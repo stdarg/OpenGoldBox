@@ -657,8 +657,8 @@ Other Wizard features and later progression remain separate requirements.
 The user explicitly declined ammunition tracking on 2026-09-25. [#57](https://github.com/stdarg/OpenGold/issues/57)
 is no longer planned: a ranged weapon has unlimited ammunition, with no inventory
 prerequisite, expenditure or recovery. This retains existing behavior, not newly
-implemented SRD expenditure/recovery. Existing saved ammunition items remain
-readable. Since [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation) Thrown weapons work the same way. [Policy and evidence](AMMUNITION.md)
+implemented SRD expenditure/recovery. Since 2026-10-23 there are no ammunition
+items at all. Since [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation) Thrown weapons work the same way. [Policy and evidence](AMMUNITION.md)
 record the decision, runtime `79558fd`, all-class weapon tests and compatibility.
 Do not reopen tracking as a missing SRD feature without explicit approval.
 

@@ -113,6 +113,16 @@ other weapon properties remain separate. See [ammunition](AMMUNITION.md).
 [SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation) later extends
 the same treatment to Thrown weapons: throwing no longer spends the weapon.
 
+**No ammunition items, 2026-10-23:** the user: "We're not dealing with ammo. You
+buy darts and you have them. You buy a bow, but not arrows. Keep javelins and
+darts, but all other ammo should be removed from the game." Arrows and quarrels,
+plain, silver or magic, are gone: no shop sells them, no treasure list, monster
+or random roll gives them (a random roll for them is rolled again), and no
+starting kit holds them. A carried bow is drawn without them. A shot has the
+bow's own magic, so Arrow +1 is gone and Protection From Normal Missiles stops a
+shot from a bow without magic. Darts and javelins stay as thrown weapons.
+Campaign format 38 drops older saves, which could hold arrows.
+
 **AR-1 — APPROVED, #99, 2026-09-25, visible question 1:** add Arcane Recovery
 dropdown and Recover slots in existing Rest dialog above Result, shortening the
 scrollable Info area. Selected eligible Wizard sees legal combinations after
@@ -1386,8 +1396,8 @@ The user chose how the original's scrolls
     or scorpion, in turn order, whose Hit Points still fit is Incapacitated for
     the fight, its Hit Points leaving the pool; a hit slays one. No save.
   - **Protection From Normal Missiles**: for an hour, cast in camp or a fight
-    on a creature within 5 feet, an attack from more than 5 feet away with
-    ammunition, or a thrown weapon, without magic misses.
+    on a creature within 5 feet, an attack from more than 5 feet away with a
+    bow, crossbow or thrown weapon without magic misses.
   The stand-ins are on the class lists of the original's casters: Friends,
   Read Magic and Protection From Normal Missiles are Wizard spells, Find Traps
   and Snake Charm Cleric spells, which Wizards learn and copy and Clerics

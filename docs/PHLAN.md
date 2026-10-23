@@ -62,37 +62,46 @@ entry or move the party out of restricted rooms.
 ## Original merchandise and artwork
 
 The [original cluebook's New Phlan map](https://www.mocagh.org/ssi/pool-hintbook.pdf)
-(printed page 3) marks twelve physical shops. Each has its own OpenGoldBox
-shopkeeper portrait, identified by map cell; shops of the same type still share
-the original merchandise list. The cluebook supplies shop types and locations,
+(printed page 3) marks twelve physical shops. Each has its own record in
+[`data/shops`](../data/shops/README.md), which the Shop & Temple Manager edits:
+its shopkeeper portrait, its stock and its prices. The records start from the
+original merchandise lists, so shops of the same type sell the same items. The cluebook supplies shop types and locations,
 not the shopkeepers' identities or appearances, so these portraits are original
 character designs.
 
 | Shop | Map position | `ITEM3.DAX` record | Stock entries | Portrait basename |
 | --- | --- | ---: | ---: | --- |
-| Arms and armor | (13,8) | 53 | 57 | `phlan-arms-13-08.png` |
-| Arms and armor | (8,11) | 53 | 57 | `phlan-arms-08-11.png` |
-| Arms and armor | (11,12) | 53 | 57 | `phlan-arms-11-12.png` |
-| Arms and armor | (9,13) | 53 | 57 | `phlan-arms-09-13.png` |
-| General items | (15,8) | 54 | 10 | `phlan-general-15-08.png` |
-| General items | (9,10) | 54 | 10 | `phlan-general-09-10.png` |
-| General items | (12,10) | 54 | 10 | `phlan-general-12-10.png` |
-| General items | (9,11) | 54 | 10 | `phlan-general-09-11.png` |
-| General items | (11,11) | 54 | 10 | `phlan-general-11-11.png` |
-| Silver items | (11,10) | 55 | 13 | `phlan-silver-11-10.png` |
-| Silver items | (10,13) | 55 | 13 | `phlan-silver-10-13.png` |
+| Arms and armor | (13,8) | 53 | 55 | `phlan-arms-13-08.png` |
+| Arms and armor | (8,11) | 53 | 55 | `phlan-arms-08-11.png` |
+| Arms and armor | (11,12) | 53 | 55 | `phlan-arms-11-12.png` |
+| Arms and armor | (9,13) | 53 | 55 | `phlan-arms-09-13.png` |
+| General items | (15,8) | 54 | 18 | `phlan-general-15-08.png` |
+| General items | (9,10) | 54 | 18 | `phlan-general-09-10.png` |
+| General items | (12,10) | 54 | 18 | `phlan-general-12-10.png` |
+| General items | (9,11) | 54 | 18 | `phlan-general-09-11.png` |
+| General items | (11,11) | 54 | 18 | `phlan-general-11-11.png` |
+| Silver items | (11,10) | 55 | 11 | `phlan-silver-11-10.png` |
+| Silver items | (10,13) | 55 | 11 | `phlan-silver-10-13.png` |
 | Jewelry | (8,10) | 52 | 11 | `phlan-jeweler-08-10.png` |
 
-All portrait files are under `art/portraits/NPCs/`. The shopkeeper fills the
+A general store's 18 entries are the original list's 7 and the 11 the game
+adds (below). The arms and silver shops leave out the original's arrows and
+quarrels, as the game has no ammunition
+([AMMO-UNLIMITED](SRD-DECISIONS.md#unlimited-ranged-ammunition--approved-exception)). The portrait files are under `art/portraits/NPCs/`; a record may
+also name one made for the manager in `dev_tools/shop_manager/portraits/`,
+which the game ships too. The shopkeeper fills the
 existing view window for the shop's greeting and throughout the shopping phase,
 including stock selection and purchases; leaving the shop restores the
 exploration view. Ordinary shop keys remain available while the portrait is
 shown.
 
 Original TREASURE instructions select these lists. The COMBAT command opens a
-shop when script register `6E6C` is set. Closing resets that flag and resumes the
-pending instruction. Each purchase charges the decoded item's gold value and
-adds its stored item/bundle to inventory. Stock may be purchased repeatedly.
+shop when script register `6E6C` is set; the game then sells what the record
+for the shop's square lists instead, at the record's prices, leaving out items
+whose stock is 0. A shop with no record sells the original list at the original
+values. Closing resets that flag and resumes the pending instruction. Each
+purchase charges the item's price and adds its stored item/bundle to inventory.
+Stock may be purchased repeatedly: the game keeps no stock limits yet.
 The demo has a 16-entry inventory limit and rejects invalid/stale requests,
 unaffordable purchases and purchases when full without charging gold.
 Selling, equipping and item activation are not implemented. Scripts that ask
@@ -108,10 +117,11 @@ Mail, Scale Mail, Splint Mail and Plate Mail (Silver Plate Mail too). SRD 5.2.1
 has no Banded Mail, so it becomes Splint, the SRD heavy armor with the same
 AD&D AC 4. Magic or cursed items keep their unsupported original record.
 
-The general store at (15,8) sells the original's Flask of Oil, which converts
-to SRD Oil, and three items the game adds from the SRD's adventuring gear:
-Torches (ten for 1 gp, as prices are whole gold), a Vial of Acid (25 gp) and a
-Flask of Alchemist's Fire (50 gp); see [GEAR-1](SRD-DECISIONS.md#gear-1-2026-10-08-fire-and-acid-for-every-party).
+Each general store sells the original's Flask of Oil, which converts to SRD
+Oil, and items its record adds from the SRD's adventuring gear: Torches (ten
+for 1 gp, as prices are whole gold), a Vial of Acid (25 gp), a Flask of
+Alchemist's Fire (50 gp) and Magic Ink of levels 1 to 8 (1,000 gp a level); see
+[GEAR-1](SRD-DECISIONS.md#gear-1-2026-10-08-fire-and-acid-for-every-party).
 Every starting kit also carries a Torch.
 
 Stock with no conversion (jewelry, holy symbols, mirrors, holy water) is

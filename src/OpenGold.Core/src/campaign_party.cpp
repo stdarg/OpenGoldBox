@@ -270,10 +270,6 @@ std::string_view enchantable_conversion(int type)
         return "light_crossbow";
     case 47:
         return "sling";
-    case 28:
-        return "bolt";
-    case 73:
-        return "arrow";
     case 50:
         return "leather";
     case 51:

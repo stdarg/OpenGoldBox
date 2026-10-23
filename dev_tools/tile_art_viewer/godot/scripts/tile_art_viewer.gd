@@ -5,7 +5,7 @@ const VIEW_NAMES := [
     "Middle right", "Near front", "Near left", "Near right", "Far extension"
 ]
 const METADATA_FILE := "../data/tile_art_catalog.csv"
-const REPLACEMENT_PACK := "../../replacement_art_creator/replacement_pack"
+const NEW_ART_FOLDER := "../../../data/art/walls"
 const CSV_COLUMNS := [
     "index", "archive", "record", "appearance", "view", "view_name", "name", "width", "height",
     "description", "usage", "map_archive", "map_record", "map_name", "profile_index",
@@ -16,10 +16,6 @@ const CSV_COLUMNS := [
 const DIRECTIONS := ["North", "East", "South", "West"]
 const DIRECTION_STEPS := [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]
 const REPLACEMENT_SCALE := 4
-const REPLACEMENT_SIZES := [
-    [8, 16], [8, 32], [8, 32], [24, 32], [16, 64],
-    [16, 64], [56, 64], [16, 88], [16, 88], [8, 16]
-]
 
 @onready var tabs: TabContainer = $Margin/Tabs
 @onready var archive_filter: OptionButton = $Margin/Tabs/ArtCatalog/Filters/ArchiveFilter
@@ -84,7 +80,6 @@ var selected_map_entry := -1
 var visible_samples: Array = []
 var selected_sample_index := -1
 var replacement_sets: Dictionary = {}
-var replacement_draws: Array[Dictionary] = []
 
 func _ready() -> void:
     legend_wall.add_theme_color_override("font_color", map_grid.get_theme_color("wall", "MapGrid"))
@@ -200,7 +195,7 @@ func _metadata_path() -> String:
         ProjectSettings.globalize_path("res://").path_join(METADATA_FILE).simplify_path()
 
 func _replacement_pack_path() -> String:
-    return ProjectSettings.globalize_path("res://").path_join(REPLACEMENT_PACK).simplify_path()
+    return ProjectSettings.globalize_path("res://").path_join(NEW_ART_FOLDER).simplify_path()
 
 func _load_metadata() -> String:
     var path := _metadata_path()
@@ -748,14 +743,11 @@ func _refresh_map_view() -> void:
         catalog_maps[selected_map]["name"], map_pose.x, map_pose.y,
         DIRECTIONS[map_facing]
     ]
-    replacement_draws.clear()
-    if show_replacement.button_pressed and not replacement_sets.is_empty():
-        first_person.set_image(_compose_replacement_view())
-    else:
-        first_person.set_image(map_view(selected_map, selected_profile,
-                                        map_pose.x, map_pose.y, map_facing))
+    var new_art := show_replacement.button_pressed and not replacement_sets.is_empty()
+    first_person.set_image(map_view(selected_map, selected_profile,
+                                    map_pose.x, map_pose.y, map_facing, new_art))
     visible_samples = map_visible_pieces(selected_map, selected_profile,
-                                         map_pose.x, map_pose.y, map_facing)
+                                         map_pose.x, map_pose.y, map_facing, new_art)
     _clear_map_pick("Click a wall, door, or other visible tile in the 3D view.")
     var profile: Dictionary = catalog_maps[selected_map]["profiles"][selected_profile]
     map_status.text = "%s · %s" % [profile["label"], profile["source"]]
@@ -763,66 +755,21 @@ func _refresh_map_view() -> void:
         map_status.text += " · %d new sets loaded; missing sets show local original art." % replacement_sets.size()
 
 func _load_replacement_pack(folder: String) -> void:
-    var loaded: Dictionary = {}
-    var rejected := 0
-    var directories := DirAccess.get_directories_at(folder)
-    directories.sort()
-    for dirname in directories:
-        var directory := folder.path_join(dirname)
-        var manifest_path := directory.path_join("manifest.json")
-        if not FileAccess.file_exists(manifest_path):
-            continue
-        var manifest_file := FileAccess.open(manifest_path, FileAccess.READ)
-        if manifest_file == null:
-            rejected += 1
-            continue
-        var manifest: Variant = JSON.parse_string(manifest_file.get_as_text())
-        if not manifest is Dictionary or manifest.get("format", "") != "opengold-replacement-art-v1":
-            rejected += 1
-            continue
-        var key := str(manifest.get("appearance_key", ""))
-        var file_data: Variant = manifest.get("files", {})
-        if not file_data is Dictionary:
-            rejected += 1
-            continue
-        var files: Dictionary = file_data
-        if key.is_empty() or files.size() != VIEW_NAMES.size():
-            rejected += 1
-            continue
-        var images: Array[Image] = []
-        for view in VIEW_NAMES.size():
-            var filename := str(files.get(VIEW_NAMES[view], ""))
-            var path := directory.path_join(filename)
-            if filename.is_empty() or filename.get_file() != filename or \
-                    not filename.to_lower().ends_with(".png") or not FileAccess.file_exists(path):
-                break
-            var image := Image.new()
-            if image.load_png_from_buffer(FileAccess.get_file_as_bytes(path)) != OK:
-                break
-            var expected := Vector2i(REPLACEMENT_SIZES[view][0], REPLACEMENT_SIZES[view][1]) * REPLACEMENT_SCALE
-            if image.get_size() != expected:
-                break
-            image.convert(Image.FORMAT_RGBA8)
-            images.append(image)
-        if images.size() != VIEW_NAMES.size():
-            rejected += 1
-            continue
-        loaded[key] = images
-    if loaded.is_empty():
-        var message := "No valid replacement sets found in %s (%d rejected)." % [folder, rejected]
+    # The native catalog reads the folder exactly as the game does.
+    var error := load_new_art(folder)
+    var loaded := new_art_sets()
+    if not error.is_empty() or loaded.is_empty():
+        var message := error if not error.is_empty() else "No new wall art found in %s." % folder
         map_status.text = message
         status.text = message
         return
     replacement_sets = loaded
     catalog_show_replacement.disabled = false
     show_replacement.disabled = false
-    var location_hint := "New art: dev_tools/replacement_art_creator/replacement_pack (restart after changing the pack)"
+    var location_hint := "New art: data/art/walls, as the game shows it (restart after changing it)"
     catalog_show_replacement.tooltip_text = location_hint
     show_replacement.tooltip_text = location_hint
     _set_replacement_mode(true)
-    if rejected > 0:
-        map_status.text += " · %d invalid sets skipped" % rejected
-        status.text += " · %d invalid sets skipped" % rejected
 
 func _set_replacement_mode(enabled: bool) -> void:
     catalog_show_replacement.set_pressed_no_signal(enabled)
@@ -831,106 +778,9 @@ func _set_replacement_mode(enabled: bool) -> void:
     _rebuild_grid()
     _refresh_map_view()
 
-func _replacement_cell(depth: int, lateral: int, view: int) -> Dictionary:
-    var forward: Vector2i = DIRECTION_STEPS[map_facing]
-    var cell := map_pose + forward * depth + Vector2i(-forward.y, forward.x) * lateral
-    if cell.x < 0 or cell.y < 0 or cell.x >= 16 or cell.y >= 16:
-        return {}
-    return map_cell(selected_map, selected_profile, cell.x, cell.y, view)
-
-func _replacement_wall(depth: int, lateral: int, face: int) -> int:
-    var cell := _replacement_cell(depth, lateral, 0)
-    if cell.is_empty():
-        return 0
-    return int(cell["faces"][face]["wall_id"])
-
-func _replacement_piece(index: int, view: int) -> Image:
-    if index < 0 or index >= catalog_entries.size():
-        return null
-    var key := _replacement_key(index)
-    if replacement_sets.has(key):
-        return replacement_sets[key][view]
-    # The reviewer can inspect a partially completed pack; originals are read
-    # from the user's installation and never copied into the exported pack.
-    var original: Image = image_at(index)
-    if original == null:
-        return null
-    var fallback := original.duplicate() as Image
-    fallback.resize(original.get_width() * REPLACEMENT_SCALE,
-                    original.get_height() * REPLACEMENT_SCALE, Image.INTERPOLATE_NEAREST)
-    return fallback
-
-func _draw_replacement(canvas: Image, depth: int, lateral: int, face: int,
-                       view: int, x: int, y: int) -> void:
-    var cell := _replacement_cell(depth, lateral, view)
-    if cell.is_empty():
-        return
-    var face_data: Dictionary = cell["faces"][face]
-    var index := int(face_data["entry_index"])
-    var piece := _replacement_piece(index, view)
-    if piece == null:
-        return
-    var origin := Vector2i(x, y) * REPLACEMENT_SCALE
-    canvas.blend_rect(piece, Rect2i(Vector2i.ZERO, piece.get_size()), origin)
-    replacement_draws.append({
-        "image": piece,
-        "origin": origin,
-        "hit": {
-            "x": cell["x"], "y": cell["y"], "face": face,
-            "wall_id": face_data["wall_id"], "door_code": face_data["door_code"],
-            "view": view, "entry_index": index, "event_raw": cell["event_raw"]
-        }
-    })
-
 func _replacement_pick(pixel: Vector2i) -> Dictionary:
-    for draw_index in range(replacement_draws.size() - 1, -1, -1):
-        var draw: Dictionary = replacement_draws[draw_index]
-        var piece: Image = draw["image"]
-        var local: Vector2i = pixel - draw["origin"]
-        if local.x >= 0 and local.y >= 0 and local.x < piece.get_width() and \
-                local.y < piece.get_height() and piece.get_pixelv(local).a > 0.0:
-            return draw["hit"]
-    return {}
-
-func _compose_replacement_view() -> Image:
-    var size := 88 * REPLACEMENT_SCALE
-    var canvas := Image.create(size, size, false, Image.FORMAT_RGBA8)
-    var current := _replacement_cell(0, 0, 0)
-    var interior := bool(current.get("interior", false))
-    canvas.fill(Color8(85, 85, 85) if interior else Color8(85, 255, 255))
-    canvas.fill_rect(Rect2i(0, 44 * REPLACEMENT_SCALE, size, 44 * REPLACEMENT_SCALE),
-                     Color8(170, 85, 0))
-    var left := (map_facing + 3) % 4
-    var right := (map_facing + 1) % 4
-    for lateral in range(-3, 4):
-        var front := _replacement_wall(2, lateral, map_facing)
-        if front > 0:
-            _draw_replacement(canvas, 2, lateral, map_facing, 0, 40 + lateral * 16, 32)
-        if lateral <= 0 and lateral > -3 and (
-                _replacement_wall(2, lateral, left) > 0 or
-                _replacement_wall(2, lateral - 1, map_facing) > 0):
-            _draw_replacement(canvas, 2, lateral, map_facing, 9, 32 + lateral * 16, 32)
-        if lateral > 0 and (front > 0 or _replacement_wall(2, lateral - 1, right) > 0):
-            _draw_replacement(canvas, 2, lateral - 1, map_facing, 9, 32 + lateral * 16, 32)
-    for lateral in range(-2, 3):
-        if lateral <= 0:
-            _draw_replacement(canvas, 2, lateral, left, 1,
-                    32 + lateral * 16 - (8 if lateral < 0 else 0), 24)
-        if lateral >= 0:
-            _draw_replacement(canvas, 2, lateral, right, 2,
-                    48 + lateral * 16 + (8 if lateral > 0 else 0), 24)
-    for lateral in range(-2, 3):
-        _draw_replacement(canvas, 1, lateral, map_facing, 3, 32 + lateral * 24, 24)
-    for lateral in range(-1, 2):
-        if lateral <= 0:
-            _draw_replacement(canvas, 1, lateral, left, 4, 16 + lateral * 24, 8)
-        if lateral >= 0:
-            _draw_replacement(canvas, 1, lateral, right, 5, 56 + lateral * 24, 8)
-    for lateral in range(-1, 2):
-        _draw_replacement(canvas, 0, lateral, map_facing, 6, 16 + lateral * 56, 8)
-    _draw_replacement(canvas, 0, 0, left, 7, 0, 0)
-    _draw_replacement(canvas, 0, 0, right, 8, 72, 0)
-    return canvas
+    return map_pick(selected_map, selected_profile, map_pose.x, map_pose.y,
+                    map_facing, pixel.x, pixel.y, true)
 
 func _clear_map_pick(message: String) -> void:
     selected_map_entry = -1
@@ -969,13 +819,9 @@ func _select_next_visible_piece() -> void:
         selected_sample_index = (selected_sample_index + 1) % visible_samples.size()
         var sample: Dictionary = visible_samples[selected_sample_index]
         var pixel := Vector2i(sample["pixel_x"], sample["pixel_y"])
-        var hit: Dictionary = {}
-        if show_replacement.button_pressed:
-            pixel = pixel * REPLACEMENT_SCALE + Vector2i.ONE * (REPLACEMENT_SCALE >> 1)
-            hit = _replacement_pick(pixel)
-        else:
-            hit = map_pick(selected_map, selected_profile, map_pose.x, map_pose.y,
-                           map_facing, pixel.x, pixel.y)
+        var hit: Dictionary = _replacement_pick(pixel) if show_replacement.button_pressed else \
+            map_pick(selected_map, selected_profile, map_pose.x, map_pose.y,
+                     map_facing, pixel.x, pixel.y)
         if hit.is_empty():
             continue
         _display_map_hit(hit)
@@ -1529,13 +1375,8 @@ func _run_replacement_check(folder: String) -> void:
         _map_check_fail("Replacement preview is identical to the source view")
         return
     var click_pixel := Vector2i(-1, -1)
-    for py in replacement.get_height():
-        for px in replacement.get_width():
-            if not _replacement_pick(Vector2i(px, py)).is_empty():
-                click_pixel = Vector2i(px, py)
-                break
-        if click_pixel.x >= 0:
-            break
+    if not visible_samples.is_empty():
+        click_pixel = Vector2i(visible_samples[0]["pixel_x"], visible_samples[0]["pixel_y"])
     if click_pixel.x < 0:
         _map_check_fail("Replacement view has no clickable tile")
         return
@@ -1600,10 +1441,7 @@ func _run_map_capture(output_path: String) -> void:
     tabs.current_tab = 1
     if not visible_samples.is_empty():
         var sample: Dictionary = visible_samples[0]
-        var pixel := Vector2i(sample["pixel_x"], sample["pixel_y"])
-        if show_replacement.button_pressed:
-            pixel = pixel * REPLACEMENT_SCALE + Vector2i.ONE * (REPLACEMENT_SCALE >> 1)
-        _pick_map_pixel(pixel)
+        _pick_map_pixel(Vector2i(sample["pixel_x"], sample["pixel_y"]))
     await RenderingServer.frame_post_draw
     var result := get_viewport().get_texture().get_image().save_png(output_path)
     if result != OK:

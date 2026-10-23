@@ -1,6 +1,7 @@
 #include "opengold/campaign_party.h"
 #include "opengold/coin_purse.h"
 #include "opengold/character.h"
+#include "opengold/npc_portraits.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/srd5.h"
 #include <algorithm>
@@ -9,6 +10,7 @@
 #include <filesystem>
 #include <functional>
 #include <iostream>
+#include <map>
 #include <queue>
 #include <set>
 #include <stdexcept>
@@ -121,6 +123,9 @@ void settle(RolfTourSession &town, bool *temple = nullptr,
             }
             // At a temple, ask for its service: "DO YOU SEEK HEALING?" YES.
             const bool asked = temple && s.dialogue.find("SEEK HEALING") != std::string::npos;
+            check(!asked || town.temples().empty() ||
+                      !opengold::temple_priest_portrait(s, town.temples()).empty(),
+                  "The temple's priest greets the party");
             town.choose(s.continue_ticket, asked || s.choices.empty() ? 0 : s.choices.size() - 1);
         }
         else if (s.phase == TourPhase::awaiting_input)
@@ -317,12 +322,16 @@ void temple_list_checks(const char *directory)
             o.price_gp = 120;
         }
     }
-    town.temples({{"GEO3.DAX", 0, {{11, 3}, {8, 4}, {8, 6}}, offerings}});
+    town.temples(
+        {{"GEO3.DAX", 0, {{11, 3}, {8, 4}, {8, 6}}, offerings, "NPCs/bishop-braccio.png"}});
     settle(town);
     bool visited = false;
     const auto visit = [&](RolfTourSession &t)
     {
         visited = true;
+        check(opengold::speaking_npc_portrait(t.snapshot(), t.shops(), t.temples()) ==
+                  "NPCs/bishop-braccio.png",
+              "Bishop Braccio presides over Tyr's Heal list");
         check(offers(t, "Cure Light Wounds (120 gp)") && !offers(t, "Cure Disease") &&
                   offers(t, "Resurrection (11,000 gp)") && offers(t, "Raise Dead (5,500 gp)"),
               "Tyr lists its own prices; Resurrection on Normal");
@@ -392,6 +401,73 @@ void temple_list_checks(const char *directory)
     }
     check(hard_visited, "The party reaches the temple on Hard");
 }
+
+// Every New Phlan temple data/shops names (TEMPLE-1): each of its squares opens
+// its own Heal list, with all ten services on Normal, and its own priest. Each temple here charges
+// its own Cure Light Wounds price so the list shows whose it is.
+void every_temple_checks(const char *directory)
+{
+    struct Site
+    {
+        std::string name;
+        std::vector<std::pair<unsigned, unsigned>> markers;
+        std::uint32_t cure_price;
+    };
+
+    const std::array<Site, 3> sites{{{"Tyr", {{11, 3}, {8, 4}, {8, 6}}, 101},
+                                     {"Sune", {{1, 1}, {3, 1}, {1, 3}}, 102},
+                                     {"Tempus", {{0, 12}, {2, 12}}, 103}}};
+    std::vector<TempleSite> temples;
+    for (const auto &site : sites)
+    {
+        auto offerings = original_temple_offerings();
+        offerings.at(2).price_gp = site.cure_price;
+        temples.push_back({"GEO3.DAX", 0, site.markers, offerings, "priest-" + site.name + ".png"});
+    }
+    auto party = std::make_shared<CampaignParty>(module());
+    party->add_pc(cleric());
+    auto town = RolfTourSession::load(directory);
+    town.campaign_party(party);
+    town.temples(temples);
+    settle(town);
+    std::map<std::pair<unsigned, unsigned>, std::string> lists;
+    const auto visit = [&](RolfTourSession &t)
+    {
+        const auto &s = t.snapshot();
+        std::string price = "none";
+        for (const auto &site : sites)
+        {
+            if (offers(t, "Cure Light Wounds (" + std::to_string(site.cure_price) + " gp)"))
+            {
+                price = site.name;
+            }
+        }
+        check(s.choices.size() == 11, "Every service is on the list, and Leave");
+        check(opengold::speaking_npc_portrait(s, t.shops(), t.temples()) ==
+                  "priest-" + price + ".png",
+              "The temple's own priest presides over its Heal list");
+        lists[{s.pose.x, s.pose.y}] = price;
+        check(pick(t, "Leave"), "Leave");
+    };
+    for (const auto &site : sites)
+    {
+        for (const auto &[x, y] : site.markers)
+        {
+            bool at_temple = false;
+            check(walk_to(town, x, y, &at_temple, visit), "The party reaches a temple's square");
+        }
+    }
+    for (const auto &site : sites)
+    {
+        for (const auto &marker : site.markers)
+        {
+            const auto list = lists.find(marker);
+            check(list != lists.end() && list->second == site.name,
+                  "The Temple of " + site.name + " opens its own Heal list on (" +
+                      std::to_string(marker.first) + ", " + std::to_string(marker.second) + ")");
+        }
+    }
+}
 } // namespace
 
 int main()
@@ -402,6 +478,7 @@ int main()
         {
             recall_checks(directory);
             temple_list_checks(directory);
+            every_temple_checks(directory);
         }
     }
     catch (const std::exception &error)

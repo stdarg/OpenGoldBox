@@ -264,6 +264,12 @@ Dead members contribute zero. Example: six level-two fighters in chain mail and
 shield at 20 HP give `6 x (20 + 5) / 10 = 12`; the conversion this replaced
 (`20 - SRD AC`, `20 - attack bonus`) gave 30 for the same party at +5 to hit.
 
+LOAD CHARACTER writes each member's Gold Box race at character byte `0x72`
+(coab `Race`): dwarf 1, elf 2, gnome 3, halfling 5, human 7. SRD species the
+original lacks read as half-orc 6, so the Orc, Dragonborn, Goliath and Tiefling
+count as non-human people, never as monsters (0). Podol Plaza's disguise check
+counts the members who are not human.
+
 Thief-skill/effect CHECKPARTY variants still fault. `PhlanResources::npc_profiles`
 accepts explicit native character conversions for this bank; unregistered NPCs
 and the special hostile NPC 24 fault. General bank resolution, morale behavior

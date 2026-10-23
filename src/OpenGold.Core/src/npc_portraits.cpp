@@ -1,14 +1,29 @@
 #include "opengold/npc_portraits.h"
 #include "opengold/rolf_tour.h"
+#include <algorithm>
 #include <array>
 
 namespace opengold
 {
-// The cluebook marks twelve separate New Phlan shops. Their map cells, rather
-// than merchandise lists, identify the individual people who keep them. The
-// original shop offer has a two-choice "THE SHOP..." dialogue before the host
-// enters shopping; show the same person for that greeting and the entire shop.
-std::string_view phlan_shopkeeper_portrait(const por::TourSnapshot &state)
+namespace
+{
+// Whether the party stands on one of a data/shops location's squares. The
+// snapshot names the map by its record, which differs between the game's maps;
+// New Phlan is record 0 of GEO3.DAX.
+bool stands_on(const por::TourSnapshot &state, const std::string &archive, unsigned record,
+               const std::vector<std::pair<unsigned, unsigned>> &markers)
+{
+    return record == state.area_id && (record != 0 || archive == "GEO3.DAX") &&
+           std::ranges::find(markers, std::pair{state.pose.x, state.pose.y}) != markers.end();
+}
+} // namespace
+
+// The shopkeeper of the New Phlan shop the party stands in, from its data/shops
+// record. The original shop offer has a two-choice "THE SHOP..." dialogue
+// before the host enters shopping; show the same person for that greeting and
+// the entire shop.
+std::string_view phlan_shopkeeper_portrait(const por::TourSnapshot &state,
+                                           const std::vector<ShopSite> &shops)
 {
     const bool greeting = state.phase == por::TourPhase::awaiting_continue &&
                           state.choices.size() == 2 && state.dialogue.starts_with("THE SHOP");
@@ -17,24 +32,9 @@ std::string_view phlan_shopkeeper_portrait(const por::TourSnapshot &state)
     {
         return {};
     }
-
-    struct Shop
-    {
-        unsigned x, y;
-        std::string_view portrait;
-    };
-
-    constexpr std::array shops{
-        Shop{13, 8, "NPCs/phlan-arms-13-08.png"},     Shop{8, 11, "NPCs/phlan-arms-08-11.png"},
-        Shop{11, 12, "NPCs/phlan-arms-11-12.png"},    Shop{9, 13, "NPCs/phlan-arms-09-13.png"},
-        Shop{15, 8, "NPCs/phlan-general-15-08.png"},  Shop{9, 10, "NPCs/phlan-general-09-10.png"},
-        Shop{12, 10, "NPCs/phlan-general-12-10.png"}, Shop{9, 11, "NPCs/phlan-general-09-11.png"},
-        Shop{11, 11, "NPCs/phlan-general-11-11.png"}, Shop{11, 10, "NPCs/phlan-silver-11-10.png"},
-        Shop{10, 13, "NPCs/phlan-silver-10-13.png"},  Shop{8, 10, "NPCs/phlan-jeweler-08-10.png"},
-    };
     for (const auto &shop : shops)
     {
-        if (state.pose.x == shop.x && state.pose.y == shop.y)
+        if (stands_on(state, shop.archive, shop.record, shop.markers))
         {
             return shop.portrait;
         }
@@ -42,16 +42,41 @@ std::string_view phlan_shopkeeper_portrait(const por::TourSnapshot &state)
     return {};
 }
 
+// The priest of the temple the party stands in, from its data/shops record,
+// for everything the temple says there: its greeting and its Heal list.
+std::string_view temple_priest_portrait(const por::TourSnapshot &state,
+                                        const std::vector<TempleSite> &temples)
+{
+    if (!state.tour_finished || state.phase != por::TourPhase::awaiting_continue)
+    {
+        return {};
+    }
+    for (const auto &temple : temples)
+    {
+        if (stands_on(state, temple.archive, temple.record, temple.markers))
+        {
+            return temple.portrait;
+        }
+    }
+    return {};
+}
+
 // The complete NPC portrait (docs/PORTRAITS.md), relative to the installed
 // portraits folder. Shopkeepers appear at their greeting and throughout
-// shopping. Story portraits use script-specific speaker cues, not the shared
-// sprite ID: several characters use the same original sprite. Frame 0 is the
+// shopping, and priests while their temple speaks. Story portraits use script-specific speaker
+// cues, not the shared sprite ID: several characters use the same original sprite. Frame 0 is the
 // encounter sprite's nearest pose; -1 means no active approach sprite.
-std::string_view speaking_npc_portrait(const por::TourSnapshot &state)
+std::string_view speaking_npc_portrait(const por::TourSnapshot &state,
+                                       const std::vector<ShopSite> &shops,
+                                       const std::vector<TempleSite> &temples)
 {
-    if (const auto shopkeeper = phlan_shopkeeper_portrait(state); !shopkeeper.empty())
+    if (const auto shopkeeper = phlan_shopkeeper_portrait(state, shops); !shopkeeper.empty())
     {
         return shopkeeper;
+    }
+    if (const auto priest = temple_priest_portrait(state, temples); !priest.empty())
+    {
+        return priest;
     }
     if (state.dialogue.empty())
     {

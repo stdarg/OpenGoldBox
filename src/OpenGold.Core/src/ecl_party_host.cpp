@@ -39,6 +39,18 @@ AdndGroup adnd_group(std::string_view class_id)
     return AdndGroup::fighter;
 }
 
+// The Gold Box race code that scripts read at character byte 0x72 (coab
+// Classes/Enums.cs Race; 7 is human). Species the original lacks are
+// non-human people, as its half-orc, never monsters (code 0).
+std::uint16_t adnd_race_code(std::string_view species_id)
+{
+    using Code = std::pair<std::string_view, std::uint16_t>;
+    static constexpr std::array<Code, 6> codes{
+        {{"dwarf", 1}, {"elf", 2}, {"gnome", 3}, {"halfling", 5}, {"orc", 6}, {"human", 7}}};
+    const auto match = std::ranges::find(codes, species_id, &Code::first);
+    return match == codes.end() ? 6 : match->second;
+}
+
 // Gold Box THAC0 by level 1..12 (coab engine/ovr018.cs thac0_table, stored
 // there as 60 - THAC0). Higher levels keep the level-12 value: the original
 // table ends there and nothing is extrapolated.
@@ -222,6 +234,7 @@ EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
             fields[n] = static_cast<unsigned char>(name[n]);
         }
         fields[0x18] = sheet.scores[rules::Ability::constitution];
+        fields[0x72] = adnd_race_code(m.character.creation_data().race);
         fields[0x100] = m.vitals.dead ? 0 : 1;
         fields[0x119] = m.vitals.hit_points;
         // Every member shows the party's money: the party owns it all.

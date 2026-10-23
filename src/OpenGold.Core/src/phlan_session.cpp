@@ -2,6 +2,7 @@
 #include "opengold/random_treasure.h"
 #include "opengold/ecl_party_host.h"
 #include "opengold/scroll_key.h"
+#include "opengold/authored_items.h"
 #include <algorithm>
 #include <set>
 
@@ -877,7 +878,8 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
         }
         for (auto &item : gear)
         {
-            if (item)
+            // There is no ammunition: a monster's arrows are not left behind.
+            if (item && !opengold::original_item::is_ammunition(item->stored.type))
             {
                 loot.items.push_back(std::move(*item));
             }
@@ -1176,6 +1178,11 @@ void RolfTourSession::stage_treasure(const EclRequest &request)
         }
         for (auto item : found->second)
         {
+            // There is no ammunition, so a list's arrows and quarrels are not found.
+            if (opengold::original_item::is_ammunition(item.stored.type))
+            {
+                continue;
+            }
             item.index = loot.items.size();
             loot.items.push_back(std::move(item));
         }
@@ -1980,7 +1987,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             throw EclError("Unsupported town treasure list");
         }
-        treasure_.insert(treasure_.end(), found->second.begin(), found->second.end());
+        // A shop list without its arrows and quarrels: there is no ammunition.
+        std::ranges::copy_if(found->second, std::back_inserter(treasure_),
+                             [](const auto &item)
+                             {
+                                 return !opengold::original_item::is_ammunition(item.stored.type);
+                             });
         break;
     }
     case 36:
@@ -2068,6 +2080,14 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 throw EclError("Shopping requires a selected party member");
             }
             read_character();
+            // The shop data/shops places on this square sells its record's items.
+            for (std::size_t n = 0; n < shops_.size(); ++n)
+            {
+                if (standing_at(shops_[n].archive, shops_[n].record, shops_[n].markers))
+                {
+                    treasure_ = shop_stocks_[n];
+                }
+            }
             shop_request_ = request.id;
             snapshot_.phase = TourPhase::shopping;
             snapshot_.continue_ticket = ++next_ticket_;
@@ -2488,18 +2508,22 @@ void RolfTourSession::roll_plaza_group(const EclRequest &request, EclHostReply &
     plaza_group_rolled_ = true;
 }
 
+bool RolfTourSession::standing_at(const std::string &archive, unsigned record,
+                                  const std::vector<std::pair<unsigned, unsigned>> &markers) const
+{
+    const auto here = "GEO" + std::to_string(current_area_ ? area_resources().bank : 3) + ".DAX";
+    return archive == here && record == current_area_ &&
+           std::find(markers.begin(), markers.end(),
+                     std::pair{snapshot_.pose.x, snapshot_.pose.y}) != markers.end();
+}
+
 void RolfTourSession::open_temple(std::uint64_t request)
 {
     // The temple data/shops places on this square, else the original's list.
-    const auto archive = "GEO" + std::to_string(current_area_ ? area_resources().bank : 3) + ".DAX";
     auto offerings = opengold::original_temple_offerings();
     for (const auto &site : temples_)
     {
-        const bool here =
-            site.archive == archive && site.record == current_area_ &&
-            std::find(site.markers.begin(), site.markers.end(),
-                      std::pair{snapshot_.pose.x, snapshot_.pose.y}) != site.markers.end();
-        if (here)
+        if (standing_at(site.archive, site.record, site.markers))
         {
             offerings = site.offerings;
         }

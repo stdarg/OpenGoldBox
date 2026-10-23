@@ -222,8 +222,8 @@ int main()
         // longbow and one flask of each kind.
         const std::vector<std::string> sword_and_shield{"longsword", "shield", "chain_mail"};
         const std::vector<CarriedEquipment> pack{
-            {11, "torch", 1, -1}, {12, "longbow", 1, -1},         {13, "arrow", 20, -1},
-            {14, "oil", 1, -1},   {15, "alchemists_fire", 1, -1}, {16, "acid", 1, -1}};
+            {11, "torch", 1, -1}, {12, "longbow", 1, -1},         {14, "oil", 1, -1},
+            {15, "alchemists_fire", 1, -1}, {16, "acid", 1, -1}};
         const Participant troll_beside{98, "troll", "Troll", Side::opposition, {2, 1}};
         const Participant troll_near{98, "troll", "Troll", Side::opposition, {4, 1}};
         const Participant troll_far{98, "troll", "Troll", Side::opposition, {11, 5}};

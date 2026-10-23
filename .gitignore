@@ -36,6 +36,8 @@ dev_tools/replacement_art_creator/godot/art/*.png.import
 !/data/art/portraits/*.png
 !/art/portraits/*.png
 !/art/portraits/NPCs/*.png
+!/data/art/portraits/shops/*.png
+!/dev_tools/shop_manager/portraits/*.png
 
 # Newly generated combat head artwork (not extracted game assets)
 !/art/heads/*.png

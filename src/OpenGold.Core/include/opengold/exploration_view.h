@@ -4,6 +4,7 @@
 #include "opengold/geo_map.h"
 #include "opengold/wall_art.h"
 #include <bitset>
+#include <vector>
 
 namespace opengold::por
 {
@@ -18,17 +19,20 @@ struct ExplorationView
 {
     Image image;
     std::bitset<GeoMap::width * GeoMap::height> visible;
-    // The last opaque source piece painted at each logical canvas pixel.
+    // The art's scale: the image is 88 * scale pixels square.
+    unsigned scale{1};
+    // The last opaque source piece painted at each image pixel, row by row.
     // Transparent cutouts and the background have no wall hit.
-    std::array<ExplorationWallHit, 88 * 88> wall_hits{};
+    std::vector<ExplorationWallHit> wall_hits;
 };
 
 // Visibility comes from the same clipped, occluded wall pixels and floor
 // projection as the image. The caller records it only when showing this view.
 [[nodiscard]] ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art,
                                                       unsigned x, unsigned y, MapDirection facing);
-// Original perspective pieces are composed on an 88x88 logical canvas. The UI
-// controls scaling; this function never changes map, door or encounter state.
+// Perspective pieces are composed on an 88x88 logical canvas, enlarged by the
+// art's scale. The UI controls display scaling; this function never changes
+// map, door or encounter state.
 [[nodiscard]] Image compose_exploration_view(const GeoMap &map, const WallArtSet &art, unsigned x,
                                              unsigned y, MapDirection facing);
 } // namespace opengold::por

@@ -20,28 +20,41 @@ throw never removes, drops or spends the weapon, which stays held or carried.
 Existing action costs, attack rolls, damage, range, proficiency, grip
 and shield behavior remain in effect.
 
-## Existing saves and verification
+## No ammunition items (2026-10-23)
 
-Ordinary ammunition records remain inventory items, including original arrows
-and quarrels and their provenance. These records are not prerequisites for firing
-and are not depleted by ranged attacks. No expenditure/recovery implementation,
-pending recovery state or new control was added.
+The user went further on 2026-10-23: "We're not dealing with ammo. You buy darts
+and you have them. You buy a bow, but not arrows. Keep javelins and darts, but
+all other ammo should be removed from the game." Arrows and quarrels, plain,
+silver or magic (original item types 73 and 28, `original_item::is_ammunition`),
+no longer exist in the game:
+
+- Shops do not sell them: they are out of the `data/shops` records, the game
+  skips any a record lists, and the Shop & Temple Manager no longer offers them.
+- Fixed treasure lists and monsters' gear leave them out, and a random treasure
+  roll for them is rolled again.
+- Starting kits hold a bow or crossbow and no ammunition.
+- A carried bow is drawn to shoot without them. A shot has the bow's own magic:
+  Arrow +1 is gone, and Protection From Normal Missiles stops a shot from a bow
+  without magic.
+- Campaign format 38 drops older saves, which could hold arrows.
+
+Darts and javelins stay: they are thrown weapons, not ammunition. Each ranged
+weapon still records the kind it shoots, which tells a firearm from a bow for
+Weapon Mastery.
+
+## Verification
 
 - `opengold_weapon_catalog_tests` exercises all 38 weapons, including all nine
   ammunition weapons, for all twelve classes without supplying ammunition.
   Normal/critical/miss attacks, range, action expenditure, stale-command rejection
   and combat save continuation are covered.
-- `opengold_ammunition_tests` checks all five inert ammunition inventory types
-  across all twelve classes, source-backed original conversions, rejected Equip
-  atomicity, and campaign/combat continuation.
+- `opengold_fire_and_acid_tests` draws a carried bow with no arrows, and checks
+  that a plain longbow's shot cannot touch a target warded by Protection From
+  Normal Missiles while a Longbow +1's can.
 - `opengold_thrown_weapon_tests` verifies that throwing keeps the weapon.
 
-All 50 native/tool tests passed on runtime `79558fd`. The three focused tests
-above passed again after the user selected the exception, with unchanged runtime
-inputs: `ctest --test-dir build/mac-check --output-on-failure -R
-'^opengold_(ammunition|weapon_catalog|thrown_weapon)_tests$'`.
-Log: `/tmp/ammunition-policy-checks.log`. No UI changes require new layout approval
-or renders for this policy decision.
+The 2026-09-25 checks ran on runtime `79558fd`; the ammunition item test they
+included was removed with the items.
 
 ## Execution record
 

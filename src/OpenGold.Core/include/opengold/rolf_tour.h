@@ -5,11 +5,13 @@
 #include "opengold/map_catalog.h"
 #include "opengold/formats.h"
 #include "opengold/wall_art.h"
+#include "opengold/wall_art_replacements.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_encounter.h"
 #include "opengold/difficulty.h"
 #include "opengold/encounter_budget.h"
+#include "opengold/shop_data.h"
 #include "opengold/temple_catalog.h"
 #include <bitset>
 
@@ -166,7 +168,9 @@ class RolfTourSession
     ~RolfTourSession() = default;
     [[nodiscard]] RolfTourSession detached_copy() const;
 
-    [[nodiscard]] static RolfTourSession load(const std::filesystem::path &directory);
+    // New wall art replaces the original appearances it covers.
+    [[nodiscard]] static RolfTourSession load(const std::filesystem::path &directory,
+                                              const WallArtReplacements &new_wall_art = {});
     // Also accepts wholly synthetic resources for asset-free host tests.
     RolfTourSession(GeoMap map, std::shared_ptr<const EclProgram> program,
                     std::array<opengold::Image, 3> sprites, std::uint32_t entry,
@@ -225,6 +229,21 @@ class RolfTourSession
     void temples(std::vector<opengold::TempleSite> sites)
     {
         temples_ = std::move(sites);
+    }
+
+    [[nodiscard]] const std::vector<opengold::TempleSite> &temples() const noexcept
+    {
+        return temples_;
+    }
+
+    // The shops data/shops describes: each sells its record's items at its
+    // prices. A shop it does not name sells the original's list. Throws when an
+    // item's source list is not in the loaded game.
+    void shops(std::vector<opengold::ShopSite> sites);
+
+    [[nodiscard]] const std::vector<opengold::ShopSite> &shops() const noexcept
+    {
+        return shops_;
     }
 
     [[nodiscard]] const TourSnapshot &snapshot() const noexcept
@@ -377,6 +396,10 @@ class RolfTourSession
     };
 
     std::vector<opengold::TempleSite> temples_;
+    std::vector<opengold::ShopSite> shops_;
+    std::vector<std::vector<Equipment>> shop_stocks_; // each shop's items, as shops_
+    [[nodiscard]] bool standing_at(const std::string &archive, unsigned record,
+                                   const std::vector<std::pair<unsigned, unsigned>> &markers) const;
     std::optional<TempleVisit> temple_visit_;
     void open_temple(std::uint64_t request);
     void show_temple(std::vector<opengold::rules::Message> notice);

@@ -21,7 +21,7 @@ of a campaign save; add completed characters to the party first.
 Until 1.0, every save kind has exactly one accepted format, and it always writes
 every field:
 
-- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 36` (`campaign_format` in
+- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 38` (`campaign_format` in
   `campaign_save.cpp`).
 - The internal training-combat checkpoint: `OGCOMBAT 65` (`checkpoint_format`
   in `srd5.cpp`).

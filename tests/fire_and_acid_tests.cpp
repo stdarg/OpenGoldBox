@@ -6,11 +6,13 @@
 #include "opengold/campaign_party.h"
 #include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
+#include "status_effects.h"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -19,6 +21,7 @@ using namespace opengold::rules;
 
 namespace
 {
+namespace fx = opengold::srd5::detail;
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 
 void check(bool ok, const std::string &message)
@@ -393,12 +396,13 @@ void oil_then_torch()
     check(false, "The Torch hits the oiled creature");
 }
 
-// A carried longbow and arrows: drawn to shoot an enemy out of melee reach.
+// A carried longbow, which needs no arrows: drawn to shoot an enemy out of
+// melee reach.
 // A shield-bearer first takes off its shield (an action), which costs its AC.
 void bows_drawn()
 {
-    constexpr std::uint8_t longbow = 41, arrows = 73;
-    auto free_hand = arena({longbow, arrows}, {{"target", {8, 2}}}, 3);
+    constexpr std::uint8_t longbow = 41;
+    auto free_hand = arena({longbow}, {{"target", {8, 2}}}, 3);
     const auto archer = EntityId(free_hand.fighter);
     turn_of(*free_hand.demo, archer);
     check(offered(free_hand.demo->combat(), "shoot", archer, 1000) &&
@@ -407,7 +411,7 @@ void bows_drawn()
     check(use(*free_hand.demo, "shoot", archer, 1000) && logged(*free_hand.demo, "Torchbearer ->"),
           "The arrow is shot");
 
-    auto shielded = arena({longbow, arrows}, {{"target", {8, 2}}}, 3, true);
+    auto shielded = arena({longbow}, {{"target", {8, 2}}}, 3, true);
     const auto fighter = EntityId(shielded.fighter);
     turn_of(*shielded.demo, fighter);
     const auto armored = unit(*shielded.demo, fighter).armor_class;
@@ -475,8 +479,8 @@ void torch_tactic()
 // carried Torch or bow and throws no flask (SRD 5.2.1).
 void wild_shape_draws_nothing()
 {
-    constexpr std::uint8_t shortbow = 42, arrows = 73;
-    auto a = arena({authored_item::torch, shortbow, arrows, authored_item::alchemists_fire},
+    constexpr std::uint8_t shortbow = 42;
+    auto a = arena({authored_item::torch, shortbow, authored_item::alchemists_fire},
                    {{"target", {3, 2}}, {"clumsy", {6, 4}}}, 2, true, torchbearer("druid"), 2);
     const auto druid = EntityId(a.fighter);
     turn_of(*a.demo, druid);
@@ -514,9 +518,8 @@ void fire_bolt_tactic()
 // can still be drawn after it is restored.
 void carried_gear_survives_checkpoint()
 {
-    constexpr std::uint8_t longbow = 41, arrows = 73;
-    auto a =
-        arena({authored_item::torch, longbow, arrows}, {{"target", {3, 2}}, {"clumsy", {9, 4}}}, 2);
+    constexpr std::uint8_t longbow = 41;
+    auto a = arena({authored_item::torch, longbow}, {{"target", {3, 2}}, {"clumsy", {9, 4}}}, 2);
     const auto fighter = EntityId(a.fighter);
     turn_of(*a.demo, fighter);
     const auto checkpoint = a.demo->combat().save();
@@ -525,6 +528,58 @@ void carried_gear_survives_checkpoint()
               offered(*restored, "shoot", fighter, 1001),
           "A restored combat still offers the carried Torch and bow");
 }
+// Gives every combatant in a saved fight Protection From Normal Missiles.
+std::string warded(std::string saved)
+{
+    for (auto at = saved.find("FX8 "); at != std::string::npos; at = saved.find("FX8 ", at + 1))
+    {
+        std::istringstream in(saved.substr(at));
+        auto effects = fx::read_effects(in);
+        const auto length = static_cast<std::size_t>(in.tellg());
+        fx::apply_spell_benefit(effects, {.scope = 9, .actor = 99}, "Ward",
+                                fx::EffectKind::missile_ward, 0);
+        std::ostringstream out;
+        fx::write_effects(out, effects);
+        saved.replace(at, length, out.str());
+    }
+    return saved;
+}
+
+// Protection From Normal Missiles (MAGIC-6): there is no ammunition, so a shot
+// has the bow's magic. From 30 feet a plain longbow's shot cannot touch a
+// warded target, and a Longbow +1's can. The saved fight is given the ward
+// and the enchanted bow.
+void warded_target()
+{
+    for (const bool magic : {false, true})
+    {
+        std::size_t deflected = 0, wounded = 0;
+        for (std::uint64_t seed = 1; seed <= 20; ++seed)
+        {
+            auto a = arena({41}, {{"target", {8, 2}}}, seed);
+            const auto archer = EntityId(a.fighter);
+            turn_of(*a.demo, archer);
+            auto saved = warded(a.demo->combat().save());
+            if (magic)
+            {
+                saved.replace(saved.find("\"longbow\""), 9, "\"longbow+1\"");
+            }
+            const auto fight = srd5::parse_content(arena_rules())->restore(saved);
+            check(submit(*fight, "shoot", archer, 1000), "The archer shoots");
+            deflected += count_logged(*fight, "The missile cannot touch target.");
+            const auto units = fight->snapshot().combatants;
+            wounded += std::any_of(units.begin(), units.end(),
+                                   [](const auto &u)
+                                   {
+                                       return u.id == 1000 && u.hit_points < 1000;
+                                   });
+        }
+        check(magic ? !deflected && wounded : deflected && !wounded,
+              magic ? "A Longbow +1's shot touches a warded target"
+                    : "A plain longbow's shot cannot touch a warded target");
+    }
+}
+
 } // namespace
 
 int main()
@@ -541,6 +596,7 @@ int main()
         burning_troll();
         torch_tactic();
         carried_gear_survives_checkpoint();
+        warded_target();
         wild_shape_draws_nothing();
         fire_bolt_tactic();
         std::cout << "Fire and acid tests passed\n";

@@ -15,9 +15,6 @@ namespace opengold::por
 {
 namespace
 {
-// The ITEM3.DAX list of New Phlan's general store, the shop that sells oil.
-constexpr unsigned general_store_list = 54;
-
 std::filesystem::path resolve_archive(const std::filesystem::path &directory, std::string_view name)
 {
     return detail::find_archive<EclError>(directory, name, "Ambiguous archive " + std::string(name),
@@ -33,7 +30,8 @@ std::vector<std::uint8_t> read_archive(const std::filesystem::path &path)
 
 } // namespace
 
-RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
+RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
+                                      const WallArtReplacements &new_wall_art)
 {
     const auto catalog = EclCatalog::load(directory);
     const auto program = catalog.find({"ECL3.DAX", 0});
@@ -116,6 +114,8 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     {
         throw EclError("Invalid Phlan wall definitions");
     }
+    wall_art = with_replacements(std::move(*wall_art), wall_appearance_keys("WALLDEF3.DAX", 0, 15),
+                                 new_wall_art);
     auto bytes = read_archive(resolve_archive(directory, "SPRIT3.DAX"));
     std::array<opengold::Image, 3> sprites;
     for (std::uint8_t i = 0; i < sprites.size(); ++i)
@@ -199,48 +199,6 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     };
     town->treasure = item_lists("ITEM3.DAX");
 
-    // The general store, which sells the original's oil, also stocks the SRD
-    // gear OpenGoldBox adds: torches (sold by ten, as prices are whole gold),
-    // Acid and Alchemist's Fire at their SRD prices, and Magic Ink (MAGIC-6) of
-    // each level up to the highest spell level the game has, at the user's
-    // 1000 gp a level, until a magic shop sells it.
-    struct StockedGear
-    {
-        std::uint8_t type;
-        const char *name;
-        std::uint16_t price_gp;
-        std::uint8_t quantity;
-    };
-
-    constexpr std::array<StockedGear, 3> added_gear{
-        {{authored_item::torch, "10 Torches", 1, 10},
-         {authored_item::acid, "Vial of Acid", 25, 1},
-         {authored_item::alchemists_fire, "Flask of Alchemist's Fire", 50, 1}}};
-    auto &general_store = town->treasure[general_store_list];
-    const auto stock = [&](std::uint8_t type, std::string name, std::uint16_t price_gp,
-                           std::uint8_t quantity)
-    {
-        Equipment item;
-        item.index = general_store.size();
-        item.stored.type = type;
-        item.stored.stored_name = std::move(name);
-        item.stored.value = price_gp;
-        item.stored.stack_size = quantity;
-        general_store.push_back(std::move(item));
-    };
-    for (const auto &gear : added_gear)
-    {
-        stock(gear.type, gear.name, gear.price_gp, gear.quantity);
-    }
-    // No spell is above level 8: the level cap of 15 (LEVELS-2) gives no
-    // level-9 slot.
-    constexpr unsigned highest_spell_level = 8;
-    for (unsigned level = 1; level <= highest_spell_level; ++level)
-    {
-        stock(static_cast<std::uint8_t>(authored_item::magic_ink + level - 1),
-              "Bottle of Magic Ink (Level " + std::to_string(level) + ")",
-              static_cast<std::uint16_t>(1000 * level), 1);
-    }
     town->item_templates = *templates;
     town->sprite_archive = std::move(bytes);
     const auto pictures = [&](const char *name, auto &destination)
@@ -385,9 +343,13 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
                 {
                     throw EclError("Invalid wall definition bank " + std::to_string(id));
                 }
+                const auto with_new_art = with_replacements(
+                    std::move(*decoded), wall_appearance_keys("WALLDEF" + bank + ".DAX", id, 5),
+                    new_wall_art);
+                district->wall_art.scale = with_new_art.scale;
                 district->wall_art.appearances.insert(district->wall_art.appearances.end(),
-                                                      decoded->appearances.begin(),
-                                                      decoded->appearances.end());
+                                                      with_new_art.appearances.begin(),
+                                                      with_new_art.appearances.end());
             }
             district->sprite_archive =
                 read_archive(resolve_archive(directory, "SPRIT" + bank + ".DAX"));
@@ -444,6 +406,73 @@ RolfTourSession RolfTourSession::detached_copy() const
     RolfTourSession copy(*this);
     copy.campaign_.reset();
     return copy;
+}
+
+namespace
+{
+// The original item a shop's record names, at the record's price. Its type
+// must still match the list's, so a record made from other files fails here.
+Equipment original_offering(const PhlanResources &town, const opengold::ShopOffering &offering)
+{
+    const std::map<unsigned, std::vector<Equipment>> *lists = nullptr;
+    if (offering.archive == "ITEM3.DAX")
+    {
+        lists = &town.treasure;
+    }
+    for (const auto &[id, district] : town.districts)
+    {
+        if (offering.archive == "ITEM" + std::to_string(district->bank) + ".DAX")
+        {
+            lists = &district->treasure;
+        }
+    }
+    if (lists)
+    {
+        const auto list = lists->find(offering.record);
+        if (list != lists->end() && offering.index < list->second.size() &&
+            list->second[offering.index].stored.type == offering.item_type)
+        {
+            auto item = list->second[offering.index];
+            item.stored.value = static_cast<std::uint16_t>(offering.price_gp);
+            return item;
+        }
+    }
+    throw EclError("A shop sells an item the game's lists lack: " + offering.name);
+}
+
+// Gear OpenGoldBox adds (authored_items.h), sold by the record's bundle.
+Equipment authored_offering(const opengold::ShopOffering &offering)
+{
+    Equipment item;
+    item.stored.type = static_cast<std::uint8_t>(offering.item_type);
+    item.stored.stored_name = offering.name;
+    item.stored.value = static_cast<std::uint16_t>(offering.price_gp);
+    item.stored.stack_size = static_cast<std::uint8_t>(offering.bundle_quantity);
+    return item;
+}
+} // namespace
+
+void RolfTourSession::shops(std::vector<opengold::ShopSite> sites)
+{
+    std::vector<std::vector<Equipment>> stocks;
+    for (const auto &site : sites)
+    {
+        auto &stock = stocks.emplace_back();
+        for (const auto &offering : site.offerings)
+        {
+            // A record may still list arrows or quarrels; there is no ammunition.
+            if (offering.item_type < 128 &&
+                opengold::original_item::is_ammunition(static_cast<std::uint8_t>(offering.item_type)))
+            {
+                continue;
+            }
+            stock.push_back(offering.archive.empty() ? authored_offering(offering)
+                                                     : original_offering(*town_, offering));
+            stock.back().index = stock.size() - 1;
+        }
+    }
+    shops_ = std::move(sites);
+    shop_stocks_ = std::move(stocks);
 }
 
 void RolfTourSession::restart()

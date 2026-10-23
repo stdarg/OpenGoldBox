@@ -103,11 +103,18 @@ showing. At every other moment the small encounter sprite is drawn instead.
 New Phlan shopkeepers are the exception: their static portraits fill the view
 for the shop's greeting and entire shopping phase, regardless of the encounter
 sprite.
-The shop's map cell selects one of twelve original character designs; repeated
-merchandise lists do not make two shops share a portrait. Shop controls continue
+The record in [`data/shops`](../data/shops/README.md) for the shop's map cell
+names its portrait, one of twelve original character designs unless the Shop &
+Temple Manager chose another; repeated merchandise lists do not make two shops
+share a portrait. Shop controls continue
 to operate normally, and leaving the shop restores the exploration view. See
 the [New Phlan shop map](PHLAN.md#original-merchandise-and-artwork) for the full
 location-to-file mapping.
+Temple priests are shown the same way while their temple speaks on its square:
+its greeting and its Heal list. Each temple's record names its priest: Bishop
+Braccio at Tyr's, and portraits drawn for the manager at Sune's, Tempus's and
+Ilmater's, which the manager exports to
+[`data/art/portraits/shops/`](../data/art/portraits/shops/README.md).
 
 - **Rolf:** during his opening tour.
 - **Norris the Gray:** in Kuto's Well (`ECL8:29`) when sprite 16 is up, which

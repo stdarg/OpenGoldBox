@@ -248,15 +248,14 @@ namespace item_type
 {
 constexpr std::uint8_t none = 0, battleaxe = 1, quarterstaff = 6, dagger = 8, mace = 23,
                        longsword = 36, shortsword = 37, longbow = 41, shortbow = 42,
-                       light_crossbow = 46, bolt = 28, arrow = 73, leather = 50, chain_mail = 55,
-                       shield = 59;
+                       light_crossbow = 46, leather = 50, chain_mail = 55, shield = 59;
 }
 
 struct StartingKit
 {
     std::uint8_t melee{}, armor{};
     bool shield{};
-    std::uint8_t ranged{}, ammunition{};
+    std::uint8_t ranged{};
 };
 
 // Barbarian keeps Unarmored Defense with a shield; Monk, Sorcerer and Wizard
@@ -265,18 +264,18 @@ StartingKit starting_kit(std::string_view character_class)
 {
     using namespace item_type;
     static constexpr std::array<std::pair<std::string_view, StartingKit>, 12> kits{{
-        {"barbarian", {battleaxe, none, true, longbow, arrow}},
-        {"bard", {dagger, leather, false, shortbow, arrow}},
-        {"cleric", {mace, leather, true, light_crossbow, bolt}},
-        {"druid", {quarterstaff, leather, true, shortbow, arrow}},
-        {"fighter", {longsword, chain_mail, true, longbow, arrow}},
-        {"monk", {shortsword, none, false, shortbow, arrow}},
-        {"paladin", {longsword, chain_mail, true, longbow, arrow}},
-        {"ranger", {shortsword, leather, true, longbow, arrow}},
-        {"rogue", {shortsword, leather, false, shortbow, arrow}},
-        {"sorcerer", {dagger, none, false, light_crossbow, bolt}},
-        {"warlock", {quarterstaff, leather, false, light_crossbow, bolt}},
-        {"wizard", {quarterstaff, none, false, light_crossbow, bolt}},
+        {"barbarian", {battleaxe, none, true, longbow}},
+        {"bard", {dagger, leather, false, shortbow}},
+        {"cleric", {mace, leather, true, light_crossbow}},
+        {"druid", {quarterstaff, leather, true, shortbow}},
+        {"fighter", {longsword, chain_mail, true, longbow}},
+        {"monk", {shortsword, none, false, shortbow}},
+        {"paladin", {longsword, chain_mail, true, longbow}},
+        {"ranger", {shortsword, leather, true, longbow}},
+        {"rogue", {shortsword, leather, false, shortbow}},
+        {"sorcerer", {dagger, none, false, light_crossbow}},
+        {"warlock", {quarterstaff, leather, false, light_crossbow}},
+        {"wizard", {quarterstaff, none, false, light_crossbow}},
     }};
     const auto kit = std::find_if(kits.begin(), kits.end(),
                                   [&](const auto &entry)
@@ -313,7 +312,6 @@ void outfit_pool_member(CampaignParty &party, MemberId member)
     add(kit.melee, 1, true);
     add(kit.shield ? item_type::shield : item_type::none, 1, true);
     add(kit.ranged, 1, false);
-    add(kit.ammunition, 20, false);
     // Every kit carries a torch, as the SRD's starting packs do.
     add(authored_item::torch, 1, false);
 }

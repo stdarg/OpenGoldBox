@@ -125,6 +125,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/campaign_party.cpp
     src/OpenGold.Core/src/ecl_party_host.cpp
     src/OpenGold.Core/src/npc_portraits.cpp
+    src/OpenGold.Core/src/shop_data.cpp
     src/OpenGold.Core/src/coin_purse.cpp
     src/OpenGold.Core/src/training_hall.cpp
     src/OpenGold.Core/src/campaign_rest.cpp
@@ -145,6 +146,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/dungeon_battlefield.cpp
     src/OpenGold.Core/src/encounter_formation.cpp
     src/OpenGold.Core/src/exploration_view.cpp
+    src/OpenGold.Core/src/wall_art_replacements.cpp
     src/OpenGold.Core/src/speaker_audio.cpp
     src/OpenGold.Core/src/sound_bank.cpp
     src/OpenGold.Core/src/sound_player.cpp
@@ -264,6 +266,7 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_playtest_fixtures COMMAND opengold_playtest_fixtures)
     set_tests_properties(opengold_playtest_fixtures PROPERTIES FIXTURES_SETUP playtest_fixtures)
     add_executable(opengold_fire_and_acid_tests tests/fire_and_acid_tests.cpp)
+    target_include_directories(opengold_fire_and_acid_tests PRIVATE src/OpenGold.Rules.Srd5/src)
     target_link_libraries(opengold_fire_and_acid_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_fire_and_acid_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_fire_and_acid_tests COMMAND opengold_fire_and_acid_tests)
@@ -386,6 +389,14 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_wizard_levels_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_wizard_levels_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_wizard_levels_tests COMMAND opengold_wizard_levels_tests)
+    add_executable(opengold_wall_art_replacements_tests tests/wall_art_replacements_tests.cpp)
+    target_link_libraries(opengold_wall_art_replacements_tests PRIVATE opengold_core)
+    target_compile_definitions(opengold_wall_art_replacements_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_wall_art_replacements_tests COMMAND opengold_wall_art_replacements_tests)
+    add_executable(opengold_shop_data_tests tests/shop_data_tests.cpp)
+    target_link_libraries(opengold_shop_data_tests PRIVATE opengold_core)
+    target_compile_definitions(opengold_shop_data_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_shop_data_tests COMMAND opengold_shop_data_tests)
     add_executable(opengold_temple_tests tests/temple_tests.cpp)
     target_include_directories(opengold_temple_tests PRIVATE src/OpenGold.Rules.Srd5/src)
     target_link_libraries(opengold_temple_tests PRIVATE opengold_core opengold_rules_srd5)
@@ -438,10 +449,6 @@ if(OPENGOLD_BUILD_TESTS)
     target_compile_definitions(opengold_thrown_weapon_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}" OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_thrown_weapon_tests COMMAND opengold_thrown_weapon_tests)
     set_tests_properties(opengold_thrown_weapon_tests PROPERTIES FIXTURES_SETUP thrown_fixtures)
-    add_executable(opengold_ammunition_tests tests/ammunition_tests.cpp)
-    target_link_libraries(opengold_ammunition_tests PRIVATE opengold_core opengold_rules_srd5)
-    target_compile_definitions(opengold_ammunition_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
-    add_test(NAME opengold_ammunition_tests COMMAND opengold_ammunition_tests)
     add_executable(opengold_arcane_recovery_tests tests/arcane_recovery_tests.cpp)
     target_link_libraries(opengold_arcane_recovery_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_arcane_recovery_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
@@ -528,6 +535,7 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_ecl_tests COMMAND opengold_ecl_tests)
     add_executable(opengold_tour_tests tests/tour_tests.cpp)
     target_link_libraries(opengold_tour_tests PRIVATE opengold_core)
+    target_compile_definitions(opengold_tour_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_tour_tests COMMAND opengold_tour_tests)
     add_executable(opengold_savage_attacker_tests tests/savage_attacker_tests.cpp)
     target_link_libraries(opengold_savage_attacker_tests PRIVATE opengold_rules_srd5 opengold_core)

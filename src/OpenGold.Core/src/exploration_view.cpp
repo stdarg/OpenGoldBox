@@ -14,23 +14,34 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
     }
     ExplorationView view;
     auto &result = view.image;
+    const int scale = static_cast<int>(art.scale);
+    const int side = 88 * scale;
+    view.scale = art.scale;
+    view.wall_hits.resize(static_cast<std::size_t>(side) * side);
     // Each screen pixel remembers the map cell that owns its visible surface.
     // Painting a nearer opaque wall replaces both its color and its owner;
     // transparent cutouts leave both untouched. Hidden walls cannot reveal cells.
-    std::array<int, 88 * 88> owners;
-    owners.fill(-1);
-    result.width = result.height = 88;
-    result.rgba.resize(88 * 88 * 4);
+    std::vector<int> owners(static_cast<std::size_t>(side) * side, -1);
+    result.width = result.height = static_cast<std::uint16_t>(side);
+    result.rgba.resize(static_cast<std::size_t>(side) * side * 4);
     const bool interior = map.at(x, y).event_high_bit();
-    for (int row = 0; row < 88; ++row)
+    // Sky (or ceiling) above the horizon and ground below: paint one row of
+    // each, then copy it down, since new art makes the view large.
+    const auto row_bytes = static_cast<std::size_t>(side) * 4;
+    for (const int band : {0, 44 * scale})
     {
         const std::array<std::uint8_t, 4> color =
-            row < 44 ? (interior ? std::array<std::uint8_t, 4>{85, 85, 85, 255}
-                                 : std::array<std::uint8_t, 4>{85, 255, 255, 255})
-                     : std::array<std::uint8_t, 4>{170, 85, 0, 255};
-        for (int column = 0; column < 88; ++column)
+            band == 0 ? (interior ? std::array<std::uint8_t, 4>{85, 85, 85, 255}
+                                  : std::array<std::uint8_t, 4>{85, 255, 255, 255})
+                      : std::array<std::uint8_t, 4>{170, 85, 0, 255};
+        const auto first = result.rgba.begin() + static_cast<std::ptrdiff_t>(band * row_bytes);
+        for (int column = 0; column < side; ++column)
         {
-            std::copy(color.begin(), color.end(), result.rgba.begin() + (row * 88 + column) * 4);
+            std::copy(color.begin(), color.end(), first + column * 4);
+        }
+        for (int row = 1; row < 44 * scale; ++row)
+        {
+            std::copy_n(first, row_bytes, first + static_cast<std::ptrdiff_t>(row * row_bytes));
         }
     }
     const auto cell_at = [&](int depth, int lateral) -> int
@@ -52,7 +63,11 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
         for (int column = 0; column < 88; ++column)
         {
             const int lateral = static_cast<int>(std::floor((column + .5 - 44) / width + .5));
-            owners[row * 88 + column] = cell_at(depth, lateral);
+            const int owner = cell_at(depth, lateral);
+            for (int py = row * scale; py < (row + 1) * scale; ++py)
+            {
+                std::fill_n(owners.begin() + py * side + column * scale, scale, owner);
+            }
         }
     }
 
@@ -90,8 +105,11 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
         {
             throw std::runtime_error("Invalid wall image");
         }
+        // Offsets are in original pixels; the piece is already at the art's scale.
+        left *= scale;
+        top *= scale;
         const int x0 = std::max(0, left), y0 = std::max(0, top);
-        const int x1 = std::min(88, left + piece.width), y1 = std::min(88, top + piece.height);
+        const int x1 = std::min(side, left + piece.width), y1 = std::min(side, top + piece.height);
         for (int py = y0; py < y1; ++py)
         {
             for (int px = x0; px < x1; ++px)
@@ -100,9 +118,9 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
                 if (piece.rgba[source + 3])
                 {
                     std::copy_n(piece.rgba.begin() + source, 4,
-                                result.rgba.begin() + (py * 88 + px) * 4);
-                    owners[py * 88 + px] = sample.cell;
-                    view.wall_hits[py * 88 + px] = {sample.cell, face, perspective};
+                                result.rgba.begin() + (py * side + px) * 4);
+                    owners[py * side + px] = sample.cell;
+                    view.wall_hits[py * side + px] = {sample.cell, face, perspective};
                 }
             }
         }

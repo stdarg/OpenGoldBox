@@ -4,7 +4,8 @@
 #include "character_text.h"
 #include "localization.h"
 #include "game_resources.h"
-#include "temple_data.h"
+#include "shop_data_files.h"
+#include "game_wall_art.h"
 #include "rolf_tour_view.h"
 #include "inventory_label.h"
 #include "opengold/campaign_party.h"
@@ -279,10 +280,11 @@ void RolfTourView::restart()
         else
         {
             const auto directory = settings::game_path();
-            session_.emplace(RolfTourSession::load(presentation::path_from_godot(directory)));
+            session_.emplace(
+                RolfTourSession::load(presentation::path_from_godot(directory), game_wall_art()));
             session_->encounter_challenge(settings::encounter_challenge());
             session_->difficulty(settings::difficulty());
-            session_->temples(load_temple_sites());
+            use_shop_data(*session_);
             if (campaign_)
             {
                 session_->campaign_party(campaign_);
@@ -1787,7 +1789,8 @@ Dictionary RolfTourView::tour_visuals()
     }
     else
     {
-        const auto portrait_file = opengold::speaking_npc_portrait(state);
+        const auto portrait_file =
+            opengold::speaking_npc_portrait(state, session_->shops(), session_->temples());
         const auto portrait =
             portrait_file.empty() ? Ref<Texture2D>() : npc_portrait(portrait_file);
         if (portrait.is_valid())
@@ -2071,7 +2074,7 @@ void RolfTourView::check_town()
             capture_frame("phlan-shop");
             const auto gold_before = gold();
             const auto price = session_->shop_stock()[0].stored.value;
-            if (required_node<ItemList>(*this, "Choices").get_item_count() != 57 ||
+            if (required_node<ItemList>(*this, "Choices").get_item_count() != 55 ||
                 required_node<Button>(*this, "Continue").is_disabled())
             {
                 throw std::runtime_error("Arms shop list is not available in Godot");

@@ -2,7 +2,8 @@
 #include "application_settings.h"
 #include "localization.h"
 #include "game_resources.h"
-#include "temple_data.h"
+#include "shop_data_files.h"
+#include "game_wall_art.h"
 #include "character_creation_view.h"
 #include "character_pool_dialog.h"
 #include "town_sheet_dialog.h"
@@ -115,12 +116,13 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
     }
     const auto directory = game_directory();
     auto module = rules_module();
+    const auto &new_wall_art = game_wall_art();
     auto saved = decode_campaign(read_campaign_file(path), *srd5::character_rules(), *module,
                                  campaign_asset_identity(directory),
                                  std::function<por::RolfTourSession()>(
                                      [&]
                                      {
-                                         return por::RolfTourSession::load(directory);
+                                         return por::RolfTourSession::load(directory, new_wall_art);
                                      }));
     auto replacement = std::make_shared<CampaignParty>(std::move(module));
     replacement->restore(std::move(saved.party));
@@ -199,7 +201,7 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
     forget_monster_picture();
     session_->encounter_challenge(settings::encounter_challenge());
     session_->difficulty(settings::difficulty());
-    session_->temples(load_temple_sites());
+    use_shop_data(*session_);
     shown_revision_ = 0;
     rendered_pose_.reset();
     rendered_sprite_id_ = 999;

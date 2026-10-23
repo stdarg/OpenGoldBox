@@ -11,8 +11,8 @@ namespace opengold
                                                     const por::CharacterArt &);
 
 // Gives a member its class's kit for free: a held melee weapon, the armor and
-// shield the class is trained with, a bow or crossbow with 20 arrows or bolts
-// and a torch in the pack. The combat demo and the simulator field ready
+// shield the class is trained with, a bow or crossbow (which needs no
+// ammunition) and a torch in the pack. The combat demo and the simulator field ready
 // parties with it; characters a player adds buy their own gear (START-1).
 void outfit_pool_member(CampaignParty &party, MemberId member);
 

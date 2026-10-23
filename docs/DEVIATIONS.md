@@ -177,6 +177,19 @@ in the game: answering YES at a hall lists its services in the dialogue
   Shop & Temple Manager; they start at the original's, which were the same
   everywhere.
   [TEMPLE-1](SRD-DECISIONS.md#temple-1-2026-10-22-temple-services).
+- **No ammunition** (2026-09-25, 2026-10-23). Bows, crossbows and slings shoot
+  without ammunition, and there are no arrows or quarrels: no shop, treasure or
+  monster gives any, a random roll for them is rolled again, and Arrow +1 is
+  gone. A shot has the bow's own magic. Darts and javelins stay as thrown
+  weapons, and a throw never spends them.
+  [AMMO-UNLIMITED](SRD-DECISIONS.md#unlimited-ranged-ammunition--approved-exception).
+- **Shop stock and prices** (2026-10-23). Each New Phlan shop sells what its
+  `data/shops` record lists, at its prices, with its shopkeeper's portrait,
+  all edited with the Shop & Temple Manager. The records start from the
+  original's lists and values, plus the gear the game adds to general stores.
+  Stock limits are not kept yet: every item a shop sells is unlimited, as in
+  the original.
+  [#275](https://github.com/stdarg/OpenGold/issues/275).
 
 ## Interface and saves
 
@@ -185,3 +198,9 @@ in the game: answering YES at a hall lists its services in the dialogue
   [PRD §5.2](PRD.md#52-modern-shell-original-game).
 - **Save files.** OpenGoldBox uses its own versioned save format. Importing
   original saves is wanted but not yet supported. [PRD §14](PRD.md#14-save-games), [SAVES.md](SAVES.md).
+- **New wall art.** The first-person view draws the new wall art in
+  `data/art/walls`, at four times the original resolution, in place of each
+  original appearance it covers. Appearances without new art keep the
+  original pieces from the player's game files.
+  [#272](https://github.com/stdarg/OpenGoldBox/issues/272),
+  [data/art/walls](../data/art/walls/README.md).

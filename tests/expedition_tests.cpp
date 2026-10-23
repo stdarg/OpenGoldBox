@@ -6,6 +6,7 @@
 #include "opengold/random_treasure.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/scroll_key.h"
+#include "opengold/shop_data.h"
 #include "opengold/npc_portraits.h"
 #include "opengold/srd5.h"
 #include "test_support.h"
@@ -895,7 +896,8 @@ struct Expedition
     por::RolfTourSession town;
 };
 
-// Six created fighters with the new-character purse, after Rolf's tour.
+// Six created fighters with the new-character purse, after Rolf's tour, in a
+// town that uses data/shops as the game does.
 Expedition create_party(const std::filesystem::path &directory)
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -906,13 +908,16 @@ Expedition create_party(const std::filesystem::path &directory)
         party->add_coins(Coin::gold, 250);
     }
     auto town = por::RolfTourSession::load(directory);
+    auto shop_data = load_shop_data(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/shops");
+    town.temples(std::move(shop_data.temples));
+    town.shops(std::move(shop_data.shops));
     town.campaign_party(party);
     settle(town, party);
     return {party, std::move(town)};
 }
 
-// The general store at (15,8) sells the original's oil and the gear the game
-// adds (Torch, Acid, Alchemist's Fire, Magic Ink), all converting to SRD items.
+// The general store at (15,8) sells the original's oil and the gear its
+// data/shops record adds (Torch, Acid, Alchemist's Fire, Magic Ink), all converting to SRD items.
 void general_store_gear(const std::filesystem::path &directory)
 {
     auto trip = create_party(directory);
@@ -1811,14 +1816,15 @@ Character knock_wizard()
 
 // Podol's hidden temple of Ilmater, behind wizard-locked doors (PODOL-1): Bash
 // fails against DC 35 and Knock opens the door; the healer's YES opens the
-// temple's Heal list at its own prices; camping there is never interrupted.
+// temple's Heal list at its own prices, with its priest's portrait; camping there is never
+// interrupted.
 void podol_temple(Expedition &trip)
 {
     auto &[party, town] = trip;
     party->recruit("test:knock-wizard", knock_wizard());
     auto offerings = original_temple_offerings();
     offerings.at(2).price_gp = 90; // Ilmater's Cure Light Wounds, in its own record
-    town.temples({{"GEO1.DAX", 18, {{1, 15}}, offerings}});
+    town.temples({{"GEO1.DAX", 18, {{1, 15}}, offerings, "shops/temple-ilmater.png"}});
     walk_to(town, party, 2, 13);
     face(town, party, 3);
     const auto knock_door = [&](std::string_view method)
@@ -1882,6 +1888,9 @@ void podol_temple(Expedition &trip)
                     check(std::find(s.choices.begin(), s.choices.end(),
                                     "Cure Light Wounds (90 gp)") != s.choices.end(),
                           "The temple of Ilmater charges its own record's prices");
+                    check(speaking_npc_portrait(s, town.shops(), town.temples()) ==
+                              "shops/temple-ilmater.png",
+                          "Ilmater's priest presides over the Heal list");
                     return pick("Cure Light Wounds");
                 }
                 if (s.dialogue == "Choose who receives Cure Light Wounds.")
@@ -2171,6 +2180,38 @@ void podol_mission(const std::filesystem::path &kuto, const std::filesystem::pat
     check(cancelled, "On some seed a sneaking party reaches the auction unseen");
 }
 
+// City Hall's clerk (ECL3:8, (5,5), past the guards at (4,5)) pays for Podol
+// Plaza from reward slot 10, 250 gp and 200 pp: once for the auction mission
+// (0x4AB0 = 254) and once for clearing the plaza (0x4AE7 = 254), each flag
+// then 255. A new party in New Phlan stands in for one back from the plaza,
+// with the flag Podol's script sets.
+void city_hall_rewards(const std::filesystem::path &directory)
+{
+    for (const auto flag : {por::EclAddress{0x4AB0}, por::EclAddress{0x4AE7}})
+    {
+        auto trip = create_party(directory);
+        auto &[party, town] = trip;
+        opengold::test::TourAccess::set_variable(town, flag, 254);
+        bool praised = false;
+        const Answer clerk = [&](const por::TourSnapshot &s) -> std::size_t
+        {
+            praised = praised || s.dialogue.find("PODAL PLAZA") != std::string::npos;
+            return peaceful(s);
+        };
+        walk_to(town, party, 4, 5);
+        const auto before = party->state().wealth;
+        walk_to(town, party, 5, 5, clerk);
+        auto paid = before;
+        coins(paid, Coin::gold) += 250;
+        coins(paid, Coin::platinum) += 200;
+        check(praised && party->state().wealth == paid && town.script_variable(flag) == 255,
+              "City Hall's clerk pays 250 gp and 200 pp for Podol Plaza");
+        walk_to(town, party, 4, 5);
+        walk_to(town, party, 5, 5, clerk);
+        check(party->state().wealth == paid, "City Hall pays for Podol Plaza only once");
+    }
+}
+
 // Podol Plaza (docs/audits/podol-plaza.md), off the council's mission:
 // entered by Kuto's Well's west edge, its exits to areas not in the game yet
 // refused, a roaming group met on the plaza, the robed orc fought for his holy
@@ -2208,11 +2249,13 @@ void podol_plaza(Expedition &trip, const std::filesystem::path &folder,
     walk_to(town, party, 4, 15, peaceful);
     refused_exit(town, party, 2, "Cadorna Textile House");
     // Off the mission, a roaming group comes on one plaza step in 26; the
-    // party flees it or fights.
+    // party flees it or fights. Nine wins in one visit clear the plaza; the
+    // count (0x4A34) starts at eight so one fight stands for the first eight.
     const auto fight_them = [](const por::TourSnapshot &s) -> std::size_t
     {
         return s.choices.size() == 4 && s.choices[0] == "Fight" ? 0 : peaceful(s);
     };
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4A34}, 8);
     const auto met = fights_started.size();
     const auto lead = party->state().slots[0];
     const auto experience = party->member(lead).experience;
@@ -2222,11 +2265,17 @@ void podol_plaza(Expedition &trip, const std::filesystem::path &folder,
     }
     check(fights_started.size() > met && party->member(lead).experience > experience,
           "A roaming group meets the party on the plaza, and the party wins its XP");
-    // Camping on the plaza: a roaming group may interrupt, every two steps 16%,
-    // so the walk heals the party instead of camping to recover.
+    // The next plaza step marks the plaza cleared (0xB241).
+    walk_to(town, party, town.snapshot().pose.x == 5 ? 11 : 5, 9, fight_them);
+    check(town.script_variable(por::EclAddress{0x4AE7}) == 254,
+          "The ninth win in one visit clears the plaza");
+    // Camping on a cleared plaza: no roaming group comes to interrupt it.
     heal(*party);
+    const auto cleared = fights_started.size();
     check(town.camp(RestKind::short_rest), "Camp starts on the plaza");
     settle(town, party, fight_them);
+    check(fights_started.size() == cleared,
+          "No roaming group interrupts a camp on a cleared plaza");
     if (party->state().short_rest)
     {
         party->finish_short_rest(party->state().short_rest->ticket);
@@ -2982,6 +3031,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         return;
     }
     general_store_gear(directory);
+    city_hall_rewards(directory);
     auto trip = create_party(directory);
     buy_and_equip(trip);
     defeat_four_orcs(trip);

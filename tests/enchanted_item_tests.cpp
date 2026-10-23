@@ -129,9 +129,8 @@ void conversion()
           "Long Sword +3 bound to Lawful Evil (#267)");
     check(equipment_conversion(original(55, 1)) == "chain_mail+1" &&
               equipment_conversion(original(59, 2)) == "shield+2" &&
-              equipment_conversion(original(73, 1)) == "arrow+1" &&
               equipment_conversion(original(47, 2, {163, 200, 47})) == "sling+2",
-          "Armor, shields, ammunition and the Sling of Seeking");
+          "Armor, shields and the Sling of Seeking");
     check(equipment_conversion(original(21, 1, {157, 167, 21}, {1, 83, 0})) == "javelin:lightning",
           "The Javelin of Lightning's charge is not an enchantment");
     check(equipment_conversion(original(79, 0, {}, {20, 88, 0})) == "wand:magic_missiles",

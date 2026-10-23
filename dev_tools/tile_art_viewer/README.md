@@ -64,14 +64,15 @@ with Tab and press Enter to cycle source pieces. Export PNG saves the displayed
 piece at its own resolution with transparency. Changing position or facing
 clears the selection.
 
-For new art review, the viewer automatically loads replacement sets from
-[`dev_tools/replacement_art_creator/replacement_pack`](../replacement_art_creator/replacement_pack),
-produced by the separate [Replacement Art Creator](../replacement_art_creator/README.md).
-**Show new art** is on at startup in both tabs; turn it off to see original art.
-The 352 × 352 Map Browser preview follows the game's draw order;
-missing appearances still use artwork decoded locally from your installation.
-Click a piece in either view to inspect and export the displayed tile.
-The replacement pack contains only the new PNGs and their manifests.
+For new art review, the viewer automatically loads the game's new wall art
+from [`data/art/walls`](../../data/art/walls), which the separate
+[Replacement Art Creator](../replacement_art_creator/README.md) writes with
+**Export to game**. It reads and composes that folder with the game's own code,
+so the 352 × 352 Map Browser preview is what the game shows. **Show new art** is
+on at startup in both tabs; turn it off to see original art. Missing appearances
+use artwork decoded locally from your installation, enlarged four times. Click
+a piece in either view to inspect and export the displayed tile. A set the game
+cannot use is reported in the status line, and no new art is shown.
 
 The map's artwork selector shows inspection profiles derived from decoded area
 scripts and their `LOAD PIECES` instructions. Some maps inherit a prior wall set
