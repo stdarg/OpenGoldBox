@@ -279,6 +279,77 @@ bool look(por::RolfTourSession &town)
     return !settle_or_rollback(town);
 }
 
+// A training hall's PROGRAM 0 in a synthetic event: leaving without buying
+// charges nothing, and a session bought before the script later fails is
+// rolled back with the event, gold, experience and the session's record alike.
+void hall_event_tests()
+{
+    for (const bool failing : {false, true})
+    {
+        for (const bool buying : {false, true})
+        {
+            auto party = std::make_shared<CampaignParty>(module());
+            (void)party->add_pc(character("Arden"));
+            party->set_wealth({0, 0, 0, 1000, 0, 0, 0});
+            const auto before = party->checkpoint();
+            std::vector<std::uint8_t> body{0x38, 0, 0};
+            if (failing)
+            {
+                body.insert(body.end(), {0x38, 0, 8});
+            }
+            body.push_back(0);
+            auto resources = std::make_shared<por::PhlanResources>();
+            por::RolfTourSession town({}, program(body), {}, 0x9914, {}, resources);
+            town.campaign_party(party);
+            settle_synthetic(town);
+            test::TourAccess::set_string(town, por::ecl_training_hall_name, "FIGHTERS ");
+            check(town.explore(por::ExplorationCommand::look), "The hall's event starts");
+            for (unsigned n = 0; n < 100 && town.snapshot().phase == por::TourPhase::running; ++n)
+            {
+                town.advance(.5);
+            }
+            const auto &choices = town.snapshot().choices;
+            check(!choices.empty() && choices.front().starts_with("Arden: session of experience") &&
+                      choices.back() == "Leave",
+                  "The hall lists Arden's session first and Leave last");
+            if (buying)
+            {
+                check(town.choose(town.snapshot().continue_ticket, 0) &&
+                          party->member(party->state().slots[0]).experience > 0,
+                      "Arden buys a session of experience");
+            }
+            check(town.choose(town.snapshot().continue_ticket, town.snapshot().choices.size() - 1),
+                  "The party leaves the hall");
+            const bool rolled_back = settle_or_rollback(town);
+            check(rolled_back == failing, "Only the failing script rolls back");
+            const auto &member = party->member(party->state().slots[0]);
+            const bool charged = party->state().wealth != before.wealth;
+            check(charged == (buying && !failing) && (member.experience > 0) == charged,
+                  buying && !failing ? "A session is paid for once"
+                  : failing          ? "A failed event refunds the session and its experience"
+                                     : "Leaving without buying charges nothing");
+        }
+    }
+}
+
+// PROGRAM 8, the original's victory after Tyranthraxus, is not supported yet:
+// the event fails and is rolled back, its payment included, instead of passing
+// as done.
+void unsupported_program_tests()
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    (void)party->add_pc(character("Arden"));
+    party->set_wealth({0, 96, 0, 145, 0, 0, 0});
+    const auto before = party->state().wealth;
+    auto resources = std::make_shared<por::PhlanResources>();
+    auto victory = program({9, 0, 14, 1, 0xC3, 0x6B, 10, 0, 128, 0x38, 0, 8, 0});
+    por::RolfTourSession town({}, victory, {}, 0x9914, {}, resources);
+    town.campaign_party(party);
+    settle_synthetic(town);
+    check(!look(town) && party->state().wealth == before,
+          "An unsupported PROGRAM fails its event and refunds what it charged");
+}
+
 Purse party_purse(const PartyState &state)
 {
     return state.wealth;
@@ -3212,6 +3283,8 @@ int main(int argc, char **argv)
         armor_conversion_tests();
         coin_purse_tests();
         script_payment_tests();
+        unsupported_program_tests();
+        hall_event_tests();
         random_treasure_tables();
         script_treasure_tests();
         deferred_treasure_tests();

@@ -4,8 +4,8 @@ extends SceneTree
 # fixture was written for. The fixture is a created party of Fighters at the
 # Fighters' training hall door, (8,1) of the training area (OPENGOLD_HALL_FIXTURE
 # from opengold_expedition_tests). Answering YES lists the hall's services in
-# the dialogue, as the temple does; a session and a lesson are bought, then the
-# party leaves. --shots=DIR also saves screenshots of each step.
+# the dialogue, as the temple does; a refused session changes nothing, a session
+# and a lesson are bought, then the party leaves. --shots=DIR also saves screenshots of each step.
 const SLOT = "Training hall fixture"
 var fixture := ""
 var shots := ""
@@ -116,14 +116,20 @@ func run_checks() -> void:
         await choose("YES")
         var session := "Arden: session of experience, 150 XP (1,000 gp)" if en else "Arden: sesión de experiencia, 150 PX (1.000 po)"
         require(choice_index(session) >= 0, "Arden's session is offered")
-        require(choice_index("Bryn: session of experience (advance a level first)" if en else "Bryn: sesión de experiencia (primero sube de nivel)") >= 0,
-                "Bryn must advance first")
+        var bryn := "Bryn: session of experience (advance a level first)" if en else "Bryn: sesión de experiencia (primero sube de nivel)"
+        require(choice_index(bryn) >= 0, "Bryn must advance first")
         require(choice_index("Cora: session of experience (bought at this level)" if en else "Cora: sesión de experiencia (ya comprada en este nivel)") >= 0,
                 "Cora bought this level's session")
         require(dialogue().contains("Fighters' hall" if en else "escuela de guerreros"), "The hall introduces itself")
         await capture("hall-%s-2-services" % locale)
+        await choose(bryn)
+        require(dialogue().contains("advance from the party roster first" if en else "primero sube de nivel desde la lista del grupo"),
+                "Choosing Bryn's session explains the refusal")
+        require(choice_index(session) >= 0, "The refusal changes nothing: Arden's session is still offered")
         await choose(session)
         require(dialogue().contains("Arden gains 150 experience." if en else "Arden gana 150 de experiencia."), "The session is bought")
+        require(choice_index("Arden: session of experience (bought at this level)" if en else "Arden: sesión de experiencia (ya comprada en este nivel)") >= 0,
+                "Arden's session now shows as bought at this level")
         await capture("hall-%s-3-session-bought" % locale)
         await choose("Darin: skill lesson" if en else "Darin: lección de habilidad")
         require(choice_index("Stealth (250 gp)" if en else "Sigilo (250 po)") >= 0, "A Ranger's Stealth is taught here")

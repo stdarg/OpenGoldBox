@@ -46,8 +46,8 @@ doubles at each level**.
 | 7 → 8 | 5,500 | 64,000 gp |
 | 8 → 9 | 7,000 | 128,000 gp |
 
-The game stops at level 4 for now, so a level-4 character is refused (the
-highest level). The later rows apply once higher levels arrive.
+A level-15 character, at the game's cap, is refused. The table's later rows
+follow the same doubling.
 
 A session never pushes a character past a level it could already take: a
 member who already has the experience for the next level is told to advance
@@ -181,7 +181,11 @@ The user decided, departing from the original
   `choose_at_hall` run the list. Its dialogue and choices are
   `TourSnapshot::host_dialogue` and `host_choices`, messages the view
   translates.
-- Saves: campaign format 27, rules 0.6.159.
+- Saves: the campaign save keeps each member's session level and lessons
+  ([SAVES.md](SAVES.md)).
 - Tests: `opengold_training_hall_tests`, `opengold_party_tests`
-  (`training_hall_service`) and `opengold_godot_training_hall` (original data:
-  the Fighters' hall at (8,0) of the training area, in English and Spanish).
+  (`training_hall_service`), `opengold_expedition_tests` (leaving without
+  buying charges nothing; a purchase rolls back if the script then fails) and
+  `opengold_godot_training_hall` (original data: the Fighters' hall at (8,0) of
+  the training area, in English and Spanish, with a refused session, a bought
+  one that then shows as bought, and a lesson).

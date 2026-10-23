@@ -176,6 +176,7 @@ Ohlo's quest is saved and reloaded at its Slums save points by
 `opengold_expedition_tests` and through the game's own save controls by
 `opengold_godot_ohlo_save_route`; see [saving during the quest](QUESTS.md#saving-during-the-quest).
 
-This completes the bounded existing-flow persistence milestone, not the complete
-expedition in issue #1. Issue #10 retains future class-feature/training coverage
-and integration with the expedition's reward/quest state.
+Class features, advancement choices and grants, training-hall sessions and
+lessons, and the expedition's reward and quest state are saved too, each with
+its round trip in the native tests (`save_tests`, `training_hall_tests`,
+`expedition_tests`).

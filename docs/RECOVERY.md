@@ -26,12 +26,12 @@ complete original campaign service coverage.
   same explicitly authored 300 XP conversion when a campaign party is attached.
   These amounts are conversion policies, not decoded original XP or general
   monster-XP calculations. Dead and reserve members receive no award.
-- Fighter, Cleric and Wizard now use [manual advancement](ADVANCEMENT.md) through
-  level 4. XP enables a small arrow beside the name; Confirm applies one level,
-  while Cancel changes nothing. Fixed-average HP, supported feats and spells,
+- Every class uses [manual advancement](ADVANCEMENT.md) to level 15, the game's
+  cap ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). XP
+  enables a small arrow beside the name; Confirm applies one level, while
+  Cancel changes nothing. Fixed-average HP, feats, spells, class features,
   Constitution changes and new resource capacity apply together. Existing
   expenditure is preserved; advancement does not wake or revive a character.
-  Full class/subclass features and other classes' advancement remain unavailable.
 - A Long Rest checks each active member at its start: at least 1 HP, alive and
   at least 16 hours since the previous completion. Eligible members recover HP,
   spent Hit Dice and supported resources after eight hours; ineligible/reserve
@@ -77,6 +77,22 @@ Supported profiles:
 
 Other nonzero profiles fail explicitly. A failure in the camp event rolls back
 the party, time, the step count and the script random state.
+
+### Rewards
+
+Each reward the game grants is claimed once, by a stable identifier in the
+campaign's claimed rewards or by the original script's own flag, so revisiting,
+restarting an encounter or re-entering its script cannot grant it again:
+
+| Reward | Source | What it grants | Once by |
+| --- | --- | --- | --- |
+| The four orcs in the Slums | `ECL2:20`, search 1 | 300 XP per living active member (authored) and the orcs' original money and items | `por:ECL2:20:search1:orcs:v1` and `:loot` |
+| Any other won fight | the area's script | each creature's XP from its stat block (authored) and its original money and items | `por:ECL<bank>:<script>:roaming:<n>` and `:loot` |
+| Ohlo's potion | `ECL2:20` TREASURE at `0xA390` | the original's treasure ([QUESTS.md](QUESTS.md#reward)) | `por:ECL2:20:treasure:a390:v1` |
+| City Hall's Podol Plaza commission | `ECL3:8`, flag table at `0x4AA6`, slot 10 at `0x9EC2` | 250 gp and 200 pp (original) | the script sets `0x4AB0` to 255 ([audit](audits/podol-plaza.md)) |
+
+XP for fights is OpenGoldBox's SRD conversion; money, items and the City Hall
+payment are the original's decoded values.
 
 ### Camp interruption evidence
 
@@ -130,10 +146,18 @@ The original inn's **PROGRAM 9** request follows its own pre-camp subroutine and
 payment dialogue. A safe, eligible request completes a long rest. The script
 collects one platinum piece from the party purse, for the chosen member, and
 [makes change](PHLAN.md#coin-payments) from gold and silver when needed.
-Failed services restore the event checkpoint, including any payment. Original
-training requests (PROGRAM 0) and victory services (PROGRAM 8)
-remain unsupported; see the [training hall proposal](TRAINING-HALL.md). Manual SRD advancement does not imply payment of an
-original training fee or completion of a training-hall script.
+Failed services restore the event checkpoint, including any payment.
+
+The training halls' **PROGRAM 0** request (`ECL3:11` at `0xA049`) opens the
+hall's services: sessions of experience and skill lessons paid from the
+party's gold ([training halls](TRAINING-HALL.md)). A hall never raises a level;
+members advance from the roster. Leaving continues the hall's script, and a
+fault after a purchase restores the event checkpoint, purchase included.
+**PROGRAM 8** appears once, after Tyranthraxus falls in Valjevo Castle's inner
+tower (`ECL5:7` at `0xA82A`), where the original shows its victory and lets the
+party go on playing. Valjevo Castle is not playable yet, so OpenGoldBox refuses
+PROGRAM 8 as an unsupported service: the event fails and its checkpoint is
+restored, any payment included, rather than the request passing as done.
 
 The original temple **COMBAT** request with `6DE2=1` opens the temple's **Heal
 list** ([TEMPLE-1](SRD-DECISIONS.md#temple-1-2026-10-22-temple-services)): its services with their prices, and **Leave**.
@@ -164,9 +188,9 @@ campaign scheduling remains open; script treasure money follows [QUESTS.md](QUES
 
 `PartyState` native checkpoints retain XP, claimed reward IDs, HP/resources,
 purses, recovery timers, clock and RNG for rollback. [Campaign file save/load](SAVES.md) now persists this supported state at the party/idle-town boundaries, with fresh-process restart verification.
-The combat checkpoint format is `OGCOMBAT 44` and the rules module identity is
-`opengold.srd5` **0.6.69**. Older formats and other identities reject; see the
-[pre-1.0 format policy](SAVES.md#pre-10-format-policy).
+The combat checkpoint format and the rules module identity are listed in
+[SAVES.md](SAVES.md); older formats and other identities reject, as the
+[pre-1.0 format policy](SAVES.md#pre-10-format-policy) explains.
 
 From PowerShell:
 

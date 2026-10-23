@@ -3,6 +3,7 @@
 
 #include "opengold/rolf_tour.h"
 #include <cstdint>
+#include <string_view>
 
 namespace opengold::test
 {
@@ -15,6 +16,13 @@ struct TourAccess
                              std::uint16_t value)
     {
         town.machine_.bind_variable(address, value);
+    }
+
+    // Sets a script string, such as the training hall's class word.
+    static void set_string(por::RolfTourSession &town, por::EclAddress address,
+                           std::string_view value)
+    {
+        town.machine_.bind_string(address, value);
     }
 
     // Reseeds the script's dice, so a test can try an event on several rolls.
