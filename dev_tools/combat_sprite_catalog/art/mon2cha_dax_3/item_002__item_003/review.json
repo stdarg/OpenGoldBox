@@ -1,16 +1,16 @@
 {
-  "action_sha256": "d70b1bf88d4c212d07d95b157ef82e58339217a203d3b4c064f601d61d66d2e5",
+  "action_sha256": "2b8b8aecc3b4034775e2c5f5c1cb40f5e18decd331dcf53279bb025f6f320026",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_3/item_002__item_003/action.png",
     "ready": "art/mon2cha_dax_3/item_002__item_003/ready.png"
   },
-  "metadata_sha256": "1e22738d150f5214cd16fbaf546a183564e6637b342cf6890e1e74d19fedf4af",
-  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
+  "metadata_sha256": "9e214c6806e1ed38b79c8e3be6abc5541284e37597aefa09d68f3af6eb469617",
+  "notes": "Goblin Leader compared with accepted MON2 Goblin Guard: 4-foot broader body versus 3.5-foot guard, richer saved scale armor and weapon presentation. Action from newly generated attack composited over exact ready lower body/feet. Inspected both poses enlarged and alternating in catalog, with same ground anchor and consistent identity across both saved weapon sets. Original game art was not a generation reference. Short sword ready raised; strike action and shield stay within selected footprint.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "68c0ef42bbb0c222508f694478ecab6f52cb6f6d41653bdd810f10194ecfcdb2",
-  "reviewed_at": "2026-10-21T21:50:54.040991+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "221708786811d967ba4ebbd52474bbe8f8b7910e30a32f6f59d7d333cd0f7246",
+  "reviewed_at": "2026-10-23T03:17:29+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:3",
   "specification": "bipedal-v1",
   "variant_id": "item_002__item_003",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
