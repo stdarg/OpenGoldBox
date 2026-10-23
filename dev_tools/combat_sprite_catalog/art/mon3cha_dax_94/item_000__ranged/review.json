@@ -1,15 +1,15 @@
 {
-  "action_sha256": "1cf4127909b62a22d259f9844b0b1871b89742234813b79b63c7fb464ccb6846",
+  "action_sha256": "8c097deef98e50b89a092daefdc66c5ba4ceb30a48776ba9b53a33590e2be38f",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_94/item_000__ranged/action.png",
     "ready": "art/mon3cha_dax_94/item_000__ranged/ready.png"
   },
-  "metadata_sha256": "aa8924654ddf2f6a8623a82e903e93b65e38f2a51bac34cb271f1ef0b03747a2",
-  "notes": "Fresh level-3 magic-user pair with Wand of Magic Missiles, charged ready and spent forward wand gesture in action; no bow. Both frames checked at 128 px and alternating in this exact catalog source record. Boots and robe hem remain fixed. MON3CHA reuses matching new art.",
+  "metadata_sha256": "5f10566fe41ef42b484fba470a47835ec9dd2573991fddc80ba9462adddd1152",
+  "notes": "Exact copy of reviewed full-height MON2CHA.DAX:94 Wand of Magic Missiles ready/action pair. Same complete saved description and gear. Both frames reviewed at 128 px and alternating in catalog; ready glow alone crosses top, action fits tile, boots coincide.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "109f70919da1812be4ebe3b33b82c02ede61adbf79015b85db2105ddf06e7617",
-  "reviewed_at": "2026-10-19T01:53:26.147185+00:00",
+  "ready_sha256": "a82c0688c6445624a87d21ac43f8c08ed0701080a680d17686636b5fbfe7112b",
+  "reviewed_at": "2026-10-23T04:16:48.327726+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON3CHA.DAX:94",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
