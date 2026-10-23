@@ -1,0 +1,32 @@
+{
+  "action_sha256": "32b984510f52909bd427f1a514ce35442c0ac75413bcd5aa9a4419345ea9a789",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon5cha_dax_93/added_20261023_9301__one_hand/action.png",
+    "ready": "art/mon5cha_dax_93/added_20261023_9301__one_hand/ready.png"
+  },
+  "metadata_sha256": "5102ba961eb140fd7a904fc5be78be029b9127af79045cc773b22c0d03352f7d",
+  "notes": "Ready and action alternated at combat size in the catalog. Same dark-cloaked thief identity, 1x1 normal height, planted boot coordinates, and scale. Short sword raised in ready and extended at the end of a thrust in action; ready overhang is overhead only and action sword side overhang is allowed. No unrelated art references.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "133fb4e1bcf47ac88d806fd77bdef26f9601605b8252c615d0650876842927b6",
+  "reviewed_at": "2026-10-23T15:06:03Z",
+  "reviewer": "Codex visual review in combat catalog",
+  "source_key": "MON5CHA.DAX:93",
+  "specification": "bipedal-v1",
+  "variant_id": "added_20261023_9301__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
