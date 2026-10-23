@@ -1,0 +1,32 @@
+{
+  "action_sha256": "96f1627f4d34f8419821dcef541a2c6ebcd56a0b93069cfe24e22dfd3e7287b9",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon7cha_dax_98/item_001__ranged/action.png",
+    "ready": "art/mon7cha_dax_98/item_001__ranged/ready.png"
+  },
+  "metadata_sha256": "378d7f0a0ce0e6f1a0bf0c1016d7e8e929d1e0b85d56248c0cf54678abae59b6",
+  "notes": "Rejected short and side-overflow drafts. Final full-height Normal body and compact 1x1 bow silhouette checked on white, native 128px, and one-second catalog alternation. Ready arrow loaded; action arrow absent and bow held. Feet keep the same toe/heel bounds and ground row; no whole-body translation. Top overflow is raised bow only. New Merchant sword art used for identity reference.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "08612804b93f88a60b404f17220e7caa13dad3180c05ba879f3475f843ffe460",
+  "reviewed_at": "2026-10-23T05:10:53.223928+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON7CHA.DAX:98",
+  "specification": "bipedal-v1",
+  "variant_id": "item_001__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
