@@ -1,10 +1,15 @@
 {
-  "description": "A spellcasting tribal leader, with magical protection and a wand in the original inventory. Source inventory: Wand of Magic Missiles, Bracers AC 2, Dagger +2. Source wealth: 20 cp.",
+  "description": "The Nomad Camp shaman, a human-scale tribal spellcaster wearing Bracers AC 2 and carrying a Wand of Magic Missiles and Dagger +2. The wand fires from a fixed stance; the dagger is a separate close-combat set. Source wealth: 20 cp.",
   "humanoid_size": "normal",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 1
+  },
   "description_sources": [
     "Original game MON7CHA.DAX:43 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed",
+    "GameDocs/Cluebook.pdf, Nomad Camps section: camp context; the Cluebook does not name the shaman directly.",
+    "Original game item tracing in docs/MAGIC_ITEMS.md identifies the wand, bracers, and dagger bearer as the nomad shaman."
   ],
   "equipment": [
     {
@@ -38,7 +43,7 @@
       "weapon_role": "one_hand"
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "SHAMAN",
   "preview_fallback_variant": "",

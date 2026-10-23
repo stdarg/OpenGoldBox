@@ -1,10 +1,14 @@
 {
-  "description": "The commandant of the Zhentil outpost, whose quarters are a key location in the Cluebook. Source inventory: Potion Extra Healing, Ring of Fire Resistance, Shield +1, Plate armor +2, Javelin of Lightning, Long sword +2. Readied: Ring of Fire Resistance, Shield +1, Plate armor +2, Javelin of Lightning. Source wealth: 18 gp, 6 pp.",
+  "description": "The commandant of the Zhentil outpost, whose quarters are a key location in the Cluebook. Source inventory: Potion Extra Healing, Ring of Fire Resistance, Shield +1, Plate armor +2, Javelin of Lightning, Long sword +2. Readied: Ring of Fire Resistance, Shield +1, Plate armor +2, Javelin of Lightning. Source wealth: 18 gp, 6 pp. The Javelin of Lightning is a magical thrown weapon, with its own ready/throw combat art pair.",
   "humanoid_size": "normal",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 1
+  },
   "description_sources": [
     "Original game MON6CHA.DAX:50 and matching MONnITM inventory",
-    "GameDocs/Cluebook.pdf, PDF page 22"
+    "GameDocs/Cluebook.pdf, PDF page 22",
+    "Catalog weapon classification approved 2026-10-23: the saved Javelin of Lightning is usable as a thrown weapon and remains a magic item."
   ],
   "equipment": [
     {
@@ -49,13 +53,13 @@
     },
     {
       "id": "item_004",
-      "kind": "gear",
+      "kind": "weapon",
       "name": "Javelin of Lightning",
       "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 71,
-      "weapon_role": ""
+      "weapon_role": "ranged"
     },
     {
       "id": "item_005",
@@ -68,7 +72,7 @@
       "weapon_role": "one_hand"
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "COMMANDANT",
   "preview_fallback_variant": "",
@@ -90,6 +94,15 @@
       "shield_id": "item_002",
       "weapon_id": "item_005",
       "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon6cha_dax_50/item_004__ranged/action.png",
+      "id": "item_004__ranged",
+      "label": "Javelin of Lightning",
+      "ready": "art/mon6cha_dax_50/item_004__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_004",
+      "weapon_role": "ranged"
     }
   ],
   "wealth": {

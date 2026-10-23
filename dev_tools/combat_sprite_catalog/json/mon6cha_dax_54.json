@@ -1,13 +1,48 @@
 {
-  "description": "A corporal directing other soldiers; distinguish rank through bearing without inventing medals or insignia. The original template records no carried items. Source wealth: 1 sp.",
+  "description": "A corporal directing soldiers in practical chain mail, with a long sword and shield ready for a close fight. His disciplined posture and well-kept kit show his rank without invented medals or insignia. The original template records no carried items; this visible kit is catalog art direction only. Source wealth: 1 sp.",
   "humanoid_size": "normal",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 1
+  },
   "description_sources": [
     "Original game MON6CHA.DAX:54 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed",
+    "Catalog art direction approved 2026-10-23: soldier equipment appropriate to a corporal; original MONnITM inventory remains empty."
   ],
-  "equipment": [],
-  "flag_for_regeneration": false,
+  "equipment": [
+    {
+      "id": "added_20261023_5401",
+      "kind": "weapon",
+      "name": "Long sword",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_20261023_5402",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_20261023_5403",
+      "kind": "gear",
+      "name": "Chain mail",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    }
+  ],
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "CORPORAL",
   "preview_fallback_variant": "",
@@ -22,13 +57,13 @@
   },
   "variants": [
     {
-      "action": "art/mon6cha_dax_54/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon6cha_dax_54/default/ready.png",
-      "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "action": "art/mon6cha_dax_54/added_20261023_5401__added_20261023_5402/action.png",
+      "id": "added_20261023_5401__added_20261023_5402",
+      "label": "Long sword + Shield",
+      "ready": "art/mon6cha_dax_54/added_20261023_5401__added_20261023_5402/ready.png",
+      "shield_id": "added_20261023_5402",
+      "weapon_id": "added_20261023_5401",
+      "weapon_role": "one_hand"
     }
   ],
   "wealth": {

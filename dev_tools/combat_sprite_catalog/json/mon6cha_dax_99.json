@@ -1,13 +1,38 @@
 {
-  "description": "A rough coastal raider associated with the Buccaneers Base; keep the stance ready for close combat. The original template records no carried items. Source wealth: 5 cp.",
+  "description": "A rough buccaneer from the Buccaneers Base, wearing weathered leather armor and carrying a cutlass-like broad sword for close combat. Sea-worn clothing and a steady deck fighter's stance distinguish this raider. The original template records no carried items; this visible kit is catalog art direction only. Source wealth: 5 cp.",
   "humanoid_size": "normal",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 1
+  },
   "description_sources": [
     "Original game MON6CHA.DAX:99 and matching MONnITM inventory",
-    "GameDocs/Cluebook.pdf, PDF page 21"
+    "GameDocs/Cluebook.pdf, PDF page 21",
+    "Catalog art direction approved 2026-10-23: buccaneer equipment; original MONnITM inventory remains empty."
   ],
-  "equipment": [],
-  "flag_for_regeneration": false,
+  "equipment": [
+    {
+      "id": "added_20261023_9901",
+      "kind": "weapon",
+      "name": "Broad sword (cutlass)",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_20261023_9902",
+      "kind": "gear",
+      "name": "Leather armor",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    }
+  ],
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "BUCCANEER",
   "preview_fallback_variant": "",
@@ -22,13 +47,13 @@
   },
   "variants": [
     {
-      "action": "art/mon6cha_dax_99/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon6cha_dax_99/default/ready.png",
+      "action": "art/mon6cha_dax_99/added_20261023_9901__one_hand/action.png",
+      "id": "added_20261023_9901__one_hand",
+      "label": "Broad sword (cutlass)",
+      "ready": "art/mon6cha_dax_99/added_20261023_9901__one_hand/ready.png",
       "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "weapon_id": "added_20261023_9901",
+      "weapon_role": "one_hand"
     }
   ],
   "wealth": {

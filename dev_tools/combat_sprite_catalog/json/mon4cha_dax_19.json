@@ -1,13 +1,17 @@
 {
-  "description": "A named figure at Sokal Keep; treat this as a distinct person rather than a generic guard. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description": "Ferran Martinez is the spectre bound to the altar at Sokal Keep, sustaining its supernatural defenses. His spectral touch drains two experience levels in combat; he can be freed by parley and the codeword LUX. His original template carries no physical equipment or wealth.",
   "humanoid_size": "normal",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 1
+  },
   "description_sources": [
     "Original game MON4CHA.DAX:19 and matching MONnITM inventory",
-    "GameDocs/Cluebook.pdf, PDF page 6"
+    "GameDocs/Cluebook.pdf, PDF page 6",
+    "GameDocs/Cluebook.pdf, Sokal Keeps map location 8: spectre, level-draining touch, and parley resolution."
   ],
   "equipment": [],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "FERRAN MARTINEZ",
   "preview_fallback_variant": "",

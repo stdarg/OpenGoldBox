@@ -1,13 +1,58 @@
 {
-  "description": "An armored cleric prepared for both religious duty and close combat. The original template records no carried items. Source wealth: 4 sp.",
+  "description": "A second-level cleric in chain mail, bearing a mace, shield, and visible holy symbol while prepared for healing duties and close combat. The original template records no carried items; this visible kit is catalog art direction only. Source wealth: 4 sp.",
   "humanoid_size": "normal",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 1
+  },
   "description_sources": [
     "Original game MON7CHA.DAX:78 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed",
+    "Catalog art direction approved 2026-10-23: second-level cleric equipment; original MONnITM inventory remains empty."
   ],
-  "equipment": [],
-  "flag_for_regeneration": false,
+  "equipment": [
+    {
+      "id": "added_20261023_7801",
+      "kind": "weapon",
+      "name": "Mace",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_20261023_7802",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_20261023_7803",
+      "kind": "gear",
+      "name": "Chain mail",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_20261023_7804",
+      "kind": "gear",
+      "name": "Holy symbol",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    }
+  ],
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "2ND LVL CLERIC",
   "preview_fallback_variant": "",
@@ -22,13 +67,13 @@
   },
   "variants": [
     {
-      "action": "art/mon7cha_dax_78/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon7cha_dax_78/default/ready.png",
-      "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "action": "art/mon7cha_dax_78/added_20261023_7801__added_20261023_7802/action.png",
+      "id": "added_20261023_7801__added_20261023_7802",
+      "label": "Mace + Shield",
+      "ready": "art/mon7cha_dax_78/added_20261023_7801__added_20261023_7802/ready.png",
+      "shield_id": "added_20261023_7802",
+      "weapon_id": "added_20261023_7801",
+      "weapon_role": "one_hand"
     }
   ],
   "wealth": {
