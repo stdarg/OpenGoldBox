@@ -177,6 +177,12 @@ in the game: answering YES at a hall lists its services in the dialogue
   Shop & Temple Manager; they start at the original's, which were the same
   everywhere.
   [TEMPLE-1](SRD-DECISIONS.md#temple-1-2026-10-22-temple-services).
+- **No ammunition** (2026-09-25, 2026-10-23). Bows, crossbows and slings shoot
+  without ammunition, and there are no arrows or quarrels: no shop, treasure or
+  monster gives any, a random roll for them is rolled again, and Arrow +1 is
+  gone. A shot has the bow's own magic. Darts and javelins stay as thrown
+  weapons, and a throw never spends them.
+  [AMMO-UNLIMITED](SRD-DECISIONS.md#unlimited-ranged-ammunition--approved-exception).
 - **Shop stock and prices** (2026-10-23). Each New Phlan shop sells what its
   `data/shops` record lists, at its prices, with its shopkeeper's portrait,
   all edited with the Shop & Temple Manager. The records start from the

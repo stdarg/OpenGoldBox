@@ -2,6 +2,7 @@
 #include "opengold/random_treasure.h"
 #include "opengold/ecl_party_host.h"
 #include "opengold/scroll_key.h"
+#include "opengold/authored_items.h"
 #include <algorithm>
 #include <set>
 
@@ -877,7 +878,8 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
         }
         for (auto &item : gear)
         {
-            if (item)
+            // There is no ammunition: a monster's arrows are not left behind.
+            if (item && !opengold::original_item::is_ammunition(item->stored.type))
             {
                 loot.items.push_back(std::move(*item));
             }
@@ -1176,6 +1178,11 @@ void RolfTourSession::stage_treasure(const EclRequest &request)
         }
         for (auto item : found->second)
         {
+            // There is no ammunition, so a list's arrows and quarrels are not found.
+            if (opengold::original_item::is_ammunition(item.stored.type))
+            {
+                continue;
+            }
             item.index = loot.items.size();
             loot.items.push_back(std::move(item));
         }
@@ -1980,7 +1987,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             throw EclError("Unsupported town treasure list");
         }
-        treasure_.insert(treasure_.end(), found->second.begin(), found->second.end());
+        // A shop list without its arrows and quarrels: there is no ammunition.
+        std::ranges::copy_if(found->second, std::back_inserter(treasure_),
+                             [](const auto &item)
+                             {
+                                 return !opengold::original_item::is_ammunition(item.stored.type);
+                             });
         break;
     }
     case 36:

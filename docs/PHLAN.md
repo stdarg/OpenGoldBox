@@ -71,21 +71,23 @@ character designs.
 
 | Shop | Map position | `ITEM3.DAX` record | Stock entries | Portrait basename |
 | --- | --- | ---: | ---: | --- |
-| Arms and armor | (13,8) | 53 | 57 | `phlan-arms-13-08.png` |
-| Arms and armor | (8,11) | 53 | 57 | `phlan-arms-08-11.png` |
-| Arms and armor | (11,12) | 53 | 57 | `phlan-arms-11-12.png` |
-| Arms and armor | (9,13) | 53 | 57 | `phlan-arms-09-13.png` |
+| Arms and armor | (13,8) | 53 | 55 | `phlan-arms-13-08.png` |
+| Arms and armor | (8,11) | 53 | 55 | `phlan-arms-08-11.png` |
+| Arms and armor | (11,12) | 53 | 55 | `phlan-arms-11-12.png` |
+| Arms and armor | (9,13) | 53 | 55 | `phlan-arms-09-13.png` |
 | General items | (15,8) | 54 | 18 | `phlan-general-15-08.png` |
 | General items | (9,10) | 54 | 18 | `phlan-general-09-10.png` |
 | General items | (12,10) | 54 | 18 | `phlan-general-12-10.png` |
 | General items | (9,11) | 54 | 18 | `phlan-general-09-11.png` |
 | General items | (11,11) | 54 | 18 | `phlan-general-11-11.png` |
-| Silver items | (11,10) | 55 | 13 | `phlan-silver-11-10.png` |
-| Silver items | (10,13) | 55 | 13 | `phlan-silver-10-13.png` |
+| Silver items | (11,10) | 55 | 11 | `phlan-silver-11-10.png` |
+| Silver items | (10,13) | 55 | 11 | `phlan-silver-10-13.png` |
 | Jewelry | (8,10) | 52 | 11 | `phlan-jeweler-08-10.png` |
 
 A general store's 18 entries are the original list's 7 and the 11 the game
-adds (below). The portrait files are under `art/portraits/NPCs/`; a record may
+adds (below). The arms and silver shops leave out the original's arrows and
+quarrels, as the game has no ammunition
+([AMMO-UNLIMITED](SRD-DECISIONS.md#unlimited-ranged-ammunition--approved-exception)). The portrait files are under `art/portraits/NPCs/`; a record may
 also name one made for the manager in `dev_tools/shop_manager/portraits/`,
 which the game ships too. The shopkeeper fills the
 existing view window for the shop's greeting and throughout the shopping phase,

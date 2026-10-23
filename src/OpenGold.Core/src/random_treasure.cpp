@@ -1,4 +1,5 @@
 #include "opengold/random_treasure.h"
+#include "opengold/authored_items.h"
 #include <array>
 #include <optional>
 #include <stdexcept>
@@ -9,12 +10,12 @@ namespace
 {
 // Original item type IDs used by the generator (ITEMS template indices),
 // compared with the type numbers it rolls.
-constexpr unsigned javelin = 21, quarrel = 28, bastard_sword = 34, broad_sword = 35,
+constexpr unsigned javelin = 21, bastard_sword = 34, broad_sword = 35,
                    long_sword = 36, short_sword = 37, two_handed_sword = 38, heavy_crossbow = 45,
                    leather_armor = 50, padded_armor = 51, studded_leather = 52, ring_mail = 53,
                    scale_mail = 54, chain_mail = 55, splint_mail = 56, banded_mail = 57,
                    plate_mail = 58, shield = 59, magic_user_scroll = 61, cleric_scroll = 62,
-                   gauntlets = 63, type_67 = 67, potion = 71, arrow = 73, bracers = 77, wand_a = 78,
+                   gauntlets = 63, type_67 = 67, potion = 71, bracers = 77, wand_a = 78,
                    wand_b = 79, type_84 = 84, type_89 = 89, cloak = 92, ring_of_protection = 93;
 
 // The engine's 63-byte item record, before it is decoded.
@@ -51,6 +52,8 @@ unsigned rolled(const DieRoller &roll, unsigned sides)
     return value;
 }
 
+// The original's item kind, with its odds; the arrows and quarrels it can
+// roll are left to the caller, which has no ammunition to give.
 unsigned random_item_type(const DieRoller &roll)
 {
     const auto kind = rolled(roll, 100);
@@ -72,7 +75,7 @@ unsigned random_item_type(const DieRoller &roll)
         }
         if (weapon >= 91 && weapon <= 94)
         {
-            return arrow;
+            return original_item::arrows;
         }
         if (weapon >= 95 && weapon <= 97)
         {
@@ -194,7 +197,6 @@ unsigned item_weight(unsigned type, unsigned &count)
 unsigned enchanted_value(unsigned type, int plus)
 {
     const auto per_plus = type == shield                              ? 2500
-                          : type == arrow || type == quarrel          ? 150
                           : type == ring_mail || type == scale_mail   ? 3000
                           : type == chain_mail || type == splint_mail ? 3500
                           : type == banded_mail                       ? 4000
@@ -204,7 +206,7 @@ unsigned enchanted_value(unsigned type, int plus)
     return static_cast<unsigned>(plus * per_plus);
 }
 
-// Weapons, armor, arrows, bracers and protection rings: +1 or +2.
+// Weapons, armor, bracers and protection rings: +1 or +2.
 std::optional<unsigned> enchant(GeneratedItem &item, const DieRoller &roll)
 {
     std::optional<unsigned> preset;
@@ -219,22 +221,12 @@ std::optional<unsigned> enchant(GeneratedItem &item, const DieRoller &roll)
         item.name3 = 0x15;
         item.name2 = plus_name;
     }
-    else if (item.type == quarrel)
-    {
-        item.name3 = 0x1C;
-        item.name2 = plus_name;
-    }
     else if (item.type >= leather_armor && item.type <= plate_mail)
     {
         item.name3 = item.type;
         item.name2 = item.type == studded_leather ? 0x32 : item.type <= padded_armor ? 0x31 : 0x30;
         item.name1 = plus_name;
         item.hidden_names = 4;
-    }
-    else if (item.type == arrow)
-    {
-        item.name3 = 0x3D;
-        item.name2 = plus_name;
     }
     else if (item.type == bracers)
     {
@@ -285,8 +277,7 @@ ItemRecord generate_item(unsigned type, const DieRoller &roll)
     GeneratedItem item;
     item.type = type;
     std::optional<unsigned> preset;
-    if ((type >= 1 && type <= shield) || type == arrow || type == bracers ||
-        type == ring_of_protection)
+    if ((type >= 1 && type <= shield) || type == bracers || type == ring_of_protection)
     {
         preset = enchant(item, roll);
     }
@@ -359,7 +350,14 @@ std::vector<ItemRecord> random_treasure_items(unsigned count, const DieRoller &r
     std::vector<ItemRecord> items;
     for (unsigned n = 0; n < count; ++n)
     {
-        items.push_back(generate_item(random_item_type(roll), roll));
+        // OpenGoldBox has no ammunition: an arrows or quarrels roll is rolled
+        // again, so every other item keeps its share of the original's odds.
+        auto type = random_item_type(roll);
+        while (original_item::is_ammunition(static_cast<std::uint8_t>(type)))
+        {
+            type = random_item_type(roll);
+        }
+        items.push_back(generate_item(type, roll));
     }
     return items;
 }

@@ -549,7 +549,7 @@ void pool_starting_gear()
     art.set_original_head(1, por::PortraitPart{"fixture", head});
     art.set_original_body(1, por::PortraitPart{"fixture", body});
     const std::set<std::string> ranged{"longbow", "shortbow", "light_crossbow"},
-        ammunition{"arrow", "bolt"}, body_armor{"leather", "chain_mail"},
+        body_armor{"leather", "chain_mail"},
         unarmored{"barbarian", "monk", "sorcerer", "wizard"},
         no_shield{"bard", "monk", "rogue", "sorcerer", "warlock", "wizard"};
     for (const auto &preset : character_pool(*srd5::character_rules(), art))
@@ -569,19 +569,12 @@ void pool_starting_gear()
         std::vector<std::string> held, carried;
         for (const auto &item : member.character.inventory().items())
         {
-            if (!ammunition.contains(item.definition_id))
-            {
-                check(srd5::equipment_note(member.character.sheet(), item.definition_id)
-                          .starts_with("Class training"),
-                      "Every starting weapon and armor is one the class is trained with");
-            }
+            check(srd5::equipment_note(member.character.sheet(), item.definition_id)
+                      .starts_with("Class training"),
+                  "Every starting weapon and armor is one the class is trained with");
             const bool equipped =
                 std::count(member.equipped.begin(), member.equipped.end(), item.id);
             (equipped ? held : carried).push_back(item.definition_id);
-            if (ammunition.contains(item.definition_id))
-            {
-                check(item.quantity == 20, "Twenty arrows or bolts");
-            }
         }
         const auto count_in =
             [](const std::vector<std::string> &items, const std::set<std::string> &kinds)
@@ -600,10 +593,9 @@ void pool_starting_gear()
               "Wear body armor unless the class relies on no armor");
         check(std::count(held.begin(), held.end(), "shield") == (no_shield.contains(klass) ? 0 : 1),
               "Carry a shield only when the class is trained with one");
-        check(carried.size() == 3 && count_in(carried, ranged) == 1 &&
-                  count_in(carried, ammunition) == 1 &&
+        check(carried.size() == 2 && count_in(carried, ranged) == 1 &&
                   std::count(carried.begin(), carried.end(), "torch") == 1,
-              "Pack a bow or crossbow with its ammunition, and a torch");
+              "Pack a bow or crossbow, which needs no ammunition, and a torch");
     }
 }
 

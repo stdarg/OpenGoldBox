@@ -7,8 +7,16 @@ namespace opengold
 // Original Pool of Radiance item types the game converts specially.
 namespace original_item
 {
-inline constexpr std::uint8_t flask_of_oil = 86;
+inline constexpr std::uint8_t quarrels = 28, arrows = 73, flask_of_oil = 86;
+
+// Arrows and quarrels, plain, silver or magic. OpenGoldBox has no ammunition
+// (AMMO-UNLIMITED): bows and crossbows shoot without it, so no shop, treasure
+// or kit gives any.
+[[nodiscard]] inline constexpr bool is_ammunition(std::uint8_t type) noexcept
+{
+    return type == quarrels || type == arrows;
 }
+} // namespace original_item
 
 // SRD 5.2.1 adventuring gear OpenGoldBox adds to the original game, numbered
 // above the original's 128 item types. They give every party Fire and Acid,

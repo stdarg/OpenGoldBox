@@ -2071,7 +2071,7 @@ void RolfTourView::check_town()
             capture_frame("phlan-shop");
             const auto gold_before = gold();
             const auto price = session_->shop_stock()[0].stored.value;
-            if (required_node<ItemList>(*this, "Choices").get_item_count() != 57 ||
+            if (required_node<ItemList>(*this, "Choices").get_item_count() != 55 ||
                 required_node<Button>(*this, "Continue").is_disabled())
             {
                 throw std::runtime_error("Arms shop list is not available in Godot");

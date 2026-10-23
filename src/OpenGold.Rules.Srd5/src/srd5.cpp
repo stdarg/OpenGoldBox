@@ -4939,8 +4939,8 @@ class Session final : public CombatSession
     // Whether a character carries an item it does not already wield.
     bool carries(const Actor &, std::string_view key) const;
     void torch_attack(Actor &, Actor &);
-    // A ranged weapon a character carries with its ammunition while wielding no
-    // ranged weapon, and has the hands for; empty when there is none.
+    // A ranged weapon a character carries while wielding no ranged weapon, and
+    // has the hands for; empty when there is none.
     std::string_view carried_ranged_weapon(const Actor &) const;
     // Whether taking off its shield would free a character to draw a carried
     // two-handed bow or crossbow.
@@ -5609,12 +5609,9 @@ class Session final : public CombatSession
 
     [[nodiscard]] int magic_weapon_bonus(const Actor &a) const;
     // What the weapon's magic adds to the attack and damage rolls: its own
-    // enchantment and its ammunition's, or Magic Weapon's bonus on a weapon
-    // with none, since that spell enchants a nonmagical weapon.
+    // enchantment, or Magic Weapon's bonus on a weapon with none, since that
+    // spell enchants a nonmagical weapon.
     [[nodiscard]] int weapon_magic(const Actor &a, const Actor &target, AttackRange range);
-    // The best enchantment among the carried ammunition the drawn bow or
-    // crossbow shoots. Ammunition is not used up in a fight.
-    [[nodiscard]] int ammunition_magic(const Actor &a) const;
     // Shillelagh is on the Club or Quarterstaff the creature holds.
     [[nodiscard]] bool shillelagh(const Actor &a) const;
 
@@ -6467,20 +6464,10 @@ std::string_view Session::carried_ranged_weapon(const Actor &a) const
     {
         return {};
     }
-    const auto has_ammunition = [&](detail::Ammunition type)
-    {
-        return type == detail::Ammunition::none ||
-               std::any_of(a.source.inventory.begin(), a.source.inventory.end(),
-                           [&](const auto &item)
-                           {
-                               const auto *ammunition = detail::ammunition(item.definition);
-                               return ammunition && ammunition->type == type && item.quantity;
-                           });
-    };
     for (const auto &item : a.source.inventory)
     {
         if (const auto *w = detail::weapon(item.definition);
-            w && w->ranged && item.quantity && has_ammunition(w->ammunition) &&
+            w && w->ranged && item.quantity &&
             (w->hands == 1 || !wears_shield(def(a))))
         {
             // The whole key, so a Short Bow +1 is drawn with its enchantment.
@@ -19490,12 +19477,12 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         hit = false;
         log("The wind deflects the shot.", {"The wind deflects the shot.", {}});
     }
-    // Protection From Normal Missiles (MAGIC-6): ammunition without magic, or a
-    // thrown weapon without it, misses from more than 5 feet away.
+    // Protection From Normal Missiles (MAGIC-6): a shot or a thrown weapon
+    // without magic misses from more than 5 feet away. There is no ammunition
+    // (AMMO-UNLIMITED), so a bow's shot has the bow's magic.
     if (hit && ranged && !spell &&
         detail::has_effect(target.effects, detail::EffectKind::missile_ward) &&
-        distance(a.source.cell, target.source.cell) > 5 &&
-        (d.ranged_weapon ? ammunition_magic(a) == 0 : weapon_magic == 0))
+        distance(a.source.cell, target.source.cell) > 5 && weapon_magic == 0)
     {
         hit = false;
         log("The missile cannot touch " + target.source.name + ".",
@@ -20488,34 +20475,7 @@ int Session::weapon_magic(const Actor &a, const Actor &target, AttackRange range
     {
         bonus = magic_weapon_bonus(a);
     }
-    return bonus + (ranged ? ammunition_magic(a) : 0);
-}
-
-int Session::ammunition_magic(const Actor &a) const
-{
-    const auto &d = def(a);
-    if (!d.ranged_weapon)
-    {
-        return 0;
-    }
-    const auto bow = std::find_if(d.equipment_keys.begin(), d.equipment_keys.end(),
-                                  [](const auto &key)
-                                  {
-                                      return detail::weapon(key) != nullptr;
-                                  });
-    const auto shoots =
-        bow == d.equipment_keys.end() ? detail::Ammunition::none : detail::weapon(*bow)->ammunition;
-    int best = 0;
-    for (const auto &item : a.source.inventory)
-    {
-        const auto *ammunition = detail::ammunition(item.definition);
-        if (shoots != detail::Ammunition::none && ammunition && ammunition->type == shoots &&
-            item.quantity)
-        {
-            best = std::max(best, rules::parse_item_key(item.definition).bonus);
-        }
-    }
-    return best;
+    return bonus;
 }
 
 int Session::magic_weapon_bonus(const Actor &a) const
@@ -29816,7 +29776,7 @@ class Module final : public RulesModule
     {
         // Magic Ink is spent writing or copying a scroll (MAGIC-6); a scroll
         // is read from the pack, and a Poisoner's Kit used from it.
-        if (detail::ammunition(key) || detail::thrown_gear(key) || rules::magic_ink_level(key) ||
+        if (detail::thrown_gear(key) || rules::magic_ink_level(key) ||
             rules::parse_scroll_key(key) || key == poisoners_kit)
         {
             return {EquipmentSlot::carried, 0};

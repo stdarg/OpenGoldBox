@@ -53,7 +53,7 @@ void shipped_records()
           "The Temple of Ilmater is in Podol Plaza");
 
     for (const auto &[x, y, count] : std::array<std::array<unsigned, 3>, 4>{
-             {{13, 8, 57}, {15, 8, 18}, {11, 10, 13}, {8, 10, 11}}})
+             {{13, 8, 55}, {15, 8, 18}, {11, 10, 11}, {8, 10, 11}}})
     {
         check(shop_at(data, x, y).offerings.size() == count, "Each kind of shop's stock");
     }

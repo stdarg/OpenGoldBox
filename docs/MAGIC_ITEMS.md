@@ -113,7 +113,7 @@ treasure generator can produce it.
 | Lucern Hammer +1 | Carried: 7th-level dwarf fighter (no area traced). Random. |
 | Javelin of Lightning | Carried: 6th-level fighter (New Phlan, Valjevo Castle NE); the commandant (Zhentil Keep Outpost). One use, power 83. Random (a preset). |
 | Short Bow +1 | Fixed: Slums, the valuables cache and the treasure room (two lists). Random. |
-| Arrow +1 | Fixed: Slums treasure room. Random. |
+| Arrow +1 | Not in the game: there is no ammunition (AMMO-UNLIMITED). |
 | Sling of Seeking +2 | Fixed: the warrior's body in the Valhingen Graveyard crypt. |
 
 ### Armor and shields
@@ -198,7 +198,7 @@ Fixed treasure, with the list that holds it (`bank:record`).
 | Area | Event | List |
 | --- | --- | --- |
 | Slums | Valuables cache: Short Bow +1, Ring of Protection +1 | 2:40 |
-| Slums | Leather bag and the treasure room: Short Bow +1, Arrow +1 | 2:41 |
+| Slums | Leather bag and the treasure room: Short Bow +1 (the list's Arrow +1 is left out) | 2:41 |
 | Slums | Chest under a floorboard: Magic Missile scroll, Shield +1 | 2:42 |
 | Mendor's Library | Book in the rubbish: Manual of Bodily Health | 2:1 |
 | Mendor's Library | A waking reptilian monster: Restoration scroll, Cloak of Displacement, Potion of Healing, Potion of Giant Strength | 2:3 |
@@ -240,7 +240,7 @@ Three lists hold magic but were not reached from any script:
 `src/OpenGold.Core/src/random_treasure.cpp` (see
 [QUESTS.md](QUESTS.md#random-items)) can roll:
 
-- +1 or +2 weapons, armor, shields and arrows.
+- +1 or +2 weapons, armor and shields (an arrows roll is rolled again).
 - Rings of protection +1 or +2.
 - Bracers AC 4 or AC 6.
 - Magic-user and cleric scrolls of one to three spells.
@@ -266,15 +266,14 @@ Issue [#234](https://github.com/stdarg/OpenGold/issues/234) tracks the work;
 [MAGIC-1](SRD-DECISIONS.md#magic-1-2026-10-17-the-originals-enchanted-weapons-and-armor)
 records the decisions.
 
-- **Enchanted weapons, ammunition, armor and shields** (#261) convert to an item
-  key that carries the enchantment: `longsword+2`, `chain_mail+1`, `arrow+1`.
+- **Enchanted weapons, armor and shields** (#261) convert to an item key that
+  carries the enchantment: `longsword+2`, `chain_mail+1`, `shortbow+1`.
   A special weapon adds a power: `longsword+2:flame_tongue`,
   `greatsword+1:undead`, `longsword-2:cursed`. The format is in
   `src/OpenGold.Rules/include/opengold/item_key.h`. The weapon's bonus adds
   to attack and damage rolls; armor's and a shield's add to Armor Class.
-  Magic Weapon adds nothing to a weapon that has its own bonus. Ammunition is
-  not used up in a fight, so the best enchanted arrows or quarrels carried
-  always add their bonus.
+  Magic Weapon adds nothing to a weapon that has its own bonus. There is no
+  ammunition, so a bow's shot has the bow's bonus.
 - **No item needs attunement**
   ([MAGIC-4](SRD-DECISIONS.md#magic-4-2026-10-20-no-attunement)), and there is
   no limit on how many magic items a character uses.

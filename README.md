@@ -71,7 +71,7 @@ See [building the game and each demo](docs/BUILD.md). The scenes under
   button, with its SRD subclass. Training halls sell experience sessions and
   skill lessons. See [advancement](docs/ADVANCEMENT.md),
   [levels 5–10](docs/LEVELS-5-10.md) and [training halls](docs/TRAINING-HALL.md).
-- **Magic items:** enchanted weapons, ammunition, armor and shields keep their
+- **Magic items:** enchanted weapons, armor and shields keep their
   bonus; the Flame Tongue needs attunement and lights for 2d6 Fire; the cursed
   Broad Sword binds its wielder until Remove Curse. See
   [magic items](docs/MAGIC_ITEMS.md#in-opengoldbox).

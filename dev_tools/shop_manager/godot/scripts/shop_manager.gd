@@ -15,6 +15,9 @@ const TEMPLE_SERVICES := [
     # cannot help (TEMPLE-1).
     ["resurrection", "Resurrection", 11000],
 ]
+# Arrows and quarrels: the game has no ammunition (AMMO-UNLIMITED), so no
+# shop offers them.
+const AMMUNITION_TYPES := [28, 73]
 const ADDED_GEAR := [
     ["10 Torches", 1, 10, 200],
     ["Vial of Acid", 25, 1, 201],
@@ -88,7 +91,7 @@ func _ready() -> void:
             _fatal("Invalid shop data: " + path)
             return
         records[String(location["id"])] = record
-    catalog_items = item_catalog()
+    catalog_items = _without_ammunition(item_catalog())
     catalog_items.append_array(_authored_gear())
     if "--seed" in OS.get_cmdline_user_args():
         for location in manifest["locations"]:
@@ -156,13 +159,17 @@ func _default_record(location: Dictionary) -> Dictionary:
             offerings.append({"service_id": service[0], "name": service[1],
                               "price_gp": service[2], "offered": true})
     else:
-        offerings = shop_stock(int(location["source_record"]))
+        offerings = _without_ammunition(shop_stock(int(location["source_record"])))
         if int(location["source_record"]) == 54:
             offerings.append_array(_authored_gear())
     return {"version": 1, "id": location["id"], "name": location["name"],
             "kind": location["kind"], "fixed_location": _fixed_location(location),
             "type": "Temple" if temple else location["default_type"],
             "portrait": location["portrait"], "offerings": offerings}
+
+func _without_ammunition(items: Array) -> Array:
+    return items.filter(func(item: Dictionary) -> bool:
+        return not int(item["item_type"]) in AMMUNITION_TYPES)
 
 func _authored_gear() -> Array:
     var result: Array = []

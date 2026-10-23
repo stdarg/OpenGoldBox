@@ -105,7 +105,8 @@ item type numbers match Pool of Radiance's (chain mail 55, shield 59, leather
 50) but the tables were not traced in the PoR executable itself.
 
 - d100 1-60: a second d100 picks a weapon or armor type (1-47 and 50-59 by
-  number, 45 becoming a shield; 60-90 a sword by d10; 91-94 arrows; 95-97 a
+  number, 45 becoming a shield; 60-90 a sword by d10; 91-94 arrows, rolled again as the game has no
+  ammunition (AMMO-UNLIMITED), as is a quarrels roll; 95-97 a
   ring of protection; 98-100 bracers; 48-49 a shield), enchanted +1 (d20 1-14)
   or +2, with the original name components, weight and value. Bracers are AC
   4 or 6; a javelin is a preset item on d5 = 5.

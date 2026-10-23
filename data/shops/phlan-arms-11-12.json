@@ -115,16 +115,6 @@
       "source_record": 53
     },
     {
-      "bundle_quantity": 10,
-      "item_type": 73,
-      "name": "10 Arrow(s)",
-      "price_gp": 0,
-      "quantity": -1,
-      "source_archive": "ITEM3.DAX",
-      "source_index": 10,
-      "source_record": 53
-    },
-    {
       "bundle_quantity": 1,
       "item_type": 46,
       "name": "Light Crossbow",
@@ -302,16 +292,6 @@
       "quantity": -1,
       "source_archive": "ITEM3.DAX",
       "source_index": 28,
-      "source_record": 53
-    },
-    {
-      "bundle_quantity": 20,
-      "item_type": 28,
-      "name": "20 Quarrel(s)",
-      "price_gp": 0,
-      "quantity": -1,
-      "source_archive": "ITEM3.DAX",
-      "source_index": 29,
       "source_record": 53
     },
     {

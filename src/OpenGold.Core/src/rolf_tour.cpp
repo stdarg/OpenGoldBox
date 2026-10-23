@@ -1,4 +1,5 @@
 #include "archive_io.h"
+#include "opengold/authored_items.h"
 #include "opengold/magic_item_catalog.h"
 #include "opengold/por_sound.h"
 #include "opengold/rolf_tour.h"
@@ -452,6 +453,12 @@ void RolfTourSession::shops(std::vector<opengold::ShopSite> sites)
         auto &stock = stocks.emplace_back();
         for (const auto &offering : site.offerings)
         {
+            // A record may still list arrows or quarrels; there is no ammunition.
+            if (offering.item_type < 128 &&
+                opengold::original_item::is_ammunition(static_cast<std::uint8_t>(offering.item_type)))
+            {
+                continue;
+            }
             stock.push_back(offering.archive.empty() ? authored_offering(offering)
                                                      : original_offering(*town_, offering));
             stock.back().index = stock.size() - 1;
