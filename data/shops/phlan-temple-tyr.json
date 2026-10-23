@@ -83,7 +83,7 @@
       "service_id": "resurrection"
     }
   ],
-  "portrait": "art/portraits/NPCs/bishop-braccio.png",
+  "portrait": "NPCs/bishop-braccio.png",
   "type": "Temple",
   "version": 1
 }

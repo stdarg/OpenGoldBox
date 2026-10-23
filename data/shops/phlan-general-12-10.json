@@ -195,7 +195,7 @@
       "quantity": -1
     }
   ],
-  "portrait": "art/portraits/NPCs/phlan-general-12-10.png",
+  "portrait": "NPCs/phlan-general-12-10.png",
   "type": "General Items",
   "version": 1
 }

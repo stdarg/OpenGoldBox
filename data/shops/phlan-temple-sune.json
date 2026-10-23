@@ -83,7 +83,7 @@
       "service_id": "resurrection"
     }
   ],
-  "portrait": "dev_tools/shop_manager/portraits/temple-sune.png",
+  "portrait": "shops/temple-sune.png",
   "type": "Temple",
   "version": 1
 }

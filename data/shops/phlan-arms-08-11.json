@@ -565,7 +565,7 @@
       "source_record": 53
     }
   ],
-  "portrait": "art/portraits/NPCs/phlan-arms-08-11.png",
+  "portrait": "NPCs/phlan-arms-08-11.png",
   "type": "Arms & Armor",
   "version": 1
 }

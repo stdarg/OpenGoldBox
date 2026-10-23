@@ -161,7 +161,7 @@ const std::string temple_record = R"({"kind": "temple", "portrait": "", "offerin
     {"service_id": "cure_disease", "price_gp": 1000, "offered": false}]})";
 
 const std::string shop_record = R"({"kind": "shop",
-    "portrait": "dev_tools/shop_manager/portraits/keeper.png",
+    "portrait": "shops/keeper.png",
     "offerings": [
     {"name": "Long Sword", "item_type": 36, "price_gp": 17, "bundle_quantity": 1,
      "quantity": -1, "source_archive": "ITEM3.DAX", "source_record": 53, "source_index": 21},
@@ -183,7 +183,7 @@ void manager_edits()
     const auto &shop = data.shops.at(0);
     check(shop.markers == std::vector<std::pair<unsigned, unsigned>>{{4, 5}} &&
               shop.portrait == "shops/keeper.png" && data.temples[0].portrait.empty(),
-          "A manager portrait is exported to the portraits' shops; a location may have none");
+          "A portrait is named as the game finds it; a location may have none");
     check(shop.offerings.size() == 2 && shop.offerings[0].price_gp == 17 &&
               shop.offerings[0].index == 21,
           "An edited price is read; an item out of stock is not sold");
@@ -211,8 +211,8 @@ void broken_records()
         R"({"portrait": "", "offerings": [{"service_id": "heal", "price_gp": 1, "offered": true}]})",
         shop_record, "An unknown service is refused");
     auto outside = shop_record;
-    outside.replace(outside.find("dev_tools/shop_manager/portraits"), 32, "elsewhere");
-    rejected(temple_record, outside, "A portrait the game does not ship is refused");
+    outside.replace(outside.find("shops/"), 6, "../");
+    rejected(temple_record, outside, "A portrait outside the game's portraits is refused");
     auto fraction = shop_record;
     fraction.replace(fraction.find("17"), 2, "1.5");
     rejected(temple_record, fraction, "A price in part gold is refused");

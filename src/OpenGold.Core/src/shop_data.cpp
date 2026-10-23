@@ -1,4 +1,5 @@
 #include "opengold/shop_data.h"
+#include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <optional>
@@ -350,26 +351,18 @@ std::vector<std::pair<unsigned, unsigned>> markers(const Json &location)
     return result;
 }
 
-// The manager stores a repository path. The game ships art/portraits as its
-// portraits folder, and the manager exports its own portraits into
-// data/art/portraits/shops, which the game ships as the folder's shops.
+// A portrait as the game finds it, in its portraits folder; the Shop & Temple
+// Manager exports its own portraits there, so records never name its folder.
 std::string game_portrait(const std::string &path)
 {
-    constexpr std::string_view art = "art/portraits/",
-                               manager = "dev_tools/shop_manager/portraits/";
-    if (path.empty())
+    const std::filesystem::path portrait(path);
+    const bool outside = portrait.is_absolute() ||
+                         std::ranges::find(portrait, std::filesystem::path("..")) != portrait.end();
+    if (outside)
     {
-        return {};
+        throw std::runtime_error("A shop portrait is outside the game's portraits: " + path);
     }
-    if (path.starts_with(art) && path.size() > art.size())
-    {
-        return path.substr(art.size());
-    }
-    if (path.starts_with(manager) && path.size() > manager.size())
-    {
-        return "shops/" + path.substr(manager.size());
-    }
-    throw std::runtime_error("A shop portrait is outside the game's portraits: " + path);
+    return path;
 }
 
 std::vector<TempleOffering> temple_offerings(const Json &record)

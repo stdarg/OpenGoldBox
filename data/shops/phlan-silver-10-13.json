@@ -125,7 +125,7 @@
       "source_record": 55
     }
   ],
-  "portrait": "art/portraits/NPCs/phlan-silver-10-13.png",
+  "portrait": "NPCs/phlan-silver-10-13.png",
   "type": "Silver Items",
   "version": 1
 }

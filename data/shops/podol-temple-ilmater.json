@@ -75,7 +75,7 @@
       "service_id": "resurrection"
     }
   ],
-  "portrait": "dev_tools/shop_manager/portraits/temple-ilmater.png",
+  "portrait": "shops/temple-ilmater.png",
   "type": "Temple",
   "version": 1
 }

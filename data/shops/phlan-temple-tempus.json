@@ -79,7 +79,7 @@
       "service_id": "resurrection"
     }
   ],
-  "portrait": "dev_tools/shop_manager/portraits/temple-tempus.png",
+  "portrait": "shops/temple-tempus.png",
   "type": "Temple",
   "version": 1
 }

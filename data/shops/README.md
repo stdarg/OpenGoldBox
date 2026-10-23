@@ -12,10 +12,11 @@ files. The game reads the temples' services, prices and `offered` switches
 each shop's stock and prices, and every shopkeeper's and priest's portrait
 ([#275](https://github.com/stdarg/OpenGold/issues/275)). It does not keep stock
 limits yet: an item with quantity `0` is not sold and every other item is
-unlimited. A portrait must be under `art/portraits/`, which ships with
-the game, or the manager's `portraits/` folder, from which the manager exports
-it to [`data/art/portraits/shops/`](../art/portraits/shops/README.md) for the
-game to ship. Each temple lists the
+unlimited. A `portrait` is named as the game finds it in its portraits folder,
+such as `NPCs/bishop-braccio.png` from `art/portraits/`, or
+`shops/temple-sune.png`, a copy the manager exports to
+[`data/art/portraits/shops/`](../art/portraits/shops/README.md). The game reads
+nothing from `dev_tools/`. Each temple lists the
 original's nine services and OpenGoldBox's Resurrection, which the game offers
 only on Easy and Normal. `opengold_shop_data_tests` reads these files as the
 game does.

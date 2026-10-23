@@ -15,8 +15,10 @@ const TEMPLE_SERVICES := [
     # cannot help (TEMPLE-1).
     ["resurrection", "Resurrection", 11000],
 ]
-# The game ships art/portraits itself. A portrait drawn for this tool is
+# A record names its portrait as the game finds it, in its portraits folder.
+# The game ships art/portraits itself; a portrait drawn for this tool is
 # exported to GAME_PORTRAITS, which the game ships as its portraits' shops.
+const GAME_ART := "art/portraits/"
 const MANAGER_PORTRAITS := "dev_tools/shop_manager/portraits/"
 const GAME_PORTRAITS := "data/art/portraits/shops"
 const PORTRAIT_NOTE := "Add new PNGs to dev_tools/shop_manager/portraits. A chosen portrait is exported to the game."
@@ -128,13 +130,27 @@ func _ready() -> void:
         if arg.begins_with("--capture="):
             _capture.call_deferred(arg.trim_prefix("--capture="))
 
+# The game's name for a portrait this tool lists by its repository path.
+func _game_portrait(source: String) -> String:
+    if source.begins_with(MANAGER_PORTRAITS):
+        return "shops/" + source.trim_prefix(MANAGER_PORTRAITS)
+    return source.trim_prefix(GAME_ART)
+
+# The repository file a record's portrait comes from.
+func _source_portrait(portrait: String) -> String:
+    if portrait.is_empty():
+        return ""
+    if portrait.begins_with("shops/"):
+        return MANAGER_PORTRAITS + portrait.trim_prefix("shops/")
+    return GAME_ART + portrait
+
 # The manager's portraits the records use, by file name.
 func _used_manager_portraits() -> Dictionary:
     var used := {}
     for id in records:
-        var path := String(records[id]["portrait"])
-        if path.begins_with(MANAGER_PORTRAITS):
-            used[path.get_file()] = repo_dir.path_join(path)
+        var source := _source_portrait(String(records[id]["portrait"]))
+        if source.begins_with(MANAGER_PORTRAITS):
+            used[source.get_file()] = repo_dir.path_join(source)
     return used
 
 # Copies each manager portrait a record uses where the game ships it, and
@@ -501,7 +517,7 @@ func _select_location(id: String) -> void:
     add_row.visible = not type_choice.disabled
     stock_title.text = "Offered" if type_choice.disabled else "Stock (-1 = ∞)"
     action_title.text = "" if type_choice.disabled else "Action"
-    _select_portrait_value(String(record["portrait"]))
+    _select_portrait_value(_source_portrait(String(record["portrait"])))
     _refresh_rows()
     _filter_catalog(add_search.text)
 
@@ -543,13 +559,13 @@ func _select_portrait_value(path: String) -> void:
 func _on_refresh_portraits() -> void:
     _scan_portraits()
     if not selected_id.is_empty():
-        _select_portrait_value(String(records[selected_id]["portrait"]))
+        _select_portrait_value(_source_portrait(String(records[selected_id]["portrait"])))
 
 func _on_portrait_selected(index: int) -> void:
     if selected_id.is_empty() or index > portrait_paths.size():
         return
     var path := "" if index == 0 else portrait_paths[index - 1]
-    records[selected_id]["portrait"] = path
+    records[selected_id]["portrait"] = _game_portrait(path)
     _select_portrait_value(path)
     _write_record(selected_id)
     _on_export_portraits()
@@ -722,6 +738,12 @@ func _run_check() -> void:
         _fatal("Negative price was allowed")
         return
     records["phlan-arms-13-08"]["offerings"][0]["price_gp"] = first_price
+    for id in records:
+        var portrait := String(records[id]["portrait"])
+        var source := _source_portrait(portrait)
+        if _game_portrait(source) != portrait or not FileAccess.file_exists(repo_dir.path_join(source)):
+            _fatal("A record names a portrait as the game cannot find it: " + id)
+            return
     if not _portraits_exported():
         _fatal("The game lacks an exported portrait: run --export-portraits")
         return

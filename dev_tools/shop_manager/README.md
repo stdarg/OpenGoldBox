@@ -34,11 +34,14 @@ offerings so the user can adjust its stock deliberately.
 
 Portraits can be selected from `art/portraits/NPCs/` or
 [`portraits/`](portraits/). Add a new PNG to the latter folder and press
-**Refresh portraits**. The tool stores a repository-relative portrait path.
-The game ships `art/portraits/` itself. A portrait from [`portraits/`](portraits/)
-is exported to [`data/art/portraits/shops/`](../../data/art/portraits/shops/README.md),
-which the game ships, as soon as it is chosen; **Export portraits to game**
-exports again after a PNG is redrawn. Unused copies are removed.
+**Refresh portraits**. The game ships `art/portraits/` itself. A portrait from
+[`portraits/`](portraits/) is exported to
+[`data/art/portraits/shops/`](../../data/art/portraits/shops/README.md), which
+the game ships, as soon as it is chosen; **Export portraits to game** exports
+again after a PNG is redrawn. Unused copies are removed. A record names its
+portrait as the game finds it, never by this folder: `art/portraits/NPCs/x.png`
+is saved as `NPCs/x.png`, and `portraits/x.png` as `shops/x.png`, its exported
+copy.
 The default Tyr record uses Bishop Braccio's existing portrait. Sune, Tempus,
 and Ilmater use the new portraits in [`portraits/`](portraits/).
 

@@ -88,8 +88,8 @@ A general store's 18 entries are the original list's 7 and the 11 the game
 adds (below). The arms and silver shops leave out the original's arrows and
 quarrels, as the game has no ammunition
 ([AMMO-UNLIMITED](SRD-DECISIONS.md#unlimited-ranged-ammunition--approved-exception)). The portrait files are under `art/portraits/NPCs/`; a record may
-also name one made for the manager in `dev_tools/shop_manager/portraits/`,
-which the game ships too. The shopkeeper fills the
+also name `shops/<file>`, a portrait made for the manager that it exports to
+`data/art/portraits/shops/`, which the game ships. The shopkeeper fills the
 existing view window for the shop's greeting and throughout the shopping phase,
 including stock selection and purchases; leaving the shop restores the
 exploration view. Ordinary shop keys remain available while the portrait is
