@@ -1,0 +1,32 @@
+{
+  "action_sha256": "e5b5547bbdfbea90c187d69b6d80843e830e29d5802765bf5c3ef7875fd84014",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon7cha_dax_43/item_000__ranged/action.png",
+    "ready": "art/mon7cha_dax_43/item_000__ranged/ready.png"
+  },
+  "metadata_sha256": "9e01fc501a47d8097d18453fe14ae29b055767efa1df3ed20d93373f4320214a",
+  "notes": "Alternated wand ready/action at combat size: 1x1 normal five-foot body, same planted feet, Bracers AC 2 and ochre cloak. Charged wand within ready footprint; action wand extends, missile has left tip toward screen right. Body and cloak remain inside tile. Both frames share one horizontal/vertical export transform; ready/action feet fixed.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "7a1c5a33f94d2d2ae36e576a26adb0da333fc05c670252c4300e51a43b91966d",
+  "reviewed_at": "2026-10-23T15:33:25Z",
+  "reviewer": "Codex visual review in combat catalog",
+  "source_key": "MON7CHA.DAX:43",
+  "specification": "bipedal-v1",
+  "variant_id": "item_000__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
