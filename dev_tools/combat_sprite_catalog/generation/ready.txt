@@ -2,10 +2,12 @@ POSE TO GENERATE: READY only.
 Apply the READY rule for the selected weapon from the specification above.
 For melee, weapon UP in a ready-to-strike guard, never lowered at rest.
 For projectile weapons, loaded before release. Preserve an included shield.
-Keep the entire READY silhouette, including the raised or loaded weapon, inside
-the saved combat-square footprint. One square is 5 feet by 5 feet. A normal
-humanoid, including an orc, remains a full 5 feet tall; do not shrink the body
-to make room for the weapon. Angle or reposition the weapon within the boundary.
+Keep the body, feet, shield, and other gear inside the saved combat-square
+footprint. A raised weapon may extend above its top boundary into the square
+above, where it can render over another combat sprite. Do not let the ready
+weapon cross a side or bottom boundary. One square is 5 feet by 5 feet. A
+normal humanoid, including an orc, remains a full 5 feet tall; do not shrink
+the body to make room for the weapon.
 Leave enough canvas space for this set's later action pose at the SAME body
 scale. The larger pose determines the shared camera distance for both frames.
 Choose and retain exact planted-foot x/y coordinates on the canvas. This ready

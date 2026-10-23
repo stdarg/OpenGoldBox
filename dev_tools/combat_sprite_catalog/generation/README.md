@@ -40,11 +40,13 @@ on 2026-10-22:
   permits. Measure planted feet to head, excluding weapons and raised arms.
   N/A is for non-humanoid body plans. Do not shrink a Normal body to clear a
   weapon or make a leader appear taller.
-- In **ready**, the complete body and equipment, including the weapon, stay
-  within the record's `sprite_size` footprint. In **action**, only the moving
-  attack weapon may cross that footprint boundary. The body, feet, shield and
-  other gear remain within it. Both images still keep every visible pixel
-  inside their 128 × 128 PNG canvas with transparent margin.
+- In **ready**, a raised weapon may extend above the record's `sprite_size`
+  footprint into the combat square above. In **action**, the moving attack
+  weapon may cross the footprint boundary during its strike. The body, feet,
+  shield and other gear remain within the footprint in both poses. The ready
+  weapon must not cross a side or bottom boundary. Draw the raised weapon over
+  any combat sprite in the square above. Both images still keep every visible
+  pixel inside their 128 × 128 PNG canvas with transparent margin.
 - For a leader, compare every pose and weapon set against the regular creature
   of its kind in the same archive. Make the leader's body modestly taller and
   broader, not just more ornate or more heavily armed. Its game-derived tile
@@ -174,9 +176,10 @@ equipment list requires a fresh packet and review before acceptance.
    head and torso the same apparent size and keep the planted feet at the same
    x/y pixels. A shared baseline without horizontal registration is not enough.
    If one generated figure is intrinsically smaller, regenerate that frame; a
-   shared export transform cannot fix mismatched character proportions. Only
-   the action weapon may cross the selected tile-footprint boundary; the ready
-   weapon and both bodies remain inside it. All pixels stay inside the PNG.
+   shared export transform cannot fix mismatched character proportions. A raised
+   ready weapon may cross only the top tile-footprint boundary; the moving
+   action weapon may cross the footprint during its strike. Both bodies remain
+   inside the footprint. All pixels stay inside the PNG.
    Do not recenter, crop, translate or rotate either pose independently. Export
    `ready.png` and `action.png` with nearest-neighbor sampling and preserved
    alpha. Never crop or fit the two poses independently to their visible bounds.
@@ -208,10 +211,11 @@ Compare other weapon sets for identity, scale and foot position. For a humanoid,
 also compare its foot-to-head height with the saved height tier and other art
 of that species. Check the stationary dotted grid and any footprint-overflow
 warning in both poses; the preview never shrinks a frame to suppress overflow.
-An action warning is acceptable only when the moving weapon alone crosses the
-tile line; the preview cannot identify which pixels belong to the weapon, so
-inspect this visually. A ready warning is a failure. A correct 128 x 128 canvas
-is not proof of consistent height.
+A ready warning is acceptable only when the raised weapon alone crosses the top
+tile line. An action warning is acceptable only when the moving weapon alone
+crosses a tile line. The preview cannot identify which pixels belong to the
+weapon, so inspect this visually. A correct 128 x 128 canvas is not proof of
+consistent height.
 To preview before installation, use a separate worktree/copy of the catalog,
 copy the staged images to that copy's `install_paths`, and run its existing
 `./dev_tools/combat_sprite_catalog/run.sh`. Keep the main checkout's accepted art

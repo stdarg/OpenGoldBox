@@ -159,9 +159,11 @@ square) for Small, using the record's `height_feet`; a **full 5 feet** (one
 square) for Normal humanoids including orcs; and about **1.7 squares** for Tall
 when the saved footprint permits.
 Orcs rendered at 3–4 feet are too short. The height target measures only the
-body, not a weapon or raised arm. The ready pose, including its weapon, must
-fit the selected footprint. In action, only the moving attack weapon may cross
-the dotted tile boundary; the body, feet, shield, and other gear remain inside.
+body, not a weapon or raised arm. A raised ready weapon may extend above the
+selected footprint and render over the combat sprite in the square above; it
+must stay within the side and bottom boundaries. In action, the moving attack
+weapon may cross a dotted tile boundary. The body, feet, shield, and other gear
+remain inside the footprint in both poses.
 Every visible pixel stays inside the 128 × 128 PNG canvas. Existing PNGs are
 not automatically resized or treated as correct merely because their canvas
 is 128 × 128.
