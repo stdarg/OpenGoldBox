@@ -1,0 +1,32 @@
+{
+  "action_sha256": "29c861a32c80dd43f48ccd3b9cbf610a8a59801a50b1aa2e578539699479d10f",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon6cha_dax_51/item_001__one_hand/action.png",
+    "ready": "art/mon6cha_dax_51/item_001__one_hand/ready.png"
+  },
+  "metadata_sha256": "2167c3fe8849214ab5355da244ef8c0d802c5b191eab300fc660294bbddc043f",
+  "notes": "Adult thief in saved leather armor with one long sword. Ready sword raised over image-left shoulder; action follows through low toward screen right. Shared 125x115 export at +0,+14; exact ready bottom 18 rows retained to fix both boot contacts. A single near-transparent artifact on bottom PNG border was removed. Body stands full 5-foot tile; only raised weapon extends above footprint. Both poses visually inspected alternating in catalog at combat size. Approved pose guide and newly generated ready art used; no original game art reference.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "aa9145b2cd0115a733ede6c0b4c491825a6ef0267c0f0c0089f0b821509985ce",
+  "reviewed_at": "2026-10-23T12:18:30.990069+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON6CHA.DAX:51",
+  "specification": "bipedal-v1",
+  "variant_id": "item_001__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
