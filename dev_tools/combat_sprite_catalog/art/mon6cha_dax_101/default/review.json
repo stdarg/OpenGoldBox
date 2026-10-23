@@ -1,0 +1,32 @@
+{
+  "action_sha256": "2449e9eb1683f8a7e498325752115c204cd5e70f2bb4015410349fdbba578e48",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon6cha_dax_101/default/action.png",
+    "ready": "art/mon6cha_dax_101/default/ready.png"
+  },
+  "metadata_sha256": "dee56011ab3041aded4510f09b27d85ff5a5bdefff519038e6131c3b382123d2",
+  "notes": "Generated with approved original pose guide and ready-frame identity. Natural unarmed guard to late straight punch; action lower body copied from ready for exact planted feet. Visually inspected native 128-pixel pair and one-second catalog alternation. Normal 5-foot head-to-foot height fits fixed 1x1 square. Action fist alone extends 0.05 square horizontally; ready fits. No recorded equipment was invented.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "08089320b623fc5cc6e3d3647d98575de5d0673e4bfdbf3a2a6f2f50b37bc03d",
+  "reviewed_at": "2026-10-23T07:11:41.997207+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON6CHA.DAX:101",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}

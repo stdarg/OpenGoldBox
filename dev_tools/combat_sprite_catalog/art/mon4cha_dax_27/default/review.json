@@ -1,0 +1,32 @@
+{
+  "action_sha256": "a85f6ff8b88a69b4c5f3473c8e112e703302a825741897a6811b1fda82977484",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon4cha_dax_27/default/action.png",
+    "ready": "art/mon4cha_dax_27/default/ready.png"
+  },
+  "metadata_sha256": "c7aa6f977d8a476b8c52b5bd21b8ef18b4160a865f4b0984cdd610ed26aafee0",
+  "notes": "Approved guide plus newly generated Skullcrusher ready used as reference. Action punches in place with exact ready lower body and planted feet. Reviewed native 128-pixel pair and one-second catalog alternation. Ready fits 1x1, bare action fist alone extends 0.06 square. Five-foot body. No invented equipment or captive chains.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "c0de472ddd767114f8227a21090a9131d2efeacae4f26af1bb65c0735e407d1d",
+  "reviewed_at": "2026-10-23T07:21:19.171297+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON4CHA.DAX:27",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
