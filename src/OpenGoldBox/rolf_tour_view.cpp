@@ -4,7 +4,7 @@
 #include "character_text.h"
 #include "localization.h"
 #include "game_resources.h"
-#include "temple_data.h"
+#include "shop_data_files.h"
 #include "rolf_tour_view.h"
 #include "inventory_label.h"
 #include "opengold/campaign_party.h"
@@ -282,7 +282,7 @@ void RolfTourView::restart()
             session_.emplace(RolfTourSession::load(presentation::path_from_godot(directory)));
             session_->encounter_challenge(settings::encounter_challenge());
             session_->difficulty(settings::difficulty());
-            session_->temples(load_temple_sites());
+            use_shop_data(*session_);
             if (campaign_)
             {
                 session_->campaign_party(campaign_);
@@ -1787,7 +1787,7 @@ Dictionary RolfTourView::tour_visuals()
     }
     else
     {
-        const auto portrait_file = opengold::speaking_npc_portrait(state);
+        const auto portrait_file = opengold::speaking_npc_portrait(state, session_->shops());
         const auto portrait =
             portrait_file.empty() ? Ref<Texture2D>() : npc_portrait(portrait_file);
         if (portrait.is_valid())

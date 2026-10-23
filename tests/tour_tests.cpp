@@ -1,6 +1,7 @@
 #include "opengold/rolf_tour.h"
 #include "opengold/exploration_view.h"
 #include "opengold/npc_portraits.h"
+#include "opengold/shop_data.h"
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
@@ -423,7 +424,8 @@ void settle_town(RolfTourSession &town, unsigned shop_x = 16, unsigned shop_y = 
         {
             if (s.pose.x == shop_x && s.pose.y == shop_y && s.dialogue.starts_with("THE SHOP"))
             {
-                check(!opengold::phlan_shopkeeper_portrait(s).empty(),
+                check(town.shops().empty() ||
+                          !opengold::phlan_shopkeeper_portrait(s, town.shops()).empty(),
                       "The shopkeeper portrait appears for the greeting");
             }
             town.choose(s.continue_ticket, s.pose.x == shop_x && s.pose.y == shop_y &&
@@ -581,8 +583,11 @@ void installed_town(const RolfTourSession &finished)
         std::string_view portrait;
     };
 
-    // Every general store adds Torches, Acid, Alchemist's Fire and Magic Ink of
+    // Each shop sells what its data/shops record lists, with its own shopkeeper:
+    // every general store adds Torches, Acid, Alchemist's Fire and Magic Ink of
     // levels 1 to 8 to its seven original items.
+    const auto data =
+        opengold::load_shop_data(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/shops");
     for (const auto target : std::array{
              ShopCase{13, 8, 57, "NPCs/phlan-arms-13-08.png"},
              ShopCase{8, 11, 57, "NPCs/phlan-arms-08-11.png"},
@@ -599,11 +604,12 @@ void installed_town(const RolfTourSession &finished)
          })
     {
         auto town = finished.detached_copy();
+        town.shops(data.shops);
         check(walk_to(town, target.x, target.y, true), "Walk to original shop");
         check(town.snapshot().phase == TourPhase::shopping,
               "Entering shop and answering Yes opens actual stock");
         check(town.shop_stock().size() == target.stock, "Original shop-specific stock count");
-        check(opengold::speaking_npc_portrait(town.snapshot()) == target.portrait,
+        check(opengold::speaking_npc_portrait(town.snapshot(), town.shops()) == target.portrait,
               "Shopping shows this location's unique shopkeeper");
         const auto affordable = std::find_if(town.shop_stock().begin(), town.shop_stock().end(),
                                              [](const auto &item)
@@ -619,10 +625,44 @@ void installed_town(const RolfTourSession &finished)
         check(town.party().wealth[3] == 9999 - price && town.party().inventory.size() == 1,
               "Actual price and inventory persist");
         check(town.leave_shop(ticket), "Exit original shop");
-        check(opengold::phlan_shopkeeper_portrait(town.snapshot()).empty(),
+        check(opengold::phlan_shopkeeper_portrait(town.snapshot(), town.shops()).empty(),
               "Shopkeeper portrait ends when shopping ends");
         settle_town(town);
     }
+
+    // A price changed in the manager is the price the shop charges.
+    auto repriced = data.shops;
+    for (auto &shop : repriced)
+    {
+        for (auto &offering : shop.offerings)
+        {
+            if (offering.name == "Long Sword")
+            {
+                offering.price_gp = 17;
+            }
+        }
+    }
+    auto armory = finished.detached_copy();
+    armory.shops(repriced);
+    check(walk_to(armory, 13, 8, true) && armory.snapshot().phase == TourPhase::shopping,
+          "Enter the armory");
+    const auto sword = std::ranges::find_if(armory.shop_stock(),
+                                            [](const auto &item)
+                                            {
+                                                return item.stored.type == 36;
+                                            });
+    check(sword != armory.shop_stock().end() &&
+              armory.buy(armory.snapshot().continue_ticket,
+                         static_cast<std::size_t>(sword - armory.shop_stock().begin())) &&
+              armory.party().wealth[3] == 9999 - 17,
+          "The armory charges the record's 17 gp for a Long Sword");
+
+    // A shop the data does not name sells the original's list, with no portrait.
+    auto original = finished.detached_copy();
+    check(walk_to(original, 15, 8, true) && original.snapshot().phase == TourPhase::shopping &&
+              original.shop_stock().size() == 7 &&
+              opengold::speaking_npc_portrait(original.snapshot(), original.shops()).empty(),
+          "Without data the general store sells its seven original items");
 }
 
 void synthetic()

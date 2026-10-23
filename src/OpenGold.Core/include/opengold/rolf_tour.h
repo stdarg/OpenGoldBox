@@ -10,6 +10,7 @@
 #include "opengold/campaign_encounter.h"
 #include "opengold/difficulty.h"
 #include "opengold/encounter_budget.h"
+#include "opengold/shop_data.h"
 #include "opengold/temple_catalog.h"
 #include <bitset>
 
@@ -227,6 +228,16 @@ class RolfTourSession
         temples_ = std::move(sites);
     }
 
+    // The shops data/shops describes: each sells its record's items at its
+    // prices. A shop it does not name sells the original's list. Throws when an
+    // item's source list is not in the loaded game.
+    void shops(std::vector<opengold::ShopSite> sites);
+
+    [[nodiscard]] const std::vector<opengold::ShopSite> &shops() const noexcept
+    {
+        return shops_;
+    }
+
     [[nodiscard]] const TourSnapshot &snapshot() const noexcept
     {
         return snapshot_;
@@ -377,6 +388,10 @@ class RolfTourSession
     };
 
     std::vector<opengold::TempleSite> temples_;
+    std::vector<opengold::ShopSite> shops_;
+    std::vector<std::vector<Equipment>> shop_stocks_; // each shop's items, as shops_
+    [[nodiscard]] bool standing_at(const std::string &archive, unsigned record,
+                                   const std::vector<std::pair<unsigned, unsigned>> &markers) const;
     std::optional<TempleVisit> temple_visit_;
     void open_temple(std::uint64_t request);
     void show_temple(std::vector<opengold::rules::Message> notice);

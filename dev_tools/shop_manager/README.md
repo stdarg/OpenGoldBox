@@ -43,8 +43,9 @@ Changes save immediately to one file per location under
 marker list, a shop or temple kind, the editable type and portrait, and its
 offerings. The tool validates the fixed location and the shop/temple boundary
 before replacing a file. The game reads the temples' services, prices and
-**Offered** switches; it does not read the shops yet
-([#271](https://github.com/stdarg/OpenGold/issues/271)).
+**Offered** switches, and each shop's stock, prices and portrait
+([#275](https://github.com/stdarg/OpenGold/issues/275)). It keeps no stock
+limits yet: Stock `0` hides an item and any other value sells it without limit.
 
 ## Run
 

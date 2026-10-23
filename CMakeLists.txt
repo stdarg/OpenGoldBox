@@ -125,6 +125,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/campaign_party.cpp
     src/OpenGold.Core/src/ecl_party_host.cpp
     src/OpenGold.Core/src/npc_portraits.cpp
+    src/OpenGold.Core/src/shop_data.cpp
     src/OpenGold.Core/src/coin_purse.cpp
     src/OpenGold.Core/src/training_hall.cpp
     src/OpenGold.Core/src/campaign_rest.cpp
@@ -386,6 +387,10 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_wizard_levels_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_wizard_levels_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_wizard_levels_tests COMMAND opengold_wizard_levels_tests)
+    add_executable(opengold_shop_data_tests tests/shop_data_tests.cpp)
+    target_link_libraries(opengold_shop_data_tests PRIVATE opengold_core)
+    target_compile_definitions(opengold_shop_data_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_shop_data_tests COMMAND opengold_shop_data_tests)
     add_executable(opengold_temple_tests tests/temple_tests.cpp)
     target_include_directories(opengold_temple_tests PRIVATE src/OpenGold.Rules.Srd5/src)
     target_link_libraries(opengold_temple_tests PRIVATE opengold_core opengold_rules_srd5)
@@ -528,6 +533,7 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_ecl_tests COMMAND opengold_ecl_tests)
     add_executable(opengold_tour_tests tests/tour_tests.cpp)
     target_link_libraries(opengold_tour_tests PRIVATE opengold_core)
+    target_compile_definitions(opengold_tour_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_tour_tests COMMAND opengold_tour_tests)
     add_executable(opengold_savage_attacker_tests tests/savage_attacker_tests.cpp)
     target_link_libraries(opengold_savage_attacker_tests PRIVATE opengold_rules_srd5 opengold_core)

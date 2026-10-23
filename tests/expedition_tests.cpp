@@ -6,6 +6,7 @@
 #include "opengold/random_treasure.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/scroll_key.h"
+#include "opengold/shop_data.h"
 #include "opengold/npc_portraits.h"
 #include "opengold/srd5.h"
 #include "test_support.h"
@@ -895,7 +896,8 @@ struct Expedition
     por::RolfTourSession town;
 };
 
-// Six created fighters with the new-character purse, after Rolf's tour.
+// Six created fighters with the new-character purse, after Rolf's tour, in a
+// town that uses data/shops as the game does.
 Expedition create_party(const std::filesystem::path &directory)
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -906,13 +908,16 @@ Expedition create_party(const std::filesystem::path &directory)
         party->add_coins(Coin::gold, 250);
     }
     auto town = por::RolfTourSession::load(directory);
+    auto shop_data = load_shop_data(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/shops");
+    town.temples(std::move(shop_data.temples));
+    town.shops(std::move(shop_data.shops));
     town.campaign_party(party);
     settle(town, party);
     return {party, std::move(town)};
 }
 
-// The general store at (15,8) sells the original's oil and the gear the game
-// adds (Torch, Acid, Alchemist's Fire, Magic Ink), all converting to SRD items.
+// The general store at (15,8) sells the original's oil and the gear its
+// data/shops record adds (Torch, Acid, Alchemist's Fire, Magic Ink), all converting to SRD items.
 void general_store_gear(const std::filesystem::path &directory)
 {
     auto trip = create_party(directory);

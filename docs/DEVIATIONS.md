@@ -177,6 +177,13 @@ in the game: answering YES at a hall lists its services in the dialogue
   Shop & Temple Manager; they start at the original's, which were the same
   everywhere.
   [TEMPLE-1](SRD-DECISIONS.md#temple-1-2026-10-22-temple-services).
+- **Shop stock and prices** (2026-10-23). Each New Phlan shop sells what its
+  `data/shops` record lists, at its prices, with its shopkeeper's portrait,
+  all edited with the Shop & Temple Manager. The records start from the
+  original's lists and values, plus the gear the game adds to general stores.
+  Stock limits are not kept yet: every item a shop sells is unlimited, as in
+  the original.
+  [#275](https://github.com/stdarg/OpenGold/issues/275).
 
 ## Interface and saves
 
