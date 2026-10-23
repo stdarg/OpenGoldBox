@@ -1,0 +1,32 @@
+{
+  "action_sha256": "9f42e40c93c9ff7ddcf009decdb0aaedd32f6483b7d2d13211c8a70e1be8b9f2",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon7cha_dax_57/default/action.png",
+    "ready": "art/mon7cha_dax_57/default/ready.png"
+  },
+  "metadata_sha256": "bdaa6d37dff97ee092bc9f8cd5d36ed4d5069abc1194e3b3b4ed389dbda4f471",
+  "notes": "MON7:57 has no saved gear; default is a natural bare-claw swipe. Both frames use one export transform and preserve exact ready head, torso, tail and planted feet. Ready fits the game-derived 1x1 tile in the catalog; the action claw alone extends 0.21 square to screen right. Reviewed native 128px side by side and one-second catalog alternation on the fixed dotted grid.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "2719e9914361ca61930fb8f30e04c9e105df09e9b85cfe8c03877ce04f7014b0",
+  "reviewed_at": "2026-10-23T08:03:16+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON7CHA.DAX:57",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
