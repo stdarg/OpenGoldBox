@@ -1,0 +1,32 @@
+{
+  "action_sha256": "4d60d67e0e5ef01031b1f4315a10b6feff889831184308b109450af5d845f722",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon3cha_dax_36/item_003__one_hand/action.png",
+    "ready": "art/mon3cha_dax_36/item_003__one_hand/ready.png"
+  },
+  "metadata_sha256": "f4d2a151be38462d9755cb04979c13a8a2c9c8068c177b365b727fe469da6478",
+  "notes": "Adult swordswoman with saved chain armor and arrow quiver. Sword raised in ready; late diagonal slash in action. Shared 125x120 nearest-neighbor source export; action y offset 5 native pixels aligns head. Exact last 18 rows from ready retain foot contacts. Body fills full 5-foot tile, sword-only overflow allowed. Both poses visually inspected alternating in catalog at combat size. Approved pose guide and independently generated art only; no original game artwork as generation reference.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "81e97d48ce4de7fe792eaac73279ad0551bd6e0c30232da1bf69ebc5cf27abf5",
+  "reviewed_at": "2026-10-23T12:36:29.870374+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON3CHA.DAX:36",
+  "specification": "bipedal-v1",
+  "variant_id": "item_003__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}

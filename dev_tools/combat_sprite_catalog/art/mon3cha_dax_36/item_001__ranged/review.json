@@ -1,0 +1,32 @@
+{
+  "action_sha256": "09ab68cf40bb75cd5a89427ecaad27c817a9d5748d36845b25ee904feb46ec36",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon3cha_dax_36/item_001__ranged/action.png",
+    "ready": "art/mon3cha_dax_36/item_001__ranged/ready.png"
+  },
+  "metadata_sha256": "f4d2a151be38462d9755cb04979c13a8a2c9c8068c177b365b727fe469da6478",
+  "notes": "Same swordswoman with loaded long bow in ready and arrow absent/string forward just after release in action. Original ready attempt arrow projected outside bow and was rejected; corrected new ready image used for action. Shared 125x120 source scale; bow upper body placed 8 native pixels above sword source to align head and belt; exact last 18 rows of newly generated sword ready retained in both bow frames to keep identical feet across sets. Bow top alone crosses top tile; no side crossing in ready. Both poses visually inspected alternating in catalog at combat size. Approved pose guide and independently generated art only; no original game artwork as generation reference.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "1147f5a682b98211919524468f012da855568896dde5d9e17a6f08551b4dec9e",
+  "reviewed_at": "2026-10-23T12:36:29.871319+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON3CHA.DAX:36",
+  "specification": "bipedal-v1",
+  "variant_id": "item_001__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
