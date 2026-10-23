@@ -6,10 +6,10 @@
     "ready": "art/mon2cha_dax_2/item_000__item_001/ready.png"
   },
   "metadata_sha256": "d2ebce5a63e3da3e77d6ece0e1e8b2718dcec1ffc87fcdf5bc4aba70916f7f82",
-  "notes": "Approved new guide plus existing replacement art for identity. Common export transform. At 128 px, planted feet align; head-to-foot body measures about 3.5 ft; ready sword within 1x1 footprint. Overlay reviewed at exact coordinates.",
+  "notes": "Re-reviewed unchanged accepted goblin pair under revised raised-ready-weapon rule. Exact-coordinate overlay and one-second catalog preview show fixed feet; body ~3.5 ft, ready sword within footprint.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "2759baa1e8fdc6311626f05f0e38bfb785a79740ce23aa13ed49877dff6a6af0",
-  "reviewed_at": "2026-10-23T00:33:52.578371+00:00",
+  "reviewed_at": "2026-10-23T01:04:52.551115+00:00",
   "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:2",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3b5624301d6268b8396c53604b6ba673f8cfe4b0aa6757b9a8c8a0fa16abde56"
+  "workflow_sha256": "25c1b13954a8f94b31cd46da533e6970c56d8c53d89f3a7be98d9443fde33563"
 }
