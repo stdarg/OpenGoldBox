@@ -135,7 +135,7 @@ the auction is over, 255 striding openly or cover blown.
   - Any ending sets `0x4A35` and `0x4AB0` to 254 (`0xA82B`, `0xA86B`): the
     mission is done. City Hall then rewards it: `ECL3:8` scans its flag table
     at `0x4AA6` for 254 (index 10 is `0x4AB0`; its line at `0xA15A`), pays
-    reward slot 10 (`0x9EC2`) and sets the flag to 255.
+    reward slot 10 (`0x9EC2`: 250 gp and 200 pp) and sets the flag to 255.
 - **The Pitt** (event 2, `0xA8B0`; its sign is event 3, `0xAD7B`):
   - First visit (`0x4A37` = 0): the party bumps into a drunk buccaneer (head
     6 and body 3 in `0x6DE1`, `SETUP MONSTER 19,0,3`) who demands that one of
@@ -201,8 +201,9 @@ the auction is over, 255 striding openly or cover blown.
 - **Quest flags other areas read:** `0x4AB0` (the auction commission: City
   Hall sets 1, Podol sets 254, City Hall pays and sets 255), `0x4AE7` (the
   plaza cleared: Podol sets 254; City Hall announces a reward for clearing it
-  at `ECL3:8 0x9DFC`, sets 255 and pays the same reward slot 10, whose
-  bookkeeping then also marks `0x4AB0` 255), `0x4ABD` (read: the Temple of
+  at `ECL3:8 0x9DFC`, sets 255 and pays the same reward slot 10; this branch
+  sets `0x4A00` to 2, which skips the table write at `0x9F5A`, so `0x4AB0` is
+  left as it was), `0x4ABD` (read: the Temple of
   Bane has fallen), item type 74 (the holy symbols for `ECL1:24`).
 - **Art:** `WALLDEF1`/`8X8D1` (banks 1, 3, 5), `SPRIT1` (2, 4, 6, 8, 9),
   `CPIC1` (icons 2-9 match the Slums' `CPIC2` byte for byte, plus 16, the
@@ -417,9 +418,13 @@ stage after Kuto's Well.
   at `0x72`, so humans no longer count against a disguised party: six humans
   are questioned 15% of the time (5% plus 5% for each of the two empty slots),
   not 45%.
-- **Gaps:** City Hall's reward for the auction and for clearing the plaza is not played
-  in a test, and clearing the plaza (nine won fights in one visit) is not
-  played either.
+- **Rewards and clearing (2026-10-23):** City Hall's clerk, at (5,5) past
+  the guards at (4,5), pays 250 gp and 200 pp once for the auction mission
+  and once for clearing the plaza, played from a new party in New Phlan with
+  Podol's flag set. Clearing is played off the mission with the win count
+  (`0x4A34`) set to eight: the ninth win, then one plaza step, marks the plaza
+  cleared (`0x4AE7` = 254), and a camp there is not interrupted.
+- **Gaps:** Enthralling Panache (the buccaneer's charm) is not modeled.
 
 ## Suggested increments
 
