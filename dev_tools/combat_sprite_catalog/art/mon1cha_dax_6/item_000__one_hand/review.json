@@ -1,15 +1,15 @@
 {
-  "action_sha256": "69132d54b60cf676b59a764d25e02dc644a4d0a8394e4ebf05be9f59f7de260a",
+  "action_sha256": "e1007a43ded08febb9330e38a95e0e059fa9e56312602e7166e338f6a5132213",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_6/item_000__one_hand/action.png",
     "ready": "art/mon1cha_dax_6/item_000__one_hand/ready.png"
   },
   "metadata_sha256": "9ef101013098017989037b64ecfa563e18614814e6b3426c43f0009f5fc8462e",
-  "notes": "New independent MON1 Hobgoblin sword pair using approved guide and the new Hobgoblin identity reference; no original game art used. Shared 0.095 source scale across both weapon sets. Exact pair inspected at combat size and alternating in catalog; ready fits 1x1, body remains inside, action sword alone crosses 0.11 square. Both planted feet stay at same x/y across frames; sword raised in ready, near-end thrust in action; bow loaded then released.",
+  "notes": "Height-corrected approved newly generated Hobgoblin art with identical nearest-neighbor 157/128 scale and (20, 27) canvas crop for both frames around planted feet. Original game art was not a reference. Inspected pair side by side and alternating in fixed-grid catalog, including foot anchor and 5-foot body fit. Matched alternate sets to same body height and compared leader against same-archive regular; leader is broader and more impressive through saved armor/gear. Only raised ready weapon or attacking action weapon crosses footprint. Rejected scaling trials retained in staging.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "07bda394aca4628d847727000e2faea3efd44c6403e556684760c3f445777c50",
-  "reviewed_at": "2026-10-21T22:09:36.764642+00:00",
+  "ready_sha256": "a1b176910771e25f2f45b1920a99e890f77b876ba5aa41ac3d43c95099637c49",
+  "reviewed_at": "2026-10-23T03:38:06+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:6",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

@@ -1,15 +1,15 @@
 {
-  "action_sha256": "ea5a6f0c6418beb08cc9731523be5356c2f01355c9f39f8b75ac780025c292b7",
+  "action_sha256": "33134d5fe9acbd21aa3186261a52a6957e7240ca3b3ad0ebbaed7e5d1401b0a6",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_7/item_000__one_hand/action.png",
     "ready": "art/mon2cha_dax_7/item_000__one_hand/ready.png"
   },
   "metadata_sha256": "da8282cb98ddfd56ad6456be23c974674ab07774d64f2a330be5218e0480df63",
-  "notes": "Generated with approved bipedal pose guide and newly created hobgoblin art only. Ready/action share crop, scale and foot baseline. Inspected both 128 px images and both poses in catalog; 1x1 footprint fits. Leader is taller and more commanding than regular hobgoblin.",
+  "notes": "Height-corrected approved newly generated Hobgoblin art with identical nearest-neighbor 177/128 scale and (25, 46) canvas crop for both frames around planted feet. Original game art was not a reference. Inspected pair side by side and alternating in fixed-grid catalog, including foot anchor and 5-foot body fit. Matched alternate sets to same body height and compared leader against same-archive regular; leader is broader and more impressive through saved armor/gear. Only raised ready weapon or attacking action weapon crosses footprint. Rejected scaling trials retained in staging.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "74c1c4337910e69ef193e9d23b014438a31cbf6772bc5c34924630181577b18f",
-  "reviewed_at": "2026-10-21T03:17:00.752305+00:00",
+  "ready_sha256": "ed813893cc61d58ea2c50d0d8f7c6e4c60caf781f8d1dea808cbf225859ba18c",
+  "reviewed_at": "2026-10-23T03:38:09+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:7",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

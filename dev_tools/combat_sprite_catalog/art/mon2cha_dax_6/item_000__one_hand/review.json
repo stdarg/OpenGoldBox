@@ -1,15 +1,15 @@
 {
-  "action_sha256": "2a2ada067687d60049ccd973f982d5854b1ad833a6d202adc21ff45e48a1e064",
+  "action_sha256": "dcedeabec1221d8d34181995805e336f53b2ca31994b3550ca7b8caf2f5a5036",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_6/item_000__one_hand/action.png",
     "ready": "art/mon2cha_dax_6/item_000__one_hand/ready.png"
   },
   "metadata_sha256": "f59b32d7cb2a84b5feba18694ecb7dc869cd3371702320ec9ddc4aa19fdd345a",
-  "notes": "Technical height correction of independently generated Hobgoblin art. Reviewed both 128px frames and fixed 3x3 catalog ready/action at 1.05-second interval. Body about 0.85 square, within normal humanoid rounded-down target and 1x1 footprint. Same planted feet; sword is up in ready and near-end horizontal swing in action. Catalog reports 0.01-square action overflow, sword tip only, permitted by rules.",
+  "notes": "Height-corrected approved newly generated Hobgoblin art with identical nearest-neighbor 177/128 scale and (25, 46) canvas crop for both frames around planted feet. Original game art was not a reference. Inspected pair side by side and alternating in fixed-grid catalog, including foot anchor and 5-foot body fit. Matched alternate sets to same body height and compared leader against same-archive regular; leader is broader and more impressive through saved armor/gear. Only raised ready weapon or attacking action weapon crosses footprint. Rejected scaling trials retained in staging.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "732d098e651e4533ce5f125f4919ca450c7b206ca5b575461796a48012b264c2",
-  "reviewed_at": "2026-10-21T22:43:57+00:00",
+  "ready_sha256": "4e5850c4e7a02463aa06152ec835441f14a34467c43a169b4afa11e893deaebd",
+  "reviewed_at": "2026-10-23T03:38:08+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:6",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

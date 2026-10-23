@@ -1,15 +1,15 @@
 {
-  "action_sha256": "dc2fa8d2a932fa2878946b7079bf8ca7bdbbb71660fbeed4894d475dd61e5721",
+  "action_sha256": "057c36a0c4e14d744c2a9310135aea77666be57c11b1eb6bcfcf50adca9166eb",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon4cha_dax_6/item_000__one_hand/action.png",
     "ready": "art/mon4cha_dax_6/item_000__one_hand/ready.png"
   },
   "metadata_sha256": "6e9c7ac618c9ad15d6376bd821b32384594736fef36c4411ffaf14b125666282",
-  "notes": "Generated with approved bipedal guide and newly created hobgoblin art only. Brown leather armor matches saved gear. Reviewed both 128px frames and catalog preview; fixed planted feet, one common pair transform, both fit 1x1. Leader larger than regular.",
+  "notes": "Height-corrected approved newly generated Hobgoblin art with identical nearest-neighbor 202/128 scale and (37, 69) canvas crop for both frames around planted feet. Original game art was not a reference. Inspected pair side by side and alternating in fixed-grid catalog, including foot anchor and 5-foot body fit. Matched alternate sets to same body height and compared leader against same-archive regular; leader is broader and more impressive through saved armor/gear. Only raised ready weapon or attacking action weapon crosses footprint. Rejected scaling trials retained in staging.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "1c56a59ce158e83a92bfdf090676986f91072fb5f9ff4d902e48fd5c3071f344",
-  "reviewed_at": "2026-10-21T03:23:14.490096+00:00",
+  "ready_sha256": "c9325ddef14641202f2c4bd97130667455de8491366ff2c76b016614db1373c2",
+  "reviewed_at": "2026-10-23T03:38:11+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON4CHA.DAX:6",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
