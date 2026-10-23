@@ -1,0 +1,32 @@
+{
+  "action_sha256": "2ec428551d3bc1dd3247aa4eb3eb05c934cbd34c8a3d654aa8716b839a94f2be",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon3cha_dax_111/item_001__one_hand/action.png",
+    "ready": "art/mon3cha_dax_111/item_001__one_hand/ready.png"
+  },
+  "metadata_sha256": "18a855b088987e37cf61442055a3a7bd1fbdb8841ca5bba80f16e0ff5b28f24a",
+  "notes": "New independent Robber art from approved pose guide and current JSON. Rejected first ready for overlong sword; regenerated shorter short-sword ready, then edited that exact new image for late horizontal strike. Both frames share 1313x1198 working canvas and 127x116 nearest-neighbor export transform. Removed only sub-1-percent alpha fringe that caused false tile overflow. Action lower 38 output rows copied from ready to keep exact planted feet. Reviewed native PNGs on black and white and one-second alternating in catalog. Ready fits 1x1, action sword alone crosses right by 0.12 square; body stays at full 5-foot height within footprint. Leather armor +1 and short sword +1 only.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "6d747c97760fc5a1ba6285d66b904fe70b169c8b0c1a1eb14fd7b371cec94cfb",
+  "reviewed_at": "2026-10-23T06:06:26+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON3CHA.DAX:111",
+  "specification": "bipedal-v1",
+  "variant_id": "item_001__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
