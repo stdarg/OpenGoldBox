@@ -1,0 +1,32 @@
+{
+  "action_sha256": "90c654451212218f7bdedc8183ef84bf03c9196b0324939fca394d3f123d0783",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon4cha_dax_72/default/action.png",
+    "ready": "art/mon4cha_dax_72/default/ready.png"
+  },
+  "metadata_sha256": "07f00a00623c1434b396bca2192789bdf9a162cc45b7e9fb4f3c404e409e1222",
+  "notes": "New independent ghoul artwork from approved pose guide, saved unarmed description and user-approved natural in-place attack. Initial action candidate rejected for moving whole body; second action used, and ready lower 56 rows copied to action for exact planted feet, legs, hips and cloth. Both frames exported using shared 121/1254 nearest-neighbor scale on 128 px canvas and shifted 3 px left together so ready claws remain inside 1 x 1 footprint. Gray undead ghoul in rags, claws raised in ready and modest left-claw late swipe toward screen right in action. Full Normal 5-foot head-to-foot span and fixed ground anchor checked at 128 px and alternating in catalog; both poses fit tile. MON8:72 has exact same saved description, body tier, footprint and empty gear as MON4:72, so the reviewed pair is shared.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "daca0eee5bafa85ae62296df1a0fc1f5726a7c19443ecdbd13e518472d1bb7f0",
+  "reviewed_at": "2026-10-23T06:58:08.342758+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON4CHA.DAX:72",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
