@@ -1,15 +1,15 @@
 {
-  "action_sha256": "83969d05a8aad668340315c8f7e51e69d60c9f0ed9bb72588a27b8234062489c",
+  "action_sha256": "6c0cac6c411768aac1ad68b71aae4ab8fd278ac5709d1391a4617558a6f935d7",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_5/item_003__ranged/action.png",
     "ready": "art/mon1cha_dax_5/item_003__ranged/ready.png"
   },
   "metadata_sha256": "edfe2d0082ee45bd937b70bee50647197fccf15d8ec1342f7064e3ae19d7d9f1",
-  "notes": "New independent Orc Leader bow pair based on approved pose guide and exact new ready identity. Shared export scale across poses and leader sets. Both poses inspected at combat size and in one-second catalog alternation. Leader is broader and modestly taller than regular Orc; ready silhouette fits 1x1. Axe action blade alone crosses the dotted footprint by 0.11 square; body and planted feet stay inside. Bow is loaded then just released.",
+  "notes": "Corrected approved newly generated Orc Leader art with one shared scale for both poses and saved weapon sets; prior art retained in ignored staging. Compared with MON1 regular Orc. Leader is broader and at least as tall at 5-foot body scale, with saved chain armor. Both frames inspected at 128px, white background and in the 1-second Godot catalog on fixed 3x3 grid. Ready raised weapon alone enters square above; action axe blade alone crosses right boundary; body and feet remain in 1x1 footprint. Action planted-foot pixels copied from ready and then same transform applied; no whole-body motion. Bow loaded then just released.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "d52b60fe0971e91f42c5c305d324bb65d49c98cfc0d5e87def36bb3127f31354",
-  "reviewed_at": "2026-10-21T21:59:38.168413+00:00",
+  "ready_sha256": "aa3460d494ca37be2e5ded4a64ce8023a01287ff718079fe4728d03524671fa8",
+  "reviewed_at": "2026-10-23T06:00:16+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:5",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
