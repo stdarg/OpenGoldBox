@@ -1,0 +1,32 @@
+{
+  "action_sha256": "90e29e71755c08ea800f6d30c85076e36066df1a63e1b790c6b08e41955f00af",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon4cha_dax_104/item_002__item_000/action.png",
+    "ready": "art/mon4cha_dax_104/item_002__item_000/ready.png"
+  },
+  "metadata_sha256": "b8fe70da11f4bf1080eec0be325ca8283dc8783d74c2fcfa5ba1b002803c5a4c",
+  "notes": "Princess Fatima in practical leather with saved short sword and shield. First action attempt rejected for shifted boots and longer blade. Second action edited from ready; common 117-pixel export scale gives about 86 source pixels crown-to-boots, filling the Normal 5-foot square while keeping the body and feet inside. At 128 px and 1-second catalog alternation, the ready raised sword alone crosses the top line; action fits 1x1 and boots stay planted. Sub-5% alpha removed.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "9115ba861fbe32e89783ecffca066125dcc9911e0ac28aa5e0ca25d2699732bd",
+  "reviewed_at": "2026-10-23T04:22:42.959231+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON4CHA.DAX:104",
+  "specification": "bipedal-v1",
+  "variant_id": "item_002__item_000",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
