@@ -21,12 +21,18 @@ namespace opengold
 [[nodiscard]] std::string_view phlan_shopkeeper_portrait(const por::TourSnapshot &state,
                                                          const std::vector<ShopSite> &shops);
 
+// The priest of the temple the party stands in, from its data/shops record,
+// for everything the temple says there: its greeting and its Heal list.
+[[nodiscard]] std::string_view temple_priest_portrait(const por::TourSnapshot &state,
+                                                      const std::vector<TempleSite> &temples);
+
 // The complete NPC portrait (docs/PORTRAITS.md), relative to the installed
 // portraits folder. Shopkeepers appear at their greeting and throughout
-// shopping. Story portraits use script-specific speaker cues, not the shared
-// sprite ID: several characters use the same original sprite. Frame 0 is the
+// shopping, and priests while their temple speaks. Story portraits use script-specific speaker
+// cues, not the shared sprite ID: several characters use the same original sprite. Frame 0 is the
 // encounter sprite's nearest pose; -1 means no active approach sprite.
 [[nodiscard]] std::string_view speaking_npc_portrait(const por::TourSnapshot &state,
-                                                     const std::vector<ShopSite> &shops = {});
+                                                     const std::vector<ShopSite> &shops = {},
+                                                     const std::vector<TempleSite> &temples = {});
 } // namespace opengold
 #endif

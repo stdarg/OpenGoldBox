@@ -1816,14 +1816,15 @@ Character knock_wizard()
 
 // Podol's hidden temple of Ilmater, behind wizard-locked doors (PODOL-1): Bash
 // fails against DC 35 and Knock opens the door; the healer's YES opens the
-// temple's Heal list at its own prices; camping there is never interrupted.
+// temple's Heal list at its own prices, with its priest's portrait; camping there is never
+// interrupted.
 void podol_temple(Expedition &trip)
 {
     auto &[party, town] = trip;
     party->recruit("test:knock-wizard", knock_wizard());
     auto offerings = original_temple_offerings();
     offerings.at(2).price_gp = 90; // Ilmater's Cure Light Wounds, in its own record
-    town.temples({{"GEO1.DAX", 18, {{1, 15}}, offerings}});
+    town.temples({{"GEO1.DAX", 18, {{1, 15}}, offerings, "shops/temple-ilmater.png"}});
     walk_to(town, party, 2, 13);
     face(town, party, 3);
     const auto knock_door = [&](std::string_view method)
@@ -1887,6 +1888,9 @@ void podol_temple(Expedition &trip)
                     check(std::find(s.choices.begin(), s.choices.end(),
                                     "Cure Light Wounds (90 gp)") != s.choices.end(),
                           "The temple of Ilmater charges its own record's prices");
+                    check(speaking_npc_portrait(s, town.shops(), town.temples()) ==
+                              "shops/temple-ilmater.png",
+                          "Ilmater's priest presides over the Heal list");
                     return pick("Cure Light Wounds");
                 }
                 if (s.dialogue == "Choose who receives Cure Light Wounds.")

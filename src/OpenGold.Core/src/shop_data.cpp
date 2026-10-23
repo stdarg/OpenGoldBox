@@ -350,19 +350,24 @@ std::vector<std::pair<unsigned, unsigned>> markers(const Json &location)
     return result;
 }
 
-// The manager stores a repository path; the game ships art/portraits as its
-// portraits folder and the manager's own portraits in it as shop-manager.
+// The manager stores a repository path. The game ships art/portraits as its
+// portraits folder, and the manager exports its own portraits into
+// data/art/portraits/shops, which the game ships as the folder's shops.
 std::string game_portrait(const std::string &path)
 {
     constexpr std::string_view art = "art/portraits/",
                                manager = "dev_tools/shop_manager/portraits/";
+    if (path.empty())
+    {
+        return {};
+    }
     if (path.starts_with(art) && path.size() > art.size())
     {
         return path.substr(art.size());
     }
     if (path.starts_with(manager) && path.size() > manager.size())
     {
-        return "shop-manager/" + path.substr(manager.size());
+        return "shops/" + path.substr(manager.size());
     }
     throw std::runtime_error("A shop portrait is outside the game's portraits: " + path);
 }
@@ -443,15 +448,16 @@ ShopData load_shop_data(const std::filesystem::path &directory)
         const auto &id = field<std::string>(location, "id");
         const auto file = read_file(directory / (id + ".json"));
         const auto &kind = field<std::string>(location, "kind");
+        const auto portrait = game_portrait(field<std::string>(file, "portrait"));
         if (kind == "temple")
         {
-            data.temples.push_back({archive, record, markers(location), temple_offerings(file)});
+            data.temples.push_back(
+                {archive, record, markers(location), temple_offerings(file), portrait});
         }
         else if (kind == "shop")
         {
-            data.shops.push_back({archive, record, markers(location),
-                                  game_portrait(field<std::string>(file, "portrait")),
-                                  shop_offerings(file)});
+            data.shops.push_back(
+                {archive, record, markers(location), portrait, shop_offerings(file)});
         }
         else
         {

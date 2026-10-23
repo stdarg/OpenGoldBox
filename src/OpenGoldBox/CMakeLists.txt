@@ -80,13 +80,13 @@ foreach(source IN LISTS npc_portrait_sources)
         DEPENDS "${source}" VERBATIM)
     list(APPEND portrait_outputs "${output}")
 endforeach()
-# Portraits made for the Shop & Temple Manager, which data/shops records name.
-file(GLOB shop_portrait_sources CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/dev_tools/shop_manager/portraits/*.png")
+# Portraits the Shop & Temple Manager exports for the shops and temples it edits.
+file(GLOB shop_portrait_sources CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/data/art/portraits/shops/*.png")
 foreach(source IN LISTS shop_portrait_sources)
     get_filename_component(name "${source}" NAME)
-    set(output "${game_project}/bin/portraits/shop-manager/${name}")
+    set(output "${game_project}/bin/portraits/shops/${name}")
     add_custom_command(OUTPUT "${output}"
-        COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_project}/bin/portraits/shop-manager"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_project}/bin/portraits/shops"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${source}" "${output}"
         DEPENDS "${source}" VERBATIM)
     list(APPEND portrait_outputs "${output}")

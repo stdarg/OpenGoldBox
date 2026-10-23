@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <string>
 
 using namespace opengold;
@@ -36,6 +37,44 @@ const ShopOffering &offering(const ShopSite &shop, std::string_view name)
     return *found;
 }
 
+std::string bytes(const std::filesystem::path &path)
+{
+    std::ifstream in(path, std::ios::binary);
+    return {std::istreambuf_iterator<char>(in), {}};
+}
+
+// Every portrait a record names ships with the game: the game's own from
+// art/portraits, and the manager's as up-to-date copies it exported to
+// data/art/portraits/shops.
+void portraits_ship(const ShopData &data)
+{
+    std::vector<std::string> portraits;
+    for (const auto &temple : data.temples)
+    {
+        portraits.push_back(temple.portrait);
+    }
+    for (const auto &shop : data.shops)
+    {
+        portraits.push_back(shop.portrait);
+    }
+    for (const auto &portrait : portraits)
+    {
+        check(!portrait.empty(), "Every shop and temple has a portrait");
+        if (portrait.starts_with("shops/"))
+        {
+            const auto name = portrait.substr(6);
+            const auto copy = bytes(root / "data/art/portraits/shops" / name);
+            check(!copy.empty() && copy == bytes(root / "dev_tools/shop_manager/portraits" / name),
+                  "The manager exported " + name + " as drawn");
+        }
+        else
+        {
+            check(std::filesystem::exists(root / "art/portraits" / portrait),
+                  "The game ships " + portrait);
+        }
+    }
+}
+
 void shipped_records()
 {
     const auto data = load_shop_data(root / "data/shops");
@@ -45,12 +84,13 @@ void shipped_records()
     check(tyr.archive == "GEO3.DAX" && tyr.record == 0 &&
               tyr.markers == std::vector<std::pair<unsigned, unsigned>>{{11, 3}, {8, 4}, {8, 6}},
           "The Temple of Tyr's squares in New Phlan");
-    check(tyr.offerings == original_temple_offerings(),
-          "Tyr offers every service at the original's prices");
+    check(tyr.offerings == original_temple_offerings() && tyr.portrait == "NPCs/bishop-braccio.png",
+          "Tyr offers every service at the original's prices, with Bishop Braccio");
     const auto &ilmater = data.temples.back();
     check(ilmater.archive == "GEO1.DAX" && ilmater.record == 18 &&
-              ilmater.markers == std::vector<std::pair<unsigned, unsigned>>{{1, 15}},
-          "The Temple of Ilmater is in Podol Plaza");
+              ilmater.markers == std::vector<std::pair<unsigned, unsigned>>{{1, 15}} &&
+              ilmater.portrait == "shops/temple-ilmater.png",
+          "The Temple of Ilmater is in Podol Plaza, with a portrait drawn for the manager");
 
     for (const auto &[x, y, count] : std::array<std::array<unsigned, 3>, 4>{
              {{13, 8, 55}, {15, 8, 18}, {11, 10, 11}, {8, 10, 11}}})
@@ -73,6 +113,7 @@ void shipped_records()
           "Magic Ink costs 1000 gp a level");
     check(offering(shop_at(data, 8, 10), "1 Diamond Necklace").price_gp == 50000,
           "The jeweler's dearest piece");
+    portraits_ship(data);
 }
 
 struct Records
@@ -115,7 +156,7 @@ struct Records
     }
 };
 
-const std::string temple_record = R"({"kind": "temple", "offerings": [
+const std::string temple_record = R"({"kind": "temple", "portrait": "", "offerings": [
     {"service_id": "cure_light_wounds", "price_gp": 120, "offered": true},
     {"service_id": "cure_disease", "price_gp": 1000, "offered": false}]})";
 
@@ -141,8 +182,8 @@ void manager_edits()
           "A temple offers only its Offered services, at its own prices");
     const auto &shop = data.shops.at(0);
     check(shop.markers == std::vector<std::pair<unsigned, unsigned>>{{4, 5}} &&
-              shop.portrait == "shop-manager/keeper.png",
-          "A manager portrait is shipped in the portraits folder");
+              shop.portrait == "shops/keeper.png" && data.temples[0].portrait.empty(),
+          "A manager portrait is exported to the portraits' shops; a location may have none");
     check(shop.offerings.size() == 2 && shop.offerings[0].price_gp == 17 &&
               shop.offerings[0].index == 21,
           "An edited price is read; an item out of stock is not sold");
@@ -166,8 +207,9 @@ void broken_records()
             message);
     };
     rejected(temple_record, "{\"kind\": \"shop\",", "A cut-off file is refused");
-    rejected(R"({"offerings": [{"service_id": "heal", "price_gp": 1, "offered": true}]})",
-             shop_record, "An unknown service is refused");
+    rejected(
+        R"({"portrait": "", "offerings": [{"service_id": "heal", "price_gp": 1, "offered": true}]})",
+        shop_record, "An unknown service is refused");
     auto outside = shop_record;
     outside.replace(outside.find("dev_tools/shop_manager/portraits"), 32, "elsewhere");
     rejected(temple_record, outside, "A portrait the game does not ship is refused");

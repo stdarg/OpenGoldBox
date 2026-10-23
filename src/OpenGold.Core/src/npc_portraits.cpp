@@ -5,6 +5,19 @@
 
 namespace opengold
 {
+namespace
+{
+// Whether the party stands on one of a data/shops location's squares. The
+// snapshot names the map by its record, which differs between the game's maps;
+// New Phlan is record 0 of GEO3.DAX.
+bool stands_on(const por::TourSnapshot &state, const std::string &archive, unsigned record,
+               const std::vector<std::pair<unsigned, unsigned>> &markers)
+{
+    return record == state.area_id && (record != 0 || archive == "GEO3.DAX") &&
+           std::ranges::find(markers, std::pair{state.pose.x, state.pose.y}) != markers.end();
+}
+} // namespace
+
 // The shopkeeper of the New Phlan shop the party stands in, from its data/shops
 // record. The original shop offer has a two-choice "THE SHOP..." dialogue
 // before the host enters shopping; show the same person for that greeting and
@@ -21,10 +34,7 @@ std::string_view phlan_shopkeeper_portrait(const por::TourSnapshot &state,
     }
     for (const auto &shop : shops)
     {
-        const bool here = shop.archive == "GEO3.DAX" && shop.record == 0 &&
-                          std::ranges::find(shop.markers, std::pair{state.pose.x, state.pose.y}) !=
-                              shop.markers.end();
-        if (here)
+        if (stands_on(state, shop.archive, shop.record, shop.markers))
         {
             return shop.portrait;
         }
@@ -32,17 +42,41 @@ std::string_view phlan_shopkeeper_portrait(const por::TourSnapshot &state,
     return {};
 }
 
+// The priest of the temple the party stands in, from its data/shops record,
+// for everything the temple says there: its greeting and its Heal list.
+std::string_view temple_priest_portrait(const por::TourSnapshot &state,
+                                        const std::vector<TempleSite> &temples)
+{
+    if (!state.tour_finished || state.phase != por::TourPhase::awaiting_continue)
+    {
+        return {};
+    }
+    for (const auto &temple : temples)
+    {
+        if (stands_on(state, temple.archive, temple.record, temple.markers))
+        {
+            return temple.portrait;
+        }
+    }
+    return {};
+}
+
 // The complete NPC portrait (docs/PORTRAITS.md), relative to the installed
 // portraits folder. Shopkeepers appear at their greeting and throughout
-// shopping. Story portraits use script-specific speaker cues, not the shared
-// sprite ID: several characters use the same original sprite. Frame 0 is the
+// shopping, and priests while their temple speaks. Story portraits use script-specific speaker
+// cues, not the shared sprite ID: several characters use the same original sprite. Frame 0 is the
 // encounter sprite's nearest pose; -1 means no active approach sprite.
 std::string_view speaking_npc_portrait(const por::TourSnapshot &state,
-                                       const std::vector<ShopSite> &shops)
+                                       const std::vector<ShopSite> &shops,
+                                       const std::vector<TempleSite> &temples)
 {
     if (const auto shopkeeper = phlan_shopkeeper_portrait(state, shops); !shopkeeper.empty())
     {
         return shopkeeper;
+    }
+    if (const auto priest = temple_priest_portrait(state, temples); !priest.empty())
+    {
+        return priest;
     }
     if (state.dialogue.empty())
     {

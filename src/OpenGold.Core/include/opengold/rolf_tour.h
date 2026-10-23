@@ -228,6 +228,11 @@ class RolfTourSession
         temples_ = std::move(sites);
     }
 
+    [[nodiscard]] const std::vector<opengold::TempleSite> &temples() const noexcept
+    {
+        return temples_;
+    }
+
     // The shops data/shops describes: each sells its record's items at its
     // prices. A shop it does not name sells the original's list. Throws when an
     // item's source list is not in the loaded game.

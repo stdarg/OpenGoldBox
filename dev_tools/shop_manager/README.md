@@ -35,6 +35,10 @@ offerings so the user can adjust its stock deliberately.
 Portraits can be selected from `art/portraits/NPCs/` or
 [`portraits/`](portraits/). Add a new PNG to the latter folder and press
 **Refresh portraits**. The tool stores a repository-relative portrait path.
+The game ships `art/portraits/` itself. A portrait from [`portraits/`](portraits/)
+is exported to [`data/art/portraits/shops/`](../../data/art/portraits/shops/README.md),
+which the game ships, as soon as it is chosen; **Export portraits to game**
+exports again after a PNG is redrawn. Unused copies are removed.
 The default Tyr record uses Bishop Braccio's existing portrait. Sune, Tempus,
 and Ilmater use the new portraits in [`portraits/`](portraits/).
 
@@ -43,8 +47,8 @@ Changes save immediately to one file per location under
 marker list, a shop or temple kind, the editable type and portrait, and its
 offerings. The tool validates the fixed location and the shop/temple boundary
 before replacing a file. The game reads the temples' services, prices and
-**Offered** switches, and each shop's stock, prices and portrait
-([#275](https://github.com/stdarg/OpenGold/issues/275)). It keeps no stock
+**Offered** switches, each shop's stock and prices, and every shopkeeper's and
+priest's portrait ([#275](https://github.com/stdarg/OpenGold/issues/275)). It keeps no stock
 limits yet: Stock `0` hides an item and any other value sells it without limit.
 
 ## Run
@@ -69,8 +73,10 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --headless \
   --path dev_tools/shop_manager/godot -- --shop-check
 ```
 
-The optional `--seed` mode creates any missing default location JSON files;
-it leaves existing edits intact. The optional `--select=podol-temple-ilmater`
+The check also fails when an exported portrait is missing or out of date. The
+optional `--export-portraits` mode exports the portraits without opening the
+window. The optional `--seed` mode creates any missing default location JSON
+files; it leaves existing edits intact. The optional `--select=podol-temple-ilmater`
 opens the Podol Plaza temple directly. A visible Godot run can append
 `--capture=/tmp/shop-manager.png` to save a review screenshot.
 

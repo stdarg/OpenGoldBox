@@ -15,6 +15,11 @@ const TEMPLE_SERVICES := [
     # cannot help (TEMPLE-1).
     ["resurrection", "Resurrection", 11000],
 ]
+# The game ships art/portraits itself. A portrait drawn for this tool is
+# exported to GAME_PORTRAITS, which the game ships as its portraits' shops.
+const MANAGER_PORTRAITS := "dev_tools/shop_manager/portraits/"
+const GAME_PORTRAITS := "data/art/portraits/shops"
+const PORTRAIT_NOTE := "Add new PNGs to dev_tools/shop_manager/portraits. A chosen portrait is exported to the game."
 # Arrows and quarrels: the game has no ammunition (AMMO-UNLIMITED), so no
 # shop offers them.
 const AMMUNITION_TYPES := [28, 73]
@@ -102,6 +107,14 @@ func _ready() -> void:
         print("Seeded 16 fixed shops and temples")
         get_tree().quit()
         return
+    if "--export-portraits" in OS.get_cmdline_user_args():
+        var export_error := _export_portraits()
+        if not export_error.is_empty():
+            _fatal(export_error)
+            return
+        print("Exported the portraits to " + GAME_PORTRAITS)
+        get_tree().quit()
+        return
     if "--shop-check" in OS.get_cmdline_user_args():
         _run_check()
         return
@@ -114,6 +127,45 @@ func _ready() -> void:
             _select_location(arg.trim_prefix("--select="))
         if arg.begins_with("--capture="):
             _capture.call_deferred(arg.trim_prefix("--capture="))
+
+# The manager's portraits the records use, by file name.
+func _used_manager_portraits() -> Dictionary:
+    var used := {}
+    for id in records:
+        var path := String(records[id]["portrait"])
+        if path.begins_with(MANAGER_PORTRAITS):
+            used[path.get_file()] = repo_dir.path_join(path)
+    return used
+
+# Copies each manager portrait a record uses where the game ships it, and
+# removes copies no record uses. Returns an error message, or "".
+func _export_portraits() -> String:
+    var target := repo_dir.path_join(GAME_PORTRAITS)
+    if DirAccess.make_dir_recursive_absolute(target) != OK:
+        return "Cannot create " + target
+    var used := _used_manager_portraits()
+    for name in used:
+        var source: String = used[name]
+        var destination := target.path_join(name)
+        if not FileAccess.file_exists(source):
+            return "Missing portrait " + source
+        if FileAccess.get_md5(source) != FileAccess.get_md5(destination) and \
+                DirAccess.copy_absolute(source, destination) != OK:
+            return "Cannot export " + source
+    for name in DirAccess.get_files_at(target):
+        if name.get_extension() == "png" and not used.has(name) and \
+                DirAccess.remove_absolute(target.path_join(name)) != OK:
+            return "Cannot remove " + target.path_join(name)
+    return ""
+
+# Whether the game has every manager portrait the records use, as drawn.
+func _portraits_exported() -> bool:
+    var used := _used_manager_portraits()
+    for name in used:
+        var copy := repo_dir.path_join(GAME_PORTRAITS).path_join(name)
+        if not FileAccess.file_exists(copy) or FileAccess.get_md5(copy) != FileAccess.get_md5(used[name]):
+            return false
+    return true
 
 func _fatal(message: String) -> void:
     push_error(message)
@@ -324,7 +376,11 @@ func _build_ui() -> void:
     refresh.text = "Refresh portraits"
     refresh.pressed.connect(_on_refresh_portraits)
     fields.add_child(refresh)
-    portrait_note = _make_label("Add new PNGs to dev_tools/shop_manager/portraits.")
+    var export_button := Button.new()
+    export_button.text = "Export portraits to game"
+    export_button.pressed.connect(_on_export_portraits)
+    fields.add_child(export_button)
+    portrait_note = _make_label(PORTRAIT_NOTE)
     fields.add_child(portrait_note)
     portrait_view = TextureRect.new()
     portrait_view.custom_minimum_size = Vector2(150, 176)
@@ -482,7 +538,7 @@ func _select_portrait_value(path: String) -> void:
         var image := Image.new()
         if image.load(repo_dir.path_join(path)) == OK:
             portrait_view.texture = ImageTexture.create_from_image(image)
-    portrait_note.text = "Add new PNGs to dev_tools/shop_manager/portraits."
+    portrait_note.text = PORTRAIT_NOTE
 
 func _on_refresh_portraits() -> void:
     _scan_portraits()
@@ -496,6 +552,13 @@ func _on_portrait_selected(index: int) -> void:
     records[selected_id]["portrait"] = path
     _select_portrait_value(path)
     _write_record(selected_id)
+    _on_export_portraits()
+
+# A chosen portrait is exported at once, as every other edit saves at once;
+# the button exports again after a portrait's PNG is redrawn.
+func _on_export_portraits() -> void:
+    var export_error := _export_portraits()
+    portrait_note.text = PORTRAIT_NOTE if export_error.is_empty() else export_error
 
 func _clear_rows() -> void:
     for child in row_box.get_children():
@@ -659,5 +722,8 @@ func _run_check() -> void:
         _fatal("Negative price was allowed")
         return
     records["phlan-arms-13-08"]["offerings"][0]["price_gp"] = first_price
-    print("Shop manager checks passed: 12 shops, 4 temples, 2 maps, fixed locations, original stock")
+    if not _portraits_exported():
+        _fatal("The game lacks an exported portrait: run --export-portraits")
+        return
+    print("Shop manager checks passed: 12 shops, 4 temples, 2 maps, fixed locations, original stock, exported portraits")
     get_tree().quit()

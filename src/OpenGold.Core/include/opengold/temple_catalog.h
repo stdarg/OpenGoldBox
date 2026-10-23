@@ -20,13 +20,15 @@ struct TempleOffering
 };
 
 // A temple the game knows from data/shops: the map squares where its service
-// opens, and the services it offers there.
+// opens, the services it offers there, and its priest's portrait (relative to
+// the game's portraits folder; empty for none).
 struct TempleSite
 {
     std::string archive; // "GEO3.DAX"
     unsigned record{};
     std::vector<std::pair<unsigned, unsigned>> markers;
     std::vector<TempleOffering> offerings;
+    std::string portrait;
 };
 
 struct TempleServiceInfo

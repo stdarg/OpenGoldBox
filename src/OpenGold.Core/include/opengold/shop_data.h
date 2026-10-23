@@ -23,9 +23,9 @@ struct ShopOffering
 };
 
 // A shop the game knows from data/shops: the map squares where it opens, its
-// shopkeeper's portrait (relative to the game's portraits folder) and what it
-// sells. Items out of stock (quantity 0) are left out; every other item is
-// unlimited.
+// shopkeeper's portrait (relative to the game's portraits folder; empty for
+// none) and what it sells. Items out of stock (quantity 0) are left out; every
+// other item is unlimited.
 struct ShopSite
 {
     std::string archive; // "GEO3.DAX"

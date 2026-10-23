@@ -1787,7 +1787,8 @@ Dictionary RolfTourView::tour_visuals()
     }
     else
     {
-        const auto portrait_file = opengold::speaking_npc_portrait(state, session_->shops());
+        const auto portrait_file =
+            opengold::speaking_npc_portrait(state, session_->shops(), session_->temples());
         const auto portrait =
             portrait_file.empty() ? Ref<Texture2D>() : npc_portrait(portrait_file);
         if (portrait.is_valid())
