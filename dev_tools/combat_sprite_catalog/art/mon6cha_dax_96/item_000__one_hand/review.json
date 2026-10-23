@@ -1,0 +1,32 @@
+{
+  "action_sha256": "f913992e54ec3d9bc9fc862efcb9b4f00acaa153fd0642da57dfd65dc87c0462",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon6cha_dax_96/item_000__one_hand/action.png",
+    "ready": "art/mon6cha_dax_96/item_000__one_hand/ready.png"
+  },
+  "metadata_sha256": "b0ec282b8683902d24922613124644e05e5db4993a9d61572bf3370f3167eee9",
+  "notes": "Saved long sword with navy leather armor, ochre sleeves, red armband and bolt case. Ready raised sword over image-left shoulder; action late diagonal slash toward screen right. Shared 125x120 nearest-neighbor export at +0,+8; exact ready bottom 18 rows transferred to action. Body fills full five-foot tile; only raised sword crosses top, only striking sword crosses action side. Both poses visually inspected alternating in catalog at combat size. Approved pose guide and newly generated character art only; no original game image reference.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "91c3ca570c2abac2df8b3f66fb6326393955f87945e5f4ff3dfee73fd3bb0556",
+  "reviewed_at": "2026-10-23T12:27:19.921849+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON6CHA.DAX:96",
+  "specification": "bipedal-v1",
+  "variant_id": "item_000__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}

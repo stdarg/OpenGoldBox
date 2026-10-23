@@ -1,0 +1,32 @@
+{
+  "action_sha256": "bbbfdc938f436fed1ea9cbb88cdfece8a34aabf39fd174c8e43efdbe57465381",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon6cha_dax_96/item_003__ranged/action.png",
+    "ready": "art/mon6cha_dax_96/item_003__ranged/ready.png"
+  },
+  "metadata_sha256": "b0ec282b8683902d24922613124644e05e5db4993a9d61572bf3370f3167eee9",
+  "notes": "Same guard identity and equipment aside from selected light crossbow. Ready crossbow has a loaded bolt; action shows empty flight groove after release. Independent generated edit removed retained bolt from first action attempt. Shared 125x120 export at +0,+8; lower 43 native rows of both frames transferred from approved newly generated sword ready to keep exact body height, boots, and anchor across weapon sets. Preview alternates at combat size. Both poses visually inspected alternating in catalog at combat size. Approved pose guide and newly generated character art only; no original game image reference.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "f365466d2b174fa958c12c12136042cc476d0d87719f8c3b78b52d9932f593f5",
+  "reviewed_at": "2026-10-23T12:27:19.922865+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON6CHA.DAX:96",
+  "specification": "bipedal-v1",
+  "variant_id": "item_003__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
