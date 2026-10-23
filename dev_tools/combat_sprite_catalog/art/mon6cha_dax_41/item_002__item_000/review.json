@@ -1,0 +1,32 @@
+{
+  "action_sha256": "c2a93093ba4c59b680d5828a2dc844e44d8b3747c3530ae03405d8df884f7d61",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon6cha_dax_41/item_002__item_000/action.png",
+    "ready": "art/mon6cha_dax_41/item_002__item_000/ready.png"
+  },
+  "metadata_sha256": "a4b8e55695b4147b18daf86daf4ae88a716f610a7cc64b42fd18ca99a1785899",
+  "notes": "Exact reuse of newly generated MON3CHA.DAX:41 full-height chain-mail fighter, with matching saved description and all equipment. Reviewed ready/action natively at 128 px and alternating in catalog: planted boots coincide, head-to-foot height fills the 5-foot square; only raised ready sword and late-strike action sword cross their permitted tile edge. All archive copies have identical pixels.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "db92ad7c6c00cb42e46ecb2cc37833caf2259b08ad6769e3bdbeec1e912107c2",
+  "reviewed_at": "2026-10-23T04:09:08.658436+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON6CHA.DAX:41",
+  "specification": "bipedal-v1",
+  "variant_id": "item_002__item_000",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}

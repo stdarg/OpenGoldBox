@@ -1,15 +1,15 @@
 {
-  "action_sha256": "feb39c7e043dc89bf13f470ab82d214d5140dc4cf73da90cdb1dc8728944a2b6",
+  "action_sha256": "c2a93093ba4c59b680d5828a2dc844e44d8b3747c3530ae03405d8df884f7d61",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_41/item_002__item_000/action.png",
     "ready": "art/mon1cha_dax_41/item_002__item_000/ready.png"
   },
   "metadata_sha256": "3a6c6ad657576c2e85494d2c057461bfc9bf923a1f74da862532c3ff8d3a8d26",
-  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
+  "notes": "Exact reuse of newly generated MON3CHA.DAX:41 full-height chain-mail fighter, with matching saved description and all equipment. Reviewed ready/action natively at 128 px and alternating in catalog: planted boots coincide, head-to-foot height fills the 5-foot square; only raised ready sword and late-strike action sword cross their permitted tile edge. All archive copies have identical pixels.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "9863eb918d65f63cbf9f97f63ac81a8a938ca93af1e7c0f841ba97c8c5830885",
-  "reviewed_at": "2026-10-21T21:50:47.488752+00:00",
+  "ready_sha256": "db92ad7c6c00cb42e46ecb2cc37833caf2259b08ad6769e3bdbeec1e912107c2",
+  "reviewed_at": "2026-10-23T04:09:08.656246+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:41",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

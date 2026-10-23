@@ -1,15 +1,15 @@
 {
-  "action_sha256": "8992a92006b473cebffec421e6a73896a392e5acade379b34465457f4d9bb0b9",
+  "action_sha256": "c2a93093ba4c59b680d5828a2dc844e44d8b3747c3530ae03405d8df884f7d61",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_41/item_002__item_000/action.png",
     "ready": "art/mon3cha_dax_41/item_002__item_000/ready.png"
   },
   "metadata_sha256": "51e7f813fa8cf33fb5ffe2bca04f239fc6e6c01ea6e15c3fae638df86877b2ee",
-  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
+  "notes": "Full-height chain-mail fighter. First action generation rejected for sliding boots; second edit accepted after native 128-pixel, exact-coordinate and 1-second catalog alternation review. Body crown to planted boots approximately 86 source pixels: about 125 px at 1.45x catalog scale, filling one 5-foot combat square. Only the raised ready sword crosses above the tile; only the late-strike action sword crosses the side. Shield and feet remain inside and registered.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "91aed90ba584fa9afbd882708fee224f2ddb08cf7965e86bb58259d339c6aeaf",
-  "reviewed_at": "2026-10-21T21:51:00.619566+00:00",
+  "ready_sha256": "db92ad7c6c00cb42e46ecb2cc37833caf2259b08ad6769e3bdbeec1e912107c2",
+  "reviewed_at": "2026-10-23T04:08:50.868109+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON3CHA.DAX:41",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
