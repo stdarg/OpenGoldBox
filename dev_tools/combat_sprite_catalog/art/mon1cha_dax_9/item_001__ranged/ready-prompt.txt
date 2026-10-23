@@ -201,4 +201,4 @@ Reference 2, when available: this monster's first approved NEW ready sprite,
 for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.
 
-PRODUCTION REVIEW NOTE: New ogre leader source art generated from approved pose guide and prior approved new leader art. Bow composition revised to preserve body height. Action released arrow with empty drawing hand. Shared 83x143 export transform and fixed 20,-12 placement. Lower body composited from ready from row 58 to preserve exact feet. Visual catalog check: ready fits 1x2; action bow alone crosses side by 0.03 square; head-to-feet about 1.75 squares; leader broader and taller than corrected regular ogre.
+FINAL ART DIRECTION: Edit the newly created Ogre Leader identity from the halberd ready art, preserving blue helmet, broad body, studded leather, red loincloth and feet. Replace halberd with a compact upright long bow, drawn string and visibly nocked arrow aimed screen right. Shorten arrow to the bow and bow's raised tip to fit the 1x2 ready footprint. Approved pose guide supplies bow mechanics, not foot placement.

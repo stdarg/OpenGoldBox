@@ -1,16 +1,16 @@
 {
-  "action_sha256": "6a277e7186e48875522ee635bb0c66c5c3dc8792f1c1095e55922f53314aefdf",
+  "action_sha256": "035b9d712bea02c3f2a139ae4bd8c9590ea793f93b0de2d2761ad474830aa591",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_9/added_4389207748__two_hand/action.png",
     "ready": "art/mon1cha_dax_9/added_4389207748__two_hand/ready.png"
   },
   "metadata_sha256": "ec55dd5e4ea3699f010e8a7efa651471acf9ff2fc7ebe800125af7ffbef8b528",
-  "notes": "New halberd source art generated from approved pose guide and newly generated bow identity. Halberd blade lowered to fit full leader body scale. Shared 83x148 export transform and fixed 16,-19 placement. Action lower-body registration composited from ready using diagonal weapon-preserving mask. One-pixel blade tip clipped in ready to fit width. Visual catalog check: ready fits 1x2; action halberd alone crosses side by 0.08 square; leader broader and taller than corrected regular ogre.",
+  "notes": "Visually reviewed 128px pair, source-coordinate overlay and one-second catalog alternation. Feet are pixel-identical; body fills tall 1x2 at fixed grid. Ready fits the footprint. Action halberd alone crosses side. Broad leader with rich blue helmet/studded leather is more imposing than regular Ogre.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "cf4367782736d7779dac04cced52e9190073a3aae1b8c6f99ec3656f54f42d34",
-  "reviewed_at": "2026-10-23T11:36:17.819436+00:00",
-  "reviewer": "Codex",
+  "ready_sha256": "b9935a0a5045f297d9e87b666e2cd623af25501528e064ecf092248d0de375e1",
+  "reviewed_at": "2026-10-23T16:20:34+00:00",
+  "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:9",
   "specification": "bipedal-v1",
   "variant_id": "added_4389207748__two_hand",

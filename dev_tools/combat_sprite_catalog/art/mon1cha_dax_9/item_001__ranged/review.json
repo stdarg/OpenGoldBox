@@ -1,16 +1,16 @@
 {
-  "action_sha256": "5d142ed15b931fd31228a64b6b73258945bd9da657560669c17723e4d0f64ad8",
+  "action_sha256": "2105a0d7388d9ad2a7635a8632a817e69528e498e61ba78cdcc43804c3db2196",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_9/item_001__ranged/action.png",
     "ready": "art/mon1cha_dax_9/item_001__ranged/ready.png"
   },
   "metadata_sha256": "ec55dd5e4ea3699f010e8a7efa651471acf9ff2fc7ebe800125af7ffbef8b528",
-  "notes": "New ogre leader source art generated from approved pose guide and prior approved new leader art. Bow composition revised to preserve body height. Action released arrow with empty drawing hand. Shared 83x143 export transform and fixed 20,-12 placement. Lower body composited from ready from row 58 to preserve exact feet. Visual catalog check: ready fits 1x2; action bow alone crosses side by 0.03 square; head-to-feet about 1.75 squares; leader broader and taller than corrected regular ogre.",
+  "notes": "Visually reviewed 128px pair, source-coordinate overlay and one-second catalog alternation. Loaded arrow stays inside ready footprint; action has released it. Bow, feet and lower 43 output rows remain registered. Same leader identity and body scale as halberd pair.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "ca26997daa7c0e44ccaf80f438e9d5d717e5aa78821d656a6cde3471e14b804f",
-  "reviewed_at": "2026-10-23T11:36:17.818851+00:00",
-  "reviewer": "Codex",
+  "ready_sha256": "31b162d620e4d41db9f58232f389f440d5f0f31cede69150d5e28d365b3b10d9",
+  "reviewed_at": "2026-10-23T16:20:34+00:00",
+  "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:9",
   "specification": "bipedal-v1",
   "variant_id": "item_001__ranged",
