@@ -1,15 +1,15 @@
 {
-  "action_sha256": "e2b26c0b1b3af609db16ff9705e5d0a0d30d6b10e20b644b2f2c533386e79635",
+  "action_sha256": "6a277e7186e48875522ee635bb0c66c5c3dc8792f1c1095e55922f53314aefdf",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_9/added_4389207748__two_hand/action.png",
     "ready": "art/mon1cha_dax_9/added_4389207748__two_hand/ready.png"
   },
   "metadata_sha256": "ec55dd5e4ea3699f010e8a7efa651471acf9ff2fc7ebe800125af7ffbef8b528",
-  "notes": "Game original is 24x48 (1x2). Full saved equipment inspected: halberd and unready long bow each require a separate pair; this is only the halberd pair. Approved existing leader art, accepted narrow ogre art, and pose guide were references; no original game artwork. Shared 810x1468 crop/scale keeps boots and body fixed while both hands lower the halberd into late chop. Native pair and catalog grid ready/action visually reviewed; both fit.",
+  "notes": "New halberd source art generated from approved pose guide and newly generated bow identity. Halberd blade lowered to fit full leader body scale. Shared 83x148 export transform and fixed 16,-19 placement. Action lower-body registration composited from ready using diagonal weapon-preserving mask. One-pixel blade tip clipped in ready to fit width. Visual catalog check: ready fits 1x2; action halberd alone crosses side by 0.08 square; leader broader and taller than corrected regular ogre.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "24b36560caf2806b29cafa02904c00c5e04414b54b5047c0e5765cf2b880e2e2",
-  "reviewed_at": "2026-10-21T01:08:18+00:00",
+  "ready_sha256": "cf4367782736d7779dac04cced52e9190073a3aae1b8c6f99ec3656f54f42d34",
+  "reviewed_at": "2026-10-23T11:36:17.819436+00:00",
   "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:9",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

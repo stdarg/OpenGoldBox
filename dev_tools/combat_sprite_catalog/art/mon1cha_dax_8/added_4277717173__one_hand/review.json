@@ -1,16 +1,16 @@
 {
-  "action_sha256": "99b09acc665affd13f9b9b2a7dbd5e14754baf08be97c490b706edc2cc9d1626",
+  "action_sha256": "78767831c6ad572e2d3053865e50bb494d58092f78e72b211e41603b3b60cc42",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_8/added_4277717173__one_hand/action.png",
     "ready": "art/mon1cha_dax_8/added_4277717173__one_hand/ready.png"
   },
   "metadata_sha256": "2055b569373c6729bd9f851ea41fe968047c8572efdc7fdc00ee8cf91ac15145",
-  "notes": "Generated with approved bipedal pose guide and newly created accepted ogre art only. Club raised in ready, lowered after strike in action, identical planted feet and shared pair transform. Inspected both 128px frames and both catalog poses: 1x2 fits, regular ogre is modestly shorter than existing ogre leader.",
+  "notes": "Visually reviewed both frames at combat size in the catalog. Shared export transform; same planted-foot registration; about 1.7 squares body height in game-derived 1x2 footprint. Ready fits; action club alone crosses right boundary during strike.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "1524b7c9cdb034f57e3701d62ec0c54619affbf1e1f81d1f650ef0e723c5d735",
-  "reviewed_at": "2026-10-21T03:28:08.847451+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "73d4f811ea3a4d457b9d56ccf180aa2d04d77da87c6421327c8ebe5af21ee46f",
+  "reviewed_at": "2026-10-23T11:18:53.633118+00:00",
+  "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:8",
   "specification": "bipedal-v1",
   "variant_id": "added_4277717173__one_hand",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

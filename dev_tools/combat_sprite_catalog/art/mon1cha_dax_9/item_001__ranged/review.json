@@ -1,15 +1,15 @@
 {
-  "action_sha256": "0fe2537cf02f6687e3d61f272c2d1ec4f498dc4cee6ac31322e10517dedc68b7",
+  "action_sha256": "5d142ed15b931fd31228a64b6b73258945bd9da657560669c17723e4d0f64ad8",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_9/item_001__ranged/action.png",
     "ready": "art/mon1cha_dax_9/item_001__ranged/ready.png"
   },
   "metadata_sha256": "ec55dd5e4ea3699f010e8a7efa651471acf9ff2fc7ebe800125af7ffbef8b528",
-  "notes": "Game original is 24x48 (1x2). Full saved gear inspected: arrows, unready long bow, ready halberd. This completes the separate bow pair. Approved newly created leader halberd art and pose guide were references; no original game artwork. Shared 618x1067 crop/scale; boots and body fixed, loaded arrow departs with small draw-hand change. Reviewed native pair and catalog ready/action on fixed grid; both fit and scale aligns with halberd variant.",
+  "notes": "New ogre leader source art generated from approved pose guide and prior approved new leader art. Bow composition revised to preserve body height. Action released arrow with empty drawing hand. Shared 83x143 export transform and fixed 20,-12 placement. Lower body composited from ready from row 58 to preserve exact feet. Visual catalog check: ready fits 1x2; action bow alone crosses side by 0.03 square; head-to-feet about 1.75 squares; leader broader and taller than corrected regular ogre.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "ed8c4af3af5f6c19dee0ede51436e5865517fe455b8bea394d84de6dd4f43c0d",
-  "reviewed_at": "2026-10-21T01:10:22+00:00",
+  "ready_sha256": "ca26997daa7c0e44ccaf80f438e9d5d717e5aa78821d656a6cde3471e14b804f",
+  "reviewed_at": "2026-10-23T11:36:17.818851+00:00",
   "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:9",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
