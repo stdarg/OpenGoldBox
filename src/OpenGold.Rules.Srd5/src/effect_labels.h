@@ -380,7 +380,9 @@ inline constexpr std::array effect_labels{
                 "Charmed until the fight ends; a hit slays it."},
     EffectLabel{
         EffectKind::envenomed, "Poisoned (Cunning Strike)",
-        "Disadvantage on attack rolls and ability checks. A Constitution save at the end of each of its turns ends it."}};
+        "Disadvantage on attack rolls and ability checks. A Constitution save at the end of each of its turns ends it."},
+    EffectLabel{EffectKind::enthralled, "Charmed (Enthralling Panache)",
+                "Cannot attack the pirate until the start of the pirate's next turn."}};
 
 // Bookkeeping no player sees: a save already made against an area this turn,
 // a summoned spirit's breath, a casting's dice, or a double's secret. Every

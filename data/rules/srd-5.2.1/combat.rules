@@ -100,7 +100,7 @@ creature norris-the-gray 15 52 3 30 5 1 6 3 0 0 0 0 0 0 0 0 0 1 0
 saves norris-the-gray 4 5 2 2 2 2
 damage_types norris-the-gray slashing piercing
 # Podol Plaza's buccaneer in the Pitt (PODOL-1) is the SRD 5.2.1 Pirate: two
-# Dagger attacks, thrown 20/60; Enthralling Panache is not modeled.
+# Dagger attacks, thrown 20/60, one of them traded for Enthralling Panache.
 creature buccaneer 14 33 5 30 5 1 4 3 5 1 4 3 20 60 0 0 0 1 0
 saves buccaneer 0 5 1 -1 1 4
 damage_types buccaneer piercing piercing
@@ -108,6 +108,9 @@ damage_types buccaneer piercing piercing
 multiattack lizardfolk 2
 multiattack norris-the-gray 2
 multiattack buccaneer 2
+# enthralling_panache creature dc: in melee the Multiattack's first attack is
+# a Wisdom save against the DC, or Charmed until the creature's next turn.
+enthralling_panache buccaneer 12
 # Slums set encounters (docs/audits/cluebook-check.md): Hobgoblin Warrior, Ogre and
 # Troll (SRD 5.2.1). Hobgoblin leaders are the same stat block: their record
 # readies no armor. The Troll's three Rends and Regeneration are rows; its Charge

@@ -491,9 +491,12 @@ enum class EffectKind : unsigned
     // Cunning Strike's Poison (Rogue 5): Poisoned for up to a minute, a
     // Constitution save at the end of each of its turns.
     envenomed = 199,
+    // A Pirate's Enthralling Panache: Charmed by it until the start of its next
+    // turn. Unlike Charm Person's charm, damage does not end it.
+    enthralled = 200,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = envenomed
+    last = enthralled
 };
 
 // Magic Circle's creature types, by `dc`.

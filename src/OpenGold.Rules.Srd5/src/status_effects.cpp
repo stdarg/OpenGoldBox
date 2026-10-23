@@ -150,8 +150,9 @@ void apply_poisoned(EffectState &effects, EffectSource source, std::string name,
          kind != EffectKind::wall_burned && kind != EffectKind::breathed &&
          kind != EffectKind::lifted && kind != EffectKind::hand_ready &&
          kind != EffectKind::hurled && kind != EffectKind::fey_fright &&
-         kind != EffectKind::thorned && kind != EffectKind::swum && kind != EffectKind::clouded &&
-         kind != EffectKind::rooted && kind != EffectKind::jigging) ||
+         kind != EffectKind::enthralled && kind != EffectKind::thorned &&
+         kind != EffectKind::swum && kind != EffectKind::clouded && kind != EffectKind::rooted &&
+         kind != EffectKind::jigging) ||
         !can_apply(effects) || !recorded(source, name) || !duration_ms ||
         duration_ms > 2 * round_ms)
     {
@@ -1171,17 +1172,17 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::wall_burned || kind == EffectKind::breathed ||
                            kind == EffectKind::lifted || kind == EffectKind::hand_ready ||
                            kind == EffectKind::hurled || kind == EffectKind::fey_fright ||
-                           kind == EffectKind::thorned || kind == EffectKind::swum ||
-                           kind == EffectKind::clouded || kind == EffectKind::rooted ||
-                           kind == EffectKind::jigging || kind == EffectKind::shocking_grasp ||
-                           kind == EffectKind::chill_touch || kind == EffectKind::sap ||
-                           kind == EffectKind::vex || kind == EffectKind::slow ||
-                           kind == EffectKind::guiding_bolt || kind == EffectKind::poisoned ||
-                           kind == EffectKind::dazzled || kind == EffectKind::shield ||
-                           kind == EffectKind::acid_arrow || kind == EffectKind::raging ||
-                           kind == EffectKind::reckless || kind == EffectKind::addled ||
-                           kind == EffectKind::lit || kind == EffectKind::moonlit ||
-                           kind == EffectKind::scorched;
+                           kind == EffectKind::enthralled || kind == EffectKind::thorned ||
+                           kind == EffectKind::swum || kind == EffectKind::clouded ||
+                           kind == EffectKind::rooted || kind == EffectKind::jigging ||
+                           kind == EffectKind::shocking_grasp || kind == EffectKind::chill_touch ||
+                           kind == EffectKind::sap || kind == EffectKind::vex ||
+                           kind == EffectKind::slow || kind == EffectKind::guiding_bolt ||
+                           kind == EffectKind::poisoned || kind == EffectKind::dazzled ||
+                           kind == EffectKind::shield || kind == EffectKind::acid_arrow ||
+                           kind == EffectKind::raging || kind == EffectKind::reckless ||
+                           kind == EffectKind::addled || kind == EffectKind::lit ||
+                           kind == EffectKind::moonlit || kind == EffectKind::scorched;
         // Searing Smite, Ensnaring Strike and Entangle act at the start of the
         // target's turn or on its escape, not on a timer.
         const bool turn_save = kind == EffectKind::searing_smite ||

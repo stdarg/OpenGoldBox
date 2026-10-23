@@ -1,6 +1,6 @@
 // The Slums set encounters' creatures (docs/audits/cluebook-check.md): the
 // Hobgoblin Warrior's poisoned arrows, the Ogre, the Troll's three Rends and
-// Regeneration, and the level-3 magic-user.
+// Regeneration, and the level-3 magic-user; and Podol Plaza's buccaneer.
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <filesystem>
@@ -326,6 +326,42 @@ void hobgoblin_arrows()
     }
     check(rejected, "Extra ranged damage needs a ranged attack");
 }
+
+// Podol Plaza's buccaneer, the SRD Pirate, trades the first of its two Dagger
+// attacks for Enthralling Panache: a Wisdom save (DC 12) or Charmed until the
+// start of its next turn, so its target cannot attack it. The Dagger that
+// follows does not end the charm.
+void buccaneer_enthralls()
+{
+    const auto module = rules();
+    for (std::uint64_t seed = 1; seed < 60; ++seed)
+    {
+        auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                                 {{1, "buccaneer", "Monster", Side::opposition, {1, 1}},
+                                  {2, "target", "Hero", Side::party, {2, 1}}}},
+                                seed);
+        turn_of(*c, 1);
+        check(submit(*c, "melee", 1, 2), "The buccaneer attacks");
+        check(count_logged(*c, "Monster uses Enthralling Panache on Hero.") == 1 &&
+                  count_logged(*c, "Monster -> Hero") == 1,
+              "Enthralling Panache replaces one of the buccaneer's two attacks");
+        if (count_logged(*c, "Hero is Charmed by Monster.") == 0 ||
+            unit(*c, 2).hit_points == unit(*c, 2).max_hit_points)
+        {
+            continue;
+        }
+        check(submit(*c, "end", 1), "The buccaneer ends its turn");
+        turn_of(*c, 2);
+        check(!offered(*c, "melee", 2, 1), "A charmed hero cannot attack the buccaneer");
+        check(submit(*c, "end", 2), "The hero ends its turn");
+        turn_of(*c, 1);
+        check(offered(*c, "melee", 1, 2) && submit(*c, "melee", 1, 2) &&
+                  count_logged(*c, "Monster uses Enthralling Panache on Hero.") == 2,
+              "The charm ends at the start of the buccaneer's next turn");
+        return;
+    }
+    check(false, "Find a charm that holds through a Dagger hit");
+}
 } // namespace
 
 int main()
@@ -341,6 +377,7 @@ int main()
         troll_stays_down();
         downed_square_stood_on();
         hobgoblin_arrows();
+        buccaneer_enthralls();
         std::cout << "Slums creature tests passed\n";
         return 0;
     }

@@ -388,7 +388,7 @@ stage after Kuto's Well.
   128" treated fleeing as winning: New Phlan's tavern brawl sent the city
   watch after a fleeing party, and fleeing a Slums fight counted toward
   clearing the Slums. The buccaneer is the SRD Pirate (`buccaneer` in
-  `combat.rules`, Enthralling Panache not modeled). With SPRIT1 lacking
+  `combat.rules`; Enthralling Panache came later, see below). With SPRIT1 lacking
   sprite 19, `SETUP MONSTER` at distance 0 shows the head-and-body portrait.
   `CALL 0x8001` makes the next `COMBAT` a duel: only the member `WHO` chose
   fights; a lost duel leaves the champion on 1 Hit Point and is not the
@@ -424,7 +424,14 @@ stage after Kuto's Well.
   Podol's flag set. Clearing is played off the mission with the win count
   (`0x4A34`) set to eight: the ninth win, then one plaza step, marks the plaza
   cleared (`0x4AE7` = 254), and a camp there is not interrupted.
-- **Gaps:** Enthralling Panache (the buccaneer's charm) is not modeled.
+- **Enthralling Panache (2026-10-23):** in melee the buccaneer trades the
+  first of its two Dagger attacks for the charm when its target is not
+  already charmed by it and it can see the target: a Wisdom save against DC
+  12, or the target is Charmed until the start of the buccaneer's next turn
+  and cannot attack it. Damage does not end this charm (Charm Person's does).
+  Fey Ancestry gives Advantage on the save, Countercharm a second try, and
+  Mindless Rage, Aura of Devotion and Mind Blank make the target immune.
+- **Gaps:** none known.
 
 ## Suggested increments
 

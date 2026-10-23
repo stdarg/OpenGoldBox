@@ -1463,6 +1463,9 @@ struct Definition
     bool metal_armor{};
     // A monster's `multiattack` row: melee attacks its Attack action makes.
     int multiattack{1};
+    // A monster's `enthralling_panache` row: the save DC of the Pirate's
+    // charm, which replaces one attack of its Multiattack.
+    int panache_dc{};
     int hit_die{}, constitution{}, rushes{}, surges{}, arcane{};
     int lay_on_hands{};  // Paladin healing pool: five times Paladin level
     int free_smite{};    // Paladin's Smite: one Divine Smite without a slot per Long Rest
@@ -1599,6 +1602,7 @@ struct Definition
     bool improved_cunning{}, devious_strikes{}; // Rogue 11 and 14
     bool improved_brutal{};
     bool brave{}; // Halfling: Advantage on saves to avoid or end Frightened
+    bool fey_ancestry{}; // Elf: Advantage on saves to avoid Charmed
     // Rogue levels 5-10.
     bool cunning_strike{}, uncanny_dodge{}, evasion{}, supreme_sneak{};
     bool fast_hands{}; // Thief: a magic item used as a Bonus Action (MAGIC-3)
@@ -2770,7 +2774,7 @@ constexpr std::array<std::pair<std::string_view, std::array<detail::EffectKind, 
          {"Stunned", {detail::EffectKind::stunned, detail::EffectKind::stunned}},
          {"Blinded", {detail::EffectKind::blindness, detail::EffectKind::dazzled}},
          {"Frightened", {detail::EffectKind::frightened, detail::EffectKind::abjured}},
-         {"Charmed", {detail::EffectKind::charmed, detail::EffectKind::charmed}}}};
+         {"Charmed", {detail::EffectKind::charmed, detail::EffectKind::enthralled}}}};
 
 bool touch_restorable(const Actor &a)
 {
@@ -2967,6 +2971,7 @@ bool has_greater_harm(const Actor &a, std::size_t harm)
                                   : harm == 2 ? e.kind == detail::EffectKind::drained
                                   : harm      ? curse(e.kind)
                                               : e.kind == detail::EffectKind::charmed ||
+                                                    e.kind == detail::EffectKind::enthralled ||
                                                     e.kind == detail::EffectKind::dominated;
                        });
 }
@@ -3219,6 +3224,7 @@ character_definition(std::string_view bytes,
     d.relentless = race == "Orc";
     d.resourceful = race == "Human";
     d.lucky = d.brave = race == "Halfling";
+    d.fey_ancestry = race == "Elf";
     d.nimble = race == "Halfling";
     d.naturally_stealthy = race == "Halfling";
     // Gnomes and Halflings are Small.
@@ -5454,6 +5460,9 @@ class Session final : public CombatSession
     void ward_nature();
     // Conjure Fey: Frightened of the caster until the start of its next turn.
     void fey_frighten(Actor &caster, Actor &target);
+    // Enthralling Panache (SRD Pirate): a Wisdom save or Charmed by the pirate
+    // until the start of its next turn.
+    void enthrall(Actor &pirate, Actor &target);
     // Hypnotic Pattern and Fear: each creature in the area that fails its
     // Wisdom save is entranced or terrified while the caster concentrates.
     void slow_area(Actor &caster, const detail::SpellDef &spell, const std::vector<Cell> &cells,
@@ -7744,6 +7753,7 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::missile_ward, "Protection From Normal Missiles"},
               std::pair{detail::EffectKind::snake_charmed, "Incapacitated (Snake Charm)"},
               std::pair{detail::EffectKind::envenomed, "Poisoned (Cunning Strike)"},
+              std::pair{detail::EffectKind::enthralled, "Charmed (Enthralling Panache)"},
               std::pair{detail::EffectKind::lethargic, "Incapacitated (lethargy)"},
               std::pair{detail::EffectKind::entranced, "Charmed (Hypnotic Pattern)"},
               std::pair{detail::EffectKind::terrified, "Frightened (Fear)"},
@@ -8427,6 +8437,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                           [](const auto &e)
                           {
                               return e.kind == detail::EffectKind::charmed ||
+                                     e.kind == detail::EffectKind::enthralled ||
                                      e.kind == detail::EffectKind::dominated;
                           });
             release(target);
@@ -15148,6 +15159,31 @@ void Session::fey_frighten(Actor &caster, Actor &target)
         {"{name} is Frightened.", {{"name", target.source.name}}});
 }
 
+void Session::enthrall(Actor &pirate, Actor &target)
+{
+    log(pirate.source.name + " uses Enthralling Panache on " + target.source.name + ".",
+        {"{name} uses Enthralling Panache on {target}.",
+         {{"name", pirate.source.name}, {"target", target.source.name}}});
+    if (mindless(target) || aura_of_devotion(target) ||
+        detail::has_effect(target.effects, detail::EffectKind::mind_blank))
+    {
+        log(target.source.name + " is immune to the charm.",
+            {"{name} is immune to the charm.", {{"name", target.source.name}}});
+        return;
+    }
+    if (charm_or_fear_save(target, detail::Ability::wisdom, def(pirate).panache_dc,
+                           def(target).fey_ancestry) ||
+        !detail::can_apply(target.effects))
+    {
+        return;
+    }
+    detail::apply_poisoned(target.effects, effect_source(pirate), pirate.source.name,
+                           next_turn_ms(pirate), detail::EffectKind::enthralled);
+    log(target.source.name + " is Charmed by " + pirate.source.name + ".",
+        {"{name} is Charmed by {caster}.",
+         {{"name", target.source.name}, {"caster", pirate.source.name}}});
+}
+
 void Session::ward_nature()
 {
     for (auto &a : actors_)
@@ -15610,8 +15646,9 @@ bool Session::otherworldly(const Actor &a) const
 bool Session::enchants(const detail::Effect &e) noexcept
 {
     return e.kind == detail::EffectKind::charmed || e.kind == detail::EffectKind::dominated ||
-           e.kind == detail::EffectKind::frightened || e.kind == detail::EffectKind::abjured ||
-           e.kind == detail::EffectKind::terrified || e.kind == detail::EffectKind::entranced;
+           e.kind == detail::EffectKind::enthralled || e.kind == detail::EffectKind::frightened ||
+           e.kind == detail::EffectKind::abjured || e.kind == detail::EffectKind::terrified ||
+           e.kind == detail::EffectKind::entranced;
 }
 
 bool Session::otherworldly_source(const detail::Effect &e) const
@@ -17801,6 +17838,7 @@ bool Session::charmed_by(const Actor &a, EntityId other) const
                        [&](const auto &e)
                        {
                            return (e.kind == detail::EffectKind::charmed ||
+                                   e.kind == detail::EffectKind::enthralled ||
                                    e.kind == detail::EffectKind::dominated) &&
                                   e.source_actor == other && e.source_scope == scope_;
                        });
@@ -23674,6 +23712,7 @@ void Session::dispatch(const Command &command)
                           [](const auto &e)
                           {
                               return e.kind == detail::EffectKind::charmed ||
+                                     e.kind == detail::EffectKind::enthralled ||
                                      e.kind == detail::EffectKind::turned ||
                                      e.kind == detail::EffectKind::frightened ||
                                      e.kind == detail::EffectKind::abjured ||
@@ -24601,9 +24640,18 @@ void Session::dispatch(const Command &command)
                     a.horde_origin = command.target;
                 }
                 // Multiattack: a monster's melee attacks follow on the same
-                // target while it stands.
+                // target while it stands. A Pirate first trades one for
+                // Enthralling Panache on a target it sees and has not charmed.
                 const int attacks = command.verb == "melee" ? d.multiattack : 1;
-                for (int n = 0; n < attacks && actor(command.target).life.hp > 0; ++n)
+                auto &target = actor(command.target);
+                int n = 0;
+                if (attacks > 1 && d.panache_dc && !has_condition(a, "blinded") &&
+                    !invisible(target) && !charmed_by(target, a.source.id))
+                {
+                    enthrall(a, target);
+                    ++n;
+                }
+                for (; n < attacks && actor(command.target).life.hp > 0; ++n)
                 {
                     attack(a, actor(command.target),
                            command.verb == "melee" ? AttackRange::melee : AttackRange::ranged);
@@ -30902,6 +30950,24 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             if (!row.eof())
             {
                 throw std::runtime_error("Unknown Multiattack fields: " + key);
+            }
+            continue;
+        }
+        if (tag == "enthralling_panache")
+        {
+            const auto found = content.definitions.find(key);
+            int dc{};
+            row >> dc;
+            if (!row || found == content.definitions.end() || dc < 1 || dc > 30 ||
+                !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid Enthralling Panache: " + key);
+            }
+            found->second.panache_dc = dc;
+            row >> std::ws;
+            if (!row.eof())
+            {
+                throw std::runtime_error("Unknown Enthralling Panache fields: " + key);
             }
             continue;
         }

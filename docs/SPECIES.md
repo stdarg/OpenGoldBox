@@ -89,11 +89,11 @@ The Quick-play AI uses each boon at its first chance.
 
 ## Saves against conditions
 
-Dwarven Resilience (Advantage against Poisoned) and Fey Ancestry (against
-Charmed) have nothing to act on yet: no save in the game makes a party member
-Poisoned, and Charm Person, the only charm, already gives its target Advantage
-while the caster's side fights it. A new save against one of those conditions
-must check the trait. Brave gives Advantage on the saves against Frightened
+Dwarven Resilience (Advantage against Poisoned) has nothing to act on yet: no
+save in the game makes a party member Poisoned. Fey Ancestry gives Advantage on
+the save against Podol Plaza's buccaneer's Enthralling Panache; Charm Person
+already gives its target Advantage while the caster's side fights it. A new
+save against one of those conditions must check the trait. Brave gives Advantage on the saves against Frightened
 (Intimidating Presence), the first and the repeated ones.
 
 ## Naturally Stealthy
