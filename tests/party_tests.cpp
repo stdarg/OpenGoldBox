@@ -2906,6 +2906,38 @@ void party_strength()
     check(por::party_strength(party) == 6, "Current hit points add with the other terms");
 }
 
+// Scripts read each member's Gold Box race at character byte 0x72; Podol
+// Plaza's disguise check counts the members who are not human (7).
+void script_race_codes()
+{
+    const auto race_code = [](const Character &c)
+    {
+        CampaignParty party(module());
+        party.add_pc(Character(c));
+        const auto reply = por::party_character_reply(party, PartySlot{0});
+        const auto race =
+            std::ranges::find(reply.writes, por::EclAddress{0x6B72}, &por::EclMemoryWrite::address);
+        return race == reply.writes.end() ? -1 : static_cast<int>(race->value);
+    };
+    const auto as_species = [](const Character &human, std::string species)
+    {
+        auto draft = human.creation_data();
+        draft.race = std::move(species);
+        std::erase_if(draft.training,
+                      [](const auto &entry)
+                      {
+                          return entry.first.starts_with("species:");
+                      });
+        return Character(*srd5::character_rules(), draft, human.appearance());
+    };
+    const auto human = character();
+    check(race_code(human) == 7, "A Human is the original's human");
+    check(race_code(as_species(human, "dwarf")) == 1, "A Dwarf keeps the original's dwarf code");
+    check(race_code(as_species(human, "orc")) == 6, "An Orc is the original's half-orc");
+    check(race_code(as_species(human, "goliath")) == 6,
+          "A species the original lacks is a non-human person, not a monster");
+}
+
 // A forwarding double answers as the module it wraps, for the virtuals
 // RulesModule gives a default body too (#238).
 void forwarding_defaults()
@@ -2936,6 +2968,7 @@ int main()
     try
     {
         party_strength();
+        script_race_codes();
         forwarding_defaults();
         two_weapon_equipment();
         equipment_rule_boundary();

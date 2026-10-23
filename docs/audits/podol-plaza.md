@@ -91,7 +91,7 @@ the auction is over, 255 striding openly or cover blown.
     (`0x6DC6`) is 30-50 (`0xB281`), +10 with leaders.
   - **Disguised** (`0x9B53`): the group is spotted at a distance and comes
     closer. The chance of being questioned is 5% plus 5% for each of the eight
-    party slots whose character byte `0x72` is not 7 (probably the race, 7
+    party slots whose character byte `0x72` is not 7 (the race, coab `Race`; 7
     being human in the Gold Box order; empty slots count). Otherwise the group
     walks on. Questioned, the party parleys (`PARLAY` at `0x9C31`): Haughty or
     Abusive pass if `PARTY STRENGTH` beats a 0-50 roll, Sly passes if the
@@ -270,7 +270,8 @@ the script wrote, used by the escape, the drinking and the leaving);
 portraits); `SETUP MONSTER` with a `SPRIT` record; `ENCOUNTER MENU` (its
 results 0 leave, 1 fight, 2 fled, 3 parley match the script's `ON GOTO` at
 `0x9DD0`); `PARTY STRENGTH` (coab's formula); `LOAD CHARACTER` for party slots
-0-7 (the disguise check reads byte `0x72`, which the engine leaves 0);
+0-7 (the disguise check reads the race at byte `0x72`; see
+[PARTY.md](../PARTY.md#ecl-adapter));
 `WHO`; `CLEAR MONSTERS`, `LOAD MONSTER`, `COMBAT`, XP and loot in any area
 with conversion rows; `TREASURE` with a fixed `ITEMn` list in an area;
 `ROB 1,x,y` (coins only, by the user's Kuto's Well choice); `COMBAT` with
@@ -412,10 +413,11 @@ stage after Kuto's Well.
   `0x4A35` = 254), the robed orc's greeting and, three hours later, the
   loyalty test fought (`0x4A38` = 2), and a sneaking party's cancelled
   auction attacked by a fresh group.
-- **Gaps:** the disguise check reads each member's race byte (`0x72`), which
-  `LOAD CHARACTER` leaves 0, so every slot counts against the party and a
-  disguised group questions it 45% of the time; humans (7) should not count.
-  City Hall's reward for the auction and for clearing the plaza is not played
+- **Race byte:** `LOAD CHARACTER` now writes each member's Gold Box race
+  at `0x72`, so humans no longer count against a disguised party: six humans
+  are questioned 15% of the time (5% plus 5% for each of the two empty slots),
+  not 45%.
+- **Gaps:** City Hall's reward for the auction and for clearing the plaza is not played
   in a test, and clearing the plaza (nine won fights in one visit) is not
   played either.
 
