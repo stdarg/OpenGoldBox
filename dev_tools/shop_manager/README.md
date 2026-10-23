@@ -24,6 +24,8 @@ JSON record, even if it shares an original stock list with other shops. Use
 **Stock** to change it. Stock `-1` means unlimited, matching the original shop
 behavior; `0` means out of stock. The item picker can search decoded item lists
 from `ITEM1.DAX` through `ITEM8.DAX` and keeps each added item's source identity.
+It also offers the game's added gear, and the Poisoner's Kit (50 gp), which no
+shop sells by default ([#271](https://github.com/stdarg/OpenGold/issues/271)).
 
 The four temples each have the nine original curative services and
 OpenGoldBox's Resurrection, which the game offers only on Easy and Normal, with

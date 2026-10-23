@@ -30,6 +30,11 @@ const ADDED_GEAR := [
     ["Vial of Acid", 25, 1, 201],
     ["Flask of Alchemist's Fire", 50, 1, 202],
 ]
+# Gear the game knows that no default stock holds; the picker offers it to
+# any shop (#271).
+const PICKER_GEAR := [
+    ["Poisoner's Kit", 50, 1, 212],
+]
 
 var manifest: Dictionary = {}
 var records: Dictionary = {}
@@ -100,6 +105,7 @@ func _ready() -> void:
         records[String(location["id"])] = record
     catalog_items = _without_ammunition(item_catalog())
     catalog_items.append_array(_authored_gear())
+    catalog_items.append_array(_gear_offerings(PICKER_GEAR))
     if "--seed" in OS.get_cmdline_user_args():
         for location in manifest["locations"]:
             var id := String(location["id"])
@@ -239,12 +245,16 @@ func _without_ammunition(items: Array) -> Array:
     return items.filter(func(item: Dictionary) -> bool:
         return not int(item["item_type"]) in AMMUNITION_TYPES)
 
-func _authored_gear() -> Array:
+func _gear_offerings(gear_list: Array) -> Array:
     var result: Array = []
-    for gear in ADDED_GEAR:
+    for gear in gear_list:
         result.append({"source_archive": "OpenGold authored gear", "source_record": -1,
                        "source_index": -1, "name": gear[0], "item_type": gear[3],
                        "price_gp": gear[1], "bundle_quantity": gear[2], "quantity": -1})
+    return result
+
+func _authored_gear() -> Array:
+    var result := _gear_offerings(ADDED_GEAR)
     for level in range(1, 9):
         result.append({"source_archive": "OpenGold authored gear", "source_record": -1,
                        "source_index": -1, "name": "Bottle of Magic Ink (Level %d)" % level,
@@ -714,6 +724,10 @@ func _run_check() -> void:
                 return
     if shops != 12 or temples != 4 or records["podol-temple-ilmater"]["offerings"].size() != 10:
         _fatal("Shop/temple inventory mismatch")
+        return
+    if not catalog_items.any(func(item: Dictionary) -> bool:
+            return int(item["item_type"]) == 212 and int(item["price_gp"]) == 50):
+        _fatal("The item picker lacks the Poisoner's Kit")
         return
     var saved_type: String = records["phlan-arms-13-08"]["type"]
     records["phlan-arms-13-08"]["type"] = "Temple"
