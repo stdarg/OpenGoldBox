@@ -1,16 +1,16 @@
 {
-  "action_sha256": "111e82c5bf7e81d6b5f35f4b385d089e6d5fdeb6e6ac0a77002cf5d104f436ad",
+  "action_sha256": "f389de176e46b60df4ca65cd3896445fc27f55ac7ef5d9e47fe715d751ea213a",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_2/added_26190831__ranged/action.png",
     "ready": "art/mon1cha_dax_2/added_26190831__ranged/ready.png"
   },
-  "metadata_sha256": "e3fd07c5c577dee330067d8df366231279ea299b88a8a117dd07df9f95438365",
-  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
+  "metadata_sha256": "9d51d436cd370f76f9905f33b404342ebbb52059c846fb389ae01bbcf629fd09",
+  "notes": "3.5 ft Goblin Guard body, approximately 88 native pixels foot-to-head; same baseline and scale as sword pair within pixel-art tolerance. Loaded short bow and just-released action reviewed at combat size and alternating in catalog.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "952cd96cc607ef3c5390d48c53e45bab8f307c404e6306919b5aa99d85f406a3",
-  "reviewed_at": "2026-10-21T21:50:46.403005+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "cd1ae51f59694a1a11d251aea4a9c5d5bfc9c68d3039db44388eb347620b51a6",
+  "reviewed_at": "2026-10-23T10:34:50.967158+00:00",
+  "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:2",
   "specification": "bipedal-v1",
   "variant_id": "added_26190831__ranged",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

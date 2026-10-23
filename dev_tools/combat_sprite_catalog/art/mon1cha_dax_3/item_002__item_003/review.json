@@ -1,15 +1,15 @@
 {
-  "action_sha256": "03cc63f398e1d0aede8c113aed942bc153e8fd91413faf849e5d4339532a3566",
+  "action_sha256": "fd20f4b6e0b89d098a70dca19b9a0238cc51c9bf512201e4a1111fa8b89b68f2",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_3/item_002__item_003/action.png",
     "ready": "art/mon1cha_dax_3/item_002__item_003/ready.png"
   },
-  "metadata_sha256": "a93bec2a7b8a12a44aa6b9413e07503568c863caf056d67077deecafce44f6a0",
-  "notes": "Compared at fixed combat zoom with MON1CHA.DAX:2 regular Goblin Guard; this leader has a modestly taller and broader body while retaining the 1x1 source footprint. Exact ready/action PNGs inspected side by side and in both catalog states. The planted boots and lower body remain registered; action is a short late sword strike. Approved replacement art and approved pose guide only; no original-game art was used as generation reference.",
+  "metadata_sha256": "79f9fe8345fe6f56194e04ffed87fcf35b33cc860acae3e3a9af8079db36e2f8",
+  "notes": "Goblin Leader 4 ft body, about 100 native pixels from plume/head to feet versus 90 for 3.5 ft guard; broader shoulders and rich scale armor without invented gear. Both poses inspected at native and catalog size with planted feet registered.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "1e9fe62b3d7ef0f39ca61110cfd023a20c5fe66f2fc2bae996c040ad30afdcae",
-  "reviewed_at": "2026-10-21T02:02:13+00:00",
+  "ready_sha256": "7588cefdfa6f70c09d099efb3d083afb2d158e960b889947dd93ac18bda812ef",
+  "reviewed_at": "2026-10-23T10:42:37.488164+00:00",
   "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:3",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
