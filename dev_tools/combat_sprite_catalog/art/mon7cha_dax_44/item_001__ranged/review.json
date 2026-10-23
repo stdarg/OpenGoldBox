@@ -1,0 +1,32 @@
+{
+  "action_sha256": "8da89e51bc4905b4aba7d74283d8c67ea0b5608a9dc5cd0d3eb906418c5c091e",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon7cha_dax_44/item_001__ranged/action.png",
+    "ready": "art/mon7cha_dax_44/item_001__ranged/ready.png"
+  },
+  "metadata_sha256": "c5a21018e5b2d0e6abebe41d7d679a00b43f8185080318295728dd13986e93d5",
+  "notes": "New imagegen ready/action pair from approved pose guide and previously generated Orc identity reference only; no original game art. Exact shared 1254-to-126 pixel nearest-neighbor export placed at +1,+1 on transparent 128 canvas. Inspected native pair and one-second catalog alternation in fixed 1x1 grid. Head-to-feet body fills one 5-foot tile; only bow rises above tile. Planted feet remain at same x/y; action arrow is released; saved gear is Short bow and Arrows, without armor or shield.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "4a395d895f1045f3c21e882dabdf329729de6d164d41b147b6a6a9806ef95cb5",
+  "reviewed_at": "2026-10-23T03:43:49+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON7CHA.DAX:44",
+  "specification": "bipedal-v1",
+  "variant_id": "item_001__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
