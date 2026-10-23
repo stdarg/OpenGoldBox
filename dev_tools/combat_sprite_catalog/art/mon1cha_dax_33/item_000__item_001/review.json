@@ -1,15 +1,15 @@
 {
-  "action_sha256": "6f2bdcc692e33951400b585ac40b59d279b43555a0bcaa1ca0d9ef776ffd5ed4",
+  "action_sha256": "190cfde22cbbee40acd6b28a793fc46ee6c2ff40c7d0138aa72d34129d4f417d",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_33/item_000__item_001/action.png",
     "ready": "art/mon1cha_dax_33/item_000__item_001/ready.png"
   },
-  "metadata_sha256": "0c82958ad1d51c44aede3fda0bb5aa9b5e484dc7936768f6558c253d0183a4d6",
-  "notes": "Both frames reviewed at 128 px and alternating in catalog; fixed boots and body with local mace swing. First action rejected because mace head overlapped shield; revised head projects past shield.",
+  "metadata_sha256": "8d20e35940c1e1e08d0f93ff51dd9ef24676154d451e670444767a995f6b8f5b",
+  "notes": "Height correction of previously approved independent generated art, no source game art. Both poses were uniformly nearest-neighbor scaled 128->137 and positioned identically at (-8,+1) to make head-to-feet 88 pixels in both poses. Fixed feet, same body proportions and all saved gear preserved. Ready mace alone crosses top border; action mace alone crosses right border. Alternating catalog review verified one-square body.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "f109c260fd9c3c359cf7b0e7e0964eac5884a2f178cc824f022e98d1d7bc225f",
-  "reviewed_at": "2026-10-19T02:37:44.007847+00:00",
+  "ready_sha256": "ced550005787fa9607cbc57e590a5cf8242aa8ebed84ce1cfbb9d52d1f13c1f8",
+  "reviewed_at": "2026-10-23T13:53:57+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:33",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
