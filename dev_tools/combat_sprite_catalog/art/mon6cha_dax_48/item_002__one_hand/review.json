@@ -1,0 +1,32 @@
+{
+  "action_sha256": "8b400f4d75c2acd99add18081acbbab3b60d18e3a097a0ec69b97812f3632e10",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon6cha_dax_48/item_002__one_hand/action.png",
+    "ready": "art/mon6cha_dax_48/item_002__one_hand/ready.png"
+  },
+  "metadata_sha256": "7ba9a57bb35c8b0345d9fa4242cd8a0c7d9d19c9c497af35918b7a3d9d6da607",
+  "notes": "New independently generated Dwarven Fighter identity from approved pose guide. MON6CHA.DAX:48 and CPIC6.DAX:15 are explicitly script-linked and have identical gear; both use exact same reviewed images. Chain armor +1, both Gauntlets of Ogre Power, one Long sword +1, no shield. First action was rejected for a two-handed-looking grip; corrected action has separate guarding free fist. Shared 1254x1254 working canvas and same piecewise export transform across ready/action; action lower 40 output rows copy ready feet. Visual review at native PNG on white and 1-second catalog alternation for both records. Saved Normal tier body fills 5-foot tile. Ready raised sword only crosses top by 0.28 square; action attacking sword only crosses right by 0.09 square. No body overflow or whole-body shuffle.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "064c314862688bc5c9a40d995a89527a4d6f5aa47dcbc626b9853f7a2bbfcf5c",
+  "reviewed_at": "2026-10-23T06:16:11+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON6CHA.DAX:48",
+  "specification": "bipedal-v1",
+  "variant_id": "item_002__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
