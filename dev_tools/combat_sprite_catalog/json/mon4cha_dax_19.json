@@ -11,7 +11,7 @@
     "GameDocs/Cluebook.pdf, Sokal Keeps map location 8: spectre, level-draining touch, and parley resolution."
   ],
   "equipment": [],
-  "flag_for_regeneration": true,
+  "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "FERRAN MARTINEZ",
   "preview_fallback_variant": "",

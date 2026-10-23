@@ -1,0 +1,32 @@
+{
+  "action_sha256": "95d42cd9f277cd5096c976210a43fb07af6c1ed9b9f5538d8c5dd6108da5eb2f",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon4cha_dax_19/default/action.png",
+    "ready": "art/mon4cha_dax_19/default/ready.png"
+  },
+  "metadata_sha256": "a124bb758a5523c1675de2aac0ce20a3545d76de8924156c19317525646edf3f",
+  "notes": "Cluebook identifies Ferran Martinez as Sokal Keep spectre, so no physical gear. Ready/action alternated at combat size: same five-foot head-to-spectral-base height and fixed robe hem x/y; only forward touch hand extends slightly with pale contact glow. Ready remains within 1x1 to one-pixel raster tolerance; action touch reaches a couple pixels past side. Weapon-grip checks interpreted as not applicable to natural touch. No original game art reference.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "291ab4d7e948726333e7e8cbb69a857e44cf886f609e061c0a5f86674ee26962",
+  "reviewed_at": "2026-10-23T15:53:10Z",
+  "reviewer": "Codex visual review in combat catalog",
+  "source_key": "MON4CHA.DAX:19",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
