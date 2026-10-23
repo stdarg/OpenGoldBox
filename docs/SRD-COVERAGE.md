@@ -409,6 +409,10 @@ and spell-Blinded effects. See
 Rules 0.6.95 adds four Wizard attack spells and the Poisoned condition, and
 level-two area spells now spend a level-two slot. See
 [Wizard](WIZARD.md#ray-of-sickness-ice-knife-chromatic-orb-and-acid-splash).
+Rules 0.6.246 gives Poisoned its Disadvantage on ability checks as well:
+Initiative, Stealth, Search, Medicine, Athletics to break free, the Maze's
+Investigation, Arcana for a scroll, Dispel Magic's check and forcing or picking
+a door. Heroes' Feast's immunity lifts it, as for attack rolls.
 
 ## Mage Armor, False Life and Expeditious Retreat
 

@@ -551,7 +551,7 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 - **Ray of Sickness** (level 1, 60 feet): a spell attack for 2d8 Poison; a hit
   leaves the target **Poisoned** (Disadvantage on attack rolls, shown as a
   condition) until the end of the Wizard's next turn. Protection from Poison
-  ends it. Disadvantage on ability checks is not modeled yet.
+  ends it. It also gives ability checks Disadvantage (rules 0.6.246).
 - **Ice Knife** (level 1, 60 feet): a spell attack for 1d10 Piercing; hit or
   miss, the target and every creature within 5 feet make a Dexterity save or
   take 2d6 Cold (3d6 from a level-two slot).

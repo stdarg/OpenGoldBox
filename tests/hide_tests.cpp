@@ -3,12 +3,14 @@
 #include "opengold/character_pool.h"
 #include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
+#include "status_effects.h"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -20,6 +22,7 @@ using namespace opengold::rules;
 // how enemies find a hidden creature.
 namespace
 {
+namespace fx = opengold::srd5::detail;
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 
 void check(bool ok, const std::string &message)
@@ -310,6 +313,93 @@ void spell_checks()
     }
     throw std::runtime_error("No seed keeps the Cleric hidden");
 }
+
+// Every combatant in a saved fight, or vital record, with `kind`: Poisoned, or
+// Heroes' Feast's immunity to it.
+std::string with_effect(std::string saved, fx::EffectKind kind)
+{
+    for (auto at = saved.find("FX8 "); at != std::string::npos; at = saved.find("FX8 ", at + 1))
+    {
+        std::istringstream in(saved.substr(at));
+        auto effects = fx::read_effects(in);
+        const auto length =
+            in.tellg() < 0 ? std::string::npos : static_cast<std::size_t>(in.tellg());
+        if (kind == fx::EffectKind::poisoned)
+        {
+            fx::apply_poisoned(effects, {.scope = 9, .actor = 99}, "Venom", 6000);
+        }
+        else
+        {
+            fx::apply_spell_benefit(effects, {.scope = 9, .actor = 99}, "Feast", kind, 0);
+        }
+        std::ostringstream out;
+        fx::write_effects(out, effects);
+        saved.replace(at, length, out.str());
+    }
+    return saved;
+}
+
+// The d20 of the Rogue's Stealth check as a Bonus Action.
+int stealth_die(const RulesModule &rules, const std::string &saved)
+{
+    const auto c = rules.restore(saved);
+    check(submit(*c, "cunning_hide"), "The Rogue tries to hide");
+    for (const auto &line : c->snapshot().log())
+    {
+        if (const auto at = line.find("Rogue Stealth check: d20 "); at != std::string::npos)
+        {
+            return std::stoi(line.substr(at + 25));
+        }
+    }
+    throw std::runtime_error("No Stealth check logged");
+}
+
+// Poisoned gives ability checks Disadvantage, as it does attack rolls: the
+// same fight rolls a Poisoned Rogue's Stealth no higher, and sometimes lower.
+// Heroes' Feast's immunity lifts it. Outside combat, a Poisoned member forces
+// a door with Disadvantage too.
+void poisoned_checks()
+{
+    const auto rules = module();
+    const auto hero = rogue();
+    bool lower = false;
+    for (std::uint64_t seed = 1; seed <= 40; ++seed)
+    {
+        const auto saved = fight(*rules, hero, "dull", {8, 1}, seed)->save();
+        const auto poisoned = with_effect(saved, fx::EffectKind::poisoned);
+        const int plain = stealth_die(*rules, saved), hindered = stealth_die(*rules, poisoned);
+        check(hindered <= plain, "A Poisoned Rogue's Stealth die is the lower of two");
+        lower = lower || hindered < plain;
+        check(stealth_die(*rules, with_effect(poisoned, fx::EffectKind::feasted)) == plain,
+              "Heroes' Feast makes the Rogue immune to Poisoned");
+    }
+    check(lower, "Poisoned lowers some Stealth checks");
+    const auto poisoned_hide = rules->restore(
+        with_effect(fight(*rules, hero, "dull", {8, 1}, 1)->save(), fx::EffectKind::poisoned));
+    check(submit(*poisoned_hide, "cunning_hide") && logged(*poisoned_hide, "(disadvantage) + "),
+          "The Stealth check's line shows the Disadvantage");
+
+    VitalState vitals{hero.sheet().hit_points, false, {}};
+    rules->recover(vitals, hero.sheet());
+    auto poisoned = vitals;
+    poisoned.resources = with_effect(vitals.resources, fx::EffectKind::poisoned);
+    lower = false;
+    for (std::uint64_t seed = 1; seed <= 40; ++seed)
+    {
+        RandomState plain{seed}, hindered{seed};
+        const auto gear = std::vector<std::string>{"dagger"};
+        const auto force = [&](const VitalState &state, RandomState &random)
+        {
+            return rules->roll_ability_check(hero.sheet(), state, gear, Ability::strength,
+                                             "athletics", random);
+        };
+        const auto a = force(vitals, plain), b = force(poisoned, hindered);
+        check(b.die <= a.die && b.total - b.die == a.total - a.die,
+              "A Poisoned member forces a door with the lower of two dice");
+        lower = lower || b.die < a.die;
+    }
+    check(lower, "Poisoned lowers some door checks");
+}
 } // namespace
 
 int main()
@@ -320,6 +410,7 @@ int main()
         finding_checks();
         search_checks();
         spell_checks();
+        poisoned_checks();
     }
     catch (const std::exception &error)
     {

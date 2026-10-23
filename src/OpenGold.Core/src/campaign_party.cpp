@@ -1988,10 +1988,11 @@ std::vector<DoorAttempt> CampaignParty::try_door(DoorMethod method, int difficul
 
         const auto roll =
             method == DoorMethod::bash
-                ? rules_->roll_ability_check(m.character.sheet(), gear, rules::Ability::strength,
-                                             "athletics", random_state)
-                : rules_->roll_ability_check(m.character.sheet(), gear, rules::Ability::dexterity,
-                                             "sleight_of_hand", random_state);
+                ? rules_->roll_ability_check(m.character.sheet(), m.vitals, gear,
+                                             rules::Ability::strength, "athletics", random_state)
+                : rules_->roll_ability_check(m.character.sheet(), m.vitals, gear,
+                                             rules::Ability::dexterity, "sleight_of_hand",
+                                             random_state);
         attempts.push_back({id, roll});
         if (roll.total >= difficulty)
         {

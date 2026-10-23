@@ -93,11 +93,12 @@ class ForwardingModule : public rules::RulesModule
     }
 
     rules::AbilityCheckRoll roll_ability_check(const rules::CharacterSheet &sheet,
+                                               const rules::VitalState &state,
                                                std::span<const std::string> gear,
                                                rules::Ability ability, std::string_view skill,
                                                RandomState &random_state) const override
     {
-        return rules_->roll_ability_check(sheet, gear, ability, skill, random_state);
+        return rules_->roll_ability_check(sheet, state, gear, ability, skill, random_state);
     }
 
     unsigned experience_for_level(unsigned level) const override

@@ -2766,6 +2766,14 @@ bool has_condition(const Actor &a, std::string_view condition)
                        });
 }
 
+// Poisoned: Disadvantage on attack rolls and ability checks. Heroes' Feast
+// makes a creature immune.
+bool suffers_poisoned(const Actor &a)
+{
+    return has_condition(a, "poisoned") &&
+           !detail::has_effect(a.effects, detail::EffectKind::feasted);
+}
+
 // The conditions Restoring Touch ends, most disabling first, and the effects
 // that give each. Deafened is not modeled (DEAF-1).
 constexpr std::array<std::pair<std::string_view, std::array<detail::EffectKind, 2>>, 5>
@@ -4447,10 +4455,12 @@ class Session final : public CombatSession
             }
             // A Druid still in a Beast form from earlier fights in that form.
             refresh_form(a);
-            a.initiative = detail::d20({d.champion || d.feral_instinct,
-                                        d.str_dex_disadvantage || a.source.surprised, d.lucky},
-                                       rng_) +
-                           d.initiative - return_penalty(a);
+            a.initiative =
+                detail::d20({d.champion || d.feral_instinct,
+                             d.str_dex_disadvantage || a.source.surprised || suffers_poisoned(a),
+                             d.lucky},
+                            rng_) +
+                d.initiative - return_penalty(a);
             a.movement = a.form ? a.form->speed : d.speed;
             actors_.push_back(std::move(a));
         }
@@ -5727,6 +5737,7 @@ class Session final : public CombatSession
     void return_from_banishment(Actor &a);
     // Frightened: a living creature that frightens `a` is in its line of sight.
     [[nodiscard]] std::vector<const Actor *> fears_in_sight(const Actor &a) const;
+    [[nodiscard]] bool check_disadvantage(const Actor &a) const;
     // Intimidating Presence (Berserker 14): each enemy within 30 feet makes a
     // Wisdom save or is Frightened for up to a minute.
     void intimidate(const Actor &barbarian);
@@ -15056,8 +15067,8 @@ void Session::seek_maze_exit(Actor &a)
 {
     // A DC 20 Intelligence (Investigation) check; a creature's Intelligence
     // save bonus stands in for Investigation.
-    const int natural = reliable(
-        a, "investigation", detail::d20({false, !fears_in_sight(a).empty(), def(a).lucky}, rng_));
+    const int natural = reliable(a, "investigation",
+                                 detail::d20({false, check_disadvantage(a), def(a).lucky}, rng_));
     const int bonus =
         (a.source.character_profile.empty() ? def(a).saves[3] : def(a).investigation) +
         guidance_bonus(a, "investigation");
@@ -16226,7 +16237,8 @@ bool Session::scroll_check_fails(const Actor &a, const detail::SpellDef &spell,
     {
         return false;
     }
-    const int natural = roll(20), bonus = def(a).arcana, dc = 10 + static_cast<int>(level);
+    const int natural = detail::d20({false, check_disadvantage(a), false}, rng_),
+              bonus = def(a).arcana, dc = 10 + static_cast<int>(level);
     log(a.source.name + "'s Arcana check for the scroll: d20 " + std::to_string(natural) + " + " +
             std::to_string(bonus) + " vs DC " + std::to_string(dc) + ".",
         {"{name}'s Arcana check for the scroll: d20 {roll} + {bonus} vs DC {dc}.",
@@ -17533,9 +17545,8 @@ Session::AthleticsRoll Session::roll_athletics(Actor &a, int dc)
     AthleticsRoll check;
     check.advantage = rage_of(a) || def(a).champion ||
                       detail::has_effect(a.effects, detail::EffectKind::enhance_ability);
-    check.natural =
-        reliable(a, "athletics",
-                 detail::d20({check.advantage, !fears_in_sight(a).empty(), def(a).lucky}, rng_));
+    check.natural = reliable(
+        a, "athletics", detail::d20({check.advantage, check_disadvantage(a), def(a).lucky}, rng_));
     check.bonus = (a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics) +
                   guidance_bonus(a, "athletics");
     check.success = check.natural + check.bonus >= dc;
@@ -17754,6 +17765,13 @@ void Session::cast_selected(Actor &a, const PendingSelection &selection)
         }
         apply_rider(spell, selection.verb, a, target, dc);
     }
+}
+
+// Frightened, while a source is in sight, and Poisoned give an ability check
+// Disadvantage.
+bool Session::check_disadvantage(const Actor &a) const
+{
+    return !fears_in_sight(a).empty() || suffers_poisoned(a);
 }
 
 std::vector<const Actor *> Session::fears_in_sight(const Actor &a) const
@@ -18106,8 +18124,8 @@ void Session::dispel(Actor &caster, Cell cell, unsigned slot_level)
         {
             return true;
         }
-        const int natural = roll(20), bonus = casting_modifier(def(caster)),
-                  dc = 10 + static_cast<int>(level);
+        const int natural = detail::d20({false, check_disadvantage(caster), false}, rng_),
+                  bonus = casting_modifier(def(caster)), dc = 10 + static_cast<int>(level);
         log(caster.source.name + " Dispel Magic check: d20 " + std::to_string(natural) + " + " +
                 std::to_string(bonus) + " vs DC " + std::to_string(dc) + ".",
             {"{name} Dispel Magic check: d20 {roll} + {bonus} vs DC {dc}.",
@@ -18444,17 +18462,17 @@ bool Session::can_hide(const Actor &a) const
 
 void Session::hide(Actor &a)
 {
-    // Armor that hinders stealth gives the check Disadvantage.
+    // Armor that hinders stealth, Frightened and Poisoned give the check
+    // Disadvantage.
     constexpr int dc = 15;
     const auto &d = def(a);
     bool lucky_reroll = false;
-    int natural =
-        detail::d20({false, d.stealth_disadvantage || !fears_in_sight(a).empty(), d.lucky}, rng_,
-                    &lucky_reroll);
+    const bool hindered = d.stealth_disadvantage || check_disadvantage(a);
+    int natural = detail::d20({false, hindered, d.lucky}, rng_, &lucky_reroll);
     log_luck(a, lucky_reroll);
     natural = reliable(a, "stealth", natural);
     int total = natural + d.stealth;
-    const std::string disadvantage = d.stealth_disadvantage ? " (disadvantage)" : "";
+    const std::string disadvantage = hindered ? " (disadvantage)" : "";
     log(a.source.name + " Stealth check: d20 " + std::to_string(natural) + disadvantage + " + " +
             std::to_string(d.stealth) + " vs DC 15.",
         {"{name} Stealth check: d20 {roll}{disadvantage} + {bonus} vs DC {dc}.",
@@ -18496,7 +18514,7 @@ void Session::search(Actor &searcher)
     const auto &d = def(searcher);
     bool lucky_reroll = false;
     const int natural =
-        detail::d20({false, !fears_in_sight(searcher).empty(), d.lucky}, rng_, &lucky_reroll);
+        detail::d20({false, check_disadvantage(searcher), d.lucky}, rng_, &lucky_reroll);
     log_luck(searcher, lucky_reroll);
     int bonus = d.perception;
     // An enemy Lore Bard's Cutting Words may keep the best-hidden creature the
@@ -18903,9 +18921,7 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     {
         result.disadvantage = true;
     }
-    if (detail::sapped(a.effects) ||
-        (has_condition(a, "poisoned") &&
-         !detail::has_effect(a.effects, detail::EffectKind::feasted)) ||
+    if (detail::sapped(a.effects) || suffers_poisoned(a) ||
         detail::has_effect(a.effects, detail::EffectKind::scorched) || !fears_in_sight(a).empty())
     {
         result.disadvantage = true;
@@ -23306,8 +23322,7 @@ void Session::dispatch(const Command &command)
     {
         PendingCheck check{
             a.source.id, command.target,
-            reliable(a, "medicine",
-                     detail::d20({false, !fears_in_sight(a).empty(), d.lucky}, rng_)),
+            reliable(a, "medicine", detail::d20({false, check_disadvantage(a), d.lucky}, rng_)),
             a.actions.surge};
         check.guidance = guidance_bonus(a, "medicine");
         a.nick_origin = 0;
@@ -29308,8 +29323,13 @@ class Module final : public RulesModule
     {
         const auto &spell = *detail::find_spell(verb);
         const unsigned level = slot_level_of(verb, spell);
-        return needs_arcana_check(reader.definition, level) &&
-               roll_die(random_state, 20) + reader.definition.arcana < 10 + static_cast<int>(level);
+        if (!needs_arcana_check(reader.definition, level))
+        {
+            return false;
+        }
+        return detail::d20({false, suffers_poisoned(reader), false}, random_state.value) +
+                   reader.definition.arcana <
+               10 + static_cast<int>(level);
     }
 
     bool use_scroll(const CharacterSheet &user, VitalState &user_state,
@@ -29944,16 +29964,17 @@ class Module final : public RulesModule
         return result;
     }
 
-    AbilityCheckRoll roll_ability_check(const CharacterSheet &sheet,
+    AbilityCheckRoll roll_ability_check(const CharacterSheet &sheet, const VitalState &state,
                                         std::span<const std::string> gear, Ability ability,
                                         std::string_view skill,
                                         RandomState &random_state) const override
     {
         const auto modifier = ability_check(sheet, gear, ability, skill);
         const bool lucky = character_definition(character_profile(sheet, gear).data).lucky;
+        const bool poisoned = suffers_poisoned(camp_actor(sheet, state));
         auto rng = random_state.value;
         // Advantage and Disadvantage cancel; either alone rolls a second d20.
-        int die = detail::d20({modifier.advantage, modifier.disadvantage, lucky}, rng);
+        int die = detail::d20({modifier.advantage, modifier.disadvantage || poisoned, lucky}, rng);
         // Reliable Talent: a proficient check's d20 counts as at least 10.
         if (detail::class_of(sheet) == CharacterClass::rogue && sheet.level >= 7 &&
             modifier.proficiency > 0)
@@ -30690,7 +30711,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.245", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.246", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

@@ -15,7 +15,7 @@ Stealthy also counts a creature at least one size larger, friend or foe, as
 blocking the line.
 
 The Dexterity (Stealth) check is against DC 15, with Disadvantage in armor that
-hinders Stealth; Halfling Luck and Bardic Inspiration apply as to other checks.
+hinders Stealth, while Frightened or while Poisoned; Halfling Luck and Bardic Inspiration apply as to other checks.
 On a success the creature is **Hidden** and has the Invisible condition: attack
 rolls against it have Disadvantage, its own have Advantage, and spells that
 need sight cannot target it. Its total is the DC to find it. Monsters do not

@@ -889,10 +889,12 @@ class RulesModule
                                                              std::span<const std::string> gear,
                                                              Ability ability,
                                                              std::string_view skill) const = 0;
-    // Rolls that check outside combat, advancing the campaign service random state.
+    // Rolls that check outside combat, advancing the campaign service random
+    // state. The state's conditions, such as Poisoned, can hinder it.
     [[nodiscard]] virtual AbilityCheckRoll
-    roll_ability_check(const CharacterSheet &, std::span<const std::string> gear, Ability ability,
-                       std::string_view skill, RandomState &random_state) const = 0;
+    roll_ability_check(const CharacterSheet &, const VitalState &,
+                       std::span<const std::string> gear, Ability ability, std::string_view skill,
+                       RandomState &random_state) const = 0;
     [[nodiscard]] virtual unsigned experience_for_level(unsigned level) const = 0;
     // The choices a finished rest lets the character change, each with its
     // current picks; empty when there are none.
