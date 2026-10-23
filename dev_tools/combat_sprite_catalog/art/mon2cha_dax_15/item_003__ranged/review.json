@@ -1,16 +1,16 @@
 {
-  "action_sha256": "cf82689bfc7c6b745d76d9727a4d2fd3c48fab38fe1fda4ca7f2c4a843130a56",
+  "action_sha256": "e5dd8816699be57893e36a5f9165460cc90802a3f97be5b2e74d80a637e77e3a",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_15/item_003__ranged/action.png",
     "ready": "art/mon2cha_dax_15/item_003__ranged/ready.png"
   },
   "metadata_sha256": "994cfd5bafe54f1a3eb488f03580126a84072d14f5a82806ee8d79ca53490a44",
-  "notes": "New independently generated Orc Leader flail +1 melee pair; matching independently generated Orc Leader bow reused for identical ranged setup. Both poses separately checked at combat size and in catalog one-second animation. Leader broader and modestly taller than regular Orc, shared scale and planted feet across its sets; ready fits 1x1. Action flail alone crosses dotted border by 0.05 square; body remains inside. Bow loaded then released.",
+  "notes": "Enchanted-chain-armor Orc Leader long-bow alternative; gold/silver armor trim matches Flail +1 pair. Arrow nocked ready, absent after release. Reviewed native frames and 1-second fixed-grid alternation at combat size; approved pose guide and independent new character art only.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "11b2a119db49813f685f084b0d620254f99b6abdc26fd088d9d4958851802008",
-  "reviewed_at": "2026-10-21T22:29:18.990948+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "9102496a81706909d2d57ba1d1836df27d88e358935da543a9efa3c8510adfa9",
+  "reviewed_at": "2026-10-23T10:19:03.345881+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:15",
   "specification": "bipedal-v1",
   "variant_id": "item_003__ranged",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

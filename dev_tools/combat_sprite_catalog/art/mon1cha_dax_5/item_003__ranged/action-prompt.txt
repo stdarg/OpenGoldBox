@@ -213,4 +213,4 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-FINAL EXPORT REVIEW: Compare with MON1 regular Orc; render leader broader, in chain armor, body exactly inside full 5-foot square. Shared vertical/horizontal scale across both poses and weapon sets; planted feet fixed. Raised ready weapon may enter square above; axe action may cross side border.
+FINAL COMPOSITION NOTE: Same leader long-bow alternative, arrow nocked and loaded in ready, arrow absent after release. Narrow upright bow preserves five-foot body and 1x1 side fit. Both poses use one shared transform and fixed planted base.

@@ -213,4 +213,4 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-FINAL EXPORT REVIEW: Compare with MON1 regular Orc; render leader broader, in chain armor, body exactly inside full 5-foot square. Shared vertical/horizontal scale across both poses and weapon sets; planted feet fixed. Raised ready weapon may enter square above; axe action may cross side border.
+FINAL COMPOSITION NOTE: Five-foot broad Orc Leader with chain armor and one-handed battle axe. Axe raised only above tile in ready; compact late chop in action. Same approved art as identical MON2 and MON4 templates. Both poses use one shared transform and fixed planted base.

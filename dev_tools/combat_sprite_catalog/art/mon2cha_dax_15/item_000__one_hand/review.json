@@ -1,16 +1,16 @@
 {
-  "action_sha256": "c0549a926f40f31196e3eae1046a686cbe2a936d7270a6ce19a5f272c6ba207f",
+  "action_sha256": "72f20e01b2a34392c1fe2929fc6b239bda8515fea0b55b2c8dc93153bce22507",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_15/item_000__one_hand/action.png",
     "ready": "art/mon2cha_dax_15/item_000__one_hand/ready.png"
   },
   "metadata_sha256": "994cfd5bafe54f1a3eb488f03580126a84072d14f5a82806ee8d79ca53490a44",
-  "notes": "New independently generated Orc Leader flail +1 melee pair; matching independently generated Orc Leader bow reused for identical ranged setup. Both poses separately checked at combat size and in catalog one-second animation. Leader broader and modestly taller than regular Orc, shared scale and planted feet across its sets; ready fits 1x1. Action flail alone crosses dotted border by 0.05 square; body remains inside. Bow loaded then released.",
+  "notes": "Five-foot broad Orc Leader with Flail +1 and Chain armor +1. Flail raised with visible chain and ball, late right swing in action. Common export width adjusted in both poses so free hand stays inside 1x1. Reviewed native frames and 1-second fixed-grid alternation at combat size; approved pose guide and independent new character art only.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "6627955bbe5aaac5236cf30d202b5dd3ad0447a684af5555f8b6c3c60618abe0",
-  "reviewed_at": "2026-10-21T22:29:17.895024+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "f082fd248dc074ffba459344d0579aed47dcd9521ec7e30c1335190f44a4588b",
+  "reviewed_at": "2026-10-23T10:19:03.345372+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:15",
   "specification": "bipedal-v1",
   "variant_id": "item_000__one_hand",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

@@ -1,16 +1,16 @@
 {
-  "action_sha256": "83969d05a8aad668340315c8f7e51e69d60c9f0ed9bb72588a27b8234062489c",
+  "action_sha256": "be59eb78f63e84798aff0ace76e5db092d4c7e9b05a6a8eb181ca457a754b838",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_14/item_003__ranged/action.png",
     "ready": "art/mon2cha_dax_14/item_003__ranged/ready.png"
   },
   "metadata_sha256": "cfa36dfd824136f36d25b9f609d3b60b4bfee3ef87594024209213074647d2dd",
-  "notes": "New independently generated Orc Leader broad sword +1 melee pair; matching independently generated Orc Leader bow reused for identical ranged setup. Both poses separately checked at combat size and in catalog one-second animation. Leader broader and modestly taller than regular Orc, shared scale and planted feet across its sets; ready fits 1x1. Action flail alone crosses dotted border by 0.05 square; body remains inside. Bow loaded then released.",
+  "notes": "Same chain-armor leader identity and long-bow setup as identical MON1 leader; bow nocked in ready and released in action. Broad sword excluded from ranged pair. Reviewed native frames and 1-second fixed-grid alternation at combat size; approved pose guide and independent new character art only.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "d52b60fe0971e91f42c5c305d324bb65d49c98cfc0d5e87def36bb3127f31354",
-  "reviewed_at": "2026-10-21T22:29:16.814097+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "22ab2587d2ff667713186be7ad29ec169afb719f9efb352a24d24f07a339a703",
+  "reviewed_at": "2026-10-23T10:19:03.344936+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:14",
   "specification": "bipedal-v1",
   "variant_id": "item_003__ranged",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

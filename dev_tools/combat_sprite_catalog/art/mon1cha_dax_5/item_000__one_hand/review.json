@@ -1,16 +1,16 @@
 {
-  "action_sha256": "9effdb781e06e723ab42a72296b4f79ee444a55f60df4ddb1a722c3536914964",
+  "action_sha256": "a596b7e51c6d6733d8251de23a02a1fb7e33507c2b989bba1cf8dac3986d4b48",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_5/item_000__one_hand/action.png",
     "ready": "art/mon1cha_dax_5/item_000__one_hand/ready.png"
   },
   "metadata_sha256": "edfe2d0082ee45bd937b70bee50647197fccf15d8ec1342f7064e3ae19d7d9f1",
-  "notes": "Corrected approved newly generated Orc Leader art with one shared scale for both poses and saved weapon sets; prior art retained in ignored staging. Compared with MON1 regular Orc. Leader is broader and at least as tall at 5-foot body scale, with saved chain armor. Both frames inspected at 128px, white background and in the 1-second Godot catalog on fixed 3x3 grid. Ready raised weapon alone enters square above; action axe blade alone crosses right boundary; body and feet remain in 1x1 footprint. Action planted-foot pixels copied from ready and then same transform applied; no whole-body motion. Axe raised guard then late strike.",
+  "notes": "Five-foot broad Orc Leader with chain armor and one-handed battle axe. Axe raised only above tile in ready; compact late chop in action. Same approved art as identical MON2 and MON4 templates. Reviewed native frames and 1-second fixed-grid alternation at combat size; approved pose guide and independent new character art only.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "cca36f74e73a4c8cc1be93a587b96c91ca28064b6b3c43fd54802f452a20bd8d",
-  "reviewed_at": "2026-10-23T06:00:16+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "8d84d431507ed87cf2173dd0dfbf7cc1049071d2a18003c65a9f428cc8019385",
+  "reviewed_at": "2026-10-23T10:19:03.341389+00:00",
+  "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:5",
   "specification": "bipedal-v1",
   "variant_id": "item_000__one_hand",

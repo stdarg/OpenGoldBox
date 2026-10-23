@@ -1,16 +1,16 @@
 {
-  "action_sha256": "6c0cac6c411768aac1ad68b71aae4ab8fd278ac5709d1391a4617558a6f935d7",
+  "action_sha256": "be59eb78f63e84798aff0ace76e5db092d4c7e9b05a6a8eb181ca457a754b838",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_5/item_003__ranged/action.png",
     "ready": "art/mon1cha_dax_5/item_003__ranged/ready.png"
   },
   "metadata_sha256": "edfe2d0082ee45bd937b70bee50647197fccf15d8ec1342f7064e3ae19d7d9f1",
-  "notes": "Corrected approved newly generated Orc Leader art with one shared scale for both poses and saved weapon sets; prior art retained in ignored staging. Compared with MON1 regular Orc. Leader is broader and at least as tall at 5-foot body scale, with saved chain armor. Both frames inspected at 128px, white background and in the 1-second Godot catalog on fixed 3x3 grid. Ready raised weapon alone enters square above; action axe blade alone crosses right boundary; body and feet remain in 1x1 footprint. Action planted-foot pixels copied from ready and then same transform applied; no whole-body motion. Bow loaded then just released.",
+  "notes": "Same leader long-bow alternative, arrow nocked and loaded in ready, arrow absent after release. Narrow upright bow preserves five-foot body and 1x1 side fit. Reviewed native frames and 1-second fixed-grid alternation at combat size; approved pose guide and independent new character art only.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "aa3460d494ca37be2e5ded4a64ce8023a01287ff718079fe4728d03524671fa8",
-  "reviewed_at": "2026-10-23T06:00:16+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "22ab2587d2ff667713186be7ad29ec169afb719f9efb352a24d24f07a339a703",
+  "reviewed_at": "2026-10-23T10:19:03.342483+00:00",
+  "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:5",
   "specification": "bipedal-v1",
   "variant_id": "item_003__ranged",
