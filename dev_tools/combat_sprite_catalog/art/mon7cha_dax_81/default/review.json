@@ -1,0 +1,32 @@
+{
+  "action_sha256": "8dfb6fc1cc79da3a03b73e95fe53e2b67debdafa7f888837f24eaf1b61b9a6c5",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon7cha_dax_81/default/action.png",
+    "ready": "art/mon7cha_dax_81/default/ready.png"
+  },
+  "metadata_sha256": "486beb1662da761ed1f36b62a4b9b1761d4d6f4c4ebbcb20402ad579379a6045",
+  "notes": "Saved Wand of Paralyzation stays gear in one default magic pair; both potions and AC4 bracers are present. Ready wand alone crosses top footprint line. Action wand lowers across face after spell release with no orb; body/robe/boots remain in place and fit 1x1. Alternating catalog review verified full five-foot body. No original game artwork used as generation reference.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "4c4bbac70392262f679638fd954ddb18d0d6c61f854d89cc867c4db9956b2958",
+  "reviewed_at": "2026-10-23T13:37:28+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON7CHA.DAX:81",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
