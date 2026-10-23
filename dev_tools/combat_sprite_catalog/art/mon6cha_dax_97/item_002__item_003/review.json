@@ -1,0 +1,32 @@
+{
+  "action_sha256": "17012129ed6e168aa7e6c0f61e4ee4dd83dde21f06a12796c85e7b768ac72e2e",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon6cha_dax_97/item_002__item_003/action.png",
+    "ready": "art/mon6cha_dax_97/item_002__item_003/ready.png"
+  },
+  "metadata_sha256": "8be530b859dfc52cd30a8d18ece7fab68ffc1ebae528200afcb54b71b702a511",
+  "notes": "Reviewed both native 128px frames and 1-second catalog alternation against fixed 1x1 grid. Full-height Normal body; fixed boots; short sword raised in ready and compact late strike in action; shield, leather armor and same identity retained. Source is independently generated art, with approved pose guide.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "c26420dab8045be7edb3c1604c0d7dc5196c1c0ee16067a4618357571877bced",
+  "reviewed_at": "2026-10-23T04:49:40.734565+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON6CHA.DAX:97",
+  "specification": "bipedal-v1",
+  "variant_id": "item_002__item_003",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
