@@ -1,0 +1,32 @@
+{
+  "action_sha256": "13944bed97c036653460f37e50e1780937c8caae7022a3a034361f017562301a",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon3cha_dax_110/item_000__ranged/action.png",
+    "ready": "art/mon3cha_dax_110/item_000__ranged/ready.png"
+  },
+  "metadata_sha256": "dd5479a1c3247ba9bf13b8d7dfd1ce197877c90c6addc8485fca0e1bffec0345",
+  "notes": "Dart setup generated using newly approved Theurgist identity and guide. Anatomical right hand on image left holds dart in ready and is empty after release; silver ring stays on anatomical left hand. Shared 125x110 export at +0,+19; lower 48 rows retained from ready for exact feet. One top hair pixel removed from action to keep body within one 5-foot square. Both poses checked at combat size in catalog, body and equipment within footprint.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "399855261abdeb03853a79324b6a933d114397689570431ade3257abba778747",
+  "reviewed_at": "2026-10-23T11:53:52.870992+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON3CHA.DAX:110",
+  "specification": "bipedal-v1",
+  "variant_id": "item_000__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
