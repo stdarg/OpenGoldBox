@@ -1,15 +1,15 @@
 {
-  "action_sha256": "53c1e1e2c478b0ec971166806cf36184fb7b5ca2a0961579a797d627a714f316",
+  "action_sha256": "909baa2cb9130e74e45fd41425481ebcaef10428d97f19fa1a1ef569cee3a001",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon5cha_dax_86/default/action.png",
     "ready": "art/mon5cha_dax_86/default/ready.png"
   },
   "metadata_sha256": "7c0272f7c132c673e4dec3d4a3b1f14f6ae77addec965a3ce167fcc9936abd29",
-  "notes": "Full-height Al-Hyam Dazid with saved Wand of Lightning shown despite gear classification, visible Ring of Fire Resistance and both AC 3 bracers. Rejected first action for moving body and second for attacking screen left. Final third action releases compact lightning toward screen right with fixed planted boots. Native 128-pixel and 1-second catalog alternation reviewed; ready wand charge alone crosses top of 1x1 tile, action fits.",
+  "notes": "MON5 and MON6 Al-Hyam Dazid have the same name and saved Wand of Lightning, Ring of Fire Resistance, and AC3 bracers. Reused the already-approved independently generated MON6 ready/action pair to correct MON5 action body height and make identity consistent. Body/boots remain registered and 87-88 pixels high in both frames; only raised ready wand crosses top. Reviewed alternating for MON5 in catalog. No original game artwork used as reference.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "b18e8c7f034659b854c2a19ad371d14bef9a9dbdf45d13ec3c53c2fd2a801aff",
-  "reviewed_at": "2026-10-23T04:28:54.237777+00:00",
+  "ready_sha256": "abfe960e2c42a4cba2176590e8cb62dc378dac1244bd46371ff6934b18b347a7",
+  "reviewed_at": "2026-10-23T14:03:24+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON5CHA.DAX:86",
   "specification": "bipedal-v1",

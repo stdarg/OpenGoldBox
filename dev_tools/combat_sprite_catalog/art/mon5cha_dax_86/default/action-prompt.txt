@@ -212,4 +212,4 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-ACTION ITERATION: First action attempt shifted the whole body to fit a straight lightning cast and was rejected. Second pointed the wand screen LEFT and was rejected. Accepted third edit holds the body and planted boots at their ready coordinates, bends the elbow, points the wand toward screen RIGHT and shows a small lightning release. Both enchanted bracers and the orange ring remain visible; the wand remains in hand. Shared scale and alpha cleanup as ready.
+PRODUCTION: MON5 and MON6 Al-Hyam Dazid have identical saved identity/equipment. This pair reuses the independently generated and accepted MON6 default pair for consistency; no original-game art is an input. It corrects the MON5 action body-height mismatch. Exact reused PNG hashes in review.json.

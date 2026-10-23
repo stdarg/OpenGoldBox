@@ -210,5 +210,4 @@ Reference 2, when available: this monster's first approved NEW ready sprite,
 for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.
 
-CHARACTER DETAIL: Distinct middle-aged named mage in indigo and gold robe, visible two jeweled AC 3 bracers and orange-gem Ring of Fire Resistance. Saved Wand of Lightning is gear, not a weapon classification change, but held up and charged in this default casting ready pose. Correct-height new level-three mage is a scale reference only; approved guide for direction only.
-EXPORT: Shared 1254-to-128 nearest-neighbor scale. Alpha below 5% removed to avoid invisible spill.
+PRODUCTION: MON5 and MON6 Al-Hyam Dazid have identical saved identity/equipment. This pair reuses the independently generated and accepted MON6 default pair for consistency; no original-game art is an input. It corrects the MON5 action body-height mismatch. Exact reused PNG hashes in review.json.
