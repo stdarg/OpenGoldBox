@@ -1,15 +1,15 @@
 {
-  "action_sha256": "864f7eedd8893f6f5cace7b134390fff0671b9563313483bc31c223dbcf2f125",
+  "action_sha256": "169fcd9adaaf00dc96b65a43e4da558131ec813aa83ed4b6c2a2ac8c938d29f5",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_44/item_001__ranged/action.png",
     "ready": "art/mon1cha_dax_44/item_001__ranged/ready.png"
   },
   "metadata_sha256": "4274987855013fd8197c2e33a888b15cf1efb3b8e64d7ce7a021c2f25764f73c",
-  "notes": "Orc short-sword pair independently edited from matching new Orc art; bow pair uses matching independent new Orc art. No original game art reference. Exact pair visually inspected at combat size and one-second catalog alternation. Both ready silhouettes fit 1x1; body and feet remain fixed, action short-sword alone crosses guide 0.08 square. Body matches normal Orc height and scale across sets.",
+  "notes": "Corrected approved newly generated Orc art by applying the identical nearest-neighbor 155/128 scale and canvas translation to ready and action, around their shared planted-foot anchor. No original game art used. Inspected both frames side by side at combat size and alternating in the fixed-grid catalog. Feet stay aligned; body reaches about one 5-foot tile without crossing the top; only the raised ready weapon or moving action weapon crosses. Full saved sword/shield and bow setups checked separately. Original art remains in git history; unaccepted 161/128 trial is in staging.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "931cf55962f0cc3bacc6e0e97df9c07d49c337283e23ce1cfc0c3a9b95c08896",
-  "reviewed_at": "2026-10-21T22:20:13.101741+00:00",
+  "ready_sha256": "cfa3e1ac58818fac48c3073966f6e0db9f92f176be4b5514cb4cc2b34b31ecae",
+  "reviewed_at": "2026-10-23T03:31:32+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:44",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

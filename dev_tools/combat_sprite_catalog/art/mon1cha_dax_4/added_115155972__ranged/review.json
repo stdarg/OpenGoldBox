@@ -1,15 +1,15 @@
 {
-  "action_sha256": "864f7eedd8893f6f5cace7b134390fff0671b9563313483bc31c223dbcf2f125",
+  "action_sha256": "74e506901b501bceb4f68160628fdb1dba63d6458a7c781a359c02b6016a8286",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_4/added_115155972__ranged/action.png",
     "ready": "art/mon1cha_dax_4/added_115155972__ranged/ready.png"
   },
   "metadata_sha256": "648ff4dcb6a75cb0734ba58a1fc5c7ae1354209975b6addc099d06e56054792d",
-  "notes": "New independently generated Orc bow pair made using approved pose guide and matching independently generated Orc set for identity. Shared 0.10 source scale across both sets and poses. Inspected exact exports and one-second catalog animation; ready silhouette fits 1x1 grid, feet fixed across poses and sets, body visibly taller than Small goblins. Action weapon may cross guide, but does not need to.",
+  "notes": "Corrected approved newly generated Orc art by applying the identical nearest-neighbor 155/128 scale and canvas translation to ready and action, around their shared planted-foot anchor. No original game art used. Inspected both frames side by side at combat size and alternating in the fixed-grid catalog. Feet stay aligned; body reaches about one 5-foot tile without crossing the top; only the raised ready weapon or moving action weapon crosses. Full saved sword/shield and bow setups checked separately. Original art remains in git history; unaccepted 161/128 trial is in staging.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "931cf55962f0cc3bacc6e0e97df9c07d49c337283e23ce1cfc0c3a9b95c08896",
-  "reviewed_at": "2026-10-21T21:55:30.755495+00:00",
+  "ready_sha256": "0a2c5fe7f3317caa845a2b6365aea9a0602f2ccc1636767d464e8caf8ccafbdb",
+  "reviewed_at": "2026-10-23T03:31:31+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:4",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

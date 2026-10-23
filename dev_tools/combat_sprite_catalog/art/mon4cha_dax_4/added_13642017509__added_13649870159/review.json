@@ -1,15 +1,15 @@
 {
-  "action_sha256": "bbfb0edc37b5ea02aed9fcd8ee64ee98923c7e6af29cce4ed7d88d324e62d667",
+  "action_sha256": "fb61cca188cd0f2761b44962cbff5bfffd29323f499d5f576621f80d4ffa33f7",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon4cha_dax_4/added_13642017509__added_13649870159/action.png",
     "ready": "art/mon4cha_dax_4/added_13642017509__added_13649870159/ready.png"
   },
   "metadata_sha256": "13a9b9745cba4b4dba84ecaf68e8111be37370cce8e685db4600ea2bc69cdfc2",
-  "notes": "Same independently generated Orc identity and matching weapon set as reviewed MON1CHA.DAX:4. Exact image pair separately inspected in this archive at combat size and one-second alternation. Ready pose fits 1x1; fixed feet and scale across weapon sets.",
+  "notes": "Corrected approved newly generated Orc art by applying the identical nearest-neighbor 155/128 scale and canvas translation to ready and action, around their shared planted-foot anchor. No original game art used. Inspected both frames side by side at combat size and alternating in the fixed-grid catalog. Feet stay aligned; body reaches about one 5-foot tile without crossing the top; only the raised ready weapon or moving action weapon crosses. Full saved sword/shield and bow setups checked separately. Original art remains in git history; unaccepted 161/128 trial is in staging.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "df43fe1b99bece1d10ee9ce38c0ed7b63b87b2316a2b072d034b2614f5e1eaf6",
-  "reviewed_at": "2026-10-21T21:56:13.736035+00:00",
+  "ready_sha256": "732987a2847f7de4b8ddaca2a2ef1549b81e6e1a78935bee054fa644a6946e35",
+  "reviewed_at": "2026-10-23T03:31:34+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON4CHA.DAX:4",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
