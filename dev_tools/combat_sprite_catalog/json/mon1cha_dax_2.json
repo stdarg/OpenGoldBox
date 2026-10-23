@@ -4,6 +4,10 @@
   "height_feet": 3.5,
   "height_reference": {"min_feet": 3, "max_feet": 4, "url": "https://www.dndbeyond.com/forums/d-d-beyond-general/bugs-support/37376-attempting-to-select-goblin-as-a-races-causes-a", "note": "Volo's Guide to Monsters playable-goblin range, reproduced in D&D Beyond data."},
   "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "description_sources": [
+    "Original game MON1CHA.DAX:2 and matching MONnITM inventory",
+    "https://www.dndbeyond.com/sources/dnd/basic-rules-2014/monster-stat-blocks-g (general creature appearance only)"
+  ],
   "equipment": [
     {
       "id": "item_000",
@@ -34,6 +38,16 @@
       "source_range": 0,
       "source_type": 52,
       "weapon_role": ""
+    },
+    {
+      "id": "added_26190831",
+      "kind": "weapon",
+      "name": "short bow",
+      "readied": false,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "ranged"
     }
   ],
   "flag_for_regeneration": false,
@@ -58,6 +72,15 @@
       "shield_id": "item_001",
       "weapon_id": "item_000",
       "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon1cha_dax_2/added_26190831__ranged/action.png",
+      "id": "added_26190831__ranged",
+      "label": "short bow",
+      "ready": "art/mon1cha_dax_2/added_26190831__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "added_26190831",
+      "weapon_role": "ranged"
     }
   ],
   "wealth": {
@@ -68,9 +91,5 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 18
-  },
-  "description_sources": [
-    "Original game MON1CHA.DAX:2 and matching MONnITM inventory",
-    "https://www.dndbeyond.com/sources/dnd/basic-rules-2014/monster-stat-blocks-g (general creature appearance only)"
-  ]
+  }
 }

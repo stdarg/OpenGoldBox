@@ -4,6 +4,9 @@ Create one independently designed full-body monster combat sprite in crisp pixel
 art. Use the monster's current text description and the selected equipment set.
 No original game image, extracted sprite, or original-art contact sheet may be an
 input reference. Do not copy the pose-guide mannequin's identity or clothes.
+The saved sprite_size comes from the game's decoded combat-art dimensions,
+measured in 24-pixel source tiles; never replace it with an SRD creature-space
+category. Do not use original game artwork as a generation reference.
 
 FACING: Front three-quarter view toward the RIGHT EDGE OF THE IMAGE (screen
 right), approximately 45 degrees between frontal and right-side profile. The
@@ -36,6 +39,37 @@ Do not add a shield to a two-handed or ranged setup. Preserve the character's
 identity, clothing, colors, handedness and equipment across the pair and all its
 weapon sets. Treat conflicting descriptions/equipment as a question to resolve,
 not permission to invent a different setup.
+
+HUMANOID HEIGHT: The catalog's humanoid_size is a visual body-height tier, separate
+from sprite_size (combat squares) and from the SRD creature-type tag. "small"
+humanoids, such as goblins and kobolds, must read shorter than "normal"
+human-scale figures; "tall" figures, such as ogres and hill giants, must read
+taller than normal figures. "na" means this humanoid-height comparison does
+not apply to the body plan. Compare with correctly scaled art from the same
+species and tier before choosing a body scale. Measure the figure from planted feet to
+the top of its head, excluding weapons, horns, raised arms and effects. Keep
+that body height consistent across both poses and every weapon set for this
+creature; do not fill the 128 x 128 canvas independently for each sprite. Use
+only a correctly scaled comparison sprite as a reference: an older accepted
+image is not a height authority if it breaks the Small < Normal < Tall order.
+On the catalog's stationary 3 x 3 combat-square guide, aim for a foot-to-head
+height of about 0.6 square for Small, 0.9 square for Normal, and 1.7 squares for
+Tall. These are rounded-down visual body measurements, not literal species
+heights or canvas sizes. The body and planted base must stay within the saved
+sprite_size footprint. The ACTION weapon may cross the dotted footprint border
+at full length; keep it completely visible within the PNG canvas. Do not shrink
+the action character to contain its weapon. The grid never moves between monsters
+or animation frames. If the body overflows, redesign the pair at a common scale;
+never fit ready and action separately.
+
+LEADER COMPARISON: For every creature named Leader or Ldr, compare its body
+against regular creatures of the same kind in the same game archive. In both
+poses and every weapon set, the leader must be modestly taller and broader from
+planted feet to head, excluding weapons, helmets, horns and raised arms. Rank
+ornament alone does not satisfy this rule. Keep its saved humanoid height tier
+and game-derived sprite_size unchanged. If the regular art leaves no room for a
+larger leader in that footprint, correct the regular art scale; never overflow
+the tile guide or independently shrink one animation frame.
 
 WEAPON-SET COVERAGE (generation workflow): Inspect the monster's entire current
 equipment list and enumerate every weapon set, including weapons not currently
@@ -72,9 +106,11 @@ needed to show the attack. Do not translate, recenter, crop, independently
 scale, or rotate the entire figure between frames. A matching foot baseline
 alone is insufficient if the character slides horizontally. For a stationary
 attack, do not invent a step or a new stance. Plan transparent space for the
-weapon's widest action sweep before making ready; if that cannot fit, remake
-BOTH frames at a smaller common scale while retaining a single shared foot
-anchor. Overlay the frames and play them at combat size to reject any jump.
+weapon's widest action sweep before making ready; the action weapon may cross
+the dotted footprint border but must remain fully visible in the PNG. If the
+body cannot fit, remake BOTH frames at a smaller common scale while retaining
+a single shared foot anchor. Overlay the frames and play them at combat size
+to reject any jump.
 
 OUTPUT: A single full-body figure, genuine transparent background, no painted
 checkerboard, ground plane, labels, borders, scenery, shadows extending off the
@@ -88,6 +124,7 @@ action must read clearly at normal combat size, not only in a magnified preview.
 MONSTER AND SELECTED SET (current catalog JSON):
 {
   "description": "The troubled man found in a corner of Mendor’s Library; the Cluebook advises speaking with him. Current catalog equipment: Great sword, scale armor. Source wealth: 2 sp.",
+  "humanoid_size": "normal",
   "name": "MAD MAN",
   "other_gear": [
     {
@@ -115,6 +152,10 @@ MONSTER AND SELECTED SET (current catalog JSON):
   ],
   "selected_set": "Great sword",
   "source_key": "MON2CHA.DAX:25",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
   "weapon_role": "two_hand"
 }
 
@@ -134,5 +175,3 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-
-FINAL ART DIRECTION: Earlier shifted actions rejected. Final compact down-right late strike; revised ready derived from it so boot x/y and body scale match.

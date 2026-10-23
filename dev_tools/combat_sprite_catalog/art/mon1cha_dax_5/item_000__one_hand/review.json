@@ -1,15 +1,15 @@
 {
-  "action_sha256": "8a808e3914293750b8e1375e0596961763403ae6ef902d6eb37fd47879c68a85",
+  "action_sha256": "af6a5f4b7c4ae65087ad1c508e870590b6a1f41f30e0ae9e57b7841be3dbcd12",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_5/item_000__one_hand/action.png",
     "ready": "art/mon1cha_dax_5/item_000__one_hand/ready.png"
   },
   "metadata_sha256": "edfe2d0082ee45bd937b70bee50647197fccf15d8ec1342f7064e3ae19d7d9f1",
-  "notes": "Regenerated larger chainmail orc leader. Rejected first action for shifted stance; second action keeps boots registered. Compared with regenerated regular orc at fixed 1x1 catalog zoom. Both poses fit.",
+  "notes": "New independent Orc Leader axe pair based on approved pose guide and exact new ready identity. Shared export scale across poses and leader sets. Both poses inspected at combat size and in one-second catalog alternation. Leader is broader and modestly taller than regular Orc; ready silhouette fits 1x1. Axe action blade alone crosses the dotted footprint by 0.11 square; body and planted feet stay inside. Bow is loaded then just released.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "0101d96620697a8322efaff427d09c49891c14b8dca368c009f6fabdd8a144a7",
-  "reviewed_at": "2026-10-21T02:36:23.002181+00:00",
+  "ready_sha256": "ec4f6e74b62569b229faefde02240cf74512d68554632f0f482f5453106e6ed6",
+  "reviewed_at": "2026-10-21T21:59:37.096752+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:5",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }

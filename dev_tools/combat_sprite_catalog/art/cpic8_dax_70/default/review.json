@@ -1,16 +1,16 @@
 {
-  "action_sha256": "bea3e4a08be4176bcb8e2376fc46806860b88018df013034add5644ea97ba84f",
+  "action_sha256": "22a54ace600fef5745c114feb9136bdb676c7e17c3160266735c5e9b3eeddc0e",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/cpic8_dax_70/default/action.png",
     "ready": "art/cpic8_dax_70/default/ready.png"
   },
   "metadata_sha256": "9adf18df42b3d0b28f43754bf1ccbcc2216e026e3eb8dd959dda346dc4c8fb95",
-  "notes": "Game source 24x48 (1x2), no carried equipment. Shared newly generated Efreeti design appropriate to matching monster copies and script-linked CPIC8 combat icon. Approved pose guide only; no original game art reference. Two glow/background drafts were rejected. Final flat transparent cutout uses shared 720x1609 crop/scale, fixed pointed smoke-tail base, small palm-flame change. Native pair and live catalog ready/action on stationary grid reviewed for this record; both fit.",
+  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "9c7e172d0441f70df50284b6486fe31cc48a2fcd1dc8fe4af84501fe15f025af",
-  "reviewed_at": "2026-10-21T01:25:51+00:00",
-  "reviewer": "Codex",
+  "ready_sha256": "0e46cd9672059cf4ec7e01657d4ddf974f737a6ad510ca8cc8abba8bb33d5598",
+  "reviewed_at": "2026-10-21T21:50:43.116123+00:00",
+  "reviewer": "Codex visual review",
   "source_key": "CPIC8.DAX:70",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }

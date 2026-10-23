@@ -1,16 +1,16 @@
 {
-  "action_sha256": "b88aa2c7ed4401a006e45b8072896032bf1dad36e072d2e469324f62c46a3b6a",
+  "action_sha256": "94ddecf483326f01d4121d6bb480f7d13775124a5d250f67d270b4e58a140254",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_2/item_000__item_001/action.png",
     "ready": "art/mon2cha_dax_2/item_000__item_001/ready.png"
   },
-  "metadata_sha256": "59b97cbb23ebb95601f76f3a4d9025200ddc3a9445705dc85a968407b01ad3fe",
-  "notes": "Generated with approved bipedal guide and newly created goblin art only. Reviewed both 128px frames and catalog poses: 1x1 fits, fixed planted feet and common transform within each pair. Regular guard has studded armor; leader has scale armor and is larger than guard. Bow ready has loaded arrow; action has just released it.",
+  "metadata_sha256": "d2ebce5a63e3da3e77d6ece0e1e8b2718dcec1ffc87fcdf5bc4aba70916f7f82",
+  "notes": "Approved new guide plus existing replacement art for identity. Common export transform. At 128 px, planted feet align; head-to-foot body measures about 3.5 ft; ready sword within 1x1 footprint. Overlay reviewed at exact coordinates.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "45c68a84ecc01fec6a7451143f3ff9de41d81b616f380f6c14be1cc1ce069d3b",
-  "reviewed_at": "2026-10-21T03:36:52.091196+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "2759baa1e8fdc6311626f05f0e38bfb785a79740ce23aa13ed49877dff6a6af0",
+  "reviewed_at": "2026-10-23T00:33:52.578371+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:2",
   "specification": "bipedal-v1",
   "variant_id": "item_000__item_001",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "3b5624301d6268b8396c53604b6ba673f8cfe4b0aa6757b9a8c8a0fa16abde56"
 }

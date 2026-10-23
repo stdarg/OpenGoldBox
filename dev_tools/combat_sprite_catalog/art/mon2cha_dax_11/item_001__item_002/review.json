@@ -1,16 +1,16 @@
 {
-  "action_sha256": "c50ef879e87db49176af2e6b2c856f3e392e8ebd978bbd2292f3f858bd73d698",
+  "action_sha256": "3a43182c8f30cd45e3de3aea2f7c56c8b6461402b7173fb0ce69efeb314dbf86",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_11/item_001__item_002/action.png",
     "ready": "art/mon2cha_dax_11/item_001__item_002/ready.png"
   },
   "metadata_sha256": "df3287e7fd107902b21f2fa545e65ce352f3b89d7aa6bfbbb1572fdfdc50312a",
-  "notes": "Leader is modestly taller and broader than ordinary Kobold. Source Kobold design/pair: mon7cha_dax_1/item_002__item_003; equipment matches this saved set (including visible bracers where present). Both exact PNG hashes inspected at combat size in this record's catalog ready and action states, with 1x1 fit; fixed claw contacts and hips, raised short sword and late in-place strike. No original game art was a generation reference.",
+  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "5060d7b3a3248909890afdb6d93463558d73f8572bcc005e7d7c363dd81c4170",
-  "reviewed_at": "2026-10-21T02:17:59+00:00",
-  "reviewer": "Codex",
+  "ready_sha256": "8777a1a09acb46af9034a19c33f0f21afc2a6fd745c8fe6af4f2dc4aa61cc85c",
+  "reviewed_at": "2026-10-21T21:50:49.662876+00:00",
+  "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:11",
   "specification": "bipedal-v1",
   "variant_id": "item_001__item_002",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }

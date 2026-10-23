@@ -1,15 +1,15 @@
 {
-  "action_sha256": "18c60ada69945997750bdfe99bca3790f108716171c0bcae89beeb6e796e0a14",
+  "action_sha256": "bbfb0edc37b5ea02aed9fcd8ee64ee98923c7e6af29cce4ed7d88d324e62d667",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_4/added_12685407688__added_12725666116/action.png",
     "ready": "art/mon2cha_dax_4/added_12685407688__added_12725666116/ready.png"
   },
   "metadata_sha256": "dd5a2ac1516a16d833c44e015ae1aebe288ab3f140d9a42ed9a90b1dd781317f",
-  "notes": "Newly regenerated species-template art reused for this matching equipment set; same approved new-art hashes. Ready/action inspected at catalog zoom and both fit fixed 1x1 grid. Regular body is smaller than leader; planted boots and body scale are consistent.",
+  "notes": "Same independently generated Orc identity and matching weapon set as reviewed MON1CHA.DAX:4. Exact image pair separately inspected in this archive at combat size and one-second alternation. Ready pose fits 1x1; fixed feet and scale across weapon sets.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "3c028cf791738e69992a301dd6dabca52386876d5ef8fe20826d8d242068df22",
-  "reviewed_at": "2026-10-21T02:38:24.458369+00:00",
+  "ready_sha256": "df43fe1b99bece1d10ee9ce38c0ed7b63b87b2316a2b072d034b2614f5e1eaf6",
+  "reviewed_at": "2026-10-21T21:56:11.532233+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:4",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }

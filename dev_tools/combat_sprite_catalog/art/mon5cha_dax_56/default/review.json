@@ -1,16 +1,16 @@
 {
-  "action_sha256": "91094bc51b93a2b5a05420bc21cc9107826369aced978a7047ba30bebc5b8a84",
+  "action_sha256": "83f8b02b965ae1c352b1f870cd14942d464ff5d124bbcaa5e6c8bb25f4330088",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon5cha_dax_56/default/action.png",
     "ready": "art/mon5cha_dax_56/default/ready.png"
   },
   "metadata_sha256": "d57ddb2decfd40a157310b50770529fba7590a9830ed2a89944382269fbad386",
-  "notes": "Game source 24x48 (1x2), no carried equipment. Natural unarmed attack with fixed boots; ember fissures are body markings rather than a magic item. Generated using approved narrow ogre art as scale and pose guide, no original game art. Shared 781x1589 crop/scale; reviewed native pair and live catalog grid ready/action; both fit.",
+  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "4b8e85472eebd79299fa29b044533193b0953c69d95f38a596856dcef76139b3",
-  "reviewed_at": "2026-10-21T01:28:21+00:00",
-  "reviewer": "Codex",
+  "ready_sha256": "6beb7e1fbbfbe8f6049884a38881d3a1ffaef80aaa2022893eb480fef2bb0006",
+  "reviewed_at": "2026-10-21T21:51:03.922397+00:00",
+  "reviewer": "Codex visual review",
   "source_key": "MON5CHA.DAX:56",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }

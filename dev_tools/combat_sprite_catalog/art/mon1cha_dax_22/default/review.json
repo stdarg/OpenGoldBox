@@ -1,16 +1,16 @@
 {
-  "action_sha256": "57aea40bba9d2de8204d0a6d73b0d65340193382a7443214b34c7261843a4cc7",
+  "action_sha256": "78d32582b399720c51579d6ef40d55a20d09eb840dbc7ef13107e3f0cfc2d587",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_22/default/action.png",
     "ready": "art/mon1cha_dax_22/default/ready.png"
   },
-  "metadata_sha256": "6b05dce66adfa6dc0e3509647372063347912515e3354bdb4f059d0632258784",
-  "notes": "Fresh giant skeleton pair with upper-body claw sweep while pelvis and skeletal feet remain fixed. Reviewed both frames at 128 px and alternating in this catalog source record. MON4CHA reuses exact matching new art. No equipment in current saved loadout.",
+  "metadata_sha256": "2a89c27e9a9990eaa83ee4c82f93ce4a97207b379c70177ec6d1c966bb79b8d7",
+  "notes": "Reviewed in the isolated catalog at normal combat size with one-second ready/action alternation. The first wide claw action was rejected; the revised bent-claw action fits the 1x2 footprint. Shared scale and lower-body registration keep both feet fixed; body is about 1.7 squares tall.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "bccd11b321a7a1177dc5765b3586b6e5dfee26c23d83fce8e0f8eb58f4b03cbf",
-  "reviewed_at": "2026-10-19T01:49:32.309905+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "6999577b99891fcc4bf4a60c61473b6de48d3b02247d09a18d9326a25f961061",
+  "reviewed_at": "2026-10-21T21:23:44+00:00",
+  "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:22",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }

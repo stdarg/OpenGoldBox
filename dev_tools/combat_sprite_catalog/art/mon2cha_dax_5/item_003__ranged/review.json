@@ -1,15 +1,15 @@
 {
-  "action_sha256": "d864c7f5ca38fa6db69125d4f51cb8f48a3e4cfe089186b70a347d14c5ff5e1f",
+  "action_sha256": "83969d05a8aad668340315c8f7e51e69d60c9f0ed9bb72588a27b8234062489c",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_5/item_003__ranged/action.png",
     "ready": "art/mon2cha_dax_5/item_003__ranged/ready.png"
   },
   "metadata_sha256": "90ebe82f417ef156c022227f980c3e9947e8779c9925fa1d1fc565a09a1c1be7",
-  "notes": "Newly regenerated species-template art reused for this matching equipment set; same approved new-art hashes. Ready/action inspected at catalog zoom and both fit fixed 1x1 grid. Regular body is smaller than leader; planted boots and body scale are consistent.",
+  "notes": "Matching Orc Leader inventory and appearance to MON1CHA.DAX:5; same independently generated bow pair. Exact pair separately inspected in this catalog record at combat size and one-second alternation. Leader broader and modestly taller than regular Orc; ready fits 1x1. Action axe blade overflow is allowed while body and planted feet remain inside.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "65cc0a0d53366f00d364dc0532051a0eaccf78bf8910cb8b009747d0561f0706",
-  "reviewed_at": "2026-10-21T02:38:26.652275+00:00",
+  "ready_sha256": "d52b60fe0971e91f42c5c305d324bb65d49c98cfc0d5e87def36bb3127f31354",
+  "reviewed_at": "2026-10-21T22:00:20.370234+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:5",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }

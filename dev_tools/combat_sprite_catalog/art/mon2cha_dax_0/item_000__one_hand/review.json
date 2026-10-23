@@ -1,16 +1,16 @@
 {
-  "action_sha256": "69de88cf01b4775b21d84771bd99038081516937f198fe2374a8f24c0e0faf89",
+  "action_sha256": "d76911ba23904bd7ec77f95c4a384377f0b5992e9cb38873db84a5f954eb7ee9",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_0/item_000__one_hand/action.png",
     "ready": "art/mon2cha_dax_0/item_000__one_hand/ready.png"
   },
   "metadata_sha256": "de2bb027918522562c228ecdfbfec8514aa3b077bf0c0ffc55be661bb8010f83",
-  "notes": "Ordinary Kobold short sword, smaller and wirier than the newly generated Kobold Leader by a modest body-height margin. Fixed claws and hips, late sword strike. Inspected exact pair side by side and in both catalog states; 1x1 fit. Approved pose guide and newly generated replacement art only.",
+  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "9fcbf8d55b9fe64dd6d5fcab429e4d8ca3e666fff22cfb70ed5ee8e976a87fd8",
-  "reviewed_at": "2026-10-21T02:13:26+00:00",
-  "reviewer": "Codex",
+  "ready_sha256": "c8313382bc45b379f8e00ad1d5f60d3ec737ddcf611299d2174d8bf079780b45",
+  "reviewed_at": "2026-10-21T21:50:48.571258+00:00",
+  "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:0",
   "specification": "bipedal-v1",
   "variant_id": "item_000__one_hand",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }

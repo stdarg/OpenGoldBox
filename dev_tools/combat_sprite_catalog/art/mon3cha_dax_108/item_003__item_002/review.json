@@ -1,15 +1,15 @@
 {
-  "action_sha256": "6e7556d61e7c7471358146c3db31367cb6333865d4faf32e47b0a8ff5c05027f",
+  "action_sha256": "aa1ef9eb128086c01be1d85124473b90c55a059e288921104c9f3ec6bed00397",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_108/item_003__item_002/action.png",
     "ready": "art/mon3cha_dax_108/item_003__item_002/ready.png"
   },
-  "metadata_sha256": "f2450991386353b83508126f0aec03db516baa91402c6e973f2b06123443825a",
-  "notes": "Both frames reviewed at 128 px and alternating in catalog; fixed boots/body, local mace extension, Sune symbol, holy water, chain armor and shield retained.",
+  "metadata_sha256": "0a6163613b41930721057bfd0efd92603c5e49cfcbcfaff37f4a6487bd8d6f2b",
+  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "f64205b22aa56622f2dfc2d02c33ee86b4631ccbaa11b4ff7325320181b42727",
-  "reviewed_at": "2026-10-19T02:37:45.090572+00:00",
+  "ready_sha256": "37d869470a59ecf76b53013a430a1db11f5f098d5429e375b7ae26d9b7de6e7e",
+  "reviewed_at": "2026-10-21T21:50:59.502917+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON3CHA.DAX:108",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }
