@@ -1,15 +1,15 @@
 {
-  "action_sha256": "85d5ec79b03493695764dc1c5764beb4bdefd4cd0a90567e5c54c4e87a83796b",
+  "action_sha256": "036303302d98fc41e3bfb45509071ac7d2fef2e021711c011693ebb57ce666c1",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_12/item_000__item_001/action.png",
     "ready": "art/mon2cha_dax_12/item_000__item_001/ready.png"
   },
-  "metadata_sha256": "80e24cface6ed2191d95593929fa51d41203b74d2f49371ec65af200dc4caa15",
-  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
+  "metadata_sha256": "a1f9089eb829166491b3d6525c78829db01526ccdb25ec5fd06a530c48c7ccaf",
+  "notes": "This record's previously approved newly generated goblin leader art was shorter and slimmer than MON2:2 Goblin Guard, contrary to saved 4.0 ft leader versus 3.5 ft guard. Shared horizontal 1.30 scale and anchored vertical transform increase body to about 4.0 ft (roughly 100 native pixels), make the leader broader, and preserve its enchanted leather +1, red rank clothing, short sword and shield. No gameplay gear invented. Both frames share transform and exact planted-foot pixels after lower 12 action rows taken from ready. Reviewed next to MON2:2 guard and MON2:3 leader; at 128px on white and alternating on fixed catalog grid. Body and shield fit 1x1 in both frames, ready sword held overhead and action near end of slash.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "5e99c5427d55c305a644b0e39458765a08c80bae5e9562c28348e1aeee461d88",
-  "reviewed_at": "2026-10-21T21:50:50.768177+00:00",
+  "ready_sha256": "999a850d1ad61ef96c37c4a55ce456c45abc8394a116b503462fa1b7f8ed6fec",
+  "reviewed_at": "2026-10-23T05:39:05.628034+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:12",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
