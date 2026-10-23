@@ -1,0 +1,32 @@
+{
+  "action_sha256": "b1d9a492c1c3937802aea084bac9a3ae422e714c8bb39c26d5b1d297d2fb6eea",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/cpic7_dax_12/item_002__item_003/action.png",
+    "ready": "art/cpic7_dax_12/item_002__item_003/ready.png"
+  },
+  "metadata_sha256": "3eb570620845c177707267babdc58e143a4843b0fd4040787fda76e4821ebd9d",
+  "notes": "CPIC7.DAX:12 is script-linked only to MON7CHA.DAX:40 and has the same saved full inventory and weapon sets. Copied exact previously approved newly generated 5-foot Nomad art from MON7. Reviewed both frames at native combat size and in the one-second Godot catalog under the linked icon. Feet, body scale, identity and equipment match the MON7 record. Short sword + shield raised ready and late strike action; pair fits tile.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "075154c3f52fd3647f801bbfb35bb791c419bb55c9c0aa616cd72a7dd82bcc46",
+  "reviewed_at": "2026-10-23T06:23:24+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "CPIC7.DAX:12",
+  "specification": "bipedal-v1",
+  "variant_id": "item_002__item_003",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
