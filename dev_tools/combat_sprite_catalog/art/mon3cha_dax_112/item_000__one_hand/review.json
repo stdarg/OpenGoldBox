@@ -1,0 +1,32 @@
+{
+  "action_sha256": "8f4777e44e283e0edbdf4c68f5c03d59cb37a57a5fa92ed2853b31c7eb7e7e56",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon3cha_dax_112/item_000__one_hand/action.png",
+    "ready": "art/mon3cha_dax_112/item_000__one_hand/ready.png"
+  },
+  "metadata_sha256": "c55f9d669c69962283367acdf84f815da544fb7b73060c43e4363e4ba83094ca",
+  "notes": "New independently generated Curate art from approved pose guide and exact new ready identity. Current JSON has Mace and Plate armor only; no shield or deity-specific symbols were added. Shared 1254x1254 working canvas and 115x115 nearest-neighbor transform; sub-1-percent alpha fringe removed. The action lower 37 rows copy ready, giving exact planted-foot coordinates. Reviewed native transparent PNG, white flatten, and 1-second catalog alternation. Body fills full Normal 5-foot tile; ready raised mace alone extends 0.15 square above, action mace alone extends about 0.01 square past side. One-handed mace has distinct blunt head and late swing.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "4cd6475d77fc904a35e3ec977d8b41a797712caeedf3c38a6deaa419d0e92bbc",
+  "reviewed_at": "2026-10-23T06:10:35+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON3CHA.DAX:112",
+  "specification": "bipedal-v1",
+  "variant_id": "item_000__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
