@@ -1,16 +1,16 @@
 {
-  "action_sha256": "aa1ef9eb128086c01be1d85124473b90c55a059e288921104c9f3ec6bed00397",
+  "action_sha256": "2f790daba4c5fe35b8af9318afbdc306b191e6a1f566a39d036f2517293d0993",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_108/item_003__item_002/action.png",
     "ready": "art/mon3cha_dax_108/item_003__item_002/ready.png"
   },
   "metadata_sha256": "0a6163613b41930721057bfd0efd92603c5e49cfcbcfaff37f4a6487bd8d6f2b",
-  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
+  "notes": "Five-foot acolyte of Sune; silver symbol, chain armor, mace and shield. Ready mace raised; action mace to right. Boots exact pixels below native row 101. Reviewed both native frames and the alternating fixed-grid preview at combat size; generated source is independent new art and approved pose guide.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "37d869470a59ecf76b53013a430a1db11f5f098d5429e375b7ae26d9b7de6e7e",
-  "reviewed_at": "2026-10-21T21:50:59.502917+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "691df01eccd35b9f2937a14cdfac1fac25a259e5f18588680b7b3d1d5f356dcc",
+  "reviewed_at": "2026-10-23T09:56:07.367696+00:00",
+  "reviewer": "Codex",
   "source_key": "MON3CHA.DAX:108",
   "specification": "bipedal-v1",
   "variant_id": "item_003__item_002",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

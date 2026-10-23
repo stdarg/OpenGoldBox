@@ -1,16 +1,16 @@
 {
-  "action_sha256": "3124ae1e3a611b2a6cc71ab628eaed4b7e53e673e6e202b152b2cec08d471891",
+  "action_sha256": "634f4c46426cafeee0db0f8841a039881ac9a58d577e9e80d0d2f29f1f9be0f5",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_107/item_001__one_hand/action.png",
     "ready": "art/mon3cha_dax_107/item_001__one_hand/ready.png"
   },
   "metadata_sha256": "86d05b45260a031bc6743d1323d2fa72cd217a16b28ed6bae4d9b7d192c80e14",
-  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
+  "notes": "Same named Dirten and identical saved gear as MON1 counterpart; same approved new art pair and five-foot body. Boots exact pixels below native row 100. Reviewed both native frames and the alternating fixed-grid preview at combat size; generated source is independent new art and approved pose guide.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "100da9afcfc5e4585f6b483f9da655e8b712e2653cce8feb125edba8152da9d8",
-  "reviewed_at": "2026-10-21T21:50:58.400333+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "1cd89374440a72b618cb297de11fb95b468f37b86dcd17e867acdd96f1ab31cd",
+  "reviewed_at": "2026-10-23T09:56:07.367407+00:00",
+  "reviewer": "Codex",
   "source_key": "MON3CHA.DAX:107",
   "specification": "bipedal-v1",
   "variant_id": "item_001__one_hand",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

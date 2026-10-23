@@ -1,16 +1,16 @@
 {
-  "action_sha256": "2f3c57227757d6ed6dc40a06197a29162bff16e5bdd744a770da4bc4c6ed3f25",
+  "action_sha256": "c859dd2af1adc9a36c76dabe8513f280ac2da656a94471233074e364344770f0",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon8cha_dax_95/default/action.png",
     "ready": "art/mon8cha_dax_95/default/ready.png"
   },
-  "metadata_sha256": "78e4c2507ef37ae7a648ec1a0cd65830866809183f78461e1e50262ec6a9912b",
-  "notes": "Both frames reviewed at 128 px and alternating in Godot catalog. Drythh holds both clawed feet, hips, tail and scale in fixed coordinates; raised empty claw makes a compact late slash. No equipment recorded. User authorized natural in-place attack. Weapon checklist interpreted as raised claw for this unarmed biped.",
+  "metadata_sha256": "58a60766cbd740bdbcdd041b80efc8a7903064063ef72ecb0c03255825c10f16",
+  "notes": "Five-foot lizard-man challenger; coiled tail and body fit 1x1. Guarded claw to in-place small claw strike; planted base exact pixels below native row 90. Reviewed both native frames and the alternating fixed-grid preview at combat size; generated source is independent new art and approved pose guide.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "0539f0459dc3b08c31f18b5d65e05f309dc76f0745338e9134497b9b36ea69a8",
-  "reviewed_at": "2026-10-19T02:51:15.823338+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "5de7e1a8957900c9c529aa7928a22cf8c4d6a9b9427b22f7a27905f11162a0a5",
+  "reviewed_at": "2026-10-23T09:56:07.368000+00:00",
+  "reviewer": "Codex",
   "source_key": "MON8CHA.DAX:95",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
