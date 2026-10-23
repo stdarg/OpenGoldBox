@@ -1,15 +1,15 @@
 {
-  "action_sha256": "9fd3b5ccff3452e7febceaa0d7022eb1f72c3cbc0487d5d4b63de020f30a3d84",
+  "action_sha256": "a0afb1ef9963a1d408093753cfb44b6cbf0d20122981e977282d04cc4122d278",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon7cha_dax_0/item_000__one_hand/action.png",
     "ready": "art/mon7cha_dax_0/item_000__one_hand/ready.png"
   },
-  "metadata_sha256": "0f6277d05a2b917e3bb8d2dd087cd0cf4936d85dcbcf0aab39fb17755f6ec172",
-  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
+  "metadata_sha256": "60829decf58fe2cd2f771c5dc8ed6f47b6b887a3acd7fab6dd858591dc12a1f6",
+  "notes": "Identical saved regular kobold, short sword only, across MON2/MON7/MON8. Previously approved newly generated MON2 ready/action character art shared after common 1.15 horizontal and 1.20 vertical resize anchored to feet: action head-to-feet about 64 native pixels, exactly the saved 2.5-foot target at Small catalog scale. Lower 15 action rows copied from ready for exact foot contacts. No shield/armor added. This record independently reviewed at 128px and in one-second catalog alternation; both fit 1x1 and regular remains smaller than saved 3-foot leaders.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "f8ee7b64d4eea98ad28a8c6b8bf6b91556b1d3837da0a16dd4a9c19d54e3df9f",
-  "reviewed_at": "2026-10-21T21:51:05.022138+00:00",
+  "ready_sha256": "e72509aca6ec6e83c93ff4bfb398e70ef68460641274c6c7cd966ef8e57f389c",
+  "reviewed_at": "2026-10-23T05:43:00.201708+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON7CHA.DAX:0",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

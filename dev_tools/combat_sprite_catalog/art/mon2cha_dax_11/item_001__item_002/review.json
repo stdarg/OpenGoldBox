@@ -1,15 +1,15 @@
 {
-  "action_sha256": "3a43182c8f30cd45e3de3aea2f7c56c8b6461402b7173fb0ce69efeb314dbf86",
+  "action_sha256": "913d077cec33d2434e382e766a47e8b27498c1675ac559f53d8d12608a20680b",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_11/item_001__item_002/action.png",
     "ready": "art/mon2cha_dax_11/item_001__item_002/ready.png"
   },
-  "metadata_sha256": "df3287e7fd107902b21f2fa545e65ce352f3b89d7aa6bfbbb1572fdfdc50312a",
-  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
+  "metadata_sha256": "c0bbb4790585646286f5835d6863775ace969db4280076bc57c084fa68472a25",
+  "notes": "Previously approved newly generated MON2 kobold leader was about 2.4 ft by head-to-feet against saved 3.0 ft target. Shared 1.30 horizontal and 1.25 vertical resize anchored to planted feet makes it about 77 native pixels / 3 feet and broader than the 2.5-foot regular kobold. Retains saved studded armor, Bracers AC 6, short sword and shield with more impressive command silhouette; no invented gear. Lower 15 action rows copied from ready to fix foot pixels. Reviewed both 128px alpha frames on white and alternating on stationary catalog grid, against MON2 regular and other leader.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "8777a1a09acb46af9034a19c33f0f21afc2a6fd745c8fe6af4f2dc4aa61cc85c",
-  "reviewed_at": "2026-10-21T21:50:49.662876+00:00",
+  "ready_sha256": "17acec41376a65199a87b006e176447481a706aa4219c774ed0f52ba9d2d9521",
+  "reviewed_at": "2026-10-23T05:43:00.201708+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:11",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
