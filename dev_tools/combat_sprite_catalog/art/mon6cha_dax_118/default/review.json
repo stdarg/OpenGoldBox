@@ -1,15 +1,15 @@
 {
-  "action_sha256": "28175e72e0fdb9a501197a7a8f950471396e15a38dede7b1dfe972e687e703e2",
+  "action_sha256": "fc8967e896c93ff5c16f6f76ef62484f97b85fa0b628b1c31d718da126d79270",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon6cha_dax_118/default/action.png",
     "ready": "art/mon6cha_dax_118/default/ready.png"
   },
   "metadata_sha256": "f0d2cc3ee783e285d61568b0ffa67bcb0dd6b6d270867c3cb3f69b2041879e69",
-  "notes": "Inspected 128px pair and one-second catalog preview at fixed 3x3 grid. Five-foot head-to-feet body fits 1x1; raised natural left claw alone exceeds top by 0.04 square in ready. Action right claw rake alone slightly crosses right line; all pixels stay on canvas. Both feet and non-attacking body retain exact ready pixels through deterministic composite of newly generated art. Exactly four arms, two legs, and no invented gear. Original game art never used as a generation or composite reference. Initial broad ready and shifted full-body action drafts rejected.",
+  "notes": "Corrected 2026-10-23: previous installed action mask leaked a full generated body. Replaced with a true local right-claw-only composite. Native ready/action difference confined to x72..112,y50..72; both planted feet and all other body pixels identical. Rechecked catalog ready/action at fixed one-square scale. Raised left natural claw alone crosses top by about 0.04 square; action claw alone crosses right by about 0.05. Exactly four arms, two legs, no saved carried gear. Only independently generated character art used.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "cbd44af226d56ea5e2d6d978d513a9574826288fa01df37252c3b5f80f0aef7a",
-  "reviewed_at": "2026-10-23T08:59:52+00:00",
+  "reviewed_at": "2026-10-23T09:19:24+00:00",
   "reviewer": "Codex",
   "source_key": "MON6CHA.DAX:118",
   "specification": "bipedal-v1",

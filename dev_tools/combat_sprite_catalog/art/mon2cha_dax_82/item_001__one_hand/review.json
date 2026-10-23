@@ -1,16 +1,16 @@
 {
-  "action_sha256": "cea9aafca04afa37e30f7cc4863bc03ff34362af14a9fd6d074f4b117d4a7001",
+  "action_sha256": "ea552de1bfb1d9c5bce346ee62748cb168b59bc5d9ba871d8ff5f6aa886f6912",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_82/item_001__one_hand/action.png",
     "ready": "art/mon2cha_dax_82/item_001__one_hand/ready.png"
   },
-  "metadata_sha256": "d310202006607403f530d018caafa07997607b4f550261b91ec8a0cb454dacc6",
-  "notes": "Both frames inspected at 128 px and alternating in Godot catalog. Dagger +2: dagger held up then compact late thrust; boots, robe, ring, scrolls and displacement cloak registered. First dagger-ready candidate rejected for widened stance; regenerated against wand-ready base. User authorized natural in-place magical attacks.",
+  "metadata_sha256": "4e0ca6e54ab9dc5a7871f9c7f108a9243b71b646ef038a07f7bdf51af811f1d9",
+  "notes": "Full five-foot silver-haired magic-user reviewed at native 128 and catalog fixed 1x1 scale, consistent with wand set. One saved Dagger +2 raised in ready and near end of short swing in action. Duplicate sheathed dagger rejected and removed in second ready. True action composite changes upper strike only; native lower body and foot pixels remain identical. No wand in this pair. Both saved weapon sets checked.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "b9086e5fdd2d9287f77f02f7d7233a28c4af07d27cbc0cf681de9defdbe7256e",
-  "reviewed_at": "2026-10-19T03:16:42.406960+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "0dd3975baa9d0845ef8fa8b390a24cd9effe50a2a6501e60488bcfdfc303b36b",
+  "reviewed_at": "2026-10-23T09:19:24+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:82",
   "specification": "bipedal-v1",
   "variant_id": "item_001__one_hand",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

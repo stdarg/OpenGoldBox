@@ -1,16 +1,16 @@
 {
-  "action_sha256": "33e6309c525bd405c64722675fcdcc30b4fe292880476b18fd2383577ecb1098",
+  "action_sha256": "ef284a4277172616c8693b82790e0a4a6ac9530a42cfd0743fbd269d664b2d6b",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_82/item_004__ranged/action.png",
     "ready": "art/mon2cha_dax_82/item_004__ranged/ready.png"
   },
-  "metadata_sha256": "d310202006607403f530d018caafa07997607b4f550261b91ec8a0cb454dacc6",
-  "notes": "Both frames inspected at 128 px and alternating in Godot catalog. Wand of Lightning: blue-white charge shrinks to fading spark after discharge, wand arm makes small follow-through; boots, robe and displacement cloak registered. Dagger set separately reviewed. User authorized natural in-place magical attacks.",
+  "metadata_sha256": "4e0ca6e54ab9dc5a7871f9c7f108a9243b71b646ef038a07f7bdf51af811f1d9",
+  "notes": "Full five-foot silver-haired magic-user reviewed at native 128 and catalog fixed 1x1 scale. Ready wand raised beside face; compact robe/cloak, saved sheathed dagger, ring and displacement cloak. Ready wand tip alone rises about 0.02 square above top. Action is short lightning release; exact ready body/feet with only cropped newly generated effect added, and effect crosses right by about 0.04 square. Rejected initial wide ready and shifted full-body action. Both saved weapon sets checked.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "51f8b905085ae5e65a57b5ee2bacaa9470e1525dbabcab774f7148d8a5d0639f",
-  "reviewed_at": "2026-10-19T03:16:41.663635+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "0ac009c950d3e8aac6c081cda4f3119d72f4ddf8063e93fb6024a0f9a6f397c6",
+  "reviewed_at": "2026-10-23T09:19:24+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:82",
   "specification": "bipedal-v1",
   "variant_id": "item_004__ranged",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

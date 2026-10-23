@@ -182,3 +182,5 @@ the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
 ATTACK-SPECIFIC DIRECTION: A short late rake with the right natural claw toward screen right; a tiny impact glint is at the tip. The large left claw, head, torso, smaller arms, legs, and exact planted feet stay registered. Full-body generated action attempts were rejected for changing scale and foot placement. The accepted action is a deterministic pixel composite of the third newly generated ready frame and the newly generated local right-claw action; the original game art was never an image-generation or composite input. The action claw may extend slightly beyond the tile's right edge, while every visible pixel stays inside the PNG.
+
+REVIEW CORRECTION: A first mask accidentally included the whole generated action body. That version was withdrawn. The corrected action copies only the right claw region from newly generated action art; all other ready-frame pixels, especially the feet, are unchanged. Exact PNG difference is confined to native coordinates x=72..112 and y=50..72.
