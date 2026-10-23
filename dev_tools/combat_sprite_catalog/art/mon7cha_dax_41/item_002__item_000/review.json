@@ -1,15 +1,15 @@
 {
-  "action_sha256": "c2a93093ba4c59b680d5828a2dc844e44d8b3747c3530ae03405d8df884f7d61",
+  "action_sha256": "d56ff40312d4a6bd42fef9a2224cca197cda9b5f15a9ae4d7ce0087159cc48f4",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon7cha_dax_41/item_002__item_000/action.png",
     "ready": "art/mon7cha_dax_41/item_002__item_000/ready.png"
   },
   "metadata_sha256": "834917cba61733800f52c2207924f1f127c6b22eca8338ff0acc37fb704d866c",
-  "notes": "Exact reuse of newly generated MON3CHA.DAX:41 full-height chain-mail fighter, with matching saved description and all equipment. Reviewed ready/action natively at 128 px and alternating in catalog: planted boots coincide, head-to-foot height fills the 5-foot square; only raised ready sword and late-strike action sword cross their permitted tile edge. All archive copies have identical pixels.",
+  "notes": "MON1CHA.DAX:41 and MON7CHA.DAX:41 have identical saved Shield, Chain armor +1, Long sword +1 and the same previously approved new art. CPIC1.DAX:16 and CPIC7.DAX:13 are each explicitly linked to the matching one creature with identical gear. Applied one shared modest vertical height correction to both frames so body head-to-feet fills Normal 5-foot tile; original MON images preserved in ignored staging. Action lower 23 rows copy ready to lock foot pixels. Reviewed exact 128px pair and one-second catalog alternation under all four records. Ready raised sword alone crosses tile top by 0.26 square; action sword alone crosses side by 0.19. Shield/body/feet remain within 1x1 footprint, no independent frame scale.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "db92ad7c6c00cb42e46ecb2cc37833caf2259b08ad6769e3bdbeec1e912107c2",
-  "reviewed_at": "2026-10-23T04:09:08.659459+00:00",
+  "ready_sha256": "9632c68bd7a24b56d9b963eec2a0470be61eaa6aaa9b17d3c69c1cd4dd8c9ce0",
+  "reviewed_at": "2026-10-23T06:26:38+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON7CHA.DAX:41",
   "specification": "bipedal-v1",

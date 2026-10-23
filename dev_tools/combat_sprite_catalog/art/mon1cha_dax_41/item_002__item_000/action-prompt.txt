@@ -213,4 +213,4 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-ART REUSE: MON3CHA.DAX:41 has the same description, all saved gear, weapon set, 1 x 1 footprint and Normal 5-foot target. Reuse its newly generated, hash-reviewed action art unchanged. Exact copy preserves body height and planted feet across identical archive records. No original game image was used as generation reference.
+FINAL HEIGHT CORRECTION: Reuse only previously approved NEW Fourth-level Fighter art with identical Shield, Chain armor +1 and Long sword +1. Apply the same shared small vertical correction to ready/action so head-to-feet fills the five-foot Normal square. Keep planted feet exact. CPIC1.DAX:16 and CPIC7.DAX:13 each link to one matching creature.
