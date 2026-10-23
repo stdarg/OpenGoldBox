@@ -1,0 +1,32 @@
+{
+  "action_sha256": "4ae38ec6fa9f75eb6c72f81a2c9bc6ae45b9af07f36bb1999b15db4bb2028497",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon6cha_dax_102/item_004__ranged/action.png",
+    "ready": "art/mon6cha_dax_102/item_004__ranged/ready.png"
+  },
+  "metadata_sha256": "fb707695a988b86bfc7e1d45a6ad8135b4d0271898c60a8097b11f7734ad3914",
+  "notes": "Same newly generated Captain identity and five-foot body. Saved light crossbow in both hands, shield absent. First release attempt rejected for retained bolt; regenerated action has empty stock. Shared export, lower boots registered. Final ready trim removes surplus projectile tip and one hair row for exact one-square fit; bolt remains visibly loaded. Reviewed side by side and alternating in catalog; action crossbow alone overflows.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "659a8e0664ee5073e5dd2ee50ed9b9e8c1a58d2ce9da853aeddbec8aa9798776",
+  "reviewed_at": "2026-10-23T12:56:50.190569+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON6CHA.DAX:102",
+  "specification": "bipedal-v1",
+  "variant_id": "item_004__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
