@@ -1,0 +1,32 @@
+{
+  "action_sha256": "ee0940bc7c2a1c5e434416b401c3197c0e21fc61d7338220f3aee83aef58b177",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon3cha_dax_122/item_001__one_hand/action.png",
+    "ready": "art/mon3cha_dax_122/item_001__one_hand/ready.png"
+  },
+  "metadata_sha256": "cec9b9ad9815e3b02fa6a01aba126d164fad635b1b239f0ee6bafa7028e6b46c",
+  "notes": "Ready dagger raised above the tile; action dagger completes a downward diagonal strike. Shared export scale; action upper body shifted 5 native pixels to align head, then exact ready lower 48 rows retained. Catalog showed both poses at combat size and only weapon top overflow. Independently generated character; approved pose guide used; no original game image reference.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "99b4edae1f0f31f0c85bbb1ec4c66190ae611d6cf3a718b398ca0d6917475185",
+  "reviewed_at": "2026-10-23T12:09:02.724415+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON3CHA.DAX:122",
+  "specification": "bipedal-v1",
+  "variant_id": "item_001__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
