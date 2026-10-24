@@ -247,6 +247,29 @@ std::string script_damage_type(unsigned script, std::uint16_t address)
     throw EclError("No damage type for DAMAGE at " + std::to_string(address));
 }
 
+// The letters of a line of rune glyphs, two glyph tiles a letter ending at a
+// zero byte: A at tile 0x40, two tiles a letter, and S on from 0x67.
+std::string rune_text(const EclMachine &machine, EclAddress address)
+{
+    std::string text;
+    for (unsigned n = 0; n < 64; n += 2)
+    {
+        const auto glyph =
+            machine.variable(EclAddress{static_cast<std::uint16_t>(address.location + n)});
+        if (!glyph)
+        {
+            return text;
+        }
+        if (glyph < 0x40 || (glyph > 0x63 && glyph < 0x67) || glyph > 0x76)
+        {
+            throw EclError("Unknown rune glyph " + std::to_string(glyph));
+        }
+        text += glyph >= 0x67 ? static_cast<char>('S' + (glyph - 0x67) / 2)
+                              : static_cast<char>('A' + (glyph - 0x40) / 2);
+    }
+    throw EclError("Unterminated rune text");
+}
+
 std::string_view area_beyond(unsigned script)
 {
     switch (script)
@@ -324,7 +347,7 @@ void RolfTourSession::configure_town()
     {
         machine_.bind_variable(w.address, w.value);
     }
-    for (const std::uint8_t op : {10, 28, 32, 33, 36, 39, 40, 50, 55, 56, 57})
+    for (const std::uint8_t op : {10, 28, 32, 33, 36, 39, 40, 50, 55, 56, 57, 60})
     {
         machine_.enable_host(op);
     }
@@ -1408,17 +1431,20 @@ void RolfTourSession::award_staged_treasure()
 
 void RolfTourSession::show_encounter_menu()
 {
+    // The first operand names the distance sprite, the third the close-up
+    // picture (coab CMD_EncounterMenu); Sokal Keep's Ferran Martinez has a
+    // picture of his own (19) and the Spectre's sprite (17).
     const auto &args = encounter_menu_->arguments;
     for (unsigned frame = 0; frame < 3; ++frame)
     {
-        auto image = decode_ega_sprite(area_resources().sprite_archive, args[2].number(), frame);
+        auto image = decode_ega_sprite(area_resources().sprite_archive, args[0].number(), frame);
         if (!image)
         {
             throw EclError("Unsupported roaming encounter sprite");
         }
         sprites_[frame] = std::move(image.image);
     }
-    snapshot_.sprite_id = args[2].number();
+    snapshot_.sprite_id = args[0].number();
     snapshot_.sprite_frame = encounter_distance_;
     snapshot_.dialogue = args[9 + encounter_distance_].text();
     if (snapshot_.dialogue.empty())
@@ -2385,6 +2411,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             break;
         }
+        // Map 255 keeps the current map: Sokal Keep's elf scroll loads the
+        // rune glyphs (bank 16) and then its own art again (bank 2).
+        if (current_area_ && arg(0) == 255 && (arg(1) == 16 || arg(1) == 2) && arg(2) == 255)
+        {
+            break;
+        }
         // A district's script loads its own maps: the Slums map 20, Kuto's
         // Well its plaza (29) and catacombs (32).
         const auto district = town_->districts.find(arg(0));
@@ -2409,6 +2441,15 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             throw EclError("Invalid district entry facing");
         }
         reply.writes = {{ecl_wall_ahead, cell.walls[facing]}, {ecl_cell_event, cell.event_raw}};
+        break;
+    }
+    case 60:
+    {
+        // PROTECTION: a line of rune glyphs at the operand's address, which the
+        // original's code wheel translated; shown translated (SOKAL-1).
+        const auto line = rune_text(machine_, address_arg(0));
+        snapshot_.dialogue += line;
+        rune_scroll_ += line + "\n";
         break;
     }
     case 55:

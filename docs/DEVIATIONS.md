@@ -189,6 +189,9 @@ in the game: answering YES at a hall lists its services in the dialogue
   fighter who joins is a level-1 Fighter. The green slime allows an SRD
   saving throw (Constitution, DC 13) where the original rolled its own.
   [MENDOR-1](SRD-DECISIONS.md#mendor-1-2026-10-24-mendors-library).
+- **Rune scrolls** (2026-10-24). Words a script shows in runes (Sokal Keep's
+  elf scroll) appear translated; the original needed the box's code wheel.
+  [SOKAL-1](SRD-DECISIONS.md#sokal-1-2026-10-24-sokal-keep).
 - **Sunlight Sensitivity** (2026-10-24). Kobolds and Wights have Disadvantage
   on attack rolls and ability checks on a square open to the sky by day; the
   original had no sunlight.

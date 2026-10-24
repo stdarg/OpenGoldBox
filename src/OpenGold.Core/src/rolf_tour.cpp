@@ -217,6 +217,14 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
     pictures("HEAD3.DAX", town->heads);
     pictures("BODY3.DAX", town->bodies);
     pictures("PIC3.DAX", town->pictures);
+    // The harbor's boat (PIC3 41) is an animation; its first frame stands for it.
+    for (const auto &record : archive("PIC3.DAX").records)
+    {
+        if (auto animation = decode_ega_animation(record.bytes))
+        {
+            town->animations.emplace(record.id, std::move(animation.frames));
+        }
+    }
     town->map = map->get();
     town->wall_art = *wall_art;
 
@@ -318,7 +326,22 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                                       {{0, "slums-kobold", 25, 25},
                                        {17, "specter", 200, 200},
                                        {25, "mad-man", 25, 25},
-                                       {26, "basilisk", 700, 700}}}};
+                                       {26, "basilisk", 700, 700}}},
+                           // Sokal Keep (docs/audits/sokal-keep.md, SOKAL-1),
+                           // by boat from New Phlan's docks: its MON4CHA orcs
+                           // and hobgoblins are the Slums' MON2CHA ones, and
+                           // Ferran Martinez has the Spectre's record.
+                           AreaSource{21,
+                                      4,
+                                      {{21, {1, 5, 9}}},
+                                      {{4, "slums-orc", 100, 75},
+                                       {5, "slums-orc-leader", 100, 150},
+                                       {6, "slums-hobgoblin", 100, 100},
+                                       {19, "specter", 200, 200},
+                                       {34, "skeleton", 50, 50},
+                                       {35, "zombie", 50, 50},
+                                       {38, "giant-frog", 50, 50},
+                                       {39, "giant-scorpion", 700, 700}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;
@@ -872,9 +895,11 @@ void RolfTourSession::advance(double seconds)
             auto &request = *result.request;
             if (request.kind == EclRequestKind::text)
             {
+                // Cleared text keeps a rune scroll on screen until the next
+                // pause, as the original drew its runes above the text.
                 if (request.clear)
                 {
-                    snapshot_.dialogue.clear();
+                    snapshot_.dialogue = rune_scroll_;
                 }
                 snapshot_.dialogue += request.text;
                 if (snapshot_.dialogue.size() > 8192)
@@ -898,6 +923,7 @@ void RolfTourSession::advance(double seconds)
                     announce_spokesman();
                 }
                 snapshot_.choices = std::move(request.choices);
+                rune_scroll_.clear();
                 menu_request_ = request.id;
                 snapshot_.continue_ticket = ++next_ticket_;
                 snapshot_.phase = TourPhase::awaiting_continue;

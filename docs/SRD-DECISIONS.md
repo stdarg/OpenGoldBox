@@ -1677,3 +1677,18 @@ following CADORNA-1's precedents; they await the user's review
   type is chosen by what the text describes: the garden's green slime is Acid.
 - **Look** runs the area's search with the original's search flag at 1, so
   finds that need searching (the jar, the buried book) are found by looking.
+
+## SOKAL-1 (2026-10-24): Sokal Keep
+
+Claude chose these on 2026-10-24 while making the map playable area by area;
+they await the user's review ([audit](audits/sokal-keep.md)):
+
+- **Monsters** keep the conversions already chosen for the same original
+  records: the Slums' orcs and hobgoblins, and the Cadorna Textile House's
+  Skeleton, Zombie, Giant Frog and Giant Scorpion. **Ferran Martinez**, whose
+  record matches the Spectre's, is the Specter with 38 Hit Points
+  (MENDOR-1).
+- **The elf's scroll** shows its three words translated (LUX, SAMOSUD,
+  SHESTNI), where the original showed elvish runes for the box's code wheel to
+  translate: the remake has no code wheel. The same holds wherever a script
+  shows runes.

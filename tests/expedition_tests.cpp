@@ -942,7 +942,7 @@ void recover(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &p
 // With camp_when_hurt, the party recovers by camping whenever a step leaves it wounded.
 void walk_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party, unsigned tx,
              unsigned ty, const Answer &answer = peaceful, bool bash_doors = false,
-             bool camp_when_hurt = false)
+             bool camp_when_hurt = false, std::string_view typed = "0")
 {
     const auto locked = [&](unsigned wall, unsigned door)
     {
@@ -1010,7 +1010,7 @@ void walk_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &p
                                 : next % 16 < int(p.x) ? 3
                                 : next / 16 > int(p.y) ? 2
                                                        : 0;
-        step(town, party, facing, answer);
+        step(town, party, facing, answer, typed);
         if (camp_when_hurt)
         {
             recover(town, party);
@@ -2449,6 +2449,27 @@ por::PartyPose edge_opening(const por::GeoMap &map, por::PartyPose party, unsign
     return {};
 }
 
+// Plays every step until `done` holds, walking back and forth over the
+// squares between (x1,y) and (x2,y), at most `steps` times.
+bool pace_until(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party,
+                unsigned x1, unsigned x2, unsigned y, const std::function<bool()> &done,
+                const Answer &answer, std::string_view typed, unsigned steps = 200)
+{
+    for (unsigned n = 0; n < steps && !done(); ++n)
+    {
+        const auto at = town.snapshot().pose;
+        const unsigned target = at.x == x1 ? x2 : x1;
+        if (at.y != y)
+        {
+            walk_to(town, party, x1, y, answer, false, false, typed);
+            continue;
+        }
+        step(town, party, target > at.x ? 1 : 3, answer, typed);
+        recover(town, party);
+    }
+    return done();
+}
+
 // Whether any member carries an item of the definition.
 bool carried(const CampaignParty &party, std::string_view definition)
 {
@@ -2457,6 +2478,22 @@ bool carried(const CampaignParty &party, std::string_view definition)
         for (const auto &item : member.character.inventory().items())
         {
             if (item.definition_id == definition)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Whether any member holds an item of the original item type.
+bool holds_original(const CampaignParty &party, unsigned type)
+{
+    for (const auto &member : party.state().roster)
+    {
+        for (const auto &[id, source] : member.item_sources)
+        {
+            if (source.stored.type == type)
             {
                 return true;
             }
@@ -2475,6 +2512,136 @@ bool look_until(por::RolfTourSession &town, const std::shared_ptr<CampaignParty>
         settle(town, party, answer);
     }
     return found();
+}
+
+// Sokal Keep (docs/audits/sokal-keep.md), by boat from New Phlan's docks:
+// the harbor master's free passage while the keep is haunted, the dead elf's
+// scroll read translated, the undead patrol sent off with SHESTNI, the
+// haunts' diary and gems for LUX, the frogs and the smithy's hammer, the
+// insects, the orc and hobgoblin raid, the illusory wall's arms and armor,
+// Ferran Martinez told the truth, the patrol passed with SAMOSUD after, and
+// the boat home.
+void sokal_keep(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 900, "test:sokal-keep-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 3)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    const auto variable = [&](std::uint16_t address)
+    {
+        return town.script_variable(por::EclAddress{address});
+    };
+    // The harbor master, met stepping north onto the dock at (11,1), books
+    // the only passage; the boat leaves from the pier's end at (15,1).
+    walk_to(town, party, 11, 2);
+    step(town, party, 0);
+    check(town.script_variable(por::EclAddress{0x4A01}) == 1,
+          "The harbor master books the only passage, to Sokal Keep");
+    walk_to(town, party, 15, 1);
+    check(town.snapshot().area_id == 21 && town.snapshot().script_id == 21,
+          "The harbor master's boat takes the party to Sokal Keep");
+    const auto folder = std::filesystem::temp_directory_path() / "opengold-sokal";
+    std::filesystem::create_directories(folder);
+    const auto keep = folder / "sokal-keep.ogs";
+    write_campaign_file(keep, encode_campaign(*party, &town, campaign_asset_identity(directory)));
+    check(load_expedition(keep, directory).town.snapshot().area_id == 21,
+          "A save in Sokal Keep loads back there");
+    const auto fight_them = prefer({"COMBAT", "Fight", "YES", "TELL THE TRUTH?"});
+    const auto talk = prefer({"Advance", "Parley", "NICE", "YES", "TELL THE TRUTH?", "SEARCH"});
+
+    // The dead elf's scroll, read by looking, holds three words.
+    visit(town, party, 6, 13, talk);
+    std::string scroll;
+    town.explore(por::ExplorationCommand::look);
+    settle(town, party,
+           [&](const por::TourSnapshot &s) -> std::size_t
+           {
+               scroll += s.dialogue;
+               return talk(s);
+           });
+    check(scroll.find("LUX") != std::string::npos && scroll.find("SAMOSUD") != std::string::npos &&
+              scroll.find("SHESTNI") != std::string::npos,
+          "The elf's scroll shows its three words translated");
+
+    // The undead patrol leaves for the password.
+    heal(*party);
+    check(pace_until(
+              town, party, 4, 6, 6,
+              [&]
+              {
+                  return variable(0x4A19) == 1;
+              },
+              talk, "SHESTNI"),
+          "The undead patrol leaves when told SHESTNI");
+
+    // The barracks' haunts, answered with LUX, point to the diary and gems.
+    check(pace_until(
+              town, party, 4, 6, 3,
+              [&]
+              {
+                  return variable(0x4A29) == 255;
+              },
+              talk, "LUX", 12),
+          "The haunts tell of the diary, and the gems are taken");
+
+    // The frogs of the smithy, then its old hammer, found by looking.
+    heal(*party);
+    check(pace_until(
+              town, party, 13, 14, 7,
+              [&]
+              {
+                  return variable(0x4A0E) == 255;
+              },
+              fight_them, "", 12),
+          "The smithy's frogs are beaten");
+    visit(town, party, 15, 6, fight_them);
+    check(look_until(
+              town, party,
+              [&]
+              {
+                  return variable(0x4A28) == 255;
+              },
+              fight_them) &&
+              holds_original(*party, 20),
+          "Looking in the smithy finds the Hammer +1");
+
+    // The insects, the raid, and the arms behind the illusory wall.
+    heal(*party);
+    visit(town, party, 2, 11, fight_them);
+    check(variable(0x4A0B) == 255, "The insects are beaten");
+    heal(*party);
+    visit(town, party, 7, 4, fight_them);
+    check(variable(0x4AD7) == 255, "The orc and hobgoblin raid is beaten");
+    visit(town, party, 12, 0, fight_them);
+    check(variable(0x4A21) == 255, "The stands' arms and armor are taken");
+
+    // Ferran Martinez, given LUX and the truth, frees the keep.
+    walk_to(town, party, 7, 10, talk, true, true, "LUX");
+    check(variable(0x4A26) == 255 && variable(0x4AA7) == 254,
+          "Ferran Martinez, told the truth, frees the keep's spirits");
+    // Ferran's word, SAMOSUD, now passes the patrols.
+    check(variable(0x4A19) == 0 && pace_until(
+                                       town, party, 4, 6, 6,
+                                       [&]
+                                       {
+                                           return variable(0x4A19) == 1;
+                                       },
+                                       talk, "SAMOSUD"),
+          "After Ferran, the undead patrol leaves when told SAMOSUD");
+
+    // The boat home.
+    const auto south = edge_opening(town.map(), town.snapshot().pose, 2);
+    walk_to(town, party, south.x, south.y, talk);
+    step(town, party, 2, prefer({"YES"}));
+    check(town.snapshot().area_id == 0, "The boat takes the party back to New Phlan");
+    std::filesystem::remove_all(folder);
 }
 
 // Mendor's Library (docs/audits/mendors-library.md), east of the Cadorna
@@ -3636,6 +3803,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         slums_encounter_menu(save, directory);
         slums_parley_outcomes(save, directory);
         slums_flight(save, directory);
+        sokal_keep(directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -3730,6 +3898,12 @@ int main(int argc, char **argv)
             step(trip.town, trip.party, 1);
             mendors_library(trip, folder, directory);
             std::filesystem::remove_all(folder);
+            return 0;
+        }
+        // Plays Sokal Keep alone with a new party.
+        if (argc == 2 && std::string_view(argv[1]) == "--sokal")
+        {
+            sokal_keep(directory);
             return 0;
         }
         if (argc == 4 && std::string_view(argv[1]) == "--resume")

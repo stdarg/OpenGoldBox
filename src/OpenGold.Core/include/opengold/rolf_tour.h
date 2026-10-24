@@ -579,6 +579,9 @@ class RolfTourSession
     // Set when a step leads to an area the game does not have yet: fail()
     // then rolls the step back with this notice instead of a diagnostic.
     std::string closed_way_;
+    // The rune lines a PROTECTION scroll showed, kept above cleared text
+    // until the next pause.
+    std::string rune_scroll_;
 };
 } // namespace opengold::por
 #endif

@@ -573,8 +573,10 @@ void installed_town(const RolfTourSession &finished)
     {
         std::cout << "Town unsupported branch: " << d << '\n';
     }
-    check(events.size() >= 30 && scripts == std::set<unsigned>{0, 8, 11},
-          "Walkable town includes City Hall and training scripts");
+    // The pier's boat, booked by the harbor master on the way, sails to Sokal
+    // Keep (ECL4:21).
+    check(events.size() >= 30 && scripts == std::set<unsigned>{0, 8, 11, 21},
+          "Walkable town includes City Hall and training scripts, and the boat to Sokal Keep");
 
     // The cluebook marks twelve distinct shops, even where stock lists repeat.
     struct ShopCase
