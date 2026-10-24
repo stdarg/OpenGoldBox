@@ -157,7 +157,7 @@ MONSTER AND SELECTED SET (current catalog JSON):
       "readied": true,
       "source_hands": -1.0,
       "source_range": -1.0,
-      "source_type": -1.0,
+      "source_type": 54.0,
       "weapon_role": ""
     }
   ],
@@ -200,3 +200,13 @@ Reference 1: approved original pose guide, for facing and ready-pose mechanics.
 Reference 2, when available: this monster's first approved NEW ready sprite,
 for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.
+
+TASK CORRECTION (2026-10-23): The previous raised Long sword looked dagger-short.
+Render a full silver longsword blade in READY, approximately the visible blade
+length of this same monster's accepted action frame. Keep it raised and wholly
+inside the transparent 128 x 128 canvas. Hold the blade diagonally up toward
+the canvas center; do not shorten it to fit. The existing approved new ready
+and action art are identity and weapon-length references, not original game
+sprites. This production frame uses the image generator for the full-length
+sword, then a deterministic pixel composite onto the old ready body to preserve
+its exact lower body and both planted feet.

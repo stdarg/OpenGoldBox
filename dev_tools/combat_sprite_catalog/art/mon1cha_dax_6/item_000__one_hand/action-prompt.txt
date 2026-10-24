@@ -157,7 +157,7 @@ MONSTER AND SELECTED SET (current catalog JSON):
       "readied": true,
       "source_hands": -1.0,
       "source_range": -1.0,
-      "source_type": -1.0,
+      "source_type": 54.0,
       "weapon_role": ""
     }
   ],
@@ -202,3 +202,8 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
+
+TASK CORRECTION (2026-10-23): The accepted action PNG is retained unchanged.
+Its complete silver longsword defines the blade-length reference for the
+corrected ready frame. Recheck the pair together at native size and in the
+one-second catalog animation; the feet and body must stay registered.
