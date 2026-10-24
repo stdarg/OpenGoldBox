@@ -61,7 +61,7 @@ const EclOpcode &ecl_opcode(std::uint8_t op)
                                                       {"SPRITE OFF", 0, false, true, true},
                                                       {"FIND ITEM", 1, false, true, true},
                                                       {"PRINT RETURN", 0, false, true},
-                                                      {"ECL CLOCK", 1},
+                                                      {"ECL CLOCK", 1, false, true, true},
                                                       {"SAVE TABLE", 3, false, true},
                                                       {"ADD NPC", 2, false, true, true},
                                                       {"LOAD PIECES", 3, false, true, true},

@@ -143,6 +143,9 @@ struct TourSnapshot
     unsigned prompts{}, redraws{}, footsteps{};
     int sprite_frame{-1}; // -1 hidden; native near/medium/far frames are 0/1/2.
     bool tour_finished{};
+    // The script opened the camp menu (PROGRAM 9 outside an inn): the party
+    // may camp now, and the view shows its camp dialog.
+    bool camp_offered{};
     unsigned script_id{}, event_runs{}, sprite_id{12};
     unsigned area_id{};
     std::vector<std::string> choices;
@@ -581,6 +584,9 @@ class RolfTourSession
     std::uint64_t shop_request_{};
     void configure_town();
     void synchronize_clock();
+    // Moves the campaign clock on to a time a script instruction wrote into
+    // the clock cells.
+    void adopt_script_clock();
     [[nodiscard]] EclHostReply clock_reply() const;
 
     // What the player did to start an event. Each value is the original script

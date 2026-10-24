@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_TESTS_TOUR_ACCESS_H
 #define OPENGOLD_TESTS_TOUR_ACCESS_H
 
+#include "opengold/overland.h"
 #include "opengold/rolf_tour.h"
 #include <cstdint>
 #include <string_view>
@@ -29,6 +30,12 @@ struct TourAccess
     static por::EclMachine machine(const por::RolfTourSession &town)
     {
         return town.machine_;
+    }
+
+    // The wilderness map the session travels, to plan a journey on.
+    static const por::OverlandWorld &overland_world(const por::RolfTourSession &town)
+    {
+        return *town.town_->overland;
     }
 
     // Reseeds the script's dice, so a test can try an event on several rolls.

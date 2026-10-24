@@ -72,6 +72,34 @@ constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_
     {
         return N_("Kuto's Well");
     }
+    if (area_id == 2)
+    {
+        return N_("Cadorna Textile House");
+    }
+    if (area_id == 15)
+    {
+        return N_("Mendor's Library");
+    }
+    if (area_id == 21)
+    {
+        return N_("Sokal Keep");
+    }
+    if (area_id == 26)
+    {
+        return N_("Wilderness");
+    }
+    if (area_id == 14)
+    {
+        return N_("Kovel Mansion");
+    }
+    if (area_id == 24 || area_id == 31)
+    {
+        return N_("Temple of Bane");
+    }
+    if (area_id == 17)
+    {
+        return N_("Nomad Camp");
+    }
     return N_("New Phlan");
 }
 
@@ -1603,6 +1631,13 @@ void RolfTourView::refresh()
     refresh_rest();
     const bool waiting = loaded && s.phase == TourPhase::awaiting_continue;
     const bool completed = loaded && s.phase == TourPhase::completed;
+    // A script that opens the camp menu (the nomads' lodging) shows the camp
+    // dialog once for that event.
+    if (completed && s.camp_offered && camp_offer_run_ != s.event_runs)
+    {
+        camp_offer_run_ = s.event_runs;
+        camp();
+    }
     required_node<Button>(*this, "SaveGame").set_disabled(!completed);
     required_node<Button>(*this, "LoadGame").set_disabled(!completed);
     const bool faulted = !loaded || s.phase == TourPhase::faulted;

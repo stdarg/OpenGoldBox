@@ -426,7 +426,18 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                     {8, "ogre", 450, 450},
                     {9, "ogre", 450, 900},
                     {33, "bane-cleric", 450, 450},
-                    {44, "bane-orc-archer", 100, 100}}}};
+                    {44, "bane-orc-archer", 100, 100}}},
+        // The nomad camp (docs/audits/nomad-camp.md, NOMAD-1), north of the
+        // city on the wilderness map.
+        AreaSource{17,
+                   7,
+                   {{17, {7, 8, 23}}},
+                   {{0, "slums-kobold", 25, 25},
+                    {123, "slums-kobold", 25, 25},
+                    {40, "wilderness-bandit", 25, 25},
+                    {41, "nomad-guard", 450, 450},
+                    {42, "hassad", 700, 700},
+                    {43, "nomad-shaman", 200, 200}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;

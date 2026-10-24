@@ -226,6 +226,8 @@ class RolfTourView : public godot::Control
     opengold::MemberId rest_member_{};
     godot::String rest_result_;
     bool rest_save_open_{};
+    // The event whose camp offer the camp dialog last answered.
+    unsigned camp_offer_run_{};
     void inventory();
     void refresh_inventory();
     void inventory_selected(std::int64_t index);

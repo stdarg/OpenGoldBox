@@ -259,9 +259,18 @@ std::string EclMachine::string(EclAddress address) const
     throw EclError("Unterminated ECL string");
 }
 
+bool EclMachine::consume_script_write(EclAddress address)
+{
+    return script_writes_.erase(address) > 0;
+}
+
 void EclMachine::write(EclAddress address, std::uint16_t v)
 {
     (void)variable(address);
+    if (executing_)
+    {
+        script_writes_.insert(address);
+    }
     if (program_address(address))
     {
         image_[address.location - EclProgram::origin + 2] = static_cast<std::uint8_t>(v);
@@ -837,10 +846,13 @@ EclRunResult EclMachine::run(std::size_t budget)
             trace_.push_back(pc_);
             ++count;
             ++total_instructions_;
+            executing_ = true;
             execute(instruction);
+            executing_ = false;
         }
         catch (const EclError &error)
         {
+            executing_ = false;
             std::ostringstream message;
             message << program_->source() << " @ 0x" << std::hex << pc_ << " (record offset 0x"
                     << (pc_ - EclProgram::origin + 2) << ", stack depth " << std::dec
@@ -1024,6 +1036,11 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
         conditions_ = *reply.conditions;
     }
     finish_request();
+    if (reply.exit)
+    {
+        state_ = EclState::completed;
+        stack_.clear();
+    }
     if (reply.next_program)
     {
         load_program(reply.next_program, std::move(next_image));
