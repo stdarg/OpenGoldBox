@@ -157,7 +157,7 @@ MONSTER AND SELECTED SET (current catalog JSON):
       "readied": true,
       "source_hands": -1.0,
       "source_range": -1.0,
-      "source_type": -1.0,
+      "source_type": 54.0,
       "weapon_role": ""
     }
   ],
@@ -179,7 +179,7 @@ MONSTER AND SELECTED SET (current catalog JSON):
       "readied": true,
       "source_hands": -1.0,
       "source_range": -1.0,
-      "source_type": -1.0,
+      "source_type": 59.0,
       "weapon_role": ""
     }
   ],
@@ -212,3 +212,5 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
+
+Longsword correction: retain the leader and foot anchor; downward late-strike blade extends about 45 pixels from guard to point at final 128 × 128 size, matching the ready sword length.

@@ -157,7 +157,7 @@ MONSTER AND SELECTED SET (current catalog JSON):
       "readied": true,
       "source_hands": -1.0,
       "source_range": -1.0,
-      "source_type": -1.0,
+      "source_type": 54.0,
       "weapon_role": ""
     }
   ],
@@ -179,7 +179,7 @@ MONSTER AND SELECTED SET (current catalog JSON):
       "readied": true,
       "source_hands": -1.0,
       "source_range": -1.0,
-      "source_type": -1.0,
+      "source_type": 59.0,
       "weapon_role": ""
     }
   ],
@@ -210,3 +210,5 @@ Reference 1: approved original pose guide, for facing and ready-pose mechanics.
 Reference 2, when available: this monster's first approved NEW ready sprite,
 for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.
+
+Longsword correction: retain the leader and foot anchor; raised steel blade extends about 45 pixels from guard to point at final 128 × 128 size, clearly a full longsword.

@@ -1,16 +1,16 @@
 {
-  "action_sha256": "70093a4846a543f1febc5982363384f570ee797b27e3413d89ef21b7e06d8a63",
+  "action_sha256": "7c541e75fa7edc7df52c4d01dcf56a6fc5a202eefafb7c0312f54cf51277e02e",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_7/item_000__added_4050213316/action.png",
     "ready": "art/mon1cha_dax_7/item_000__added_4050213316/ready.png"
   },
-  "metadata_sha256": "c5214fa63cec28e07d9e1dfb6d37913b220749e36fc546ca06bb686f270cc31b",
-  "notes": "Height-corrected approved newly generated Hobgoblin art with identical nearest-neighbor 141/128 scale and (6, 12) canvas crop for both frames around planted feet. Original game art was not a reference. Inspected pair side by side and alternating in fixed-grid catalog, including foot anchor and 5-foot body fit. Matched alternate sets to same body height and compared leader against same-archive regular; leader is broader and more impressive through saved armor/gear. Only raised ready weapon or attacking action weapon crosses footprint. Rejected scaling trials retained in staging.",
+  "metadata_sha256": "ba896956065ed7114dab830eba28a3fe0b3f44670571e0b0bf78c666125ba69d",
+  "notes": "MON1CHA.DAX:7 longsword + shield only. Both 128px frames and enlarged pixel art visually inspected side by side. Raised ready blade and downward action blade each read as a full longsword (about 45px visible from guard to tip). Generated sword art was composited onto the previously accepted leader to retain exact body, shield, camera, and foot coordinates. Pixel comparison found zero changes at y >= 90 in either frame; action change is confined to x >= 89. Ready weapon alone rises above 1x1 tile; action weapon alone crosses the side. Final catalog alternation rechecked after integration.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "6cb1845bd5482f441b6fcc38e9477a4049806d50cc7fc4066d42514f289314f4",
-  "reviewed_at": "2026-10-23T03:38:07+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "e740f54e58f1b16b71ba8100d19dd8d85b4938a3a9f1427f224c69368537f878",
+  "reviewed_at": "2026-10-24T05:46:33+00:00",
+  "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:7",
   "specification": "bipedal-v1",
   "variant_id": "item_000__added_4050213316",
