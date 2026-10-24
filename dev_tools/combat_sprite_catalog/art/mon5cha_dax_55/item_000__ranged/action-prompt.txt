@@ -164,3 +164,5 @@ the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
 Production decision: reuse matching accepted Boulder after-release action at same coordinates; visually re-reviewed for MON5.
+
+ATTACK-SPECIFIC DIRECTION (the user, 2026-10-24; regenerate the ACTION pose only, keeping the approved ready frame): the giant has just thrown the boulder toward screen right. The upper body leans to the right, following the throw, with the throwing arm outstretched to the right and its hand open, empty after the release. The boulder is gone from the hand; it may be shown leaving at the right edge or already out of the image. Planted feet stay at the ready frame's exact pixels.
