@@ -1,16 +1,16 @@
 {
-  "action_sha256": "7c541e75fa7edc7df52c4d01dcf56a6fc5a202eefafb7c0312f54cf51277e02e",
+  "action_sha256": "0d867995e1eaa8f1b95936c457bcb1c7a652aefa35009e4f11f9faf1412f98ff",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_7/item_000__added_4050213316/action.png",
     "ready": "art/mon1cha_dax_7/item_000__added_4050213316/ready.png"
   },
   "metadata_sha256": "ba896956065ed7114dab830eba28a3fe0b3f44670571e0b0bf78c666125ba69d",
-  "notes": "MON1CHA.DAX:7 longsword + shield only. Both 128px frames and enlarged pixel art visually inspected side by side. Raised ready blade and downward action blade each read as a full longsword (about 45px visible from guard to tip). Generated sword art was composited onto the previously accepted leader to retain exact body, shield, camera, and foot coordinates. Pixel comparison found zero changes at y >= 90 in either frame; action change is confined to x >= 89. Ready weapon alone rises above 1x1 tile; action weapon alone crosses the side. Installed image hashes passed the catalog workflow check; both exported frames were visually inspected at combat size side by side.",
+  "notes": "MON1CHA.DAX:7 longsword + shield only. Rebuilt both frames from the accepted newly created leader and image-generated sword pixels with source alpha preserved. Inspected exact 128px exports side by side, at 6x on pale gray and magenta, and in the catalog 5 FPS movie: ready frames 1 and 10, action frame 6. No opaque black boxes or wedge remain. Ready and action retain full-length blades, shield, front three-quarter screen-right body, and equal scale. The original accepted lower 38 rows (y >= 90), including both planted feet, are pixel-identical in both repaired frames. Only weapon pixels cross the allowed tile boundary; all pixels have PNG margin. Bow pair untouched.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "e740f54e58f1b16b71ba8100d19dd8d85b4938a3a9f1427f224c69368537f878",
-  "reviewed_at": "2026-10-24T05:46:33+00:00",
-  "reviewer": "Codex",
+  "ready_sha256": "2a365e0edeb6f55000d639cd458e331e8e42d3d0cc26f24d28e2b13bf25f7b68",
+  "reviewed_at": "2026-10-24T06:09:41+00:00",
+  "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:7",
   "specification": "bipedal-v1",
   "variant_id": "item_000__added_4050213316",

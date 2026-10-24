@@ -213,4 +213,4 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-Longsword correction: retain the leader and foot anchor; downward late-strike blade extends about 45 pixels from guard to point at final 128 × 128 size, matching the ready sword length.
+Repair note: remove the old short blade with an alpha mask, restore shield pixels, and overlay a full-length late-strike sword while preserving source alpha. No opaque black fill may remain. Inspect on pale gray, magenta, and the catalog grid.
