@@ -1,15 +1,15 @@
 {
-  "action_sha256": "c63ef774fb53c46295947fbc51bf227d37102d40d8e88dadcef2e68fd2ec50cf",
+  "action_sha256": "5fb30611cd3617a829e9b51c7158936b30a16913c43084bde012e70a4c517b92",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_22/default/action.png",
     "ready": "art/mon1cha_dax_22/default/ready.png"
   },
-  "metadata_sha256": "8e287ee4f57e45193030df51e5aca0437f7e96150c549b230afe68016ce6f879",
-  "notes": "Reviewed transparent pair side by side at combat pixel size and against the fixed catalog grid; checked one-second ready/action timing, planted base, scale, equipment and intended attack. Unarmed limbs fit saved footprint; moving weapons may overhang only in action.",
+  "metadata_sha256": "9bf051d8e7f0c5a64146330e3d16686321e372085158004cf7521d706c4bd0c8",
+  "notes": "MON1CHA.DAX:22/default: complete unarmed set. Regenerated both frames using only approved guide and newly generated character art. Shared 110x110 nearest-neighbor transform, +2,+12 canvas offset. Action lower legs and planted feet x=0..80, y=75..127 are pixel-identical to ready, including alpha. Inspected final 128px exports on light gray, dark, magenta; side-by-side and one-second catalog alternation with matching Sprite IDs. Ready and action both fit saved 1x2 footprint; tall narrow scale preserved, no armor/weapon. Weapon/grip-specific checklist items interpreted as unarmed ready guard and late natural strike.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "ed94f3134b455c03e41424cdd9320359ac9ebc2b62a7aa5616c3f3646856ee31",
-  "reviewed_at": "2026-10-24T04:48:26+00:00",
+  "ready_sha256": "649da19a8f07b68269bdc850332ded7e4f7b92f163c49ae1363d945500056959",
+  "reviewed_at": "2026-10-24T22:51:42+00:00",
   "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:22",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
 }
