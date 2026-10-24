@@ -309,7 +309,16 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                                        {35, "zombie", 50, 50},
                                        {38, "giant-frog", 50, 50},
                                        {39, "giant-scorpion", 700, 700},
-                                       {72, "ghoul", 200, 200}}}};
+                                       {72, "ghoul", 200, 200}}},
+                           // Mendor's Library (docs/audits/mendors-library.md,
+                           // MENDOR-1): its MON2CHA kobold is the Slums' one.
+                           AreaSource{15,
+                                      2,
+                                      {{15, {1, 19, 23}}},
+                                      {{0, "slums-kobold", 25, 25},
+                                       {17, "specter", 200, 200},
+                                       {25, "mad-man", 25, 25},
+                                       {26, "basilisk", 700, 700}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;

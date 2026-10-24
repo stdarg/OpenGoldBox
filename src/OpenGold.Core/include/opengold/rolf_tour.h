@@ -572,7 +572,7 @@ class RolfTourSession
     // Each arrow attacks a random conscious active member; returns a report line for each.
     [[nodiscard]] std::string shoot_arrows(unsigned arrows, const rules::HazardAttack &arrow);
     // The chosen member falls for dice d sides + bonus Bludgeoning; returns its report line.
-    [[nodiscard]] std::string fall(unsigned dice, unsigned sides, int bonus);
+    [[nodiscard]] std::string hurt(const std::optional<HazardHit> &hit) const;
     void publish_pose();
     void handle_host(const EclRequest &request);
     void fail(std::string diagnostic);

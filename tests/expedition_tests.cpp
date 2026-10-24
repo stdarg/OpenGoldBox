@@ -2449,6 +2449,132 @@ por::PartyPose edge_opening(const por::GeoMap &map, por::PartyPose party, unsign
     return {};
 }
 
+// Whether any member carries an item of the definition.
+bool carried(const CampaignParty &party, std::string_view definition)
+{
+    for (const auto &member : party.state().roster)
+    {
+        for (const auto &item : member.character.inventory().items())
+        {
+            if (item.definition_id == definition)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Looks where the party stands, up to `tries` times, until `found` holds.
+bool look_until(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party,
+                const std::function<bool()> &found, const Answer &answer, unsigned tries = 60)
+{
+    for (unsigned n = 0; n < tries && !found(); ++n)
+    {
+        town.explore(por::ExplorationCommand::look);
+        settle(town, party, answer);
+    }
+    return found();
+}
+
+// Mendor's Library (docs/audits/mendors-library.md), east of the Cadorna
+// Textile House: entered by the house's east edge and saved there, the
+// wizard-locked doors opened with Knock, a book of history found by looking in
+// the stacks, the basilisk fought for its treasure, the jar and the buried
+// Manual of Bodily Health found by looking, the kobolds spared for their map,
+// the mad fighter invited along, the Specter that guards the books met on the
+// way out, and the way back west.
+void mendors_library(Expedition &trip, const std::filesystem::path &folder,
+                     const std::filesystem::path &directory)
+{
+    auto &[party, town] = trip;
+    check(town.snapshot().area_id == 15 && town.snapshot().script_id == 15,
+          "Leaving the Cadorna Textile House eastward enters Mendor's Library");
+    const auto save = folder / "mendors-library.ogs";
+    write_campaign_file(save, encode_campaign(*party, &town, campaign_asset_identity(directory)));
+    check(load_expedition(save, directory).town.snapshot().area_id == 15,
+          "A save in Mendor's Library loads back there");
+    const auto books = [&]
+    {
+        return town.script_variable(por::EclAddress{0x4A2F});
+    };
+    const auto cleared = [&]
+    {
+        return town.script_variable(por::EclAddress{0x4A31});
+    };
+    const auto fight_them = prefer({"Bash", "COMBAT", "Fight", "YES"});
+    // The library's doors are wizard locked; Knock opens the north one.
+    walk_to(town, party, 8, 1);
+    face(town, party, 2);
+    town.explore(por::ExplorationCommand::forward);
+    settle(town, party, prefer({"Knock"}));
+    check(town.snapshot().pose.x == 8 && town.snapshot().pose.y == 2,
+          "Knock opens the library's wizard-locked north door");
+
+    // The history stacks: looking finds a book worth copying into the journal.
+    heal(*party);
+    visit(town, party, 11, 4, fight_them);
+    check(look_until(town, party, [&] { return (books() & (4 | 8 | 16)) != 0; }, fight_them),
+          "Looking through the history stacks finds a book for the journal");
+
+    // The rhetoric stacks hide the basilisk.
+    heal(*party);
+    visit(town, party, 5, 4, fight_them);
+    check((cleared() & 64) && carried(*party, "cloak_of_displacement"),
+          "The basilisk falls and its treasure holds the Cloak of Displacement");
+
+    // The mad fighter, asked nicely and urged twice, joins a party with room:
+    // Skullcrusher leaves, as the party has room for two companions.
+    for (const auto id : party->state().slots)
+    {
+        if (id && party->member(id).npc_source == "por:MON4CHA:27")
+        {
+            party->remove(id);
+            break;
+        }
+    }
+    visit(town, party, 11, 12, prefer({"Bash", "PARLAY", "NICE", "YES"}));
+    const auto &slots = party->state().slots;
+    const auto joined = std::find_if(slots.begin(), slots.end(),
+                                     [&](MemberId id)
+                                     {
+                                         return id &&
+                                                party->member(id).npc_source == "por:MON2CHA:25";
+                                     });
+    check((cleared() & 2) && joined != slots.end(), "The mad fighter joins the party");
+    const auto &sheet = party->member(*joined).character.sheet();
+    check(sheet.level == 1 && sheet.character_class == "Fighter" &&
+              sheet.scores[rules::Ability::strength] == 17 &&
+              sheet.scores[rules::Ability::constitution] == 10,
+          "The mad fighter is a level-1 Fighter with his record's Strength 17");
+
+    // A jar under the floorboards beside the bones, and a book in the study's
+    // trash, are found by looking.
+    heal(*party);
+    visit(town, party, 8, 11, fight_them);
+    check(look_until(town, party, [&] { return (books() & 32) != 0; }, fight_them),
+          "Looking beside the bones finds the jar of potions");
+    visit(town, party, 13, 13, fight_them);
+    check(look_until(town, party, [&] { return (books() & 64) != 0; }, fight_them) &&
+              carried(*party, "manual_of_bodily_health"),
+          "Looking in the study's trash finds the Manual of Bodily Health");
+
+    // The kobolds in the storeroom are spared for what they know.
+    // Met across the room, the party advances and parleys.
+    visit(town, party, 12, 10, prefer({"Bash", "Advance", "Parley", "YES"}));
+    check(cleared() & 128, "The kobolds are spared and sketch a map");
+
+    // Leaving with books, the party meets the Specter at the north door.
+    heal(*party);
+    walk_to(town, party, 8, 2, fight_them, true);
+    step(town, party, 0, fight_them);
+    check(cleared() & 32, "The Specter that guards the books is destroyed");
+    const auto west = edge_opening(town.map(), town.snapshot().pose, 3);
+    walk_to(town, party, west.x, west.y, fight_them);
+    step(town, party, 3);
+    check(town.snapshot().area_id == 2, "The library's west edge leads back to the textile house");
+}
+
 // The Cadorna Textile House (docs/audits/cadorna-textile-house.md), south of
 // Podol Plaza: a save there, its exits to areas not in the game yet refused,
 // a fall down the dry well, the courtyard's drum, Grishnak and her treasure,
@@ -2468,13 +2594,9 @@ void cadorna_textile_house(Expedition &trip, const std::filesystem::path &folder
     check(load_expedition(save, directory).town.snapshot().area_id == 2,
           "A save in the Cadorna Textile House loads back there");
     opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AE4}, 9);
-    for (const auto &[facing, area] :
-         std::array{std::pair{1u, "Mendor's Library"}, std::pair{3u, "the wilderness"}})
-    {
-        const auto exit = edge_opening(town.map(), town.snapshot().pose, facing);
-        walk_to(town, party, exit.x, exit.y);
-        refused_exit(town, party, facing, area);
-    }
+    const auto west = edge_opening(town.map(), town.snapshot().pose, 3);
+    walk_to(town, party, west.x, west.y);
+    refused_exit(town, party, 3, "the wilderness");
 
     // A fighter who climbs down the dry well falls 15d6; the party is put back
     // as it was after.
@@ -2579,6 +2701,12 @@ void cadorna_textile_house(Expedition &trip, const std::filesystem::path &folder
               sheet.scores[rules::Ability::charisma] == 12 &&
               party->member(companion).character.inventory().items().empty(),
           "Skullcrusher is a level-4 Fighter with his record's scores and nothing carried");
+    const auto east = edge_opening(town.map(), town.snapshot().pose, 1);
+    walk_to(town, party, east.x, east.y, fight_them);
+    write_campaign_file(folder / "cadorna-east-edge.ogs",
+                        encode_campaign(*party, &town, campaign_asset_identity(directory)));
+    step(town, party, 1);
+    mendors_library(trip, folder, directory);
     const auto north = edge_opening(town.map(), town.snapshot().pose, 0);
     walk_to(town, party, north.x, north.y, fight_them);
     step(town, party, 0);
@@ -3589,6 +3717,18 @@ int main(int argc, char **argv)
             cadorna_payment(directory);
             auto trip = load_expedition(argv[2], directory);
             cadorna_textile_house(trip, folder, directory);
+            std::filesystem::remove_all(folder);
+            return 0;
+        }
+        // Plays Mendor's Library alone, from a save at the Cadorna Textile
+        // House's east edge after Skullcrusher joined (cadorna-east-edge.ogs).
+        if (argc == 3 && std::string_view(argv[1]) == "--library")
+        {
+            const auto folder = std::filesystem::temp_directory_path() / "opengold-library";
+            std::filesystem::create_directories(folder);
+            auto trip = load_expedition(argv[2], directory);
+            step(trip.town, trip.party, 1);
+            mendors_library(trip, folder, directory);
             std::filesystem::remove_all(folder);
             return 0;
         }

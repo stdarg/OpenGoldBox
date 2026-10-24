@@ -50,6 +50,17 @@ Sensitivity on squares open to the sky by day (Wights and kobolds), and daily
 innate spells cast without slots (the Priest's Spirit Guardians and Divine Aid,
 the latter as a Bonus Action). Combat checkpoints become `OGCOMBAT 69`.
 
+## Mendor's Library monsters
+
+Rules 0.6.251 adds Mendor's Library's SRD 5.2.1 stat blocks: Specter, Basilisk
+and Guard (the mad fighter), by
+[MENDOR-1](SRD-DECISIONS.md#mendor-1-2026-10-24-mendors-library). New monster
+mechanics: Life Drain on every hit (the Specter's), flight over Difficult
+Terrain, Incorporeal Movement through creatures and walls, condition
+immunities (an immune creature shakes off the effect), and the Basilisk's
+Petrifying Gaze, a Bonus Action Cone with Recharge 4-6 that Restrains and then
+Petrifies. Hazards outside combat may allow a saving throw that avoids them.
+
 ## Thieves' Tools
 
 Rules 0.6.249 adds SRD 5.2.1 Thieves' Tools (authored item 214, 25 gp), carried

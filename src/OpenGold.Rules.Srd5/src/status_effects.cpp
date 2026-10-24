@@ -561,7 +561,8 @@ bool restrained(const EffectState &effects) noexcept
             has_effect(effects, EffectKind::entangle) || has_effect(effects, EffectKind::webbed) ||
             has_effect(effects, EffectKind::tentacled) ||
             has_effect(effects, EffectKind::engulfed) || has_effect(effects, EffectKind::lifted) ||
-            has_effect(effects, EffectKind::stoning) || has_effect(effects, EffectKind::indigo)) &&
+            has_effect(effects, EffectKind::stoning) || has_effect(effects, EffectKind::indigo) ||
+            has_effect(effects, EffectKind::petrifying)) &&
            !has_effect(effects, EffectKind::free_moving);
 }
 
@@ -642,6 +643,7 @@ int benefit_value_limit(EffectKind kind)
                    kind == EffectKind::befuddled || kind == EffectKind::word_stunned
                ? 40
            : kind == EffectKind::indigo                                         ? 4033
+           : kind == EffectKind::petrifying                                     ? 30
            : kind == EffectKind::overchanneled || kind == EffectKind::luck_used ? 20
            : kind == EffectKind::arcanum_used                                   ? 7
            : kind == EffectKind::inspired                                       ? 12
@@ -792,6 +794,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::indigo:
     case EffectKind::violet:
     case EffectKind::word_stunned:
+    case EffectKind::petrifying:
         return 60000; // 1 minute
     case EffectKind::giant_strength:
     case EffectKind::enhance_ability:

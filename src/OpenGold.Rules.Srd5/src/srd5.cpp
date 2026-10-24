@@ -1517,6 +1517,20 @@ struct Definition
         std::vector<std::string> spells;
     };
     std::vector<InnatePool> innate;
+    // A monster's `life_drain_attack` row: its melee hits lower the target's
+    // Hit Point maximum by the damage taken (a Specter's Life Drain).
+    bool life_drain_attack{};
+    // A monster's `flies` row: it flies over Difficult Terrain.
+    bool flies{};
+    // A monster's `incorporeal` row: it moves through creatures and objects as
+    // if they were Difficult Terrain, never ending its move inside them.
+    bool incorporeal{};
+    // A monster's `petrifying_gaze` row: a Basilisk's Bonus Action gaze, its
+    // save DC, and the d6 roll that recharges it.
+    int gaze_dc{}, gaze_recharge{};
+    // A monster's `condition_immunity` row: the conditions it never suffers,
+    // as effect labels name them ("Restrained", "Prone").
+    std::vector<std::string> condition_immunities;
     int hit_die{}, constitution{}, rushes{}, surges{}, arcane{};
     int lay_on_hands{};  // Paladin healing pool: five times Paladin level
     int free_smite{};    // Paladin's Smite: one Divine Smite without a slot per Long Rest
@@ -5948,6 +5962,11 @@ class Session final : public CombatSession
     bool attack_as(Actor &a, Loadout loadout, Actor &target, AttackRange range);
     // A Wight's Life Drain on the creature (MON4CHA 20).
     void drain_life(Actor &wight, Actor &target);
+    void lower_hit_point_maximum(const Actor &drainer, Actor &target, int amount);
+    void shed_immune_conditions();
+    void recharge_gaze(Actor &a);
+    void petrifying_gaze(Actor &basilisk, const PendingArea &aimed);
+    void resist_petrifying(Actor &a);
     // The attacker wearing its stat block's `last_attack` statistics.
     [[nodiscard]] Loadout last_attack_loadout(const Actor &a) const;
 
@@ -7230,7 +7249,8 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
             }
         }
     }
-    return {board, mover.source.cell, occupants, mover.effects.prone};
+    return {board,          mover.source.cell, occupants, mover.effects.prone,
+            def(mover).flies, def(mover).incorporeal};
 }
 
 std::vector<Cell> Session::path_to(const Actor &actor, Cell destination) const
@@ -7962,6 +7982,7 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::sickened, "Poisoned (Eyebite)"},
               std::pair{detail::EffectKind::stoning, "Restrained (Flesh to Stone)"},
               std::pair{detail::EffectKind::petrified, "Petrified"},
+              std::pair{detail::EffectKind::petrifying, "Restrained (Petrifying Gaze)"},
               std::pair{detail::EffectKind::dancing, "Charmed (Irresistible Dance)"},
               std::pair{detail::EffectKind::jigging, "Dancing"},
               std::pair{detail::EffectKind::jarred, "Body left behind (Magic Jar)"},
@@ -8141,7 +8162,8 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::fog_cloud:
     case detail::Rider::silence:
     case detail::Rider::thunderwave:
-        return; // Area spells resolve through cast_area().
+    case detail::Rider::petrifying_gaze:
+        return; // Area spells resolve through cast_area(), the gaze through petrifying_gaze().
     case detail::Rider::spiritual_weapon:
     case detail::Rider::arcane_sword:
     case detail::Rider::ice_knife:
@@ -11197,6 +11219,13 @@ std::vector<Command> Session::offered_commands() const
              !detail::has_effect(a.effects, detail::EffectKind::innate_sorcery))
     {
         add(id, "innate_sorcery_points", "Innate Sorcery (2 Sorcery Points)");
+    }
+    // A Basilisk's Petrifying Gaze, while it is charged.
+    if (a.bonus && d.gaze_dc && trait_uses_left(a) > 0)
+    {
+        commands.push_back(
+            {revision_, id, 0, "petrifying_gaze", "Petrifying Gaze", Cell{}, 0, true});
+        commands.back().spell = spell_facts(a, *detail::find_spell("petrifying_gaze"));
     }
     // Dragon Wings (Sorcerer 14): once per Long Rest, or for 3 Sorcery Points.
     if (a.bonus && d.dragon_wings &&
@@ -15409,8 +15438,13 @@ void Session::drain_life(Actor &wight, Actor &target)
         {"{name} takes {damage} {type} damage.",
          {{"name", target.source.name}, {"damage", std::to_string(amount)}, {"type", name, true}}});
     damage(target, amount, false);
-    // The Hit Point maximum drops by the damage, never below 1, unless Aura of
-    // Life guards it; a Long Rest restores it.
+    lower_hit_point_maximum(wight, target, amount);
+}
+
+// Life Drain's lowering: the Hit Point maximum drops by the damage taken, never
+// below 1, unless Aura of Life guards it; a Long Rest restores it.
+void Session::lower_hit_point_maximum(const Actor &drainer, Actor &target, int amount)
+{
     if (amount <= 0 || target.life.dead || in_aura_of_life(target) ||
         !detail::can_apply(target.effects))
     {
@@ -15419,13 +15453,119 @@ void Session::drain_life(Actor &wight, Actor &target)
     const int lowered = std::min(amount, max_hp(target) - 1);
     if (lowered > 0)
     {
-        detail::apply_spell_benefit(target.effects, effect_source(wight), wight.source.name,
+        detail::apply_spell_benefit(target.effects, effect_source(drainer), drainer.source.name,
                                     detail::EffectKind::life_drained, lowered);
         target.life.hp = std::min(target.life.hp, max_hp(target));
         log(target.source.name + "'s Hit Point maximum drops by " + std::to_string(lowered) + ".",
             {"{name}'s Hit Point maximum drops by {amount}.",
              {{"name", target.source.name}, {"amount", std::to_string(lowered)}}});
     }
+}
+
+// A creature immune to a condition shakes off whatever imposed it.
+void Session::shed_immune_conditions()
+{
+    for (auto &a : actors_)
+    {
+        for (const auto &condition : def(a).condition_immunities)
+        {
+            bool shed = false;
+            if (condition == "Prone" && a.effects.prone)
+            {
+                a.effects.prone = false;
+                shed = true;
+            }
+            shed |= std::erase_if(a.effects.active,
+                                  [&](const auto &e)
+                                  {
+                                      return detail::imposes_condition(e.kind, condition);
+                                  }) > 0;
+            if (shed)
+            {
+                log(a.source.name + " is immune to the " + condition + " condition.",
+                    {"{name} is immune to the {condition} condition.",
+                     {{"name", a.source.name}, {"condition", condition, true}}});
+            }
+        }
+    }
+}
+
+// A spent Petrifying Gaze comes back on a d6 roll of its Recharge number or
+// more as the creature's turn starts.
+void Session::recharge_gaze(Actor &a)
+{
+    if (!def(a).gaze_recharge || trait_uses_left(a) > 0)
+    {
+        return;
+    }
+    const int rolled = roll(6);
+    if (rolled < def(a).gaze_recharge)
+    {
+        return;
+    }
+    std::erase_if(a.effects.active,
+                  [](const auto &e)
+                  {
+                      return e.kind == detail::EffectKind::trait_uses;
+                  });
+    log(a.source.name + "'s Petrifying Gaze recharges (" + std::to_string(rolled) + ").",
+        {"{name}'s Petrifying Gaze recharges ({roll}).",
+         {{"name", a.source.name}, {"roll", std::to_string(rolled)}}});
+}
+
+// A Basilisk's Petrifying Gaze, its Bonus Action: each other creature in the
+// Cone makes a Constitution save or is Restrained, turning to stone if it
+// fails again at the end of its next turn.
+void Session::petrifying_gaze(Actor &basilisk, const PendingArea &aimed)
+{
+    basilisk.bonus = false;
+    spend_trait_use(basilisk);
+    log(basilisk.source.name + " uses Petrifying Gaze.",
+        {"{name} uses Petrifying Gaze.", {{"name", basilisk.source.name}}});
+    const auto &gaze = *detail::find_spell(aimed.verb);
+    const auto cells = area_cells(gaze, aimed.verb, basilisk.source.cell, aimed.center);
+    const int dc = def(basilisk).gaze_dc;
+    for (auto &other : actors_)
+    {
+        if (other.life.dead || other.source.id == basilisk.source.id || absent(other) ||
+            std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
+            !detail::can_apply(other.effects) ||
+            saving_throw_succeeds(other, detail::Ability::constitution, dc))
+        {
+            continue;
+        }
+        detail::apply_spell_benefit(other.effects, effect_source(basilisk), basilisk.source.name,
+                                    detail::EffectKind::petrifying, dc);
+        log(other.source.name + " is Restrained as its flesh stiffens.",
+            {"{name} is Restrained as its flesh stiffens.", {{"name", other.source.name}}});
+    }
+}
+
+// The Petrifying Gaze's second save, at the end of the Restrained creature's
+// turn: success ends it, failure turns the creature to stone until Greater
+// Restoration.
+void Session::resist_petrifying(Actor &a)
+{
+    const auto gazed = std::find_if(a.effects.active.begin(), a.effects.active.end(),
+                                    [](const auto &e)
+                                    {
+                                        return e.kind == detail::EffectKind::petrifying;
+                                    });
+    if (gazed == a.effects.active.end() || a.life.dead)
+    {
+        return;
+    }
+    if (saving_throw_succeeds(a, detail::Ability::constitution, gazed->dc))
+    {
+        a.effects.active.erase(gazed);
+        log(a.source.name + " shakes off the stone.",
+            {"{name} shakes off the stone.", {{"name", a.source.name}}});
+        return;
+    }
+    gazed->kind = detail::EffectKind::petrified;
+    gazed->dc = 1;
+    gazed->remaining_ms = detail::benefit_duration_ms(detail::EffectKind::petrified);
+    log(a.source.name + " turns to stone.", {"{name} turns to stone.", {{"name", a.source.name}}});
 }
 
 Loadout Session::last_attack_loadout(const Actor &a) const
@@ -16602,6 +16742,10 @@ void Session::cast_area()
     if (aimed.verb.starts_with("breath_weapon_"))
     {
         breath_weapon(a, aimed);
+    }
+    else if (aimed.verb == "petrifying_gaze")
+    {
+        petrifying_gaze(a, aimed);
     }
     else
     {
@@ -19890,6 +20034,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         hunters_defense(target, damage_type);
     }
     const int amount = hit ? dodged(target, deflected(a, target, rolled, damage_type, ranged)) : 0;
+    const int hit_points_before = target.life.hp;
     apply_hit(a, target,
               ResolvedAttack{.natural = natural,
                              .bonus = bonus,
@@ -19899,6 +20044,11 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                              .range = range,
                              .spell = spell,
                              .savage = savage});
+    // A Specter's Life Drain: the damage taken lowers the Hit Point maximum.
+    if (hit && !ranged && !spell && d.life_drain_attack)
+    {
+        lower_hit_point_maximum(a, target, hit_points_before - target.life.hp);
+    }
     if (hit && charging && target.life.hp > 0 && !target.effects.prone)
     {
         target.effects.prone = true;
@@ -21312,6 +21462,7 @@ bool Session::begin_turn()
         log(a.source.name + " gains Heroic Inspiration (Heroic Warrior).",
             {"{name} gains Heroic Inspiration (Heroic Warrior).", {{"name", a.source.name}}});
     }
+    recharge_gaze(a);
     // Burning: 1d4 Fire damage at the start of each turn until put out.
     if (a.burning && !a.life.dead)
     {
@@ -22326,6 +22477,7 @@ void Session::end_turn()
             bathe(zone, actors_[turn_]);
         }
     }
+    resist_petrifying(actors_[turn_]);
     // Flesh to Stone: a Constitution save at the end of each of its turns;
     // three successes end it, three failures turn the creature to stone.
     for (auto &e : actors_[turn_].effects.active)
@@ -22763,6 +22915,7 @@ bool Session::submit(const Command &command)
             perform(command);
         }
         limit_slowed_turn();
+        shed_immune_conditions();
         if (!reaction_prompt_)
         {
             settle_dominated();
@@ -25999,7 +26152,8 @@ void Session::validate_pending_movement() const
                                  other.life.hp == 0});
         }
     }
-    const detail::MovementGrid grid{board_, moving.source.cell, occupants, moving.effects.prone};
+    const detail::MovementGrid grid{board_,           moving.source.cell,    occupants,
+                                    moving.effects.prone, def(moving).flies, def(moving).incorporeal};
     auto cell = moving.source.cell;
     int remaining =
         effect_reaction_origin_ ? effect_reaction_origin_->movement : mover_budget(moving);
@@ -28891,6 +29045,16 @@ class Module final : public RulesModule
             result.hit =
                 result.critical || (result.natural != 1 && result.total >= result.armor_class);
         }
+        if (result.hit && attack.save_dc)
+        {
+            const auto save = detail::saving_throw(
+                attack.save_ability,
+                actor.definition.saves[static_cast<unsigned>(attack.save_ability)],
+                attack.save_dc, {}, rng);
+            result.save_total = save.natural + save.bonus;
+            result.saved = save.success;
+            result.hit = !save.success;
+        }
         if (result.hit)
         {
             int rolled = attack.damage_bonus;
@@ -31087,7 +31251,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.250", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.251", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
@@ -31399,6 +31563,53 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             }
             continue;
         }
+        // petrifying_gaze creature dc recharge: a Basilisk's Petrifying Gaze
+        // (Recharge 4-6 is 4); its one use is the creature's trait use.
+        if (tag == "petrifying_gaze")
+        {
+            const auto found = content.definitions.find(key);
+            int dc{}, recharge{};
+            row >> dc >> recharge;
+            if (!row || found == content.definitions.end() || dc < 1 || dc > 30 || recharge < 2 ||
+                recharge > 6 || !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid Petrifying Gaze: " + key);
+            }
+            found->second.gaze_dc = dc;
+            found->second.gaze_recharge = recharge;
+            found->second.trait_uses = 1;
+            row >> std::ws;
+            if (!row.eof())
+            {
+                throw std::runtime_error("Unknown Petrifying Gaze fields: " + key);
+            }
+            continue;
+        }
+        // condition_immunity creature condition...: SRD condition names
+        // ("restrained", "prone").
+        if (tag == "condition_immunity")
+        {
+            const auto found = content.definitions.find(key);
+            if (found == content.definitions.end() || !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid condition immunity: " + key);
+            }
+            std::string condition;
+            while (row >> condition)
+            {
+                const auto name = detail::condition_label(condition);
+                if (name.empty())
+                {
+                    throw std::runtime_error("Unknown condition: " + condition);
+                }
+                found->second.condition_immunities.emplace_back(name);
+            }
+            if (found->second.condition_immunities.empty())
+            {
+                throw std::runtime_error("Invalid condition immunity: " + key);
+            }
+            continue;
+        }
         if (tag == "enthralling_panache")
         {
             const auto found = content.definitions.find(key);
@@ -31419,7 +31630,8 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         }
         if (tag == "pack_tactics" || tag == "aggressive" || tag == "advantage_damage" ||
             tag == "undead_fortitude" || tag == "multiattack_ranged" ||
-            tag == "sunlight_sensitivity" || tag == "evil")
+            tag == "sunlight_sensitivity" || tag == "evil" || tag == "life_drain_attack" ||
+            tag == "flies" || tag == "incorporeal")
         {
             const auto found = content.definitions.find(key);
             if (found == content.definitions.end() || !trait_rows.insert(tag + " " + key).second)
@@ -31450,6 +31662,18 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             else if (tag == "evil")
             {
                 definition.evil = true;
+            }
+            else if (tag == "life_drain_attack")
+            {
+                definition.life_drain_attack = true;
+            }
+            else if (tag == "flies")
+            {
+                definition.flies = true;
+            }
+            else if (tag == "incorporeal")
+            {
+                definition.incorporeal = true;
             }
             else
             {

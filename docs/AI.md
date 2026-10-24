@@ -68,7 +68,8 @@ The policy works down one list and takes the first command that applies:
    and Wild Shape.
 10. A spell with a slot, by priority (below).
 11. Fire and acid against a regenerating enemy (trolls).
-12. A Breath Weapon or Dragon's Breath's exhale where it is safe; Steady Aim
+12. A Breath Weapon, Dragon's Breath's exhale or a Basilisk's Petrifying Gaze
+    where it is safe; Steady Aim
     when it can attack without moving; then attacks, in a fixed order (below).
 13. With the Action spent: Action Surge with an enemy in view; Flurry of
     Blows, Martial Arts, moving Hex or Heat Metal; then End turn.
@@ -151,9 +152,10 @@ The features added by #269:
   Ensnaring Strike) only on a Critical Hit, from the lowest slot, so slots stay
   for spells; one that needs Concentration waits while the caster holds one.
 - **Steady Aim** when the Rogue can attack without moving.
-- **Breath Weapon** and **Dragon's Breath**'s exhale before the attacks, while
-  uses remain, where the area catches an enemy and no ally; Dragon's Breath
-  itself is a helpful spell of priority 3.
+- **Breath Weapon**, **Dragon's Breath**'s exhale and a Basilisk's
+  **Petrifying Gaze** before the attacks, while uses remain, where the area
+  catches an enemy and no ally; Dragon's Breath itself is a helpful spell of
+  priority 3.
 - **Hide**, with the action or Cunning Action, is left to the player.
 
 **Original.** It scored each usable weapon (damage dice, magic bonus, extra

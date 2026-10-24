@@ -237,6 +237,42 @@ creature skullcrusher 12 32 1 30 4 1 6 2 3 1 10 1 100 400 0 0 0 1 0
 saves skullcrusher 2 1 2 0 0 0
 damage_types skullcrusher bludgeoning piercing
 pack_tactics skullcrusher
+# Mendor's Library (docs/audits/mendors-library.md, MENDOR-1), with the
+# original's Hit Points. Specter: Life Drain (life_drain_attack: its hits lower
+# the Hit Point maximum), Fly 50 (flies), Incorporeal Movement, its
+# Resistances, Immunities and condition_immunity row (SRD condition names).
+creature specter 12 38 2 50 4 2 6 0 0 0 0 0 0 0 0 0 0 1 0
+saves specter -5 2 0 0 0 0
+damage_types specter necrotic necrotic
+affinity specter stat:acid resistance acid
+affinity specter stat:bludgeoning resistance bludgeoning
+affinity specter stat:cold resistance cold
+affinity specter stat:fire resistance fire
+affinity specter stat:lightning resistance lightning
+affinity specter stat:piercing resistance piercing
+affinity specter stat:slashing resistance slashing
+affinity specter stat:thunder resistance thunder
+affinity specter stat:necrotic immunity necrotic
+affinity specter stat:poison immunity poison
+condition_immunity specter charmed exhaustion grappled paralyzed petrified poisoned prone restrained unconscious
+type specter undead
+life_drain_attack specter
+flies specter
+incorporeal specter
+sunlight_sensitivity specter
+# Basilisk: Bite 2d6 + 3 Piercing and 2d6 Poison; Petrifying Gaze
+# (petrifying_gaze creature dc recharge), a Bonus Action, Recharge 4-6.
+creature basilisk 15 31 -1 20 5 2 6 3 0 0 0 0 0 0 0 0 0 1 0
+saves basilisk 3 -1 2 -4 -1 -2
+damage_types basilisk piercing piercing
+melee_extra_damage basilisk 2 6 poison
+type basilisk monstrosity
+petrifying_gaze basilisk 12 4
+# The mad fighter as a foe: the SRD 5.2.1 Guard (Spear, thrown 20/60).
+creature mad-man 16 7 1 30 3 1 6 1 3 1 6 1 20 60 0 0 0 1 0
+saves mad-man 1 1 1 0 0 0
+damage_types mad-man piercing piercing
+perception mad-man 2
 # Summon Dragon's Draconic Spirit (SRD 5.2.1 p. 166), one stat block per
 # spell level: AC 14 + the level, 50 Hit Points and 10 more per level above 5,
 # Rend 1d6 + 4 + the level Piercing (reach 10 feet), half the level in Rends.

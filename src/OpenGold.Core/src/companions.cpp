@@ -38,6 +38,24 @@ void choose_training(const rules::CharacterRules &creation, rules::CharacterDraf
     }
 }
 
+// The Soldier background's +2 Strength and +1 Constitution, by its index.
+unsigned soldier_adjustment(const rules::CharacterRules &creation, const std::string &background)
+{
+    const auto adjustments = creation.adjustments(background);
+    const auto soldier =
+        std::find_if(adjustments.begin(), adjustments.end(),
+                     [](const auto &a)
+                     {
+                         return a.bonuses[rules::Ability::strength] == 2 &&
+                                a.bonuses[rules::Ability::constitution] == 1;
+                     });
+    if (soldier == adjustments.end())
+    {
+        throw std::runtime_error("No Soldier adjustment for a companion");
+    }
+    return static_cast<unsigned>(soldier - adjustments.begin());
+}
+
 // Skullcrusher (MON4CHA 27): Strength 18, Dexterity 16, Constitution 18,
 // Intelligence 10, Wisdom 8 and Charisma 12 at level 4, as his record has
 // them. A Soldier's +2 Strength and +1 Constitution and the level-4 Ability
@@ -57,19 +75,7 @@ Character skullcrusher(const rules::CharacterRules &creation, const rules::Rules
     {
         draft.rolls[ability] = roll_of(rolled[ability]);
     }
-    const auto adjustments = creation.adjustments(draft.background);
-    const auto soldier =
-        std::find_if(adjustments.begin(), adjustments.end(),
-                     [](const auto &a)
-                     {
-                         return a.bonuses[rules::Ability::strength] == 2 &&
-                                a.bonuses[rules::Ability::constitution] == 1;
-                     });
-    if (soldier == adjustments.end())
-    {
-        throw std::runtime_error("No Soldier adjustment for Skullcrusher");
-    }
-    draft.adjustment = static_cast<unsigned>(soldier - adjustments.begin());
+    draft.adjustment = soldier_adjustment(creation, draft.background);
     choose_training(creation, draft);
     // Levels 2 to 4, each with the rules' default choices for the level it
     // reaches.
@@ -83,6 +89,29 @@ Character skullcrusher(const rules::CharacterRules &creation, const rules::Rules
     }
     return companion;
 }
+
+// The mad fighter of Mendor's Library (MON2CHA 25): Strength 17 and 10 in the
+// rest at level 1, as his record has them; a Soldier's +2 Strength and +1
+// Constitution reach them from the rolls.
+Character mad_fighter(const rules::CharacterRules &creation)
+{
+    rules::CharacterDraft draft;
+    draft.name = "Mad Man";
+    draft.race = "human";
+    draft.gender = "male";
+    draft.character_class = "fighter";
+    draft.alignment = "neutral";
+    draft.background = "soldier";
+    draft.rolled = true;
+    constexpr std::array<int, 6> rolled{15, 10, 9, 10, 10, 10};
+    for (unsigned ability = 0; ability < rolled.size(); ++ability)
+    {
+        draft.rolls[ability] = roll_of(rolled[ability]);
+    }
+    draft.adjustment = soldier_adjustment(creation, draft.background);
+    choose_training(creation, draft);
+    return Character(creation, draft, {});
+}
 } // namespace
 
 std::optional<Character> original_companion(unsigned bank, unsigned record,
@@ -92,6 +121,10 @@ std::optional<Character> original_companion(unsigned bank, unsigned record,
     if (bank == 4 && record == 27)
     {
         return skullcrusher(creation, rules);
+    }
+    if (bank == 2 && record == 25)
+    {
+        return mad_fighter(creation);
     }
     return std::nullopt;
 }

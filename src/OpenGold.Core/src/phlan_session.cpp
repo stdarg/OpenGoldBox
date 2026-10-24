@@ -216,14 +216,43 @@ std::uint64_t clock_minute_of_day(std::uint64_t minutes)
 }
 
 // The areas next to the loaded ones that the game cannot enter yet.
+// The original's saving throws (paralysis, poison or death; petrification or
+// polymorph; rod, staff or wand; breath weapon; spell) as SRD abilities, and
+// the DC of one with no bonus (MENDOR-1).
+constexpr std::array original_save_abilities{rules::Ability::constitution,
+                                             rules::Ability::constitution,
+                                             rules::Ability::dexterity, rules::Ability::dexterity,
+                                             rules::Ability::wisdom};
+constexpr int original_save_dc = 13;
+
+// The damage type of a DAMAGE call that hurts members directly, by its script
+// and address: the original names none.
+std::string script_damage_type(unsigned script, std::uint16_t address)
+{
+    struct ScriptDamage
+    {
+        unsigned script;
+        std::uint16_t address;
+        std::string_view type;
+    };
+    constexpr std::array types{ScriptDamage{2, 0xADB1, "bludgeoning"}, // the Cadorna well's fall
+                               ScriptDamage{15, 0x9D31, "acid"}};      // Mendor's green slime
+    for (const auto &known : types)
+    {
+        if (known.script == script && known.address == address)
+        {
+            return std::string(known.type);
+        }
+    }
+    throw EclError("No damage type for DAMAGE at " + std::to_string(address));
+}
+
 std::string_view area_beyond(unsigned script)
 {
     switch (script)
     {
     case 9:
         return "Stojanow Gate";
-    case 15:
-        return "Mendor's Library";
     case 26:
         return "the wilderness";
     default:
@@ -505,7 +534,9 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
                   (!cell.walls[index(p.facing)] || cell.doors[index(p.facing)]);
     }
     machine_.bind_variable(EclAddress{0x6DD5}, off_map ? 1 : 0);
-    machine_.bind_variable(EclAddress{0x6DCA}, trigger == EventTrigger::look ? 2 : 0);
+    // The original runs Look's search with its search flag at 1, as each step
+    // in Search mode reads it (coab ovr003): the scripts test only 0 and 1.
+    machine_.bind_variable(EclAddress{0x6DCA}, trigger == EventTrigger::look ? 1 : 0);
     // The spokesman's reaction score (0x6DCF), which the scripts add to reaction
     // rolls. The original's formula is unknown; twice Charisma, as New Phlan's
     // own script doubles it, was chosen (LEADER-1).
@@ -1834,28 +1865,28 @@ std::string RolfTourSession::shoot_arrows(unsigned arrows, const rules::HazardAt
     return report;
 }
 
-std::string RolfTourSession::fall(unsigned dice, unsigned sides, int bonus)
+// A DAMAGE call's harm to one member: the saving throw that avoided it, or
+// the damage taken.
+std::string RolfTourSession::hurt(const std::optional<HazardHit> &hit) const
 {
-    const auto id = campaign_->state().slots.at(selected_character_.index);
-    if (!id)
-    {
-        throw EclError("A fall needs a chosen member");
-    }
-    rules::HazardAttack landing{0, dice, sides, bonus, "bludgeoning"};
-    landing.automatic = true;
-    const auto result = campaign_->hazard_attack(id, landing);
-    if (!result)
+    if (!hit)
     {
         return {};
     }
-    const auto &member = campaign_->member(id);
+    const auto &result = hit->result;
+    const auto &member = campaign_->member(hit->target);
     const auto &name = member.character.sheet().name;
-    auto report = "\n" + name + " takes " + std::to_string(result->damage) + " damage.";
+    if (result.saved)
+    {
+        return "\n" + name + " avoids it (saving throw " + std::to_string(result.save_total) +
+               ").";
+    }
+    auto report = "\n" + name + " takes " + std::to_string(result.damage) + " damage.";
     if (member.vitals.dead)
     {
         report += " " + name + " dies.";
     }
-    else if (!result->death_saves.empty())
+    else if (!result.death_saves.empty())
     {
         report += " " + name +
                   (member.vitals.hit_points ? " falls, then regains 1 HP."
@@ -2407,20 +2438,50 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     case 46:
     {
         // Arrow volleys: arg(0) arrows of arg(1)d arg(2) + arg(3). A high bit
-        // marks the original's other forms (coab CMD_Damage); of those, only
-        // the dice dealt to the member the script chose, with no saving
-        // throw, is supported: the Cadorna well's fall.
+        // marks the original's other forms (coab CMD_Damage): the dice dealt
+        // to the member the script chose, with no saving throw (the Cadorna
+        // well's fall), or to a random member who fails a saving throw with
+        // the bonus in arg(0)'s low bits, of the type arg(4) names (Mendor's
+        // green slime). The original names no damage type; script_damage_type
+        // gives each call's.
         const bool volley = !(arg(0) & 0x80) && !(arg(4) & 0x80);
         const bool chosen_member = (arg(0) & 0xC0) == 0x80 && (arg(4) & 0x87) == 0x80;
-        if (!campaign_ || (!volley && !chosen_member))
+        const bool random_member =
+            (arg(0) & 0xD0) == 0x80 && !(arg(4) & 0x80) && (arg(4) & 7) < original_save_abilities.size();
+        if (!campaign_ || (!volley && !chosen_member && !random_member))
         {
             throw EclError("Unsupported DAMAGE form");
         }
         read_character();
-        snapshot_.dialogue +=
-            volley ? shoot_arrows(arg(0), {hidden_archer_attack_bonus, arg(1), arg(2),
-                                           static_cast<int>(arg(3)), "piercing"})
-                   : fall(arg(1), arg(2), static_cast<int>(arg(3)));
+        if (volley)
+        {
+            snapshot_.dialogue += shoot_arrows(arg(0), {hidden_archer_attack_bonus, arg(1), arg(2),
+                                                        static_cast<int>(arg(3)), "piercing"});
+        }
+        else
+        {
+            rules::HazardAttack harm{0, arg(1), arg(2), static_cast<int>(arg(3)),
+                                     script_damage_type(current_script_,
+                                                        request.instruction->address)};
+            harm.automatic = true;
+            if (random_member)
+            {
+                harm.save_ability = original_save_abilities[arg(4) & 7];
+                harm.save_dc = original_save_dc - static_cast<int>(arg(0) & 0x1F);
+                snapshot_.dialogue += hurt(campaign_->hazard_attack(harm));
+            }
+            else
+            {
+                const auto id = campaign_->state().slots.at(selected_character_.index);
+                if (!id)
+                {
+                    throw EclError("DAMAGE needs a chosen member");
+                }
+                const auto result = campaign_->hazard_attack(id, harm);
+                snapshot_.dialogue += hurt(result ? std::optional<HazardHit>{{id, *result}}
+                                                  : std::nullopt);
+            }
+        }
         damage_request_ = request.id;
         snapshot_.phase = TourPhase::awaiting_continue;
         snapshot_.choices = {"Continue"};

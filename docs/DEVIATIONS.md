@@ -183,6 +183,12 @@ in the game: answering YES at a hall lists its services in the dialogue
   20 gems for the family treasure brought back sealed, which the cluebook
   promises but the original's scripts never set.
   [CADORNA-1](SRD-DECISIONS.md#cadorna-1-2026-10-24-the-cadorna-textile-house).
+- **Mendor's Library** (2026-10-24). Its monsters are SRD stat blocks with the
+  original's Hit Points; the Spectre drains Hit Point maximums instead of
+  levels, and the Basilisk's gaze Restrains before it Petrifies. The mad
+  fighter who joins is a level-1 Fighter. The green slime allows an SRD
+  saving throw (Constitution, DC 13) where the original rolled its own.
+  [MENDOR-1](SRD-DECISIONS.md#mendor-1-2026-10-24-mendors-library).
 - **Sunlight Sensitivity** (2026-10-24). Kobolds and Wights have Disadvantage
   on attack rolls and ability checks on a square open to the sky by day; the
   original had no sunlight.

@@ -1,7 +1,8 @@
 // The Slums set encounters' creatures (docs/audits/cluebook-check.md): the
 // Hobgoblin Warrior's poisoned arrows, the Ogre, the Troll's three Rends and
 // Regeneration, and the level-3 magic-user; Podol Plaza's buccaneer; and the
-// Cadorna Textile House's scorpions and Wight, and Sunlight Sensitivity.
+// Cadorna Textile House's scorpions and Wight, and Sunlight Sensitivity; and
+// Mendor's Library's Specter and Basilisk.
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <filesystem>
@@ -97,6 +98,18 @@ void turn_of(CombatSession &c, EntityId id)
         check(turns < 8, "Reach the wanted turn");
         check(submit(c, "end", c.snapshot().actor), "End the turn");
     }
+}
+
+bool aim(CombatSession &c, Cell cell)
+{
+    for (const auto &command : c.legal_commands())
+    {
+        if (command.verb == "area_move" && command.destination == cell)
+        {
+            return c.submit(command);
+        }
+    }
+    return false;
 }
 
 std::size_t count_logged(const CombatSession &c, std::string_view text)
@@ -529,6 +542,129 @@ void sunlight_sensitivity()
     check(!attack(true, false) && !attack(false, true),
           "In shade or at night a kobold attacks normally");
 }
+// A Specter's Life Drain: each melee hit lowers the Hit Point maximum by the
+// damage taken. It resists Slashing damage.
+void specter_drains_life()
+{
+    const auto module = rules();
+    bool drained = false;
+    for (std::uint64_t seed = 1; seed < 40 && !drained; ++seed)
+    {
+        auto c = fight(*module, "specter", "target");
+        turn_of(*c, 1);
+        check(submit(*c, "melee", 1, 2) && count_logged(*c, "Monster -> Hero") == 1,
+              "The Specter makes one Life Drain attack");
+        const int lost = 1000 - unit(*c, 2).hit_points;
+        drained = lost > 0 && unit(*c, 2).max_hit_points == 1000 - lost &&
+                  count_logged(*c, "Hero's Hit Point maximum drops by " + std::to_string(lost)) == 1;
+    }
+    check(drained, "A Life Drain hit lowers the Hit Point maximum by the damage taken");
+    const auto cutting = rules("creature cutter 30 1000 20 30 30 1 2 9 0 0 0 0 0 0 0 0 0 1 0\n"
+                               "damage_types cutter slashing slashing\n");
+    auto c = fight(*cutting, "specter", "cutter");
+    turn_of(*c, 2);
+    check(submit(*c, "melee", 2, 1) && unit(*c, 1).hit_points == 33,
+          "The Specter takes half of a 10- or 11-point Slashing hit");
+}
+
+// A Specter flies and is incorporeal: it passes through a wall and an enemy to
+// stand beyond them, where a Skeleton cannot.
+void specter_passes_through()
+{
+    const auto module = rules();
+    std::vector<Terrain> wall(40);
+    for (int y = 0; y < 4; ++y)
+    {
+        wall[static_cast<std::size_t>(y * 10 + 3)] = Terrain::obstacle;
+    }
+    const auto pass = [&](const std::string &monster, Cell destination)
+    {
+        auto c = module->create({{10, 4, wall},
+                                 {{1, monster, "Monster", Side::opposition, {1, 1}},
+                                  {2, "target", "Hero", Side::party, {8, 3}}}},
+                                3);
+        turn_of(*c, 1);
+        return move_to(*c, 1, destination);
+    };
+    check(pass("specter", {5, 1}), "The Specter moves through the wall");
+    check(!pass("skeleton", {5, 1}), "A Skeleton cannot pass the wall");
+    // A corridor one square wide, the hero standing in it.
+    std::vector<Terrain> corridor(20, Terrain::obstacle);
+    std::fill_n(corridor.begin(), 10, Terrain::open);
+    auto c = module->create({{10, 2, corridor},
+                             {{1, "specter", "Monster", Side::opposition, {1, 0}},
+                              {2, "target", "Hero", Side::party, {2, 0}}}},
+                            3);
+    turn_of(*c, 1);
+    check(move_to(*c, 1, {3, 0}), "The Specter moves through an enemy");
+}
+
+// A Basilisk's Petrifying Gaze, a Bonus Action that recharges on a 4-6: a
+// creature in its Cone that fails a Constitution save is Restrained and, if it
+// fails again at the end of its next turn, turns to stone. A Specter is immune
+// to the Restrained condition.
+void basilisk_gazes()
+{
+    const auto module = rules();
+    bool stone = false, shaken = false;
+    for (std::uint64_t seed = 1; seed < 80 && !(stone && shaken); ++seed)
+    {
+        auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                                 {{1, "basilisk", "Monster", Side::opposition, {1, 1}},
+                                  {2, "target", "Hero", Side::party, {3, 1}},
+                                  {3, "specter", "Ghost", Side::party, {3, 2}}}},
+                                seed);
+        turn_of(*c, 1);
+        check(submit(*c, "petrifying_gaze", 1) && aim(*c, Cell{3, 1}) &&
+                  submit(*c, "area_cast", 1),
+              "The Basilisk gazes with its Bonus Action");
+        check(!offered_any(*c, "petrifying_gaze", 1) && offered_any(*c, "dash", 1),
+              "The gaze spends the Bonus Action and leaves the Action");
+        check(count_logged(*c, "Ghost is Restrained") ==
+                      count_logged(*c, "Ghost is immune to the Restrained condition.") &&
+                  unit(*c, 3).status.find("Restrained") == std::string::npos,
+              "The Specter never stays Restrained");
+        const auto restrained = [&]
+        {
+            const auto statuses = unit(*c, 2).status;
+            return statuses.find("Restrained (Petrifying Gaze)") != std::string::npos;
+        };
+        if (!restrained())
+        {
+            continue;
+        }
+        turn_of(*c, 2);
+        check(submit(*c, "end", 2), "The Restrained hero ends its turn");
+        if (unit(*c, 2).status.find("Petrified") != std::string::npos)
+        {
+            stone = count_logged(*c, "Hero turns to stone.") == 1;
+        }
+        else
+        {
+            shaken = count_logged(*c, "Hero shakes off the stone.") == 1 && !restrained();
+        }
+    }
+    check(stone && shaken, "A second failed save petrifies; a success ends the gaze");
+    // Recharge 4-6: some turns the gaze comes back, some it does not.
+    bool recharged = false, waited = false;
+    for (std::uint64_t seed = 1; seed < 40 && !(recharged && waited); ++seed)
+    {
+        auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                                 {{1, "basilisk", "Monster", Side::opposition, {1, 1}},
+                                  {2, "target", "Hero", Side::party, {6, 1}}}},
+                                seed);
+        turn_of(*c, 1);
+        check(submit(*c, "petrifying_gaze", 1) && aim(*c, Cell{6, 1}) &&
+                  submit(*c, "area_cast", 1) && submit(*c, "end", 1),
+              "The Basilisk gazes and ends its turn");
+        turn_of(*c, 1);
+        const bool back = offered_any(*c, "petrifying_gaze", 1);
+        check(back == (count_logged(*c, "Monster's Petrifying Gaze recharges") == 1),
+              "The gaze is offered again exactly when it recharges");
+        (back ? recharged : waited) = true;
+    }
+    check(recharged && waited, "The gaze recharges on some turns and not others");
+}
 } // namespace
 
 int main()
@@ -550,6 +686,9 @@ int main()
         sunlight_sensitivity();
         grishnak_casts();
         held_weapons();
+        specter_drains_life();
+        specter_passes_through();
+        basilisk_gazes();
         std::cout << "Slums creature tests passed\n";
         return 0;
     }

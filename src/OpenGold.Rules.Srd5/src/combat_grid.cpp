@@ -30,8 +30,10 @@ void validate_battlefield(const Battlefield &board)
 }
 
 MovementGrid::MovementGrid(const Battlefield &board, Cell origin,
-                           std::span<const Occupant> occupants, bool crawling)
-    : board_(board), origin_(origin), crawling_(crawling)
+                           std::span<const Occupant> occupants, bool crawling, bool flying,
+                           bool incorporeal)
+    : board_(board), origin_(origin), crawling_(crawling), flying_(flying),
+      incorporeal_(incorporeal)
 {
     validate_battlefield(board_);
     if (board_.at(origin_) == Terrain::obstacle)
@@ -54,9 +56,9 @@ MovementGrid::MovementGrid(const Battlefield &board, Cell origin,
         // Apply the strongest restriction when several creatures overlap:
         // a conscious enemy blocks; an incapacitated enemy adds difficult terrain.
         const auto candidate =
-            occupant.hostile
-                ? (occupant.incapacitated ? Occupancy::incapacitated_enemy : Occupancy::enemy)
-                : Occupancy::ally;
+            occupant.hostile ? (occupant.incapacitated || incorporeal_ ? Occupancy::incapacitated_enemy
+                                                                       : Occupancy::enemy)
+                             : Occupancy::ally;
         entry = std::max(entry, candidate);
     }
 }
@@ -74,7 +76,12 @@ bool MovementGrid::can_stop_at(Cell destination) const
 
 std::optional<int> MovementGrid::step_cost(Cell from, Cell to) const
 {
-    if (board_.at(from) == Terrain::obstacle || board_.at(to) == Terrain::obstacle)
+    if (!board_.contains(from) || !board_.contains(to))
+    {
+        return std::nullopt;
+    }
+    if (!incorporeal_ &&
+        (board_.at(from) == Terrain::obstacle || board_.at(to) == Terrain::obstacle))
     {
         return std::nullopt;
     }
@@ -83,7 +90,7 @@ std::optional<int> MovementGrid::step_cost(Cell from, Cell to) const
     {
         return std::nullopt;
     }
-    if (dx && dy &&
+    if (dx && dy && !incorporeal_ &&
         (board_.at({from.x, to.y}) == Terrain::obstacle ||
          board_.at({to.x, from.y}) == Terrain::obstacle))
     {
@@ -94,9 +101,12 @@ std::optional<int> MovementGrid::step_cost(Cell from, Cell to) const
     {
         return std::nullopt;
     }
-    const bool difficult =
-        board_.at(to) == Terrain::difficult || occupant == Occupancy::incapacitated_enemy;
-    return (board_.at(to) == Terrain::overgrown ? 20 : difficult ? 10 : 5) + (crawling_ ? 5 : 0);
+    const auto ground = board_.at(to);
+    const bool difficult = (!flying_ && ground == Terrain::difficult) ||
+                           occupant == Occupancy::incapacitated_enemy ||
+                           ground == Terrain::obstacle;
+    return (!flying_ && ground == Terrain::overgrown ? 20 : difficult ? 10 : 5) +
+           (crawling_ ? 5 : 0);
 }
 
 ReachableCells MovementGrid::reachable(int budget) const

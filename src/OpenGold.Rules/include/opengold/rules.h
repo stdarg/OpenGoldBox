@@ -368,12 +368,19 @@ struct HazardAttack
     // No attack roll: it always hits, never critically (an alignment-bound
     // sword's burn, #267).
     bool automatic{};
+    // A saving throw against `save_dc` that avoids the damage altogether (an
+    // original script's saving throw); none when `save_dc` is 0.
+    Ability save_ability{Ability::dexterity};
+    int save_dc{};
 };
 
 struct HazardAttackResult
 {
     int natural{}, total{}, armor_class{}, damage{};
     bool hit{}, critical{};
+    // The saving throw's total, and whether it avoided the damage.
+    int save_total{};
+    bool saved{};
     // With no turns outside combat, a member dropped to 0 HP rolls these at once.
     std::vector<int> death_saves;
 };

@@ -76,6 +76,24 @@ Swallow, and the Giant Scorpion's Claws no grapple. New rows: `last_attack`
 `sunlight_sensitivity` (also on the kobolds), `innate` (daily spell pools) and
 `evil`.
 
+## Mendor's Library monsters
+
+Mendor's Library's monsters are SRD 5.2.1 stat blocks
+([audit](../../../docs/audits/mendors-library.md),
+[MENDOR-1](../../../docs/SRD-DECISIONS.md#mendor-1-2026-10-24-mendors-library)).
+Each Open5E response was fetched on 2026-10-24 (`srd-2024`) and is retained here:
+
+| Rows | Stat block | Response | SHA-256 |
+| --- | --- | --- | --- |
+| `specter` | Specter | `open5e-specter.json` | `A104A532C248E82A811C10A8B4A125963C7F359D7C144799CF799378B91FA5AB` |
+| `basilisk` | Basilisk | `open5e-basilisk.json` | `C87406EC4020A6F07E81464F88F51ABABC43D648BC5C142438C38B13BDEAF354` |
+| `mad-man` | Guard | `open5e-guard.json` | `62B49565F6250D60D710E60003CEAF78B7EF44153BAEE2F7064D23D1EB80C18C` |
+
+The Specter's Resistances, Immunities and condition Immunities come from the
+SRD 5.2.1 PDF. Each keeps the original's Hit Points (38, 31 and 7). New rows:
+`life_drain_attack`, `flies`, `incorporeal`, `condition_immunity` (SRD
+condition names) and `petrifying_gaze creature dc recharge`.
+
 ## Fixtures
 
 `vanguard`, `scout`, `adept`, and `healer` are authored combat fixtures, not

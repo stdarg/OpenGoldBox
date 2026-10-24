@@ -1643,3 +1643,37 @@ monsters and events that SRD 5.2.1 cannot copy work
   family treasure brought back sealed, as the cluebook says, though the
   original's scripts never set it.
 
+
+## MENDOR-1 (2026-10-24): Mendor's Library
+
+Claude chose these on 2026-10-24 while making the map playable area by area,
+following CADORNA-1's precedents; they await the user's review
+([audit](audits/mendors-library.md)):
+
+- **Monsters** are SRD 5.2.1 stat blocks with the original's Hit Points, as
+  the user chose for the Wight and the Large Scorpion:
+  - **Spectre:** the Specter with 38 Hit Points (the SRD's has 22). Life Drain
+    lowers the target's Hit Point maximum by the damage taken on every hit,
+    until a Long Rest. It flies (Difficult Terrain does not slow it), moves
+    through creatures and walls as through Difficult Terrain without stopping
+    inside them, has its Resistances and Immunities, and Sunlight Sensitivity.
+  - **Basilisk:** the Basilisk with 31 Hit Points (the SRD's has 52). Its
+    Petrifying Gaze is a Bonus Action, Recharge 4-6: each other creature in a
+    30-foot Cone makes a DC 12 Constitution save or is Restrained, and a
+    second failure at the end of its next turn Petrifies it until Greater
+    Restoration (or the temple's Stone to Flesh). The reflection clause is
+    left out: no mirrors are carried.
+  - **Mad Man as a foe:** the Guard (Spear, thrown 20/60) with 7 Hit Points.
+- **Condition immunities** are kept: a creature immune to a condition shakes
+  off any effect that imposes it (the Specter's Restrained, Prone and seven
+  more).
+- **The mad fighter as a companion:** a level-1 Fighter with his record's
+  Strength 17 and 10 in every other score, unarmored and unarmed as found.
+- **Script damage with a saving throw** (the original's `DAMAGE` to a random
+  member): the original's save types become SRD saving throws (paralysis,
+  poison or death and petrification: Constitution; rods, staves and wands and
+  breath: Dexterity; spells: Wisdom) against DC 13 less the script's save
+  bonus. A success avoids the damage, as in the original. Each call's damage
+  type is chosen by what the text describes: the garden's green slime is Acid.
+- **Look** runs the area's search with the original's search flag at 1, so
+  finds that need searching (the jar, the buried book) are found by looking.

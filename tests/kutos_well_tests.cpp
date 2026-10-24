@@ -197,6 +197,34 @@ void arrow_traps()
     check(rejected, "An arrow whose die has no sides is refused");
 }
 
+// A hazard with a saving throw (Mendor's Library's green slime, MENDOR-1): a
+// success avoids the damage altogether, a failure takes all of it.
+void saved_hazards()
+{
+    const auto module = rules();
+    const auto sheet = fighter();
+    HazardAttack slime{0, 1, 4, 0, "acid"};
+    slime.automatic = true;
+    slime.save_ability = Ability::dexterity;
+    slime.save_dc = 13;
+    bool saved = false, failed = false;
+    for (std::uint64_t seed = 1; seed < 100; ++seed)
+    {
+        VitalState state{sheet.hit_points, false, {}};
+        RandomState random{seed};
+        const auto r = module->hazard_attack(state, sheet, {}, slime, random);
+        check(r.saved == (r.save_total >= 13) && r.hit == !r.saved,
+              "The Dexterity save against DC 13 decides whether the slime hurts");
+        check(r.saved ? r.damage == 0 && state.hit_points == sheet.hit_points
+                      : r.damage >= 1 && r.damage <= 4 &&
+                            state.hit_points == sheet.hit_points - r.damage,
+              "A success takes no damage; a failure takes 1d4");
+        saved |= r.saved;
+        failed |= !r.saved;
+    }
+    check(saved && failed, "Members both avoid and suffer the slime");
+}
+
 // An arrow rolls against the AC the member's worn armor and shield give, as the
 // original's arrows did, not against the member unarmored.
 void arrows_meet_worn_armor()
@@ -249,6 +277,7 @@ int main()
         multiattack();
         norris_portrait();
         arrow_traps();
+        saved_hazards();
         arrows_meet_worn_armor();
         std::cout << "Kuto's Well tests passed\n";
         return 0;

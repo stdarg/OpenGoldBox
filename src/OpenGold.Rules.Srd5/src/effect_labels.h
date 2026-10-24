@@ -241,6 +241,9 @@ inline constexpr std::array effect_labels{
     EffectLabel{EffectKind::drained, "Hit Point maximum lowered (Harm)",
                 "Hit Point maximum lowered by {value} until Greater Restoration.",
                 EffectValue::number},
+    EffectLabel{
+        EffectKind::petrifying, "Restrained (Petrifying Gaze)",
+        "Speed 0; turning to stone. A Constitution save at the end of its next turn ends it; a failure leaves it Petrified."},
     EffectLabel{EffectKind::life_drained, "Hit Point maximum lowered (Life Drain)",
                 "Hit Point maximum lowered by {value} until a Long Rest.", EffectValue::number},
     EffectLabel{
@@ -416,6 +419,58 @@ inline constexpr const EffectLabel *effect_label(EffectKind kind)
                                         return label.kind == kind;
                                     });
     return found == effect_labels.end() ? nullptr : &*found;
+}
+
+// The SRD conditions a creature can be immune to, as effect labels name them.
+inline constexpr std::array<std::string_view, 14> condition_labels{
+    "Blinded",       "Charmed",   "Deafened",  "Exhaustion", "Frightened", "Grappled",  "Incapacitated",
+    "Paralyzed",     "Petrified", "Poisoned",  "Prone",      "Restrained", "Stunned",   "Unconscious"};
+
+// The label of a condition named in lower case ("restrained"); empty when it
+// is no SRD condition.
+inline constexpr std::string_view condition_label(std::string_view condition)
+{
+    for (const auto label : condition_labels)
+    {
+        if (label.size() == condition.size() &&
+            std::equal(label.begin() + 1, label.end(), condition.begin() + 1) &&
+            label.front() - 'A' + 'a' == condition.front())
+        {
+            return label;
+        }
+    }
+    return {};
+}
+
+// Whether an effect of the kind imposes the condition: its label names it
+// before any parenthesis ("Prone and Incapacitated (laughing)"), or it charms
+// or frightens under another name.
+inline constexpr bool imposes_condition(EffectKind kind, std::string_view condition)
+{
+    if (kind == EffectKind::dominated)
+    {
+        return condition == "Charmed";
+    }
+    if (kind == EffectKind::haunted)
+    {
+        return condition == "Frightened";
+    }
+    const auto *label = effect_label(kind);
+    if (!label)
+    {
+        return false;
+    }
+    auto named = label->name.substr(0, label->name.find(" ("));
+    while (!named.empty())
+    {
+        const auto end = named.find(" and ");
+        if (named.substr(0, end) == condition)
+        {
+            return true;
+        }
+        named = end == std::string_view::npos ? std::string_view{} : named.substr(end + 5);
+    }
+    return false;
 }
 
 inline constexpr bool ends_with_long_rest(EffectKind kind)

@@ -39,8 +39,12 @@ class ReachableCells
 class MovementGrid
 {
   public:
+    // A flier crosses Difficult Terrain underfoot at no extra cost; an
+    // incorporeal mover passes creatures and obstacles as Difficult Terrain,
+    // never stopping in them.
     MovementGrid(const rules::Battlefield &board, rules::Cell origin,
-                 std::span<const Occupant> occupants, bool crawling = false);
+                 std::span<const Occupant> occupants, bool crawling = false, bool flying = false,
+                 bool incorporeal = false);
     [[nodiscard]] bool can_stop_at(rules::Cell destination) const;
     [[nodiscard]] std::optional<int> step_cost(rules::Cell from, rules::Cell to) const;
     [[nodiscard]] ReachableCells reachable(int budget) const;
@@ -55,7 +59,7 @@ class MovementGrid
     };
     rules::Battlefield board_;
     rules::Cell origin_;
-    bool crawling_{};
+    bool crawling_{}, flying_{}, incorporeal_{};
     std::vector<Occupancy> occupancy_;
     std::vector<bool> held_; // A creature not downed stands there.
     [[nodiscard]] int index(rules::Cell cell) const;

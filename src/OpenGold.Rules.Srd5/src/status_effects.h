@@ -497,9 +497,12 @@ enum class EffectKind : unsigned
     // A Wight's Life Drain: the Hit Point maximum lowered by `dc` until a Long
     // Rest or Greater Restoration.
     life_drained = 201,
+    // A Basilisk's Petrifying Gaze: Restrained until a Constitution save
+    // against `dc` at the end of its next turn ends it or turns it to stone.
+    petrifying = 202,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = life_drained
+    last = petrifying
 };
 
 // Magic Circle's creature types, by `dc`.

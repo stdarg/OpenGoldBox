@@ -227,7 +227,9 @@ enum class Rider : unsigned
     // Spells found on the original's scrolls (MAGIC-6).
     enhance_ability,
     snake_charm,
-    missile_ward
+    missile_ward,
+    // A Basilisk's Petrifying Gaze (MENDOR-1).
+    petrifying_gaze
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -984,6 +986,18 @@ inline constexpr std::array spell_table{
              .half_on_success = true,
              .dice = {1, 10, 0},
              .cone = 15},
+    // A Basilisk's Petrifying Gaze (SRD 5.2.1 p. 262), aimed as
+    // "petrifying_gaze" with its Bonus Action. No one learns it as a spell.
+    SpellDef{.id = "petrifying_gaze",
+             .label = "Petrifying Gaze",
+             .level = 0,
+             .pattern = SpellPattern::save_condition,
+             .target = SpellTarget::area,
+             .range = 30,
+             .bonus_action = true,
+             .save = Ability::constitution,
+             .rider = Rider::petrifying_gaze,
+             .cone = 30},
     SpellDef{.id = "breath_weapon_line",
              .label = "Breath Weapon",
              .level = 0,
