@@ -86,10 +86,13 @@ Add an entry whenever a new departure is decided.
   Alchemist's Fire at SRD prices, and every starting kit has a Torch, so any
   party can keep a troll down.
   [GEAR-1](SRD-DECISIONS.md#gear-1-2026-10-08-fire-and-acid-for-every-party).
-- **Poisoner's Kit and Basic Poison** (2026-10-22, 2026-10-24). Two SRD items
-  the original lacks: a Rogue carrying a Poisoner's Kit can poison with
-  Cunning Strike, and a vial of Basic Poison coats a weapon. No shop sells them
-  by default; the Shop & Temple Manager can add them to any shop
+- **Poisoner's Kit, Basic Poison and Thieves' Tools** (2026-10-22, 2026-10-24).
+  Three SRD items the original lacks: a Rogue carrying a Poisoner's Kit can
+  poison with Cunning Strike, a vial of Basic Poison coats a weapon, and a Rogue
+  carrying Thieves' Tools has twice the chance to pick a lock
+  ([LOCK-1](SRD-DECISIONS.md#lock-1-2026-10-24-thieves-tools-double-the-chance-to-pick-a-lock)).
+  No shop sells them by default; the Shop & Temple Manager can add them to any
+  shop, and can make a shop a Rogue's Shop or a Magic User's Shop
   ([#271](https://github.com/stdarg/OpenGold/issues/271)).
 
 - **Computer play** (2026-10-21). The original's AI walked toward an enemy it

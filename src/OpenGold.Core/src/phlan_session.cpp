@@ -1233,9 +1233,10 @@ void RolfTourSession::try_locked_door(DoorMethod method)
     for (const auto &attempt : attempts)
     {
         snapshot_.door_checks.push_back({campaign_->member(attempt.member).character.sheet().name,
-                                         method, attempt.roll.die, attempt.roll.total, difficulty});
+                                         method, attempt.roll.die, attempt.roll.total,
+                                         attempt.difficulty, attempt.thieves_tools});
     }
-    if (attempts.empty() || attempts.back().roll.total < difficulty)
+    if (attempts.empty() || attempts.back().roll.total < attempts.back().difficulty)
     {
         return;
     }

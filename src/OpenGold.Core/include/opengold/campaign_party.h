@@ -70,8 +70,9 @@ struct RestResult
 };
 
 // How the party tries a locked door: Bash is Strength (Athletics) by anyone
-// conscious; Pick is Dexterity (Sleight of Hand) by a conscious Rogue; Knock is
-// the spell, cast by a member who has it prepared, and always opens it.
+// conscious; Pick is Dexterity (Sleight of Hand) by a conscious Rogue, whose
+// Thieves' Tools double the chance (LOCK-1); Knock is the spell, cast by a
+// member who has it prepared, and always opens it.
 enum class DoorMethod
 {
     bash,
@@ -79,11 +80,14 @@ enum class DoorMethod
     knock
 };
 
-// One member's check against a locked door.
+// One member's check against a locked door. The difficulty is the lock's, or
+// lower for a Rogue picking it with Thieves' Tools.
 struct DoorAttempt
 {
     MemberId member{};
     rules::AbilityCheckRoll roll;
+    int difficulty{};
+    bool thieves_tools{};
 };
 
 struct PartyMember

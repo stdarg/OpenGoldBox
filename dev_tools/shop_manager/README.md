@@ -24,15 +24,16 @@ JSON record, even if it shares an original stock list with other shops. Use
 **Stock** to change it. Stock `-1` means unlimited, matching the original shop
 behavior; `0` means out of stock. The item picker can search decoded item lists
 from `ITEM1.DAX` through `ITEM8.DAX` and keeps each added item's source identity.
-It also offers the game's added gear, and the Poisoner's Kit (50 gp) and Basic
-Poison (100 gp), which no shop sells by default
+It also offers the game's added gear, and the Poisoner's Kit (50 gp), Basic
+Poison (100 gp) and Thieves' Tools (25 gp), which no shop sells by default
 ([#271](https://github.com/stdarg/OpenGold/issues/271)).
 
 The four temples each have the nine original curative services and
 OpenGoldBox's Resurrection, which the game offers only on Easy and Normal, with
 independent editable prices and **Offered** switches. Their type is fixed to Temple. Shops
-can change among Arms & Armor, General Items, Silver Items, and Jewelry, but
-cannot become temples. Changing a shop type preserves its independently edited
+can change among Arms & Armor, General Items, Silver Items, Jewelry, Rogue's
+Shop, and Magic User's Shop, but cannot become temples. The game sells what a
+shop's record lists, whatever its type. Changing a shop type preserves its independently edited
 offerings so the user can adjust its stock deliberately.
 
 Portraits can be selected from `art/portraits/NPCs/` or

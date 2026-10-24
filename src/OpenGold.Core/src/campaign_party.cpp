@@ -659,6 +659,8 @@ std::string equipment_conversion(const por::Equipment &item)
         return "poisoners_kit";
     case authored_item::basic_poison:
         return "basic_poison";
+    case authored_item::thieves_tools:
+        return "thieves_tools";
     default:
         return unsupported;
     }
@@ -1947,6 +1949,21 @@ bool tries_door(const PartyMember &m, DoorMethod method)
     return conscious &&
            (method == DoorMethod::bash || m.character.creation_data().character_class == "rogue");
 }
+
+bool carries_thieves_tools(const PartyMember &m)
+{
+    const auto &items = m.character.inventory().items();
+    return std::any_of(items.begin(), items.end(),
+                       [](const auto &item) { return item.definition_id == "thieves_tools"; });
+}
+
+// The difficulty that gives a check with `modifier` twice as many winning d20
+// faces as `difficulty` does, which doubles the chance (LOCK-1).
+int doubled_chance_difficulty(int difficulty, int modifier)
+{
+    const int winning_faces = std::clamp(21 - (difficulty - modifier), 0, 20);
+    return std::min(difficulty, 21 - 2 * winning_faces + modifier);
+}
 } // namespace
 
 bool CampaignParty::can_try_door(DoorMethod method) const
@@ -1995,8 +2012,12 @@ std::vector<DoorAttempt> CampaignParty::try_door(DoorMethod method, int difficul
                 : rules_->roll_ability_check(m.character.sheet(), m.vitals, gear,
                                              rules::Ability::dexterity, "sleight_of_hand",
                                              random_state);
-        attempts.push_back({id, roll});
-        if (roll.total >= difficulty)
+        const bool thieves_tools = method == DoorMethod::pick && carries_thieves_tools(m);
+        const int needed = thieves_tools
+                               ? doubled_chance_difficulty(difficulty, roll.total - roll.die)
+                               : difficulty;
+        attempts.push_back({id, roll, needed, thieves_tools});
+        if (roll.total >= needed)
         {
             break;
         }
@@ -2022,7 +2043,7 @@ std::vector<DoorAttempt> CampaignParty::cast_knock(int difficulty)
         }
         rules_->cast_exploration_spell(caster.character.sheet(), caster.vitals, "knock");
         state_ = std::move(next);
-        return {{id, {0, difficulty}}};
+        return {{id, {0, difficulty}, difficulty}};
     }
     throw std::runtime_error("No member can cast Knock");
 }

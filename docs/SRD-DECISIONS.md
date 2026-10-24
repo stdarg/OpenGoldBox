@@ -1587,3 +1587,20 @@ The user decided on 2026-10-22 how Podol Plaza's original events that SRD
 - **The cancelled auction**: when no roaming group was rolled this visit, the
   crowd that attacks is a freshly rolled plaza group, not whatever group
   another area left behind.
+
+## LOCK-1 (2026-10-24): Thieves' Tools double the chance to pick a lock
+
+The user decided on 2026-10-24 that Thieves' Tools are not needed to pick a
+lock, but double the chance. Tool proficiencies stay gone (DM-1), so any Rogue
+can still pick a lock, as in the original.
+
+- **Who picks:** each conscious Rogue in party order, as before, with a
+  Dexterity (Sleight of Hand) check.
+- **With Thieves' Tools:** the DC drops until twice as many d20 rolls (1 to 20)
+  succeed, to at most all twenty. A Rogue with +2 who needs 13 (8 rolls) needs 5
+  (16 rolls) with them; one who already succeeds on more than half the rolls
+  always succeeds. The log names the tools and shows the lowered DC.
+- A lock no roll can open (a wizard lock's DC 35 for most Rogues) stays shut.
+- **The item:** SRD 5.2.1 Thieves' Tools, authored item 214, carried gear at
+  25 gp. No shop sells it by default; the Shop & Temple Manager can add it
+  ([#271](https://github.com/stdarg/OpenGold/issues/271)).

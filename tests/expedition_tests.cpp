@@ -1,3 +1,4 @@
+#include "opengold/authored_items.h"
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
 #include "opengold/character_creator.h"
@@ -557,6 +558,53 @@ bool try_door(por::RolfTourSession &town, const std::string &choice,
     return rolled_back || town.snapshot().pose.x == 1;
 }
 
+// The d20 faces from 1 to 20 that reach `difficulty` with `modifier`.
+int winning_faces(int difficulty, int modifier)
+{
+    int faces = 0;
+    for (int die = 1; die <= 20; ++die)
+    {
+        faces += die + modifier >= difficulty;
+    }
+    return faces;
+}
+
+// Thieves' Tools double a Rogue's chance to pick a lock (LOCK-1): the check's
+// difficulty drops until twice as many d20 faces win.
+void thieves_tools_tests(const std::shared_ptr<CampaignParty> &party, MemberId rogue,
+                         const std::shared_ptr<const por::EclProgram> &passable,
+                         const std::shared_ptr<por::PhlanResources> &resources)
+{
+    por::Equipment tools;
+    tools.stored.type = authored_item::thieves_tools;
+    check(equipment_conversion(tools) == "thieves_tools" && tools.label() == "Thieves' Tools" &&
+              module()->equipment_info("thieves_tools").slot == rules::EquipmentSlot::carried,
+          "Thieves' Tools are carried gear");
+    party->purchase(rogue, tools);
+    for (unsigned tries = 0;; ++tries)
+    {
+        check(tries < 40, "A Rogue with Thieves' Tools eventually picks the lock");
+        por::RolfTourSession town(locked_door_map(), passable, {}, 0x9914, {}, resources);
+        town.campaign_party(party);
+        settle_synthetic(town);
+        town.explore(por::ExplorationCommand::turn_right);
+        const bool picked = try_door(town, "Pick", {"Bash", "Pick", "Exit"});
+        const auto &check_made = town.snapshot().door_checks.at(0);
+        const int modifier = check_made.total - check_made.die;
+        check(check_made.thieves_tools && check_made.difficulty <= 15 &&
+                  winning_faces(check_made.difficulty, modifier) ==
+                      std::min(20, 2 * winning_faces(15, modifier)),
+              "Thieves' Tools double the d20 faces that pick the lock");
+        check(picked == (check_made.total >= check_made.difficulty),
+              "The lowered difficulty decides the pick");
+        if (picked)
+        {
+            break;
+        }
+        check(!try_door(town, "Exit"), "After a failed Pick the lock offers only Bash and Exit");
+    }
+}
+
 // A conscious Rogue adds Pick: Dexterity (Sleight of Hand), once per lock until
 // the party moves, as the original allowed one pick attempt per step.
 void pick_lock_tests()
@@ -586,6 +634,7 @@ void pick_lock_tests()
         }
         check(!try_door(town, "Exit"), "After a failed Pick the lock offers only Bash and Exit");
     }
+    thieves_tools_tests(party, rogue, passable, resources);
 
     auto unconscious = party->checkpoint();
     for (auto &member : unconscious.roster)

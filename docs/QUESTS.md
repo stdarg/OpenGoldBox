@@ -60,7 +60,9 @@ The conversion here:
   tried since the party last moved. Each conscious Rogue in party order makes a
   Dexterity (Sleight of Hand) check against the same DC 15 until one succeeds.
   The original rolled thief open-lock percentages; no evidence suggests a
-  different difficulty from Bash.
+  different difficulty from Bash. A Rogue carrying Thieves' Tools has twice the
+  chance: the DC drops until twice as many d20 rolls succeed
+  ([LOCK-1](SRD-DECISIONS.md#lock-1-2026-10-24-thieves-tools-double-the-chance-to-pick-a-lock)).
 - **Exit**: the party stays; nothing is rolled.
 - Every check (member, d20, total, DC) and whether the door opened are shown
   under "Locked." with localized messages. Rolls use the campaign service

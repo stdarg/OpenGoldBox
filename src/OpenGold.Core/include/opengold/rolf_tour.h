@@ -123,6 +123,7 @@ struct DoorCheck
     std::string member;
     opengold::DoorMethod method{};
     int die{}, total{}, difficulty{};
+    bool thieves_tools{};
 };
 
 struct TourSnapshot

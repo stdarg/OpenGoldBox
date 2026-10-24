@@ -37,6 +37,13 @@ the next Piercing or Slashing damage the character deals with a weapon adds
 spends the coat. There is no ammunition to coat (AMMO-UNLIMITED). The campaign
 removes the spent vials after the fight. Combat checkpoints become `OGCOMBAT 68`.
 
+## Thieves' Tools
+
+Rules 0.6.249 adds SRD 5.2.1 Thieves' Tools (authored item 214, 25 gp), carried
+gear. Picking a lock still needs a conscious Rogue; one carrying Thieves' Tools
+has twice the chance
+([LOCK-1](SRD-DECISIONS.md#lock-1-2026-10-24-thieves-tools-double-the-chance-to-pick-a-lock)).
+
 ## Torches, Acid, Alchemist's Fire and Oil
 
 Rules 0.6.135 adds the Torch to the weapon table (a Simple Melee weapon dealing

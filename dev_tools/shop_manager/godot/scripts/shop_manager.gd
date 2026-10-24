@@ -1,6 +1,9 @@
 extends WallArtCatalog
 
-const SHOP_TYPES := ["Arms & Armor", "General Items", "Silver Items", "Jewelry"]
+const SHOP_TYPES := [
+    "Arms & Armor", "General Items", "Silver Items", "Jewelry", "Rogue's Shop",
+    "Magic User's Shop",
+]
 const TEMPLE_SERVICES := [
     ["cure_blindness", "Cure Blindness", 1000],
     ["cure_disease", "Cure Disease", 1000],
@@ -35,6 +38,7 @@ const ADDED_GEAR := [
 const PICKER_GEAR := [
     ["Poisoner's Kit", 50, 1, 212],
     ["Basic Poison", 100, 1, 213],
+    ["Thieves' Tools", 25, 1, 214],
 ]
 
 var manifest: Dictionary = {}
@@ -734,11 +738,20 @@ func _run_check() -> void:
             return int(item["item_type"]) == 213 and int(item["price_gp"]) == 100):
         _fatal("The item picker lacks Basic Poison")
         return
+    if not catalog_items.any(func(item: Dictionary) -> bool:
+            return int(item["item_type"]) == 214 and int(item["price_gp"]) == 25):
+        _fatal("The item picker lacks Thieves' Tools")
+        return
     var saved_type: String = records["phlan-arms-13-08"]["type"]
     records["phlan-arms-13-08"]["type"] = "Temple"
     if _valid_record(records["phlan-arms-13-08"], _location_meta("phlan-arms-13-08")):
         _fatal("Shop-to-temple type change was allowed")
         return
+    for type in ["Rogue's Shop", "Magic User's Shop"]:
+        records["phlan-arms-13-08"]["type"] = type
+        if not _valid_record(records["phlan-arms-13-08"], _location_meta("phlan-arms-13-08")):
+            _fatal("A shop cannot become a " + type)
+            return
     records["phlan-arms-13-08"]["type"] = saved_type
     records["podol-temple-ilmater"]["type"] = "General Items"
     if _valid_record(records["podol-temple-ilmater"], _location_meta("podol-temple-ilmater")):

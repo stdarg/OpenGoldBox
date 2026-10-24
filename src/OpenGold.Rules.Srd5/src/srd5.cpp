@@ -589,6 +589,10 @@ constexpr std::string_view poisoners_kit = "poisoners_kit";
 // There is no ammunition to coat (AMMO-UNLIMITED).
 constexpr std::string_view basic_poison = "basic_poison";
 
+// A Rogue carrying Thieves' Tools has twice the chance to pick a lock (LOCK-1);
+// the campaign rolls the check.
+constexpr std::string_view thieves_tools = "thieves_tools";
+
 std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
 {
     if (const auto *magic = detail::magic_item(item))
@@ -603,6 +607,10 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
     {
         return "In combat, a Bonus Action coats your weapon: its next Piercing or Slashing hit "
                "within a minute deals 1d4 extra Poison damage.";
+    }
+    if (item == thieves_tools)
+    {
+        return "A Rogue carrying them has twice the chance to pick a lock.";
     }
     if (rules::magic_ink_level(item))
     {
@@ -29911,9 +29919,11 @@ class Module final : public RulesModule
     EquipmentInfo equipment_info(std::string_view key) const override
     {
         // Magic Ink is spent writing or copying a scroll (MAGIC-6); a scroll
-        // is read from the pack, and a Poisoner's Kit or Basic Poison used from it.
+        // is read from the pack, and a Poisoner's Kit, Basic Poison or Thieves'
+        // Tools used from it.
         if (detail::thrown_gear(key) || rules::magic_ink_level(key) ||
-            rules::parse_scroll_key(key) || key == poisoners_kit || key == basic_poison)
+            rules::parse_scroll_key(key) || key == poisoners_kit || key == basic_poison ||
+            key == thieves_tools)
         {
             return {EquipmentSlot::carried, 0};
         }
@@ -30827,7 +30837,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.248", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.249", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
