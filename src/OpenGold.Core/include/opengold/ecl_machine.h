@@ -106,6 +106,9 @@ struct EclHostReply
     std::optional<EclConditions> conditions;
     // Required only for NEW ECL. The host resolves the current disk/script ID.
     std::shared_ptr<const EclProgram> next_program;
+    // Ends the script after the operation, as PROGRAM 9 does once the camp
+    // menu closes (coab CMD_Program).
+    bool exit{};
 };
 
 struct EclRequest
@@ -141,6 +144,9 @@ class EclMachine
     void seed_random(std::uint32_t seed);
     void enable_host(std::uint8_t opcode);
     [[nodiscard]] std::uint16_t variable(EclAddress address) const;
+    // Whether a script instruction (not a host reply or binding) wrote the
+    // cell since the last call for it, such as a script setting the clock.
+    [[nodiscard]] bool consume_script_write(EclAddress address);
     [[nodiscard]] std::string string(EclAddress address) const;
     bool start(std::size_t entry_slot);
     // Load another script while idle, keeping the variables, as the original's
@@ -187,6 +193,9 @@ class EclMachine
     std::vector<std::uint8_t> image_;
     std::mt19937 random_{5489U}; // Reproducible OpenGoldBox RNG, not the DOS RNG sequence.
     std::set<std::uint8_t> host_opcodes_;
+    // Cells script instructions wrote, and whether one is executing now.
+    std::set<EclAddress> script_writes_;
+    bool executing_{};
     std::map<std::uint32_t, std::uint32_t> instruction_spans_;
     std::vector<std::uint32_t> stack_, trace_;
     EclConditions conditions_{};

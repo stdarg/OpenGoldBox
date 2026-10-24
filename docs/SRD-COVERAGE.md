@@ -79,6 +79,14 @@ original's 25 Hit Points and its orc archers the Orc shooting a Shortbow, by
 [BANE-1](SRD-DECISIONS.md#bane-1-2026-10-24-the-temple-of-bane). Dirten, who
 joins for the temple, is a level-5 Cleric.
 
+## Nomad camp monsters
+
+The nomad camp's headman Hassad is the SRD 5.2.1 Warrior Veteran (two
+Greatsword or Heavy Crossbow attacks) with the original's 45 Hit Points, his
+guards the Bandit Captain with 30, and the shaman a level-4 Wizard profile
+with 20, by [NOMAD-1](SRD-DECISIONS.md#nomad-1-2026-10-24-the-nomad-camp).
+The Warrior Veteran's Parry is omitted, as the Bandit Captain's is.
+
 ## Mendor's Library monsters
 
 Rules 0.6.251 adds Mendor's Library's SRD 5.2.1 stat blocks: Specter, Basilisk

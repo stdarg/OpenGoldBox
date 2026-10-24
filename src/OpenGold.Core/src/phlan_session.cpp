@@ -12,6 +12,8 @@ namespace opengold::por
 // Arrow volleys come from Norris the Gray's hidden kobold archers: each arrow is
 // an attack roll with the SRD 5.2.1 Kobold Warrior's +4 ranged bonus.
 constexpr int hidden_archer_attack_bonus = 4;
+// The time a step takes, which ECL CLOCK also counts in.
+constexpr std::chrono::seconds step_time{6};
 
 const PhlanResources &RolfTourSession::area_resources() const
 {
@@ -61,7 +63,7 @@ void RolfTourSession::attach_restored_party(std::shared_ptr<opengold::CampaignPa
     campaign_ = std::move(party);
     if (campaign_)
     {
-        for (const std::uint8_t op : {11, 29, 30, 34, 35, 41, 46, 54, 59})
+        for (const std::uint8_t op : {11, 29, 30, 34, 35, 41, 46, 52, 54, 59})
         {
             machine_.enable_host(op);
         }
@@ -303,8 +305,6 @@ std::string_view area_beyond(unsigned script)
         return "Stojanow Gate";
     case 10:
         return "Valhingen Graveyard";
-    case 17:
-        return "the nomad camp";
     case 22:
         return "the Pyramid";
     case 25:
@@ -391,7 +391,7 @@ void RolfTourSession::configure_town()
     }
     if (campaign_)
     {
-        for (const std::uint8_t op : {11, 29, 30, 34, 35, 41, 46, 54, 59})
+        for (const std::uint8_t op : {11, 29, 30, 34, 35, 41, 46, 52, 54, 59})
         {
             machine_.enable_host(op);
         }
@@ -401,10 +401,36 @@ void RolfTourSession::configure_town()
 
 void RolfTourSession::synchronize_clock()
 {
+    adopt_script_clock();
     for (const auto &w : clock_reply().writes)
     {
         machine_.bind_variable(w.address, w.value);
     }
+}
+
+// A script may set the clock: the nomads' feast lasts until hour 18 (ECL7:17
+// 0xA980). Time moves on to the next such hour and minute, as in the original,
+// whose clock those cells are.
+void RolfTourSession::adopt_script_clock()
+{
+    bool scripted_clock = false;
+    for (const auto cell : {ecl_clock_hour, ecl_clock_minute_tens, ecl_clock_minute_ones})
+    {
+        scripted_clock = machine_.consume_script_write(cell) || scripted_clock;
+    }
+    if (!scripted_clock || !campaign_)
+    {
+        return;
+    }
+    const std::uint64_t scripted = machine_.variable(ecl_clock_hour) * 60U +
+                                   machine_.variable(ecl_clock_minute_tens) * 10U +
+                                   machine_.variable(ecl_clock_minute_ones);
+    if (scripted >= 1440)
+    {
+        throw EclError("Invalid script clock");
+    }
+    const auto now = clock_minute_of_day(campaign_->state().time_minutes);
+    campaign_->advance_time(std::chrono::minutes{(scripted + 1440 - now) % 1440});
 }
 
 EclHostReply RolfTourSession::clock_reply() const
@@ -552,7 +578,7 @@ bool RolfTourSession::move_party(ExplorationCommand command)
     }
     if (campaign_ && command == ExplorationCommand::forward)
     {
-        campaign_->advance_time(std::chrono::seconds{6});
+        campaign_->advance_time(step_time);
     }
     bind_pose(pose);
     synchronize_clock();
@@ -566,6 +592,7 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
     snapshot_.payments.clear();
     snapshot_.door_checks.clear();
     snapshot_.door_opened = false;
+    snapshot_.camp_offered = false;
     std::optional<opengold::PartyState> campaign;
     if (campaign_)
     {
@@ -1254,6 +1281,8 @@ void RolfTourSession::finish_event()
         snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") +
                               std::string("The rest was interrupted. Rest again to recover.");
     }
+    // A clock the event's script set is the campaign's before anything saves.
+    synchronize_clock();
     event_checkpoint_.reset();
     snapshot_.phase = TourPhase::completed;
     snapshot_.choices.clear();
@@ -2063,7 +2092,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     };
     // The party's own requests need a campaign party: a session copied without
     // one (detached_copy) refuses them rather than reading none.
-    constexpr std::array party_requests{11, 29, 30, 34, 35, 41, 46, 54, 59};
+    adopt_script_clock();
+    constexpr std::array party_requests{11, 29, 30, 34, 35, 41, 46, 52, 54, 59};
     if (!campaign_ && std::find(party_requests.begin(), party_requests.end(), op) !=
                           party_requests.end())
     {
@@ -2345,6 +2375,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         break;
     }
+    case 52:
+        // ECL CLOCK: time passes as for arg(0) steps, while a script walks the
+        // party (the nomad camp's escort, ECL7:17 0x9D37).
+        campaign_->advance_time(step_time * arg(0));
+        reply = clock_reply();
+        break;
     case 59:
     {
         // SPELL: which member can cast the original's spell arg(0), as the
@@ -2834,11 +2870,17 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         // The original inn invokes its pre-camp subroutine before PROGRAM 9.
         read_character();
+        // Elsewhere PROGRAM 9 opens the camp menu and ends the script (coab
+        // TryEncamp): the nomad camp's lodging, whose night the kobolds may
+        // break (ECL7:17 0xA5EF).
         if (machine_.variable(ecl_rest_interruption_chance) == 255 ||
             (machine_.variable(ecl_rest_check_interval) &&
              machine_.variable(ecl_rest_interruption_chance)))
         {
-            throw EclError("Inn rest is not safe in this script context");
+            snapshot_.camp_offered = true;
+            reply = character_reply(selected_character_);
+            reply.exit = true;
+            break;
         }
         if (!campaign_->rest())
         {

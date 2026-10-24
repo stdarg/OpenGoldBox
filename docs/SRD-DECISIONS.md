@@ -1748,3 +1748,18 @@ they await the user's review ([audit](audits/temple-of-bane.md)):
 - **The half-orc cleric** is the SRD Priest with the original's 25 Hit
   Points, as Grishnak is; the orc archers are the Orc shooting a Shortbow;
   the Ogre Leader is the Ogre, with a leader's double experience.
+
+## NOMAD-1 (2026-10-24): the nomad camp
+
+Claude chose these on 2026-10-24 while making the map playable area by area;
+they await the user's review ([audit](audits/nomad-camp.md)):
+
+- **The nomads** keep the original's Hit Points on SRD stat blocks: Hassad is
+  the Warrior Veteran, his guards the Bandit Captain, the shaman the Slums
+  magic-user's Wizard profile at level 4 (the highest a creature row takes),
+  and the nomads the Bandit. Hassad's and his guards' Parry is omitted, as
+  Norris's is.
+- **The script's clock:** when a script sets the hour, as the feast does,
+  time moves on to it.
+- **The lodging** opens the camp, as the original's camp menu did; its rest
+  is broken when the script says the kobolds come.

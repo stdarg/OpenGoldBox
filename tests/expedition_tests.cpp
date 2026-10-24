@@ -954,9 +954,11 @@ void recover(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &p
 // Breadth-first walk over open edges, through the original movement events.
 // With bash_doors, locked doors are part of the route and are retried until forced.
 // With camp_when_hurt, the party recovers by camping whenever a step leaves it wounded.
+// The walk also ends early once `arrived` holds.
 void walk_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party, unsigned tx,
              unsigned ty, const Answer &answer = peaceful, bool bash_doors = false,
-             bool camp_when_hurt = false, std::string_view typed = "0")
+             bool camp_when_hurt = false, std::string_view typed = "0",
+             const std::function<bool()> &arrived = {})
 {
     const auto locked = [&](unsigned wall, unsigned door)
     {
@@ -967,7 +969,7 @@ void walk_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &p
     for (unsigned moves = 0; moves < 400; ++moves)
     {
         const auto p = town.snapshot().pose;
-        if (p.x == tx && p.y == ty)
+        if ((p.x == tx && p.y == ty) || (arrived && arrived()))
         {
             return;
         }
@@ -2687,27 +2689,108 @@ void travel(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &pa
     settle(town, party, answer);
 }
 
-// Steps across the wilderness map toward (x,y), diagonally while it can.
+// Walks out of the central wilderness's grove or ruined huts: the squares at
+// its edge (event 10) lead back out to the wilderness map.
+void leave_grove(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party)
+{
+    std::optional<std::pair<unsigned, unsigned>> border;
+    for (unsigned y = 0; y < 16 && !border; ++y)
+    {
+        for (unsigned x = 0; x < 16 && !border; ++x)
+        {
+            if (town.map().at(x, y).event_number() == 10 &&
+                reachable(town.map(), town.snapshot().pose, x, y))
+            {
+                border = {x, y};
+            }
+        }
+    }
+    check(border.has_value(), "The grove or the huts have a way out");
+    // The first edge square the walk reaches leads out.
+    try
+    {
+        walk_to(town, party, border->first, border->second, peaceful, true, true);
+    }
+    catch (const std::runtime_error &)
+    {
+        check(town.snapshot().overland, "The walk ends only on leaving the grove or the huts");
+    }
+}
+
+// The first of the eight directions on a shortest way across the central
+// wilderness window from (from_x,from_y) to (x,y), over squares the party may
+// enter: rivers only once the Pyramid's valley is healed.
+std::optional<unsigned> overland_heading(const por::RolfTourSession &town, unsigned from_x,
+                                         unsigned from_y, unsigned x, unsigned y)
+{
+    const auto &world = opengold::test::TourAccess::overland_world(town);
+    const bool rivers = town.script_variable(por::EclAddress{0x4AA2}) != 0;
+    constexpr unsigned columns = por::OverlandWorld::window_columns,
+                       rows = por::OverlandWorld::rows;
+    const auto start_column = world.window_start[1];
+    const auto open = [&](unsigned cx, unsigned cy)
+    {
+        const auto passage = por::overland_passage(world.at(start_column + cx, cy));
+        return passage == por::OverlandPassage::open ||
+               (rivers && passage == por::OverlandPassage::river);
+    };
+    // Breadth-first from the goal, so each square knows its step toward it.
+    std::vector<int> distance(columns * rows, -1);
+    std::queue<std::pair<unsigned, unsigned>> squares;
+    distance[y * columns + x] = 0;
+    squares.push({x, y});
+    while (!squares.empty())
+    {
+        const auto [cx, cy] = squares.front();
+        squares.pop();
+        for (unsigned direction = 0; direction < 8; ++direction)
+        {
+            const int nx = int(cx) + por::overland_dx[direction],
+                      ny = int(cy) + por::overland_dy[direction];
+            // The window's first two columns lead to the western wilderness.
+            if (nx < 2 || ny < 0 || nx >= int(columns) || ny >= int(rows) ||
+                distance[ny * columns + nx] >= 0 || !open(unsigned(nx), unsigned(ny)))
+            {
+                continue;
+            }
+            distance[ny * columns + nx] = distance[cy * columns + cx] + 1;
+            squares.push({unsigned(nx), unsigned(ny)});
+        }
+    }
+    for (unsigned direction = 0; direction < 8; ++direction)
+    {
+        const int nx = int(from_x) + por::overland_dx[direction],
+                  ny = int(from_y) + por::overland_dy[direction];
+        if (nx >= 0 && ny >= 0 && nx < int(columns) && ny < int(rows) &&
+            distance[ny * columns + nx] >= 0 &&
+            distance[ny * columns + nx] < distance[from_y * columns + from_x])
+        {
+            return direction;
+        }
+    }
+    return std::nullopt;
+}
+
+// Steps across the wilderness map toward (x,y) by a shortest way.
 void travel_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party, unsigned x,
                unsigned y, const Answer &answer = peaceful)
 {
-    for (unsigned steps = 0; steps < 60; ++steps)
+    for (unsigned steps = 0; steps < 80; ++steps)
     {
         const auto &s = town.snapshot();
+        // A roaming roll may lead into the grove or the huts on the way.
+        if (!s.overland && s.area_id == 26 && s.script_id == 26)
+        {
+            leave_grove(town, party);
+            continue;
+        }
         if (!s.overland || (s.overland_x == x && s.overland_y == y))
         {
             return;
         }
-        const int dx = (x > s.overland_x) - (x < s.overland_x),
-                  dy = (y > s.overland_y) - (y < s.overland_y);
-        for (unsigned direction = 0; direction < 8; ++direction)
-        {
-            if (por::overland_dx[direction] == dx && por::overland_dy[direction] == dy)
-            {
-                travel(town, party, direction, answer);
-                break;
-            }
-        }
+        const auto heading = overland_heading(town, s.overland_x, s.overland_y, x, y);
+        check(heading.has_value(), "The wilderness has a way to the destination");
+        travel(town, party, *heading, answer);
     }
     throw std::runtime_error("The wilderness journey did not arrive");
 }
@@ -2788,29 +2871,7 @@ void central_wilderness(const std::filesystem::path &directory)
     travel(town, party, 0, prefer({"ENTER", "INVESTIGATE"}));
     check(!town.snapshot().overland && town.snapshot().area_id == 26,
           "The grove or the huts are a 3D area of their own");
-    // The squares at its edge (event 10) lead back out.
-    std::optional<std::pair<unsigned, unsigned>> border;
-    for (unsigned y = 0; y < 16 && !border; ++y)
-    {
-        for (unsigned x = 0; x < 16 && !border; ++x)
-        {
-            if (town.map().at(x, y).event_number() == 10 &&
-                reachable(town.map(), town.snapshot().pose, x, y))
-            {
-                border = {x, y};
-            }
-        }
-    }
-    check(border.has_value(), "The grove or the huts have a way out");
-    // The first edge square the walk reaches leads out.
-    try
-    {
-        walk_to(town, party, border->first, border->second, peaceful, true, true);
-    }
-    catch (const std::runtime_error &)
-    {
-        check(town.snapshot().overland, "The walk ends only on leaving the grove or the huts");
-    }
+    leave_grove(town, party);
     check(town.snapshot().overland && town.snapshot().overland_x == 8 &&
               town.snapshot().overland_y == 27,
           "Leaving the grove or the huts returns the party to the wilderness map");
@@ -3063,6 +3124,69 @@ void temple_of_bane(const std::filesystem::path &directory)
     check(temple(0x4ABD) == 254, "The horde and its half-orc cleric are beaten");
     check(std::find(slots.begin(), slots.end(), dirten) == slots.end(),
           "Dirten stays behind at the cleansed temple");
+}
+
+// The nomad camp (docs/audits/nomad-camp.md), north of the city: entered
+// from the wilderness map, the nomads met in peace, the headman's feast and
+// a night's lodging, the party staying to fight the kobolds, and the
+// headman's reward.
+void nomad_camp(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 6500, "test:nomad-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 5)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    walk_to(town, party, 11, 2);
+    step(town, party, 0, prefer({"WEST"}));
+    walk_to(town, party, 14, 1);
+    step(town, party, 1, prefer({"STAY"}));
+    travel_to(town, party, 12, 11, prefer({"ENTER"}));
+    check(town.snapshot().area_id == 17 && !town.snapshot().overland,
+          "The nomads' camp is a 3D area of its own");
+    // The nomads are met in peace; the kobolds are fought.
+    const Answer guest = [](const por::TourSnapshot &s)
+    {
+        if (s.dialogue.find("THE NOMADS WAIT") != std::string::npos)
+        {
+            return prefer({"Parley"})(s);
+        }
+        return prefer({"YES", "STAY AND FIGHT", "DESTROY THE KOBOLDS", "Fight"})(s);
+    };
+    walk_to(town, party, 8, 8, guest, false, false, "0",
+            [&] { return town.snapshot().camp_offered; });
+    const auto nomads = [&](std::uint16_t address)
+    {
+        return town.script_variable(por::EclAddress{address});
+    };
+    check(town.snapshot().camp_offered && (nomads(0x4A7C) & 1) != 0 &&
+              town.script_variable(por::EclAddress{0x49C9}) == 18,
+          "After the headman's feast, which lasts until evening, the nomads lodge the party "
+          "and offer a night's rest");
+    check(town.camp(RestKind::long_rest), "Camp in the nomads' lodging");
+    settle(town, party, guest);
+    check(nomads(0x4A7D) == 3 && town.script_variable(por::EclAddress{0x49C9}) == 0,
+          "At midnight the headman asks the party to stay against the kobolds, and it stays");
+    rest_until(town, party, [&] { return nomads(0x4A7E) > 0; },
+               "The kobolds attack the next evening");
+    const auto gold = coins(party->state().wealth, Coin::gold);
+    for (unsigned n = 0; n < 10 && !(nomads(0x4A7C) & 8); ++n)
+    {
+        heal(*party);
+        walk_to(town, party, 9, n % 2 ? 12 : 10, guest);
+    }
+    check((nomads(0x4A7C) & 8) != 0 && coins(party->state().wealth, Coin::gold) >= gold + 8000,
+          "With the kobolds broken the shaman pays the promised reward");
+    check(town.snapshot().overland && town.snapshot().overland_x == 12 &&
+              town.snapshot().overland_y == 11,
+          "The nomads send the party back out onto the wilderness map");
 }
 
 // Mendor's Library (docs/audits/mendors-library.md), east of the Cadorna
@@ -4235,6 +4359,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         central_wilderness(directory);
         kovel_mansion(directory);
         temple_of_bane(directory);
+        nomad_camp(directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -4335,6 +4460,12 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--wilderness")
         {
             central_wilderness(directory);
+            return 0;
+        }
+        // Plays the nomad camp alone with a new party.
+        if (argc == 2 && std::string_view(argv[1]) == "--nomads")
+        {
+            nomad_camp(directory);
             return 0;
         }
         // Plays the Temple of Bane alone with a new party.

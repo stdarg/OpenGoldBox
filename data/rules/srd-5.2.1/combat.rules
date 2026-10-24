@@ -349,6 +349,25 @@ creature bane-orc-archer 13 15 1 30 5 1 12 3 3 1 6 1 80 320 0 0 0 1 0
 saves bane-orc-archer 3 1 3 -2 0 0
 damage_types bane-orc-archer slashing piercing
 aggressive bane-orc-archer
+# The nomad camp (docs/audits/nomad-camp.md, NOMAD-1), with the original's Hit
+# Points: the headman Hassad is the SRD 5.2.1 Warrior Veteran (two Greatsword
+# or Heavy Crossbow attacks), his guards the Bandit Captain and his shaman
+# the Slums magic-user's Wizard profile at level 4, the highest a creature row
+# takes. Their Parry is omitted, as Norris's is.
+creature hassad 17 45 3 30 5 2 6 3 3 2 10 1 100 400 0 0 0 1 0
+saves hassad 3 1 2 0 0 0
+damage_types hassad slashing piercing
+multiattack hassad 2
+multiattack_ranged hassad
+perception hassad 2
+creature nomad-guard 15 30 3 30 5 1 6 3 0 0 0 0 0 0 0 0 0 1 0
+saves nomad-guard 4 5 2 2 2 2
+damage_types nomad-guard slashing piercing
+multiattack nomad-guard 2
+creature nomad-shaman 12 20 2 30 4 1 4 2 0 0 0 0 0 0 0 4 5 4 5
+saves nomad-shaman -1 2 1 5 3 0
+damage_types nomad-shaman piercing piercing
+perception nomad-shaman 1
 # Summon Dragon's Draconic Spirit (SRD 5.2.1 p. 166), one stat block per
 # spell level: AC 14 + the level, 50 Hit Points and 10 more per level above 5,
 # Rend 1d6 + 4 + the level Piercing (reach 10 feet), half the level in Rends.

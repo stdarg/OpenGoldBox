@@ -142,6 +142,21 @@ The Temple of Bane's monsters reuse retained responses
 The cleric keeps the original's 25 Hit Points; the archers shoot a Shortbow
 (+3, 1d6 + 1 Piercing, 80/320 feet) in place of the Orc's Javelin.
 
+## Nomad camp monsters
+
+The nomad camp's monsters ([audit](../../../docs/audits/nomad-camp.md),
+[NOMAD-1](../../../docs/SRD-DECISIONS.md#nomad-1-2026-10-24-the-nomad-camp)).
+The Warrior Veteran's Open5E response was fetched on 2026-10-24 (`srd-2024`):
+
+| Rows | Stat block | Response | SHA-256 |
+| --- | --- | --- | --- |
+| `hassad` | Warrior Veteran | `open5e-warrior-veteran.json` | `6AED9B1464F18369A80638420B2ECFCECB209832D5E437659B7F2A20D4622257` |
+| `nomad-guard` | Bandit Captain | `open5e-bandit-captain.json` | (above) |
+| `nomad-shaman` | the `slums-magic-user` Wizard profile | none | none |
+
+Each keeps the original's Hit Points (45, 30 and 20); the Warrior Veteran's
+and the Bandit Captain's Parry are omitted.
+
 ## Fixtures
 
 `vanguard`, `scout`, `adept`, and `healer` are authored combat fixtures, not
