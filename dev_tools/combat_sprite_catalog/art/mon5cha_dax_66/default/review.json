@@ -1,0 +1,28 @@
+{
+  "format": "opengold-sprite-review-v1",
+  "specification": "natural-in-place-v1",
+  "source_key": "MON5CHA.DAX:66",
+  "variant_id": "default",
+  "install_paths": {
+    "ready": "art/mon5cha_dax_66/default/ready.png",
+    "action": "art/mon5cha_dax_66/default/action.png"
+  },
+  "metadata_sha256": "25860429869ac12131ce1ca7938ef2db9a1cbb9b08d45c85a88a2b0cd32d47e7",
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e",
+  "visual_checks": {
+    "source_identity_and_independent_art": true,
+    "correct_equipment_or_no_equipment": true,
+    "same_body_scale_and_perspective": true,
+    "planted_base_registered": true,
+    "requested_ready_and_action_motion": true,
+    "footprint_and_attack_appendage_reviewed": true,
+    "complete_alpha_silhouette_on_light_magenta_dark": true,
+    "readable_at_combat_size": true,
+    "one_second_fixed_grid_catalog_review": true
+  },
+  "ready_sha256": "1e89d8fa0515634a4b5a71a9489c79e008e3c6ef8a79c053fe4a058653ac121f",
+  "action_sha256": "b12ee4de8abe02d27c0f989ae3f2277804cc9c9710844c17ac4d7ed484f99684",
+  "reviewer": "Codex",
+  "reviewed_at": "2026-10-24T19:52:42.208968+00:00",
+  "notes": "Bronze dragon identity verified; copper-gold scales and warm bronze wings in both frames, blue only in the rightward lightning breath. Ready and action inspected at native combat size over light, magenta and dark grounds and alternating in the catalog. The 2x2 footprint fits; tail and planted claws are identical in both frames. No equipment or other set."
+}

@@ -1,15 +1,15 @@
 {
-  "action_sha256": "70c395483f397d0a3d2fb447060f22449ca15f3c16a0b462c00b112f57d2ca1b",
+  "action_sha256": "59c3fd43233e9853a54ebfe3050c4871e7593dfeffc9421b24ab108d9f4ebaa4",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon5cha_dax_90/item_000__one_hand/action.png",
     "ready": "art/mon5cha_dax_90/item_000__one_hand/ready.png"
   },
   "metadata_sha256": "973b5b9693f03d795591e8a2d246170a563a99529cf76ae30382631563a16198",
-  "notes": "Armored adult cleric with chain armor and one mace; ready mace overhead, action follows through toward screen right. Shared 125x126 nearest-neighbor export. Action head aligned downward 7 native pixels; last 20 rows transferred exactly from ready for fixed planted boots. At combat size the mace alone crosses the top tile in ready and side tile in action; body and feet stay within 1x1. Approved pose guide and newly generated ready art used; no original game art reference. Both poses inspected alternating in catalog.",
+  "notes": "Action-only correction: same slim first-level cleric body as untouched ready, mace remains hand-connected at end of downward rightward strike. Planted boots retain ready pixels. Raised ready mace and moving action mace alone cross the footprint as allowed. Native light, magenta and dark review plus one-second catalog alternation passed. No other weapon set.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "bad6c5810428b7ed761e8d9521e492523ad7b4dab8c20e0461f035bd42601eea",
-  "reviewed_at": "2026-10-23T12:13:23.297872+00:00",
+  "reviewed_at": "2026-10-24T19:52:42.208968+00:00",
   "reviewer": "Codex",
   "source_key": "MON5CHA.DAX:90",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
 }

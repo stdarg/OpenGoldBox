@@ -138,6 +138,10 @@ transparent margin. A raised READY weapon may cross the top tile line; the
 moving ACTION weapon may cross a footprint line. Final assets are 128 x 128
 PNGs with alpha. Larger working images are allowed; export with nearest-neighbor
 sampling and preserve alpha.
+The final ready and action cutouts must have no opaque black boxes, wedges,
+halos, or stray pixels; inspect both on light, dark, and contrasting backgrounds.
+For a sword, preserve its recognizable blade length and continuous hand-to-tip
+shape in BOTH frames at combat size; do not shorten it to fit a pose.
 Keep camera, character scale and exact planted-foot coordinates consistent across poses
 and weapon sets; do not resize each pose independently to fill the canvas. The
 action must read clearly at normal combat size, not only in a magnified preview.
@@ -203,4 +207,4 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-PRODUCTION AND REGISTRATION NOTE: Armored adult cleric with chain armor and one mace; ready mace overhead, action follows through toward screen right. Shared 125x126 nearest-neighbor export. Action head aligned downward 7 native pixels; last 20 rows transferred exactly from ready for fixed planted boots. At combat size the mace alone crosses the top tile in ready and side tile in action; body and feet stay within 1x1.
+SPECIFIC CORRECTION: The action figure must keep the same slim first-level cleric body as READY. Do not broaden the shoulders, torso, waist, hips or legs, or add apparent weight. The Mace remains a clear one-handed weapon connected to the hand near the end of a rightward downward swing. Keep the ready frame and planted feet unchanged.
