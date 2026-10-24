@@ -1,8 +1,19 @@
 {
-  "description": "A two-headed giant with a bulky frame and distinct heads facing the same combat direction. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description": "A two-headed giant with a bulky frame and distinct heads facing the same combat direction. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded. Catalog addition: Club, requested for this combat sprite.",
   "humanoid_size": "tall",
   "sprite_size": {"height_squares": 2, "width_squares": 1},
-  "equipment": [],
+  "equipment": [
+    {
+      "id": "added_ettin_club",
+      "kind": "weapon",
+      "name": "Club",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": 7,
+      "weapon_role": "one_hand"
+    }
+  ],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "ETTIN",
@@ -18,13 +29,13 @@
   },
   "variants": [
     {
-      "action": "art/mon2cha_dax_71/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon2cha_dax_71/default/ready.png",
+      "action": "art/mon2cha_dax_71/added_ettin_club__one_hand/action.png",
+      "id": "added_ettin_club__one_hand",
+      "label": "Club",
+      "ready": "art/mon2cha_dax_71/added_ettin_club__one_hand/ready.png",
       "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "weapon_id": "added_ettin_club",
+      "weapon_role": "one_hand"
     }
   ],
   "wealth": {
@@ -38,6 +49,7 @@
   },
   "description_sources": [
     "Original game MON2CHA.DAX:71 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed",
+    "Club added to catalog at the user's request for MON2CHA.DAX:71 on 2026-10-24"
   ]
 }
