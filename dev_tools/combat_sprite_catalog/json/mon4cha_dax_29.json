@@ -1,27 +1,67 @@
 {
   "description": "A juju zombie with a more alert, controlled stance than a shambling ordinary zombie. Source inventory: Short bow. Source wealth: no coins, gems, or jewelry recorded.",
-  "humanoid_size": "normal",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON4CHA.DAX:29 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"
   ],
   "equipment": [
     {
-      "id": "item_000",
+      "id": "added_1466043237",
+      "kind": "weapon",
+      "name": "Broad sword",
+      "readied": false,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": 35,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_1475742521",
+      "kind": "weapon",
+      "name": "Military pick",
+      "readied": false,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": 26,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_1491125625",
       "kind": "weapon",
       "name": "Short bow",
       "readied": false,
-      "source_hands": 2,
-      "source_range": 16,
+      "source_hands": -1,
+      "source_range": -1,
       "source_type": 44,
       "weapon_role": "ranged"
+    },
+    {
+      "id": "added_1515127546",
+      "kind": "weapon",
+      "name": "Morning star",
+      "readied": false,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": 24,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_1543484202",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": false,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": 59,
+      "weapon_role": ""
     }
   ],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
+  "height_feet": null,
+  "humanoid_size": "normal",
   "name": "JUJU ZOMBIE",
-  "preview_fallback_variant": "",
+  "preview_fallback_variant": "item_000__ranged",
   "source": {
     "art_archive": "CPIC4.DAX",
     "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
@@ -31,14 +71,45 @@
     "key": "MON4CHA.DAX:29",
     "linked_creature_keys": []
   },
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 1
+  },
   "variants": [
     {
-      "action": "art/mon4cha_dax_29/item_000__ranged/action.png",
-      "id": "item_000__ranged",
+      "action": "art/mon4cha_dax_29/added_1466043237__added_1543484202/action.png",
+      "id": "added_1466043237__added_1543484202",
+      "label": "Broad sword + Shield",
+      "ready": "art/mon4cha_dax_29/added_1466043237__added_1543484202/ready.png",
+      "shield_id": "added_1543484202",
+      "weapon_id": "added_1466043237",
+      "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon4cha_dax_29/added_1475742521__added_1543484202/action.png",
+      "id": "added_1475742521__added_1543484202",
+      "label": "Military pick + Shield",
+      "ready": "art/mon4cha_dax_29/added_1475742521__added_1543484202/ready.png",
+      "shield_id": "added_1543484202",
+      "weapon_id": "added_1475742521",
+      "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon4cha_dax_29/added_1515127546__added_1543484202/action.png",
+      "id": "added_1515127546__added_1543484202",
+      "label": "Morning star + Shield",
+      "ready": "art/mon4cha_dax_29/added_1515127546__added_1543484202/ready.png",
+      "shield_id": "added_1543484202",
+      "weapon_id": "added_1515127546",
+      "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon4cha_dax_29/added_1491125625__ranged/action.png",
+      "id": "added_1491125625__ranged",
       "label": "Short bow",
-      "ready": "art/mon4cha_dax_29/item_000__ranged/ready.png",
+      "ready": "art/mon4cha_dax_29/added_1491125625__ranged/ready.png",
       "shield_id": "",
-      "weapon_id": "item_000",
+      "weapon_id": "added_1491125625",
       "weapon_role": "ranged"
     }
   ],

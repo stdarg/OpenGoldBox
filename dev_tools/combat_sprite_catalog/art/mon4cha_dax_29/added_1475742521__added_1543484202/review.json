@@ -1,0 +1,32 @@
+{
+  "action_sha256": "fc5a971c258858b43fe033b09e3f059e4730327484f1715042e8144816964467",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon4cha_dax_29/added_1475742521__added_1543484202/action.png",
+    "ready": "art/mon4cha_dax_29/added_1475742521__added_1543484202/ready.png"
+  },
+  "metadata_sha256": "61fb9d841fae3311c12c6234aa5398647f6bc0326afa563ca2a70d7304988dbf",
+  "notes": "Four sets from the live edited equipment record: broad sword+shield, military pick+shield, morning star+shield, short bow. Raised pointed beak pick; late right/down pick strike preserves the distinct pick head and shield. Identical planted feet and scale across sets; original existing bow PNGs at item_000__ranged preserved. Final 128x128 PNGs inspected at native combat size over light, dark and magenta backgrounds; one-second catalog alternation and loaded paths reviewed. Raised ready weapon and attacking action weapon are the only footprint overflows. Bow inspected in isolated catalog session after combined capture briefly displayed stale prior texture.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "820c7178d8174d35888d797c00958650c41f540a84a41739a5328174cca39b65",
+  "reviewed_at": "2026-10-24T22:03:56+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON4CHA.DAX:29",
+  "specification": "bipedal-v1",
+  "variant_id": "added_1475742521__added_1543484202",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
+}
