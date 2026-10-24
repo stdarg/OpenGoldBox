@@ -94,6 +94,25 @@ SRD 5.2.1 PDF. Each keeps the original's Hit Points (38, 31 and 7). New rows:
 `life_drain_attack`, `flies`, `incorporeal`, `condition_immunity` (SRD
 condition names) and `petrifying_gaze creature dc recharge`.
 
+## Central Wilderness monsters
+
+The Central Wilderness's monsters are SRD 5.2.1 stat blocks
+([audit](../../../docs/audits/central-wilderness.md),
+[WILD-1](../../../docs/SRD-DECISIONS.md#wild-1-2026-10-24-the-wilderness-map)).
+Each Open5E response was fetched on 2026-10-24 (`srd-2024`) and is retained here:
+
+| Rows | Stat block | Response | SHA-256 |
+| --- | --- | --- | --- |
+| `drider` | Drider | `open5e-drider.json` | `CF516165FDACEDFE5BDD07FC6F15C55E84163880F9BC858BD029E602F9D693A2` |
+| `stirge` | Stirge | `open5e-stirge.json` | `FC86A8852699B6511D775069B4897EE299E738F61DA3C948667838EFA36560A2` |
+| `bandit-captain` | Bandit Captain | `open5e-bandit-captain.json` | `755DEF9D6872843EA75FC6551D60B475AD40AF0018D3A4E68C3793DD2CF3CA38` |
+| `displacer-beast` | Owlbear | `open5e-owlbear.json` | `A2454F0E7DA6BD3A3ADB6EE074D9C0A32D2384E3EF8A311403746B590BB1B4CF` |
+| `wilderness-bandit` | Bandit | `open5e-bandit.json` | (above) |
+
+Each keeps the original's Hit Points. New rows: `attach creature count sides
+type` (the drain while attached), `web_walker`, and `innate` uses
+`rechargeN`.
+
 ## Fixtures
 
 `vanguard`, `scout`, `adept`, and `healer` are authored combat fixtures, not

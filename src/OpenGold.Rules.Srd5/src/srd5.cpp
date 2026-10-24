@@ -28,6 +28,7 @@
 #include <utility>
 #include <array>
 #include <cctype>
+#include <charconv>
 #include <chrono>
 #include <cmath>
 #include <fstream>
@@ -1508,11 +1509,14 @@ struct Definition
     bool sunlight_sensitive{};
     // A monster's `innate` rows: pools of daily spell uses that spend no slot,
     // each cast with the Action or a Bonus Action (a Priest's Spellcasting and
-    // Divine Aid). At most four pools of at most fifteen uses.
+    // Divine Aid). At most four pools of at most fifteen uses. A pool with a
+    // `recharge` has one use, regained at the start of the creature's turn on
+    // a d6 roll of at least that number (a Drider's Magic of the Spider Queen).
     struct InnatePool
     {
         std::string label;
         int uses{};
+        int recharge{};
         bool bonus_action{};
         std::vector<std::string> spells;
     };
@@ -1522,6 +1526,14 @@ struct Definition
     bool life_drain_attack{};
     // A monster's `flies` row: it flies over Difficult Terrain.
     bool flies{};
+    // A monster's `attach` row: a melee hit attaches it to the target, which
+    // it then drains of this damage at the start of each of its turns (a
+    // Stirge's Proboscis).
+    std::optional<detail::DamageDice> attach_drain;
+    detail::DamageType attach_type{detail::DamageType::necrotic};
+    // A monster's `web_walker` row: webs neither catch nor slow it (a
+    // Drider's Web Walker).
+    bool web_walker{};
     // A monster's `incorporeal` row: it moves through creatures and objects as
     // if they were Difficult Terrain, never ending its move inside them.
     bool incorporeal{};
@@ -2636,6 +2648,19 @@ bool item_effect(std::string_view verb)
                         {
                             return item.spell == id && item.use == detail::ItemUse::wand;
                         });
+}
+
+// The creature a Stirge clings to, if it clings to one.
+std::optional<EntityId> attached_host(const Actor &a)
+{
+    for (const auto &e : a.effects.active)
+    {
+        if (e.kind == detail::EffectKind::attached)
+        {
+            return e.source_actor;
+        }
+    }
+    return std::nullopt;
 }
 
 // The uses a pool of the actor's innate spells has left.
@@ -5965,6 +5990,9 @@ class Session final : public CombatSession
     void lower_hit_point_maximum(const Actor &drainer, Actor &target, int amount);
     void shed_immune_conditions();
     void recharge_gaze(Actor &a);
+    void recharge_innate(Actor &a);
+    void drain_attached(Actor &a);
+    void pull_off(Actor &a, Actor &clinger);
     void petrifying_gaze(Actor &basilisk, const PendingArea &aimed);
     void resist_petrifying(Actor &a);
     // The attacker wearing its stat block's `last_attack` statistics.
@@ -7156,6 +7184,18 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
     }
     // Frightened: no square closer to a creature it fears and can see.
     auto board = zoned_board();
+    // Web Walker: a web's squares are as they were before it.
+    if (def(mover).web_walker)
+    {
+        for (const auto &zone : zones_)
+        {
+            for (const auto cell : zone.kind == ZoneKind::web ? zone.cells : std::vector<Cell>{})
+            {
+                const auto index = static_cast<std::size_t>(cell.y * board.width + cell.x);
+                board.terrain[index] = board_.terrain[index];
+            }
+        }
+    }
     // Spirit Guardians halve an enemy's Speed in their Emanation: here its
     // squares are Difficult Terrain to it.
     for (const auto &zone : zones_)
@@ -7983,6 +8023,7 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::stoning, "Restrained (Flesh to Stone)"},
               std::pair{detail::EffectKind::petrified, "Petrified"},
               std::pair{detail::EffectKind::petrifying, "Restrained (Petrifying Gaze)"},
+              std::pair{detail::EffectKind::attached, "Attached"},
               std::pair{detail::EffectKind::dancing, "Charmed (Irresistible Dance)"},
               std::pair{detail::EffectKind::jigging, "Dancing"},
               std::pair{detail::EffectKind::jarred, "Body left behind (Magic Jar)"},
@@ -12199,7 +12240,8 @@ std::vector<Command> Session::offered_commands() const
                 }
             }
         }
-        if (feet <= d.reach)
+        // An attached Stirge cannot attack.
+        if (feet <= d.reach && !attached_host(a))
         {
             add(id, "melee",
                 a.source.definition.starts_with("slums-kobold") ? "Dagger attack" : "Melee attack",
@@ -12352,6 +12394,16 @@ std::vector<Command> Session::offered_commands() const
         if (a.burning)
         {
             add(id, "extinguish", "Put out the fire");
+        }
+        // A Stirge clinging to this creature or one within 5 feet of it.
+        for (const auto &other : actors_)
+        {
+            if (const auto host = attached_host(other);
+                host && !other.life.dead && find_actor(*host) &&
+                distance(a.source.cell, actor(*host).source.cell) <= 5)
+            {
+                add(id, "detach", "Pull off", other.source.id);
+            }
         }
         add(id, "disengage", "Disengage");
         for (const auto &other : actors_)
@@ -15513,6 +15565,80 @@ void Session::recharge_gaze(Actor &a)
          {{"name", a.source.name}, {"roll", std::to_string(rolled)}}});
 }
 
+// A Stirge drains the creature it clings to as its turn starts, or lets go of
+// one that is gone or out of reach.
+void Session::drain_attached(Actor &a)
+{
+    const auto host = attached_host(a);
+    if (!host)
+    {
+        return;
+    }
+    const auto *target = find_actor(*host);
+    if (!target || target->life.dead || a.life.hp == 0 ||
+        distance(a.source.cell, target->source.cell) > 5)
+    {
+        std::erase_if(a.effects.active,
+                      [](const auto &e)
+                      {
+                          return e.kind == detail::EffectKind::attached;
+                      });
+        log(a.source.name + " lets go.", {"{name} lets go.", {{"name", a.source.name}}});
+        return;
+    }
+    auto &host_actor = actor(*host);
+    const auto type = def(a).attach_type;
+    const auto name = std::string(detail::damage_name(type));
+    const int amount = resolved_damage(host_actor, type, dice(*def(a).attach_drain));
+    log(host_actor.source.name + " takes " + std::to_string(amount) + " " + name +
+            " damage from " + a.source.name + ".",
+        {"{name} takes {damage} {type} damage from {source}.",
+         {{"name", host_actor.source.name},
+          {"damage", std::to_string(amount)},
+          {"type", name, true},
+          {"source", a.source.name}}});
+    damage(host_actor, amount, false);
+}
+
+// The creature a Stirge clings to, or one within 5 feet of it, pulls it off
+// with an action.
+void Session::pull_off(Actor &a, Actor &clinger)
+{
+    std::erase_if(clinger.effects.active,
+                  [](const auto &e)
+                  {
+                      return e.kind == detail::EffectKind::attached;
+                  });
+    log(a.source.name + " pulls " + clinger.source.name + " off.",
+        {"{name} pulls {target} off.", {{"name", a.source.name}, {"target", clinger.source.name}}});
+}
+
+// A spent Recharge pool of innate spells comes back on a d6 roll of its number
+// or more as the creature's turn starts.
+void Session::recharge_innate(Actor &a)
+{
+    const auto &pools = def(a).innate;
+    for (std::size_t pool = 0; pool < pools.size(); ++pool)
+    {
+        if (!pools[pool].recharge || innate_left(a, pool) > 0)
+        {
+            continue;
+        }
+        const int rolled = roll(6);
+        if (rolled < pools[pool].recharge)
+        {
+            continue;
+        }
+        a.innate_spent &= ~(15 << (4 * pool));
+        log(a.source.name + "'s " + pools[pool].label + " recharges (" + std::to_string(rolled) +
+                ").",
+            {"{name}'s {ability} recharges ({roll}).",
+             {{"name", a.source.name},
+              {"ability", pools[pool].label, true},
+              {"roll", std::to_string(rolled)}}});
+    }
+}
+
 // A Basilisk's Petrifying Gaze, its Bonus Action: each other creature in the
 // Cone makes a Constitution save or is Restrained, turning to stone if it
 // fails again at the end of its next turn.
@@ -16163,7 +16289,7 @@ bool Session::spring_zone(const Zone &zone, Actor &creature)
     // Grease knocks a creature Prone and Web Restrains it, each on a failed
     // Dexterity save against the caster's spell DC.
     const bool grease = zone.kind == ZoneKind::grease;
-    if (creature.life.dead || creature.life.hp == 0 ||
+    if (creature.life.dead || creature.life.hp == 0 || (!grease && def(creature).web_walker) ||
         (grease ? creature.effects.prone
                 : detail::has_effect(creature.effects, detail::EffectKind::webbed) ||
                       !detail::can_apply(creature.effects)))
@@ -20049,6 +20175,16 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     {
         lower_hit_point_maximum(a, target, hit_points_before - target.life.hp);
     }
+    // A Stirge's Proboscis attaches it to the creature it hits.
+    if (hit && !ranged && !spell && d.attach_drain && !target.life.dead && !attached_host(a) &&
+        detail::can_apply(a.effects))
+    {
+        detail::apply_spell_benefit(a.effects, effect_source(target), target.source.name,
+                                    detail::EffectKind::attached, 0);
+        log(a.source.name + " attaches to " + target.source.name + ".",
+            {"{name} attaches to {target}.",
+             {{"name", a.source.name}, {"target", target.source.name}}});
+    }
     if (hit && charging && target.life.hp > 0 && !target.effects.prone)
     {
         target.effects.prone = true;
@@ -21463,6 +21599,8 @@ bool Session::begin_turn()
             {"{name} gains Heroic Inspiration (Heroic Warrior).", {{"name", a.source.name}}});
     }
     recharge_gaze(a);
+    recharge_innate(a);
+    drain_attached(a);
     // Burning: 1d4 Fire damage at the start of each turn until put out.
     if (a.burning && !a.life.dead)
     {
@@ -24982,6 +25120,10 @@ void Session::dispatch(const Command &command)
                          : nullptr)
         {
             throw_gear(a, actor(command.target), *gear);
+        }
+        else if (command.verb == "detach")
+        {
+            pull_off(a, actor(command.target));
         }
         else if (command.verb == "dodge")
         {
@@ -31251,7 +31393,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.251", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.252", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
@@ -31475,21 +31617,35 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             continue;
         }
         // innate creature label uses action|bonus spell...: a pool of daily
-        // spell uses ("Divine_Aid" is shown as "Divine Aid").
+        // spell uses ("Divine_Aid" is shown as "Divine Aid"). Uses "recharge5"
+        // is one use regained on a d6 roll of 5 or more (Recharge 5-6).
         if (tag == "innate")
         {
             const auto found = content.definitions.find(key);
             Definition::InnatePool pool;
-            std::string casting, spell;
-            row >> pool.label >> pool.uses >> casting;
+            std::string uses, casting, spell;
+            row >> pool.label >> uses >> casting;
             while (row >> spell)
             {
                 pool.spells.push_back(spell);
             }
             std::replace(pool.label.begin(), pool.label.end(), '_', ' ');
             pool.bonus_action = casting == "bonus";
+            constexpr std::string_view recharge = "recharge";
+            const bool recharging = uses.starts_with(recharge);
+            const auto count = std::string_view(uses).substr(recharging ? recharge.size() : 0);
+            int number{};
+            if (count.empty() ||
+                std::from_chars(count.data(), count.data() + count.size(), number).ptr !=
+                    count.data() + count.size())
+            {
+                number = 0;
+            }
+            pool.uses = recharging ? 1 : number;
+            pool.recharge = recharging ? number : 0;
             if (found == content.definitions.end() || pool.label.empty() ||
                 pool.label.size() > 40 || pool.uses < 1 || pool.uses > 15 ||
+                (recharging && (pool.recharge < 2 || pool.recharge > 6)) ||
                 (casting != "action" && casting != "bonus") || pool.spells.empty() ||
                 found->second.innate.size() >= 4 ||
                 std::any_of(pool.spells.begin(), pool.spells.end(),
@@ -31563,6 +31719,28 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             }
             continue;
         }
+        // attach creature count sides type: a Stirge's drain while attached.
+        if (tag == "attach")
+        {
+            const auto found = content.definitions.find(key);
+            detail::DamageDice drain;
+            std::string type;
+            row >> drain.count >> drain.sides >> type;
+            if (!row || found == content.definitions.end() || drain.count < 1 ||
+                drain.count > 10 || drain.sides < 2 || drain.sides > 20 ||
+                !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid attachment: " + key);
+            }
+            found->second.attach_drain = drain;
+            found->second.attach_type = detail::damage_type(type);
+            row >> std::ws;
+            if (!row.eof())
+            {
+                throw std::runtime_error("Unknown attachment fields: " + key);
+            }
+            continue;
+        }
         // petrifying_gaze creature dc recharge: a Basilisk's Petrifying Gaze
         // (Recharge 4-6 is 4); its one use is the creature's trait use.
         if (tag == "petrifying_gaze")
@@ -31631,7 +31809,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         if (tag == "pack_tactics" || tag == "aggressive" || tag == "advantage_damage" ||
             tag == "undead_fortitude" || tag == "multiattack_ranged" ||
             tag == "sunlight_sensitivity" || tag == "evil" || tag == "life_drain_attack" ||
-            tag == "flies" || tag == "incorporeal")
+            tag == "flies" || tag == "incorporeal" || tag == "web_walker")
         {
             const auto found = content.definitions.find(key);
             if (found == content.definitions.end() || !trait_rows.insert(tag + " " + key).second)
@@ -31674,6 +31852,10 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             else if (tag == "incorporeal")
             {
                 definition.incorporeal = true;
+            }
+            else if (tag == "web_walker")
+            {
+                definition.web_walker = true;
             }
             else
             {

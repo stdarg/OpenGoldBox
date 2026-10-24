@@ -50,6 +50,17 @@ Sensitivity on squares open to the sky by day (Wights and kobolds), and daily
 innate spells cast without slots (the Priest's Spirit Guardians and Divine Aid,
 the latter as a Bonus Action). Combat checkpoints become `OGCOMBAT 69`.
 
+## Central Wilderness monsters
+
+Rules 0.6.252 adds the Central Wilderness's SRD 5.2.1 stat blocks: Stirge,
+Drider, Bandit Captain and the Owlbear (for the displacer beast), and the
+Bandit with the original's 6 Hit Points, by
+[WILD-1](SRD-DECISIONS.md#wild-1-2026-10-24-the-wilderness-map). New monster
+mechanics: a Stirge's Proboscis attaches it to its target, which it drains as
+its turns start, until a creature beside the target pulls it off with an
+action; innate spells that recharge (a Drider's Magic of the Spider Queen,
+Recharge 5-6); and Web Walker.
+
 ## Mendor's Library monsters
 
 Rules 0.6.251 adds Mendor's Library's SRD 5.2.1 stat blocks: Specter, Basilisk

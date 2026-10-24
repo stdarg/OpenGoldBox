@@ -189,6 +189,10 @@ in the game: answering YES at a hall lists its services in the dialogue
   fighter who joins is a level-1 Fighter. The green slime allows an SRD
   saving throw (Constitution, DC 13) where the original rolled its own.
   [MENDOR-1](SRD-DECISIONS.md#mendor-1-2026-10-24-mendors-library).
+- **The wilderness map** (2026-10-24). The displacer beast, which the SRD
+  lacks, fights as an Owlbear; wilderness fights are drawn on the original's
+  field.
+  [WILD-1](SRD-DECISIONS.md#wild-1-2026-10-24-the-wilderness-map).
 - **Rune scrolls** (2026-10-24). Words a script shows in runes (Sokal Keep's
   elf scroll) appear translated; the original needed the box's code wheel.
   [SOKAL-1](SRD-DECISIONS.md#sokal-1-2026-10-24-sokal-keep).

@@ -130,6 +130,8 @@ class RolfTourView : public godot::Control
     double monster_picture_seconds_{};
     unsigned monster_picture_check_frames_{};
     std::optional<opengold::por::PartyPose> rendered_pose_;
+    // The wilderness square and direction last drawn: x, y, direction.
+    std::array<unsigned, 3> rendered_overland_{};
     godot::Ref<godot::AudioStreamWAV> footstep_;
     godot::Rect2 scene_rect_, map_rect_, dialogue_rect_;
     godot::String error_;
@@ -176,6 +178,7 @@ class RolfTourView : public godot::Control
     void left();
     void right();
     void forward();
+    [[nodiscard]] bool on_overland() const;
     void look();
     void camp();
     void setup_rest();

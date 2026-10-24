@@ -29,6 +29,22 @@ inline constexpr EclAddress ecl_party_facing{0xC04D};
 inline constexpr EclAddress ecl_wall_ahead{0xC04E};
 inline constexpr EclAddress ecl_cell_event{0xC04F};
 
+// On the wilderness map: the party's square in its window (0-15, 0-35), the
+// direction it steps (the original's party_Dir: 0 north and on clockwise to
+// 7), whether the area is a 3D map (0 on the wilderness map), the scratch
+// cells a wilderness script computes a step's target in, and the terrain cell
+// it reads after CALL 0xC01B, which the original leaves unset.
+inline constexpr EclAddress ecl_overland_x{0x49C3};
+inline constexpr EclAddress ecl_overland_y{0x49C4};
+inline constexpr EclAddress ecl_overland_direction{0x033D};
+inline constexpr EclAddress ecl_in_3d_area{0x49E6};
+inline constexpr EclAddress ecl_overland_target_x{0x00FB};
+inline constexpr EclAddress ecl_overland_target_y{0x00FC};
+inline constexpr EclAddress ecl_overland_terrain{0x035F};
+// A wilderness script's tile for the square at 0x00FB/0x00FC, which the
+// original's engine stores but never draws.
+inline constexpr EclAddress ecl_overland_tile{0x00B1};
+
 // The game clock: minute digits, hour, day of month and month (both from 1),
 // and year.
 inline constexpr EclAddress ecl_clock_minute_ones{0x49C7};

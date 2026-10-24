@@ -1692,3 +1692,25 @@ they await the user's review ([audit](audits/sokal-keep.md)):
   SHESTNI), where the original showed elvish runes for the box's code wheel to
   translate: the remake has no code wheel. The same holds wherever a script
   shows runes.
+
+## WILD-1 (2026-10-24): the wilderness map
+
+Claude chose these on 2026-10-24 while making the map playable area by area;
+they await the user's review ([audit](audits/central-wilderness.md)):
+
+- **The wilderness map** follows the original: its grid and tiles from the
+  user's START.EXE and SQRPACI, eight directions, half a day a step, the
+  original's impassable squares and the poisoned rivers. The three movement
+  buttons step west, north and east there, and the arrow keys, Home, Page Up,
+  End and Page Down (or the keypad) step in all eight directions.
+- **Its fights** are on the field the original grows from the terrain under
+  the party.
+- **Monsters** keep the original's Hit Points on SRD stat blocks, as in
+  MENDOR-1: the Drider (with Magic of the Spider Queen and Web Walker), the
+  Stirge (its Proboscis attaches and drains; a creature next to it pulls it
+  off with an action), the Bandit for bandits, nomads and merchants, and the
+  Bandit Captain for their aides, without its Pistol and Parry as for Norris
+  the Gray. Mutant lizard men are the Lizardfolk with their 18 Hit Points.
+- **The displacer beast**, which SRD 5.2.1 lacks, keeps its art and name on
+  the Owlbear's stat block (two Rends, CR 3), the nearest in strength to the
+  original's.

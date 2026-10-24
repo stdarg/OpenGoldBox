@@ -147,6 +147,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
     // Flame Tongue"). START.EXE holds the words; without it they keep the
     // generic label and bonus.
     std::vector<std::string> item_words;
+    std::optional<OverlandWorld> overland;
     std::optional<std::filesystem::path> start;
     try
     {
@@ -157,12 +158,14 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
     }
     if (start)
     {
-        auto words = decode_item_words(unpack_sound_executable(read_archive(*start)));
+        const auto image = unpack_sound_executable(read_archive(*start));
+        auto words = decode_item_words(image);
         if (!words)
         {
             throw EclError("START.EXE has no item name table");
         }
         item_words = std::move(*words);
+        overland = read_overland_world(image);
     }
     // An archive's fixed item lists (shop stock in town, script treasure in areas).
     const auto item_lists = [&](const std::string &name)
@@ -214,6 +217,46 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
             }
         }
     };
+    // The wilderness map (docs/audits/central-wilderness.md): START.EXE's grid
+    // drawn with SQRPACI's two sets of 128 tiles, the party as ICON 0, and its
+    // fights on WILDCOM's ground with RANDCOM's debris.
+    if (overland)
+    {
+        const auto tiles = read_archive(resolve_archive(directory, "SQRPACI.DAX"));
+        for (std::uint8_t set = 1; set <= 2; ++set)
+        {
+            for (unsigned frame = 0; frame < 128; ++frame)
+            {
+                auto tile = decode_ega_combat_icon(tiles, set, frame);
+                if (!tile)
+                {
+                    throw EclError("Invalid overland tile " + std::to_string(frame));
+                }
+                town->overland_tiles.push_back(std::move(tile.image));
+            }
+        }
+        auto icon = decode_ega_combat_icon(read_archive(resolve_archive(directory, "ICON.DAX")), 0, 0);
+        if (!icon)
+        {
+            throw EclError("Invalid overland party icon");
+        }
+        town->party_icon = std::move(icon.image);
+        const auto wild = read_archive(resolve_archive(directory, "WILDCOM.DAX")),
+                   debris = read_archive(resolve_archive(directory, "RANDCOM.DAX"));
+        for (const auto &[set, frames] : {std::pair{&wild, 34u}, std::pair{&debris, 6u}})
+        {
+            for (unsigned frame = 0; frame < frames; ++frame)
+            {
+                auto art = decode_ega_combat_icon(*set, 1, frame);
+                if (!art || art.image.width != 24 || art.image.height != 24)
+                {
+                    throw EclError("Invalid wilderness battlefield tile " + std::to_string(frame));
+                }
+                town->wilderness_art.push_back(std::move(art.image));
+            }
+        }
+        town->overland = std::make_shared<const OverlandWorld>(std::move(*overland));
+    }
     pictures("HEAD3.DAX", town->heads);
     pictures("BODY3.DAX", town->bodies);
     pictures("PIC3.DAX", town->pictures);
@@ -341,7 +384,25 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                                        {34, "skeleton", 50, 50},
                                        {35, "zombie", 50, 50},
                                        {38, "giant-frog", 50, 50},
-                                       {39, "giant-scorpion", 700, 700}}}};
+                                       {39, "giant-scorpion", 700, 700}}},
+                           // The Central Wilderness (docs/audits/central-wilderness.md,
+                           // WILD-1): the wilderness map, and the grove and
+                           // ruined huts on GEO7:26.
+                           AreaSource{26,
+                                      7,
+                                      {{26, {7, 8, 23}}},
+                                      {{0, "slums-kobold", 25, 25},
+                                       {1, "slums-kobold-leader", 25, 50},
+                                       {123, "slums-kobold", 25, 25},
+                                       {40, "wilderness-bandit", 25, 25},
+                                       {53, "bandit-captain", 450, 450},
+                                       {57, "lizardfolk", 100, 100},
+                                       {58, "mutant-lizardfolk", 100, 100},
+                                       {61, "stirge", 25, 25},
+                                       {68, "displacer-beast", 700, 700},
+                                       {69, "drider", 2300, 2300},
+                                       {97, "wilderness-bandit", 25, 25},
+                                       {98, "wilderness-bandit", 25, 25}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;
@@ -669,6 +730,7 @@ void RolfTourSession::roll_back_event()
     visited_areas_ = std::move(saved.visited_areas);
     seen_areas_ = std::move(saved.seen_areas);
     rest_checks_ = saved.rest_checks;
+    travel_mode_ = saved.travel_mode;
     const auto revision = snapshot_.revision + 1;
     snapshot_ = std::move(saved.snapshot);
     snapshot_.revision = revision;
@@ -707,13 +769,59 @@ void RolfTourSession::publish_pose()
         throw EclError("Tour wrote an invalid party pose");
     }
     snapshot_.pose = next;
-    snapshot_.visited.set(next.y * 16 + next.x);
-    snapshot_.seen.set(next.y * 16 + next.x);
+    snapshot_.overland = overland();
+    if (overland())
+    {
+        snapshot_.overland_x = machine_.variable(ecl_overland_x);
+        snapshot_.overland_y = machine_.variable(ecl_overland_y);
+        snapshot_.overland_direction = machine_.variable(ecl_overland_direction) % 8;
+    }
+    else
+    {
+        snapshot_.visited.set(next.y * 16 + next.x);
+        snapshot_.seen.set(next.y * 16 + next.x);
+    }
     ++snapshot_.revision;
 }
 
 Image RolfTourSession::observe_view()
 {
+    if (overland() && town_ && town_->overland)
+    {
+        // The landmarks the story has revealed or changed (the original's
+        // DrawOverlandWindow): each shows its own tile while its condition holds.
+        const auto variable = [&](std::uint16_t address)
+        {
+            return machine_.variable(EclAddress{address});
+        };
+        const OverlandView view{
+            town_->overland->window_start[travel_mode_ - 2] + snapshot_.overland_x,
+            snapshot_.overland_y, snapshot_.overland_direction,
+            [&](unsigned landmark)
+            {
+                switch (landmark)
+                {
+                case 3:
+                    return variable(0x4A8C) != 0xFF;
+                case 4:
+                    return variable(0x4AD2) != 0 || (variable(0x4A7C) & 8) != 0 ||
+                           variable(0x4A9F) == 0;
+                case 5:
+                    return (variable(0x4AA0) & 2) == 0;
+                case 6:
+                    return true;
+                case 7:
+                    return (variable(0x4AA0) & 1) == 0;
+                case 8:
+                case 9:
+                    return variable(0x4AB3) > 0xFD;
+                default:
+                    return false;
+                }
+            }};
+        return render_overland_window(*town_->overland, town_->overland_tiles, town_->party_icon,
+                                      view);
+    }
     const auto pose = snapshot_.pose;
     auto view = render_exploration_view(map_, wall_art_, pose.x, pose.y, pose.facing);
     // Before the opening script publishes a pose, (0,0) is only a default
@@ -820,6 +928,14 @@ void RolfTourSession::handle_host(const EclRequest &request)
                 throw EclError("Unsupported tour sound selector");
             }
             ++snapshot_.footsteps; // Presentation plays an original OpenGoldBox footstep cue.
+        }
+        else if (service == EclAddress{0x0806} || service == EclAddress{0x2C4E} ||
+                 service == EclAddress{0x2C51} || service == EclAddress{0xC003} ||
+                 service == EclAddress{0xC009} || service == EclAddress{0xC01B})
+        {
+            // The original engine runs only its six known routines and does
+            // nothing for any other address, such as the wilderness scripts'
+            // map redraws and recolourings.
         }
         else
         {
@@ -1003,7 +1119,23 @@ bool RolfTourSession::explore(ExplorationCommand command)
     }
     if (town_)
     {
-        if (command == ExplorationCommand::forward)
+        // On the wilderness map the party steps in eight directions; in a 3D
+        // area it walks forward and turns.
+        const bool step = command >= ExplorationCommand::north;
+        if (step != overland() && command != ExplorationCommand::look)
+        {
+            return false;
+        }
+        if (step)
+        {
+            const auto direction = static_cast<unsigned>(command) -
+                                   static_cast<unsigned>(ExplorationCommand::north);
+            machine_.bind_variable(ecl_overland_direction, static_cast<std::uint16_t>(direction));
+            snapshot_.overland_direction = direction;
+            pending_movement_ = command;
+            begin_event(EventTrigger::step);
+        }
+        else if (command == ExplorationCommand::forward)
         {
             pending_movement_ = command;
             begin_event(EventTrigger::step);

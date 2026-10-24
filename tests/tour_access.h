@@ -25,6 +25,12 @@ struct TourAccess
         town.machine_.bind_string(address, value);
     }
 
+    // A copy of the script machine, to try dice on without touching the session.
+    static por::EclMachine machine(const por::RolfTourSession &town)
+    {
+        return town.machine_;
+    }
+
     // Reseeds the script's dice, so a test can try an event on several rolls.
     static void seed_dice(por::RolfTourSession &town, std::uint32_t seed)
     {
