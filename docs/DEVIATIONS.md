@@ -192,7 +192,12 @@ in the game: answering YES at a hall lists its services in the dialogue
 - **The wilderness map** (2026-10-24). The displacer beast, which the SRD
   lacks, fights as an Owlbear; wilderness fights are drawn on the original's
   field.
-  [WILD-1](SRD-DECISIONS.md#wild-1-2026-10-24-the-wilderness-map).
+  [OVERLAND-1](SRD-DECISIONS.md#overland-1-2026-10-24-the-wilderness-map).
+- **Kovel Mansion** (2026-10-24). Casting Knock on a locked cabinet needs a
+  member with the spell, which the original never checked. Thief skills the
+  scripts roll are a Rogue's Sleight of Hand checks. A trap that hurts the
+  whole party rolls each member's damage on its own.
+  [KOVEL-1](SRD-DECISIONS.md#kovel-1-2026-10-24-kovel-mansion).
 - **Rune scrolls** (2026-10-24). Words a script shows in runes (Sokal Keep's
   elf scroll) appear translated; the original needed the box's code wheel.
   [SOKAL-1](SRD-DECISIONS.md#sokal-1-2026-10-24-sokal-keep).

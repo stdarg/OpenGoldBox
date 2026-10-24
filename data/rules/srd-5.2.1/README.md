@@ -98,7 +98,7 @@ condition names) and `petrifying_gaze creature dc recharge`.
 
 The Central Wilderness's monsters are SRD 5.2.1 stat blocks
 ([audit](../../../docs/audits/central-wilderness.md),
-[WILD-1](../../../docs/SRD-DECISIONS.md#wild-1-2026-10-24-the-wilderness-map)).
+[OVERLAND-1](../../../docs/SRD-DECISIONS.md#overland-1-2026-10-24-the-wilderness-map)).
 Each Open5E response was fetched on 2026-10-24 (`srd-2024`) and is retained here:
 
 | Rows | Stat block | Response | SHA-256 |
@@ -112,6 +112,21 @@ Each Open5E response was fetched on 2026-10-24 (`srd-2024`) and is retained here
 Each keeps the original's Hit Points. New rows: `attach creature count sides
 type` (the drain while attached), `web_walker`, and `innate` uses
 `rechargeN`.
+
+## Kovel Mansion monsters
+
+Kovel Mansion's thieves are SRD 5.2.1 stat blocks
+([audit](../../../docs/audits/kovel-mansion.md),
+[KOVEL-1](../../../docs/SRD-DECISIONS.md#kovel-1-2026-10-24-kovel-mansion)).
+The Open5E response was fetched on 2026-10-24 (`srd-2024`) and is retained here:
+
+| Rows | Stat block | Response | SHA-256 |
+| --- | --- | --- | --- |
+| `kovel-thief` | Bandit | `open5e-bandit.json` | (above) |
+| `kovel-master-thief` | Spy | `open5e-spy.json` | `38C5CE5513F9CC469DA515529B923B4C88708AF06E9D706E83CC6BDEFF35E762` |
+
+Each keeps the original's Hit Points (4 and 28). New row: `cunning_action
+creature`, the Rogue's Cunning Action.
 
 ## Fixtures
 

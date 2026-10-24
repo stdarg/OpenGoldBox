@@ -1693,7 +1693,7 @@ they await the user's review ([audit](audits/sokal-keep.md)):
   translate: the remake has no code wheel. The same holds wherever a script
   shows runes.
 
-## WILD-1 (2026-10-24): the wilderness map
+## OVERLAND-1 (2026-10-24): the wilderness map
 
 Claude chose these on 2026-10-24 while making the map playable area by area;
 they await the user's review ([audit](audits/central-wilderness.md)):
@@ -1714,3 +1714,24 @@ they await the user's review ([audit](audits/central-wilderness.md)):
 - **The displacer beast**, which SRD 5.2.1 lacks, keeps its art and name on
   the Owlbear's stat block (two Rends, CR 3), the nearest in strength to the
   original's.
+
+## KOVEL-1 (2026-10-24): Kovel Mansion
+
+Claude chose these on 2026-10-24 while making the map playable area by area;
+they await the user's review ([audit](audits/kovel-mansion.md)):
+
+- **Thief skills the scripts roll.** Where Kovel Mansion's lock and traps roll
+  the original's thief skills (picking locks, finding and removing traps), the
+  chance is a conscious Rogue's DC 15 Dexterity (Sleight of Hand) check,
+  doubled with Thieves' Tools, as for locked doors (LOCK-1); anyone else has
+  none, as the original's non-thieves had none.
+- **Find Traps** in effect is the original's magic that sees a trap.
+- **Cast Knock** on a locked cabinet needs a member who can cast Knock, and
+  spends it. The original PC game did nothing for the script's spell check,
+  so any party "cast" it.
+- **Traps that hurt the whole party** roll each member's damage and saving
+  throw (Constitution, DC 13, as MENDOR-1's) on their own. The original rolled
+  the damage once for everyone.
+- **The thieves** keep the original's Hit Points on SRD stat blocks, as in
+  MENDOR-1: a 1st-level thief is the Bandit (4 Hit Points) and a 6th-level
+  thief the Spy (28 Hit Points), with its Cunning Action and poisoned blades.

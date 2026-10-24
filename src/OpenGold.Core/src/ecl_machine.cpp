@@ -438,7 +438,8 @@ void EclMachine::execute(const EclInstruction &i)
     }
     const auto &a = i.operands;
     // These are explicit no-ops in PoR PC, unlike later games. Never call a DOS pointer.
-    if (i.opcode == 59)
+    // A host may still answer SPELL (Kovel Mansion's Knock, KOVEL-1).
+    if (i.opcode == 59 && !host_opcodes_.contains(59))
     {
         pc_ = i.next;
         return;
@@ -786,7 +787,8 @@ void EclMachine::request_host(const EclInstruction &i)
         const auto &operand = i.operands[n];
         const auto op = i.opcode;
         const bool output =
-            (op == 29 && n == 0) || (op == 30 && n >= 2) || op == 34 || (op == 41 && n == 3);
+            (op == 29 && n == 0) || (op == 30 && n >= 2) || op == 34 || (op == 41 && n == 3) ||
+            (op == 59 && n >= 1);
         const bool address =
             output || (op == 30 && n == 0) || (op == 35 && n < 2) || op == 45 || op == 60;
         const bool is_text = op == 57 || (op == 41 && n >= 9 && n <= 11);
@@ -997,7 +999,7 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
         for (std::size_t n = 0; n < pending_->arguments.size(); ++n)
         {
             if (((opcode == 29 && n == 0) || (opcode == 30 && n >= 2) || opcode == 34 ||
-                 (opcode == 41 && n == 3)) &&
+                 (opcode == 41 && n == 3) || (opcode == 59 && n >= 1)) &&
                 !addresses.contains(pending_->arguments[n].address()))
             {
                 return false;

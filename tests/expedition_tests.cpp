@@ -2819,6 +2819,142 @@ void central_wilderness(const std::filesystem::path &directory)
           "The city's western edge leads south into the Cadorna Textile House");
 }
 
+// Kovel Mansion (docs/audits/kovel-mansion.md), the thieves' guild on the
+// city's northeast block: the harbor's boat to the bay and the city's eastern
+// edge, a save in the mansion, a trap the Rogue disarms, the cabinets opened
+// with Knock and by force, the jail's thugs, the chase after the guild master,
+// the ambush and the weapons' gas, the guild beaten so camps are safe, and the
+// way out north onto the wilderness map.
+void kovel_mansion(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->recruit("test:kovel-rogue", character("Sly", 7, "rogue"));
+    party->recruit("test:knock-wizard", knock_wizard());
+    party->award_experience(8 * 6500, "test:kovel-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 5)
+        {
+            auto choice = party->default_advancement(id);
+            party->advance(id, choice);
+            keep_rest_choices(*party);
+        }
+    }
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    walk_to(town, party, 11, 2);
+    step(town, party, 0, prefer({"BAY"}));
+    walk_to(town, party, 14, 1);
+    step(town, party, 1, prefer({"STAY", "NORTH"}));
+    check(town.snapshot().area_id == 14 && !town.snapshot().overland &&
+              town.snapshot().pose.x == 15 && town.snapshot().pose.y == 4,
+          "The bay's boat and the city's eastern edge lead north into Kovel Mansion");
+    const auto folder = std::filesystem::temp_directory_path() / "opengold-kovel";
+    std::filesystem::create_directories(folder);
+    const auto save = folder / "kovel-mansion.ogs";
+    write_campaign_file(save, encode_campaign(*party, &town, campaign_asset_identity(directory)));
+    check(load_expedition(save, directory).town.snapshot().area_id == 14,
+          "A save in Kovel Mansion loads back there");
+    std::filesystem::remove_all(folder);
+    // While the guild stands its thieves break up every camp with slings, so
+    // the party is healed between walks instead.
+    check(town.camp(RestKind::long_rest), "Camp in the mansion");
+    settle(town, party);
+    check(town.snapshot().dialogue.find("THIEVES WITH SLINGS") != std::string::npos,
+          "The guild's slingers break up a camp in the mansion");
+    const auto fight_them = prefer({"Bash", "ATTACK HIM", "ATTACK", "DISARM TRAP", "YES"});
+    const auto guild = [&](std::uint16_t address)
+    {
+        return town.script_variable(por::EclAddress{address});
+    };
+    // Every prompt the party answers, to check what the events said.
+    std::string heard;
+    const auto prowl = [&](unsigned x, unsigned y, const Answer &answer)
+    {
+        heal(*party);
+        const Answer noting = [&](const por::TourSnapshot &s)
+        {
+            heard += s.dialogue + "\n";
+            return answer(s);
+        };
+        walk_to(town, party, x, y, noting, true);
+    };
+
+    // The trap room at (4,3): with the Rogue the party may see the trap and
+    // disarm it; either way it is spent.
+    prowl(4, 3, fight_them);
+    check(guild(0x4A05) == 1, "The trap at (4,3) is disarmed or sprung once");
+
+    // The cabinets at (14,10): A is locked and opened with Knock, B is
+    // smashed open, C may be trapped.
+    std::set<std::string> examined;
+    bool knocked = false;
+    const auto cabinets = [&](const por::TourSnapshot &s) -> std::size_t
+    {
+        const auto has = [&](std::string_view label)
+        {
+            return std::find(s.choices.begin(), s.choices.end(), label) != s.choices.end();
+        };
+        if (has("CAST KNOCK"))
+        {
+            const auto label = knocked ? "BREAK" : "CAST KNOCK";
+            knocked = true;
+            return prefer({label})(s);
+        }
+        if (has("A") && has("LEAVE"))
+        {
+            for (const auto *label : {"A", "B", "C"})
+            {
+                if (examined.insert(label).second)
+                {
+                    return prefer({label})(s);
+                }
+            }
+            return prefer({"LEAVE"})(s);
+        }
+        return fight_them(s);
+    };
+    const auto wealth = party->state().wealth;
+    prowl(14, 10, cabinets);
+    check(guild(0x4AEA) == 1 && guild(0x4AEB) == 1 && guild(0x4AEC) == 1,
+          "The three cabinets are opened and emptied");
+    check(knocked && heard.find("NO ONE IN THE PARTY HAS THE KNOCK SPELL") == std::string::npos,
+          "The wizard casts Knock on cabinet A");
+    check(party->state().wealth[std::size_t(Coin::silver)] >=
+                  wealth[std::size_t(Coin::silver)] + 1500 &&
+              party->state().wealth[std::size_t(Coin::gold)] >= wealth[std::size_t(Coin::gold)] + 1800,
+          "Cabinets B and C hold 1,500 silver and 1,800 gold pieces");
+
+    // The jail at (10,12): ten thugs beating an old thief.
+    prowl(10, 12, fight_them);
+    check((guild(0x4A48) & 2) != 0, "The jail's thugs are beaten and the old thief's papers taken");
+
+    // The guild master's chase from (6,5).
+    const auto killed = guild(0x4A45);
+    prowl(6, 5, prefer({"Bash", "YES", "EAST", "ATTACK", "ATTACK HIM"}));
+    check(guild(0x4A45) == killed + 1 &&
+              heard.find("YOU HAVE CAUGHT ONE OF THE THIEVES") != std::string::npos,
+          "The party chases the thieves through the mansion and fights the guild master");
+
+    // The ambush at (8,13): fifteen thieves and three masters.
+    prowl(8, 13, fight_them);
+    check(guild(0x4A19) == 1, "The ambush is beaten");
+
+    // The weapons at (3,4): taking some sets off the gas and more thieves.
+    prowl(3, 4, prefer({"Bash", "TAKE SOME", "ATTACK", "ATTACK HIM", "YES"}));
+    check(guild(0x4A45) >= 21 && guild(0x4AB2) == 254,
+          "With twenty-one thieves beaten the guild no longer troubles the party's camps");
+
+    // North off the map: the wilderness at the city's northern edge.
+    const auto north = edge_opening(town.map(), town.snapshot().pose, 0);
+    walk_to(town, party, north.x, north.y, fight_them);
+    step(town, party, 0, prefer({"LEAVE"}));
+    check(town.snapshot().overland && town.snapshot().overland_x == 13 &&
+              town.snapshot().overland_y == 26,
+          "Kovel Mansion's north edge leads onto the wilderness map");
+}
+
 // Mendor's Library (docs/audits/mendors-library.md), east of the Cadorna
 // Textile House: entered by the house's east edge and saved there, the
 // wizard-locked doors opened with Knock, a book of history found by looking in
@@ -3987,6 +4123,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         slums_flight(save, directory);
         sokal_keep(directory);
         central_wilderness(directory);
+        kovel_mansion(directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -4087,6 +4224,12 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--wilderness")
         {
             central_wilderness(directory);
+            return 0;
+        }
+        // Plays Kovel Mansion alone with a new party.
+        if (argc == 2 && std::string_view(argv[1]) == "--kovel")
+        {
+            kovel_mansion(directory);
             return 0;
         }
         // Plays Sokal Keep alone with a new party.
