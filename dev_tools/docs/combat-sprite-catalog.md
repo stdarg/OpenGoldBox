@@ -181,3 +181,25 @@ Preserve the game-derived `sprite_size` and keep the body inside its footprint.
 Do not shrink a correctly sized 5-foot Normal creature to make a taller leader
 fit. If that footprint cannot contain both the required Normal body height and
 a taller leader, flag the conflict for review before generating either pair.
+
+## Lessons from localized art corrections
+
+The MON1CHA.DAX:7 longsword revision exposed review failures that the normal
+PNG file check could not catch. Translate a request into the exact record,
+weapon set, frames, and visible acceptance criterion before editing. A longsword
+must read as a full sword in **both** ready and action; do not accept a dagger or
+short sword silhouette merely because the saved equipment says `Longsword`.
+
+Keep a narrow weapon fix narrow. Preserve the accepted figure, shield, body
+height, planted feet, and other weapon sets. An alpha mask must actually erase
+pixels to transparency; painting black or disabling alpha can leave opaque
+rectangles and wedges. Review the **final saved PNGs** on light, dark, and
+contrasting backgrounds, at 128 × 128 combat size and enlarged, then alternate
+them in the catalog. Check the blade, hand connection, transparency, foot anchor,
+and in-place motion. A file check is necessary but cannot prove visual quality.
+
+Record visual approval only for the exact hashes inspected. If the catalog
+shows older art, verify its selected record, weapon set, loaded paths, and
+hashes and refresh the preview; do not treat a cached view as proof about the
+saved files. Follow the [generation and review workflow](../combat_sprite_catalog/generation/README.md)
+before installing a corrected pair or clearing a regeneration flag.

@@ -213,9 +213,23 @@ clipping), or identical ready/action pixels. It prints each file's SHA-256 hash.
 **It does not recognize facing, grip, anatomy, correct alpha cutouts or poses.**
 Those require visual review; a technical pass is not acceptance.
 
+For a localized weapon correction, start with the exact monster ID, weapon set,
+and requested ready/action frames. Keep the accepted body, shield, scale, and
+planted-foot pixels registered; compare the unchanged lower body pixel for
+pixel after compositing. Do not alter another weapon set to solve this one.
+Preserve source alpha through every crop and composite: an erased area must
+have alpha zero, not opaque black RGB, and a pasted weapon must retain its
+original cutout. Disabling alpha or painting a mask black can create opaque
+wedges and boxes even when the PNG passes file checks.
+
 Review the pair overlaid at native pixel coordinates, side by side at normal
 combat size, and alternating every second in the catalog. Confirm the planted
 feet stay at the same x/y coordinates and the whole body does not slide or jump.
+Inspect the **final exported files**, not an earlier draft, over light gray,
+magenta, and dark backgrounds. A dark-only preview can hide black boxes, seams,
+halos, and stray opaque pixels. For a sword correction, check the visible
+guard-to-tip blade length, shape, and hand connection in **both** frames at
+combat size; the equipment label alone does not prove it reads as a sword.
 Compare other weapon sets for identity, scale and foot position. For a humanoid,
 also compare its foot-to-head height with the saved height tier and other art
 of that species. Check the stationary dotted grid and any footprint-overflow
@@ -229,11 +243,16 @@ To preview before installation, use a separate worktree/copy of the catalog,
 copy the staged images to that copy's `install_paths`, and run its existing
 `./dev_tools/combat_sprite_catalog/run.sh`. Keep the main checkout's accepted art
 until the staged pair passes. The catalog already reloads changed PNGs.
+If the preview still shows old art, confirm the selected monster and weapon set,
+the loaded file paths and hashes, and reload or restart the preview before
+drawing a conclusion from it.
 
 In `review.json`, set each `visual_checks` entry to `true` **only after inspecting
 it**. Enter `reviewer`, an ISO date/time in `reviewed_at`, and the exact inspected
 `ready_sha256` and `action_sha256` from the check. Use `notes` for relevant pose
 decisions, references and comparisons. Review every weapon set independently.
+Changing either image after review invalidates that attestation; recheck the
+final bytes and inspect them again before recording approval.
 
 ## 4. Accept, then install
 
