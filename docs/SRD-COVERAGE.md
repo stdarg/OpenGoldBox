@@ -72,6 +72,13 @@ Action), which the computer already plays. The rules also answer the chance
 that an ability check reaches a difficulty (`check_chance`), which the
 scripts' thief-skill rolls use.
 
+## Temple of Bane monsters
+
+The Temple of Bane's half-orc cleric is the SRD 5.2.1 Priest with the
+original's 25 Hit Points and its orc archers the Orc shooting a Shortbow, by
+[BANE-1](SRD-DECISIONS.md#bane-1-2026-10-24-the-temple-of-bane). Dirten, who
+joins for the temple, is a level-5 Cleric.
+
 ## Mendor's Library monsters
 
 Rules 0.6.251 adds Mendor's Library's SRD 5.2.1 stat blocks: Specter, Basilisk

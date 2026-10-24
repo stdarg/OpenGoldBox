@@ -287,6 +287,10 @@ EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
         // Picking a lock and removing traps, which Kovel Mansion's lock and
         // traps roll (ECL3:14 0x9F91, 0xB3A2).
         fields[0xA5] = fields[0xA7] = party.thieves_tools_chance(id);
+        // The high bit of the control byte marks a companion (coab's
+        // control_morale, NPC_Base 0x80); the Temple of Bane looks for it
+        // before Dirten takes his leave (ECL1:24 0xAC5D).
+        fields[0xB8] = m.npc_source.empty() ? 0 : 0x80;
         fields[0x100] = m.vitals.dead ? 0 : 1;
         fields[0x119] = m.vitals.hit_points;
         // Every member shows the party's money: the party owns it all.

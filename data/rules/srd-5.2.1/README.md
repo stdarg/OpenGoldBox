@@ -128,6 +128,20 @@ The Open5E response was fetched on 2026-10-24 (`srd-2024`) and is retained here:
 Each keeps the original's Hit Points (4 and 28). New row: `cunning_action
 creature`, the Rogue's Cunning Action.
 
+## Temple of Bane monsters
+
+The Temple of Bane's monsters reuse retained responses
+([audit](../../../docs/audits/temple-of-bane.md),
+[BANE-1](../../../docs/SRD-DECISIONS.md#bane-1-2026-10-24-the-temple-of-bane)):
+
+| Rows | Stat block | Response | SHA-256 |
+| --- | --- | --- | --- |
+| `bane-cleric` | Priest | `open5e-priest.json` | (above) |
+| `bane-orc-archer` | Orc (SRD 5.1) | `open5e-orc.json` | (above) |
+
+The cleric keeps the original's 25 Hit Points; the archers shoot a Shortbow
+(+3, 1d6 + 1 Piercing, 80/320 feet) in place of the Orc's Javelin.
+
 ## Fixtures
 
 `vanguard`, `scout`, `adept`, and `healer` are authored combat fixtures, not

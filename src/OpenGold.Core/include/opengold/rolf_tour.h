@@ -599,6 +599,8 @@ class RolfTourSession
     // Scripts change coins relative to the view they were given, so the script
     // must receive a fresh character_reply after every read before it continues.
     void read_character();
+    // Whether the script blanked the selected companion's record to send it away.
+    [[nodiscard]] bool dismissed_companion() const;
     [[nodiscard]] EclHostReply character_reply(PartySlot slot) const;
     void bind_pose(PartyPose pose);
     bool move_party(ExplorationCommand command);

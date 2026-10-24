@@ -198,6 +198,9 @@ in the game: answering YES at a hall lists its services in the dialogue
   scripts roll are a Rogue's Sleight of Hand checks. A trap that hurts the
   whole party rolls each member's damage on its own.
   [KOVEL-1](SRD-DECISIONS.md#kovel-1-2026-10-24-kovel-mansion).
+- **Dirten's armor** (2026-10-24). The bishop's priest wears a Chain Shirt,
+  the chain an SRD Cleric is trained in, where the original gave him chain
+  armor. [BANE-1](SRD-DECISIONS.md#bane-1-2026-10-24-the-temple-of-bane).
 - **Rune scrolls** (2026-10-24). Words a script shows in runes (Sokal Keep's
   elf scroll) appear translated; the original needed the box's code wheel.
   [SOKAL-1](SRD-DECISIONS.md#sokal-1-2026-10-24-sokal-keep).

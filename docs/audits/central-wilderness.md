@@ -108,7 +108,8 @@ up.
   wilderness fields, the grove and huts, and the conversions above, by
   [OVERLAND-1](../SRD-DECISIONS.md#overland-1-2026-10-24-the-wilderness-map). The
   sites lead to the areas already in the game (New Phlan, Podol Plaza, the
-  Cadorna Textile House, and since 2026-10-24 Kovel Mansion); the others are
+  Cadorna Textile House, and since 2026-10-24 Kovel Mansion and the Temple
+  of Bane); the others are
   refused with a notice. Played
   (`opengold_expedition_tests`, a new level-5 party): the western boat from
   the harbor, a save on the map, the sea stopping a step, half a day a step,
