@@ -1,0 +1,28 @@
+{
+  "format": "opengold-sprite-review-v1",
+  "specification": "natural-in-place-v1",
+  "source_key": "MON6CHA.DAX:60",
+  "variant_id": "default",
+  "install_paths": {
+    "ready": "art/mon6cha_dax_60/default/ready.png",
+    "action": "art/mon6cha_dax_60/default/action.png"
+  },
+  "metadata_sha256": "36877b9dd28900e8b5b615f4512cd2d4d39772731cdbdbe18da969c1a9e43273",
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e",
+  "visual_checks": {
+    "source_identity_and_independent_art": true,
+    "correct_equipment_or_no_equipment": true,
+    "same_body_scale_and_perspective": true,
+    "planted_base_registered": true,
+    "requested_ready_and_action_motion": true,
+    "footprint_and_attack_appendage_reviewed": true,
+    "complete_alpha_silhouette_on_light_magenta_dark": true,
+    "readable_at_combat_size": true,
+    "one_second_fixed_grid_catalog_review": true
+  },
+  "ready_sha256": "0c11b74d8fceda77051102876a9a778c2e0120c8cb9da39d0ccebd1f8e0d40f9",
+  "action_sha256": "5da3911b48c2d7252ae8d49b71c9e25d45303dcef486257a987e69b324da8a16",
+  "reviewer": "Codex",
+  "reviewed_at": "2026-10-24T19:52:42.208968+00:00",
+  "notes": "Long, low horizontal giant snake fits 2x1; planted body/tail identical across ready and action, with the right head lowering and mouth opening to bite. Native light, magenta and dark review and one-second catalog alternation passed. No gear or other set."
+}
