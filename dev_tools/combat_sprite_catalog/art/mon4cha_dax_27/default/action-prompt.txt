@@ -138,6 +138,10 @@ transparent margin. A raised READY weapon may cross the top tile line; the
 moving ACTION weapon may cross a footprint line. Final assets are 128 x 128
 PNGs with alpha. Larger working images are allowed; export with nearest-neighbor
 sampling and preserve alpha.
+The final ready and action cutouts must have no opaque black boxes, wedges,
+halos, or stray pixels; inspect both on light, dark, and contrasting backgrounds.
+For a sword, preserve its recognizable blade length and continuous hand-to-tip
+shape in BOTH frames at combat size; do not shorten it to fit a pose.
 Keep camera, character scale and exact planted-foot coordinates consistent across poses
 and weapon sets; do not resize each pose independently to fill the canvas. The
 action must read clearly at normal combat size, not only in a magnified preview.
@@ -181,4 +185,4 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-ART DIRECTION: Natural short bare-knuckle punch toward screen right; exact ready lower body copied into action below the belt to register both planted feet.
+FINAL ACTION DIRECTION: Starting from the newly generated ready, preserve both planted boots; lean the upper body modestly and drive one fist toward screen right near the end of a physical punch. No gear invented.
