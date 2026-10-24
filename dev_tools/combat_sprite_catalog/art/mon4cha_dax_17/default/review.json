@@ -1,16 +1,16 @@
 {
-  "action_sha256": "ee3b96235377b39fd12968f31971f413f1dc3abce89ff2d65670c5a739013f2b",
+  "action_sha256": "f1dd59a3c54b8cff19eee0952382df78dd6eca7ccfc0ffe831d92c676fb8637b",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon4cha_dax_17/default/action.png",
     "ready": "art/mon4cha_dax_17/default/ready.png"
   },
   "metadata_sha256": "6125a9b446d6728450479264819cc8fbea65cbf4b72e52a702f128fc00fa9b7b",
-  "notes": "Exact accepted MON2 Spectre pair reused for identical MON4 Spectre metadata and empty gear. Native pair and one-second catalog alternation reviewed on MON4 record. Fixed spectral base and five-foot head-to-base height. Ready fits 1x1, action hand alone crosses 0.01 square.",
+  "notes": "Reviewed transparent pair side by side at combat pixel size and against the fixed catalog grid; checked one-second ready/action timing, planted base, scale, equipment and intended attack. Unarmed limbs fit saved footprint; moving weapons may overhang only in action.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "04f1e02545be1563294df9ec0ab8004845f2b5c764927b571940eec6345e5a6e",
-  "reviewed_at": "2026-10-23T07:49:11.274166+00:00",
-  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-24T04:48:26+00:00",
+  "reviewer": "Codex",
   "source_key": "MON4CHA.DAX:17",
   "specification": "bipedal-v1",
   "variant_id": "default",

@@ -202,5 +202,3 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-
-ACTION EDIT NOTE: Use the accepted new Robber ready art and approved pose guide as references. Keep exact foot coordinates, body size, armor and identity; move only sword arm into late horizontal strike to screen right. Final export shares full 1313x1198 canvas and 127x116 nearest-neighbor transform with ready; exact ready lower 38 pixels retained for grounded feet.

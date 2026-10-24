@@ -222,5 +222,3 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-
-FINAL EXPORT REVIEW: Shared scale and foot registration correction from approved newly generated MON3 nomad art. Source inventory includes Arrows, Long bow, Short sword, Shield, Leather armor; wealth 15 cp. Reviewed at combat size with stable 5-foot body.

@@ -180,5 +180,3 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-
-MATCHING SPECTRE ART: This record has the same creature name, description, 1x1 Normal size and empty equipment as MON2CHA.DAX:17; reuse its exact accepted newly generated pair for visual consistency.

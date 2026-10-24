@@ -1,0 +1,32 @@
+{
+  "action_sha256": "424f5cc301475927347e4b919205f29adefcb3cb404a1a95908156c21182497e",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon1cha_dax_23/default/action.png",
+    "ready": "art/mon1cha_dax_23/default/ready.png"
+  },
+  "metadata_sha256": "250aca827f8b3890abebcd392c0342bdbdaff74ec207c5684e724f0cce762d59",
+  "notes": "Reviewed transparent pair side by side at combat pixel size and against the fixed catalog grid; checked one-second ready/action timing, planted base, scale, equipment and intended attack. Unarmed limbs fit saved footprint; moving weapons may overhang only in action.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "7480ae634d9dd091382005189d16f88155231c8858b085482bba6c2fb983575b",
+  "reviewed_at": "2026-10-24T04:48:26+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON1CHA.DAX:23",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}

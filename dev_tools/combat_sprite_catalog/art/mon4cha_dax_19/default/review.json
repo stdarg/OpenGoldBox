@@ -1,16 +1,16 @@
 {
-  "action_sha256": "95d42cd9f277cd5096c976210a43fb07af6c1ed9b9f5538d8c5dd6108da5eb2f",
+  "action_sha256": "7574f2a8020ef2297e1af915a98023d457f038b4a4378cc0bc5c6426e4c0fd72",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon4cha_dax_19/default/action.png",
     "ready": "art/mon4cha_dax_19/default/ready.png"
   },
-  "metadata_sha256": "a124bb758a5523c1675de2aac0ce20a3545d76de8924156c19317525646edf3f",
-  "notes": "Cluebook identifies Ferran Martinez as Sokal Keep spectre, so no physical gear. Ready/action alternated at combat size: same five-foot head-to-spectral-base height and fixed robe hem x/y; only forward touch hand extends slightly with pale contact glow. Ready remains within 1x1 to one-pixel raster tolerance; action touch reaches a couple pixels past side. Weapon-grip checks interpreted as not applicable to natural touch. No original game art reference.",
+  "metadata_sha256": "b9ff7df23c0938e7f3821a6eace047bf1a3c51c1ceecf494a2b5c36a0e92a575",
+  "notes": "Reviewed transparent pair side by side at combat pixel size and against the fixed catalog grid; checked one-second ready/action timing, planted base, scale, equipment and intended attack. Unarmed limbs fit saved footprint; moving weapons may overhang only in action.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "291ab4d7e948726333e7e8cbb69a857e44cf886f609e061c0a5f86674ee26962",
-  "reviewed_at": "2026-10-23T15:53:10Z",
-  "reviewer": "Codex visual review in combat catalog",
+  "ready_sha256": "508e5de111bc10e0624c8254411230a6455ba6a51f0d3e7040881163ff76d31a",
+  "reviewed_at": "2026-10-24T04:48:26+00:00",
+  "reviewer": "Codex",
   "source_key": "MON4CHA.DAX:19",
   "specification": "bipedal-v1",
   "variant_id": "default",

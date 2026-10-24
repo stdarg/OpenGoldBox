@@ -210,5 +210,3 @@ Reference 1: approved original pose guide, for facing and ready-pose mechanics.
 Reference 2, when available: this monster's first approved NEW ready sprite,
 for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.
-
-FINAL EXPORT REVIEW: Shared scale and foot registration correction from approved newly generated MON3 nomad art. Source inventory includes Arrows, Long bow, Short sword, Shield, Leather armor; wealth 15 cp. Reviewed at combat size with stable 5-foot body.

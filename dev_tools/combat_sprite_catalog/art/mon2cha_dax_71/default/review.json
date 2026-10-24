@@ -1,16 +1,16 @@
 {
-  "action_sha256": "d886e2f8e704695b194e49ee64bfdde62c3325152fc6cb54e85772d86670f606",
+  "action_sha256": "770a82923c9069cf580a2262a532b188717265c0ba2d6c8e16f40efa84dacff1",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_71/default/action.png",
     "ready": "art/mon2cha_dax_71/default/ready.png"
   },
   "metadata_sha256": "33481fbf5202ef620cb65a012eb9aa2f4eff58893e791b3e37df152ed069c571",
-  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
+  "notes": "Reviewed transparent pair side by side at combat pixel size and against the fixed catalog grid; checked one-second ready/action timing, planted base, scale, equipment and intended attack. Unarmed limbs fit saved footprint; moving weapons may overhang only in action.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "8582d1c2b39791693beb209585e77e9e577d9055c2ede1ccc39c5432d0123faa",
-  "reviewed_at": "2026-10-21T21:50:57.305806+00:00",
-  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-24T04:48:26+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:71",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

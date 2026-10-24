@@ -212,5 +212,3 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-
-PRODUCTION/HEIGHT AUDIT: Generated from approved pose guide and the newly generated sword ready for identity. Ready edit brought front arm, longbow and nocked arrow within right tile boundary. Action edited from that ready to remove arrow after release while keeping boots. Both frames use identical 120/1254 nearest-neighbor export and (+11,+4) placement. Body foot-to-hair approximately 87-88px; bow upper limb alone extends above tile. Compared with sword set on fixed guide. No original game artwork was a generation reference.

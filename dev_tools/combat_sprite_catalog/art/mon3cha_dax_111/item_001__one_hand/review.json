@@ -1,16 +1,16 @@
 {
-  "action_sha256": "2ec428551d3bc1dd3247aa4eb3eb05c934cbd34c8a3d654aa8716b839a94f2be",
+  "action_sha256": "f1ed11f7c59afae4388b64d743545e8961b82156ba0e517e1e007456899acda5",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_111/item_001__one_hand/action.png",
     "ready": "art/mon3cha_dax_111/item_001__one_hand/ready.png"
   },
   "metadata_sha256": "18a855b088987e37cf61442055a3a7bd1fbdb8841ca5bba80f16e0ff5b28f24a",
-  "notes": "New independent Robber art from approved pose guide and current JSON. Rejected first ready for overlong sword; regenerated shorter short-sword ready, then edited that exact new image for late horizontal strike. Both frames share 1313x1198 working canvas and 127x116 nearest-neighbor export transform. Removed only sub-1-percent alpha fringe that caused false tile overflow. Action lower 38 output rows copied from ready to keep exact planted feet. Reviewed native PNGs on black and white and one-second alternating in catalog. Ready fits 1x1, action sword alone crosses right by 0.12 square; body stays at full 5-foot height within footprint. Leather armor +1 and short sword +1 only.",
+  "notes": "Reviewed transparent pair side by side at combat pixel size and against the fixed catalog grid; checked one-second ready/action timing, planted base, scale, equipment and intended attack. Unarmed limbs fit saved footprint; moving weapons may overhang only in action.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "6d747c97760fc5a1ba6285d66b904fe70b169c8b0c1a1eb14fd7b371cec94cfb",
-  "reviewed_at": "2026-10-23T06:06:26+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "b1f42f3b0e70d518b42e6a9faf3bc59e6ffb9cf28a89ac6898ae03bb93055cca",
+  "reviewed_at": "2026-10-24T04:48:26+00:00",
+  "reviewer": "Codex",
   "source_key": "MON3CHA.DAX:111",
   "specification": "bipedal-v1",
   "variant_id": "item_001__one_hand",

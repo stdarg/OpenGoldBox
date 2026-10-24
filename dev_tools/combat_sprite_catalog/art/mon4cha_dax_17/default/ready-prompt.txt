@@ -178,5 +178,3 @@ Reference 1: approved original pose guide, for facing and ready-pose mechanics.
 Reference 2, when available: this monster's first approved NEW ready sprite,
 for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.
-
-MATCHING SPECTRE ART: This record has the same creature name, description, 1x1 Normal size and empty equipment as MON2CHA.DAX:17; reuse its exact accepted newly generated pair for visual consistency.

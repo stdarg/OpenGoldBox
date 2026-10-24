@@ -1,15 +1,15 @@
 {
-  "action_sha256": "78d32582b399720c51579d6ef40d55a20d09eb840dbc7ef13107e3f0cfc2d587",
+  "action_sha256": "c63ef774fb53c46295947fbc51bf227d37102d40d8e88dadcef2e68fd2ec50cf",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_22/default/action.png",
     "ready": "art/mon1cha_dax_22/default/ready.png"
   },
-  "metadata_sha256": "2a89c27e9a9990eaa83ee4c82f93ce4a97207b379c70177ec6d1c966bb79b8d7",
-  "notes": "Reviewed in the isolated catalog at normal combat size with one-second ready/action alternation. The first wide claw action was rejected; the revised bent-claw action fits the 1x2 footprint. Shared scale and lower-body registration keep both feet fixed; body is about 1.7 squares tall.",
+  "metadata_sha256": "8e287ee4f57e45193030df51e5aca0437f7e96150c549b230afe68016ce6f879",
+  "notes": "Reviewed transparent pair side by side at combat pixel size and against the fixed catalog grid; checked one-second ready/action timing, planted base, scale, equipment and intended attack. Unarmed limbs fit saved footprint; moving weapons may overhang only in action.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "6999577b99891fcc4bf4a60c61473b6de48d3b02247d09a18d9326a25f961061",
-  "reviewed_at": "2026-10-21T21:23:44+00:00",
+  "ready_sha256": "ed94f3134b455c03e41424cdd9320359ac9ebc2b62a7aa5616c3f3646856ee31",
+  "reviewed_at": "2026-10-24T04:48:26+00:00",
   "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:22",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

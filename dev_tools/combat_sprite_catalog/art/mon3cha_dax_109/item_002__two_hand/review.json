@@ -1,16 +1,16 @@
 {
-  "action_sha256": "81f5a904e5528b449edebfe13e5661bbed7e0879b5176c301a624ac8bc668fd8",
+  "action_sha256": "72068ef8101ce89e5097e0c91ecd0a43c6f39bcf7749ebfd3e274ab5ef8d32d2",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_109/item_002__two_hand/action.png",
     "ready": "art/mon3cha_dax_109/item_002__two_hand/ready.png"
   },
   "metadata_sha256": "3fd9dae40b93c8a999d633ed8b3f82611a9624e5cad9154767f6701243e5fbf6",
-  "notes": "Generated from approved pose guide and earlier independent Hero art as identity only, correcting the previous short body. Ready sword/height edit used as action reference; shortened only action blade for PNG margin. Both frames use identical 126/1254 nearest-neighbor export and (+0,+0) placement. Body foot-to-hair approximately 87-88px; same planted boots. Ready sword alone extends above top tile, action sword moves right. Compared with bow set on fixed guide. Reviewed side by side and alternating on the fixed 3x3 catalog guide.",
+  "notes": "Reviewed transparent pair side by side at combat pixel size and against the fixed catalog grid; checked one-second ready/action timing, planted base, scale, equipment and intended attack. Unarmed limbs fit saved footprint; moving weapons may overhang only in action.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "0fd39e38720cf73b3dd829ce0611ce3b22e6081e4c60c9e3e27a08e4fbfdfe0e",
-  "reviewed_at": "2026-10-23T14:22:42+00:00",
-  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-24T04:48:26+00:00",
+  "reviewer": "Codex",
   "source_key": "MON3CHA.DAX:109",
   "specification": "bipedal-v1",
   "variant_id": "item_002__two_hand",

@@ -212,5 +212,3 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-
-PRODUCTION/HEIGHT AUDIT: Generated from approved pose guide and earlier independent Hero art as identity only, correcting the previous short body. Ready sword/height edit used as action reference; shortened only action blade for PNG margin. Both frames use identical 126/1254 nearest-neighbor export and (+0,+0) placement. Body foot-to-hair approximately 87-88px; same planted boots. Ready sword alone extends above top tile, action sword moves right. Compared with bow set on fixed guide.

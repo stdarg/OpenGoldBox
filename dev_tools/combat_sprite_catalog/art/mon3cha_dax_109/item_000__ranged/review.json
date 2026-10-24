@@ -1,16 +1,16 @@
 {
-  "action_sha256": "f39ce277a5448108159a241969ec6864fc2122fc3915c0a2b6855f97ab914944",
+  "action_sha256": "a1ba30fcd18a35e9f082b8032b639201e54f34b185239bb5552ac4c33ec950f9",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_109/item_000__ranged/action.png",
     "ready": "art/mon3cha_dax_109/item_000__ranged/ready.png"
   },
   "metadata_sha256": "3fd9dae40b93c8a999d633ed8b3f82611a9624e5cad9154767f6701243e5fbf6",
-  "notes": "Generated from approved pose guide and the newly generated sword ready for identity. Ready edit brought front arm, longbow and nocked arrow within right tile boundary. Action edited from that ready to remove arrow after release while keeping boots. Both frames use identical 120/1254 nearest-neighbor export and (+11,+4) placement. Body foot-to-hair approximately 87-88px; bow upper limb alone extends above tile. Compared with sword set on fixed guide. No original game artwork was a generation reference. Reviewed side by side and alternating on the fixed 3x3 catalog guide.",
+  "notes": "Reviewed transparent pair side by side at combat pixel size and against the fixed catalog grid; checked one-second ready/action timing, planted base, scale, equipment and intended attack. Unarmed limbs fit saved footprint; moving weapons may overhang only in action.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "332386c3bd1651ce1ae9382e5f47fe63666793fae73b044fff50d61ad1d4ae37",
-  "reviewed_at": "2026-10-23T14:22:42+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "dd4820a12413f3cbfd4ca1a8cc5ab39174854fc666d335a55a7f7d066a7e1f33",
+  "reviewed_at": "2026-10-24T04:48:26+00:00",
+  "reviewer": "Codex",
   "source_key": "MON3CHA.DAX:109",
   "specification": "bipedal-v1",
   "variant_id": "item_000__ranged",

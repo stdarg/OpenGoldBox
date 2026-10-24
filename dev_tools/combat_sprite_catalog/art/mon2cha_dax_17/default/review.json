@@ -1,16 +1,16 @@
 {
-  "action_sha256": "ee3b96235377b39fd12968f31971f413f1dc3abce89ff2d65670c5a739013f2b",
+  "action_sha256": "1e23961d63cea353f77ee949a254c363b253211058f2ca113dbab7a7a8c206b4",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_17/default/action.png",
     "ready": "art/mon2cha_dax_17/default/ready.png"
   },
-  "metadata_sha256": "0a2aaea2afb23146ded9c21d47c073283222a84ea4bc16ca193f9bed6a27eb6b",
-  "notes": "Approved guide and newly generated spectre ready were only image references. Rejected whole action due base/body drift; transferred only distal reach. Native 128px pair and one-second catalog alternation inspected. Normal five-foot head-to-fixed-spectral-base height; ready fits 1x1; action hand alone extends 0.01 square. No source equipment.",
+  "metadata_sha256": "ecd6f7c01db99ee5c714bb99f12fbfb2d96f0afb3ec7f10b6b37ab542c250788",
+  "notes": "Reviewed transparent pair side by side at combat pixel size and against the fixed catalog grid; checked one-second ready/action timing, planted base, scale, equipment and intended attack. Unarmed limbs fit saved footprint; moving weapons may overhang only in action.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "04f1e02545be1563294df9ec0ab8004845f2b5c764927b571940eec6345e5a6e",
-  "reviewed_at": "2026-10-23T07:48:17.972544+00:00",
-  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-24T04:48:26+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:17",
   "specification": "bipedal-v1",
   "variant_id": "default",

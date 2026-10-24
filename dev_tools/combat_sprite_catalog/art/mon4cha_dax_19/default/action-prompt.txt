@@ -180,5 +180,3 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-
-Production edit: keep same spectre identity and exact spectral robe base x/y; move only front forearm and claw into short draining touch with tiny glow. Same normal-height export in both frames; shortened second action draft accepted.
