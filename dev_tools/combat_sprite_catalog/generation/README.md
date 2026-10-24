@@ -123,6 +123,11 @@ one-handed weapons or shields, follow the catalog's existing set list (each
 one-handed weapon paired with each available shield); ask if an unusual loadout
 makes a combination unclear. Generate, review and accept **both images for each
 set**. A currently selected or readied set does not limit generation coverage.
+Use the complete archive-qualified Monster ID, weapon-set ID, and frame when
+tracking work; never select a monster by its numeric record alone. If an art
+request does not name a frame, it covers **both ready and action**. If it names
+only a monster, inspect its saved gear and cover every weapon set. An explicit
+single-frame request changes only that frame, followed by review of the pair.
 
 Resolve conflicts between the description and equipment with the user. For an
 unarmed, magical or unusual attack, ask for the pose behavior if unspecified.

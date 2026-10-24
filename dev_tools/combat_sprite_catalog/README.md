@@ -29,20 +29,17 @@ press **Copy as new monster** to create an independent JSON record and copy all
 available replacement PNGs into its own art directory. Copies reappear on later
 launches, including when unused records are hidden. These actions do not change
 the supplied game files or the game's runtime monster catalog.
-The read-only **Monster ID** field beside the copy button shows the selected
-record's full source key (for example, `MON1CHA.DAX:4`, or `CUSTOM:...` for a
-copy). Select the field to highlight its ID, then use Command+C on macOS,
-Ctrl+C on Linux or Windows, or the field's Copy context-menu command.
-The preview's read-only **Sprite ID** combines that Monster ID, the selected
-weapon-set ID, and the current animation frame. For example,
-`MON3CHA.DAX:84/item_000__ranged/action` identifies this fighter's javelin
-action frame; `MON3CHA.DAX:84/item_001__two_hand/action` identifies its sword
-action frame. The adjacent label gives the readable weapon-set name and frame.
-Use **Copy Sprite ID** or select the field and use the standard copy shortcut.
-The ID follows the selected set and one-second ready/action animation. It names
-the selected art slot even while the preview shows original fallback art; the
-source message below the preview identifies that fallback. The Sprite ID is
-derived from saved record and variant IDs, so it needs no separate JSON field.
+The read-only **Monster ID** field beside the copy button identifies the selected
+monster, weapon set, and current animation frame in one copyable value. For
+example, `MON3CHA.DAX:84/item_000__ranged/action` identifies this fighter's
+javelin action frame, while `MON3CHA.DAX:84/item_001__two_hand/action` identifies
+its sword action frame. The prefix before the first slash is the saved monster
+source key (`CUSTOM:...` for a copy). The field follows the selected weapon set
+and one-second ready/action animation. Select it and use Command+C on macOS,
+Ctrl+C on Linux or Windows, or its Copy context-menu command. It identifies the
+selected art slot even if the preview shows original fallback art; the source
+message below the preview identifies that fallback. The suffix is derived from
+the saved variant ID and frame, so it needs no separate JSON field.
 Enter a description, edit the decoded equipment list, set **Flag for regeneration**
 when art needs another pass, and press **Save monster data**. The first save
 creates `dev_tools/combat_sprite_catalog/json/<source-key>.json` (lowercase,

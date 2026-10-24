@@ -22,9 +22,6 @@ var name_filter: LineEdit
 var monster_title: Label
 var name_edit: LineEdit
 var monster_id_edit: LineEdit
-var sprite_id_edit: LineEdit
-var sprite_id_label: Label
-var copy_sprite_id_button: Button
 var monster_image: TextureRect
 var image_frame: Control
 var preview_is_replacement := false
@@ -283,7 +280,7 @@ func _build_ui() -> void:
     monster_id_edit.editable = false
     monster_id_edit.select_all_on_focus = true
     monster_id_edit.add_theme_color_override("font_uneditable_color", Color(0.92, 0.95, 0.96))
-    monster_id_edit.tooltip_text = "Select and copy the ID with the standard keyboard shortcut or context menu"
+    monster_id_edit.tooltip_text = "Monster / weapon set / frame ID; select and copy with the standard shortcut or context menu"
     identity.add_child(monster_id_edit)
     var copy_button := Button.new()
     copy_button.text = "Copy as new monster"
@@ -306,24 +303,6 @@ func _build_ui() -> void:
     variant_choice.custom_minimum_size.y = 42
     variant_choice.item_selected.connect(func(_index: int): _show_monster_image())
     preview.add_child(variant_choice)
-    var sprite_id_header := HBoxContainer.new()
-    preview.add_child(sprite_id_header)
-    sprite_id_label = Label.new()
-    sprite_id_label.text = "Sprite ID"
-    sprite_id_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    sprite_id_header.add_child(sprite_id_label)
-    copy_sprite_id_button = Button.new()
-    copy_sprite_id_button.text = "Copy Sprite ID"
-    copy_sprite_id_button.tooltip_text = "Copy the selected monster, weapon set, and frame ID"
-    copy_sprite_id_button.pressed.connect(_copy_sprite_id)
-    sprite_id_header.add_child(copy_sprite_id_button)
-    sprite_id_edit = LineEdit.new()
-    sprite_id_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    sprite_id_edit.editable = false
-    sprite_id_edit.select_all_on_focus = true
-    sprite_id_edit.add_theme_color_override("font_uneditable_color", Color(0.92, 0.95, 0.96))
-    sprite_id_edit.tooltip_text = "Monster ID / weapon-set ID / ready or action; select and copy with the standard shortcut or Copy Sprite ID"
-    preview.add_child(sprite_id_edit)
     show_new_art = CheckButton.new()
     show_new_art.text = "Show new art when available"
     show_new_art.button_pressed = true
@@ -465,9 +444,6 @@ func _rebuild_list() -> void:
         monster_source.text = ""
         name_edit.text = ""
         monster_id_edit.text = ""
-        sprite_id_edit.text = ""
-        sprite_id_label.text = "Sprite ID"
-        copy_sprite_id_button.disabled = true
         variant_choice.clear()
         description_edit.text = ""
         sprite_size_choice.select(0)
@@ -845,10 +821,6 @@ func _selected_variant() -> Dictionary:
     var record: Dictionary = draft_records[rows[selected].key]
     return record.variants[variant_choice.selected]
 
-func _copy_sprite_id() -> void:
-    if not sprite_id_edit.text.is_empty():
-        DisplayServer.clipboard_set(sprite_id_edit.text)
-
 func _show_monster_image() -> void:
     if selected < 0: return
     var row: Dictionary = rows[selected]
@@ -856,14 +828,13 @@ func _show_monster_image() -> void:
     var source_note := ""
     var ready_path := ""
     var variant := _selected_variant()
+    var base_id: String = str(draft_records[row.key].source.key)
     if variant.is_empty():
-        sprite_id_edit.text = ""
-        sprite_id_label.text = "Sprite ID"
+        monster_id_edit.text = base_id
     else:
         var frame := "action" if action else "ready"
-        sprite_id_edit.text = "%s/%s/%s" % [monster_id_edit.text, variant.id, frame]
-        sprite_id_label.text = "Sprite ID · %s · %s" % [variant.label, frame.capitalize()]
-    copy_sprite_id_button.disabled = sprite_id_edit.text.is_empty()
+        monster_id_edit.text = "%s/%s/%s" % [base_id, variant.id, frame]
+    monster_id_edit.tooltip_text = monster_id_edit.text + " — select and copy with the standard shortcut or context menu"
     if show_new_art.button_pressed and not variant.is_empty():
         var replacement_path: String = MonsterMetadata.art_path(str(row.key), str(variant.id), action, metadata_root)
         if FileAccess.file_exists(replacement_path):
@@ -1046,9 +1017,7 @@ func _metadata_check() -> void:
 
     # Draft changes survive switching records; the selector follows edited gear.
     _select_monster(0)
-    assert(monster_id_edit.text == str(first.key))
-    assert(sprite_id_edit.text == "%s/%s/ready" % [first.key, _selected_variant().id])
-    assert(not copy_sprite_id_button.disabled)
+    assert(monster_id_edit.text == "%s/%s/ready" % [first.key, _selected_variant().id])
     description_edit.text = "Unsaved draft"
     sprite_size_choice.select(2)
     humanoid_size_choice.select(1)
@@ -1112,8 +1081,7 @@ func _metadata_check() -> void:
     image.fill(Color(0.8, 0.8, 0.1))
     assert(image.save_png(ranged_action_path) == OK)
     variant_choice.item_selected.emit(2)
-    assert(sprite_id_edit.text == "%s/%s/ready" % [first.key, ranged_id])
-    assert(sprite_id_label.text.contains("Long bow") and sprite_id_label.text.ends_with("Ready"))
+    assert(monster_id_edit.text == "%s/%s/ready" % [first.key, ranged_id])
     assert(monster_source.text.begins_with("New art"))
     assert(monster_source.text.contains("Long bow"))
     var pixel: Color = monster_image.texture.get_image().get_pixel(0, 0)
@@ -1127,8 +1095,7 @@ func _metadata_check() -> void:
     assert(JSON.stringify(draft_records[first.key].equipment) == equipment_before)
     action = true
     _show_monster_image()
-    assert(sprite_id_edit.text == "%s/%s/action" % [first.key, _selected_variant().id])
-    assert(sprite_id_label.text.ends_with("Action"))
+    assert(monster_id_edit.text == "%s/%s/action" % [first.key, _selected_variant().id])
     pixel = monster_image.texture.get_image().get_pixel(0, 0)
     assert(pixel.b > 0.7 and pixel.g < 0.3)
     variant_choice.select(2)
@@ -1165,8 +1132,7 @@ func _metadata_check() -> void:
     name_edit.text = "Copied test monster"
     _copy_monster()
     assert(str(rows[selected].key).begins_with("CUSTOM:"))
-    assert(monster_id_edit.text == str(rows[selected].key))
-    assert(sprite_id_edit.text.begins_with(monster_id_edit.text + "/"))
+    assert(monster_id_edit.text.begins_with(str(rows[selected].key) + "/"))
     assert(rows[selected].name == "Copied test monster")
     assert(FileAccess.file_exists(MonsterMetadata.art_path(str(rows[selected].key), "w1__s1", true, metadata_root)))
     assert(monster_source.text.begins_with("Previous new art"))
