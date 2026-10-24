@@ -1,15 +1,15 @@
 {
-  "action_sha256": "fc8967e896c93ff5c16f6f76ef62484f97b85fa0b628b1c31d718da126d79270",
+  "action_sha256": "fa29dbda876a6a36be9d15f96b7bdb3f9b8bfc3df40c834de1882d98c682881d",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon6cha_dax_118/default/action.png",
     "ready": "art/mon6cha_dax_118/default/ready.png"
   },
   "metadata_sha256": "f0d2cc3ee783e285d61568b0ffa67bcb0dd6b6d270867c3cb3f69b2041879e69",
-  "notes": "Corrected 2026-10-23: previous installed action mask leaked a full generated body. Replaced with a true local right-claw-only composite. Native ready/action difference confined to x72..112,y50..72; both planted feet and all other body pixels identical. Rechecked catalog ready/action at fixed one-square scale. Raised left natural claw alone crosses top by about 0.04 square; action claw alone crosses right by about 0.05. Exactly four arms, two legs, no saved carried gear. Only independently generated character art used.",
+  "notes": "Only action changed; accepted ready PNG bytes preserved. Both upper scythe arms extend right while upper torso leans into attack; lower body y>=80 copied pixel-for-pixel from accepted ready so both feet remain fixed. No equipment. Exact PNGs inspected at 128 pixels on light, magenta and dark and after one-second catalog alternation. Action claws alone cross right footprint boundary.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "cbd44af226d56ea5e2d6d978d513a9574826288fa01df37252c3b5f80f0aef7a",
-  "reviewed_at": "2026-10-23T09:19:24+00:00",
+  "reviewed_at": "2026-10-24T20:41:09.772603+00:00",
   "reviewer": "Codex",
   "source_key": "MON6CHA.DAX:118",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
 }

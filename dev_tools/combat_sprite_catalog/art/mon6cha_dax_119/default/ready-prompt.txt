@@ -1,0 +1,2 @@
+Tiger 2x1, crouched ready and rightward jaw/forepaw attack; rear feet remain grounded.
+Ready: in-place guard, facing screen right, low 2x1 body. Fixed planted contacts and transparent 128x128 canvas. New independent pixel art, no original game art used as a reference.

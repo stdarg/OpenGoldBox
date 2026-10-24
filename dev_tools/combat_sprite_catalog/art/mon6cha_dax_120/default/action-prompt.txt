@@ -1,0 +1,2 @@
+Wild boar 2x1, low stance and rightward tusk charge without base translation; planted hoof rows copied from ready.
+Action: localized natural attack toward screen right, same body scale and planted contacts. Transparent 128x128 canvas. New independent pixel art, no original game art used as a reference.

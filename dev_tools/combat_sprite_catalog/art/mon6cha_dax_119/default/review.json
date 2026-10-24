@@ -1,0 +1,28 @@
+{
+  "format": "opengold-sprite-review-v1",
+  "specification": "natural-in-place-v1",
+  "source_key": "MON6CHA.DAX:119",
+  "variant_id": "default",
+  "install_paths": {
+    "ready": "art/mon6cha_dax_119/default/ready.png",
+    "action": "art/mon6cha_dax_119/default/action.png"
+  },
+  "metadata_sha256": "b1bca5b429f4c2efe1413d676ad6ce96392b7ae7f78d7102728cd3b747b6cc89",
+  "workflow_sha256": "b94d8f23461d37c0dc82bbfb09a4e64f98725d4744d5b3096469cffe911dd9f8",
+  "visual_checks": {
+    "source_identity_and_independent_art": true,
+    "correct_equipment_or_no_equipment": true,
+    "same_body_scale_and_perspective": true,
+    "planted_base_registered": true,
+    "requested_ready_and_action_motion": true,
+    "footprint_and_attack_appendage_reviewed": true,
+    "complete_alpha_silhouette_on_light_magenta_dark": true,
+    "readable_at_combat_size": true,
+    "one_second_fixed_grid_catalog_review": true
+  },
+  "ready_sha256": "f766128615713a17760a5b80de82b222b4d151a515e784057dafee7f794336f8",
+  "action_sha256": "a179082cc89ec76c400e73c76fb4e5ca8d4d662a9cf458bfcfb1fe3d90f9d2fe",
+  "reviewer": "Codex",
+  "reviewed_at": "2026-10-24T20:34:44.575495+00:00",
+  "notes": "2x1 tiger, low body at tile bottom. Rear and middle paws stay planted while near forepaw and jaw attack right; no whole-body scale change. Exact final PNGs inspected at 128 pixels on light, magenta and dark; one-second fixed-grid catalog alternation inspected."
+}

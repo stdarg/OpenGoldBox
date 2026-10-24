@@ -138,6 +138,10 @@ transparent margin. A raised READY weapon may cross the top tile line; the
 moving ACTION weapon may cross a footprint line. Final assets are 128 x 128
 PNGs with alpha. Larger working images are allowed; export with nearest-neighbor
 sampling and preserve alpha.
+The final ready and action cutouts must have no opaque black boxes, wedges,
+halos, or stray pixels; inspect both on light, dark, and contrasting backgrounds.
+For a sword, preserve its recognizable blade length and continuous hand-to-tip
+shape in BOTH frames at combat size; do not shorten it to fit a pose.
 Keep camera, character scale and exact planted-foot coordinates consistent across poses
 and weapon sets; do not resize each pose independently to fill the canvas. The
 action must read clearly at normal combat size, not only in a magnified preview.
@@ -223,4 +227,4 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-FINAL EXPORT REVIEW: Shared scale and foot registration correction from approved newly generated MON3 nomad art. Source inventory includes Arrows, Long bow, Short sword, Shield, Leather armor; wealth 15 cp. Reviewed at combat size with stable 5-foot body.
+MON7CHA.DAX:40 specific action: the short sword completes a forward/down-right swing, while the shield stays in the off hand. Preserve the ready boot pixels in the action at rows 104 through 127; only arms, sword and modest upper-body follow-through move.

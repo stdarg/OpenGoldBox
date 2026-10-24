@@ -4,25 +4,25 @@
   "source_key": "MON6CHA.DAX:67",
   "variant_id": "added_14614854085__two_hand",
   "install_paths": {
-    "action": "art/mon6cha_dax_67/added_14614854085__two_hand/action.png",
-    "ready": "art/mon6cha_dax_67/added_14614854085__two_hand/ready.png"
+    "ready": "art/mon6cha_dax_67/added_14614854085__two_hand/ready.png",
+    "action": "art/mon6cha_dax_67/added_14614854085__two_hand/action.png"
   },
-  "metadata_sha256": "baf75b871fbcccde2f2464445a572deba432e1723ec4e5510ec0757b8013bd91",
-  "ready_sha256": "2c8448de22c29793189dc1a3d29e04f8f615a7f13f862ad7297df6faeba52c95",
-  "action_sha256": "8b9028ef2230570f2c7a82bdf7c5ff4dc36038d21ab48e2f39476e3e4fa555c9",
-  "reviewer": "Codex visual review",
-  "reviewed_at": "2026-10-19T05:55:28.924288+00:00",
-  "notes": "Same centaur identity and four hoof anchors as bow set. Raised two-hand halberd guard advances to a late forward strike; horse body remains stationary. Rejected two earlier action drafts for whole-horse translation; this accepted local edit preserves hoof contact regions. Reviewed side by side and alternating in catalog.",
+  "metadata_sha256": "3af5b5d067ec47e717156f515e044c7c50b8c1cf43cda1a086e38a36ac3ffb79",
+  "workflow_sha256": "b94d8f23461d37c0dc82bbfb09a4e64f98725d4744d5b3096469cffe911dd9f8",
   "visual_checks": {
-    "four_planted_hooves_same_xy": true,
-    "horse_body_camera_and_scale_registered": true,
-    "localized_upper_body_attack_motion": true,
-    "ready_pose_and_late_action_pose": true,
-    "complete_silhouette_transparent_no_clipping": true,
-    "pixel_art_readable_at_combat_size": true,
-    "correct_equipment_and_grip": true,
-    "same_source_identity_across_sets": true,
-    "only_independent_art_used_as_references": true,
-    "pair_reviewed_side_by_side_and_alternating_in_catalog": true
-  }
+    "source_identity_and_independent_art": true,
+    "correct_equipment_or_no_equipment": true,
+    "same_body_scale_and_perspective": true,
+    "planted_base_registered": true,
+    "requested_ready_and_action_motion": true,
+    "footprint_and_attack_appendage_reviewed": true,
+    "complete_alpha_silhouette_on_light_magenta_dark": true,
+    "readable_at_combat_size": true,
+    "one_second_fixed_grid_catalog_review": true
+  },
+  "ready_sha256": "320c65691bbe372e552abee137943bab39281f89548d7dd83f5643fb3d798d15",
+  "action_sha256": "c73aeda5b582353de0d82d7c3b99fd0fd5e8a6b73725dfe2052dbad1202ba59c",
+  "reviewer": "Codex",
+  "reviewed_at": "2026-10-24T20:36:15.505354+00:00",
+  "notes": "2x1 centaur halberd set. Raised two-handed ready and late down-right swing action. Four hooves remain in place; ready blade rises into square above. Reviewed exact 128x128 images on light, magenta and dark and one-second fixed-grid catalog alternation."
 }
