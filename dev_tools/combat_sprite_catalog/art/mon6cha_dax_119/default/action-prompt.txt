@@ -1,0 +1,2 @@
+Tiger 2x1, crouched ready and rightward jaw/forepaw attack; rear feet remain grounded.
+Action: localized natural attack toward screen right, same body scale and planted contacts. Transparent 128x128 canvas. New independent pixel art, no original game art used as a reference.

@@ -1,0 +1,2 @@
+Wild boar 2x1, low stance and rightward tusk charge without base translation; planted hoof rows copied from ready.
+Ready: in-place guard, facing screen right, low 2x1 body. Fixed planted contacts and transparent 128x128 canvas. New independent pixel art, no original game art used as a reference.

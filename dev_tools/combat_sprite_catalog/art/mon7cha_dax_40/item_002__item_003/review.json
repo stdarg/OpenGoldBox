@@ -1,16 +1,16 @@
 {
-  "action_sha256": "b1d9a492c1c3937802aea084bac9a3ae422e714c8bb39c26d5b1d297d2fb6eea",
+  "action_sha256": "5d1fb6eea8d968acec1bce76cec0762e970ff72326643754b004e5d98caf3b8d",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon7cha_dax_40/item_002__item_003/action.png",
     "ready": "art/mon7cha_dax_40/item_002__item_003/ready.png"
   },
   "metadata_sha256": "0b8a47c7a56eba9bb64d3b1750e7a569e78533900909ee27105efac0e1f32bc4",
-  "notes": "Reviewed at 128px, white background, and in the 1-second Godot catalog on fixed 3x3 grid. Derived both frames by one shared correction from previously approved newly generated MON3 nomad art; kept the previous images in ignored build/sprite-review staging. Body head-to-planted-feet is about 88 source pixels, filling the Normal 5-foot tile at catalog 1.45x. Both frames share lower-body/feet pixels and character scale. MON3 and MON7 have the same source inventory; MON3 JSON Arrows entry was restored from the source and MON7 record. Raised sword and shield ready, late sword strike action; both fit within tile.",
+  "notes": "Short sword and shield. Sword raised in ready, late down-right swing in action; blade remains visibly short-sword length and shield stays in both frames. Normal body fills 5-foot square; planted boot rows 104-127 identical within pair. Both poses checked at 128 pixels on light, magenta and dark and one-second catalog alternation.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "075154c3f52fd3647f801bbfb35bb791c419bb55c9c0aa616cd72a7dd82bcc46",
-  "reviewed_at": "2026-10-23T05:51:50+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "34c66953cd3886b44e5ef4576d98d184ad78de9b559381844a7a1b5df5f41a37",
+  "reviewed_at": "2026-10-24T20:42:56.734691+00:00",
+  "reviewer": "Codex",
   "source_key": "MON7CHA.DAX:40",
   "specification": "bipedal-v1",
   "variant_id": "item_002__item_003",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
 }

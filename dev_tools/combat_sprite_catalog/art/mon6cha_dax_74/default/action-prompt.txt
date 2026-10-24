@@ -1,0 +1,2 @@
+Giant mantis 2x1, forelegs raised in ready and swept right in action; walking contacts stay fixed.
+Action: localized natural attack toward screen right, same body scale and planted contacts. Transparent 128x128 canvas. New independent pixel art, no original game art used as a reference.

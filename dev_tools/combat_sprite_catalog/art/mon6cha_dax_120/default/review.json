@@ -1,0 +1,28 @@
+{
+  "format": "opengold-sprite-review-v1",
+  "specification": "natural-in-place-v1",
+  "source_key": "MON6CHA.DAX:120",
+  "variant_id": "default",
+  "install_paths": {
+    "ready": "art/mon6cha_dax_120/default/ready.png",
+    "action": "art/mon6cha_dax_120/default/action.png"
+  },
+  "metadata_sha256": "4e905ce70a3a7bed0d23d71826241d85c8962322c97246cc92f24bbc811518cf",
+  "workflow_sha256": "b94d8f23461d37c0dc82bbfb09a4e64f98725d4744d5b3096469cffe911dd9f8",
+  "visual_checks": {
+    "source_identity_and_independent_art": true,
+    "correct_equipment_or_no_equipment": true,
+    "same_body_scale_and_perspective": true,
+    "planted_base_registered": true,
+    "requested_ready_and_action_motion": true,
+    "footprint_and_attack_appendage_reviewed": true,
+    "complete_alpha_silhouette_on_light_magenta_dark": true,
+    "readable_at_combat_size": true,
+    "one_second_fixed_grid_catalog_review": true
+  },
+  "ready_sha256": "d63ea0c9e5ca6c12d43fa446e5690ae70c99b2ba60d95785be229f24593461fc",
+  "action_sha256": "f6abe26e921bb1913d604bc0e3737596af165b83b383343dae6c1602324d3087",
+  "reviewer": "Codex",
+  "reviewed_at": "2026-10-24T20:34:44.576052+00:00",
+  "notes": "2x1 wild boar replaces overlarge old art. Ready snarl and action mouth/tusks attack right; planted hoof rows y>=109 identical. Exact final PNGs inspected at 128 pixels on light, magenta and dark; one-second fixed-grid catalog alternation inspected."
+}
