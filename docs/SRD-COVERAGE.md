@@ -55,11 +55,22 @@ the latter as a Bonus Action). Combat checkpoints become `OGCOMBAT 69`.
 Rules 0.6.252 adds the Central Wilderness's SRD 5.2.1 stat blocks: Stirge,
 Drider, Bandit Captain and the Owlbear (for the displacer beast), and the
 Bandit with the original's 6 Hit Points, by
-[WILD-1](SRD-DECISIONS.md#wild-1-2026-10-24-the-wilderness-map). New monster
+[OVERLAND-1](SRD-DECISIONS.md#overland-1-2026-10-24-the-wilderness-map). New monster
 mechanics: a Stirge's Proboscis attaches it to its target, which it drains as
 its turns start, until a creature beside the target pulls it off with an
 action; innate spells that recharge (a Drider's Magic of the Spider Queen,
 Recharge 5-6); and Web Walker.
+
+## Kovel Mansion monsters
+
+Rules 0.6.253 adds Kovel Mansion's thieves on SRD 5.2.1 stat blocks with the
+original's Hit Points, by
+[KOVEL-1](SRD-DECISIONS.md#kovel-1-2026-10-24-kovel-mansion): the Bandit for a
+1st-level thief and the Spy for a 6th-level one. A monster's `cunning_action`
+row gives it the Rogue's Cunning Action (Dash, Disengage or Hide as a Bonus
+Action), which the computer already plays. The rules also answer the chance
+that an ability check reaches a difficulty (`check_chance`), which the
+scripts' thief-skill rolls use.
 
 ## Mendor's Library monsters
 

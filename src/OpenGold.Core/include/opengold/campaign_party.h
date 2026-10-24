@@ -298,6 +298,10 @@ class CampaignParty
                                                            const rules::HazardAttack &attack);
     // The chance in percent that the member climbs a sheer wall (CADORNA-1).
     [[nodiscard]] unsigned climbing_chance(MemberId id) const;
+    // The chance in percent that the member picks a lock or disarms a trap
+    // with a DC 15 Dexterity (Sleight of Hand) check: a conscious Rogue only,
+    // doubled with Thieves' Tools (LOCK-1, KOVEL-1).
+    [[nodiscard]] unsigned thieves_tools_chance(MemberId id) const;
     // The member's current Hit Point maximum, raised by Aid.
     [[nodiscard]] int hit_point_maximum(MemberId id) const;
     // The member's status effects, such as Aid or a used Relentless Endurance.

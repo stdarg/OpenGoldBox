@@ -20,7 +20,9 @@ inline constexpr std::array<EclAddress, 7> ecl_coin_addresses{
 [[nodiscard]] bool party_has_item(const CampaignParty &party, unsigned original_type);
 // The original PARTY STRENGTH value.
 [[nodiscard]] unsigned party_strength(const CampaignParty &party);
-// CHECK PARTY: the lowest, highest and average of a party attribute.
+// CHECK PARTY: the lowest, highest and average of a party attribute (movement
+// or a thief skill), or, for attribute 0, whether a spell effect is on the
+// party in the fourth value (coab CMD_CheckParty).
 [[nodiscard]] std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attribute,
                                                   unsigned effect);
 // The script memory writes describing the member in a party slot.

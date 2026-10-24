@@ -106,9 +106,10 @@ up.
   SQRPACI, eight-direction travel, the view, saves on the map (campaign
   format 39), the central window's sites, edges and roaming groups, fights on
   wilderness fields, the grove and huts, and the conversions above, by
-  [WILD-1](../SRD-DECISIONS.md#wild-1-2026-10-24-the-wilderness-map). The
+  [OVERLAND-1](../SRD-DECISIONS.md#overland-1-2026-10-24-the-wilderness-map). The
   sites lead to the areas already in the game (New Phlan, Podol Plaza, the
-  Cadorna Textile House); the others are refused with a notice. Played
+  Cadorna Textile House, and since 2026-10-24 Kovel Mansion); the others are
+  refused with a notice. Played
   (`opengold_expedition_tests`, a new level-5 party): the western boat from
   the harbor, a save on the map, the sea stopping a step, half a day a step,
   a roaming group fought, the grove or huts entered and left, and the city's

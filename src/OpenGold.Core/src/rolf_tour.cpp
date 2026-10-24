@@ -386,7 +386,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                                        {38, "giant-frog", 50, 50},
                                        {39, "giant-scorpion", 700, 700}}},
                            // The Central Wilderness (docs/audits/central-wilderness.md,
-                           // WILD-1): the wilderness map, and the grove and
+                           // OVERLAND-1): the wilderness map, and the grove and
                            // ruined huts on GEO7:26.
                            AreaSource{26,
                                       7,
@@ -402,7 +402,14 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                                        {68, "displacer-beast", 700, 700},
                                        {69, "drider", 2300, 2300},
                                        {97, "wilderness-bandit", 25, 25},
-                                       {98, "wilderness-bandit", 25, 25}}}};
+                                       {98, "wilderness-bandit", 25, 25}}},
+                           // Kovel Mansion (docs/audits/kovel-mansion.md,
+                           // KOVEL-1), the thieves' guild north of the city.
+                           AreaSource{14,
+                                      3,
+                                      {{14, {1, 3, 5}}},
+                                      {{45, "kovel-thief", 25, 25},
+                                       {51, "kovel-master-thief", 200, 200}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;

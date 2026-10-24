@@ -913,6 +913,11 @@ class RulesModule
     // else cannot (CADORNA-1).
     [[nodiscard]] virtual unsigned climbing_chance(const CharacterSheet &, const VitalState &,
                                                    std::span<const std::string> gear) const = 0;
+    // The chance in percent that an ability check reaches `difficulty`, as
+    // roll_ability_check rolls it.
+    [[nodiscard]] virtual unsigned check_chance(const CharacterSheet &, const VitalState &,
+                                                std::span<const std::string> gear, Ability ability,
+                                                std::string_view skill, int difficulty) const = 0;
     [[nodiscard]] virtual AbilityCheckRoll
     roll_ability_check(const CharacterSheet &, const VitalState &,
                        std::span<const std::string> gear, Ability ability, std::string_view skill,

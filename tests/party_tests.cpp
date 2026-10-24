@@ -2807,10 +2807,11 @@ void script_handoff()
     check(party->profile(second).armor_class ==
               12 + party->member(second).character.sheet().modifiers[Ability::dexterity],
           "Cleric equips purchased shield");
-    // A supported store followed by an unsupported query must roll the party back.
+    // A supported store followed by an unsupported query (CHECK PARTY of a
+    // record byte no script asks about) must roll the party back.
     const auto hp = party->member(second).vitals.hit_points;
     auto failed =
-        program({10, 0, 1, 9,    0,    0, 1,    0x19, 0x6c, 10,   0,    129, 30,   1,    0xa7, 0x6b,
+        program({10, 0, 1, 9,    0,    0, 1,    0x19, 0x6c, 10,   0,    129, 30,   1,    0x10, 0x6b,
                  0,  0, 1, 0x11, 0x98, 1, 0x12, 0x98, 1,    0x13, 0x98, 1,   0x14, 0x98, 0});
     por::RolfTourSession rollback({}, failed, {}, 0x9914, {}, resources);
     rollback.campaign_party(party);

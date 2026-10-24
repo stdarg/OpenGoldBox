@@ -723,6 +723,27 @@ void drider_casts()
     }
     check(recharged && waited, "Magic of the Spider Queen recharges on some turns only");
 }
+
+// Kovel Mansion's master thief is the SRD Spy: Cunning Action lets it Dash or
+// Disengage as a Bonus Action, and its Shortsword adds 2d6 Poison damage.
+void master_thief_strikes()
+{
+    const auto module = rules();
+    bool poisoned = false;
+    for (std::uint64_t seed = 1; seed < 40 && !poisoned; ++seed)
+    {
+        auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                                 {{1, "kovel-master-thief", "Monster", Side::opposition, {1, 1}},
+                                  {2, "target", "Hero", Side::party, {2, 1}}}},
+                                seed);
+        turn_of(*c, 1);
+        check(offered_any(*c, "cunning_dash", 1) && offered_any(*c, "cunning_disengage", 1),
+              "The master thief has Cunning Action");
+        check(submit(*c, "melee", 1, 2), "The master thief attacks");
+        poisoned = count_logged(*c, "Poison damage") >= 1;
+    }
+    check(poisoned, "The master thief's Shortsword adds Poison damage");
+}
 } // namespace
 
 int main()
@@ -749,6 +770,7 @@ int main()
         basilisk_gazes();
         stirge_attaches();
         drider_casts();
+        master_thief_strikes();
         std::cout << "Slums creature tests passed\n";
         return 0;
     }

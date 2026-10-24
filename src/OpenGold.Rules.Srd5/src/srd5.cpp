@@ -30614,16 +30614,25 @@ class Module final : public RulesModule
         {
             return 0;
         }
-        // Weigh the d20 rolls (pairs, with Advantage or Disadvantage) that
-        // reach DC 15, as roll_ability_check rolls them: a Halfling's 1 is
-        // rolled again, and Reliable Talent makes a proficient roll at least 10.
         constexpr int climb_dc = 15;
-        const auto modifier = ability_check(sheet, gear, Ability::strength, "athletics");
+        return check_chance(sheet, state, gear, Ability::strength, "athletics", climb_dc);
+    }
+
+    unsigned check_chance(const CharacterSheet &sheet, const VitalState &state,
+                          std::span<const std::string> gear, Ability ability,
+                          std::string_view skill, int difficulty) const override
+    {
+        // Weigh the d20 rolls (pairs, with Advantage or Disadvantage) that
+        // reach the difficulty, as roll_ability_check rolls them: a Halfling's
+        // 1 is rolled again, and Reliable Talent makes a proficient roll at
+        // least 10.
+        const auto modifier = ability_check(sheet, gear, ability, skill);
         const bool poisoned = suffers_poisoned(camp_actor(sheet, state));
         const bool advantage = modifier.advantage && !(modifier.disadvantage || poisoned);
         const bool disadvantage = !modifier.advantage && (modifier.disadvantage || poisoned);
         const bool lucky = character_definition(character_profile(sheet, gear).data).lucky;
-        const bool reliable = sheet.level >= 7 && modifier.proficiency > 0;
+        const bool reliable = detail::class_of(sheet) == CharacterClass::rogue && sheet.level >= 7 &&
+                              modifier.proficiency > 0;
         // Out of 400 for one die: 20 a face, or 1 for a lucky 1 and 21 for the rest.
         const auto weight = [&](int face) -> std::uint64_t
         {
@@ -30637,7 +30646,7 @@ class Module final : public RulesModule
                 const int die = advantage      ? std::max(first, second)
                                 : disadvantage ? std::min(first, second)
                                                : first;
-                if ((reliable ? std::max(die, 10) : die) + modifier.total >= climb_dc)
+                if ((reliable ? std::max(die, 10) : die) + modifier.total >= difficulty)
                 {
                     successes += weight(first) * weight(second);
                 }
@@ -31393,7 +31402,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.252", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.253", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
@@ -31809,7 +31818,8 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         if (tag == "pack_tactics" || tag == "aggressive" || tag == "advantage_damage" ||
             tag == "undead_fortitude" || tag == "multiattack_ranged" ||
             tag == "sunlight_sensitivity" || tag == "evil" || tag == "life_drain_attack" ||
-            tag == "flies" || tag == "incorporeal" || tag == "web_walker")
+            tag == "flies" || tag == "incorporeal" || tag == "web_walker" ||
+            tag == "cunning_action")
         {
             const auto found = content.definitions.find(key);
             if (found == content.definitions.end() || !trait_rows.insert(tag + " " + key).second)
@@ -31856,6 +31866,10 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             else if (tag == "web_walker")
             {
                 definition.web_walker = true;
+            }
+            else if (tag == "cunning_action")
+            {
+                definition.cunning = true;
             }
             else
             {

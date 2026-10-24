@@ -188,10 +188,50 @@ unsigned party_strength(const CampaignParty &party)
     return result & 255;
 }
 
+namespace
+{
+// A member's thief skill as the character record's byte `field` holds it:
+// picking a lock (0xA5, which Kovel Mansion's locks read) and finding or
+// removing traps (0xA7) are Thieves' Tools checks, climbing walls (0xAB) an
+// Athletics check.
+unsigned thief_skill(const CampaignParty &party, MemberId id, unsigned field)
+{
+    switch (field)
+    {
+    case 0xA5:
+    case 0xA7:
+        return party.thieves_tools_chance(id);
+    case 0xAB:
+        return party.climbing_chance(id);
+    default:
+        throw std::runtime_error("Unsupported thief skill " + std::to_string(field));
+    }
+}
+
+unsigned member_movement(const CampaignParty &party, MemberId id)
+{
+    const auto &m = party.member(id);
+    return m.vitals.dead || m.vitals.hit_points == 0 ? 0 : party.profile(id).movement_feet * 2 / 5;
+}
+} // namespace
+
 std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attribute,
                                     unsigned effect)
 {
-    if (attribute != EclAddress{0x6C1B} || effect)
+    // The original's effect 19 is Find Traps, which Kovel Mansion's traps ask
+    // about (ECL3:14 0xB3B4).
+    constexpr unsigned find_traps_effect = 19;
+    if (attribute == EclAddress{0})
+    {
+        if (effect != find_traps_effect)
+        {
+            throw std::runtime_error("Unsupported CHECK PARTY effect " + std::to_string(effect));
+        }
+        return {0, 0, 0, party.finding_traps() ? 1U : 0U};
+    }
+    const auto field = attribute.location - ecl_character_record.location;
+    const bool movement = attribute == EclAddress{0x6C1B};
+    if (effect || (!movement && (field < 0xA5 || field > 0xAC)))
     {
         throw std::runtime_error("Unsupported CHECK PARTY attribute/effect conversion");
     }
@@ -200,21 +240,23 @@ std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attri
     {
         if (id)
         {
-            const auto &m = party.member(id);
-            const unsigned move = m.vitals.dead || m.vitals.hit_points == 0
-                                      ? 0
-                                      : party.profile(id).movement_feet * 2 / 5;
-            low = std::min(low, move);
-            high = std::max(high, move);
-            total += move;
+            const unsigned value =
+                movement ? member_movement(party, id) : thief_skill(party, id, field);
+            low = std::min(low, value);
+            high = std::max(high, value);
+            total += value;
             ++count;
         }
     }
-    // The fourth output is not recoverable from the scripts; the Slums' Run after
-    // a parley compares it with the monsters' speed, as the encounter menu's
-    // Flee compares the slowest member, so it is the slowest member too.
-    return count ? std::array<unsigned, 4>{low, high, total / count, low}
-                 : std::array<unsigned, 4>{};
+    if (!count)
+    {
+        return {};
+    }
+    // The fourth output is not recoverable from the scripts for movement; the
+    // Slums' Run after a parley compares it with the monsters' speed, as the
+    // encounter menu's Flee compares the slowest member, so it is the slowest
+    // member too. For a thief skill the original leaves it 0.
+    return {low, high, total / count, movement ? low : 0};
 }
 
 EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
@@ -242,6 +284,9 @@ EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
         // The thief's climb-walls chance, which the Cadorna Textile House's
         // dry well rolls (ECL4:2 0xACC5).
         fields[0xAB] = party.climbing_chance(id);
+        // Picking a lock and removing traps, which Kovel Mansion's lock and
+        // traps roll (ECL3:14 0x9F91, 0xB3A2).
+        fields[0xA5] = fields[0xA7] = party.thieves_tools_chance(id);
         fields[0x100] = m.vitals.dead ? 0 : 1;
         fields[0x119] = m.vitals.hit_points;
         // Every member shows the party's money: the party owns it all.

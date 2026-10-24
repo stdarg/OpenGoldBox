@@ -61,7 +61,7 @@ void RolfTourSession::attach_restored_party(std::shared_ptr<opengold::CampaignPa
     campaign_ = std::move(party);
     if (campaign_)
     {
-        for (const std::uint8_t op : {11, 29, 30, 34, 35, 41, 46, 54})
+        for (const std::uint8_t op : {11, 29, 30, 34, 35, 41, 46, 54, 59})
         {
             machine_.enable_host(op);
         }
@@ -229,7 +229,7 @@ constexpr int original_save_dc = 13;
 
 // The damage type of a DAMAGE call that hurts members directly, by its script
 // and address: the original names none.
-std::string script_damage_type(unsigned script, std::uint16_t address)
+std::optional<std::string_view> listed_damage_type(unsigned script, std::uint16_t address)
 {
     struct ScriptDamage
     {
@@ -238,13 +238,34 @@ std::string script_damage_type(unsigned script, std::uint16_t address)
         std::string_view type;
     };
     constexpr std::array types{ScriptDamage{2, 0xADB1, "bludgeoning"}, // the Cadorna well's fall
-                               ScriptDamage{15, 0x9D31, "acid"}};      // Mendor's green slime
+                               ScriptDamage{15, 0x9D31, "acid"},       // Mendor's green slime
+                               // Kovel Mansion's traps and thieves (KOVEL-1).
+                               ScriptDamage{14, 0x9A98, "slashing"},    // a scything blade
+                               ScriptDamage{14, 0x9ADD, "poison"},      // poison gas
+                               ScriptDamage{14, 0x9B2A, "slashing"},    // a net of blades
+                               ScriptDamage{14, 0x9C64, "piercing"},    // a backstab
+                               ScriptDamage{14, 0xA239, "piercing"},    // a needle
+                               ScriptDamage{14, 0xA450, "poison"},      // yellow gas
+                               ScriptDamage{14, 0xA5F7, "poison"},      // a poisoned needle
+                               ScriptDamage{14, 0xA708, "piercing"},    // a dart
+                               ScriptDamage{14, 0xA7EA, "poison"},      // noxious powder
+                               ScriptDamage{14, 0xA8D4, "piercing"},    // a shower of darts
+                               ScriptDamage{14, 0xB566, "bludgeoning"}}; // sling bullets
     for (const auto &known : types)
     {
         if (known.script == script && known.address == address)
         {
-            return std::string(known.type);
+            return known.type;
         }
+    }
+    return std::nullopt;
+}
+
+std::string script_damage_type(unsigned script, std::uint16_t address)
+{
+    if (const auto type = listed_damage_type(script, address))
+    {
+        return std::string(*type);
     }
     throw EclError("No damage type for DAMAGE at " + std::to_string(address));
 }
@@ -282,8 +303,6 @@ std::string_view area_beyond(unsigned script)
         return "Stojanow Gate";
     case 10:
         return "Valhingen Graveyard";
-    case 14:
-        return "Kovel Mansion";
     case 17:
         return "the nomad camp";
     case 22:
@@ -374,7 +393,7 @@ void RolfTourSession::configure_town()
     }
     if (campaign_)
     {
-        for (const std::uint8_t op : {11, 29, 30, 34, 35, 41, 46, 54})
+        for (const std::uint8_t op : {11, 29, 30, 34, 35, 41, 46, 54, 59})
         {
             machine_.enable_host(op);
         }
@@ -2028,7 +2047,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     };
     // The party's own requests need a campaign party: a session copied without
     // one (detached_copy) refuses them rather than reading none.
-    constexpr std::array party_requests{11, 29, 30, 34, 35, 41, 46, 54};
+    constexpr std::array party_requests{11, 29, 30, 34, 35, 41, 46, 54, 59};
     if (!campaign_ && std::find(party_requests.begin(), party_requests.end(), op) !=
                           party_requests.end())
     {
@@ -2298,6 +2317,33 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             reply.writes.push_back({address, value});
         }
+        break;
+    }
+    case 59:
+    {
+        // SPELL: which member can cast the original's spell arg(0), as the
+        // spell's place in that member's list (255 for nobody) and the
+        // member's slot. Only Knock (31) is asked, by Kovel Mansion's locks
+        // (ECL3:14 0x9ECA); its caster spends the spell now. The original PC
+        // game did nothing here, so anyone could "cast" it (KOVEL-1).
+        constexpr unsigned knock = 31;
+        if (arg(0) != knock)
+        {
+            throw EclError("Unsupported SPELL " + std::to_string(arg(0)));
+        }
+        read_character();
+        reply = character_reply(selected_character_);
+        std::uint16_t place = 255, slot = 0;
+        if (campaign_->can_try_door(DoorMethod::knock))
+        {
+            const auto caster = campaign_->try_door(DoorMethod::knock, 0).front().member;
+            const auto &slots = campaign_->state().slots;
+            place = 0;
+            slot = static_cast<std::uint16_t>(std::find(slots.begin(), slots.end(), caster) -
+                                              slots.begin());
+        }
+        reply.writes.push_back({address_arg(1), place});
+        reply.writes.push_back({address_arg(2), slot});
         break;
     }
     case 54:
@@ -2593,23 +2639,30 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     }
     case 55:
+    {
         // The wilderness's sites reset the wall banks (127) before NEW ECL.
-        if (arg(0) == 127 && arg(1) == 127 && arg(2) == 127)
+        const std::array<unsigned, 3> banks{arg(0), arg(1), arg(2)};
+        if (banks == std::array<unsigned, 3>{127, 127, 127})
         {
             break;
         }
-        if (current_area_)
+        // A script may load its wall banks before its map (Kovel Mansion's
+        // entry, ECL3:14 0xB592), so they are checked against its own
+        // districts, not the area it came from.
+        const bool own_district =
+            std::any_of(town_->districts.begin(), town_->districts.end(),
+                        [&](const auto &district)
+                        {
+                            return district.second->script == current_script_ &&
+                                   district.second->pieces == banks;
+                        });
+        if (!own_district)
         {
-            if (std::array<unsigned, 3>{arg(0), arg(1), arg(2)} != area_resources().pieces)
-            {
-                throw EclError("Unverified district wall resource profile");
-            }
-        }
-        else if (arg(0) != 127 || arg(1) != 127 || arg(2) != 127)
-        {
-            throw EclError("Unverified town wall resource profile");
+            throw EclError(current_area_ ? "Unverified district wall resource profile"
+                                         : "Unverified town wall resource profile");
         }
         break;
+    }
     case 50:
     {
         const bool found = campaign_ ? party_has_item(*campaign_, arg(0))
@@ -2630,27 +2683,50 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // the bonus in arg(0)'s low bits, of the type arg(4) names (Mendor's
         // green slime). The original names no damage type; script_damage_type
         // gives each call's.
+        const auto address = request.instruction->address;
         const bool volley = !(arg(0) & 0x80) && !(arg(4) & 0x80);
         const bool chosen_member = (arg(0) & 0xC0) == 0x80 && (arg(4) & 0x87) == 0x80;
         const bool random_member =
             (arg(0) & 0xD0) == 0x80 && !(arg(4) & 0x80) && (arg(4) & 7) < original_save_abilities.size();
-        if (!campaign_ || (!volley && !chosen_member && !random_member))
+        // Every member, each saving unless arg(0) has 0x20 (Kovel Mansion's gas).
+        const bool whole_party =
+            (arg(0) & 0xD0) == 0xC0 && (arg(4) & 7) < original_save_abilities.size();
+        if (!campaign_ || (!volley && !chosen_member && !random_member && !whole_party))
         {
             throw EclError("Unsupported DAMAGE form");
         }
         read_character();
         if (volley)
         {
+            // Arrows unless the call names another weapon (Kovel Mansion's
+            // blades, darts and sling bullets).
+            const auto type = listed_damage_type(current_script_, address).value_or("piercing");
             snapshot_.dialogue += shoot_arrows(arg(0), {hidden_archer_attack_bonus, arg(1), arg(2),
-                                                        static_cast<int>(arg(3)), "piercing"});
+                                                        static_cast<int>(arg(3)), std::string(type)});
         }
         else
         {
             rules::HazardAttack harm{0, arg(1), arg(2), static_cast<int>(arg(3)),
-                                     script_damage_type(current_script_,
-                                                        request.instruction->address)};
+                                     script_damage_type(current_script_, address)};
             harm.automatic = true;
-            if (random_member)
+            if (whole_party)
+            {
+                if (!(arg(0) & 0x20))
+                {
+                    harm.save_ability = original_save_abilities[arg(4) & 7];
+                    harm.save_dc = original_save_dc - static_cast<int>(arg(0) & 0x1F);
+                }
+                for (const auto id : campaign_->state().slots)
+                {
+                    if (id)
+                    {
+                        const auto result = campaign_->hazard_attack(id, harm);
+                        snapshot_.dialogue += hurt(result ? std::optional<HazardHit>{{id, *result}}
+                                                          : std::nullopt);
+                    }
+                }
+            }
+            else if (random_member)
             {
                 harm.save_ability = original_save_abilities[arg(4) & 7];
                 harm.save_dc = original_save_dc - static_cast<int>(arg(0) & 0x1F);

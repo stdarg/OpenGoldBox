@@ -68,7 +68,7 @@ const EclOpcode &ecl_opcode(std::uint8_t op)
                                                       {"PROGRAM", 1, false, true, true},
                                                       {"WHO", 1, false, true, true},
                                                       {"DELAY", 0, false, true, true},
-                                                      {"SPELL", 3, false, true},
+                                                      {"SPELL", 3, false, true, true},
                                                       {"PROTECTION", 1, false, true, true},
                                                       {"CLEAR BOX", 0, false, true}}};
     if (op >= specs.size())

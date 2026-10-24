@@ -273,7 +273,7 @@ creature mad-man 16 7 1 30 3 1 6 1 3 1 6 1 20 60 0 0 0 1 0
 saves mad-man 1 1 1 0 0 0
 damage_types mad-man piercing piercing
 perception mad-man 2
-# The Central Wilderness (docs/audits/central-wilderness.md, WILD-1), with the
+# The Central Wilderness (docs/audits/central-wilderness.md, OVERLAND-1), with the
 # original's Hit Points. Mutant lizard men are Lizardfolk; bandits, nomads and
 # merchants the Bandit; their aides the Bandit Captain without its Pistol and
 # Parry, as Norris is.
@@ -319,6 +319,20 @@ damage_types displacer-beast slashing slashing
 size displacer-beast large
 type displacer-beast monstrosity
 multiattack displacer-beast 2
+# Kovel Mansion's thieves (docs/audits/kovel-mansion.md, KOVEL-1), with the
+# original's Hit Points: a 1st-level thief is the SRD 5.2.1 Bandit, a
+# 6th-level one the Spy (Shortsword or Hand Crossbow with 2d6 Poison, Cunning
+# Action).
+creature kovel-thief 12 4 1 30 3 1 6 1 3 1 8 1 80 320 0 0 0 1 0
+saves kovel-thief 0 1 1 0 0 0
+damage_types kovel-thief slashing piercing
+creature kovel-master-thief 12 28 4 30 4 1 6 2 4 1 6 2 30 120 0 0 0 1 0
+saves kovel-master-thief 0 2 0 1 2 3
+damage_types kovel-master-thief piercing piercing
+perception kovel-master-thief 6
+melee_extra_damage kovel-master-thief 2 6 poison
+ranged_extra_damage kovel-master-thief 2 6 poison
+cunning_action kovel-master-thief
 # Summon Dragon's Draconic Spirit (SRD 5.2.1 p. 166), one stat block per
 # spell level: AC 14 + the level, 50 Hit Points and 10 more per level above 5,
 # Rend 1d6 + 4 + the level Piercing (reach 10 feet), half the level in Rends.

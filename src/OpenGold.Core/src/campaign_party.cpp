@@ -2158,6 +2158,20 @@ unsigned CampaignParty::climbing_chance(MemberId id) const
     return rules_->climbing_chance(m.character.sheet(), m.vitals, equipped_definitions(m));
 }
 
+unsigned CampaignParty::thieves_tools_chance(MemberId id) const
+{
+    constexpr int difficulty = 15;
+    const auto &m = member(id);
+    if (!tries_door(m, DoorMethod::pick))
+    {
+        return 0;
+    }
+    const auto chance =
+        rules_->check_chance(m.character.sheet(), m.vitals, equipped_definitions(m),
+                             rules::Ability::dexterity, "sleight_of_hand", difficulty);
+    return carries_thieves_tools(m) ? std::min(100U, chance * 2) : chance;
+}
+
 int CampaignParty::hit_point_maximum(MemberId id) const
 {
     const auto &m = member(id);
