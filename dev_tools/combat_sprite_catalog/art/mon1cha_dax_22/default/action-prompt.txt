@@ -138,6 +138,10 @@ transparent margin. A raised READY weapon may cross the top tile line; the
 moving ACTION weapon may cross a footprint line. Final assets are 128 x 128
 PNGs with alpha. Larger working images are allowed; export with nearest-neighbor
 sampling and preserve alpha.
+The final ready and action cutouts must have no opaque black boxes, wedges,
+halos, or stray pixels; inspect both on light, dark, and contrasting backgrounds.
+For a sword, preserve its recognizable blade length and continuous hand-to-tip
+shape in BOTH frames at combat size; do not shorten it to fit a pose.
 Keep camera, character scale and exact planted-foot coordinates consistent across poses
 and weapon sets; do not resize each pose independently to fill the canvas. The
 action must read clearly at normal combat size, not only in a magnified preview.
@@ -180,3 +184,5 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
+
+FINAL MONSTER-SPECIFIC ACTION DIRECTION AND EXPORT: Edited the accepted newly generated ready reference into a late two-arm claw attack, fingers reaching screen right with modest head/ribcage lean. Rejected an overly wide action draft. Used the same 1254x1254 source canvas, shared nearest-neighbor 110x110 scale and +2,+12 offset for both frames. Copied exact ready pixels, including alpha, in the lower-leg/foot region x=0..80 and y=75..127 into action after export to fix planted feet at exact x/y. Both body silhouettes fit 1x2 in the one-second catalog preview; no gear or weapon. Final 128x128 PNG.
