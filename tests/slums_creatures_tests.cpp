@@ -665,6 +665,64 @@ void basilisk_gazes()
     }
     check(recharged && waited, "The gaze recharges on some turns and not others");
 }
+// A Stirge's Proboscis attaches it to the creature it hits; attached, it does
+// not attack, and drains 2d4 Necrotic as each of its turns starts, until the
+// creature pulls it off with an action.
+void stirge_attaches()
+{
+    const auto module = rules();
+    bool attached = false;
+    for (std::uint64_t seed = 1; seed < 40 && !attached; ++seed)
+    {
+        auto c = fight(*module, "stirge", "target");
+        turn_of(*c, 1);
+        check(submit(*c, "melee", 1, 2), "The Stirge attacks");
+        attached = count_logged(*c, "Monster attaches to Hero.") == 1;
+        if (!attached)
+        {
+            continue;
+        }
+        check(!offered(*c, "melee", 1, 2), "An attached Stirge cannot attack");
+        check(submit(*c, "end", 1), "The Stirge ends its turn");
+        turn_of(*c, 1);
+        check(count_logged(*c, "Necrotic damage from Monster.") == 1,
+              "The attached Stirge drains Necrotic damage as its turn starts");
+        check(submit(*c, "end", 1), "The Stirge ends its turn again");
+        turn_of(*c, 2);
+        check(submit(*c, "detach", 2, 1) && count_logged(*c, "Hero pulls Monster off.") == 1,
+              "The hero pulls the Stirge off with an action");
+        check(submit(*c, "end", 2), "The hero ends its turn");
+        turn_of(*c, 1);
+        check(offered(*c, "melee", 1, 2), "Pulled off, the Stirge attacks again");
+    }
+    check(attached, "A Stirge's hit attaches it");
+}
+
+// A Drider's Magic of the Spider Queen is a Bonus Action that recharges on a
+// 5 or 6; its own Web never catches it.
+void drider_casts()
+{
+    const auto module = rules();
+    bool recharged = false, waited = false;
+    for (std::uint64_t seed = 1; seed < 60 && !(recharged && waited); ++seed)
+    {
+        auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                                 {{1, "drider", "Monster", Side::opposition, {1, 1}},
+                                  {2, "target", "Hero", Side::party, {6, 1}}}},
+                                seed);
+        turn_of(*c, 1);
+        check(offered_any(*c, "faerie_fire_innate_bonus", 1), "The Drider can cast Faerie Fire");
+        check(submit(*c, "faerie_fire_innate_bonus", 1) && aim(*c, Cell{6, 1}) &&
+                  submit(*c, "area_cast", 1) && submit(*c, "end", 1),
+              "The Drider casts Faerie Fire with its Bonus Action");
+        turn_of(*c, 1);
+        const bool back = offered_any(*c, "faerie_fire_innate_bonus", 1);
+        check(back == (count_logged(*c, "Magic of the Spider Queen recharges") == 1),
+              "The spells come back exactly when they recharge");
+        (back ? recharged : waited) = true;
+    }
+    check(recharged && waited, "Magic of the Spider Queen recharges on some turns only");
+}
 } // namespace
 
 int main()
@@ -689,6 +747,8 @@ int main()
         specter_drains_life();
         specter_passes_through();
         basilisk_gazes();
+        stirge_attaches();
+        drider_casts();
         std::cout << "Slums creature tests passed\n";
         return 0;
     }

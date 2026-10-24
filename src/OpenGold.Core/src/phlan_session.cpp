@@ -207,6 +207,8 @@ Image close_up_portrait(const PhlanResources &resources, unsigned head_id, unsig
 // City Hall's script (ECL3:8), and the Cadorna Textile House's quest cells it
 // reads: the family treasure (1 sealed, 128 opened) and its reward slot.
 constexpr unsigned city_hall_script = 8;
+// The Pyramid's poisoned rivers open once its sorcerer is beaten.
+constexpr EclAddress pyramid_valley_healed{0x4AA2};
 constexpr EclAddress cadorna_box{0x4AC8}, cadorna_payment{0x4AB8};
 
 // The minute of the day on the campaign clock, which starts at noon.
@@ -274,10 +276,24 @@ std::string_view area_beyond(unsigned script)
 {
     switch (script)
     {
+    case 6:
+        return "Valjevo Castle";
     case 9:
         return "Stojanow Gate";
-    case 26:
-        return "the wilderness";
+    case 10:
+        return "Valhingen Graveyard";
+    case 14:
+        return "Kovel Mansion";
+    case 17:
+        return "the nomad camp";
+    case 22:
+        return "the Pyramid";
+    case 24:
+        return "the Temple of Bane";
+    case 25:
+        return "the western wilderness";
+    case 27:
+        return "the eastern wilderness";
     default:
         return "another area";
     }
@@ -339,6 +355,11 @@ void RolfTourSession::configure_town()
     // they are stored for the script and have no effect yet.
     machine_.bind_variable(EclAddress{0xC059}, 0);
     machine_.bind_variable(EclAddress{0xC05F}, 0);
+    for (const auto address : {ecl_overland_direction, ecl_overland_target_x,
+                               ecl_overland_target_y, ecl_overland_terrain, ecl_overland_tile})
+    {
+        machine_.bind_variable(address, 0);
+    }
     if (campaign_)
     {
         selected_character_ = campaign_->state().selected_slot;
@@ -534,6 +555,7 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
                                         .visited_areas = visited_areas_,
                                         .seen_areas = seen_areas_,
                                         .rest_checks = rest_checks_,
+                                        .travel_mode = travel_mode_,
                                         .map = map_,
                                         .pending_loot = pending_loot_,
                                         .snapshot = snapshot_,
@@ -547,7 +569,7 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
     robbed_ = false;
     member_chosen_ = false;
     bool off_map = false;
-    if (trigger == EventTrigger::step && pending_movement_)
+    if (trigger == EventTrigger::step && pending_movement_ && !overland())
     {
         const auto p = snapshot_.pose;
         const int x = static_cast<int>(p.x) + step_x(p.facing),
@@ -1095,6 +1117,12 @@ void RolfTourSession::finish_event()
         }
         return;
     }
+    if (event_stage_ == EventStage::step && overland())
+    {
+        overland_step();
+        search_destination();
+        return;
+    }
     if (event_stage_ == EventStage::step)
     {
         if (!move_party(*pending_movement_))
@@ -1111,6 +1139,7 @@ void RolfTourSession::finish_event()
     }
     if (event_stage_ == EventStage::area_entry)
     {
+        update_travel_mode();
         event_stage_ = EventStage::search;
         if (!machine_.start(1))
         {
@@ -1201,6 +1230,69 @@ void RolfTourSession::finish_event()
     snapshot_.choices.clear();
     snapshot_.continue_ticket = 0;
     ++snapshot_.revision;
+}
+
+// After a script's entry, the original travels the wilderness map when the
+// script is a wilderness's (25 west, 26 central, 27 east) and left its 3D-area
+// cell clear; otherwise it is in a 3D area.
+void RolfTourSession::update_travel_mode()
+{
+    const bool wilderness = current_script_ >= 25 && current_script_ <= 27;
+    if (wilderness && machine_.variable(ecl_in_3d_area) == 0)
+    {
+        if (!town_->overland)
+        {
+            throw EclError("The wilderness map needs START.EXE");
+        }
+        travel_mode_ = current_script_ - 23;
+    }
+    else
+    {
+        travel_mode_ = 1;
+    }
+    publish_pose();
+}
+
+// The original's StepOverland: a step in the party's direction, kept on the
+// window, unless the square's terrain is impassable or a poisoned river
+// before the Pyramid's sorcerer falls; it takes half a day.
+bool RolfTourSession::overland_step()
+{
+    if (machine_.variable(EclAddress{0x6DC9}) == 255)
+    {
+        return false;
+    }
+    const auto &world = *town_->overland;
+    const auto direction = machine_.variable(ecl_overland_direction) % 8;
+    const auto x = static_cast<unsigned>(std::clamp<int>(
+                   machine_.variable(ecl_overland_x) + overland_dx[direction], 0,
+                   OverlandWorld::window_columns - 1)),
+               y = static_cast<unsigned>(std::clamp<int>(
+                   machine_.variable(ecl_overland_y) + overland_dy[direction], 0,
+                   OverlandWorld::rows - 1));
+    switch (overland_passage(world.at(world.window_start[travel_mode_ - 2] + x, y)))
+    {
+    case OverlandPassage::closed:
+        return false;
+    case OverlandPassage::river:
+        if (machine_.variable(pyramid_valley_healed) == 0)
+        {
+            snapshot_.dialogue = "The river's stench drives you back.";
+            return false;
+        }
+        break;
+    case OverlandPassage::open:
+        break;
+    }
+    machine_.bind_variable(ecl_overland_x, static_cast<std::uint16_t>(x));
+    machine_.bind_variable(ecl_overland_y, static_cast<std::uint16_t>(y));
+    if (campaign_)
+    {
+        campaign_->advance_time(std::chrono::hours{12});
+    }
+    synchronize_clock();
+    publish_pose();
+    return true;
 }
 
 // The original engine rests in five-minute steps. Each step counts toward the
@@ -1934,6 +2026,14 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         return request.arguments.at(n).address();
     };
+    // The party's own requests need a campaign party: a session copied without
+    // one (detached_copy) refuses them rather than reading none.
+    constexpr std::array party_requests{11, 29, 30, 34, 35, 41, 46, 54};
+    if (!campaign_ && std::find(party_requests.begin(), party_requests.end(), op) !=
+                          party_requests.end())
+    {
+        throw EclError("This event needs the campaign party");
+    }
     switch (op)
     {
     case 10:
@@ -2278,12 +2378,28 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             encounter_records_ = staged_records_;
             fit_staged_encounter();
             const auto p = snapshot_.pose;
+            // On the wilderness map the field grows from the terrain under the
+            // party, drawn with the wilderness set, north up.
+            const auto roll = [&](int sides)
+            {
+                return static_cast<int>(
+                           machine_.host_random(request.id, static_cast<unsigned>(sides))) +
+                       1;
+            };
+            auto field = overland()
+                             ? wilderness_battlefield(
+                                   *town_->overland,
+                                   town_->overland->at(town_->overland->window_start[travel_mode_ - 2] +
+                                                           machine_.variable(ecl_overland_x),
+                                                       machine_.variable(ecl_overland_y)),
+                                   roll)
+                             : dungeon_battlefield(map_, p.x, p.y);
             encounter_ = opengold::CampaignEncounter{
-                dungeon_battlefield(map_, p.x, p.y),
+                std::move(field),
                 std::move(staged_enemies_),
                 std::move(staged_art_),
-                area_resources().terrain_art,
-                p.facing,
+                overland() ? town_->wilderness_art : area_resources().terrain_art,
+                overland() ? MapDirection::north : p.facing,
                 script_surprise(machine_.variable(ecl_encounter_surprise))};
             encounter_->party_resting = event_stage_ == EventStage::camp_interrupted;
             const auto hour = clock_minute_of_day(campaign_->state().time_minutes) / 60;
@@ -2296,7 +2412,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                     throw EclError("A duel needs a chosen member");
                 }
             }
-            encounter_distance_ = std::min(encounter_distance_, open_squares_ahead(map_, p));
+            if (!overland())
+            {
+                encounter_distance_ = std::min(encounter_distance_, open_squares_ahead(map_, p));
+            }
             encounter_->distance = encounter_distance_;
             // The script sets the encounter's morale before COMBAT.
             encounter_->morale = std::min<unsigned>(machine_.variable(ecl_encounter_morale), 100);
@@ -2411,6 +2530,27 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             break;
         }
+        // A site of the wilderness map clears the view (127) before NEW ECL.
+        if (arg(0) == 127 && arg(1) == 127 && arg(2) == 127)
+        {
+            break;
+        }
+        // A wilderness script with its 3D-area cell clear shows the
+        // wilderness map (LOAD FILES 4,4,0 to 6,6,0); its own district holds
+        // its art and creatures.
+        if (current_script_ >= 25 && current_script_ <= 27 &&
+            machine_.variable(ecl_in_3d_area) == 0 && arg(0) == arg(1) && arg(2) == 0)
+        {
+            for (const auto &[id, district] : town_->districts)
+            {
+                if (district->script == current_script_)
+                {
+                    change_area(id);
+                    break;
+                }
+            }
+            break;
+        }
         // Map 255 keeps the current map: Sokal Keep's elf scroll loads the
         // rune glyphs (bank 16) and then its own art again (bank 2).
         if (current_area_ && arg(0) == 255 && (arg(1) == 16 || arg(1) == 2) && arg(2) == 255)
@@ -2453,6 +2593,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     }
     case 55:
+        // The wilderness's sites reset the wall banks (127) before NEW ECL.
+        if (arg(0) == 127 && arg(1) == 127 && arg(2) == 127)
+        {
+            break;
+        }
         if (current_area_)
         {
             if (std::array<unsigned, 3>{arg(0), arg(1), arg(2)} != area_resources().pieces)

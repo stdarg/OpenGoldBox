@@ -347,19 +347,26 @@ void RolfTourView::next()
     refresh();
 }
 
+// On the wilderness map the three buttons step west, north and east, as the
+// original's arrow keys do there.
+bool RolfTourView::on_overland() const
+{
+    return session_ && session_->snapshot().overland;
+}
+
 void RolfTourView::left()
 {
-    movement(ExplorationCommand::turn_left);
+    movement(on_overland() ? ExplorationCommand::west : ExplorationCommand::turn_left);
 }
 
 void RolfTourView::right()
 {
-    movement(ExplorationCommand::turn_right);
+    movement(on_overland() ? ExplorationCommand::east : ExplorationCommand::turn_right);
 }
 
 void RolfTourView::forward()
 {
-    movement(ExplorationCommand::forward);
+    movement(on_overland() ? ExplorationCommand::north : ExplorationCommand::forward);
 }
 
 void RolfTourView::look()
@@ -1252,7 +1259,25 @@ void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
         forward();
         break;
     case Key::KEY_DOWN:
-        movement(ExplorationCommand::turn_around);
+        movement(on_overland() ? ExplorationCommand::south : ExplorationCommand::turn_around);
+        break;
+    // The wilderness map's diagonal steps: Home, Page Up, End and Page Down, or
+    // the keypad's corners.
+    case Key::KEY_HOME:
+    case Key::KEY_KP_7:
+        movement(ExplorationCommand::northwest);
+        break;
+    case Key::KEY_PAGEUP:
+    case Key::KEY_KP_9:
+        movement(ExplorationCommand::northeast);
+        break;
+    case Key::KEY_END:
+    case Key::KEY_KP_1:
+        movement(ExplorationCommand::southwest);
+        break;
+    case Key::KEY_PAGEDOWN:
+    case Key::KEY_KP_3:
+        movement(ExplorationCommand::southeast);
         break;
     case Key::KEY_L:
         look();
@@ -1351,7 +1376,15 @@ String rest_notice(const std::string &resource, const std::string &text)
          N_("The monsters go on their way."), N_("You get away."),
          N_("Your party flees the battle."), N_("You have lost the fight."), N_("Locked."),
          N_("Wizard locked."), N_("The way to Stojanow Gate is not in the game yet."),
-         N_("The way to the wilderness is not in the game yet."),
+         N_("The way to Valjevo Castle is not in the game yet."),
+         N_("The way to Valhingen Graveyard is not in the game yet."),
+         N_("The way to Kovel Mansion is not in the game yet."),
+         N_("The way to the nomad camp is not in the game yet."),
+         N_("The way to the Pyramid is not in the game yet."),
+         N_("The way to the Temple of Bane is not in the game yet."),
+         N_("The way to the western wilderness is not in the game yet."),
+         N_("The way to the eastern wilderness is not in the game yet."),
+         N_("The river's stench drives you back."),
          N_("The way to another area is not in the game yet.")})
     {
         result = result.replace(String::utf8(source), i18n::text(source));
@@ -1531,8 +1564,11 @@ void RolfTourView::refresh()
         }
         rendered_sprite_id_ = session_->snapshot().sprite_id;
     }
-    if (session_ && session_->snapshot().visited.any() &&
+    if (session_ && (session_->snapshot().visited.any() || session_->snapshot().overland) &&
         (!rendered_pose_ || *rendered_pose_ != session_->snapshot().pose ||
+         rendered_overland_ != std::array{session_->snapshot().overland_x,
+                                          session_->snapshot().overland_y,
+                                          session_->snapshot().overland_direction} ||
          rendered_picture_revision_ != session_->snapshot().picture_revision))
     {
         try
@@ -1550,6 +1586,8 @@ void RolfTourView::refresh()
                 wall_view_->set_image(image);
             }
             rendered_pose_ = pose;
+            rendered_overland_ = {session_->snapshot().overland_x, session_->snapshot().overland_y,
+                                  session_->snapshot().overland_direction};
             rendered_picture_revision_ = session_->snapshot().picture_revision;
         }
         catch (const std::exception &error)
@@ -1633,6 +1671,13 @@ void RolfTourView::refresh()
     {
         required_node<Button>(*this, name).set_disabled(!completed);
     }
+    const bool overland = s.overland;
+    required_node<Button>(*this, "Left")
+        .set_text(i18n::text(overland ? N_("← West") : N_("← Turn")));
+    required_node<Button>(*this, "Forward")
+        .set_text(i18n::text(overland ? N_("↑ North") : N_("↑ Step")));
+    required_node<Button>(*this, "Right")
+        .set_text(i18n::text(overland ? N_("East →") : N_("Turn →")));
     required_node<Button>(*this, "LeaveShop").set_visible(shopping);
     required_node<LineEdit>(*this, "Answer").set_visible(answer);
     required_node<LineEdit>(*this, "Answer").set_max_length(s.number_input ? 6 : 40);

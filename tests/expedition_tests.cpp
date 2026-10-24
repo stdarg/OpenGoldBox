@@ -779,7 +779,7 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     combat.campaign_party(party);
     combat.encounter(*town.pending_encounter(), 42);
     FightStart start{town.snapshot().pose, town.pending_encounter()->distance, {}};
-    check(start.distance <= open_squares_ahead(town.map(), start.pose),
+    check(town.snapshot().overland || start.distance <= open_squares_ahead(town.map(), start.pose),
           "The monsters are never further away than the party can see");
     for (const auto &unit : combat.combat().snapshot().combatants)
     {
@@ -825,7 +825,14 @@ void settle(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &pa
                   "The route uses only supported events" +
                       (town.script_diagnostics().empty()
                            ? std::string{}
-                           : ": " + town.script_diagnostics().back()));
+                           : ": " + town.script_diagnostics().back() + " (script " +
+                                 std::to_string(s.script_id) + ", area " +
+                                 std::to_string(s.area_id) + " at " + std::to_string(s.pose.x) +
+                                 "," + std::to_string(s.pose.y) +
+                                 (s.overland ? ", wilderness " + std::to_string(s.overland_x) +
+                                                   "," + std::to_string(s.overland_y)
+                                             : std::string{}) +
+                                 ")"));
             return;
         case por::TourPhase::running:
             town.advance(.5);
@@ -855,7 +862,7 @@ void face(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &part
 {
     while (index(town.snapshot().pose.facing) != facing)
     {
-        town.explore(por::ExplorationCommand::turn_right);
+        check(town.explore(por::ExplorationCommand::turn_right), "The party turns");
         settle(town, party);
     }
 }
@@ -900,14 +907,15 @@ void keep_rest_choices(CampaignParty &party)
     }
 }
 
-// Camps where the party stands until nobody living is wounded: a Long Rest when
-// anyone is eligible, otherwise a Short Rest spending Hit Dice. Interruptions
-// are played like any encounter, and the party rests again.
-void recover(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party)
+// Camps where the party stands until `rested` holds: a Long Rest when anyone is
+// eligible, otherwise a Short Rest spending Hit Dice. Interruptions are played
+// like any encounter, and the party rests again.
+void rest_until(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party,
+                const std::function<bool()> &rested, const std::string &goal)
 {
-    for (unsigned tries = 0; party_wounded(*party); ++tries)
+    for (unsigned tries = 0; !rested(); ++tries)
     {
-        check(tries < 40, "The party recovers by camping");
+        check(tries < 40, goal);
         const auto info = party->rest_info(RestKind::long_rest);
         const bool long_rest = std::any_of(info.begin(), info.end(),
                                            [](const auto &member)
@@ -935,6 +943,12 @@ void recover(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &p
         }
         party->finish_short_rest(party->state().short_rest->ticket);
     }
+}
+
+// Camps until nobody living is wounded.
+void recover(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party)
+{
+    rest_until(town, party, [&] { return !party_wounded(*party); }, "The party recovers by camping");
 }
 
 // Breadth-first walk over open edges, through the original movement events.
@@ -1915,9 +1929,12 @@ void heal(CampaignParty &party)
     auto state = party.checkpoint();
     for (auto &member : state.roster)
     {
+        // Through the rules, so a downed member's stable recovery clock ends too.
         if (!member.vitals.dead)
         {
-            member.vitals.hit_points = member.character.sheet().hit_points;
+            party.rule_module().set_hit_points(
+                member.vitals, member.character.sheet(),
+                std::min(member.character.sheet().hit_points, party.hit_point_maximum(member.id)));
         }
     }
     party.restore(std::move(state));
@@ -2081,6 +2098,21 @@ Answer prefer(std::vector<std::string> labels)
         }
         return peaceful(s);
     };
+}
+
+// Steps off a city block's edge onto the wilderness map at the city's western
+// edge (11,28), leaves its menu, and comes back in by `entrance`.
+void out_to_city_edge(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party,
+                      unsigned facing, const std::string &entrance)
+{
+    step(town, party, facing, prefer({"LEAVE"}));
+    const auto &s = town.snapshot();
+    check(s.overland && s.script_id == 26 && s.overland_x == 11 && s.overland_y == 28,
+          "The city's west edge leads onto the wilderness map at (11,28)");
+    check(town.explore(por::ExplorationCommand::north), "Step away from the city");
+    settle(town, party);
+    check(town.explore(por::ExplorationCommand::south), "Step back to the city");
+    settle(town, party, prefer({entrance}));
 }
 
 // Steps once into the Pitt (4,8) from its door, answering with `answer`.
@@ -2644,6 +2676,149 @@ void sokal_keep(const std::filesystem::path &directory)
     std::filesystem::remove_all(folder);
 }
 
+// One step on the wilderness map in `direction` (0 north and on clockwise to
+// 7), played to its end.
+void travel(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party,
+            unsigned direction, const Answer &answer = peaceful)
+{
+    check(town.explore(static_cast<por::ExplorationCommand>(
+              static_cast<unsigned>(por::ExplorationCommand::north) + direction)),
+          "The party sets off across the wilderness");
+    settle(town, party, answer);
+}
+
+// Steps across the wilderness map toward (x,y), diagonally while it can.
+void travel_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party, unsigned x,
+               unsigned y, const Answer &answer = peaceful)
+{
+    for (unsigned steps = 0; steps < 60; ++steps)
+    {
+        const auto &s = town.snapshot();
+        if (!s.overland || (s.overland_x == x && s.overland_y == y))
+        {
+            return;
+        }
+        const int dx = (x > s.overland_x) - (x < s.overland_x),
+                  dy = (y > s.overland_y) - (y < s.overland_y);
+        for (unsigned direction = 0; direction < 8; ++direction)
+        {
+            if (por::overland_dx[direction] == dx && por::overland_dy[direction] == dy)
+            {
+                travel(town, party, direction, answer);
+                break;
+            }
+        }
+    }
+    throw std::runtime_error("The wilderness journey did not arrive");
+}
+
+// The Central Wilderness (docs/audits/central-wilderness.md): the harbor's
+// western boat to the wilderness map once Sokal Keep is freed, its view and a
+// save there, the sea that stops a step, half a day a step, and the city's
+// western edge, whose south entrance leads into the Cadorna Textile House.
+void central_wilderness(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 6500, "test:wilderness-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 5)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    walk_to(town, party, 11, 2);
+    step(town, party, 0, prefer({"WEST"}));
+    check(town.script_variable(por::EclAddress{0x4A01}) == 1,
+          "Once Sokal Keep is freed, the harbor master sells passage west");
+    walk_to(town, party, 15, 1, prefer({"STAY"}));
+    const auto &s = town.snapshot();
+    check(s.overland && s.script_id == 26 && s.overland_x == 7 && s.overland_y == 29,
+          "The western boat lands the party on the wilderness map at (7,29)");
+    const auto view = town.observe_view();
+    check(view.width == 120 && view.height == 120,
+          "The wilderness view shows the 5 x 5 squares around the party");
+    const auto folder = std::filesystem::temp_directory_path() / "opengold-wilderness";
+    std::filesystem::create_directories(folder);
+    const auto save = folder / "central-wilderness.ogs";
+    write_campaign_file(save, encode_campaign(*party, &town, campaign_asset_identity(directory)));
+    const auto loaded = load_expedition(save, directory);
+    check(loaded.town.snapshot().overland && loaded.town.snapshot().overland_x == 7 &&
+              loaded.town.snapshot().overland_y == 29,
+          "A save on the wilderness map loads back there");
+    std::filesystem::remove_all(folder);
+    const auto minutes = party->state().time_minutes;
+    travel(town, party, 4);
+    check(town.snapshot().overland_y == 29 && party->state().time_minutes == minutes,
+          "The sea stops a step south, and no time passes");
+    travel(town, party, 2);
+    check(town.snapshot().overland_x == 8 && party->state().time_minutes == minutes + 720,
+          "A step east takes half a day");
+    // A roaming group met on the wilderness map is fought on a field grown
+    // from the terrain.
+    const auto fights = fights_started.size();
+    for (unsigned n = 0; n < 200 && fights_started.size() == fights; ++n)
+    {
+        travel(town, party, n % 2 ? 4 : 0, prefer({"Fight"}));
+        recover(town, party);
+    }
+    check(fights_started.size() == fights + 1 && last_encounter &&
+              last_encounter->field.tiles.size() == 1250,
+          "A wilderness group is fought on a wilderness battlefield");
+    travel_to(town, party, 8, 28);
+    // The grove and the ruined huts, about one wilderness step in 420: a
+    // step's arrival rolls RANDOM 19 for a meeting (0 meets one) and then
+    // RANDOM 20 for its kind (20 is the grove or the huts). The dice that
+    // bring them are found on a copy of the script machine, then rolled.
+    std::optional<std::uint32_t> grove;
+    for (std::uint32_t seed = 1; seed < 100000 && !grove; ++seed)
+    {
+        auto dice = opengold::test::TourAccess::machine(town);
+        dice.seed_random(seed);
+        if (dice.engine_random(20) == 0 && dice.engine_random(21) == 20)
+        {
+            grove = seed;
+        }
+    }
+    check(grove.has_value(), "Some dice lead to the grove or the huts");
+    opengold::test::TourAccess::seed_dice(town, *grove);
+    travel(town, party, 0, prefer({"ENTER", "INVESTIGATE"}));
+    check(!town.snapshot().overland && town.snapshot().area_id == 26,
+          "The grove or the huts are a 3D area of their own");
+    // The squares at its edge (event 10) lead back out.
+    std::optional<std::pair<unsigned, unsigned>> border;
+    for (unsigned y = 0; y < 16 && !border; ++y)
+    {
+        for (unsigned x = 0; x < 16 && !border; ++x)
+        {
+            if (town.map().at(x, y).event_number() == 10 &&
+                reachable(town.map(), town.snapshot().pose, x, y))
+            {
+                border = {x, y};
+            }
+        }
+    }
+    check(border.has_value(), "The grove or the huts have a way out");
+    // The first edge square the walk reaches leads out.
+    try
+    {
+        walk_to(town, party, border->first, border->second, peaceful, true, true);
+    }
+    catch (const std::runtime_error &)
+    {
+        check(town.snapshot().overland, "The walk ends only on leaving the grove or the huts");
+    }
+    check(town.snapshot().overland && town.snapshot().overland_x == 8 &&
+              town.snapshot().overland_y == 27,
+          "Leaving the grove or the huts returns the party to the wilderness map");
+    travel_to(town, party, 11, 28, prefer({"SOUTH"}));
+    check(town.snapshot().area_id == 2 && !town.snapshot().overland,
+          "The city's western edge leads south into the Cadorna Textile House");
+}
+
 // Mendor's Library (docs/audits/mendors-library.md), east of the Cadorna
 // Textile House: entered by the house's east edge and saved there, the
 // wizard-locked doors opened with Knock, a book of history found by looking in
@@ -2670,8 +2845,11 @@ void mendors_library(Expedition &trip, const std::filesystem::path &folder,
         return town.script_variable(por::EclAddress{0x4A31});
     };
     const auto fight_them = prefer({"Bash", "COMBAT", "Fight", "YES"});
-    // The library's doors are wizard locked; Knock opens the north one.
+    // The library's doors are wizard locked; Knock opens the north one. Camp
+    // until the wizard can cast it again, whatever fights came before.
     walk_to(town, party, 8, 1);
+    rest_until(town, party, [&] { return party->can_try_door(DoorMethod::knock); },
+               "The wizard regains a slot for Knock by camping");
     face(town, party, 2);
     town.explore(por::ExplorationCommand::forward);
     settle(town, party, prefer({"Knock"}));
@@ -2763,7 +2941,9 @@ void cadorna_textile_house(Expedition &trip, const std::filesystem::path &folder
     opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AE4}, 9);
     const auto west = edge_opening(town.map(), town.snapshot().pose, 3);
     walk_to(town, party, west.x, west.y);
-    refused_exit(town, party, 3, "the wilderness");
+    out_to_city_edge(town, party, 3, "SOUTH");
+    check(town.snapshot().area_id == 2 && !town.snapshot().overland,
+          "The textile house's west edge leads onto the wilderness map and back by the south entrance");
 
     // A fighter who climbs down the dry well falls 15d6; the party is put back
     // as it was after.
@@ -2913,7 +3093,9 @@ void podol_plaza(Expedition &trip, const std::filesystem::path &folder,
     walk_to(town, party, 4, 0, peaceful);
     refused_exit(town, party, 0, "Stojanow Gate");
     walk_to(town, party, 0, 4, peaceful);
-    refused_exit(town, party, 3, "the wilderness");
+    out_to_city_edge(town, party, 3, "NORTH");
+    check(town.snapshot().area_id == 18 && !town.snapshot().overland,
+          "Podol Plaza's west edge leads onto the wilderness map and back by the north entrance");
     // Off the mission, a roaming group comes on one plaza step in 26; the
     // party flees it or fights. Nine wins in one visit clear the plaza; the
     // count (0x4A34) starts at eight so one fight stands for the first eight.
@@ -3804,6 +3986,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         slums_parley_outcomes(save, directory);
         slums_flight(save, directory);
         sokal_keep(directory);
+        central_wilderness(directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -3898,6 +4081,12 @@ int main(int argc, char **argv)
             step(trip.town, trip.party, 1);
             mendors_library(trip, folder, directory);
             std::filesystem::remove_all(folder);
+            return 0;
+        }
+        // Plays the Central Wilderness alone with a new party.
+        if (argc == 2 && std::string_view(argv[1]) == "--wilderness")
+        {
+            central_wilderness(directory);
             return 0;
         }
         // Plays Sokal Keep alone with a new party.

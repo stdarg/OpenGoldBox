@@ -43,6 +43,16 @@ Both work in every window. Neither advances the splash screens.
 | Enter | The bottom-right button: Continue, Choose, Submit, Buy or Leave temple. |
 | Any key | Leave the monster close-up and start the fight. |
 
+### On the wilderness map
+
+| Key | Does |
+| --- | --- |
+| Up / Right / Down / Left | Step north, east, south or west (half a day). |
+| Home / Page Up / End / Page Down | Step northwest, northeast, southwest or southeast. |
+| Keypad 7 / 9 / 1 / 3 | The same diagonal steps. |
+
+The three movement buttons step west, north and east there.
+
 These keys do nothing while the Inventory, the Cast menu or the Camp dialog is
 open. While an answer is being typed, or while several choices are on screen,
 only Enter works. M works only when the Cast button does.

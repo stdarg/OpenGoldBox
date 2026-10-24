@@ -242,6 +242,9 @@ inline constexpr std::array effect_labels{
                 "Hit Point maximum lowered by {value} until Greater Restoration.",
                 EffectValue::number},
     EffectLabel{
+        EffectKind::attached, "Attached",
+        "Clings to a creature, draining it at the start of each of its turns; it cannot attack while attached."},
+    EffectLabel{
         EffectKind::petrifying, "Restrained (Petrifying Gaze)",
         "Speed 0; turning to stone. A Constitution save at the end of its next turn ends it; a failure leaves it Petrified."},
     EffectLabel{EffectKind::life_drained, "Hit Point maximum lowered (Life Drain)",

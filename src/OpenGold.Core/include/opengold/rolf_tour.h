@@ -3,6 +3,7 @@
 
 #include "opengold/ecl_machine.h"
 #include "opengold/map_catalog.h"
+#include "opengold/overland.h"
 #include "opengold/formats.h"
 #include "opengold/wall_art.h"
 #include "opengold/wall_art_replacements.h"
@@ -105,6 +106,13 @@ struct PhlanResources
     std::array<unsigned, 3> pieces{};
     std::vector<std::uint8_t> combat_archive;
     std::vector<Image> terrain_art;
+    // On the town only: the wilderness from START.EXE, SQRPACI's 256 overland
+    // tiles, the party's overland icon and the wilderness battlefield art
+    // (WILDCOM, then RANDCOM). Null without START.EXE.
+    std::shared_ptr<const OverlandWorld> overland;
+    std::vector<Image> overland_tiles;
+    Image party_icon;
+    std::vector<Image> wilderness_art;
     // The Combat Sprite Catalog's export (#274), on the town only: creatures'
     // names, gear and new art. Null without one.
     std::shared_ptr<const MonsterBundle> monsters;
@@ -149,6 +157,10 @@ struct TourSnapshot
     // This step's checks against a locked door and whether it opened.
     std::vector<DoorCheck> door_checks;
     bool door_opened{};
+    // On the wilderness map: the party's square in its window's coordinates
+    // and the direction it last moved, 0 north and on clockwise to 7.
+    bool overland{};
+    unsigned overland_x{}, overland_y{}, overland_direction{};
 };
 enum class ExplorationCommand
 {
@@ -157,7 +169,16 @@ enum class ExplorationCommand
     turn_around,
     forward,
     look,
-    camp
+    camp,
+    // On the wilderness map, a step in one of eight directions.
+    north,
+    northeast,
+    east,
+    southeast,
+    south,
+    southwest,
+    west,
+    northwest
 };
 
 // Original tour followed by the New Phlan movement/search/script scheduler.
@@ -442,6 +463,7 @@ class RolfTourSession
         unsigned script{}, area{};
         std::map<unsigned, std::bitset<256>> visited_areas, seen_areas;
         unsigned rest_checks{};
+        unsigned travel_mode{};
         GeoMap map;
         std::vector<PendingLoot> pending_loot;
         TourSnapshot snapshot;
@@ -455,6 +477,18 @@ class RolfTourSession
     unsigned current_script_{};
     PartySlot selected_character_{};
     unsigned current_area_{};
+    // The original's travel mode: 1 in a 3D area, 2-4 on the west, central or
+    // east window of the wilderness map, where the party's square is the
+    // script's 0x49C3/0x49C4 and it steps in eight directions.
+    unsigned travel_mode_{1};
+    [[nodiscard]] bool overland() const noexcept
+    {
+        return travel_mode_ > 1;
+    }
+    void update_travel_mode();
+    // Steps the party one wilderness square in its direction, unless the
+    // terrain stops it; false when it stays.
+    bool overland_step();
     std::map<unsigned, std::bitset<256>> visited_areas_;
     std::map<unsigned, std::bitset<256>> seen_areas_;
     std::vector<rules::Participant> staged_enemies_;

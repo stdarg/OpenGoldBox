@@ -273,6 +273,52 @@ creature mad-man 16 7 1 30 3 1 6 1 3 1 6 1 20 60 0 0 0 1 0
 saves mad-man 1 1 1 0 0 0
 damage_types mad-man piercing piercing
 perception mad-man 2
+# The Central Wilderness (docs/audits/central-wilderness.md, WILD-1), with the
+# original's Hit Points. Mutant lizard men are Lizardfolk; bandits, nomads and
+# merchants the Bandit; their aides the Bandit Captain without its Pistol and
+# Parry, as Norris is.
+creature mutant-lizardfolk 15 18 0 30 4 1 6 2 4 1 6 2 30 120 0 0 0 1 0
+saves mutant-lizardfolk 2 0 1 -2 1 -2
+damage_types mutant-lizardfolk piercing piercing
+multiattack mutant-lizardfolk 2
+perception mutant-lizardfolk 3
+creature wilderness-bandit 12 6 1 30 3 1 6 1 3 1 8 1 80 320 0 0 0 1 0
+saves wilderness-bandit 0 1 1 0 0 0
+damage_types wilderness-bandit slashing piercing
+creature bandit-captain 15 18 3 30 5 1 6 3 0 0 0 0 0 0 0 0 0 1 0
+saves bandit-captain 4 5 2 2 2 2
+damage_types bandit-captain slashing piercing
+multiattack bandit-captain 2
+# Stirge: Proboscis, which attaches (attach creature count sides type: the
+# damage it drains at the start of each of its turns while attached); Fly 40.
+creature stirge 13 5 3 40 5 1 6 3 0 0 0 0 0 0 0 0 0 1 0
+saves stirge -3 3 0 -4 -1 -2
+damage_types stirge piercing piercing
+size stirge small
+type stirge monstrosity
+flies stirge
+attach stirge 2 4 necrotic
+# Drider: three attacks, Foreleg or Poison Burst (120 feet); Magic of the
+# Spider Queen as a Bonus Action, Recharge 5-6, save DC 14 (casting bonus 6).
+creature drider 19 36 4 30 7 2 8 4 6 3 6 3 120 120 0 0 6 1 0
+saves drider 3 4 4 1 3 1
+damage_types drider piercing poison
+size drider large
+type drider monstrosity
+perception drider 6
+multiattack drider 3
+multiattack_ranged drider
+sunlight_sensitivity drider
+web_walker drider
+innate drider Magic_of_the_Spider_Queen recharge5 bonus darkness faerie_fire web
+# The displacer beast, which SRD 5.2.1 lacks, on the Owlbear's stat block: two
+# Rends.
+creature displacer-beast 13 30 1 40 7 2 8 5 0 0 0 0 0 0 0 0 0 1 0
+saves displacer-beast 5 1 3 -4 1 -2
+damage_types displacer-beast slashing slashing
+size displacer-beast large
+type displacer-beast monstrosity
+multiattack displacer-beast 2
 # Summon Dragon's Draconic Spirit (SRD 5.2.1 p. 166), one stat block per
 # spell level: AC 14 + the level, 50 Hit Points and 10 more per level above 5,
 # Rend 1d6 + 4 + the level Piercing (reach 10 feet), half the level in Rends.

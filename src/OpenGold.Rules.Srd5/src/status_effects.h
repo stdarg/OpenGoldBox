@@ -500,9 +500,12 @@ enum class EffectKind : unsigned
     // A Basilisk's Petrifying Gaze: Restrained until a Constitution save
     // against `dc` at the end of its next turn ends it or turns it to stone.
     petrifying = 202,
+    // A Stirge clinging to the creature that is its source; it drains that
+    // creature at the start of each of its turns and cannot attack.
+    attached = 203,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = petrifying
+    last = attached
 };
 
 // Magic Circle's creature types, by `dc`.

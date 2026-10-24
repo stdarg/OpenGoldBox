@@ -795,6 +795,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::violet:
     case EffectKind::word_stunned:
     case EffectKind::petrifying:
+    case EffectKind::attached:
         return 60000; // 1 minute
     case EffectKind::giant_strength:
     case EffectKind::enhance_ability:
