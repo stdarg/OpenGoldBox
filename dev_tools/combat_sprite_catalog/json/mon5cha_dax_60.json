@@ -1,5 +1,5 @@
 {
-  "description": "A large snake with a coiled body and striking head; no humanoid gear is implied. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description": "A large snake with a coiled body and striking head; no humanoid gear is implied. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded. Its combat art lies low along its two-square footprint: the body stretched to the right across both squares, the head raised less than one square high.",
   "humanoid_size": "na",
   "sprite_size": {"height_squares": 1, "width_squares": 2},
   "description_sources": [
@@ -7,7 +7,7 @@
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"
   ],
   "equipment": [],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "GIANT SNAKE",
   "source": {
