@@ -121,6 +121,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/combat_body_catalog.cpp
     src/OpenGold.Core/src/character_creator.cpp
     src/OpenGold.Core/src/character_pool.cpp
+    src/OpenGold.Core/src/companions.cpp
     src/OpenGold.Core/src/character.cpp
     src/OpenGold.Core/src/campaign_party.cpp
     src/OpenGold.Core/src/ecl_party_host.cpp

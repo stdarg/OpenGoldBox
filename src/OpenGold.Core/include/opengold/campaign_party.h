@@ -21,6 +21,10 @@ using MemberId = rules::EntityId;
 // A place in the party's marching order: 0-5 hold PCs and 6-7 hold NPCs. A slot
 // is not a MemberId, because the member in a slot changes as the party changes
 // (Effective C++ Item 18).
+// Scripts scan party slots 0 to 8 (Skullcrusher's search, ECL4:2 0xAA95);
+// no member fills slot 8, so it always reads as empty.
+inline constexpr unsigned ecl_scanned_slots = 8;
+
 struct PartySlot
 {
     unsigned index{};
@@ -288,6 +292,12 @@ class CampaignParty
     // An attack from outside combat, such as an arrow trap, on a random active
     // conscious member; nothing when none is conscious.
     std::optional<HazardHit> hazard_attack(const rules::HazardAttack &attack);
+    // The same on an active member a script chose, such as a fall down a well;
+    // nothing when that member is already down.
+    std::optional<rules::HazardAttackResult> hazard_attack(MemberId target,
+                                                           const rules::HazardAttack &attack);
+    // The chance in percent that the member climbs a sheer wall (CADORNA-1).
+    [[nodiscard]] unsigned climbing_chance(MemberId id) const;
     // The member's current Hit Point maximum, raised by Aid.
     [[nodiscard]] int hit_point_maximum(MemberId id) const;
     // The member's status effects, such as Aid or a used Relentless Endurance.

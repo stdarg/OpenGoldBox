@@ -63,6 +63,9 @@ struct CampaignEncounter
     // A duel (the original's CALL 0x8001): only this member fights; 0 means
     // the whole party.
     rules::EntityId champion{};
+    // The fight is by day, 06:00 to 17:59, so squares open to the sky are in
+    // sunlight (Sunlight Sensitivity).
+    bool daylight{};
 };
 } // namespace opengold
 #endif

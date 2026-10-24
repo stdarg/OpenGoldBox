@@ -1,6 +1,7 @@
 // The Slums set encounters' creatures (docs/audits/cluebook-check.md): the
 // Hobgoblin Warrior's poisoned arrows, the Ogre, the Troll's three Rends and
-// Regeneration, and the level-3 magic-user; and Podol Plaza's buccaneer.
+// Regeneration, and the level-3 magic-user; Podol Plaza's buccaneer; and the
+// Cadorna Textile House's scorpions and Wight, and Sunlight Sensitivity.
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <filesystem>
@@ -196,7 +197,7 @@ void troll_delay_saved()
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1) && unit(*c, 1).hit_points == 0, "A hero fells the Troll");
     const auto checkpoint = c->save();
-    check(checkpoint.starts_with("OGCOMBAT 68 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 69 "), "Checkpoints use the current format");
     auto restored = module->restore(checkpoint);
     check(restored->save() == checkpoint, "A downed Troll's delay survives a checkpoint");
     check(round_troll_gets_up(*restored) == round_troll_gets_up(*c),
@@ -211,7 +212,7 @@ void troll_burns()
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1) && unit(*c, 1).hit_points == 0, "Fire fells the Troll");
     const auto checkpoint = c->save();
-    check(checkpoint.starts_with("OGCOMBAT 68 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 69 "), "Checkpoints use the current format");
     auto restored = module->restore(checkpoint);
     check(restored->save() == checkpoint, "A blocked Regeneration survives a checkpoint");
     check(submit(*restored, "end", first) && submit(*restored, "end", second),
@@ -390,6 +391,144 @@ void held_weapons()
     check(restored->save() == checkpoint && unit(*restored, 1).melee_rating == 16,
           "A checkpoint keeps the weapons a creature holds");
 }
+// A Giant Scorpion makes two Claw attacks, then its Sting, whose hit adds
+// Poison damage. The Large Scorpion is its stat block with the original's 10
+// Hit Points.
+void scorpion_stings()
+{
+    const auto module = rules();
+    for (std::uint64_t seed = 1; seed < 40; ++seed)
+    {
+        auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                                 {{1, "giant-scorpion", "Monster", Side::opposition, {1, 1}},
+                                  {2, "target", "Hero", Side::party, {2, 1}}}},
+                                seed);
+        turn_of(*c, 1);
+        check(submit(*c, "melee", 1, 2) && count_logged(*c, "Monster -> Hero") == 3,
+              "The scorpion makes three attacks");
+        const auto log = c->snapshot().log();
+        if (log.back().find("Monster -> Hero") != std::string::npos ||
+            count_logged(*c, "Poison damage") == 0)
+        {
+            continue;
+        }
+        check(count_logged(*c, "Poison damage") == 1 &&
+                  log.back().find("Hero takes") != std::string::npos,
+              "Only the Sting, the last attack, adds Poison damage");
+        auto large = fight(*module, "large-scorpion", "target");
+        check(unit(*large, 1).max_hit_points == 10, "The Large Scorpion has 10 Hit Points");
+        return;
+    }
+    check(false, "Find a Sting that hits");
+}
+
+// A Wight trades one of its two melee attacks for Life Drain: on a failed
+// Constitution save (DC 13), Necrotic damage that lowers the Hit Point maximum
+// by as much. At range it shoots its Necrotic Bow twice.
+void wight_drains_life()
+{
+    const auto module = rules();
+    bool drained = false;
+    for (std::uint64_t seed = 1; seed < 40 && !drained; ++seed)
+    {
+        auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                                 {{1, "wight", "Monster", Side::opposition, {1, 1}},
+                                  {2, "target", "Hero", Side::party, {2, 1}}}},
+                                seed);
+        turn_of(*c, 1);
+        check(submit(*c, "melee", 1, 2) &&
+                  count_logged(*c, "Monster uses Life Drain on Hero.") == 1 &&
+                  count_logged(*c, "Monster -> Hero") == 1,
+              "Life Drain replaces one of the Wight's two attacks");
+        const auto lowered = count_logged(*c, "Hero's Hit Point maximum drops by");
+        drained = lowered == 1 && unit(*c, 2).max_hit_points < 1000 &&
+                  count_logged(*c, "Necrotic damage") >= 1;
+    }
+    check(drained, "A failed save lowers the Hit Point maximum");
+    auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                             {{1, "wight", "Monster", Side::opposition, {1, 1}},
+                              {2, "target", "Hero", Side::party, {8, 1}}}},
+                            3);
+    turn_of(*c, 1);
+    check(submit(*c, "ranged", 1, 2) && count_logged(*c, "Monster -> Hero") == 2 &&
+              count_logged(*c, "Life Drain") == 0,
+          "At range the Wight shoots twice, without Life Drain");
+}
+
+// Whether `actor` is offered `verb` at any target.
+bool offered_any(const CombatSession &c, std::string_view verb, EntityId actor)
+{
+    const auto commands = c.legal_commands();
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb && command.actor == actor;
+                       });
+}
+
+// Grishnak, the SRD Priest, casts Spirit Guardians once a day with her Action,
+// spending no slot, and Divine Aid's spells (Bless among them) as a Bonus
+// Action three times a day.
+void grishnak_casts()
+{
+    const auto module = rules();
+    auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                             {{1, "grishnak", "Monster", Side::opposition, {1, 1}},
+                              {2, "target", "Hero", Side::party, {2, 1}}}},
+                            9);
+    turn_of(*c, 1);
+    check(offered_any(*c, "spirit_guardians_innate", 1) && offered_any(*c, "bless_innate_bonus", 1),
+          "Grishnak is offered Spirit Guardians and Divine Aid's Bless");
+    check(submit(*c, "spirit_guardians_innate", 1) &&
+              count_logged(*c, "Spirit guardians flit around Monster.") == 1,
+          "Grishnak casts Spirit Guardians with her Action");
+    check(offered_any(*c, "bless_innate_bonus", 1) && !offered_any(*c, "melee", 1),
+          "Her Bonus Action is left for Divine Aid; her Action is spent");
+    check(submit(*c, "end", 1), "Grishnak ends her turn");
+    turn_of(*c, 1);
+    check(!offered_any(*c, "spirit_guardians_innate", 1),
+          "Spirit Guardians is cast once a day");
+    for (unsigned day_use = 0; day_use < 3; ++day_use)
+    {
+        check(offered_any(*c, "healing_word_innate_bonus", 1) ||
+                  offered_any(*c, "bless_innate_bonus", 1),
+              "Divine Aid has a use left");
+        const auto verb = offered_any(*c, "bless_innate_bonus", 1) ? "bless_innate_bonus"
+                                                                    : "healing_word_innate_bonus";
+        // Bless takes up to three creatures, then is cast.
+        check(submit(*c, verb, 1) && (!offered_any(*c, "spell_cast", 1) || submit(*c, "spell_cast", 1)),
+              "Grishnak uses Divine Aid");
+        check(submit(*c, "end", 1), "Grishnak ends her turn");
+        turn_of(*c, 1);
+    }
+    check(!offered_any(*c, "bless_innate_bonus", 1) &&
+              !offered_any(*c, "healing_word_innate_bonus", 1),
+          "Divine Aid is used three times a day");
+}
+
+// Sunlight Sensitivity: a kobold on a square open to the sky by day attacks
+// with Disadvantage; in shade or at night it does not.
+void sunlight_sensitivity()
+{
+    const auto module = rules();
+    const auto attack = [&](bool daylight, bool sky)
+    {
+        auto c = module->create({{10, 4, std::vector<Terrain>(40), std::vector<bool>(40, sky)},
+                                 {{1, "slums-kobold", "Monster", Side::opposition, {1, 1}},
+                                  {2, "target", "Hero", Side::party, {2, 1}}},
+                                 1,
+                                 100,
+                                 0,
+                                 daylight},
+                                5);
+        turn_of(*c, 1);
+        check(submit(*c, "melee", 1, 2), "The kobold attacks");
+        return count_logged(*c, "(disadvantage)") == 1;
+    };
+    check(attack(true, true), "A kobold in sunlight attacks with Disadvantage");
+    check(!attack(true, false) && !attack(false, true),
+          "In shade or at night a kobold attacks normally");
+}
 } // namespace
 
 int main()
@@ -406,6 +545,10 @@ int main()
         downed_square_stood_on();
         hobgoblin_arrows();
         buccaneer_enthralls();
+        scorpion_stings();
+        wight_drains_life();
+        sunlight_sensitivity();
+        grishnak_casts();
         held_weapons();
         std::cout << "Slums creature tests passed\n";
         return 0;

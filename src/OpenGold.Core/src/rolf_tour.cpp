@@ -289,7 +289,27 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                                        {6, "slums-hobgoblin", 100, 100},
                                        {7, "slums-hobgoblin", 100, 200},
                                        {8, "ogre", 450, 450},
-                                       {41, "buccaneer", 200, 200}}}};
+                                       {41, "buccaneer", 200, 200}}},
+                           // Cadorna Textile House
+                           // (docs/audits/cadorna-textile-house.md, CADORNA-1):
+                           // its MON4CHA records 6-8 are the Slums' MON2CHA
+                           // ones; the Large Scorpion and the Wight keep their
+                           // stat blocks' XP with the original's Hit Points.
+                           AreaSource{2,
+                                      4,
+                                      {{2, {1, 3, 20}}},
+                                      {{6, "slums-hobgoblin", 100, 100},
+                                       {7, "slums-hobgoblin", 100, 200},
+                                       {8, "ogre", 450, 450},
+                                       {18, "large-scorpion", 700, 700},
+                                       {20, "wight", 700, 700},
+                                       {27, "skullcrusher", 100, 100},
+                                       {28, "grishnak", 450, 450},
+                                       {34, "skeleton", 50, 50},
+                                       {35, "zombie", 50, 50},
+                                       {38, "giant-frog", 50, 50},
+                                       {39, "giant-scorpion", 700, 700},
+                                       {72, "ghoul", 200, 200}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;

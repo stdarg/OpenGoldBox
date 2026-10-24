@@ -3,6 +3,7 @@
 #include "opengold/ecl_party_host.h"
 #include "opengold/scroll_key.h"
 #include "opengold/authored_items.h"
+#include "opengold/companions.h"
 #include <algorithm>
 #include <set>
 
@@ -203,15 +204,26 @@ Image close_up_portrait(const PhlanResources &resources, unsigned head_id, unsig
     return portrait;
 }
 
+// City Hall's script (ECL3:8), and the Cadorna Textile House's quest cells it
+// reads: the family treasure (1 sealed, 128 opened) and its reward slot.
+constexpr unsigned city_hall_script = 8;
+constexpr EclAddress cadorna_box{0x4AC8}, cadorna_payment{0x4AB8};
+
+// The minute of the day on the campaign clock, which starts at noon.
+std::uint64_t clock_minute_of_day(std::uint64_t minutes)
+{
+    return (minutes % 1440 + 720) % 1440;
+}
+
 // The areas next to the loaded ones that the game cannot enter yet.
 std::string_view area_beyond(unsigned script)
 {
     switch (script)
     {
-    case 2:
-        return "Cadorna Textile House";
     case 9:
         return "Stojanow Gate";
+    case 15:
+        return "Mendor's Library";
     case 26:
         return "the wilderness";
     default:
@@ -245,7 +257,10 @@ void RolfTourSession::configure_town()
 {
     // Campaign flags, area-local flags, host registers and scratch strings have
     // explicit lifetimes. These are logical VM cells, never native addresses.
-    for (std::uint16_t a = 0x49C3; a <= 0x4AFF; ++a)
+    // The Cadorna Textile House's well searches 0x4900-0x497F for a falling
+    // charm on the climber (ECL4:2 0xACF5); no script writes there, so it
+    // finds none.
+    for (std::uint16_t a = 0x4900; a <= 0x4AFF; ++a)
     {
         machine_.bind_variable(EclAddress{a}, 0);
     }
@@ -310,7 +325,7 @@ EclHostReply RolfTourSession::clock_reply() const
         return reply;
     }
     const auto minutes = campaign_->state().time_minutes;
-    const auto minute_of_day = (minutes % 1440 + 720) % 1440;
+    const auto minute_of_day = clock_minute_of_day(minutes);
     const auto days = minutes / 1440 + (minutes % 1440 + 720) / 1440;
     reply.writes = {{ecl_clock_minute_ones, static_cast<std::uint16_t>(minute_of_day % 10)},
                     {ecl_clock_minute_tens, static_cast<std::uint16_t>((minute_of_day % 60) / 10)},
@@ -1819,6 +1834,36 @@ std::string RolfTourSession::shoot_arrows(unsigned arrows, const rules::HazardAt
     return report;
 }
 
+std::string RolfTourSession::fall(unsigned dice, unsigned sides, int bonus)
+{
+    const auto id = campaign_->state().slots.at(selected_character_.index);
+    if (!id)
+    {
+        throw EclError("A fall needs a chosen member");
+    }
+    rules::HazardAttack landing{0, dice, sides, bonus, "bludgeoning"};
+    landing.automatic = true;
+    const auto result = campaign_->hazard_attack(id, landing);
+    if (!result)
+    {
+        return {};
+    }
+    const auto &member = campaign_->member(id);
+    const auto &name = member.character.sheet().name;
+    auto report = "\n" + name + " takes " + std::to_string(result->damage) + " damage.";
+    if (member.vitals.dead)
+    {
+        report += " " + name + " dies.";
+    }
+    else if (!result->death_saves.empty())
+    {
+        report += " " + name +
+                  (member.vitals.hit_points ? " falls, then regains 1 HP."
+                                            : " falls unconscious and is stable.");
+    }
+    return report;
+}
+
 bool RolfTourSession::handle_town_host(const EclRequest &request)
 {
     const auto op = request.instruction->opcode;
@@ -2100,14 +2145,29 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 54:
     {
+        // ADD NPC names a record of the area's MONnCHA archive: New Phlan's is
+        // MON3CHA, whose record 24 has no conversion.
         read_character();
         reply = character_reply(selected_character_);
-        const auto found = town_->npc_profiles.find(arg(0));
-        if (found == town_->npc_profiles.end() || arg(0) == 24)
+        const unsigned bank = current_area_ ? area_resources().bank : 3;
+        const auto &profiles = current_area_ ? area_resources().npc_profiles : town_->npc_profiles;
+        std::optional<Character> companion;
+        if (const auto found = profiles.find(arg(0));
+            found != profiles.end() && !(bank == 3 && arg(0) == 24))
+        {
+            companion = found->second;
+        }
+        else if (companion_rules_)
+        {
+            companion = original_companion(bank, arg(0), *companion_rules_,
+                                           campaign_->rule_module());
+        }
+        if (!companion)
         {
             throw EclError("NPC needs an explicit supported conversion/allegiance profile");
         }
-        campaign_->recruit("por:MON3CHA:" + std::to_string(arg(0)), found->second, arg(1));
+        campaign_->recruit("por:MON" + std::to_string(bank) + "CHA:" + std::to_string(arg(0)),
+                           std::move(*companion), arg(1));
         break;
     }
     case 39:
@@ -2169,6 +2229,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 p.facing,
                 script_surprise(machine_.variable(ecl_encounter_surprise))};
             encounter_->party_resting = event_stage_ == EventStage::camp_interrupted;
+            const auto hour = clock_minute_of_day(campaign_->state().time_minutes) / 60;
+            encounter_->daylight = hour >= 6 && hour < 18;
             if (std::exchange(duel_, false))
             {
                 encounter_->champion = campaign_->state().slots.at(selected_character_.index);
@@ -2272,6 +2334,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         reply.writes = {{EclAddress{0x49F2}, static_cast<std::uint16_t>(current_script_)},
                         {ecl_script_bank, static_cast<std::uint16_t>(bank)}};
+        // Cadorna's payment (CADORNA-1): the clerk's reward slot 18 pays for the
+        // family treasure brought back sealed, which no original script sets.
+        if (arg(0) == city_hall_script && machine_.variable(cadorna_box) == 1 &&
+            machine_.variable(cadorna_payment) == 0)
+        {
+            reply.writes.push_back({cadorna_payment, 254});
+        }
         current_script_ = arg(0);
         snapshot_.script_id = current_script_;
         transition_ = true;
@@ -2338,14 +2407,20 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     case 46:
     {
         // Arrow volleys: arg(0) arrows of arg(1)d arg(2) + arg(3). A high bit
-        // marks the original's other forms (every member, a saving throw).
-        if (!campaign_ || (arg(0) & 0x80) || (arg(4) & 0x80))
+        // marks the original's other forms (coab CMD_Damage); of those, only
+        // the dice dealt to the member the script chose, with no saving
+        // throw, is supported: the Cadorna well's fall.
+        const bool volley = !(arg(0) & 0x80) && !(arg(4) & 0x80);
+        const bool chosen_member = (arg(0) & 0xC0) == 0x80 && (arg(4) & 0x87) == 0x80;
+        if (!campaign_ || (!volley && !chosen_member))
         {
             throw EclError("Unsupported DAMAGE form");
         }
         read_character();
-        snapshot_.dialogue += shoot_arrows(arg(0), {hidden_archer_attack_bonus, arg(1), arg(2),
-                                                    static_cast<int>(arg(3)), "piercing"});
+        snapshot_.dialogue +=
+            volley ? shoot_arrows(arg(0), {hidden_archer_attack_bonus, arg(1), arg(2),
+                                           static_cast<int>(arg(3)), "piercing"})
+                   : fall(arg(1), arg(2), static_cast<int>(arg(3)));
         damage_request_ = request.id;
         snapshot_.phase = TourPhase::awaiting_continue;
         snapshot_.choices = {"Continue"};

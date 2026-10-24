@@ -471,8 +471,9 @@ struct Battlefield
 {
     int width{}, height{};
     std::vector<Terrain> terrain;
-    // Squares with ordinary plants, for Plant Growth: those open to the sky in
-    // the original's map. Empty means none.
+    // Squares open to the sky in the original's map: they have ordinary plants,
+    // for Plant Growth, and sunlight by day (Encounter::daylight). Empty means
+    // none.
     std::vector<bool> plants;
     [[nodiscard]] bool contains(Cell p) const noexcept;
     // Outside the board, or past a short terrain list, is an obstacle.
@@ -549,6 +550,10 @@ struct Encounter
     unsigned morale{100};
     // Gold coins in the party purse, for offerings such as Revivify's.
     unsigned party_gold{};
+    // The fight is by day: a creature on a square open to the sky (`plants`)
+    // is in sunlight, where Sunlight Sensitivity gives Disadvantage on attack
+    // rolls and ability checks.
+    bool daylight{};
 };
 
 struct Identity
@@ -895,6 +900,12 @@ class RulesModule
                                                              std::string_view skill) const = 0;
     // Rolls that check outside combat, advancing the campaign service random
     // state. The state's conditions, such as Poisoned, can hinder it.
+    // The chance in percent that the member climbs a sheer wall without rope,
+    // such as the Cadorna Textile House's dry well: a Rogue wearing no armor or
+    // Light armor makes a Strength (Athletics) check against DC 15; anyone
+    // else cannot (CADORNA-1).
+    [[nodiscard]] virtual unsigned climbing_chance(const CharacterSheet &, const VitalState &,
+                                                   std::span<const std::string> gear) const = 0;
     [[nodiscard]] virtual AbilityCheckRoll
     roll_ability_check(const CharacterSheet &, const VitalState &,
                        std::span<const std::string> gear, Ability ability, std::string_view skill,

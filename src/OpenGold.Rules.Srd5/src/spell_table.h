@@ -3065,6 +3065,10 @@ inline constexpr std::string_view natural_suffix = "_natural";
 inline constexpr std::string_view item_suffix = "_item";
 // The same, used as a Bonus Action with a Thief's Fast Hands.
 inline constexpr std::string_view item_bonus_suffix = "_item_bonus";
+// A monster's innate spell (its stat block's `innate` rows): a daily use, not a
+// slot, cast with the Action, or with a Bonus Action (a Priest's Divine Aid).
+inline constexpr std::string_view innate_suffix = "_innate";
+inline constexpr std::string_view innate_bonus_suffix = "_innate_bonus";
 
 // Whether a verb uses a carried item, with the Action or a Bonus Action.
 inline constexpr bool item_verb(std::string_view verb)
@@ -3119,6 +3123,14 @@ inline constexpr std::string_view without_cast_suffix(std::string_view verb)
     else if (verb.ends_with(item_bonus_suffix))
     {
         verb.remove_suffix(item_bonus_suffix.size());
+    }
+    else if (verb.ends_with(innate_suffix))
+    {
+        verb.remove_suffix(innate_suffix.size());
+    }
+    else if (verb.ends_with(innate_bonus_suffix))
+    {
+        verb.remove_suffix(innate_bonus_suffix.size());
     }
     if (verb.ends_with(scroll_suffix))
     {

@@ -596,6 +596,29 @@ void supreme_sneak_checks()
 }
 } // namespace
 
+// Climbing the Cadorna Textile House's dry well (CADORNA-1): a Rogue in Light
+// or no armor makes a Strength (Athletics) check against DC 15, so its chance
+// is the share of d20 rolls that reach it. Heavier armor, or another class,
+// cannot climb.
+void climbing_checks()
+{
+    const auto rules = module();
+    const auto hero = rogue(1);
+    const VitalState life{hero.sheet().hit_points};
+    const int athletics =
+        rules->ability_check(hero.sheet(), {}, Ability::strength, "athletics").total;
+    const auto expected = static_cast<unsigned>(std::clamp(21 - (15 - athletics), 0, 20) * 5);
+    const std::vector<std::string> leather{"leather"}, scale{"scale_mail"};
+    check(rules->climbing_chance(hero.sheet(), life, {}) == expected &&
+              rules->climbing_chance(hero.sheet(), life, leather) == expected,
+          "A Rogue in Light or no armor climbs with its Athletics check's chance");
+    check(rules->climbing_chance(hero.sheet(), life, scale) == 0,
+          "A Rogue in Medium armor cannot climb");
+    const Character fighter(*srd5::character_rules(), draft("fighter", "dwarf"), {});
+    check(rules->climbing_chance(fighter.sheet(), VitalState{fighter.sheet().hit_points}, {}) == 0,
+          "Only a Rogue can climb");
+}
+
 int main()
 {
     try
@@ -610,6 +633,7 @@ int main()
         evasion_checks();
         reliable_checks();
         supreme_sneak_checks();
+        climbing_checks();
     }
     catch (const std::exception &error)
     {

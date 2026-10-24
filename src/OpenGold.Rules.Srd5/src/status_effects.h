@@ -494,9 +494,12 @@ enum class EffectKind : unsigned
     // A Pirate's Enthralling Panache: Charmed by it until the start of its next
     // turn. Unlike Charm Person's charm, damage does not end it.
     enthralled = 200,
+    // A Wight's Life Drain: the Hit Point maximum lowered by `dc` until a Long
+    // Rest or Greater Restoration.
+    life_drained = 201,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = enthralled
+    last = life_drained
 };
 
 // Magic Circle's creature types, by `dc`.

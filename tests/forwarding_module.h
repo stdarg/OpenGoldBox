@@ -92,6 +92,12 @@ class ForwardingModule : public rules::RulesModule
         return rules_->ability_check(sheet, gear, ability, skill);
     }
 
+    unsigned climbing_chance(const rules::CharacterSheet &sheet, const rules::VitalState &state,
+                             std::span<const std::string> gear) const override
+    {
+        return rules_->climbing_chance(sheet, state, gear);
+    }
+
     rules::AbilityCheckRoll roll_ability_check(const rules::CharacterSheet &sheet,
                                                const rules::VitalState &state,
                                                std::span<const std::string> gear,

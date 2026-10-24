@@ -37,6 +37,19 @@ the next Piercing or Slashing damage the character deals with a weapon adds
 spends the coat. There is no ammunition to coat (AMMO-UNLIMITED). The campaign
 removes the spent vials after the fight. Combat checkpoints become `OGCOMBAT 68`.
 
+## Cadorna Textile House monsters
+
+Rules 0.6.250 adds the Cadorna Textile House's SRD 5.2.1 stat blocks: Skeleton,
+Giant Frog, Giant Scorpion (and the Large Scorpion on its stat block), Wight,
+Priest (Grishnak) and Tough (Skullcrusher), by
+[CADORNA-1](SRD-DECISIONS.md#cadorna-1-2026-10-24-the-cadorna-textile-house).
+New monster mechanics: a Multiattack whose last attack differs (the Sting), one
+that may shoot (the Wight's bow, the Priest's Radiant Flame), Life Drain (a
+lowered Hit Point maximum until a Long Rest or Greater Restoration), Sunlight
+Sensitivity on squares open to the sky by day (Wights and kobolds), and daily
+innate spells cast without slots (the Priest's Spirit Guardians and Divine Aid,
+the latter as a Bonus Action). Combat checkpoints become `OGCOMBAT 69`.
+
 ## Thieves' Tools
 
 Rules 0.6.249 adds SRD 5.2.1 Thieves' Tools (authored item 214, 25 gp), carried

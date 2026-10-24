@@ -233,7 +233,11 @@ Event rollback restores the whole party as well as VM state.
 The PC 1.3 command contracts are described in sections 7.14 and 12.3 of
 [Lee's technical research](https://gamefaqs.gamespot.com/c64/578753-pool-of-radiance/faqs/73869).
 Movement CHECKPARTY returns minimum, maximum, mean and zero; aliased output
-addresses receive the last write. ADD NPC uses a monster ID and morale.
+addresses receive the last write. ADD NPC uses a monster ID and morale; the ID
+names a record of the area's own MONnCHA archive (MON3CHA in New Phlan). The
+original's NPCs who join are built by `original_companion` (`companions.cpp`)
+with the creation rules the host gives the session: so far Skullcrusher,
+MON4CHA 27, a level-4 Fighter (CADORNA-1).
 These contracts are reference-derived and synthetic-tested, not new DOS traces.
 
 The SRD compatibility mapping is explicit: script movement is speed in five-foot

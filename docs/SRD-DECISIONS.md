@@ -424,8 +424,9 @@ the earlier authored Slums conversions.
   readies. A leader shoots a bow only when its combat art shows one; otherwise
   its better gear is loot. Of the Slums icons only the orc leader's (CPIC2 5)
   shows a bow.
-- **Simplifications:** kobolds have no Sunlight Sensitivity and goblins no
-  Nimble Escape. The Bugbear's Grab hits an adjacent character for its damage
+- **Simplifications:** goblins have no Nimble Escape. Kobolds had no Sunlight
+  Sensitivity until 2026-10-24, when the user asked that every creature with
+  it keep it ([CADORNA-1](#cadorna-1-2026-10-24-the-cadorna-textile-house)). The Bugbear's Grab hits an adjacent character for its damage
   with no grapple (consistent with [SCOPE-2](#scope-2-2026-09-30-exploration-halves-and-marginal-features)).
   Aggressive adds the orc's speed as a bonus action; only monsters have it, so
   "toward a hostile creature" is left to the monster's policy. The Lizardfolk's
@@ -1604,3 +1605,41 @@ can still pick a lock, as in the original.
 - **The item:** SRD 5.2.1 Thieves' Tools, authored item 214, carried gear at
   25 gp. No shop sells it by default; the Shop & Temple Manager can add it
   ([#271](https://github.com/stdarg/OpenGold/issues/271)).
+
+## CADORNA-1 (2026-10-24): the Cadorna Textile House
+
+The user decided on 2026-10-24 how the Cadorna Textile House's original
+monsters and events that SRD 5.2.1 cannot copy work
+([audit](audits/cadorna-textile-house.md)):
+
+- **Monsters** are SRD 5.2.1 stat blocks: Skeleton, Zombie, Ghoul, Giant Frog,
+  Giant Scorpion, Priest (Grishnak) and Tough (Skullcrusher as a foe). The
+  original's monster stays the creature its art shows; only its numbers come
+  from the stat block.
+  - **Wight:** the SRD Wight with the original's 23 Hit Points (the SRD's has
+    82). Life Drain as written: on a failed Constitution save it deals
+    Necrotic damage and lowers the target's Hit Point maximum by as much until
+    a Long Rest. A slain humanoid does not rise as a Zombie.
+  - **Large Scorpion:** the Giant Scorpion's stat block with the original's
+    10 Hit Points.
+  - **Giant Scorpion:** two Claws, then the Sting with its Poison; the Claws'
+    grapple is left out.
+  - **Giant Frog:** its Bite, without the Grapple and Swallow.
+  - **Grishnak** casts the Priest's spells: Spirit Guardians once a day and
+    Divine Aid (Bless, Dispel Magic, Healing Word or Lesser Restoration) three
+    times a day.
+- **Sunlight Sensitivity:** every creature that has it keeps it (the Wight,
+  and the Slums' and Kuto's Well's kobolds). It applies on a square open to
+  the sky (the map's own interior flag, as for Plant Growth) during a fight by
+  day, 06:00 to 17:59 on the campaign clock.
+- **Skullcrusher as a companion:** a level-4 Fighter built from his record's
+  scores (Strength 18, Dexterity 16, Constitution 18, Intelligence 10, Wisdom
+  8, Charisma 12), unarmored and unarmed as found, played like any member.
+- **Climbing the dry well:** a Rogue wearing no armor or Light armor climbs
+  down with a Strength (Athletics) check against DC 15; anyone else falls, as
+  in the original. The check's chance becomes the original's climbing chance,
+  which the script rolls. The fall is the original's 15d6 Bludgeoning.
+- **Cadorna's payment:** the clerk pays reward slot 18 (20 gems) for the
+  family treasure brought back sealed, as the cluebook says, though the
+  original's scripts never set it.
+

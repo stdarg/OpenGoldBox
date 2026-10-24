@@ -874,15 +874,30 @@ bool party_wounded(const CampaignParty &party)
     {
         if (id)
         {
+            // The current maximum: Life Drain or Harm may have lowered it.
             const auto &member = party.member(id);
-            if (!member.vitals.dead &&
-                member.vitals.hit_points < member.character.sheet().hit_points)
+            if (!member.vitals.dead && member.vitals.hit_points < party.hit_point_maximum(id))
             {
                 return true;
             }
         }
     }
     return false;
+}
+
+// Keeps the spell and training choices a finished rest offers as they are, one
+// member at a time, as each choice renews the rest's ticket.
+void keep_rest_choices(CampaignParty &party)
+{
+    while (party.state().spell_rest && !party.state().spell_rest->members.empty())
+    {
+        party.keep_rest_spells(party.state().spell_rest->members.front());
+    }
+    while (party.state().training_rest && !party.state().training_rest->members.empty())
+    {
+        const auto &rest = *party.state().training_rest;
+        party.keep_rest_training(rest.ticket, rest.members.front());
+    }
 }
 
 // Camps where the party stands until nobody living is wounded: a Long Rest when
@@ -901,6 +916,7 @@ void recover(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &p
                                            });
         check(town.camp(long_rest ? RestKind::long_rest : RestKind::short_rest), "Camp starts");
         settle(town, party);
+        keep_rest_choices(*party);
         if (!party->state().short_rest)
         {
             continue;
@@ -912,7 +928,7 @@ void recover(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &p
             const auto &member = party->member(id);
             const auto recovery =
                 party->rule_module().recovery_info(member.character.sheet(), member.vitals);
-            if (recovery.hit_dice && member.vitals.hit_points < member.character.sheet().hit_points)
+            if (recovery.hit_dice && member.vitals.hit_points < party->hit_point_maximum(id))
             {
                 (void)party->heal_with_hit_dice(party->state().short_rest->ticket, id);
             }
@@ -1038,6 +1054,7 @@ Expedition create_party(const std::filesystem::path &directory,
     auto shop_data = load_shop_data(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/shops");
     town.temples(std::move(shop_data.temples));
     town.shops(std::move(shop_data.shops));
+    town.companion_rules(srd5::character_rules());
     town.campaign_party(party);
     settle(town, party);
     return {party, std::move(town)};
@@ -1562,6 +1579,7 @@ Expedition load_expedition(const std::filesystem::path &save,
     party->restore(std::move(loaded.party));
     Expedition trip{party, std::move(*loaded.town)};
     trip.town.attach_restored_party(party);
+    trip.town.companion_rules(srd5::character_rules());
     check(encode_campaign(*party, &trip.town, assets) == bytes,
           "The reloaded campaign is the saved campaign");
     return trip;
@@ -1868,6 +1886,7 @@ void refused_exit(por::RolfTourSession &town, const std::shared_ptr<CampaignPart
 {
     face(town, party, facing);
     const auto before = town.snapshot().pose;
+    const auto area_id = town.snapshot().area_id;
     town.explore(por::ExplorationCommand::forward);
     bool refused = false;
     for (unsigned n = 0; n < 200 && town.snapshot().phase != por::TourPhase::completed; ++n)
@@ -1884,7 +1903,7 @@ void refused_exit(por::RolfTourSession &town, const std::shared_ptr<CampaignPart
             town.advance(.5);
         }
     }
-    check(refused && town.snapshot().area_id == 18 && town.snapshot().pose.x == before.x &&
+    check(refused && town.snapshot().area_id == area_id && town.snapshot().pose.x == before.x &&
               town.snapshot().pose.y == before.y,
           "The way to " + std::string(area) + " is refused and the party stays");
 }
@@ -2339,6 +2358,233 @@ void city_hall_rewards(const std::filesystem::path &directory)
     }
 }
 
+// City Hall's clerk pays Cadorna's 20 gems (reward slot 18) for the family
+// treasure brought back sealed (0x4AC8 = 1), which no original script sets
+// (CADORNA-1); once paid, 0x4AB8 is 255. An opened box (128) earns Cadorna's
+// threat on entering City Hall, which settles the payment unpaid (0x4AB8 =
+// 255). A new party in New Phlan stands in for one back
+// from the textile house, with the flag that script sets.
+void cadorna_payment(const std::filesystem::path &directory)
+{
+    for (const std::uint16_t box : {1, 128})
+    {
+        auto trip = create_party(directory);
+        auto &[party, town] = trip;
+        opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AC8}, box);
+        bool thanked = false;
+        const Answer clerk = [&](const por::TourSnapshot &s) -> std::size_t
+        {
+            thanked = thanked || s.dialogue.find("CADORNA LEFT THIS PAYMENT") != std::string::npos;
+            return peaceful(s);
+        };
+        walk_to(town, party, 4, 5, clerk);
+        const auto before = party->state().wealth;
+        walk_to(town, party, 5, 5, clerk);
+        auto paid = before;
+        if (box == 1)
+        {
+            coins(paid, Coin::gems) += 20;
+        }
+        check(thanked == (box == 1) && party->state().wealth == paid &&
+                  town.script_variable(por::EclAddress{0x4AB8}) == 255,
+              box == 1 ? "City Hall's clerk pays 20 gems for Cadorna's sealed treasure"
+                       : "Cadorna pays nothing to a party that opened his box");
+    }
+}
+
+// Whether (x, y) can be walked to from `from` over open edges and unlocked doors.
+bool reachable(const por::GeoMap &map, por::PartyPose from, unsigned x, unsigned y)
+{
+    constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
+    std::set<unsigned> seen{from.y * 16 + from.x};
+    std::queue<unsigned> cells;
+    cells.push(from.y * 16 + from.x);
+    while (!cells.empty())
+    {
+        const auto cell = cells.front();
+        cells.pop();
+        if (cell == y * 16 + x)
+        {
+            return true;
+        }
+        for (unsigned d = 0; d < 4; ++d)
+        {
+            const int nx = int(cell % 16) + dx[d], ny = int(cell / 16) + dy[d];
+            if (nx < 0 || ny < 0 || nx >= 16 || ny >= 16)
+            {
+                continue;
+            }
+            const auto &a = map.at(cell % 16, cell / 16);
+            const auto &b = map.at(nx, ny);
+            const unsigned reverse = (d + 2) % 4;
+            const auto blocked = [](unsigned wall, unsigned door)
+            {
+                return door > 1 || (wall && !door);
+            };
+            if (!blocked(a.walls[d], a.doors[d]) && !blocked(b.walls[reverse], b.doors[reverse]) &&
+                seen.insert(ny * 16 + nx).second)
+            {
+                cells.push(ny * 16 + nx);
+            }
+        }
+    }
+    return false;
+}
+
+// A square on the map's edge facing `facing` (0 north to 3 west) that opens
+// off the map and that the party can walk to.
+por::PartyPose edge_opening(const por::GeoMap &map, por::PartyPose party, unsigned facing)
+{
+    for (unsigned n = 0; n < 16; ++n)
+    {
+        const unsigned x = facing == 1 ? 15 : facing == 3 ? 0 : n;
+        const unsigned y = facing == 0 ? 0 : facing == 2 ? 15 : n;
+        const auto &cell = map.at(x, y);
+        if ((!cell.walls[facing] || cell.doors[facing] == 1) && reachable(map, party, x, y))
+        {
+            return {x, y, static_cast<por::MapDirection>(facing)};
+        }
+    }
+    check(false, "The map has a way out on that edge");
+    return {};
+}
+
+// The Cadorna Textile House (docs/audits/cadorna-textile-house.md), south of
+// Podol Plaza: a save there, its exits to areas not in the game yet refused,
+// a fall down the dry well, the courtyard's drum, Grishnak and her treasure,
+// the ogre chief and Cadorna's box taken sealed, Skullcrusher unchained with
+// the Brass Key and joining the party, and the way back north. Nine roaming fights are counted done
+// (0x4AE4 = 9), so none meets the party in the streets while the chief lives.
+void cadorna_textile_house(Expedition &trip, const std::filesystem::path &folder,
+                           const std::filesystem::path &directory)
+{
+    auto &[party, town] = trip;
+    walk_to(town, party, 4, 15, peaceful);
+    step(town, party, 2);
+    check(town.snapshot().area_id == 2 && town.snapshot().script_id == 2,
+          "Leaving Podol Plaza southward enters the Cadorna Textile House");
+    const auto save = folder / "cadorna-textile-house.ogs";
+    write_campaign_file(save, encode_campaign(*party, &town, campaign_asset_identity(directory)));
+    check(load_expedition(save, directory).town.snapshot().area_id == 2,
+          "A save in the Cadorna Textile House loads back there");
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AE4}, 9);
+    for (const auto &[facing, area] :
+         std::array{std::pair{1u, "Mendor's Library"}, std::pair{3u, "the wilderness"}})
+    {
+        const auto exit = edge_opening(town.map(), town.snapshot().pose, facing);
+        walk_to(town, party, exit.x, exit.y);
+        refused_exit(town, party, facing, area);
+    }
+
+    // A fighter who climbs down the dry well falls 15d6; the party is put back
+    // as it was after.
+    const auto before_fall = party->checkpoint();
+    const auto climber = party->state().slots[0];
+    const auto hit_points = party->member(climber).vitals.hit_points;
+    bool fell = false;
+    walk_to(town, party, 1, 3,
+            [&](const por::TourSnapshot &s) -> std::size_t
+            {
+                fell = fell || s.dialogue.find("YOU BEGIN A LONG FALL") != std::string::npos;
+                for (std::size_t n = 0; n < s.choices.size(); ++n)
+                {
+                    if (s.choices[n] == "CLIMB DOWN")
+                    {
+                        return n;
+                    }
+                }
+                return peaceful(s);
+            });
+    const auto &fallen = party->member(climber);
+    check(fell && (fallen.vitals.dead || fallen.vitals.hit_points < hit_points),
+          "A fighter climbing down the dry well falls and is hurt");
+    party->restore(before_fall);
+
+    // Garrisons are fought and locked doors bashed.
+    const Answer fight_them = [](const por::TourSnapshot &s) -> std::size_t
+    {
+        if (!s.choices.empty() && s.choices[0] == "Bash")
+        {
+            return 0;
+        }
+        return s.choices.size() == 4 && s.choices[0] == "Fight" ? 0 : peaceful(s);
+    };
+    const auto fought = [&](std::string_view definition)
+    {
+        return std::find(enemies_fought.begin(), enemies_fought.end(), definition) !=
+               enemies_fought.end();
+    };
+    heal(*party);
+    visit(town, party, 4, 10, fight_them);
+    check(town.script_variable(por::EclAddress{0x4A74}) == 1,
+          "The courtyard's hobgoblins are beaten and the drum falls silent");
+    heal(*party);
+    visit(town, party, 3, 11, fight_them);
+    const auto brass_key = [&]
+    {
+        for (const auto &member : party->state().roster)
+        {
+            for (const auto &[id, source] : member.item_sources)
+            {
+                if (source.stored.type == 75)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+    check(fought("grishnak") && town.script_variable(por::EclAddress{0x4A74}) == 2 && brass_key(),
+          "Grishnak falls and her treasure holds the Brass Key");
+    heal(*party);
+    visit(town, party, 12, 14, fight_them);
+    check(fought("ogre") && town.script_variable(por::EclAddress{0x4A75}) == 255 &&
+              town.script_variable(por::EclAddress{0x4AC8}) == 1,
+          "The ogre chief falls and the party takes Cadorna's box sealed");
+    // Unlocked, a polite word and a yes: Skullcrusher joins the party.
+    heal(*party);
+    visit(town, party, 2, 15,
+          [&](const por::TourSnapshot &s) -> std::size_t
+          {
+              for (const auto *wanted : {"FREE", "UNLOCK", "PARLAY", "NICE", "YES"})
+              {
+                  for (std::size_t n = 0; n < s.choices.size(); ++n)
+                  {
+                      if (s.choices[n] == wanted)
+                      {
+                          return n;
+                      }
+                  }
+              }
+              return fight_them(s);
+          });
+    const auto &slots = party->state().slots;
+    const auto joined = std::find_if(slots.begin(), slots.end(),
+                                     [&](MemberId id)
+                                     {
+                                         return id &&
+                                                party->member(id).npc_source == "por:MON4CHA:27";
+                                     });
+    const auto companion = joined == slots.end() ? MemberId{} : *joined;
+    check(town.script_variable(por::EclAddress{0x4A73}) == 255 && companion,
+          "The Brass Key unlocks Skullcrusher's padlocks and he joins the party");
+    const auto &sheet = party->member(companion).character.sheet();
+    check(sheet.name == "Skullcrusher" && sheet.level == 4 &&
+              sheet.character_class == "Fighter" &&
+              sheet.scores[rules::Ability::strength] == 18 &&
+              sheet.scores[rules::Ability::dexterity] == 16 &&
+              sheet.scores[rules::Ability::constitution] == 18 &&
+              sheet.scores[rules::Ability::intelligence] == 10 &&
+              sheet.scores[rules::Ability::wisdom] == 8 &&
+              sheet.scores[rules::Ability::charisma] == 12 &&
+              party->member(companion).character.inventory().items().empty(),
+          "Skullcrusher is a level-4 Fighter with his record's scores and nothing carried");
+    const auto north = edge_opening(town.map(), town.snapshot().pose, 0);
+    walk_to(town, party, north.x, north.y, fight_them);
+    step(town, party, 0);
+    check(town.snapshot().area_id == 18, "The textile house's north edge leads back to Podol Plaza");
+}
+
 // Podol Plaza (docs/audits/podol-plaza.md), off the council's mission:
 // entered by Kuto's Well's west edge, its exits to areas not in the game yet
 // refused, a roaming group met on the plaza, the robed orc fought for his holy
@@ -2373,8 +2619,6 @@ void podol_plaza(Expedition &trip, const std::filesystem::path &folder,
     refused_exit(town, party, 0, "Stojanow Gate");
     walk_to(town, party, 0, 4, peaceful);
     refused_exit(town, party, 3, "the wilderness");
-    walk_to(town, party, 4, 15, peaceful);
-    refused_exit(town, party, 2, "Cadorna Textile House");
     // Off the mission, a roaming group comes on one plaza step in 26; the
     // party flees it or fights. Nine wins in one visit clear the plaza; the
     // count (0x4A34) starts at eight so one fight stands for the first eight.
@@ -2440,6 +2684,7 @@ void podol_plaza(Expedition &trip, const std::filesystem::path &folder,
           "The party defeats the robed orc and takes his six leather holy symbols");
     heal(*party);
     podol_temple(trip);
+    cadorna_textile_house(trip, folder, directory);
     walk_to(town, party, 15, 4, peaceful);
     step(town, party, 1);
     check(town.snapshot().area_id == 29, "Podol Plaza's east edge leads back to Kuto's Well");
@@ -3218,6 +3463,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
     }
     general_store_gear(directory);
     city_hall_rewards(directory);
+    cadorna_payment(directory);
     exported_monsters(directory);
     auto trip = create_party(directory);
     buy_and_equip(trip);
@@ -3327,6 +3573,22 @@ int main(int argc, char **argv)
             std::filesystem::create_directories(folder);
             auto trip = load_expedition(argv[2], directory);
             podol_plaza(trip, folder, directory);
+            std::filesystem::remove_all(folder);
+            return 0;
+        }
+        // Plays the Cadorna Textile House alone, from a save in Podol Plaza.
+        if (argc == 2 && std::string_view(argv[1]) == "--cadorna-payment")
+        {
+            cadorna_payment(directory);
+            return 0;
+        }
+        if (argc == 3 && std::string_view(argv[1]) == "--cadorna")
+        {
+            const auto folder = std::filesystem::temp_directory_path() / "opengold-cadorna";
+            std::filesystem::create_directories(folder);
+            cadorna_payment(directory);
+            auto trip = load_expedition(argv[2], directory);
+            cadorna_textile_house(trip, folder, directory);
             std::filesystem::remove_all(folder);
             return 0;
         }

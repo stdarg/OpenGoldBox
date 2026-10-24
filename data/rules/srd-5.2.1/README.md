@@ -49,6 +49,33 @@ record 11, readies only studded leather and keeps AC 14). Only
 `slums-orc-leader-archer`, for the orc leader whose combat icon shows a bow,
 replaces the Javelin with a Longbow (+3, 1d8+1, 150/600).
 
+## Cadorna Textile House monsters
+
+The Cadorna Textile House's monsters are SRD 5.2.1 stat blocks
+([audit](../../../docs/audits/cadorna-textile-house.md),
+[CADORNA-1](../../../docs/SRD-DECISIONS.md#cadorna-1-2026-10-24-the-cadorna-textile-house)).
+Each Open5E response was fetched on 2026-10-24 (`srd-2024`) and is retained here:
+
+| Rows | Stat block | Response | SHA-256 |
+| --- | --- | --- | --- |
+| `skeleton` | Skeleton | `open5e-skeleton.json` | `943A7325C9A0F8149737A2FD8934404383441A8FFF1998574F459545D190A1D5` |
+| `giant-frog` | Giant Frog | `open5e-giant-frog.json` | `098AABC1C09555D238C17AB17A6E0DFCE7994DA2CA52F25AEC008FF5C1C5CD4C` |
+| `giant-scorpion`, `large-scorpion` | Giant Scorpion | `open5e-giant-scorpion.json` | `A6074EE3FDAAA4CF1A85513F576AA83734D9CD124DC84F13541D99729BD99530` |
+| `wight` | Wight | `open5e-wight.json` | `E6EDD76FB2CAE5880136D6E000F14C7EB85173A93962A4199500D7C90B7017B8` |
+| `grishnak` | Priest | `open5e-priest.json` | `5BFA33E9EE1713A6BBBCEA57B48164694FB71A227D8EAE06093567D6E7AE1DBC` |
+| `skullcrusher` | Tough | `open5e-tough.json` | `91473AABCF59135925AD6A3EB286CD25152B1A49A6C2A22A06433E8A1F0E6372` |
+
+The responses leave damage vulnerabilities, resistances and immunities and the
+Priest's daily uses empty; those come from the SRD 5.2.1 PDF: the Skeleton's
+Vulnerability to Bludgeoning and Immunity to Poison, the Wight's Resistance to
+Necrotic and Immunity to Poison, and the Priest's Spirit Guardians once a day
+and Divine Aid three times a day. By decision the Wight and the Large Scorpion
+keep the original's Hit Points (23 and 10), the Giant Frog has no Grapple or
+Swallow, and the Giant Scorpion's Claws no grapple. New rows: `last_attack`
+(the Multiattack's last attack, the Sting), `multiattack_ranged`, `life_drain`,
+`sunlight_sensitivity` (also on the kobolds), `innate` (daily spell pools) and
+`evil`.
+
 ## Fixtures
 
 `vanguard`, `scout`, `adept`, and `healer` are authored combat fixtures, not

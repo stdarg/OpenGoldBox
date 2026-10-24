@@ -379,7 +379,7 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     }
     auto next = module_->create({encounter.field.geometry, std::move(participants),
                                  campaign_->state().next_combat_scope, encounter.morale,
-                                 coins(campaign_->state().wealth, Coin::gold)},
+                                 coins(campaign_->state().wealth, Coin::gold), encounter.daylight},
                                 seed);
     install_combat(std::move(next), {});
     seed_ = seed;
@@ -973,6 +973,7 @@ constexpr std::array ai_spells{AiSpell{"fireball", 7},
                                AiSpell{"hypnotic_pattern", 6},
                                AiSpell{"vitriolic_sphere", 6},
                                AiSpell{"irresistible_dance", 6},
+                               AiSpell{"spirit_guardians", 5, true},
                                AiSpell{"stinking_cloud", 5},
                                AiSpell{"bestow_curse", 5},
                                AiSpell{"cloudkill", 5},
@@ -983,6 +984,7 @@ constexpr std::array ai_spells{AiSpell{"fireball", 7},
                                AiSpell{"vampiric_touch", 5},
                                AiSpell{"insect_plague", 5},
                                AiSpell{"magic_missile", 4},
+                               AiSpell{"dispel_magic", 4},
                                AiSpell{"charm_person", 4},
                                AiSpell{"silence", 4},
                                AiSpell{"slow", 4},
@@ -1594,7 +1596,8 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         }
     }
     if (const auto *command =
-            heal_most_wounded({"cure_wounds", "cure_wounds_2", "healing_word", "healing_word_2"}))
+            heal_most_wounded({"cure_wounds", "cure_wounds_2", "healing_word", "healing_word_2",
+                               "healing_word_innate_bonus"}))
     {
         return *command;
     }

@@ -68,8 +68,7 @@ for it never returned with; `0x4A97` = 255.
   party: "You have taken my family treasure. I don't forget such things."
 - **Sealed:** the clerk's reward list has an entry for it, slot 18 at
   `0xA389`, "Councilman Cadorna left this payment for some service you had
-  rendered", worth 120 pp by the clerk's tables (read at the offset that gives
-  slot 10's known 250 gp and 200 pp). But no script in `ECL1`-`ECL8` sets
+  rendered", worth 20 gems by the clerk's tables. But no script in `ECL1`-`ECL8` sets
   `0x4AB8` to 254, so the original never pays it, though the cluebook says the
   clerk rewards an unopened box. Question 8.
 
@@ -78,12 +77,12 @@ for it never returned with; `0x4A97` = 255.
 - **Roaming creatures** (events 0 and 22, `0x9A08`): each step rolls 0-30
   (0-5 in search mode, `0x6DCA` = 1) and a 1 meets something.
   - In the halls (22) while the chief lives: 8 hobgoblins and a leader.
-  - Elsewhere, unless the block is cleared (`0x4AEE` ≥ 254): a roll of 0-10
-    plus the count of roaming fights so far (`0x4AEC`) picks the group: above
+  - Elsewhere, unless the block is cleared (`0x4AE6` ≥ 254): a roll of 0-10
+    plus the count of roaming fights so far (`0x4AE4`) picks the group: above
     17 hobgoblins, 13-17 undead, 8-12 ghouls, 4-7 scorpions, else frogs, so
     the creatures grow tougher with each fight. After nine fights no more
     come until the chief is dead; with him dead, the next meeting after the
-    ninth fight clears the block (`0x4AEE` = 254) instead. City Hall then pays the clearing
+    ninth fight clears the block (`0x4AE6` = 254) instead. City Hall then pays the clearing
     reward (`0x9E21`, slot 10, as for Podol Plaza).
 - **The courtyard** (event 1, `0x9C27`, while `0x4A74` = 0): a drum beats and
   12 hobgoblins and 2 leaders attack. Won, the drum falls silent (`0x4A74` =
@@ -147,7 +146,7 @@ for it never returned with; `0x4A97` = 255.
 - **Camping** (`0x993D`): every 12 five-minute steps, a 6% chance of a roaming
   fight (`0x9957`, the same roll as a step). None once the block is cleared.
 - **Quest flags other areas read:** `0x4A97` (the commission), `0x4AC8` (the
-  box), `0x4AB8` (Cadorna's payment), `0x4AEE` (the block cleared).
+  box), `0x4AB8` (Cadorna's payment), `0x4AE6` (the block cleared).
 - **Art:** `WALLDEF4`/`8X8D4` (banks 1, 3, 20), `SPRIT4` (6, 14, 18, 34, 37,
   72), `CPIC4` (2, 6, 7, 8, 11, 18, 20, 34, 35, 37, 72), `HEAD4` (32
   Skullcrusher, 52 Restal), `BODY4` (3, 8), `MON4CHA`, `ITEM4` are all present.
@@ -274,10 +273,29 @@ stage after Podol Plaza.
    makes a Strength (Athletics) check against DC 15 to climb down (the SRD's
    climbing check); anyone else falls, as in the original. The fall is the
    original's 15d6 Bludgeoning, also the SRD's damage for 150 feet.
-9. **Cadorna's payment.** Recommend the clerk pays the 120 pp of slot 18 when
+9. **Cadorna's payment.** Recommend the clerk pays the 20 gems of slot 18 when
    the party brings back the box sealed, as the cluebook says, though the
    original's scripts never set it.
 
 ## Status
 
-- Waiting on the questions above.
+- **Increment 1 (done, 2026-10-24):** the area row (`rolf_tour.cpp`): script 2,
+  bank 4, map 2 with wall banks 1, 3, 20, and every MON4CHA record the script
+  loads converting by CADORNA-1. Podol Plaza's south edge leads in, and the
+  house's north edge back; east (Mendor's Library) and west (the wilderness)
+  are refused with a notice. The fall is `DAMAGE` to the chosen member, the
+  climbing chance is the Rogue's Strength (Athletics) check written to byte
+  `0xAB`, the script's cells from `0x4900` are bound (the falling-charm search
+  finds nothing), slot 8 reads as empty, names reach scripts in capitals, and
+  `ADD NPC` builds Skullcrusher (`companions.cpp`) from the area's own MON4CHA.
+  City Hall pays Cadorna's 20 gems for the box brought back sealed. Played
+  (`opengold_expedition_tests`, after Podol Plaza at level 4): a save in the
+  house, the refused exits, a fighter's fall down the well, the courtyard,
+  Grishnak and her Brass Key, the ogre chief and the box taken sealed,
+  Skullcrusher unlocked and joining as a level-4 Fighter, and the way back.
+  The route counts nine roaming fights as done, so it meets none of the
+  streets' frogs, scorpions or undead; their stat blocks are checked in
+  `opengold_slums_creatures_tests`.
+- **Fixed on the way:** a fight reported an item it had used up again after
+  every action, and the campaign then failed on the missing item; a potion
+  drunk in combat (here Grishnak's) or the last Basic Poison would trigger it.

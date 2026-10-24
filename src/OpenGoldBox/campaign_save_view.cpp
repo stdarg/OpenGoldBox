@@ -205,6 +205,7 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
     session_->encounter_challenge(settings::encounter_challenge());
     session_->difficulty(settings::difficulty());
     use_shop_data(*session_);
+    session_->companion_rules(srd5::character_rules());
     shown_revision_ = 0;
     rendered_pose_.reset();
     rendered_sprite_id_ = 999;

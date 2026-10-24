@@ -187,7 +187,11 @@ spells that make sense, at random, cast from its lowest slot:
 - **a spell that needs Concentration waits while the caster holds one.**
 
 The priorities follow the original's table where it has the spell, and its
-nearest kin where it does not (`ai_spells` in `combat_demo.cpp`). Healing,
+nearest kin where it does not (`ai_spells` in `combat_demo.cpp`). Spirit
+Guardians (5) and Dispel Magic (4), which a Priest casts (Grishnak, CADORNA-1),
+have their nearest kin's place. A monster's daily innate spells are cast like
+slot spells, spending a daily use; a Priest's Divine Aid casts its spells as a
+Bonus Action, and its Healing Word heals by the healing rule below. Healing,
 cantrips and the spells with their own rules (Moonbeam, Hex, Spiritual Weapon,
 Hunter's Mark) stay outside the roll. Magic Missile's darts all go to one
 enemy while they can.

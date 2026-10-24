@@ -175,6 +175,18 @@ in the game: answering YES at a hall lists its services in the dialogue
   berserk; and a cancelled auction with no group rolled yet meets a fresh
   plaza group.
   [PODOL-1](SRD-DECISIONS.md#podol-1-2026-10-22-podol-plaza).
+- **Cadorna Textile House** (2026-10-24). Its monsters are SRD stat blocks; the
+  Wight and the Large Scorpion keep the original's Hit Points (23 and 10, the
+  latter on the Giant Scorpion's stat block). Only a Rogue in Light or no
+  armor can climb down the dry well, with a Strength (Athletics) check, where
+  the original rolled a thief's climb-walls chance. The clerk pays Cadorna's
+  20 gems for the family treasure brought back sealed, which the cluebook
+  promises but the original's scripts never set.
+  [CADORNA-1](SRD-DECISIONS.md#cadorna-1-2026-10-24-the-cadorna-textile-house).
+- **Sunlight Sensitivity** (2026-10-24). Kobolds and Wights have Disadvantage
+  on attack rolls and ability checks on a square open to the sky by day; the
+  original had no sunlight.
+  [CADORNA-1](SRD-DECISIONS.md#cadorna-1-2026-10-24-the-cadorna-textile-house).
 - **Temple services** (2026-10-22). The original's temples cast AD&D spells.
   Each service now casts an SRD 5.2.1 spell under its original name: Cure
   Serious and Cure Critical Wounds are Cure Wounds from a level-3 and a level-5

@@ -649,7 +649,9 @@ int benefit_value_limit(EffectKind kind)
            : kind == EffectKind::cursed                                         ? 18
            : kind == EffectKind::contagion                                      ? 335
            : kind == EffectKind::returned                                       ? 4
-           : kind == EffectKind::drained || kind == EffectKind::simulacrum      ? 2000
+           : kind == EffectKind::drained || kind == EffectKind::simulacrum ||
+                   kind == EffectKind::life_drained
+               ? 2000
            : kind == EffectKind::feasted                                        ? 20
            : kind == EffectKind::animating                                      ? 19
            : kind == EffectKind::worded                                         ? 2
@@ -721,6 +723,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::returned:
         return 345600000; // four Long Rests' worth, ended by them
     case EffectKind::drained:
+    case EffectKind::life_drained: // until a Long Rest
     case EffectKind::dust:
     case EffectKind::simulacrum: // never counted down
     case EffectKind::petrified:  // a minute, or for good once its spell lasted it
@@ -886,7 +889,8 @@ int hit_point_bonus(const EffectState &effects)
         {
             feast = std::max(feast, e.dc);
         }
-        else if (e.kind == EffectKind::drained || e.kind == EffectKind::simulacrum)
+        else if (e.kind == EffectKind::drained || e.kind == EffectKind::simulacrum ||
+                 e.kind == EffectKind::life_drained)
         {
             drained += e.dc;
         }

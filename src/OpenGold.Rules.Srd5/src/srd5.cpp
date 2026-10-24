@@ -681,7 +681,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 68;
+constexpr unsigned checkpoint_format = 69;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -1484,6 +1484,39 @@ struct Definition
     // A monster's `enthralling_panache` row: the save DC of the Pirate's
     // charm, which replaces one attack of its Multiattack.
     int panache_dc{};
+    // A monster's `multiattack_ranged` row: its Multiattack's attacks may be
+    // ranged too (a Wight's Necrotic Bow, a Priest's Radiant Flame).
+    bool multiattack_ranged{};
+    // A monster's `life_drain` row: a Wight's Life Drain, which replaces one
+    // melee attack of its Multiattack. On a failed Constitution save it deals
+    // Necrotic damage and lowers the Hit Point maximum by as much until a Long
+    // Rest.
+    int life_drain_dc{};
+    detail::DamageDice life_drain;
+    // A monster's `last_attack` row: the statistics of its Multiattack's last
+    // melee attack, when that is another attack (a Giant Scorpion's Sting after
+    // its two Claws).
+    struct LastAttack
+    {
+        int bonus{};
+        detail::DamageDice dice, extra;
+        detail::DamageType type{}, extra_type{};
+    };
+    std::optional<LastAttack> last_attack;
+    // A monster's `sunlight_sensitivity` row: Disadvantage on attack rolls and
+    // ability checks while in sunlight.
+    bool sunlight_sensitive{};
+    // A monster's `innate` rows: pools of daily spell uses that spend no slot,
+    // each cast with the Action or a Bonus Action (a Priest's Spellcasting and
+    // Divine Aid). At most four pools of at most fifteen uses.
+    struct InnatePool
+    {
+        std::string label;
+        int uses{};
+        bool bonus_action{};
+        std::vector<std::string> spells;
+    };
+    std::vector<InnatePool> innate;
     int hit_die{}, constitution{}, rushes{}, surges{}, arcane{};
     int lay_on_hands{};  // Paladin healing pool: five times Paladin level
     int free_smite{};    // Paladin's Smite: one Divine Smite without a slot per Long Rest
@@ -1777,6 +1810,8 @@ struct Actor
         free_casts{}, channel_divinity{};
     // Magic Initiate's unspent free casts: bit n is Definition::initiate_spells[n].
     int initiate_casts{};
+    // The uses each of Definition::innate's pools has spent, four bits a pool.
+    int innate_spent{};
     // The creature this actor just hit with a melee weapon on its own turn, which
     // a smite may follow; cleared by any other command or a new turn.
     EntityId smite_target{};
@@ -2589,10 +2624,70 @@ bool item_effect(std::string_view verb)
                         });
 }
 
+// The uses a pool of the actor's innate spells has left.
+int innate_left(const Actor &a, std::size_t pool)
+{
+    return a.definition.innate[pool].uses - ((a.innate_spent >> (4 * pool)) & 15);
+}
+
+// The pool of the actor's innate spells, cast with a Bonus Action or with the
+// Action, that can cast the spell now; none when no such pool has a use left.
+std::optional<std::size_t> innate_pool(const Actor &a, const detail::SpellDef &spell,
+                                       bool bonus_action)
+{
+    const auto &pools = a.definition.innate;
+    for (std::size_t n = 0; n < pools.size(); ++n)
+    {
+        if (pools[n].bonus_action == bonus_action && innate_left(a, n) > 0 &&
+            std::find(pools[n].spells.begin(), pools[n].spells.end(), spell.id) !=
+                pools[n].spells.end())
+        {
+            return n;
+        }
+    }
+    return std::nullopt;
+}
+
+// Whether `spent` is a count of uses each innate pool of `d` could have spent.
+bool valid_innate_spent(const Definition &d, int spent)
+{
+    if (spent < 0 || spent >= 1 << (4 * d.innate.size()))
+    {
+        return false;
+    }
+    for (std::size_t pool = 0; pool < d.innate.size(); ++pool)
+    {
+        if (((spent >> (4 * pool)) & 15) > d.innate[pool].uses)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Whether a verb casts a spell with a Bonus Action that is not the spell's own
+// casting time: an item used with Fast Hands, or an innate Bonus Action spell.
+bool bonus_action_verb(std::string_view verb)
+{
+    return verb.ends_with(detail::item_bonus_suffix) ||
+           verb.ends_with(detail::innate_bonus_suffix);
+}
+
 // Pays for a leveled spell: with Magic Initiate's free cast, or from a slot of
 // the level it is cast at, the turn's one slot.
 void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spell)
 {
+    // An innate spell spends a use of its pool.
+    if (verb.ends_with(detail::innate_suffix) || verb.ends_with(detail::innate_bonus_suffix))
+    {
+        const auto pool = innate_pool(a, spell, verb.ends_with(detail::innate_bonus_suffix));
+        if (!pool)
+        {
+            throw std::runtime_error("No innate use of the spell is left");
+        }
+        a.innate_spent += 1 << (4 * *pool);
+        return;
+    }
     // A scroll's spell is erased from it (MAGIC-6).
     if (detail::scroll_verb(verb))
     {
@@ -3020,7 +3115,8 @@ bool has_greater_harm(const Actor &a, std::size_t harm)
                        {
                            return harm == 4   ? e.kind == detail::EffectKind::befuddled
                                   : harm == 3 ? e.kind == detail::EffectKind::petrified
-                                  : harm == 2 ? e.kind == detail::EffectKind::drained
+                                  : harm == 2 ? e.kind == detail::EffectKind::drained ||
+                                                    e.kind == detail::EffectKind::life_drained
                                   : harm      ? curse(e.kind)
                                               : e.kind == detail::EffectKind::charmed ||
                                                     e.kind == detail::EffectKind::enthralled ||
@@ -4468,7 +4564,8 @@ class Session final : public CombatSession
     Session(std::shared_ptr<const Content> content, Encounter encounter, std::uint64_t seed,
             bool restoring = false)
         : content_(std::move(content)), board_(std::move(encounter.battlefield)), rng_(seed),
-          scope_(encounter.scope), morale_(encounter.morale), gold_(encounter.party_gold)
+          scope_(encounter.scope), morale_(encounter.morale), gold_(encounter.party_gold),
+          daylight_(encounter.daylight)
     {
         if (!scope_)
         {
@@ -4535,7 +4632,8 @@ class Session final : public CombatSession
             refresh_form(a);
             a.initiative =
                 detail::d20({d.champion || d.feral_instinct,
-                             d.str_dex_disadvantage || a.source.surprised || suffers_poisoned(a),
+                             d.str_dex_disadvantage || a.source.surprised || suffers_poisoned(a) ||
+                                 (d.sunlight_sensitive && open_sky(a.source.cell)),
                              d.lucky},
                             rng_) +
                 d.initiative - return_penalty(a);
@@ -5057,6 +5155,7 @@ class Session final : public CombatSession
     // Morale (the original's rule): checked at the start of each turn of a
     // creature the rules control. The encounter's morale is set by its script.
     unsigned morale_{100};
+    bool daylight_{}; // Encounter::daylight
     // Gold coins in the party purse, and what offerings have taken of them.
     unsigned gold_{}, offerings_gold_{};
     // A party member who has just died: Revivify may bring it back for a minute.
@@ -5816,6 +5915,10 @@ class Session final : public CombatSession
     // Frightened: a living creature that frightens `a` is in its line of sight.
     [[nodiscard]] std::vector<const Actor *> fears_in_sight(const Actor &a) const;
     [[nodiscard]] bool check_disadvantage(const Actor &a) const;
+    // Sunlight Sensitivity on a square in sunlight.
+    [[nodiscard]] bool in_sunlight(const Actor &a) const;
+    // Whether the square is in sunlight: open to the sky in a fight by day.
+    [[nodiscard]] bool open_sky(Cell cell) const;
     // Intimidating Presence (Berserker 14): each enemy within 30 feet makes a
     // Wisdom save or is Frightened for up to a minute.
     void intimidate(const Actor &barbarian);
@@ -5843,6 +5946,10 @@ class Session final : public CombatSession
     // so what the attack does to the attacker (Fire Shield, Sanctuary ending,
     // once-a-turn features) happens to the attacker itself.
     bool attack_as(Actor &a, Loadout loadout, Actor &target, AttackRange range);
+    // A Wight's Life Drain on the creature (MON4CHA 20).
+    void drain_life(Actor &wight, Actor &target);
+    // The attacker wearing its stat block's `last_attack` statistics.
+    [[nodiscard]] Loadout last_attack_loadout(const Actor &a) const;
 
     // The statistics an attack with the loadout uses: a Wild Shape form's
     // still, as def() gives.
@@ -7823,6 +7930,8 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::cursed, "Cursed"},
               std::pair{detail::EffectKind::contagion, "Poisoned (Contagion)"},
               std::pair{detail::EffectKind::drained, "Hit Point maximum lowered (Harm)"},
+              std::pair{detail::EffectKind::life_drained,
+                        "Hit Point maximum lowered (Life Drain)"},
               std::pair{detail::EffectKind::feasted, "Heroes' Feast"},
               std::pair{detail::EffectKind::true_seeing, "True Seeing"},
               std::pair{detail::EffectKind::regenerating, "Regenerate"},
@@ -8550,7 +8659,8 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
             std::erase_if(target.effects.active,
                           [](const auto &e)
                           {
-                              return e.kind == detail::EffectKind::drained;
+                              return e.kind == detail::EffectKind::drained ||
+                                     e.kind == detail::EffectKind::life_drained;
                           });
             log(target.source.name + "'s Hit Point maximum is whole again.",
                 {"{name}'s Hit Point maximum is whole again.", {{"name", target.source.name}}});
@@ -9831,14 +9941,16 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         // A spell on a carried scroll (MAGIC-6), read with its own casting time.
         const auto scroll = spells_blocked ? std::nullopt : readable_scroll(a, spell);
         const bool scroll_ready = scroll && spell.bonus_action == bonus_pass;
-        if (!known && !intervene && !arcanum && !item_ready && !scroll_ready)
+        // A monster's innate spell, with the pass's own action.
+        const auto innate = spells_blocked ? std::nullopt : innate_pool(a, spell, bonus_pass);
+        if (!known && !intervene && !arcanum && !item_ready && !scroll_ready && !innate)
         {
             continue;
         }
         // Quickened Spell offers an Action spell in the Bonus Action pass.
         const bool as_bonus = spell.bonus_action || readies(a, Metamagic::quickened, spell);
         const bool usual = known && as_bonus == bonus_pass;
-        if (!usual && !intervene && !arcanum && !item_ready && !scroll_ready)
+        if (!usual && !intervene && !arcanum && !item_ready && !scroll_ready && !innate)
         {
             continue;
         }
@@ -9975,9 +10087,12 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         {
             continue;
         }
+        const bool innate_ready = innate && (bonus_pass ? a.bonus : a.actions.available(true));
         const bool casting_ready =
-            (usual || intervene || arcanum) &&
-            (usual ? (as_bonus ? a.bonus : a.actions.available(true)) : a.actions.available(true));
+            ((usual || intervene || arcanum) &&
+             (usual ? (as_bonus ? a.bonus : a.actions.available(true))
+                    : a.actions.available(true))) ||
+            innate_ready;
         // Dust is thrown with the Utilize action; a wand or missile takes the Magic
         // action.
         const bool item_offered =
@@ -10046,6 +10161,12 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             if (natural)
             {
                 offer(verb + std::string(detail::natural_suffix), label + " (Natural Recovery)");
+            }
+            if (innate_ready)
+            {
+                offer(verb + std::string(bonus_pass ? detail::innate_bonus_suffix
+                                                    : detail::innate_suffix),
+                      label + " (" + d.innate[*innate].label + ")");
             }
         };
         if (spell.id == "chromatic_orb")
@@ -15271,6 +15392,56 @@ void Session::enthrall(Actor &pirate, Actor &target)
          {{"name", target.source.name}, {"caster", pirate.source.name}}});
 }
 
+void Session::drain_life(Actor &wight, Actor &target)
+{
+    log(wight.source.name + " uses Life Drain on " + target.source.name + ".",
+        {"{name} uses Life Drain on {target}.",
+         {{"name", wight.source.name}, {"target", target.source.name}}});
+    const auto &d = def(wight);
+    if (saving_throw_succeeds(target, detail::Ability::constitution, d.life_drain_dc))
+    {
+        return;
+    }
+    const auto type = detail::DamageType::necrotic;
+    const int amount = resolved_damage(target, type, dice(d.life_drain));
+    const auto name = std::string(detail::damage_name(type));
+    log(target.source.name + " takes " + std::to_string(amount) + " " + name + " damage.",
+        {"{name} takes {damage} {type} damage.",
+         {{"name", target.source.name}, {"damage", std::to_string(amount)}, {"type", name, true}}});
+    damage(target, amount, false);
+    // The Hit Point maximum drops by the damage, never below 1, unless Aura of
+    // Life guards it; a Long Rest restores it.
+    if (amount <= 0 || target.life.dead || in_aura_of_life(target) ||
+        !detail::can_apply(target.effects))
+    {
+        return;
+    }
+    const int lowered = std::min(amount, max_hp(target) - 1);
+    if (lowered > 0)
+    {
+        detail::apply_spell_benefit(target.effects, effect_source(wight), wight.source.name,
+                                    detail::EffectKind::life_drained, lowered);
+        target.life.hp = std::min(target.life.hp, max_hp(target));
+        log(target.source.name + "'s Hit Point maximum drops by " + std::to_string(lowered) + ".",
+            {"{name}'s Hit Point maximum drops by {amount}.",
+             {{"name", target.source.name}, {"amount", std::to_string(lowered)}}});
+    }
+}
+
+Loadout Session::last_attack_loadout(const Actor &a) const
+{
+    Loadout last{a.definition, a.selected_weapon, a.light_damage};
+    auto &d = last.definition;
+    const auto &profile = *d.last_attack;
+    d.melee_bonus = profile.bonus;
+    d.melee = profile.dice;
+    d.melee_type = profile.type;
+    d.melee_extra = profile.extra;
+    d.melee_extra_type = profile.extra_type;
+    d.melee_magic = 0;
+    return last;
+}
+
 void Session::ward_nature()
 {
     for (auto &a : actors_)
@@ -16508,7 +16679,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     const bool quickened = !spell.bonus_action && readies(a, Metamagic::quickened, spell);
     take_metamagic(a, spell);
     take_overchannel(a, spell, aimed.verb);
-    if (spell.bonus_action || quickened || aimed.verb.ends_with(detail::item_bonus_suffix))
+    if (spell.bonus_action || quickened || bonus_action_verb(aimed.verb))
     {
         a.bonus = false;
     }
@@ -17796,8 +17967,8 @@ void Session::cast_selected(Actor &a, const PendingSelection &selection)
 {
     const auto &spell = *detail::find_spell(selection.verb);
     // Fast Hands uses an item as a Bonus Action, as Quickened Spell casts one.
-    const bool quickened = readies(a, Metamagic::quickened, spell) ||
-                           selection.verb.ends_with(detail::item_bonus_suffix);
+    const bool quickened =
+        readies(a, Metamagic::quickened, spell) || bonus_action_verb(selection.verb);
     if (splits_among_targets(spell) || spell.pattern == detail::SpellPattern::heal ||
         spell.id == "chain_lightning")
     {
@@ -17856,11 +18027,22 @@ void Session::cast_selected(Actor &a, const PendingSelection &selection)
     }
 }
 
-// Frightened, while a source is in sight, and Poisoned give an ability check
-// Disadvantage.
+// Frightened, while a source is in sight, Poisoned and Sunlight Sensitivity
+// in sunlight give an ability check Disadvantage.
 bool Session::check_disadvantage(const Actor &a) const
 {
-    return !fears_in_sight(a).empty() || suffers_poisoned(a);
+    return !fears_in_sight(a).empty() || suffers_poisoned(a) || in_sunlight(a);
+}
+
+bool Session::in_sunlight(const Actor &a) const
+{
+    return def(a).sunlight_sensitive && open_sky(a.source.cell);
+}
+
+bool Session::open_sky(Cell cell) const
+{
+    return daylight_ && !board_.plants.empty() &&
+           board_.plants[static_cast<std::size_t>(cell.y * board_.width + cell.x)];
 }
 
 std::vector<const Actor *> Session::fears_in_sight(const Actor &a) const
@@ -19011,7 +19193,8 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
         result.disadvantage = true;
     }
     if (detail::sapped(a.effects) || suffers_poisoned(a) ||
-        detail::has_effect(a.effects, detail::EffectKind::scorched) || !fears_in_sight(a).empty())
+        detail::has_effect(a.effects, detail::EffectKind::scorched) ||
+        !fears_in_sight(a).empty() || in_sunlight(a))
     {
         result.disadvantage = true;
     }
@@ -24572,7 +24755,7 @@ void Session::dispatch(const Command &command)
     else if (const auto *bonus_spell = detail::find_spell(command.verb);
              bonus_spell && !command.verb.ends_with(detail::intervention_suffix) &&
              (bonus_spell->bonus_action || readies(a, Metamagic::quickened, *bonus_spell) ||
-              command.verb.ends_with(detail::item_bonus_suffix)))
+              bonus_action_verb(command.verb)))
     {
         // A Bonus Action spell spends no Action, so it resolves outside the
         // Action block below.
@@ -24727,10 +24910,13 @@ void Session::dispatch(const Command &command)
                 {
                     a.horde_origin = command.target;
                 }
-                // Multiattack: a monster's melee attacks follow on the same
-                // target while it stands. A Pirate first trades one for
-                // Enthralling Panache on a target it sees and has not charmed.
-                const int attacks = command.verb == "melee" ? d.multiattack : 1;
+                // Multiattack: a monster's attacks follow on the same target
+                // while it stands, ranged ones only for a stat block whose
+                // Multiattack allows them. A Pirate first trades one for
+                // Enthralling Panache on a target it sees and has not charmed,
+                // and a Wight one melee attack for Life Drain.
+                const bool melee = command.verb == "melee";
+                const int attacks = melee || d.multiattack_ranged ? d.multiattack : 1;
                 auto &target = actor(command.target);
                 int n = 0;
                 if (attacks > 1 && d.panache_dc && !has_condition(a, "blinded") &&
@@ -24739,10 +24925,23 @@ void Session::dispatch(const Command &command)
                     enthrall(a, target);
                     ++n;
                 }
+                else if (attacks > 1 && melee && d.life_drain_dc)
+                {
+                    drain_life(a, target);
+                    ++n;
+                }
                 for (; n < attacks && actor(command.target).life.hp > 0; ++n)
                 {
-                    attack(a, actor(command.target),
-                           command.verb == "melee" ? AttackRange::melee : AttackRange::ranged);
+                    if (melee && d.last_attack && n == attacks - 1)
+                    {
+                        attack_as(a, last_attack_loadout(a), actor(command.target),
+                                  AttackRange::melee);
+                    }
+                    else
+                    {
+                        attack(a, actor(command.target),
+                               melee ? AttackRange::melee : AttackRange::ranged);
+                    }
                 }
                 if (qualifies)
                 {
@@ -24794,7 +24993,8 @@ std::string Session::save() const
             << a.rush_used << ' ' << a.surges << ' ' << a.surge_used << ' ' << a.actions.surge
             << ' ' << a.actions.extra_attacks << ' ' << a.dashes << ' ' << a.arcane << ' '
             << a.lay_on_hands << ' ' << a.free_casts << ' ' << a.channel_divinity << ' '
-            << a.initiate_casts << ' ' << a.smite_target << ' ' << a.smite_critical << ' '
+            << a.initiate_casts << ' ' << a.innate_spent << ' ' << a.smite_target << ' '
+            << a.smite_critical << ' '
             << a.sneak_used << ' ' << a.aim_used << ' ' << a.aim_ready << ' ' << a.moved << ' '
             << a.attacked << ' ' << a.pounce << ' ' << a.brutal_used << ' ' << a.stun_used << ' '
             << a.fleet_step << ' ' << a.carried << ' ' << a.selected_weapon << ' '
@@ -24844,7 +25044,7 @@ std::string Session::save() const
         out << std::quoted(entry.english) << '\n';
     }
     out << scope_ << ' ' << elapsed_ms_ << ' ' << morale_ << ' ' << gold_ << ' ' << offerings_gold_
-        << ' ' << actors_.size() << '\n';
+        << ' ' << daylight_ << ' ' << actors_.size() << '\n';
     for (const auto &a : actors_)
     {
         detail::write_effects(out, all_effects(a));
@@ -25041,7 +25241,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         std::quoted(actor.life.temporary_hp.source_id) >> actor.rushes >> actor.rush_used >>
         actor.surges >> actor.surge_used >> actor.actions.surge >> actor.actions.extra_attacks >>
         actor.dashes >> actor.arcane >> actor.lay_on_hands >> actor.free_casts >>
-        actor.channel_divinity >> actor.initiate_casts >> actor.smite_target >>
+        actor.channel_divinity >> actor.initiate_casts >> actor.innate_spent >> actor.smite_target >>
         actor.smite_critical >> actor.sneak_used >> actor.aim_used >> actor.aim_ready >>
         actor.moved >> actor.attacked >> actor.pounce >> actor.brutal_used >> actor.stun_used >>
         actor.fleet_step >> actor.carried >> actor.selected_weapon >> light_count;
@@ -25198,7 +25398,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.lay_on_hands < 0 || actor.lay_on_hands > lay_capacity(definition) ||
         actor.free_casts < 0 || actor.free_casts > free_cast_capacity(definition) ||
         actor.channel_divinity < 0 || actor.channel_divinity > channel_capacity(definition) ||
-        actor.initiate_casts < 0 || (actor.initiate_casts & ~initiate_capacity(definition)))
+        actor.initiate_casts < 0 || (actor.initiate_casts & ~initiate_capacity(definition)) ||
+        !valid_innate_spent(definition, actor.innate_spent))
     {
         throw std::runtime_error("Invalid checkpoint actor state");
     }
@@ -25936,7 +26137,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     session->restore_log(input);
     unsigned effects_count{};
     input >> session->scope_ >> session->elapsed_ms_ >> session->morale_ >> session->gold_ >>
-        session->offerings_gold_ >> effects_count;
+        session->offerings_gold_ >> session->daylight_ >> effects_count;
     if (session->morale_ > 100 || session->offerings_gold_ > session->gold_)
     {
         throw std::runtime_error("Invalid checkpoint morale");
@@ -28453,7 +28654,8 @@ class Module final : public RulesModule
                                  e.kind == detail::EffectKind::resurged ||
                                  e.kind == detail::EffectKind::natural_cast ||
                                  e.kind == detail::EffectKind::trait_uses ||
-                                 e.kind == detail::EffectKind::heroic_inspiration;
+                                 e.kind == detail::EffectKind::heroic_inspiration ||
+                                 e.kind == detail::EffectKind::life_drained;
                       });
         // Back from the dead: the penalty eases by 1 with each Long Rest.
         for (auto &e : actor.effects.active)
@@ -30090,6 +30292,54 @@ class Module final : public RulesModule
         return result;
     }
 
+    unsigned climbing_chance(const CharacterSheet &sheet, const VitalState &state,
+                             std::span<const std::string> gear) const override
+    {
+        const bool heavier = std::any_of(gear.begin(), gear.end(),
+                                         [](const std::string &key)
+                                         {
+                                             const auto *armor = detail::armor(key);
+                                             return armor &&
+                                                    (armor->category ==
+                                                         detail::ArmorCategory::medium ||
+                                                     armor->category == detail::ArmorCategory::heavy);
+                                         });
+        if (detail::class_of(sheet) != CharacterClass::rogue || heavier)
+        {
+            return 0;
+        }
+        // Weigh the d20 rolls (pairs, with Advantage or Disadvantage) that
+        // reach DC 15, as roll_ability_check rolls them: a Halfling's 1 is
+        // rolled again, and Reliable Talent makes a proficient roll at least 10.
+        constexpr int climb_dc = 15;
+        const auto modifier = ability_check(sheet, gear, Ability::strength, "athletics");
+        const bool poisoned = suffers_poisoned(camp_actor(sheet, state));
+        const bool advantage = modifier.advantage && !(modifier.disadvantage || poisoned);
+        const bool disadvantage = !modifier.advantage && (modifier.disadvantage || poisoned);
+        const bool lucky = character_definition(character_profile(sheet, gear).data).lucky;
+        const bool reliable = sheet.level >= 7 && modifier.proficiency > 0;
+        // Out of 400 for one die: 20 a face, or 1 for a lucky 1 and 21 for the rest.
+        const auto weight = [&](int face) -> std::uint64_t
+        {
+            return !lucky ? 20 : face == 1 ? 1 : 21;
+        };
+        std::uint64_t successes = 0;
+        for (int first = 1; first <= 20; ++first)
+        {
+            for (int second = 1; second <= 20; ++second)
+            {
+                const int die = advantage      ? std::max(first, second)
+                                : disadvantage ? std::min(first, second)
+                                               : first;
+                if ((reliable ? std::max(die, 10) : die) + modifier.total >= climb_dc)
+                {
+                    successes += weight(first) * weight(second);
+                }
+            }
+        }
+        return static_cast<unsigned>((successes * 100 + 80000) / 160000);
+    }
+
     AbilityCheckRoll roll_ability_check(const CharacterSheet &sheet, const VitalState &state,
                                         std::span<const std::string> gear, Ability ability,
                                         std::string_view skill,
@@ -30837,7 +31087,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.249", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.250", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
@@ -31060,6 +31310,95 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             }
             continue;
         }
+        // innate creature label uses action|bonus spell...: a pool of daily
+        // spell uses ("Divine_Aid" is shown as "Divine Aid").
+        if (tag == "innate")
+        {
+            const auto found = content.definitions.find(key);
+            Definition::InnatePool pool;
+            std::string casting, spell;
+            row >> pool.label >> pool.uses >> casting;
+            while (row >> spell)
+            {
+                pool.spells.push_back(spell);
+            }
+            std::replace(pool.label.begin(), pool.label.end(), '_', ' ');
+            pool.bonus_action = casting == "bonus";
+            if (found == content.definitions.end() || pool.label.empty() ||
+                pool.label.size() > 40 || pool.uses < 1 || pool.uses > 15 ||
+                (casting != "action" && casting != "bonus") || pool.spells.empty() ||
+                found->second.innate.size() >= 4 ||
+                std::any_of(pool.spells.begin(), pool.spells.end(),
+                            [](const std::string &id)
+                            {
+                                const auto *known = detail::find_spell(id);
+                                return !known || known->id != id || !known->level;
+                            }))
+            {
+                throw std::runtime_error("Invalid innate spells: " + key);
+            }
+            // The creature knows its innate spells, as a caster knows its own.
+            auto &known = found->second.spells;
+            for (const auto &id : pool.spells)
+            {
+                if (std::find(known.begin(), known.end(), id) == known.end())
+                {
+                    known.push_back(id);
+                }
+            }
+            found->second.innate.push_back(std::move(pool));
+            continue;
+        }
+        // life_drain creature dc count sides bonus: a Wight's Life Drain.
+        if (tag == "life_drain")
+        {
+            const auto found = content.definitions.find(key);
+            int dc{};
+            Dice drain;
+            row >> dc >> drain.count >> drain.sides >> drain.bonus;
+            if (!row || found == content.definitions.end() || dc < 1 || dc > 30 ||
+                drain.count < 1 || drain.count > 10 || drain.sides < 2 || drain.sides > 20 ||
+                drain.bonus < 0 || drain.bonus > 30 || !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid Life Drain: " + key);
+            }
+            found->second.life_drain_dc = dc;
+            found->second.life_drain = drain;
+            row >> std::ws;
+            if (!row.eof())
+            {
+                throw std::runtime_error("Unknown Life Drain fields: " + key);
+            }
+            continue;
+        }
+        // last_attack creature bonus count sides modifier type extra_count
+        // extra_sides extra_type: the Multiattack's last melee attack.
+        if (tag == "last_attack")
+        {
+            const auto found = content.definitions.find(key);
+            Definition::LastAttack last;
+            std::string type, extra_type;
+            row >> last.bonus >> last.dice.count >> last.dice.sides >> last.dice.bonus >> type >>
+                last.extra.count >> last.extra.sides >> extra_type;
+            if (!row || found == content.definitions.end() || found->second.multiattack < 2 ||
+                last.bonus < -10 || last.bonus > 30 || last.dice.count < 1 ||
+                last.dice.count > 10 || last.dice.sides < 2 || last.dice.sides > 20 ||
+                last.dice.bonus < -10 || last.dice.bonus > 30 || last.extra.count < 1 ||
+                last.extra.count > 10 || last.extra.sides < 2 || last.extra.sides > 20 ||
+                !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid last attack: " + key);
+            }
+            last.type = detail::damage_type(type);
+            last.extra_type = detail::damage_type(extra_type);
+            found->second.last_attack = last;
+            row >> std::ws;
+            if (!row.eof())
+            {
+                throw std::runtime_error("Unknown last attack fields: " + key);
+            }
+            continue;
+        }
         if (tag == "enthralling_panache")
         {
             const auto found = content.definitions.find(key);
@@ -31079,7 +31418,8 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             continue;
         }
         if (tag == "pack_tactics" || tag == "aggressive" || tag == "advantage_damage" ||
-            tag == "undead_fortitude")
+            tag == "undead_fortitude" || tag == "multiattack_ranged" ||
+            tag == "sunlight_sensitivity" || tag == "evil")
         {
             const auto found = content.definitions.find(key);
             if (found == content.definitions.end() || !trait_rows.insert(tag + " " + key).second)
@@ -31098,6 +31438,18 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             else if (tag == "undead_fortitude")
             {
                 definition.undead_fortitude = true;
+            }
+            else if (tag == "multiattack_ranged")
+            {
+                definition.multiattack_ranged = true;
+            }
+            else if (tag == "sunlight_sensitivity")
+            {
+                definition.sunlight_sensitive = true;
+            }
+            else if (tag == "evil")
+            {
+                definition.evil = true;
             }
             else
             {

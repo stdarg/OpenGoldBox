@@ -68,6 +68,11 @@ type slums-bugbear fey
 pack_tactics slums-kobold
 pack_tactics slums-kobold-leader
 pack_tactics slums-kobold-leader-sword
+# sunlight_sensitivity creature: Disadvantage on attack rolls and ability
+# checks on a square open to the sky by day (the user, 2026-10-24).
+sunlight_sensitivity slums-kobold
+sunlight_sensitivity slums-kobold-leader
+sunlight_sensitivity slums-kobold-leader-sword
 advantage_damage slums-goblin 1 4
 advantage_damage slums-goblin-leader 1 4
 aggressive slums-orc
@@ -164,6 +169,74 @@ affinity ghoul stat:poison immunity poison
 type ghoul undead
 multiattack ghoul 2
 melee_extra_damage ghoul 1 6 necrotic
+# The Cadorna Textile House's Skeleton (SRD 5.2.1): Shortsword and Shortbow,
+# Vulnerability to Bludgeoning, Immunity to Poison.
+creature skeleton 14 13 3 30 5 1 6 3 5 1 6 3 80 320 0 0 0 1 0
+saves skeleton 0 3 2 -2 -1 -3
+damage_types skeleton piercing piercing
+affinity skeleton stat:bludgeoning vulnerability bludgeoning
+affinity skeleton stat:poison immunity poison
+type skeleton undead
+# The Cadorna Textile House's other monsters (SRD 5.2.1;
+# docs/audits/cadorna-textile-house.md, CADORNA-1).
+# Giant Frog: its Bite, without the Grapple and Swallow.
+creature giant-frog 11 18 1 30 3 1 6 2 0 0 0 0 0 0 0 0 0 1 0
+saves giant-frog 1 1 0 -4 0 -4
+damage_types giant-frog piercing piercing
+type giant-frog beast
+perception giant-frog 2
+# Giant Scorpion: two Claws, then the Sting (last_attack creature bonus count
+# sides modifier type extra_count extra_sides extra_type); no grapple. The
+# original's Large Scorpion is the same stat block with its 10 Hit Points.
+creature giant-scorpion 15 52 1 40 5 1 6 3 0 0 0 0 0 0 0 0 0 1 0
+saves giant-scorpion 3 1 2 -5 -1 -4
+damage_types giant-scorpion bludgeoning bludgeoning
+size giant-scorpion large
+type giant-scorpion beast
+multiattack giant-scorpion 3
+last_attack giant-scorpion 5 1 8 3 piercing 2 10 poison
+creature large-scorpion 15 10 1 40 5 1 6 3 0 0 0 0 0 0 0 0 0 1 0
+saves large-scorpion 3 1 2 -5 -1 -4
+damage_types large-scorpion bludgeoning bludgeoning
+size large-scorpion large
+type large-scorpion beast
+multiattack large-scorpion 3
+last_attack large-scorpion 5 1 8 3 piercing 2 10 poison
+# Wight, with the original's 23 Hit Points: two attacks, Necrotic Sword or
+# Necrotic Bow (multiattack_ranged), one of them Life Drain in melee
+# (life_drain creature dc count sides bonus).
+creature wight 14 23 4 30 4 1 8 2 4 1 8 2 150 600 0 0 0 1 0
+saves wight 2 2 3 0 1 2
+damage_types wight slashing piercing
+affinity wight stat:necrotic resistance necrotic
+affinity wight stat:poison immunity poison
+type wight undead
+perception wight 3
+multiattack wight 2
+multiattack_ranged wight
+melee_extra_damage wight 1 8 necrotic
+ranged_extra_damage wight 1 8 necrotic
+life_drain wight 13 1 8 2
+sunlight_sensitivity wight
+# Grishnak, the SRD 5.2.1 Priest: two attacks, Mace (1d6 + 3 Bludgeoning and
+# 2d4 Radiant) or Radiant Flame (2d10 Radiant, 60 feet); Wisdom spellcasting,
+# save DC 13 (casting bonus 5). innate creature label uses action|bonus
+# spells...: Spirit Guardians once a day, and Divine Aid's spells three times a
+# day as a Bonus Action. evil: her Spirit Guardians deal Necrotic damage.
+creature grishnak 13 38 0 30 5 1 6 3 5 2 10 0 60 60 0 0 5 1 0
+saves grishnak 3 0 1 1 3 1
+damage_types grishnak bludgeoning radiant
+multiattack grishnak 2
+multiattack_ranged grishnak
+melee_extra_damage grishnak 2 4 radiant
+innate grishnak Spellcasting 1 action spirit_guardians
+innate grishnak Divine_Aid 3 bonus bless dispel_magic healing_word lesser_restoration
+evil grishnak
+# Skullcrusher as a foe: the SRD 5.2.1 Tough (Mace, Heavy Crossbow).
+creature skullcrusher 12 32 1 30 4 1 6 2 3 1 10 1 100 400 0 0 0 1 0
+saves skullcrusher 2 1 2 0 0 0
+damage_types skullcrusher bludgeoning piercing
+pack_tactics skullcrusher
 # Summon Dragon's Draconic Spirit (SRD 5.2.1 p. 166), one stat block per
 # spell level: AC 14 + the level, 50 Hit Points and 10 more per level above 5,
 # Rend 1d6 + 4 + the level Piercing (reach 10 feet), half the level in Rends.

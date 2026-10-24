@@ -231,6 +231,14 @@ class RolfTourSession
         difficulty_ = difficulty;
     }
 
+    // The character creation rules the original's NPCs who join the party are
+    // built with (Skullcrusher, CADORNA-1). Without them, ADD NPC accepts only
+    // the profiles in the area's resources.
+    void companion_rules(std::shared_ptr<const rules::CharacterRules> creation)
+    {
+        companion_rules_ = std::move(creation);
+    }
+
     // The temples data/shops describes (TEMPLE-1); a temple it does not name
     // offers the original's services and prices.
     void temples(std::vector<opengold::TempleSite> sites)
@@ -403,6 +411,7 @@ class RolfTourSession
     };
 
     std::vector<opengold::TempleSite> temples_;
+    std::shared_ptr<const rules::CharacterRules> companion_rules_;
     std::vector<opengold::ShopSite> shops_;
     std::vector<std::vector<Equipment>> shop_stocks_; // each shop's items, as shops_
     [[nodiscard]] bool standing_at(const std::string &archive, unsigned record,
@@ -562,6 +571,8 @@ class RolfTourSession
     void notice(std::string message);
     // Each arrow attacks a random conscious active member; returns a report line for each.
     [[nodiscard]] std::string shoot_arrows(unsigned arrows, const rules::HazardAttack &arrow);
+    // The chosen member falls for dice d sides + bonus Bludgeoning; returns its report line.
+    [[nodiscard]] std::string fall(unsigned dice, unsigned sides, int bonus);
     void publish_pose();
     void handle_host(const EclRequest &request);
     void fail(std::string diagnostic);

@@ -3,6 +3,7 @@
 #include "opengold/coin_purse.h"
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <optional>
 #include <stdexcept>
 #include <string_view>
@@ -218,23 +219,29 @@ std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attri
 
 EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
 {
-    if (slot.index >= 8)
+    if (slot.index > ecl_scanned_slots)
     {
         throw std::runtime_error("Invalid ECL party position");
     }
     std::array<std::uint16_t, 285> fields{};
     EclHostReply reply;
-    if (const auto id = party.state().slots[slot.index])
+    if (const auto id = slot.index < 8 ? party.state().slots[slot.index] : MemberId{})
     {
         const auto &m = party.member(id);
         const auto &sheet = m.character.sheet();
         const auto &name = sheet.name;
+        // The original keeps names in capitals, as its scripts compare them
+        // (Skullcrusher's search, ECL4:2 0xAAA5).
         for (std::size_t n = 0; n < name.size() && n < 15; ++n)
         {
-            fields[n] = static_cast<unsigned char>(name[n]);
+            fields[n] = static_cast<unsigned char>(
+                std::toupper(static_cast<unsigned char>(name[n])));
         }
         fields[0x18] = sheet.scores[rules::Ability::constitution];
         fields[0x72] = adnd_race_code(m.character.creation_data().race);
+        // The thief's climb-walls chance, which the Cadorna Textile House's
+        // dry well rolls (ECL4:2 0xACC5).
+        fields[0xAB] = party.climbing_chance(id);
         fields[0x100] = m.vitals.dead ? 0 : 1;
         fields[0x119] = m.vitals.hit_points;
         // Every member shows the party's money: the party owns it all.

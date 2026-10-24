@@ -125,6 +125,12 @@ void keep_item_uses(PartyMember &member, std::uint64_t id, unsigned left)
         keep_scroll_spells(member, id, left);
         return;
     }
+    // Combat reports the uses left after every action, so an item an earlier
+    // report used up is already gone.
+    if (!item && left == 0)
+    {
+        return;
+    }
     if (!item || left > item->get().quantity)
     {
         throw std::runtime_error("Combat reported more item uses than were carried");
@@ -2130,6 +2136,28 @@ std::optional<HazardHit> CampaignParty::hazard_attack(const rules::HazardAttack 
     return hit;
 }
 
+std::optional<rules::HazardAttackResult>
+CampaignParty::hazard_attack(MemberId target, const rules::HazardAttack &attack)
+{
+    editable();
+    if (member(target).vitals.hit_points <= 0)
+    {
+        return std::nullopt;
+    }
+    auto next = state_;
+    auto &struck = member_in(next, target);
+    auto result = rules_->hazard_attack(struck.vitals, struck.character.sheet(),
+                                        equipped_definitions(struck), attack, next.random_state);
+    state_ = std::move(next);
+    return result;
+}
+
+unsigned CampaignParty::climbing_chance(MemberId id) const
+{
+    const auto &m = member(id);
+    return rules_->climbing_chance(m.character.sheet(), m.vitals, equipped_definitions(m));
+}
+
 int CampaignParty::hit_point_maximum(MemberId id) const
 {
     const auto &m = member(id);
@@ -2529,11 +2557,11 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
 std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot, const por::EclMachine &vm)
 {
     outside_combat();
-    if (slot.index >= 8)
+    if (slot.index > ecl_scanned_slots)
     {
         throw std::runtime_error("Invalid ECL party position");
     }
-    const auto id = state_.slots[slot.index];
+    const auto id = slot.index < 8 ? state_.slots[slot.index] : MemberId{};
     if (!id)
     {
         return {};

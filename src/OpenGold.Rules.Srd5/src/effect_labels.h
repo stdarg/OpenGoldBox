@@ -241,6 +241,8 @@ inline constexpr std::array effect_labels{
     EffectLabel{EffectKind::drained, "Hit Point maximum lowered (Harm)",
                 "Hit Point maximum lowered by {value} until Greater Restoration.",
                 EffectValue::number},
+    EffectLabel{EffectKind::life_drained, "Hit Point maximum lowered (Life Drain)",
+                "Hit Point maximum lowered by {value} until a Long Rest.", EffectValue::number},
     EffectLabel{
         EffectKind::feasted, "Heroes' Feast",
         "Hit Point maximum increased by {value}, Resistance to Poison damage, and immune to Frightened and Poisoned.",
@@ -403,7 +405,7 @@ inline constexpr std::array long_rest_effects{
     EffectKind::protectors_used,   EffectKind::overchanneled, EffectKind::wings_used,
     EffectKind::luck_used,         EffectKind::hurl_used,     EffectKind::arcanum_used,
     EffectKind::resurged,          EffectKind::natural_cast,  EffectKind::trait_uses,
-    EffectKind::heroic_inspiration};
+    EffectKind::heroic_inspiration, EffectKind::life_drained};
 
 // The label of a kind a player sees; nullptr for bookkeeping.
 inline constexpr const EffectLabel *effect_label(EffectKind kind)
