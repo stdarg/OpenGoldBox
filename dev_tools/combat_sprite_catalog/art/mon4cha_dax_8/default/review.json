@@ -1,15 +1,15 @@
 {
-  "action_sha256": "fee63637f6ba3c0e3925da1b9daf0289c282357abada197fbd43c84059623a2f",
+  "action_sha256": "90771aaeb51f6530c2af51d82884ced882fca11028d94e491436d53c5d438667",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon4cha_dax_8/default/action.png",
     "ready": "art/mon4cha_dax_8/default/ready.png"
   },
   "metadata_sha256": "baceb3cb8017394947eea5b5ac1614ccaed2519ea998d99fef635a9dfedcdfcf",
-  "notes": "Reviewed transparent pair side by side at combat pixel size and against the fixed catalog grid; checked one-second ready/action timing, planted base, scale, equipment and intended attack. Unarmed limbs fit saved footprint; moving weapons may overhang only in action.",
+  "notes": "Reviewed final 128x128 transparent unarmed Ogre pair on light gray, magenta and dark backgrounds, side by side and alternating in the staged Combat Sprite Catalog. Ready has both bare fists slightly raised; action visibly lowers and leans the upper body into a foreshortened punch with the other fist recoiled. Both poses fit the saved 1x2 footprint at catalog size. Lower-foot pixels match exactly, with no whole-body slide. One Ogre identity, scale, facing, clothing and alpha cutout checked. No weapon or shield was invented. Only newly generated character art and the approved pose guide were used as generation references.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "f6634d75e14ae23ea03b8d86706e905cdd17ec0ec7a0a6afdf05bb4ed73cca9b",
-  "reviewed_at": "2026-10-24T04:48:26+00:00",
+  "ready_sha256": "c777da545efaae578a379b094f2818b4e9e6c392cdea064e5724480661b0f193",
+  "reviewed_at": "2026-10-24T18:17:34+00:00",
   "reviewer": "Codex",
   "source_key": "MON4CHA.DAX:8",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
 }
