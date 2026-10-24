@@ -307,8 +307,6 @@ std::string_view area_beyond(unsigned script)
         return "the nomad camp";
     case 22:
         return "the Pyramid";
-    case 24:
-        return "the Temple of Bane";
     case 25:
         return "the western wilderness";
     case 27:
@@ -459,6 +457,18 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
     reply.writes.push_back({EclAddress{0x6DB1}, static_cast<std::uint16_t>(slot.index)});
     reply.writes.push_back({EclAddress{0x6DB4}, static_cast<std::uint16_t>(slot.index)});
     return reply;
+}
+
+bool RolfTourSession::dismissed_companion() const
+{
+    if (!campaign_ || selected_character_.index >= 8)
+    {
+        return false;
+    }
+    const auto id = campaign_->state().slots[selected_character_.index];
+    return id && !campaign_->member(id).npc_source.empty() &&
+           machine_.variable(ecl_character_record) == 0 &&
+           machine_.variable(ecl_character_status) == 0;
 }
 
 void RolfTourSession::read_character()
@@ -1466,6 +1476,12 @@ void RolfTourSession::stage_treasure(const EclRequest &request)
         loot.wealth[coin] = request.arguments.at(coin).number();
     }
     loot.reward_id = treasure_identity(request.instruction->address);
+    // An instruction whose list comes from a script cell gives each list once:
+    // the Temple of Bane's three trapdoors share one (ECL1:24 0xAA34).
+    if (request.instruction->operands.at(7).tag != 0)
+    {
+        loot.reward_id += ":list:" + std::to_string(items);
+    }
     loot.include_items = false;
     if (items < 128)
     {
@@ -2069,7 +2085,17 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             {
                 throw EclError("Selected character store mismatch");
             }
-            read_character();
+            // A script that blanks a companion's name and status before
+            // storing the record sends the companion away (Dirten stays at
+            // the cleansed Temple of Bane, ECL1:24 0xACC3).
+            if (dismissed_companion())
+            {
+                campaign_->remove(campaign_->state().slots[selected_character_.index]);
+            }
+            else
+            {
+                read_character();
+            }
             reply = character_reply(selected_character_);
         }
         else
@@ -2369,8 +2395,24 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             throw EclError("NPC needs an explicit supported conversion/allegiance profile");
         }
-        campaign_->recruit("por:MON" + std::to_string(bank) + "CHA:" + std::to_string(arg(0)),
-                           std::move(*companion), arg(1));
+        const auto joined =
+            campaign_->recruit("por:MON" + std::to_string(bank) + "CHA:" + std::to_string(arg(0)),
+                               std::move(*companion), arg(1));
+        // A companion arrives with its gear on (Dirten's mace and armor).
+        const auto &member = campaign_->member(joined);
+        std::vector<std::uint64_t> unequipped;
+        for (const auto &item : member.character.inventory().items())
+        {
+            if (std::find(member.equipped.begin(), member.equipped.end(), item.id) ==
+                member.equipped.end())
+            {
+                unequipped.push_back(item.id);
+            }
+        }
+        for (const auto item : unequipped)
+        {
+            (void)campaign_->equip(joined, item);
+        }
         break;
     }
     case 39:
@@ -2627,6 +2669,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             throw EclError("Invalid district entry facing");
         }
         reply.writes = {{ecl_wall_ahead, cell.walls[facing]}, {ecl_cell_event, cell.event_raw}};
+        // The original keeps the loaded map's number, which a script with two
+        // maps reads to tell them apart (the Temple of Bane, ECL1:24 0x993D).
+        if (current_area_)
+        {
+            reply.writes.push_back({ecl_current_map, static_cast<std::uint16_t>(current_area_)});
+        }
         break;
     }
     case 60:

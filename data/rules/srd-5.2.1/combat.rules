@@ -333,6 +333,22 @@ perception kovel-master-thief 6
 melee_extra_damage kovel-master-thief 2 6 poison
 ranged_extra_damage kovel-master-thief 2 6 poison
 cunning_action kovel-master-thief
+# The Temple of Bane (docs/audits/temple-of-bane.md, BANE-1): its half-orc
+# cleric is the SRD 5.2.1 Priest, as Grishnak is, with the original's 25 Hit
+# Points; its orc archers are the Orc (SRD 5.1) shooting a Shortbow.
+creature bane-cleric 13 25 0 30 5 1 6 3 5 2 10 0 60 60 0 0 5 1 0
+saves bane-cleric 3 0 1 1 3 1
+damage_types bane-cleric bludgeoning radiant
+multiattack bane-cleric 2
+multiattack_ranged bane-cleric
+melee_extra_damage bane-cleric 2 4 radiant
+innate bane-cleric Spellcasting 1 action spirit_guardians
+innate bane-cleric Divine_Aid 3 bonus bless dispel_magic healing_word lesser_restoration
+evil bane-cleric
+creature bane-orc-archer 13 15 1 30 5 1 12 3 3 1 6 1 80 320 0 0 0 1 0
+saves bane-orc-archer 3 1 3 -2 0 0
+damage_types bane-orc-archer slashing piercing
+aggressive bane-orc-archer
 # Summon Dragon's Draconic Spirit (SRD 5.2.1 p. 166), one stat block per
 # spell level: AC 14 + the level, 50 Hit Points and 10 more per level above 5,
 # Rend 1d6 + 4 + the level Piercing (reach 10 feet), half the level in Rends.

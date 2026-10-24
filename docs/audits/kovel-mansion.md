@@ -17,8 +17,8 @@ Central Wilderness's `ECL7.DAX 26` for the way in), `opengold_creatures GAME`,
   leads to (15,4) facing west. New Phlan's harbor master sells passage to the
   bay, which lands at the eastern edge.
 - **The way out** (the step entry `0x9914`): north to the wilderness at
-  (13,26), east to (13,27), south to the Temple of Bane's block (`ECL1:24`,
-  not in the game yet, refused with a notice); the west edge leads nowhere.
+  (13,26), east to (13,27), south to the Temple of Bane's street (`ECL1:24`,
+  in the game since 2026-10-24); the west edge leads nowhere.
 - **Camps** (`0xB4CC`): while the guild stands (`0x4AB2` below 254), three
   thieves with slings break up every camp: three sling bullets of 1d4+1.
 - **Events** (the event byte's low seven bits index the jump table at

@@ -28,6 +28,8 @@ inline constexpr EclAddress ecl_party_y{0xC04C};
 inline constexpr EclAddress ecl_party_facing{0xC04D};
 inline constexpr EclAddress ecl_wall_ahead{0xC04E};
 inline constexpr EclAddress ecl_cell_event{0xC04F};
+// The 3D map LOAD FILES last loaded (coab's current_3DMap_block_id).
+inline constexpr EclAddress ecl_current_map{0x49C5};
 
 // On the wilderness map: the party's square in its window (0-15, 0-35), the
 // direction it steps (the original's party_Dir: 0 north and on clockwise to
@@ -57,6 +59,8 @@ inline constexpr EclAddress ecl_clock_year{0x49CC};
 // The selected character's record fields start here; its hit points are one
 // of them.
 inline constexpr EclAddress ecl_character_record{0x6B00};
+// The record's status byte: 1 for a member who can act.
+inline constexpr EclAddress ecl_character_status{0x6C00};
 inline constexpr EclAddress ecl_character_hit_points{0x6C19};
 
 // Combat: the morale the script sets beforehand, the surprise bits (1 the

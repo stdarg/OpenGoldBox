@@ -1735,3 +1735,16 @@ they await the user's review ([audit](audits/kovel-mansion.md)):
 - **The thieves** keep the original's Hit Points on SRD stat blocks, as in
   MENDOR-1: a 1st-level thief is the Bandit (4 Hit Points) and a 6th-level
   thief the Spy (28 Hit Points), with its Cunning Action and poisoned blades.
+
+## BANE-1 (2026-10-24): the Temple of Bane
+
+Claude chose these on 2026-10-24 while making the map playable area by area;
+they await the user's review ([audit](audits/temple-of-bane.md)):
+
+- **Dirten** joins as a level-5 Cleric with his record's scores, an
+  Acolyte, wearing a Chain Shirt for his chain armor: SRD Clerics are not
+  trained in Chain Mail, and without training he could not cast. He carries
+  his Mace.
+- **The half-orc cleric** is the SRD Priest with the original's 25 Hit
+  Points, as Grishnak is; the orc archers are the Orc shooting a Shortbow;
+  the Ogre Leader is the Ogre, with a leader's double experience.

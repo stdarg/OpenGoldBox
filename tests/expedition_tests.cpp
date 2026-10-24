@@ -2955,6 +2955,116 @@ void kovel_mansion(const std::filesystem::path &directory)
           "Kovel Mansion's north edge leads onto the wilderness map");
 }
 
+// The Temple of Bane (docs/audits/temple-of-bane.md): City Hall's summons to
+// Tyr's bishop, Dirten joining, the bay's boat and the city's eastern edge
+// south into the street before the orcs' mansion, the mansion's orcs, the
+// goblin slaves let go, the temple's guards, its three trapdoors found by
+// searching, the horde and its half-orc cleric, and Dirten staying behind.
+void temple_of_bane(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 6500, "test:temple-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 5)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    // City Hall's clerk names three commissions at most, the bishop's sixth:
+    // the party stands in for one that has finished the five before it (the
+    // Slums, Sokal Keep, the books, the auction and Cadorna's commission).
+    for (const auto done : {0x4ABB, 0x4AA7, 0x4AC2, 0x4AB0, 0x4A97})
+    {
+        opengold::test::TourAccess::set_variable(town, por::EclAddress{std::uint16_t(done)}, 255);
+    }
+    walk_to(town, party, 4, 5);
+    walk_to(town, party, 5, 5);
+    check(town.script_variable(por::EclAddress{0x4A9B}) == 254,
+          "City Hall summons the party to Tyr's bishop");
+    walk_to(town, party, 10, 5, prefer({"YES"}));
+    const auto &slots = party->state().slots;
+    const auto joined =
+        std::find_if(slots.begin(), slots.end(),
+                     [&](MemberId id)
+                     {
+                         return id && party->member(id).npc_source == "por:MON3CHA:107";
+                     });
+    check(joined != slots.end(), "Dirten joins the party at the bishop's request");
+    const auto dirten = *joined;
+    const auto &sheet = party->member(dirten).character.sheet();
+    check(sheet.name == "Dirten" && sheet.level == 5 && sheet.character_class == "Cleric" &&
+              sheet.scores[rules::Ability::strength] == 10 &&
+              sheet.scores[rules::Ability::dexterity] == 10 &&
+              sheet.scores[rules::Ability::constitution] == 9 &&
+              sheet.scores[rules::Ability::intelligence] == 15 &&
+              sheet.scores[rules::Ability::wisdom] == 16 &&
+              sheet.scores[rules::Ability::charisma] == 15 &&
+              party->member(dirten).equipped.size() == 2,
+          "Dirten is a level-5 Cleric with his record's scores, his mace and armor on");
+
+    walk_to(town, party, 11, 2);
+    step(town, party, 0, prefer({"BAY"}));
+    walk_to(town, party, 14, 1);
+    step(town, party, 1, prefer({"STAY", "SOUTH"}));
+    check(town.snapshot().area_id == 31 && town.snapshot().pose.x == 15 &&
+              town.snapshot().pose.y == 4,
+          "The city's eastern edge leads south into the street before the Temple of Bane");
+    const auto folder = std::filesystem::temp_directory_path() / "opengold-temple";
+    std::filesystem::create_directories(folder);
+    const auto save = folder / "temple-of-bane.ogs";
+    write_campaign_file(save, encode_campaign(*party, &town, campaign_asset_identity(directory)));
+    check(load_expedition(save, directory).town.snapshot().area_id == 31,
+          "A save before the Temple of Bane loads back there");
+    std::filesystem::remove_all(folder);
+
+    const auto temple = [&](std::uint16_t address)
+    {
+        return town.script_variable(por::EclAddress{address});
+    };
+    const auto fight_them = prefer({"Bash", "ATTACK", "COMBAT", "Fight", "SEARCH THE BEDS",
+                                    "LET THEM GO", "OPEN TRAPDOOR", "DESTROY ALTAR", "YES"});
+    const auto prowl = [&](unsigned x, unsigned y)
+    {
+        heal(*party);
+        walk_to(town, party, x, y, fight_them, true);
+    };
+    // The orcs' mansion, entered from the south.
+    prowl(10, 9);
+    check(temple(0x4AA8) == 254, "The mansion's orcs are beaten");
+    prowl(6, 8);
+    check((temple(0x4A2E) & 16) != 0, "The six orcs and their ogre are beaten");
+    prowl(14, 8);
+    check((temple(0x4A2E) & 32) != 0, "The goblin slaves are let go");
+
+    // West into the temple's block, to its doors.
+    prowl(0, 4);
+    step(town, party, 3, fight_them);
+    check(town.snapshot().area_id == 24, "The street's west edge leads to the temple's block");
+    prowl(2, 7);
+    check(temple(0x4A0F) == 1, "The temple's guards are beaten");
+
+    // The three trapdoors inside, found by searching.
+    for (const auto &[x, y, bit] : std::array<std::tuple<unsigned, unsigned, unsigned>, 3>{
+             {{5, 5, 1}, {9, 12, 2}, {12, 9, 4}}})
+    {
+        prowl(x, y);
+        check(look_until(
+                  town, party,
+                  [&]
+                  {
+                      return (temple(0x4A2D) & bit) != 0;
+                  },
+                  fight_them),
+              "Searching finds a trapdoor's treasure");
+    }
+    check(temple(0x4ABD) == 254, "The horde and its half-orc cleric are beaten");
+    check(std::find(slots.begin(), slots.end(), dirten) == slots.end(),
+          "Dirten stays behind at the cleansed temple");
+}
+
 // Mendor's Library (docs/audits/mendors-library.md), east of the Cadorna
 // Textile House: entered by the house's east edge and saved there, the
 // wizard-locked doors opened with Knock, a book of history found by looking in
@@ -4124,6 +4234,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         sokal_keep(directory);
         central_wilderness(directory);
         kovel_mansion(directory);
+        temple_of_bane(directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -4224,6 +4335,12 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--wilderness")
         {
             central_wilderness(directory);
+            return 0;
+        }
+        // Plays the Temple of Bane alone with a new party.
+        if (argc == 2 && std::string_view(argv[1]) == "--temple")
+        {
+            temple_of_bane(directory);
             return 0;
         }
         // Plays Kovel Mansion alone with a new party.
