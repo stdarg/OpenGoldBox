@@ -1,0 +1,28 @@
+{
+  "action_sha256": "ecbc2f3c6ed8a100757f753965509d1bc0dbfaf450568b8a98fc581ff9503095",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon4cha_dax_106/default/action.png",
+    "ready": "art/mon4cha_dax_106/default/ready.png"
+  },
+  "metadata_sha256": "3740bc9923a8fd0164bd945a02db87162f21f680df8ec52cb46cb6e96be3918f",
+  "notes": "The Wolf is low and wide in its 2x1 footprint. It faces and attacks screen right with an open-mouthed bite in action rather than lunging toward the viewer; paws remain grounded. Final 128x128 PNGs checked on light gray, magenta, and dark backgrounds, at native combat size and in a one-second ready/action cycle in the isolated Godot catalog. Loaded path and exact file hashes matched the staged images. Full equipment and alternate weapon sets were inspected; unaffected sets remain unchanged.",
+  "ready_sha256": "88e7671f951d5f326d84a9150a9e2d520d16592a69272cb2c2065630f5aaafa8",
+  "reviewed_at": "2026-10-24T19:18:51.505602+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON4CHA.DAX:106",
+  "specification": "natural-in-place-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "complete_alpha_silhouette_on_light_magenta_dark": true,
+    "correct_equipment_or_no_equipment": true,
+    "footprint_and_attack_appendage_reviewed": true,
+    "one_second_fixed_grid_catalog_review": true,
+    "planted_base_registered": true,
+    "readable_at_combat_size": true,
+    "requested_ready_and_action_motion": true,
+    "same_body_scale_and_perspective": true,
+    "source_identity_and_independent_art": true
+  },
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
+}

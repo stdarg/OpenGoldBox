@@ -1,16 +1,16 @@
 {
-  "action_sha256": "9548d5fc171473f373f4d91eac5301d165627453ad63f0dd0f8841d95edc3f23",
+  "action_sha256": "4eb270e0fe7f96a55820251a6b48bf2142c97a8cbc438309fb0ac020483cb413",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon4cha_dax_28/default/action.png",
     "ready": "art/mon4cha_dax_28/default/ready.png"
   },
   "metadata_sha256": "eb75f1c592d9dfddfe56dcaf9cf7984b30e7831e7a044185e9b7900ec6994cdb",
-  "notes": "Used approved pose guide and newly generated Grishnak art. Rejected first design with invented metallic accessories; revised to plain cloth. Native 128-pixel pair and one-second catalog alternation visually checked. Ready fits 1x1; action casting effect alone crosses side 0.06 square. Exact same body and feet in both frames; normal 5-foot head-to-foot height.",
+  "notes": "Grishnak is visibly a hobgoblin high priestess with copper skin, pointed ears, broad jaw, and tusks in both poses. Preserve ivory and red priestly robes and in-place spellcasting gesture; no gear was invented. Final 128x128 PNGs checked on light gray, magenta, and dark backgrounds, at native combat size and in a one-second ready/action cycle in the isolated Godot catalog. Loaded path and exact file hashes matched the staged images. Full equipment and alternate weapon sets were inspected; unaffected sets remain unchanged.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "5d108ecf027bbc76147a9595a14a48f88abb20541a0725894a488660a8005eb7",
-  "reviewed_at": "2026-10-23T07:17:41.088248+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "946ffc1e4d494d891d3b1856e07df765b5c6d8c9d63405e409a1bbd58caec63c",
+  "reviewed_at": "2026-10-24T19:18:51.504625+00:00",
+  "reviewer": "Codex",
   "source_key": "MON4CHA.DAX:28",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
 }

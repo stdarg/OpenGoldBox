@@ -1,16 +1,16 @@
 {
-  "action_sha256": "d0ea1b407b6937c83194b6c72ceb1d627a2e099db3415910944bf52dbd5ccf78",
+  "action_sha256": "626f3b84e21ff4f458428426a3f920252a28f7a71e145983e1382cff4aedc981",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon4cha_dax_70/default/action.png",
     "ready": "art/mon4cha_dax_70/default/ready.png"
   },
   "metadata_sha256": "e5cb9b369720d6de7538e1a6e023203e4b2664c8e34bdce4512062570b231ca8",
-  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
+  "notes": "Both Efreeti poses have a vivid flame vortex below a muscular torso. Ready arms are crossed; action fists rise with flame. The vortex base is fixed, and only action flames at the fists extend right of the 1x2 square. Final 128x128 PNGs checked on light gray, magenta, and dark backgrounds, at native combat size and in a one-second ready/action cycle in the isolated Godot catalog. Loaded path and exact file hashes matched the staged images. Full equipment and alternate weapon sets were inspected; unaffected sets remain unchanged.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "e4d7077dd3587b274dba7de7f9408b6024787d1e040e9b53b687d249e199c368",
-  "reviewed_at": "2026-10-21T21:51:01.736121+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "d3ef974b0efd20fbdce1f2746a2dcca6535a9a0b6656578f4bfcc712c9218a96",
+  "reviewed_at": "2026-10-24T19:18:51.505223+00:00",
+  "reviewer": "Codex",
   "source_key": "MON4CHA.DAX:70",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
 }

@@ -1,0 +1,2 @@
+Natural in-place action for MON4CHA.DAX:106. The Wolf is low and wide in its 2x1 footprint. It faces and attacks screen right with an open-mouthed bite in action rather than lunging toward the viewer; paws remain grounded.
+128x128 transparent pixel art. Use the independently made ready image for identity, palette, scale, and base registration. Animate only the attacking head, tail, or other relevant appendage.

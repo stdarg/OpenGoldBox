@@ -185,4 +185,4 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-REVISION-SPECIFIC DIRECTION (2026-10-24): The unarmed Ogre goes low by bending and leaning its upper body forward, then delivers a clear punch toward screen right and the viewer. The punching fist moves in front of the chest through foreshortening while the other fist recoils. Keep both feet fixed at the ready frame's exact pixels; the body and arms fit the narrow 1 x 2 footprint. The selected final action was generated from the new ready and its lower foot pixels were restored from that ready with an alpha-preserving composite. No weapon, slide, background, or blur.
+REQUESTED 2026-10-24 CORRECTION: Keep the ready Ogre. In action it lowers and leans its upper body toward screen right, punching low to the right. The striking fist extends into the adjacent square; the torso and planted feet remain inside the 1x2 footprint.

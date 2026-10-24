@@ -1,0 +1,2 @@
+Natural in-place combat sprite for MON4CHA.DAX:106. The Wolf is low and wide in its 2x1 footprint. It faces and attacks screen right with an open-mouthed bite in action rather than lunging toward the viewer; paws remain grounded.
+128x128 transparent pixel art. Fixed body scale, camera, and planted base across the pair. Use saved description, sprite_size, and independent new art only; never reference extracted original game images.

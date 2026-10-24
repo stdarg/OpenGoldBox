@@ -1,15 +1,15 @@
 {
-  "action_sha256": "87c29e430d2928badb11114e5ddca9db6197647830d71c252fb2b5254d82a329",
+  "action_sha256": "e2151318da19ce11d6dd3f9dae629fbdf162209efc4e80218f959e8407d4ec69",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_14/item_000__one_hand/action.png",
     "ready": "art/mon2cha_dax_14/item_000__one_hand/ready.png"
   },
   "metadata_sha256": "cfa36dfd824136f36d25b9f609d3b60b4bfee3ef87594024209213074647d2dd",
-  "notes": "Five-foot broad Orc Leader with one-handed Broad sword +1 and chain armor. Sword raised ready then lowered near end of cut. No shield or bow in this pair. Reviewed native frames and 1-second fixed-grid alternation at combat size; approved pose guide and independent new character art only.",
+  "notes": "The Orc Leader thrusts its full-length one-handed broad sword to screen right with a forward upper-body lean. The ready sword stays raised. Boots are planted; the moving blade alone crosses the right dotted line. Final 128x128 PNGs checked on light gray, magenta, and dark backgrounds, at native combat size and in a one-second ready/action cycle in the isolated Godot catalog. Loaded path and exact file hashes matched the staged images. Full equipment and alternate weapon sets were inspected; unaffected sets remain unchanged.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "916a2a053d9d3f5e2295b9f1f7448e010b4341f766236381359eb4be8ff1a9fa",
-  "reviewed_at": "2026-10-23T10:19:03.344511+00:00",
+  "reviewed_at": "2026-10-24T19:18:51.499717+00:00",
   "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:14",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
 }

@@ -1,16 +1,16 @@
 {
-  "action_sha256": "f13f79715ed60e51598a1084ba156a48bbb138d9f28c9d83f8af6ecea6667cde",
+  "action_sha256": "4e032747f834549017ff2e3b80a1934c8af525e73a5edc728cc288f8de3d395b",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_84/item_001__two_hand/action.png",
     "ready": "art/mon3cha_dax_84/item_001__two_hand/ready.png"
   },
   "metadata_sha256": "4c12ba69ba7f22ba964a5c2433017ac7598dacfa70eab65687cc8d5b2102c415",
-  "notes": "Approved independent two-handed-sword pair vertically corrected in both poses using same nearest-neighbor row transform: original head row 27 to 23, planted foot row 110 unchanged, giving full Normal 5-foot body height. Bottom 24 action rows copied from ready for exact boots. Sword held by two hands raised in ready, near-finished strike in action. Reviewed natively and alternating in catalog with game-derived 1 x 1 footprint; only sword crosses top in ready and action weapon may cross boundary. Javelin pair reviewed for identity and size.",
+  "notes": "The two-handed sword finishes a downward-right cut at full length with both hands on its grip. The accepted ready and planted lower body remain intact; only the attacking upper body and blade change. Final 128x128 PNGs checked on light gray, magenta, and dark backgrounds, at native combat size and in a one-second ready/action cycle in the isolated Godot catalog. Loaded path and exact file hashes matched the staged images. Full equipment and alternate weapon sets were inspected; unaffected sets remain unchanged.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "d4fe4417928c17c3c9173cf8fac7974d1eb5e16c4d02124d6cbf52c5e111260e",
-  "reviewed_at": "2026-10-23T07:03:50.997006+00:00",
-  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-24T19:18:51.500929+00:00",
+  "reviewer": "Codex",
   "source_key": "MON3CHA.DAX:84",
   "specification": "bipedal-v1",
   "variant_id": "item_001__two_hand",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
 }
