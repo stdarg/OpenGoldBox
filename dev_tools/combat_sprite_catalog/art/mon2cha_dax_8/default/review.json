@@ -1,16 +1,16 @@
 {
-  "action_sha256": "d382a0dea5f64b2ee8598831e9bab69947cc409cd48473d6fd79b299e08307f6",
+  "action_sha256": "248e2d8942f101365e9e14d62a1e0fdaa52ae8703ab06e631805ff0ae49765e2",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_8/default/action.png",
     "ready": "art/mon2cha_dax_8/default/ready.png"
   },
   "metadata_sha256": "41eeac6abbcc403fc9e218b8764d1347e551ced495180fba92989d98125e16a3",
-  "notes": "Height-corrected technical re-export of independently generated Ogre art. Ready and late unarmed punch inspected at 128px side by side and in the fixed 3x3 catalog after one-second alternation; both fit saved 1x2 footprint, tall body about 1.7 squares. Planted feet stay at the same x/y positions; 2nd MON4 Ogre comparison pending.",
+  "notes": "MON2CHA.DAX:8 action-only correction. Existing ready PNG bytes preserved. Screen-right fist extends to x=109 (old action ended at x=89), and shoulders/upper torso lean into the punch. Guard fist remains near face. The accepted ready lower body at y>=70 was copied pixel for pixel to action, fixing both feet and the red loincloth. Rejected an earlier draft that widened and shifted the base. Final 128x128 PNGs inspected on light, magenta and dark, then alternated for one second on fixed 1x2 catalog grid. The striking fist alone extends about 0.26 square to the right; torso and feet stay within footprint. No gear.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "c7041ffd0c99b841b777a32fa6cc4a3af5fc5e0b1ea34d64cc0e2a4cce4f11ee",
-  "reviewed_at": "2026-10-21T22:40:59+00:00",
-  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-24T21:14:54.237280+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:8",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
 }
