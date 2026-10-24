@@ -657,6 +657,8 @@ std::string equipment_conversion(const por::Equipment &item)
         return "alchemists_fire";
     case authored_item::poisoners_kit:
         return "poisoners_kit";
+    case authored_item::basic_poison:
+        return "basic_poison";
     default:
         return unsupported;
     }

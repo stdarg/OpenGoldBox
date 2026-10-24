@@ -34,6 +34,7 @@ const ADDED_GEAR := [
 # any shop (#271).
 const PICKER_GEAR := [
     ["Poisoner's Kit", 50, 1, 212],
+    ["Basic Poison", 100, 1, 213],
 ]
 
 var manifest: Dictionary = {}
@@ -728,6 +729,10 @@ func _run_check() -> void:
     if not catalog_items.any(func(item: Dictionary) -> bool:
             return int(item["item_type"]) == 212 and int(item["price_gp"]) == 50):
         _fatal("The item picker lacks the Poisoner's Kit")
+        return
+    if not catalog_items.any(func(item: Dictionary) -> bool:
+            return int(item["item_type"]) == 213 and int(item["price_gp"]) == 100):
+        _fatal("The item picker lacks Basic Poison")
         return
     var saved_type: String = records["phlan-arms-13-08"]["type"]
     records["phlan-arms-13-08"]["type"] = "Temple"

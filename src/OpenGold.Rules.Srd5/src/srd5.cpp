@@ -584,6 +584,11 @@ std::string_view charge_noun(std::string_view item) noexcept
 // enough, as tool proficiencies are gone (DM-1).
 constexpr std::string_view poisoners_kit = "poisoners_kit";
 
+// Basic Poison (SRD 5.2.1): a Bonus Action coats a weapon with a vial, and the
+// next Piercing or Slashing damage it deals within a minute adds 1d4 Poison.
+// There is no ammunition to coat (AMMO-UNLIMITED).
+constexpr std::string_view basic_poison = "basic_poison";
+
 std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
 {
     if (const auto *magic = detail::magic_item(item))
@@ -593,6 +598,11 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
     if (item == poisoners_kit)
     {
         return "A Rogue carrying it can poison a foe with Cunning Strike.";
+    }
+    if (item == basic_poison)
+    {
+        return "In combat, a Bonus Action coats your weapon: its next Piercing or Slashing hit "
+               "within a minute deals 1d4 extra Poison damage.";
     }
     if (rules::magic_ink_level(item))
     {
@@ -663,7 +673,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 67;
+constexpr unsigned checkpoint_format = 68;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -1824,6 +1834,7 @@ struct Actor
     // The enemy its last command on its own turn aimed at, for the computer (#266).
     rules::EntityId last_target{};
     int oiled_until_round{}; // Covered in Oil through this round: Fire damage deals 5 more
+    int coated_until_round{}; // Its weapon carries Basic Poison through this round; 0 for none
     bool shield_off{};       // Took its shield off this fight (for a two-handed bow)
     // Tried to run off the field as fast as the fastest enemy and failed: it
     // stays until the fight ends (the original's rule).
@@ -2443,6 +2454,31 @@ const detail::MagicItem *usable_item(const Actor &a, const detail::SpellDef &spe
         }
     }
     return nullptr;
+}
+
+// The uses left of the first carried vial of Basic Poison with any, or null.
+const unsigned *basic_poison_left(const Actor &a)
+{
+    for (const auto &carried : a.source.inventory)
+    {
+        if (carried.definition != basic_poison)
+        {
+            continue;
+        }
+        for (const auto &[id, left] : a.item_uses)
+        {
+            if (id == carried.inventory_id && left)
+            {
+                return &left;
+            }
+        }
+    }
+    return nullptr;
+}
+
+unsigned *basic_poison_left(Actor &a)
+{
+    return const_cast<unsigned *>(basic_poison_left(std::as_const(a)));
 }
 
 // Spends a use of the first carried item of `kind` with uses left.
@@ -4569,7 +4605,7 @@ class Session final : public CombatSession
                     {
                         a.thrown_gear_left[static_cast<std::size_t>(gear->effect)] += item.quantity;
                     }
-                    if (detail::magic_item(item.definition))
+                    if (detail::magic_item(item.definition) || item.definition == basic_poison)
                     {
                         a.item_uses.emplace_back(item.inventory_id, item.quantity);
                     }
@@ -7511,6 +7547,10 @@ Snapshot Session::snapshot() const
         if (def(a).flame_tongue)
         {
             view.bonus_actions.push_back(a.flame_lit ? "douse_flame_tongue" : "ignite_flame_tongue");
+        }
+        if (basic_poison_left(a))
+        {
+            view.bonus_actions.push_back("coat_weapon");
         }
         if (def(a).intimidating_presence)
         {
@@ -11169,6 +11209,11 @@ std::vector<Command> Session::offered_commands() const
     else if (a.bonus && d.flame_tongue)
     {
         add(id, "ignite_flame_tongue", "Flame Tongue: light");
+    }
+    // Basic Poison: a Bonus Action coats the weapon with a carried vial.
+    if (a.bonus && basic_poison_left(a) && !a.coated_until_round)
+    {
+        add(id, "coat_weapon", "Basic Poison: coat weapon");
     }
     // Rage: a Bonus Action outside Heavy armor; on a later turn a Bonus Action
     // extends it.
@@ -19800,6 +19845,22 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
              {{"name", target.source.name}, {"damage", std::to_string(extra)}}});
         damage(target, extra, false);
     }
+    // Basic Poison: the coated weapon's next Piercing or Slashing damage within
+    // a minute adds 1d4 Poison, which spends the coat.
+    if (amount > 0 && !spell && a.coated_until_round >= static_cast<int>(round_) &&
+        (damage_type == detail::DamageType::piercing ||
+         damage_type == detail::DamageType::slashing) &&
+        !target.life.dead)
+    {
+        a.coated_until_round = 0;
+        const int extra = resolved_damage(target, detail::DamageType::poison,
+                                          dice({1, 4, 0}, critical_hit(a, target, natural)));
+        log(target.source.name + " takes " + std::to_string(extra) +
+                " Poison damage from Basic Poison.",
+            {"{name} takes {damage} Poison damage from Basic Poison.",
+             {{"name", target.source.name}, {"damage", std::to_string(extra)}}});
+        damage(target, extra, false);
+    }
     // Flame Tongue: while lit, a hit deals an extra 2d6 Fire damage.
     if (hit && !spell && !ranged && def(a).flame_tongue && a.flame_lit && !target.life.dead)
     {
@@ -23687,6 +23748,14 @@ void Session::dispatch(const Command &command)
         a.bonus = false;
         attack_as(a, unarmed_loadout(a), actor(command.target), AttackRange::melee);
     }
+    else if (command.verb == "coat_weapon")
+    {
+        a.bonus = false;
+        --*basic_poison_left(a);
+        a.coated_until_round = static_cast<int>(round_) + 10;
+        log(a.source.name + " coats a weapon with Basic Poison.",
+            {"{name} coats a weapon with Basic Poison.", {{"name", a.source.name}}});
+    }
     else if (command.verb == "ignite_flame_tongue" || command.verb == "douse_flame_tongue")
     {
         a.bonus = false;
@@ -24733,7 +24802,7 @@ std::string Session::save() const
             << ' ' << a.smite_melee << ' ' << a.resistance_used << ' ' << a.regeneration_blocked
             << ' ' << a.rises_on_round << ' ' << a.thrown_gear_left[0] << ' '
             << a.thrown_gear_left[1] << ' ' << a.thrown_gear_left[2] << ' ' << a.burning << ' '
-            << a.oiled_until_round << ' ' << a.shield_off << ' ' << a.must_stay << ' ' << a.panicked
+            << a.oiled_until_round << ' ' << a.coated_until_round << ' ' << a.shield_off << ' ' << a.must_stay << ' ' << a.panicked
             << ' ' << a.source.morale << ' ' << a.source.intelligence << ' '
             << std::quoted(a.source.melee_weapon) << ' ' << std::quoted(a.source.ranged_weapon)
             << ' ' << a.run_start.x << ' '
@@ -24990,7 +25059,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.drink_used >> actor.hurl_used >> actor.smite_melee >> actor.resistance_used >>
         actor.regeneration_blocked >> actor.rises_on_round >> actor.thrown_gear_left[0] >>
         actor.thrown_gear_left[1] >> actor.thrown_gear_left[2] >> actor.burning >>
-        actor.oiled_until_round >> actor.shield_off >> actor.must_stay >> actor.panicked >>
+        actor.oiled_until_round >> actor.coated_until_round >> actor.shield_off >> actor.must_stay >> actor.panicked >>
         actor.source.morale >> actor.source.intelligence >>
         std::quoted(actor.source.melee_weapon) >> std::quoted(actor.source.ranged_weapon) >>
         actor.run_start.x >>
@@ -25632,6 +25701,8 @@ void Session::validate_restored_state() const
         }
         if ((actor.burning && actor.life.dead) || actor.oiled_until_round < 0 ||
             actor.oiled_until_round > static_cast<int>(round_) + 10 ||
+            actor.coated_until_round < 0 ||
+            actor.coated_until_round > static_cast<int>(round_) + 10 ||
             (actor.source.character_profile.empty() &&
              std::any_of(actor.thrown_gear_left.begin(), actor.thrown_gear_left.end(),
                          [](auto left)
@@ -29840,9 +29911,9 @@ class Module final : public RulesModule
     EquipmentInfo equipment_info(std::string_view key) const override
     {
         // Magic Ink is spent writing or copying a scroll (MAGIC-6); a scroll
-        // is read from the pack, and a Poisoner's Kit used from it.
+        // is read from the pack, and a Poisoner's Kit or Basic Poison used from it.
         if (detail::thrown_gear(key) || rules::magic_ink_level(key) ||
-            rules::parse_scroll_key(key) || key == poisoners_kit)
+            rules::parse_scroll_key(key) || key == poisoners_kit || key == basic_poison)
         {
             return {EquipmentSlot::carried, 0};
         }
@@ -30756,7 +30827,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.247", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.248", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

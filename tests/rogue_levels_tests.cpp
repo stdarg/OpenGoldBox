@@ -145,17 +145,18 @@ CombatantView unit(const CombatSession &c, EntityId id)
 
 // The Rogue with a dagger at (1, 1), the dummy at (2, 1) and an ally beside
 // the dummy, so Sneak Attack applies; at the Rogue's turn. The Rogue may carry
-// a Poisoner's Kit.
+// two of an item, such as a Poisoner's Kit.
 std::unique_ptr<CombatSession> fight(const RulesModule &rules, const Character &hero,
-                                     std::uint64_t seed, bool ally = true, bool kit = false)
+                                     std::uint64_t seed, bool ally = true,
+                                     std::string_view carried = {})
 {
     const auto profile =
         rules.character_profile(hero.sheet(), std::vector<std::string>{"dagger"}).data;
     std::vector<Participant> setup{{1, "campaign-character", "Rogue", Side::party, {1, 1}, profile},
                                    {98, "dummy", "Dummy", Side::opposition, {2, 1}}};
-    if (kit)
+    if (!carried.empty())
     {
-        setup.front().inventory.push_back({1, "poisoners_kit", 1});
+        setup.front().inventory.push_back({1, std::string(carried), 2});
     }
     if (ally)
     {
@@ -374,12 +375,12 @@ void poison_checks()
     check(rules->equipment_info("poisoners_kit").slot == EquipmentSlot::carried,
           "The kit is carried gear");
     check(!offered(*fight(*rules, rogue(5), 1), "melee_poison"), "No Poison without the kit");
-    check(!offered(*fight(*rules, rogue(4), 1, true, true), "melee_poison"),
+    check(!offered(*fight(*rules, rogue(4), 1, true, "poisoners_kit"), "melee_poison"),
           "No Cunning Strike before level 5");
     bool poisoned = false, recovered = false;
     for (std::uint64_t seed = 1; seed < 80 && !(poisoned && recovered); ++seed)
     {
-        auto c = fight(*rules, rogue(5), seed, true, true);
+        auto c = fight(*rules, rogue(5), seed, true, "poisoners_kit");
         check(offered(*c, "melee_poison"), "A Rogue carrying the kit is offered Poison");
         check(submit(*c, "melee_poison", 98), "A Poison attack");
         if (!logged(*c, "adds Sneak Attack: 2d6") || !logged(*c, "Dummy is poisoned."))
@@ -399,6 +400,46 @@ void poison_checks()
         recovered |= !shows(*c, 98, "Poisoned (Cunning Strike)");
     }
     check(poisoned && recovered, "Poison lands on some seed and a later save ends it");
+}
+
+// Basic Poison (#271): a Bonus Action coats the weapon with a vial, and its
+// next Piercing or Slashing hit within a minute adds 1d4 Poison damage.
+void basic_poison_checks()
+{
+    por::Equipment vial;
+    vial.stored.type = authored_item::basic_poison;
+    check(equipment_conversion(vial) == "basic_poison" && vial.label() == "Basic Poison",
+          "The original-format vial converts to SRD Basic Poison");
+    const auto rules = dummy_rules();
+    check(rules->equipment_info("basic_poison").slot == EquipmentSlot::carried,
+          "Basic Poison is carried gear");
+    check(!offered(*fight(*rules, rogue(1), 1), "coat_weapon"), "No coating without a vial");
+    bool landed = false;
+    for (std::uint64_t seed = 1; seed < 80 && !landed; ++seed)
+    {
+        auto c = fight(*rules, rogue(1), seed, true, "basic_poison");
+        check(submit(*c, "coat_weapon") && !offered(*c, "coat_weapon") &&
+                  logged(*c, "Rogue coats a weapon with Basic Poison."),
+              "Coating a weapon takes the Bonus Action");
+        check(unit(*c, 1).item_uses_left ==
+                  std::vector<std::pair<std::uint64_t, unsigned>>{{1, 1}},
+              "Coating spends a vial");
+        const auto saved = c->save();
+        check(rules->restore(saved)->save() == saved, "A checkpoint keeps the coat");
+        check(submit(*c, "melee", 98), "A Dagger attack");
+        if (!logged(*c, "Poison damage from Basic Poison"))
+        {
+            continue;
+        }
+        landed = true;
+        check(submit(*c, "end"), "The Rogue ends its turn");
+        for (unsigned steps = 0; steps < 12 && c->snapshot().actor != 1; ++steps)
+        {
+            check(submit(*c, "end") || c->submit(choose_demo_command(*c)), "Reach the next round");
+        }
+        check(offered(*c, "coat_weapon"), "The hit spent the coat; the second vial is left");
+    }
+    check(landed, "A coated Dagger hits on some seed and adds Poison damage");
 }
 
 // Uncanny Dodge: the Rogue's Reaction halves a hit's damage.
@@ -564,6 +605,7 @@ int main()
         devious_checks();
         cunning_checks();
         poison_checks();
+        basic_poison_checks();
         uncanny_dodge_checks();
         evasion_checks();
         reliable_checks();

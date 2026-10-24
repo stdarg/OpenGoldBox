@@ -1600,5 +1600,8 @@
   "Cure Serious Wounds",
   "Cure Critical Wounds",
   "Neutralize Poison",
-  "Stone to Flesh"
+  "Stone to Flesh",
+  "Basic Poison",
+  "Basic Poison: coat weapon",
+  "In combat, a Bonus Action coats your weapon: its next Piercing or Slashing hit within a minute deals 1d4 extra Poison damage."
 ]

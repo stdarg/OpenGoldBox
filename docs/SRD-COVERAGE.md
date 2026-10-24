@@ -27,6 +27,16 @@ natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1); spells
 have no components and Subtle Spell is gone (CLASS-11). Entries below that
 describe those features are delivery history, not current behavior.
 
+## Basic Poison
+
+Rules 0.6.248 adds SRD 5.2.1 Basic Poison (authored item 213, 100 gp), carried
+gear. In combat, a character carrying a vial is offered "Basic Poison: coat
+weapon" as a Bonus Action, which spends one vial. For a minute (ten rounds),
+the next Piercing or Slashing damage the character deals with a weapon adds
+1d4 Poison damage (doubled on a Critical Hit, reduced by resistance), and that
+spends the coat. There is no ammunition to coat (AMMO-UNLIMITED). The campaign
+removes the spent vials after the fight. Combat checkpoints become `OGCOMBAT 68`.
+
 ## Torches, Acid, Alchemist's Fire and Oil
 
 Rules 0.6.135 adds the Torch to the weapon table (a Simple Melee weapon dealing

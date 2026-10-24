@@ -105,6 +105,10 @@ std::string_view item_type_name(std::uint8_t type)
     {
         return "Poisoner's Kit";
     }
+    if (type == authored_item::basic_poison)
+    {
+        return "Basic Poison";
+    }
     // Type IDs, not names of particular enchanted items. Name components remain exposed.
     constexpr std::string_view names[] = {"Unarmed",
                                           "Battle axe",
