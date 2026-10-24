@@ -30,7 +30,7 @@
       "readied": true,
       "source_hands": -1,
       "source_range": -1,
-      "source_type": -1,
+      "source_type": 7,
       "weapon_role": "one_hand"
     }
   ],

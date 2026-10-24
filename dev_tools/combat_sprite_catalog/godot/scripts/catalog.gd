@@ -35,6 +35,7 @@ var height_edit: SpinBox
 var height_source_label: Label
 var gear_rows: VBoxContainer
 var gear_source_hint: Label
+var add_type_choice: OptionButton
 var regeneration_flag: CheckButton
 var show_new_art: CheckButton
 var variant_choice: OptionButton
@@ -385,10 +386,19 @@ func _build_ui() -> void:
     gear_rows = VBoxContainer.new()
     gear_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     gear_scroll.add_child(gear_rows)
+    var add_row := HBoxContainer.new()
+    editor.add_child(add_row)
+    add_type_choice = OptionButton.new()
+    add_type_choice.tooltip_text = "An original item type fights and drops as that item in the game. Other gear only changes the art."
+    add_type_choice.add_item("Other gear (art only)", -1)
+    for type in catalog.item_types():
+        add_type_choice.add_item(str(type.name), int(type.type))
+    add_type_choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    add_row.add_child(add_type_choice)
     var add_gear := Button.new()
-    add_gear.text = "Add weapon or gear"
-    add_gear.pressed.connect(_add_gear)
-    editor.add_child(add_gear)
+    add_gear.text = "Add item"
+    add_gear.pressed.connect(func(): _add_gear(add_type_choice.get_selected_id()))
+    add_row.add_child(add_gear)
     regeneration_flag = CheckButton.new()
     regeneration_flag.text = "Flag for regeneration"
     editor.add_child(regeneration_flag)
@@ -540,11 +550,16 @@ func _set_gear_role(button: Button, role: String) -> void:
     button.set_meta("role", GEAR_ROLES[index])
     button.text = ["1H weapon", "2H weapon", "Ranged", "Shield", "Gear"][index]
 
-func _add_gear() -> void:
+# Adds an item of an original type (named for it, which can be edited), or
+# with type -1 a named piece of gear that only changes the art.
+func _add_gear(type: int = -1) -> void:
     if selected < 0: return
     var item_id := "added_%d" % Time.get_ticks_usec()
-    _append_gear_row({"id": item_id, "source_type": -1, "source_hands": -1,
-        "source_range": -1, "kind": "gear", "weapon_role": "", "name": "", "readied": false})
+    var kind := MonsterMetadata.source_kind(type) if type >= 0 else "gear"
+    var role := MonsterMetadata.source_weapon_role(type, -1) if kind == "weapon" else ""
+    var name := add_type_choice.get_item_text(add_type_choice.get_item_index(type)) if type >= 0 else ""
+    _append_gear_row({"id": item_id, "source_type": type, "source_hands": -1,
+        "source_range": -1, "kind": kind, "weapon_role": role, "name": name, "readied": false})
     _gear_changed()
     var line: HBoxContainer = gear_rows.get_child(gear_rows.get_child_count() - 1)
     line.get_child(1).grab_focus()
@@ -1024,6 +1039,20 @@ func _metadata_check() -> void:
     _gear_changed()
     assert(variant_choice.item_count == 5)
     _set_gear_role(bow_kind, "ranged")
+    _gear_changed()
+    assert(variant_choice.item_count == 4)
+    # Add item takes an original type, which the game fights with and drops.
+    var types: Array = catalog.item_types()
+    assert(types.any(func(t): return int(t.type) == 36 and str(t.name) == "Long sword"))
+    assert(not types.any(func(t): return int(t.type) == 28))
+    _add_gear(36)
+    _store_draft()
+    var added: Dictionary = draft_records[first.key].equipment.back()
+    assert(added.source_type == 36 and added.kind == "weapon" and added.weapon_role == "one_hand")
+    assert(added.name == "Long sword" and MonsterExport._source_index(added) == -1)
+    var added_line: Node = gear_rows.get_child(gear_rows.get_child_count() - 1)
+    gear_rows.remove_child(added_line)
+    added_line.free()
     _gear_changed()
     assert(variant_choice.item_count == 4)
     var equipment_before: String = JSON.stringify(draft_records[first.key].equipment)

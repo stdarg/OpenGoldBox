@@ -208,6 +208,10 @@ in the game: answering YES at a hall lists its services in the dialogue
   catalog exported to `data/monsters` fights under the catalog's name, in its
   new art for the weapon set it readies, and carries only the original items
   the catalog kept: an item left out is neither used in the fight nor left
-  behind. A creature without new art shows its original icon with its action
+  behind. Gear the catalog added as an original item type is carried and left
+  behind as a plain item of that type, when New Phlan's shop lists hold one. A
+  human-shaped creature hits with the weapon it holds, at its stat block's
+  bonuses ([MON-1](SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks)).
+  A creature without new art shows its original icon with its action
   pose. [#274](https://github.com/stdarg/OpenGoldBox/issues/274),
   [data/monsters](../data/monsters/README.md).

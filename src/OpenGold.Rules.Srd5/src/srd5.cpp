@@ -663,7 +663,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 66;
+constexpr unsigned checkpoint_format = 67;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -4184,6 +4184,38 @@ constexpr int distance(Cell a, Cell b)
     return std::max(across, down) * 5;
 }
 
+// A creature holding the weapons its art shows (#274): their dice, damage
+// types, enchantment and range in place of its stat block's, with the stat
+// block's own attack and damage bonuses. Reach stays 5 feet (MELEE-1).
+Definition wielding(Definition d, std::string_view melee_key, std::string_view ranged_key)
+{
+    if (const auto *melee = detail::weapon(melee_key); melee && !melee->ranged && melee->dice)
+    {
+        const auto enchantment = rules::parse_item_key(melee_key);
+        d.melee.count = melee->dice;
+        d.melee.sides = melee->sides;
+        d.melee_type = melee->type;
+        d.melee_magic = enchantment.bonus;
+        d.bane_undead = enchantment.power == rules::ItemPower::bane_undead;
+    }
+    if (const auto *ranged = detail::weapon(ranged_key); ranged && ranged->ranged && ranged->dice)
+    {
+        // A stat block without a ranged weapon shoots with its melee bonuses.
+        if (!d.range)
+        {
+            d.ranged_bonus = d.melee_bonus;
+            d.ranged.bonus = d.melee.bonus;
+        }
+        d.ranged.count = ranged->dice;
+        d.ranged.sides = ranged->sides;
+        d.ranged_type = ranged->type;
+        d.ranged_magic = rules::parse_item_key(ranged_key).bonus;
+        d.range = ranged->range;
+        d.long_range = ranged->long_range;
+    }
+    return d;
+}
+
 bool same_command(const Command &a, const Command &b)
 {
     return a.revision == b.revision && a.actor == b.actor && a.target == b.target &&
@@ -4433,8 +4465,10 @@ class Session final : public CombatSession
             }
             sides.insert(p.side);
             Actor a;
-            a.definition = p.character_profile.empty() ? content_->definitions.at(p.definition)
-                                                       : character_definition(p.character_profile);
+            a.definition = p.character_profile.empty()
+                               ? wielding(content_->definitions.at(p.definition), p.melee_weapon,
+                                          p.ranged_weapon)
+                               : character_definition(p.character_profile);
             const auto &d = a.definition;
             a.source = std::move(p);
             a.life.hp = d.hp;
@@ -14057,6 +14091,8 @@ void Session::finish_animating(Actor &caster, std::string_view undead)
 void Session::raise_undead(const Actor &caster, Actor &corpse, std::string_view undead)
 {
     corpse.source.definition = std::string(undead);
+    corpse.source.melee_weapon.clear();
+    corpse.source.ranged_weapon.clear();
     corpse.definition = content_->definitions.at(corpse.source.definition);
     corpse.form.reset();
     corpse.effects.active.clear();
@@ -24698,7 +24734,9 @@ std::string Session::save() const
             << ' ' << a.rises_on_round << ' ' << a.thrown_gear_left[0] << ' '
             << a.thrown_gear_left[1] << ' ' << a.thrown_gear_left[2] << ' ' << a.burning << ' '
             << a.oiled_until_round << ' ' << a.shield_off << ' ' << a.must_stay << ' ' << a.panicked
-            << ' ' << a.source.morale << ' ' << a.source.intelligence << ' ' << a.run_start.x << ' '
+            << ' ' << a.source.morale << ' ' << a.source.intelligence << ' '
+            << std::quoted(a.source.melee_weapon) << ' ' << std::quoted(a.source.ranged_weapon)
+            << ' ' << a.run_start.x << ' '
             << a.run_start.y << ' ' << a.run_end.x << ' ' << a.run_end.y << ' ' << a.run_step.x
             << ' ' << a.run_step.y << ' ' << a.run_feet << ' ' << a.flame_lit << ' '
             << a.curse_lifted << ' ' << a.displacement_spent << ' ' << a.last_target << ' '
@@ -24953,7 +24991,9 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.regeneration_blocked >> actor.rises_on_round >> actor.thrown_gear_left[0] >>
         actor.thrown_gear_left[1] >> actor.thrown_gear_left[2] >> actor.burning >>
         actor.oiled_until_round >> actor.shield_off >> actor.must_stay >> actor.panicked >>
-        actor.source.morale >> actor.source.intelligence >> actor.run_start.x >>
+        actor.source.morale >> actor.source.intelligence >>
+        std::quoted(actor.source.melee_weapon) >> std::quoted(actor.source.ranged_weapon) >>
+        actor.run_start.x >>
         actor.run_start.y >> actor.run_end.x >> actor.run_end.y >> actor.run_step.x >>
         actor.run_step.y >> actor.run_feet >> actor.flame_lit >> actor.curse_lifted >>
         actor.displacement_spent >> actor.last_target;
@@ -24974,6 +25014,10 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     {
         throw std::runtime_error("Invalid checkpoint morale");
     }
+    if (actor.source.melee_weapon.size() > 80 || actor.source.ranged_weapon.size() > 80)
+    {
+        throw std::runtime_error("Invalid checkpoint weapon");
+    }
     if (actor.run_feet < 0 || actor.run_feet % 5 || actor.run_feet > 5 * 64 * 64 ||
         std::abs(actor.run_step.x) > 1 || std::abs(actor.run_step.y) > 1)
     {
@@ -24993,7 +25037,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         throw std::runtime_error("Invalid checkpoint actor");
     }
     actor.definition = source.character_profile.empty()
-                           ? content.definitions.at(source.definition)
+                           ? wielding(content.definitions.at(source.definition),
+                                      source.melee_weapon, source.ranged_weapon)
                            : character_definition(source.character_profile);
     if (actor.shield_off)
     {
@@ -30711,7 +30756,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.246", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.247", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

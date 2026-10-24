@@ -17,7 +17,7 @@
       "name": "Staff",
       "readied": true,
       "source_index": -1,
-      "source_type": -1,
+      "source_type": 33,
       "weapon_role": "two_hand"
     }
   ],

@@ -10,7 +10,7 @@
       "readied": true,
       "source_hands": -1,
       "source_range": -1,
-      "source_type": -1,
+      "source_type": 43,
       "weapon_role": "ranged"
     },
     {
@@ -20,7 +20,7 @@
       "readied": false,
       "source_hands": -1,
       "source_range": -1,
-      "source_type": -1,
+      "source_type": 18,
       "weapon_role": "two_hand"
     }
   ],

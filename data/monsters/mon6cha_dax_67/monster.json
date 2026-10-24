@@ -8,7 +8,7 @@
       "name": "long bow",
       "readied": true,
       "source_index": -1,
-      "source_type": -1,
+      "source_type": 43,
       "weapon_role": "ranged"
     },
     {
@@ -17,7 +17,7 @@
       "name": "halberd",
       "readied": false,
       "source_index": -1,
-      "source_type": -1,
+      "source_type": 18,
       "weapon_role": "two_hand"
     }
   ],

@@ -26,6 +26,7 @@ class SpriteCatalog : public godot::RefCounted
     godot::Dictionary monster_art(int index) const;
     godot::Ref<godot::Texture2D> monster_image(int index, bool action) const;
     godot::Array weapons() const;
+    godot::Array item_types() const;
     godot::Array combat_body_groups() const;
     godot::Dictionary character_art(int head, int body, int size, int weapon_type, bool shield,
                                     const godot::Array &colors) const;

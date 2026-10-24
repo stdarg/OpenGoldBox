@@ -205,6 +205,49 @@ const MonsterVariant *readied_variant(const ExportedMonster &monster, bool arche
     return armed ? armed : &monster.variants.front();
 }
 
+WieldedItems wielded_items(const ExportedMonster &monster, bool archer)
+{
+    const auto first = [&](auto wanted) -> const MonsterItem *
+    {
+        const auto found = std::ranges::find_if(monster.equipment, wanted);
+        return found == monster.equipment.end() ? nullptr : &*found;
+    };
+    const auto ranged = [](const MonsterItem &item)
+    {
+        return item.kind == "weapon" && item.weapon_role == "ranged";
+    };
+    const auto melee = [](const MonsterItem &item)
+    {
+        return item.kind == "weapon" && item.weapon_role != "ranged";
+    };
+    WieldedItems result;
+    result.melee = first(
+        [&](const MonsterItem &item)
+        {
+            return melee(item) && item.readied;
+        });
+    if (!result.melee)
+    {
+        result.melee = first(melee);
+    }
+    result.ranged = first(
+        [&](const MonsterItem &item)
+        {
+            return ranged(item) && item.readied;
+        });
+    if (!result.ranged && archer)
+    {
+        result.ranged = first(ranged);
+    }
+    return result;
+}
+
+bool human_shaped(const ExportedMonster &monster)
+{
+    return monster.humanoid_size == "small" || monster.humanoid_size == "normal" ||
+           monster.humanoid_size == "tall";
+}
+
 double art_scale(const ExportedMonster &monster)
 {
     if (monster.humanoid_size == "small")

@@ -3,6 +3,8 @@
 #include "sprite_catalog.h"
 #include "../../../src/OpenGoldBox/godot_images.h"
 #include "../../../src/OpenGoldBox/godot_path.h"
+#include "opengold/authored_items.h"
+#include "opengold/creature_catalog.h"
 #include "opengold/formats.h"
 #include <godot_cpp/core/class_db.hpp>
 #include <algorithm>
@@ -39,6 +41,7 @@ void SpriteCatalog::_bind_methods()
     ClassDB::bind_method(D_METHOD("monster_image", "index", "action"),
                          &SpriteCatalog::monster_image);
     ClassDB::bind_method(D_METHOD("weapons"), &SpriteCatalog::weapons);
+    ClassDB::bind_method(D_METHOD("item_types"), &SpriteCatalog::item_types);
     ClassDB::bind_method(D_METHOD("combat_body_groups"), &SpriteCatalog::combat_body_groups);
     ClassDB::bind_method(
         D_METHOD("character_art", "head", "body", "size", "weapon_type", "shield", "colors"),
@@ -414,6 +417,26 @@ Array SpriteCatalog::weapons() const
         Dictionary row;
         row["label"] = gs(option.label);
         row["type"] = option.original_type;
+        result.push_back(row);
+    }
+    return result;
+}
+
+Array SpriteCatalog::item_types() const
+{
+    // The original's weapons, armor and shield, which a creature can carry as
+    // plain items of their type (#274). Quarrels are left out: there is no
+    // ammunition.
+    Array result;
+    for (std::uint8_t type = 1; type <= 59; ++type)
+    {
+        if (opengold::original_item::is_ammunition(type))
+        {
+            continue;
+        }
+        Dictionary row;
+        row["type"] = type;
+        row["name"] = gs(opengold::por::item_type_name(type));
         result.push_back(row);
     }
     return result;

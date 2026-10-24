@@ -18,8 +18,14 @@ size and humanoid height, its equipment and its weapon sets:
   here keeps its original combat icon, with the icon's action pose.
 - **Equipment.** Each original item names its `MONnITM` slot
   (`source_index`); one the catalog left out is not carried into a fight and
-  is not left behind after it. Gear added in the catalog (`source_index` -1)
-  only picks the art for now.
+  is not left behind after it. Gear added in the catalog has `source_index`
+  -1. With an original item type (`source_type`) it is left behind as a plain
+  item of that type, copied from New Phlan's shop lists (a type they lack is
+  not); without one it only picks the art.
+- **Weapons.** A creature drawn at a humanoid height hits with the weapon it
+  holds, original or added: its readied melee weapon (else its first), and a
+  readied ranged weapon or an archer's bow. The weapon's dice and damage type
+  replace its stat block's; the stat block keeps its bonuses.
 - **Copies** keep their own name, gear and art; no encounter places them yet.
 
 A record flagged for regeneration exports its data but no art. Do not edit

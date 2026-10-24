@@ -8,7 +8,7 @@
       "name": "leather armor",
       "readied": true,
       "source_index": -1,
-      "source_type": -1,
+      "source_type": 50,
       "weapon_role": ""
     },
     {
@@ -17,7 +17,7 @@
       "name": "battle axe",
       "readied": true,
       "source_index": -1,
-      "source_type": -1,
+      "source_type": 1,
       "weapon_role": "two_hand"
     }
   ],

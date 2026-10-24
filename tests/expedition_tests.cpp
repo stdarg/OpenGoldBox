@@ -3046,6 +3046,8 @@ void exported_monsters(const std::filesystem::path &directory)
                   {
                       return item.source_index >= 0;
                   });
+    check(std::ranges::find(tusker.equipment, "scimitar", &por::MonsterItem::name)->source_type == 30,
+          "The catalog added the orc's scimitar as the original's item type 30");
     bundle.monsters.erase("MON2CHA.DAX:4");
     const auto tusker_art = tusker;
     const auto [exported, exported_items] =
@@ -3063,14 +3065,18 @@ void exported_monsters(const std::filesystem::path &directory)
             check(art.planted && art.planted->scale == por::art_scale(tusker_art) && art.image.width == 128 &&
                       art.action->width == 128,
                   "The renamed orc stands in its new art, scaled as the catalog previews it");
+            check(enemy.melee_weapon == "scimitar" && enemy.ranged_weapon.empty(),
+                  "The renamed orc fights with the scimitar the catalog gave it");
         }
         else
         {
             check(!art.planted, enemy.name + " has no exported art and keeps its original icon");
+            check(enemy.melee_weapon.empty(), enemy.name + " keeps its stat block's attacks");
         }
     }
     check(renamed, "The renamed orc fights under its new name");
-    check(exported_items + 1 == original_items, "The renamed orc's scroll is not left behind");
+    check(exported_items == original_items,
+          "The renamed orc leaves its added scimitar behind, but not its scroll");
 }
 
 void installed_first_expedition(const std::filesystem::path &executable,

@@ -534,6 +534,10 @@ struct Participant
     // decides whether a broken creature that cannot run surrenders.
     unsigned morale{};
     unsigned intelligence{10};
+    // Item keys of the weapons a human-shaped creature holds (#274): their
+    // dice, damage type and range replace its stat block's, which keeps its
+    // own bonuses. Empty, or not a weapon of that kind, keeps the stat block's.
+    std::string melee_weapon, ranged_weapon;
 };
 
 struct Encounter

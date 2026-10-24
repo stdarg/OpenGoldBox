@@ -14,7 +14,7 @@
       "readied": true,
       "source_hands": -1,
       "source_range": -1,
-      "source_type": -1,
+      "source_type": 36,
       "weapon_role": "one_hand"
     },
     {
@@ -24,7 +24,7 @@
       "readied": true,
       "source_hands": -1,
       "source_range": -1,
-      "source_type": -1,
+      "source_type": 50,
       "weapon_role": ""
     },
     {
@@ -34,7 +34,7 @@
       "readied": true,
       "source_hands": -1,
       "source_range": -1,
-      "source_type": -1,
+      "source_type": 59,
       "weapon_role": ""
     },
     {
@@ -44,7 +44,7 @@
       "readied": false,
       "source_hands": -1,
       "source_range": -1,
-      "source_type": -1,
+      "source_type": 44,
       "weapon_role": "ranged"
     }
   ],

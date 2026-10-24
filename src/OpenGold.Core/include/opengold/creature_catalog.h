@@ -71,6 +71,10 @@ struct EffectDefinition
     std::optional<Regeneration> regeneration;
 };
 
+// An item type's generic name ("Long sword", "Shield", "Torch"), or empty for
+// a type named only by its items, such as a potion.
+[[nodiscard]] std::string_view item_type_name(std::uint8_t type);
+
 // Pool of Radiance's SPC namespace, not a later Gold Box game's effect table.
 [[nodiscard]] EffectDefinition describe_effect(std::uint8_t code);
 

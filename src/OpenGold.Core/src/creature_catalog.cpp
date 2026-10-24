@@ -75,8 +75,6 @@ EquipmentBonuses equipment_bonuses(const ItemRecord &item, const ItemTemplate &b
     return b;
 }
 
-namespace
-{
 std::string_view item_type_name(std::uint8_t type)
 {
     if (type == 73)
@@ -171,6 +169,8 @@ std::string_view item_type_name(std::uint8_t type)
     return type < std::size(names) ? names[type] : std::string_view{};
 }
 
+namespace
+{
 // A generated worn item's or scroll's base word, for random treasure, whose
 // names are not decoded (MAGIC-4, MAGIC-6). Creature gear and fixed lists keep
 // their decoded names.

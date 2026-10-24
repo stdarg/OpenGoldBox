@@ -444,6 +444,16 @@ the earlier authored Slums conversions.
 - **Rewards:** experience and loot remain those of the original encounter,
   however many monsters fought. The user will later tie challenge to difficulty
   and to experience and treasure gain, and add a visible slider.
+- **Held weapons (2026-10-24, [#274](https://github.com/stdarg/OpenGold/issues/274)):**
+  a human-shaped monster or NPC (one the Combat Sprite Catalog draws at a
+  humanoid height) hits with the weapon it holds: the weapon's SRD dice, damage
+  type and enchantment replace its stat block's, which keeps its own attack and
+  damage bonuses. It swings its readied melee weapon, else its first. A ranged
+  weapon replaces the stat block's ranged attack only when readied, or as an
+  archer's bow; a stat block without one shoots with its melee bonuses. Reach
+  stays 5 feet (MELEE-1). Other creatures keep their natural attacks. The user
+  said "humanoid" in the everyday sense, so the SRD creature type does not
+  matter: kobolds (Dragon) and goblins (Fey) hold weapons too.
 
 ## CLERIC-1 (2026-10-02): Cleric preparation and Divine Order
 

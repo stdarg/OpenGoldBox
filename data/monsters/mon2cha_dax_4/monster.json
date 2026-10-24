@@ -8,7 +8,7 @@
       "name": "long sword",
       "readied": true,
       "source_index": -1,
-      "source_type": -1,
+      "source_type": 36,
       "weapon_role": "one_hand"
     },
     {
@@ -17,7 +17,7 @@
       "name": "leather armor",
       "readied": true,
       "source_index": -1,
-      "source_type": -1,
+      "source_type": 50,
       "weapon_role": ""
     },
     {
@@ -26,7 +26,7 @@
       "name": "shield",
       "readied": true,
       "source_index": -1,
-      "source_type": -1,
+      "source_type": 59,
       "weapon_role": ""
     },
     {
@@ -35,7 +35,7 @@
       "name": "short bow",
       "readied": false,
       "source_index": -1,
-      "source_type": -1,
+      "source_type": 44,
       "weapon_role": "ranged"
     }
   ],

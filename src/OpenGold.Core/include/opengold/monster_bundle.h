@@ -66,6 +66,18 @@ struct MonsterBundle
 // the first set. Null without art.
 [[nodiscard]] const MonsterVariant *readied_variant(const ExportedMonster &monster, bool archer);
 
+// The weapons a creature fights with: a readied ranged weapon, else an
+// archer's bow; a readied melee weapon, else its first. Null where it has none.
+struct WieldedItems
+{
+    const MonsterItem *melee{}, *ranged{};
+};
+
+[[nodiscard]] WieldedItems wielded_items(const ExportedMonster &monster, bool archer);
+
+// Whether the catalog draws the creature human-shaped, at a humanoid height.
+[[nodiscard]] bool human_shaped(const ExportedMonster &monster);
+
 // How many 128-pixel art squares fill one combat square, as the catalog
 // previews it: by humanoid height, else by the footprint.
 [[nodiscard]] double art_scale(const ExportedMonster &monster);

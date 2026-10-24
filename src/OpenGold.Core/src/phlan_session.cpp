@@ -859,6 +859,63 @@ std::vector<std::optional<Equipment>> carried_gear(const Creature &creature,
     return gear;
 }
 
+// Gear the catalog added to a creature (#274), each as a plain item of its
+// original type from New Phlan's shop lists. A type no list sells is left out.
+std::vector<Equipment> added_gear(const ExportedMonster *exported, const PhlanResources &town)
+{
+    std::vector<Equipment> gear;
+    for (const auto &added : exported ? exported->equipment : std::vector<MonsterItem>{})
+    {
+        if (added.source_index >= 0 || added.source_type < 0)
+        {
+            continue;
+        }
+        const auto plain = [&]() -> const Equipment *
+        {
+            for (const auto &[record, list] : town.treasure)
+            {
+                for (const auto &item : list)
+                {
+                    if (item.stored.type == added.source_type && !item.stored.magic_bonus &&
+                        !item.stored.cursed_raw)
+                    {
+                        return &item;
+                    }
+                }
+            }
+            return nullptr;
+        }();
+        if (plain)
+        {
+            gear.push_back(*plain);
+        }
+    }
+    return gear;
+}
+
+// The item key of the item a creature fights with: its original item, or a
+// plain item of the type the catalog added. Empty for none.
+std::string wielded_key(const Creature &creature, const MonsterItem *item)
+{
+    if (!item || (item->source_index < 0 && item->source_type < 0))
+    {
+        return {};
+    }
+    if (item->source_index < 0)
+    {
+        Equipment added;
+        added.stored.type = static_cast<std::uint8_t>(item->source_type);
+        return equipment_conversion(added);
+    }
+    if (static_cast<std::size_t>(item->source_index) >= creature.equipment.size())
+    {
+        return {};
+    }
+    const auto &original = creature.equipment[static_cast<std::size_t>(item->source_index)];
+    return original.stored.type == item->source_type ? equipment_conversion(original)
+                                                     : std::string{};
+}
+
 // A staged creature's art: the export's weapon set for what it readies, drawn
 // as the catalog previews it, or else the original icon with its action pose,
 // the icon 128 records on.
@@ -940,6 +997,11 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
             {
                 loot.items.push_back(std::move(*item));
             }
+        }
+        for (auto &item : added_gear(exported_creature(*district->second, id), *town_))
+        {
+            item.index = loot.items.size();
+            loot.items.push_back(std::move(item));
         }
     }
     return loot;
@@ -1932,6 +1994,14 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         const auto art = staged_creature_art(area_resources().combat_archive, arg(2),
                                              std::move(icon.image), exported,
                                              definition.ends_with("-archer"));
+        // A human-shaped creature fights with the weapons it holds (#274).
+        std::string melee_weapon, ranged_weapon;
+        if (exported && human_shaped(*exported))
+        {
+            const auto wielded = wielded_items(*exported, definition.ends_with("-archer"));
+            melee_weapon = wielded_key(creature, wielded.melee);
+            ranged_weapon = wielded_key(creature, wielded.ranged);
+        }
         for (unsigned i = 0; i < count; ++i)
         {
             const auto id = static_cast<rules::EntityId>(1000 + staged_enemies_.size());
@@ -1950,6 +2020,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             staged_enemies_.back().morale = own > 102 ? 0 : std::min(own, 100u);
             staged_enemies_.back().intelligence =
                 std::min<unsigned>(creature.stored.abilities.intelligence, 30);
+            staged_enemies_.back().melee_weapon = melee_weapon;
+            staged_enemies_.back().ranged_weapon = ranged_weapon;
             staged_art_.push_back(art);
             staged_art_.back().entity = id;
             staged_records_.push_back(record);

@@ -53,6 +53,15 @@ void shipped()
           "With no weapon readied, the first weapon set shows");
     check(slums(bundle, 8).variants.size() == 1 && slums(bundle, 8).variants[0].id == "default",
           "A creature without weapons has one default pair");
+    const auto archer = wielded_items(leader, true), fighter = wielded_items(leader, false);
+    check(archer.melee && archer.melee->name == "Battle axe" && archer.ranged &&
+              archer.ranged->name == "Long bow" && fighter.melee == archer.melee && !fighter.ranged,
+          "An orc leader swings its battle axe and shoots its bow only as the archer");
+    check(wielded_items(kobold, false).melee == &kobold.equipment.front(),
+          "With no weapon readied, a creature fights with its first");
+    check(human_shaped(kobold) && human_shaped(slums(bundle, 8)) &&
+              !human_shaped(*bundle.creature(3, 106)),
+          "Kobolds and ogres are human-shaped; wolves are not");
     check(art_scale(slums(bundle, 2)) == 1.0 && art_scale(orc) == 1.45,
           "Art scales by humanoid height, as the catalog previews it");
     for (const auto &entry : std::filesystem::directory_iterator(root / "data/monsters"))

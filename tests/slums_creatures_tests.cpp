@@ -196,7 +196,7 @@ void troll_delay_saved()
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1) && unit(*c, 1).hit_points == 0, "A hero fells the Troll");
     const auto checkpoint = c->save();
-    check(checkpoint.starts_with("OGCOMBAT 66 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 67 "), "Checkpoints use the current format");
     auto restored = module->restore(checkpoint);
     check(restored->save() == checkpoint, "A downed Troll's delay survives a checkpoint");
     check(round_troll_gets_up(*restored) == round_troll_gets_up(*c),
@@ -211,7 +211,7 @@ void troll_burns()
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1) && unit(*c, 1).hit_points == 0, "Fire fells the Troll");
     const auto checkpoint = c->save();
-    check(checkpoint.starts_with("OGCOMBAT 66 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 67 "), "Checkpoints use the current format");
     auto restored = module->restore(checkpoint);
     check(restored->save() == checkpoint, "A blocked Regeneration survives a checkpoint");
     check(submit(*restored, "end", first) && submit(*restored, "end", second),
@@ -362,6 +362,34 @@ void buccaneer_enthralls()
     }
     check(false, "Find a charm that holds through a Dagger hit");
 }
+// A human-shaped creature fights with the weapons it holds (#274): their dice
+// and range in place of its stat block's, which keeps its own bonuses.
+void held_weapons()
+{
+    const auto module = rules();
+    const auto orc = [&](std::string melee, std::string ranged)
+    {
+        Encounter encounter{{10, 4, std::vector<Terrain>(40)},
+                            {{1, "slums-orc", "Orc", Side::opposition, {1, 1}},
+                             {2, "target", "Hero", Side::party, {2, 1}}}};
+        encounter.participants[0].melee_weapon = std::move(melee);
+        encounter.participants[0].ranged_weapon = std::move(ranged);
+        return module->create(std::move(encounter), 7);
+    };
+    const auto plain = unit(*orc("", ""), 1);
+    check(plain.melee_rating == 12 && plain.ranged_rating == 6,
+          "Without weapons the orc has its Greataxe and Javelins");
+    auto armed = orc("longsword+1", "longbow");
+    check(unit(*armed, 1).melee_rating == 8 + 8 && unit(*armed, 1).ranged_rating == 8,
+          "The orc fights with its +1 Longsword and shoots its Longbow");
+    const auto wrong = unit(*orc("longbow", "longsword"), 1);
+    check(wrong.melee_rating == 12 && wrong.ranged_rating == 6,
+          "A weapon of the wrong kind leaves the stat block's");
+    const auto checkpoint = armed->save();
+    const auto restored = module->restore(checkpoint);
+    check(restored->save() == checkpoint && unit(*restored, 1).melee_rating == 16,
+          "A checkpoint keeps the weapons a creature holds");
+}
 } // namespace
 
 int main()
@@ -378,6 +406,7 @@ int main()
         downed_square_stood_on();
         hobgoblin_arrows();
         buccaneer_enthralls();
+        held_weapons();
         std::cout << "Slums creature tests passed\n";
         return 0;
     }

@@ -49,3 +49,13 @@ comment otherwise:
 The training profiles (bandit, vanguard, scout, adept, healer) have no original
 record and no rows. Encounter art is a tie-breaker only where a record and its
 art disagree; none do yet.
+
+## Held weapons
+
+Weapons come from the Combat Sprite Catalog's export, not from rows: a creature
+drawn at a humanoid height hits with the weapon it holds there, original or
+added in the catalog ([#274](https://github.com/stdarg/OpenGold/issues/274),
+[data/monsters](../data/monsters/README.md)). The game hands the rules module
+its melee and ranged weapons as item keys on the participant, and the weapon's
+dice, damage type and enchantment replace the stat line's while its bonuses
+stay ([MON-1](SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks)).

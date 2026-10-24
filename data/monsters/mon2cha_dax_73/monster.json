@@ -8,7 +8,7 @@
       "name": "Leather armor",
       "readied": true,
       "source_index": -1,
-      "source_type": -1,
+      "source_type": 50,
       "weapon_role": ""
     },
     {
@@ -17,7 +17,7 @@
       "name": "Shield",
       "readied": true,
       "source_index": -1,
-      "source_type": -1,
+      "source_type": 59,
       "weapon_role": ""
     },
     {
@@ -26,7 +26,7 @@
       "name": "flail",
       "readied": true,
       "source_index": -1,
-      "source_type": -1,
+      "source_type": 12,
       "weapon_role": "one_hand"
     }
   ],
