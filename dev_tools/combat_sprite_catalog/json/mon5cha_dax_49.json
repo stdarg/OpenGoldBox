@@ -8,7 +8,7 @@
     "Original CPIC5.DAX Medusa combat icon (upright two-legged silhouette)"
   ],
   "equipment": [],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "MEDUSA",
   "source": {
