@@ -21,6 +21,7 @@ var hide_unused: CheckButton
 var name_filter: LineEdit
 var monster_title: Label
 var name_edit: LineEdit
+var monster_id_edit: LineEdit
 var monster_image: TextureRect
 var image_frame: Control
 var preview_is_replacement := false
@@ -261,6 +262,7 @@ func _build_ui() -> void:
     identity.add_child(identity_label)
     name_edit = LineEdit.new()
     name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    name_edit.size_flags_stretch_ratio = 1.0
     name_edit.placeholder_text = "Monster or NPC name"
     identity.add_child(name_edit)
     var rename_button := Button.new()
@@ -268,6 +270,16 @@ func _build_ui() -> void:
     rename_button.tooltip_text = "Save this name for the selected catalog record"
     rename_button.pressed.connect(_rename_monster)
     identity.add_child(rename_button)
+    var id_label := Label.new()
+    id_label.text = "Monster ID"
+    identity.add_child(id_label)
+    monster_id_edit = LineEdit.new()
+    monster_id_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    monster_id_edit.size_flags_stretch_ratio = 2.0
+    monster_id_edit.editable = false
+    monster_id_edit.select_all_on_focus = true
+    monster_id_edit.tooltip_text = "Select and copy the ID with the standard keyboard shortcut or context menu"
+    identity.add_child(monster_id_edit)
     var copy_button := Button.new()
     copy_button.text = "Copy as new monster"
     copy_button.tooltip_text = "Copy metadata and replacement PNGs under a new name"
@@ -420,6 +432,7 @@ func _rebuild_list() -> void:
         preview_status.text = ""
         monster_source.text = ""
         name_edit.text = ""
+        monster_id_edit.text = ""
         variant_choice.clear()
         description_edit.text = ""
         sprite_size_choice.select(0)
@@ -457,6 +470,7 @@ func _select_monster(list_index: int) -> void:
     row.name = record.name
     monster_title.text = "%s%s" % [row.name, "  ·  Unused" if not used.has(row.key) else ""]
     name_edit.text = record.name
+    monster_id_edit.text = str(record.source.key)
     if row.has("linked_keys"):
         gear_source_hint.text = "Gear from %s" % row.linked_keys[0] if row.linked_keys.size() == 1 else \
             "Shared icon. Select a named creature to edit its gear."
@@ -859,6 +873,9 @@ func _show_monster_image() -> void:
     monster_source.text += uses_note + linked_note + shared_note
 
 func _metadata_check() -> void:
+    assert(not monster_id_edit.editable and monster_id_edit.select_all_on_focus)
+    assert(is_equal_approx(monster_id_edit.size_flags_stretch_ratio,
+        name_edit.size_flags_stretch_ratio * 2.0))
     assert(MonsterMetadata.valid_sprite_size({"width_squares": 3, "height_squares": 3}))
     assert(_sprite_size_index({"width_squares": 3, "height_squares": 3}) == 5)
     assert(_sprite_size_for_index(5) == {"width_squares": 3, "height_squares": 3})
@@ -977,6 +994,7 @@ func _metadata_check() -> void:
 
     # Draft changes survive switching records; the selector follows edited gear.
     _select_monster(0)
+    assert(monster_id_edit.text == str(first.key))
     description_edit.text = "Unsaved draft"
     sprite_size_choice.select(2)
     humanoid_size_choice.select(1)
@@ -1075,6 +1093,7 @@ func _metadata_check() -> void:
     name_edit.text = "Copied test monster"
     _copy_monster()
     assert(str(rows[selected].key).begins_with("CUSTOM:"))
+    assert(monster_id_edit.text == str(rows[selected].key))
     assert(rows[selected].name == "Copied test monster")
     assert(FileAccess.file_exists(MonsterMetadata.art_path(str(rows[selected].key), "w1__s1", true, metadata_root)))
     assert(monster_source.text.begins_with("Previous new art"))

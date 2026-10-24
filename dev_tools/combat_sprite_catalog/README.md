@@ -29,6 +29,10 @@ press **Copy as new monster** to create an independent JSON record and copy all
 available replacement PNGs into its own art directory. Copies reappear on later
 launches, including when unused records are hidden. These actions do not change
 the supplied game files or the game's runtime monster catalog.
+The read-only **Monster ID** field beside the copy button shows the selected
+record's full source key (for example, `MON1CHA.DAX:4`, or `CUSTOM:...` for a
+copy). Select the field to highlight its ID, then use Command+C on macOS,
+Ctrl+C on Linux or Windows, or the field's Copy context-menu command.
 Enter a description, edit the decoded equipment list, set **Flag for regeneration**
 when art needs another pass, and press **Save monster data**. The first save
 creates `dev_tools/combat_sprite_catalog/json/<source-key>.json` (lowercase,
