@@ -1,15 +1,15 @@
 {
-  "action_sha256": "5fb30611cd3617a829e9b51c7158936b30a16913c43084bde012e70a4c517b92",
+  "action_sha256": "b8d3f076eccaba7bf54ee40793563d009ce9fc88706800d499e3b605206a4196",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_22/default/action.png",
     "ready": "art/mon1cha_dax_22/default/ready.png"
   },
   "metadata_sha256": "9bf051d8e7f0c5a64146330e3d16686321e372085158004cf7521d706c4bd0c8",
-  "notes": "MON1CHA.DAX:22/default: complete unarmed set. Regenerated both frames using only approved guide and newly generated character art. Shared 110x110 nearest-neighbor transform, +2,+12 canvas offset. Action lower legs and planted feet x=0..80, y=75..127 are pixel-identical to ready, including alpha. Inspected final 128px exports on light gray, dark, magenta; side-by-side and one-second catalog alternation with matching Sprite IDs. Ready and action both fit saved 1x2 footprint; tall narrow scale preserved, no armor/weapon. Weapon/grip-specific checklist items interpreted as unarmed ready guard and late natural strike.",
+  "notes": "MON1CHA.DAX:22/default complete unarmed set. Regenerated both frames using only approved guide and newly generated skeleton identity art. Shared 115x115 nearest-neighbor export at +0,+9; action y=66..127 copied from ready including alpha, with zero pixel differences across planted hips/legs/feet. Skull/torso remain visually registered; both arms swing down-right for late claw strike. Inspected exact final PNGs side by side at combat size on light gray, dark, magenta, then one-second alternating catalog preview. Both fit saved 1x2 footprint. No gear or weapon; weapon-specific checklist items interpreted as unarmed guard and natural strike.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "649da19a8f07b68269bdc850332ded7e4f7b92f163c49ae1363d945500056959",
-  "reviewed_at": "2026-10-24T22:51:42+00:00",
+  "ready_sha256": "df6a2229106422eccfc9f833b2fbb83b44ef98f1db128de9c7dfb64be8be8c64",
+  "reviewed_at": "2026-10-24T23:41:25+00:00",
   "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:22",
   "specification": "bipedal-v1",
