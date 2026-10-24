@@ -1,0 +1,32 @@
+{
+  "action_sha256": "b8de5dcc4d2ae18763607239f328718a4827d0e935a474b8797e5854066e3df6",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon6cha_dax_101/added_5278681468__added_5264957017/action.png",
+    "ready": "art/mon6cha_dax_101/added_5278681468__added_5264957017/ready.png"
+  },
+  "metadata_sha256": "3f4d1af9c5d3e856bbcf2737e4f5be1d3580faa0ecface89dc569403e330badc",
+  "notes": "Spear held up in ready and thrust down-right in action; long shaft, shield and chain armor retained. Both boot contacts registered; 5-foot normal body fills 1x1. Ready spear rises into square above; action spear tip extends right. Native light, magenta, dark and one-second catalog screenshots reviewed; exact image hashes bound to this review.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "d3e853076f5ec88837efaf41da08e095892df76519b84416fc5514d8c1a3d15f",
+  "reviewed_at": "2026-10-24T20:27:56.611359+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON6CHA.DAX:101",
+  "specification": "bipedal-v1",
+  "variant_id": "added_5278681468__added_5264957017",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
+}

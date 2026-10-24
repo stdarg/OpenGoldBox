@@ -1,43 +1,97 @@
 {
-  "description": "An experienced martial fighter; the listed level and source equipment guide the combat silhouette. The original template records no carried items. Source wealth: 5 cp, 2 sp.",
-  "humanoid_size": "normal",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "description": "An experienced fifth-level fighter in chain armor, using a spear with shield or a heavy crossbow. These items were added in the Combat Sprite Catalog; the original template records no carried items. Source wealth: 5 cp, 2 sp.",
   "description_sources": [
     "Original game MON6CHA.DAX:101 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+    "User-saved Combat Sprite Catalog equipment"
   ],
-  "equipment": [],
+  "equipment": [
+    {
+      "id": "added_5163707222",
+      "kind": "gear",
+      "name": "Chain armor",
+      "readied": true,
+      "source_hands": -1.0,
+      "source_range": -1.0,
+      "source_type": 55.0,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_5249940073",
+      "kind": "weapon",
+      "name": "Heavy crossbow",
+      "readied": false,
+      "source_hands": -1.0,
+      "source_range": -1.0,
+      "source_type": 45.0,
+      "weapon_role": "ranged"
+    },
+    {
+      "id": "added_5264957017",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": true,
+      "source_hands": -1.0,
+      "source_range": -1.0,
+      "source_type": 59.0,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_5278681468",
+      "kind": "weapon",
+      "name": "Spear",
+      "readied": true,
+      "source_hands": -1.0,
+      "source_range": -1.0,
+      "source_type": 31.0,
+      "weapon_role": "one_hand"
+    }
+  ],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
+  "height_feet": null,
+  "humanoid_size": "normal",
   "name": "5TH LVL FIGHTER",
-  "preview_fallback_variant": "",
+  "preview_fallback_variant": "default",
   "source": {
     "art_archive": "CPIC6.DAX",
     "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
-    "art_record": 11,
+    "art_record": 11.0,
     "creature_archive": "MON6CHA.DAX",
-    "creature_record": 101,
+    "creature_record": 101.0,
     "key": "MON6CHA.DAX:101",
     "linked_creature_keys": []
   },
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
   "variants": [
     {
-      "action": "art/mon6cha_dax_101/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon6cha_dax_101/default/ready.png",
+      "action": "art/mon6cha_dax_101/added_5278681468__added_5264957017/action.png",
+      "id": "added_5278681468__added_5264957017",
+      "label": "Spear + Shield",
+      "ready": "art/mon6cha_dax_101/added_5278681468__added_5264957017/ready.png",
+      "shield_id": "added_5264957017",
+      "weapon_id": "added_5278681468",
+      "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon6cha_dax_101/added_5249940073__ranged/action.png",
+      "id": "added_5249940073__ranged",
+      "label": "Heavy crossbow",
+      "ready": "art/mon6cha_dax_101/added_5249940073__ranged/ready.png",
       "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "weapon_id": "added_5249940073",
+      "weapon_role": "ranged"
     }
   ],
   "wealth": {
-    "copper": 5,
-    "electrum": 0,
-    "gems": 0,
-    "gold": 0,
-    "jewelry": 0,
-    "platinum": 0,
-    "silver": 2
+    "copper": 5.0,
+    "electrum": 0.0,
+    "gems": 0.0,
+    "gold": 0.0,
+    "jewelry": 0.0,
+    "platinum": 0.0,
+    "silver": 2.0
   }
 }

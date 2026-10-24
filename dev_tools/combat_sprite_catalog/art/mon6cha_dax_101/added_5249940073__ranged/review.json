@@ -1,0 +1,32 @@
+{
+  "action_sha256": "fc94387ba7fb810dd33ccc1aef1c786653e51981ee3ed000cbb97a7f22d8ec7d",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon6cha_dax_101/added_5249940073__ranged/action.png",
+    "ready": "art/mon6cha_dax_101/added_5249940073__ranged/ready.png"
+  },
+  "metadata_sha256": "3f4d1af9c5d3e856bbcf2737e4f5be1d3580faa0ecface89dc569403e330badc",
+  "notes": "Loaded heavy crossbow raised within 1x1 side boundaries in ready; lowered and released toward screen right in action with bolt absent. Both boot contacts registered and body scale matches spear set. Ready crossbow rises into square above. Native light, magenta, dark and one-second catalog screenshots reviewed; exact image hashes bound to this review.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "da2cb6a214805e4e68fa483efb7ab294c7f19aab63b85b6cac0e7cdbf3ee3d24",
+  "reviewed_at": "2026-10-24T20:27:56.612582+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON6CHA.DAX:101",
+  "specification": "bipedal-v1",
+  "variant_id": "added_5249940073__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
+}
