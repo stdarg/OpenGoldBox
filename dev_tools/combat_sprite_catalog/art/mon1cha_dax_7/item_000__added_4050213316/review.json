@@ -6,7 +6,7 @@
     "ready": "art/mon1cha_dax_7/item_000__added_4050213316/ready.png"
   },
   "metadata_sha256": "ba896956065ed7114dab830eba28a3fe0b3f44670571e0b0bf78c666125ba69d",
-  "notes": "MON1CHA.DAX:7 longsword + shield only. Both 128px frames and enlarged pixel art visually inspected side by side. Raised ready blade and downward action blade each read as a full longsword (about 45px visible from guard to tip). Generated sword art was composited onto the previously accepted leader to retain exact body, shield, camera, and foot coordinates. Pixel comparison found zero changes at y >= 90 in either frame; action change is confined to x >= 89. Ready weapon alone rises above 1x1 tile; action weapon alone crosses the side. Final catalog alternation rechecked after integration.",
+  "notes": "MON1CHA.DAX:7 longsword + shield only. Both 128px frames and enlarged pixel art visually inspected side by side. Raised ready blade and downward action blade each read as a full longsword (about 45px visible from guard to tip). Generated sword art was composited onto the previously accepted leader to retain exact body, shield, camera, and foot coordinates. Pixel comparison found zero changes at y >= 90 in either frame; action change is confined to x >= 89. Ready weapon alone rises above 1x1 tile; action weapon alone crosses the side. Installed image hashes passed the catalog workflow check; both exported frames were visually inspected at combat size side by side.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "e740f54e58f1b16b71ba8100d19dd8d85b4938a3a9f1427f224c69368537f878",
   "reviewed_at": "2026-10-24T05:46:33+00:00",
