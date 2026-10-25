@@ -82,13 +82,15 @@ the auction is over, 255 striding openly or cover blown.
   the odds of a group in both cases. After nine won fights off mission (`0xB241`), `0x4AE7` = 254: the
   plaza is cleared and no more groups come (the cluebook says ten).
   - **The group** (`0x9F86`): a 0-8 roll picks goblins (4 in 9), orcs (3 in 9),
-    hobgoblins or ogres (1 in 9 each) through the tables at `0xB260` (type),
+    hobgoblins or ogres (1 in 9 each) through the tables at `0xB260` (type:
+    rolls 0-8 give 0, 0, 1, 1, 2, 2, 3, 4, 5),
     `0xB269` (MON1CHA record 2, 2, 4, 4, 6, 8) and `0xB26F` (speed 6 or 9). Its
     size is `PARTY STRENGTH` / 1, 1, 1, 1, 2 or 4 (`0xB275`) / 3 = n, then n
     to 2n, doubled when a mission party's cover is blown, at least 2 and at
     most 50. Groups of at least 40, 40, 30, 30, 20 (`0xB287`) bring 5, 5, 4,
     4 or 3 leaders (`0xB28D`, the next record); ogres never do. Morale
-    (`0x6DC6`) is 30-50 (`0xB281`), +10 with leaders.
+    (`0x6DC6`) is 30, 35, 40, 45, 45 or 50 by type (`0xB281`), +10 with
+    leaders.
   - **Disguised** (`0x9B53`): the group is spotted at a distance and comes
     closer. The chance of being questioned is 5% plus 5% for each of the eight
     party slots whose character byte `0x72` is not 7 (the race, coab `Race`; 7
@@ -431,6 +433,12 @@ stage after Kuto's Well.
   and cannot attack it. Damage does not end this charm (Charm Person's does).
   Fey Ancestry gives Advantage on the save, Countercharm a second try, and
   Mindless Rage, Aura of Devotion and Mind Blank make the target immune.
+- **Group table, roll by roll (2026-10-24):** from the save made on entering,
+  each of the nine group rolls is forced by reseeding the script's dice before
+  one step on open plaza (row 9). Each must print its type's name, roll a size
+  and leaders that fit its divisor and threshold, fight only its own creatures
+  and set its type's morale (`podol_group_rolls` in
+  [expedition_tests.cpp](../../tests/expedition_tests.cpp)).
 - **Gaps:** none known.
 
 ## Suggested increments
