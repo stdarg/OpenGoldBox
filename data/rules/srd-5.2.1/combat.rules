@@ -407,6 +407,99 @@ innate yarash Fireball 2 action fireball
 innate yarash Invisibility 2 action invisibility
 innate yarash Cone_of_Cold 1 action cone_of_cold
 innate yarash Misty_Step 3 bonus misty_step
+# The western wilderness (docs/audits/western-wilderness.md, WEST-1), with the
+# original's Hit Points: quicklings as the Sprite (its Enchanting Bow's 1
+# damage as 1d2 - 1; the bow's charm and Invisibility not modeled), Zhentil corporals as the Guard, giant snakes
+# as the Giant Venomous Snake, ankhegs (Acid Spray and grapple not modeled),
+# centaurs as the Centaur Trooper (Trampling Charge not modeled), giant
+# mantises on the Giant Scorpion's claws, thri-kreen as the Warrior Veteran,
+# tigers and wild boars.
+creature quickling 15 7 4 40 6 1 4 4 6 1 2 -1 40 160 0 0 0 1 0
+saves quickling -4 4 0 2 1 0
+damage_types quickling piercing piercing
+size quickling small
+type quickling fey
+flies quickling
+perception quickling 3
+creature zhent-corporal 16 13 1 30 3 1 6 1 3 1 6 1 20 60 0 0 0 1 0
+saves zhent-corporal 1 1 1 0 0 0
+damage_types zhent-corporal piercing piercing
+perception zhent-corporal 2
+creature venomous-snake 14 25 4 40 6 1 4 4 0 0 0 0 0 0 0 0 0 1 0
+saves venomous-snake 0 4 1 -4 0 -4
+damage_types venomous-snake piercing piercing
+type venomous-snake beast
+perception venomous-snake 2
+melee_extra_damage venomous-snake 1 8 poison
+creature ankheg 14 40 0 30 5 2 6 3 0 0 0 0 0 0 0 0 0 1 0
+saves ankheg 3 0 2 -5 1 -2
+damage_types ankheg slashing slashing
+size ankheg large
+type ankheg monstrosity
+melee_extra_damage ankheg 1 6 acid
+creature centaur 16 20 2 50 6 1 10 4 4 1 8 2 150 600 0 0 0 1 0
+saves centaur 4 2 2 -1 1 0
+damage_types centaur piercing piercing
+size centaur large
+type centaur fey
+multiattack centaur 2
+multiattack_ranged centaur
+perception centaur 3
+creature giant-mantis 15 55 1 40 5 1 8 3 0 0 0 0 0 0 0 0 0 1 0
+saves giant-mantis 3 1 2 -5 -1 -4
+damage_types giant-mantis slashing slashing
+size giant-mantis large
+type giant-mantis beast
+multiattack giant-mantis 2
+creature thri-kreen 17 33 3 30 5 2 6 3 3 2 10 1 100 400 0 0 0 1 0
+saves thri-kreen 3 1 2 0 0 0
+damage_types thri-kreen slashing piercing
+multiattack thri-kreen 2
+multiattack_ranged thri-kreen
+perception thri-kreen 2
+creature tiger 13 38 3 40 5 2 6 3 0 0 0 0 0 0 0 0 0 1 0
+saves tiger 3 3 2 -4 1 -1
+damage_types tiger slashing slashing
+size tiger large
+type tiger beast
+perception tiger 3
+prone_large tiger
+nimble_escape tiger
+creature wild-boar 11 18 0 40 3 1 6 1 0 0 0 0 0 0 0 0 0 1 0
+saves wild-boar 1 0 2 -4 -1 -3
+damage_types wild-boar piercing piercing
+type wild-boar beast
+charge wild-boar
+bloodied_fury wild-boar
+# The eastern wilderness (docs/audits/eastern-wilderness.md, EAST-1), with the
+# original's Hit Points: the Hippogriff (its Flyby not modeled), the Wyvern
+# (Bite, then Sting with 7d6 Poison; the Sting's Poisoned not modeled) and the
+# Phase Spider (Ethereal Jaunt and its Poisoned paralysis not modeled).
+creature hippogriff 11 18 1 60 5 1 8 3 0 0 0 0 0 0 0 0 0 1 0
+saves hippogriff 3 1 1 -4 1 -1
+damage_types hippogriff slashing slashing
+size hippogriff large
+type hippogriff monstrosity
+flies hippogriff
+multiattack hippogriff 2
+perception hippogriff 5
+creature wyvern 14 42 0 80 7 2 8 4 0 0 0 0 0 0 0 0 0 1 0
+saves wyvern 4 0 3 -3 1 -2
+damage_types wyvern piercing piercing
+size wyvern large
+type wyvern dragon
+flies wyvern
+multiattack wyvern 2
+last_attack wyvern 7 2 6 4 piercing 7 6 poison
+perception wyvern 4
+creature phase-spider 14 35 3 30 5 1 10 3 0 0 0 0 0 0 0 0 0 1 0
+saves phase-spider 2 3 1 -2 0 -2
+damage_types phase-spider piercing piercing
+size phase-spider large
+type phase-spider monstrosity
+multiattack phase-spider 2
+melee_extra_damage phase-spider 2 8 poison
+web_walker phase-spider
 # Summon Dragon's Draconic Spirit (SRD 5.2.1 p. 166), one stat block per
 # spell level: AC 14 + the level, 50 Hit Points and 10 more per level above 5,
 # Rend 1d6 + 4 + the level Piercing (reach 10 feet), half the level in Rends.

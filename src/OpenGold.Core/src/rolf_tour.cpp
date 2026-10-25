@@ -461,7 +461,40 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                    {{23, {1, 3, no_wall_bank}}},
                    {{57, "lizardfolk", 100, 100},
                     {58, "mutant-lizardfolk", 100, 100},
-                    {81, "yarash", 2300, 2300}}}};
+                    {81, "yarash", 2300, 2300}}},
+        // The western wilderness (docs/audits/western-wilderness.md, WEST-1):
+        // its window of the wilderness map, and the dark cave on GEO6:25.
+        AreaSource{25,
+                   6,
+                   {{25, {17, 17, 17}}},
+                   {{10, "quickling", 100, 100},
+                    {45, "kovel-thief", 25, 25},
+                    {51, "kovel-master-thief", 200, 200},
+                    {54, "zhent-corporal", 25, 25},
+                    {60, "venomous-snake", 50, 50},
+                    {65, "ankheg", 450, 450},
+                    {67, "centaur", 450, 450},
+                    {74, "giant-mantis", 700, 700},
+                    {99, "kovel-thief", 25, 25},
+                    {100, "bandit-captain", 450, 450},
+                    {118, "thri-kreen", 700, 700},
+                    {119, "tiger", 200, 200},
+                    {120, "wild-boar", 50, 50}}},
+        // The eastern wilderness (docs/audits/eastern-wilderness.md, EAST-1):
+        // its window of the wilderness map, and the wyverns' cave on GEO8:27.
+        AreaSource{27,
+                   8,
+                   {{27, {17, 17, 17}}},
+                   {{0, "slums-kobold", 25, 25},
+                    {1, "slums-kobold-leader", 25, 50},
+                    {31, "troll", 1800, 1800},
+                    {57, "lizardfolk", 100, 100},
+                    {59, "giant-lizard", 50, 50},
+                    {62, "minotaur", 700, 700},
+                    {73, "gnoll-warrior", 100, 100},
+                    {113, "hippogriff", 200, 200},
+                    {116, "phase-spider", 700, 700},
+                    {121, "wyvern", 2300, 2300}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;

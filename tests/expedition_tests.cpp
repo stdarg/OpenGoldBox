@@ -2717,7 +2717,12 @@ void leave_grove(por::RolfTourSession &town, const std::shared_ptr<CampaignParty
     }
 }
 
-// The first of the eight directions on a shortest way across the central
+// Wilderness squares whose sites lead to areas not in the game yet, by
+// script * 100 + x and y: a journey goes around them, as stepping on one
+// only refuses and steps back.
+std::set<std::pair<unsigned, unsigned>> closed_sites;
+
+// The first of the eight directions on a shortest way across the party's
 // wilderness window from (from_x,from_y) to (x,y), over squares the party may
 // enter: rivers only once the Pyramid's valley is healed.
 std::optional<unsigned> overland_heading(const por::RolfTourSession &town, unsigned from_x,
@@ -2727,7 +2732,11 @@ std::optional<unsigned> overland_heading(const por::RolfTourSession &town, unsig
     const bool rivers = town.script_variable(por::EclAddress{0x4AA2}) != 0;
     constexpr unsigned columns = por::OverlandWorld::window_columns,
                        rows = por::OverlandWorld::rows;
-    const auto start_column = world.window_start[1];
+    // Scripts 25-27 are the western, central and eastern windows; the central
+    // window's first two columns and the eastern's first three lead west.
+    const unsigned window = town.snapshot().script_id - 25;
+    const int first_column = window == 1 ? 2 : window == 2 ? 3 : 0;
+    const auto start_column = world.window_start[window];
     const auto open = [&](unsigned cx, unsigned cy)
     {
         const auto passage = por::overland_passage(world.at(start_column + cx, cy));
@@ -2747,9 +2756,9 @@ std::optional<unsigned> overland_heading(const por::RolfTourSession &town, unsig
         {
             const int nx = int(cx) + por::overland_dx[direction],
                       ny = int(cy) + por::overland_dy[direction];
-            // The window's first two columns lead to the western wilderness.
-            if (nx < 2 || ny < 0 || nx >= int(columns) || ny >= int(rows) ||
-                distance[ny * columns + nx] >= 0 || !open(unsigned(nx), unsigned(ny)))
+            if (nx < first_column || ny < 0 || nx >= int(columns) || ny >= int(rows) ||
+                distance[ny * columns + nx] >= 0 || !open(unsigned(nx), unsigned(ny)) ||
+                closed_sites.contains({(window + 25) * 100 + unsigned(nx), unsigned(ny)}))
             {
                 continue;
             }
@@ -2771,12 +2780,18 @@ std::optional<unsigned> overland_heading(const por::RolfTourSession &town, unsig
     return std::nullopt;
 }
 
-// Steps across the wilderness map toward (x,y) by a shortest way.
+// Steps across the wilderness map toward (x,y) by a shortest way, until it
+// arrives or `arrived` holds.
 void travel_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party, unsigned x,
-               unsigned y, const Answer &answer = peaceful)
+               unsigned y, const Answer &answer = peaceful,
+               const std::function<bool()> &arrived = {})
 {
     for (unsigned steps = 0; steps < 80; ++steps)
     {
+        if (arrived && arrived())
+        {
+            return;
+        }
         const auto &s = town.snapshot();
         // A roaming roll may lead into the grove or the huts on the way.
         if (!s.overland && s.area_id == 26 && s.script_id == 26)
@@ -3297,6 +3312,242 @@ void pyramid(const std::filesystem::path &directory)
     check(town.snapshot().overland && town.script_variable(por::EclAddress{0x4AA2}) == 255 &&
               heard.find("BEGINNING TO RECOVER") != std::string::npos,
           "Leaving the Pyramid, the valley begins to heal and its rivers open");
+}
+
+// Explores a wilderness window's cave from the square it entered on, its way
+// out (`stay` declines it, `leave` takes it): the farthest room reachable
+// from the entrance, then back out onto the wilderness map.
+void explore_cave(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party,
+                  const char *stay, const char *leave)
+{
+    const auto entrance = town.snapshot().pose;
+    std::optional<std::pair<unsigned, unsigned>> room;
+    for (unsigned y = 0; y < 16; ++y)
+    {
+        for (unsigned x = 0; x < 16; ++x)
+        {
+            const auto &cell = town.map().at(x, y);
+            if (cell.event_number() != 0 && (x != entrance.x || y != entrance.y) &&
+                reachable(town.map(), entrance, x, y))
+            {
+                room = {x, y};
+            }
+        }
+    }
+    check(room.has_value(), "The cave has a room to explore");
+    heal(*party);
+    walk_to(town, party, room->first, room->second, prefer({"Fight", "ATTACK", "APPROACH", stay}),
+            true);
+    heal(*party);
+    walk_to(town, party, entrance.x, entrance.y,
+            prefer({"Fight", "ATTACK", "APPROACH", leave}), true, false, "0",
+            [&] { return town.snapshot().overland; });
+}
+
+// The western wilderness (docs/audits/western-wilderness.md): stepping west
+// off the central window, the dragon seen over the mountains, its cave, the
+// anhkhegs, the slavers and the Buccaneers' base, the Zhentil outpost's riders,
+// the dark cave a roaming roll finds, and the way back east.
+void western_wilderness(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 14000, "test:west-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 6)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    // The party stands in for one City Hall sent to rescue the Bivant heir
+    // from the Buccaneers (0x4A8C) and with a message for the Zhentil keep
+    // (0x4A98).
+    for (const auto commission : {0x4AA7, 0x4A8C, 0x4A98})
+    {
+        opengold::test::TourAccess::set_variable(town, por::EclAddress{std::uint16_t(commission)},
+                                                 255);
+    }
+    walk_to(town, party, 11, 2);
+    step(town, party, 0, prefer({"WEST"}));
+    walk_to(town, party, 14, 1);
+    step(town, party, 1, prefer({"STAY"}));
+    std::string heard;
+    const Answer noting = [&](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        return prefer({"Parley", "YES", "Fight", "ENTER", "ENTER CAVE", "STAY", "LEAVE CAVE"})(s);
+    };
+    // A square of the central window's second column with open ground west.
+    const auto &world = opengold::test::TourAccess::overland_world(town);
+    std::optional<unsigned> crossing;
+    for (unsigned y = 35; y > 0 && !crossing; --y)
+    {
+        if (por::overland_passage(world.at(14, y)) == por::OverlandPassage::open &&
+            por::overland_passage(world.at(15, y)) == por::OverlandPassage::open &&
+            overland_heading(town, 7, 29, 2, y))
+        {
+            crossing = y;
+        }
+    }
+    check(crossing.has_value(), "The central window has a way west");
+    travel_to(town, party, 2, *crossing, noting);
+    travel(town, party, 6, noting);
+    check(town.snapshot().script_id == 25 && town.snapshot().overland &&
+              town.snapshot().overland_x == 14 && town.snapshot().overland_y == *crossing,
+          "Stepping west off the central window enters the western wilderness");
+    // The sites that lead on to areas not in the game yet.
+    for (const auto &[x, y, place] : std::array<std::tuple<unsigned, unsigned, const char *>, 3>{
+             {{12, 31, "the Buccaneers' base"}, {3, 32, "the Zhentil outpost"},
+              {10, 9, "the dragon's cave"}}})
+    {
+        heal(*party);
+        const auto refusal = std::string("The way to ") + place + " is not in the game yet.";
+        travel_to(town, party, x, y, noting,
+                  [&] { return heard.find(refusal) != std::string::npos; });
+        check(heard.find(refusal) != std::string::npos,
+              std::string("The western wilderness's way to ") + place + " is refused for now");
+        closed_sites.insert({town.snapshot().script_id * 100 + x, y});
+    }
+    check(heard.find("ARE YOU THE DIPLOMATIC ENVOYS") != std::string::npos &&
+              heard.find("A LARGE DRAGON FLYS ABOVE YOU") != std::string::npos,
+          "The Zhentil riders meet the envoys and the dragon flies to its cave");
+    // The anhkhegs at (8,24).
+    heal(*party);
+    const auto fights = fights_started.size();
+    travel_to(town, party, 8, 24, noting);
+    check(town.script_variable(por::EclAddress{0x4A0F}) == 1 && fights_started.size() > fights,
+          "Two anhkhegs erupt at (8,24) and are beaten");
+    // The dark cave, about one step in 420, as the central window's grove.
+    std::optional<std::uint32_t> cave;
+    for (std::uint32_t seed = 1; seed < 100000 && !cave; ++seed)
+    {
+        auto dice = opengold::test::TourAccess::machine(town);
+        dice.seed_random(seed);
+        if (dice.engine_random(20) == 0 && dice.engine_random(21) == 20)
+        {
+            cave = seed;
+        }
+    }
+    check(cave.has_value(), "Some dice lead to the dark cave");
+    opengold::test::TourAccess::seed_dice(town, *cave);
+    travel(town, party, 0, prefer({"ENTER", "STAY IN"}));
+    check(!town.snapshot().overland && town.snapshot().area_id == 25,
+          "A roaming roll finds the dark cave, a 3D area of its own");
+    explore_cave(town, party, "STAY IN", "LEAVE CAVE");
+    check(town.snapshot().overland && town.snapshot().script_id == 25,
+          "The dark cave's passage leads back outside");
+    // Back east into the central window.
+    std::optional<unsigned> east;
+    for (unsigned y = 35; y > 0 && !east; --y)
+    {
+        if (por::overland_passage(world.at(15, y)) == por::OverlandPassage::open &&
+            por::overland_passage(world.at(16, y)) == por::OverlandPassage::open &&
+            overland_heading(town, town.snapshot().overland_x, town.snapshot().overland_y, 15, y))
+        {
+            east = y;
+        }
+    }
+    check(east.has_value(), "The western window has a way east");
+    travel_to(town, party, 15, *east, noting);
+    travel(town, party, 2, noting);
+    check(town.snapshot().script_id == 26 && town.snapshot().overland &&
+              town.snapshot().overland_x == 3,
+          "Stepping east off the western window returns to the central wilderness");
+}
+
+// The eastern wilderness (docs/audits/eastern-wilderness.md): the harbor's
+// eastern boat, the ruined castle in the quicksand and the kobolds' two caves
+// (areas not in the game yet), a kobold horde, the wyverns' cave a roaming
+// roll finds, and the boat home to New Phlan.
+void eastern_wilderness(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 14000, "test:east-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 6)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    walk_to(town, party, 11, 2);
+    step(town, party, 0, prefer({"EAST"}));
+    walk_to(town, party, 14, 1);
+    step(town, party, 1, prefer({"STAY"}));
+    check(town.snapshot().script_id == 27 && town.snapshot().overland &&
+              town.snapshot().overland_x == 9 && town.snapshot().overland_y == 29,
+          "The harbor's eastern boat lands the party on the eastern wilderness at (9,29)");
+    std::string heard;
+    const Answer noting = [&](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        return prefer({"Parley", "YES", "Fight", "ENTER", "SMALL", "LEAVE CAVE"})(s);
+    };
+    for (const auto &[x, y, place] : std::array<std::tuple<unsigned, unsigned, const char *>, 2>{
+             {{11, 8, "the lizard men's keep"}, {6, 15, "the kobold caves"}}})
+    {
+        heal(*party);
+        const auto refusal = std::string("The way to ") + place + " is not in the game yet.";
+        travel_to(town, party, x, y, noting,
+                  [&] { return heard.find(refusal) != std::string::npos; });
+        check(heard.find(refusal) != std::string::npos,
+              std::string("The eastern wilderness's way to ") + place + " is refused for now");
+        closed_sites.insert({town.snapshot().script_id * 100 + x, y});
+    }
+    check(heard.find("RUINED CASTLE SURROUNDED BY QUICKSAND") != std::string::npos,
+          "The ruined castle stands in the quicksand");
+    // The kobold horde near the caves, met on the way there or now.
+    heal(*party);
+    const auto horde_beaten = [&] { return town.script_variable(por::EclAddress{0x4A11}) == 255; };
+    travel_to(town, party, 7, 14, noting, horde_beaten);
+    check(horde_beaten(), "A screaming horde of kobolds attacks near their caves and is beaten");
+    // The wyverns' cave, about one step in 420.
+    std::optional<std::uint32_t> cave;
+    for (std::uint32_t seed = 1; seed < 100000 && !cave; ++seed)
+    {
+        auto dice = opengold::test::TourAccess::machine(town);
+        dice.seed_random(seed);
+        if (dice.engine_random(20) == 0 && dice.engine_random(21) == 20)
+        {
+            cave = seed;
+        }
+    }
+    check(cave.has_value(), "Some dice lead to the wyverns' cave");
+    heal(*party);
+    // A step onto open ground next to the party, so the step rolls.
+    const auto &world = opengold::test::TourAccess::overland_world(town);
+    std::optional<unsigned> open_step;
+    for (unsigned direction = 0; direction < 8 && !open_step; ++direction)
+    {
+        const int nx = int(town.snapshot().overland_x) + por::overland_dx[direction],
+                  ny = int(town.snapshot().overland_y) + por::overland_dy[direction];
+        if (nx >= 3 && nx < 16 && ny >= 0 && ny < 36 &&
+            !closed_sites.contains({2700 + unsigned(nx), unsigned(ny)}) &&
+            por::overland_passage(world.at(world.window_start[2] + nx, ny)) ==
+                por::OverlandPassage::open)
+        {
+            open_step = direction;
+        }
+    }
+    check(open_step.has_value(), "The party can step onto open ground");
+    opengold::test::TourAccess::seed_dice(town, *cave);
+    travel(town, party, *open_step, prefer({"ENTER", "STAY"}));
+    check(!town.snapshot().overland && town.snapshot().area_id == 27,
+          "A roaming roll finds the wyverns' cave, a 3D area of its own");
+    explore_cave(town, party, "STAY", "LEAVE");
+    check(town.snapshot().overland && town.snapshot().script_id == 27,
+          "The wyverns' cave leads back outside");
+    // The boat home.
+    heal(*party);
+    travel_to(town, party, 9, 29, prefer({"TAKE BOAT"}),
+              [&] { return !town.snapshot().overland; });
+    check(town.snapshot().area_id == 0 && town.snapshot().script_id == 0,
+          "The eastern wilderness's boat returns the party to New Phlan");
 }
 
 // Mendor's Library (docs/audits/mendors-library.md), east of the Cadorna
@@ -4471,6 +4722,8 @@ void installed_first_expedition(const std::filesystem::path &executable,
         temple_of_bane(directory);
         nomad_camp(directory);
         pyramid(directory);
+        western_wilderness(directory);
+        eastern_wilderness(directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -4571,6 +4824,18 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--wilderness")
         {
             central_wilderness(directory);
+            return 0;
+        }
+        // Plays the eastern wilderness alone with a new party.
+        if (argc == 2 && std::string_view(argv[1]) == "--east")
+        {
+            eastern_wilderness(directory);
+            return 0;
+        }
+        // Plays the western wilderness alone with a new party.
+        if (argc == 2 && std::string_view(argv[1]) == "--west")
+        {
+            western_wilderness(directory);
             return 0;
         }
         // Plays the Pyramid alone with a new party.

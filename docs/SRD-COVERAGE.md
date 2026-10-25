@@ -96,6 +96,17 @@ trapped cleric the Priest Acolyte and its fighters the Warrior Veteran, by
 [PYRAMID-1](SRD-DECISIONS.md#pyramid-1-2026-10-24-the-pyramid). Not modeled
 yet: the Mage's Fly and Protective Magic, and the Minotaur's Gore.
 
+## Wilderness window monsters
+
+Rules 0.6.254 adds the western and eastern wilderness windows' SRD 5.2.1 stat
+blocks with the original's Hit Points: Sprite, Guard, Giant Venomous Snake,
+Ankheg, Centaur Trooper, Tiger, Boar, Hippogriff, Wyvern and Phase Spider, by
+[WEST-1](SRD-DECISIONS.md#west-1-2026-10-25-the-western-wilderness) and
+[EAST-1](SRD-DECISIONS.md#east-1-2026-10-25-the-eastern-wilderness). The beast
+forms' traits become monster rows (`bloodied_fury`, `charge`, `prone_on_hit`,
+`prone_large`), and a new `nimble_escape` row gives Disengage or Hide as a
+Bonus Action.
+
 ## Mendor's Library monsters
 
 Rules 0.6.251 adds Mendor's Library's SRD 5.2.1 stat blocks: Specter, Basilisk
