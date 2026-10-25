@@ -1,7 +1,17 @@
 {
   "creature_archive": "MON5CHA.DAX",
   "creature_record": 56,
-  "equipment": [],
+  "equipment": [
+    {
+      "id": "added_164509205",
+      "kind": "weapon",
+      "name": "Halberd",
+      "readied": true,
+      "source_index": -1,
+      "source_type": 18,
+      "weapon_role": "two_hand"
+    }
+  ],
   "format": "opengold-monster-v1",
   "humanoid_size": "tall",
   "key": "MON5CHA.DAX:56",
@@ -12,11 +22,11 @@
   },
   "variants": [
     {
-      "action": "default/action.png",
-      "id": "default",
-      "ready": "default/ready.png",
+      "action": "added_164509205__two_hand/action.png",
+      "id": "added_164509205__two_hand",
+      "ready": "added_164509205__two_hand/ready.png",
       "shield_id": "",
-      "weapon_id": ""
+      "weapon_id": "added_164509205"
     }
   ]
 }

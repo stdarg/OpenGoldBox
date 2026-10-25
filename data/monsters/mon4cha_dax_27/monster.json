@@ -1,7 +1,35 @@
 {
   "creature_archive": "MON4CHA.DAX",
   "creature_record": 27,
-  "equipment": [],
+  "equipment": [
+    {
+      "id": "added_1512788588",
+      "kind": "weapon",
+      "name": "Hammer",
+      "readied": true,
+      "source_index": -1,
+      "source_type": 20,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_1518488749",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": true,
+      "source_index": -1,
+      "source_type": 59,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_1530880444",
+      "kind": "gear",
+      "name": "Ring armor",
+      "readied": true,
+      "source_index": -1,
+      "source_type": 53,
+      "weapon_role": ""
+    }
+  ],
   "format": "opengold-monster-v1",
   "humanoid_size": "normal",
   "key": "MON4CHA.DAX:27",
@@ -12,11 +40,11 @@
   },
   "variants": [
     {
-      "action": "default/action.png",
-      "id": "default",
-      "ready": "default/ready.png",
-      "shield_id": "",
-      "weapon_id": ""
+      "action": "added_1512788588__added_1518488749/action.png",
+      "id": "added_1512788588__added_1518488749",
+      "ready": "added_1512788588__added_1518488749/ready.png",
+      "shield_id": "added_1518488749",
+      "weapon_id": "added_1512788588"
     }
   ]
 }

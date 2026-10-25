@@ -1,17 +1,7 @@
 {
   "creature_archive": "MON4CHA.DAX",
   "creature_record": 23,
-  "equipment": [
-    {
-      "id": "item_000",
-      "kind": "weapon",
-      "name": "Short bow",
-      "readied": false,
-      "source_index": 0,
-      "source_type": 44,
-      "weapon_role": "ranged"
-    }
-  ],
+  "equipment": [],
   "format": "opengold-monster-v1",
   "humanoid_size": "normal",
   "key": "MON4CHA.DAX:23",
@@ -22,11 +12,11 @@
   },
   "variants": [
     {
-      "action": "item_000__ranged/action.png",
-      "id": "item_000__ranged",
-      "ready": "item_000__ranged/ready.png",
+      "action": "default/action.png",
+      "id": "default",
+      "ready": "default/ready.png",
       "shield_id": "",
-      "weapon_id": "item_000"
+      "weapon_id": ""
     }
   ]
 }

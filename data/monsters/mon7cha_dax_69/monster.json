@@ -38,5 +38,13 @@
     "height_squares": 1.0,
     "width_squares": 2.0
   },
-  "variants": []
+  "variants": [
+    {
+      "action": "item_002__ranged/action.png",
+      "id": "item_002__ranged",
+      "ready": "item_002__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_002"
+    }
+  ]
 }
