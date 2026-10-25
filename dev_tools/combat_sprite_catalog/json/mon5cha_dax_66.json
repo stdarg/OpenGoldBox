@@ -1,7 +1,5 @@
 {
-  "description": "The bronze dragon form of Tyranthraxus, the power behind occupied Phlan and the final adversary at the Pool of Radiance beneath Valjevo Castle. Its metallic bronze scales and weathered green highlights distinguish it from a blue dragon. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
-  "humanoid_size": "na",
-  "sprite_size": {"height_squares": 2, "width_squares": 2},
+  "description": "A bronze dragon. The power behind occupied Phlan and the final adversary at the Pool of Radiance beneath Valjevo Castle. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.\n\nIMAGEGEN PROMPT\nEdit ONE transparent pixel-art combat sprite: MON5CHA.DAX:66/default/ACTION, Tyranthraxus in bronze dragon form. Reference image 1 is the existing independently created READY frame: it fixes the bronze dragon's identity, copper-gold scales, warm bronze wings, horns, dimensions, planted claws, tail, body orientation and exact canvas registration. Reference image 2 is the existing independently created ACTION frame: it shows the current head location and the blue lightning to remove. Both are replacement artwork, not original game artwork.\n\nMake a physical BITE attack toward the RIGHT EDGE. The dragon extends its neck and head only modestly toward screen right; its jaws snap at a target to the right, with upper and lower jaws visibly converging and pointed teeth clearly readable. The action must look like a forceful rightward bite, not breath, roar, or a stationary open mouth. Keep the head connected naturally to the neck and chest with continuous scales and contours. Remove every blue lightning bolt and every blue glow pixel; no breath effect, projectile, magic line or extra object. The dragon remains unmistakably BRONZE, not blue.\n\nCRITICAL INVARIANTS: Keep all four planted claws, legs, torso, wings, wing roots, tail, camera scale and ground registration pixel-for-pixel aligned with the ready frame as much as possible. Do not move, rotate, rescale, recenter, crop or redraw the whole creature. Do not shear or detach the neck from the chest. Keep the same 128 by 128 canvas origin, two-by-two-square footprint, transparent background, and clear image-border margin. Only the head, jaws and the small joining section of neck should change; preserve the rest of the accepted dragon. No shadow, ground, text, border, checkerboard, opaque black region or halo. Output ACTION ONLY, one sprite, genuine alpha transparency.",
   "description_sources": [
     "Original game MON5CHA.DAX:66 and matching MONnITM inventory",
     "GameDocs/Cluebook.pdf, PDF page 28"
@@ -9,14 +7,22 @@
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
-  "name": "TYRANITHRAXUS",
+  "height_feet": null,
+  "humanoid_size": "na",
+  "name": "Tyranthraxus",
+  "preview_fallback_variant": "",
   "source": {
     "art_archive": "CPIC5.DAX",
-    "art_basis": "Same ID, same bank (candidate)",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
     "art_record": 66,
     "creature_archive": "MON5CHA.DAX",
     "creature_record": 66,
-    "key": "MON5CHA.DAX:66"
+    "key": "MON5CHA.DAX:66",
+    "linked_creature_keys": []
+  },
+  "sprite_size": {
+    "height_squares": 2,
+    "width_squares": 2
   },
   "variants": [
     {
