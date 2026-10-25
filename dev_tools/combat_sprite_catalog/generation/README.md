@@ -200,6 +200,12 @@ equipment list requires a fresh packet and review before acceptance.
    modest upper-body motion needed for a late strike or just-released projectile.
    Reject a newly composed figure that merely resembles ready or shifts as a
    whole. Inspect identity, facing and gear as well as attack timing.
+   For a thrown weapon, first mark the ready frame's object, gripping hand,
+   elbow, and shoulder on a separate planning copy. Draw an arrow from that
+   shoulder toward screen right for the intended empty-hand follow-through.
+   Use the unmarked ready sprite as the art reference; a marked copy can guide
+   arm identity but its marks must never appear in the export. If a two-handed
+   grip is shown, name the primary throwing arm and the supporting arm.
 5. Before export, compare the full silhouettes and the body landmarks in both
    working images. Set the common scale from whichever pose occupies more space,
    then place both poses on the same canvas with transparent margins. Keep the
@@ -250,6 +256,15 @@ For any action made with an edit or composite, apply the torso continuity gate
 above to the **exported action PNG** on a contrasting background before recording
 the visual review. Reopen the saved PNG after the last export or alpha operation;
 reviewing only a working image can miss a newly introduced waist seam.
+For every thrown-weapon pair, trace the ready frame from the thrown object
+through its gripping hand, wrist, elbow, and shoulder. Then trace that **same**
+shoulder through the action elbow and empty hand. Its hand must reach past the
+torso toward screen right near shoulder height or higher. Reject the action if
+this hand drops, if only the opposite hand extends, if the object remains in
+the hand, or if the arm connection is unclear. Record the identified arm and
+observed release path in `review.json` notes beside the inspected image hashes;
+do not attest `action_late_strike_or_after_release` until this passes. The
+technical PNG check cannot establish arm identity or direction.
 Inspect the **final exported files**, not an earlier draft, over light gray,
 magenta, and dark backgrounds. A dark-only preview can hide black boxes, seams,
 halos, and stray opaque pixels. For a sword correction, check the visible

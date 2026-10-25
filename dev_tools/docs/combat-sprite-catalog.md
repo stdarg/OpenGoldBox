@@ -186,6 +186,20 @@ a taller leader, flag the conflict for review before generating either pair.
 
 ## Lessons from localized art corrections
 
+### Thrown-object release check
+
+For a boulder, javelin, or other thrown object, identify the actual throwing
+arm in ready by following the object to its hand, wrist, elbow, and shoulder.
+On a separate planning copy, mark that arm and its intended screen-right
+follow-through. In action, the **same** arm must end with an empty hand extended
+past the torso toward screen right; the other arm pointing right does not
+count. Keep the planted feet and body scale registered. Review the final two
+PNG files at combat size and alternating in the catalog, and write the arm
+identity and observed release path into the hash-bound `review.json` notes.
+Reject and regenerate any frame where the throwing hand drops or the arm's
+connection is ambiguous. The [generation workflow](../combat_sprite_catalog/generation/README.md)
+contains the full gate and prompt rules.
+
 The MON1CHA.DAX:7 longsword revision exposed review failures that the normal
 PNG file check could not catch. Translate a request into the exact record,
 weapon set, frames, and visible acceptance criterion before editing. A longsword

@@ -1,15 +1,15 @@
 {
-  "action_sha256": "6dd89193188ff80ce3419d75bc0d3cb4cd2c47f86c0f635f912d49425153afb4",
+  "action_sha256": "18d57fb90c604f6f9f2d4a4024a65d8d6240d9c46b420caaa2d7accc41554542",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon5cha_dax_55/item_000__ranged/action.png",
     "ready": "art/mon5cha_dax_55/item_000__ranged/ready.png"
   },
-  "metadata_sha256": "aeed33f41cf4ee17eec6f8f69eaa84cfabd530e14af57e3bc7891a25726668b2",
-  "notes": "Game source 24x48 (1x2). At user direction, first of two source Boulders is a ranged weapon; second remains carried gear. This Hill Giant has the same creature type, footprint and boulder attack as MON2CHA.DAX:55, so its accepted new ready/action pair is reused at exact hashes. No original game artwork used as generation reference. Visually reviewed both poses in this MON5 catalog record on fixed grid; both fit and planted feet stay fixed. Previous default art is retained in repository but no longer selected.",
+  "metadata_sha256": "55a7e8852c342473ec7a6f6c352255c66b92958cdb77cbb3724f662675062bc5",
+  "notes": "Thrown release arm trace: in ready, the viewer-left raised hand holds the boulder and connects through its elbow to the viewer-left shoulder. In action, that same shoulder leads across the chest through the extended elbow and wrist to an empty hand at shoulder height toward screen right; the other arm remains bent. First generated candidate extended the opposite arm and was rejected. The final pair was inspected at 128x128 on light, dark, and magenta backgrounds and alternated in the catalog. Both frames fit the 1x2 footprint. Ready art is unchanged; action rows 65-127 match ready pixel-for-pixel, keeping feet fixed. No opaque black blocks or stray marks. Reopened the final saved action after compositing and confirmed shoulder-to-torso and waist-to-loincloth continuity on contrasting backgrounds under the integrated torso-continuity gate.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "33b152b4792f512f4199a64dec0a9501427914c7e4f703baf1baeb49275994f5",
-  "reviewed_at": "2026-10-21T01:21:42+00:00",
+  "reviewed_at": "2026-10-25T01:19:13+00:00",
   "reviewer": "Codex",
   "source_key": "MON5CHA.DAX:55",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
+  "workflow_sha256": "11cc4625c78edf912cc29f9fc3182c8bccb50b1f7812dc6cf0599b29ade75205"
 }
