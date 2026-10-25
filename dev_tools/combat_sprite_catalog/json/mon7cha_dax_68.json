@@ -1,7 +1,10 @@
 {
-  "description": "A sleek six-legged predator with two long tentacles rising from its shoulders. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description": "A sleek six-legged predator with two long tentacles rising from its shoulders. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.\n\nCOMBAT SPRITE EDIT PROMPT:\nFor MON7CHA.DAX:68/default, keep the existing independently created displacer-beast design, six legs, shoulder tentacles, black-violet palette, screen-right facing, and both distinct ready/action poses. No equipment is saved; add none. Correct BOTH 128x128 transparent PNGs to the saved 2-wide by 1-high combat footprint by applying the SAME deterministic transform to each original frame: nearest-neighbor resize the full 128x128 canvas to 126x66 pixels; place that result at x=1, y=40 on a new transparent 128x128 canvas. Preserve genuine alpha and the shared planted-foot registration. The entire silhouette, including tentacles, must fit one catalog square high at the fixed nonhumanoid 2x preview scale, while the body remains nearly two squares wide. Do not redraw, crop, recenter one pose independently, add gear, or change either pose independently.",
   "humanoid_size": "na",
-  "sprite_size": {"height_squares": 1, "width_squares": 2},
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 2
+  },
   "description_sources": [
     "Original game MON7CHA.DAX:68 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"

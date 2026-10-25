@@ -1,0 +1,28 @@
+{
+  "format": "opengold-sprite-review-v1",
+  "specification": "natural-in-place-v1",
+  "source_key": "MON7CHA.DAX:68",
+  "variant_id": "default",
+  "install_paths": {
+    "ready": "art/mon7cha_dax_68/default/ready.png",
+    "action": "art/mon7cha_dax_68/default/action.png"
+  },
+  "metadata_sha256": "9eaf44ddd351db8d8768bd1bc89437347fec1464b90f75e3e5c33a0734cd538c",
+  "workflow_sha256": "a768a0be59c5d1fba305a5943e718901140e2eaa81d0fac32484bf006202c63f",
+  "ready_sha256": "09c155ae04ec30dd3e0db791cde1261fb640d126217cc82da6aa281f59ea36c2",
+  "action_sha256": "a99241d06da8ca7288ca7e2de515082b4e94c68d70591ad76b0a2caaf5dcab21",
+  "reviewer": "Codex",
+  "reviewed_at": "2026-10-25T06:13:50+00:00",
+  "visual_checks": {
+    "source_identity_and_independent_art": true,
+    "correct_equipment_or_no_equipment": true,
+    "same_body_scale_and_perspective": true,
+    "planted_base_registered": true,
+    "requested_ready_and_action_motion": true,
+    "footprint_and_attack_appendage_reviewed": true,
+    "complete_alpha_silhouette_on_light_magenta_dark": true,
+    "readable_at_combat_size": true,
+    "one_second_fixed_grid_catalog_review": true
+  },
+  "notes": "Geometry-only correction of the existing independent displacer beast ready/action pair. No saved gear; default is the only set. Identical nearest-neighbor 128x128 to 126x66 canvas transform, positioned at x=1 y=40, preserves relative pose alignment and transparent background. Ready used alpha bounds 124x64+1+41; action 122x62+4+42. Exact saved PNGs inspected at native and enlarged size over light gray, dark, and magenta. Isolated catalog loaded both exact paths, reported both frames fit the saved 2x1 footprint, and one-second auto swap reached action. Technical sprite check passed. Original source art was not used as a reference."
+}
