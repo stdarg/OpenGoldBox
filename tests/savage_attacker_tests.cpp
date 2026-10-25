@@ -305,7 +305,7 @@ void defenses()
            "",
            VitalState{
                1000, false,
-               "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3 \"ward\" 0 0 0 0 0 0 0 FX8 1 0 0"}}}},
+               "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3 \"ward\" 0 0 0 0 0 0 0 FX9 1 0 0"}}}},
         13);
     act(*c, "melee");
     check(logged(*c, "9 and 10, keeps 10.") && unit(*c, 99).hit_points == 998 &&

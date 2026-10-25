@@ -337,7 +337,7 @@ Rest) and
   raise their Hit Point maximum and current Hit Points by 5. A creature already
   aided gains nothing more. The higher maximum is kept in the character's vital
   state, so it lasts after the fight; when Aid ends, Hit Points above the sheet's
-  maximum go with it. Higher slots wait for level-three slots.
+  maximum go with it. Each slot level above 2 adds 5 more ([Spell slots](SPELL-SLOTS.md)).
 - `RulesModule::hit_point_maximum` and `CampaignParty::hit_point_maximum` give
   the raised maximum; the campaign's checks, healing, the temple, the rest
   dialog, the party panel and the combat roster use it.
@@ -372,8 +372,8 @@ Rest) and
 
 - **Hold Person** (level 2, Action, 60 feet, Concentration up to 1 minute): a
   Humanoid the Cleric can see makes a Wisdom save or is **Paralyzed**,
-  repeating the save at the end of each of its turns. A higher slot's extra
-  target waits for level-three slots. The AI casts it on a creature with no
+  repeating the save at the end of each of its turns. Each slot level above
+  2 adds a Humanoid ([Spell slots](SPELL-SLOTS.md)). The AI casts it on a creature with no
   condition, as it does Blindness.
 - **Paralyzed** (shown as a condition): Incapacitated (it can only end its turn
   and takes no Reactions) with Speed 0; it automatically fails Strength and
@@ -436,7 +436,8 @@ Rest) and
   attack** (Bonus Action, no slot) moves the force beside an enemy within 25
   feet of it and attacks again. Adaptation: the force goes to the square beside
   the chosen enemy rather than being placed by hand. The force ends with the
-  Cleric's Concentration. A higher slot's extra die waits for level-three slots.
+  Cleric's Concentration. Each slot level above 2 adds 1d8 to its first attack
+  and its later strikes ([Spell slots](SPELL-SLOTS.md)).
   The AI strikes whenever the attack is offered.
 - Verification: `opengold_cleric_channel_tests` (placement beside the target, a
   checkpoint, the later Bonus Action attack, Concentration ending it).
@@ -449,7 +450,7 @@ Rest) and
   each regain 2d8 + Wisdom modifier (Disciple of Life adds 4). No member is
   chosen in the dialog: the target list is hidden for it, and the result line
   shows the party's total. Adaptation: the members are chosen automatically.
-  A higher slot's extra die waits for level-three slots.
+  Each slot level above 2 adds 1d8 ([Spell slots](SPELL-SLOTS.md)).
 - Rules: `RulesModule::use_party_camp_action` handles camp actions that affect
   several members (`CampAction::whole_party`).
 - Verification: `opengold_camp_action_tests` (a whole-party action, several

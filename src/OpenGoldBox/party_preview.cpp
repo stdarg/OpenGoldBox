@@ -258,7 +258,7 @@ void CharacterCreationView::reincarnate_check()
                         m.character,
                         {.failures = 3,
                          .hit_dice = 1,
-                         .effects = "FX8 2 1 1 113 1 1 \"Fallen companion\" 0 864000000 0 0"}),
+                         .effects = "FX9 2 1 1 113 1 1 \"Fallen companion\" 0 864000000 0 0 0"}),
                     "Dead"};
             }
         }

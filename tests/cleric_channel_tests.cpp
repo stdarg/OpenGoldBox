@@ -367,9 +367,9 @@ void lesser_restoration_checks()
     auto module = rules();
     // Blinded, Paralyzed and Poisoned, with saves the ally cannot make.
     const std::string afflicted =
-        "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 4 3 "
-        "1 1 77 99 \"Caster\" 30 60000 6000 2 24 77 99 \"Caster\" 30 60000 6000 "
-        "3 32 77 99 \"Caster\" 0 12000 0 0";
+        "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 4 3 "
+        "1 1 77 99 \"Caster\" 30 60000 6000 0 2 24 77 99 \"Caster\" 30 60000 6000 0 "
+        "3 32 77 99 \"Caster\" 0 12000 0 0 0";
     auto plain = battle(*module, cleric(3));
     check(!submit(*plain, "lesser_restoration_blinded", 2),
           "Lesser Restoration needs a condition to end");
@@ -423,7 +423,7 @@ void aid_expiry_checks()
     auto state = party.checkpoint();
     state.roster.front().vitals = {
         sheet_maximum + 5, false,
-        "SRD13 0 2 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 2 1 1 21 77 99 \"Caster\" 5 28800000 0 0"};
+        "SRD13 0 2 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 2 1 1 21 77 99 \"Caster\" 5 28800000 0 0 0"};
     party.restore(std::move(state));
     check(party.hit_point_maximum(id) == sheet_maximum + 5, "Aid raises the campaign maximum");
     party.advance_time(std::chrono::minutes(481));

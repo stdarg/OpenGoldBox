@@ -152,7 +152,7 @@ void medicine_combat()
               {},
               VitalState{
                   0, false,
-                  "SRD13 0 0 0 0 0 0 0 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"}},
+                  "SRD13 0 0 0 0 0 0 0 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"}},
              {99, "vanguard", "Enemy", Side::opposition, {6, 6}}}};
     };
     bool success = false, failure = false;

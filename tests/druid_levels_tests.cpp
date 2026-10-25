@@ -489,6 +489,114 @@ void reincarnate_checks()
                      .party);
     check(encode_campaign(next, nullptr, "reincarnate") == bytes, "The new body saves and reloads");
 }
+
+// The amounts on log lines holding `text`: "Foe takes 17 Radiant damage from
+// the Moonbeam." or, for an attack that is no critical hit, "... hits for 12
+// damage.".
+std::vector<int> amounts(const CombatSession &c, std::string_view text)
+{
+    std::vector<int> result;
+    for (const auto &line : c.snapshot().log())
+    {
+        if (line.find(text) == std::string::npos || line.find("d20 20 ") != std::string::npos)
+        {
+            continue;
+        }
+        for (const std::string_view marker : {" takes ", " hits for "})
+        {
+            if (const auto at = line.find(marker); at != std::string::npos)
+            {
+                result.push_back(std::stoi(line.substr(at + marker.size())));
+            }
+        }
+    }
+    return result;
+}
+
+// Whether every amount is at most `most`, and some exceed `own_slot_most`,
+// the most the spell's own slot could deal.
+bool grew(const std::vector<int> &found, int own_slot_most, int most)
+{
+    return !found.empty() &&
+           std::all_of(found.begin(), found.end(),
+                       [&](int amount)
+                       {
+                           return amount <= most;
+                       }) &&
+           std::any_of(found.begin(), found.end(),
+                       [&](int amount)
+                       {
+                           return amount > own_slot_most;
+                       });
+}
+
+// Casting from higher slots (SRD 5.2.1's "Using a Higher-Level Spell Slot"):
+// Moonbeam, Heat Metal and Flame Blade keep the slot's extra die for their
+// later damage, and Giant Insect's stat block grows with it.
+void higher_slot_checks()
+{
+    const auto rules = dummy_rules();
+    auto sheet = druid(9).sheet();
+    const std::vector<std::string> spells{"moonbeam", "heat_metal", "flame_blade", "giant_insect"};
+    std::copy(spells.begin(), spells.end(), sheet.prepared_spells.begin());
+    const std::vector<std::string> staff{"quarterstaff"}, mail{"chain_mail"};
+    const auto profile = rules->character_profile(sheet, staff).data;
+    const auto knight = rules->character_profile(druid(9).sheet(), mail).data;
+    const auto fight = [&](std::uint64_t seed)
+    {
+        auto c =
+            rules->create({{14, 7, std::vector<Terrain>(98)},
+                           {{1, "campaign-character", "Druid", Side::party, {1, 2}, profile},
+                            {97, "campaign-character", "Knight", Side::opposition, {6, 2}, knight},
+                            {98, "dummy", "Foe", Side::opposition, {2, 2}}}},
+                          seed);
+        to_turn(*c, 1);
+        return c;
+    };
+    std::vector<int> beams, heats, blades;
+    for (std::uint64_t seed = 1; seed <= 12; ++seed)
+    {
+        auto beam = fight(seed);
+        check(submit(*beam, "moonbeam_3") && submit_cell(*beam, "area_move", Cell{2, 2}) &&
+                  submit(*beam, "area_cast"),
+              "Moonbeam from a level-3 slot");
+        const auto beamed = amounts(*beam, "from the Moonbeam");
+        beams.insert(beams.end(), beamed.begin(), beamed.end());
+
+        auto heat = fight(seed);
+        check(submit(*heat, "heat_metal_3", 97) && submit(*heat, "end"),
+              "Heat Metal from a level-3 slot");
+        to_turn(*heat, 1);
+        if (offered(*heat, "heat_metal_again", 97))
+        {
+            check(submit(*heat, "heat_metal_again", 97), "Heat the metal again");
+        }
+        const auto heated = amounts(*heat, "from the hot metal");
+        heats.insert(heats.end(), heated.begin(), heated.end());
+
+        auto blade = fight(seed);
+        check(submit(*blade, "flame_blade_3", 1) && submit(*blade, "flame_blade_strike", 98),
+              "Flame Blade from a level-3 slot strikes");
+        const auto struck = amounts(*blade, "Druid -> Foe");
+        blades.insert(blades.end(), struck.begin(), struck.end());
+    }
+    check(grew(beams, 20, 30), "Moonbeam burns for 3d10 from a level-3 slot");
+    check(grew(heats, 16, 24), "Heat Metal burns for 3d8 from a level-3 slot, again too");
+    // 3d6 + 4 Fire from a level-2 slot, 4d6 + 4 from a level-3 one.
+    check(grew(blades, 22, 28), "Flame Blade strikes for 4d6 from a level-3 slot");
+
+    auto insect = fight(1);
+    check(submit(*insect, "giant_insect_spider_5") &&
+              submit_cell(*insect, "area_move", Cell{3, 2}) && submit(*insect, "area_cast"),
+          "Giant Insect from a level-5 slot");
+    const auto combatants = insect->snapshot().combatants;
+    check(std::any_of(combatants.begin(), combatants.end(),
+                      [](const auto &a)
+                      {
+                          return a.max_hit_points == 40;
+                      }),
+          "A level-5 Giant Insect has 40 Hit Points");
+}
 } // namespace
 
 int main()
@@ -496,6 +604,7 @@ int main()
     try
     {
         progression_checks();
+        higher_slot_checks();
         circle_and_recovery_checks();
         resurgence_and_fury_checks();
         tiger_checks();

@@ -318,7 +318,7 @@ void spell_checks()
 // Heroes' Feast's immunity to it.
 std::string with_effect(std::string saved, fx::EffectKind kind)
 {
-    for (auto at = saved.find("FX8 "); at != std::string::npos; at = saved.find("FX8 ", at + 1))
+    for (auto at = saved.find("FX9 "); at != std::string::npos; at = saved.find("FX9 ", at + 1))
     {
         std::istringstream in(saved.substr(at));
         auto effects = fx::read_effects(in);

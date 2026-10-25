@@ -410,7 +410,7 @@ void lifecycle()
     fx::apply_ray_of_frost(state, {.scope = 6, .actor = 1}, "Cold", 4000);
     std::ostringstream out;
     fx::write_effects(out, state);
-    check(out.str().starts_with("FX8 "), "Effects are written in the only effect format");
+    check(out.str().starts_with("FX9 "), "Effects are written in the only effect format");
     std::istringstream input(out.str());
     check(fx::read_effects(input) == state, "Mixed sourced effects round trip");
     fx::EffectSubject subject{10, state, {}};
@@ -420,13 +420,13 @@ void lifecycle()
           "Independent suppression sources do not consume saves");
     fx::elapse_effects(std::span(&subject, 1), 4000, random);
     check(state.active.empty() && random == 17, "Last source expires without RNG");
-    std::istringstream valid("FX8 2 1 1 3 5 1 \"Caster\" 0 6000 0 0");
+    std::istringstream valid("FX9 2 1 1 3 5 1 \"Caster\" 0 6000 0 0 0");
     check(fx::opportunity_blocked(fx::read_effects(valid)),
           "A well-formed Shocking Grasp record loads");
     for (const char *bad :
-         {"FX3 2 1 1 3 5 1 \"Caster\" 0 6000 0", "FX8 2 1 1 3 5 1 \"Caster\" 1 6000 0 0",
-          "FX8 2 1 1 3 5 1 \"Caster\" 0 6001 0 0", "FX8 2 1 1 3 5 1 \"Caster\" 0 6000 1 0",
-          "FX8 1 0"})
+         {"FX3 2 1 1 3 5 1 \"Caster\" 0 6000 0", "FX9 2 1 1 3 5 1 \"Caster\" 1 6000 0 0 0",
+          "FX9 2 1 1 3 5 1 \"Caster\" 0 6001 0 0 0", "FX9 2 1 1 3 5 1 \"Caster\" 0 6000 1 0 0",
+          "FX9 1 0"})
     {
         rejects(
             [&]
@@ -490,8 +490,8 @@ void persistence_guards()
             (void)rules->restore(old);
         });
     auto malformed = current;
-    const auto fx = malformed.find("FX8 ");
-    check(fx != malformed.npos, "Actual live effect encoded as FX8");
+    const auto fx = malformed.find("FX9 ");
+    check(fx != malformed.npos, "Actual live effect encoded as FX9");
     malformed.replace(fx, 3, "FX6");
     rejects(
         [&]

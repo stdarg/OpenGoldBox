@@ -73,7 +73,7 @@ public rules interface, UI layout or player combat-saving change is introduced.
 Implementation stays in `opengold_rules_srd5` STATIC. Core and public RulesModule
 interfaces are unchanged. Main-game Godot adds only the spell ID/label and routes
 it through existing targeting/audio/selection code. Released choices are retained.
-FX8 stores prevention and the Prone flag.
+FX9 stores prevention and the Prone flag.
 
 Focused tests cover all three sources and casting abilities, starting counts,
 levels 1–4 damage, critical hits, Necrotic affinities including immunity, Magic

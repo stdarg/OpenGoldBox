@@ -28,13 +28,26 @@ Part of [#176](https://github.com/stdarg/OpenGoldBox/issues/176) (levels 5–15)
   also offered from a level-2 slot.
 - The camp's Cast / Use list follows the same rule.
 - The smites follow it after a hit: "Divine Smite (level 3 slot)" deals 4d8.
-  Searing Smite stays at level 1: its burn from a higher slot is not built.
+  Searing Smite's hit and its burn each deal 1d6 more for each level above 1.
   Ensnaring Strike's vines deal 1d6 more a turn for each level above 1; the
   caster carries the count (an `ensnaring` effect) while it concentrates.
 - Shield and Hellish Rebuke, cast as Reactions, take the lowest slot left;
   Hellish Rebuke deals 1d10 more for each level above 1.
 - Upcast rules added with the Paladin: Heroism takes one more creature per
   level above 1, Prayer of Healing heals 1d8 more per level above 2.
+- Upcast rules added for levels 5–10 (2026-10-25), from each spell's "Using a
+  Higher-Level Spell Slot": one more ray for Scorching Ray; one more creature
+  for Hold Person, Hideous Laughter, Blindness, Invisibility and Freedom of
+  Movement; 1d8 more for Shatter and Mind Spike; and later damage that
+  remembers the slot it was cast with: Spiritual Weapon's strikes (1d8),
+  Flaming Sphere (1d6), Moonbeam (1d10), Heat Metal (1d8), Flame Blade (1d6),
+  Dragon's Breath (1d6) and Acid Arrow's hit and burn (1d4). Heal's 10 more
+  Hit Points, Giant Insect's and Summon Dragon's stat blocks, Animate
+  Objects' Slam and the Globe of Invulnerability's warded levels already grew
+  with the slot but were only offered there once the lower slots were spent;
+  they are offered at each level now. Bestow Curse is offered from a level-5
+  slot, which needs no Concentration. A later burn's slot is kept on its area
+  (`slot`) or on its effect (the effect state's `slot`, FX9).
 - A label "X (level N slot)" with no Spanish entry of its own is translated as
   the spell's name plus "(espacio de nivel N)".
 

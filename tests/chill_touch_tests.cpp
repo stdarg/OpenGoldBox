@@ -447,7 +447,7 @@ void lifecycle()
     state.prone = true;
     std::ostringstream out;
     fx::write_effects(out, state);
-    check(out.str().starts_with("FX8 "), "Effect state writes the current tag");
+    check(out.str().starts_with("FX9 "), "Effect state writes the current tag");
     std::istringstream input(out.str());
     check(fx::read_effects(input) == state, "Mixed source and posture codec");
     fx::EffectSubject subject{10, state, {}};
@@ -460,9 +460,9 @@ void lifecycle()
     check(state.active.empty() && state.prone && random == 17,
           "Last source expires without changing posture or RNG");
     for (const char *bad :
-         {"FX4 2 1 1 4 5 1 \"Caster\" 0 6000 0 0 1", "FX8 2 1 1 4 5 1 \"Caster\" 1 6000 0 0",
-          "FX8 2 1 1 4 5 1 \"Caster\" 0 12001 0 0", "FX8 2 1 1 4 5 1 \"Caster\" 0 6000 1 0",
-          "FX8 2 1 1 4 5 1 \"Caster\" 0 6000 0 2"})
+         {"FX4 2 1 1 4 5 1 \"Caster\" 0 6000 0 0 1", "FX9 2 1 1 4 5 1 \"Caster\" 1 6000 0 0 0",
+          "FX9 2 1 1 4 5 1 \"Caster\" 0 12001 0 0 0", "FX9 2 1 1 4 5 1 \"Caster\" 0 6000 1 0 0",
+          "FX9 2 1 1 4 5 1 \"Caster\" 0 6000 0 0 2"})
     {
         rejects(
             [&]
@@ -481,7 +481,7 @@ VitalState blocked_state(const RulesModule &rules, const Character &h, int hp)
     auto at = result.resources.find("FX");
     check(at != result.resources.npos, "Orc fixture carries effect record");
     result.resources.replace(at, result.resources.size() - at,
-                             "FX8 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0");
+                             "FX9 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0 0");
     return result;
 }
 
@@ -793,7 +793,7 @@ VitalState stable_blocked(unsigned deadline = 1000)
 {
     return {0, false,
             "SRD13 2 0 0 0 0 0 0 0 0 0 0 0 1 2 0 " + std::to_string(deadline) +
-                " 0 \"\" 2 1 0 0 0 0 0 FX8 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0"};
+                " 0 \"\" 2 1 0 0 0 0 0 FX9 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0 0"};
 }
 
 void stable_continuation()
@@ -819,7 +819,7 @@ void stable_continuation()
     check(encode_campaign(loaded, nullptr, "earned-recovery") == bytes,
           "Pending earned recovery round trips exactly");
     auto no_block = pending;
-    no_block.resources.replace(no_block.resources.find("FX8"), std::string::npos, "FX8 1 0 0");
+    no_block.resources.replace(no_block.resources.find("FX9"), std::string::npos, "FX9 1 0 0");
     rejects(
         [&]
         {
@@ -877,7 +877,7 @@ void stable_actual_cast()
            {2, 1},
            {},
            VitalState{0, false,
-                      "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 5000 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"}},
+                      "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 5000 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"}},
           {99, "vanguard", "Enemy", Side::opposition, {6, 1}}}},
         13);
     while (c->snapshot().actor != 1)

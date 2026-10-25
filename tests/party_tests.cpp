@@ -964,7 +964,7 @@ void stabilization_handoff()
     party.add_pc(character("fighter", "Conscious ally"));
     auto state = party.checkpoint();
     state.roster[0].vitals = {
-        0, false, "SRD13 1 0 0 0 0 0 0 0 0 0 2 1 0 1 6000 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
+        0, false, "SRD13 1 0 0 0 0 0 0 0 0 0 2 1 0 1 6000 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"};
     party.restore(std::move(state));
     auto participants = party.participants();
     participants[0].cell = {1, 1};
@@ -1024,7 +1024,7 @@ void remaining_turn_handoff()
     const auto hero = party.add_pc(character());
     auto state = party.checkpoint();
     state.roster[0].vitals = {
-        3, false, "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
+        3, false, "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"};
     party.restore(std::move(state));
     auto participants = party.participants();
     participants[0].cell = {1, 1};
@@ -1061,7 +1061,7 @@ void remaining_turn_handoff()
     use("second_wind");
     check(party.member(hero).vitals.hit_points > 3 &&
               party.member(hero).vitals.resources ==
-                  "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0",
+                  "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0",
           "Post-attack Second Wind updates campaign HP and spends its last use");
     use("end");
     check(party.state().subminute_milliseconds == 3000,
@@ -1293,7 +1293,7 @@ void campaign_encounters()
     party->add_pc(character("fighter", "Companion"));
     auto checkpoint = party->checkpoint();
     checkpoint.roster[0].vitals = {
-        1, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 1 0 0 0 0 FX8 1 0 0"};
+        1, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 1 0 0 0 0 FX9 1 0 0"};
     party->restore(std::move(checkpoint));
     const auto wounded = party->member(pc).vitals;
     const auto still_wounded = [&](const VitalState &state)
@@ -1692,7 +1692,7 @@ void progression_and_services()
         });
     auto wounded = party.checkpoint();
     wounded.roster[0].vitals = {
-        0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0",
+        0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0",
         "Unconscious"};
     party.restore(std::move(wounded));
     check(!party.rest() && party.time_hours() == 32,
@@ -1713,7 +1713,7 @@ void progression_and_services()
     party.temple_service(pc, TempleService::cure_light_wounds, 100);
     check(party.member(pc).vitals.hit_points > 0 && party.state().wealth[3] == 0 &&
               party.member(pc).vitals.resources ==
-                  "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0",
+                  "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0",
           "Healing charges once, clears death saves and preserves spent resources");
     const auto checkpoint = party.checkpoint();
     CampaignParty restored(module());
@@ -1725,7 +1725,7 @@ void progression_and_services()
     check(restored.member(pc).experience == 300, "Checkpoint retains claimed rewards");
     auto dead = checkpoint;
     dead.roster[0].vitals = {
-        0, true, "SRD13 0 0 0 0 0 0 0 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
+        0, true, "SRD13 0 0 0 0 0 0 0 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"};
     party.restore(dead);
     rejects(
         [&]
@@ -1769,8 +1769,8 @@ void caster_advancement()
         const bool wizard = std::string_view(klass) == "wizard";
         spent.roster[0].vitals = {
             c.sheet().hit_points - 2, false,
-            wizard ? "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 1 0 0 0 0 FX8 1 0 0"
-                   : "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
+            wizard ? "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 1 0 0 0 0 FX9 1 0 0"
+                   : "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"};
         party.restore(spent);
         party.award_experience(299, "below");
         check(party.member(pc).character.sheet().level == 1, "Below threshold does not advance");
@@ -1783,16 +1783,16 @@ void caster_advancement()
                   m.vitals.hit_points == m.character.sheet().hit_points - 2,
               "Dwarven growth preserves HP deficit");
         check(m.vitals.resources ==
-                  (wizard ? "SRD13 0 1 0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 \"\" 0 0 1 0 0 0 0 FX8 1 0 0"
+                  (wizard ? "SRD13 0 1 0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 \"\" 0 0 1 0 0 0 0 FX9 1 0 0"
                           // A level-two Cleric gains two Channel Divinity uses.
-                          : "SRD13 0 1 0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 \"\" 0 0 0 0 0 2 0 FX8 1 0 0"),
+                          : "SRD13 0 1 0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 \"\" 0 0 0 0 0 2 0 FX9 1 0 0"),
               "Advancement grants new slot without refilling spent slots");
         check(
             party.rest() &&
                 party.member(pc).vitals.resources ==
                     (wizard
-                         ? "SRD13 0 3 0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 \"\" 0 0 1 0 0 0 0 FX8 1 0 0"
-                         : "SRD13 0 3 0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 \"\" 0 0 0 0 0 2 0 FX8 1 0 0"),
+                         ? "SRD13 0 3 0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 \"\" 0 0 1 0 0 0 0 FX9 1 0 0"
+                         : "SRD13 0 3 0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 \"\" 0 0 0 0 0 2 0 FX9 1 0 0"),
             "Level-two long rest restores three slots and safely stands the rested character");
         auto participants = party.participants();
         participants.push_back({1000, "bandit", "Bandit", Side::opposition, {9, 4}});
@@ -1811,7 +1811,7 @@ void temple_party_purse()
     party.set_wealth({0, 0, 0, 90, 0, 0, 0});
     auto state = party.checkpoint();
     state.roster[1].vitals = {
-        0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 \"\" 0 0 1 0 0 0 0 FX8 1 0 0"};
+        0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 \"\" 0 0 1 0 0 0 0 FX9 1 0 0"};
     party.restore(state);
     rejects(
         [&]
@@ -1877,7 +1877,7 @@ void dynamic_checkpoint()
             (void)rules->create(e, 42);
         });
     e.participants[0].state = VitalState{
-        1, false, "SRD13 0 99 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
+        1, false, "SRD13 0 99 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"};
     rejects(
         [&]
         {
@@ -2559,7 +2559,7 @@ void recovery_hosts()
     const auto pc = party->add_pc(character());
     auto state = party->checkpoint();
     state.roster[0].vitals = {
-        1, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
+        1, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"};
     party->restore(state);
     auto resources = std::make_shared<por::PhlanResources>();
     auto p = program({0});

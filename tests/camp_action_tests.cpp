@@ -360,7 +360,7 @@ void lay_on_hands_cure_checks()
     party.end_combat();
     auto state = party.checkpoint();
     auto &vitals = state.roster.at(1).vitals;
-    const auto at = vitals.resources.find("FX8");
+    const auto at = vitals.resources.find("FX9");
     std::istringstream in(vitals.resources.substr(at));
     auto effects = fx::read_effects(in);
     fx::apply_poisoned(effects, {.scope = 9, .actor = 99}, "Bandit", 12000);
@@ -371,7 +371,7 @@ void lay_on_hands_cure_checks()
     const auto poisoned = [&]
     {
         const auto &resources = party.member(fighter).vitals.resources;
-        std::istringstream read(resources.substr(resources.find("FX8")));
+        std::istringstream read(resources.substr(resources.find("FX9")));
         const auto active = fx::read_effects(read).active;
         return std::any_of(active.begin(), active.end(),
                            [](const auto &effect)

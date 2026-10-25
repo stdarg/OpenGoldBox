@@ -632,8 +632,8 @@ void mass_cure_wounds_checks()
 void greater_restoration_checks()
 {
     const auto rules = dummy_rules();
-    const std::string hexed = "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 2 1 "
-                              "1 56 77 99 \"Witch\" 0 3600000 0 0";
+    const std::string hexed = "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 2 1 "
+                              "1 56 77 99 \"Witch\" 0 3600000 0 0 0";
     const std::vector<std::string> gear{"mace"};
     auto c =
         rules->create({{12, 5, std::vector<Terrain>(60)},
@@ -1043,7 +1043,7 @@ void camp_heal_checks()
     VitalState target{1, false, {}};
     rules->recover(target, patient.sheet());
     target.hit_points = 1;
-    const auto at = target.resources.find("FX8");
+    const auto at = target.resources.find("FX9");
     check(at != std::string::npos, "The patient's record holds its effects");
     std::istringstream in(target.resources.substr(at));
     auto effects = fx::read_effects(in);
@@ -1145,8 +1145,8 @@ void antimagic_checks()
 {
     const auto rules = dummy_rules();
     // The ally has True Seeing, an hour's spell.
-    const std::string seeing = "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 2 1 "
-                               "1 117 77 99 \"Sage\" 0 3600000 0 0";
+    const std::string seeing = "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 2 1 "
+                               "1 117 77 99 \"Sage\" 0 3600000 0 0 0";
     auto c = field(*rules, with_spells(cleric(15), {"antimagic_field"}),
                    {{2, "dummy", "Ally", Side::party, {1, 1}, {}, VitalState{3, false, seeing}},
                     {98, "dummy", "Foe", Side::opposition, {8, 2}}},
@@ -1226,12 +1226,62 @@ void divine_intervention_checks()
           "Divine Intervention casts Flame Strike with its use and no slot");
     check(!offered(*c, "cure_wounds_intervention", 2), "Once per Long Rest");
 }
+
+// Casting from higher slots (SRD 5.2.1's "Using a Higher-Level Spell Slot"):
+// Spiritual Weapon's later strikes keep the slot's extra die; Freedom of
+// Movement takes one more creature; Heal restores 10 more.
+void higher_slot_checks()
+{
+    const auto rules = dummy_rules();
+    const auto sheet = with_spells(cleric(9), {"spiritual_weapon", "freedom_of_movement"});
+    std::vector<int> strikes;
+    for (std::uint64_t seed = 1; seed <= 12; ++seed)
+    {
+        auto c = chapel(*rules, sheet, "dummy", seed);
+        check(submit(*c, "spiritual_weapon_3", 98) && submit(*c, "end"),
+              "Spiritual Weapon from a level-3 slot");
+        to_turn(*c, 1);
+        check(submit(*c, "spiritual_weapon_strike", 98), "The force strikes again");
+        // The strike's line follows its announcement; a critical hit's dice
+        // are doubled, so it proves nothing.
+        const auto lines = log_lines(*c);
+        const auto announced =
+            std::find(lines.begin(), lines.end(), "Cleric's Spiritual Weapon strikes.");
+        check(announced != lines.end() && announced + 1 != lines.end(), "The strike is logged");
+        const auto &strike = *(announced + 1);
+        const auto hit = strike.find(" hits for ");
+        if (hit != std::string::npos && strike.find("d20 20 ") == std::string::npos)
+        {
+            strikes.push_back(std::stoi(strike.substr(hit + 10)));
+        }
+    }
+    // 1d8 + 5 from a level-2 slot; 2d8 + 5 from a level-3 one.
+    check(std::all_of(strikes.begin(), strikes.end(),
+                      [](int amount)
+                      {
+                          return amount <= 21;
+                      }) &&
+              std::any_of(strikes.begin(), strikes.end(),
+                          [](int amount)
+                          {
+                              return amount > 13;
+                          }),
+          "Spiritual Weapon's later strikes deal 2d8 from a level-3 slot");
+
+    auto c = chapel(*rules, sheet, "dummy", 1);
+    check(submit(*c, "freedom_of_movement_5", 2) && offered(*c, "freedom_of_movement_5", 3) &&
+              submit(*c, "freedom_of_movement_5", 3) && slots(*c, 5) == 0,
+          "Freedom of Movement from a level-5 slot takes two creatures");
+    const auto healer = chapel(*rules, with_spells(cleric(13), {"heal"}), "dummy", 1);
+    check(offered(*healer, "heal_7", 2), "Heal is offered from a level-7 slot");
+}
 } // namespace
 
 int main()
 {
     try
     {
+        higher_slot_checks();
         progression_checks();
         mass_healing_word_checks();
         spirit_guardians_checks();

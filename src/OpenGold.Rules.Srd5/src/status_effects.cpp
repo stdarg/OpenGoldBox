@@ -1119,7 +1119,7 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
 
 // The only effect-state tag written or read. It lives inside campaign saves and
 // combat checkpoints, whose format numbers reject older data.
-constexpr std::string_view effects_magic = "FX8";
+constexpr std::string_view effects_magic = "FX9";
 
 void write_effects(std::ostream &out, const EffectState &effects)
 {
@@ -1128,7 +1128,7 @@ void write_effects(std::ostream &out, const EffectState &effects)
     {
         out << ' ' << e.id << ' ' << static_cast<unsigned>(e.kind) << ' ' << e.source_scope << ' '
             << e.source_actor << ' ' << std::quoted(e.source_name) << ' ' << e.dc << ' '
-            << e.remaining_ms << ' ' << e.save_in_ms;
+            << e.remaining_ms << ' ' << e.save_in_ms << ' ' << e.slot;
     }
     out << ' ' << effects.prone;
 }
@@ -1172,7 +1172,14 @@ EffectState read_effects(std::istream &in)
         in >> std::quoted(e.source_name) >> e.dc;
         unsigned_field(in, e.remaining_ms);
         unsigned_field(in, e.save_in_ms);
+        unsigned_field(in, e.slot);
         const auto kind = saved_effect_kind(saved_kind);
+        if (e.slot > 9 || (e.slot && kind != EffectKind::flame_blade &&
+                           kind != EffectKind::heated && kind != EffectKind::dragons_breath &&
+                           kind != EffectKind::acid_arrow && kind != EffectKind::searing_smite))
+        {
+            throw std::runtime_error("Invalid active effect");
+        }
         const bool timed = kind == EffectKind::ray_of_frost || kind == EffectKind::frosts_chill ||
                            kind == EffectKind::hamstrung || kind == EffectKind::stunned ||
                            kind == EffectKind::staggered || kind == EffectKind::studied ||

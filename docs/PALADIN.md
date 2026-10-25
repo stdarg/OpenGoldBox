@@ -46,8 +46,8 @@ campaign the Training Hall trains it to level 15.
   an Undead), and **Shining Smite**: 2d6 Radiant, and until the Paladin's
   Concentration ends (up to 1 minute) attack rolls against the target have
   Advantage and it cannot be Invisible. From level 9 both are offered from a
-  level-3 slot too, one die more ([Spell slots](SPELL-SLOTS.md)). Searing
-  Smite uses a level-1 slot only: its burn from a higher slot is not built.
+  level-3 slot too, one die more ([Spell slots](SPELL-SLOTS.md)); a higher
+  Searing Smite's burn deals one die more too.
 - **Aura of Protection** (6): the Paladin and its allies within 10 feet, in a
   clear line, add the Paladin's Charisma modifier (at least +1) to saving
   throws, including repeated saves, Concentration saves and death saves. The

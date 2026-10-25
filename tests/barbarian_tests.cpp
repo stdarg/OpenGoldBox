@@ -203,7 +203,7 @@ std::unique_ptr<CombatSession> entangled(const RulesModule &module)
         module.character_profile(hero.sheet(), std::vector<std::string>{"greataxe"}).data,
         VitalState{hero.sheet().hit_points, false,
                    "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 2 "
-                   "0 FX8 2 1 1 19 77 99 \"Druid\" 15 60000 0 0"}};
+                   "0 FX9 2 1 1 19 77 99 \"Druid\" 15 60000 0 0 0"}};
     barbarian_entry.inventory = {{0, "acid", 3, -1}};
     auto c = module.create({{12, 6, std::vector<Terrain>(72)},
                             {barbarian_entry, {98, "target", "Enemy", Side::opposition, {2, 1}}}},
@@ -371,7 +371,7 @@ int danger_save(const RulesModule &module, const Character &hero, std::uint64_t 
     if (incapacitated)
     {
         auto vitals = unit(*module.create(e, seed), 1).persistent;
-        const auto at = vitals.resources.find("FX8");
+        const auto at = vitals.resources.find("FX9");
         std::istringstream in(vitals.resources.substr(at));
         auto effects = fx::read_effects(in);
         fx::apply_repeating_condition(effects, fx::EffectKind::laughing, {.scope = 7, .actor = 98},

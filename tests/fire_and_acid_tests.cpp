@@ -531,7 +531,7 @@ void carried_gear_survives_checkpoint()
 // Gives every combatant in a saved fight Protection From Normal Missiles.
 std::string warded(std::string saved)
 {
-    for (auto at = saved.find("FX8 "); at != std::string::npos; at = saved.find("FX8 ", at + 1))
+    for (auto at = saved.find("FX9 "); at != std::string::npos; at = saved.find("FX9 ", at + 1))
     {
         std::istringstream in(saved.substr(at));
         auto effects = fx::read_effects(in);

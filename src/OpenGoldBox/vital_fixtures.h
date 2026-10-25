@@ -17,7 +17,7 @@ struct VitalFixture
     int winds{}, slots{}, slots2{}, successes{}, failures{};
     bool stable{};
     int hit_dice{}, death_save_ms{}, stable_recovery_ms{};
-    std::string_view effects = "FX8 1 0 0";
+    std::string_view effects = "FX9 1 0 0";
 };
 
 // Reads the race and class by stable ID; their labels are presentation only.

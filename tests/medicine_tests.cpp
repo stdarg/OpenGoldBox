@@ -139,7 +139,7 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed = 0, Cel
            target,
            {},
            VitalState{0, false,
-                      "SRD13 0 0 0 0 0 0 0 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"}},
+                      "SRD13 0 0 0 0 0 0 0 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"}},
           {99, "vanguard", "Enemy", Side::opposition, {6, 6}}}},
         seed);
     while (c->snapshot().actor != 1)
@@ -479,7 +479,7 @@ void fixtures()
              {2, 1},
              {},
              VitalState{0, false,
-                        "SRD13 2 0 0 0 0 0 0 0 0 0 0 0 0 0 6000 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"}},
+                        "SRD13 2 0 0 0 0 0 0 0 0 0 0 0 0 0 6000 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"}},
             {99, "vanguard", "Enemy", Side::opposition, {6, 6}}};
         auto ui = normal->create({{8, 8, std::vector<Terrain>(64)}, actors}, seed);
         while (ui->snapshot().actor != 1)
@@ -522,7 +522,7 @@ void fixtures()
                {},
                VitalState{
                    0, false,
-                   "SRD13 2 0 0 0 0 0 0 0 0 0 0 0 0 0 6000 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"}},
+                   "SRD13 2 0 0 0 0 0 0 0 0 0 0 0 0 0 6000 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"}},
               {99, "vanguard", "Enemy", Side::opposition, {6, 6}}}},
             seed);
         while (c->snapshot().actor != 1)
