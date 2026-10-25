@@ -3,6 +3,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/character_creator.h"
 #include "opengold/coin_purse.h"
+#include "opengold/ecl_party_host.h"
 #include "opengold/combat_demo.h"
 #include "opengold/random_treasure.h"
 #include "opengold/rolf_tour.h"
@@ -4319,6 +4320,84 @@ void cadorna_textile_house(Expedition &trip, const std::filesystem::path &folder
     check(town.snapshot().area_id == 18, "The textile house's north edge leads back to Podol Plaza");
 }
 
+// Podol Plaza's roaming group table, roll by roll (docs/audits/podol-plaza.md):
+// from the save made on entering, each of the nine group rolls (0x9F86) is
+// forced by reseeding the script's dice, and the group met on the next plaza
+// step must be the one the script's tables give for that roll.
+void podol_group_rolls(const std::filesystem::path &save, const std::filesystem::path &directory)
+{
+    struct Group
+    {
+        std::string_view name, soldier, leader;
+        unsigned divisor, morale, threshold, leaders;
+    };
+
+    // The six group types (0xB269 records, 0xB275 divisors, 0xB281 morale,
+    // 0xB287 leader thresholds, 0xB28D leaders) and which type each roll
+    // picks (0xB260).
+    const std::array<Group, 6> types{
+        {{"GOBLINS", "slums-goblin", "slums-goblin-leader", 1, 30, 40, 5},
+         {"GOBLINS", "slums-goblin", "slums-goblin-leader", 1, 35, 40, 5},
+         {"ORCS", "slums-orc", "slums-orc-leader", 1, 40, 30, 4},
+         {"ORCS", "slums-orc", "slums-orc-leader", 1, 45, 30, 4},
+         {"HOBGOBLINS", "slums-hobgoblin", "slums-hobgoblin", 2, 45, 20, 3},
+         {"OGRES", "ogre", "ogre", 4, 50, 11, 0}}};
+    constexpr std::array<unsigned, 9> type_of_roll{0, 0, 1, 1, 2, 2, 3, 4, 5};
+    for (unsigned roll = 0; roll < type_of_roll.size(); ++roll)
+    {
+        auto trip = load_expedition(save, directory);
+        auto &[party, town] = trip;
+        // Row 9 is open plaza (event 0) from (5,9) to (11,9).
+        walk_to(town, party, 11, 9);
+        face(town, party, 3);
+        // The step's first die is the plaza's 0-25 (a group on 0), its second
+        // the group's 0-8.
+        std::uint32_t seed = 0;
+        for (;; ++seed)
+        {
+            opengold::test::TourAccess::seed_dice(town, seed);
+            auto dice = opengold::test::TourAccess::machine(town);
+            if (dice.engine_random(26) == 0 && dice.engine_random(9) == roll)
+            {
+                break;
+            }
+        }
+        const auto &group = types[type_of_roll[roll]];
+        const auto fight_them = [](const por::TourSnapshot &s) -> std::size_t
+        {
+            return s.choices.size() == 4 && s.choices[0] == "Fight" ? 0 : peaceful(s);
+        };
+        const auto fights = fights_started.size();
+        const auto strength = por::party_strength(*party);
+        step(town, party, 3, fight_them);
+        // The name the script prints: "<n> GOBLINS RUSH TO ATTACK."
+        const auto name = opengold::test::TourAccess::machine(town).string(por::EclAddress{0x9800});
+        check(name == " " + std::string(group.name) && fights_started.size() == fights + 1 &&
+                  last_encounter,
+              "Group roll " + std::to_string(roll) + " meets " + std::string(group.name));
+        // The script's group: n to 2n for n = strength / divisor / 3, from 2
+        // to 50, with leaders once it reaches the type's threshold.
+        const unsigned size = town.script_variable(por::EclAddress{0x4A01});
+        const unsigned leaders = town.script_variable(por::EclAddress{0x4A03});
+        const auto n = strength / group.divisor / 3;
+        check(size >= std::max(n, 2U) && size <= std::min(std::max(2 * n, 2U), 50U) &&
+                  leaders == (size >= group.threshold ? group.leaders : 0U),
+              "Group roll " + std::to_string(roll) + " sizes the group by its type");
+        // The fight is that group, fitted to the party's XP budget.
+        const auto &enemies = last_encounter->enemies;
+        check(!enemies.empty() && enemies.size() <= size + leaders &&
+                  std::all_of(enemies.begin(), enemies.end(),
+                              [&](const rules::Participant &enemy)
+                              {
+                                  return enemy.definition == group.soldier ||
+                                         enemy.definition == group.leader;
+                              }),
+              "Group roll " + std::to_string(roll) + " brings only its own creatures");
+        check(last_encounter->morale == group.morale + (leaders ? 10 : 0),
+              "Group roll " + std::to_string(roll) + " sets its type's morale");
+    }
+}
+
 // Podol Plaza (docs/audits/podol-plaza.md), off the council's mission:
 // entered by Kuto's Well's west edge, Stojanow Gate north and back, a
 // roaming group met on the plaza, the robed orc fought for his holy symbols,
@@ -4347,6 +4426,7 @@ void podol_plaza(Expedition &trip, const std::filesystem::path &folder,
     check(load_expedition(save, directory).town.snapshot().area_id == 18,
           "A save in Podol Plaza loads back there");
     podol_pitt(save, directory);
+    podol_group_rolls(save, directory);
     // Every edge has openings at 4 and 11: north to Stojanow Gate and back.
     walk_to(town, party, 4, 0, peaceful);
     step(town, party, 0);
