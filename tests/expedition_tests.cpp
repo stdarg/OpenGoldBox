@@ -3787,6 +3787,95 @@ void lizard_keep(const std::filesystem::path &directory)
           "The drawbridge leads back out to the eastern wilderness");
 }
 
+// Valhingen Graveyard (docs/audits/valhingen-graveyard.md): the way in from
+// the city's north edge, the mystic who joins, the black marble crypt's coffin
+// sanctified, the vampire in its pit and, fled to its coffin, destroyed there,
+// and the way back out to the wilderness.
+void valhingen_graveyard(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 34000, "test:graveyard-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 8)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    walk_to(town, party, 11, 2);
+    step(town, party, 0, prefer({"WEST"}));
+    walk_to(town, party, 14, 1);
+    step(town, party, 1, prefer({"STAY"}));
+    std::string heard;
+    const Answer noting = [&](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        return prefer({"GRAVEYARD", "LET HIM JOIN", "YES", "SANCTIFY", "Fight", "Bash"})(s);
+    };
+    travel_to(town, party, 13, 26, noting, [&] { return !town.snapshot().overland; });
+    check(town.snapshot().area_id == 10 && town.snapshot().pose.x == 0 &&
+              town.snapshot().pose.y == 4,
+          "The city's north edge leads into Valhingen Graveyard");
+    const auto graveyard = [&](std::uint16_t address)
+    {
+        return town.script_variable(por::EclAddress{address});
+    };
+    // The spectres behind the brass doors, met facing east, and in the tower
+    // at (9,7); with them beaten the mystic comes.
+    heal(*party);
+    walk_to(town, party, 8, 1, noting, true);
+    step(town, party, 1, noting);
+    check(graveyard(0x4A42) == 2, "Spectres flow from between the brass doors");
+    heal(*party);
+    walk_to(town, party, 9, 7, noting, true);
+    check(graveyard(0x4A42) == 3, "A spectre haunts the tower's lower chamber");
+    // The mystic, who joins and names the vampire behind the undead.
+    heal(*party);
+    walk_to(town, party, 8, 9, noting, true);
+    const auto &slots = party->state().slots;
+    const auto mystic = std::find_if(slots.begin(), slots.end(),
+                                     [&](const auto id)
+                                     {
+                                         return id && party->member(id).character.sheet().name ==
+                                                          "Mystic";
+                                     });
+    check(graveyard(0x4A42) == 250 && mystic != slots.end() &&
+              town.snapshot().dialogue.find("NORTHEAST CORNER") != std::string::npos,
+          "The mystic joins the party and tells it of the vampire");
+    const auto &sheet = party->member(*mystic).character.sheet();
+    check(sheet.level == 6 && sheet.scores[rules::Ability::intelligence] == 15 &&
+              sheet.scores[rules::Ability::constitution] == 10 &&
+              sheet.scores[rules::Ability::strength] == 10 &&
+              party->member(*mystic).equipped.size() == 1,
+          "The mystic is a level-6 Wizard with his record's scores, his ring worn");
+    // The black marble crypt: the scroll read and the coffin sanctified.
+    heal(*party);
+    walk_to(town, party, 12, 4, noting, true);
+    check(graveyard(0x4A43) == 251 && heard.find("ENTRY 43") != std::string::npos,
+          "The coffin in the black marble crypt is sanctified after its scroll is read");
+    // The vampire's pit, down the wooden stairs.
+    heal(*party);
+    walk_to(town, party, 15, 0, noting, true);
+    check(heard.find("TALL, PALE MAN") != std::string::npos && graveyard(0x4A41) == 250,
+          "Beaten in its pit, the vampire flees as a vapor cloud");
+    // Back at its sanctified coffin, the vampire is destroyed.
+    heal(*party);
+    walk_to(town, party, 12, 4, noting, true);
+    check(heard.find("THERE IS A VAMPIRE HERE") != std::string::npos &&
+              graveyard(0x4A41) == 255,
+          "The vampire, weakened by its sanctified coffin, is destroyed there");
+    // Out by the west edge.
+    heal(*party);
+    walk_to(town, party, 0, 4, noting, true);
+    step(town, party, 3, prefer({"LEAVE"}));
+    check(town.snapshot().overland && town.snapshot().overland_x == 12 &&
+              town.snapshot().overland_y == 26,
+          "The graveyard's west edge leads back to the city's north edge");
+}
+
 // Mendor's Library (docs/audits/mendors-library.md), east of the Cadorna
 // Textile House: entered by the house's east edge and saved there, the
 // wizard-locked doors opened with Knock, a book of history found by looking in
@@ -5019,6 +5108,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         eastern_wilderness(directory);
         kobold_caves(directory);
         lizard_keep(directory);
+        valhingen_graveyard(directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -5125,6 +5215,12 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--wilderness")
         {
             central_wilderness(directory);
+            return 0;
+        }
+        // Plays Valhingen Graveyard alone with a new party.
+        if (argc == 2 && std::string_view(argv[1]) == "--graveyard")
+        {
+            valhingen_graveyard(directory);
             return 0;
         }
         // Plays the lizard men's keep alone with a new party.

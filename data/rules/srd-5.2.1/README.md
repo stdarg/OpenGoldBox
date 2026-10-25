@@ -209,6 +209,26 @@ Open5E response was fetched on 2026-10-25 (`srd-2024`):
 
 It keeps the original's 55 Hit Points.
 
+## Valhingen Graveyard monsters
+
+Valhingen Graveyard's undead and wolves
+([audit](../../../docs/audits/valhingen-graveyard.md)). Each Open5E response was
+fetched on 2026-10-25 (`srd-2024`):
+
+| Rows | Stat block | Response | SHA-256 |
+| --- | --- | --- | --- |
+| `wraith` | Wraith | `open5e-wraith.json` | `0485B8649AC9463F89314E1B34A0F0E872C2B98374EFF4B8043D8D3789C0E98E` |
+| `giant-skeleton` | Minotaur Skeleton | `open5e-minotaur-skeleton.json` | `03C0A26E0750667E63B8018B94ED52FC057080A2EB9A05D1F4CF13103E87487E` |
+| `juju-zombie` | Ogre Zombie | `open5e-ogre-zombie.json` | `79F55B379EFB00AE68C88DE72F1206DDC2FA1116E54DC55BAD38451E6EAF48E0` |
+| `mummy` | Mummy | `open5e-mummy.json` | `BF89F266789B7D87E2E913500169B0DA28DE46FE3D0E4FE36552732026987B25` |
+| `vampire`, `weakened-vampire` | Vampire | `open5e-vampire.json` | `97A9678B91671AFC175FD86925C1BB53CB7413BBD01441CA5185942E6668E02C` |
+| `wolf` | Wolf | `open5e-wolf.json` | `F68A8D97592A10620F342A2CA97CD449F62D18C8D338098EBABE594B08E434B8` |
+
+Each keeps the original's Hit Points. Where this response and the SRD 5.2.1
+PDF differ, the rows follow the PDF: the Wraith's Bludgeoning, Piercing and
+Slashing Resistances, the Minotaur Skeleton's Bludgeoning Vulnerability and
+the Mummy's Fire Vulnerability.
+
 ## Fixtures
 
 `vanguard`, `scout`, `adept`, and `healer` are authored combat fixtures, not

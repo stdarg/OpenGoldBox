@@ -252,6 +252,9 @@ std::optional<ScriptDamage> listed_damage(unsigned script, std::uint16_t address
 {
     constexpr std::array types{ScriptDamage{2, 0xADB1, "bludgeoning"}, // the Cadorna well's fall
                                ScriptDamage{15, 0x9D31, "acid"},       // Mendor's green slime
+                               // Valhingen Graveyard's towers (GRAVE-1).
+                               ScriptDamage{10, 0xA53E, "poison"},    // noxious fumes
+                               ScriptDamage{10, 0xAA5F, "lightning"}, // a sharp crack
                                // The kobold caves' traps and rocks (KOBOLD-1).
                                ScriptDamage{13, 0x9CF3, "bludgeoning"}, // the roof
                                ScriptDamage{13, 0x9E73, "piercing"},    // spikes
@@ -2101,7 +2104,7 @@ std::string RolfTourSession::shoot_arrows(unsigned arrows, std::string_view miss
 
 // A DAMAGE call's harm to one member: the saving throw that avoided it, or
 // the damage taken.
-std::string RolfTourSession::hurt(const std::optional<HazardHit> &hit) const
+std::string RolfTourSession::hurt(const std::optional<HazardHit> &hit, int save_dc) const
 {
     if (!hit)
     {
@@ -2113,7 +2116,7 @@ std::string RolfTourSession::hurt(const std::optional<HazardHit> &hit) const
     if (result.saved)
     {
         return "\n" + name + " avoids it (saving throw " + std::to_string(result.save_total) +
-               ").";
+               " vs DC " + std::to_string(save_dc) + ").";
     }
     auto report = "\n" + name + " takes " + std::to_string(result.damage) + " damage.";
     if (member.vitals.dead)
@@ -2318,6 +2321,15 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                            std::to_string(arg(2)));
         }
         const auto &creature = area_resources().encounter_creatures.at(record);
+        // Record byte 0x10E is the side a creature fights on (coab
+        // combat_team): 0, the party's, only for Valhingen Graveyard's
+        // efreeti, who helps a party carrying his bottle. Allies are not in
+        // the game yet (GRAVE-1), so he stays out of the fight rather than
+        // joining the vampire's side.
+        if (creature.stored.raw.at(0x10E) == 0)
+        {
+            break;
+        }
         auto icon = decode_ega_combat_icon(area_resources().combat_archive, arg(2), 0);
         if (!icon)
         {
@@ -2870,8 +2882,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                     if (id)
                     {
                         const auto result = campaign_->hazard_attack(id, harm);
-                        snapshot_.dialogue += hurt(result ? std::optional<HazardHit>{{id, *result}}
-                                                          : std::nullopt);
+                        snapshot_.dialogue += hurt(
+                            result ? std::optional<HazardHit>{{id, *result}} : std::nullopt,
+                            harm.save_dc);
                     }
                 }
             }
@@ -2879,7 +2892,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             {
                 harm.save_ability = original_save_abilities[arg(4) & 7];
                 harm.save_dc = original_save_dc - static_cast<int>(arg(0) & 0x1F);
-                snapshot_.dialogue += hurt(campaign_->hazard_attack(harm));
+                snapshot_.dialogue += hurt(campaign_->hazard_attack(harm), harm.save_dc);
             }
             else
             {
@@ -2889,8 +2902,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                     throw EclError("DAMAGE needs a chosen member");
                 }
                 const auto result = campaign_->hazard_attack(id, harm);
-                snapshot_.dialogue += hurt(result ? std::optional<HazardHit>{{id, *result}}
-                                                  : std::nullopt);
+                snapshot_.dialogue +=
+                    hurt(result ? std::optional<HazardHit>{{id, *result}} : std::nullopt,
+                         harm.save_dc);
             }
         }
         damage_request_ = request.id;

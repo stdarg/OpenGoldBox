@@ -1829,3 +1829,20 @@ they await the user's review ([audit](audits/lizard-keep.md)):
   Central Wilderness's mutant lizard men use.
 - **The anti-magic shell** the entry announces forbids nothing, as in the
   original, whose script never sets the area's spell ban.
+
+## GRAVE-1 (2026-10-25): Valhingen Graveyard
+
+Claude chose these on 2026-10-25 while making the map playable area by area;
+they await the user's review ([audit](audits/valhingen-graveyard.md)):
+
+- **Monsters** keep the original's Hit Points on SRD stat blocks: the Wraith;
+  the Minotaur Skeleton for the giant skeleton; the Ogre Zombie, Medium, for
+  the juju zombie, which the SRD lacks; the Mummy; the Vampire, with 15 Hit
+  Points once its coffin is sanctified; and the Wolf.
+- **The mystic** joins as a level-6 Wizard with his record's scores and his
+  Ring of Protection +2.
+- **Not modeled yet:** the Wraith's Create Specter, the Minotaur Skeleton's
+  charging Gore, the Vampire's grapple, Bite, Beguile and Charm, the Mummy's
+  Dreadful Glare and curse, and the efreeti Samir Ahwahl fighting beside a
+  party that carries his bottle.
+

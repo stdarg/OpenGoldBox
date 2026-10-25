@@ -115,6 +115,18 @@ Blade or Hurl Flame; fire immunity) with the original's 55 Hit Points, by
 spells and Magic Resistance are not modeled yet. Princess Fatima, who joins,
 is a level-4 Fighter.
 
+## Valhingen Graveyard monsters
+
+Valhingen Graveyard's undead are SRD 5.2.1 stat blocks with the original's Hit
+Points, by [GRAVE-1](SRD-DECISIONS.md#grave-1-2026-10-25-valhingen-graveyard):
+the Wraith (Life Drain, flying, Incorporeal Movement), the Minotaur Skeleton's
+Slam for the giant skeleton, the Ogre Zombie for the juju zombie, the Mummy
+(two Rotting Fists, Fire Vulnerability), the Vampire's two Grave Strikes and
+the Wolf (Pack Tactics, a Bite that knocks Prone). Not modeled yet: Create
+Specter, the charging Gore, the Vampire's grapple, Bite, Beguile and Charm,
+and the Mummy's Dreadful Glare and curse. The mystic who joins is a level-6
+Wizard.
+
 ## Mendor's Library monsters
 
 Rules 0.6.251 adds Mendor's Library's SRD 5.2.1 stat blocks: Specter, Basilisk
