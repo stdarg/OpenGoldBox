@@ -1,0 +1,28 @@
+{
+  "format": "opengold-sprite-review-v1",
+  "specification": "natural-in-place-v1",
+  "source_key": "MON8CHA.DAX:59",
+  "variant_id": "default",
+  "install_paths": {
+    "ready": "art/mon8cha_dax_59/default/ready.png",
+    "action": "art/mon8cha_dax_59/default/action.png"
+  },
+  "metadata_sha256": "0110e3016999fc569dee60e254e826c36486529eee07f845714fa366d99d871f",
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd",
+  "ready_sha256": "9548bb75f02d3ba2c9600016ab7e1557f440c6d2f499a5ad9edc3804905421ee",
+  "action_sha256": "cf75f6e9ad943a75a015365186809e362043ef43fdeae7083fc79a04f502bae4",
+  "reviewer": "Codex",
+  "reviewed_at": "2026-10-25T19:36:48+00:00",
+  "visual_checks": {
+    "source_identity_and_independent_art": true,
+    "correct_equipment_or_no_equipment": true,
+    "same_body_scale_and_perspective": true,
+    "planted_base_registered": true,
+    "requested_ready_and_action_motion": true,
+    "footprint_and_attack_appendage_reviewed": true,
+    "complete_alpha_silhouette_on_light_magenta_dark": true,
+    "readable_at_combat_size": true,
+    "one_second_fixed_grid_catalog_review": true
+  },
+  "notes": "New original long, low copper-orange and teal giant lizard, no gear, with one default set. Both generated 1769x889 frames share the same nearest-neighbor 116x58 export and x=6,y=62 placement on transparent 128x128 canvases. Alpha below 15% removed to clear faint background haze. The action extends the poised near foreclaw screen right and lunges the head into a wide open bite. Ready paw-contact pixels x=0..100, y=106..127 were retained exactly in action; neck, chest and belly remain visibly connected. Exact saved files inspected at native and enlarged combat size on light, magenta and dark backgrounds. Catalog loaded both exact paths, reported both fit the saved 2x1 footprint, and auto-swapped to action after one second. No original game art supplied as a generation reference."
+}
