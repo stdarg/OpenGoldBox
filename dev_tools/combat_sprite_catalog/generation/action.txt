@@ -2,6 +2,10 @@ POSE TO GENERATE: ACTION only.
 Apply the ACTION rule for the selected weapon from the specification above.
 For melee, near the END of the swing or thrust, not a windup. For projectile
 weapons, just AFTER release, with no projectile remaining loaded. Keep any shield.
+For a thrown object, use the ready pose to identify its actual gripping hand.
+Extend THAT arm and empty hand toward screen right after release; do not drop
+that hand or extend only the opposite arm. Trace shoulder to elbow to wrist
+before accepting the pose.
 Only the moving attack weapon may cross the saved combat-square footprint line
 in ACTION. Keep the full-size body, planted feet, shield and other gear inside
 the footprint. The weapon may pass the dotted tile border but all its visible

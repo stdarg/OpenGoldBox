@@ -30,6 +30,16 @@ The projectile is no longer nocked, loaded or in the sling pouch; it may already
 be outside the image. Keep the bow, crossbow or sling in the character's hands.
 For a thrown weapon, ready holds it poised to throw; action is just after release
 and that thrown weapon is no longer in the hand. Do not turn a wand into a bow.
+THROWN-WEAPON ARM CONTINUITY: Before drawing action, identify the arm that
+actually grips the thrown object in ready by tracing its shoulder, elbow,
+wrist, and hand. If the object has a two-handed grip, identify the primary
+throwing arm and the supporting arm. In action, that SAME throwing arm follows
+through toward screen right: its empty hand extends past the torso in the
+attack direction, near shoulder height or higher. The other arm cannot
+substitute for it. A lowered throwing hand is a failed throw even if the
+object has disappeared or the other hand points right. Keep the shoulder,
+elbow, wrist, and open hand visibly connected; do not detach the arm or move
+the whole figure to fit its reach.
 BARE-HANDED ATTACKS BY MONSTERS WITH ARMS: In ACTION, lean the upper body
 slightly toward screen right and show either a punch or an outstretched reach.
 A humanoid's bare-handed attack is ALWAYS a punch, never a reach. Keep the
