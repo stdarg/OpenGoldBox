@@ -46,6 +46,17 @@ uses passable tiles, so omitting that decoration preserves collision geometry.
 Wilderness generation and original creature-placement/morale rules are separate
 compatibility work; this geometry implementation does not claim those systems.
 
+## Evidence limit
+
+The arena geometry above was measured by running the original routine. Where
+the party and the monsters start ([PLACE-1](SRD-DECISIONS.md#place-1-2026-10-10-starting-positions-as-the-original-game-had-them))
+and how far ahead the party sees (the encounter distance, stopping at a wall or
+door) were read from the coab reimplementation and START.EXE's placement
+tables, not measured in a running fight. No battlefield has been compared with
+a fight in the running original. The user accepted this evidence on 2026-10-24
+for closing issue #3; records from the running original are added as the
+[DOS probe](../dev_tools/docs/dos-probe.md) makes them.
+
 ## Validation and inspection
 
 The native suite compares 35 complete-arena hashes obtained from original

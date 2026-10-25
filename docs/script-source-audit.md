@@ -73,9 +73,9 @@ already selects only the actual branch and reads tables as data.
 
 | Topic | Current decision / next evidence needed |
 | --- | --- |
-| GETTABLE condition flags | Preserves flags. The FAQ's detailed IF-handler list mentions GETTABLE, but its GETTABLE description and Explorer do not describe a flag update. Trace/disassemble `19B5:0E5E..0EBB` before introducing a new side effect. |
-| RANDOM upper endpoint | Uses the saturated increment described for `19B5:0234..0291`, so argument 255 produces 0..254. The general opcode prose suggests an inclusive bound instead. Ordinary bounds are tested; verify the 255 corner case against DOS. OpenGoldBox's seedable RNG intentionally has a different sequence. |
-| Conditional skip quirks | Skips one whole decoded instruction. The original has skip bugs for some variable-length/other commands; bug-for-bug behavior needs specific traces, not a general broken decoder. |
+| GETTABLE condition flags | Preserves flags. Settled by the [DOS probe](../dev_tools/docs/dos-probe.md#findings) (2026-10-24): after `COMPARE 1,1` or `COMPARE 2,1` and a GETTABLE, the original's `IF =` or `IF >` still held. |
+| RANDOM upper endpoint | Inclusive, with argument 255 producing 0..254. Settled by the DOS probe (2026-10-24): in 3,000 rolls the original's `RANDOM 8` gave 8 350 times and never more, and `RANDOM 255` gave 254 eight times and never 255. OpenGoldBox's seedable RNG intentionally has a different sequence. |
+| Conditional skip quirks | Skips one whole decoded instruction. The DOS probe read the original's skip table (2026-10-24): it skips only the opcode of VERTICAL MENU, ON GOTO, ON GOSUB and HORIZONTAL MENU, two of SETUP MONSTER's three operands and one of ADD NPC's two. None of the 1,936 IFs in the 29 original scripts is followed by one of these, so both skip the same bytes on every original script. |
 | `0x1F` | Two-operand grammar, undefined handler. Execution faults; it is not a guessed command or silent success. |
 | ECL CLOCK | One operand is confirmed. Original execution uses an uninitialized value; by the user's policy campaign play passes time for the operand's steps ([nomad camp](audits/nomad-camp.md)), and a VM without the campaign host faults. |
 | Runtime code changes | Private script writes and subsequent fetches are implemented and isolated. Original self-modifying command sequences still need a dedicated DOS compatibility trace. |
@@ -90,8 +90,9 @@ particular, preserve the distinctions between creature setup/loading, encounter
 cleanup, combat versus shop/temple routing, and replacement of the active script
 versus loading map resources. These are separate operations in the request API.
 
-The next validation step is to record a DOS event using Companion's monitor or
-a debugger and compare request PCs, decoded operands, state writes and branch
+The [DOS probe](../dev_tools/docs/dos-probe.md) now records DOS events: the
+script bytes the original reads and the variables it writes. The next validation
+step is to compare request PCs, decoded operands, state writes and branch
 choices with OpenGoldBox. Start with the existing Slums event fixture, replacing its
 mock fight result with an observed result. Then cover map transitions, a text
 input event, party queries and a table-driven random encounter. Record executable
