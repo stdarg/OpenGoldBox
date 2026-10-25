@@ -1,7 +1,10 @@
 {
-  "description": "A reptilian warrior from the swamp and ruined keep, with a long tail and strong jaws. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description": "A reptilian warrior from the swamp and ruined keep, with a long tail and strong jaws. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.\n\nIMAGEGEN PROMPT ACTION:\nUse case: precise-object-edit\nAsset type: OpenGold combat sprite MON8CHA.DAX:57/default/action; edit the approved 128x128 transparent lizardman ready frame.\nInput image 1 is the CURRENT READY FRAME and the actual edit target. Input image 2 is a newly generated attack-pose draft, used ONLY to show the desired two-arm reach and open mouth. Both are independently created replacement art; no original game artwork is a reference.\nLOCK the ready frame's tail, pelvis, abdomen, BOTH legs, BOTH planted feet, their exact x/y pixel positions, full body scale, camera, and colors. Preserve the existing connected torso from pelvis through chest. Modify only head/jaws, shoulders, and arms to create an aggressive TWO-ARM FORWARD REACH: extend BOTH lizard arms toward screen right with BOTH open clawed hands clearly visible, connected to separate shoulders. Lean the UPPER BODY slightly right into the attack without shearing it from the pelvis. Open the mouth WIDE in a menacing snarl with visible dark mouth and teeth. Face screen right in front three-quarter view with chest partly visible.\nMaintain the ready sprite's native 128x128 canvas placement and silhouette below the waist, not the draft's shifted lower body. Full normal-height lizardman; no weapons, shield, clothing change, added or missing limbs, double edges, cut torso, seam, black box, scenery, ground, text, border, checkerboard, or motion blur. Keep the body inside the saved 1x1 tile; attacking claws may extend past the tile line but must remain inside the transparent PNG margin. Do not crop, recenter, resize, or translate the whole character.",
   "humanoid_size": "normal",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 1
+  },
   "description_sources": [
     "Original game MON8CHA.DAX:57 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"
