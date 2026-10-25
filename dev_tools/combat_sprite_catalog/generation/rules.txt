@@ -62,6 +62,12 @@ their exact ready-frame coordinates and preserve the body's scale and facing.
 If a magical or other unusual attack is unspecified, ask for its ready/action
 behavior before generating.
 
+FOUR-LEGGED ANIMAL BITES: In ACTION, lunge the head and neck toward screen right
+with the mouth OPEN WIDE. Keep the planted paws, rear body, camera, and scale
+registered to READY. Animate the upper body into the bite; do not slide or
+recenter the entire animal. Apply the same bite motion to the six-legged
+Displacer Beast while preserving all six legs and both shoulder tentacles.
+
 EQUIPMENT: Draw only the selected weapon/shield setup, plus appropriate other
 gear from the record. Retain the shield in both frames when the set includes it.
 For a spellcaster whose saved wand is classified as gear, show that wand in the
