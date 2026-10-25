@@ -5,11 +5,11 @@
     "action": "art/mon3cha_dax_103/item_003__item_000/action.png",
     "ready": "art/mon3cha_dax_103/item_003__item_000/ready.png"
   },
-  "metadata_sha256": "b9abc228ffc8af12a7bfd366cbaafe3dae05a36ff192b4d38271f13c71df92c9",
-  "notes": "Common nearest-neighbor 128-to-156 scale and identical (-18,-16) placement applied to the previously accepted independently generated axe/shield ready/action pair. At combat size, body head-to-feet about 88px in both; feet remain registered. Ready axe alone rises above top tile; action axe alone moves right. Compared with bow set in catalog. Reviewed side by side and alternating on the fixed 3x3 catalog guide.",
+  "metadata_sha256": "f33498459f8cd5abcd3eb2fcd13ae1e4e185bda0dbbc9e25153c895a6a7b895f",
+  "notes": "Localized ready battle-axe correction: reflect only the metal head/short mount within x=33..57,y=7..24 around its raised haft, putting broad cutting edge screen right and narrow poll left. Exactly 312 ready pixels changed, all inside that head region; gripping hand, haft below head, shoulder, torso, shield, feet, scale, alpha elsewhere, and entire action PNG remain byte-for-byte unchanged. Full inventory inspected: Battle axe + Shield and Long bow; bow pair untouched. Final ready/action checked at native combat size, enlarged on dark/light/magenta backgrounds, and alternating in the Godot catalog. Ready raised axe alone extends 0.27 square above the 1x1 footprint; action axe sweep already extended 0.19 square rightward. Loaded paths and exact hashes verified.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "a9050a46e5419a1c40f3674e57987e6d2d825bcc40375cfeac13394c3105a1fb",
-  "reviewed_at": "2026-10-23T14:12:31+00:00",
+  "ready_sha256": "0fa535c80175d393250dae83da24589916f4e76c9ed67f8739d2fad8bd001a0c",
+  "reviewed_at": "2026-10-25T23:32:22.781934+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON3CHA.DAX:103",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
 }

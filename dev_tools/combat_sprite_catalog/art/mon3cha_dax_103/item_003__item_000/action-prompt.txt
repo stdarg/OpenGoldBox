@@ -224,3 +224,5 @@ the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
 PRODUCTION/HEIGHT AUDIT: Common nearest-neighbor 128-to-156 scale and identical (-18,-16) placement applied to the previously accepted independently generated axe/shield ready/action pair. At combat size, body head-to-feet about 88px in both; feet remain registered. Ready axe alone rises above top tile; action axe alone moves right. Compared with bow set in catalog.
+
+2026-10-25 ACTION INSTALL DECISION: Keep existing action.png byte-for-byte unchanged; the battle-axe blade already faces screen right.
