@@ -553,7 +553,18 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                     {63, "slums-bugbear", 200, 200},
                     {71, "ettin", 1100, 1100},
                     {75, "trapped-fighter", 700, 700},
-                    {89, "nomad-shaman", 200, 200}}}};
+                    {89, "nomad-shaman", 200, 200}}},
+        // Valjevo's old town (docs/audits/valjevo-old-town.md, TOWN-1): its
+        // bank 24 is two blocks and fills two wall slots.
+        AreaSource{6,
+                   5,
+                   {{6, {24, 25, 1}}},
+                   {{41, "nomad-guard", 450, 450},
+                    {55, "hill-giant", 1800, 1800},
+                    {56, "fire-giant", 5000, 5000},
+                    {75, "trapped-fighter", 700, 700},
+                    {90, "trapped-acolyte", 50, 50},
+                    {91, "bane-priest", 450, 450}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;

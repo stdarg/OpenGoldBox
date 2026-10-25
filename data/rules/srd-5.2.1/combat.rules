@@ -614,6 +614,30 @@ type ettin giant
 multiattack ettin 2
 perception ettin 4
 prone_large ettin
+# Valjevo's old town (docs/audits/valjevo-old-town.md, TOWN-1), with the
+# original's Hit Points: the Fire Giant's two Flame Sword or Hammer Throw
+# attacks (the throw's push and Disadvantage not modeled); the temple's priest
+# the Temple of Bane's Priest.
+creature fire-giant 18 59 3 30 11 4 6 7 11 3 10 7 60 240 0 0 0 1 0
+saves fire-giant 7 3 10 0 2 5
+damage_types fire-giant slashing bludgeoning
+size fire-giant huge
+type fire-giant giant
+multiattack fire-giant 2
+multiattack_ranged fire-giant
+melee_extra_damage fire-giant 3 6 fire
+ranged_extra_damage fire-giant 1 8 fire
+affinity fire-giant stat:fire immunity fire
+perception fire-giant 6
+creature bane-priest 13 29 0 30 5 1 6 3 5 2 10 0 60 60 0 0 5 1 0
+saves bane-priest 3 0 1 1 3 1
+damage_types bane-priest bludgeoning radiant
+multiattack bane-priest 2
+multiattack_ranged bane-priest
+melee_extra_damage bane-priest 2 4 radiant
+innate bane-priest Spellcasting 1 action spirit_guardians
+innate bane-priest Divine_Aid 3 bonus bless dispel_magic healing_word lesser_restoration
+evil bane-priest
 # Summon Dragon's Draconic Spirit (SRD 5.2.1 p. 166), one stat block per
 # spell level: AC 14 + the level, 50 Hit Points and 10 more per level above 5,
 # Rend 1d6 + 4 + the level Piercing (reach 10 feet), half the level in Rends.

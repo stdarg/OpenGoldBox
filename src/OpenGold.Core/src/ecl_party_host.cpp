@@ -52,6 +52,17 @@ std::uint16_t adnd_race_code(std::string_view species_id)
     return match == codes.end() ? 6 : match->second;
 }
 
+// The original's alignment codes, lawful good to chaotic evil (coab
+// Player.alignment, record byte 0xD8): Valjevo's Temple of Bane reads them.
+std::uint16_t adnd_alignment_code(std::string_view alignment)
+{
+    static constexpr std::array<std::string_view, 9> codes{
+        "lawful_good",  "lawful_neutral", "lawful_evil",     "neutral_good", "neutral",
+        "neutral_evil", "chaotic_good",   "chaotic_neutral", "chaotic_evil"};
+    const auto match = std::ranges::find(codes, alignment);
+    return static_cast<std::uint16_t>(match == codes.end() ? 4 : match - codes.begin());
+}
+
 // Gold Box THAC0 by level 1..12 (coab engine/ovr018.cs thac0_table, stored
 // there as 60 - THAC0). Higher levels keep the level-12 value: the original
 // table ends there and nothing is extrapolated.
@@ -281,6 +292,7 @@ EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
         }
         fields[0x18] = sheet.scores[rules::Ability::constitution];
         fields[0x72] = adnd_race_code(m.character.creation_data().race);
+        fields[0xD8] = adnd_alignment_code(m.character.creation_data().alignment);
         // The thief's climb-walls chance, which the Cadorna Textile House's
         // dry well rolls (ECL4:2 0xACC5).
         fields[0xAB] = party.climbing_chance(id);

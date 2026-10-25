@@ -241,6 +241,17 @@ Open5E response was fetched on 2026-10-25 (`srd-2024`):
 
 Each keeps the original's Hit Points.
 
+## Valjevo old town monsters
+
+The old town's fire giants ([audit](../../../docs/audits/valjevo-old-town.md)).
+The Open5E response was fetched on 2026-10-25 (`srd-2024`):
+
+| Rows | Stat block | Response | SHA-256 |
+| --- | --- | --- | --- |
+| `fire-giant` | Fire Giant | `open5e-fire-giant.json` | `AB2611D8384D2FCD65DA9667CD5B6E3D1E35EB384661CB1B5B4CE020B27BA31A` |
+
+It keeps the original's 59 Hit Points.
+
 ## Fixtures
 
 `vanguard`, `scout`, `adept`, and `healer` are authored combat fixtures, not

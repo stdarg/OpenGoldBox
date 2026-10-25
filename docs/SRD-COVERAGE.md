@@ -115,6 +115,14 @@ Blade or Hurl Flame; fire immunity) with the original's 55 Hit Points, by
 spells and Magic Resistance are not modeled yet. Princess Fatima, who joins,
 is a level-4 Fighter.
 
+## Valjevo old town monsters
+
+The old town's Fire Giant (two Flame Sword or Hammer Throw attacks, fire
+immunity) is the SRD 5.2.1 stat block with the original's 59 Hit Points, by
+[TOWN-1](SRD-DECISIONS.md#town-1-2026-10-25-valjevos-old-town); its temple's
+priest is the Temple of Bane's Priest with 29. Not modeled yet: the Hammer
+Throw's push and Disadvantage.
+
 ## Stojanow Gate monsters
 
 Stojanow Gate's Hill Giant (two Tree Club or Trash Lob attacks, a hit
