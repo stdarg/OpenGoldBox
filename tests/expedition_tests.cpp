@@ -16,6 +16,7 @@
 #include "tour_access.h"
 #include <algorithm>
 #include <array>
+#include <bitset>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
@@ -32,10 +33,10 @@ namespace
 {
 // A Godot check runs this binary only for the save fixtures its environment
 // names; once each is written, the rest of the expedition need not run.
-constexpr std::array<const char *, 7> fixture_variables{
-    "OPENGOLD_SHOP_FIXTURE",       "OPENGOLD_HALL_FIXTURE",   "OPENGOLD_REST_CHOICE_FIXTURE",
-    "OPENGOLD_OHLO_FIXTURE",       "OPENGOLD_SLUMS_FIXTURES", "OPENGOLD_KUTO_WELL_FIXTURE",
-    "OPENGOLD_KUTO_NORRIS_FIXTURE"};
+constexpr std::array<const char *, 8> fixture_variables{
+    "OPENGOLD_SHOP_FIXTURE",        "OPENGOLD_HALL_FIXTURE",   "OPENGOLD_REST_CHOICE_FIXTURE",
+    "OPENGOLD_OHLO_FIXTURE",        "OPENGOLD_SLUMS_FIXTURES", "OPENGOLD_KUTO_WELL_FIXTURE",
+    "OPENGOLD_KUTO_NORRIS_FIXTURE", "OPENGOLD_GATE_FIXTURE"};
 std::set<std::string, std::less<>> written_fixtures;
 
 bool requested_fixtures_written()
@@ -1196,12 +1197,52 @@ unsigned orc_rewards(const CampaignParty &party)
                     std::count(claimed.begin(), claimed.end(), "por:ECL2:20:search1:orcs:v1:loot"));
 }
 
+// What a crossing between areas swaps: the map, its wall art, the script and
+// its archive bank (ECL3 for the town), and the area's own map memory.
+struct AreaContext
+{
+    unsigned area{}, script{};
+    std::uint16_t bank{};
+    std::vector<std::uint8_t> map;
+    std::vector<std::vector<std::uint8_t>> art;
+    std::bitset<256> visited;
+    bool operator==(const AreaContext &) const = default;
+};
+
+AreaContext area_context(const por::RolfTourSession &town)
+{
+    const auto &s = town.snapshot();
+    AreaContext context{s.area_id, s.script_id, town.script_variable(por::ecl_script_bank),
+                        town.map().raw};
+    for (const auto &appearance : town.wall_art().appearances)
+    {
+        for (const auto &image : appearance)
+        {
+            context.art.push_back(image.rgba);
+        }
+    }
+    context.visited = s.visited;
+    return context;
+}
+
+bool posed(const por::RolfTourSession &town, unsigned x, unsigned y, por::MapDirection facing)
+{
+    return town.snapshot().pose == por::PartyPose{x, y, facing};
+}
+
 void defeat_four_orcs(Expedition &trip)
 {
     auto &[party, town] = trip;
     walk_to(town, party, 0, 4);
+    const auto in_town = area_context(town);
     step(town, party, 3);
-    check(town.snapshot().area_id == 20, "The west gate leads into the Slums");
+    const auto in_slums = area_context(town);
+    check(in_slums.area == 20 && in_slums.script == 20 && in_slums.bank == 2 &&
+              posed(town, 15, 4, por::MapDirection::west),
+          "The west gate leads into the Slums, on its east edge and still facing west");
+    check(in_slums.map != in_town.map && in_slums.art != in_town.art &&
+              in_slums.visited.count() == 1,
+          "The Slums bring their own map, wall art and map memory");
     // The route passes (13,1), where the orcs argue over their papers.
     walk_to(town, party, 12, 1);
     check(town.script_variable(por::ecl_slums_orc_victory) == 255 && orc_rewards(*party) == 2,
@@ -1213,9 +1254,10 @@ void defeat_four_orcs(Expedition &trip)
     check(party->state().wealth[1] == 96, "The orcs' original silver is collected");
     walk_to(town, party, 15, 4);
     step(town, party, 1);
-    check(town.snapshot().area_id == 0 && town.snapshot().pose.x == 0 &&
-              town.snapshot().pose.y == 4,
-          "The east edge of the Slums returns to New Phlan");
+    check(town.snapshot().area_id == 0 && posed(town, 0, 4, por::MapDirection::east),
+          "The east edge of the Slums returns to New Phlan's west gate, facing east");
+    check(area_context(town) == in_town,
+          "Back in town: its map, wall art, script, bank and map memory as they were");
 }
 
 // Accepts the inn's quote ("YES") or declines it, and names the payer.
@@ -1382,8 +1424,15 @@ void accept_commission(Expedition &trip)
         }
     }
     walk_to(town, party, 0, 4);
+    const auto in_town = area_context(town);
     step(town, party, 3);
-    check(town.snapshot().area_id == 20, "The west gate leads into the Slums");
+    const auto in_slums = area_context(town);
+    check(in_slums.area == 20 && in_slums.script == 20 && in_slums.bank == 2 &&
+              posed(town, 15, 4, por::MapDirection::west),
+          "The west gate leads into the Slums, on its east edge and still facing west");
+    check(in_slums.map != in_town.map && in_slums.art != in_town.art &&
+              in_slums.visited.count() == 1,
+          "The Slums bring their own map, wall art and map memory");
 
     const auto accepting = enter_ohlo_room(trip, 250);
     check(town.script_variable(por::EclAddress{0x4A81}) == 0 &&
@@ -1667,6 +1716,22 @@ void verify_hand_in(const std::filesystem::path &at_door, const std::filesystem:
     check_ohlo_reward(before.party->checkpoint(), after.party->checkpoint());
 }
 
+// The save tests/area_crossing_tests.gd wrote after walking from the west gate
+// into the Slums and back: the town as the fixture left it, with nothing of the
+// Slums in its map memory, and the four-orc victory kept without a second reward.
+void verify_gate_crossing(const std::filesystem::path &gate, const std::filesystem::path &crossed,
+                          const std::filesystem::path &directory)
+{
+    const auto before = load_expedition(gate, directory);
+    const auto after = load_expedition(crossed, directory);
+    check(posed(after.town, 0, 4, por::MapDirection::east) &&
+              area_context(after.town) == area_context(before.town),
+          "The game's save is back at the west gate with the town as it was");
+    check(after.town.script_variable(por::ecl_slums_orc_victory) == 255 &&
+              orc_rewards(*after.party) == 2,
+          "The crossing keeps the orc victory and claims nothing twice");
+}
+
 int run(const std::string &command)
 {
 #ifdef _WIN32
@@ -1902,7 +1967,7 @@ void refused_exit(por::RolfTourSession &town, const std::shared_ptr<CampaignPart
 {
     face(town, party, facing);
     const auto before = town.snapshot().pose;
-    const auto area_id = town.snapshot().area_id;
+    const auto context = area_context(town);
     town.explore(por::ExplorationCommand::forward);
     bool refused = false;
     for (unsigned n = 0; n < 200 && town.snapshot().phase != por::TourPhase::completed; ++n)
@@ -1919,9 +1984,9 @@ void refused_exit(por::RolfTourSession &town, const std::shared_ptr<CampaignPart
             town.advance(.5);
         }
     }
-    check(refused && town.snapshot().area_id == area_id && town.snapshot().pose.x == before.x &&
-              town.snapshot().pose.y == before.y,
-          "The way to " + std::string(area) + " is refused and the party stays");
+    check(refused && town.snapshot().pose == before && area_context(town) == context,
+          "The way to " + std::string(area) +
+              " is refused and the party stays, its area untouched");
 }
 
 // Restores every living member's Hit Points, so one check's fight does not
@@ -4678,6 +4743,17 @@ void installed_first_expedition(const std::filesystem::path &executable,
     defeat_four_orcs(trip);
     const auto after_return = encode_campaign(*trip.party, &trip.town, assets);
     write_campaign_file(save, after_return);
+    // Back at New Phlan's west gate: tests/area_crossing_tests.gd walks from
+    // here into the Slums and back with the game's own controls.
+    if (const auto *fixture = std::getenv("OPENGOLD_GATE_FIXTURE"))
+    {
+        write_campaign_file(fixture, after_return);
+        written_fixtures.insert("OPENGOLD_GATE_FIXTURE");
+        if (requested_fixtures_written())
+        {
+            return;
+        }
+    }
     rest_at_inn(trip);
     write_campaign_file(save, encode_campaign(*trip.party, &trip.town, assets));
     check(read_campaign_file(std::filesystem::path(save).concat(".bak")) == after_return,
@@ -4780,6 +4856,12 @@ int main(int argc, char **argv)
         {
             verify_hand_in(argv[2], argv[3], directory);
             std::cout << "Ohlo hand-in save verified.\n";
+            return 0;
+        }
+        if (argc == 4 && std::string_view(argv[1]) == "--verify-gate-crossing")
+        {
+            verify_gate_crossing(argv[2], argv[3], directory);
+            std::cout << "Gate crossing save verified.\n";
             return 0;
         }
         // Plays Podol Plaza alone, from a save in Kuto's Well.

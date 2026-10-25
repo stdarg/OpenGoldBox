@@ -91,7 +91,8 @@ and
 [GeoDaxFileViewer.cs](https://github.com/bsimser/Gold-Box-Explorer/blob/eac30abaa6ee66aea6f5d65ebe6d676b10015a8f/src/Common/Plugins/GeoDax/GeoDaxFileViewer.cs).
 The mappings were checked against installed resources and original screenshots.
 
-The loader guards Phlan's `LOAD PIECES 127,127,127` at `ECL3:0/0x9B11` but does
-not execute general resource-bank selection. Other areas, special-value
+The loader guards Phlan's `LOAD PIECES 127,127,127` at `ECL3:0/0x9B11`. Each
+supported district's wall banks are loaded with it and checked against its
+script's `LOAD PIECES` ([area transitions](MAPS.md#area-transitions)). Special-value
 semantics, exact dynamic backgrounds and all distant occlusion cases remain
-unverified. Door interaction and campaign transitions remain outside this demo.
+unverified.

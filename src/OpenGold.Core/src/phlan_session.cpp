@@ -37,6 +37,15 @@ void RolfTourSession::change_area(unsigned id)
     {
         throw EclError("District map is missing");
     }
+    // A gate's script writes the party's square in the new area before it
+    // changes areas, so that square was marked in the old area's map memory.
+    // It stays there only if the party had been there before this event.
+    if (event_checkpoint_ && event_checkpoint_->area == current_area_)
+    {
+        const auto arrival = snapshot_.pose.y * 16 + snapshot_.pose.x;
+        snapshot_.visited[arrival] = event_checkpoint_->snapshot.visited[arrival];
+        snapshot_.seen[arrival] = event_checkpoint_->snapshot.seen[arrival];
+    }
     visited_areas_[current_area_] = snapshot_.visited;
     seen_areas_[current_area_] = snapshot_.seen;
     plaza_group_rolled_ = false;

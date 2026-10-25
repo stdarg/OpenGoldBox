@@ -9,6 +9,8 @@
 #include <iostream>
 #include <iterator>
 #include <queue>
+#include <stdexcept>
+#include <string>
 #include <string_view>
 
 using namespace opengold::por;
@@ -766,8 +768,37 @@ void installed_monster_picture(const char *directory)
           "Ready and striking poses differ");
 }
 
+// Every area's resources load before play begins, so a missing one stops the
+// load with its name instead of failing at a gate in the middle of play.
+void missing_area_map(const std::filesystem::path &installed)
+{
+    const auto copy = std::filesystem::path(OPENGOLD_BINARY_DIR) / "tour-without-geo2";
+    std::filesystem::remove_all(copy);
+    std::filesystem::create_directories(copy);
+    for (const auto &entry : std::filesystem::directory_iterator(installed))
+    {
+        if (entry.is_regular_file() && entry.path().filename() != "GEO2.DAX")
+        {
+            std::filesystem::copy_file(entry.path(), copy / entry.path().filename());
+        }
+    }
+    std::string error;
+    try
+    {
+        (void)RolfTourSession::load(copy);
+    }
+    catch (const std::exception &failure)
+    {
+        error = failure.what();
+    }
+    std::filesystem::remove_all(copy);
+    check(error.find("GEO2") != std::string::npos,
+          "A missing Slums map stops the load and names its file");
+}
+
 void installed(const char *directory)
 {
+    missing_area_map(directory);
     installed_monster_picture(directory);
     auto tour = RolfTourSession::load(directory);
     check(tour.wall_art().appearances.size() == 15, "Load all fifteen Phlan appearances");
