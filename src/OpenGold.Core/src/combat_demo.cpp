@@ -1,4 +1,5 @@
 #include "archive_io.h"
+#include "opengold/path_text.h"
 #include "opengold/authored_items.h"
 #include "opengold/combat_demo.h"
 #include "opengold/combat_body_catalog.h"
@@ -48,7 +49,7 @@ std::optional<Image> original_icon(const std::filesystem::path &directory, unsig
 {
     for (const auto &file : std::filesystem::directory_iterator(directory))
     {
-        auto name = por::detail::upper_ascii(file.path().filename().string());
+        auto name = por::detail::upper_ascii(path_text(file.path().filename()));
         if (name != "CPIC2.DAX")
         {
             continue;

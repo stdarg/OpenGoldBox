@@ -1,4 +1,5 @@
 #include "opengold/monster_bundle.h"
+#include "opengold/path_text.h"
 #include "json_document.h"
 #include <algorithm>
 #include <cmath>
@@ -33,7 +34,7 @@ std::vector<std::uint8_t> read_bytes(const std::filesystem::path &path)
     std::ifstream in(path, std::ios::binary);
     if (!in)
     {
-        throw std::runtime_error("Cannot read monster art " + path.string());
+        throw std::runtime_error("Cannot read monster art " + path_text(path));
     }
     return {std::istreambuf_iterator<char>(in), {}};
 }
@@ -51,7 +52,7 @@ Image pose(const std::filesystem::path &folder, const std::string &relative,
     if (!image || image->width != art_size || image->height != art_size ||
         image->rgba.size() != std::size_t{art_size} * art_size * 4)
     {
-        throw std::runtime_error("Monster art is not 128 x 128: " + (folder / path).string());
+        throw std::runtime_error("Monster art is not 128 x 128: " + path_text(folder / path));
     }
     return std::move(*image);
 }
@@ -78,7 +79,7 @@ ExportedMonster monster(const std::filesystem::path &folder, const PngDecoder &d
     const auto file = detail::read_json_file(folder / "monster.json", "monster data");
     if (field<std::string>(file, "format") != "opengold-monster-v1")
     {
-        throw std::runtime_error("Unknown monster data format in " + folder.string());
+        throw std::runtime_error("Unknown monster data format in " + path_text(folder));
     }
     ExportedMonster result;
     result.key = field<std::string>(file, "key");
@@ -110,7 +111,7 @@ ExportedMonster monster(const std::filesystem::path &folder, const PngDecoder &d
     }
     if (!result.creature_archive.starts_with("MON") || result.name.empty())
     {
-        throw std::runtime_error("Monster data names no creature in " + folder.string());
+        throw std::runtime_error("Monster data names no creature in " + path_text(folder));
     }
     return result;
 }

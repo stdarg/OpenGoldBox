@@ -1,4 +1,5 @@
 #include "archive_io.h"
+#include "opengold/path_text.h"
 #include "opengold/character_art.h"
 #include <algorithm>
 #include <cmath>
@@ -377,7 +378,7 @@ CharacterArt CharacterArt::load(const std::filesystem::path &directory)
     {
         if (entry.is_regular_file())
         {
-            auto name = detail::upper_ascii(entry.path().filename().string());
+            auto name = detail::upper_ascii(path_text(entry.path().filename()));
             if (!paths.emplace(name, entry.path()).second)
             {
                 throw std::runtime_error("Ambiguous art archive: " + name);

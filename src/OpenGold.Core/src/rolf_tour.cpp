@@ -1,4 +1,5 @@
 #include "archive_io.h"
+#include "opengold/path_text.h"
 #include "opengold/authored_items.h"
 #include "opengold/magic_item_catalog.h"
 #include "opengold/por_sound.h"
@@ -25,7 +26,7 @@ std::filesystem::path resolve_archive(const std::filesystem::path &directory, st
 std::vector<std::uint8_t> read_archive(const std::filesystem::path &path)
 {
     return detail::read_archive_bytes<EclError>(path, "Archive exceeds size limit",
-                                                "Cannot open " + path.string(),
+                                                "Cannot open " + path_text(path),
                                                 "Incomplete archive read");
 }
 

@@ -2,6 +2,7 @@
 #define OPENGOLD_ARCHIVE_IO_H
 
 #include <cstdint>
+#include "opengold/path_text.h"
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -59,7 +60,7 @@ std::filesystem::path find_archive(const std::filesystem::path &directory, std::
     std::optional<std::filesystem::path> match;
     for (const auto &file : std::filesystem::directory_iterator(directory))
     {
-        if (upper_ascii(file.path().filename().string()) != name || !file.is_regular_file())
+        if (upper_ascii(path_text(file.path().filename())) != name || !file.is_regular_file())
         {
             continue;
         }

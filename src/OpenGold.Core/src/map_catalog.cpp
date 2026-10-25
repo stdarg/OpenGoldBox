@@ -1,4 +1,5 @@
 #include "archive_io.h"
+#include "opengold/path_text.h"
 #include "opengold/map_catalog.h"
 #include "opengold/formats.h"
 #include <algorithm>
@@ -18,7 +19,7 @@ MapCatalog MapCatalog::load(const std::filesystem::path &directory)
             {
                 continue;
             }
-            auto name = detail::upper_ascii(entry.path().filename().string());
+            auto name = detail::upper_ascii(path_text(entry.path().filename()));
             if (!name.starts_with("GEO") || !name.ends_with(".DAX"))
             {
                 continue;
@@ -60,7 +61,7 @@ MapCatalog MapCatalog::load(const std::filesystem::path &directory)
         }
         if (catalog.maps_.empty())
         {
-            throw MapError("No GEO maps found in " + directory.string());
+            throw MapError("No GEO maps found in " + path_text(directory));
         }
         return catalog;
     }

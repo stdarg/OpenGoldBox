@@ -1,4 +1,5 @@
 #include "godot_nodes.h"
+#include "opengold/path_text.h"
 #include "localization.h"
 #include "save_slots.h"
 #include "godot_path.h"
@@ -160,7 +161,7 @@ void SaveSlots::open(bool saving)
                 {
                     continue;
                 }
-                auto name = decoded(p.stem().string());
+                auto name = decoded(opengold::path_text(p.stem()));
                 if (name.empty())
                 {
                     continue;
@@ -173,7 +174,7 @@ void SaveSlots::open(bool saving)
         {
             bool backup = p.extension() == ".bak";
             auto base = backup ? p.stem() : p;
-            auto name = decoded(base.stem().string());
+            auto name = decoded(opengold::path_text(base.stem()));
             list->add_item(String::utf8(name.c_str()) +
                            (backup ? i18n::text(" (previous version)") : String()));
         }
@@ -214,7 +215,7 @@ void SaveSlots::select(std::int64_t index)
     if (saving_)
     {
         required_node<LineEdit>(*this, "Name")
-            .set_text(String::utf8(decoded(paths_[index].stem().string()).c_str()));
+            .set_text(String::utf8(decoded(opengold::path_text(paths_[index].stem())).c_str()));
     }
 }
 

@@ -1,4 +1,5 @@
 #include "json_document.h"
+#include "opengold/path_text.h"
 #include <fstream>
 #include <locale>
 #include <sstream>
@@ -267,7 +268,7 @@ Json read_json_file(const std::filesystem::path &path, std::string_view what)
     std::ifstream in(path, std::ios::binary);
     if (!in)
     {
-        throw std::runtime_error("Cannot read " + std::string(what) + " " + path.string());
+        throw std::runtime_error("Cannot read " + std::string(what) + " " + path_text(path));
     }
     std::ostringstream text;
     text << in.rdbuf();
@@ -277,7 +278,7 @@ Json read_json_file(const std::filesystem::path &path, std::string_view what)
     }
     catch (const std::runtime_error &)
     {
-        throw std::runtime_error("Cannot read " + std::string(what) + " " + path.string());
+        throw std::runtime_error("Cannot read " + std::string(what) + " " + path_text(path));
     }
 }
 } // namespace opengold::detail
