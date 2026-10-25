@@ -2554,11 +2554,13 @@ std::optional<Command> choose_item(const rules::Snapshot &state, const Combatant
         }
         else if (command.aims_area)
         {
+            // Only an enemy it can aim at, in range and sight: one out of
+            // reach would be given up while aiming, and chosen again.
             const bool safe_enemy =
                 std::any_of(state.combatants.begin(), state.combatants.end(),
                             [&](const auto &a)
                             {
-                                return a.side != active.side && a.conscious &&
+                                return safe_area_target(state, active, command.spell, a) &&
                                        !area_risks_ally(state, active, verb, a.cell);
                             });
             if (safe_enemy)

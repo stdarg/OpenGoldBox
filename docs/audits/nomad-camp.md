@@ -94,3 +94,5 @@ the huge groups are trimmed to the party's budget.
   the feast until evening, the lodging and the camp it opens, the headman's
   midnight request, the kobolds the next evening, the reward, and the way
   back out to the wilderness map.
+- **The whole map (2026-10-25):** played by one party from Mendor's Library,
+  earning its commissions at City Hall ([the whole map](whole-map.md)).

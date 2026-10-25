@@ -110,3 +110,7 @@ his guards at the default encounter challenge.
   maze into the inner tower, the stairs up, the messenger called away,
   Genheeris joining, Tyranthraxus beaten and the game won, and the walk back
   to the civilized city.
+- **The whole map (2026-10-25):** played by one party from Mendor's Library,
+  earning its commissions at City Hall ([the whole map](whole-map.md)). The
+  maze's disorientation squares send the party only to one another; the test
+  now steps off and on until it comes out beside the inner tower.

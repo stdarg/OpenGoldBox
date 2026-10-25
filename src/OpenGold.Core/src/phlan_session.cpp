@@ -296,7 +296,9 @@ std::optional<ScriptDamage> listed_damage(unsigned script, std::uint16_t address
                                ScriptDamage{16, 0xA837, "piercing", "javelin"},
                                ScriptDamage{16, 0xAAB8, "piercing", "javelin"},
                                ScriptDamage{16, 0xAD0C, "piercing", "javelin"},
-                               ScriptDamage{16, 0xAD17, "piercing", "javelin"}};
+                               ScriptDamage{16, 0xAD17, "piercing", "javelin"},
+                               // The Pyramid's pumping equipment blowing up.
+                               ScriptDamage{23, 0xA8E0, "bludgeoning"}};
     for (const auto &known : types)
     {
         if (known.script == script && known.address == address)
@@ -1616,17 +1618,22 @@ void RolfTourSession::award_staged_treasure()
     auto loot = std::move(*staged_treasure_);
     staged_treasure_.reset();
     const auto &claimed = campaign_->state().claimed_rewards;
-    const bool repeated =
-        std::find(claimed.begin(), claimed.end(), loot.reward_id) != claimed.end() ||
-        std::any_of(pending_loot_.begin(), pending_loot_.end(),
-                    [&](const auto &pending)
-                    {
-                        return pending.reward_id == loot.reward_id;
-                    });
-    if (repeated)
+    const auto awarded = [&](const std::string &id)
     {
-        throw EclError("This script treasure was already awarded; repeatable treasure is not "
-                       "supported");
+        return std::find(claimed.begin(), claimed.end(), id) != claimed.end() ||
+               std::any_of(pending_loot_.begin(), pending_loot_.end(),
+                           [&](const auto &pending)
+                           {
+                               return pending.reward_id == id;
+                           });
+    };
+    // The script decides whether a treasure repeats, as the original's flags
+    // did: City Hall pays every reward through one instruction. Each award
+    // from an instruction already used gets an identity of its own.
+    const auto first_award = loot.reward_id;
+    for (unsigned award = 2; awarded(loot.reward_id); ++award)
+    {
+        loot.reward_id = first_award + ":award:" + std::to_string(award);
     }
     pending_loot_.push_back(std::move(loot));
     claim_loot();
@@ -2552,8 +2559,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             money = money || arg(n);
         }
-        // In an area, a fixed item list is script treasure like money.
-        if (money || (current_area_ && arg(7) != 255))
+        // In an area, or in a town building's own script (City Hall's
+        // enchanted weapon for the graveyard commission, ECL3:8 0xA780), a
+        // fixed item list is script treasure like money; the town script's
+        // lists stock its shops.
+        if (money || ((current_area_ || current_script_ != 0) && arg(7) != 255))
         {
             stage_treasure(request);
             break;
@@ -2780,6 +2790,15 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // its plaza (29) and catacombs (32), Valjevo Castle's scripts their
         // shared quarters.
         const auto district = town_->districts.find(arg(0));
+        // Leaving for the wilderness, the Temple of Bane's block loads a
+        // wilderness script's map (ECL1:24 0x997B) before NEW ECL to that
+        // script, which loads what it shows itself.
+        if (district != town_->districts.end() && !district->second->loaded_by(current_script_) &&
+            district->second->script >= 25 && district->second->script <= 27 && arg(1) == 2 &&
+            arg(2) == 255)
+        {
+            break;
+        }
         if (district != town_->districts.end() && district->second->loaded_by(current_script_) &&
             (arg(1) == 2 || arg(1) == 255) && arg(2) == 255)
         {
@@ -3012,17 +3031,24 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             reply.exit = true;
             break;
         }
-        if (!campaign_->rest())
+        // No one benefits from a second Long Rest within a day (SRD 5.2.1),
+        // but the night at the inn still passes, as the original's always did.
+        if (const bool rested = campaign_->rest(); rested)
         {
-            throw EclError("Party is not eligible for a long rest");
+            snapshot_.dialogue += "\nLong rest complete: eight hours passed; eligible members "
+                                  "recovered HP and supported resources.";
+        }
+        else
+        {
+            campaign_->advance_time(std::chrono::hours{8});
+            snapshot_.dialogue +=
+                "\nEight hours passed; no one can benefit from another Long Rest so soon.";
         }
         reply = character_reply(selected_character_);
         for (const auto &w : clock_reply().writes)
         {
             reply.writes.push_back(w);
         }
-        snapshot_.dialogue +=
-            "\nLong rest complete: eight hours passed; eligible members recovered HP and supported resources.";
         break;
     default:
         return false;

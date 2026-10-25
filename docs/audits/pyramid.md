@@ -81,6 +81,8 @@ Missing before this audit, now done:
    (the Pyramid's NOKNOK, Valjevo's RHODIA).
 4. **Cells the host does not model:** the tile colours the valley's healing
    patches are accepted and dropped.
+5. **The explosion's harm** (since 2026-10-25, met by the whole-map run): the
+   fountain's equipment blowing up deals bludgeoning damage.
 
 The step itself was checked against coab: the original stops a step only on
 the wall on the party's side of the edge, as the engine has since Stojanow
@@ -101,3 +103,7 @@ default encounter challenge.
   from its runes, the fountain's equipment destroyed, Yarash beaten behind
   his locked door, his desk searched, the dial's teleporter back out, the
   north door found, and the valley healing.
+- **The whole map (2026-10-25):** played by one party from Mendor's Library,
+  earning its commissions at City Hall ([the whole map](whole-map.md)). The
+  test now frees the pumping room's chained lizard men (`0x4A52` bit 1), whose
+  friend-word the lizard men's keep asks.

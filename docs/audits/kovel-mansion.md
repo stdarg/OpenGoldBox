@@ -117,3 +117,7 @@ to the party's budget. Camping is impossible until the guild is beaten.
   cabinets (Knock, force and their coins), the jail, the chase and the guild
   master, the ambush, the weapons' gas, the guild beaten, and the way out north
   onto the wilderness map.
+- **The whole map (2026-10-25):** played by one party from Mendor's Library,
+  earning its commissions at City Hall ([the whole map](whole-map.md)). The
+  cabinets are now opened after the guild is beaten, when the wizard can camp
+  for Knock: earlier fights may spend it.

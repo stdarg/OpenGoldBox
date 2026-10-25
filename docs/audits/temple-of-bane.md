@@ -118,3 +118,7 @@ trimmed to the party's budget.
   a save in the street, the mansion's orcs, the six orcs and their ogre, the
   goblin slaves let go, the temple's guards, the three trapdoors found by
   searching, the horde and its cleric, and Dirten staying behind.
+- **The whole map (2026-10-25):** played by one party from Mendor's Library,
+  earning its commissions at City Hall ([the whole map](whole-map.md)). Leaving
+  the block east onto the wilderness now loads the wilderness script's map
+  before handing over to it.

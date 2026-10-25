@@ -1455,7 +1455,10 @@ bool CampaignParty::award_loot(const std::array<unsigned, 7> &wealth,
         throw std::runtime_error("Loot collection exceeds supported limits");
     }
     auto next = state_;
-    std::vector<std::size_t> recipients;
+    // Items go to the living player characters; companions come and go and
+    // leave with what they carry (Fatima from the kobold caves), so one gets
+    // items only when no player character lives.
+    std::vector<std::size_t> recipients, companions;
     for (auto id : next.slots)
     {
         if (id)
@@ -1463,9 +1466,14 @@ bool CampaignParty::award_loot(const std::array<unsigned, 7> &wealth,
             const auto &member = member_in(next, id);
             if (!member.vitals.dead)
             {
-                recipients.push_back(static_cast<std::size_t>(&member - next.roster.data()));
+                (member.npc_source.empty() ? recipients : companions)
+                    .push_back(static_cast<std::size_t>(&member - next.roster.data()));
             }
         }
+    }
+    if (recipients.empty())
+    {
+        recipients = std::move(companions);
     }
     if (recipients.empty())
     {

@@ -34,10 +34,10 @@ namespace
 {
 // A Godot check runs this binary only for the save fixtures its environment
 // names; once each is written, the rest of the expedition need not run.
-constexpr std::array<const char *, 8> fixture_variables{
+constexpr std::array<const char *, 9> fixture_variables{
     "OPENGOLD_SHOP_FIXTURE",        "OPENGOLD_HALL_FIXTURE",   "OPENGOLD_REST_CHOICE_FIXTURE",
     "OPENGOLD_OHLO_FIXTURE",        "OPENGOLD_SLUMS_FIXTURES", "OPENGOLD_KUTO_WELL_FIXTURE",
-    "OPENGOLD_KUTO_NORRIS_FIXTURE", "OPENGOLD_GATE_FIXTURE"};
+    "OPENGOLD_KUTO_NORRIS_FIXTURE", "OPENGOLD_GATE_FIXTURE",   "OPENGOLD_WHOLE_MAP_FIXTURE"};
 std::set<std::string, std::less<>> written_fixtures;
 
 bool requested_fixtures_written()
@@ -460,18 +460,20 @@ void script_treasure_tests()
               party->state().claimed_rewards == paid.claimed_rewards,
           "The completed flag keeps a revisit from paying again");
 
-    // Were a script to reach the same TREASURE again, it is refused, not paid twice.
+    // A script that reaches the same TREASURE again pays again, as the
+    // original did: its flags, not the engine, guard a reward (City Hall pays
+    // every reward through one instruction).
     por::RolfTourSession repeat({}, treasure_program(false, false), {}, 0x9914, {}, resources);
     auto other = std::make_shared<CampaignParty>(module());
     other->add_pc(character("Cora", 3));
     repeat.campaign_party(other);
     settle_synthetic(repeat);
-    check(look(repeat), "The unguarded treasure pays once");
+    check(look(repeat), "The unguarded treasure pays");
     const auto once = other->checkpoint();
-    check(!look(repeat) && party_purse(other->checkpoint()) == party_purse(once) &&
-              other->state().claimed_rewards == once.claimed_rewards &&
-              repeat.script_diagnostics().back().find("already awarded") != std::string::npos,
-          "A repeated award is an explicit, rolled-back failure");
+    check(look(repeat) && party_purse(other->checkpoint())[4] == 2 * party_purse(once)[4] &&
+              other->state().claimed_rewards.size() == once.claimed_rewards.size() + 1 &&
+              repeat.script_diagnostics().empty(),
+          "An unguarded treasure reached again pays again under an identity of its own");
 }
 
 // The generator follows the original tables for scripted dice.
@@ -825,13 +827,33 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
             }
         }
     }
-    for (unsigned n = 0; n < 4000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing;
-         ++n)
+    unsigned commands = 0;
+    for (; commands < 4000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing;
+         ++commands)
     {
-        check(combat.submit(choose_demo_command(combat.combat(), Searching::party)),
-              "Combat accepts the command");
+        const auto chosen = choose_demo_command(combat.combat(), Searching::party);
+        check(combat.submit(chosen), "Combat accepts the command");
+        if (std::getenv("OPENGOLD_TRACE") && commands % 250 == 249)
+        {
+            const auto now = combat.combat().snapshot();
+            std::cerr << "TRACE fight at " << commands << " (" << chosen.verb << " by "
+                      << chosen.actor << " to " << chosen.target << " at " << chosen.destination.x
+                      << ',' << chosen.destination.y << "):";
+            for (const auto &unit : now.combatants)
+            {
+                std::cerr << ' ' << unit.name << '=' << unit.hit_points << '@' << unit.cell.x << ','
+                          << unit.cell.y;
+            }
+            const auto log = now.log();
+            std::cerr << " | " << (log.empty() ? "" : log.back()) << '\n';
+        }
     }
     const auto result = combat.combat().snapshot();
+    if (std::getenv("OPENGOLD_TRACE"))
+    {
+        std::cerr << "TRACE fight " << commands << " commands, "
+                  << (result.outcome == rules::Outcome::victory ? "won" : "not won") << '\n';
+    }
     check(result.outcome == rules::Outcome::victory, "The party wins its fight");
     check(town.resolve_combat(result), "Exploration accepts the victory");
 }
@@ -864,6 +886,16 @@ void settle(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &pa
             town.advance(.5);
             break;
         case por::TourPhase::awaiting_continue:
+            if (std::getenv("OPENGOLD_TRACE"))
+            {
+                std::cerr << "TRACE area " << s.area_id << " (" << s.pose.x << "," << s.pose.y
+                          << ") " << s.dialogue << " {frame " << s.sprite_frame << "} [";
+                for (const auto &choice : s.choices)
+                {
+                    std::cerr << choice << '|';
+                }
+                std::cerr << "]\n";
+            }
             check(town.choose(s.continue_ticket, answer(s)), "The script accepts the answer");
             break;
         case por::TourPhase::awaiting_input:
@@ -886,8 +918,15 @@ void settle(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &pa
 
 void face(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party, unsigned facing)
 {
-    while (index(town.snapshot().pose.facing) != facing)
+    for (unsigned turns = 0; index(town.snapshot().pose.facing) != facing; ++turns)
     {
+        if (turns >= 4)
+        {
+            const auto &s = town.snapshot();
+            std::cerr << "TRACE stuck turning: phase " << int(s.phase) << " facing "
+                      << index(s.pose.facing) << " dialogue " << s.dialogue << '\n';
+        }
+        check(turns < 8, "The party faces the way it turns");
         check(town.explore(por::ExplorationCommand::turn_right), "The party turns");
         settle(town, party);
     }
@@ -899,6 +938,21 @@ void step(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &part
     face(town, party, facing);
     town.explore(por::ExplorationCommand::forward);
     settle(town, party, answer, typed);
+    if (std::getenv("OPENGOLD_TRACE"))
+    {
+        const auto &s = town.snapshot();
+        for (const auto &door : s.door_checks)
+        {
+            std::cerr << "TRACE door " << door.member << " rolls " << door.total << " vs "
+                      << door.difficulty << '\n';
+        }
+        std::cerr << "TRACE step " << facing << " -> area " << s.area_id << " (" << s.pose.x << ","
+                  << s.pose.y << ")"
+                  << (s.overland ? " wilderness " + std::to_string(s.overland_x) + "," +
+                                       std::to_string(s.overland_y)
+                                 : std::string{})
+                  << '\n';
+    }
 }
 
 bool party_wounded(const CampaignParty &party)
@@ -942,6 +996,8 @@ void rest_until(por::RolfTourSession &town, const std::shared_ptr<CampaignParty>
     for (unsigned tries = 0; !rested(); ++tries)
     {
         check(tries < 40, goal);
+        // A rest taken before may leave a caster's spell choices open.
+        keep_rest_choices(*party);
         const auto info = party->rest_info(RestKind::long_rest);
         const bool long_rest = std::any_of(info.begin(), info.end(),
                                            [](const auto &member)
@@ -1364,6 +1420,15 @@ void rest_at_inn(Expedition &trip)
                   member.last_rest_minutes,
               "The long rest restores every fighter");
     }
+    leave_inn();
+    // A second night within a day passes with no Long Rest's benefits (SRD 5.2.1).
+    const auto rested = party->checkpoint();
+    step(town, party, 2, inn_answer(true, "Arden"));
+    check(town.snapshot().dialogue.find("no one can benefit from another Long Rest") !=
+                  std::string::npos &&
+              party->state().time_minutes >= rested.time_minutes + 480 &&
+              party->state().roster[0].last_rest_minutes == rested.roster[0].last_rest_minutes,
+          "A second night at the inn within a day passes without a Long Rest");
     leave_inn();
 }
 
@@ -2608,19 +2673,9 @@ bool look_until(por::RolfTourSession &town, const std::shared_ptr<CampaignParty>
 // insects, the orc and hobgoblin raid, the illusory wall's arms and armor,
 // Ferran Martinez told the truth, the patrol passed with SAMOSUD after, and
 // the boat home.
-void sokal_keep(const std::filesystem::path &directory)
+void play_sokal_keep(Expedition &trip, const std::filesystem::path &directory)
 {
-    auto trip = create_party(directory);
-    buy_and_equip(trip);
     auto &[party, town] = trip;
-    party->award_experience(6 * 900, "test:sokal-keep-level");
-    for (const auto id : party->state().slots)
-    {
-        while (id && party->member(id).character.sheet().level < 3)
-        {
-            party->advance(id, party->default_advancement(id));
-        }
-    }
     const auto variable = [&](std::uint16_t address)
     {
         return town.script_variable(por::EclAddress{address});
@@ -2729,6 +2784,22 @@ void sokal_keep(const std::filesystem::path &directory)
     step(town, party, 2, prefer({"YES"}));
     check(town.snapshot().area_id == 0, "The boat takes the party back to New Phlan");
     std::filesystem::remove_all(folder);
+}
+
+void sokal_keep(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 900, "test:sokal-keep-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 3)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    play_sokal_keep(trip, directory);
 }
 
 // One step on the wilderness map in `direction` (0 north and on clockwise to
@@ -2950,28 +3021,13 @@ void central_wilderness(const std::filesystem::path &directory)
 
 // Kovel Mansion (docs/audits/kovel-mansion.md), the thieves' guild on the
 // city's northeast block: the harbor's boat to the bay and the city's eastern
-// edge, a save in the mansion, a trap the Rogue disarms, the cabinets opened
-// with Knock and by force, the jail's thugs, the chase after the guild master,
-// the ambush and the weapons' gas, the guild beaten so camps are safe, and the
-// way out north onto the wilderness map.
-void kovel_mansion(const std::filesystem::path &directory)
+// edge, a save in the mansion, a trap the Rogue disarms, the jail's thugs, the
+// chase after the guild master, the ambush and the weapons' gas, the guild
+// beaten so camps are safe, the cabinets opened with Knock and by force, and
+// the way out north onto the wilderness map.
+void play_kovel_mansion(Expedition &trip, const std::filesystem::path &directory)
 {
-    auto trip = create_party(directory);
-    buy_and_equip(trip);
     auto &[party, town] = trip;
-    party->recruit("test:kovel-rogue", character("Sly", 7, "rogue"));
-    party->recruit("test:knock-wizard", knock_wizard());
-    party->award_experience(8 * 6500, "test:kovel-level");
-    for (const auto id : party->state().slots)
-    {
-        while (id && party->member(id).character.sheet().level < 5)
-        {
-            auto choice = party->default_advancement(id);
-            party->advance(id, choice);
-            keep_rest_choices(*party);
-        }
-    }
-    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
     walk_to(town, party, 11, 2);
     step(town, party, 0, prefer({"BAY"}));
     walk_to(town, party, 14, 1);
@@ -3015,8 +3071,38 @@ void kovel_mansion(const std::filesystem::path &directory)
     prowl(4, 3, fight_them);
     check(guild(0x4A05) == 1, "The trap at (4,3) is disarmed or sprung once");
 
+    // The jail at (10,12): ten thugs beating an old thief.
+    prowl(10, 12, fight_them);
+    check((guild(0x4A48) & 2) != 0, "The jail's thugs are beaten and the old thief's papers taken");
+
+    // The guild master's chase from (6,5).
+    const auto killed = guild(0x4A45);
+    prowl(6, 5, prefer({"Bash", "YES", "EAST", "ATTACK", "ATTACK HIM"}));
+    check(guild(0x4A45) == killed + 1 &&
+              heard.find("YOU HAVE CAUGHT ONE OF THE THIEVES") != std::string::npos,
+          "The party chases the thieves through the mansion and fights the guild master");
+
+    // The ambush at (8,13): fifteen thieves and three masters.
+    prowl(8, 13, fight_them);
+    check(guild(0x4A19) == 1, "The ambush is beaten");
+
+    // The weapons at (3,4): taking some sets off the gas and more thieves.
+    prowl(3, 4, prefer({"Bash", "TAKE SOME", "ATTACK", "ATTACK HIM", "YES"}));
+
     // The cabinets at (14,10): A is locked and opened with Knock, B is
-    // smashed open, C may be trapped.
+    // smashed open, C may be trapped. On the way the thief at (7,3) is the
+    // twenty-first beaten; the guild beaten, the party camps beside the
+    // cabinets until the wizard can cast Knock, whatever fights came before.
+    prowl(13, 10, fight_them);
+    check(guild(0x4A45) >= 21 && guild(0x4AB2) == 254,
+          "With twenty-one thieves beaten the guild no longer troubles the party's camps");
+    rest_until(
+        town, party,
+        [&]
+        {
+            return party->can_try_door(DoorMethod::knock);
+        },
+        "The wizard regains a slot for Knock by camping");
     std::set<std::string> examined;
     bool knocked = false;
     const auto cabinets = [&](const por::TourSnapshot &s) -> std::size_t
@@ -3055,26 +3141,6 @@ void kovel_mansion(const std::filesystem::path &directory)
               party->state().wealth[std::size_t(Coin::gold)] >= wealth[std::size_t(Coin::gold)] + 1800,
           "Cabinets B and C hold 1,500 silver and 1,800 gold pieces");
 
-    // The jail at (10,12): ten thugs beating an old thief.
-    prowl(10, 12, fight_them);
-    check((guild(0x4A48) & 2) != 0, "The jail's thugs are beaten and the old thief's papers taken");
-
-    // The guild master's chase from (6,5).
-    const auto killed = guild(0x4A45);
-    prowl(6, 5, prefer({"Bash", "YES", "EAST", "ATTACK", "ATTACK HIM"}));
-    check(guild(0x4A45) == killed + 1 &&
-              heard.find("YOU HAVE CAUGHT ONE OF THE THIEVES") != std::string::npos,
-          "The party chases the thieves through the mansion and fights the guild master");
-
-    // The ambush at (8,13): fifteen thieves and three masters.
-    prowl(8, 13, fight_them);
-    check(guild(0x4A19) == 1, "The ambush is beaten");
-
-    // The weapons at (3,4): taking some sets off the gas and more thieves.
-    prowl(3, 4, prefer({"Bash", "TAKE SOME", "ATTACK", "ATTACK HIM", "YES"}));
-    check(guild(0x4A45) >= 21 && guild(0x4AB2) == 254,
-          "With twenty-one thieves beaten the guild no longer troubles the party's camps");
-
     // North off the map: the wilderness at the city's northern edge.
     const auto north = edge_opening(town.map(), town.snapshot().pose, 0);
     walk_to(town, party, north.x, north.y, fight_them);
@@ -3084,31 +3150,35 @@ void kovel_mansion(const std::filesystem::path &directory)
           "Kovel Mansion's north edge leads onto the wilderness map");
 }
 
+void kovel_mansion(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->recruit("test:kovel-rogue", character("Sly", 7, "rogue"));
+    party->recruit("test:knock-wizard", knock_wizard());
+    party->award_experience(8 * 6500, "test:kovel-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 5)
+        {
+            auto choice = party->default_advancement(id);
+            party->advance(id, choice);
+            keep_rest_choices(*party);
+        }
+    }
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    play_kovel_mansion(trip, directory);
+}
+
 // The Temple of Bane (docs/audits/temple-of-bane.md): City Hall's summons to
 // Tyr's bishop, Dirten joining, the bay's boat and the city's eastern edge
 // south into the street before the orcs' mansion, the mansion's orcs, the
 // goblin slaves let go, the temple's guards, its three trapdoors found by
 // searching, the horde and its half-orc cleric, and Dirten staying behind.
-void temple_of_bane(const std::filesystem::path &directory)
+void play_temple_of_bane(Expedition &trip, const std::filesystem::path &directory)
 {
-    auto trip = create_party(directory);
-    buy_and_equip(trip);
     auto &[party, town] = trip;
-    party->award_experience(6 * 6500, "test:temple-level");
-    for (const auto id : party->state().slots)
-    {
-        while (id && party->member(id).character.sheet().level < 5)
-        {
-            party->advance(id, party->default_advancement(id));
-        }
-    }
-    // City Hall's clerk names three commissions at most, the bishop's sixth:
-    // the party stands in for one that has finished the five before it (the
-    // Slums, Sokal Keep, the books, the auction and Cadorna's commission).
-    for (const auto done : {0x4ABB, 0x4AA7, 0x4AC2, 0x4AB0, 0x4A97})
-    {
-        opengold::test::TourAccess::set_variable(town, por::EclAddress{std::uint16_t(done)}, 255);
-    }
     walk_to(town, party, 4, 5);
     walk_to(town, party, 5, 5);
     check(town.script_variable(por::EclAddress{0x4A9B}) == 254,
@@ -3194,16 +3264,12 @@ void temple_of_bane(const std::filesystem::path &directory)
           "Dirten stays behind at the cleansed temple");
 }
 
-// The nomad camp (docs/audits/nomad-camp.md), north of the city: entered
-// from the wilderness map, the nomads met in peace, the headman's feast and
-// a night's lodging, the party staying to fight the kobolds, and the
-// headman's reward.
-void nomad_camp(const std::filesystem::path &directory)
+void temple_of_bane(const std::filesystem::path &directory)
 {
     auto trip = create_party(directory);
     buy_and_equip(trip);
     auto &[party, town] = trip;
-    party->award_experience(6 * 6500, "test:nomad-level");
+    party->award_experience(6 * 6500, "test:temple-level");
     for (const auto id : party->state().slots)
     {
         while (id && party->member(id).character.sheet().level < 5)
@@ -3211,7 +3277,23 @@ void nomad_camp(const std::filesystem::path &directory)
             party->advance(id, party->default_advancement(id));
         }
     }
-    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    // City Hall's clerk names three commissions at most, the bishop's sixth:
+    // the party stands in for one that has finished the five before it (the
+    // Slums, Sokal Keep, the books, the auction and Cadorna's commission).
+    for (const auto done : {0x4ABB, 0x4AA7, 0x4AC2, 0x4AB0, 0x4A97})
+    {
+        opengold::test::TourAccess::set_variable(town, por::EclAddress{std::uint16_t(done)}, 255);
+    }
+    play_temple_of_bane(trip, directory);
+}
+
+// The nomad camp (docs/audits/nomad-camp.md), north of the city: entered
+// from the wilderness map, the nomads met in peace, the headman's feast and
+// a night's lodging, the party staying to fight the kobolds, and the
+// headman's reward.
+void play_nomad_camp(Expedition &trip)
+{
+    auto &[party, town] = trip;
     walk_to(town, party, 11, 2);
     step(town, party, 0, prefer({"WEST"}));
     walk_to(town, party, 14, 1);
@@ -3257,25 +3339,31 @@ void nomad_camp(const std::filesystem::path &directory)
           "The nomads send the party back out onto the wilderness map");
 }
 
-// The Pyramid (docs/audits/pyramid.md), in the poisoned valley west of the
-// camp: the rowboat in the reeds and the secret door, the souls Yarash keeps,
-// the teleporters into his laboratories, the password, the pumping room's
-// slaves, the fountain's equipment destroyed, Yarash beaten, and the valley
-// healing.
-void pyramid(const std::filesystem::path &directory)
+void nomad_camp(const std::filesystem::path &directory)
 {
     auto trip = create_party(directory);
     buy_and_equip(trip);
     auto &[party, town] = trip;
-    party->award_experience(6 * 14000, "test:pyramid-level");
+    party->award_experience(6 * 6500, "test:nomad-level");
     for (const auto id : party->state().slots)
     {
-        while (id && party->member(id).character.sheet().level < 6)
+        while (id && party->member(id).character.sheet().level < 5)
         {
             party->advance(id, party->default_advancement(id));
         }
     }
     opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    play_nomad_camp(trip);
+}
+
+// The Pyramid (docs/audits/pyramid.md), in the poisoned valley west of the
+// camp: the rowboat in the reeds and the secret door, the souls Yarash keeps,
+// the teleporters into his laboratories, the password, the pumping room's
+// slaves, the fountain's equipment destroyed, Yarash beaten, and the valley
+// healing.
+void play_pyramid(Expedition &trip)
+{
+    auto &[party, town] = trip;
     walk_to(town, party, 11, 2);
     step(town, party, 0, prefer({"WEST"}));
     walk_to(town, party, 14, 1);
@@ -3351,7 +3439,28 @@ void pyramid(const std::filesystem::path &directory)
                      [&] { return (town.script_variable(por::EclAddress{0x4A52}) & 128) != 0; },
                      noting),
           "Searching Yarash's desk finds his papers");
-    // The dial's teleporter back to the prison, and its north door out.
+    // The pumping room's three chained lizard men, met nicely, are freed and
+    // tell of their tribe in the swamp (0x4A52 bit 1).
+    const Answer nicely = [&](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        return prefer({"Parley", "Advance", "NICE"})(s);
+    };
+    walk(5, 4, nicely,
+         [&]
+         {
+             return (town.script_variable(por::EclAddress{0x4A52}) & 1) != 0;
+         });
+    check((town.script_variable(por::EclAddress{0x4A52}) & 1) != 0 &&
+              heard.find("ENTRY 35") != std::string::npos,
+          "The pumping room's lizard men are freed and tell of their tribe");
+    // The dial's teleporter back to the prison, by way of the desk, and its
+    // north door out.
+    walk(6, 1, noting,
+         []
+         {
+             return false;
+         });
     walk(6, 0, noting, [&] { return town.snapshot().area_id == 22; });
     check(at(22, 15, 8), "The dial's teleporter returns the party to the prison of souls");
     walk(15, 0, noting, [] { return false; });
@@ -3365,6 +3474,23 @@ void pyramid(const std::filesystem::path &directory)
     check(town.snapshot().overland && town.script_variable(por::EclAddress{0x4AA2}) == 255 &&
               heard.find("BEGINNING TO RECOVER") != std::string::npos,
           "Leaving the Pyramid, the valley begins to heal and its rivers open");
+}
+
+void pyramid(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 14000, "test:pyramid-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 6)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    play_pyramid(trip);
 }
 
 // Explores a wilderness window's cave from the square it entered on, its way
@@ -3586,20 +3712,9 @@ void eastern_wilderness(const std::filesystem::path &directory)
 // wilderness: the small cave, the king's hall and his envoys, Princess
 // Fatima, the efreeti in the brass bottle, the wyvern, the king's end and
 // the community's wealth, and the way out with Fatima taking her leave.
-void kobold_caves(const std::filesystem::path &directory)
+void play_kobold_caves(Expedition &trip)
 {
-    auto trip = create_party(directory);
-    buy_and_equip(trip);
     auto &[party, town] = trip;
-    party->award_experience(6 * 23000, "test:kobold-level");
-    for (const auto id : party->state().slots)
-    {
-        while (id && party->member(id).character.sheet().level < 7)
-        {
-            party->advance(id, party->default_advancement(id));
-        }
-    }
-    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
     walk_to(town, party, 11, 2);
     step(town, party, 0, prefer({"EAST"}));
     walk_to(town, party, 14, 1);
@@ -3676,15 +3791,12 @@ void kobold_caves(const std::filesystem::path &directory)
           "Leaving the caves, Fatima goes her own way");
 }
 
-// The lizard men's keep (docs/audits/lizard-keep.md), the ruined castle in
-// the eastern wilderness's quicksand: the old lizard man and his champion's
-// duel, the flooded lower level and a pool's lizard men, and the way out.
-void lizard_keep(const std::filesystem::path &directory)
+void kobold_caves(const std::filesystem::path &directory)
 {
     auto trip = create_party(directory);
     buy_and_equip(trip);
     auto &[party, town] = trip;
-    party->award_experience(6 * 23000, "test:lizard-level");
+    party->award_experience(6 * 23000, "test:kobold-level");
     for (const auto id : party->state().slots)
     {
         while (id && party->member(id).character.sheet().level < 7)
@@ -3692,10 +3804,16 @@ void lizard_keep(const std::filesystem::path &directory)
             party->advance(id, party->default_advancement(id));
         }
     }
-    // The party stands in for one that freed the Pyramid's chained lizard
-    // men (0x4A52 bit 1), who told it their tribe's friend-word.
     opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
-    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4A52}, 1);
+    play_kobold_caves(trip);
+}
+
+// The lizard men's keep (docs/audits/lizard-keep.md), the ruined castle in
+// the eastern wilderness's quicksand: the old lizard man and his champion's
+// duel, the flooded lower level and a pool's lizard men, and the way out.
+void play_lizard_keep(Expedition &trip)
+{
+    auto &[party, town] = trip;
     walk_to(town, party, 11, 2);
     step(town, party, 0, prefer({"EAST"}));
     walk_to(town, party, 14, 1);
@@ -3774,25 +3892,32 @@ void lizard_keep(const std::filesystem::path &directory)
           "The drawbridge leads back out to the eastern wilderness");
 }
 
-// A new party of `level` by way of Podol Plaza's north edge to Stojanow
-// Gate, where the trader's wagon is bought and the toll paid: the gate opens
-// onto its north side. Every prompt the party meets is added to `heard`.
-Expedition through_stojanow_gate(const std::filesystem::path &directory, int level,
-                                 std::string &heard)
+void lizard_keep(const std::filesystem::path &directory)
 {
     auto trip = create_party(directory);
     buy_and_equip(trip);
     auto &[party, town] = trip;
-    party->award_experience(6 * (level == 7 ? 23000 : level == 8 ? 34000 : 48000),
-                            "test:gate-level");
+    party->award_experience(6 * 23000, "test:lizard-level");
     for (const auto id : party->state().slots)
     {
-        while (id && party->member(id).character.sheet().level < level)
+        while (id && party->member(id).character.sheet().level < 7)
         {
             party->advance(id, party->default_advancement(id));
         }
     }
+    // The party stands in for one that freed the Pyramid's chained lizard
+    // men (0x4A52 bit 1), who told it their tribe's friend-word.
     opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4A52}, 1);
+    play_lizard_keep(trip);
+}
+
+// Drives the trader's wagon from New Phlan by way of Podol Plaza's north edge
+// through Stojanow Gate, the toll paid, onto its north side. Every prompt the
+// party meets is added to `heard`.
+void drive_through_stojanow_gate(Expedition &trip, std::string &heard)
+{
+    auto &[party, town] = trip;
     walk_to(town, party, 11, 2);
     step(town, party, 0, prefer({"WEST"}));
     walk_to(town, party, 14, 1);
@@ -3804,17 +3929,48 @@ Expedition through_stojanow_gate(const std::filesystem::path &directory, int lev
     check(town.snapshot().area_id == 9, "Podol Plaza's north edge leads to Stojanow Gate");
     // The wagon driver sells his wagon and warns of the bugbears; the toll
     // paid, the gate opens and the party drives through to the north side.
+    // A bugbear may see through the party (a d9 roll, ECL2:9 0xABE4); it
+    // flees and drives up again.
     const Answer paying = [&](const por::TourSnapshot &s)
     {
         heard += s.dialogue + "\n";
-        return prefer({"TAKE THE PUNCH", "TAKE IT", "YES", "Parley", "Bash"})(s);
+        return prefer({"TAKE THE PUNCH", "TAKE IT", "YES", "Parley", "Bash", "FLEE"})(s);
     };
-    walk_to(town, party, 7, 12, paying, true);
-    step(town, party, 0, paying);
-    check(heard.find("HERE'S YOUR WAGON") != std::string::npos &&
-              heard.find("LETS HAVE THE 15 GOLD") != std::string::npos &&
-              town.snapshot().pose.x == 8 && town.snapshot().pose.y == 5,
-          "The wagon bought and the toll paid, the gate opens onto its north side");
+    const auto through = [&]
+    {
+        return town.snapshot().pose.x == 8 && town.snapshot().pose.y == 5;
+    };
+    for (unsigned tries = 0; tries < 10 && !through(); ++tries)
+    {
+        walk_to(town, party, 7, 12, paying, true);
+        step(town, party, 0, paying);
+    }
+    check(heard.find("LETS HAVE THE 15 GOLD") != std::string::npos && through(),
+          "With the trader's wagon and the toll paid, the gate opens onto its north side");
+}
+
+// A new party of `level` driven through Stojanow Gate.
+Expedition through_stojanow_gate(const std::filesystem::path &directory, int level,
+                                 std::string &heard)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * (level == 7   ? 23000
+                                 : level == 8 ? 34000
+                                              : 48000),
+                            "test:gate-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < level)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    drive_through_stojanow_gate(trip, heard);
+    check(heard.find("HERE'S YOUR WAGON") != std::string::npos,
+          "The trader sells the party his wagon");
     return trip;
 }
 
@@ -3822,10 +3978,8 @@ Expedition through_stojanow_gate(const std::filesystem::path &directory, int lev
 // wagon bought and the toll paid, both towers' garrisons, the old town north
 // and back, the bugbears beyond the passage and the gate taken, and the way
 // back south to Podol Plaza.
-void stojanow_gate(const std::filesystem::path &directory)
+void play_stojanow_gate(Expedition &trip, std::string &heard)
 {
-    std::string heard;
-    auto trip = through_stojanow_gate(directory, 7, heard);
     auto &[party, town] = trip;
     const Answer noting = [&](const por::TourSnapshot &s)
     {
@@ -3880,14 +4034,19 @@ void stojanow_gate(const std::filesystem::path &directory)
     check(town.snapshot().area_id == 18, "The gate's south edge leads back to Podol Plaza");
 }
 
+void stojanow_gate(const std::filesystem::path &directory)
+{
+    std::string heard;
+    auto trip = through_stojanow_gate(directory, 7, heard);
+    play_stojanow_gate(trip, heard);
+}
+
 // Valjevo's old town (docs/audits/valjevo-old-town.md): through Stojanow
 // Gate, the washerwomen's disguise, the Temple of Bane's blessing and altar,
 // the smithy's fire giants, the castle north and back, and the way back to
 // the gate.
-void valjevo_old_town(const std::filesystem::path &directory)
+void play_valjevo_old_town(Expedition &trip, std::string &heard)
 {
-    std::string heard;
-    auto trip = through_stojanow_gate(directory, 8, heard);
     auto &[party, town] = trip;
     walk_to(town, party, 4, 0, peaceful);
     step(town, party, 0, peaceful);
@@ -3921,7 +4080,15 @@ void valjevo_old_town(const std::filesystem::path &directory)
     walk_to(town, party, 1, 0, answering({"YES", "Fight", "Bash"}), true);
     check(heard.find("CROSSED SWORDS") != std::string::npos,
           "The altar keeps an offering box and two crossed swords");
-    // The smith and his fire giants, fought.
+    // The smith and his fire giants, fought; they work until the fourteenth
+    // hour (ECL5:6 0x9FEE).
+    rest_until(
+        town, party,
+        [&]
+        {
+            return town.script_variable(por::ecl_clock_hour) <= 14;
+        },
+        "The party camps until the smithy's working hours");
     heal(*party);
     walk_to(town, party, 1, 14, answering({"Fight", "YES", "Bash"}), true);
     check((old_town(0x4A69) & 8) != 0, "The smith and his fire giants are beaten");
@@ -3937,53 +4104,43 @@ void valjevo_old_town(const std::filesystem::path &directory)
     check(town.snapshot().area_id == 9, "The old town's south edge leads back to Stojanow Gate");
 }
 
-// The western wilderness's sites (docs/audits/western-sites.md): the dragon
-// Diogenes's cave, the Zhentil outpost and the Buccaneers' base.
-void western_sites(const std::filesystem::path &directory)
+void valjevo_old_town(const std::filesystem::path &directory)
 {
-    auto trip = create_party(directory);
-    buy_and_equip(trip);
-    auto &[party, town] = trip;
-    party->award_experience(6 * 23000, "test:sites-level");
-    for (const auto id : party->state().slots)
+    std::string heard;
+    auto trip = through_stojanow_gate(directory, 8, heard);
+    play_valjevo_old_town(trip, heard);
+}
+
+// Answers for the western window's sites, noting every prompt in `heard`;
+// they keep out of the window's dark cave and, once the dragon has spoken,
+// out of his cave too.
+Answer western_answer(std::string &heard, std::vector<std::string> labels)
+{
+    return [&heard, labels = std::move(labels)](const por::TourSnapshot &s)
     {
-        while (id && party->member(id).character.sheet().level < 7)
+        heard += s.dialogue + "\n";
+        if (s.dialogue.find("SMALL DARK CAVE") != std::string::npos)
         {
-            party->advance(id, party->default_advancement(id));
+            return prefer({"LEAVE"})(s);
         }
-    }
-    // The party stands in for one City Hall sent to rescue the Bivant heir
-    // from the Buccaneers (0x4A8C) and with a message for the Zhentil keep
-    // (0x4A98).
-    for (const auto commission : {0x4AA7, 0x4A8C, 0x4A98})
-    {
-        opengold::test::TourAccess::set_variable(town, por::EclAddress{std::uint16_t(commission)},
-                                                 255);
-    }
+        if (s.dialogue.find("LARGE CAVE") != std::string::npos &&
+            heard.find("SILVER BOTTLE OF GREAT POWER") != std::string::npos)
+        {
+            return prefer({"IGNORE CAVE"})(s);
+        }
+        return prefer(labels)(s);
+    };
+}
+
+// From New Phlan by the harbor's western boat across the central wilderness
+// into the western window.
+void into_western_window(Expedition &trip, std::string &heard)
+{
+    auto &[party, town] = trip;
     walk_to(town, party, 11, 2);
     step(town, party, 0, prefer({"WEST"}));
     walk_to(town, party, 14, 1);
     step(town, party, 1, prefer({"STAY"}));
-    std::string heard;
-    // Answers that keep out of the window's dark cave and, once the dragon
-    // has spoken, out of his cave too.
-    const auto answering = [&heard](std::vector<std::string> labels) -> Answer
-    {
-        return [&heard, labels](const por::TourSnapshot &s)
-        {
-            heard += s.dialogue + "\n";
-            if (s.dialogue.find("SMALL DARK CAVE") != std::string::npos)
-            {
-                return prefer({"LEAVE"})(s);
-            }
-            if (s.dialogue.find("LARGE CAVE") != std::string::npos &&
-                heard.find("SILVER BOTTLE OF GREAT POWER") != std::string::npos)
-            {
-                return prefer({"IGNORE CAVE"})(s);
-            }
-            return prefer(labels)(s);
-        };
-    };
     const auto &world = opengold::test::TourAccess::overland_world(town);
     std::optional<unsigned> crossing;
     for (unsigned y = 35; y > 0 && !crossing; --y)
@@ -3996,28 +4153,45 @@ void western_sites(const std::filesystem::path &directory)
         }
     }
     check(crossing.has_value(), "The central window has a way west");
-    const auto wandering = answering({"Parley", "YES", "Fight"});
+    const auto wandering = western_answer(heard, {"Parley", "YES", "Fight"});
     travel_to(town, party, 2, *crossing, wandering);
     travel(town, party, 6, wandering);
+}
+
+void visit_diogenes(Expedition &trip, std::string &heard)
+{
+    auto &[party, town] = trip;
     // The dragon Diogenes, asked for advice, sends the party after the
     // kobolds' silver bottle.
     heal(*party);
-    travel_to(town, party, 10, 9,
-              answering({"ENTER CAVE", "STATE NAME AND INTENT", "ASK DRAGON FOR ADVICE"}),
-              [&] { return heard.find("SILVER BOTTLE OF GREAT POWER") != std::string::npos; });
+    travel_to(
+        town, party, 10, 9,
+        western_answer(heard, {"ENTER CAVE", "STATE NAME AND INTENT", "ASK DRAGON FOR ADVICE"}),
+        [&]
+        {
+            return heard.find("SILVER BOTTLE OF GREAT POWER") != std::string::npos;
+        });
     check(heard.find("MAGIC MOUTH") != std::string::npos &&
               heard.find("SILVER BOTTLE OF GREAT POWER") != std::string::npos &&
               town.snapshot().overland && town.snapshot().script_id == 25,
           "The dragon Diogenes gives his advice and the party leaves his cave");
+}
+
+void visit_zhentil_outpost(Expedition &trip, std::string &heard)
+{
+    auto &[party, town] = trip;
     // The Zhentil outpost: the riders escort the envoys in, the commandant
     // dines with them, and his guards come by night; the party escapes.
     heal(*party);
-    travel_to(town, party, 3, 32, answering({"YES", "Parley", "Fight"}),
-              [&] { return !town.snapshot().overland; });
+    travel_to(town, party, 3, 32, western_answer(heard, {"YES", "Parley", "Fight"}),
+              [&]
+              {
+                  return !town.snapshot().overland;
+              });
     check(town.snapshot().area_id == 28 && heard.find("HAND HIM THE PAPERS") != std::string::npos,
           "Zhentil riders escort the envoys into their outpost and its commandant");
-    const auto guest =
-        answering({"RELAX", "CITY", "NEW", "TALK", "STRONG", "YES", "SLEEP WITH A WATCH", "Fight"});
+    const auto guest = western_answer(
+        heard, {"RELAX", "CITY", "NEW", "TALK", "STRONG", "YES", "SLEEP WITH A WATCH", "Fight"});
     town.explore(por::ExplorationCommand::look);
     settle(town, party, guest);
     check(heard.find("OFFICERS MESS") != std::string::npos &&
@@ -4028,11 +4202,16 @@ void western_sites(const std::filesystem::path &directory)
     step(town, party, 0, guest);
     check(town.snapshot().overland && town.snapshot().script_id == 25,
           "The commotion lets the party out of the outpost's front gate");
+}
+
+void raid_buccaneers_base(Expedition &trip, std::string &heard)
+{
+    auto &[party, town] = trip;
     // The Buccaneers' base: the Bivant heir freed from the slave pen, the
     // buccaneers' waves and their captain fought, and the way out.
     heal(*party);
-    const auto raiding = answering({"ENTER", "GET HIM", "RESCUE BOY", "ATTACK GUARDS", "ATTACK",
-                                    "Fight", "Bash", "YES"});
+    const auto raiding = western_answer(heard, {"ENTER", "GET HIM", "RESCUE BOY", "ATTACK GUARDS",
+                                                "ATTACK", "Fight", "Bash", "YES"});
     travel_to(town, party, 12, 31, raiding, [&] { return !town.snapshot().overland; });
     check(town.snapshot().area_id == 1 && heard.find("BUCCANEER") != std::string::npos,
           "Buccaneers escort the party into their base");
@@ -4054,14 +4233,47 @@ void western_sites(const std::filesystem::path &directory)
           "The party leaves the base with the Bivant heir");
 }
 
+// The western wilderness's sites (docs/audits/western-sites.md): the dragon
+// Diogenes's cave, the Zhentil outpost and the Buccaneers' base.
+void play_western_sites(Expedition &trip)
+{
+    std::string heard;
+    into_western_window(trip, heard);
+    visit_diogenes(trip, heard);
+    visit_zhentil_outpost(trip, heard);
+    raid_buccaneers_base(trip, heard);
+}
+
+void western_sites(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 23000, "test:sites-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 7)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    // The party stands in for one City Hall sent to rescue the Bivant heir
+    // from the Buccaneers (0x4A8C) and with a message for the Zhentil keep
+    // (0x4A98).
+    for (const auto commission : {0x4AA7, 0x4A8C, 0x4A98})
+    {
+        opengold::test::TourAccess::set_variable(town, por::EclAddress{std::uint16_t(commission)},
+                                                 255);
+    }
+    play_western_sites(trip);
+}
+
 // Valjevo Castle (docs/audits/valjevo-castle.md): through Stojanow Gate and
 // the old town, the castle's inner gate opened with its password, Al-Hyam
 // Dazid's notes, the maze into the inner tower, the messenger and Genheeris,
 // Tyranthraxus beaten in his audience hall, and the way back to the city.
-void valjevo_castle(const std::filesystem::path &directory)
+void play_valjevo_castle(Expedition &trip, std::string &heard)
 {
-    std::string heard;
-    auto trip = through_stojanow_gate(directory, 9, heard);
     auto &[party, town] = trip;
     walk_to(town, party, 4, 0, peaceful);
     step(town, party, 0, peaceful);
@@ -4105,29 +4317,43 @@ void valjevo_castle(const std::filesystem::path &directory)
     step(town, party, 1, fighting);
     check(town.snapshot().area_id == 4 && town.snapshot().script_id == 5,
           "The maze runs on into the castle's northeast quarter");
+    // Map 3's southeast corner, beside the tower's lower level and its stairs.
     const auto in_tower = [&]
     {
         const auto &p = town.snapshot().pose;
-        const auto area = town.snapshot().area_id;
-        return (area == 3 && p.x >= 11 && p.y >= 11) || (area == 5 && p.x <= 4 && p.y <= 4);
+        return town.snapshot().area_id == 3 && p.x >= 11 && p.y >= 11;
     };
-    for (unsigned tries = 0; tries < 20 && !in_tower(); ++tries)
+    // The quarters' disorientation squares (event 71, ECL5:5 0x9C95) send the
+    // party to one another at random; standing on one, it steps off and back
+    // on until it comes out on map 3's.
+    for (unsigned tries = 0; tries < 40 && !in_tower(); ++tries)
     {
         heal(*party);
         const auto area = town.snapshot().area_id;
-        const auto target = area == 4 ? std::pair{6u, 10u} : area == 6 ? std::pair{9u, 5u}
-                                                                     : std::pair{12u, 11u};
-        walk_to(town, party, target.first, target.second, fighting, true, false, "0", in_tower);
+        const auto [x, y] = area == 4   ? std::pair{6u, 10u}
+                            : area == 5 ? std::pair{3u, 4u}
+                            : area == 6 ? std::pair{9u, 5u}
+                                        : std::pair{12u, 11u};
+        const auto &pose = town.snapshot().pose;
+        if (pose.x == x && pose.y == y)
+        {
+            const auto &cell = town.map().at(x, y);
+            unsigned side = 0;
+            while (side < 3 && cell.walls[side] && cell.doors[side] != 1)
+            {
+                ++side;
+            }
+            step(town, party, side, fighting);
+        }
+        // A disorientation square moves the party elsewhere: the walk ends there.
+        walk_to(town, party, x, y, fighting, true, false, "0",
+                [&]
+                {
+                    return in_tower() || town.snapshot().area_id != area;
+                });
     }
     check(in_tower(), "A disorientation square in the maze leads into the inner tower");
     // The stairs up from the tower's lower level, met facing east.
-    if (town.snapshot().area_id == 5)
-    {
-        walk_to(town, party, 0, 4, fighting, true);
-        step(town, party, 3, fighting);
-        walk_to(town, party, 13, 0, fighting, true);
-        step(town, party, 0, fighting);
-    }
     heal(*party);
     walk_to(town, party, 13, 15, fighting, true);
     step(town, party, 1, fighting);
@@ -4183,24 +4409,20 @@ void valjevo_castle(const std::filesystem::path &directory)
           "After the victory the party walks back to the civilized city");
 }
 
+void valjevo_castle(const std::filesystem::path &directory)
+{
+    std::string heard;
+    auto trip = through_stojanow_gate(directory, 9, heard);
+    play_valjevo_castle(trip, heard);
+}
+
 // Valhingen Graveyard (docs/audits/valhingen-graveyard.md): the way in from
 // the city's north edge, the mystic who joins, the black marble crypt's coffin
 // sanctified, the vampire in its pit and, fled to its coffin, destroyed there,
 // and the way back out to the wilderness.
-void valhingen_graveyard(const std::filesystem::path &directory)
+void play_valhingen_graveyard(Expedition &trip)
 {
-    auto trip = create_party(directory);
-    buy_and_equip(trip);
     auto &[party, town] = trip;
-    party->award_experience(6 * 34000, "test:graveyard-level");
-    for (const auto id : party->state().slots)
-    {
-        while (id && party->member(id).character.sheet().level < 8)
-        {
-            party->advance(id, party->default_advancement(id));
-        }
-    }
-    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
     walk_to(town, party, 11, 2);
     step(town, party, 0, prefer({"WEST"}));
     walk_to(town, party, 14, 1);
@@ -4253,10 +4475,8 @@ void valhingen_graveyard(const std::filesystem::path &directory)
     check(graveyard(0x4A43) == 251 && heard.find("ENTRY 43") != std::string::npos,
           "The coffin in the black marble crypt is sanctified after its scroll is read");
     // The party carries the efreeti Samir Ahwahl's bottle from the kobold
-    // caves (item list 50 of ITEM8): he fights the vampire beside it.
-    const auto &bottle = opengold::test::TourAccess::item_list(town, 13, 50);
-    check(party->award_loot({}, bottle, "test:samir-bottle") && por::party_has_item(*party, 82),
-          "The party carries Samir Ahwahl's brass bottle");
+    // caves: he fights the vampire beside it.
+    check(por::party_has_item(*party, 82), "The party carries Samir Ahwahl's brass bottle");
     // The vampire's pit, down the wooden stairs.
     heal(*party);
     const auto allies = allies_fought.size();
@@ -4280,9 +4500,32 @@ void valhingen_graveyard(const std::filesystem::path &directory)
     heal(*party);
     walk_to(town, party, 0, 4, noting, true);
     step(town, party, 3, prefer({"LEAVE"}));
-    check(town.snapshot().overland && town.snapshot().overland_x == 12 &&
+    // The north edge is (12,26) and (13,26); the party comes out where it went in.
+    check(town.snapshot().overland &&
+              (town.snapshot().overland_x == 12 || town.snapshot().overland_x == 13) &&
               town.snapshot().overland_y == 26,
           "The graveyard's west edge leads back to the city's north edge");
+}
+
+void valhingen_graveyard(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 34000, "test:graveyard-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 8)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    // The kobold caves' brass bottle (item list 50 of ITEM8), as a party
+    // that played them carries it.
+    const auto &bottle = opengold::test::TourAccess::item_list(town, 13, 50);
+    check(party->award_loot({}, bottle, "test:samir-bottle"), "The party takes the brass bottle");
+    play_valhingen_graveyard(trip);
 }
 
 // Mendor's Library (docs/audits/mendors-library.md), east of the Cadorna
@@ -5383,6 +5626,451 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
     check(someone_got_away, "Someone got away");
 }
 
+// Tops every member up to `level` with the experience the lowest one lacks
+// and advances them, standing in for the roaming fights and training halls a
+// player meets between areas.
+void reach_level(CampaignParty &party, int level, const std::string &reason)
+{
+    constexpr std::array<unsigned, 10> experience_for{0,    0,     300,   900,   2700,
+                                                      6500, 14000, 23000, 34000, 48000};
+    unsigned lacking = 0;
+    for (const auto id : party.state().slots)
+    {
+        if (id && !party.member(id).vitals.dead)
+        {
+            const auto has = party.member(id).experience;
+            const auto needs = experience_for.at(static_cast<std::size_t>(level));
+            lacking = std::max(lacking, needs > has ? needs - has : 0u);
+        }
+    }
+    if (lacking)
+    {
+        party.award_experience(lacking, "test:whole-map-" + reason);
+    }
+    for (const auto id : party.state().slots)
+    {
+        while (id && party.can_advance(id) && party.member(id).character.sheet().level < level)
+        {
+            party.advance(id, party.default_advancement(id));
+            keep_rest_choices(party);
+        }
+    }
+}
+
+// Brings the party home to New Phlan: from Kuto's Well through the Slums, or
+// from the wilderness by its boats.
+void go_home(Expedition &trip)
+{
+    auto &[party, town] = trip;
+    // An opening in the east edge, one reachable without forcing a door if
+    // there is one; locked doors on the way are bashed.
+    const auto through_east_edge = [&](const Answer &answer)
+    {
+        std::optional<unsigned> way_out;
+        for (unsigned y = 0; y < 16; ++y)
+        {
+            const auto &cell = town.map().at(15, y);
+            if ((cell.walls[1] && cell.doors[1] != 1) ||
+                (way_out && reachable(town.map(), town.snapshot().pose, 15, *way_out)))
+            {
+                continue;
+            }
+            way_out = y;
+        }
+        check(way_out.has_value(), "The area has a way out east");
+        walk_to(town, party, 15, *way_out, peaceful, true);
+        step(town, party, 1, answer);
+    };
+    // From Stojanow Gate, its passage opens south from the north side, and
+    // its south edge leads to Podol Plaza.
+    if (town.snapshot().area_id == 9 && !town.snapshot().overland)
+    {
+        walk_to(town, party, 4, 15, peaceful, true);
+        step(town, party, 2, peaceful);
+    }
+    // Podol Plaza, Kuto's Well and the Slums lead east to New Phlan; the Temple of Bane's
+    // block east to the street before it, and that east to the city's eastern
+    // edge, where a boat goes home.
+    for (const auto area : {18u, 29u, 20u, 24u, 31u})
+    {
+        if (town.snapshot().area_id == area && !town.snapshot().overland)
+        {
+            through_east_edge(area == 31 ? prefer({"BOAT"}) : peaceful);
+        }
+    }
+    if (town.snapshot().overland && town.snapshot().script_id == 25)
+    {
+        const auto &world = opengold::test::TourAccess::overland_world(town);
+        std::optional<unsigned> east;
+        for (unsigned y = 35; y > 0 && !east; --y)
+        {
+            if (por::overland_passage(world.at(15, y)) == por::OverlandPassage::open &&
+                por::overland_passage(world.at(16, y)) == por::OverlandPassage::open &&
+                overland_heading(town, town.snapshot().overland_x, town.snapshot().overland_y, 15,
+                                 y))
+            {
+                east = y;
+            }
+        }
+        check(east.has_value(), "The western window has a way east");
+        travel_to(town, party, 15, *east);
+        travel(town, party, 2);
+    }
+    const auto ashore = [&]
+    {
+        return !town.snapshot().overland;
+    };
+    if (town.snapshot().overland && town.snapshot().script_id == 27)
+    {
+        travel_to(town, party, 9, 29, prefer({"TAKE BOAT"}), ashore);
+    }
+    if (town.snapshot().overland && town.snapshot().script_id == 26)
+    {
+        travel_to(town, party, 7, 29, prefer({"TAKE BOAT"}), ashore);
+    }
+    check(town.snapshot().area_id == 0 && !town.snapshot().overland,
+          "The party comes home to New Phlan");
+}
+
+// A night at New Phlan's inn, south of (4,11): eight hours' Long Rest.
+void stay_at_inn(Expedition &trip)
+{
+    auto &[party, town] = trip;
+    walk_to(town, party, 4, 11);
+    step(town, party, 2, inn_answer(true, party->member(party->leader()).character.sheet().name));
+    keep_rest_choices(*party);
+    if (town.snapshot().pose.y == 12)
+    {
+        step(town, party, 0);
+    }
+}
+
+// Calls on City Hall's clerk, who pays the rewards due and names up to three
+// commissions, each accepted; returns what was said.
+std::string call_on_city_hall(Expedition &trip)
+{
+    auto &[party, town] = trip;
+    std::string said;
+    // The town script locks the hall from the fourteenth hour to midnight;
+    // the party waits at the inn.
+    for (unsigned nights = 0; town.script_variable(por::ecl_clock_hour) >= 14; ++nights)
+    {
+        check(nights < 3, "The party waits at the inn until City Hall opens");
+        stay_at_inn(trip);
+    }
+    walk_to(town, party, 4, 5);
+    walk_to(town, party, 5, 5,
+            [&](const por::TourSnapshot &s)
+            {
+                said += s.dialogue + "\n";
+                return prefer({"YES", "ACCEPT"})(s);
+            });
+    // Out of the hall, so a later call is a new visit.
+    walk_to(town, party, 2, 4);
+    return said;
+}
+
+// The council's auction commission (0x4AB0 = 1): through the Slums and
+// Kuto's Well to Podol Plaza, where the party sneaks to the auction at (7,7);
+// the crowd notices it and the auction is called off, which is the mission
+// done (254). A roaming group that blows its cover first means another visit.
+void attend_the_auction(Expedition &trip)
+{
+    auto &[party, town] = trip;
+    const auto flag = [&](std::uint16_t address)
+    {
+        return town.script_variable(por::EclAddress{address});
+    };
+    const Answer fight = [](const por::TourSnapshot &s) -> std::size_t
+    {
+        return s.choices.size() == 4 && s.choices[0] == "Fight" ? 0 : prefer({"Bash"})(s);
+    };
+    const auto to_kutos_well = [&]
+    {
+        walk_to(town, party, 0, 4);
+        step(town, party, 3);
+        check(town.snapshot().area_id == 20, "New Phlan's west gate leads into the Slums");
+        unsigned edge = 16;
+        for (unsigned y = 0; y < 16 && edge == 16; ++y)
+        {
+            if (town.map().at(0, y).doors[3] == 1)
+            {
+                edge = y;
+            }
+        }
+        walk_to(town, party, 0, edge, fight, true);
+        step(town, party, 3, fight);
+        check(town.snapshot().area_id == 29, "The Slums' west doorway leads into Kuto's Well");
+    };
+    const auto sneaking = prefer({"SNEAK, REMAINING UNSEEN", "HAUGHTY", "Fight", "MOVE IN CLOSER"});
+    for (unsigned visits = 0; visits < 10 && flag(0x4AB0) != 254; ++visits)
+    {
+        if (town.snapshot().area_id == 18)
+        {
+            go_home(trip);
+        }
+        if (town.snapshot().area_id == 0)
+        {
+            to_kutos_well();
+        }
+        heal(*party);
+        enter_podol(trip, sneaking);
+        visit(town, party, 7, 7, sneaking);
+    }
+    check(flag(0x4AB0) == 254, "On the council's mission the party learns of the auction");
+    go_home(trip);
+}
+
+// In Valjevo Castle's northeast quarter, the scribes' building at its
+// southeast corner (event 137, (13..15,12..15) of map 4): searched after a
+// first visit, one search in nine finds the evidence that Cadorna sought the
+// Pool of Radiance for himself (0x4ABE = 254, ECL5:4 0xADA6). From Stojanow
+// Gate's north side, by the old town and the castle's northwest grounds, and
+// back.
+void find_cadorna_evidence(Expedition &trip, std::string &heard)
+{
+    auto &[party, town] = trip;
+    const auto flag = [&](std::uint16_t address)
+    {
+        return town.script_variable(por::EclAddress{address});
+    };
+    const Answer fighting = [&heard](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        return prefer({"ATTACK", "Fight", "Bash", "YES"})(s);
+    };
+    walk_to(town, party, 4, 0, peaceful);
+    step(town, party, 0, peaceful);
+    walk_to(town, party, 3, 0, peaceful, true);
+    step(town, party, 0, fighting);
+    const auto east = edge_opening(town.map(), town.snapshot().pose, 1);
+    walk_to(town, party, east.x, east.y, fighting, true);
+    step(town, party, 1, fighting);
+    check(town.snapshot().area_id == 4 && town.snapshot().script_id == 4,
+          "The castle's northwest grounds lead east into its northeast quarter");
+    heal(*party);
+    walk_to(town, party, 14, 12, fighting, true);
+    town.set_searching(true);
+    for (unsigned n = 0; n < 200 && flag(0x4ABE) < 254; ++n)
+    {
+        heal(*party);
+        walk_to(town, party, n % 2 ? 15 : 13, n % 2 ? 15 : 14, fighting, true);
+    }
+    town.set_searching(false);
+    check(flag(0x4ABE) == 254 && heard.find("HARD EVIDENCE") != std::string::npos,
+          "Searching the scribes' building finds the evidence of Cadorna's treachery");
+    heal(*party);
+    const auto west = edge_opening(town.map(), town.snapshot().pose, 3);
+    walk_to(town, party, west.x, west.y, fighting, true);
+    step(town, party, 3, fighting);
+    walk_to(town, party, 3, 15, fighting, true);
+    step(town, party, 2, fighting);
+    walk_to(town, party, 4, 15, peaceful, true);
+    step(town, party, 2, peaceful);
+    check(town.snapshot().area_id == 9, "The old town's south edge leads back to Stojanow Gate");
+}
+
+// From New Phlan by the harbor's western boat and Podol Plaza to Stojanow
+// Gate, taken, and through it onto its north side.
+void through_taken_gate(Expedition &trip)
+{
+    auto &[party, town] = trip;
+    walk_to(town, party, 11, 2);
+    step(town, party, 0, prefer({"WEST"}));
+    walk_to(town, party, 14, 1);
+    step(town, party, 1, prefer({"STAY"}));
+    travel_to(town, party, 11, 28, prefer({"NORTH"}),
+              [&]
+              {
+                  return !town.snapshot().overland;
+              });
+    walk_to(town, party, 4, 0, peaceful);
+    step(town, party, 0, peaceful);
+    check(town.snapshot().area_id == 9, "Podol Plaza's north edge leads to Stojanow Gate");
+    walk_to(town, party, 7, 12, peaceful);
+    for (unsigned steps = 0; steps < 8 && town.snapshot().pose.y > 6; ++steps)
+    {
+        step(town, party, 0, peaceful);
+    }
+    check(town.snapshot().pose.y <= 6, "The taken gate lets the party through to its north side");
+}
+
+// The whole map with one party (issue #4): from Mendor's Library, where the
+// expedition chain leaves it in Kuto's Well, through every area as the
+// council's commissions open them, to Tyranthraxus's fall and the walk home.
+// Between areas the party goes home and calls on City Hall; reach_level()
+// brings it to the level each area's audit plays. Each stage starts with a
+// save in `folder`; `first` skips the stages before it, to play on from one.
+void whole_map(Expedition &trip, const std::filesystem::path &directory,
+               const std::filesystem::path &folder, std::string_view first = {})
+{
+    auto &[party, town] = trip;
+    const auto flag = [&](std::uint16_t address)
+    {
+        return town.script_variable(por::EclAddress{address});
+    };
+    std::string heard;
+    const std::vector<std::pair<std::string_view, std::function<void()>>> stages{
+        {"home",
+         [&]
+         {
+             go_home(trip);
+             call_on_city_hall(trip);
+         }},
+        {"auction",
+         [&]
+         {
+             attend_the_auction(trip);
+             call_on_city_hall(trip);
+             check(flag(0x4AB0) == 255, "City Hall pays for the auction mission");
+         }},
+        {"sokal",
+         [&]
+         {
+             play_sokal_keep(trip, directory);
+             call_on_city_hall(trip);
+             check(flag(0x4AA7) == 255, "City Hall pays for Sokal Keep");
+         }},
+        {"temple",
+         [&]
+         {
+             reach_level(*party, 5, "temple");
+             play_temple_of_bane(trip, directory);
+             go_home(trip);
+         }},
+        {"nomads",
+         [&]
+         {
+             play_nomad_camp(trip);
+             go_home(trip);
+         }},
+        {"kovel",
+         [&]
+         {
+             // The wizard rests to cast Knock on the guild's cabinet again;
+             // the days on the wilderness map make the party eligible.
+             stay_at_inn(trip);
+             play_kovel_mansion(trip, directory);
+             go_home(trip);
+             call_on_city_hall(trip);
+         }},
+        {"pyramid",
+         [&]
+         {
+             reach_level(*party, 6, "pyramid");
+             play_pyramid(trip);
+             go_home(trip);
+         }},
+        {"kobolds",
+         [&]
+         {
+             reach_level(*party, 7, "kobolds");
+             play_kobold_caves(trip);
+             go_home(trip);
+         }},
+        {"lizards",
+         [&]
+         {
+             play_lizard_keep(trip);
+             go_home(trip);
+         }},
+        {"graveyard",
+         [&]
+         {
+             reach_level(*party, 8, "graveyard");
+             call_on_city_hall(trip);
+             play_valhingen_graveyard(trip);
+             go_home(trip);
+         }},
+        {"sites",
+         [&]
+         {
+             call_on_city_hall(trip);
+             check(flag(0x4A8C) == 255, "City Hall sends the party for the Bivant heir");
+             std::string western;
+             into_western_window(trip, western);
+             visit_diogenes(trip, western);
+             raid_buccaneers_base(trip, western);
+             go_home(trip);
+             call_on_city_hall(trip);
+         }},
+        // A party that opened Cadorna's family treasure is never offered his
+        // commissions; the castle's evidence against him brings the
+        // council's message for the Zhentil keep instead, which the clerk no
+        // longer gives once Tyranthraxus is beaten.
+        {"evidence",
+         [&]
+         {
+             reach_level(*party, 9, "castle");
+             drive_through_stojanow_gate(trip, heard);
+             find_cadorna_evidence(trip, heard);
+             // Back south through the gate, its towers' garrisons and the
+             // bugbears beyond its passage beaten: the gate is taken.
+             play_stojanow_gate(trip, heard);
+             go_home(trip);
+         }},
+        {"outpost",
+         [&]
+         {
+             call_on_city_hall(trip);
+             check(flag(0x4A98) == 255, "City Hall sends the party to the Zhentil keep");
+             std::string western;
+             into_western_window(trip, western);
+             visit_zhentil_outpost(trip, western);
+             go_home(trip);
+         }},
+        {"castle",
+         [&]
+         {
+             // The mystic who joined against the graveyard's undead stays
+             // behind, leaving an NPC place for Genheeris.
+             for (const auto id : party->state().slots)
+             {
+                 if (id && party->member(id).character.sheet().name == "Mystic")
+                 {
+                     party->remove(id);
+                 }
+             }
+             through_taken_gate(trip);
+             play_valjevo_castle(trip, heard);
+         }},
+        // The old town's alarms (0x4A6A bits 1 and 2), raised by its temple
+        // and smithy and never cleared, keep the castle's inner gate from
+        // asking its password; the old town and the gate's towers come after
+        // the victory.
+        {"south", [&]
+         {
+             through_taken_gate(trip);
+             play_valjevo_old_town(trip, heard);
+             go_home(trip);
+         }}};
+    bool playing = first.empty();
+    // The mad man who joined in New Phlan attacks passers-by and brings the
+    // watch; Tyr's priest asks the party to leave him in the temple's care.
+    for (const auto id : party->state().slots)
+    {
+        if (id && party->member(id).character.sheet().name == "Mad Man")
+        {
+            party->remove(id);
+        }
+    }
+    for (const auto &[name, play] : stages)
+    {
+        playing = playing || name == first;
+        if (!playing)
+        {
+            continue;
+        }
+        write_campaign_file(folder / ("whole-map-" + std::string(name) + ".ogs"),
+                            encode_campaign(*party, &town, campaign_asset_identity(directory)));
+        std::cout << "Whole map: " << name << '\n';
+        play();
+    }
+    check(playing, "The whole map plays from the named stage");
+    check(flag(0x4AFD) == 255 && town.snapshot().area_id == 0,
+          "One party plays the whole map from Mendor's Library to the victory");
+}
+
 // The Combat Sprite Catalog's export (#274) in the four-orc fight. A renamed
 // creature fights under its new name, in its new art for the weapon set it
 // readies, standing as the catalog previews it; one without exported art
@@ -5608,6 +6296,17 @@ void installed_first_expedition(const std::filesystem::path &executable,
         kutos_well_catacombs(explorer, folder, directory);
         auto podol = load_expedition(folder / "kutos-well.ogs", directory);
         podol_plaza(podol, folder, directory);
+        // Back in Kuto's Well after Mendor's Library: --whole-map plays on from here.
+        if (const auto *fixture = std::getenv("OPENGOLD_WHOLE_MAP_FIXTURE"))
+        {
+            write_campaign_file(fixture, encode_campaign(*podol.party, &podol.town, assets));
+            written_fixtures.insert("OPENGOLD_WHOLE_MAP_FIXTURE");
+            if (requested_fixtures_written())
+            {
+                return;
+            }
+        }
+        whole_map(podol, directory, folder);
     }
 
     const auto program = "\"" + executable.string() + "\"";
@@ -5703,6 +6402,17 @@ int main(int argc, char **argv)
             step(trip.town, trip.party, 1);
             mendors_library(trip, folder, directory);
             std::filesystem::remove_all(folder);
+            return 0;
+        }
+        // Plays the whole map on from a save the expedition chain writes after
+        // Mendor's Library (OPENGOLD_WHOLE_MAP_FIXTURE).
+        // A stage name plays on from that stage's save (whole-map-<stage>.ogs).
+        if ((argc == 3 || argc == 4) && std::string_view(argv[1]) == "--whole-map")
+        {
+            const auto folder = std::filesystem::temp_directory_path() / "opengold-whole-map";
+            std::filesystem::create_directories(folder);
+            auto trip = load_expedition(argv[2], directory);
+            whole_map(trip, directory, folder, argc == 4 ? argv[3] : "");
             return 0;
         }
         // Plays the Central Wilderness alone with a new party.

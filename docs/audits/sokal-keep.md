@@ -107,3 +107,5 @@ default encounter challenge. The raid is trimmed to the party's budget.
   frogs and the Hammer +1, the insects, the raid, the arms behind the wall,
   Ferran freed with LUX and the truth, a patrol passed with SAMOSUD, and the
   boat home.
+- **The whole map (2026-10-25):** played by one party from Mendor's Library,
+  earning its commissions at City Hall ([the whole map](whole-map.md)).
