@@ -2,6 +2,10 @@ OpenGold combat sprite specification: bipedal-v1 (2026-10-17)
 
 Create one independently designed full-body monster combat sprite in crisp pixel
 art. Use the monster's current text description and the selected equipment set.
+Before every generation or regeneration, the exact full prompt sent to the
+image generator must be saved in that monster's description under an IMAGEGEN
+PROMPT heading. If this text changes for a retry, update and save the monster
+description before making the next request; prompt files alone are insufficient.
 No original game image, extracted sprite, or original-art contact sheet may be an
 input reference. Do not copy the pose-guide mannequin's identity or clothes.
 The saved sprite_size comes from the game's decoded combat-art dimensions,
@@ -46,13 +50,13 @@ object has disappeared or the other hand points right. Keep the shoulder,
 elbow, wrist, and open hand visibly connected; do not detach the arm or move
 the whole figure to fit its reach.
 BARE-HANDED ATTACKS BY MONSTERS WITH ARMS: Before generating or regenerating
-the attack, ask the user to choose PUNCH or TWO-ARM GRAB for the exact monster
+the attack, ask the user to choose PUNCH or TWO-ARM FORWARD REACH for the exact monster
 and variant, unless that choice was already explicitly supplied by the user.
 Do not infer the choice from humanoid shape, a saved description, or earlier
-art. For PUNCH, lean the upper body toward screen right and extend the striking
-fist toward the target; the action must read as a forceful punch, not an idle
-reach. For TWO-ARM GRAB, lower and lean the upper body toward screen right and
-reach DOWN AND RIGHT WITH BOTH ARMS, hands open, as if grabbing the target.
+art. In EITHER ACTION, lean the UPPER BODY toward screen right into the attack.
+For PUNCH, extend the striking fist forward toward the target; the action must
+read as a forceful punch, not an idle reach. For TWO-ARM FORWARD REACH, extend
+BOTH ARMS FORWARD toward screen right with both hands outstretched.
 In READY, hold the arms poised for the chosen attack. Keep the planted feet at
 their exact ready-frame coordinates and preserve the body's scale and facing.
 If a magical or other unusual attack is unspecified, ask for its ready/action
@@ -183,7 +187,7 @@ action must read clearly at normal combat size, not only in a magnified preview.
 
 MONSTER AND SELECTED SET (current catalog JSON):
 {
-  "description": "The medusa kept near Tyranthraxus’s lair stands upright on two legs, with snake hair and a petrifying gaze. Keep the humanlike lower body shown by the game icon; do not give her a serpent tail. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description": "MON5CHA.DAX:49/default — ACTION IMAGEGEN PROMPT\n\nCreate only the ACTION frame of this Medusa's 128 × 128 transparent pixel-art combat animation. She is the Medusa kept near Tyranthraxus's lair: an upright humanlike woman with two planted legs, teal clothing, snake hair, and no carried equipment. Do not add a serpent tail, weapon, shield, magic beam, or scenery.\n\nReference image 1 is her currently installed newly generated READY sprite. It controls her identity, face, colors, clothing, five-foot body scale, camera, canvas origin, pelvis, lower body, and the exact x/y positions of both planted feet. Reference image 2 is a previously generated two-arm reaching ACTION pose, supplied only for its attack motion and expressive snakes. Its waist connection is defective: do not copy its cut or sheared torso. Reference image 3 is the user-approved bipedal pose guide, for front three-quarter screen-right facing only; do not copy the mannequin's identity or clothes. No original game artwork is a reference.\n\nShow a late physical reach: BOTH arms emerge from their own shoulders and stretch forward together toward screen right, with BOTH hands outstretched. Move the ribcage, shoulders, neck, and head forward so the UPPER BODY visibly leans into the attack from the fixed hips and pelvis. The snakes on her head must rear UP and also lean FORWARD toward screen right into the same attack; they must not stay in their ready arrangement. Keep her chest partly visible in front three-quarter view toward screen right. This is a two-arm reach, not a punch or a gaze beam.\n\nDraw one continuous, anatomically joined figure from neck through chest, abdomen, waist, pelvis, dress, and legs. The teal garment folds must flow across the waist without a horizontal cut, gap, doubled edge, abrupt pattern break, or displaced upper body. Keep both planted feet at their exact READY-frame x/y positions; do not step, slide, recenter, independently crop, or change body height. The attack arms and snakes may cross the 1 × 1 tile-footprint boundary. NEVER shrink or shear her body to contain them. Keep every visible pixel inside the 128 × 128 PNG canvas with transparent margin and genuine alpha. Produce a crisp, readable full-body pixel-art ACTION frame only, with no background, labels, ground plane, painted checkerboard, opaque black boxes, halos, or stray pixels.",
   "height_feet": null,
   "height_reference": null,
   "humanoid_size": "normal",
@@ -223,12 +227,3 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-
-LOCAL MEDUSA CORRECTION: The prior installed action visibly sheared the upper
-body away from the lower torso. The selected action was edited from the newly
-created matching ready figure as one anatomically continuous body; the teal
-garment and waist flow into the pelvis and legs without a horizontal splice.
-The action is a forward bare-handed punch with a slight screen-right lean.
-The planted feet retain the same x/y anchor as ready. Do not shrink, cut or
-splice the torso to force the action inside the 1x1 footprint; an attacking
-motion may cross the tile boundary as long as all pixels remain inside the PNG.

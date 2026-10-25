@@ -41,7 +41,8 @@ func _initialize() -> void:
     expect(DirAccess.make_dir_recursive_absolute(fixture_dir) == OK, "Create isolated fixture directory")
     var metadata_path := fixture_dir.path_join("monster.json")
     var record := {
-        "format": "opengold-monster-art-v1", "name": "Test biped", "description": "An independently designed warrior.",
+        "format": "opengold-monster-art-v1", "name": "Test biped",
+        "description": "An independently designed warrior. IMAGEGEN PROMPT: Full fixture image prompt for this warrior and selected equipment.",
         "humanoid_size": "normal", "sprite_size": {"width_squares": 1, "height_squares": 1},
         "flag_for_regeneration": true, "source": {"key": "TEST:1"},
         "equipment": [
@@ -54,6 +55,12 @@ func _initialize() -> void:
     }
     save_json(metadata_path, record)
     var original_hash := FileAccess.get_sha256(metadata_path)
+    var missing_prompt := record.duplicate(true)
+    missing_prompt.description = "An independently designed warrior."
+    save_json(metadata_path, missing_prompt)
+    expect(not Workflow.prepare(metadata_path, "sword__shield", fixture_dir.path_join("missing-prompt")).is_empty(),
+        "Preparation requires a prompt saved in description")
+    save_json(metadata_path, record)
     var stage := fixture_dir.path_join("sword-pair")
     expect(Workflow.prepare(metadata_path, "sword__shield", stage).is_empty(), "Prepare sword/shield pair")
     expect(not Workflow.prepare(metadata_path, "sword__one_hand", fixture_dir.path_join("wrong")).is_empty(),
@@ -146,6 +153,7 @@ func _initialize() -> void:
     expect(not Workflow.check_pair(stage).errors.is_empty(), "Disguised non-PNG rejected")
 
     record.equipment = []
+    record.description = "An independently designed warrior. IMAGEGEN PROMPT: Full fixture image prompt for the default set."
     save_json(metadata_path, record)
     expect(Workflow.prepare(metadata_path, "default", fixture_dir.path_join("unarmed")).is_empty(), "No-gear default pair supported")
     record.humanoid_size = "small"
