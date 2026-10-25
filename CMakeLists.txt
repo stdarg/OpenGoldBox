@@ -35,6 +35,7 @@ option(OPENGOLD_BUILD_TESTS "Build the native test suite" ${BUILD_TESTING})
 option(OPENGOLD_BUILD_GODOT "Build the C++ Godot tour and combat scenes" OFF)
 option(OPENGOLD_BUILD_GAME "Build the OpenGoldBox Windows game" OFF)
 option(OPENGOLD_BUILD_FUZZERS "Build isolated Clang libFuzzer targets with ASan/UBSan" OFF)
+option(OPENGOLD_BUILD_DOS_PROBE "Build the research-only DOS probe (dev_tools/dos_probe)" OFF)
 
 # Effective C++ Item 53: the project's own targets build at a high warning
 # level and fail on any warning, while fetched code such as godot-cpp keeps its
@@ -690,6 +691,10 @@ endif()
 
 if(OPENGOLD_BUILD_GAME)
     add_subdirectory(src/OpenGoldBox)
+endif()
+
+if(OPENGOLD_BUILD_DOS_PROBE)
+    add_subdirectory(dev_tools/dos_probe)
 endif()
 
 if(OPENGOLD_BUILD_TESTS)
