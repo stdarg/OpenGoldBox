@@ -294,7 +294,7 @@ void Machine::run(std::uint64_t count, const std::function<bool()> &stop)
 void Machine::press(std::uint8_t scan_code, std::uint8_t ascii)
 {
     keys_.emplace_back(scan_code, ascii);
-    keys_.emplace_back(static_cast<std::uint8_t>(scan_code | 0x80U), 0);
+    keys_.emplace_back(static_cast<std::uint8_t>(scan_code | 0x80U), std::uint8_t{0});
 }
 
 void Machine::watch(std::uint32_t first, std::uint32_t last, Watch callback)
