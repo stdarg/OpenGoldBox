@@ -1,16 +1,16 @@
 {
-  "action_sha256": "57aea40bba9d2de8204d0a6d73b0d65340193382a7443214b34c7261843a4cc7",
+  "action_sha256": "e324012f5d75d4f28f10577974d242c8f8902983e7215859b5933f8335e5a221",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon4cha_dax_22/default/action.png",
     "ready": "art/mon4cha_dax_22/default/ready.png"
   },
-  "metadata_sha256": "792361bf0d00405b0c1a98f837532444f120eecd270e54ccbed2ad69ce9878e9",
-  "notes": "Fresh giant skeleton pair with upper-body claw sweep while pelvis and skeletal feet remain fixed. Reviewed both frames at 128 px and alternating in this catalog source record. MON4CHA reuses exact matching new art. No equipment in current saved loadout.",
+  "metadata_sha256": "13662acdac5db419b56b89828a698b30bc49a9d63158c0581c9ea42bdda2b167",
+  "notes": "Regenerated both frames of MON4CHA.DAX:22/default for the saved 1x2 footprint. No selectable equipment in current JSON; unarmed claws only. Earlier wide and painted-background candidates were rejected. Final ready/action share one scale and placement; ready opaque bounds 42x100+40+18 and action 56x100+38+18. Action claw advances screen right with skull, ribs, spine, pelvis and upper legs continuous. Final rows 88-127 match ready pixel-for-pixel (AE 0), anchoring both feet. Both final 128x128 PNGs reviewed at combat size and enlarged on light, dark, and magenta backgrounds; no black boxes, seams, halo, or stray backdrop. Catalog loaded exact files, alternated at one second with fixed image position/size, and reported both frames fit selected 1x2 footprint.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "bccd11b321a7a1177dc5765b3586b6e5dfee26c23d83fce8e0f8eb58f4b03cbf",
-  "reviewed_at": "2026-10-19T01:49:32.311028+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "cae4f30fc30e27125b87da348f8613c12f13acf446660747c65ddfff77081fdb",
+  "reviewed_at": "2026-10-25T01:43:55+00:00",
+  "reviewer": "Codex",
   "source_key": "MON4CHA.DAX:22",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "e7f98f03faddfba4db29c94db6fe5b09818d246f9dd0a209f8a2a324b7152b5c"
 }
