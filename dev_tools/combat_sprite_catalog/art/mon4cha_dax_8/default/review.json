@@ -1,15 +1,15 @@
 {
-  "action_sha256": "4070d735753353d1995b72a944e8f727964fa6243ef2e829c6623ad79e702fe3",
+  "action_sha256": "c6259fd358c5b6a1da9d3731fd0a270d32f6d1e4b91427200f4fff7f6bab1fce",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon4cha_dax_8/default/action.png",
     "ready": "art/mon4cha_dax_8/default/ready.png"
   },
-  "metadata_sha256": "0b2db0311ab3fbf71ddbb24677e9b6502f7aa67b2e704acea7d24ef636668e27",
-  "notes": "Skin-only warm ochre-yellow recolor of the existing approved Ogre pair. No equipment; default is the sole saved set. Both final 128x128 exports retain alpha and silhouettes pixel for pixel; 2238 ready and 1988 action RGB pixels changed, with no alpha changes. Red hair and loincloth preserved. Ready fits the 1x2 footprint; the existing low punching fist in action extends 0.36 square rightward while torso and planted feet stay within it. Reviewed native size, enlarged on light gray and magenta, and on the dark catalog grid; exact loaded paths and one-second alternation checked. Existing pose, connected torso, and fixed feet retained.",
+  "metadata_sha256": "8edcd813a0f9d1f72614b84e053a88517e61a66cba1592e2e4c1a98dac93fd17",
+  "notes": "Palette matched to approved new art of MON1CHA.DAX:8, MON2CHA.DAX:8, and MON1CHA.DAX:9; their representative peach-orange skin colors are #FCB96C, #F9C269, and #FDAD60. This Ogre skin now includes #FCB96C. Only the 2238 ready and 1988 action skin RGB pixels from the prior recolor changed; alpha, non-skin pixels, pose, silhouette, foot coordinates, loincloth, and hair are identical to the previous accepted pair. No equipment; default is the sole saved set. Ready fits 1x2; existing low punching fist crosses right border by 0.36 square in action, while torso and feet remain within. Reviewed both 128x128 PNGs at combat size against the other three Ogres and on light, magenta, and dark backgrounds; checked exact loaded catalog paths and one-second frame alternation.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "16c4bbd645c9a37b7995777e969a41cd66ae9f27ced0341664f0af4bbd1d5564",
-  "reviewed_at": "2026-10-25T20:57:20.893514+00:00",
+  "ready_sha256": "9b90e622fefeafbaebe9571958f6b3ace4ab29456600b5439722b6018aadf0e3",
+  "reviewed_at": "2026-10-25T21:53:32.484515+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON4CHA.DAX:8",
   "specification": "bipedal-v1",
