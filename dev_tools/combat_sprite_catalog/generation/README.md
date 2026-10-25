@@ -129,8 +129,12 @@ request does not name a frame, it covers **both ready and action**. If it names
 only a monster, inspect its saved gear and cover every weapon set. An explicit
 single-frame request changes only that frame, followed by review of the pair.
 
-Resolve conflicts between the description and equipment with the user. For an
-unarmed, magical or unusual attack, ask for the pose behavior if unspecified.
+Resolve conflicts between the description and equipment with the user. For a
+monster with arms making a bare-handed attack, the action leans slightly toward
+screen right and punches or reaches with outstretched arms. A humanoid always
+punches. Ask which motion to use for a non-humanoid if the description gives no
+direction. Keep the planted feet fixed. For an unspecified magical or other
+unusual attack, ask for the ready/action behavior.
 A saved wand classified as gear remains gear; show it in a spellcaster's
 default casting pair when present rather than silently omitting it.
 
