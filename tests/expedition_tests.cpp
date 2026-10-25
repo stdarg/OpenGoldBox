@@ -343,9 +343,12 @@ void victory_program_tests()
 {
     auto party = std::make_shared<CampaignParty>(module());
     const auto arden = party->add_pc(character("Arden"));
+    const auto bryn = party->add_pc(character("Bryn", 2));
     auto state = party->checkpoint();
     party->rule_module().set_hit_points(state.roster.front().vitals,
                                         state.roster.front().character.sheet(), 1);
+    state.roster[1].vitals.hit_points = 0;
+    state.roster[1].vitals.dead = true;
     party->restore(std::move(state));
     auto resources = std::make_shared<por::PhlanResources>();
     resources->closing_story = {"The first page.", "The second page."};
@@ -361,8 +364,10 @@ void victory_program_tests()
     check(town.snapshot().phase == por::TourPhase::awaiting_continue &&
               town.snapshot().dialogue.starts_with("The first page.\n\nThe second page.\n\n") &&
               town.snapshot().dialogue.find("You have won") != std::string::npos &&
-              party->member(arden).vitals.hit_points == party->hit_point_maximum(arden),
-          "The victory heals the party and pauses on its closing words");
+              party->member(arden).vitals.hit_points == party->hit_point_maximum(arden) &&
+              !party->member(bryn).vitals.dead &&
+              party->member(bryn).vitals.hit_points == party->hit_point_maximum(bryn),
+          "The victory restores the party, the dead too, and pauses on its closing words");
     check(town.choose(town.snapshot().continue_ticket, 0), "The closing words are acknowledged");
     settle_synthetic(town);
     check(town.snapshot().phase == por::TourPhase::completed &&

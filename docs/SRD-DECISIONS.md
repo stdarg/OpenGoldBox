@@ -1900,7 +1900,8 @@ they await the user's review ([audit](audits/valjevo-castle.md)):
   Tyranthraxus; the nomad shaman's Wizard profile for Al-Hyam Dazid and
   Genheeris.
 - **Genheeris** joins as a level-6 Wizard with his record's scores.
-- **The victory** heals the living only; the original also raised the dead.
+- **The victory** restores every member, the dead and the stoned too, as the
+  original did (the user's choice, 2026-10-25).
 - **Since 2026-10-25** the Knight parries, the Medusa bites with its Snake
   Hair, and Tyranthraxus has the dragon's Repulsion Breath, Legendary Actions
   and Legendary Resistance

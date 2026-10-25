@@ -77,7 +77,8 @@ Missing before this audit, now done:
    its map and holds their creatures too, so the castle's scripts load each
    other's quarters and the old town's map.
 2. **The area rows**, the conversions and Genheeris.
-3. **`PROGRAM 8`, the game won:** every living member regains its Hit Points,
+3. **`PROGRAM 8`, the game won:** every member is restored to all its Hit
+   Points, the dead and the stoned too (since 2026-10-25, the user's choice),
    the won cell (`0x4AFD`, coab's area byte `0x3FA`) is set, and the closing
    words wait for a key press before the script goes on.
 4. **The castle's harm:** a bucket of sand, boulders and falling stones are
@@ -94,11 +95,6 @@ Missing before this audit, now done:
    `legendary_resistance` rows) and **Repulsion Breath** for Tyranthraxus, and
    **Snake Hair** for the medusa (her Multiattack's last attack), since
    2026-10-25 ([MONSTER-2](../SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders)).
-
-## Not done
-
-- **The dead are not raised by the victory:** the original restores every
-  member (see [DEVIATIONS](../DEVIATIONS.md)).
 
 ## Party level and balance
 

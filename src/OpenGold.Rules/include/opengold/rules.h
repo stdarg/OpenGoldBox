@@ -986,6 +986,9 @@ class RulesModule
     // throws when it would not help.
     virtual void temple_service(VitalState &state, const CharacterSheet &sheet,
                                 TempleService service, RandomState &random_state) const = 0;
+    // Pool of Radiance's victory (PROGRAM 8): the member lives, is no longer
+    // stone and has all its Hit Points, whatever befell it.
+    virtual void restore_after_victory(VitalState &state, const CharacterSheet &sheet) const = 0;
     // `gear` is what the member wears, so the attack meets its armor and shield.
     [[nodiscard]] virtual HazardAttackResult
     hazard_attack(VitalState &state, const CharacterSheet &sheet, std::span<const std::string> gear,

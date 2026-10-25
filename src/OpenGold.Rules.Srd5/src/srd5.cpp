@@ -30341,6 +30341,21 @@ class Module final : public RulesModule
         random_state.value = rng;
     }
 
+    void restore_after_victory(VitalState &state, const CharacterSheet &sheet) const override
+    {
+        auto member = camp_actor(sheet, state);
+        std::erase_if(member.effects.active,
+                      [](const auto &e)
+                      {
+                          return e.kind == detail::EffectKind::petrified ||
+                                 e.kind == detail::EffectKind::stoning ||
+                                 e.kind == detail::EffectKind::petrifying;
+                      });
+        bring_back(member, 0);
+        member.life.hp = max_hp(member);
+        state = vitals(member);
+    }
+
     int hit_point_maximum(const CharacterSheet &sheet, const VitalState &state) const override
     {
         // Unreadable vitals keep the sheet's maximum; validating them is left to

@@ -209,9 +209,6 @@ in the game: answering YES at a hall lists its services in the dialogue
   kobold caves' pool) takes that member's share of the party's shared purse;
   the original took from that member's own coins and items.
   [KOBOLD-1](SRD-DECISIONS.md#kobold-1-2026-10-25-the-kobold-caves).
-- **The victory** (2026-10-25). Beating Tyranthraxus heals every living
-  member; the original also restored the dead and the stoned.
-  [CASTLE-1](SRD-DECISIONS.md#castle-1-2026-10-25-valjevo-castle).
 - **Rune scrolls** (2026-10-24). Words a script shows in runes (Sokal Keep's
   elf scroll) appear translated; the original needed the box's code wheel.
   [SOKAL-1](SRD-DECISIONS.md#sokal-1-2026-10-24-sokal-keep).

@@ -2190,12 +2190,7 @@ void CampaignParty::heal_after_victory()
 {
     for (auto &member : state_.roster)
     {
-        if (!member.vitals.dead)
-        {
-            rules_->set_hit_points(member.vitals, member.character.sheet(),
-                                   std::min(member.character.sheet().hit_points,
-                                            hit_point_maximum(member.id)));
-        }
+        rules_->restore_after_victory(member.vitals, member.character.sheet());
     }
 }
 
