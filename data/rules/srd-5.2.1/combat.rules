@@ -526,7 +526,7 @@ affinity efreeti stat:fire immunity fire
 # Fly 60, Incorporeal Movement (Create Specter not modeled). Giant skeletons are
 # the Minotaur Skeleton's Slam (its charging Gore not modeled); juju zombies
 # the Ogre Zombie, Medium as the original's are; mummies the Mummy with its
-# Dreadful Glare (the Rotting Fist's curse not modeled); the vampire the
+# Dreadful Glare and the Rotting Fist's curse; the vampire the
 # Vampire's two Grave Strikes, its Bite on a creature it has Charmed or that is
 # Incapacitated or Restrained, and its Charm (no grapple, SCOPE-2; Beguile, a
 # legendary action, not modeled), and 15 Hit Points once its coffin is
@@ -575,6 +575,7 @@ type mummy undead
 multiattack mummy 2
 melee_extra_damage mummy 3 6 necrotic
 dreadful_glare mummy 11 60
+rotting_curse mummy
 creature vampire 16 43 14 40 9 1 8 4 0 0 0 0 0 0 0 0 9 1 0
 saves vampire 4 9 9 3 7 9
 damage_types vampire bludgeoning bludgeoning

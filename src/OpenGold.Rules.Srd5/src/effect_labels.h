@@ -370,6 +370,10 @@ inline constexpr std::array effect_labels{
                 "Frightened of the caster until the start of its next turn."},
     EffectLabel{EffectKind::glared, "Frightened (Dreadful Glare)",
                 "Frightened of the mummy until the end of its next turn."},
+    EffectLabel{
+        EffectKind::rotting_curse, "Cursed (Rotting Fist)",
+        "Regains no Hit Points; the Hit Point maximum is lowered by {value} and drops by 3d6 more each day, until Remove Curse. Dust at a maximum of 0.",
+        EffectValue::number},
     EffectLabel{EffectKind::animal_shaped, "Animal Shapes", "In the form of a {value}.",
                 EffectValue::beast_form},
     EffectLabel{

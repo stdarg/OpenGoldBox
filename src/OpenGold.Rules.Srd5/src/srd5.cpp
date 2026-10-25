@@ -1556,6 +1556,9 @@ struct Definition
     // monster.
     int bite_dc{};
     detail::DamageDice bite_pierce, bite_necrotic;
+    // A monster's `rotting_curse` row: its melee hits curse (a Mummy's
+    // Rotting Fist).
+    bool rotting_curse{};
     // A monster's `breath` row: its breath weapon's spell id, such as an
     // Adult Bronze Dragon's "lightning_breath", taken with its action, its save
     // DC, and the d6 roll that recharges it.
@@ -3017,7 +3020,8 @@ bool touch_restorable(const Actor &a)
 // A curse on the creature, which Remove Curse ends: Hex so far.
 bool curse(detail::EffectKind kind)
 {
-    return kind == detail::EffectKind::hex || kind == detail::EffectKind::cursed;
+    return kind == detail::EffectKind::hex || kind == detail::EffectKind::cursed ||
+           kind == detail::EffectKind::rotting_curse;
 }
 
 // Raise Dead, Resurrection and Reincarnate bring a dead creature back with
@@ -8083,6 +8087,7 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::hurled, "Hurled through the Lower Planes"},
               std::pair{detail::EffectKind::fey_fright, "Frightened (Conjure Fey)"},
               std::pair{detail::EffectKind::glared, "Frightened (Dreadful Glare)"},
+              std::pair{detail::EffectKind::rotting_curse, "Cursed (Rotting Fist)"},
               std::pair{detail::EffectKind::animal_shaped, "Animal Shapes"},
               std::pair{detail::EffectKind::enlarged, "Enlarged"},
               std::pair{detail::EffectKind::reduced, "Reduced"},
@@ -20367,6 +20372,16 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     {
         lower_hit_point_maximum(a, target, hit_points_before - target.life.hp);
     }
+    // A Mummy's Rotting Fist curses the creature it hits.
+    if (hit && !ranged && !spell && d.rotting_curse && !target.life.dead &&
+        detail::can_apply(target.effects) &&
+        !detail::has_effect(target.effects, detail::EffectKind::rotting_curse))
+    {
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::rotting_curse, 0);
+        log(target.source.name + " is cursed.",
+            {"{name} is cursed.", {{"name", target.source.name}}});
+    }
     // A Stirge's Proboscis attaches it to the creature it hits.
     if (hit && !ranged && !spell && d.attach_drain && !target.life.dead && !attached_host(a) &&
         detail::can_apply(a.effects))
@@ -29090,6 +29105,42 @@ class Module final : public RulesModule
                  a.life});
         }
         auto rng = random_state.value;
+        // A Mummy's curse lowers the Hit Point maximum by 3d6 as each day
+        // ends; at 0 the creature turns to dust. The days are counted before
+        // the effects' clocks run, so the curse is never timed out.
+        constexpr std::uint64_t day_ms = 86400000;
+        for (auto &a : actors)
+        {
+            std::optional<detail::EffectSource> dust_from;
+            std::string mummy;
+            for (auto &e : a.effects.active)
+            {
+                if (e.kind != detail::EffectKind::rotting_curse || a.life.dead)
+                {
+                    continue;
+                }
+                std::uint64_t next_day = e.remaining_ms;
+                for (; next_day <= milliseconds && !dust_from; next_day += day_ms)
+                {
+                    e.dc += roll_die(rng, 6) + roll_die(rng, 6) + roll_die(rng, 6);
+                    if (a.definition.hp + detail::hit_point_bonus(a.effects) <= 0)
+                    {
+                        dust_from = detail::EffectSource{e.source_scope, e.source_actor};
+                        mummy = e.source_name;
+                    }
+                }
+                e.remaining_ms = static_cast<unsigned>(
+                    std::min<std::uint64_t>(next_day, std::numeric_limits<unsigned>::max()));
+            }
+            if (dust_from)
+            {
+                a.life.hp = 0;
+                a.life.dead = true;
+                a.life.recovery = {};
+                detail::apply_spell_benefit(a.effects, *dust_from, mummy, detail::EffectKind::dust,
+                                            0);
+            }
+        }
         detail::elapse_recovery(subjects, milliseconds, rng);
         // An ended Aid lowers the maximum, and Hit Points above it with it.
         for (auto &a : actors)
@@ -31972,6 +32023,17 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             {
                 throw std::runtime_error("Unknown Petrifying Gaze fields: " + key);
             }
+            continue;
+        }
+        // rotting_curse creature: a Mummy's Rotting Fist, whose hits curse.
+        if (tag == "rotting_curse")
+        {
+            const auto found = content.definitions.find(key);
+            if (found == content.definitions.end() || !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid Rotting Fist curse: " + key);
+            }
+            found->second.rotting_curse = true;
             continue;
         }
         // dreadful_glare creature dc range: a Mummy's Dreadful Glare.

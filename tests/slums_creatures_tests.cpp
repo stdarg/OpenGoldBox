@@ -5,10 +5,12 @@
 // Mendor's Library's Specter and Basilisk.
 #include "opengold/srd5.h"
 #include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -809,6 +811,39 @@ void mummy_glares()
     check(frightened && resisted, "The glare frightens on a failure and not after a success");
 }
 
+// A mummy's Rotting Fist curses the creature it hits: it regains no Hit
+// Points, and as each day ends its Hit Point maximum drops by 3d6.
+void mummy_curses()
+{
+    const auto module = rules();
+    std::optional<rules::VitalState> cursed;
+    for (std::uint64_t seed = 1; seed < 40 && !cursed; ++seed)
+    {
+        auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                                 {{1, "mummy", "Monster", Side::opposition, {1, 1}},
+                                  {2, "target", "Hero", Side::party, {2, 1}}}},
+                                seed);
+        turn_of(*c, 1);
+        check(submit(*c, "melee", 1, 2), "The mummy attacks");
+        if (count_logged(*c, "Hero is cursed.") == 1)
+        {
+            check(unit(*c, 2).status.find("Cursed (Rotting Fist)") != std::string::npos,
+                  "The cursed hero shows the curse");
+            cursed = unit(*c, 2).persistent;
+        }
+    }
+    check(cursed.has_value(), "A Rotting Fist hit curses");
+    std::vector<rules::Participant> hero{{2, "target", "Hero", Side::party, {2, 1}}};
+    hero[0].state = *cursed;
+    RandomState random{7};
+    module->elapse(hero, std::chrono::hours{25}, random);
+    auto later = module->create({{10, 4, std::vector<Terrain>(40)},
+                                 {{1, "target", "Other", Side::opposition, {8, 1}}, hero[0]}},
+                                3);
+    const int lowered = 1000 - unit(*later, 2).max_hit_points;
+    check(lowered >= 3 && lowered <= 18, "A day later the Hit Point maximum drops by 3d6");
+}
+
 // Valhingen Graveyard's vampire charms and bites as the SRD Vampire does: its
 // Charm is Charm Person as a Bonus Action (DC 17), and with its two Grave
 // Strikes it bites a creature it has Charmed: a Constitution save or Piercing
@@ -923,6 +958,7 @@ int main()
         tyranthraxus_breathes();
         knight_parries();
         mummy_glares();
+        mummy_curses();
         vampire_bites();
         std::cout << "Slums creature tests passed\n";
         return 0;

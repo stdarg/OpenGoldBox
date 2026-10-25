@@ -99,13 +99,13 @@ bool save_proficient(CharacterClass character_class, unsigned level, Ability abi
 
 bool healing_blocked(const EffectState &effects, std::uint64_t after_ms) noexcept
 {
-    return std::any_of(effects.active.begin(), effects.active.end(),
-                       [&](const auto &e)
-                       {
-                           return (e.kind == EffectKind::chill_touch &&
-                                   e.remaining_ms > after_ms) ||
-                                  e.kind == EffectKind::simulacrum;
-                       });
+    return std::any_of(
+        effects.active.begin(), effects.active.end(),
+        [&](const auto &e)
+        {
+            return (e.kind == EffectKind::chill_touch && e.remaining_ms > after_ms) ||
+                   e.kind == EffectKind::simulacrum || e.kind == EffectKind::rotting_curse;
+        });
 }
 
 void apply_chill_touch(EffectState &effects, EffectSource source, std::string name,
@@ -809,7 +809,8 @@ unsigned benefit_duration_ms(EffectKind kind)
         return 600000; // Concentration, up to 10 minutes
     case EffectKind::mind_blank:
     case EffectKind::glare_resisted:
-        return 86400000; // 24 hours
+    case EffectKind::rotting_curse: // to the first day's end
+        return 86400000;            // 24 hours
     case EffectKind::befuddled:
         return 2592000000u; // 30 days
     case EffectKind::produce_flame:
@@ -895,7 +896,7 @@ int hit_point_bonus(const EffectState &effects)
             feast = std::max(feast, e.dc);
         }
         else if (e.kind == EffectKind::drained || e.kind == EffectKind::simulacrum ||
-                 e.kind == EffectKind::life_drained)
+                 e.kind == EffectKind::life_drained || e.kind == EffectKind::rotting_curse)
         {
             drained += e.dc;
         }
