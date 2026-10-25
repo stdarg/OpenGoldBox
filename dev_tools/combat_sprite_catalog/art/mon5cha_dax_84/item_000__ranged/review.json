@@ -1,15 +1,15 @@
 {
-  "action_sha256": "3c0f6bdf31526c850c1f7c69fa52b4806100f631e01334f387d411cd91dff40c",
+  "action_sha256": "7de66a060528cd3de429b5f9f060bb595f4e3018368df326245ca0f48d75a819",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon5cha_dax_84/item_000__ranged/action.png",
     "ready": "art/mon5cha_dax_84/item_000__ranged/ready.png"
   },
-  "metadata_sha256": "6aa1050c702fbc7d5546892a90c2d828837156579ee858276ff28b7a0024b2ac",
-  "notes": "Action-only correction: empty throwing hand extended right after Javelin +1 release, body/armor and planted boots consistent with untouched ready. Hand and body fit the 1x1 footprint; raised ready javelin alone crosses the top line as allowed. Native light, magenta and dark review plus one-second catalog alternation passed. Existing two-handed sword set inspected and untouched.",
+  "metadata_sha256": "7c07d57ddd4601de78c98ea371b452192c008c1188e789791456ac2d9ea8a672",
+  "notes": "Exact MON5CHA.DAX:84/item_000__ranged pair rebuilt. Saved gear has Javelin +1 ranged and Two-handed sword +2 separate, plus Chain armor +1. Final javelin ready and action share one newly generated fighter body and identical pixels below y60 (AE=0); head-to-soles is about 89 source pixels and matches the two-handed-sword fighter height/identity. READY grips a full-length javelin in the viewer-right throwing arm, cocked upward/back. ACTION extends that SAME shoulder/arm toward screen right with empty hand after release; offhand stays near chest. Two rejected drafts swapped the arms. Final ready uses a feathered transparent composite of independently generated raised-arm art on the final action body; shoulder/neck/torso continuity inspected enlarged and at combat size. Both final 128px PNGs inspected on light, magenta, dark backgrounds, no stray alpha boxes; 5% alpha threshold removed invisible edge fringe. Catalog loaded exact ready/action paths; ready top overflow 0.22 square is javelin only, action 0.01 square is rounding; one-second auto swap reached action. Sword set was only a reference and remains unchanged.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "ec1edc2e8092037222660a9384964b276f381da7ea6ae32839dc990c6d0a93a6",
-  "reviewed_at": "2026-10-24T19:52:42.208968+00:00",
+  "ready_sha256": "d0fccf2f9b0cdad214843d9881436685b5da047b4896757ad0c6f6bf87bd442f",
+  "reviewed_at": "2026-10-25T06:07:57+00:00",
   "reviewer": "Codex",
   "source_key": "MON5CHA.DAX:84",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
+  "workflow_sha256": "c19ac5526ae113ea3c69c40668ca6a4cfae3fd6eefb299b3d753008c0204213d"
 }
