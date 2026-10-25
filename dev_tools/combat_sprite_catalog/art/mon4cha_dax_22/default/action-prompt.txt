@@ -45,14 +45,18 @@ substitute for it. A lowered throwing hand is a failed throw even if the
 object has disappeared or the other hand points right. Keep the shoulder,
 elbow, wrist, and open hand visibly connected; do not detach the arm or move
 the whole figure to fit its reach.
-BARE-HANDED ATTACKS BY MONSTERS WITH ARMS: In ACTION, lean the upper body
-slightly toward screen right and show either a punch or an outstretched reach.
-A humanoid's bare-handed attack is ALWAYS a punch, never a reach. Keep the
-planted feet at their exact ready-frame coordinates and preserve the body's
-scale and facing. In READY, hold the arms poised for the chosen attack. If the
-description gives no direction for a non-humanoid's bare-handed attack, ask
-whether it should punch or reach before generating. If a magical or other
-unusual attack is unspecified, ask for its ready/action behavior.
+BARE-HANDED ATTACKS BY MONSTERS WITH ARMS: Before generating or regenerating
+the attack, ask the user to choose PUNCH or TWO-ARM GRAB for the exact monster
+and variant, unless that choice was already explicitly supplied by the user.
+Do not infer the choice from humanoid shape, a saved description, or earlier
+art. For PUNCH, lean the upper body toward screen right and extend the striking
+fist toward the target; the action must read as a forceful punch, not an idle
+reach. For TWO-ARM GRAB, lower and lean the upper body toward screen right and
+reach DOWN AND RIGHT WITH BOTH ARMS, hands open, as if grabbing the target.
+In READY, hold the arms poised for the chosen attack. Keep the planted feet at
+their exact ready-frame coordinates and preserve the body's scale and facing.
+If a magical or other unusual attack is unspecified, ask for its ready/action
+behavior before generating.
 
 EQUIPMENT: Draw only the selected weapon/shield setup, plus appropriate other
 gear from the record. Retain the shield in both frames when the set includes it.
@@ -179,7 +183,7 @@ action must read clearly at normal combat size, not only in a magnified preview.
 
 MONSTER AND SELECTED SET (current catalog JSON):
 {
-  "description": "An oversized animated skeleton with long bony arms and no weapon in the current catalog loadout. Its raised claw guard gives way to a late reaching strike. Source archive inventory lists an unselected short bow.",
+  "description": "An oversized animated skeleton with long bony arms and no weapon in the current catalog loadout. From a raised guard, it lowers and leans forward to grab down and right with both arms. Source archive inventory lists an unselected short bow.",
   "height_feet": null,
   "height_reference": null,
   "humanoid_size": "tall",
@@ -220,4 +224,15 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-Generation record: built-in imagegen edited the exact selected new ready, using the approved pose guide for direction only. The first action reached too far right and was rejected. The selected action shows a compact late claw reach screen right and uses the SAME 108x108 nearest-neighbor transform and x+5,y+13 placement as ready. Accepted ready pixels in final rows 88..127 replace the corresponding action lower-shin and feet pixels, keeping the planted base identical; the continuous action torso, spine, pelvis and upper legs remain from the selected action image. Final opaque action bounds are 56x100+38+18. Both frames fit the saved 1x2 catalog footprint without moving the grid. No weapon, bow, opaque background, halo, or clipping.
+MON4CHA.DAX:22/default/action, user-approved motion (2026-10-24):
+Use a two-arm grab, not a punch or limp one-arm reach. Lower and lean the entire
+connected upper skeleton into the attack; each arm remains attached to its own
+shoulder and ends in an open hand directed down and right. Keep the neck, ribs,
+spine, waist, pelvis and hips one continuous figure. Keep the accepted ready
+frame unchanged and retain its exact planted foot pixels. The final action was
+selected from an imagegen edit of the accepted ready image with the approved
+pose guide, scaled uniformly to match the 100-pixel body height and kept within
+the 1x2 sprite footprint. Ready pixels in source rows 104..127 preserve the
+planted feet; two ankle pixels bridge the lower-leg transition. Reject torso
+shear, disconnected limbs, overlapping hands, missing alpha, or a frame that
+exceeds the saved footprint.
