@@ -4,6 +4,7 @@
 #include "opengold/character_creator.h"
 #include "opengold/srd5.h"
 #include <algorithm>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -350,10 +351,17 @@ void discovery_swap_checks()
 
     CampaignParty party(module());
     const auto id = party.add_pc(Character(*srd5::character_rules(), draft(), {}));
-    party.award_experience(23000, "discovery-xp");
+    party.award_experience(34000, "discovery-xp"); // to level 8, for the screen check
     while (party.member(id).character.sheet().level < 6)
     {
         party.advance(id, party.default_advancement(id));
+    }
+    // With original files, the level-up screen's fixture: this level-6 Lore Bard
+    // with the experience for level 7.
+    if (const auto *directory = std::getenv("OPENGOLD_GAME_DIR"); directory && *directory)
+    {
+        write_campaign_file(std::filesystem::path(OPENGOLD_BINARY_DIR) / "discovery-swap-ui.ogs",
+                            encode_campaign(party, nullptr, campaign_asset_identity(directory)));
     }
     auto choice = party.default_advancement(id);
     const auto offer =

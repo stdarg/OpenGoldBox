@@ -52,4 +52,6 @@ and Druidic Warrior cantrips, save replay) and
 `opengold_godot_level_up_lab` (a Sorcerer's cantrip swap through the window,
 seen again in the next level's list). `opengold_bard_levels_tests` covers the
 Magical Discoveries swap: none before level 6, a level-4 spell offered at 7 but
-not a level-5 one, a refused swap and save replay.
+not a level-5 one, a refused swap and save replay; with original files it writes
+the fixture `opengold_godot_creation_discovery_swap` loads to make the swap
+through the window in English and Spanish and find it on the next level's page.
