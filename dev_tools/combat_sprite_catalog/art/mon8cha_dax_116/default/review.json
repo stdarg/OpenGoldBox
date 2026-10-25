@@ -1,0 +1,30 @@
+{
+  "format": "opengold-sprite-review-v1",
+  "specification": "natural-in-place-v1",
+  "source_key": "MON8CHA.DAX:116",
+  "variant_id": "default",
+  "install_paths": {
+    "ready": "art/mon8cha_dax_116/default/ready.png",
+    "action": "art/mon8cha_dax_116/default/action.png"
+  },
+  "metadata_sha256": "cc52d41bd58823312c458fc5c6219329ab6ca7f6ff10378184bc12c3e984afcc",
+  "workflow_sha256": "a768a0be59c5d1fba305a5943e718901140e2eaa81d0fac32484bf006202c63f",
+  "ready_sha256": "e699723e4211773dd131b88ca8ccc139353b228bf10f07c70be7be761adc667f",
+  "action_sha256": "386800b0d37a1a61de76114cb6945a3c5b9fdcb0e91a295b39f15a2e24ddd0b3",
+  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-25T20:50:42Z",
+  "technical_check": "sprite_art_workflow.gd check passed; natural-in-place-v1 review applies to this invertebrate",
+  "visual_checks": {
+    "one_spider_eight_visible_legs": true,
+    "source_identity_and_independent_art": true,
+    "correct_equipment_or_no_equipment": true,
+    "same_body_scale_and_perspective": true,
+    "all_planted_contacts_registered": true,
+    "rightward_bite_with_open_fangs": true,
+    "footprint_and_attack_appendage_reviewed": true,
+    "complete_alpha_silhouette_on_light_magenta_dark": true,
+    "readable_at_combat_size": true,
+    "one_second_fixed_grid_catalog_review": true
+  },
+  "notes": "Rejected first generated pair because high leg arches made the spider too small in a 2x1 tile footprint. Final ready is one low, wide eight-legged Phase Spider with no gear. Action retains the ready abdomen, all legs and planted contacts; only a localized head/chelicera edit creates a screen-right open-fang bite. Ready/action share one crop, transform and pixel scale. Exact installed PNGs were inspected at 128 px and enlarged on light, magenta and dark backgrounds; no black boxes or torso break. The bottom 12 rows, left 61 columns and right 10 columns are pixel-identical between frames. Headless catalog selection loaded both exact paths, reported a fit in the 2x1 footprint, and auto-swapped to action after 1.1 seconds; loaded image pixels match installed files."
+}

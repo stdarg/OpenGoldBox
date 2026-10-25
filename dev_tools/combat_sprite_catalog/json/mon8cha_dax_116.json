@@ -1,7 +1,5 @@
 {
-  "description": "A large spider with long legs and a body that can shift between planes. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
-  "humanoid_size": "na",
-  "sprite_size": {"height_squares": 1, "width_squares": 2},
+  "description": "A large eight-legged Phase Spider that can shift between planes. The original template records no carried items or wealth. One low, wide spider occupies a 2-by-1 combat-tile footprint and attacks by biting to screen right while all eight feet stay rooted.\n\nIMAGEGEN PROMPT - READY:\nUse case: new-transparent-game-sprite\nAsset type: exactly one READY frame for MON8CHA.DAX:116/default, exported as a 128x128 transparent combat sprite.\nCreate ONE anatomically clear Phase Spider facing screen right. Its bulbous abdomen is image-left; the cephalothorax, clustered amber eyes, short pedipalps and mostly closed fangs are image-right. It has EIGHT and only eight walking legs: four leg roots on the far side and four on the near side, all attached to the cephalothorax, with eight separate planted pointed tips. At combat size, every leg must trace visibly through a knee to its own tip. Use broad, bold leg shapes and transparent gaps between them; no overlapping bundle of thin legs and no extra walking pair.\nThis is a LOW CRAWLING spider that sits on all eight legs in a 2-combat-square-wide by 1-square-high footprint. Compose its visible silhouette at least 1.8 times wider than tall. In the future 128x128 export, plan approximately x=7..120 and y=64..122, with eight leg tips near the same ground zone and room for a short rightward bite. Keep the leg knees and upper arcs LOW, no high vaulted legs above the abdomen, no upright rearing. Use a slightly elevated three-quarter view so far and near legs remain distinguishable and the right-facing mouth is visible. The abdomen stays behind the head; ready fangs are poised but not yet striking.\nUse crisp bold fantasy pixel-art clusters that remain readable at 128 pixels: warm russet-brown and charcoal chitin, muted violet iridescent abdomen bands, pale tan joint accents, small amber eyes. Keep the body and all eight feet entirely within a transparent 128x128 canvas with margin. No large glow, web, floor, scenery, shadow, other creatures, armor, weapons, labels, border or motion effect. ONE spider, ONE frame, no duplicate, sheet or diptych.\n\nIMAGEGEN PROMPT - ACTION:\nUse case: precise-object-edit\nAsset type: one ACTION frame for MON8CHA.DAX:116/default, final 128x128 transparent combat PNG.\nInput Image 1 is the newly accepted Phase Spider READY art and is the exact edit target, identity, eight-leg anatomy, camera, scale, canvas-origin and foot-contact reference. No original-game art is supplied.\nKeep exactly ONE same spider. Preserve the ready abdomen, body scale, eight leg attachments and all eight planted foot tips at the identical pixel coordinates. Do not translate, recenter, rotate, resize, duplicate or redraw the whole animal. Animate only a modest forward tilt of the front cephalothorax and the upper segments of the foremost legs while keeping their feet rooted. Open the chelicerae and two fangs wide and project the biting mouth several pixels toward SCREEN RIGHT. The bite must be clearly more aggressive than ready at 128 pixels, as a natural close-range attack, with the rear abdomen and rear legs steady. Retain four legs on each side; no missing, doubled, floating or newly invented walking legs. Keep the same russet-brown, charcoal and muted-violet markings, with continuous anatomy at the abdomen-thorax join.\nThe entire animal stays in the saved 2-wide by 1-high combat footprint, all pixels inside the 128x128 canvas with transparent margin. No large phase glow, web blast, projectile, weapon, armor, scene, floor, shadow, black box, label or motion streak. Exactly one action frame of one spider, not a sheet or second spider.",
   "description_sources": [
     "Original game MON8CHA.DAX:116 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"
@@ -9,6 +7,8 @@
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
+  "height_feet": null,
+  "humanoid_size": "na",
   "name": "PHASE SPIDER",
   "preview_fallback_variant": "",
   "source": {
@@ -19,6 +19,10 @@
     "creature_record": 116,
     "key": "MON8CHA.DAX:116",
     "linked_creature_keys": []
+  },
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 2
   },
   "variants": [
     {
