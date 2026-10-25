@@ -2,6 +2,10 @@ OpenGold combat sprite specification: bipedal-v1 (2026-10-17)
 
 Create one independently designed full-body monster combat sprite in crisp pixel
 art. Use the monster's current text description and the selected equipment set.
+Before every generation or regeneration, the exact full prompt sent to the
+image generator must be saved in that monster's description under an IMAGEGEN
+PROMPT heading. If this text changes for a retry, update and save the monster
+description before making the next request; prompt files alone are insufficient.
 No original game image, extracted sprite, or original-art contact sheet may be an
 input reference. Do not copy the pose-guide mannequin's identity or clothes.
 The saved sprite_size comes from the game's decoded combat-art dimensions,
@@ -29,9 +33,34 @@ projectile has been released toward screen right, with appropriate follow-throug
 The projectile is no longer nocked, loaded or in the sling pouch; it may already
 be outside the image. Keep the bow, crossbow or sling in the character's hands.
 For a thrown weapon, ready holds it poised to throw; action is just after release
-and that thrown weapon is no longer in the hand. Do not turn a wand into a bow.
-If an unarmed, magical or unusual attack is not specified by the description,
-ask the user for its ready/action behavior before generating it.
+and that thrown weapon is no longer in the hand. The SAME arm that holds the
+weapon in ready must follow through in action. Trace its hand back to its
+shoulder in both frames; do not extend the offhand while leaving the throwing
+arm bent behind the head or resting at the waist. An empty extended hand is
+not enough unless it belongs to the former weapon arm. Do not turn a wand into
+a bow.
+THROWN-WEAPON ARM CONTINUITY: Before drawing action, identify the arm that
+actually grips the thrown object in ready by tracing its shoulder, elbow,
+wrist, and hand. If the object has a two-handed grip, identify the primary
+throwing arm and the supporting arm. In action, that SAME throwing arm follows
+through toward screen right: its empty hand extends past the torso in the
+attack direction, near shoulder height or higher. The other arm cannot
+substitute for it. A lowered throwing hand is a failed throw even if the
+object has disappeared or the other hand points right. Keep the shoulder,
+elbow, wrist, and open hand visibly connected; do not detach the arm or move
+the whole figure to fit its reach.
+BARE-HANDED ATTACKS BY MONSTERS WITH ARMS: Before generating or regenerating
+the attack, ask the user to choose PUNCH or TWO-ARM FORWARD REACH for the exact monster
+and variant, unless that choice was already explicitly supplied by the user.
+Do not infer the choice from humanoid shape, a saved description, or earlier
+art. In EITHER ACTION, lean the UPPER BODY toward screen right into the attack.
+For PUNCH, extend the striking fist forward toward the target; the action must
+read as a forceful punch, not an idle reach. For TWO-ARM FORWARD REACH, extend
+BOTH ARMS FORWARD toward screen right with both hands outstretched.
+In READY, hold the arms poised for the chosen attack. Keep the planted feet at
+their exact ready-frame coordinates and preserve the body's scale and facing.
+If a magical or other unusual attack is unspecified, ask for its ready/action
+behavior before generating.
 
 EQUIPMENT: Draw only the selected weapon/shield setup, plus appropriate other
 gear from the record. Retain the shield in both frames when the set includes it.
@@ -131,6 +160,16 @@ If the weapon cannot fit inside the PNG,
 revise the pose without changing body scale or foot anchor. Overlay the frames
 and play them at combat size to reject any jump.
 
+TORSO CONTINUITY: Keep a single connected figure from neck through chest,
+abdomen, waist and hips in BOTH frames. Derive action from the complete ready
+figure; do not paste an independently generated upper half onto a lower half
+at a straight horizontal boundary. When changing an attacking arm, preserve
+the torso and blend its shoulder into the original anatomy and clothing. Reject
+any visible shear, seam, gap, doubled edge, abrupt garment-pattern break or
+upper body that appears detached from the pelvis. Inspect the final exported
+action enlarged around the torso and at normal combat size, then alternate it
+with ready. Registered feet alone do not establish anatomical continuity.
+
 OUTPUT: A single full-body figure, genuine transparent background, no painted
 checkerboard, ground plane, labels, borders, scenery, shadows extending off the
 figure or motion blur. Keep all visible pixels inside the PNG canvas with
@@ -148,7 +187,7 @@ action must read clearly at normal combat size, not only in a magnified preview.
 
 MONSTER AND SELECTED SET (current catalog JSON):
 {
-  "description": "Cadorna’s hired adventurer, found chained in the Textile House; he can join the party if freed. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description": "Cadorna’s hired adventurer, found chained in the Textile House; he can join the party if freed. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.\n\nIMAGEGEN PROMPT\nCreate the READY combat sprite for MON4CHA.DAX:27, variant added_1512788588__added_1518488749. This record is saved as SKULLCRUSHER; preserve the existing brown-haired human identity. Reference image 1 is the approved bipedal pose guide for camera and pose mechanics, not the character identity or clothing. Reference image 2 is this character's existing newly created ready sprite, for face, palette, hammer, round shield, ring armor, brown pants and boots.\n\nMake one single crisp pixel-art figure on a 128 by 128 transparent canvas, no scenery, grid, text, border, shadow, or second pose. Face screen right in front three-quarter view with chest partly visible. Hold the hammer UP in the right hand in a combat guard; the round shield stays on the left arm. Keep the ring armor. No other weapons. Preserve a broad, capable human physique.\n\nCRITICAL HEIGHT: The actual body from the top of the head to the planted feet must measure at least 88 pixels, corresponding to at least five feet in the catalog's fixed one-square combat height. Exclude the hammer and raised hand from this measurement. Put the soles near y=119, the top of the head at or above y=31, and keep the body fully within the one-square footprint. Match both poses to this exact body scale. Place the planted feet at approximately x=31,y=119 and x=85,y=119; these coordinates will remain fixed in action. Reserve transparent room for the action hammer swing toward screen right. The raised hammer may extend above the footprint but keep every pixel inside the image with clear border margin.\n\nPlan the action companion at this same camera distance: the same man, shield, armor, head/body size and feet, swinging the hammer to the low right near the end of a blow. Do not enlarge or shrink the whole figure between poses. Keep connected anatomy neck through pelvis. This request outputs READY ONLY. Genuine transparency, pixelated edges, no opaque black boxes or halo.\n\nIMAGEGEN PROMPT ACTION\nEdit the attached NEW ready art into the ACTION frame for MON4CHA.DAX:27, variant added_1512788588__added_1518488749. Reference image 1 is the generated ready character and is the exact identity, palette, scale, outfit, hammer, shield, face, body and foot-position reference. Reference image 2 is the approved bipedal pose guide for facing and late melee attack mechanics only, not character identity or clothes.\n\nChange the combat pose only: swing the hammer with the SAME right arm toward screen right and down, showing the hammer near the END of a forceful strike; keep a firm one-hand grip. The round wooden shield remains on the left arm. Lean the upper torso modestly forward/right into the blow while keeping one continuous connected neck, chest, abdomen, belt, hips and legs. Preserve the same human head and body proportions, ring armor, brown pants and boots. Face screen right in front three-quarter view with chest partly visible. No projectile or extra equipment.\n\nCRITICAL: This is frame 2 of an in-place two-frame animation. Keep both planted feet at exactly the same x and y coordinates as the ready image; retain the lower body and shield at the same camera scale. Do not shift, rotate, recenter, shrink, enlarge, or cut and paste the whole figure. No waist shear, gap, doubled torso, or disconnected arm. The actual head-to-feet BODY must measure at least 88 of 128 pixels after export, at least five feet tall in one combat square, excluding weapon and raised arm. Target soles near y=119 and head at or above y=31. The hammer is allowed to extend right of the footprint during the strike but all visible pixels must stay within the 128 by 128 image and have transparent border margin. Do not shorten the hammer.\n\nOutput ONE full-body action figure only in crisp pixel art on a genuine transparent canvas, no second frame, text, ground, grid, shadow, painted checkerboard, opaque black boxes, or halo. Preserve the ready artwork as closely as possible except for the hammer-swing motion.\n\nFINAL ART REVIEW: The image-generated draft was rejected because the planted feet shifted between frames. Final ready and action are regenerated from the previously saved independent pair with the SAME nearest-neighbor 156/128 scale and 128x128 crop offset +20,+13. This keeps the attack and both planted feet registered while bringing head-to-foot body height to approximately 88 source pixels, one five-foot combat square at normal preview scale.",
   "height_feet": null,
   "height_reference": null,
   "humanoid_size": "normal",
@@ -200,6 +239,10 @@ POSE TO GENERATE: ACTION only.
 Apply the ACTION rule for the selected weapon from the specification above.
 For melee, near the END of the swing or thrust, not a windup. For projectile
 weapons, just AFTER release, with no projectile remaining loaded. Keep any shield.
+For a thrown object, use the ready pose to identify its actual gripping hand.
+Extend THAT arm and empty hand toward screen right after release; do not drop
+that hand or extend only the opposite arm. Trace shoulder to elbow to wrist
+before accepting the pose.
 Only the moving attack weapon may cross the saved combat-square footprint line
 in ACTION. Keep the full-size body, planted feet, shield and other gear inside
 the footprint. The weapon may pass the dotted tile border but all its visible
@@ -216,5 +259,3 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-
-Generation record: built-in imagegen edit of this exact new ready image, with approved bipedal-v1 pose guide as mechanics reference. Final output uses the same 1254-to-128 nearest-neighbor transform and alpha threshold cleanup. The lower left leg and planted foot from ready are retained at the same coordinates; hammer and striking arm remain from the generated action. The shield, armor, and body scale stay consistent.
