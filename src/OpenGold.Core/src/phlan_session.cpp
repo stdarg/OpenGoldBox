@@ -252,6 +252,9 @@ std::optional<ScriptDamage> listed_damage(unsigned script, std::uint16_t address
 {
     constexpr std::array types{ScriptDamage{2, 0xADB1, "bludgeoning"}, // the Cadorna well's fall
                                ScriptDamage{15, 0x9D31, "acid"},       // Mendor's green slime
+                               // Stojanow Gate (GATE-1).
+                               ScriptDamage{9, 0xA155, "bludgeoning", "rock"}, // from the gate
+                               ScriptDamage{9, 0xA94E, "bludgeoning"},         // a bugbear's punch
                                // Valhingen Graveyard's towers (GRAVE-1).
                                ScriptDamage{10, 0xA53E, "poison"},    // noxious fumes
                                ScriptDamage{10, 0xAA5F, "lightning"}, // a sharp crack
@@ -336,10 +339,6 @@ std::string_view area_beyond(unsigned script)
         return "the Buccaneers' base";
     case 6:
         return "Valjevo Castle";
-    case 9:
-        return "Stojanow Gate";
-    case 10:
-        return "Valhingen Graveyard";
     case 19:
         return "the dragon's cave";
     case 28:
@@ -595,15 +594,16 @@ bool RolfTourSession::move_party(ExplorationCommand command)
                   y = static_cast<int>(pose.y) + step_y(pose.facing);
         const auto wrapped_x = (x + 16) % 16, wrapped_y = (y + 16) % 16;
         const auto &a = map_.at(pose.x, pose.y);
-        const auto &b = map_.at(wrapped_x, wrapped_y);
-        const auto side = pose.facing, other = reversed(side);
+        const auto side = pose.facing;
         // Ordinary doors are traversable. Locks retain their distinct codes.
+        // Only the party's side of the edge stops a step (coab
+        // TryStepForward): Stojanow Gate's passage opens southward from its
+        // north side though its gates stay shut from the south.
         const auto blocked = [](unsigned wall, unsigned door)
         {
             return door > 1 || (wall && !door);
         };
-        if (blocked(a.walls[index(side)], a.doors[index(side)]) ||
-            blocked(b.walls[index(other)], b.doors[index(other)]))
+        if (blocked(a.walls[index(side)], a.doors[index(side)]))
         {
             return false;
         }

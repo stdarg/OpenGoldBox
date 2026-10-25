@@ -229,6 +229,18 @@ PDF differ, the rows follow the PDF: the Wraith's Bludgeoning, Piercing and
 Slashing Resistances, the Minotaur Skeleton's Bludgeoning Vulnerability and
 the Mummy's Fire Vulnerability.
 
+## Stojanow Gate monsters
+
+Stojanow Gate's giants ([audit](../../../docs/audits/stojanow-gate.md)). Each
+Open5E response was fetched on 2026-10-25 (`srd-2024`):
+
+| Rows | Stat block | Response | SHA-256 |
+| --- | --- | --- | --- |
+| `hill-giant` | Hill Giant | `open5e-hill-giant.json` | `E80F67FCB3E710E1E448478462D794079D704E6C91F0DEC0FB1D9256F45BBC7D` |
+| `ettin` | Ettin | `open5e-ettin.json` | `B566FCA1D317770D6DE4262C105B995073FE97E54577752716E307ADE21B8862` |
+
+Each keeps the original's Hit Points.
+
 ## Fixtures
 
 `vanguard`, `scout`, `adept`, and `healer` are authored combat fixtures, not

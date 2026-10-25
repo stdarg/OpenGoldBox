@@ -541,7 +541,19 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
              {72, "ghoul", 200, 200},
              {105, "weakened-vampire", 2300, 2300},
              {106, "wolf", 50, 50},
-             {114, "mummy", 700, 700}}}};
+             {114, "mummy", 700, 700}}},
+        // Stojanow Gate (docs/audits/stojanow-gate.md, GATE-1): its level-6
+        // magic-user is the graveyard mystic's record.
+        AreaSource{9,
+                   2,
+                   {{9, {1, 9, 23}}},
+                   {{24, "graveyard-mystic", 200, 200},
+                    {53, "bandit-captain", 450, 450},
+                    {55, "hill-giant", 1800, 1800},
+                    {63, "slums-bugbear", 200, 200},
+                    {71, "ettin", 1100, 1100},
+                    {75, "trapped-fighter", 700, 700},
+                    {89, "nomad-shaman", 200, 200}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;

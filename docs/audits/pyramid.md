@@ -83,8 +83,8 @@ Missing before this audit, now done:
    patches are accepted and dropped.
 
 The step itself was checked against coab: the original stops a step only on
-the wall on the party's side of the edge; every Pyramid door has a door on
-both sides, so the engine's stricter both-sides check changes nothing here.
+the wall on the party's side of the edge, as the engine has since Stojanow
+Gate; every Pyramid door has a door on both sides.
 
 ## Party level and balance
 

@@ -100,6 +100,31 @@ constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_
     {
         return N_("Nomad Camp");
     }
+    if (area_id == 22 || area_id == 23)
+    {
+        return N_("Pyramid");
+    }
+    // The western and eastern windows' caves.
+    if (area_id == 25 || area_id == 27)
+    {
+        return N_("Wilderness");
+    }
+    if (area_id == 13)
+    {
+        return N_("Kobold Caves");
+    }
+    if (area_id == 16 || area_id == 30)
+    {
+        return N_("Lizard Men's Keep");
+    }
+    if (area_id == 10)
+    {
+        return N_("Valhingen Graveyard");
+    }
+    if (area_id == 9)
+    {
+        return N_("Stojanow Gate");
+    }
     return N_("New Phlan");
 }
 

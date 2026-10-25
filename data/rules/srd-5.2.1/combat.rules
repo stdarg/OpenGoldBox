@@ -592,6 +592,28 @@ creature graveyard-mystic 12 23 2 30 4 1 4 2 0 0 0 0 0 0 0 4 5 4 5
 saves graveyard-mystic -1 2 1 5 3 0
 damage_types graveyard-mystic piercing piercing
 perception graveyard-mystic 1
+# Stojanow Gate (docs/audits/stojanow-gate.md, GATE-1), with the original's Hit
+# Points. The Hill Giant: two Tree Club or Trash Lob attacks, a Tree Club hit
+# knocking a Large or smaller target Prone (Trash Lob's Poisoned not modeled);
+# the Ettin: Battleaxe and Morningstar, a hit knocking Prone as the Battleaxe's
+# does (the Morningstar's Disadvantage not modeled).
+creature hill-giant 13 41 2 40 8 3 8 5 8 2 10 5 60 240 0 0 0 1 0
+saves hill-giant 5 -1 4 -3 -1 -2
+damage_types hill-giant bludgeoning bludgeoning
+size hill-giant huge
+type hill-giant giant
+multiattack hill-giant 2
+multiattack_ranged hill-giant
+perception hill-giant 2
+prone_large hill-giant
+creature ettin 12 50 -1 40 7 2 8 5 0 0 0 0 0 0 0 0 0 1 0
+saves ettin 5 -1 3 -2 0 -1
+damage_types ettin slashing slashing
+size ettin large
+type ettin giant
+multiattack ettin 2
+perception ettin 4
+prone_large ettin
 # Summon Dragon's Draconic Spirit (SRD 5.2.1 p. 166), one stat block per
 # spell level: AC 14 + the level, 50 Hit Points and 10 more per level above 5,
 # Rend 1d6 + 4 + the level Piercing (reach 10 feet), half the level in Rends.

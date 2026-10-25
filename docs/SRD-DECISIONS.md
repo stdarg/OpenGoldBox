@@ -1846,3 +1846,15 @@ they await the user's review ([audit](audits/valhingen-graveyard.md)):
   Dreadful Glare and curse, and the efreeti Samir Ahwahl fighting beside a
   party that carries his bottle.
 
+## GATE-1 (2026-10-25): Stojanow Gate
+
+Claude chose these on 2026-10-25 while making the map playable area by area;
+they await the user's review ([audit](audits/stojanow-gate.md)):
+
+- **Monsters** keep the original's Hit Points on SRD stat blocks: the Hill
+  Giant and the Ettin; the gate's magic-users, aides, fighter and bugbears
+  reuse earlier areas' rows.
+- **Not modeled yet:** the Hill Giant's Poisoned Trash Lob and the Ettin's
+  Morningstar Disadvantage; every Ettin hit knocks Prone, as its Battleaxe's
+  does.
+
