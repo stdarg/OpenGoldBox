@@ -1,0 +1,28 @@
+{
+  "format": "opengold-sprite-review-v1",
+  "specification": "bipedal-v1 localized ready grip correction",
+  "source_key": "MON6CHA.DAX:101",
+  "variant_id": "added_5278681468__added_5264957017",
+  "install_paths": {
+    "ready": "art/mon6cha_dax_101/added_5278681468__added_5264957017/ready.png",
+    "action": "art/mon6cha_dax_101/added_5278681468__added_5264957017/action.png"
+  },
+  "metadata_sha256": "6d01f382d80e9c38eaf982c07aa69f6ed541bfd87280986e776b24990b87a0eb",
+  "ready_sha256": "5c9c06495cdbadbdfdef81bf6cb05f9e2418a67af8a7df000478c6881f4a48b5",
+  "action_sha256": "b8de5dcc4d2ae18763607239f328718a4827d0e935a474b8797e5854066e3df6",
+  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-25T23:54:07.270990+00:00",
+  "technical_check": "sprite_art_workflow.gd check passed for staged pair",
+  "notes": "User requested ready spear grip 30% toward front. Original hand approximately x36 and revised hand x62 on about 90-pixel spear, roughly 29% forward. Tip remains raised screen right. Action PNG and crossbow set unchanged. Final 128px PNG visually inspected at native size and enlarged on light, dark and magenta; shaft-hand connection and upper-body join checked. Original ready pixels from row 58 downward are exact, preserving shield lower section, torso base, legs and planted boots. Catalog alternation pending; Godot computer-use approval was previously denied in this session.",
+  "visual_checks": {
+    "forward_grip_about_30_percent": true,
+    "raised_spear_tip_and_full_shaft": true,
+    "connected_hand_arm_torso": true,
+    "shield_and_armor_retained": true,
+    "planted_feet_exact_xy": true,
+    "action_unchanged": true,
+    "complete_transparent_silhouette": true,
+    "readable_at_combat_size": true,
+    "alternating_catalog_review": false
+  }
+}
