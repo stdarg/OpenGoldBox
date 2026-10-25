@@ -229,8 +229,9 @@ Slashing Resistances, the Minotaur Skeleton's Bludgeoning Vulnerability and
 the Mummy's Fire Vulnerability.
 
 New rows (2026-10-25): `dreadful_glare creature dc range`, a Mummy's Dreadful
-Glare with its Multiattack, and `bite creature dc count sides bonus count
-sides`, a Vampire's Bite, its Piercing then its Necrotic dice. The vampire's
+Glare with its Multiattack; `rotting_curse creature`, whose melee hits curse
+as the Mummy's Rotting Fist does; and `bite creature dc count sides bonus
+count sides`, a Vampire's Bite, its Piercing then its Necrotic dice. The vampire's
 Charm is an `innate` Charm Person (DC 17).
 
 ## Stojanow Gate monsters

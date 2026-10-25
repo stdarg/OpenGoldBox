@@ -62,7 +62,7 @@ GAME`, `opengold_maps GAME`, coab's `LoadWalldef`, `CMD_LoadFiles`,
 | 70 | Efreeti (an ally) | the kobold caves' Efreeti, fighting on the party's side |
 | 105 | Vampire (HP 15) | **new:** the Vampire with 15 Hit Points |
 | 106 | Wolf (HP 18) | **new:** SRD 5.2.1 Wolf with 18 Hit Points |
-| 114 | Mummy (HP 33) | **new:** SRD 5.2.1 Mummy with 33 Hit Points and its Dreadful Glare (the Rotting Fist's curse not modeled) |
+| 114 | Mummy (HP 33) | **new:** SRD 5.2.1 Mummy with 33 Hit Points, its Dreadful Glare and the Rotting Fist's curse (lifted by a temple's Remove Curse) |
 
 ## The companion
 

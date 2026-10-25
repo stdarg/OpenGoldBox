@@ -508,9 +508,13 @@ enum class EffectKind : unsigned
     glare_resisted = 204,
     // A Mummy's Dreadful Glare: Frightened of it until the end of its next turn.
     glared = 205,
+    // A Mummy's Rotting Fist curse: no Hit Points regained, and the Hit Point
+    // maximum lowered by `dc`, 3d6 more as each day ends (`remaining_ms` to
+    // the next), until Remove Curse; a Long Rest does not restore it.
+    rotting_curse = 206,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = glared
+    last = rotting_curse
 };
 
 // Magic Circle's creature types, by `dc`.

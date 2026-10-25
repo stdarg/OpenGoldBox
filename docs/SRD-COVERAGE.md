@@ -158,11 +158,11 @@ Valhingen Graveyard's undead are SRD 5.2.1 stat blocks with the original's Hit
 Points, by [GRAVE-1](SRD-DECISIONS.md#grave-1-2026-10-25-valhingen-graveyard):
 the Wraith (Life Drain, flying, Incorporeal Movement), the Minotaur Skeleton's
 Slam for the giant skeleton, the Ogre Zombie for the juju zombie, the Mummy
-(two Rotting Fists, Dreadful Glare, Fire Vulnerability), the Vampire (two
+(two Rotting Fists and their curse, Dreadful Glare, Fire Vulnerability), the Vampire (two
 Grave Strikes, its Charm and its Bite on a creature it has Charmed or that is
 Incapacitated or Restrained) and the Wolf (Pack Tactics, a Bite that knocks
 Prone). Not modeled yet: Create Specter, the charging Gore, the Vampire's
-Beguile (a legendary action) and the Mummy's curse; the Vampire's grapple is
+Beguile (a legendary action); the Vampire's grapple is
 dropped with grappling ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)).
 The mystic who joins is a level-6 Wizard.
 

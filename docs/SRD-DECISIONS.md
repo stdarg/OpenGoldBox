@@ -1846,9 +1846,11 @@ they await the user's review ([audit](audits/valhingen-graveyard.md)):
 - **The mystic** joins as a level-6 Wizard with his record's scores and his
   Ring of Protection +2.
 - **Not modeled yet:** the Wraith's Create Specter, the Minotaur Skeleton's
-  charging Gore, the Vampire's Beguile and the Mummy's curse. Since 2026-10-25
-  the Mummy glares and the Vampire charms and bites (a creature it has Charmed
-  or that is Incapacitated or Restrained, as it cannot grapple: SCOPE-2).
+  charging Gore and the Vampire's Beguile. Since 2026-10-25 the Mummy glares
+  and its Rotting Fist curses (no Hit Points regained, the maximum 3d6 lower
+  each day until Remove Curse, dust at 0), and the Vampire charms and bites (a
+  creature it has Charmed or that is Incapacitated or Restrained, as it cannot
+  grapple: SCOPE-2).
 - **Samir Ahwahl** fights beside a party carrying his bottle as the computer
   plays him, as the original's quick fight did; the player does not command
   him.
