@@ -15,8 +15,8 @@ GAME`, `opengold_maps GAME`, and SRD 5.2.1.
     (`ECL8:16`, not in the game yet).
   - (6,14), (7,14), (5,15), (7,15), (6,16), (7,16): a screaming horde of
     kobolds (25 and 5 leaders), once.
-  - (6,15): the kobolds' two caves, small and large (`ECL8:13`, not in the
-    game yet).
+  - (6,15): the kobolds' two caves, small and large (`ECL8:13`, in the game
+    since 2026-10-25: [kobold caves](kobold-caves.md)).
   - (9,29): a boat back to New Phlan.
 - **Roaming groups** (`0x9EA7`): one step in twenty, a group by the table at
   `0xABF7`: kobolds, gnolls, lizard men, giant lizards, hippogriffs, wyverns,

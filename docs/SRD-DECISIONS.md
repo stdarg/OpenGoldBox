@@ -1805,3 +1805,17 @@ they await the user's review ([audit](audits/eastern-wilderness.md)):
   Hippogriff, the Wyvern and the Phase Spider.
 - **Not modeled yet:** the Hippogriff's Flyby, the Wyvern's Poisoned sting and
   the Phase Spider's Ethereal Jaunt and paralysing poison.
+
+## KOBOLD-1 (2026-10-25): the kobold caves
+
+Claude chose these on 2026-10-25 while making the map playable area by area;
+they await the user's review ([audit](audits/kobold-caves.md)):
+
+- **Princess Fatima** joins as a level-4 Fighter with her record's scores and
+  gear.
+- **The efreeti** is the SRD Efreeti with the original's 55 Hit Points; its
+  spells and Magic Resistance are not modeled yet.
+- **A member robbed alone** (the pool) costs the party that member's share of
+  its purse, since the party shares one; as for the whole party (Kuto's
+  Well), only money is taken.
+- **A fight of more than 56 monsters** takes the first 56.

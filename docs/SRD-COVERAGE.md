@@ -107,6 +107,14 @@ forms' traits become monster rows (`bloodied_fury`, `charge`, `prone_on_hit`,
 `prone_large`), and a new `nimble_escape` row gives Disengage or Hide as a
 Bonus Action.
 
+## Kobold caves monsters
+
+The kobold caves' efreeti is the SRD 5.2.1 Efreeti (three attacks, Heated
+Blade or Hurl Flame; fire immunity) with the original's 55 Hit Points, by
+[KOBOLD-1](SRD-DECISIONS.md#kobold-1-2026-10-25-the-kobold-caves). Its
+spells and Magic Resistance are not modeled yet. Princess Fatima, who joins,
+is a level-4 Fighter.
+
 ## Mendor's Library monsters
 
 Rules 0.6.251 adds Mendor's Library's SRD 5.2.1 stat blocks: Specter, Basilisk

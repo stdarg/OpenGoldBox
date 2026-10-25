@@ -205,6 +205,10 @@ in the game: answering YES at a hall lists its services in the dialogue
   wilderness's rivers open, but its valley tiles keep their art; the
   original recoloured them.
   [PYRAMID-1](SRD-DECISIONS.md#pyramid-1-2026-10-24-the-pyramid).
+- **One member robbed** (2026-10-25). A script that robs one member (the
+  kobold caves' pool) takes that member's share of the party's shared purse;
+  the original took from that member's own coins and items.
+  [KOBOLD-1](SRD-DECISIONS.md#kobold-1-2026-10-25-the-kobold-caves).
 - **Rune scrolls** (2026-10-24). Words a script shows in runes (Sokal Keep's
   elf scroll) appear translated; the original needed the box's code wheel.
   [SOKAL-1](SRD-DECISIONS.md#sokal-1-2026-10-24-sokal-keep).
