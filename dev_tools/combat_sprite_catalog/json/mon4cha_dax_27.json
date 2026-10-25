@@ -1,16 +1,47 @@
 {
-  "description": "Cadorna’s hired adventurer, found chained in the Textile House; he can join the party if freed. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
-  "humanoid_size": "normal",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "description": "Cadorna’s hired adventurer, found chained in the Textile House; he can join the party if freed. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.\n\nIMAGEGEN PROMPT\nCreate the READY combat sprite for MON4CHA.DAX:27, variant added_1512788588__added_1518488749. This record is saved as SKULLCRUSHER; preserve the existing brown-haired human identity. Reference image 1 is the approved bipedal pose guide for camera and pose mechanics, not the character identity or clothing. Reference image 2 is this character's existing newly created ready sprite, for face, palette, hammer, round shield, ring armor, brown pants and boots.\n\nMake one single crisp pixel-art figure on a 128 by 128 transparent canvas, no scenery, grid, text, border, shadow, or second pose. Face screen right in front three-quarter view with chest partly visible. Hold the hammer UP in the right hand in a combat guard; the round shield stays on the left arm. Keep the ring armor. No other weapons. Preserve a broad, capable human physique.\n\nCRITICAL HEIGHT: The actual body from the top of the head to the planted feet must measure at least 88 pixels, corresponding to at least five feet in the catalog's fixed one-square combat height. Exclude the hammer and raised hand from this measurement. Put the soles near y=119, the top of the head at or above y=31, and keep the body fully within the one-square footprint. Match both poses to this exact body scale. Place the planted feet at approximately x=31,y=119 and x=85,y=119; these coordinates will remain fixed in action. Reserve transparent room for the action hammer swing toward screen right. The raised hammer may extend above the footprint but keep every pixel inside the image with clear border margin.\n\nPlan the action companion at this same camera distance: the same man, shield, armor, head/body size and feet, swinging the hammer to the low right near the end of a blow. Do not enlarge or shrink the whole figure between poses. Keep connected anatomy neck through pelvis. This request outputs READY ONLY. Genuine transparency, pixelated edges, no opaque black boxes or halo.\n\nIMAGEGEN PROMPT ACTION\nEdit the attached NEW ready art into the ACTION frame for MON4CHA.DAX:27, variant added_1512788588__added_1518488749. Reference image 1 is the generated ready character and is the exact identity, palette, scale, outfit, hammer, shield, face, body and foot-position reference. Reference image 2 is the approved bipedal pose guide for facing and late melee attack mechanics only, not character identity or clothes.\n\nChange the combat pose only: swing the hammer with the SAME right arm toward screen right and down, showing the hammer near the END of a forceful strike; keep a firm one-hand grip. The round wooden shield remains on the left arm. Lean the upper torso modestly forward/right into the blow while keeping one continuous connected neck, chest, abdomen, belt, hips and legs. Preserve the same human head and body proportions, ring armor, brown pants and boots. Face screen right in front three-quarter view with chest partly visible. No projectile or extra equipment.\n\nCRITICAL: This is frame 2 of an in-place two-frame animation. Keep both planted feet at exactly the same x and y coordinates as the ready image; retain the lower body and shield at the same camera scale. Do not shift, rotate, recenter, shrink, enlarge, or cut and paste the whole figure. No waist shear, gap, doubled torso, or disconnected arm. The actual head-to-feet BODY must measure at least 88 of 128 pixels after export, at least five feet tall in one combat square, excluding weapon and raised arm. Target soles near y=119 and head at or above y=31. The hammer is allowed to extend right of the footprint during the strike but all visible pixels must stay within the 128 by 128 image and have transparent border margin. Do not shorten the hammer.\n\nOutput ONE full-body action figure only in crisp pixel art on a genuine transparent canvas, no second frame, text, ground, grid, shadow, painted checkerboard, opaque black boxes, or halo. Preserve the ready artwork as closely as possible except for the hammer-swing motion.\n\nFINAL ART REVIEW: The image-generated draft was rejected because the planted feet shifted between frames. Final ready and action are regenerated from the previously saved independent pair with the SAME nearest-neighbor 156/128 scale and 128x128 crop offset +20,+13. This keeps the attack and both planted feet registered while bringing head-to-foot body height to approximately 88 source pixels, one five-foot combat square at normal preview scale.",
   "description_sources": [
     "Original game MON4CHA.DAX:27 and matching MONnITM inventory",
     "GameDocs/Cluebook.pdf, PDF page 10"
   ],
-  "equipment": [],
+  "equipment": [
+    {
+      "id": "added_1512788588",
+      "kind": "weapon",
+      "name": "Hammer",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": 20,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_1518488749",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": 59,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_1530880444",
+      "kind": "gear",
+      "name": "Ring armor",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": 53,
+      "weapon_role": ""
+    }
+  ],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
+  "height_feet": null,
+  "humanoid_size": "normal",
   "name": "SKULLCRUSHER",
-  "preview_fallback_variant": "",
+  "preview_fallback_variant": "default",
   "source": {
     "art_archive": "CPIC4.DAX",
     "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
@@ -20,15 +51,19 @@
     "key": "MON4CHA.DAX:27",
     "linked_creature_keys": []
   },
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 1
+  },
   "variants": [
     {
-      "action": "art/mon4cha_dax_27/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon4cha_dax_27/default/ready.png",
-      "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "action": "art/mon4cha_dax_27/added_1512788588__added_1518488749/action.png",
+      "id": "added_1512788588__added_1518488749",
+      "label": "Hammer + Shield",
+      "ready": "art/mon4cha_dax_27/added_1512788588__added_1518488749/ready.png",
+      "shield_id": "added_1518488749",
+      "weapon_id": "added_1512788588",
+      "weapon_role": "one_hand"
     }
   ],
   "wealth": {
