@@ -992,14 +992,13 @@ void walk_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &p
                 {
                     continue;
                 }
+                // As the engine steps: only the wall on the party's side stops it.
                 const auto &a = town.map().at(cell % 16, cell / 16);
-                const auto &b = town.map().at(x, y);
-                const unsigned reverse = (d + 2) % 4;
                 const auto blocked = [&](unsigned wall, unsigned door)
                 {
                     return !locked(wall, door) && (door > 1 || (wall && !door));
                 };
-                if (blocked(a.walls[d], a.doors[d]) || blocked(b.walls[reverse], b.doors[reverse]))
+                if (blocked(a.walls[d], a.doors[d]))
                 {
                     continue;
                 }
@@ -3787,6 +3786,97 @@ void lizard_keep(const std::filesystem::path &directory)
           "The drawbridge leads back out to the eastern wilderness");
 }
 
+// Stojanow Gate (docs/audits/stojanow-gate.md): Podol Plaza's north edge, the
+// wagon bought and the toll paid, both towers' garrisons, the way north
+// refused, the bugbears beyond the passage and the gate taken, and the way
+// back south to Podol Plaza.
+void stojanow_gate(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 23000, "test:gate-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 7)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    walk_to(town, party, 11, 2);
+    step(town, party, 0, prefer({"WEST"}));
+    walk_to(town, party, 14, 1);
+    step(town, party, 1, prefer({"STAY"}));
+    travel_to(town, party, 11, 28, prefer({"NORTH"}), [&] { return !town.snapshot().overland; });
+    check(town.snapshot().area_id == 18, "The city's west edge leads into Podol Plaza");
+    std::string heard;
+    const Answer noting = [&](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        return prefer({"ATTACK", "Fight", "Bash", "YES"})(s);
+    };
+    walk_to(town, party, 4, 0, peaceful);
+    step(town, party, 0, noting);
+    check(town.snapshot().area_id == 9, "Podol Plaza's north edge leads to Stojanow Gate");
+    const auto gate = [&](std::uint16_t address)
+    {
+        return town.script_variable(por::EclAddress{address});
+    };
+    // The wagon driver sells his wagon and warns of the bugbears; the toll
+    // paid, the gate opens and the party drives through to the north side.
+    const Answer paying = [&](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        return prefer({"TAKE THE PUNCH", "TAKE IT", "YES", "Parley", "Bash"})(s);
+    };
+    walk_to(town, party, 7, 12, paying, true);
+    step(town, party, 0, paying);
+    check(heard.find("HERE'S YOUR WAGON") != std::string::npos &&
+              heard.find("LETS HAVE THE 15 GOLD") != std::string::npos &&
+              town.snapshot().pose.x == 8 && town.snapshot().pose.y == 5,
+          "The wagon bought and the toll paid, the gate opens onto its north side");
+    // Each tower's stairs lead up to its garrison: a mage, an aide and three
+    // ettins.
+    const auto climb = [&](unsigned x)
+    {
+        heal(*party);
+        walk_to(town, party, x, 5, noting);
+        step(town, party, 2, noting);
+        check(town.snapshot().pose.x == x && town.snapshot().pose.y == 7,
+              "The tower's stairs, climbed facing south, lead up to its garrison");
+        heal(*party);
+        step(town, party, 0, noting);
+        check(town.snapshot().pose.x == x && town.snapshot().pose.y == 5,
+              "The tower's stairs lead back down");
+    };
+    climb(4);
+    climb(11);
+    check((gate(0x4A77) & 12) == 12, "Both towers' garrisons are beaten");
+    // North of the gate lies Valjevo Castle, not in the game yet.
+    walk_to(town, party, 4, 0, noting);
+    refused_exit(town, party, 0, "Valjevo Castle");
+    // South through the gate's passage, which opens from its north side, onto
+    // the bugbears waiting beyond: with them beaten the gate is taken.
+    heal(*party);
+    walk_to(town, party, 7, 6, noting);
+    step(town, party, 2, noting);
+    check(heard.find("BUGBEARS WERE WAITING") != std::string::npos &&
+              town.snapshot().dialogue.find("YOU HAVE TAKEN THE GATE") != std::string::npos &&
+              (gate(0x4A77) & 16) != 0 && gate(0x4AB9) == 254,
+          "The bugbears beyond the passage beaten, the gate is taken");
+    for (unsigned n = 0; n < 3; ++n)
+    {
+        step(town, party, 2, noting);
+    }
+    check(town.snapshot().pose.x == 7 && town.snapshot().pose.y == 10,
+          "The passage leads back out to the gate's south side");
+    // Back south to Podol Plaza.
+    walk_to(town, party, 4, 15, noting, true);
+    step(town, party, 2, noting);
+    check(town.snapshot().area_id == 18, "The gate's south edge leads back to Podol Plaza");
+}
+
 // Valhingen Graveyard (docs/audits/valhingen-graveyard.md): the way in from
 // the city's north edge, the mystic who joins, the black marble crypt's coffin
 // sanctified, the vampire in its pit and, fled to its coffin, destroyed there,
@@ -4163,9 +4253,9 @@ void cadorna_textile_house(Expedition &trip, const std::filesystem::path &folder
 }
 
 // Podol Plaza (docs/audits/podol-plaza.md), off the council's mission:
-// entered by Kuto's Well's west edge, its exits to areas not in the game yet
-// refused, a roaming group met on the plaza, the robed orc fought for his holy
-// symbols, a camp made, and the way back east to Kuto's Well.
+// entered by Kuto's Well's west edge, Stojanow Gate north and back, a
+// roaming group met on the plaza, the robed orc fought for his holy symbols,
+// a camp made, and the way back east to Kuto's Well.
 void podol_plaza(Expedition &trip, const std::filesystem::path &folder,
                  const std::filesystem::path &directory)
 {
@@ -4190,10 +4280,12 @@ void podol_plaza(Expedition &trip, const std::filesystem::path &folder,
     check(load_expedition(save, directory).town.snapshot().area_id == 18,
           "A save in Podol Plaza loads back there");
     podol_pitt(save, directory);
-    // Every edge has openings at 4 and 11; only the east one leads anywhere
-    // the game has.
+    // Every edge has openings at 4 and 11: north to Stojanow Gate and back.
     walk_to(town, party, 4, 0, peaceful);
-    refused_exit(town, party, 0, "Stojanow Gate");
+    step(town, party, 0);
+    check(town.snapshot().area_id == 9, "Podol Plaza's north edge leads to Stojanow Gate");
+    step(town, party, 2);
+    check(town.snapshot().area_id == 18, "Stojanow Gate's south edge leads back to Podol Plaza");
     walk_to(town, party, 0, 4, peaceful);
     out_to_city_edge(town, party, 3, "NORTH");
     check(town.snapshot().area_id == 18 && !town.snapshot().overland,
@@ -5109,6 +5201,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         kobold_caves(directory);
         lizard_keep(directory);
         valhingen_graveyard(directory);
+        stojanow_gate(directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -5215,6 +5308,12 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--wilderness")
         {
             central_wilderness(directory);
+            return 0;
+        }
+        // Plays Stojanow Gate alone with a new party.
+        if (argc == 2 && std::string_view(argv[1]) == "--gate")
+        {
+            stojanow_gate(directory);
             return 0;
         }
         // Plays Valhingen Graveyard alone with a new party.

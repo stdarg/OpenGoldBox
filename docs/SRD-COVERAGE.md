@@ -115,6 +115,14 @@ Blade or Hurl Flame; fire immunity) with the original's 55 Hit Points, by
 spells and Magic Resistance are not modeled yet. Princess Fatima, who joins,
 is a level-4 Fighter.
 
+## Stojanow Gate monsters
+
+Stojanow Gate's Hill Giant (two Tree Club or Trash Lob attacks, a hit
+knocking a Large or smaller target Prone) and Ettin (Battleaxe and
+Morningstar) are SRD 5.2.1 stat blocks with the original's Hit Points, by
+[GATE-1](SRD-DECISIONS.md#gate-1-2026-10-25-stojanow-gate). Not modeled yet:
+Trash Lob's Poisoned and the Morningstar's Disadvantage.
+
 ## Valhingen Graveyard monsters
 
 Valhingen Graveyard's undead are SRD 5.2.1 stat blocks with the original's Hit
