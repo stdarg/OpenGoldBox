@@ -95,11 +95,11 @@ To build the executable target directly after configuring:
 cmake --build build/game --target OpenGoldBox
 ```
 
-The game reads original assets from the path saved in `settings.cfg` beside the
-executable, with `OPENGOLD_GAME_DIR` as a runtime override. Missing settings prompt
+The game reads original assets from the path saved in `settings.cfg` in the
+player's user data folder, with `OPENGOLD_GAME_DIR` as a runtime override. Missing settings prompt
 for the language, then the game folder. `--reset-game-path` and `--reset-lang` force
-selection again. See [configuration](../../docs/CONFIGURATION.md) for portable
-settings, environment overrides and checksum warnings. The game preserves the
+selection again. See [configuration](../../docs/CONFIGURATION.md) for the
+settings file, environment overrides and checksum warnings. The game preserves the
 existing per-user save directory. Rules and
 authored portraits are copied from root `data/` and `art/` at build time.
 No original game assets are copied or exported. Diagnostic captures use

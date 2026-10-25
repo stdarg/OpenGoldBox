@@ -1287,7 +1287,7 @@ Spanish uses Estanque de Resplandor on the game splash. Original campaign text
 falls back to its source wording until separate translation overrides exist.
 See [LOCALIZATION.md](LOCALIZATION.md) for current coverage and workflow.
 
-Persist the original game-folder path and language beside the executable. On
+Persist the original game-folder path and language in the player's user data folder. On
 first run request the language and then the folder; otherwise prompt only for missing
 or invalid settings. Provide `--reset-game-path` and `--reset-lang` (replacing
 `--lang`), preserving previous values until confirmation. Support environment

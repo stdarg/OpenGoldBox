@@ -87,11 +87,8 @@ String path()
     {
         return ProjectSettings::get_singleton()->globalize_path("res://settings.cfg");
     }
-    if (os->has_feature("macos"))
-    {
-        return ProjectSettings::get_singleton()->globalize_path("user://settings.cfg");
-    }
-    return os->get_executable_path().get_base_dir().path_join("settings.cfg");
+    // Beside saves, in the player's own folder: the game's folder may be read-only.
+    return ProjectSettings::get_singleton()->globalize_path("user://settings.cfg");
 }
 
 String saved_game_path()

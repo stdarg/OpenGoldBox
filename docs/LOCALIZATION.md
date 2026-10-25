@@ -27,7 +27,7 @@ the flag. Closing this dialog with X or Ctrl+X exits through the normal graceful
 shutdown path. If the preference cannot be saved, the dialog displays
 an error in the highlighted language and remains open.
 
-Both the game path and language live in `settings.cfg` beside the executable.
+Both the game path and language live in `settings.cfg` in the player's user data folder.
 See [CONFIGURATION.md](CONFIGURATION.md) for first-run setup, `--reset-game-path`,
 environment overrides and MD5 compatibility warnings. `--lang` is removed.
 
@@ -98,7 +98,7 @@ they are strings.
   an English class name. Substitution examines the template once; braces in a
   name are never interpreted as placeholders. Rich-text character names are
   escaped before presentation.
-- Language preference is application configuration (`settings.cfg` beside the executable,
+- Language preference is application configuration (`settings.cfg` in the user data folder,
   section `interface`, key `language`), not campaign state. On startup the saved
   supported language takes precedence over the system language; otherwise use
   Spanish for a Spanish system locale and English as fallback.
