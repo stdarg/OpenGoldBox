@@ -1891,3 +1891,15 @@ they await the user's review ([audit](audits/valjevo-castle.md)):
 - **Not modeled yet:** the dragon's Repulsion Breath, spells and Legendary
   Resistance, the Medusa's Snake Hair poison and the Knight's Parry.
 
+## SITES-1 (2026-10-25): the western wilderness sites
+
+Claude chose these on 2026-10-25 while making the map playable area by area;
+they await the user's review ([audit](audits/western-sites.md)):
+
+- **Monsters** keep the original's Hit Points on SRD stat blocks: the Pirate
+  for the buccaneers, the Warrior Veteran for their mates, the Pirate Captain
+  for their captain, the Guard for the outpost's guards and the Guard Captain
+  for its commandant.
+- **Not modeled yet:** the Pirate Captain's Captain's Charm, Riposte and the
+  Rapier's Advantage.
+

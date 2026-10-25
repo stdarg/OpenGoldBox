@@ -13,17 +13,18 @@ sites), `opengold_creatures GAME`, `opengold_maps GAME`, and SRD 5.2.1.
   the central window's second column enters this one at column 14.
 - **Sites** (`0x9A77`, by the tables at `0xADD6`-`0xAE14`):
   - (10,8), (11,8), (9,9), (11,9), (9,10), (10,10): a dragon seen over the
-    mountains; (10,9): the dragon lands at its cave (`ECL6:19`, not in the
-    game yet).
+    mountains; (10,9): the dragon lands at its cave (`ECL6:19`, in the game
+    since 2026-10-25: [western sites](western-sites.md)).
   - (8,24): two ankhegs erupt from the ground, once.
   - (12,30), (13,30), (11,31), (13,31), (12,32), (13,32): a slaver caravan
     riding to the Buccaneers' base; (12,31): the base, whose riders escort the
-    party in (`ECL6:1`, not in the game yet). Both need City Hall's
+    party in (`ECL6:1`, in the game since 2026-10-25). Both need City Hall's
     commission to rescue the Bivant heir (`0x4A8C` = 255).
   - (2,31), (3,31), (2,32), (4,32), (2,33), (3,33): armed guards riding by;
     (3,32): the Zhentil outpost's riders, who take the party for New Phlan's
     envoys (City Hall's message for the Zhentil keep, `0x4A98` = 255) and
-    escort it in (`ECL6:28`, not in the game yet), or else warn it off.
+    escort it in (`ECL6:28`, in the game since 2026-10-25), or else warn it
+    off.
 - **Roaming groups** (`0xA0B3`): one step in twenty, a group by the table at
   `0xAE2A`: quicklings, wild boars, giant mantises, tigers, thri-kreen,
   ankhegs, centaurs, Zhentil soldiers, thieves, buccaneers or giant snakes,

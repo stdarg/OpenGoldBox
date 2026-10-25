@@ -602,7 +602,28 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
         AreaSource{7,
                    5,
                    {{7, {24, 25, 1}}},
-                   valjevo_castle}};
+                   valjevo_castle},
+        // The western wilderness's sites (docs/audits/western-sites.md,
+        // SITES-1): the Buccaneers' base, the dragon's cave, which has no map
+        // of its own, and the Zhentil outpost.
+        AreaSource{1,
+                   6,
+                   {{1, {2, 6, 6}}},
+                   {{41, "nomad-guard", 450, 450},
+                    {99, "buccaneer-raider", 200, 200},
+                    {100, "bandit-captain", 450, 450},
+                    {101, "buccaneer-mate", 700, 700},
+                    {102, "pirate-captain", 2300, 2300}}},
+        AreaSource{19, 6, {}, {}},
+        AreaSource{28,
+                   6,
+                   {{28, {1, 2, 9}}},
+                   {{48, "trapped-veteran", 700, 700},
+                    {50, "commandant", 1100, 1100},
+                    {53, "bandit-captain", 450, 450},
+                    {54, "zhent-corporal", 25, 25},
+                    {86, "castle-mage", 200, 200},
+                    {96, "outpost-guard", 25, 25}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;
@@ -625,6 +646,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
             throw EclError("Missing area script ECL" + bank + ":" + std::to_string(area.script));
         }
         town->programs.emplace(area.script, program);
+        town->script_banks.emplace(area.script, area.bank);
         const auto definitions = archive(("WALLDEF" + bank + ".DAX").c_str()),
                    tiles = archive(("8X8D" + bank + ".DAX").c_str());
         for (const auto &geo : area.maps)

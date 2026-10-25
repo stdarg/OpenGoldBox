@@ -2762,9 +2762,9 @@ void leave_grove(por::RolfTourSession &town, const std::shared_ptr<CampaignParty
     }
 }
 
-// Wilderness squares whose sites lead to areas not in the game yet, by
-// script * 100 + x and y: a journey goes around them, as stepping on one
-// only refuses and steps back.
+// Wilderness squares a journey goes around, by script * 100 + x and y:
+// sites that lead to areas not in the game yet, which only refuse and step
+// back, or sites another test plays.
 std::set<std::pair<unsigned, unsigned>> closed_sites;
 
 // The first of the eight directions on a shortest way across the party's
@@ -3390,9 +3390,8 @@ void explore_cave(por::RolfTourSession &town, const std::shared_ptr<CampaignPart
 }
 
 // The western wilderness (docs/audits/western-wilderness.md): stepping west
-// off the central window, the dragon seen over the mountains, its cave, the
-// anhkhegs, the slavers and the Buccaneers' base, the Zhentil outpost's riders,
-// the dark cave a roaming roll finds, and the way back east.
+// off the central window, the anhkhegs, the dark cave a roaming roll finds,
+// and the way back east; its sites are western_sites's.
 void western_wilderness(const std::filesystem::path &directory)
 {
     auto trip = create_party(directory);
@@ -3442,22 +3441,12 @@ void western_wilderness(const std::filesystem::path &directory)
     check(town.snapshot().script_id == 25 && town.snapshot().overland &&
               town.snapshot().overland_x == 14 && town.snapshot().overland_y == *crossing,
           "Stepping west off the central window enters the western wilderness");
-    // The sites that lead on to areas not in the game yet.
-    for (const auto &[x, y, place] : std::array<std::tuple<unsigned, unsigned, const char *>, 3>{
-             {{12, 31, "the Buccaneers' base"}, {3, 32, "the Zhentil outpost"},
-              {10, 9, "the dragon's cave"}}})
+    // The Buccaneers' base, the Zhentil outpost and the dragon's cave have a
+    // test of their own (western_sites); this one's routes keep clear of them.
+    for (const auto &[x, y] : std::array<std::pair<unsigned, unsigned>, 3>{{{12, 31}, {3, 32}, {10, 9}}})
     {
-        heal(*party);
-        const auto refusal = std::string("The way to ") + place + " is not in the game yet.";
-        travel_to(town, party, x, y, noting,
-                  [&] { return heard.find(refusal) != std::string::npos; });
-        check(heard.find(refusal) != std::string::npos,
-              std::string("The western wilderness's way to ") + place + " is refused for now");
         closed_sites.insert({town.snapshot().script_id * 100 + x, y});
     }
-    check(heard.find("ARE YOU THE DIPLOMATIC ENVOYS") != std::string::npos &&
-              heard.find("A LARGE DRAGON FLYS ABOVE YOU") != std::string::npos,
-          "The Zhentil riders meet the envoys and the dragon flies to its cave");
     // The anhkhegs at (8,24).
     heal(*party);
     const auto fights = fights_started.size();
@@ -3500,6 +3489,10 @@ void western_wilderness(const std::filesystem::path &directory)
     check(town.snapshot().script_id == 26 && town.snapshot().overland &&
               town.snapshot().overland_x == 3,
           "Stepping east off the western window returns to the central wilderness");
+    for (const auto &[x, y] : std::array<std::pair<unsigned, unsigned>, 3>{{{12, 31}, {3, 32}, {10, 9}}})
+    {
+        closed_sites.erase({2500 + x, y});
+    }
 }
 
 // The eastern wilderness (docs/audits/eastern-wilderness.md): the harbor's
@@ -3934,6 +3927,123 @@ void valjevo_old_town(const std::filesystem::path &directory)
     walk_to(town, party, 4, 15, peaceful, true);
     step(town, party, 2, peaceful);
     check(town.snapshot().area_id == 9, "The old town's south edge leads back to Stojanow Gate");
+}
+
+// The western wilderness's sites (docs/audits/western-sites.md): the dragon
+// Diogenes's cave, the Zhentil outpost and the Buccaneers' base.
+void western_sites(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 23000, "test:sites-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 7)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    // The party stands in for one City Hall sent to rescue the Bivant heir
+    // from the Buccaneers (0x4A8C) and with a message for the Zhentil keep
+    // (0x4A98).
+    for (const auto commission : {0x4AA7, 0x4A8C, 0x4A98})
+    {
+        opengold::test::TourAccess::set_variable(town, por::EclAddress{std::uint16_t(commission)},
+                                                 255);
+    }
+    walk_to(town, party, 11, 2);
+    step(town, party, 0, prefer({"WEST"}));
+    walk_to(town, party, 14, 1);
+    step(town, party, 1, prefer({"STAY"}));
+    std::string heard;
+    // Answers that keep out of the window's dark cave and, once the dragon
+    // has spoken, out of his cave too.
+    const auto answering = [&heard](std::vector<std::string> labels) -> Answer
+    {
+        return [&heard, labels](const por::TourSnapshot &s)
+        {
+            heard += s.dialogue + "\n";
+            if (s.dialogue.find("SMALL DARK CAVE") != std::string::npos)
+            {
+                return prefer({"LEAVE"})(s);
+            }
+            if (s.dialogue.find("LARGE CAVE") != std::string::npos &&
+                heard.find("SILVER BOTTLE OF GREAT POWER") != std::string::npos)
+            {
+                return prefer({"IGNORE CAVE"})(s);
+            }
+            return prefer(labels)(s);
+        };
+    };
+    const auto &world = opengold::test::TourAccess::overland_world(town);
+    std::optional<unsigned> crossing;
+    for (unsigned y = 35; y > 0 && !crossing; --y)
+    {
+        if (por::overland_passage(world.at(14, y)) == por::OverlandPassage::open &&
+            por::overland_passage(world.at(15, y)) == por::OverlandPassage::open &&
+            overland_heading(town, 7, 29, 2, y))
+        {
+            crossing = y;
+        }
+    }
+    check(crossing.has_value(), "The central window has a way west");
+    const auto wandering = answering({"Parley", "YES", "Fight"});
+    travel_to(town, party, 2, *crossing, wandering);
+    travel(town, party, 6, wandering);
+    // The dragon Diogenes, asked for advice, sends the party after the
+    // kobolds' silver bottle.
+    heal(*party);
+    travel_to(town, party, 10, 9,
+              answering({"ENTER CAVE", "STATE NAME AND INTENT", "ASK DRAGON FOR ADVICE"}),
+              [&] { return heard.find("SILVER BOTTLE OF GREAT POWER") != std::string::npos; });
+    check(heard.find("MAGIC MOUTH") != std::string::npos &&
+              heard.find("SILVER BOTTLE OF GREAT POWER") != std::string::npos &&
+              town.snapshot().overland && town.snapshot().script_id == 25,
+          "The dragon Diogenes gives his advice and the party leaves his cave");
+    // The Zhentil outpost: the riders escort the envoys in, the commandant
+    // dines with them, and his guards come by night; the party escapes.
+    heal(*party);
+    travel_to(town, party, 3, 32, answering({"YES", "Parley", "Fight"}),
+              [&] { return !town.snapshot().overland; });
+    check(town.snapshot().area_id == 28 && heard.find("HAND HIM THE PAPERS") != std::string::npos,
+          "Zhentil riders escort the envoys into their outpost and its commandant");
+    const auto guest =
+        answering({"RELAX", "CITY", "NEW", "TALK", "STRONG", "YES", "SLEEP WITH A WATCH", "Fight"});
+    town.explore(por::ExplorationCommand::look);
+    settle(town, party, guest);
+    check(heard.find("OFFICERS MESS") != std::string::npos &&
+              heard.find("FOUR ARMED GUARDS BURST IN") != std::string::npos,
+          "The commandant dines with the party, and his guards come by night");
+    heal(*party);
+    walk_to(town, party, 7, 0, guest, true);
+    step(town, party, 0, guest);
+    check(town.snapshot().overland && town.snapshot().script_id == 25,
+          "The commotion lets the party out of the outpost's front gate");
+    // The Buccaneers' base: the Bivant heir freed from the slave pen, the
+    // buccaneers' waves and their captain fought, and the way out.
+    heal(*party);
+    const auto raiding = answering({"ENTER", "GET HIM", "RESCUE BOY", "ATTACK GUARDS", "ATTACK",
+                                    "Fight", "Bash", "YES"});
+    travel_to(town, party, 12, 31, raiding, [&] { return !town.snapshot().overland; });
+    check(town.snapshot().area_id == 1 && heard.find("BUCCANEER") != std::string::npos,
+          "Buccaneers escort the party into their base");
+    heal(*party);
+    walk_to(town, party, 6, 9, raiding, true);
+    face(town, party, 0);
+    town.explore(por::ExplorationCommand::look);
+    settle(town, party, raiding);
+    check(heard.find("HEART-SHAPED BIRTHMARK") != std::string::npos,
+          "The Bivant heir waits among the slaves");
+    heal(*party);
+    const auto freed = [&] { return town.script_variable(por::EclAddress{0x4AA9}) == 254; };
+    walk_to(town, party, 7, 7, raiding, true, false, "0", freed);
+    check(freed(), "The pen's guards beaten, the party frees the boy");
+    heal(*party);
+    walk_to(town, party, 7, 0, raiding, true);
+    step(town, party, 0, raiding);
+    check(town.snapshot().overland && town.snapshot().script_id == 25 && freed(),
+          "The party leaves the base with the Bivant heir");
 }
 
 // Valjevo Castle (docs/audits/valjevo-castle.md): through Stojanow Gate and
@@ -5467,6 +5577,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         stojanow_gate(directory);
         valjevo_old_town(directory);
         valjevo_castle(directory);
+        western_sites(directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -5573,6 +5684,12 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--wilderness")
         {
             central_wilderness(directory);
+            return 0;
+        }
+        // Plays the western wilderness's sites alone with a new party.
+        if (argc == 2 && std::string_view(argv[1]) == "--sites")
+        {
+            western_sites(directory);
             return 0;
         }
         // Plays Valjevo Castle alone with a new party.

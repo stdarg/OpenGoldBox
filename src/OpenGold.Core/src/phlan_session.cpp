@@ -255,6 +255,9 @@ std::optional<ScriptDamage> listed_damage(unsigned script, std::uint16_t address
                                // Stojanow Gate (GATE-1).
                                ScriptDamage{9, 0xA155, "bludgeoning", "rock"}, // from the gate
                                ScriptDamage{9, 0xA94E, "bludgeoning"},         // a bugbear's punch
+                               // The western wilderness's sites (SITES-1).
+                               ScriptDamage{19, 0xA0DF, "fire"}, // Diogenes's fireball
+                               ScriptDamage{28, 0xA4B1, "slashing", "sword stroke"},
                                // Valjevo Castle (CASTLE-1).
                                ScriptDamage{3, 0xA597, "bludgeoning", "bucket of sand"},
                                ScriptDamage{3, 0xA9C0, "bludgeoning", "boulder"},
@@ -343,21 +346,6 @@ std::string rune_text(const EclMachine &machine, EclAddress address)
         n += 2;
     }
     throw EclError("Unterminated rune text");
-}
-
-std::string_view area_beyond(unsigned script)
-{
-    switch (script)
-    {
-    case 1:
-        return "the Buccaneers' base";
-    case 19:
-        return "the dragon's cave";
-    case 28:
-        return "the Zhentil outpost";
-    default:
-        return "another area";
-    }
 }
 
 Message refusal(opengold::TrainingDenial denial, const std::string &name, std::uint32_t fee)
@@ -2710,19 +2698,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         if (found == town_->programs.end())
         {
             closed_way_ =
-                "The way to " + std::string(area_beyond(arg(0))) + " is not in the game yet.";
+                "The way to another area is not in the game yet.";
             throw EclError(closed_way_);
         }
         reply.next_program = found->second;
         // 0x6E12 names the new script's archive bank: ECL3 for the town.
-        unsigned bank = 3;
-        for (const auto &[id, district] : town_->districts)
-        {
-            if (district->loaded_by(arg(0)))
-            {
-                bank = district->bank;
-            }
-        }
+        const auto script_bank = town_->script_banks.find(arg(0));
+        const unsigned bank = script_bank == town_->script_banks.end() ? 3 : script_bank->second;
         reply.writes = {{EclAddress{0x49F2}, static_cast<std::uint16_t>(current_script_)},
                         {ecl_script_bank, static_cast<std::uint16_t>(bank)}};
         // Cadorna's payment (CADORNA-1): the clerk's reward slot 18 pays for the
