@@ -146,6 +146,8 @@ struct TourSnapshot
     // The script opened the camp menu (PROGRAM 9 outside an inn): the party
     // may camp now, and the view shows its camp dialog.
     bool camp_offered{};
+    // Search mode is on (set_searching).
+    bool searching{};
     unsigned script_id{}, event_runs{}, sprite_id{12};
     unsigned area_id{};
     std::vector<std::string> choices;
@@ -241,6 +243,12 @@ class RolfTourSession
     bool buy(std::uint64_t ticket, std::size_t item);
     bool leave_shop(std::uint64_t ticket);
     bool explore(ExplorationCommand command);
+    // The original's Search mode: each step searches as Look does, and takes
+    // ten minutes more.
+    void set_searching(bool searching) noexcept
+    {
+        snapshot_.searching = searching;
+    }
     // Both kinds run the original pre-camp and interruption services.
     bool camp(RestKind kind);
     // A percentage of the SRD's Moderate XP budget, 0-200. Original encounters

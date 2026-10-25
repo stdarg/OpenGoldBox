@@ -201,6 +201,10 @@ in the game: answering YES at a hall lists its services in the dialogue
 - **Dirten's armor** (2026-10-24). The bishop's priest wears a Chain Shirt,
   the chain an SRD Cleric is trained in, where the original gave him chain
   armor. [BANE-1](SRD-DECISIONS.md#bane-1-2026-10-24-the-temple-of-bane).
+- **The healed valley** (2026-10-24). When Yarash's pollution stops, the
+  wilderness's rivers open, but its valley tiles keep their art; the
+  original recoloured them.
+  [PYRAMID-1](SRD-DECISIONS.md#pyramid-1-2026-10-24-the-pyramid).
 - **Rune scrolls** (2026-10-24). Words a script shows in runes (Sokal Keep's
   elf scroll) appear translated; the original needed the box's code wheel.
   [SOKAL-1](SRD-DECISIONS.md#sokal-1-2026-10-24-sokal-keep).

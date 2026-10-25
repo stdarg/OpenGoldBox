@@ -180,6 +180,8 @@ class RolfTourView : public godot::Control
     void forward();
     [[nodiscard]] bool on_overland() const;
     void look();
+    // The original's Search mode: each step searches, and takes longer.
+    void toggle_search();
     void camp();
     void setup_rest();
     void check_rest_controls();

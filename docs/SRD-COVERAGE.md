@@ -87,6 +87,15 @@ guards the Bandit Captain with 30, and the shaman a level-4 Wizard profile
 with 20, by [NOMAD-1](SRD-DECISIONS.md#nomad-1-2026-10-24-the-nomad-camp).
 The Warrior Veteran's Parry is omitted, as the Bandit Captain's is.
 
+## Pyramid monsters
+
+The Pyramid's Yarash is the SRD 5.2.1 Mage (three Arcane Bursts; Fireball,
+Invisibility, Cone of Cold and Misty Step as innate spells) with the original's
+27 Hit Points, its minotaurs the Minotaur of Baphomet (Abyssal Glaive), its
+trapped cleric the Priest Acolyte and its fighters the Warrior Veteran, by
+[PYRAMID-1](SRD-DECISIONS.md#pyramid-1-2026-10-24-the-pyramid). Not modeled
+yet: the Mage's Fly and Protective Magic, and the Minotaur's Gore.
+
 ## Mendor's Library monsters
 
 Rules 0.6.251 adds Mendor's Library's SRD 5.2.1 stat blocks: Specter, Basilisk

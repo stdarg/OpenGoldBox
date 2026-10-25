@@ -38,6 +38,7 @@ Both work in every window. Neither advances the splash screens.
 | Down | Turn around. |
 | Left / Right | Turn left / right. |
 | L | Look. |
+| S | Search mode on or off: each step searches as Look does and takes ten minutes more, as the original's Search command did. "Searching" shows beside the party's coordinates. |
 | C | Camp: rest, and use Cast / Use. |
 | M | Cast menu: cast a spell or use a feature outside combat (the original's Magic menu). |
 | Enter | The bottom-right button: Continue, Choose, Submit, Buy or Leave temple. |

@@ -157,6 +157,22 @@ The Warrior Veteran's Open5E response was fetched on 2026-10-24 (`srd-2024`):
 Each keeps the original's Hit Points (45, 30 and 20); the Warrior Veteran's
 and the Bandit Captain's Parry are omitted.
 
+## Pyramid monsters
+
+The Pyramid's monsters ([audit](../../../docs/audits/pyramid.md),
+[PYRAMID-1](../../../docs/SRD-DECISIONS.md#pyramid-1-2026-10-24-the-pyramid)).
+Each Open5E response was fetched on 2026-10-24 (`srd-2024`):
+
+| Rows | Stat block | Response | SHA-256 |
+| --- | --- | --- | --- |
+| `minotaur` | Minotaur of Baphomet | `open5e-minotaur-of-baphomet.json` | `5F861981DC0B7F5ADCC823BD38483EB118C93D563F81E0A344CEF7993EBE01AA` |
+| `trapped-acolyte` | Priest Acolyte | `open5e-priest-acolyte.json` | `44D66C1471AD22E6CFAF646187B62AA689AA671ACDA27740CACF7AC40AB87041` |
+| `yarash` | Mage | `open5e-mage.json` | `2742260A80AAA1BD26AEF3A445FE230F91BD93EDE94A2D11638D839469B338C2` |
+| `trapped-fighter`, `trapped-veteran` | Warrior Veteran | `open5e-warrior-veteran.json` | (above) |
+
+Each keeps the original's Hit Points (33, 8, 27, 45 and 50). The Minotaur's
+Gore, and the Mage's Fly and Protective Magic, are not modeled.
+
 ## Fixtures
 
 `vanguard`, `scout`, `adept`, and `healer` are authored combat fixtures, not
