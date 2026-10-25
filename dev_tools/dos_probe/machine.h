@@ -53,12 +53,14 @@ class Machine final : public Bus
     // buffer then holds it for INT 16h.
     void press(std::uint8_t scan_code, std::uint8_t ascii);
 
-    // Whether the program has asked for a key and found none since the last
-    // key was read: it is waiting for the player.
+    // Whether the program has asked for a key and found none for a while since
+    // the last key was read: it is waiting for the player. Work that checks
+    // the keyboard between steps, as setting up a fight does, polls too, so
+    // the polls must go on for `quiet_instructions`.
     [[nodiscard]] bool waiting_for_key() const
     {
         return keys_.empty() && !irq_pending_[1] && !pending_scan_ && ram_[0x41A] == ram_[0x41C] &&
-               idle_polls_ >= 3;
+               idle_polls_ >= 3 && instructions_ - idle_since_ >= quiet_instructions;
     }
 
     [[nodiscard]] bool exited() const
@@ -170,6 +172,15 @@ class Machine final : public Bus
     void return_carry(bool failed, std::uint16_t error = 0);
     void set_stacked_flag(Flag flag, bool on);
 
+    // The program looked for a key and found none.
+    void note_idle_poll()
+    {
+        if (idle_polls_++ == 0)
+        {
+            idle_since_ = instructions_;
+        }
+    }
+
     std::string read_string(std::uint16_t segment, std::uint16_t offset) const;
     // The DOS path's directory and name, upper case, relative to C:\POOLRAD;
     // empty when it lies outside it.
@@ -200,6 +211,8 @@ class Machine final : public Bus
     std::optional<std::uint8_t> pending_scan_;
     std::uint64_t key_ready_at_{};
     unsigned idle_polls_{};
+    std::uint64_t idle_since_{};
+    static constexpr std::uint64_t quiet_instructions = 3'000'000;
     bool irq_pending_[2]{};
 
     std::uint8_t pic_mask_{};

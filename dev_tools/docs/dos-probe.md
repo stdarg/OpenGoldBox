@@ -43,7 +43,7 @@ A scenario is a text file of commands, one per line (`#` starts a comment):
 
 | Command | Effect |
 | --- | --- |
-| `wait [N]` | Runs until the game waits for a key (at most N thousand instructions). |
+| `wait [N]` | Runs until the game waits for a key (at most N thousand instructions): it has looked for one and found none for 3 million instructions. |
 | `key NAME` | Presses a key and waits: a character, or `enter`, `esc`, `space`, `backspace`, `tab`, `up`, `down`, `left`, `right`, `home`, `end`, `pgup`, `pgdn`, `ins`, `del`, `f1`-`f5`, `f10`, or `kp1`-`kp9` (the keypad with Num Lock on). |
 | `type TEXT` | Presses each character in turn. |
 | `run N` | Runs N thousand instructions. |
@@ -130,9 +130,9 @@ EXIT, so no roaming monsters come. Its entry 1 gets a program that, on the
 case's square and facing only, runs `SETUP MONSTER` with the case's distance,
 `LOAD MONSTER` with its orcs, and `COMBAT`. The original reads a script's entry
 addresses when it loads the script, so programs go at the entries' code, not in
-the jump table. The original's combat occupancy map gives each side's squares:
-50 by 25 bytes at linear `1A99B`, 0 or a combatant's number, party first.
-`--large` runs the cases with groups too big for the original (below).
+the jump table. Each combatant's square is the first the original writes for it into its
+combat occupancy map (50 by 25 bytes at linear `1A99B`, 0 or a combatant's
+number, party first), as monsters may move before the party's first turn.
 
 ```bash
 python3 dev_tools/dos_probe/experiments/battlefield.py \
@@ -170,19 +170,17 @@ Recorded 2026-10-24 with `START.EXE` SHA-1
   (with the new facing); entry 1 runs on the new square. OpenGoldBox's session
   binds the same squares.
 - **Starting positions** ([PLACE-1](../../docs/SRD-DECISIONS.md#place-1-2026-10-10-starting-positions-as-the-original-game-had-them)):
-  in eleven fights, facing each of the four directions at distances 0, 1 and 2,
-  with parties of one to six and up to sixteen orcs, the original stood every
-  combatant on the square OpenGoldBox's formation gives. This includes ranks,
-  spilling into neighbouring squares and the distance capped by the view ahead.
-  A random encounter of the original's own (one orc against one character at
-  Slums (14,5) facing south) matched as well.
-- **Large groups:** given 20 or 30 orcs, the original stands only 12 to 17 of
-  them, depending on the square, facing, distance and party, and leaves the
-  rest out. Those it stands take OpenGoldBox's first squares in OpenGoldBox's
-  order, in all sixteen cases tried; OpenGoldBox goes on to place more. The
-  creature list the original places already holds only those it stands
-  (`LOAD MONSTER` ran for all 30), so the cut is made earlier in the fight's
-  setup. Its rule is not known yet.
+  in sixteen fights, facing each of the four directions at distances 0, 1 and
+  2, with parties of one to six and groups of 1 to 30 orcs, the original stood
+  every combatant on the square OpenGoldBox's formation gives. This includes
+  ranks, spilling into neighbouring squares and the distance capped by the view
+  ahead. A random encounter of the original's own (one orc against one
+  character at Slums (14,5) facing south) matched as well.
+- **Fight setup checks the keyboard** between combatants it places, so a key
+  pressed then cuts the setup short and the rest of the group is left out.
+  The probe therefore counts the game as waiting only after 3 million
+  instructions of looking for a key; with less, it once seemed that the
+  original fields only 12 to 17 of a big group.
 
 ## Limits
 
