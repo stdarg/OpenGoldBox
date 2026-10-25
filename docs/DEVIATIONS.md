@@ -209,6 +209,15 @@ in the game: answering YES at a hall lists its services in the dialogue
   kobold caves' pool) takes that member's share of the party's shared purse;
   the original took from that member's own coins and items.
   [KOBOLD-1](SRD-DECISIONS.md#kobold-1-2026-10-25-the-kobold-caves).
+- **The victory** (2026-10-25). Beating Tyranthraxus heals every living
+  member; the original also restored the dead and the stoned. A line of our
+  own announces the victory in place of the original's closing story, which
+  lives in its executable.
+  [CASTLE-1](SRD-DECISIONS.md#castle-1-2026-10-25-valjevo-castle).
+- **Tyranthraxus's breath** (2026-10-25). The bronze dragon breathes as an
+  innate Lightning Bolt, once a fight (8d6, save DC 19), as monster rows have
+  no breath weapon; the SRD's Lightning Breath deals 10d10 and recharges.
+  [CASTLE-1](SRD-DECISIONS.md#castle-1-2026-10-25-valjevo-castle).
 - **Rune scrolls** (2026-10-24). Words a script shows in runes (Sokal Keep's
   elf scroll) appear translated; the original needed the box's code wheel.
   [SOKAL-1](SRD-DECISIONS.md#sokal-1-2026-10-24-sokal-keep).

@@ -255,6 +255,15 @@ std::optional<ScriptDamage> listed_damage(unsigned script, std::uint16_t address
                                // Stojanow Gate (GATE-1).
                                ScriptDamage{9, 0xA155, "bludgeoning", "rock"}, // from the gate
                                ScriptDamage{9, 0xA94E, "bludgeoning"},         // a bugbear's punch
+                               // Valjevo Castle (CASTLE-1).
+                               ScriptDamage{3, 0xA597, "bludgeoning", "bucket of sand"},
+                               ScriptDamage{3, 0xA9C0, "bludgeoning", "boulder"},
+                               ScriptDamage{3, 0xAB76, "bludgeoning", "falling stone"},
+                               ScriptDamage{3, 0xAF93, "bludgeoning"}, // drowning
+                               ScriptDamage{4, 0xAAD4, "fire", "scalding pot"},
+                               ScriptDamage{5, 0x9BC3, "poison"}, // a poisonous thorn
+                               ScriptDamage{5, 0xA190, "bludgeoning", "boulder"},
+                               ScriptDamage{7, 0x9D4F, "bludgeoning"}, // the trap door's fall
                                // Valjevo's Temple of Bane (TOWN-1).
                                ScriptDamage{6, 0xA579, "necrotic"}, // Bane's blessing
                                ScriptDamage{6, 0xA62F, "fire"},     // the priest's fireball
@@ -342,8 +351,6 @@ std::string_view area_beyond(unsigned script)
     {
     case 1:
         return "the Buccaneers' base";
-    case 3:
-        return "Valjevo Castle";
     case 19:
         return "the dragon's cave";
     case 28:
@@ -1921,7 +1928,12 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
     }
     if (damage_request_)
     {
-        if (!machine_.resume_host(damage_request_, character_reply(selected_character_)))
+        auto reply = character_reply(selected_character_);
+        if (std::exchange(victory_, false))
+        {
+            reply.writes.push_back({EclAddress{0x4AFD}, 255});
+        }
+        if (!machine_.resume_host(damage_request_, reply))
         {
             return false;
         }
@@ -2706,7 +2718,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         unsigned bank = 3;
         for (const auto &[id, district] : town_->districts)
         {
-            if (district->script == arg(0))
+            if (district->loaded_by(arg(0)))
             {
                 bank = district->bank;
             }
@@ -2746,7 +2758,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             for (const auto &[id, district] : town_->districts)
             {
-                if (district->script == current_script_)
+                if (district->loaded_by(current_script_))
                 {
                     change_area(id);
                     break;
@@ -2760,10 +2772,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             break;
         }
-        // A district's script loads its own maps: the Slums map 20, Kuto's
-        // Well its plaza (29) and catacombs (32).
+        // A district's scripts load its maps: the Slums map 20, Kuto's Well
+        // its plaza (29) and catacombs (32), Valjevo Castle's scripts their
+        // shared quarters.
         const auto district = town_->districts.find(arg(0));
-        if (district != town_->districts.end() && district->second->script == current_script_ &&
+        if (district != town_->districts.end() && district->second->loaded_by(current_script_) &&
             (arg(1) == 2 || arg(1) == 255) && arg(2) == 255)
         {
             change_area(arg(0));
@@ -2816,7 +2829,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             std::any_of(town_->districts.begin(), town_->districts.end(),
                         [&](const auto &district)
                         {
-                            return district.second->script == current_script_ &&
+                            return district.second->loaded_by(current_script_) &&
                                    district.second->pieces == banks;
                         });
         if (!own_district)
@@ -2953,6 +2966,23 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             read_character();
             open_hall(request.id);
+            return true;
+        }
+        // Tyranthraxus defeated (coab CMD_Program 8): every living member is
+        // healed and the game is won (area byte 0x3FA, the cell 0x4AFD). The
+        // original pauses on its closing words; then the script goes on, back
+        // to the civilized city.
+        if (arg(0) == 8 && campaign_)
+        {
+            read_character();
+            campaign_->heal_after_victory();
+            snapshot_.dialogue = "Tyranthraxus is destroyed, and Phlan is free of him. You have won.";
+            victory_ = true;
+            damage_request_ = request.id;
+            snapshot_.phase = TourPhase::awaiting_continue;
+            snapshot_.choices = {"Continue"};
+            snapshot_.continue_ticket = ++next_ticket_;
+            ++snapshot_.revision;
             return true;
         }
         if (arg(0) != 9 || !campaign_)

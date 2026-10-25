@@ -304,6 +304,9 @@ class CampaignParty
     [[nodiscard]] unsigned thieves_tools_chance(MemberId id) const;
     // The member's current Hit Point maximum, raised by Aid.
     [[nodiscard]] int hit_point_maximum(MemberId id) const;
+    // Tyranthraxus defeated: every living member regains all its Hit Points
+    // (coab CMD_Program 8).
+    void heal_after_victory();
     // The member's status effects, such as Aid or a used Relentless Endurance.
     [[nodiscard]] std::vector<rules::StatusEffectView> status_effects(MemberId id) const;
     // Spells and features an active member can use outside combat (CLASS-3).

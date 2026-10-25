@@ -1873,3 +1873,21 @@ they await the user's review ([audit](audits/valjevo-old-town.md)):
   alignments map one to one.
 - **Not modeled yet:** the Fire Giant's Hammer Throw push and Disadvantage.
 
+## CASTLE-1 (2026-10-25): Valjevo Castle
+
+Claude chose these on 2026-10-25 while making the map playable area by area;
+they await the user's review ([audit](audits/valjevo-castle.md)):
+
+- **Tyranthraxus** possesses an ancient bronze dragon: the SRD Adult Bronze
+  Dragon (the Ancient's breath would kill a party outright) with the
+  original's 80 Hit Points, three Rends, and its Lightning Breath as an
+  innate Lightning Bolt once a fight.
+- **Monsters** keep the original's Hit Points on SRD stat blocks: the Medusa;
+  the Knight for the elite guards; the Warrior Veteran for the false
+  Tyranthraxus; the nomad shaman's Wizard profile for Al-Hyam Dazid and
+  Genheeris.
+- **Genheeris** joins as a level-6 Wizard with his record's scores.
+- **The victory** heals the living only; the original also raised the dead.
+- **Not modeled yet:** the dragon's Repulsion Breath, spells and Legendary
+  Resistance, the Medusa's Snake Hair poison and the Knight's Parry.
+

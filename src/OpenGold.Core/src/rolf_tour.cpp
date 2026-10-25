@@ -280,6 +280,8 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
     {
         unsigned id;
         std::array<unsigned, 3> pieces;
+        // Other scripts that load this map, whose creatures it also holds.
+        std::vector<unsigned> shared_with{};
     };
 
     struct Conversion
@@ -295,6 +297,23 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
         std::vector<DistrictMap> maps;
         std::vector<Conversion> creatures;
     };
+
+    // Valjevo Castle's creatures, whichever of its scripts loads them.
+    const std::vector<Conversion> valjevo_castle{{31, "troll", 1800, 1800},
+                                                 {45, "kovel-thief", 25, 25},
+                                                 {49, "medusa", 2300, 2300},
+                                                 {55, "hill-giant", 1800, 1800},
+                                                 {56, "fire-giant", 5000, 5000},
+                                                 {60, "venomous-snake", 50, 50},
+                                                 {66, "tyranthraxus", 13000, 13000},
+                                                 {75, "trapped-fighter", 700, 700},
+                                                 {84, "trapped-fighter", 700, 700},
+                                                 {85, "castle-knight", 700, 700},
+                                                 {86, "castle-mage", 200, 200},
+                                                 {87, "trapped-fighter", 700, 700},
+                                                 {88, "castle-mage", 200, 200},
+                                                 {92, "impostor", 700, 700},
+                                                 {93, "kovel-master-thief", 200, 200}};
 
     // The original Slums creatures' experience follows docs/EXPEDITION.md; the
     // set-encounter creatures added later and Kuto's Well award each stat
@@ -558,13 +577,32 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
         // bank 24 is two blocks and fills two wall slots.
         AreaSource{6,
                    5,
-                   {{6, {24, 25, 1}}},
+                   {{6, {24, 25, 1}, {5}}},
                    {{41, "nomad-guard", 450, 450},
                     {55, "hill-giant", 1800, 1800},
                     {56, "fire-giant", 5000, 5000},
                     {75, "trapped-fighter", 700, 700},
                     {90, "trapped-acolyte", 50, 50},
-                    {91, "bane-priest", 450, 450}}}};
+                    {91, "bane-priest", 450, 450}}},
+        // Valjevo Castle (docs/audits/valjevo-castle.md, CASTLE-1): four
+        // scripts share its quarters, maps 3 (northwest), 4 (northeast), 5
+        // (southeast) and the old town's 6 (southwest); its tower is map 7.
+        AreaSource{3,
+                   5,
+                   {{3, {24, 25, 1}, {5, 7}}},
+                   valjevo_castle},
+        AreaSource{4,
+                   5,
+                   {{4, {24, 25, 1}, {5}}},
+                   valjevo_castle},
+        AreaSource{5,
+                   5,
+                   {{5, {24, 25, 1}, {3}}},
+                   valjevo_castle},
+        AreaSource{7,
+                   5,
+                   {{7, {24, 25, 1}}},
+                   valjevo_castle}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;
@@ -599,6 +637,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
             }
             district->map = map->get();
             district->script = area.script;
+            district->shared_with = geo.shared_with;
             district->bank = area.bank;
             district->pieces = geo.pieces;
             district->treasure = item_lists("ITEM" + bank + ".DAX");
@@ -663,7 +702,18 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
             }
             district->sprite_archive =
                 read_archive(resolve_archive(directory, "SPRIT" + bank + ".DAX"));
-            for (const auto &conversion : area.creatures)
+            std::vector<Conversion> conversions = area.creatures;
+            for (const auto &other : areas)
+            {
+                if (other.bank == area.bank &&
+                    std::find(geo.shared_with.begin(), geo.shared_with.end(), other.script) !=
+                        geo.shared_with.end())
+                {
+                    conversions.insert(conversions.end(), other.creatures.begin(),
+                                       other.creatures.end());
+                }
+            }
+            for (const auto &conversion : conversions)
             {
                 const auto id = conversion.record;
                 const auto creature = creatures.find({static_cast<std::uint8_t>(area.bank), id});
@@ -829,6 +879,7 @@ void RolfTourSession::reset_run()
     door_menu_ = pick_tried_ = false;
     door_choices_.clear();
     who_request_ = damage_request_ = 0;
+    victory_ = false;
     duel_ = false;
     who_slots_.clear();
     temple_visit_.reset();
@@ -930,6 +981,7 @@ void RolfTourSession::roll_back_event()
     snapshot_ = std::move(saved.snapshot);
     snapshot_.revision = revision;
     who_request_ = damage_request_ = 0;
+    victory_ = false;
     duel_ = false;
     who_slots_.clear();
     temple_visit_.reset();

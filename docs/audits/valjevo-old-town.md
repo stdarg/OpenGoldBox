@@ -14,8 +14,9 @@ fields (`0xD8`, alignment), and SRD 5.2.1.
   `ECL5.DAX:6`.
 - **The way in:** Stojanow Gate's north edge opens on (4,15).
 - **The ways out:** the south edge, stepped off facing south, leads back to
-  the gate; the north edge at (3,0) and the east edge at (15,12) lead into
-  Valjevo Castle (`ECL5:3`, not in the game yet).
+  the gate; the north edge at (3,0) leads into Valjevo Castle (`ECL5:3`, in
+  the game since 2026-10-25: [Valjevo Castle](valjevo-castle.md)), and the
+  east edge at (15,12) into its maze.
 - **Sites** (by each square's event number, the table at `0x9BF2`):
   - **the washerwomen** (12,13): spoken to, they offer their clothes as a
     disguise (`0x4A65` bit 1); threatened and left free, they talk, and the

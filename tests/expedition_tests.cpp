@@ -298,7 +298,8 @@ void hall_event_tests()
             std::vector<std::uint8_t> body{0x38, 0, 0};
             if (failing)
             {
-                body.insert(body.end(), {0x38, 0, 8});
+                // LOAD MONSTER of a record no area converts fails the event.
+                body.insert(body.end(), {0x0B, 0, 4, 0, 1, 0, 4});
             }
             body.push_back(0);
             auto resources = std::make_shared<por::PhlanResources>();
@@ -335,22 +336,36 @@ void hall_event_tests()
     }
 }
 
-// PROGRAM 8, the original's victory after Tyranthraxus, is not supported yet:
-// the event fails and is rolled back, its payment included, instead of passing
-// as done.
-void unsupported_program_tests()
+// PROGRAM 8, the original's victory after Tyranthraxus: the event pauses on
+// the closing words, a hurt member is healed, and the game's won cell is set
+// as the event goes on to its end.
+void victory_program_tests()
 {
     auto party = std::make_shared<CampaignParty>(module());
-    (void)party->add_pc(character("Arden"));
-    party->set_wealth({0, 96, 0, 145, 0, 0, 0});
-    const auto before = party->state().wealth;
+    const auto arden = party->add_pc(character("Arden"));
+    auto state = party->checkpoint();
+    party->rule_module().set_hit_points(state.roster.front().vitals,
+                                        state.roster.front().character.sheet(), 1);
+    party->restore(std::move(state));
     auto resources = std::make_shared<por::PhlanResources>();
-    auto victory = program({9, 0, 14, 1, 0xC3, 0x6B, 10, 0, 128, 0x38, 0, 8, 0});
+    auto victory = program({0x38, 0, 8, 0});
     por::RolfTourSession town({}, victory, {}, 0x9914, {}, resources);
     town.campaign_party(party);
     settle_synthetic(town);
-    check(!look(town) && party->state().wealth == before,
-          "An unsupported PROGRAM fails its event and refunds what it charged");
+    check(town.explore(por::ExplorationCommand::look), "The victory event starts");
+    for (unsigned n = 0; n < 100 && town.snapshot().phase == por::TourPhase::running; ++n)
+    {
+        town.advance(.5);
+    }
+    check(town.snapshot().phase == por::TourPhase::awaiting_continue &&
+              town.snapshot().dialogue.find("You have won") != std::string::npos &&
+              party->member(arden).vitals.hit_points == party->hit_point_maximum(arden),
+          "The victory heals the party and pauses on its closing words");
+    check(town.choose(town.snapshot().continue_ticket, 0), "The closing words are acknowledged");
+    settle_synthetic(town);
+    check(town.snapshot().phase == por::TourPhase::completed &&
+              town.script_variable(por::EclAddress{0x4AFD}) == 255,
+          "The game's won cell is set and the event ends");
 }
 
 Purse party_purse(const PartyState &state)
@@ -1952,35 +1967,6 @@ void visit(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
             throw;
         }
     }
-}
-
-// Steps off the map toward an area the game does not have yet: the step is
-// refused with a notice naming it, and the party stays where it was.
-void refused_exit(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party,
-                  unsigned facing, std::string_view area)
-{
-    face(town, party, facing);
-    const auto before = town.snapshot().pose;
-    const auto context = area_context(town);
-    town.explore(por::ExplorationCommand::forward);
-    bool refused = false;
-    for (unsigned n = 0; n < 200 && town.snapshot().phase != por::TourPhase::completed; ++n)
-    {
-        const auto &s = town.snapshot();
-        if (s.phase == por::TourPhase::awaiting_continue)
-        {
-            refused |= s.dialogue.find("The way to " + std::string(area) +
-                                       " is not in the game yet") != std::string::npos;
-            check(town.choose(s.continue_ticket, peaceful(s)), "Acknowledge the notice");
-        }
-        else
-        {
-            town.advance(.5);
-        }
-    }
-    check(refused && town.snapshot().pose == before && area_context(town) == context,
-          "The way to " + std::string(area) +
-              " is refused and the party stays, its area untouched");
 }
 
 // Restores every living member's Hit Points, so one check's fight does not
@@ -3796,7 +3782,8 @@ Expedition through_stojanow_gate(const std::filesystem::path &directory, int lev
     auto trip = create_party(directory);
     buy_and_equip(trip);
     auto &[party, town] = trip;
-    party->award_experience(6 * (level == 7 ? 23000 : 34000), "test:gate-level");
+    party->award_experience(6 * (level == 7 ? 23000 : level == 8 ? 34000 : 48000),
+                            "test:gate-level");
     for (const auto id : party->state().slots)
     {
         while (id && party->member(id).character.sheet().level < level)
@@ -3894,7 +3881,8 @@ void stojanow_gate(const std::filesystem::path &directory)
 
 // Valjevo's old town (docs/audits/valjevo-old-town.md): through Stojanow
 // Gate, the washerwomen's disguise, the Temple of Bane's blessing and altar,
-// the smithy's fire giants, the castle refused, and the way back to the gate.
+// the smithy's fire giants, the castle north and back, and the way back to
+// the gate.
 void valjevo_old_town(const std::filesystem::path &directory)
 {
     std::string heard;
@@ -3936,13 +3924,141 @@ void valjevo_old_town(const std::filesystem::path &directory)
     heal(*party);
     walk_to(town, party, 1, 14, answering({"Fight", "YES", "Bash"}), true);
     check((old_town(0x4A69) & 8) != 0, "The smith and his fire giants are beaten");
-    // North lies Valjevo Castle, not in the game yet; south, the gate.
+    // North lies Valjevo Castle; south, the gate.
     heal(*party);
     walk_to(town, party, 3, 0, peaceful, true);
-    refused_exit(town, party, 0, "Valjevo Castle");
+    step(town, party, 0, peaceful);
+    check(town.snapshot().area_id == 3, "The old town's north edge leads into Valjevo Castle");
+    step(town, party, 2, peaceful);
+    check(town.snapshot().area_id == 6, "The castle's south edge leads back to the old town");
     walk_to(town, party, 4, 15, peaceful, true);
     step(town, party, 2, peaceful);
     check(town.snapshot().area_id == 9, "The old town's south edge leads back to Stojanow Gate");
+}
+
+// Valjevo Castle (docs/audits/valjevo-castle.md): through Stojanow Gate and
+// the old town, the castle's inner gate opened with its password, Al-Hyam
+// Dazid's notes, the maze into the inner tower, the messenger and Genheeris,
+// Tyranthraxus beaten in his audience hall, and the way back to the city.
+void valjevo_castle(const std::filesystem::path &directory)
+{
+    std::string heard;
+    auto trip = through_stojanow_gate(directory, 9, heard);
+    auto &[party, town] = trip;
+    walk_to(town, party, 4, 0, peaceful);
+    step(town, party, 0, peaceful);
+    walk_to(town, party, 3, 0, peaceful, true);
+    const auto answering = [&heard](std::vector<std::string> labels) -> Answer
+    {
+        return [&heard, labels](const por::TourSnapshot &s)
+        {
+            heard += s.dialogue + "\n";
+            return prefer(labels)(s);
+        };
+    };
+    const auto fighting = answering({"ATTACK", "Fight", "Bash", "YES"});
+    step(town, party, 0, fighting);
+    check(town.snapshot().area_id == 3 && town.snapshot().script_id == 3,
+          "The old town's north edge leads into Valjevo Castle");
+    // The inner gate, met facing east, opens to its password.
+    walk_to(town, party, 3, 7, fighting, true);
+    step(town, party, 1, answering({"GIVE THE PASSWORD"}), "RHODIA");
+    check(town.snapshot().pose.x == 4 && town.snapshot().script_id == 5,
+          "The castle's inner gate opens to its password, RHODIA");
+    // Al-Hyam Dazid, threatened, gives up his notes on the Pool of Radiance.
+    heal(*party);
+    unsigned threatened = 0;
+    const Answer sparing = [&](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        if (std::find(s.choices.begin(), s.choices.end(), "LET HIM GO") != s.choices.end())
+        {
+            return prefer({threatened++ == 0 ? "ATTACK HIM" : "LET HIM GO"})(s);
+        }
+        return prefer({"ATTACK", "Fight", "Bash", "YES"})(s);
+    };
+    walk_to(town, party, 5, 4, sparing, true);
+    check(heard.find("ENTRY 30") != std::string::npos,
+          "Al-Hyam Dazid leaves his notes on the Pool of Radiance");
+    // East into the maze, whose disorientation squares send the party to one
+    // of four places, two of them inside the inner tower's lower level.
+    heal(*party);
+    walk_to(town, party, 15, 4, fighting, true);
+    step(town, party, 1, fighting);
+    check(town.snapshot().area_id == 4 && town.snapshot().script_id == 5,
+          "The maze runs on into the castle's northeast quarter");
+    const auto in_tower = [&]
+    {
+        const auto &p = town.snapshot().pose;
+        const auto area = town.snapshot().area_id;
+        return (area == 3 && p.x >= 11 && p.y >= 11) || (area == 5 && p.x <= 4 && p.y <= 4);
+    };
+    for (unsigned tries = 0; tries < 20 && !in_tower(); ++tries)
+    {
+        heal(*party);
+        const auto area = town.snapshot().area_id;
+        const auto target = area == 4 ? std::pair{6u, 10u} : area == 6 ? std::pair{9u, 5u}
+                                                                     : std::pair{12u, 11u};
+        walk_to(town, party, target.first, target.second, fighting, true, false, "0", in_tower);
+    }
+    check(in_tower(), "A disorientation square in the maze leads into the inner tower");
+    // The stairs up from the tower's lower level, met facing east.
+    if (town.snapshot().area_id == 5)
+    {
+        walk_to(town, party, 0, 4, fighting, true);
+        step(town, party, 3, fighting);
+        walk_to(town, party, 13, 0, fighting, true);
+        step(town, party, 0, fighting);
+    }
+    heal(*party);
+    walk_to(town, party, 13, 15, fighting, true);
+    step(town, party, 1, fighting);
+    check(town.snapshot().area_id == 7 && town.snapshot().script_id == 7,
+          "Stairs lead up into the inner tower's upper level");
+    // The upper level, not back down its stairs: the messenger spoken to
+    // nicely is called away, and Genheeris, taking the party for Tyranthraxus's
+    // assassins, turns on him and joins.
+    const Answer upstairs = [&](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        if (s.dialogue.find("DOWN THESE STAIRS") != std::string::npos)
+        {
+            return prefer({"NO"})(s);
+        }
+        return prefer({"Advance", "Parley", "NICE", "STAY", "YES", "Bash"})(s);
+    };
+    heal(*party);
+    walk_to(town, party, 2, 6, upstairs, true);
+    heal(*party);
+    walk_to(town, party, 2, 5, upstairs, true);
+    const auto &slots = party->state().slots;
+    check(std::any_of(slots.begin(), slots.end(),
+                      [&](const auto id)
+                      {
+                          return id && party->member(id).character.sheet().name == "Genheeris";
+                      }),
+          "Genheeris turns on Tyranthraxus and joins the party");
+    // Down the stairs at (3,6) into Tyranthraxus's audience hall: his guards,
+    // his offer refused, and the dragon he possesses beaten.
+    const Answer lair = [&](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        if (s.dialogue.find("UP THESE STAIRS") != std::string::npos)
+        {
+            return prefer({"NO"})(s);
+        }
+        return prefer({"ATTACK", "YES", "Fight", "Bash"})(s);
+    };
+    heal(*party);
+    walk_to(town, party, 3, 6, upstairs, true);
+    step(town, party, 2, lair);
+    check(heard.find("AUDIENCE HALL OF TYRANTHRAXUS") != std::string::npos &&
+              heard.find("You have won") != std::string::npos &&
+              town.script_variable(por::EclAddress{0x4AFD}) == 255,
+          "Tyranthraxus is beaten in his audience hall and the game is won");
+    check(town.snapshot().area_id == 0 && town.snapshot().script_id == 0 &&
+              heard.find("YOU LEAVE THE CASTLE") != std::string::npos,
+          "After the victory the party walks back to the civilized city");
 }
 
 // Valhingen Graveyard (docs/audits/valhingen-graveyard.md): the way in from
@@ -5350,6 +5466,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         valhingen_graveyard(directory);
         stojanow_gate(directory);
         valjevo_old_town(directory);
+        valjevo_castle(directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -5458,6 +5575,12 @@ int main(int argc, char **argv)
             central_wilderness(directory);
             return 0;
         }
+        // Plays Valjevo Castle alone with a new party.
+        if (argc == 2 && std::string_view(argv[1]) == "--castle")
+        {
+            valjevo_castle(directory);
+            return 0;
+        }
         // Plays Valjevo's old town alone with a new party.
         if (argc == 2 && std::string_view(argv[1]) == "--old-town")
         {
@@ -5538,7 +5661,7 @@ int main(int argc, char **argv)
         armor_conversion_tests();
         coin_purse_tests();
         script_payment_tests();
-        unsupported_program_tests();
+        victory_program_tests();
         hall_event_tests();
         random_treasure_tables();
         script_treasure_tests();

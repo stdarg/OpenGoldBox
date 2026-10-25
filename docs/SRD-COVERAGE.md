@@ -115,6 +115,17 @@ Blade or Hurl Flame; fire immunity) with the original's 55 Hit Points, by
 spells and Magic Resistance are not modeled yet. Princess Fatima, who joins,
 is a level-4 Fighter.
 
+## Valjevo Castle monsters
+
+Valjevo Castle's Medusa (two Claws or Poison Rays, Petrifying Gaze), Knight
+guards (two Greatsword or Heavy Crossbow attacks with radiant damage) and
+Tyranthraxus, the Adult Bronze Dragon (three Rends with lightning, Lightning
+Breath as an innate Lightning Bolt once, lightning immunity), keep the
+original's Hit Points, by
+[CASTLE-1](SRD-DECISIONS.md#castle-1-2026-10-25-valjevo-castle). Not modeled
+yet: Repulsion Breath, the dragon's spells and Legendary Resistance, Snake
+Hair's poison and Parry.
+
 ## Valjevo old town monsters
 
 The old town's Fire Giant (two Flame Sword or Hammer Throw attacks, fire
