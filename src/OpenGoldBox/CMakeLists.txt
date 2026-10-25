@@ -297,6 +297,13 @@ if(OPENGOLD_BUILD_TESTS)
         -P "${PROJECT_SOURCE_DIR}/tests/ohlo_save_route.cmake")
     set_tests_properties(opengold_godot_ohlo_save_route PROPERTIES FIXTURES_REQUIRED godot_project
         TIMEOUT 240 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
+    add_test(NAME opengold_godot_area_crossing COMMAND "${CMAKE_COMMAND}"
+        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
+        "-DWORK=${CMAKE_BINARY_DIR}/area-crossing"
+        -P "${PROJECT_SOURCE_DIR}/tests/area_crossing.cmake")
+    set_tests_properties(opengold_godot_area_crossing PROPERTIES FIXTURES_REQUIRED godot_project
+        TIMEOUT 240 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_shop_disclosure COMMAND "${CMAKE_COMMAND}"
         "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
         "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"

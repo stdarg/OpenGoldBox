@@ -299,13 +299,47 @@ fallthrough paths into embedded tables. The runtime now reads those tables with
 GETTABLE; the inspector retains possible fallthroughs and identifies their source.
 See the [audit](script-source-audit.md) for exact addresses and unresolved details.
 
-Map-event dispatch will construct a context from the map, position, facing, and
-cell data, then invoke the verified entry point in the active program. Movement
-ordering, blocked moves, repeat visits, one-time events, persistent variables,
-and map transitions remain explicit verification tasks. The first target is one
-original location event with text, a choice, a persistent state change, and
-correct revisit behavior. See [SCRIPTS.md](SCRIPTS.md) for architecture, ownership,
-save/resume contracts, implementation stages, and acceptance criteria.
+Map-event dispatch now runs the campaign's original events, revisits and
+persistent variables area by area (see [the expedition adapter](EXPEDITION.md)
+and the [area audits](audits/)); map transitions are described below. See
+[SCRIPTS.md](SCRIPTS.md) for architecture, ownership, save/resume contracts,
+implementation stages, and acceptance criteria.
+
+### Area transitions
+
+A crossing is the original scripts' own sequence. Stepping onto New Phlan's west
+gate, the town's script writes the party's square and facing in the new area
+(15,4, still facing west) and runs `NEW ECL 20`. The session writes `0x49F2`
+(the script left) and `0x6E12` (the new script's archive bank: 3 for the town, 2
+for the Slums). The Slums script's `LOAD FILES 20,2,255` then swaps the map, its
+wall art and the area's own map memory (`change_area` in
+[phlan_session.cpp](../src/OpenGold.Core/src/phlan_session.cpp)). Its `LOAD PIECES`
+must match the banks recorded for that district. Area entry runs the new
+script's startup entry, and any movement left over from the old area is
+dropped. Persistent variables, such as the four-orc victory `0x4ACA`, belong to
+the whole campaign and survive every crossing.
+
+Every area's script, map and wall art is loaded and checked when the game
+starts, so a missing file stops the load with its name instead of failing at a
+gate. A crossing the game cannot make (an area not in the game yet, resources
+outside the supported areas, an invalid entry facing) throws inside the event,
+and the event's checkpoint restores the party's square, area, script, map and
+map memory as they were.
+
+Because the gate writes the arrival square before the area changes, that square
+used to be marked in the old area's map memory too (the Slums' 15,4 appeared on
+the town's map). `change_area` now keeps it there only if the party had been on
+it before the event.
+
+Tests: `defeat_four_orcs` in
+[expedition_tests.cpp](../tests/expedition_tests.cpp) checks the area, script,
+bank, square, facing, map, wall art and map memory on entering the Slums and on
+returning; `refused_exit` checks a refused crossing leaves all of them untouched;
+`missing_area_map` in [tour_tests.cpp](../tests/tour_tests.cpp) loads the game
+without `GEO2.DAX`. `opengold_godot_area_crossing`
+([area_crossing_tests.gd](../tests/area_crossing_tests.gd)) walks the same
+round trip with the game's controls, saves, and has the native suite check the
+save. All of these need the installed game (`OPENGOLD_GAME_DIR`).
 
 ## Movement model
 
