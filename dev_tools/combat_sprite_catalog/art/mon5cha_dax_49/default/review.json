@@ -1,16 +1,16 @@
 {
-  "action_sha256": "baf155a01f1870c0d6320d04113b6e602aad93e2baedef8edcce11e4b7280636",
+  "action_sha256": "2a63a57236d9609beca3221907f8b351fdb44887122cf5c507b67d423295925f",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon5cha_dax_49/default/action.png",
     "ready": "art/mon5cha_dax_49/default/ready.png"
   },
-  "metadata_sha256": "d288be78c06073f7e5c871078ae3d52babff504b15c5cf96c4850f692ddbb689",
-  "notes": "Action-only correction; ready PNG preserved byte-for-byte. Unarmed, two-legged Medusa: no beam, both arms grasp screen right, snake hair rises and bends screen right. Existing ready lower half registered pixel-for-pixel in action; full pair inspected on light, dark and magenta backgrounds and alternating in catalog. Both frames fit 1x1 footprint. Weapon-specific checks evaluated as unarmed-equivalent.",
+  "metadata_sha256": "602482a038701317f2cca2fda8b44ccfbe9cfeb7234ac0c0706ece20a81683ec",
+  "notes": "Replaced the sheared installed pair with a newly generated matching Medusa pair. Action is a forward bare-handed punch; neck, chest, waist, pelvis, skirt and legs form one continuous figure with no horizontal splice. Feet keep the same apparent x/y anchor. Inspected the exact final 128x128 PNGs enlarged and at combat size on light, dark and magenta backgrounds, including the waist connection. Action tile overflow is allowed and was not used as a reason to cut or shrink the torso. Godot computer-use access was rejected, so alternating in the catalog was not performed and that checklist item remains false; installed at the user’s explicit request with this limitation recorded.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "b82806634829fb2daa0c8460cddc52ba478e120d12f81ae5ab3afcbbeaa7466f",
-  "reviewed_at": "2026-10-24T21:41:44+00:00",
-  "reviewer": "Codex",
+  "ready_sha256": "d41b26a435d60ef6725e1a5385e96e9074a6b1c7f9b9002d023917d9a064ded3",
+  "reviewed_at": "2026-10-25T02:21:38+00:00",
+  "reviewer": "Codex direct PNG inspection",
   "source_key": "MON5CHA.DAX:49",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -22,11 +22,11 @@
     "front_three_quarter_screen_right_chest_visible": true,
     "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
-    "pair_reviewed_alternating_in_catalog": true,
+    "pair_reviewed_alternating_in_catalog": false,
     "pixel_art_readable_at_combat_size": true,
     "planted_feet_same_xy_no_whole_body_translation": true,
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
+  "workflow_sha256": "8a3537797a4b70222fb8810a0c2104f606c29246130f9f1b85c615c80bbba203"
 }
