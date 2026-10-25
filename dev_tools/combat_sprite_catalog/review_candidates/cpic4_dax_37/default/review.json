@@ -1,0 +1,27 @@
+{
+  "format": "opengold-sprite-review-v1",
+  "specification": "natural-in-place-v1",
+  "source_key": "CPIC4.DAX:37",
+  "variant_id": "default",
+  "install_paths": {
+    "ready": "art/cpic4_dax_37/default/ready.png",
+    "action": "art/cpic4_dax_37/default/action.png"
+  },
+  "metadata_sha256": "aa35ab2d0d74dcdd94df421fa71f986c922d7ec5a108d3154d024e6a8f0be088",
+  "ready_sha256": "a2d6a62b0463f0d815bb05ea418b71a3b4a05b628c197109d126556a376c2b0e",
+  "action_sha256": "6f6718560b923c4b0937cc0722d301ddeba768cf0ac47413ec30782d437965b6",
+  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-25T22:26:26.783022+00:00",
+  "technical_check": "sprite_art_workflow.gd check; bipedal accept does not apply to frog body plan",
+  "notes": "User approved low crouch ready and in-place wide-open bite action for CPIC4.DAX:37/default. Reviewed final 128 px pair and enlarged on gray and magenta. Rear body and planted feet remain visually registered; continuous body, no carried gear. Catalog alternation pending: automatic computer-use approval review denied access to Godot; no installed art or cleared regeneration flag.",
+  "visual_checks": {
+    "all_feet_or_base_contact_fixed_xy": true,
+    "alternating_catalog_review": false,
+    "appropriate_in_place_attack": true,
+    "complete_transparent_silhouette": true,
+    "natural_body_plan_and_identity": true,
+    "only_independent_art_references": true,
+    "readable_at_128_pixels": true,
+    "same_scale_palette_and_camera": true
+  }
+}

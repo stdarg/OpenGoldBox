@@ -1,13 +1,16 @@
 {
-  "description": "A large poisonous frog with a squat body and powerful hind legs for a clear low silhouette. This is the script-linked icon for MON4CHA.DAX:38. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description": "A large poisonous frog with a squat body and powerful hind legs for a clear low silhouette. This is the script-linked icon for MON4CHA.DAX:38. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.\n\nIMAGEGEN PROMPT \u2014 CPIC4.DAX:37/default/ready\nUse case: stylized-concept. Asset type: OpenGold combat sprite ready frame. Create exactly one character and one frame: a full-body large poisonous frog combat sprite in crisp, readable pixel art. Genuine transparent background. Squat broad frog body, powerful folded hind legs, four visible feet, no equipment or clothing. Face screen right in a front three-quarter view so the near side, face and both eyes read clearly. Crouch low with hind legs coiled, front feet planted, head raised toward a target at screen right, mouth closed or slightly parted. This is the READY frame before a bite. Make the frog's own silhouette distinctive without copying original Pool of Radiance art. Plan the next frame as an in-place head-and-neck lunge with a wide-open mouth: leave transparent room in front of the muzzle. Keep the body sized for a 1 x 1 combat-square footprint; do not make it canvas-filling. Final asset will be 128 x 128 pixels with transparent margin. No ground plane, painted checkerboard, shadow, projectile, scenery, labels, text, border, duplicate, diptych or sprite sheet. Exactly one frog, one pose, one frame. No original game art reference.\n\nIMAGEGEN PROMPT \u2014 CPIC4.DAX:37/default/action\nUse case: stylized-concept. Asset type: OpenGold combat sprite ACTION frame. Edit the attached image, which is the approved new READY frog and the edit target. Create exactly one ACTION frame of that same poisonous frog biting toward screen right. Preserve the same full canvas origin, crisp pixel-art style, exact golden-yellow, orange and black spotted palette, body scale, camera, rear body, powerful folded hind legs, and exact planted coordinates of all four feet. Lunge only its upper body, head and neck toward screen right; open the mouth VERY wide with distinct upper and lower jaws, a dark mouth interior, and a clear bite silhouette. The frog remains grounded and anatomically connected from head through shoulders and torso to hips and hind legs. Bite is near its fullest extension. Preserve genuine transparent background and margin around all visible pixels. No hop, step, body slide, recentering, resizing, detached head or torso, new equipment, poison cloud, tongue projectile, duplicate, diptych or sprite sheet. Exactly one frog, one pose, one frame. Do not use original game art as reference.",
   "humanoid_size": "na",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 1
+  },
   "description_sources": [
     "Decoded ECL link to MON4CHA.DAX:38",
     "Original game inventory and wealth of linked creature"
   ],
   "equipment": [],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "POISONOUS FROG combat icon",
   "source": {
