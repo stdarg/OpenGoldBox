@@ -494,7 +494,20 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                     {73, "gnoll-warrior", 100, 100},
                     {113, "hippogriff", 200, 200},
                     {116, "phase-spider", 700, 700},
-                    {121, "wyvern", 2300, 2300}}}};
+                    {121, "wyvern", 2300, 2300}}},
+        // The kobold caves (docs/audits/kobold-caves.md, KOBOLD-1), by the
+        // eastern wilderness.
+        AreaSource{13,
+                   8,
+                   {{13, {17, 18, no_wall_bank}}},
+                   {{0, "slums-kobold", 25, 25},
+                    {1, "slums-kobold-leader", 25, 50},
+                    {31, "troll", 1800, 1800},
+                    {87, "trapped-fighter", 700, 700},
+                    {104, "trapped-fighter", 700, 700},
+                    {120, "wild-boar", 50, 50},
+                    {121, "wyvern", 2300, 2300},
+                    {124, "efreeti", 2300, 2300}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;

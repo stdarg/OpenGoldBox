@@ -155,6 +155,36 @@ Character dirten(const rules::CharacterRules &creation, const rules::RulesModule
     companion.add_item({"chain_shirt", "Chain Shirt"});
     return companion;
 }
+
+// Princess Fatima of the kobold caves (MON8CHA 104): a level-4 Fighter with
+// Strength 18, Dexterity 18, Constitution 16, Intelligence 14, Wisdom 10 and
+// Charisma 15, as her record has them; a Soldier's +2 Strength and +1
+// Constitution and the level-4 Ability Score Improvement's +2 Strength reach
+// them from the rolls. She brings her short sword, leather armor and shield.
+Character fatima(const rules::CharacterRules &creation, const rules::RulesModule &rules)
+{
+    rules::CharacterDraft draft;
+    draft.name = "Princess Fatima";
+    draft.race = "human";
+    draft.gender = "female";
+    draft.character_class = "fighter";
+    draft.alignment = "lawful_good";
+    draft.background = "soldier";
+    draft.rolled = true;
+    constexpr std::array<int, 6> rolled{14, 18, 15, 14, 10, 15};
+    for (unsigned ability = 0; ability < rolled.size(); ++ability)
+    {
+        draft.rolls[ability] = roll_of(rolled[ability]);
+    }
+    draft.adjustment = soldier_adjustment(creation, draft.background);
+    choose_training(creation, draft);
+    auto companion = advanced(creation, rules, draft, 4);
+    constexpr int original_short_sword = 37, original_leather = 50, original_shield = 59;
+    companion.add_item({"shortsword", "Shortsword", 1, original_short_sword});
+    companion.add_item({"leather", "Leather Armor", 1, original_leather});
+    companion.add_item({"shield", "Shield", 1, original_shield});
+    return companion;
+}
 } // namespace
 
 std::optional<Character> original_companion(unsigned bank, unsigned record,
@@ -172,6 +202,10 @@ std::optional<Character> original_companion(unsigned bank, unsigned record,
     if (bank == 3 && record == 107)
     {
         return dirten(creation, rules);
+    }
+    if (bank == 8 && record == 104)
+    {
+        return fatima(creation, rules);
     }
     return std::nullopt;
 }

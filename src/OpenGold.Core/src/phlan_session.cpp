@@ -250,6 +250,10 @@ std::optional<std::string_view> listed_damage_type(unsigned script, std::uint16_
     };
     constexpr std::array types{ScriptDamage{2, 0xADB1, "bludgeoning"}, // the Cadorna well's fall
                                ScriptDamage{15, 0x9D31, "acid"},       // Mendor's green slime
+                               // The kobold caves' traps and rocks (KOBOLD-1).
+                               ScriptDamage{13, 0x9CF3, "bludgeoning"}, // the roof
+                               ScriptDamage{13, 0x9E73, "piercing"},    // spikes
+                               ScriptDamage{13, 0xB48A, "bludgeoning"}, // thrown rocks
                                // Kovel Mansion's traps and thieves (KOVEL-1).
                                ScriptDamage{14, 0x9A98, "slashing"},    // a scything blade
                                ScriptDamage{14, 0x9ADD, "poison"},      // poison gas
@@ -325,8 +329,6 @@ std::string_view area_beyond(unsigned script)
         return "Stojanow Gate";
     case 10:
         return "Valhingen Graveyard";
-    case 13:
-        return "the kobold caves";
     case 16:
         return "the lizard men's keep";
     case 19:
@@ -2294,9 +2296,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 11:
     {
-        const unsigned record = arg(0), count = arg(1);
-        if (!current_area_ || !area_resources().conversions.contains(record) || !count ||
-            staged_enemies_.size() + count > 56)
+        // A fight holds 56 monsters; the original stops loading at its limit,
+        // as the kobold king's 58 do (ECL8:13 0xA1BE).
+        constexpr std::size_t monster_limit = 56;
+        const unsigned record = arg(0);
+        const auto count = static_cast<unsigned>(
+            std::min<std::size_t>(arg(1), monster_limit - std::min(monster_limit, staged_enemies_.size())));
+        if (!current_area_ || !area_resources().conversions.contains(record) || !arg(1))
         {
             throw EclError("Encounter needs an explicit supported creature conversion: record " +
                            std::to_string(record) + ", count " + std::to_string(count) + ", icon " +
@@ -2885,18 +2891,25 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     case 40:
     {
         // Surrender (Kuto's Well): arg(0) 1 robs the whole party of arg(1)% of its
-        // coins. The original also takes arg(2)% of the items; by the user's choice
-        // only money is taken.
-        if (!campaign_ || arg(0) != 1 || arg(1) > 100)
+        // coins; arg(0) 0 robs the chosen member (the kobold caves' pool, ECL8:13
+        // 0x9AF6), which here takes that member's share of the party's purse.
+        // The original also takes arg(2)% of the items; by the user's choice only
+        // money is taken.
+        if (!campaign_ || arg(0) > 1 || arg(1) > 100)
         {
             throw EclError("Unsupported ROB form");
         }
         read_character();
         {
+            const auto &slots = campaign_->state().slots;
+            const auto members =
+                static_cast<std::uint64_t>(std::count_if(slots.begin(), slots.end(),
+                                                         [](MemberId id) { return id != 0; }));
+            const std::uint64_t whole = arg(0) == 1 ? 100 : 100 * std::max<std::uint64_t>(1, members);
             auto wealth = campaign_->state().wealth;
             for (auto &coins : wealth)
             {
-                coins = static_cast<std::uint32_t>(std::uint64_t{coins} * (100 - arg(1)) / 100);
+                coins = static_cast<std::uint32_t>(std::uint64_t{coins} * (whole - arg(1)) / whole);
             }
             campaign_->set_wealth(wealth);
         }

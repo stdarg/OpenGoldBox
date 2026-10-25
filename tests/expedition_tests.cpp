@@ -382,7 +382,8 @@ std::shared_ptr<const por::EclProgram> treasure_program(bool guarded, bool faili
     body.insert(body.end(), {9, 0, 255, 1, 0x04, 0x4A});
     if (failing)
     {
-        body.insert(body.end(), {3, 1, 0xB4, 0x6D, 0, 1, 22, 40, 0, 0, 0, 0, 0, 0});
+        // ROB form 2, which no script uses, fails after the award.
+        body.insert(body.end(), {3, 1, 0xB4, 0x6D, 0, 1, 22, 40, 0, 2, 0, 0, 0, 0});
     }
     body.push_back(0);
     return program(body);
@@ -660,7 +661,7 @@ void locked_door_tests()
     party->add_pc(character("Bryn", 2));
     auto resources = std::make_shared<por::PhlanResources>();
     // The destination's search fails, so an opened door must be rolled back too.
-    const auto failing = program({3, 1, 0x4B, 0xC0, 0, 1, 22, 40, 0, 0, 0, 0, 0, 0, 0});
+    const auto failing = program({3, 1, 0x4B, 0xC0, 0, 1, 22, 40, 0, 2, 0, 0, 0, 0, 0});
     por::RolfTourSession town(locked_door_map(), failing, {}, 0x9914, {}, resources);
     town.campaign_party(party);
     settle_synthetic(town);
@@ -3516,8 +3517,8 @@ void western_wilderness(const std::filesystem::path &directory)
 }
 
 // The eastern wilderness (docs/audits/eastern-wilderness.md): the harbor's
-// eastern boat, the ruined castle in the quicksand and the kobolds' two caves
-// (areas not in the game yet), a kobold horde, the wyverns' cave a roaming
+// eastern boat, the ruined castle in the quicksand (an area not in the game
+// yet), a kobold horde, the wyverns' cave a roaming
 // roll finds, and the boat home to New Phlan.
 void eastern_wilderness(const std::filesystem::path &directory)
 {
@@ -3546,8 +3547,8 @@ void eastern_wilderness(const std::filesystem::path &directory)
         heard += s.dialogue + "\n";
         return prefer({"Parley", "YES", "Fight", "ENTER", "SMALL", "LEAVE CAVE"})(s);
     };
-    for (const auto &[x, y, place] : std::array<std::tuple<unsigned, unsigned, const char *>, 2>{
-             {{11, 8, "the lizard men's keep"}, {6, 15, "the kobold caves"}}})
+    for (const auto &[x, y, place] : std::array<std::tuple<unsigned, unsigned, const char *>, 1>{
+             {{11, 8, "the lizard men's keep"}}})
     {
         heal(*party);
         const auto refusal = std::string("The way to ") + place + " is not in the game yet.";
@@ -3606,6 +3607,100 @@ void eastern_wilderness(const std::filesystem::path &directory)
               [&] { return !town.snapshot().overland; });
     check(town.snapshot().area_id == 0 && town.snapshot().script_id == 0,
           "The eastern wilderness's boat returns the party to New Phlan");
+}
+
+// The kobold caves (docs/audits/kobold-caves.md), by the eastern
+// wilderness: the small cave, the king's hall and his envoys, Princess
+// Fatima, the efreeti in the brass bottle, the wyvern, the king's end and
+// the community's wealth, and the way out with Fatima taking her leave.
+void kobold_caves(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 23000, "test:kobold-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 7)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    walk_to(town, party, 11, 2);
+    step(town, party, 0, prefer({"EAST"}));
+    walk_to(town, party, 14, 1);
+    step(town, party, 1, prefer({"STAY"}));
+    std::string heard;
+    // The party answers to stay, to parley where offered, to fight where met,
+    // and declines to be the vampires the efreeti seeks.
+    const Answer noting = [&](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        if (s.dialogue.find("WANT TO LEAVE") != std::string::npos ||
+            s.dialogue.find("VAMPIRES") != std::string::npos)
+        {
+            return prefer({"NO"})(s);
+        }
+        return prefer({"Bash", "SMALL", "Fight", "FIGHT", "YES", "AGREE", "FOLLOW", "PULL IT OUT",
+                       "GIVE IT WATER", "DISARM IT"})(s);
+    };
+    travel_to(town, party, 6, 15, noting, [&] { return !town.snapshot().overland; });
+    check(town.snapshot().area_id == 13 && town.snapshot().pose.x == 6 &&
+              town.snapshot().pose.y == 15,
+          "The small cave by the eastern wilderness leads into the kobold caves");
+    const auto kobolds = [&](std::uint16_t address)
+    {
+        return town.script_variable(por::EclAddress{address});
+    };
+    const auto wealth = party->state().wealth;
+    // The king's hall, by way of the pool, the truce and the wyvern.
+    heal(*party);
+    walk_to(town, party, 5, 3, noting, true);
+    check(heard.find("FALLS INTO A POOL OF WATER") != std::string::npos &&
+              party->state().wealth != wealth,
+          "A member falls into the pool and the party loses that member's share of its money");
+    check(heard.find("I AM TO ESCORT YOU TO OUR TREASURE") != std::string::npos &&
+              kobolds(0x4A8E) == 1,
+          "The truce kobold leads the party past its traps to the wyvern, which is beaten");
+    check(kobolds(0x4A8D) == 4, "The king's horde and envoys are beaten, and the king escapes");
+    for (const auto &[x, y] : std::array<std::pair<unsigned, unsigned>, 5>{
+             {{1, 3}, {7, 0}, {10, 1}, {13, 1}, {14, 6}}})
+    {
+        heal(*party);
+        walk_to(town, party, x, y, noting, true);
+    }
+    const auto &slots = party->state().slots;
+    const auto joined = std::find_if(slots.begin(), slots.end(),
+                                     [&](MemberId id)
+                                     {
+                                         return id &&
+                                                party->member(id).npc_source == "por:MON8CHA:104";
+                                     });
+    check(joined != slots.end(), "Princess Fatima joins the party");
+    const auto fatima_id = *joined;
+    const auto &fatima = party->member(fatima_id);
+    check(fatima.character.sheet().level == 4 &&
+              fatima.character.sheet().scores[rules::Ability::strength] == 18 &&
+              fatima.character.sheet().scores[rules::Ability::dexterity] == 18 &&
+              fatima.character.sheet().scores[rules::Ability::constitution] == 16 &&
+              fatima.equipped.size() == 3,
+          "Fatima is a level-4 Fighter with her record's scores, her sword, armor and shield on");
+    check(kobolds(0x4AB6) == 254 && kobolds(0x4A8D) == 7 && kobolds(0x4A8E) == 2,
+          "The king dies in his own pit, and the community's wealth and the wyvern's are taken");
+    // The brass bottle, found by searching.
+    heal(*party);
+    walk_to(town, party, 12, 0, noting, true);
+    check(look_until(town, party, [&] { return kobolds(0x4AD3) != 0; }, noting, 5) &&
+              heard.find("EFREETI SAMIR AHWAHL") != std::string::npos,
+          "Searching finds the brass bottle, whose efreeti returns to it");
+    // The way out, where Fatima takes her leave.
+    heal(*party);
+    walk_to(town, party, 6, 15, prefer({"Bash", "Fight", "YES"}), true, false, "0",
+            [&] { return town.snapshot().overland; });
+    check(town.snapshot().overland && town.snapshot().script_id == 27 &&
+              std::find(slots.begin(), slots.end(), fatima_id) == slots.end(),
+          "Leaving the caves, Fatima goes her own way");
 }
 
 // Mendor's Library (docs/audits/mendors-library.md), east of the Cadorna
@@ -4838,6 +4933,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         pyramid(directory);
         western_wilderness(directory);
         eastern_wilderness(directory);
+        kobold_caves(directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -4944,6 +5040,12 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--wilderness")
         {
             central_wilderness(directory);
+            return 0;
+        }
+        // Plays the kobold caves alone with a new party.
+        if (argc == 2 && std::string_view(argv[1]) == "--kobolds")
+        {
+            kobold_caves(directory);
             return 0;
         }
         // Plays the eastern wilderness alone with a new party.

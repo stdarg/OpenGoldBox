@@ -198,6 +198,17 @@ fetched on 2026-10-25 (`srd-2024`):
 Each keeps the original's Hit Points. New rows: `bloodied_fury`, `charge`,
 `prone_on_hit`, `prone_large` and `nimble_escape`.
 
+## Kobold caves monsters
+
+The kobold caves' efreeti ([audit](../../../docs/audits/kobold-caves.md)). The
+Open5E response was fetched on 2026-10-25 (`srd-2024`):
+
+| Rows | Stat block | Response | SHA-256 |
+| --- | --- | --- | --- |
+| `efreeti` | Efreeti | `open5e-efreeti.json` | `B753821A4C618D2DBC9E9D43B17FDF11F7DAA88BAABEF9AFE7E2CED90C0CE763` |
+
+It keeps the original's 55 Hit Points.
+
 ## Fixtures
 
 `vanguard`, `scout`, `adept`, and `healer` are authored combat fixtures, not

@@ -500,6 +500,20 @@ type phase-spider monstrosity
 multiattack phase-spider 2
 melee_extra_damage phase-spider 2 8 poison
 web_walker phase-spider
+# The kobold caves (docs/audits/kobold-caves.md, KOBOLD-1): the efreeti Samir
+# Ahwahl is the SRD 5.2.1 Efreeti with the original's 55 Hit Points: three
+# attacks, Heated Blade or Hurl Flame (its spells and Magic Resistance not
+# modeled).
+creature efreeti 17 55 1 60 10 2 6 6 8 7 6 0 120 120 0 0 0 1 0
+saves efreeti 6 1 7 3 6 8
+damage_types efreeti slashing fire
+size efreeti large
+type efreeti elemental
+flies efreeti
+multiattack efreeti 3
+multiattack_ranged efreeti
+melee_extra_damage efreeti 2 12 fire
+affinity efreeti stat:fire immunity fire
 # Summon Dragon's Draconic Spirit (SRD 5.2.1 p. 166), one stat block per
 # spell level: AC 14 + the level, 50 Hit Points and 10 more per level above 5,
 # Rend 1d6 + 4 + the level Piercing (reach 10 feet), half the level in Rends.
