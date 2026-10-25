@@ -1,7 +1,10 @@
 {
-  "description": "A crouched undead predator with grasping hands and a low, hungry stance. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description": "A crouched undead predator with grasping hands and a low, hungry stance. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.\n\nIMAGEGEN PROMPT:\nEdit reference image 1, the already accepted newly generated READY combat sprite for MON4CHA.DAX:72/default, a gray undead GHOUL in torn rags with a crouched hungry stance and no carried gear. Create exactly ONE ACTION frame, one complete character, crisp readable pixel art, genuine transparent RGBA, final intended size 128 x 128. Reference image 2 is the user-approved bipedal pose guide for screen-right front three-quarter facing and attack timing only; do not copy its human identity, clothes or equipment. This is a BARE-HANDED TWO-ARM FORWARD REACH, explicitly selected by the user: BOTH left and right arms reach OUTSTRETCHED toward the screen-right target, BOTH hands open with claws extended; neither hand stays at the hip, behind the head or folded. The neck, chest, abdomen and waist lean together toward screen right into the attack, while remaining one continuous anatomically connected torso down to the hips. The full head and torso stay the same apparent size and gray-undead palette as reference 1. Keep the accepted READY frame lower body, rags below the waist, both legs and planted feet at EXACTLY the same x/y pixels; do not redraw or translate the base. Keep the body within its saved one-combat-square by one-combat-square footprint; only the attacking claws may cross the tile line, while all pixels remain inside the PNG with transparent margin. No weapon, shield, armor, effects, background, extra figures, duplicate arms or sheared waist. Make a visibly different near-contact attack frame, not another ready pose.",
   "humanoid_size": "normal",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 1
+  },
   "description_sources": [
     "Original game MON4CHA.DAX:72 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"
