@@ -32,10 +32,23 @@ struct TourAccess
         return town.machine_;
     }
 
+    // An original item list of the area that loads `map`, as its TREASURE gives it.
+    static const std::vector<por::Equipment> &item_list(const por::RolfTourSession &town,
+                                                        unsigned map, unsigned list)
+    {
+        return town.town_->districts.at(map)->treasure.at(list);
+    }
+
     // The wilderness map the session travels, to plan a journey on.
     static const por::OverlandWorld &overland_world(const por::RolfTourSession &town)
     {
         return *town.town_->overland;
+    }
+
+    // The original's closing story, as read from the player's GAME.OVR.
+    static const std::vector<std::string> &closing_story(const por::RolfTourSession &town)
+    {
+        return town.town_->closing_story;
     }
 
     // Reseeds the script's dice, so a test can try an event on several rolls.

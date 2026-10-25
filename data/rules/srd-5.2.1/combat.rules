@@ -641,9 +641,9 @@ evil bane-priest
 # Valjevo Castle (docs/audits/valjevo-castle.md, CASTLE-1), with the original's
 # Hit Points. The Medusa: two Claws or Poison Rays and its Petrifying Gaze
 # (Snake Hair's poison not modeled). Tyranthraxus possesses an ancient bronze
-# dragon: the Adult Bronze Dragon's three Rends, its Lightning Breath as an
-# innate Lightning Bolt once (save DC 19; Repulsion Breath, spells and
-# Legendary Resistance not modeled). His guards are the Knight (Parry not
+# dragon: the Adult Bronze Dragon's three Rends and its Lightning Breath
+# (Recharge 5-6, save DC 19; Repulsion Breath, spells and Legendary
+# Resistance not modeled). His guards are the Knight (Parry not
 # modeled); his impostor the Warrior Veteran; his mages the nomad shaman's
 # level-4 Wizard profile.
 creature medusa 15 30 6 30 6 2 6 3 5 2 8 2 150 150 0 0 0 1 0
@@ -653,7 +653,7 @@ multiattack medusa 2
 multiattack_ranged medusa
 perception medusa 4
 petrifying_gaze medusa 13 5
-creature tyranthraxus 18 80 10 40 12 2 8 7 0 0 0 0 0 0 0 0 11 1 0
+creature tyranthraxus 18 80 10 40 12 2 8 7 0 0 0 0 0 0 0 0 0 1 0
 saves tyranthraxus 7 5 6 3 7 5
 damage_types tyranthraxus slashing slashing
 size tyranthraxus huge
@@ -663,7 +663,7 @@ multiattack tyranthraxus 3
 melee_extra_damage tyranthraxus 1 10 lightning
 affinity tyranthraxus stat:lightning immunity lightning
 perception tyranthraxus 12
-innate tyranthraxus Lightning_Breath 1 action lightning_bolt
+breath tyranthraxus lightning_breath 19 5
 evil tyranthraxus
 creature castle-knight 18 87 0 30 5 2 6 3 2 2 10 0 100 400 0 0 0 1 0
 saves castle-knight 3 0 4 0 2 2

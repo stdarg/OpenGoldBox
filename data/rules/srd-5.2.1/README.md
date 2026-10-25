@@ -264,7 +264,8 @@ fetched on 2026-10-25 (`srd-2024`):
 | `tyranthraxus` | Adult Bronze Dragon | `open5e-adult-bronze-dragon.json` | `E99FDAE6AE9825FCCC6F5722B94152315C0EDF45B3B4CC9692B670C126E75116` |
 | `castle-knight` | Knight | `open5e-knight.json` | `A89C498B0F6B71AAFAE4FBEB291F7D50E3780E6D6D6C258269A5709D47585276` |
 
-Each keeps the original's Hit Points.
+Each keeps the original's Hit Points. New row: `breath creature spell dc
+recharge`, a monster's breath weapon (Tyranthraxus's `lightning_breath`).
 
 ## Western wilderness sites' monsters
 

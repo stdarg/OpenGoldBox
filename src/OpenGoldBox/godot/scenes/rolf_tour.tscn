@@ -455,6 +455,8 @@ text = "Cast"
 [node name="Footstep" type="AudioStreamPlayer" parent="."]
 volume_db = -12.0
 
+[node name="OriginalSound" type="AudioStreamPlayer" parent="."]
+
 [node name="PartyList" type="ScrollContainer" parent="."]
 anchor_left = 0.291666641
 anchor_right = 0.882499924

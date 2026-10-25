@@ -16,6 +16,7 @@
 #include "opengold/scroll_key.h"
 #include "godot_path.h"
 #include "guarded_handlers.h"
+#include "godot_sound_output.h"
 #include "monster_picture_timing.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
 #include <godot_cpp/classes/button.hpp>
@@ -53,6 +54,9 @@ namespace
 {
 const std::array<Vector2, 4> direction{Vector2(0, -1), Vector2(1, 0), Vector2(0, 1),
                                        Vector2(-1, 0)};
+// The original's fireball sample (START.EXE effect 11), which Valhingen
+// Graveyard's storm plays as thunder.
+constexpr unsigned original_fireball_sound = 11;
 constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_("South"),
                                                      N_("West")};
 
@@ -291,6 +295,24 @@ void RolfTourView::prepare_view()
     }
     footstep_->set_data(samples);
     required_node<AudioStreamPlayer>(*this, "Footstep").set_stream(footstep_);
+    // The storm's thunder is the original's own sample, from the player's
+    // game; a game without the sound bank leaves it silent.
+    const auto game = presentation::path_from_godot(settings::game_path());
+    if (std::filesystem::is_directory(game))
+    {
+        try
+        {
+            original_sound_ = std::make_unique<SoundPlayer>(
+                SoundBank::load(game),
+                std::make_unique<GodotSoundOutput>(
+                    required_node<AudioStreamPlayer>(*this, "OriginalSound")));
+            original_sound_->set_volume(0.125);
+        }
+        catch (const std::runtime_error &)
+        {
+            original_sound_.reset();
+        }
+    }
     setup_rest();
     restart();
     if (embedded_party_)
@@ -371,6 +393,7 @@ void RolfTourView::restart()
         rendered_sprite_id_ = 999;
         displayed_ticket_ = 0;
         played_footsteps_ = 0;
+        played_thunder_ = 0;
         shown_revision_ = 0;
         session_->advance(0);
     }
@@ -1413,6 +1436,14 @@ void RolfTourView::advance_frame(double delta)
             if (!checking_)
             {
                 required_node<AudioStreamPlayer>(*this, "Footstep").play();
+            }
+        }
+        if (session_->snapshot().thunder != played_thunder_)
+        {
+            played_thunder_ = session_->snapshot().thunder;
+            if (!checking_ && original_sound_)
+            {
+                original_sound_->play(original_fireball_sound);
             }
         }
         if (session_->snapshot().revision != shown_revision_)

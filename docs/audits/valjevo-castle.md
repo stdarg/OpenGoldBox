@@ -57,7 +57,7 @@ GAME`, `opengold_maps GAME`, coab's `CMD_Program` (8), `CMD_LoadFiles` and
 | 49 | Medusa (HP 30) | **new:** SRD 5.2.1 Medusa with 30 Hit Points: two Claws or Poison Rays and its Petrifying Gaze (Snake Hair's poison not modeled) |
 | 55, 56 | Hill Giant, Fire Giant | Stojanow Gate's and the old town's |
 | 60 | Giant Snake (HP 25) | the western wilderness's Giant Venomous Snake |
-| 66 | Tyranthraxus (HP 80) | **new:** SRD 5.2.1 Adult Bronze Dragon with 80 Hit Points: three Rends and its Lightning Breath as an innate Lightning Bolt once (save DC 19) |
+| 66 | Tyranthraxus (HP 80) | **new:** SRD 5.2.1 Adult Bronze Dragon with 80 Hit Points: three Rends and its Lightning Breath (10d10 in a 90-foot Line, save DC 19, Recharge 5-6) |
 | 75, 84, 87 | 6th Level Fighters, Envoy (HP 45) | the Pyramid's Warrior Veteran |
 | 85 | 8th Level Fighter (HP 87) | **new:** SRD 5.2.1 Knight with 87 Hit Points (Parry not modeled) |
 | 86, 88 | Al-Hyam Dazid, Genheeris (HP 22) | **new:** the nomad shaman's level-4 Wizard profile with 22 Hit Points |
@@ -84,11 +84,15 @@ Missing before this audit, now done:
    bludgeoning missiles; drowning and the trap door's fall bludgeoning; the
    gnoll's scalding pot fire; the hedge's thorn poison.
 5. **The location label** names the castle.
+6. **The original's closing story** (Tyranthraxus's spirit leaving the dragon
+   and called back through the pool) is read from the player's `GAME.OVR` at
+   the victory and told before the closing words; nothing of it is stored in
+   the repository, and another release's file leaves only the closing words.
+7. **A monster's breath weapon** (a `breath` row): Tyranthraxus's Lightning
+   Breath, taken with his action and recharging on a 5 or 6.
 
 ## Not done
 
-- **The original's closing story**, told from the game's executable, is not
-  shown: a line of our own announces the victory.
 - **The dead are not raised by the victory:** the original restores every
   member (see [DEVIATIONS](../DEVIATIONS.md)).
 

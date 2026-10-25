@@ -986,6 +986,22 @@ inline constexpr std::array spell_table{
              .half_on_success = true,
              .dice = {1, 10, 0},
              .cone = 15},
+    // An Adult Bronze Dragon's Lightning Breath (SRD 5.2.1), aimed as
+    // "lightning_breath" with its action: a 90-foot, 5-foot-wide Line;
+    // Dexterity save, 10d10 Lightning, half on a success. No one learns it as
+    // a spell; its save DC and Recharge come from its `breath` row.
+    SpellDef{.id = "lightning_breath",
+             .label = "Lightning Breath",
+             .level = 0,
+             .pattern = SpellPattern::save_damage,
+             .target = SpellTarget::area,
+             .range = 90,
+             .save = Ability::dexterity,
+             .half_on_success = true,
+             .damage = DamageType::lightning,
+             .dice = {10, 10, 0},
+             .line = 90,
+             .narrow_line = true},
     // A Basilisk's Petrifying Gaze (SRD 5.2.1 p. 262), aimed as
     // "petrifying_gaze" with its Bonus Action. No one learns it as a spell.
     SpellDef{.id = "petrifying_gaze",

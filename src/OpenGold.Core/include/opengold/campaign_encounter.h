@@ -43,6 +43,16 @@ enum class Surprise : std::uint8_t
     both
 };
 
+// A monster a script fields on the party's side (the original record's team
+// byte 0x10E: Valhingen Graveyard's efreeti) takes an id from 2000 on. The
+// computer fights it, as the original's quick fight did.
+inline constexpr rules::EntityId first_ally_id = 2000;
+
+[[nodiscard]] constexpr bool is_ally(rules::EntityId id) noexcept
+{
+    return id >= first_ally_id;
+}
+
 struct CampaignEncounter
 {
     por::DungeonBattlefield field;
@@ -66,6 +76,8 @@ struct CampaignEncounter
     // The fight is by day, 06:00 to 17:59, so squares open to the sky are in
     // sunlight (Sunlight Sensitivity).
     bool daylight{};
+    // Monsters on the party's side, standing beside it.
+    std::vector<rules::Participant> allies;
 };
 } // namespace opengold
 #endif

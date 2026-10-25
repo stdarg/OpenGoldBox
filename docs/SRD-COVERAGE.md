@@ -130,7 +130,7 @@ Riposte and the Rapier's Advantage.
 Valjevo Castle's Medusa (two Claws or Poison Rays, Petrifying Gaze), Knight
 guards (two Greatsword or Heavy Crossbow attacks with radiant damage) and
 Tyranthraxus, the Adult Bronze Dragon (three Rends with lightning, Lightning
-Breath as an innate Lightning Bolt once, lightning immunity), keep the
+Breath recharging on a 5 or 6, lightning immunity), keep the
 original's Hit Points, by
 [CASTLE-1](SRD-DECISIONS.md#castle-1-2026-10-25-valjevo-castle). Not modeled
 yet: Repulsion Breath, the dragon's spells and Legendary Resistance, Snake

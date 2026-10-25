@@ -337,7 +337,7 @@ void hall_event_tests()
 }
 
 // PROGRAM 8, the original's victory after Tyranthraxus: the event pauses on
-// the closing words, a hurt member is healed, and the game's won cell is set
+// the closing story and words, a hurt member is healed, and the game's won cell is set
 // as the event goes on to its end.
 void victory_program_tests()
 {
@@ -348,6 +348,7 @@ void victory_program_tests()
                                         state.roster.front().character.sheet(), 1);
     party->restore(std::move(state));
     auto resources = std::make_shared<por::PhlanResources>();
+    resources->closing_story = {"The first page.", "The second page."};
     auto victory = program({0x38, 0, 8, 0});
     por::RolfTourSession town({}, victory, {}, 0x9914, {}, resources);
     town.campaign_party(party);
@@ -358,6 +359,7 @@ void victory_program_tests()
         town.advance(.5);
     }
     check(town.snapshot().phase == por::TourPhase::awaiting_continue &&
+              town.snapshot().dialogue.starts_with("The first page.\n\nThe second page.\n\n") &&
               town.snapshot().dialogue.find("You have won") != std::string::npos &&
               party->member(arden).vitals.hit_points == party->hit_point_maximum(arden),
           "The victory heals the party and pauses on its closing words");
@@ -753,6 +755,8 @@ std::size_t peaceful(const por::TourSnapshot &s)
 
 // Every combat definition fight() has faced, in order.
 std::vector<std::string> enemies_fought;
+// Every monster a script fielded on the party's side, by rules definition.
+std::vector<std::string> allies_fought;
 
 // How each fight fight() played began: where the party stood, the encounter
 // distance and each combatant's starting square.
@@ -791,6 +795,10 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     for (const auto &enemy : town.pending_encounter()->enemies)
     {
         enemies_fought.push_back(enemy.definition);
+    }
+    for (const auto &ally : town.pending_encounter()->allies)
+    {
+        allies_fought.push_back(ally.definition);
     }
     last_encounter = *town.pending_encounter();
     CombatDemo combat(module());
@@ -4166,6 +4174,10 @@ void valjevo_castle(const std::filesystem::path &directory)
               heard.find("You have won") != std::string::npos &&
               town.script_variable(por::EclAddress{0x4AFD}) == 255,
           "Tyranthraxus is beaten in his audience hall and the game is won");
+    const auto &story = opengold::test::TourAccess::closing_story(town);
+    check(story.size() == 2 && heard.find(story[0]) != std::string::npos &&
+              heard.find(story[1]) != std::string::npos,
+          "The victory tells the original's closing story, read from GAME.OVR");
     check(town.snapshot().area_id == 0 && town.snapshot().script_id == 0 &&
               heard.find("YOU LEAVE THE CASTLE") != std::string::npos,
           "After the victory the party walks back to the civilized city");
@@ -4201,8 +4213,8 @@ void valhingen_graveyard(const std::filesystem::path &directory)
     };
     travel_to(town, party, 13, 26, noting, [&] { return !town.snapshot().overland; });
     check(town.snapshot().area_id == 10 && town.snapshot().pose.x == 0 &&
-              town.snapshot().pose.y == 4,
-          "The city's north edge leads into Valhingen Graveyard");
+              town.snapshot().pose.y == 4 && town.snapshot().thunder > 0,
+          "The city's north edge leads into Valhingen Graveyard, under a storm's thunder");
     const auto graveyard = [&](std::uint16_t address)
     {
         return town.script_variable(por::EclAddress{address});
@@ -4240,11 +4252,24 @@ void valhingen_graveyard(const std::filesystem::path &directory)
     walk_to(town, party, 12, 4, noting, true);
     check(graveyard(0x4A43) == 251 && heard.find("ENTRY 43") != std::string::npos,
           "The coffin in the black marble crypt is sanctified after its scroll is read");
+    // The party carries the efreeti Samir Ahwahl's bottle from the kobold
+    // caves (item list 50 of ITEM8): he fights the vampire beside it.
+    const auto &bottle = opengold::test::TourAccess::item_list(town, 13, 50);
+    check(party->award_loot({}, bottle, "test:samir-bottle") && por::party_has_item(*party, 82),
+          "The party carries Samir Ahwahl's brass bottle");
     // The vampire's pit, down the wooden stairs.
     heal(*party);
+    const auto allies = allies_fought.size();
     walk_to(town, party, 15, 0, noting, true);
     check(heard.find("TALL, PALE MAN") != std::string::npos && graveyard(0x4A41) == 250,
           "Beaten in its pit, the vampire flees as a vapor cloud");
+    check(allies_fought.size() == allies + 1 && allies_fought.back() == "efreeti" &&
+              std::any_of(fights_started.back().cells.begin(), fights_started.back().cells.end(),
+                          [](const auto &unit)
+                          {
+                              return opengold::is_ally(unit.first);
+                          }),
+          "Samir Ahwahl fights the vampire on the party's side");
     // Back at its sanctified coffin, the vampire is destroyed.
     heal(*party);
     walk_to(town, party, 12, 4, noting, true);

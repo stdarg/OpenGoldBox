@@ -1540,6 +1540,11 @@ struct Definition
     // A monster's `petrifying_gaze` row: a Basilisk's Bonus Action gaze, its
     // save DC, and the d6 roll that recharges it.
     int gaze_dc{}, gaze_recharge{};
+    // A monster's `breath` row: its breath weapon's spell id, such as an
+    // Adult Bronze Dragon's "lightning_breath", taken with its action, its save
+    // DC, and the d6 roll that recharges it.
+    std::string monster_breath;
+    int breath_dc{}, breath_recharge{};
     // A monster's `condition_immunity` row: the conditions it never suffers,
     // as effect labels name them ("Restrained", "Prone").
     std::vector<std::string> condition_immunities;
@@ -5997,6 +6002,7 @@ class Session final : public CombatSession
     void drain_attached(Actor &a);
     void pull_off(Actor &a, Actor &clinger);
     void petrifying_gaze(Actor &basilisk, const PendingArea &aimed);
+    void exhale_breath(Actor &dragon, const PendingArea &aimed);
     void resist_petrifying(Actor &a);
     // The attacker wearing its stat block's `last_attack` statistics.
     [[nodiscard]] Loadout last_attack_loadout(const Actor &a) const;
@@ -11293,6 +11299,14 @@ std::vector<Command> Session::offered_commands() const
             {revision_, id, 0, "petrifying_gaze", "Petrifying Gaze", Cell{}, 0, true});
         commands.back().spell = spell_facts(a, *detail::find_spell("petrifying_gaze"));
     }
+    // A monster's breath weapon, while it is charged.
+    if (!d.monster_breath.empty() && trait_uses_left(a) > 0 && a.actions.available())
+    {
+        const auto &breath = *detail::find_spell(d.monster_breath);
+        commands.push_back(
+            {revision_, id, 0, d.monster_breath, std::string(breath.label), Cell{}, 0, true});
+        commands.back().spell = spell_facts(a, breath);
+    }
     // Dragon Wings (Sorcerer 14): once per Long Rest, or for 3 Sorcery Points.
     if (a.bonus && d.dragon_wings &&
         !detail::has_effect(a.effects, detail::EffectKind::dragon_wings))
@@ -13538,8 +13552,9 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
     }
     auto rolled = spell.dice;
     rolled.count += static_cast<int>(upcast_steps(verb, spell) * spell.upcast.extra_dice);
-    // A cantrip's dice, and a Breath Weapon's, grow with the caster's level.
-    if (!spell.level)
+    // A cantrip's dice, and a Breath Weapon's, grow with the caster's level;
+    // a monster's breath has its own.
+    if (!spell.level && spell.id != def(caster).monster_breath)
     {
         rolled.count *= cantrip_tier(def(caster));
     }
@@ -15567,16 +15582,18 @@ void Session::shed_immune_conditions()
     }
 }
 
-// A spent Petrifying Gaze comes back on a d6 roll of its Recharge number or
-// more as the creature's turn starts.
+// A spent Petrifying Gaze or breath weapon comes back on a d6 roll of its
+// Recharge number or more as the creature's turn starts.
 void Session::recharge_gaze(Actor &a)
 {
-    if (!def(a).gaze_recharge || trait_uses_left(a) > 0)
+    const auto &d = def(a);
+    const int recharge = d.gaze_recharge ? d.gaze_recharge : d.breath_recharge;
+    if (!recharge || trait_uses_left(a) > 0)
     {
         return;
     }
     const int rolled = roll(6);
-    if (rolled < def(a).gaze_recharge)
+    if (rolled < recharge)
     {
         return;
     }
@@ -15585,6 +15602,14 @@ void Session::recharge_gaze(Actor &a)
                   {
                       return e.kind == detail::EffectKind::trait_uses;
                   });
+    if (d.breath_recharge)
+    {
+        const std::string label(detail::find_spell(d.monster_breath)->label);
+        log(a.source.name + "'s " + label + " recharges (" + std::to_string(rolled) + ").",
+            {"{name}'s {ability} recharges ({roll}).",
+             {{"name", a.source.name}, {"ability", label, true}, {"roll", std::to_string(rolled)}}});
+        return;
+    }
     log(a.source.name + "'s Petrifying Gaze recharges (" + std::to_string(rolled) + ").",
         {"{name}'s Petrifying Gaze recharges ({roll}).",
          {{"name", a.source.name}, {"roll", std::to_string(rolled)}}});
@@ -15690,6 +15715,21 @@ void Session::petrifying_gaze(Actor &basilisk, const PendingArea &aimed)
         log(other.source.name + " is Restrained as its flesh stiffens.",
             {"{name} is Restrained as its flesh stiffens.", {{"name", other.source.name}}});
     }
+}
+
+// A monster's breath weapon, its action: each other creature in the area
+// saves against the `breath` row's DC.
+void Session::exhale_breath(Actor &dragon, const PendingArea &aimed)
+{
+    (void)dragon.actions.spend();
+    spend_trait_use(dragon);
+    const auto &breath = *detail::find_spell(aimed.verb);
+    log(dragon.source.name + " uses " + std::string(breath.label) + ".",
+        {"{name} uses {feature}.",
+         {{"name", dragon.source.name}, {"feature", std::string(breath.label), true}}});
+    damage_area(dragon, breath, aimed.verb,
+                area_cells(breath, aimed.verb, dragon.source.cell, aimed.center),
+                def(dragon).breath_dc);
 }
 
 // The Petrifying Gaze's second save, at the end of the Restrained creature's
@@ -16897,6 +16937,10 @@ void Session::cast_area()
     else if (aimed.verb == "petrifying_gaze")
     {
         petrifying_gaze(a, aimed);
+    }
+    else if (aimed.verb == def(a).monster_breath)
+    {
+        exhale_breath(a, aimed);
     }
     else
     {
@@ -31794,6 +31838,34 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             if (!row.eof())
             {
                 throw std::runtime_error("Unknown Petrifying Gaze fields: " + key);
+            }
+            continue;
+        }
+        // breath creature spell dc recharge: a monster's breath weapon, such as
+        // an Adult Bronze Dragon's Lightning Breath (Recharge 5-6 is 5); its
+        // one use is the creature's trait use.
+        if (tag == "breath")
+        {
+            const auto found = content.definitions.find(key);
+            std::string spell;
+            int dc{}, recharge{};
+            row >> spell >> dc >> recharge;
+            const auto *known = detail::find_spell(spell);
+            if (!row || found == content.definitions.end() || !known || known->id != spell ||
+                known->level || known->pattern != detail::SpellPattern::save_damage ||
+                dc < 1 || dc > 30 || recharge < 2 || recharge > 6 ||
+                found->second.gaze_recharge || !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid breath weapon: " + key);
+            }
+            found->second.monster_breath = spell;
+            found->second.breath_dc = dc;
+            found->second.breath_recharge = recharge;
+            found->second.trait_uses = 1;
+            row >> std::ws;
+            if (!row.eof())
+            {
+                throw std::runtime_error("Unknown breath weapon fields: " + key);
             }
             continue;
         }

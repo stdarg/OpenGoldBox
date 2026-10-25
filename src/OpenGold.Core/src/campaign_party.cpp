@@ -1,4 +1,5 @@
 #include "opengold/campaign_party.h"
+#include "opengold/campaign_encounter.h"
 #include "opengold/authored_items.h"
 #include "opengold/dice.h"
 #include "opengold/ecl_party_host.h"
@@ -2954,7 +2955,7 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
     std::vector<MemberId> active;
     for (const auto &actor : snapshot.combatants)
     {
-        if (actor.side == rules::Side::party)
+        if (actor.side == rules::Side::party && !is_ally(actor.id))
         {
             active.push_back(actor.id);
         }
@@ -2970,7 +2971,7 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
     std::vector<std::pair<MemberId, int>> newly_checked;
     for (const auto &actor : snapshot.combatants)
     {
-        if (actor.side == rules::Side::party)
+        if (actor.side == rules::Side::party && !is_ally(actor.id))
         {
             const auto it = std::find_if(state_.roster.begin(), state_.roster.end(),
                                          [&](const auto &m)
