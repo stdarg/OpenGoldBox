@@ -289,7 +289,9 @@ melee|ranged`; `flyby creature`; `magic_resistance creature`; and
 `protective_magic creature uses`.
 
 `off ability [creature]` leaves out an ability's rows, every creature's or one
-creature's, to switch it off. It takes these abilities: `advantage_damage`,
+creature's, to switch it off. The game's options (`settings.cfg`'s
+`[monsters]`) switch the same abilities by difficulty without editing this
+file. It takes these abilities: `advantage_damage`,
 `attach`, `bite`, `bloodied_fury`, `breath`, `captains_charm`, `charge`,
 `charming`, `create_specter`, `cunning_action`, `dreadful_glare`,
 `enthralling_panache`, `flyby`, `hampering`, `hit_advantage`, `incorporeal`,

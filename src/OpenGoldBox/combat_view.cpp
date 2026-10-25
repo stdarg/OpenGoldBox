@@ -384,6 +384,18 @@ void CombatView::flee()
     refresh();
 }
 
+namespace
+{
+// The game's rules for a fight, without the monster abilities the options and
+// the difficulty switch off (MONSTER-2).
+std::unique_ptr<rules::RulesModule> fight_rules()
+{
+    auto module = srd5::load(presentation::path_from_godot(game_rules_file()));
+    module->switch_off_abilities(settings::monster_abilities_off());
+    return module;
+}
+} // namespace
+
 void CombatView::prepare_combat()
 {
     flee_mode_ = false;
@@ -391,8 +403,7 @@ void CombatView::prepare_combat()
     {
         return;
     }
-    auto next =
-        std::make_unique<CombatDemo>(srd5::load(presentation::path_from_godot(game_rules_file())));
+    auto next = std::make_unique<CombatDemo>(fight_rules());
     const bool demo_mode = settings::flag("--combat-demo");
     if (demo_mode)
     {
@@ -431,7 +442,7 @@ void CombatView::prepare_combat()
             }
         }
         auto showcase = make_combat_demo(
-            srd5::load(presentation::path_from_godot(game_rules_file())), *characters, directory,
+            fight_rules(), *characters, directory,
             {.body_catalog_file = presentation::path_from_godot(game_combat_body_file()),
              .classes = std::move(classes),
              .level = level,

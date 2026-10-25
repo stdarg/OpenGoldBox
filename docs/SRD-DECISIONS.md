@@ -1931,7 +1931,14 @@ them; they await the user's review:
 - **A switch for each ability:** an `off` row in `combat.rules` leaves out an
   ability's rows, for every creature (`off legendary`) or one
   (`off legendary vampire`); the [rules README](../data/rules/srd-5.2.1/README.md)
-  lists the abilities it takes.
+  lists the abilities it takes. The user chose on 2026-10-25 that they be game
+  options: `settings.cfg`'s `[monsters]` section gives each ability the lowest
+  difficulty it is on at, or `never` ([CONFIGURATION](CONFIGURATION.md)), and
+  the game switches them off without changing the rules' identity, so saves
+  still load.
+- **Legendary Actions are off on Easy and Normal** and on from Hard, the
+  user's choice on 2026-10-25 for Tyranthraxus; the vampire's follow the same
+  option. The tests play with every ability on.
 - **Legendary Actions** come one at a time right after each other creature's
   turn while a use is left, three a round, regained as the monster's own turn
   starts; neither monster fights in a lair, so neither gets a fourth. The

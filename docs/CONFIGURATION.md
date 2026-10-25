@@ -18,6 +18,9 @@ language="es"
 [combat]
 combat_zoom=100
 encounter_challenge=33
+
+[monsters]
+legendary="hard"
 ```
 
 Use the actual folder containing `START.EXE`, `ITEMS`, and the original `.DAX`
@@ -30,6 +33,16 @@ easiest first; the default, also used for an unknown value, is `normal`. On
 game reads it when exploration starts or a save is loaded, and new settings
 files receive the default. See
 [DIFF-1](SRD-DECISIONS.md#diff-1-2026-10-21-difficulty-and-monsters-that-use-their-items).
+
+`[monsters]` switches monster abilities by difficulty. Each key names an
+ability (`legendary`, `parry`, `breath`; the
+[rules README](../data/rules/srd-5.2.1/README.md) lists them all) and its value
+the lowest difficulty it is on at, or `never`. An ability without a key is on
+at every difficulty, and a value that is neither a difficulty nor `never` keeps
+the default. By default Legendary Actions (Tyranthraxus's and the vampire's)
+are on from `hard`; new settings files receive that key. The combat screen
+reads the section when a fight starts. See
+[MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders).
 
 The combat screen reads `combat_zoom` from `[combat]` when it opens. The value
 is a percentage, clamped to 10–1000. The default is 100, also recorded in the

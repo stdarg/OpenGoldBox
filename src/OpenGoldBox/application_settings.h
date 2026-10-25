@@ -17,6 +17,9 @@ int combat_zoom_percent();
 unsigned encounter_challenge();
 // [game] difficulty: easy, normal, hard, nightmare or infernal (DIFF-1).
 opengold::Difficulty difficulty();
+// [monsters]: each monster ability's lowest difficulty, or "never"; the
+// abilities off at the set difficulty (MONSTER-2).
+std::vector<std::string> monster_abilities_off();
 bool valid_language(const godot::String &locale);
 bool save_game_path(const godot::String &directory);
 bool save_language(const godot::String &locale);
