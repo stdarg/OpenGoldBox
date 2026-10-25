@@ -1,4 +1,5 @@
 #include "archive_io.h"
+#include "opengold/path_text.h"
 #include "opengold/authored_items.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/formats.h"
@@ -17,11 +18,11 @@ std::vector<std::uint8_t> read_file(const std::filesystem::path &path)
 {
     if (!std::filesystem::exists(path))
     {
-        throw CatalogError("Cannot open " + path.string());
+        throw CatalogError("Cannot open " + path_text(path));
     }
     return detail::read_archive_bytes<CatalogError>(
-        path, "Asset exceeds size limit: " + path.string(), "Cannot open " + path.string(),
-        "Cannot read " + path.string());
+        path, "Asset exceeds size limit: " + path_text(path), "Cannot open " + path_text(path),
+        "Cannot read " + path_text(path));
 }
 
 using Archive = std::map<std::uint8_t, std::vector<std::uint8_t>>;
@@ -31,7 +32,7 @@ Archive read_archive(const std::filesystem::path &path)
     auto decoded = decode_dax_archive(read_file(path));
     if (!decoded)
     {
-        throw CatalogError("Invalid DAX archive: " + path.string());
+        throw CatalogError("Invalid DAX archive: " + path_text(path));
     }
     Archive records;
     for (auto &record : decoded.records)
@@ -400,7 +401,7 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)
             {
                 continue;
             }
-            const auto name = detail::upper_ascii(entry.path().filename().string());
+            const auto name = detail::upper_ascii(path_text(entry.path().filename()));
             if (name != "ITEMS" && name != "START.EXE" &&
                 !(name.starts_with("MON") && name.ends_with(".DAX")))
             {
@@ -416,7 +417,7 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)
             const auto file = files.find(name);
             if (file == files.end())
             {
-                throw CatalogError("Missing required asset " + name + " in " + directory.string());
+                throw CatalogError("Missing required asset " + name + " in " + path_text(directory));
             }
             return file->second;
         };

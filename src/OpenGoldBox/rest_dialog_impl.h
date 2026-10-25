@@ -1145,7 +1145,7 @@ void RolfTourView::check_rest_controls()
                 {
                     const auto directory = String(arg).trim_prefix("--rest-captures=");
                     std::filesystem::create_directories(
-                        std::filesystem::path(directory.utf8().get_data()));
+                        presentation::path_from_godot(directory));
                     const auto image = get_viewport()->get_texture()->get_image();
                     check(image.is_valid() &&
                               image->save_png(directory.path_join(

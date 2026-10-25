@@ -1,4 +1,5 @@
 #include "godot_text.h"
+#include "opengold/path_text.h"
 #include "initiative_controls.h"
 #include "optional_effect_controls.h"
 #include "combat_weapon_controls.h"
@@ -857,7 +858,7 @@ CombatView::ArtSet CombatView::build_art() const
     {
         for (const auto &file : std::filesystem::directory_iterator(directory))
         {
-            auto name = file.path().filename().string();
+            auto name = opengold::path_text(file.path().filename());
             for (auto &c : name)
             {
                 if (c >= 'a' && c <= 'z')
@@ -1005,7 +1006,7 @@ CombatView::ArtSet CombatView::build_art() const
     {
         for (const auto &file : std::filesystem::directory_iterator(directory))
         {
-            auto name = file.path().filename().string();
+            auto name = opengold::path_text(file.path().filename());
             for (auto &c : name)
             {
                 if (c >= 'a' && c <= 'z')
@@ -3465,7 +3466,7 @@ void CombatView::_process(double delta)
                                                            : "user://checks/training-combat.png");
             std::filesystem::create_directories(file.parent_path());
             const auto image = get_viewport()->get_texture()->get_image();
-            if (image.is_null() || image->save_png(gs(file.generic_string())) != OK)
+            if (image.is_null() || image->save_png(gs(opengold::path_text(file))) != OK)
             {
                 throw std::runtime_error("Combat capture failed");
             }

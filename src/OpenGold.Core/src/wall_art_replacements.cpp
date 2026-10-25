@@ -1,4 +1,5 @@
 #include "opengold/wall_art_replacements.h"
+#include "opengold/path_text.h"
 #include <fstream>
 #include <stdexcept>
 
@@ -46,14 +47,14 @@ std::vector<std::uint8_t> read_bytes(const std::filesystem::path &path)
     std::ifstream in(path, std::ios::binary | std::ios::ate);
     if (!in)
     {
-        throw std::runtime_error("Cannot read wall art " + path.string());
+        throw std::runtime_error("Cannot read wall art " + path_text(path));
     }
     std::vector<std::uint8_t> bytes(static_cast<std::size_t>(in.tellg()));
     in.seekg(0);
     if (!in.read(reinterpret_cast<char *>(bytes.data()),
                  static_cast<std::streamsize>(bytes.size())))
     {
-        throw std::runtime_error("Cannot read wall art " + path.string());
+        throw std::runtime_error("Cannot read wall art " + path_text(path));
     }
     return bytes;
 }
@@ -118,11 +119,11 @@ WallArtReplacements load_wall_art_replacements(const std::filesystem::path &fold
         {
             continue;
         }
-        const auto name = entry.path().filename().string();
+        const auto name = path_text(entry.path().filename());
         const auto key = key_from_folder(name);
         if (!key)
         {
-            throw std::runtime_error("Unknown wall art folder " + entry.path().string());
+            throw std::runtime_error("Unknown wall art folder " + path_text(entry.path()));
         }
         std::array<Image, 10> pieces;
         for (unsigned view = 0; view < pieces.size(); ++view)
@@ -131,7 +132,7 @@ WallArtReplacements load_wall_art_replacements(const std::filesystem::path &fold
             auto image = decode(read_bytes(path));
             if (!image || !consistent(*image) || image->width == 0 || image->height == 0)
             {
-                throw std::runtime_error("Cannot decode wall art " + path.string());
+                throw std::runtime_error("Cannot decode wall art " + path_text(path));
             }
             pieces[view] = std::move(*image);
         }

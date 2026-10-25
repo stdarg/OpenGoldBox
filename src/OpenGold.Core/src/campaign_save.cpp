@@ -1,4 +1,5 @@
 #include "opengold/campaign_save.h"
+#include "opengold/path_text.h"
 #include "opengold/save_file.h"
 #include <algorithm>
 #include <charconv>
@@ -977,7 +978,7 @@ std::string campaign_asset_identity(const std::filesystem::path &directory)
         {
             continue;
         }
-        auto name = entry.path().filename().string();
+        auto name = path_text(entry.path().filename());
         for (auto &c : name)
         {
             if (c >= 'a' && c <= 'z')

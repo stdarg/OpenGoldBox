@@ -1,4 +1,5 @@
 #include "opengold/magic_item_catalog.h"
+#include "opengold/path_text.h"
 #include "archive_io.h"
 #include "opengold/ecl_machine.h"
 #include "opengold/formats.h"
@@ -23,8 +24,8 @@ std::vector<std::uint8_t> read_game_file(const std::filesystem::path &directory,
     const auto path = detail::find_archive<MagicItemError>(
         directory, name, "Ambiguous " + std::string(name), "Missing " + std::string(name));
     return detail::read_archive_bytes<MagicItemError>(path, std::string(name) + " is too large",
-                                                      "Cannot open " + path.string(),
-                                                      "Incomplete read of " + path.string());
+                                                      "Cannot open " + path_text(path),
+                                                      "Incomplete read of " + path_text(path));
 }
 
 Records read_dax(const std::filesystem::path &directory, const std::string &name)

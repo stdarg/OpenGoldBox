@@ -217,7 +217,7 @@ void RolfTourView::check_mastery_rest_controls()
                     {
                         const auto dir = String(arg).trim_prefix("--mastery-rest-captures=");
                         std::filesystem::create_directories(
-                            std::filesystem::path(dir.utf8().get_data()));
+                            presentation::path_from_godot(dir));
                         const auto image = get_viewport()->get_texture()->get_image();
                         check(image.is_valid() &&
                                   image->save_png(dir.path_join(

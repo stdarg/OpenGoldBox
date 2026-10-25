@@ -1,4 +1,5 @@
 #include "archive_io.h"
+#include "opengold/path_text.h"
 #include "opengold/ecl_machine.h"
 #include "opengold/formats.h"
 #include <algorithm>
@@ -21,7 +22,7 @@ EclCatalog EclCatalog::load(const std::filesystem::path &directory)
             {
                 continue;
             }
-            auto name = detail::upper_ascii(entry.path().filename().string());
+            auto name = detail::upper_ascii(path_text(entry.path().filename()));
             if (!name.starts_with("ECL") || !name.ends_with(".DAX"))
             {
                 continue;
@@ -61,7 +62,7 @@ EclCatalog EclCatalog::load(const std::filesystem::path &directory)
         }
         if (catalog.programs_.empty())
         {
-            throw EclError("No ECL programs found in " + directory.string());
+            throw EclError("No ECL programs found in " + path_text(directory));
         }
         return catalog;
     }

@@ -1,4 +1,5 @@
 #include "dice.h"
+#include "opengold/path_text.h"
 #include "character_class.h"
 #include "damage_roll.h"
 #include "sneak_attack.h"
@@ -32374,7 +32375,7 @@ std::unique_ptr<RulesModule> load(const std::filesystem::path &file)
     std::ifstream input(file, std::ios::binary);
     if (!input)
     {
-        throw std::runtime_error("Cannot open rules content: " + file.string());
+        throw std::runtime_error("Cannot open rules content: " + path_text(file));
     }
     std::string bytes{std::istreambuf_iterator<char>(input), {}};
     if (bytes.size() > 65536 || input.bad())

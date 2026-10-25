@@ -760,6 +760,27 @@ void installed()
             "Named NPC included");
     std::cout << "Installed-game checks passed for all " << c.all().size() << " records.\n";
 }
+
+// A player's game folder may be named in any script. On Windows, path text that
+// goes through the ANSI code page fails for the characters it lacks.
+void non_ascii_folder()
+{
+    Fixture f;
+    f.populate();
+    // Escaped Japanese, so the name does not depend on how the compiler reads
+    // this file.
+    const auto folder = f.path() / std::filesystem::path(u8"Pool of Radiance \u5192\u967A");
+    require(std::filesystem::create_directory(folder), "Non-ASCII game folder created");
+    for (const auto &file : std::filesystem::directory_iterator(f.path()))
+    {
+        if (file.is_regular_file())
+        {
+            std::filesystem::copy_file(file.path(), folder / file.path().filename());
+        }
+    }
+    require(CreatureCatalog::load(folder).all().size() == 2, "Catalog loads from a non-ASCII folder");
+    (void)CreatureFactory::load(folder);
+}
 } // namespace
 
 int main()
@@ -773,6 +794,7 @@ int main()
         instances();
         maps();
         installed();
+        non_ascii_folder();
     }
     catch (const std::exception &e)
     {

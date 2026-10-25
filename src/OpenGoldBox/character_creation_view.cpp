@@ -1,4 +1,5 @@
 #include "godot_text.h"
+#include "opengold/path_text.h"
 #include "cantrip_control.h"
 #include "spell_choice_controls.h"
 #include "training_control.h"
@@ -1210,7 +1211,7 @@ void CharacterCreationView::capture(const char *name)
         ProjectSettings::get_singleton()->globalize_path(gs(std::string("user://checks/") + name)));
     std::filesystem::create_directories(path.parent_path());
     const auto image = get_viewport()->get_texture()->get_image();
-    if (image.is_null() || image->save_png(gs(path.generic_string())) != OK)
+    if (image.is_null() || image->save_png(gs(opengold::path_text(path))) != OK)
     {
         throw std::runtime_error("Character capture failed");
     }

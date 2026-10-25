@@ -1,4 +1,5 @@
 #include "opengold/combat_body_catalog.h"
+#include "opengold/path_text.h"
 #include "opengold/campaign_party.h"
 #include "opengold/item_key.h"
 #include <algorithm>
@@ -50,7 +51,7 @@ CombatBodyCatalog CombatBodyCatalog::load(const std::filesystem::path &assignmen
     std::ifstream options(options_file);
     if (!options)
     {
-        throw std::runtime_error("Cannot open combat look options: " + options_file.string());
+        throw std::runtime_error("Cannot open combat look options: " + path_text(options_file));
     }
     std::set<std::string> keys{"unreviewed"};
     std::string line;
@@ -88,7 +89,7 @@ CombatBodyCatalog CombatBodyCatalog::load(const std::filesystem::path &assignmen
     std::ifstream in(assignments);
     if (!in)
     {
-        throw std::runtime_error("Cannot open combat body catalog: " + assignments.string());
+        throw std::runtime_error("Cannot open combat body catalog: " + path_text(assignments));
     }
     std::array<bool, 35> seen{};
     unsigned count = 0;
