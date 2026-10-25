@@ -160,9 +160,11 @@ and world-state changes, then explicitly starts slot 4. It must not resume the
 old script after a transition. Program resolution must use the current resource
 bank; a numeric script ID alone is insufficient.
 
-All 26 commands below have request/continuation support. Their concrete game
-services are still outstanding; a registered capability must supply the behavior
-and state changes described here.
+All 26 commands below have request/continuation support. The game's campaign
+host now implements them for the supported areas; [ECL-COVERAGE.md](ECL-COVERAGE.md)
+records, per command and service variant, what is implemented, what a
+synthetic script tests, what an original event checks, and what is still
+refused.
 
 | Opcode (hex) | Command | Host responsibility |
 | --- | --- | --- |
@@ -198,7 +200,9 @@ party position, time, and inventory. In particular, the character-name address
 needs the original special handling when connected to real characters. Updating
 a binding alone does not move a party or modify a `CreatureInstance`. Hosts must
 validate world mutations before committing and keep VM/world state synchronized.
-`0x1F` and the broken `ECL CLOCK` remain explicit execution faults.
+`0x1F` remains an explicit execution fault. `ECL CLOCK` passes time for its
+operand's steps in campaign play ([nomad camp](audits/nomad-camp.md)); without a
+campaign host it still faults.
 
 ## Validation
 
@@ -228,12 +232,14 @@ battlefield geometry, loot and campaign saves for the Slums encounters; see
 Static inspection still reports seven diagnostics in six programs. Each comes
 from a possible indexed-jump fallthrough into embedded table data; the audit
 lists their PCs. The inspector retains those paths until range analysis can
-prove them impossible. Full campaign execution, original-DOS differential traces,
-save/replay and map-event scheduling remain outstanding.
+prove them impossible. Campaign execution, saves and map-event scheduling now
+run for the supported areas ([the expedition](EXPEDITION.md), [saves](SAVES.md));
+original-DOS differential traces remain outstanding.
 
 ## Plan for closing execution gaps
 
-Recorded September 5, 2026. The current 62-opcode table contains **34 core VM
+Recorded September 5, 2026; for the current state of each command see
+[ECL-COVERAGE.md](ECL-COVERAGE.md). The 62-opcode table then contained **34 core VM
 operations, 26 commands awaiting concrete host services, and 2 explicitly
 unsupported commands** (`0x1F` and `ECL CLOCK`). The 28 command-level gaps overlap
 with shared state, scheduling and persistence work; this is not a percentage of

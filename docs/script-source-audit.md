@@ -77,10 +77,10 @@ already selects only the actual branch and reads tables as data.
 | RANDOM upper endpoint | Uses the saturated increment described for `19B5:0234..0291`, so argument 255 produces 0..254. The general opcode prose suggests an inclusive bound instead. Ordinary bounds are tested; verify the 255 corner case against DOS. OpenGoldBox's seedable RNG intentionally has a different sequence. |
 | Conditional skip quirks | Skips one whole decoded instruction. The original has skip bugs for some variable-length/other commands; bug-for-bug behavior needs specific traces, not a general broken decoder. |
 | `0x1F` | Two-operand grammar, undefined handler. Execution faults; it is not a guessed command or silent success. |
-| ECL CLOCK | One operand is confirmed. Original execution uses an uninitialized value, so OpenGoldBox faults instead of inventing elapsed time. |
+| ECL CLOCK | One operand is confirmed. Original execution uses an uninitialized value; by the user's policy campaign play passes time for the operand's steps ([nomad camp](audits/nomad-camp.md)), and a VM without the campaign host faults. |
 | Runtime code changes | Private script writes and subsequent fetches are implemented and isolated. Original self-modifying command sequences still need a dedicated DOS compatibility trace. |
 | Mapped engine fields | Bindings are explicit research state. Character-name special handling, selected-creature views, position/wall updates, time and inventory must be connected to authoritative world objects. |
-| Engine services | Opcodes have opt-in host requests, not complete gameplay implementations. Reply acceptance means the registered host has performed the service. The native console registers none of these services. |
+| Engine services | Opcodes have opt-in host requests. The campaign host implements them for the supported areas; [ECL-COVERAGE.md](ECL-COVERAGE.md) lists each one's variants and evidence. Reply acceptance means the registered host has performed the service. The native console registers none of these services. |
 | Persistence and invocation timing | Program changes clear bound local flags and require explicit startup entry invocation. A full scheduler must handle movement-before-resolution, search-after-movement/Look, camp, load/save initialization and reentrancy. |
 
 ## Host behavior checklist from the research

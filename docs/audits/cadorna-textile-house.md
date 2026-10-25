@@ -293,7 +293,10 @@ stage after Podol Plaza.
   house, the refused exits, a fighter's fall down the well, the courtyard,
   Grishnak and her Brass Key, the ogre chief and the box taken sealed,
   Skullcrusher unlocked and joining as a level-4 Fighter, and the way back.
-  The route counts nine roaming fights as done, so it meets none of the
+  A save just after Skullcrusher joins is reloaded (`reload_cadorna_chain`,
+  issue #4): the drum, Grishnak, the chief, the sealed box and Skullcrusher
+  are all still done, and walking back through their rooms fights nobody,
+  adds no coins or gems and recruits no second Skullcrusher. The route counts nine roaming fights as done, so it meets none of the
   streets' frogs, scorpions or undead; their stat blocks are checked in
   `opengold_slums_creatures_tests`.
 - **Fixed on the way:** a fight reported an item it had used up again after
