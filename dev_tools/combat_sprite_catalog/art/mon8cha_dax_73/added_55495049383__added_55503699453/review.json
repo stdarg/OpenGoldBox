@@ -1,0 +1,32 @@
+{
+  "action_sha256": "f7a998c601d1c6ee9177b19c014e799ea24a66ea7e5d7d50af9175011fe69bcd",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon8cha_dax_73/added_55495049383__added_55503699453/action.png",
+    "ready": "art/mon8cha_dax_73/added_55495049383__added_55503699453/ready.png"
+  },
+  "metadata_sha256": "774bd085d66c6a113fa6d63d848e07603be30623690710d8c35d3bdb82a3008e",
+  "notes": "One set only: readied one-handed Morning star + Shield. Preserved checked-in default PNGs byte-for-byte. Rejected full-body image-generation drafts because they changed the Gnoll body and clothing. Final pair composites newly generated gear onto the accepted original Gnoll art; the action raises the existing Gnoll weapon arm while retaining the complete ready torso, hips, legs, tail and planted feet. The rigid morning star stays in the image-left hand and swings down/right; the round shield stays on the image-right forearm. Compared exact final 128x128 files enlarged and at combat size on light gray, magenta and dark backgrounds. The lower 33 rows have zero changed pixels between ready/action. Head/torso/waist and shoulder connection were inspected for seams and black artifacts. A headless catalog run selected MON8CHA.DAX:73, loaded both new paths, auto-swapped ready to action after 1.1 seconds, and the loaded pixels matched the installed files (AE=0). Saved humanoid tier and 1x2 footprint retained from existing art as requested.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "82c840866aa94a8529303f74971053b6c5df631db81d53c8d008c9b7b1acdf61",
+  "reviewed_at": "2026-10-25T20:29:43Z",
+  "reviewer": "Codex visual review",
+  "source_key": "MON8CHA.DAX:73",
+  "specification": "bipedal-v1",
+  "variant_id": "added_55495049383__added_55503699453",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
+}
