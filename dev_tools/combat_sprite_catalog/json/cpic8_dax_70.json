@@ -1,7 +1,5 @@
 {
-  "description": "A powerful fire-associated genie with a tall, commanding outline and otherworldly presence. This is the script-linked icon for MON8CHA.DAX:124. The original template records no carried items. Source wealth: 6 gp.",
-  "humanoid_size": "tall",
-  "sprite_size": {"height_squares": 2, "width_squares": 1},
+  "description": "A powerful fire-associated genie with a tall, commanding outline and otherworldly presence. This is the script-linked combat icon for MON8CHA.DAX:124. The original template records no carried items. Source wealth: 6 gp. The ready lower body is all flame; the action extends both arms in a horizontal cross with flames running from hands to shoulders and a wide screaming mouth.\n\nREADY ART REUSE for CPIC8.DAX:70/default: byte-identical to the newly reviewed MON8CHA.DAX:124/default/ready.png. Both catalog records represent the same script-linked Efreeti. The reused ready sprite shows a closed-mouth red Efreeti with poised arms and an entirely flame lower body; no new ready-frame image-generation request was made for this revision.\n\nIMAGEGEN PROMPT - ACTION:\nUse case: precise-object-edit\nAsset type: exactly ONE ACTION frame for CPIC8.DAX:70/default, final transparent 128x128 combat pixel art after export.\nInput Image 1 is the newly generated high-resolution READY master for the same script-linked Efreeti in MON8CHA.DAX:124/default. Edit this exact character, not an original game sprite. Input Image 2 is the accepted 128x128 READY export copied to CPIC8.DAX:70/default/ready.png; it defines the final canvas origin, torso scale, waist position, flame-base location, and pixel-art appearance.\nShow the red muscular Efreeti with black hair and gold jewelry in front three-quarter view toward screen right. Keep head, chest, face, belt, and the ENTIRE lower body of red-orange-yellow living flame at the same size and coordinates as ready. The waist must connect continuously to the flame column, whose pointed bottom tip stays anchored at exactly the ready position. No legs or dark smoke.\nACTION POSE: hold BOTH arms OUTRIGHT in a broad horizontal CROSS / T shape at shoulder height: one complete straight arm extends to image-left from the left shoulder and the other complete straight arm extends to image-right from the right shoulder. Keep the chest partly visible; this is a forceful attack, not surrender or a guard. Both arms must be attached through shoulders, elbows, wrists, and open hands, and have consistent length and thickness. Open his mouth WIDE in a fierce scream, visibly different from the ready closed mouth. Bright fire rises from EACH hand and runs back along each forearm and upper arm toward its shoulder, with continuous attached tongues reaching the shoulders. Leave the face readable and do not hide it behind fire. No detached fireballs or straight beam.\nThe outstretched attacking arms and their fire may pass the one-square-wide dotted footprint sides, but the torso, belt, and flame lower body remain within the saved ONE-square-wide by TWO-squares-high body footprint. Plan the wider action before exporting; keep the same head and torso scale as ready, and keep all final pixels inside the 128x128 canvas with a transparent margin. Do not shrink, slide, recenter, or rotate the whole character. Preserve a continuous shoulder-to-torso connection and a stable flame-base anchor.\nCrisp fantasy pixel-art clusters matching the attached replacement art. Genuine transparent alpha. Exactly one Efreeti in one frame, no duplicate, sheet, diptych, text, border, scenery, floor, cast shadow, opaque black box, extra arms, weapon, shield, or armor. The saved equipment list is empty and the linked monster's 6 gp is not an object to draw.",
   "description_sources": [
     "Decoded ECL link to MON8CHA.DAX:124",
     "Original game inventory and wealth of linked creature"
@@ -9,10 +7,13 @@
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
+  "height_feet": null,
+  "humanoid_size": "tall",
   "name": "EFREETI combat icon",
+  "preview_fallback_variant": "",
   "source": {
     "art_archive": "CPIC8.DAX",
-    "art_basis": "ECL LOAD MONSTER icon linked to 1 creature",
+    "art_basis": "ECL LOAD MONSTER icon shared by 1 creature",
     "art_record": 70,
     "creature_archive": "",
     "creature_record": -1,
@@ -20,6 +21,10 @@
     "linked_creature_keys": [
       "MON8CHA.DAX:124"
     ]
+  },
+  "sprite_size": {
+    "height_squares": 2,
+    "width_squares": 1
   },
   "variants": [
     {
