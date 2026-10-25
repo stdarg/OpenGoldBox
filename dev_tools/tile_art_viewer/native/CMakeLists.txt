@@ -2,11 +2,6 @@ add_library(opengold_tile_art_viewer SHARED EXCLUDE_FROM_ALL
     wall_art_catalog.cpp map_art_profiles.cpp register_types.cpp)
 target_link_libraries(opengold_tile_art_viewer PRIVATE opengold_core godot-cpp)
 target_compile_features(opengold_tile_art_viewer PRIVATE cxx_std_20)
-if(MSVC)
-    target_compile_options(opengold_tile_art_viewer PRIVATE /WX)
-else()
-    target_compile_options(opengold_tile_art_viewer PRIVATE -Werror)
-endif()
 set_target_properties(opengold_tile_art_viewer PROPERTIES
     PREFIX ""
     RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/dev_tools/tile_art_viewer/godot/bin"

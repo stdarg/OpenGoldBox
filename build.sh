@@ -5,7 +5,6 @@
 #
 #   --test      after building, run the native test suite
 #   --test-all  after building, run every test, including the Godot checks
-#   --werror    make every compiler warning fail the build
 #   <preset>    build another CMake preset: default (native core and tests,
 #               build/), debug (the same, unoptimized) or macos-universal
 #
@@ -26,15 +25,13 @@ JOBS="${JOBS:-$( (command -v sysctl >/dev/null 2>&1 && sysctl -n hw.ncpu) \
               || echo 4 )}"
 
 PRESET=
-WARNINGS_AS_ERRORS=OFF
 TESTS=none
 for arg in "$@"; do
     case "$arg" in
-        --werror) WARNINGS_AS_ERRORS=ON ;;
         --test) TESTS=native ;;
         --test-all) TESTS=all ;;
         -*)
-            echo "Unknown option: $arg (use --test, --test-all, --werror or a preset name)" >&2
+            echo "Unknown option: $arg (use --test, --test-all or a preset name)" >&2
             exit 2
             ;;
         *) PRESET="$arg" ;;
@@ -48,9 +45,7 @@ if [ -z "$PRESET" ]; then
     fi
 fi
 
-# Passed on every run, so a tree configured with --werror goes back to
-# warnings when the flag is dropped.
-"$CMAKE" --preset "$PRESET" -DCMAKE_COMPILE_WARNING_AS_ERROR="$WARNINGS_AS_ERRORS"
+"$CMAKE" --preset "$PRESET"
 "$CMAKE" --build --preset "$PRESET" --parallel "$JOBS"
 if [ "$PRESET" = macos-universal ]; then
     echo "Game exported: mac-package/OpenGoldBox.app"

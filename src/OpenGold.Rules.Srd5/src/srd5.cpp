@@ -4603,8 +4603,8 @@ class Session final : public CombatSession
     Session(std::shared_ptr<const Content> content, Encounter encounter, std::uint64_t seed,
             bool restoring = false)
         : content_(std::move(content)), board_(std::move(encounter.battlefield)), rng_(seed),
-          scope_(encounter.scope), morale_(encounter.morale), gold_(encounter.party_gold),
-          daylight_(encounter.daylight)
+          scope_(encounter.scope), morale_(encounter.morale), daylight_(encounter.daylight),
+          gold_(encounter.party_gold)
     {
         if (!scope_)
         {
@@ -8209,6 +8209,14 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::arcane_sword:
     case detail::Rider::ice_knife:
         return; // Its force or sword is placed, or its shard bursts, with the attack.
+    case detail::Rider::abjure_foes:
+    case detail::Rider::dispel_magic:
+    case detail::Rider::guardian_of_faith:
+    case detail::Rider::magic_circle:
+    case detail::Rider::revivify:
+    case detail::Rider::mass_healing_word:
+    case detail::Rider::contingency:
+        return; // Resolved by abjure(), the aimed cast, revivify() or camp, not as a rider.
     case detail::Rider::ray_of_sickness:
     {
         // Poisoned until the end of the caster's next turn.
@@ -10060,6 +10068,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             break;
         case detail::SpellTarget::corpse:
             continue; // Offered with the corpses it can raise (Animate Dead).
+        case detail::SpellTarget::dead_ally:
+            continue; // Offered on its own to a just-dead ally (Revivify).
         }
         if (feet > spell_range(a, spell))
         {

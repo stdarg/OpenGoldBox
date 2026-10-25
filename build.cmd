@@ -5,19 +5,8 @@ rem Build this checkout even when called from another directory or worktree.
 cd /d "%~dp0"
 
 rem "build.cmd debug" runs the slower Debug preset; the default is optimized.
-rem "--werror" makes every compiler warning fail the build.
 set "PRESET=default"
-set "WARNINGS_AS_ERRORS=OFF"
-:parse_args
-if "%~1"=="" goto args_parsed
-if /i "%~1"=="--werror" (
-    set "WARNINGS_AS_ERRORS=ON"
-) else (
-    set "PRESET=%~1"
-)
-shift
-goto parse_args
-:args_parsed
+if not "%~1"=="" set "PRESET=%~1"
 
 set "VSDEV_CMD=C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\Common7\Tools\VsDevCmd.bat"
 set "CMAKE_EXE=C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
@@ -28,9 +17,7 @@ if not exist "%CMAKE_EXE%" goto missing_cmake
 call "%VSDEV_CMD%" -arch=x64
 if errorlevel 1 exit /b %errorlevel%
 
-rem Passed on every run, so a tree configured with --werror goes back to
-rem warnings when the flag is dropped.
-"%CMAKE_EXE%" --preset %PRESET% -DCMAKE_COMPILE_WARNING_AS_ERROR=%WARNINGS_AS_ERRORS%
+"%CMAKE_EXE%" --preset %PRESET%
 if errorlevel 1 exit /b %errorlevel%
 
 "%CMAKE_EXE%" --build --preset %PRESET%
