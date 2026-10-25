@@ -1,0 +1,12 @@
+Use case: precise-object-edit. Asset type: MON5CHA.DAX:60/default/action, one transparent pixel-art combat sprite. Image 1 is the exact NEW ready sprite for this giant snake, magnified 8x without smoothing; it is the EDIT TARGET. Keep the SAME 128 x 128 source-canvas origin, same scale, same brown-and-tan scale pattern, same long low body, same tail, same two-square horizontal span, and same grounded belly/coil pixels. Do not move, resize, redraw, or recenter the body at all. Change ONLY the short rising neck, head, jaws, and tongue: the head thrusts toward SCREEN RIGHT to bite, advancing about 8 to 12 source pixels; its jaws open widely enough to show upper and lower fangs and a dark mouth. The neck stretches naturally from the SAME continuous body, with no severed join or extra coil. The head/neck change should make the bite obvious when alternated with ready at combat size. Keep the head and all visible pixels inside the 128 x 128 canvas with a few transparent pixels at the right edge; keep the body and head under one combat square high. Preserve the original ground/base anchor exactly, including the left tail and low coil. No projectile, no extra snake, no limbs, no scenery, no border, no text, no opaque black box, no halo, no sprite sheet. Output only the action frame with genuine transparency and crisp pixel edges.
+
+POSTPROCESS AND REVIEW RECORD (not part of imagegen prompt): The selected
+first action source supplies the open-mouthed head and short neck shifted eight
+source pixels right, alpha-masked into the newly generated ready body. A later
+retry was rejected because it redrew the whole body; its exact prompt is also
+saved in the monster JSON description. The ready tail and grounded body through
+source x=75 remain pixel-identical across the pair. The neck join was checked
+enlarged on light gray and at combat size on light, dark, and magenta; no double
+head, cut line, black box, or detached body is accepted. The same 110x110
+nearest-neighbor transform and +5,+14 placement were used for the two selected
+generated source images before the localized action composite.
