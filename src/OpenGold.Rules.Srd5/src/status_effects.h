@@ -523,12 +523,12 @@ enum class EffectKind : unsigned
     hampered = 209,
     // Advantage on its next attack roll this turn (a Pirate Captain's Rapier).
     poised = 210,
-    // A Pirate Captain's Captain's Charm: Charmed until the start of the
-    // captain's next turn.
-    captain_charmed = 211,
+    // Charmed by its source until the start of the source's next turn (a
+    // Pirate Captain's Captain's Charm, a Sprite's Enchanting Bow).
+    turn_charmed = 211,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = captain_charmed
+    last = turn_charmed
 };
 
 // Magic Circle's creature types, by `dc`.

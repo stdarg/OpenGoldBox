@@ -1600,6 +1600,20 @@ struct Definition
         ranged
     };
     Strike hampering{}, poisoning{}, pushing{};
+    // A monster's `charming` row: its hits with that attack leave the target
+    // Charmed until the start of its next turn (a Sprite's Enchanting Bow).
+    Strike charming{};
+    // A monster's `flyby` row: flying out of an enemy's reach draws no
+    // Opportunity Attack (a Hippogriff's Flyby).
+    bool flyby{};
+    // A monster's `magic_resistance` row: Advantage on saves against spells
+    // (an Efreeti's Magic Resistance).
+    bool magic_resistance{};
+    // A monster's `protective_magic` row: its Reaction casts Shield when that
+    // turns a hit into a miss, or Counterspell on an enemy's spell of level 1
+    // or higher it sees within 60 feet, sharing `trait_uses` a day (a Mage's
+    // Protective Magic).
+    bool protective_magic{};
     bool poisoning_own_turn{};
     int push_feet{};
     // A monster's `hit_advantage` row: a melee hit gives Advantage on its next
@@ -3064,7 +3078,7 @@ constexpr std::array<std::pair<std::string_view, std::array<detail::EffectKind, 
          {"Frightened", {detail::EffectKind::frightened, detail::EffectKind::abjured,
                          detail::EffectKind::abjured}},
          {"Charmed", {detail::EffectKind::charmed, detail::EffectKind::enthralled,
-                      detail::EffectKind::captain_charmed}}}};
+                      detail::EffectKind::turn_charmed}}}};
 
 bool touch_restorable(const Actor &a)
 {
@@ -3264,7 +3278,7 @@ bool has_greater_harm(const Actor &a, std::size_t harm)
                                   : harm      ? curse(e.kind)
                                               : e.kind == detail::EffectKind::charmed ||
                                                     e.kind == detail::EffectKind::enthralled ||
-                                                    e.kind == detail::EffectKind::captain_charmed ||
+                                                    e.kind == detail::EffectKind::turn_charmed ||
                                                     e.kind == detail::EffectKind::dominated;
                        });
 }
@@ -5168,6 +5182,8 @@ class Session final : public CombatSession
     // While perform() carries out a command, whose reactions it can ask; turns
     // ended outside one take no Legendary Actions after them.
     bool performing_{};
+    // While a spell is cast: Magic Resistance gives Advantage on its saves.
+    bool against_magic_{};
     [[nodiscard]] const ReactionAnswer *answer_of(EntityId target, Asked asked) const;
     [[nodiscard]] bool can_shield(const Actor &target) const;
     [[nodiscard]] bool can_deflect(const Actor &target, bool deflectable) const;
@@ -5814,7 +5830,10 @@ class Session final : public CombatSession
     // Counterspell: whether a creature may answer this casting, and whether
     // one stops it.
     [[nodiscard]] bool can_counter(const Actor &wizard, const Actor &caster) const;
-    [[nodiscard]] bool countered(Actor &caster);
+    // A monster's Protective Magic counters the spell without asking.
+    [[nodiscard]] bool protective_counter(const Actor &wizard, const Actor &caster,
+                                          const detail::SpellDef &spell) const;
+    [[nodiscard]] bool countered(Actor &caster, const detail::SpellDef &spell);
     [[nodiscard]] bool slowed_spell_fails(Actor &caster, std::string_view verb,
                                           const detail::SpellDef &spell);
     void limit_slowed_turn();
@@ -8150,7 +8169,7 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::snake_charmed, "Incapacitated (Snake Charm)"},
               std::pair{detail::EffectKind::envenomed, "Poisoned (Cunning Strike)"},
               std::pair{detail::EffectKind::enthralled, "Charmed (Enthralling Panache)"},
-              std::pair{detail::EffectKind::captain_charmed, "Charmed (Captain's Charm)"},
+              std::pair{detail::EffectKind::turn_charmed, "Charmed"},
               std::pair{detail::EffectKind::hampered, "Hampered"},
               std::pair{detail::EffectKind::lethargic, "Incapacitated (lethargy)"},
               std::pair{detail::EffectKind::entranced, "Charmed (Hypnotic Pattern)"},
@@ -8849,7 +8868,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                           {
                               return e.kind == detail::EffectKind::charmed ||
                                      e.kind == detail::EffectKind::enthralled ||
-                                     e.kind == detail::EffectKind::captain_charmed ||
+                                     e.kind == detail::EffectKind::turn_charmed ||
                                      e.kind == detail::EffectKind::dominated;
                           });
             release(target);
@@ -9616,7 +9635,7 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         }
     }
     // Counterspell: a stopped spell keeps its slot.
-    if (!item_effect(verb) && (countered(a) || slowed_spell_fails(a, verb, spell)))
+    if (!item_effect(verb) && (countered(a, spell) || slowed_spell_fails(a, verb, spell)))
     {
         return;
     }
@@ -9628,6 +9647,12 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         EntityId &caster;
         ~ItemCasterReset() { caster = 0; }
     } item_caster_reset{item_caster_};
+    const struct AgainstMagic
+    {
+        bool &against_magic;
+        explicit AgainstMagic(bool &flag) : against_magic(flag) { against_magic = true; }
+        ~AgainstMagic() { against_magic = false; }
+    } against_magic{against_magic_};
     // A spell without damage dice keeps the default damage type, Fire.
     against_fire_ = spell.dice.count && spell.damage == detail::DamageType::fire;
     const struct AgainstFireReset
@@ -15771,6 +15796,17 @@ void Session::strike_riders(Actor &a, Actor &target, bool ranged)
     {
         push_away(a, target, d.push_feet / 5);
     }
+    if (d.charming == strike && conscious(target) && !mindless(target) &&
+        !aura_of_devotion(target) &&
+        !detail::has_effect(target.effects, detail::EffectKind::mind_blank) &&
+        detail::can_apply(target.effects))
+    {
+        detail::apply_poisoned(target.effects, effect_source(a), a.source.name, next_turn_ms(a),
+                               detail::EffectKind::turn_charmed);
+        log(target.source.name + " is Charmed by " + a.source.name + ".",
+            {"{name} is Charmed by {caster}.",
+             {{"name", target.source.name}, {"caster", a.source.name}}});
+    }
     // Until this turn ends: its next attack roll this turn has Advantage.
     if (!ranged && d.hit_advantage && detail::can_apply(a.effects))
     {
@@ -15807,7 +15843,7 @@ void Session::captains_charm(Actor &captain, Actor &target)
         return;
     }
     detail::apply_poisoned(target.effects, effect_source(captain), captain.source.name,
-                           next_turn_ms(captain), detail::EffectKind::captain_charmed);
+                           next_turn_ms(captain), detail::EffectKind::turn_charmed);
     log(target.source.name + " is Charmed by " + captain.source.name + ".",
         {"{name} is Charmed by {caster}.",
          {{"name", target.source.name}, {"caster", captain.source.name}}});
@@ -16592,6 +16628,17 @@ void Session::choke(const Zone &cloud, Actor &creature)
          {{"name", creature.source.name}}});
 }
 
+bool Session::protective_counter(const Actor &wizard, const Actor &caster,
+                                 const detail::SpellDef &spell) const
+{
+    // Only a spell of level 1 or higher is worth a use.
+    return def(wizard).protective_magic && trait_uses_left(wizard) > 0 && spell.level > 0 &&
+           wizard.source.side != caster.source.side && conscious(wizard) && wizard.reaction &&
+           !detail::incapacitated(wizard.effects) &&
+           distance(wizard.source.cell, caster.source.cell) <= 60 && can_see(wizard, caster) &&
+           !sealed_off(wizard) && !absent(wizard);
+}
+
 bool Session::can_counter(const Actor &wizard, const Actor &caster) const
 {
     // A level-3 slot or higher, one slot a turn, a Reaction, and the casting
@@ -16603,23 +16650,35 @@ bool Session::can_counter(const Actor &wizard, const Actor &caster) const
            !sealed_off(wizard) && !absent(wizard);
 }
 
-bool Session::countered(Actor &caster)
+bool Session::countered(Actor &caster, const detail::SpellDef &spell)
 {
     for (auto &wizard : actors_)
     {
-        if (!can_counter(wizard, caster))
+        const bool protective = protective_counter(wizard, caster, spell);
+        if (!protective && !can_counter(wizard, caster))
         {
             continue;
         }
-        ask_reaction(wizard, Asked::counter);
-        if (answer_of(wizard.source.id, Asked::counter)->verb != "counterspell")
+        if (!protective)
         {
-            continue;
+            ask_reaction(wizard, Asked::counter);
+            if (answer_of(wizard.source.id, Asked::counter)->verb != "counterspell")
+            {
+                continue;
+            }
         }
         wizard.reaction = false;
         const auto &counter = *detail::find_spell("counterspell");
-        pay_for_spell(wizard, cast_at(counter, lowest_slot(wizard, 3), "counterspell", "").first,
-                      counter);
+        if (protective)
+        {
+            spend_trait_use(wizard);
+        }
+        else
+        {
+            pay_for_spell(wizard,
+                          cast_at(counter, lowest_slot(wizard, 3), "counterspell", "").first,
+                          counter);
+        }
         log(wizard.source.name + " casts Counterspell.",
             {"{name} casts {spell}.",
              {{"name", wizard.source.name}, {"spell", "Counterspell", true}}});
@@ -16836,7 +16895,7 @@ bool Session::enchants(const detail::Effect &e) noexcept
 {
     return e.kind == detail::EffectKind::charmed || e.kind == detail::EffectKind::dominated ||
            e.kind == detail::EffectKind::enthralled ||
-           e.kind == detail::EffectKind::captain_charmed || e.kind == detail::EffectKind::frightened ||
+           e.kind == detail::EffectKind::turn_charmed || e.kind == detail::EffectKind::frightened ||
            e.kind == detail::EffectKind::abjured || e.kind == detail::EffectKind::terrified ||
            e.kind == detail::EffectKind::entranced;
 }
@@ -17244,8 +17303,8 @@ bool Session::provokes(const Actor &other, const Actor &moving, Cell from, Cell 
 {
     // A dominated creature reacts only with its controller's Reaction too.
     const auto *boss = controller(other);
-    return other.source.side != moving.source.side && conscious(other) && other.reaction &&
-           (!boss || (boss->reaction && conscious(*boss))) &&
+    return other.source.side != moving.source.side && !def(moving).flyby && conscious(other) &&
+           other.reaction && (!boss || (boss->reaction && conscious(*boss))) &&
            !detail::has_effect(other.effects, detail::EffectKind::turned) &&
            !detail::incapacitated(other.effects) && !detail::opportunity_blocked(other.effects) &&
            !charmed_by(other, moving.source.id) && has_weapon_reaction(other, from, to) &&
@@ -17650,7 +17709,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         }
     }
     if (!again && spell.id != "dragons_breath_exhale" && !item_effect(aimed.verb) &&
-        (countered(a) || slowed_spell_fails(a, aimed.verb, spell)))
+        (countered(a, spell) || slowed_spell_fails(a, aimed.verb, spell)))
     {
         return;
     }
@@ -17663,6 +17722,12 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         EntityId &caster;
         ~ItemCasterReset() { caster = 0; }
     } item_caster_reset{item_caster_};
+    const struct AgainstMagic
+    {
+        bool &against_magic;
+        explicit AgainstMagic(bool &flag) : against_magic(flag) { against_magic = true; }
+        ~AgainstMagic() { against_magic = false; }
+    } against_magic{against_magic_};
     if (spell.level && !again)
     {
         pay_for_spell(a, aimed.verb, spell);
@@ -19057,7 +19122,7 @@ bool Session::charmed_by(const Actor &a, EntityId other) const
                        {
                            return (e.kind == detail::EffectKind::charmed ||
                                    e.kind == detail::EffectKind::enthralled ||
-                                   e.kind == detail::EffectKind::captain_charmed ||
+                                   e.kind == detail::EffectKind::turn_charmed ||
                                    e.kind == detail::EffectKind::dominated) &&
                                   e.source_actor == other && e.source_scope == scope_;
                        });
@@ -20718,6 +20783,21 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         hit = false;
         log("The missile cannot touch " + target.source.name + ".",
             {"The missile cannot touch {name}.", {{"name", target.source.name}}});
+    }
+    // Protective Magic: a monster's Reaction casts Shield when its +5 turns the
+    // hit into a miss.
+    if (hit && !automatic && def(target).protective_magic && trait_uses_left(target) > 0 &&
+        target.reaction && conscious(target) && !detail::incapacitated(target.effects) &&
+        !detail::has_effect(target.effects, detail::EffectKind::shield) &&
+        !attack_hits(natural, bonus, armor_class(target) + 5))
+    {
+        target.reaction = false;
+        spend_trait_use(target);
+        detail::apply_poisoned(target.effects, effect_source(target), target.source.name,
+                               next_turn_ms(target), detail::EffectKind::shield);
+        log(target.source.name + " casts Shield.",
+            {"{name} casts {spell}.", {{"name", target.source.name}, {"spell", "Shield", true}}});
+        hit = attack_hits(natural, bonus, armor_class(target));
     }
     // Parry: a monster hit by a melee attack roll uses its Reaction when the
     // bonus turns the hit into a miss. A critical hit stands.
@@ -22764,6 +22844,8 @@ bool Session::rolled_save_succeeds(const Actor &target, detail::Ability ability,
                     });
     // Gnomish Cunning: Advantage on Intelligence, Wisdom and Charisma saves.
     modifiers.advantage |= def(target).gnomish_cunning && detail::mental(ability);
+    // Magic Resistance: Advantage on saves against a spell being cast.
+    modifiers.advantage |= against_magic_ && def(target).magic_resistance;
     // Holy Aura: Advantage on every save.
     modifiers.advantage |= holy_aura(target) != nullptr;
     // Beacon of Hope: Advantage on Wisdom saves.
@@ -25060,7 +25142,7 @@ void Session::dispatch(const Command &command)
                           {
                               return e.kind == detail::EffectKind::charmed ||
                                      e.kind == detail::EffectKind::enthralled ||
-                                     e.kind == detail::EffectKind::captain_charmed ||
+                                     e.kind == detail::EffectKind::turn_charmed ||
                                      e.kind == detail::EffectKind::turned ||
                                      e.kind == detail::EffectKind::frightened ||
                                      e.kind == detail::EffectKind::abjured ||
@@ -32221,7 +32303,9 @@ constexpr std::array switchable_abilities{
     std::string_view{"hampering"},        std::string_view{"poisoning"},
     std::string_view{"pushing"},          std::string_view{"hit_advantage"},
     std::string_view{"captains_charm"},   std::string_view{"riposte"},
-    std::string_view{"create_specter"}};
+    std::string_view{"create_specter"},   std::string_view{"charming"},
+    std::string_view{"flyby"},            std::string_view{"magic_resistance"},
+    std::string_view{"protective_magic"}};
 
 // The rows `off ability [creature]` leave out: "ability" for every creature,
 // "ability creature" for one.
@@ -32753,7 +32837,8 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             if (!row || found == content.definitions.end() || !known || known->id != spell ||
                 known->level || known->pattern != detail::SpellPattern::save_damage ||
                 dc < 1 || dc > 30 || recharge < 2 || recharge > 6 ||
-                found->second.gaze_recharge || !trait_rows.insert(tag + " " + key).second)
+                found->second.gaze_recharge || found->second.protective_magic ||
+                !trait_rows.insert(tag + " " + key).second)
             {
                 throw std::runtime_error("Invalid breath weapon: " + key);
             }
@@ -32771,7 +32856,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         // hampering creature melee|ranged|last, poisoning creature
         // melee|ranged|last [own_turn], pushing creature melee|ranged feet: the
         // riders of the attack's hits.
-        if (tag == "hampering" || tag == "poisoning" || tag == "pushing")
+        if (tag == "hampering" || tag == "poisoning" || tag == "pushing" || tag == "charming")
         {
             const auto found = content.definitions.find(key);
             std::string strike, extra;
@@ -32792,7 +32877,8 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
                               : strike == "ranged" ? Definition::Strike::ranged
                                                    : Definition::Strike::none;
             if (found == content.definitions.end() || !row.eof() ||
-                (kind == Definition::Strike::none && (!last || tag == "pushing")) ||
+                (kind == Definition::Strike::none &&
+                 (!last || tag == "pushing" || tag == "charming")) ||
                 (last && !found->second.last_attack) ||
                 (tag == "pushing" && (feet < 5 || feet > 60 || feet % 5)) ||
                 (!extra.empty() && extra != "own_turn") ||
@@ -32822,10 +32908,47 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
                     definition.poisoning_own_turn = !extra.empty();
                 }
             }
+            else if (tag == "charming")
+            {
+                definition.charming = kind;
+            }
             else
             {
                 definition.pushing = kind;
                 definition.push_feet = feet;
+            }
+            continue;
+        }
+        // flyby creature, magic_resistance creature, protective_magic
+        // creature uses_a_day.
+        if (tag == "flyby" || tag == "magic_resistance" || tag == "protective_magic")
+        {
+            const auto found = content.definitions.find(key);
+            int uses{};
+            if (tag == "protective_magic")
+            {
+                row >> uses;
+            }
+            if (!row || found == content.definitions.end() ||
+                (tag == "protective_magic" &&
+                 (uses < 1 || uses > 10 || found->second.trait_uses)) ||
+                !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid monster ability: " + line);
+            }
+            auto &definition = found->second;
+            if (tag == "flyby")
+            {
+                definition.flyby = true;
+            }
+            else if (tag == "magic_resistance")
+            {
+                definition.magic_resistance = true;
+            }
+            else
+            {
+                definition.protective_magic = true;
+                definition.trait_uses = uses;
             }
             continue;
         }

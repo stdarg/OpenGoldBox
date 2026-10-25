@@ -399,8 +399,8 @@ inline constexpr std::array effect_labels{
                 "Cannot attack the pirate until the start of the pirate's next turn."},
     EffectLabel{EffectKind::hampered, "Hampered",
                 "Disadvantage on its next attack roll before the end of its next turn."},
-    EffectLabel{EffectKind::captain_charmed, "Charmed (Captain's Charm)",
-                "Cannot attack the captain until the start of the captain's next turn."}};
+    EffectLabel{EffectKind::turn_charmed, "Charmed",
+                "Cannot attack its charmer until the start of the charmer's next turn."}};
 
 // Bookkeeping no player sees: a save already made against an area this turn,
 // a summoned spirit's breath, a casting's dice, or a double's secret. Every

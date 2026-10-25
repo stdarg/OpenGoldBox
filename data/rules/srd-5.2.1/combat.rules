@@ -380,7 +380,9 @@ perception nomad-shaman 1
 # the trapped fighters as the Warrior Veteran, the trapped cleric as the
 # Priest Acolyte, and Yarash as the Mage (three Arcane Bursts; Fireball and
 # Invisibility twice a day, Cone of Cold once, Misty Step three times as a
-# Bonus Action; his Fly and Protective Magic not modeled).
+# Bonus Action; Protective Magic three times a day, Shield when it turns a hit
+# into a miss or Counterspell on a spell of level 1 or higher: protective_magic
+# creature uses; the game has no Fly).
 creature minotaur 14 33 0 40 6 1 12 4 0 0 0 0 0 0 0 0 0 1 0
 saves minotaur 4 0 3 -2 3 -1
 damage_types minotaur slashing slashing
@@ -416,10 +418,13 @@ innate yarash Fireball 2 action fireball
 innate yarash Invisibility 2 action invisibility
 innate yarash Cone_of_Cold 1 action cone_of_cold
 innate yarash Misty_Step 3 bonus misty_step
+protective_magic yarash 3
 # The western wilderness (docs/audits/western-wilderness.md, WEST-1), with the
 # original's Hit Points: quicklings as the Sprite (its Enchanting Bow's 1
-# damage as 1d2 - 1; the bow's charm and Invisibility not modeled), Zhentil corporals as the Guard, giant snakes
-# as the Giant Venomous Snake, ankhegs (Acid Spray and grapple not modeled),
+# damage as 1d2 - 1, its hits charming until the start of the sprite's next
+# turn: charming creature melee|ranged; the computer casts no Invisibility),
+# Zhentil corporals as the Guard, giant snakes as the Giant Venomous Snake,
+# ankhegs (Acid Spray, Recharge 6, as a breath row; no grapple, SCOPE-2),
 # centaurs as the Centaur Trooper (Trampling Charge not modeled), giant
 # mantises on the Giant Scorpion's claws, thri-kreen as the Warrior Veteran,
 # tigers and wild boars.
@@ -430,6 +435,7 @@ size quickling small
 type quickling fey
 flies quickling
 perception quickling 3
+charming quickling ranged
 creature zhent-corporal 16 13 1 30 3 1 6 1 3 1 6 1 20 60 0 0 0 1 0
 saves zhent-corporal 1 1 1 0 0 0
 damage_types zhent-corporal piercing piercing
@@ -446,6 +452,7 @@ damage_types ankheg slashing slashing
 size ankheg large
 type ankheg monstrosity
 melee_extra_damage ankheg 1 6 acid
+breath ankheg acid_spray 12 6
 creature centaur 16 20 2 50 6 1 10 4 4 1 8 2 150 600 0 0 0 1 0
 saves centaur 4 2 2 -1 1 0
 damage_types centaur piercing piercing
@@ -482,7 +489,7 @@ type wild-boar beast
 charge wild-boar
 bloodied_fury wild-boar
 # The eastern wilderness (docs/audits/eastern-wilderness.md, EAST-1), with the
-# original's Hit Points: the Hippogriff (its Flyby not modeled), the Wyvern
+# original's Hit Points: the Hippogriff (Flyby: flyby creature), the Wyvern
 # (Bite, then Sting with 7d6 Poison, Poisoned until the start of its next
 # turn: poisoning creature melee|ranged|last [own_turn]) and the
 # Phase Spider (Ethereal Jaunt and its Poisoned paralysis not modeled).
@@ -492,6 +499,7 @@ damage_types hippogriff slashing slashing
 size hippogriff large
 type hippogriff monstrosity
 flies hippogriff
+flyby hippogriff
 multiattack hippogriff 2
 perception hippogriff 5
 creature wyvern 14 42 0 80 7 2 8 4 0 0 0 0 0 0 0 0 0 1 0
@@ -514,8 +522,9 @@ melee_extra_damage phase-spider 2 8 poison
 web_walker phase-spider
 # The kobold caves (docs/audits/kobold-caves.md, KOBOLD-1): the efreeti Samir
 # Ahwahl is the SRD 5.2.1 Efreeti with the original's 55 Hit Points: three
-# attacks, Heated Blade or Hurl Flame (its spells and Magic Resistance not
-# modeled).
+# attacks, Heated Blade or Hurl Flame, and Magic Resistance (magic_resistance
+# creature: Advantage on saves against spells being cast); the computer casts
+# none of its spells.
 creature efreeti 17 55 1 60 10 2 6 6 8 7 6 0 120 120 0 0 0 1 0
 saves efreeti 6 1 7 3 6 8
 damage_types efreeti slashing fire
@@ -526,6 +535,7 @@ multiattack efreeti 3
 multiattack_ranged efreeti
 melee_extra_damage efreeti 2 12 fire
 affinity efreeti stat:fire immunity fire
+magic_resistance efreeti
 # Valhingen Graveyard (docs/audits/valhingen-graveyard.md, GRAVE-1), with the
 # original's Hit Points. The Wraith: Life Drain lowers the Hit Point maximum,
 # Fly 60, Incorporeal Movement, and Create Specter (create_specter creature

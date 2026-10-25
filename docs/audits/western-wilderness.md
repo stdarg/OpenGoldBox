@@ -38,12 +38,12 @@ sites), `opengold_creatures GAME`, `opengold_maps GAME`, and SRD 5.2.1.
 
 | Record | Original | Conversion |
 | --- | --- | --- |
-| 10 | Quicklings (HP 7) | **new:** SRD 5.2.1 Sprite with 7 Hit Points (Enchanting Bow's charm and Invisibility not modeled) |
+| 10 | Quicklings (HP 7) | **new:** SRD 5.2.1 Sprite with 7 Hit Points; its Enchanting Bow charms (the computer casts no Invisibility) |
 | 45, 99 | 1st Level Thief, Buccaneer (HP 4) | the Bandit with 4 Hit Points, as Kovel Mansion's thief |
 | 51 | 6th Level Thief (HP 28) | the Spy with 28 Hit Points |
 | 54 | Corporal (HP 13) | **new:** SRD 5.2.1 Guard with 13 Hit Points |
 | 60 | Giant Snake (HP 25) | **new:** SRD 5.2.1 Giant Venomous Snake with 25 Hit Points |
-| 65 | Ankheg (HP 40) | **new:** SRD 5.2.1 Ankheg with 40 Hit Points (Acid Spray and its grapple not modeled) |
+| 65 | Ankheg (HP 40) | **new:** SRD 5.2.1 Ankheg with 40 Hit Points and its Acid Spray (no grapple, SCOPE-2) |
 | 67 | Centaur (HP 20) | **new:** SRD 5.2.1 Centaur Trooper with 20 Hit Points (Trampling Charge not modeled) |
 | 74 | Giant Mantis (HP 55) | **new:** the Giant Scorpion's two Claws with 55 Hit Points (SRD 5.2.1 has no mantis) |
 | 100 | 3rd Level Fighter (HP 18) | the Bandit Captain with 18 Hit Points |

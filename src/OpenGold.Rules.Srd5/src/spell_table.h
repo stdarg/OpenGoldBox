@@ -1014,6 +1014,21 @@ inline constexpr std::array spell_table{
              .save = Ability::constitution,
              .rider = Rider::petrifying_gaze,
              .cone = 30},
+    // An Ankheg's Acid Spray (SRD 5.2.1), aimed as "acid_spray" with its
+    // action: a 30-foot, 5-foot-wide Line; Dexterity save, 4d6 Acid, half on a
+    // success. Its save DC and Recharge come from its `breath` row.
+    SpellDef{.id = "acid_spray",
+             .label = "Acid Spray",
+             .level = 0,
+             .pattern = SpellPattern::save_damage,
+             .target = SpellTarget::area,
+             .range = 30,
+             .save = Ability::dexterity,
+             .half_on_success = true,
+             .damage = DamageType::acid,
+             .dice = {4, 6, 0},
+             .line = 30,
+             .narrow_line = true},
     // An Adult Bronze Dragon's Thunderclap (SRD 5.2.1), a Legendary Action: a
     // 20-foot Sphere within 90 feet; Constitution save or 3d6 Thunder (its
     // Deafened does nothing here, DEAF-1). No one learns it as a spell.

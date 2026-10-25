@@ -43,7 +43,7 @@ eastern wilderness's `ECL8.DAX 27` (the way in), `opengold_creatures GAME`,
 | 104 | Princess Fatima, fought (HP 33) | the Warrior Veteran with 45 Hit Points |
 | 120 | Wild Boar | the western wilderness's Boar |
 | 121 | Wyvern | the eastern wilderness's Wyvern |
-| 124 | Efreeti (HP 55) | **new:** SRD 5.2.1 Efreeti with 55 Hit Points: three attacks, Heated Blade or Hurl Flame (its spells and Magic Resistance not modeled) |
+| 124 | Efreeti (HP 55) | **new:** SRD 5.2.1 Efreeti with 55 Hit Points: three attacks, Heated Blade or Hurl Flame, and Magic Resistance (the computer casts none of its spells) |
 
 ## The companion
 

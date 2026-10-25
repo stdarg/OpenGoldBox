@@ -1213,6 +1213,139 @@ void wraith_creates_specter()
           "The specter fights for the wraith with the SRD Specter's 22 Hit Points");
 }
 
+// The eastern wilderness's hippogriff has the SRD Hippogriff's Flyby: flying
+// out of an enemy's reach draws no Opportunity Attack, where a wolf's does.
+void hippogriff_flies_by()
+{
+    const auto module = rules();
+    const auto leave = [&](const std::string &monster)
+    {
+        auto c = fight(*module, monster, "target");
+        turn_of(*c, 1);
+        const bool moved = move_to(*c, 1, {1, 3});
+        return std::pair{moved, offered_any(*c, "opportunity", 2)};
+    };
+    const auto [flew, flyby_drew] = leave("hippogriff");
+    check(flew && !flyby_drew, "The hippogriff flies off without an Opportunity Attack");
+    const auto [walked, wolf_drew] = leave("wolf");
+    check(!walked && wolf_drew, "A wolf leaving the hero's reach draws one");
+}
+
+// The western wilderness's ankhegs spray acid as the SRD Ankheg does: a
+// 30-foot Line, 4d6 Acid, half on a DC 12 Dexterity save, recharging on a 6.
+void ankheg_sprays()
+{
+    const auto module = rules();
+    auto c = module->create({{12, 4, std::vector<Terrain>(48)},
+                             {{1, "ankheg", "Monster", Side::opposition, {0, 1}},
+                              {2, "target", "Hero", Side::party, {4, 1}}}},
+                            7);
+    turn_of(*c, 1);
+    const auto before = unit(*c, 2).hit_points;
+    check(submit(*c, "acid_spray", 1) && aim(*c, Cell{4, 1}) && submit(*c, "area_cast", 1),
+          "The ankheg sprays acid with its action");
+    const auto taken = before - unit(*c, 2).hit_points;
+    check(count_logged(*c, "Monster uses Acid Spray.") == 1 &&
+              count_logged(*c, "Acid damage") == 1 && taken >= 2 && taken <= 24,
+          "The spray deals 4d6 Acid, halved on a save");
+    check(!offered_any(*c, "acid_spray", 1), "The spray is spent");
+}
+
+// The efreeti's Magic Resistance: Advantage on saves against spells. With the
+// same dice its save rolls are never lower than without it, and sometimes
+// higher.
+void efreeti_resists_magic()
+{
+    const std::string caster = "creature caster 10 100 0 30 0 1 4 0 0 0 0 0 0 0 0 0 7 1 0\n"
+                               "innate caster Fireball 3 action fireball\n";
+    const auto resistant = rules(caster);
+    const auto plain = rules(caster + "off magic_resistance\n");
+    const auto save_roll = [&](const RulesModule &module, std::uint64_t seed)
+    {
+        auto c = module.create({{12, 4, std::vector<Terrain>(48)},
+                                {{1, "efreeti", "Monster", Side::opposition, {8, 1}},
+                                 {2, "caster", "Hero", Side::party, {1, 1}}}},
+                               seed);
+        turn_of(*c, 2);
+        check(submit(*c, "fireball_innate", 2) && aim(*c, Cell{8, 1}) &&
+                  submit(*c, "area_cast", 2),
+              "The caster throws a Fireball at the efreeti");
+        const auto log = c->snapshot().log();
+        const auto line = std::find_if(log.begin(), log.end(),
+                                       [](const auto &text)
+                                       {
+                                           return text.starts_with("Monster Dexterity save: d20 ");
+                                       });
+        check(line != log.end(), "The efreeti saves against the Fireball");
+        return std::stoi(line->substr(std::string("Monster Dexterity save: d20 ").size()));
+    };
+    bool higher = false;
+    for (std::uint64_t seed = 1; seed < 30; ++seed)
+    {
+        const int with = save_roll(*resistant, seed), without = save_roll(*plain, seed);
+        check(with >= without, "Advantage never lowers the efreeti's save roll");
+        higher = higher || with > without;
+    }
+    check(higher, "Advantage sometimes raises it");
+}
+
+// The western wilderness's quicklings shoot the SRD Sprite's Enchanting Bow:
+// a hit charms until the start of the sprite's next turn.
+void quickling_charms()
+{
+    const auto module = rules();
+    bool charmed = false;
+    for (std::uint64_t seed = 1; seed < 30 && !charmed; ++seed)
+    {
+        auto c = module->create({{12, 4, std::vector<Terrain>(48)},
+                                 {{1, "quickling", "Monster", Side::opposition, {1, 1}},
+                                  {2, "target", "Hero", Side::party, {5, 1}}}},
+                                seed);
+        turn_of(*c, 1);
+        check(submit(*c, "ranged", 1, 2), "The quickling shoots");
+        charmed = count_logged(*c, "Hero is Charmed by Monster.") == 1 &&
+                  unit(*c, 2).status.find("Charmed") != std::string::npos;
+    }
+    check(charmed, "An Enchanting Bow hit charms");
+}
+
+// Yarash's Protective Magic, as the SRD Mage's: three times a day his Reaction
+// casts Shield when its +5 turns a hit into a miss, or Counterspell on a spell
+// of level 1 or higher he sees within 60 feet.
+void yarash_protects_himself()
+{
+    const auto fencing = rules("creature fencer 10 1000 0 30 5 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+    bool shielded = false;
+    for (std::uint64_t seed = 1; seed < 80 && !shielded; ++seed)
+    {
+        auto c = fencing->create({{10, 4, std::vector<Terrain>(40)},
+                                  {{1, "yarash", "Monster", Side::opposition, {1, 1}},
+                                   {2, "fencer", "Hero", Side::party, {2, 1}}}},
+                                 seed);
+        turn_of(*c, 2);
+        check(submit(*c, "melee", 2, 1), "The fencer attacks Yarash");
+        shielded = count_logged(*c, "Monster casts Shield.") == 1;
+        if (shielded)
+        {
+            check(count_logged(*c, "vs AC 20 misses") == 1, "Shield turns the hit into a miss");
+        }
+    }
+    check(shielded, "Yarash casts Shield");
+    const auto casting = rules("creature caster 10 100 0 30 0 1 4 0 0 0 0 0 0 0 0 0 7 1 0\n"
+                               "saves caster -10 -10 -10 -10 -10 -10\n"
+                               "innate caster Fireball 3 action fireball\n");
+    auto c = casting->create({{12, 4, std::vector<Terrain>(48)},
+                              {{1, "yarash", "Monster", Side::opposition, {6, 1}},
+                               {2, "caster", "Hero", Side::party, {1, 1}}}},
+                             7);
+    turn_of(*c, 2);
+    check(submit(*c, "fireball_innate", 2) && aim(*c, Cell{6, 1}) && submit(*c, "area_cast", 2) &&
+              count_logged(*c, "Monster casts Counterspell.") == 1 &&
+              count_logged(*c, "Hero's spell dissipates.") == 1 &&
+              count_logged(*c, "Fire damage") == 0,
+          "Yarash counters the Fireball");
+}
+
 // The wilderness's tiger has the SRD Tiger's Nimble Escape: Disengage or
 // Hide as a Bonus Action, without Cunning Action's Dash.
 void tiger_escapes()
@@ -1265,6 +1398,11 @@ int main()
         giants_hit_riders();
         pirate_captain_fights();
         wraith_creates_specter();
+        hippogriff_flies_by();
+        ankheg_sprays();
+        efreeti_resists_magic();
+        quickling_charms();
+        yarash_protects_himself();
         std::cout << "Slums creature tests passed\n";
         return 0;
     }
