@@ -2,6 +2,10 @@ OpenGold combat sprite specification: bipedal-v1 (2026-10-17)
 
 Create one independently designed full-body monster combat sprite in crisp pixel
 art. Use the monster's current text description and the selected equipment set.
+Before every generation or regeneration, the exact full prompt sent to the
+image generator must be saved in that monster's description under an IMAGEGEN
+PROMPT heading. If this text changes for a retry, update and save the monster
+description before making the next request; prompt files alone are insufficient.
 No original game image, extracted sprite, or original-art contact sheet may be an
 input reference. Do not copy the pose-guide mannequin's identity or clothes.
 The saved sprite_size comes from the game's decoded combat-art dimensions,
@@ -29,9 +33,34 @@ projectile has been released toward screen right, with appropriate follow-throug
 The projectile is no longer nocked, loaded or in the sling pouch; it may already
 be outside the image. Keep the bow, crossbow or sling in the character's hands.
 For a thrown weapon, ready holds it poised to throw; action is just after release
-and that thrown weapon is no longer in the hand. Do not turn a wand into a bow.
-If an unarmed, magical or unusual attack is not specified by the description,
-ask the user for its ready/action behavior before generating it.
+and that thrown weapon is no longer in the hand. The SAME arm that holds the
+weapon in ready must follow through in action. Trace its hand back to its
+shoulder in both frames; do not extend the offhand while leaving the throwing
+arm bent behind the head or resting at the waist. An empty extended hand is
+not enough unless it belongs to the former weapon arm. Do not turn a wand into
+a bow.
+THROWN-WEAPON ARM CONTINUITY: Before drawing action, identify the arm that
+actually grips the thrown object in ready by tracing its shoulder, elbow,
+wrist, and hand. If the object has a two-handed grip, identify the primary
+throwing arm and the supporting arm. In action, that SAME throwing arm follows
+through toward screen right: its empty hand extends past the torso in the
+attack direction, near shoulder height or higher. The other arm cannot
+substitute for it. A lowered throwing hand is a failed throw even if the
+object has disappeared or the other hand points right. Keep the shoulder,
+elbow, wrist, and open hand visibly connected; do not detach the arm or move
+the whole figure to fit its reach.
+BARE-HANDED ATTACKS BY MONSTERS WITH ARMS: Before generating or regenerating
+the attack, ask the user to choose PUNCH or TWO-ARM FORWARD REACH for the exact monster
+and variant, unless that choice was already explicitly supplied by the user.
+Do not infer the choice from humanoid shape, a saved description, or earlier
+art. In EITHER ACTION, lean the UPPER BODY toward screen right into the attack.
+For PUNCH, extend the striking fist forward toward the target; the action must
+read as a forceful punch, not an idle reach. For TWO-ARM FORWARD REACH, extend
+BOTH ARMS FORWARD toward screen right with both hands outstretched.
+In READY, hold the arms poised for the chosen attack. Keep the planted feet at
+their exact ready-frame coordinates and preserve the body's scale and facing.
+If a magical or other unusual attack is unspecified, ask for its ready/action
+behavior before generating.
 
 EQUIPMENT: Draw only the selected weapon/shield setup, plus appropriate other
 gear from the record. Retain the shield in both frames when the set includes it.
@@ -131,6 +160,16 @@ If the weapon cannot fit inside the PNG,
 revise the pose without changing body scale or foot anchor. Overlay the frames
 and play them at combat size to reject any jump.
 
+TORSO CONTINUITY: Keep a single connected figure from neck through chest,
+abdomen, waist and hips in BOTH frames. Derive action from the complete ready
+figure; do not paste an independently generated upper half onto a lower half
+at a straight horizontal boundary. When changing an attacking arm, preserve
+the torso and blend its shoulder into the original anatomy and clothing. Reject
+any visible shear, seam, gap, doubled edge, abrupt garment-pattern break or
+upper body that appears detached from the pelvis. Inspect the final exported
+action enlarged around the torso and at normal combat size, then alternate it
+with ready. Registered feet alone do not establish anatomical continuity.
+
 OUTPUT: A single full-body figure, genuine transparent background, no painted
 checkerboard, ground plane, labels, borders, scenery, shadows extending off the
 figure or motion blur. Keep all visible pixels inside the PNG canvas with
@@ -138,13 +177,17 @@ transparent margin. A raised READY weapon may cross the top tile line; the
 moving ACTION weapon may cross a footprint line. Final assets are 128 x 128
 PNGs with alpha. Larger working images are allowed; export with nearest-neighbor
 sampling and preserve alpha.
+The final ready and action cutouts must have no opaque black boxes, wedges,
+halos, or stray pixels; inspect both on light, dark, and contrasting backgrounds.
+For a sword, preserve its recognizable blade length and continuous hand-to-tip
+shape in BOTH frames at combat size; do not shorten it to fit a pose.
 Keep camera, character scale and exact planted-foot coordinates consistent across poses
 and weapon sets; do not resize each pose independently to fill the canvas. The
 action must read clearly at normal combat size, not only in a magnified preview.
 
 MONSTER AND SELECTED SET (current catalog JSON):
 {
-  "description": "An experienced martial fighter; the listed level and source equipment guide the combat silhouette. Source inventory: Javelin +1, Two-handed sword +2, Chain armor +1. Readied: Two-handed sword +2, Chain armor +1. Source wealth: 15 cp.",
+  "description": "An experienced martial fighter; the listed level and source equipment guide the combat silhouette. Source inventory: Javelin +1, Two-handed sword +2, Chain armor +1. Readied: Two-handed sword +2, Chain armor +1. Source wealth: 15 cp.\n\nIMAGEGEN PROMPT READY\nEDIT ONLY THE WEAPON ARM of the attached finished javelin ACTION fighter into a READY frame for MON5CHA.DAX:84/item_000__ranged. Reference image 1 is the UNMARKED action sprite and is the authoritative fighter identity, body, armor, red waist cloth, pose, canvas, and foot anchor. Reference image 2 is a PLANNING ANNOTATION of that same action: RED circles and lines trace the arm that extends toward screen right, from its shoulder around x71,y42 through elbow x86,y41 to empty hand x105,y38. BLUE circles the OTHER hand near x56,y53. RED also indicates where the weapon-bearing hand should return near x81,y26. The red and blue marks are annotations only; do not show them in final art. Reference image 3 is the same fighter's approved two-handed-sword ready art for identity and human height. Reference image 4 is the approved bipedal pose guide for camera and attack timing, not identity. All are independently created replacement art.\n\nTHIS IS THE KEY OPERATION: Bend the RED-MARKED, viewer-RIGHT arm BACK and UP around ITS OWN shoulder x71,y42, making its same hand grip a long recognizable JAVELIN +1 near x81,y26 in a poised throwing position. The shaft angles upward, stays inside the PNG and does not cross the one-square footprint side boundaries. Its sharp metal tip is clearly visible. Keep the BLUE-MARKED other arm bent near the chest, empty and unchanged. Do NOT move the weapon to the viewer-left arm. Do NOT turn the offhand into the throwing arm. The final ready image must make it possible to extend this exact javelin-bearing arm to the right to recreate reference image 1's after-throw pose.\n\nKeep the ENTIRE head, chain armor +1, red waist cloth, belt, torso, hips, legs, feet, stance width, facing, body height and canvas origin of reference image 1. Do not redraw or translate the full figure; this is a local arm-and-weapon edit only. The body is a normal five-foot human in one combat square, approximately 88 source pixels head to soles, head around y22, soles around y111 in a 128x128 canvas. Face screen right in front three-quarter view, chest partly visible. Genuine transparent crisp pixel art; no sword, shield, bow, projectile, magic, ground, background, grid, text, colored markers, checkerboard, black box, seam, or motion blur. One READY figure only.\n\nIMAGEGEN PROMPT ACTION\nEDIT the attached NEW javelin READY sprite into ONE ACTION frame for MON5CHA.DAX:84/item_000__ranged. Reference image 1 is the UNMARKED full-resolution new ready image and controls all actual art. Reference image 2 is an ANNOTATED PLANNING COPY: RED dots trace the javelin-bearing arm from the VIEWER-LEFT shoulder near x42,y43 through elbow near x33,y40 to hand near x31,y28, and the RED line indicates its required forward path to about x108,y43. BLUE marks the OTHER hand near x64,y55; that hand must remain bent near the chest. Do not render any red or blue planning marks. Reference image 3 is the unmarked 128x128 ready export showing exact body and foot registration. Reference image 4 is the approved bipedal pose guide for front three-quarter view and action timing, not identity. All are independent replacement art, not original game art.\n\nThe javelin has just been THROWN to screen right. The SAME VIEWER-LEFT ARM that gripped it in ready must visibly follow through: start from the viewer-left shoulder at x42,y43, extend the upper arm across the FRONT of the chest to a clearly connected elbow and wrist, and finish with an EMPTY open hand to screen right around x105-112,y38-46. This is the arm that was raised behind the head in ready. The OTHER, viewer-right arm and its hand stay flexed near x64,y55 and do not become the thrower. No javelin remains in either hand or in the image. An action that extends the viewer-right arm while the original throwing arm stays bent is WRONG. Show the instant after release, not a windup, dropped hand, pointing gesture, or sword swing.\n\nKeep the SAME dark-haired sixth-level human fighter in chain armor +1 and red waist cloth. The head, connected torso, waist, hips, legs, boots and both planted soles must stay at the SAME canvas coordinates and pixel scale as the ready export. The head-to-feet body height stays about 88 source pixels, with head around y24 and soles around y111 on a 128x128 canvas. Do not shrink or enlarge the body, translate it, change stance width, slide the feet or shear torso from hips. Modest shoulder rotation is allowed solely for the rightward throw. Face screen right, front three-quarter, chest partly visible. Genuine transparent crisp pixel-art cutout with border margin; no other weapon, shield, bow, trail, magic, background, checkerboard, text, shadow, motion blur, marker, or opaque box. Output ACTION ONLY.\n\nFINAL ART ASSEMBLY: Rejected full ready/action drafts that put the javelin in a different arm from the extended empty action arm or changed body scale. The accepted action uses the newly generated forward-follow-through figure as the fixed full-body base. The accepted ready reuses that identical head, torso, legs and planted feet, with a newly generated raised javelin arm mirrored and attached to the SAME viewer-right shoulder that extends in action. Transparent feathered masking removes the old outstretched ready arm and blends the raised arm into the shoulder. The ready javelin points back/up-left; in action that exact arm extends toward screen right after release with an empty hand. Both frames share one normal-human body scale and exact foot contacts.",
   "height_feet": null,
   "height_reference": null,
   "humanoid_size": "normal",
