@@ -208,9 +208,9 @@ Captures are written under ignored `user-data/phlan-shop.png`,
 `user-data/phlan-inventory.png`, `phlan-cast.png`, `phlan-cast-done.png`,
 `phlan-detect.png` and `phlan-identify.png`. Tested at 960 x 720 and 1280 x 900.
 
-Unimplemented branches include town combat/duels and their party-strength
-queries, training, short rests and general
-rest interruptions, robbery, recruitment,
-non-shop treasure item lists and random items, and external travel. Script money awards follow [QUESTS.md](QUESTS.md#reward). The shared party flow supports [idle-town campaign saves](SAVES.md); pending events remain unsavable. Campaign
+Town duels and party-strength queries, training, short rests and rest
+interruptions, robbery (coins only), recruitment, script treasure and travel
+beyond the town now run; [ECL-COVERAGE.md](ECL-COVERAGE.md) lists the variants
+each still refuses. Script money awards follow [QUESTS.md](QUESTS.md#reward). The shared party flow supports [idle-town campaign saves](SAVES.md); pending events remain unsavable. Campaign
 flags affect which dialogue branches can be reached; this test is not exhaustive
 coverage of all choices, quest states, random outcomes, or camp interruptions.
