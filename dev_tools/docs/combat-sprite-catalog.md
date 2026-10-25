@@ -29,6 +29,7 @@ The game-data directory is required. The launcher uses `OPENGOLD_GAME_DIR` or
 - [`art/`](../combat_sprite_catalog/art) holds replacement `ready.png` and `action.png` pairs under each source key and weapon-set variant. Missing pairs fall back to locally decoded original art. See the [art inventory](../combat_sprite_catalog/art/README.md).
 - One-handed weapons pair with available shields; ranged and two-handed weapons have separate sets. Include unready weapons when planning art. Each set needs its own reviewed ready/action pair.
 - The [generation and review workflow](../combat_sprite_catalog/generation/README.md) and [rules](../combat_sprite_catalog/generation/rules.txt) govern new sprite art. Keep body scale and planted foot/base coordinates fixed between frames; review the actual 128 x 128 images alternating in the catalog before clearing a regeneration flag. The [pose guide](../combat_sprite_catalog/art/pose-guide/README.md) covers the approved bipedal attack poses.
+- For a bare-handed monster with arms, ask whether its action is a punch or a two-arm grab unless the user has already chosen for that exact sprite. A grab reaches down and right with both arms and open hands while the upper body lowers and leans toward the target. Humanoid shape and an inferred description do not decide the attack.
 - [`godot/`](../combat_sprite_catalog/godot) contains the standalone UI and workflow script; [`native/`](../combat_sprite_catalog/native) contains its Godot extension.
 
 The [tool README](../combat_sprite_catalog/README.md) describes original-art

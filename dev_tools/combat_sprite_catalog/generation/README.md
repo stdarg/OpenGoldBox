@@ -149,12 +149,16 @@ request does not name a frame, it covers **both ready and action**. If it names
 only a monster, inspect its saved gear and cover every weapon set. An explicit
 single-frame request changes only that frame, followed by review of the pair.
 
-Resolve conflicts between the description and equipment with the user. For a
-monster with arms making a bare-handed attack, the action leans slightly toward
-screen right and punches or reaches with outstretched arms. A humanoid always
-punches. Ask which motion to use for a non-humanoid if the description gives no
-direction. Keep the planted feet fixed. For an unspecified magical or other
-unusual attack, ask for the ready/action behavior.
+Resolve conflicts between the description and equipment with the user. Before
+generating or regenerating a bare-handed monster with arms, ask the user whether
+that exact monster and variant should **punch** or **grab with both arms**, unless
+the user already explicitly chose. Do not decide from its humanoid shape, an
+inferred saved description, or earlier art. A punch leans the upper body toward
+screen right and extends a striking fist toward the target. A grab lowers and
+leans the upper body toward screen right while **both open hands reach down and
+right** as if to seize the target. The ready pose prepares the chosen motion;
+both poses keep the feet fixed and the body at the same scale. For an
+unspecified magical or other unusual attack, ask for the ready/action behavior.
 A saved wand classified as gear remains gear; show it in a spellcaster's
 default casting pair when present rather than silently omitting it.
 
