@@ -95,6 +95,14 @@ change. The fixed-foot rule below is this project's specific requirement.
   Then inspect at normal combat size and alternate with ready. A technical PNG
   check, matching silhouette or identical lower-body pixels cannot clear a
   failed torso-continuity gate.
+- **Throwing-arm identity gate:** Before editing a thrown-weapon action, mark
+  the ready frame's weapon hand and trace that arm back to its shoulder. Mark
+  the other arm separately. In action, trace the *same shoulder and arm* to the
+  empty hand at the end of the throw; the offhand must not become the apparent
+  throwing arm. An extended empty hand alone is insufficient. Reject an action
+  that extends the offhand while leaving the former weapon arm cocked or at the
+  waist. Check this in the final ready/action pair at combat size, using an
+  enlarged annotated comparison when the arm path is hard to read.
 - Do not center each silhouette independently, shift the whole cutout, crop to
   its changing bounds, or fit either pose separately into the canvas. Matching
   only the lowest occupied row does not prevent a horizontal shuffle.
@@ -252,6 +260,9 @@ wedges and boxes even when the PNG passes file checks.
 Review the pair overlaid at native pixel coordinates, side by side at normal
 combat size, and alternating every second in the catalog. Confirm the planted
 feet stay at the same x/y coordinates and the whole body does not slide or jump.
+For a thrown weapon, explicitly apply the throwing-arm identity gate above;
+do not infer success from the projectile being absent or from an empty extended
+hand without tracing which shoulder it belongs to.
 For any action made with an edit or composite, apply the torso continuity gate
 above to the **exported action PNG** on a contrasting background before recording
 the visual review. Reopen the saved PNG after the last export or alpha operation;
