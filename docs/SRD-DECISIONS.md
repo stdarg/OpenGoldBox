@@ -1819,3 +1819,13 @@ they await the user's review ([audit](audits/kobold-caves.md)):
   its purse, since the party shares one; as for the whole party (Kuto's
   Well), only money is taken.
 - **A fight of more than 56 monsters** takes the first 56.
+
+## LIZARD-1 (2026-10-25): the lizard men's keep
+
+Claude chose these on 2026-10-25 while making the map playable area by area;
+they await the user's review ([audit](audits/lizard-keep.md)):
+
+- **Drythh** is the Lizardfolk with the original's 18 Hit Points, the row the
+  Central Wilderness's mutant lizard men use.
+- **The anti-magic shell** the entry announces forbids nothing, as in the
+  original, whose script never sets the area's spell ban.

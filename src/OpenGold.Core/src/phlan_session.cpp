@@ -238,39 +238,47 @@ constexpr std::array original_save_abilities{rules::Ability::constitution,
                                              rules::Ability::wisdom};
 constexpr int original_save_dc = 13;
 
-// The damage type of a DAMAGE call that hurts members directly, by its script
-// and address: the original names none.
-std::optional<std::string_view> listed_damage_type(unsigned script, std::uint16_t address)
+// The damage of a DAMAGE call that hurts members directly, by its script and
+// address: the original names no damage type, nor what a volley throws.
+struct ScriptDamage
 {
-    struct ScriptDamage
-    {
-        unsigned script;
-        std::uint16_t address;
-        std::string_view type;
-    };
+    unsigned script;
+    std::uint16_t address;
+    std::string_view type;
+    std::string_view missile = "arrow";
+};
+
+std::optional<ScriptDamage> listed_damage(unsigned script, std::uint16_t address)
+{
     constexpr std::array types{ScriptDamage{2, 0xADB1, "bludgeoning"}, // the Cadorna well's fall
                                ScriptDamage{15, 0x9D31, "acid"},       // Mendor's green slime
                                // The kobold caves' traps and rocks (KOBOLD-1).
                                ScriptDamage{13, 0x9CF3, "bludgeoning"}, // the roof
                                ScriptDamage{13, 0x9E73, "piercing"},    // spikes
-                               ScriptDamage{13, 0xB48A, "bludgeoning"}, // thrown rocks
+                               ScriptDamage{13, 0xA1A4, "piercing", "ballista bolt"},
+                               ScriptDamage{13, 0xB48A, "bludgeoning", "rock"},
                                // Kovel Mansion's traps and thieves (KOVEL-1).
-                               ScriptDamage{14, 0x9A98, "slashing"},    // a scything blade
-                               ScriptDamage{14, 0x9ADD, "poison"},      // poison gas
-                               ScriptDamage{14, 0x9B2A, "slashing"},    // a net of blades
-                               ScriptDamage{14, 0x9C64, "piercing"},    // a backstab
-                               ScriptDamage{14, 0xA239, "piercing"},    // a needle
-                               ScriptDamage{14, 0xA450, "poison"},      // yellow gas
-                               ScriptDamage{14, 0xA5F7, "poison"},      // a poisoned needle
-                               ScriptDamage{14, 0xA708, "piercing"},    // a dart
-                               ScriptDamage{14, 0xA7EA, "poison"},      // noxious powder
-                               ScriptDamage{14, 0xA8D4, "piercing"},    // a shower of darts
-                               ScriptDamage{14, 0xB566, "bludgeoning"}}; // sling bullets
+                               ScriptDamage{14, 0x9A98, "slashing"}, // a scything blade
+                               ScriptDamage{14, 0x9ADD, "poison"},   // poison gas
+                               ScriptDamage{14, 0x9B2A, "slashing"}, // a net of blades
+                               ScriptDamage{14, 0x9C64, "piercing"}, // a backstab
+                               ScriptDamage{14, 0xA239, "piercing"}, // a needle
+                               ScriptDamage{14, 0xA450, "poison"},   // yellow gas
+                               ScriptDamage{14, 0xA5F7, "poison"},   // a poisoned needle
+                               ScriptDamage{14, 0xA708, "piercing"}, // a dart
+                               ScriptDamage{14, 0xA7EA, "poison"},   // noxious powder
+                               ScriptDamage{14, 0xA8D4, "piercing"}, // a shower of darts
+                               ScriptDamage{14, 0xB566, "bludgeoning", "sling bullet"},
+                               // The lizard men's javelins (LIZARD-1).
+                               ScriptDamage{16, 0xA837, "piercing", "javelin"},
+                               ScriptDamage{16, 0xAAB8, "piercing", "javelin"},
+                               ScriptDamage{16, 0xAD0C, "piercing", "javelin"},
+                               ScriptDamage{16, 0xAD17, "piercing", "javelin"}};
     for (const auto &known : types)
     {
         if (known.script == script && known.address == address)
         {
-            return known.type;
+            return known;
         }
     }
     return std::nullopt;
@@ -278,9 +286,9 @@ std::optional<std::string_view> listed_damage_type(unsigned script, std::uint16_
 
 std::string script_damage_type(unsigned script, std::uint16_t address)
 {
-    if (const auto type = listed_damage_type(script, address))
+    if (const auto damage = listed_damage(script, address))
     {
-        return std::string(*type);
+        return std::string(damage->type);
     }
     throw EclError("No damage type for DAMAGE at " + std::to_string(address));
 }
@@ -329,8 +337,6 @@ std::string_view area_beyond(unsigned script)
         return "Stojanow Gate";
     case 10:
         return "Valhingen Graveyard";
-    case 16:
-        return "the lizard men's keep";
     case 19:
         return "the dragon's cave";
     case 28:
@@ -2054,8 +2060,11 @@ bool RolfTourSession::leave_shop(std::uint64_t ticket)
     return true;
 }
 
-std::string RolfTourSession::shoot_arrows(unsigned arrows, const rules::HazardAttack &arrow)
+std::string RolfTourSession::shoot_arrows(unsigned arrows, std::string_view missile,
+                                          const rules::HazardAttack &arrow)
 {
+    const bool vowel = std::string_view("aeiou").find(missile.front()) != std::string_view::npos;
+    const auto article = (vowel ? "\nAn " : "\nA ") + std::string(missile);
     std::string report;
     for (unsigned n = 0; n < arrows; ++n)
     {
@@ -2071,11 +2080,11 @@ std::string RolfTourSession::shoot_arrows(unsigned arrows, const rules::HazardAt
                           std::to_string(result.armor_class) + ")";
         if (!result.hit)
         {
-            report += "\nAn arrow misses " + name + roll + ".";
+            report += article + " misses " + name + roll + ".";
             continue;
         }
-        report += "\nAn arrow " + std::string(result.critical ? "critically hits " : "hits ") +
-                  name + roll + " for " + std::to_string(result.damage) + " damage.";
+        report += article + (result.critical ? " critically hits " : " hits ") + name + roll +
+                  " for " + std::to_string(result.damage) + " damage.";
         if (member.vitals.dead)
         {
             report += " " + name + " dies.";
@@ -2835,11 +2844,14 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         read_character();
         if (volley)
         {
-            // Arrows unless the call names another weapon (Kovel Mansion's
-            // blades, darts and sling bullets).
-            const auto type = listed_damage_type(current_script_, address).value_or("piercing");
-            snapshot_.dialogue += shoot_arrows(arg(0), {hidden_archer_attack_bonus, arg(1), arg(2),
-                                                        static_cast<int>(arg(3)), std::string(type)});
+            // Arrows unless the call names another missile (Kovel Mansion's
+            // sling bullets, the lizard men's javelins).
+            const auto damage =
+                listed_damage(current_script_, address).value_or(ScriptDamage{0, 0, "piercing"});
+            snapshot_.dialogue +=
+                shoot_arrows(arg(0), damage.missile,
+                             {hidden_archer_attack_bonus, arg(1), arg(2), static_cast<int>(arg(3)),
+                              std::string(damage.type)});
         }
         else
         {
