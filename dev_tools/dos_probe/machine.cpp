@@ -679,7 +679,16 @@ std::filesystem::path Machine::read_path(const std::string &relative) const
     {
         return *written;
     }
-    return resolve(options_.game_directory, relative).value_or(std::filesystem::path{});
+    return original_path(relative).value_or(std::filesystem::path{});
+}
+
+std::optional<std::filesystem::path> Machine::original_path(const std::string &relative) const
+{
+    if (options_.fresh_saves && (relative == "SAVE" || relative.starts_with("SAVE/")))
+    {
+        return std::nullopt;
+    }
+    return resolve(options_.game_directory, relative);
 }
 
 std::filesystem::path Machine::write_path(const std::string &relative) const
@@ -1231,10 +1240,12 @@ void Machine::find_service(std::uint8_t function)
         if (relative)
         {
             std::set<std::string> names;
-            for (const auto &root : {options_.game_directory, options_.scratch_directory})
+            for (const bool original : {true, false})
             {
-                const auto folder =
-                    relative->empty() ? std::optional{root} : resolve(root, *relative);
+                const auto &root = original ? options_.game_directory : options_.scratch_directory;
+                const auto folder = relative->empty() ? std::optional{root}
+                                    : original        ? original_path(*relative)
+                                                      : resolve(root, *relative);
                 std::error_code error;
                 if (!folder || !std::filesystem::is_directory(*folder, error))
                 {

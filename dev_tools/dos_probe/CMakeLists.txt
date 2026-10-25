@@ -8,5 +8,14 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_dos_probe_tests cpu_tests.cpp)
     target_link_libraries(opengold_dos_probe_tests PRIVATE opengold_dos_probe_machine)
     add_test(NAME opengold_dos_probe_tests COMMAND opengold_dos_probe_tests)
+    find_package(Python3 COMPONENTS Interpreter)
+    if(Python3_Interpreter_FOUND)
+        add_test(NAME opengold_dos_probe_experiments
+            COMMAND "${CMAKE_COMMAND}" "-DPYTHON=${Python3_EXECUTABLE}"
+            "-DPROBE=$<TARGET_FILE:opengold_dos_probe>"
+            "-DWORK=${CMAKE_CURRENT_BINARY_DIR}/experiments"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/experiments/run_experiments.cmake")
+        set_tests_properties(opengold_dos_probe_experiments PROPERTIES SKIP_RETURN_CODE 77)
+    endif()
 endif()
 opengold_enable_warnings("${CMAKE_CURRENT_SOURCE_DIR}")

@@ -215,6 +215,8 @@ void control()
               no_compare.variable(EclAddress{0x9700}) == 0,
           "Comparison flags start false");
     // False IF = skips the entire variable-length menu, without needing its destination binding.
+    // The original skips only such a command's opcode (dev_tools/docs/dos-probe.md), but no
+    // original script puts one after an IF.
     auto skip = machine(
         {3, 0, 1, 0, 2, 22, 43, 1, 1, 0x97, 0, 1, 128, 3, 4, 32, 192, 9, 0, 9, 1, 0, 0x97, 0});
     check(skip.run().state == EclState::completed && skip.variable(EclAddress{0x9700}) == 9,
@@ -383,6 +385,17 @@ void memory_and_input()
     auto overflow = machine({42, 2, 255, 255, 0, 1, 1, 0, 0x97, 0});
     check(overflow.run().diagnostic.find("overflow") != std::string::npos,
           "Table address overflow");
+    // GETTABLE keeps COMPARE's flags, as the original did when the DOS probe
+    // ran this script (dev_tools/docs/dos-probe.md): COMPARE 1, n; GETTABLE
+    // 9900[0] -> 9700; IF =; SAVE 7 -> 9700.
+    for (const std::uint8_t compared : {1, 2})
+    {
+        auto kept = machine(
+            {3, 0, 1, 0, compared, 42, 1, 0, 0x99, 0, 0, 1, 0, 0x97, 22, 9, 0, 7, 1, 0, 0x97, 0});
+        check(kept.run().state == EclState::completed &&
+                  kept.variable(EclAddress{0x9700}) == (compared == 1 ? 7 : 1),
+              "GETTABLE keeps the comparison flags");
+    }
     // Change a byte used by an already encountered command; a later invocation
     // must fetch the new operand, without changing another machine's image.
     auto patched = machine({9, 0, 7, 1, 0, 0x97, 53, 0, 42, 1, 0x16, 0x99, 0, 0, 0});

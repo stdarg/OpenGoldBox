@@ -32,6 +32,9 @@ class Machine final : public Bus
         std::filesystem::path scratch_directory;
         // One 18.2 Hz timer tick, at the PIT's default rate.
         std::uint64_t instructions_per_tick{20000};
+        // Hides the installation's SAVE folder, so a run starts with no saved
+        // games or characters whatever the player has.
+        bool fresh_saves{};
     };
 
     // Called on every access to a watched linear address range.
@@ -156,6 +159,8 @@ class Machine final : public Bus
     // empty when it lies outside it.
     std::optional<std::string> game_relative(const std::string &dos_path) const;
     std::filesystem::path read_path(const std::string &relative) const;
+    // The installation's copy of a file, unless the run hides it.
+    std::optional<std::filesystem::path> original_path(const std::string &relative) const;
     std::filesystem::path write_path(const std::string &relative) const;
     int open_file(const std::string &dos_path, std::uint8_t mode, bool create);
     void write_find_entry(const std::string &directory, const std::string &name);

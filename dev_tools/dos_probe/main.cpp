@@ -6,11 +6,14 @@
 #include "script_trace.h"
 
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 
 namespace
 {
@@ -69,6 +72,17 @@ int run_scenario(Machine &machine, std::istream &scenario, const std::filesystem
                  const std::filesystem::path &output)
 {
     std::unique_ptr<opengold::probe::ScriptTrace> trace;
+    // Where the running script was found; kept, since a poke into the script
+    // changes the bytes it was found by.
+    std::optional<opengold::probe::ScriptLocation> script;
+    const auto locate = [&](bool again)
+    {
+        if (again || !script)
+        {
+            script = opengold::probe::find_script(machine, game);
+        }
+        return script.has_value();
+    };
     std::ofstream log(output / "run.log");
     std::string line;
     unsigned number = 0;
@@ -114,17 +128,54 @@ int run_scenario(Machine &machine, std::istream &scenario, const std::filesystem
         {
             opengold::probe::write_png(output / (argument + ".png"), 320, 200, machine.screen());
         }
-        else if (command == "trace")
+        else if (command == "trace" || command == "trace-bytes")
         {
             trace.reset();
-            const auto script = opengold::probe::find_script(machine, game);
-            if (!script)
+            if (!locate(false))
             {
                 std::cerr << "Line " << number << ": no ECL script is in memory\n";
                 return 1;
             }
-            trace = std::make_unique<opengold::probe::ScriptTrace>(machine, *script,
-                                                                   output / (argument + ".trace"));
+            trace = std::make_unique<opengold::probe::ScriptTrace>(
+                machine, *script, output / (argument + ".trace"), command == "trace-bytes");
+        }
+        else if (command == "cpu")
+        {
+            // Logs the next N instructions with the registers before each.
+            std::ofstream cpu_log(output / "cpu.log", std::ios::app);
+            auto &cpu = machine.cpu();
+            using opengold::probe::Reg;
+            using opengold::probe::Seg;
+            const auto count = std::stoull(argument);
+            const auto end = machine.instructions() + count;
+            machine.run(count,
+                        [&]
+                        {
+                            cpu_log << std::hex << std::setfill('0') << std::setw(4)
+                                    << cpu.seg(Seg::cs) << ':' << std::setw(4) << cpu.ip()
+                                    << " ax=" << std::setw(4) << cpu.reg(Reg::ax)
+                                    << " bx=" << std::setw(4) << cpu.reg(Reg::bx)
+                                    << " cx=" << std::setw(4) << cpu.reg(Reg::cx)
+                                    << " dx=" << std::setw(4) << cpu.reg(Reg::dx)
+                                    << " si=" << std::setw(4) << cpu.reg(Reg::si)
+                                    << " di=" << std::setw(4) << cpu.reg(Reg::di)
+                                    << " bp=" << std::setw(4) << cpu.reg(Reg::bp)
+                                    << " sp=" << std::setw(4) << cpu.reg(Reg::sp)
+                                    << " ds=" << std::setw(4) << cpu.seg(Seg::ds)
+                                    << " es=" << std::setw(4) << cpu.seg(Seg::es)
+                                    << " fl=" << std::setw(4) << cpu.flags() << std::dec << '\n';
+                            return machine.instructions() >= end;
+                        });
+        }
+        else if (command == "locate")
+        {
+            // After the party enters another area, the script to trace changes.
+            if (!locate(true))
+            {
+                std::cerr << "Line " << number << ": no ECL script is in memory\n";
+                return 1;
+            }
+            log << "script " << script->archive << " record " << script->record << '\n';
         }
         else if (command == "dump")
         {
@@ -132,6 +183,40 @@ int run_scenario(Machine &machine, std::istream &scenario, const std::filesystem
             for (std::uint32_t linear = 0; linear < 0x100000; ++linear)
             {
                 memory.put(static_cast<char>(machine.peek(linear)));
+            }
+        }
+        else if (command == "poke" || command == "peek")
+        {
+            // poke ADDRESS HEX-BYTES / peek ADDRESS COUNT, at script addresses
+            // (offsets in the running script's data segment).
+            if (!locate(false))
+            {
+                std::cerr << "Line " << number << ": no ECL script is in memory\n";
+                return 1;
+            }
+            std::istringstream fields(argument);
+            std::string address, rest;
+            fields >> address >> rest;
+            const auto base = std::uint32_t{script->data_segment} * 16 +
+                              static_cast<std::uint32_t>(std::stoul(address, nullptr, 16));
+            if (command == "poke")
+            {
+                for (std::size_t n = 0; n + 1 < rest.size(); n += 2)
+                {
+                    machine.poke(
+                        static_cast<std::uint32_t>(base + n / 2),
+                        static_cast<std::uint8_t>(std::stoul(rest.substr(n, 2), nullptr, 16)));
+                }
+            }
+            else
+            {
+                log << "peek " << address << ':';
+                for (unsigned n = 0; n < std::stoul(rest); ++n)
+                {
+                    log << ' ' << std::hex << std::setw(2) << std::setfill('0')
+                        << unsigned{machine.peek(base + n)} << std::dec;
+                }
+                log << '\n';
             }
         }
         else if (command == "untrace")
@@ -164,18 +249,21 @@ int run_scenario(Machine &machine, std::istream &scenario, const std::filesystem
 
 int main(int argc, char **argv)
 {
-    if (argc != 4)
+    const bool fresh = argc == 5 && std::string_view(argv[1]) == "--fresh";
+    if (argc != 4 && !fresh)
     {
-        std::cerr << "Usage: opengold_dos_probe GAME_DIR SCENARIO OUTPUT_DIR\n"
+        std::cerr << "Usage: opengold_dos_probe [--fresh] GAME_DIR SCENARIO OUTPUT_DIR\n"
                      "Runs C:\\POOLRAD\\START.EXE from GAME_DIR (never written) through the\n"
-                     "scenario's commands; writes screenshots and run.log to OUTPUT_DIR.\n";
+                     "scenario's commands; writes screenshots and run.log to OUTPUT_DIR.\n"
+                     "--fresh hides GAME_DIR's saved games and characters.\n";
         return 2;
     }
+    argv += fresh ? 1 : 0;
     try
     {
         const std::filesystem::path output = argv[3];
         std::filesystem::create_directories(output);
-        Machine machine({argv[1], output / "drive", 20000});
+        Machine machine({argv[1], output / "drive", 20000, fresh});
         machine.load("C:\\POOLRAD\\START.EXE");
         std::ifstream scenario(argv[2]);
         if (!scenario)

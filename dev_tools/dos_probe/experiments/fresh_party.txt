@@ -1,0 +1,31 @@
+# A new one-character party (a dwarf fighter named PROBE, the first choice on
+# every list and the first rolled scores), Rolf's tour pressed through to its
+# end: the party stands at New Phlan's west gate, 0,4 facing west, in the
+# town's script. Run with --fresh so the player's own saves are hidden.
+wait
+key enter
+key c
+key enter
+key enter
+key enter
+key enter
+key y
+type PROBE
+key enter
+key k
+key e
+key y
+key a
+key a
+key e
+key b
+key enter
+key enter
+key enter
+key enter
+key enter
+key enter
+key enter
+key enter
+key enter
+key enter

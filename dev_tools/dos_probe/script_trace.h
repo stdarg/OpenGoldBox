@@ -32,21 +32,25 @@ find_script(const Machine &machine, const std::filesystem::path &game_directory)
 class ScriptTrace
 {
   public:
-    ScriptTrace(Machine &machine, const ScriptLocation &location,
-                const std::filesystem::path &file);
+    // `bytes` logs every script byte read on its own, with its value and the
+    // reading instruction, instead of runs.
+    ScriptTrace(Machine &machine, const ScriptLocation &location, const std::filesystem::path &file,
+                bool bytes = false);
     ~ScriptTrace();
     ScriptTrace(const ScriptTrace &) = delete;
     ScriptTrace &operator=(const ScriptTrace &) = delete;
 
   private:
-    void read(std::uint16_t address);
+    void read(std::uint16_t address, std::uint8_t value);
     void write(std::uint16_t address, std::uint8_t value);
+    void write_cell(std::uint16_t address, std::uint16_t value);
     void flush_reads();
 
     Machine &machine_;
     std::uint32_t base_{};
     std::ofstream out_;
     std::optional<std::uint16_t> run_start_, run_end_;
+    bool bytes_{};
 };
 } // namespace opengold::probe
 
