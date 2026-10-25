@@ -1,0 +1,32 @@
+{
+  "action_sha256": "0dcac6be81b8e0cdbe03867e2d5e14803697f702c17b86068c8e1d28240a5a3e",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon8cha_dax_95/added_55602892051__two_hand/action.png",
+    "ready": "art/mon8cha_dax_95/added_55602892051__two_hand/ready.png"
+  },
+  "metadata_sha256": "777415c488cd306619429d2c4b76c985cb7530f9db66e5c4b07432e2a99905a5",
+  "notes": "MON8CHA.DAX:95/added_55602892051__two_hand is the only saved weapon set: two-handed Trident plus leather armor, no shield. Ready is a steep raised three-pronged guard with both hands gripping the shaft; action is a late horizontal thrust with both hands still gripping the same continuous trident. Approved pose guide and independently generated Drythh art were the only visual references. Both exported at the same vertical scale and 104-pixel horizontal canvas scale. The action generator shifted its lower body; the final action retained its complete torso, smoothly registered the lower legs to ready, and copied exact ready foot-contact pixels in rows 116-127 (AE=0). Enlarged neck/chest/abdomen/waist/pelvis review found no shear or seam. Both exact PNGs reviewed at combat size and over light gray, dark, and magenta backgrounds. Isolated catalog loaded exact staged paths; ready overflow 0.33 square is only raised trident above the 1x1 tile, action overflow 0.19 square is only thrusting trident to the right. Body, tail, and feet fit 1x1; one-second auto swap reached action. PNG and catalog checks passed.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "d61270a328c54b90144d8d76de559acec5be7bd00d1efada02e30b8f93fcfbb8",
+  "reviewed_at": "2026-10-25T20:29:17+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON8CHA.DAX:95",
+  "specification": "bipedal-v1",
+  "variant_id": "added_55602892051__two_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
+}
