@@ -3517,8 +3517,7 @@ void western_wilderness(const std::filesystem::path &directory)
 }
 
 // The eastern wilderness (docs/audits/eastern-wilderness.md): the harbor's
-// eastern boat, the ruined castle in the quicksand (an area not in the game
-// yet), a kobold horde, the wyverns' cave a roaming
+// eastern boat, a kobold horde, the wyverns' cave a roaming
 // roll finds, and the boat home to New Phlan.
 void eastern_wilderness(const std::filesystem::path &directory)
 {
@@ -3547,19 +3546,6 @@ void eastern_wilderness(const std::filesystem::path &directory)
         heard += s.dialogue + "\n";
         return prefer({"Parley", "YES", "Fight", "ENTER", "SMALL", "LEAVE CAVE"})(s);
     };
-    for (const auto &[x, y, place] : std::array<std::tuple<unsigned, unsigned, const char *>, 1>{
-             {{11, 8, "the lizard men's keep"}}})
-    {
-        heal(*party);
-        const auto refusal = std::string("The way to ") + place + " is not in the game yet.";
-        travel_to(town, party, x, y, noting,
-                  [&] { return heard.find(refusal) != std::string::npos; });
-        check(heard.find(refusal) != std::string::npos,
-              std::string("The eastern wilderness's way to ") + place + " is refused for now");
-        closed_sites.insert({town.snapshot().script_id * 100 + x, y});
-    }
-    check(heard.find("RUINED CASTLE SURROUNDED BY QUICKSAND") != std::string::npos,
-          "The ruined castle stands in the quicksand");
     // The kobold horde near the caves, met on the way there or now.
     heal(*party);
     const auto horde_beaten = [&] { return town.script_variable(por::EclAddress{0x4A11}) == 255; };
@@ -3701,6 +3687,104 @@ void kobold_caves(const std::filesystem::path &directory)
     check(town.snapshot().overland && town.snapshot().script_id == 27 &&
               std::find(slots.begin(), slots.end(), fatima_id) == slots.end(),
           "Leaving the caves, Fatima goes her own way");
+}
+
+// The lizard men's keep (docs/audits/lizard-keep.md), the ruined castle in
+// the eastern wilderness's quicksand: the old lizard man and his champion's
+// duel, the flooded lower level and a pool's lizard men, and the way out.
+void lizard_keep(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 23000, "test:lizard-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 7)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    // The party stands in for one that freed the Pyramid's chained lizard
+    // men (0x4A52 bit 1), who told it their tribe's friend-word.
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4A52}, 1);
+    walk_to(town, party, 11, 2);
+    step(town, party, 0, prefer({"EAST"}));
+    walk_to(town, party, 14, 1);
+    step(town, party, 1, prefer({"STAY"}));
+    std::string heard;
+    // The party parleys with the old lizard man, fights what attacks it, and
+    // dives into the pools and climbs the stairs it finds.
+    const Answer noting = [&](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        if (s.dialogue.find("PATIENTLY") != std::string::npos)
+        {
+            return prefer({"Parley"})(s);
+        }
+        return prefer({"ENTER", "Bash", "Fight", "YES"})(s);
+    };
+    travel_to(town, party, 11, 8, noting,
+              [&]
+              {
+                  return !town.snapshot().overland;
+              });
+    check(town.snapshot().area_id == 16 && town.snapshot().pose.x == 8 &&
+              town.snapshot().pose.y == 14,
+          "The drawbridge over the quicksand leads into the lizard men's keep");
+    // The old lizard man waits at one of three places on the first level.
+    const auto story_told = [&]
+    {
+        return heard.find("WILL NOT JOIN TYRANTHRAXUS") != std::string::npos;
+    };
+    for (const auto &[x, y] : std::array<std::pair<unsigned, unsigned>, 8>{
+             {{4, 3}, {3, 7}, {10, 4}, {5, 12}, {6, 6}, {9, 6}, {7, 9}, {15, 4}}})
+    {
+        if (story_told())
+        {
+            break;
+        }
+        heal(*party);
+        walk_to(town, party, x, y, noting, true, false, "SAVIOR", story_told);
+    }
+    check(story_told() && heard.find("DO YOU REALLY MEAN SAVIOR") != std::string::npos &&
+              town.script_variable(por::EclAddress{0x4A60}) == 255,
+          "The old lizard man knows the friend-word SAVIOR, and his champion beats Drythh");
+    // The stairs down to the flooded lower level, and one of its pools.
+    heal(*party);
+    walk_to(town, party, 9, 8, noting, true, false, "0",
+            [&]
+            {
+                return town.snapshot().area_id == 30;
+            });
+    check(town.snapshot().area_id == 30, "Stairs lead down to the keep's flooded lower level");
+    heal(*party);
+    walk_to(town, party, 9, 6, noting, true);
+    check(heard.find("YOU DIVE INTO THE POOL") != std::string::npos &&
+              heard.find("THROW JAVELINS") != std::string::npos &&
+              heard.find("\nA javelin ") != std::string::npos,
+          "The lower level's pools hide lizard men, who throw javelins at divers");
+    // Back up, and out by the drawbridge.
+    heal(*party);
+    walk_to(town, party, 10, 8, noting, true);
+    face(town, party, 0);
+    town.explore(por::ExplorationCommand::forward);
+    // Up the stairs, then not straight back down them.
+    settle(town, party,
+           [&](const por::TourSnapshot &s)
+           {
+               return s.dialogue.find("LEADING DOWN") != std::string::npos ? prefer({"NO"})(s)
+                                                                           : noting(s);
+           });
+    check(town.snapshot().area_id == 16, "The tunnel slopes back up to the first level");
+    heal(*party);
+    walk_to(town, party, 8, 15, noting, true);
+    face(town, party, 2);
+    town.explore(por::ExplorationCommand::forward);
+    settle(town, party, prefer({"LEAVE"}));
+    check(town.snapshot().overland && town.snapshot().script_id == 27,
+          "The drawbridge leads back out to the eastern wilderness");
 }
 
 // Mendor's Library (docs/audits/mendors-library.md), east of the Cadorna
@@ -4934,6 +5018,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         western_wilderness(directory);
         eastern_wilderness(directory);
         kobold_caves(directory);
+        lizard_keep(directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -5040,6 +5125,12 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--wilderness")
         {
             central_wilderness(directory);
+            return 0;
+        }
+        // Plays the lizard men's keep alone with a new party.
+        if (argc == 2 && std::string_view(argv[1]) == "--lizards")
+        {
+            lizard_keep(directory);
             return 0;
         }
         // Plays the kobold caves alone with a new party.

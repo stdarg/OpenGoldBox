@@ -620,7 +620,8 @@ class RolfTourSession
     bool move_party(ExplorationCommand command);
     void notice(std::string message);
     // Each arrow attacks a random conscious active member; returns a report line for each.
-    [[nodiscard]] std::string shoot_arrows(unsigned arrows, const rules::HazardAttack &arrow);
+    [[nodiscard]] std::string shoot_arrows(unsigned arrows, std::string_view missile,
+                                           const rules::HazardAttack &arrow);
     // The chosen member falls for dice d sides + bonus Bludgeoning; returns its report line.
     [[nodiscard]] std::string hurt(const std::optional<HazardHit> &hit) const;
     void publish_pose();
