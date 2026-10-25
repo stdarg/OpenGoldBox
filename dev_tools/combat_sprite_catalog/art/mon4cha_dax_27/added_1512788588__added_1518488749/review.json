@@ -1,0 +1,32 @@
+{
+  "action_sha256": "f1b5048ba1b82f1b40afd8352995f80c6a90486cad0cc95ee34ac663bee2e1a4",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon4cha_dax_27/added_1512788588__added_1518488749/action.png",
+    "ready": "art/mon4cha_dax_27/added_1512788588__added_1518488749/ready.png"
+  },
+  "metadata_sha256": "4e01f00fa2b2b12f2eabdb4bcb2464e2a74d28bb05159bdab4f4e261ea702b02",
+  "notes": "New ring-armored Skullcrusher pair with one-handed raised hammer and shield in ready; hammer near end of downward swing to screen right in action. New ready derived from accepted independently generated character art; action derived from that ready. Same camera, body scale and planted feet. Reviewed at combat size on light and dark backgrounds and alternating in catalog. Only attacking hammer extends 0.09 square beyond 1x1 right edge in action.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "9e23198fe082df0fc3135b42cc75bc62436241ec1dc1e046cf4582fdd5569e86",
+  "reviewed_at": "2026-10-25T00:59:38+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON4CHA.DAX:27",
+  "specification": "bipedal-v1",
+  "variant_id": "added_1512788588__added_1518488749",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
+}

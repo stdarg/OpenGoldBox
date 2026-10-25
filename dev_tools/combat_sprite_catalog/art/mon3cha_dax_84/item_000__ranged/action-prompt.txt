@@ -138,6 +138,10 @@ transparent margin. A raised READY weapon may cross the top tile line; the
 moving ACTION weapon may cross a footprint line. Final assets are 128 x 128
 PNGs with alpha. Larger working images are allowed; export with nearest-neighbor
 sampling and preserve alpha.
+The final ready and action cutouts must have no opaque black boxes, wedges,
+halos, or stray pixels; inspect both on light, dark, and contrasting backgrounds.
+For a sword, preserve its recognizable blade length and continuous hand-to-tip
+shape in BOTH frames at combat size; do not shorten it to fit a pose.
 Keep camera, character scale and exact planted-foot coordinates consistent across poses
 and weapon sets; do not resize each pose independently to fill the canvas. The
 action must read clearly at normal combat size, not only in a magnified preview.
@@ -203,5 +207,16 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-
-FINAL ART DIRECTION AND PROVENANCE: This record's previously approved newly generated javelin pair was already about full 5-foot height; preserved its body identity and scaled only the right-side horizontal reach, trimmed the ready javelin tail so no ready side overflow, and shortened body vertically 2 pixels to an 88-pixel foot-to-head height. Shared transform across both poses; copied bottom action foot pixels from ready to fix planted feet. Ready javelin alone enters square above; after-release action contains no javelin and fits 1x1. Inspected both at 128px on white and one-second alternation in isolated catalog. Chain armor +1; no shield.
+LOCAL ACTION CORRECTION: The red-circled hand in the annotated ready reference
+holds the javelin and is the throwing hand. In action, after release, extend
+that empty throwing arm toward screen right; keep the blue-circled offhand near
+the chest. Do not leave the throwing arm cocked behind the head or include a
+javelin in action. Keep the accepted ready frame and lower-body/foot pixels
+fixed. The generated upper action is composited only in source rows 20..66;
+rows 67..127 remain byte-for-byte the prior accepted action.
+Low-alpha pixels below 5% in the generated upper frame are cleared to genuine
+transparency; the accepted lower rows 67..127 are then restored exactly.
+The final released empty hand and forearm are shortened by three source pixels
+within x=80..110 and y=28..53 so the action body remains inside the saved 1x1
+combat footprint; the hand still reaches screen right. Everything below row 67
+and the ready frame remain unchanged.

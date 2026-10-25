@@ -1,16 +1,16 @@
 {
-  "action_sha256": "1a9f2bc5e1ef6584efb561896157d9b73eac4bba387a202a4e66e6a0612f8901",
+  "action_sha256": "568e94aaeb7855a31c9e5e982e2f3ea17de21e3a8386b356de131e5bf3f3cdae",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_84/item_000__ranged/action.png",
     "ready": "art/mon3cha_dax_84/item_000__ranged/ready.png"
   },
   "metadata_sha256": "4c12ba69ba7f22ba964a5c2433017ac7598dacfa70eab65687cc8d5b2102c415",
-  "notes": "This record's previously approved newly generated javelin pair was already about full 5-foot height; preserved its body identity and scaled only the right-side horizontal reach, trimmed the ready javelin tail so no ready side overflow, and shortened body vertically 2 pixels to an 88-pixel foot-to-head height. Shared transform across both poses; copied bottom action foot pixels from ready to fix planted feet. Ready javelin alone enters square above; after-release action contains no javelin and fits 1x1. Inspected both at 128px on white and one-second alternation in isolated catalog. Chain armor +1; no shield.",
+  "notes": "Accepted ready unchanged. Corrected action shows empty throwing hand extended toward screen right immediately after javelin release. Prior action lower-body pixels are retained. Reviewed exact PNGs at combat size on light, dark and magenta backgrounds and alternating in catalog. Ready raised javelin alone extends above its 1x1 square; action fits.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "ec1edc2e8092037222660a9384964b276f381da7ea6ae32839dc990c6d0a93a6",
-  "reviewed_at": "2026-10-23T05:35:22.701728+00:00",
-  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-25T00:59:38+00:00",
+  "reviewer": "Codex",
   "source_key": "MON3CHA.DAX:84",
   "specification": "bipedal-v1",
   "variant_id": "item_000__ranged",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
 }
