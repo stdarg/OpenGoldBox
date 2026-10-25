@@ -1,15 +1,15 @@
 {
-  "action_sha256": "296aa8ecb2c43a0cde3783ae961406f772c6aee2f34b0f13ac89991b41635bc4",
+  "action_sha256": "dc8d89fe1b64ce968c62ddeccc5dc5f73ea938758079a3d1936dce4b8c6041ac",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_71/added_ettin_club__one_hand/action.png",
     "ready": "art/mon2cha_dax_71/added_ettin_club__one_hand/ready.png"
   },
   "metadata_sha256": "3d198af162411c53719f193ba24f9a686c6cdff9bc48851ed9fa151a431a3715",
-  "notes": "Reviewed final 128x128 transparent club pair on light gray, magenta and dark backgrounds, side by side and alternating in the staged Combat Sprite Catalog. Ready visibly fits the saved 1x2 footprint; action crosses the right tile line only with the swinging club. Two heads, full club, raised ready guard, late low-forward strike, one-handed grip, and fixed body scale checked at combat size. Action lower-foot pixels match ready exactly; alpha was cleaned after an alpha-preserving composite. Only newly generated character art and the approved pose guide were used as generation references.",
+  "notes": "Single-frame waist repair for MON2CHA.DAX:71/added_ettin_club__one_hand/action. Imagegen edited the accepted action with the accepted ready and approved pose guide as references. Only source pixels x=32..64, y=50..75 were composited into the action; every pixel outside that waist rectangle remains identical to the prior action. The ready PNG is byte-identical to the accepted ready. Inspected final ready/action at 128x128 on light, dark and magenta backgrounds and enlarged at the waist; no detached torso, opaque box, halo, or shifted feet. The catalog loaded the exact final files, retained image position and size, and alternated between their image data.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "e9eb2c58bee8899aa129c2000966c9a80259866878c95c47f8fa1b714ada6534",
-  "reviewed_at": "2026-10-24T18:07:24+00:00",
+  "reviewed_at": "2026-10-25T00:27:39+00:00",
   "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:71",
   "specification": "bipedal-v1",
