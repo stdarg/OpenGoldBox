@@ -1,15 +1,15 @@
 {
-  "action_sha256": "b1d9a492c1c3937802aea084bac9a3ae422e714c8bb39c26d5b1d297d2fb6eea",
+  "action_sha256": "075154c3f52fd3647f801bbfb35bb791c419bb55c9c0aa616cd72a7dd82bcc46",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/cpic7_dax_12/item_002__item_003/action.png",
     "ready": "art/cpic7_dax_12/item_002__item_003/ready.png"
   },
-  "metadata_sha256": "3eb570620845c177707267babdc58e143a4843b0fd4040787fda76e4821ebd9d",
-  "notes": "CPIC7.DAX:12 is script-linked only to MON7CHA.DAX:40 and has the same saved full inventory and weapon sets. Copied exact previously approved newly generated 5-foot Nomad art from MON7. Reviewed both frames at native combat size and in the one-second Godot catalog under the linked icon. Feet, body scale, identity and equipment match the MON7 record. Short sword + shield raised ready and late strike action; pair fits tile.",
+  "metadata_sha256": "a784f0331459cb8d20f12291c30a05315de52ffaff956028c8f313522a799ecd",
+  "notes": "User requested prior ready become action and a new raised-short-sword ready. Action is the exact former ready PNG (SHA-256 075154c3f52fd3647f801bbfb35bb791c419bb55c9c0aa616cd72a7dd82bcc46). New ready shows continuous sword-arm grip and full upward short blade, retained shield and Nomad identity. The lower boot/foot pixels from y=100 through 127 are exact copies of action, so planted feet match pixel-for-pixel; torso and shoulder continuity inspected enlarged. Ready blade alone extends 0.25 square above the saved 1x1 footprint; body, shield and feet remain inside. Action fits. Both final 128x128 PNGs reviewed at combat size and enlarged on light, dark catalog and magenta backgrounds; one-second catalog alternation and loaded paths confirmed. Long-bow set and saved gear unchanged.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "075154c3f52fd3647f801bbfb35bb791c419bb55c9c0aa616cd72a7dd82bcc46",
-  "reviewed_at": "2026-10-23T06:23:24+00:00",
+  "ready_sha256": "2fd5a37262d7229f038de094ae222e364093c4f0f0a3dc5c89dc6b73f286564a",
+  "reviewed_at": "2026-10-25T22:33:46.046360+00:00",
   "reviewer": "Codex visual review",
   "source_key": "CPIC7.DAX:12",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
 }
