@@ -185,6 +185,36 @@ Character fatima(const rules::CharacterRules &creation, const rules::RulesModule
     companion.add_item({"shield", "Shield", 1, original_shield});
     return companion;
 }
+
+// The mystic of Valhingen Graveyard (MON4CHA 24): a level-6 Wizard with
+// Strength 10, Dexterity 10, Constitution 10, Intelligence 15, Wisdom 10 and
+// Charisma 10, as his record has them; a Sage's +2 Intelligence and +1
+// Constitution and the level-4 Ability Score Improvement's +2 Intelligence
+// reach them from the rolls. He brings the Ring of Protection +2 he wears.
+Character mystic(const rules::CharacterRules &creation, const rules::RulesModule &rules)
+{
+    rules::CharacterDraft draft;
+    draft.name = "Mystic";
+    draft.race = "human";
+    draft.gender = "male";
+    draft.character_class = "wizard";
+    draft.alignment = "neutral_good";
+    draft.background = "sage";
+    draft.rolled = true;
+    constexpr std::array<int, 6> rolled{10, 10, 9, 11, 10, 10};
+    for (unsigned ability = 0; ability < rolled.size(); ++ability)
+    {
+        draft.rolls[ability] = roll_of(rolled[ability]);
+    }
+    draft.adjustment = adjustment(creation, draft.background, rules::Ability::intelligence,
+                                  rules::Ability::constitution);
+    choose_training(creation, draft);
+    auto companion = advanced(creation, rules, draft, 6);
+    constexpr int original_ring_of_protection = 93;
+    companion.add_item({"ring_of_protection+2", "Ring of Protection +2", 1,
+                        original_ring_of_protection});
+    return companion;
+}
 } // namespace
 
 std::optional<Character> original_companion(unsigned bank, unsigned record,
@@ -206,6 +236,10 @@ std::optional<Character> original_companion(unsigned bank, unsigned record,
     if (bank == 8 && record == 104)
     {
         return fatima(creation, rules);
+    }
+    if (bank == 4 && record == 24)
+    {
+        return mystic(creation, rules);
     }
     return std::nullopt;
 }

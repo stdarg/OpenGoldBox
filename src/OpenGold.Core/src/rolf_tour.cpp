@@ -522,7 +522,26 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
             {{16, {9, 20, 23}}, {30, {9, 17, 23}}},
             {{57, "lizardfolk", 100, 100},
              {59, "giant-lizard", 50, 50},
-             {95, "mutant-lizardfolk", 100, 100}}}};
+             {95, "mutant-lizardfolk", 100, 100}}},
+        // Valhingen Graveyard (docs/audits/valhingen-graveyard.md, GRAVE-1).
+        AreaSource{
+            10,
+            4,
+            {{10, {21, 22, 20}}},
+            {{17, "specter", 200, 200},
+             {20, "wight", 700, 700},
+             {21, "wraith", 1800, 1800},
+             {22, "giant-skeleton", 450, 450},
+             {23, "vampire", 2300, 2300},
+             {24, "graveyard-mystic", 200, 200},
+             {29, "juju-zombie", 450, 450},
+             {34, "skeleton", 50, 50},
+             {35, "zombie", 50, 50},
+             {70, "efreeti", 2300, 2300},
+             {72, "ghoul", 200, 200},
+             {105, "weakened-vampire", 2300, 2300},
+             {106, "wolf", 50, 50},
+             {114, "mummy", 700, 700}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;
@@ -560,39 +579,64 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
             district->bank = area.bank;
             district->pieces = geo.pieces;
             district->treasure = item_lists("ITEM" + bank + ".DAX");
-            // Three five-appearance banks, each with the common tiles followed
-            // by its own 70 tiles. Decode independently before concatenating.
-            for (const auto id : geo.pieces)
+            // Three five-appearance slots, each with the common tiles followed
+            // by its bank's own 70 tiles. Decode independently before
+            // concatenating.
+            for (std::size_t slot = 0; slot < geo.pieces.size();)
             {
+                const auto id = geo.pieces[slot];
                 // Bank 255 loads nothing (the Pyramid's LOAD PIECES 1,3,255):
                 // its five appearances stay blank.
                 if (id == no_wall_bank)
                 {
                     district->wall_art.appearances.resize(district->wall_art.appearances.size() +
                                                           5);
+                    ++slot;
                     continue;
+                }
+                // A bank of several blocks fills that many slots, its tiles
+                // those of each block in turn, block n's in record id * 10 + n
+                // (coab LoadWalldef): Valhingen Graveyard's LOAD PIECES 21,22,20,
+                // whose script sets the cells that keep the original from
+                // loading slot 2's own bank.
+                const auto &definition = find_record(definitions, id);
+                constexpr std::size_t block_size = 780;
+                const auto blocks = definition.size() / block_size;
+                if (blocks == 0 || slot + blocks > geo.pieces.size())
+                {
+                    throw EclError("Invalid wall definition bank " + std::to_string(id));
                 }
                 WallTiles walls(1);
                 auto common = decode_wall_tiles(find_record(shared, 203));
-                auto local_bank = decode_wall_tiles(find_record(tiles, id));
-                if (!common || common->size() != 45 || !local_bank || local_bank->size() != 70)
+                if (!common || common->size() != 45)
                 {
-                    throw EclError("Invalid wall tile bank " + std::to_string(id));
+                    throw EclError("Invalid common wall tiles");
                 }
                 walls.insert(walls.end(), common->begin(), common->end());
-                walls.insert(walls.end(), local_bank->begin(), local_bank->end());
-                auto decoded = decode_wall_art(find_record(definitions, id), walls);
-                if (!decoded || decoded->appearances.size() != 5)
+                for (std::size_t block = 0; block < blocks; ++block)
+                {
+                    const auto tile_record =
+                        blocks == 1 ? id : static_cast<unsigned>(id * 10 + block + 1);
+                    auto local_bank = decode_wall_tiles(find_record(tiles, tile_record));
+                    if (!local_bank || local_bank->size() != 70)
+                    {
+                        throw EclError("Invalid wall tile bank " + std::to_string(tile_record));
+                    }
+                    walls.insert(walls.end(), local_bank->begin(), local_bank->end());
+                }
+                auto decoded = decode_wall_art(definition, walls);
+                if (!decoded || decoded->appearances.size() != 5 * blocks)
                 {
                     throw EclError("Invalid wall definition bank " + std::to_string(id));
                 }
                 const auto with_new_art = with_replacements(
-                    std::move(*decoded), wall_appearance_keys("WALLDEF" + bank + ".DAX", id, 5),
-                    new_wall_art);
+                    std::move(*decoded),
+                    wall_appearance_keys("WALLDEF" + bank + ".DAX", id, 5 * blocks), new_wall_art);
                 district->wall_art.scale = with_new_art.scale;
                 district->wall_art.appearances.insert(district->wall_art.appearances.end(),
                                                       with_new_art.appearances.begin(),
                                                       with_new_art.appearances.end());
+                slot += blocks;
             }
             district->sprite_archive =
                 read_archive(resolve_archive(directory, "SPRIT" + bank + ".DAX"));
@@ -1051,11 +1095,17 @@ void RolfTourSession::handle_host(const EclRequest &request)
         }
         else if (service == EclAddress{0xBA03})
         {
-            if (machine_.variable(EclAddress{0x03DE}) != 8)
+            // The original plays its footstep for selector 8 and its fireball
+            // for 10, Valhingen Graveyard's thunder (coab CMD_Call).
+            const auto selector = machine_.variable(EclAddress{0x03DE});
+            if (selector != 8 && selector != 10)
             {
                 throw EclError("Unsupported tour sound selector");
             }
-            ++snapshot_.footsteps; // Presentation plays an original OpenGoldBox footstep cue.
+            if (selector == 8)
+            {
+                ++snapshot_.footsteps; // Presentation plays an original OpenGoldBox footstep cue.
+            }
         }
         else if (service == EclAddress{0x0806} || service == EclAddress{0x2C4E} ||
                  service == EclAddress{0x2C51} || service == EclAddress{0xC003} ||

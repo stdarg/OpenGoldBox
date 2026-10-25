@@ -53,7 +53,8 @@ about the original, not copied), and SRD 5.2.1.
   - (12,10), (13,10), (11,11), (13,11), (12,12), (13,12): a recently abandoned
     camp; (12,11): the nomad camp, entered to `ECL7:17`.
   - (12,26), (13,26): the city's north edge: the northern gates (`ECL3:14`,
-    Kovel Mansion's block) or the graveyard (`ECL4:10`).
+    Kovel Mansion's block) or the graveyard (`ECL4:10`, in the game since
+    2026-10-25: [Valhingen Graveyard](valhingen-graveyard.md)).
   - (13,27): the city's east edge: north (`ECL3:14`), south (`ECL1:24`, the
     Temple of Bane's block) or the boat to the civilized area (`ECL3:0`).
   - (11,28): the city's west edge: north into Podol Plaza (`ECL1:18`), south

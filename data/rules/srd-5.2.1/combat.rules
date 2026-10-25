@@ -514,6 +514,84 @@ multiattack efreeti 3
 multiattack_ranged efreeti
 melee_extra_damage efreeti 2 12 fire
 affinity efreeti stat:fire immunity fire
+# Valhingen Graveyard (docs/audits/valhingen-graveyard.md, GRAVE-1), with the
+# original's Hit Points. The Wraith: Life Drain lowers the Hit Point maximum,
+# Fly 60, Incorporeal Movement (Create Specter not modeled). Giant skeletons are
+# the Minotaur Skeleton's Slam (its charging Gore not modeled); juju zombies
+# the Ogre Zombie, Medium as the original's are; mummies the Mummy (Dreadful
+# Glare and the Rotting Fist's curse not modeled); the vampire the Vampire's
+# two Grave Strikes (its grapple, Bite, Beguile and Charm not modeled), and
+# 15 Hit Points once its coffin is consecrated; its wolves the Wolf; the mystic
+# the nomad shaman's level-4 Wizard profile.
+creature wraith 13 24 3 60 6 4 8 3 0 0 0 0 0 0 0 0 0 1 0
+saves wraith -2 3 3 1 2 2
+damage_types wraith necrotic necrotic
+affinity wraith stat:acid resistance acid
+affinity wraith stat:bludgeoning resistance bludgeoning
+affinity wraith stat:cold resistance cold
+affinity wraith stat:fire resistance fire
+affinity wraith stat:piercing resistance piercing
+affinity wraith stat:slashing resistance slashing
+affinity wraith stat:necrotic immunity necrotic
+affinity wraith stat:poison immunity poison
+condition_immunity wraith charmed exhaustion grappled paralyzed petrified poisoned prone restrained unconscious
+type wraith undead
+life_drain_attack wraith
+flies wraith
+incorporeal wraith
+sunlight_sensitivity wraith
+creature giant-skeleton 12 28 0 40 6 2 10 4 0 0 0 0 0 0 0 0 0 1 0
+saves giant-skeleton 4 0 2 -2 -1 -3
+damage_types giant-skeleton bludgeoning bludgeoning
+size giant-skeleton large
+affinity giant-skeleton stat:bludgeoning vulnerability bludgeoning
+affinity giant-skeleton stat:poison immunity poison
+condition_immunity giant-skeleton exhaustion poisoned
+type giant-skeleton undead
+creature juju-zombie 8 24 -2 30 6 2 8 4 0 0 0 0 0 0 0 0 0 1 0
+saves juju-zombie 4 -2 4 -4 0 -3
+damage_types juju-zombie bludgeoning bludgeoning
+affinity juju-zombie stat:poison immunity poison
+condition_immunity juju-zombie exhaustion poisoned
+type juju-zombie undead
+undead_fortitude juju-zombie
+creature mummy 11 33 -1 20 5 1 10 3 0 0 0 0 0 0 0 0 0 1 0
+saves mummy 3 -1 2 -2 3 1
+damage_types mummy bludgeoning bludgeoning
+affinity mummy stat:fire vulnerability fire
+affinity mummy stat:necrotic immunity necrotic
+affinity mummy stat:poison immunity poison
+condition_immunity mummy charmed exhaustion frightened paralyzed poisoned
+type mummy undead
+multiattack mummy 2
+melee_extra_damage mummy 3 6 necrotic
+creature vampire 16 43 14 40 9 1 8 4 0 0 0 0 0 0 0 0 0 1 0
+saves vampire 4 9 9 3 7 9
+damage_types vampire bludgeoning bludgeoning
+affinity vampire stat:necrotic resistance necrotic
+type vampire undead
+perception vampire 7
+multiattack vampire 2
+melee_extra_damage vampire 2 6 necrotic
+creature weakened-vampire 16 15 14 40 9 1 8 4 0 0 0 0 0 0 0 0 0 1 0
+saves weakened-vampire 4 9 9 3 7 9
+damage_types weakened-vampire bludgeoning bludgeoning
+affinity weakened-vampire stat:necrotic resistance necrotic
+type weakened-vampire undead
+perception weakened-vampire 7
+multiattack weakened-vampire 2
+melee_extra_damage weakened-vampire 2 6 necrotic
+creature wolf 12 18 2 40 4 1 6 2 0 0 0 0 0 0 0 0 0 1 0
+saves wolf 2 2 1 -4 1 -2
+damage_types wolf piercing piercing
+type wolf beast
+perception wolf 5
+pack_tactics wolf
+prone_on_hit wolf
+creature graveyard-mystic 12 23 2 30 4 1 4 2 0 0 0 0 0 0 0 4 5 4 5
+saves graveyard-mystic -1 2 1 5 3 0
+damage_types graveyard-mystic piercing piercing
+perception graveyard-mystic 1
 # Summon Dragon's Draconic Spirit (SRD 5.2.1 p. 166), one stat block per
 # spell level: AC 14 + the level, 50 Hit Points and 10 more per level above 5,
 # Rend 1d6 + 4 + the level Piercing (reach 10 feet), half the level in Rends.
