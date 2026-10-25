@@ -692,11 +692,13 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
         else if (grant.source_id == "subclass:bard:discoveries")
         {
             // Magical Discoveries: two Cleric, Druid or Wizard spells, a cantrip
-            // or of level 1 to 3, chosen at level six.
+            // or of a level the Bard has slots for, chosen at level six and
+            // each replaceable on a later level.
             const auto *spell = find_spell(std::string_view(grant.id).substr(10));
             require(klass == CharacterClass::bard && grant.level == 6 && grant.choices.empty() &&
                     grant.id.starts_with("discovery:") && spell &&
-                    spell->id == std::string_view(grant.id).substr(10) && spell->level <= 3 &&
+                    spell->id == std::string_view(grant.id).substr(10) &&
+                    spell->level <= highest_slot_level(klass, level) &&
                     (on_class_list(CharacterClass::cleric, spell->id) ||
                      on_class_list(CharacterClass::druid, spell->id) ||
                      on_class_list(CharacterClass::wizard, spell->id)));

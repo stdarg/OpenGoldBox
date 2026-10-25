@@ -1703,6 +1703,14 @@ bool prepares_spells(CharacterClass klass)
     return klass == CharacterClass::wizard || prepared_caster(klass);
 }
 
+unsigned highest_slot_level(CharacterClass klass, unsigned level)
+{
+    const auto *caster = prepared_caster(klass);
+    return caster && level >= 1 && level <= caster->highest_slot.size()
+               ? caster->highest_slot[level - 1]
+               : 0;
+}
+
 bool on_class_list(CharacterClass klass, std::string_view spell)
 {
     const auto *caster = prepared_caster(klass);
@@ -1898,6 +1906,70 @@ void apply_spell_swap(CharacterSheet &sheet, const LevelSwap &swap, const SwapOf
         throw std::runtime_error("No such spell to replace");
     }
     *found = swap.replacement;
+}
+
+SwapOffer discovery_swap_offer(const CharacterSheet &sheet)
+{
+    SwapOffer offer{"Magical Discoveries", {}, {}};
+    const auto klass = class_of(sheet);
+    const auto *caster = prepared_caster(klass);
+    if (!caster || sheet.level >= static_cast<int>(level_cap(klass)))
+    {
+        return offer;
+    }
+    for (const auto &g : sheet.grants)
+    {
+        if (g.source_id == "subclass:bard:discoveries")
+        {
+            const auto id = std::string_view(g.id).substr(std::string_view("discovery:").size());
+            offer.replaceable.push_back({std::string(id), std::string(find(id).label), {}});
+        }
+    }
+    if (offer.replaceable.empty())
+    {
+        return offer;
+    }
+    const auto next = sheet.level + 1u;
+    const auto taken = [&](std::string_view id)
+    {
+        return std::find(sheet.prepared_spells.begin(), sheet.prepared_spells.end(), id) !=
+                   sheet.prepared_spells.end() ||
+               std::any_of(sheet.grants.begin(), sheet.grants.end(),
+                           [&](const auto &g)
+                           {
+                               return g.id == "spell:" + std::string(id) ||
+                                      g.id == "discovery:" + std::string(id);
+                           });
+    };
+    for (const auto &spell : spells)
+    {
+        if (spell.level <= caster->highest_slot[next - 1] && !taken(spell.id) &&
+            (on_class_list(CharacterClass::cleric, spell.id) ||
+             on_class_list(CharacterClass::druid, spell.id) ||
+             on_class_list(CharacterClass::wizard, spell.id)))
+        {
+            offer.replacements.push_back({std::string(spell.id), std::string(spell.label), {}});
+        }
+    }
+    return offer;
+}
+
+void apply_discovery_swap(CharacterSheet &sheet, const LevelSwap &swap, const SwapOffer &offer)
+{
+    if (!swap_allowed(swap, offer))
+    {
+        return;
+    }
+    // The replacement keeps the replaced spell's place: same source and level.
+    for (auto &g : sheet.grants)
+    {
+        if (g.source_id == "subclass:bard:discoveries" && g.id == "discovery:" + swap.replaced)
+        {
+            g.id = "discovery:" + swap.replacement;
+            return;
+        }
+    }
+    throw std::runtime_error("No such Magical Discoveries spell to replace");
 }
 
 std::vector<InitiateSpells> lineage_spells(std::span<const FeatureGrant> grants, unsigned level)

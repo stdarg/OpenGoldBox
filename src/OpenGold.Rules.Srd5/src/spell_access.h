@@ -32,6 +32,9 @@ std::vector<std::string> always_prepared_spells(CharacterClass klass, unsigned l
                                                 std::span<const rules::FeatureGrant> grants);
 // Wizards prepare from a spellbook; Clerics and Paladins from their class list.
 bool prepares_spells(CharacterClass klass);
+// The highest spell slot level a class has at a character level; 0 for a class
+// that does not prepare spells.
+unsigned highest_slot_level(CharacterClass klass, unsigned level);
 // Whether a spell is on a class's spell list in the game.
 bool on_class_list(CharacterClass klass, std::string_view spell);
 // The grant a Wizard of `level` gains by copying `spell` from a scroll into its
@@ -64,6 +67,11 @@ rules::SwapOffer spell_swap_offer(const rules::CharacterSheet &);
 void apply_cantrip_swap(rules::CharacterSheet &, const rules::LevelSwap &,
                         const rules::SwapOffer &);
 void apply_spell_swap(rules::CharacterSheet &, const rules::LevelSwap &, const rules::SwapOffer &);
+// A Lore Bard may replace one Magical Discoveries spell with another Cleric,
+// Druid or Wizard cantrip or spell of a level it has slots for at the new level.
+rules::SwapOffer discovery_swap_offer(const rules::CharacterSheet &);
+void apply_discovery_swap(rules::CharacterSheet &, const rules::LevelSwap &,
+                          const rules::SwapOffer &);
 // A level-four feat entry for each list, available unless that list's feat is held.
 std::vector<rules::AdvancementOption>
 magic_initiate_feats(std::span<const rules::FeatureGrant> grants);

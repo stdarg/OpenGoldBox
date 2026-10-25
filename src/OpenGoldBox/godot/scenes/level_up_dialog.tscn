@@ -101,6 +101,22 @@ layout_mode = 2
 clip_text = true
 fit_to_longest_item = false
 
+[node name="SwapDiscoveryLabel" type="Label" parent="SwapPage"]
+layout_mode = 2
+
+[node name="SwapDiscovery" type="OptionButton" parent="SwapPage"]
+layout_mode = 2
+clip_text = true
+fit_to_longest_item = false
+
+[node name="SwapDiscoveryWithLabel" type="Label" parent="SwapPage"]
+layout_mode = 2
+
+[node name="SwapDiscoveryWith" type="OptionButton" parent="SwapPage"]
+layout_mode = 2
+clip_text = true
+fit_to_longest_item = false
+
 [node name="Back" type="Button" parent="."]
 offset_left = 236.0
 offset_top = 610.0

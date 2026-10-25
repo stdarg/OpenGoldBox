@@ -73,7 +73,7 @@ void choices_and_sources()
                               }),
                   "Scholar source remains level two");
             const auto bytes = encode_campaign(party, nullptr, "scholar");
-            check(bytes.starts_with("OPENGOLD-CAMPAIGN 40\n"),
+            check(bytes.starts_with("OPENGOLD-CAMPAIGN 41\n"),
                   "Wizard spell history is written in the current campaign format");
             CampaignParty restored(module());
             restored.restore(

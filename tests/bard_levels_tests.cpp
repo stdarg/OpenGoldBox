@@ -336,6 +336,66 @@ void reincarnation_checks()
                           }),
           "Its Expertise stands on the kept skill");
 }
+
+// Magical Discoveries: on each later Bard level one of its spells may be
+// replaced by another Cleric, Druid or Wizard cantrip or spell the Bard has
+// slots for (SRD 5.2.1 p. 35); the replacement keeps the replaced one's place.
+void discovery_swap_checks()
+{
+    const auto rules = module();
+    const auto five = bard(5).sheet();
+    check(rules->advancement_options(five, rules->default_advancement(five))
+              .discovery_swap.replaceable.empty(),
+          "Nothing to replace before Magical Discoveries");
+
+    CampaignParty party(module());
+    const auto id = party.add_pc(Character(*srd5::character_rules(), draft(), {}));
+    party.award_experience(23000, "discovery-xp");
+    while (party.member(id).character.sheet().level < 6)
+    {
+        party.advance(id, party.default_advancement(id));
+    }
+    auto choice = party.default_advancement(id);
+    const auto offer =
+        rules->advancement_options(party.member(id).character.sheet(), choice).discovery_swap;
+    const auto offers = [&](std::string_view spell)
+    {
+        return std::any_of(offer.replacements.begin(), offer.replacements.end(),
+                           [&](const auto &o)
+                           {
+                               return o.id == spell;
+                           });
+    };
+    check(offer.replaceable.size() == 2 && offers("ice_storm") && !offers("cone_of_cold"),
+          "At 7 either discovery may become a spell of a level the Bard has slots for");
+
+    auto refused = choice;
+    refused.discovery_swap = {offer.replaceable.front().id, "cone_of_cold"};
+    bool rejected = false;
+    try
+    {
+        party.advance(id, refused);
+    }
+    catch (const std::exception &)
+    {
+        rejected = true;
+    }
+    check(rejected && party.member(id).character.sheet().level == 6,
+          "A spell above the Bard's slots is refused");
+
+    const auto replaced = offer.replaceable.front().id;
+    choice.discovery_swap = {replaced, "ice_storm"};
+    party.advance(id, choice);
+    const auto &sheet = party.member(id).character.sheet();
+    check(granted(sheet, "discovery:ice_storm", 6) && !granted(sheet, "discovery:" + replaced, 6),
+          "The new discovery takes the replaced one's place");
+    const auto bytes = encode_campaign(party, nullptr, "discovery-swap");
+    CampaignParty next(module());
+    next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
+                                 "discovery-swap", nullptr)
+                     .party);
+    check(encode_campaign(next, nullptr, "discovery-swap") == bytes, "The swap replays exactly");
+}
 } // namespace
 
 int main()
@@ -343,6 +403,7 @@ int main()
     try
     {
         progression_checks();
+        discovery_swap_checks();
         inspiration_checks();
         countercharm_checks();
         secrets_checks();

@@ -186,6 +186,8 @@ struct AdvancementChoice
     std::optional<TrainingChoices> spell_learning; // Required for Wizards; absent otherwise.
     // A cantrip, a known spell, and an Eldritch Invocation or Metamagic option.
     LevelSwap cantrip_swap, spell_swap, option_swap;
+    // A Lore Bard's Magical Discoveries spell.
+    LevelSwap discovery_swap;
     bool operator==(const AdvancementChoice &) const = default;
 };
 
@@ -210,7 +212,7 @@ struct AdvancementOptions
     std::vector<AdvancementOption> feats, spells, fighting_styles;
     std::vector<TrainingChoiceGroup> training;
     std::string description;
-    SwapOffer cantrip_swap, spell_swap, option_swap;
+    SwapOffer cantrip_swap, spell_swap, option_swap, discovery_swap;
 };
 
 struct LearnedSpell

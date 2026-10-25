@@ -98,7 +98,7 @@ void LevelUpDialog::bind_controls()
             presentation::guarded(this, &LevelUpDialog::advancement_spell_changed).bind(i));
     }
     for (const char *name : {"SwapCantrip", "SwapCantripWith", "SwapSpell", "SwapSpellWith",
-                             "SwapOption", "SwapOptionWith"})
+                             "SwapOption", "SwapOptionWith", "SwapDiscovery", "SwapDiscoveryWith"})
     {
         required_node<OptionButton>(*this, String("SwapPage/") + name)
             .connect("item_selected",
@@ -231,7 +231,7 @@ void LevelUpDialog::show_step(AdvancementStep step)
 bool LevelUpDialog::has_swaps() const
 {
     const auto &o = advancement_options_;
-    const std::array offers{&o.cantrip_swap, &o.spell_swap, &o.option_swap};
+    const std::array offers{&o.cantrip_swap, &o.spell_swap, &o.option_swap, &o.discovery_swap};
     return std::any_of(offers.begin(), offers.end(),
                        [](const auto *offer)
                        {
@@ -244,10 +244,11 @@ namespace
 // What the row asks the player to replace, by the offer's kind.
 String swap_question(const std::string &kind)
 {
-    return kind == "Cantrip"     ? i18n::text(N_("Replace a cantrip"))
-           : kind == "Spell"     ? i18n::text(N_("Replace a spell"))
-           : kind == "Metamagic" ? i18n::text(N_("Replace a Metamagic option"))
-                                 : i18n::text(N_("Replace an Eldritch Invocation"));
+    return kind == "Cantrip"               ? i18n::text(N_("Replace a cantrip"))
+           : kind == "Spell"               ? i18n::text(N_("Replace a spell"))
+           : kind == "Metamagic"           ? i18n::text(N_("Replace a Metamagic option"))
+           : kind == "Magical Discoveries" ? i18n::text(N_("Replace a Magical Discoveries spell"))
+                                           : i18n::text(N_("Replace an Eldritch Invocation"));
 }
 } // namespace
 
@@ -322,6 +323,7 @@ void LevelUpDialog::refresh_swaps()
     row("SwapCantrip", advancement_options_.cantrip_swap, swap_rows_[0]);
     row("SwapSpell", advancement_options_.spell_swap, swap_rows_[1]);
     row("SwapOption", advancement_options_.option_swap, swap_rows_[2]);
+    row("SwapDiscovery", advancement_options_.discovery_swap, swap_rows_[3]);
 }
 
 void LevelUpDialog::advancement_swap_changed(std::int64_t)
@@ -330,7 +332,8 @@ void LevelUpDialog::advancement_swap_changed(std::int64_t)
     {
         return;
     }
-    static constexpr std::array<const char *, 3> names{"SwapCantrip", "SwapSpell", "SwapOption"};
+    static constexpr std::array<const char *, 4> names{"SwapCantrip", "SwapSpell", "SwapOption",
+                                                       "SwapDiscovery"};
     const auto value = [&](const String &node)
     {
         auto &dropdown = required_node<OptionButton>(*this, String("SwapPage/") + node);
@@ -340,7 +343,7 @@ void LevelUpDialog::advancement_swap_changed(std::int64_t)
                    : std::string(String(dropdown.get_item_metadata(index)).utf8().get_data());
     };
     swap_incomplete_ = false;
-    std::array<opengold::rules::LevelSwap, 3> complete{};
+    std::array<opengold::rules::LevelSwap, 4> complete{};
     for (std::size_t n = 0; n < names.size(); ++n)
     {
         const String base(names[n]);
@@ -364,6 +367,7 @@ void LevelUpDialog::advancement_swap_changed(std::int64_t)
     advancement_choice_.cantrip_swap = complete[0];
     advancement_choice_.spell_swap = complete[1];
     advancement_choice_.option_swap = complete[2];
+    advancement_choice_.discovery_swap = complete[3];
     auto &spells = advancement_choice_.spells;
     if (!before.replacement.empty())
     {
