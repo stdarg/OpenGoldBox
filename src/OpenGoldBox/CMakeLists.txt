@@ -518,7 +518,14 @@ if(WIN32)
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_output}/data/art"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_body_source}" "${game_output}/data/art/combat-body-looks.tsv"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_weapon_source}" "${game_output}/data/art/combat-weapon-options.tsv"
-        COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} "${game_output}")
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} "${game_output}"
+        COMMAND "${CMAKE_COMMAND}" "-DEXPORT=${game_output}" "-DSTAGE=${CMAKE_BINARY_DIR}/package"
+            "-DZIP=${CMAKE_BINARY_DIR}/OpenGoldBox-windows-x86_64.zip" "-DGODOT=${OPENGOLDBOX_GODOT}"
+            "-DNOTICES_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/write_engine_notices.gd"
+            "-DPROJECT_LICENSE=${PROJECT_SOURCE_DIR}/LICENSE"
+            "-DGODOT_CPP_LICENSE=${godot_cpp_SOURCE_DIR}/LICENSE.md"
+            "-DMD5_MANIFEST=${game_project}/config/por-pc13-md5.json"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/package_windows.cmake")
 else()
     set(package_commands
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${export_path}/Contents/Resources/data/rules/srd-5.2.1"
@@ -530,6 +537,13 @@ else()
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_weapon_source}" "${export_path}/Contents/Resources/data/art/combat-weapon-options.tsv"
         COMMAND codesign --force --deep --sign - "${export_path}"
         COMMAND "${CMAKE_COMMAND}" "-DAPP_BUNDLE=${export_path}" -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_macos_package.cmake")
+endif()
+if(WIN32 AND OPENGOLD_BUILD_TESTS)
+    add_test(NAME opengold_windows_package_smoke COMMAND "${CMAKE_COMMAND}"
+        "-DPACKAGE=${CMAKE_BINARY_DIR}/package/OpenGoldBox" "-DWORK=${CMAKE_BINARY_DIR}/package-smoke"
+        -P "${PROJECT_SOURCE_DIR}/tests/windows_package_smoke.cmake")
+    set_tests_properties(opengold_windows_package_smoke PROPERTIES
+        TIMEOUT 900 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
 endif()
 add_custom_target(OpenGoldBox ALL
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/opengold.gdextension" "${game_project}/bin/opengold.gdextension"

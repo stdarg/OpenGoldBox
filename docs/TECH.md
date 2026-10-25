@@ -623,7 +623,7 @@ Scene-authored text is translated once before native refresh methods take over.
 Español rows, mouse/arrow-key selection and Enter or the translated Continue button
 to confirm. Highlighting a row previews the dialog text in that language while
 language names retain their native spelling. Only confirmation changes the
-active language and saves it in `settings.cfg` beside the executable. Later launches
+active language and saves it in `settings.cfg` in the user data folder. Later launches
 use the saved value or environment override; a missing value prompts again.
 Initial setup follows the system language, with English fallback.
 Closing the selector follows the global graceful exit path.
@@ -633,7 +633,7 @@ context-keyed overrides and retains source text when untranslated.
 See [LOCALIZATION.md](LOCALIZATION.md) for catalog maintenance, artwork and coverage.
 
 `application_settings` resolves the original-game path for all game views and
-save identity checks. Portable `settings.cfg` beside the executable stores the
+save identity checks. `settings.cfg` in the user data folder, beside the saves, stores the
 path and language; missing/invalid values prompt before splashes, language first.
 The development editor uses an ignored project-local config. `--reset-game-path`
 and `--reset-lang` force selection without deleting prior values. Environment

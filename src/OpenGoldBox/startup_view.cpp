@@ -198,7 +198,7 @@ void StartupView::continue_path()
     if (save_pending_path_ && !settings::save_game_path(pending_path_))
     {
         show_path(i18n::text(
-            "Cannot save settings beside the executable. Check that the folder is writable and settings.cfg is valid."));
+            "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."));
         return;
     }
     save_pending_path_ = false;

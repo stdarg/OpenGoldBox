@@ -1,8 +1,11 @@
-# First-run setup and portable configuration
+# First-run setup and configuration
 
-The packaged game saves `settings.cfg` beside `opengoldbox.exe`. The executable's
-folder must be writable. Campaign saves and characters keep their existing
-per-user location; moving settings does not move or convert saves.
+The packaged game saves `settings.cfg` in the player's user data folder, beside
+the campaign saves: `%APPDATA%\Godot\app_userdata\OpenGold\settings.cfg` on
+Windows and `~/Library/Application Support/Godot/app_userdata/OpenGold/settings.cfg`
+on macOS. The game's own folder can be read-only. A `settings.cfg` left beside
+`opengoldbox.exe` by an earlier build is no longer read; the first launch asks for
+the language and the game folder again.
 
 ```ini
 [game]
@@ -120,7 +123,6 @@ reviewed manifest change and decoder validation.
 Godot editor runs use `src/OpenGoldBox/godot/settings.cfg` rather than placing
 project preferences beside the shared Godot executable. This development file
 and its temporary file are ignored by Git and explicitly excluded from exports.
-The old `user://settings.cfg` language preference is no longer read.
 
 `tests/setup_config_tests.gd` exercises first run, partial settings, complete
 settings, resets, environment precedence, invalid folders, synthetic checksum
