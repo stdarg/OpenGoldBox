@@ -42,24 +42,22 @@ it changes the current formats in place without migration (see the
 
 ## Combat integration
 
-Rules 0.6.69 uses this state in combat for Shield of Faith and Heroism: one
-Concentration spell per caster, the damage save, ending at 0 Hit Points, expiry
-with combat time, and `CN1` embedded in each actor of combat checkpoints
-(`OGCOMBAT 40`). Concentration ends when the combat ends; it is not yet kept in
-campaign saves. See [Paladin](PALADIN.md#buffs-and-concentration).
+Rules 0.6.69 first used this state in combat for Shield of Faith and Heroism.
+Every Concentration spell in `spell_table.h` now shares it: one Concentration
+spell per caster, the damage save, ending when the caster is Incapacitated or
+drops to 0 Hit Points, expiry with combat time, and `CN1` embedded in each
+actor of combat checkpoints. Ending Concentration ends the spell's effects on
+every creature and removes its area. Concentration ends when the combat ends;
+it is not kept in campaign saves. See [Paladin](PALADIN.md#buffs-and-concentration).
 
-## Integration still required
+The [representative encounter](RULES.md#representative-encounter) shows a Web
+held by Concentration freeing two creatures at once when a hit breaks it, and
+a restored checkpoint continuing in step with the original session.
 
-- [#208](https://github.com/stdarg/OpenGold/issues/208): actual Silence access,
-  persistent sphere geometry, sound/Verbal restrictions, Deafened and Thunder
-  immunity, combat damage/concentration hooks, player controls and checkpoints.
-- [#209](https://github.com/stdarg/OpenGold/issues/209): campaign location/time,
-  ritual casting, damage and recovery, camping/inn persistence and sound-dependent
-  interactions. Source routes remain Cleric, Bard (#126) and Ranger (#145).
-- [#39](https://github.com/stdarg/OpenGold/issues/39): mundane gagging also needs
-  explicit source and removal behavior; magical silence does not deliver it.
-
-The foundation is not playable concentration or Silence. Parents #38/#39/#43,
-the spell inventory entry and campaign tracker #174 remain open until their
-actual acceptance criteria pass. Silence's new area/control layout needs user
-review before implementation; no new UI approval has been inferred.
+#38 (the lifecycle) is closed. Silence (#208) and its campaign carry-over (#209)
+were closed as not planned under
+[SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features),
+and speech-blocking sources (#39) under
+[SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations);
+Silence is now an ordinary spell (`silence_checks` in
+[cleric_channel_tests.cpp](../tests/cleric_channel_tests.cpp)).

@@ -213,11 +213,11 @@ subset. Standalone party profiles are authored combat fixtures, not finished
 character sheets. The orc conversion is authored for this demo; its AC/HP are
 not an automatic conversion of original AD&D values.
 
-Not yet implemented (as of 2026-10-02): full class features or equipment,
-additional saving-throw effects and conditions, partial cover, multiple sizes,
-concentration spells (the [foundation](CONCENTRATION.md) exists), most other
-spells, split-target Magic Missile/Scorching Ray, or complete
-campaign encounter coverage. Weapon mastery, typed damage and resistance, and
+Not yet implemented (as of 2026-10-24): partial cover, multi-square creature
+footprints (#45) and complete campaign encounter coverage. Concentration spells
+([CONCENTRATION.md](CONCENTRATION.md)), split-target Magic Missile and Scorching
+Ray, and the spells and conditions in the [SRD coverage ledger](SRD-COVERAGE.md)
+are implemented; that ledger, not this list, is the full account. Weapon mastery, typed damage and resistance, and
 Prone are implemented; grappling was dropped
 ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)). The shared campaign now includes named saves,
 surprise initiative disadvantage, original dungeon geometry and bounded original
@@ -226,6 +226,31 @@ Unconscious enemies are currently treated as defeated, and attacks against
 unconscious party members are not offered. Allied transit and diagonal geometry
 use the documented grid adjudication; this is not an implementation of every
 SRD movement exception. Unsupported creature definitions fail explicitly.
+
+### Representative encounter
+
+`representative_encounter_checks` in
+[wizard_spell_tests.cpp](../tests/wizard_spell_tests.cpp) plays saving throws,
+conditions, Concentration, area effects and resistance together in one fight
+(issue #5), using the game's own creatures from `combat.rules`:
+
+1. A level-3 Wizard's Burning Hands catches a Specter and a Vanguard. Both fail
+   the Dexterity save; one damage roll serves the cone, and the Specter's Fire
+   resistance halves it.
+2. Web covers the Specter and two Vanguards, but not the Wizard, who
+   concentrates. Both Vanguards are Restrained; the Specter, immune to the
+   Restrained condition, is not.
+3. A Bandit beside the Wizard hits. A failed Constitution save ends
+   Concentration, which removes the webs and frees both Vanguards at once.
+4. A checkpoint taken before the hit is restored and given the same commands:
+   both sessions stay byte-identical through the hit and six more turns.
+
+The test searches seeds for this sequence, so it pins the interactions, not one
+roll. It also writes the Wizard's Web turn as a fixture; `opengold_godot_encounter`
+([encounter_view_tests.gd](../tests/encounter_view_tests.gd)) loads it in the
+combat view, casts Web with the player's controls in English and Spanish, and
+checks that the webs catch both Vanguards. Enemy turns in the view belong to the
+AI, so the forced hit and Concentration loss are proven natively.
 
 ## Original Slums adapter
 
