@@ -1493,6 +1493,106 @@ void gust_of_wind_checks()
     throw std::runtime_error("No seed fails the Strength save");
 }
 
+bool save_failed(const CombatSession &c, const std::string &save)
+{
+    const auto log = c.snapshot().log();
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.starts_with(save + ":") &&
+                                  line.find("(failure)") != std::string::npos;
+                       });
+}
+
+// Issue #5's representative encounter, every interaction in one fight with
+// the game's own creatures. Burning Hands catches a Specter, which resists
+// Fire, and a Vanguard; Web then Restrains two Vanguards while the Wizard
+// concentrates, and passes over the Specter, which cannot be Restrained. A
+// Bandit's hit breaks the Concentration, which frees both Vanguards at once.
+// A checkpoint taken before the hit continues exactly as the session it came
+// from.
+void representative_encounter_checks()
+{
+    auto module = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
+    const auto hero = wizard(3, {"magic_missile", "burning_hands"}, {"web", "shatter"});
+    const auto profile = module->character_profile(hero.sheet(), std::vector<std::string>{}).data;
+    const auto lost = [](const CombatSession &c, EntityId id)
+    {
+        const auto view = unit(c, id);
+        return view.max_hit_points - view.hit_points;
+    };
+    for (std::uint64_t seed = 1; seed < 512; ++seed)
+    {
+        auto c = module->create({{12, 6, std::vector<Terrain>(72)},
+                                 {{1, "campaign-character", "Wizard", Side::party, {1, 1}, profile},
+                                  {96, "vanguard", "Second", Side::opposition, {5, 2}},
+                                  {97, "bandit", "Striker", Side::opposition, {0, 1}},
+                                  {98, "specter", "Specter", Side::opposition, {3, 1}},
+                                  {99, "vanguard", "First", Side::opposition, {3, 2}}}},
+                                seed);
+        reach(*c, 1);
+        check(submit(*c, "burning_hands") && aim(*c, Cell{3, 1}) && submit(*c, "area_cast") &&
+                  lost(*c, 96) == 0,
+              "Burning Hands reaches the Specter and the first Vanguard only");
+        // One damage roll serves the whole cone, so only matching saves compare.
+        if (!save_failed(*c, "Specter Dexterity save") || !save_failed(*c, "First Dexterity save"))
+        {
+            continue;
+        }
+        check(lost(*c, 99) > 0 && lost(*c, 98) == lost(*c, 99) / 2,
+              "The Specter's Fire resistance halves the shared roll");
+
+        next_turn(*c);
+        const auto web_turn = c->save();
+        check(submit(*c, "web") && aim(*c, Cell{3, 1}) && submit(*c, "area_cast") &&
+                  has_condition(*c, 1, "Concentrating") && difficult(*c, {3, 1}) &&
+                  difficult(*c, {5, 2}) && !difficult(*c, {1, 1}),
+              "Web covers the three foes but not the Wizard, who concentrates");
+        check(!has_condition(*c, 98, "Restrained"), "The Specter cannot be Restrained");
+        // A foe the webs catch stays held until it breaks free.
+        const auto both_held = [&]
+        {
+            return has_condition(*c, 96, "Restrained") && has_condition(*c, 99, "Restrained");
+        };
+        for (unsigned turns = 0; (c->snapshot().actor != 97 || !both_held()) && turns < 10; ++turns)
+        {
+            check(submit(*c, "end"), "End a turn while the webs hold");
+        }
+        if (c->snapshot().actor != 97 || !both_held())
+        {
+            continue;
+        }
+
+        const auto saved = c->save();
+        auto twin = module->restore(saved);
+        check(submit(*c, "melee", 1) && submit(*twin, "melee", 1) && c->save() == twin->save(),
+              "The restored checkpoint strikes exactly as the original");
+        if (!logged(*c, "Wizard loses Concentration."))
+        {
+            continue;
+        }
+        check(save_failed(*c, "Wizard Constitution save"), "A failed Constitution save");
+        check(!has_condition(*c, 1, "Concentrating") && !has_condition(*c, 96, "Restrained") &&
+                  !has_condition(*c, 99, "Restrained") && !difficult(*c, {3, 1}) &&
+                  !difficult(*c, {5, 2}),
+              "Losing Concentration clears the webs and frees both Vanguards");
+        for (unsigned turns = 0; turns < 6; ++turns)
+        {
+            check(submit(*c, "end") && submit(*twin, "end") && c->save() == twin->save(),
+                  "Both sessions continue in step");
+        }
+
+        // tests/encounter_view_tests.gd casts the Web through the combat view.
+        const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "wizard-fixtures";
+        std::filesystem::create_directories(path);
+        std::ofstream out(path / "encounter.save", std::ios::binary);
+        out << web_turn;
+        check(bool(out), "Write the encounter UI fixture");
+        return;
+    }
+    throw std::runtime_error("No seed plays the encounter through");
+}
+
 } // namespace
 
 int main()
@@ -1521,6 +1621,7 @@ int main()
         grease_outlasts_its_fled_caster();
         invisible_caster_awaits_a_reaction();
         web_checks();
+        representative_encounter_checks();
         shield_checks();
         shield_missile_checks();
         shield_slot_per_turn_checks();
