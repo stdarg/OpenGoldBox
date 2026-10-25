@@ -103,7 +103,7 @@ void collision_tests()
           "The party's square records its walled north side, seen from both squares");
     for (unsigned door = 1; door <= 3; ++door)
     {
-        c.doors[0] = door;
+        c.doors[0] = static_cast<std::uint8_t>(door);
         auto field = dungeon_battlefield(map, 8, 8);
         check(field.geometry.at({24, 10}) == Terrain::open &&
                   field.geometry.at({25, 10}) == Terrain::open,

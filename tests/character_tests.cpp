@@ -317,7 +317,7 @@ void creation_tests()
               creator.draft().assignment[Ability::intelligence] == 1,
           "Assigned results swap when dropped on another ability");
     creator.assign_roll(2, Ability::dexterity);
-    check(std::find(creator.draft().assignment.begin(), creator.draft().assignment.end(), 0) ==
+    check(std::find(creator.draft().assignment.begin(), creator.draft().assignment.end(), 0u) ==
               creator.draft().assignment.end(),
           "A displaced result returns to unassigned rolls");
     rejects(
@@ -665,8 +665,8 @@ void additional_portrait_tests()
             source.rgba[p + 3] = 255;
             if (y < 80)
             {
-                source.rgba[p] = 31 + x / 2;
-                source.rgba[p + 1] = 61 + y / 2;
+                source.rgba[p] = static_cast<std::uint8_t>(31 + x / 2);
+                source.rgba[p + 1] = static_cast<std::uint8_t>(61 + y / 2);
                 source.rgba[p + 2] = 173;
             }
         }
@@ -853,7 +853,7 @@ void additional_portrait_tests()
     {
         for (unsigned x = 0; x < 88; ++x)
         {
-            rounded.rgba[(y * 88 + x) * 4] = y;
+            rounded.rgba[(y * 88 + x) * 4] = static_cast<std::uint8_t>(y);
         }
     }
     for (const auto id : {258u, 260u, 262u, 264u})
@@ -888,7 +888,7 @@ void art_tests()
         for (unsigned region = 0; region < 6; ++region)
         {
             body.pixels.assign(576, 0);
-            body.pixels[0] = masks[region] + bank * 8;
+            body.pixels[0] = static_cast<std::uint8_t>(masks[region] + bank * 8);
             body.pixels[1] = 8;
             body.pixels[2] = 5;
             a.colors[bank][region] = 0;

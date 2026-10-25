@@ -71,13 +71,13 @@ std::string weapon_label(std::string_view key)
     {
         label = item->label;
     }
-    else if (const auto *item = detail::armor(key))
+    else if (const auto *armor_item = detail::armor(key))
     {
-        label = item->label;
+        label = armor_item->label;
     }
-    else if (const auto *item = detail::worn_item(key))
+    else if (const auto *worn = detail::worn_item(key))
     {
-        label = rules::parse_item_key(key).unidentified ? item->unidentified_label : item->label;
+        label = rules::parse_item_key(key).unidentified ? worn->unidentified_label : worn->label;
     }
     else
     {
@@ -3901,8 +3901,8 @@ character_definition(std::string_view bytes,
                 d.ranged_heavy_disadvantage = item->heavy_disadvantage(worn_scores);
             }
         }
-        else if (const auto *item = detail::armor(key);
-                 item && item->category != detail::ArmorCategory::shield)
+        else if (const auto *armor_item = detail::armor(key);
+                 armor_item && armor_item->category != detail::ArmorCategory::shield)
         {
             if (armor)
             {
@@ -3914,10 +3914,11 @@ character_definition(std::string_view bytes,
                 d.spells.clear();
             }
             armor = true;
-            d.heavy_armor = item->category == detail::ArmorCategory::heavy;
-            d.ac = item->base_ac + item->dexterity_contribution(dex) + enchantment.bonus;
-            d.stealth_disadvantage = item->stealth_disadvantage;
-            if (worn_scores[Ability::strength] < item->strength)
+            d.heavy_armor = armor_item->category == detail::ArmorCategory::heavy;
+            d.ac = armor_item->base_ac + armor_item->dexterity_contribution(dex) +
+                   enchantment.bonus;
+            d.stealth_disadvantage = armor_item->stealth_disadvantage;
+            if (worn_scores[Ability::strength] < armor_item->strength)
             {
                 d.speed -= 10;
             }
@@ -16775,7 +16776,9 @@ std::vector<Cell> Session::flight_route(const Actor &from, const Actor &target, 
 
     struct Visit
     {
-        int provoked = unreached;
+        // Spelled out: MSVC cannot default-construct a local class whose
+        // member initializer names a local of the enclosing function.
+        int provoked = std::numeric_limits<int>::max();
         int previous = -1;
     };
 
@@ -20432,15 +20435,15 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
             {
                 const auto type = static_cast<detail::DamageType>(e.dc);
                 const auto name = std::string(detail::damage_name(type));
-                const int amount = resolved_damage(
+                const int spirit_damage = resolved_damage(
                     target, type, dice({2 + static_cast<int>(spirits->slot) - 4, 8, 0}));
-                log(target.source.name + " takes " + std::to_string(amount) + " " + name +
+                log(target.source.name + " takes " + std::to_string(spirit_damage) + " " + name +
                         " damage from the elemental spirits.",
                     {"{name} takes {damage} {type} damage from the elemental spirits.",
                      {{"name", target.source.name},
-                      {"damage", std::to_string(amount)},
+                      {"damage", std::to_string(spirit_damage)},
                       {"type", name, true}}});
-                damage(target, amount, false);
+                damage(target, spirit_damage, false);
                 break;
             }
         }
@@ -20457,12 +20460,14 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     {
         const auto type = shield->dc ? detail::DamageType::cold : detail::DamageType::fire;
         const auto name = std::string(detail::damage_name(type));
-        const int amount = resolved_damage(a, type, dice({2, 8, 0}));
-        log(a.source.name + " takes " + std::to_string(amount) + " " + name +
+        const int shield_damage = resolved_damage(a, type, dice({2, 8, 0}));
+        log(a.source.name + " takes " + std::to_string(shield_damage) + " " + name +
                 " damage from the fire shield.",
             {"{name} takes {damage} {type} damage from the fire shield.",
-             {{"name", a.source.name}, {"damage", std::to_string(amount)}, {"type", name, true}}});
-        damage(a, amount, false);
+             {{"name", a.source.name},
+              {"damage", std::to_string(shield_damage)},
+              {"type", name, true}}});
+        damage(a, shield_damage, false);
     }
     // A hit's added damage of a second type (the Hobgoblin Warrior's poison,
     // a Ghoul's Necrotic bite).
@@ -26689,14 +26694,14 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     session->items_active_ = has_items;
     if (has_items)
     {
-        std::size_t count{};
-        input >> count;
-        if (!input || count > 100000)
+        std::size_t held_item_count{};
+        input >> held_item_count;
+        if (!input || held_item_count > 100000)
         {
             throw std::runtime_error("Invalid held item count");
         }
-        session->items_.resize(count);
-        for (unsigned index = 0; index < count; ++index)
+        session->items_.resize(held_item_count);
+        for (unsigned index = 0; index < held_item_count; ++index)
         {
             auto &item = session->items_[index];
             unsigned id{};
@@ -26840,14 +26845,14 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     if (selecting)
     {
         PendingSelection selection;
-        std::size_t count{};
-        input >> selection.caster >> selection.verb >> count;
+        std::size_t chosen_count{};
+        input >> selection.caster >> selection.verb >> chosen_count;
         const auto *spell = detail::find_spell(selection.verb);
-        if (!input || !spell || !selects_creatures(*spell) || !count || count > 8)
+        if (!input || !spell || !selects_creatures(*spell) || !chosen_count || chosen_count > 8)
         {
             throw std::runtime_error("Invalid spell target choice");
         }
-        for (std::size_t n = 0; n < count; ++n)
+        for (std::size_t n = 0; n < chosen_count; ++n)
         {
             EntityId id{};
             input >> id;
@@ -26863,7 +26868,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         };
         if (!input || !known(selection.caster) ||
             !std::all_of(selection.chosen.begin(), selection.chosen.end(), known) ||
-            count >= session->selection_maximum(selection))
+            chosen_count >= session->selection_maximum(selection))
         {
             throw std::runtime_error("Invalid spell target choice");
         }
@@ -31142,14 +31147,15 @@ class Module final : public RulesModule
                 result.item_modifiers +=
                     "Source: equipped Wand. Held focus; melee uses unarmed strike.\n";
             }
-            else if (const auto *item = detail::weapon(key); item && item->fixed_damage)
+            else if (const auto *fixed_weapon = detail::weapon(key);
+                     fixed_weapon && fixed_weapon->fixed_damage)
             {
                 result.item_modifiers +=
                     "Source: equipped " + weapon_label(key) + ". Attack uses " +
                     attack_ability(key) + " modifier" +
                     (trained(klass, sheet.grants, key) ? " +" + bonus + " class proficiency"
                                                        : std::string(" without proficiency")) +
-                    "; damage is fixed at " + std::to_string(item->fixed_damage) +
+                    "; damage is fixed at " + std::to_string(fixed_weapon->fixed_damage) +
                     " without an ability modifier.\n";
             }
             else
@@ -31258,7 +31264,8 @@ class Module final : public RulesModule
                 result.item_messages.push_back(
                     {"Source: equipped Wand. Held focus; melee uses unarmed strike.", {}});
             }
-            else if (const auto *item = detail::weapon(key); item && item->fixed_damage)
+            else if (const auto *fixed_weapon = detail::weapon(key);
+                     fixed_weapon && fixed_weapon->fixed_damage)
             {
                 result.item_messages.push_back(
                     {trained(klass, sheet.grants, key)
@@ -31267,7 +31274,7 @@ class Module final : public RulesModule
                      {{"item", weapon_label(key), true},
                       {"ability", attack_ability(key), true},
                       {"bonus", bonus},
-                      {"damage", std::to_string(item->fixed_damage)}}});
+                      {"damage", std::to_string(fixed_weapon->fixed_damage)}}});
             }
             else
             {

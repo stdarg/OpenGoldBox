@@ -500,7 +500,7 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
             for (const unsigned type : {weapons[i], i < 2 ? 55u : 50u})
             {
                 Equipment item;
-                item.stored.type = type;
+                item.stored.type = static_cast<std::uint8_t>(type);
                 item.stored.stack_size = 1;
                 item.stored.value = 1;
                 party->purchase(id, item);
@@ -684,7 +684,7 @@ void CombatDemo::slums(const std::filesystem::path &directory, std::uint64_t see
         }
     }
     vm.bind_variable(ecl_cell_event, 1);
-    for (std::uint8_t opcode : {11, 12, 13, 14, 28, 36})
+    for (std::uint8_t opcode : std::initializer_list<std::uint8_t>{11, 12, 13, 14, 28, 36})
     {
         vm.enable_host(opcode);
     }
@@ -1443,18 +1443,18 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                 return command;
             }
         }
-        const Command *aim = nullptr;
+        const Command *spell_aim = nullptr;
         for (const auto &command : offered)
         {
             if (command.verb == targeting->verb &&
-                (!aim || command.target == targeting->chosen.back()))
+                (!spell_aim || command.target == targeting->chosen.back()))
             {
-                aim = &command;
+                spell_aim = &command;
             }
         }
-        if (aim)
+        if (spell_aim)
         {
-            return *aim;
+            return *spell_aim;
         }
     }
     // Paladin's Smite costs no slot, so a Paladin uses it on the first hit it can;

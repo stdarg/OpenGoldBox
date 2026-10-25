@@ -500,9 +500,9 @@ void identification_spells()
         {
             for (const auto &carried : party.member(id).character.inventory().items())
             {
-                const auto &source = party.member(id).item_sources.at(carried.id);
-                if (source.stored.magic_bonus == item.stored.magic_bonus &&
-                    source.stored.type == item.stored.type)
+                const auto &item_source = party.member(id).item_sources.at(carried.id);
+                if (item_source.stored.magic_bonus == item.stored.magic_bonus &&
+                    item_source.stored.type == item.stored.type)
                 {
                     return std::pair{id, carried.id};
                 }

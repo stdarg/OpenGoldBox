@@ -11,6 +11,7 @@
 #include <godot_cpp/classes/translation_server.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include <algorithm>
 
 using namespace godot;
 

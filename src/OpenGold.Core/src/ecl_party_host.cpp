@@ -45,11 +45,11 @@ AdndGroup adnd_group(std::string_view class_id)
 // non-human people, as its half-orc, never monsters (code 0).
 std::uint16_t adnd_race_code(std::string_view species_id)
 {
-    using Code = std::pair<std::string_view, std::uint16_t>;
+    using Code = std::pair<std::string_view, unsigned>;
     static constexpr std::array<Code, 6> codes{
         {{"dwarf", 1}, {"elf", 2}, {"gnome", 3}, {"halfling", 5}, {"orc", 6}, {"human", 7}}};
     const auto match = std::ranges::find(codes, species_id, &Code::first);
-    return match == codes.end() ? 6 : match->second;
+    return static_cast<std::uint16_t>(match == codes.end() ? 6 : match->second);
 }
 
 // The original's alignment codes, lawful good to chaotic evil (coab
@@ -290,21 +290,21 @@ EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
             fields[n] = static_cast<unsigned char>(
                 std::toupper(static_cast<unsigned char>(name[n])));
         }
-        fields[0x18] = sheet.scores[rules::Ability::constitution];
+        fields[0x18] = static_cast<std::uint16_t>(sheet.scores[rules::Ability::constitution]);
         fields[0x72] = adnd_race_code(m.character.creation_data().race);
         fields[0xD8] = adnd_alignment_code(m.character.creation_data().alignment);
         // The thief's climb-walls chance, which the Cadorna Textile House's
         // dry well rolls (ECL4:2 0xACC5).
-        fields[0xAB] = party.climbing_chance(id);
+        fields[0xAB] = static_cast<std::uint16_t>(party.climbing_chance(id));
         // Picking a lock and removing traps, which Kovel Mansion's lock and
         // traps roll (ECL3:14 0x9F91, 0xB3A2).
-        fields[0xA5] = fields[0xA7] = party.thieves_tools_chance(id);
+        fields[0xA5] = fields[0xA7] = static_cast<std::uint16_t>(party.thieves_tools_chance(id));
         // The high bit of the control byte marks a companion (coab's
         // control_morale, NPC_Base 0x80); the Temple of Bane looks for it
         // before Dirten takes his leave (ECL1:24 0xAC5D).
         fields[0xB8] = m.npc_source.empty() ? 0 : 0x80;
         fields[0x100] = m.vitals.dead ? 0 : 1;
-        fields[0x119] = m.vitals.hit_points;
+        fields[0x119] = static_cast<std::uint16_t>(m.vitals.hit_points);
         // Every member shows the party's money: the party owns it all.
         const auto coins = script_coins(party.state().wealth);
         for (unsigned n = 0; n < 7; ++n)

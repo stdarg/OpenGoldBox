@@ -362,7 +362,10 @@ void copying()
     const auto known = rules->spell_access(party.member(id).character.sheet()).spellbook;
     std::uint8_t number = 0;
     for (const auto &[candidate, spell] : std::vector<std::pair<std::uint8_t, std::string>>{
-             {9, "burning_hands"}, {10, "charm_person"}, {21, "sleep"}, {15, "magic_missile"}})
+             {std::uint8_t{9}, "burning_hands"},
+             {std::uint8_t{10}, "charm_person"},
+             {std::uint8_t{21}, "sleep"},
+             {std::uint8_t{15}, "magic_missile"}})
     {
         if (!number && std::none_of(known.begin(), known.end(),
                                     [&](const auto &s)

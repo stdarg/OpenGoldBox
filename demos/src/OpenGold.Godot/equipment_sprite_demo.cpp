@@ -87,7 +87,7 @@ void EquipmentSpriteDemo::_ready()
                 return;
             }
             por::Equipment item;
-            item.stored.type = type;
+            item.stored.type = static_cast<std::uint8_t>(type);
             item.stored.stack_size = 1;
             character.add_item({.definition_id = equipment_conversion(item),
                                 .name = name,

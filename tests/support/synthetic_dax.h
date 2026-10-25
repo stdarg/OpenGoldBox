@@ -34,7 +34,7 @@ inline std::vector<std::uint8_t> literal_dax(const std::vector<DaxRecord> &recor
         for (std::size_t at = 0; at < record.bytes.size(); at += 128)
         {
             const auto count = std::min<std::size_t>(128, record.bytes.size() - at);
-            bytes.push_back(count - 1);
+            bytes.push_back(static_cast<std::uint8_t>(count - 1));
             bytes.insert(bytes.end(), record.bytes.begin() + at, record.bytes.begin() + at + count);
         }
         if (record.bytes.size() > 65535 || bytes.size() - start > 65535)

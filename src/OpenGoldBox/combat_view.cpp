@@ -925,8 +925,10 @@ CombatView::ArtSet CombatView::build_art() const
                          left_action,
                          ImageTexture::create_from_image(lying),
                          visible,
-                         Rect2(image->get_width() - visible.get_end().x, visible.position.y,
-                               visible.size.x, visible.size.y),
+                         Rect2(static_cast<godot::real_t>(image->get_width() - visible.get_end().x),
+                               static_cast<godot::real_t>(visible.position.y),
+                               static_cast<godot::real_t>(visible.size.x),
+                               static_cast<godot::real_t>(visible.size.y)),
                          lying->get_used_rect(),
                          goliath,
                          source.planted ? source.planted->scale : 0.0,
@@ -2495,7 +2497,7 @@ void CombatView::refresh()
     if (player && s.ability_check_choice)
     {
         const auto &check = *s.ability_check_choice;
-        const bool changed = !mind->is_visible();
+        const bool mind_was_hidden = !mind->is_visible();
         required_node<Label>(*this, "TacticalMind/Text")
             .set_text(i18n::format(
                 "Failed Medicine check: d20 {roll} + {modifier} = {total} vs DC {dc}.\nSecond Wind uses: {uses}\n\nAdd 1d10. Spend one use only if the check succeeds.\nThe original Action is already spent.",
@@ -2504,7 +2506,7 @@ void CombatView::refresh()
                  {"total", check.total},
                  {"dc", check.difficulty},
                  {"uses", check.resource_uses}}));
-        if (changed)
+        if (mind_was_hidden)
         {
             mind->popup_centered();
             required_node<Button>(*this, "TacticalMind/Use").grab_focus();
@@ -3004,14 +3006,14 @@ void CombatView::refresh()
     }
     if (player && s.spell_targeting)
     {
-        String chosen;
+        String chosen_names;
         for (const auto id : s.spell_targeting->chosen)
         {
             for (const auto &a : s.combatants)
             {
                 if (a.id == id)
                 {
-                    chosen += (chosen.is_empty() ? "" : ", ") + gs(a.name);
+                    chosen_names += (chosen_names.is_empty() ? "" : ", ") + gs(a.name);
                 }
             }
         }
@@ -3032,7 +3034,7 @@ void CombatView::refresh()
                                         {"left", static_cast<int64_t>(targeting.maximum -
                                                                       targeting.chosen.size())},
                                         {"maximum", static_cast<int64_t>(targeting.maximum)},
-                                        {"chosen", chosen}}) +
+                                        {"chosen", chosen_names}}) +
                           "\n" + i18n::text("Click a foe: aim the next at it | Escape: cancel"));
         }
         else
@@ -3041,7 +3043,7 @@ void CombatView::refresh()
                 .set_text(
                     i18n::format("Choose up to {maximum} creatures. Chosen: {chosen}",
                                  {{"maximum", static_cast<int64_t>(s.spell_targeting->maximum)},
-                                  {"chosen", chosen}}) +
+                                  {"chosen", chosen_names}}) +
                     "\n" +
                     i18n::text(
                         "Click: choose or remove | Space or Cast spell: cast | Escape: cancel"));

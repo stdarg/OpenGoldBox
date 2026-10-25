@@ -609,7 +609,7 @@ void CharacterCreationView::equipment_art_check()
             for (const unsigned type : {36u, 8u, 59u, 55u})
             {
                 por::Equipment item;
-                item.stored.type = type;
+                item.stored.type = static_cast<uint8_t>(type);
                 item.stored.stack_size = 1;
                 campaign_->purchase(id, item);
             }
@@ -759,7 +759,7 @@ void CharacterCreationView::equipment_art_check()
             if (option.original_type)
             {
                 por::Equipment item;
-                item.stored.type = option.original_type;
+                item.stored.type = static_cast<uint8_t>(option.original_type);
                 item.stored.stack_size = 1;
                 character.add_item({.definition_id = equipment_conversion(item),
                                     .name = option.label,
@@ -1542,11 +1542,11 @@ void CharacterCreationView::update_party_navigation()
             }
         }
     }
-    if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown")))
+    if (auto *shown_town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown")))
     {
-        if (town->is_visible())
+        if (shown_town->is_visible())
         {
-            allowed = town->can_leave();
+            allowed = shown_town->can_leave();
         }
     }
     if (campaign_defeated_)
@@ -1576,7 +1576,7 @@ void CharacterCreationView::expedition_check()
             for (unsigned type : {36, 55, 59})
             {
                 por::Equipment gear;
-                gear.stored.type = type;
+                gear.stored.type = static_cast<uint8_t>(type);
                 gear.stored.stack_size = 1;
                 gear.stored.value = 1;
                 campaign_->purchase(id, gear);

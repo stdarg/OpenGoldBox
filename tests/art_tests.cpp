@@ -56,7 +56,7 @@ Bytes picture(unsigned width, unsigned height, unsigned offset = 0)
             // and head occlusion. Different offsets distinguish sizes/poses.
             return pixel % 3 == 0 ? 0u : (pixel + offset) % 16;
         };
-        bytes[17 + p / 2] = (color(p) << 4) | color(p + 1);
+        bytes[17 + p / 2] = static_cast<std::uint8_t>((color(p) << 4) | color(p + 1));
     }
     return bytes;
 }

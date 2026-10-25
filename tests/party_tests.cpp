@@ -209,8 +209,8 @@ Character character(std::string klass = "fighter", std::string name = "Ada")
 por::Equipment item(unsigned type, unsigned price = 10)
 {
     por::Equipment e;
-    e.stored.type = type;
-    e.stored.value = price;
+    e.stored.type = static_cast<std::uint8_t>(type);
+    e.stored.value = static_cast<std::uint16_t>(price);
     e.stored.stack_size = 1;
     return e;
 }
@@ -1842,14 +1842,15 @@ void dynamic_checkpoint()
     const auto command = choose_demo_command(*session);
     check(session->submit(command) && restored->submit(command), "Restored command accepted");
     check(session->save() == restored->save(), "Dynamic checkpoint deterministic continuation");
-    for (const auto &c : srd5::character_rules()->choices(CreationField::character_class))
+    for (const auto &choice : srd5::character_rules()->choices(CreationField::character_class))
     {
-        const auto pc = character(c.id);
+        const auto pc = character(choice.id);
         const auto p = rules->character_profile(pc.sheet(), {});
-        const int expected = 10 + pc.sheet().modifiers[Ability::dexterity] +
-                             (c.id == "monk"        ? pc.sheet().modifiers[Ability::wisdom]
-                              : c.id == "barbarian" ? pc.sheet().modifiers[Ability::constitution]
-                                                    : 0);
+        const int expected =
+            10 + pc.sheet().modifiers[Ability::dexterity] +
+            (choice.id == "monk"        ? pc.sheet().modifiers[Ability::wisdom]
+             : choice.id == "barbarian" ? pc.sheet().modifiers[Ability::constitution]
+                                        : 0);
         check(p.armor_class == std::max(expected, 10 + pc.sheet().modifiers[Ability::dexterity]) &&
                   p.hit_points == pc.sheet().hit_points,
               "All twelve classes have correct unarmored AC and HP profiles");
@@ -2599,7 +2600,7 @@ void recovery_hosts()
     Bytes pre{9, 0, 1, 1, 0xd2, 0x6d, 9, 0, 101, 1, 0xd3, 0x6d, 0};
     const unsigned interrupt = 0x9915 + static_cast<unsigned>(pre.size());
     bytes[16] = interrupt & 255;
-    bytes[17] = interrupt >> 8;
+    bytes[17] = static_cast<std::uint8_t>(interrupt >> 8);
     bytes.insert(bytes.end(), pre.begin(), pre.end());
     bytes.insert(bytes.end(), {9, 0, 1, 1, 0x10, 0x98, 0});
     auto interrupted_program = std::make_shared<const por::EclProgram>(

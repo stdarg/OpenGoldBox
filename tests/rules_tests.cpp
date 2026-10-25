@@ -1257,9 +1257,9 @@ void checkpoint_validation_tests()
     // A route pauses after spending 10 feet while leaving an enemy's reach.
     // Only its remaining movement may be charged when validating a restore.
     Battlefield corridor{5, 3, std::vector<Terrain>(15, Terrain::obstacle)};
-    for (int x = 0; x < 5; ++x)
+    for (int column = 0; column < 5; ++column)
     {
-        corridor.terrain[5 + x] = Terrain::open;
+        corridor.terrain[5 + column] = Terrain::open;
     }
     corridor.terrain[1] = corridor.terrain[2] = Terrain::open; // Clear sight from the reactor.
     Encounter encounter{corridor,
@@ -1338,9 +1338,9 @@ void installed()
         demo.continue_script();
     }
     check(demo.script_complete(), "Original ECL resumes after real combat");
-    check(demo.script_variable(por::ecl_combat_result) == (outcome == Outcome::victory ? 0
-                                                           : outcome == Outcome::fled  ? 129
-                                                                                       : 128),
+    check(demo.script_variable(por::ecl_combat_result) == (outcome == Outcome::victory ? 0u
+                                                           : outcome == Outcome::fled  ? 129u
+                                                                                       : 128u),
           "Actual outcome mapped to original ECL");
     if (outcome == Outcome::victory)
     {

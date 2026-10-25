@@ -2002,15 +2002,15 @@ Dictionary RolfTourView::tour_visuals()
             }
             const auto &cell = session_->map().at(x, y);
             int flags = state.visited.test(index) ? 1 : 0;
-            for (unsigned direction = 0; direction < 4; ++direction)
+            for (unsigned side = 0; side < 4; ++side)
             {
-                if (cell.walls[direction])
+                if (cell.walls[side])
                 {
-                    flags |= 1 << (1 + direction);
+                    flags |= 1 << (1 + side);
                 }
-                if (cell.doors[direction])
+                if (cell.doors[side])
                 {
-                    flags |= 1 << (5 + direction);
+                    flags |= 1 << (5 + side);
                 }
             }
             cells[index] = flags;
@@ -2048,13 +2048,16 @@ void RolfTourView::capture_frame(const String &name)
                     continue; // Party arrow covers its cell.
                 }
                 const auto center = get_global_transform_with_canvas().xform(
-                    map_rect_.position + Vector2((x + .5) * cell, (y + .5) * cell));
+                    map_rect_.position + Vector2(static_cast<godot::real_t>((x + .5) * cell),
+                                                 static_cast<godot::real_t>((y + .5) * cell)));
                 const auto expected =
                     get_theme_color(!no_fog_ && !state.seen.test(y * 16 + x) ? "map_black"
                                     : state.visited.test(y * 16 + x)         ? "map_visited"
                                                                              : "map_seen",
                                     "OpenGoldPalette");
-                if (!image->get_pixel(center.x, center.y).is_equal_approx(expected))
+                if (!image->get_pixel(static_cast<int32_t>(center.x),
+                                      static_cast<int32_t>(center.y))
+                         .is_equal_approx(expected))
                 {
                     throw std::runtime_error("Overhead fog pixel mismatch at " + std::to_string(x) +
                                              "," + std::to_string(y));

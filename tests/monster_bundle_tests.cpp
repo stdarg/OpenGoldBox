@@ -28,7 +28,8 @@ const ExportedMonster &slums(const MonsterBundle &bundle, unsigned record)
 
 std::string text(const std::filesystem::path &path)
 {
-    std::ifstream in(path);
+    // Binary: on Windows a text-mode read drops the PNGs' \r bytes.
+    std::ifstream in(path, std::ios::binary);
     return {std::istreambuf_iterator<char>(in), {}};
 }
 

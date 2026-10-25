@@ -254,7 +254,7 @@ int main()
         }
         // A dying Fighter ally when the last enemy, a wounded Kobold, falls.
         {
-            const auto ally = module->character_profile(fighter(), sword_and_shield).data;
+            const auto dying_ally = module->character_profile(fighter(), sword_and_shield).data;
             write(
                 *module, directory, "bandage",
                 battle(
@@ -264,7 +264,7 @@ int main()
                       "Ally",
                       Side::party,
                       {1, 3},
-                      ally,
+                      dying_ally,
                       VitalState{
                           0, false,
                           "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 6000 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 1"}},

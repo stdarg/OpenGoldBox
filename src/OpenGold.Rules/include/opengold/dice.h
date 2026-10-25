@@ -18,7 +18,7 @@ inline int roll_die(std::uint64_t &state, int sides)
         throw std::invalid_argument("A die needs at least one side");
     }
     const auto count = static_cast<std::uint64_t>(sides);
-    const auto threshold = (-count) % count;
+    const auto threshold = (std::uint64_t{0} - count) % count;
     std::uint64_t value;
     do
     {

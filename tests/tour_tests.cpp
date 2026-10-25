@@ -139,9 +139,9 @@ void wall_art_tests()
     tiles_record[0] = 8;
     tiles_record[2] = 1;
     tiles_record[8] = 4;
-    std::fill_n(tiles_record.begin() + 17, 32, 0x11);
-    std::fill_n(tiles_record.begin() + 49, 32, 0x88);
-    std::fill_n(tiles_record.begin() + 113, 32, 0xdd);
+    std::fill_n(tiles_record.begin() + 17, 32, std::uint8_t{0x11});
+    std::fill_n(tiles_record.begin() + 49, 32, std::uint8_t{0x88});
+    std::fill_n(tiles_record.begin() + 113, 32, std::uint8_t{0xdd});
     auto tiles = decode_wall_tiles(tiles_record);
     check(tiles && tiles->size() == 4 && (*tiles)[1][63] == 8, "Decode normal 8x8 tile frames");
     tiles_record.pop_back();
@@ -151,7 +151,7 @@ void wall_art_tests()
     check(!decode_wall_tiles(tiles_record), "Reject unsupported tile dimensions");
 
     Bytes definitions(156 * 2, 1);
-    std::fill(definitions.begin() + 156, definitions.end(), 2);
+    std::fill(definitions.begin() + 156, definitions.end(), std::uint8_t{2});
     auto art = decode_wall_art(definitions, *tiles);
     check(art && art->appearances.size() == 2, "Two appearances with ten views each");
     const auto &face = art->appearances[0][6];
@@ -626,7 +626,7 @@ void installed_town(const RolfTourSession &finished)
         const auto ticket = town.snapshot().continue_ticket;
         const auto price = affordable->stored.value;
         check(town.buy(ticket, item_index), "Buy original item");
-        check(town.party().wealth[3] == 9999 - price && town.party().inventory.size() == 1,
+        check(town.party().wealth[3] == 9999u - price && town.party().inventory.size() == 1,
               "Actual price and inventory persist");
         check(town.leave_shop(ticket), "Exit original shop");
         check(opengold::phlan_shopkeeper_portrait(town.snapshot(), town.shops()).empty(),

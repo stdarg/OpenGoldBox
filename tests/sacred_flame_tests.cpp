@@ -251,8 +251,8 @@ void access()
         {
             ++clerics;
             // Four Cleric cantrips exist, enough for every level-one choice.
-            const auto access = rules->spell_access(preset.sheet());
-            check(access.cantrips.size() == access.cantrip_choices,
+            const auto preset_access = rules->spell_access(preset.sheet());
+            check(preset_access.cantrips.size() == preset_access.cantrip_choices,
                   "Preset Clerics have pre-generated supported selections");
         }
     }
@@ -404,7 +404,7 @@ void targets()
     {
         for (bool dead : {false, true})
         {
-            auto c = rules->create(
+            auto fight = rules->create(
                 {{10, 8, std::vector<Terrain>(80)},
                  {{1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
                   {2,
@@ -418,24 +418,24 @@ void targets()
                           : std::nullopt},
                   {3, "target", "Enemy", Side::opposition, {8, 1}}}},
                 13);
-            check(has(*c, "sacred_flame", 2) == !dead,
+            check(has(*fight, "sacred_flame", 2) == !dead,
                   "Living allies, including unconscious targets, are eligible; corpses are not");
-            const auto before = c->save();
-            const auto random = rng(*c);
+            const auto before_cast = fight->save();
+            const auto random = rng(*fight);
             if (dead)
             {
-                check(!c->submit({c->snapshot().revision, 1, 2, "sacred_flame"}) &&
-                          c->save() == before,
+                check(!fight->submit({fight->snapshot().revision, 1, 2, "sacred_flame"}) &&
+                          fight->save() == before_cast,
                       "Dead-target rejection is atomic");
                 continue;
             }
-            check(c->submit(command(*c, "sacred_flame", 2)), "Ally cast");
+            check(fight->submit(command(*fight, "sacred_flame", 2)), "Ally cast");
             if (down)
             {
-                check(rng(*c) == random + 0x9e3779b97f4a7c15ULL,
+                check(rng(*fight) == random + 0x9e3779b97f4a7c15ULL,
                       "Automatic unconscious failure rolls damage only");
                 check(
-                    unit(*c, 2).persistent.description.find("1 failures") != std::string::npos,
+                    unit(*fight, 2).persistent.description.find("1 failures") != std::string::npos,
                     "Saving-throw damage at zero HP adds one death failure, never a close-range critical");
             }
         }

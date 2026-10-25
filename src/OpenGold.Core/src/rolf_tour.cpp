@@ -268,12 +268,13 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
     // fights on WILDCOM's ground with RANDCOM's debris.
     if (overland)
     {
-        const auto tiles = read_archive(resolve_archive(directory, "SQRPACI.DAX"));
+        const auto tile_archive = read_archive(resolve_archive(directory, "SQRPACI.DAX"));
         for (std::uint8_t set = 1; set <= 2; ++set)
         {
             for (unsigned frame = 0; frame < 128; ++frame)
             {
-                auto tile = decode_ega_combat_icon(tiles, set, frame);
+                auto tile =
+                    decode_ega_combat_icon(tile_archive, set, static_cast<std::uint8_t>(frame));
                 if (!tile)
                 {
                     throw EclError("Invalid overland tile " + std::to_string(frame));
@@ -293,7 +294,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
         {
             for (unsigned frame = 0; frame < frames; ++frame)
             {
-                auto art = decode_ega_combat_icon(*set, 1, frame);
+                auto art = decode_ega_combat_icon(*set, 1, static_cast<std::uint8_t>(frame));
                 if (!art || art.image.width != 24 || art.image.height != 24)
                 {
                     throw EclError("Invalid wilderness battlefield tile " + std::to_string(frame));
@@ -676,7 +677,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
     std::vector<Image> terrain_art;
     for (unsigned tile = 0; tile < 25; ++tile)
     {
-        auto image = decode_ega_combat_icon(dungeon, 1, tile);
+        auto image = decode_ega_combat_icon(dungeon, 1, static_cast<std::uint8_t>(tile));
         if (!image || image.image.width != 24 || image.image.height != 24)
         {
             throw EclError("Invalid dungeon tactical tile");
@@ -686,25 +687,26 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
     for (const auto &area : areas)
     {
         const auto bank = std::to_string(area.bank);
-        const auto program =
+        const auto area_program =
             catalog.find({"ECL" + bank + ".DAX", static_cast<std::uint8_t>(area.script)});
-        if (!program)
+        if (!area_program)
         {
             throw EclError("Missing area script ECL" + bank + ":" + std::to_string(area.script));
         }
-        town->programs.emplace(area.script, program);
+        town->programs.emplace(area.script, area_program);
         town->script_banks.emplace(area.script, area.bank);
-        const auto definitions = archive(("WALLDEF" + bank + ".DAX").c_str()),
-                   tiles = archive(("8X8D" + bank + ".DAX").c_str());
+        const auto wall_definitions = archive(("WALLDEF" + bank + ".DAX").c_str()),
+                   wall_tiles = archive(("8X8D" + bank + ".DAX").c_str());
         for (const auto &geo : area.maps)
         {
             auto district = std::make_shared<PhlanResources>();
-            const auto map = maps.find({"GEO" + bank + ".DAX", static_cast<std::uint8_t>(geo.id)});
-            if (!map)
+            const auto area_map =
+                maps.find({"GEO" + bank + ".DAX", static_cast<std::uint8_t>(geo.id)});
+            if (!area_map)
             {
                 throw EclError("Missing area map GEO" + bank + ":" + std::to_string(geo.id));
             }
-            district->map = map->get();
+            district->map = area_map->get();
             district->script = area.script;
             district->shared_with = geo.shared_with;
             district->bank = area.bank;
@@ -730,7 +732,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                 // (coab LoadWalldef): Valhingen Graveyard's LOAD PIECES 21,22,20,
                 // whose script sets the cells that keep the original from
                 // loading slot 2's own bank.
-                const auto &definition = find_record(definitions, id);
+                const auto &definition = find_record(wall_definitions, id);
                 constexpr std::size_t block_size = 780;
                 const auto blocks = definition.size() / block_size;
                 if (blocks == 0 || slot + blocks > geo.pieces.size())
@@ -748,7 +750,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                 {
                     const auto tile_record =
                         blocks == 1 ? id : static_cast<unsigned>(id * 10 + block + 1);
-                    auto local_bank = decode_wall_tiles(find_record(tiles, tile_record));
+                    auto local_bank = decode_wall_tiles(find_record(wall_tiles, tile_record));
                     if (!local_bank || local_bank->size() != 70)
                     {
                         throw EclError("Invalid wall tile bank " + std::to_string(tile_record));
@@ -960,7 +962,8 @@ void RolfTourSession::reset_run()
     {
         for (unsigned n = 0; n < 3; ++n)
         {
-            auto decoded = decode_ega_sprite(town_->sprite_archive, 12, n);
+            auto decoded =
+                decode_ega_sprite(town_->sprite_archive, 12, static_cast<std::uint8_t>(n));
             if (!decoded)
             {
                 throw EclError("Cannot restore Rolf sprite");
@@ -969,14 +972,14 @@ void RolfTourSession::reset_run()
         }
     }
     // Minimal explicit isolated state, not a fabricated whole party/world model.
-    for (const std::uint16_t address :
-         {0x03DE, 0x49C9, 0x49FD, 0x4AC5, 0x4A07, 0x4A0F, 0x4A10, 0x4A11, 0x6DE1, 0x6E79,
-          0x6E7A, 0x6E7B, 0x6E7C, 0x6E7D, 0x9801, 0xC04B, 0xC04C, 0xC04D, 0xC04E, 0xC04F})
+    for (const std::uint16_t address : std::initializer_list<std::uint16_t>{
+             0x03DE, 0x49C9, 0x49FD, 0x4AC5, 0x4A07, 0x4A0F, 0x4A10, 0x4A11, 0x6DE1, 0x6E79,
+             0x6E7A, 0x6E7B, 0x6E7C, 0x6E7D, 0x9801, 0xC04B, 0xC04C, 0xC04D, 0xC04E, 0xC04F})
     {
         machine_.bind_variable(EclAddress{address}, 0);
     }
     machine_.bind_variable(ecl_clock_hour, 12); // Research fixture: midday.
-    for (const std::uint8_t opcode : {12, 13, 14, 45, 49, 58})
+    for (const std::uint8_t opcode : std::initializer_list<std::uint8_t>{12, 13, 14, 45, 49, 58})
     {
         machine_.enable_host(opcode);
     }
@@ -1510,8 +1513,8 @@ bool RolfTourSession::explore(ExplorationCommand command)
         pose.x = x;
         pose.y = y;
     }
-    machine_.bind_variable(ecl_party_x, pose.x);
-    machine_.bind_variable(ecl_party_y, pose.y);
+    machine_.bind_variable(ecl_party_x, static_cast<std::uint16_t>(pose.x));
+    machine_.bind_variable(ecl_party_y, static_cast<std::uint16_t>(pose.y));
     machine_.bind_variable(ecl_party_facing, static_cast<std::uint16_t>(index(pose.facing)));
     const auto &cell = map_.at(pose.x, pose.y);
     machine_.bind_variable(ecl_wall_ahead, cell.walls[index(pose.facing)]);

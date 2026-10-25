@@ -17,7 +17,12 @@
 namespace opengold
 {
 // Commits that install a prepared member in place rely on this not throwing.
+// MSVC's std::map allocates a node when move-constructed, so there moving an
+// engaged std::optional of a map can throw std::bad_alloc; libstdc++ and
+// libc++ move maps without allocating.
+#ifndef _MSVC_STL_VERSION
 static_assert(std::is_nothrow_move_assignable_v<PartyMember>);
+#endif
 
 namespace
 {
@@ -1266,9 +1271,9 @@ void CampaignParty::change_equipment(MemberId id, std::uint64_t item,
         candidates.push_back(item);
     }
     std::vector<std::string> keys;
-    for (auto id : candidates)
+    for (auto candidate_id : candidates)
     {
-        const auto entry = before.character.inventory().find(id);
+        const auto entry = before.character.inventory().find(candidate_id);
         if (!entry)
         {
             throw std::runtime_error("Unknown item");

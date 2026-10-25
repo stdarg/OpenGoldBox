@@ -2518,7 +2518,7 @@ void city_hall_rewards(const std::filesystem::path &directory)
 // from the textile house, with the flag that script sets.
 void cadorna_payment(const std::filesystem::path &directory)
 {
-    for (const std::uint16_t box : {1, 128})
+    for (const std::uint16_t box : std::initializer_list<std::uint16_t>{1, 128})
     {
         auto trip = create_party(directory);
         auto &[party, town] = trip;
@@ -4640,7 +4640,8 @@ void reload_cadorna_chain(const std::filesystem::path &save, const std::filesyst
     const auto chain = [&]
     {
         std::vector<std::uint16_t> flags;
-        for (const std::uint16_t address : {0x4A73, 0x4A74, 0x4A75, 0x4AC8})
+        for (const std::uint16_t address :
+             std::initializer_list<std::uint16_t>{0x4A73, 0x4A74, 0x4A75, 0x4AC8})
         {
             flags.push_back(town.script_variable(por::EclAddress{address}));
         }
@@ -6182,14 +6183,14 @@ void installed_first_expedition(const std::filesystem::path &executable,
         party->award_experience(1800, "rest-choices");
         for (unsigned level = 2; level <= 3; ++level)
         {
-            auto ranger = party->default_advancement(bryn);
+            auto ranger_advancement = party->default_advancement(bryn);
             auto druid = party->default_advancement(elin);
             if (level == 3)
             {
-                ranger.training["subclass:ranger:hunter"] = {"colossus_slayer"};
+                ranger_advancement.training["subclass:ranger:hunter"] = {"colossus_slayer"};
                 druid.training["subclass:druid:land"] = {"arid"};
             }
-            party->advance(bryn, ranger);
+            party->advance(bryn, ranger_advancement);
             party->advance(elin, druid);
         }
         auto town = por::RolfTourSession::load(directory);
