@@ -1,0 +1,29 @@
+{
+  "action_sha256": "df7d85ceb080e4c9996f7354f59c7f43f2004bf6c5a16744df14fbfbe2caeff8",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon5cha_dax_60/default/action.png",
+    "ready": "art/mon5cha_dax_60/default/ready.png"
+  },
+  "metadata_sha256": "f6213de91d2f3ec10f37c245bba26f0c932eb784053f762ba5215a3a230a01a2",
+  "notes": "No equipped gear; default is the only set. Ready visible bounds 104x40+9+75 span both horizontal squares. Action bounds 112x34+9+81 show the head advancing right with open fanged mouth. Tail and grounded body to x=75 are pixel-identical; both end at the same ground row. Final exact PNGs inspected at native combat size and enlarged on light gray, dark, and magenta. The neck-to-body transition is continuous with no double head or opaque box. Catalog loaded the recorded hashes, auto-swapped after one second at unchanged position (96,170) and size (256,256), and reported both fit the saved 2x1 footprint. The selected action source came from the first saved action prompt; a later retry was rejected because it redrew the whole body. Both exact prompts remain in the JSON description.",
+  "ready_sha256": "e529ce646232bd7178951309152d4320aee22e269adac2b1ea61ae03c9c32bcb",
+  "reviewed_at": "2026-10-25T02:58:08Z",
+  "reviewer": "Codex",
+  "source_key": "MON5CHA.DAX:60",
+  "specification": "natural-in-place-v1",
+  "technical_check": "sprite_art_workflow.gd check passed; bipedal accept checklist does not apply to snake body plan",
+  "variant_id": "default",
+  "visual_checks": {
+    "complete_alpha_silhouette_on_light_magenta_dark": true,
+    "correct_equipment_or_no_equipment": true,
+    "footprint_and_attack_appendage_reviewed": true,
+    "one_second_fixed_grid_catalog_review": true,
+    "planted_base_registered": true,
+    "readable_at_combat_size": true,
+    "requested_ready_and_action_motion": true,
+    "same_body_scale_and_perspective": true,
+    "source_identity_and_independent_art": true
+  },
+  "workflow_sha256": "6fc854bb1f57ebf03424eb0b162575c89a65f0138e3fef711727807672fbc478"
+}
