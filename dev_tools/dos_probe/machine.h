@@ -14,6 +14,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace opengold::probe
@@ -56,7 +57,8 @@ class Machine final : public Bus
     // key was read: it is waiting for the player.
     [[nodiscard]] bool waiting_for_key() const
     {
-        return keys_.empty() && !irq_pending_[1] && ram_[0x41A] == ram_[0x41C] && idle_polls_ >= 3;
+        return keys_.empty() && !irq_pending_[1] && !pending_scan_ && ram_[0x41A] == ram_[0x41C] &&
+               idle_polls_ >= 3;
     }
 
     [[nodiscard]] bool exited() const
@@ -109,11 +111,25 @@ class Machine final : public Bus
         return opened_files_;
     }
 
+    // Called with the CPU before every instruction while set, such as to see
+    // which code runs; empty to stop.
+    void before_instruction(std::function<void(const Cpu &)> callback)
+    {
+        before_instruction_ = std::move(callback);
+    }
+
     void watch(std::uint32_t first, std::uint32_t last, Watch callback);
 
     void clear_watches()
     {
         watches_.clear();
+    }
+
+    // How often each BIOS or DOS service (interrupt and AH) was called since
+    // the counts were last taken.
+    [[nodiscard]] std::map<std::pair<std::uint8_t, std::uint8_t>, unsigned> take_service_counts()
+    {
+        return std::exchange(service_counts_, {});
     }
 
     // Bus
@@ -163,7 +179,6 @@ class Machine final : public Bus
     std::optional<std::filesystem::path> original_path(const std::string &relative) const;
     std::filesystem::path write_path(const std::string &relative) const;
     int open_file(const std::string &dos_path, std::uint8_t mode, bool create);
-    void write_find_entry(const std::string &directory, const std::string &name);
 
     Options options_;
     std::vector<std::uint8_t> ram_;
@@ -174,11 +189,15 @@ class Machine final : public Bus
     std::optional<int> exit_code_;
     std::string console_;
     std::vector<WatchRange> watches_;
+    std::map<std::pair<std::uint8_t, std::uint8_t>, unsigned> service_counts_;
+    std::function<void(const Cpu &)> before_instruction_;
 
     // Keyboard: keys still to deliver, and the scan code port 60h shows.
     std::deque<std::pair<std::uint8_t, std::uint8_t>> keys_;
     std::uint8_t port60_{};
     std::uint8_t pending_ascii_{};
+    // The scan code DOS still owes for an extended key it returned as 0.
+    std::optional<std::uint8_t> pending_scan_;
     std::uint64_t key_ready_at_{};
     unsigned idle_polls_{};
     bool irq_pending_[2]{};

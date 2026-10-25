@@ -261,7 +261,9 @@ void Machine::run(std::uint64_t count, const std::function<bool()> &stop)
             keys_.pop_front();
             irq_pending_[1] = true;
             idle_polls_ = 0;
-            key_ready_at_ = instructions_ + options_.instructions_per_tick;
+            // A key is held a few ticks, for programs that watch port 60h.
+            key_ready_at_ =
+                instructions_ + (port60_ & 0x80U ? 1 : 4) * options_.instructions_per_tick;
         }
         if (irq_pending_[0] && !(pic_mask_ & 1U) && cpu_.request_interrupt(8))
         {
@@ -275,6 +277,10 @@ void Machine::run(std::uint64_t count, const std::function<bool()> &stop)
         {
             instructions_ = std::min(end, std::max(instructions_ + 1, next_tick_));
             continue;
+        }
+        if (before_instruction_)
+        {
+            before_instruction_(cpu_);
         }
         cpu_.step();
         ++instructions_;
@@ -411,6 +417,7 @@ void Machine::host_interrupt(std::uint8_t number)
 {
     const auto ax = cpu_.reg(Reg::ax);
     const auto ah = static_cast<std::uint8_t>(ax >> 8U);
+    ++service_counts_[{number, ah}];
     switch (number)
     {
     case 0x08:
@@ -780,6 +787,15 @@ void Machine::dos_service()
             console_ += static_cast<char>(dx);
             return;
         }
+        // DOS hands over an extended key as 0, then its scan code.
+        if (pending_scan_)
+        {
+            cpu_.set_reg(Reg::ax, static_cast<std::uint16_t>((ax & 0xFF00U) | *pending_scan_));
+            pending_scan_.reset();
+            set_stacked_flag(zero, false);
+            idle_polls_ = 0;
+            return;
+        }
         const auto head = static_cast<std::uint16_t>(ram_[0x41A] | (ram_[0x41B] << 8U));
         const auto tail = static_cast<std::uint16_t>(ram_[0x41C] | (ram_[0x41D] << 8U));
         if (head == tail)
@@ -796,6 +812,10 @@ void Machine::dos_service()
             return;
         }
         cpu_.set_reg(Reg::ax, static_cast<std::uint16_t>((ax & 0xFF00U) | ram_[0x400 + head]));
+        if (ram_[0x400 + head] == 0)
+        {
+            pending_scan_ = ram_[0x400 + head + 1];
+        }
         const auto next = static_cast<std::uint16_t>(head + 2);
         ram_[0x41A] = static_cast<std::uint8_t>(next >= 0x3E ? 0x1E : next);
         set_stacked_flag(zero, false);
@@ -817,8 +837,9 @@ void Machine::dos_service()
         }
         return;
     case 0x0B:
-        cpu_.set_reg(Reg::ax, static_cast<std::uint16_t>((ax & 0xFF00U) |
-                                                         (ram_[0x41A] != ram_[0x41C] ? 0xFF : 0)));
+        cpu_.set_reg(Reg::ax, static_cast<std::uint16_t>(
+                                  (ax & 0xFF00U) |
+                                  (ram_[0x41A] != ram_[0x41C] || pending_scan_ ? 0xFF : 0)));
         if (ram_[0x41A] == ram_[0x41C])
         {
             ++idle_polls_;
