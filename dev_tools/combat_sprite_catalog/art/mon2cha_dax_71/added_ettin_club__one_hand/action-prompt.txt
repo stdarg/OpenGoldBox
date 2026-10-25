@@ -196,4 +196,11 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-REVISION-SPECIFIC DIRECTION (2026-10-24): Edit this set's newly generated ready Ettin into a late overhead-to-forward-downward club strike. Keep the same two heads, full-length club and one-handed grip. The club head travels low and to screen right; only the moving club may cross the footprint. Keep the torso tall and narrow and the planted feet at the ready frame's exact coordinates. The accepted action uses the ready lower body under the generated attack upper body with alpha-preserving masking; do not translate the whole character or paint an opaque background.
+LOCALIZED ACTION-FRAME REPAIR (2026-10-24): The upper torso must visibly connect
+through the waist into the hips and loincloth. Use the existing accepted action
+as the edit target, the ready frame as the body/foot-registration reference,
+and the approved pose guide for attack direction only. Change only the torso-to-
+hip junction. Preserve the club swing, both heads, limbs, 128x128 canvas,
+transparent background, and exact planted-foot coordinates. The generated waist
+repair is composited into the accepted action only in source pixels x=32..64,
+y=50..75; all other source pixels remain untouched.
