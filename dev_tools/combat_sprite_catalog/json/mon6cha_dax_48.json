@@ -1,22 +1,10 @@
 {
-  "description": "An experienced martial fighter; the listed level and source equipment guide the combat silhouette. Source inventory: Gauntlets of Ogre Power, Chain armor +1, Long sword +1. Source wealth: 15 gp.",
-  "humanoid_size": "normal",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "description": "An experienced dwarven fighter in enchanted chain armor, now using a Battle axe with both hands. The original source inventory named Gauntlets of Ogre Power, Chain armor +1 and Long sword +1; the current saved loadout keeps Chain armor +1 and replaces the sword and gauntlets with the two-handed Battle axe. Source wealth remains 15 gp. This dwarf is rendered at a four-foot visual target within his 1x1 combat footprint.\n\nIMAGEGEN PROMPT - READY:\nUse case: precise-object-edit\nAsset type: exactly ONE corrected READY image for MON6CHA.DAX:48/added_61186225371__two_hand, later exported as transparent 128x128 combat pixel art.\nInput Image 1 is the second NEW ready draft of this Battle-axe dwarf; edit it in place. Keep the SAME stout broad four-foot body, bearded face, hair, steel Chain armor +1, brown boots, belt, full single-blade Battle axe and both hands on its full-length haft. Input Image 2 is the user-approved two-handed melee pose guide for front three-quarter screen-right facing only; do not copy its human figure or sword. Both references are independent replacement art, not original game assets.\nRotate the entire axe and both gripping hands DOWN substantially into a HORIZONTAL HIGH GUARD across the dwarf's upper chest and back of the shoulder. The broad axe blade points toward image-left at approximately the SAME HEIGHT as the top of his hair, while the hands hold the haft close to the upper chest. The blade is still raised and ready to swing from shoulder height; it is NOT hanging at the waist, striking, shortened, or changed into another weapon. At the 1254x1254 source resolution, the blade's TOP must be around y=340–380, roughly level with the hair top around y=380; do not put ANY axe pixel above y=300. Keep the boots anchored at their current bottom near y=1180, the head at the same size and location, and all other body proportions unchanged. This compact high guard is essential so the final 128x128 sprite can show the dwarf as a full four feet tall (0.8 of a five-foot tile) without clipping the axe or shrinking the figure.\nShow one complete broad-bladed BATTLE AXE with its existing full steel head and wood haft, both hands visibly gripping one shaft. Keep chain links obvious; no plate cuirass, sword, shield, Gauntlets of Ogre Power, extra arm or second weapon. Maintain a clear front three-quarter face toward screen right, chest partly visible, continuous anatomy, and transparent margin. Gameplay Size Medium and saved sprite footprint 1x1 remain unchanged. Exactly one dwarf, one ready frame, no diptych, sheet, text, scene, floor, shadow, effect, detached limb, black box or opaque background. Crisp pixel art and genuine alpha transparency.\n\nIMAGEGEN PROMPT - ACTION:\nUse case: precise-object-edit\nAsset type: exactly ONE corrected ACTION frame for MON6CHA.DAX:48/added_61186225371__two_hand, later exported as 128x128 transparent combat pixel art.\nInput Image 1 is the NEW accepted Battle-axe dwarf READY master and is the exact edit target. Keep its identity, beard, face, hair, Chain armor +1, belt, boots, full single-bladed Battle axe, two-handed grip, camera, body proportions, canvas origin and stance. Input Image 2 is the approved bipedal pose guide for the timing of a late two-handed melee strike and screen-right facing only. No original game art is attached.\nCRITICAL FIX: The prior action draft shifted the ENTIRE dwarf left; reject that. On the 1254x1254 ready master, copy the LEFT planted boot silhouette at x about 285..430,y about 1080..1190 and the RIGHT planted boot silhouette at x about 900..1090,y about 1080..1190 to the EXACT SAME PIXELS in action. Keep both legs, hips, belt and lower chain-armor skirt in the SAME x/y position. Do not step, slide, recenter, widen the stance, change the camera, or shrink the dwarf. The four-foot foot-to-head body size must remain the same.\nChange only the shoulders, arms, upper chest and battle axe to show a late powerful two-handed DOWNWARD CHOP toward SCREEN RIGHT. Both hands stay on the same long wood haft, with a believable spaced grip. The full-size recognizable broad single steel axe blade is now LOW near the dwarf's right knee/boot, with its head centered around source x=950,y=910; do not sweep it far to the image edge. Keep the blade, haft length and metal head shape matching ready. Within the 1254x1254 source, all visible action pixels should stay roughly inside x=127..1092, the ready frame's horizontal envelope, while the axe alone may cross the 1x1 combat tile boundary after shared export. Lean the chest into the strike, but keep a continuous visible torso through waist and legs. The pose must read as the END of an attack, not as a second ready guard.\nThe saved current gear is Chain armor +1 and the two-handed Battle axe ONLY; no Long sword +1, shield, Gauntlets of Ogre Power, second axe or magic effect. Maintain broad four-foot dwarf proportions, gameplay Size Medium and 1x1 combat footprint. Front three-quarter view facing screen right with chest partly visible. All pixels must fit inside the 128x128 exported canvas with transparent margin at the SAME scale as ready. Exactly one dwarf, one frame, no diptych, sheet, caption, scenery, floor, shadow, effect, detached limb or opaque black box. Crisp readable pixel art with genuine transparency.",
   "description_sources": [
     "Original game MON6CHA.DAX:48 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"
   ],
   "equipment": [
-    {
-      "id": "item_000",
-      "kind": "gear",
-      "name": "Gauntlets of Ogre Power",
-      "readied": true,
-      "source_hands": 0,
-      "source_range": 0,
-      "source_type": 63,
-      "weapon_role": ""
-    },
     {
       "id": "item_001",
       "kind": "gear",
@@ -28,20 +16,28 @@
       "weapon_role": ""
     },
     {
-      "id": "item_002",
+      "id": "added_61186225371",
       "kind": "weapon",
-      "name": "Long sword +1",
-      "readied": true,
-      "source_hands": 1,
-      "source_range": 0,
-      "source_type": 36,
-      "weapon_role": "one_hand"
+      "name": "Battle axe",
+      "readied": false,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": 1,
+      "weapon_role": "two_hand"
     }
   ],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
+  "height_feet": 4.0,
+  "height_reference": {
+    "max_feet": 5.0,
+    "min_feet": 4.0,
+    "note": "SRD 5.2.1 Dwarf is Medium and about 4–5 feet tall. Four feet is the chosen visual art target; gameplay Size remains Medium.",
+    "url": "https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf"
+  },
+  "humanoid_size": "small",
   "name": "DWARVEN FIGHTER",
-  "preview_fallback_variant": "",
+  "preview_fallback_variant": "item_002__one_hand",
   "source": {
     "art_archive": "CPIC6.DAX",
     "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
@@ -51,15 +47,19 @@
     "key": "MON6CHA.DAX:48",
     "linked_creature_keys": []
   },
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 1
+  },
   "variants": [
     {
-      "action": "art/mon6cha_dax_48/item_002__one_hand/action.png",
-      "id": "item_002__one_hand",
-      "label": "Long sword +1",
-      "ready": "art/mon6cha_dax_48/item_002__one_hand/ready.png",
+      "action": "art/mon6cha_dax_48/added_61186225371__two_hand/action.png",
+      "id": "added_61186225371__two_hand",
+      "label": "Battle axe",
+      "ready": "art/mon6cha_dax_48/added_61186225371__two_hand/ready.png",
       "shield_id": "",
-      "weapon_id": "item_002",
-      "weapon_role": "one_hand"
+      "weapon_id": "added_61186225371",
+      "weapon_role": "two_hand"
     }
   ],
   "wealth": {
