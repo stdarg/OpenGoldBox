@@ -850,7 +850,13 @@ func _refresh_monster_preview_layout() -> void:
     var image_size := (monster_image.texture.get_size() * scale).round()
     var center_x := GRID_ORIGIN.x + footprint.x * GRID_CELL * 0.5
     var ground_y := GRID_ORIGIN.y + GRID_CELLS * GRID_CELL
-    monster_image.position = Vector2(roundf(center_x - image_size.x * 0.5),
+    var offset_x := 0.0
+    if preview_is_replacement and selected >= 0:
+        var record: Dictionary = draft_records[rows[selected].key]
+        var offsets: Dictionary = record.get("preview_offset_x_by_variant", {})
+        var variant := _selected_variant()
+        offset_x = float(offsets.get(str(variant.get("id", "")), 0.0)) * scale
+    monster_image.position = Vector2(roundf(center_x - image_size.x * 0.5 + offset_x),
         roundf(ground_y - preview_ready_bottom * scale))
     monster_image.size = image_size
     if not chosen is Dictionary:

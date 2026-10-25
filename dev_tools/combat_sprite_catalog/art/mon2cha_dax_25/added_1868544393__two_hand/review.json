@@ -1,15 +1,15 @@
 {
-  "action_sha256": "715410bb5ac999c33c4db44aaeafd07d9c362f80f5f48d71200ce21ae1f3025c",
+  "action_sha256": "9c631b237af30224b53a958cf74e285953f28720b7f8bf27cd4659a23f021756",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_25/added_1868544393__two_hand/action.png",
     "ready": "art/mon2cha_dax_25/added_1868544393__two_hand/ready.png"
   },
-  "metadata_sha256": "0dba17e0ef4dc410e22afcc070b6d4aebb028b998ce447f0d91c22b53beb45e3",
-  "notes": "Action attack arm/weapon composited from newly generated action over exact ready lower body. Inspected enlarged and alternating in catalog; feet/legs remain registered, normal body fills 5-foot tile, raised ready weapon alone crosses top tile line, action weapon alone crosses right tile line. Original game artwork was not a generation reference. Re-reviewed unchanged final image hashes under revised leader and saved-wand instructions.",
+  "metadata_sha256": "5abdde88e19a850316f15337ef711599e1061d46d89ba3212e8c6a4e314548a7",
+  "notes": "Single-action localized torso continuity repair. Current accepted action was the edit target, accepted ready was the identity/lower-body reference, and the approved independent bipedal guide supplied facing only. A generated continuous torso supplied a feathered patch confined to approximately x40..72,y55..92; the original action remains outside that patch. The complete sword region x80..127, both planted feet and whole lower y96..127, and the head y0..34 are pixel-identical to the prior action. Inspected final 128x128 saved PNG at combat size and enlarged over gray, magenta and dark backgrounds: continuous scale armor, waist/belt and skirt, no opaque boxes or torso gap. Verified catalog loaded the exact final action pixels and automatic one-second swap retained the same preview position and scale. Ready PNG unchanged.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "f979e131420a44b5ad564cf365bc46267e6ca4a2a846280620a40bee3e097c85",
-  "reviewed_at": "2026-10-23T03:03:36+00:00",
+  "reviewed_at": "2026-10-25T23:28:37+00:00",
   "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:25",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
 }
