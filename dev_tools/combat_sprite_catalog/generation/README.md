@@ -116,6 +116,18 @@ change. The fixed-foot rule below is this project's specific requirement.
 
 ## 1. Prepare from the current JSON
 
+Before **every** combat-sprite generation or regeneration, including one frame
+of an existing pair, put the **exact full text you will send to the image
+generator** in that monster's saved `description`. Include the selected monster,
+variant, frame, attack motion, body and equipment constraints, and the roles of
+attached reference images. Keep source identity facts in the description too.
+Save the description before preparing the packet or generating an image. The
+`ready-prompt.txt` and `action-prompt.txt` files are review records, not a
+substitute for the monster description. If the image prompt changes on a retry,
+save the revised full text in `description` and prepare a fresh packet before
+the next image request. Preparation refuses a description without an
+`IMAGEGEN PROMPT` block.
+
 Save description and equipment edits in the Combat Sprite Catalog first. Inspect
 the **entire current equipment list**, including weapons not currently readied,
 then compare the JSON's `variants` with the complete weapon sets it should offer.

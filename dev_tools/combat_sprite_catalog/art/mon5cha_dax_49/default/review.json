@@ -1,16 +1,16 @@
 {
-  "action_sha256": "2a63a57236d9609beca3221907f8b351fdb44887122cf5c507b67d423295925f",
+  "action_sha256": "292b8ec18600d9b1611ac28dbfad62b4d919b30b1c5fa54fa41061454b070b52",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon5cha_dax_49/default/action.png",
     "ready": "art/mon5cha_dax_49/default/ready.png"
   },
-  "metadata_sha256": "602482a038701317f2cca2fda8b44ccfbe9cfeb7234ac0c0706ece20a81683ec",
-  "notes": "Replaced the sheared installed pair with a newly generated matching Medusa pair. Action is a forward bare-handed punch; neck, chest, waist, pelvis, skirt and legs form one continuous figure with no horizontal splice. Feet keep the same apparent x/y anchor. Inspected the exact final 128x128 PNGs enlarged and at combat size on light, dark and magenta backgrounds, including the waist connection. Action tile overflow is allowed and was not used as a reason to cut or shrink the torso. Godot computer-use access was rejected, so alternating in the catalog was not performed and that checklist item remains false; installed at the user’s explicit request with this limitation recorded.",
+  "metadata_sha256": "ed44000537a72664f27a98c5143b80c8e0ea3638db73f58ca1329a162d0668fe",
+  "notes": "The exact full imagegen request was saved verbatim in the monster description before generation. Ready PNG remained byte-for-byte unchanged. The new action shows both arms stretched forward, upper body leaning into the reach, and head snakes rearing and leaning screen right. The neck, chest, waist, pelvis, dress and legs form one continuous figure without a horizontal splice; action motion may exceed tile boundaries, with all pixels inside the PNG. Generated from the installed ready, the previous newly generated reach as motion reference, and the approved pose guide. Export used nearest-neighbor 118x125 scaling on the 1254x1254 generated image, alpha threshold 10%, placement x+8,y-3 on a transparent 128x128 canvas. Inspected final installed hashes at combat size and enlarged on light, dark and magenta backgrounds; planted foot positions and baseline align with ready. Godot app computer-use access was rejected, so catalog alternation was not performed and remains false. Installed at the user’s explicit request with this limitation recorded.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "d41b26a435d60ef6725e1a5385e96e9074a6b1c7f9b9002d023917d9a064ded3",
-  "reviewed_at": "2026-10-25T02:21:38+00:00",
-  "reviewer": "Codex direct PNG inspection",
+  "reviewed_at": "2026-10-25T02:43:52+00:00",
+  "reviewer": "Codex direct final-PNG visual inspection",
   "source_key": "MON5CHA.DAX:49",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "8a3537797a4b70222fb8810a0c2104f606c29246130f9f1b85c615c80bbba203"
+  "workflow_sha256": "c19ac5526ae113ea3c69c40668ca6a4cfae3fd6eefb299b3d753008c0204213d"
 }

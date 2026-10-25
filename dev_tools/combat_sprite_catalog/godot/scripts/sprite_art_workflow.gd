@@ -84,6 +84,8 @@ static func prepare(metadata_path: String, variant_id: String, directory: String
     for name in ["rules.txt", "ready.txt", "action.txt"]:
         if not FileAccess.file_exists(GENERATION + name): return ["Missing generation specification: " + name]
     if not FileAccess.file_exists(GUIDE): return ["Missing pose guide."]
+    if not str(record.get("description", "")).contains("IMAGEGEN PROMPT"):
+        return ["Save the exact full image-generation prompt in the monster description before preparing art."]
     var selected: Array = []
     var other_gear: Array = []
     for item in record.equipment:
