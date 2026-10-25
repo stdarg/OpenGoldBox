@@ -356,6 +356,9 @@ if(OPENGOLD_BUILD_TESTS)
         -DCHECK_FLAG=--party-check "-DARGS=--save-check-write"
         "-DWORK=${CMAKE_BINARY_DIR}/creation-checks/saves")
     set_tests_properties(opengold_godot_creation_party PROPERTIES FIXTURES_SETUP creation_save)
+    # The same route with an Orc, who also uses Adrenaline Rush in camp.
+    opengold_creation_check(party_orc "Godot party check passed"
+        -DCHECK_FLAG=--party-check "-DARGS=--adrenaline-check")
     opengold_creation_check(save_read "Godot campaign restart check passed"
         -DCHECK_FLAG=--save-check-read -DKEEP_WORK=ON
         "-DWORK=${CMAKE_BINARY_DIR}/creation-checks/saves")

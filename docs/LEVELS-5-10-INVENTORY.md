@@ -134,6 +134,8 @@ Faithful Hound (level 4); Animate Objects, Mislead, Reincarnate, Telekinesis
    makes Revivify (300 gp), Raise Dead (500 gp), Greater Restoration and
    Stoneskin (100 gp each), Glyph of Warding (200 gp) and Magic Circle (100 gp)
    free. Is free resurrection intended?
+   Answered by LEVELS-1 (resurrection takes an offering) and COST-1 (the
+   others stay free).
 2. **Pre-fight buffs.** Should long buffs (Death Ward, Stoneskin, Protection
    from Energy, Freedom of Movement) cast in camp persist into the next fight?
    CLASS-2 ends Concentration at the end of combat.

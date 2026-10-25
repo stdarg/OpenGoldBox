@@ -113,11 +113,16 @@ checkpoint codec preserves an unresolved choice exactly for internal continuatio
 and regression checks. Per the user's save policy, no combat Save/Load controls
 are exposed; player saving belongs at camp or an inn.
 
-Activating Adrenaline Rush during exploration, before combat, remains missing.
-Its resource/HP effect and an outstanding replacement choice must be owned by the
-campaign, and exploration time/action semantics need to be defined. Keep parent
-[#34](https://github.com/stdarg/OpenGold/issues/34) open for that integration;
-additional granting spells/features remain their own tracked increments.
+Outside combat ([RUSH-1](SRD-DECISIONS.md#rush-1-2026-10-25-adrenaline-rush-outside-combat)),
+the Camp dialog's Cast / Use list and the Cast menu offer Adrenaline Rush while
+the Orc has a use left. It takes no game time and needs no target. With no
+Temporary HP it is one entry; with some, the list offers "keep current
+Temporary HP" and "use new Temporary HP" instead, and either spends the use.
+The campaign owns the result like any camp action, so saves keep the pool and
+the spent use. `opengold_adrenaline_tests` (camp) covers the offers, both
+choices, the rejected spent or empty-keep uses, a campaign save, Short Rest
+recharge and Long Rest expiry. Other spells and features that grant Temporary
+HP remain their own tracked increments.
 
 Delivery verification: all 18 selected native suites and seven Godot checks
 (including project preparation) passed. The normal Orc game route passed creation,

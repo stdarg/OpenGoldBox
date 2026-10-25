@@ -476,6 +476,14 @@ std::optional<String> RolfTourView::use_outside_combat(opengold::MemberId user,
     {
         return action_text + String("   ") + rest_text(N_("Magic items are marked * for ten minutes."));
     }
+    if (id.begins_with("adrenaline_rush"))
+    {
+        const auto &orc = campaign_->member(user);
+        return action_text + String("   ") + rest_text(N_("Temporary HP:")) + " " +
+               String::num_int64(campaign_->rule_module()
+                                     .recovery_info(orc.character.sheet(), orc.vitals)
+                                     .temporary_hp.amount);
+    }
     return action_text + (target_text.is_empty() ? String() : ": " + target_text) + String("   ") +
            (id == "lay_on_hands_cure"
                 ? rest_text(N_("No longer Poisoned."))
@@ -526,6 +534,40 @@ void RolfTourView::rest_use()
     {
         rest_result_ = rest_text(e.what());
         refresh_rest();
+    }
+}
+
+void RolfTourView::check_camp_adrenaline_rush(opengold::MemberId orc)
+{
+    auto *w = &presentation::required_node<Window>(*this, "RestDialog");
+    auto *action = &presentation::required_node<OptionButton>(*w, "UseAction");
+    rest_member_ = orc;
+    refresh_rest();
+    int rush = -1;
+    for (int n = 0; n < action->get_item_count(); ++n)
+    {
+        rush = action->get_item_metadata(n) == Variant("adrenaline_rush") ? n : rush;
+    }
+    if (rush < 0 || !action->is_visible())
+    {
+        throw std::runtime_error("The Camp dialog must offer an Orc's Adrenaline Rush");
+    }
+    action->select(rush);
+    action->emit_signal("item_selected", rush);
+    if (presentation::required_node<OptionButton>(*w, "UseTarget").is_visible())
+    {
+        throw std::runtime_error("Adrenaline Rush in camp chooses no member");
+    }
+    presentation::required_node<Button>(*w, "Use").emit_signal("pressed");
+    const auto &member = campaign_->member(orc);
+    if (campaign_->rule_module()
+                .recovery_info(member.character.sheet(), member.vitals)
+                .temporary_hp.amount <= 0 ||
+        !presentation::required_node<Label>(*w, "Result")
+             .get_text()
+             .contains(rest_text(N_("Temporary HP:"))))
+    {
+        throw std::runtime_error("Use gives the Orc its Temporary HP and reports them");
     }
 }
 

@@ -1965,3 +1965,19 @@ them; they await the user's review:
 - **Spells the computer never casts** (Invisibility, Wall of Fire, the
   efreeti's others) are left out of the stat blocks, as they would do nothing.
 
+
+## RUSH-1 (2026-10-25): Adrenaline Rush outside combat
+
+The user chose to let an Orc use Adrenaline Rush outside combat, from the Camp
+dialog's Cast / Use list and the Cast menu. It takes no game time, spends a
+use and gives Temporary Hit Points equal to the Proficiency Bonus, which last
+until a Long Rest. An Orc who already has Temporary Hit Points chooses between
+keeping them and taking the new ones; keeping them still spends the use. See
+[Temporary HP](TEMPORARY-HP.md).
+
+## COST-1 (2026-10-25): costly components stay free
+
+The user chose to keep Greater Restoration, Stoneskin and Magic Circle free,
+although SRD 5.2.1 has each use up 100 gp of materials: [CLASS-11](#class-11-2026-10-06-no-spell-components)
+removed spell components. Only the resurrection spells take an offering from
+the party purse ([LEVELS-1](#levels-1-2026-10-14-levels-510)).

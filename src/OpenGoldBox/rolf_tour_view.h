@@ -190,6 +190,8 @@ class RolfTourView : public godot::Control
     void setup_rest();
     void check_rest_controls();
     void check_mastery_rest_controls();
+    // The open Camp dialog's Cast / Use row gives the Orc its Adrenaline Rush.
+    void check_camp_adrenaline_rush(opengold::MemberId orc);
     unsigned rest_check_stage_{};
     void refresh_rest();
     void rest_selected(std::int64_t index);

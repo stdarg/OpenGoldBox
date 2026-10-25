@@ -30395,6 +30395,24 @@ class Module final : public RulesModule
         {
             actions.push_back({"magical_cunning", {"Magical Cunning", {}}, true});
         }
+        // Adrenaline Rush outside combat: its Dash goes nowhere, but its
+        // Temporary Hit Points last until a Long Rest. With some already, the
+        // player keeps them or takes the new ones, as in combat.
+        if (d.rushes && actor.rushes > 0)
+        {
+            if (!actor.life.temporary_hp.amount)
+            {
+                actions.push_back({"adrenaline_rush", {"Adrenaline Rush", {}}, true});
+            }
+            else
+            {
+                actions.push_back({"adrenaline_rush_keep",
+                                   {"Adrenaline Rush: keep current Temporary HP", {}},
+                                   true});
+                actions.push_back(
+                    {"adrenaline_rush_use", {"Adrenaline Rush: use new Temporary HP", {}}, true});
+            }
+        }
         if (d.str_dex_disadvantage)
         {
             return actions;
@@ -31143,6 +31161,18 @@ class Module final : public RulesModule
             const int maximum = d.slots[d.slots[2] ? 2 : 1];
             slots = std::min(maximum, slots + (maximum + 1) / 2);
             --caster.arcane;
+            user_state = vitals(caster);
+            return;
+        }
+        if (action.starts_with("adrenaline_rush"))
+        {
+            // Keeping the current Temporary Hit Points still spends the use.
+            --caster.rushes;
+            detail::grant_temporary_hp(caster.life,
+                                       {caster.definition.rushes, std::string(rush_source)},
+                                       action == "adrenaline_rush_keep"
+                                           ? TemporaryHpChoice::keep_current
+                                           : TemporaryHpChoice::use_new);
             user_state = vitals(caster);
             return;
         }
