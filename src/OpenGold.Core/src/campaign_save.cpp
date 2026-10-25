@@ -669,7 +669,7 @@ template <bool Reading> struct SaveCodec
             std::string reward;
             bool items = true;
             std::array<unsigned, 7> wealth{};
-            unsigned area{};
+            unsigned loot_area{};
             if constexpr (!reading)
             {
                 const auto &loot = v.pending_loot_[index];
@@ -677,9 +677,9 @@ template <bool Reading> struct SaveCodec
                 reward = loot.reward_id;
                 items = loot.include_items;
                 wealth = loot.wealth;
-                area = loot.area;
+                loot_area = loot.area;
             }
-            fields(records, reward, items, wealth, area);
+            fields(records, reward, items, wealth, loot_area);
             // Script treasure has no creature records, and monsters may have
             // used some of their gear (DIFF-1): the items are saved.
             std::vector<por::Equipment> saved_items;
@@ -702,7 +702,7 @@ template <bool Reading> struct SaveCodec
             else if constexpr (reading)
             {
                 v.pending_loot_.push_back(
-                    v.encounter_loot(area, std::move(records), std::move(reward), items));
+                    v.encounter_loot(loot_area, std::move(records), std::move(reward), items));
                 auto &loot = v.pending_loot_.back();
                 require(loot.wealth == wealth && original_gear_left(loot.items, saved_items),
                         "Saved loot does not match its original creatures");
@@ -715,7 +715,8 @@ template <bool Reading> struct SaveCodec
                         v.selected_character_.index < 8 && v.rest_checks_ < 24,
                     "Unsupported saved town context");
             v.machine_ = por::EclMachine(v.town_->programs.at(v.current_script_));
-            for (const std::uint8_t op : {12, 13, 14, 45, 49, 58})
+            for (const std::uint8_t op :
+                 std::initializer_list<std::uint8_t>{12, 13, 14, 45, 49, 58})
             {
                 v.machine_.enable_host(op);
             }

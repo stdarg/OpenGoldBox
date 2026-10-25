@@ -42,7 +42,9 @@ option(OPENGOLD_BUILD_DOS_PROBE "Build the research-only DOS probe (dev_tools/do
 # own flags. Designated initializers that leave fields at their defaults are
 # idiomatic here, so that one warning stays off.
 if(MSVC)
-    set(OPENGOLD_WARNING_FLAGS /W4 /permissive-)
+    # getenv and sscanf are standard C++; MSVC's advice to use its _s variants
+    # is not portable.
+    set(OPENGOLD_WARNING_FLAGS /W4 /permissive- /D_CRT_SECURE_NO_WARNINGS)
 else()
     set(OPENGOLD_WARNING_FLAGS -Wall -Wextra -Wno-missing-field-initializers)
     # Clang can also report the 64-to-32-bit narrowing MSVC's /W4 warns about.

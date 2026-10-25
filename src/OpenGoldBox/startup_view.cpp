@@ -132,7 +132,7 @@ void StartupView::browse_path()
 {
     auto *browser = &required_node<FileDialog>(*this, "PathDialog/BrowseDialog");
     browser->set_current_dir(required_node<LineEdit>(*this, "PathDialog/Path").get_text());
-    browser->popup_centered_ratio(.7);
+    browser->popup_centered_ratio(.7f);
 }
 
 void StartupView::picked_path(const String &directory)

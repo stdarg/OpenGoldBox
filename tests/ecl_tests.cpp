@@ -230,7 +230,7 @@ void control()
               "Conditional relation");
     }
     // Indexed goto selects the first target with index 0, and falls through for >= count.
-    for (std::uint8_t index : {0, 1, 2})
+    for (std::uint8_t index : std::initializer_list<std::uint8_t>{0, 1, 2})
     {
         auto indexed = machine({37, 0, index, 0, 1, 1, 0x1e, 0x99, 0, 0, 9, 0, 8, 1, 0, 0x97, 0});
         check(indexed.run().state == EclState::completed &&
@@ -238,7 +238,7 @@ void control()
               "Indexed goto and fallthrough");
     }
     // ON GOSUB's first/last choices must both return to the fallthrough EXIT.
-    for (std::uint8_t index : {0, 1, 2})
+    for (std::uint8_t index : std::initializer_list<std::uint8_t>{0, 1, 2})
     {
         auto indexed = machine({38, 0, index, 0, 2,    1,  0x20, 0x99, 1, 0x27, 0x99, 0,    9,
                                 0,  8, 1,     0, 0x97, 19, 9,    0,    9, 1,    0,    0x97, 19});
@@ -300,7 +300,7 @@ void por_operations()
     check(zero.run().diagnostic.find("Division by zero") != std::string::npos &&
               zero.variable(EclAddress{0x9700}) == 0,
           "Divide fault before mutation");
-    for (const std::uint8_t op : {47, 48})
+    for (const std::uint8_t op : std::initializer_list<std::uint8_t>{47, 48})
     {
         auto bits = machine({op, 0, 2, 0, 1, 1, 0, 0x97, 23, 9, 0, 99, 1, 0, 0x97, 0});
         check(bits.run().state == EclState::completed &&
@@ -338,7 +338,7 @@ void por_operations()
     check(unknown.run().state == EclState::faulted, "Undefined opcode remains explicit");
     auto clock = machine({52, 0, 1, 0});
     check(clock.run().state == EclState::faulted, "Broken clock is not guessed");
-    for (const std::uint8_t limit : {0, 1, 12, 254, 255})
+    for (const std::uint8_t limit : std::initializer_list<std::uint8_t>{0, 1, 12, 254, 255})
     {
         EclMachine first(program({8, 0, limit, 1, 0, 0x97, 0})),
             second(program({8, 0, limit, 1, 0, 0x97, 0}));
@@ -388,7 +388,7 @@ void memory_and_input()
     // GETTABLE keeps COMPARE's flags, as the original did when the DOS probe
     // ran this script (dev_tools/docs/dos-probe.md): COMPARE 1, n; GETTABLE
     // 9900[0] -> 9700; IF =; SAVE 7 -> 9700.
-    for (const std::uint8_t compared : {1, 2})
+    for (const std::uint8_t compared : std::initializer_list<std::uint8_t>{1, 2})
     {
         auto kept = machine(
             {3, 0, 1, 0, compared, 42, 1, 0, 0x99, 0, 0, 1, 0, 0x97, 22, 9, 0, 7, 1, 0, 0x97, 0});
@@ -574,7 +574,7 @@ void installed_slums(const EclCatalog &catalog)
         }
     }
     vm.bind_variable(ecl_cell_event, 1); // Slums event 1, as in marainein's published trace.
-    for (std::uint8_t op : {11, 12, 13, 14, 28, 36})
+    for (std::uint8_t op : std::initializer_list<std::uint8_t>{11, 12, 13, 14, 28, 36})
     {
         vm.enable_host(op);
     }

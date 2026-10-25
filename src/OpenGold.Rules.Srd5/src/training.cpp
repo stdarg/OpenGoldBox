@@ -655,11 +655,11 @@ TrainingChoiceGroup scholar_options(std::span<const FeatureGrant> grants)
     for (const auto &skill : skills)
     {
         // Expertise from another source, such as a training hall, is not offered twice.
-        const auto expertise = "expertise:" + std::string(skill.id);
+        const auto expertise_id = "expertise:" + std::string(skill.id);
         const bool expert = std::any_of(grants.begin(), grants.end(),
                                         [&](const auto &g)
                                         {
-                                            return g.id == expertise && g.source_id != group.id;
+                                            return g.id == expertise_id && g.source_id != group.id;
                                         });
         if ((skill.id == "arcana" || skill.id == "history" || skill.id == "investigation" ||
              skill.id == "medicine" || skill.id == "nature" || skill.id == "religion") &&
@@ -679,11 +679,11 @@ TrainingChoiceGroup expertise_options(const ExpertisePick &pick,
     group.control = TrainingChoiceControl::checkboxes;
     for (const auto &skill : skills)
     {
-        const auto expertise = "expertise:" + std::string(skill.id);
+        const auto expertise_id = "expertise:" + std::string(skill.id);
         const bool expert = std::any_of(grants.begin(), grants.end(),
                                         [&](const auto &g)
                                         {
-                                            return g.id == expertise && g.source_id != group.id;
+                                            return g.id == expertise_id && g.source_id != group.id;
                                         });
         if (source(grants, "skill:" + std::string(skill.id)) && !expert)
         {

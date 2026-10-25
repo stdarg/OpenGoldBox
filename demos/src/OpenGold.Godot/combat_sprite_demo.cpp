@@ -93,7 +93,8 @@ std::vector<std::uint8_t> archive(const std::filesystem::path &directory, std::s
 
 Ref<ImageTexture> icon(const std::vector<std::uint8_t> &bytes, unsigned record, unsigned frame = 0)
 {
-    auto decoded = opengold::decode_ega_combat_icon(bytes, record, frame);
+    auto decoded = opengold::decode_ega_combat_icon(bytes, static_cast<std::uint8_t>(record),
+                                                   static_cast<std::uint8_t>(frame));
     if (!decoded)
     {
         throw std::runtime_error("Missing or invalid combat sprite pose: " +
@@ -323,7 +324,8 @@ void CombatSpriteDemo::refresh_figures()
         const auto &figure = figures_[i];
         const auto &texture = figure.poses[action_];
         auto *sprite = get_node<TextureRect>(String("BattlefieldScroll/Canvas/") + figure.node);
-        const Vector2 source(texture->get_width(), texture->get_height());
+        const Vector2 source(static_cast<real_t>(texture->get_width()),
+                             static_cast<real_t>(texture->get_height()));
         const auto bounds = figure.visible_bounds[action_];
         sprite->set_texture(texture);
         canvas->call("place_figure", figure.node, source, bounds, figure.cell,

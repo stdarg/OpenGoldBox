@@ -20,7 +20,7 @@ std::uint16_t word_at(std::span<const std::uint8_t> image, std::size_t at)
     return static_cast<std::uint16_t>(image[at] | image[at + 1] << 8);
 }
 
-bool in(std::uint8_t tile, std::initializer_list<std::pair<std::uint8_t, std::uint8_t>> ranges)
+bool in(std::uint8_t tile, std::initializer_list<std::pair<int, int>> ranges)
 {
     return std::any_of(ranges.begin(), ranges.end(),
                        [&](const auto &range)

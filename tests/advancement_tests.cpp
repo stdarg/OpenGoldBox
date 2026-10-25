@@ -827,7 +827,7 @@ void feats()
         for (unsigned type : {36, 55})
         {
             por::Equipment e;
-            e.stored.type = type;
+            e.stored.type = static_cast<std::uint8_t>(type);
             e.stored.stack_size = 1;
             e.stored.value = 1;
             party.purchase(id, e);

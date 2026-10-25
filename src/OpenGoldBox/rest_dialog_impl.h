@@ -213,13 +213,13 @@ void RolfTourView::refresh_rest()
         {
             for (const auto &choice : r.choices)
             {
-                const int index = recovery->get_item_count();
+                const int choice_index = recovery->get_item_count();
                 recovery->add_item(rest_text(choice.label.source));
                 const auto id = String::utf8(choice.id.c_str());
-                recovery->set_item_metadata(index, id);
+                recovery->set_item_metadata(choice_index, id);
                 if (id == previous)
                 {
-                    recovery->select(index);
+                    recovery->select(choice_index);
                 }
             }
         }

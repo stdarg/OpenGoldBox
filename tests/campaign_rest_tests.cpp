@@ -665,7 +665,7 @@ void watch_interruption_and_rollback()
         const Bytes pre{9, 0, 1, 1, 0xd2, 0x6d, 9, 0, 101, 1, 0xd3, 0x6d, 0};
         const unsigned arrival = 0x9915 + static_cast<unsigned>(pre.size());
         bytes[16] = arrival & 255;
-        bytes[17] = arrival >> 8;
+        bytes[17] = static_cast<std::uint8_t>(arrival >> 8);
         bytes.insert(bytes.end(), pre.begin(), pre.end());
         if (failure)
         {
@@ -717,7 +717,7 @@ std::shared_ptr<const por::EclProgram> camp_script(std::uint8_t interval, std::u
     bytes.push_back(0);
     const unsigned arrival = 0x9915 + static_cast<unsigned>(pre.size());
     bytes[16] = arrival & 255;
-    bytes[17] = arrival >> 8;
+    bytes[17] = static_cast<std::uint8_t>(arrival >> 8);
     bytes.insert(bytes.end(), pre.begin(), pre.end());
     bytes.insert(bytes.end(), interruption.begin(), interruption.end());
     return std::make_shared<const por::EclProgram>(por::EclProgram::decode(bytes, "camp profile"));

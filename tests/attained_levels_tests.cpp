@@ -261,9 +261,9 @@ void attained_levels(const std::string &klass, const std::vector<LevelPlan> &pla
                 std::cerr << ' ' << g.id;
             }
             std::cerr << "\n  pools:";
-            for (const auto &pool : pools(party, id))
+            for (const auto &listed : pools(party, id))
             {
-                std::cerr << ' ' << pool.id << ' ' << pool.remaining << '/' << pool.capacity;
+                std::cerr << ' ' << listed.id << ' ' << listed.remaining << '/' << listed.capacity;
             }
             std::cerr << '\n';
         }
@@ -301,16 +301,16 @@ void attained_levels(const std::string &klass, const std::vector<LevelPlan> &pla
         party.restore(std::move(state));
         const auto before_rest = pools(party, id);
         check(bool(party.rest(RestKind::short_rest)), label + ": a Short Rest completes");
-        for (const auto &pool : before_rest)
+        for (const auto &rested_pool : before_rest)
         {
-            if (pool.short_rest_recovery && pool.remaining < pool.capacity)
+            if (rested_pool.short_rest_recovery && rested_pool.remaining < rested_pool.capacity)
             {
                 for (const auto &after : pools(party, id))
                 {
-                    if (after.id == pool.id)
+                    if (after.id == rested_pool.id)
                     {
-                        check(after.remaining > pool.remaining,
-                              label + ": a Short Rest recovers " + pool.id);
+                        check(after.remaining > rested_pool.remaining,
+                              label + ": a Short Rest recovers " + rested_pool.id);
                     }
                 }
             }

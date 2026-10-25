@@ -246,7 +246,7 @@ std::vector<FuzzSeed> format_seeds()
     icon[8] = 1;
     for (std::size_t i = 17; i < icon.size(); ++i)
     {
-        icon[i] = i;
+        icon[i] = static_cast<std::uint8_t>(i);
     }
     seeds.push_back(format_seed("character-icon", 1, icon));
     seeds.push_back(format_seed("combat-dax", 0, literal_dax({{0, icon}})));
@@ -283,7 +283,7 @@ std::vector<FuzzSeed> format_seeds()
     packed[32] = 7;
     word(packed, 33, 16);
     packed[35] = 0xb1;
-    std::fill(packed.begin() + 36, packed.begin() + 48, 255);
+    std::fill(packed.begin() + 36, packed.begin() + 48, std::uint8_t{255});
     word(packed, 60, 1);
     word(packed, 62, 1);
     word(packed, 64, 0x4252);

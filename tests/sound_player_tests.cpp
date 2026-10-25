@@ -173,19 +173,19 @@ void playback_contract()
                 "Player owns output and prepares the bank once");
         require(!player.current_sound() && state.gain == 1, "Initial state");
         player.play(7);
-        require(player.current_sound() == 7 && state.last_id == 7, "Playback by ID");
+        require(player.current_sound() == 7u && state.last_id == 7, "Playback by ID");
         const auto starts = state.starts, stops = state.stops;
         rejects<std::out_of_range>(
             [&]
             {
                 player.play(999);
             });
-        require(state.starts == starts && state.stops == stops && player.current_sound() == 7,
+        require(state.starts == starts && state.stops == stops && player.current_sound() == 7u,
                 "Invalid ID leaves current audio uninterrupted");
         player.play(7);
         require(state.starts == starts + 1 && state.stops == stops + 1, "Replay restarts output");
         player.play(42);
-        require(player.current_sound() == 42 && state.prepares == 1, "Switch uses existing cache");
+        require(player.current_sound() == 42u && state.prepares == 1, "Switch uses existing cache");
         state.playing = false; // Simulate device completion, without real time or hardware.
         require(!player.current_sound(), "Completion clears observable playback state");
         player.play(7);

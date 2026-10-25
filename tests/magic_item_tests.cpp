@@ -181,7 +181,7 @@ void installed()
               wand->spells == std::vector<std::string>{"Lightning Bolt"},
           "A charged wand's spell and charges");
 
-    for (const std::uint8_t shop : {52, 53, 54, 55})
+    for (const std::uint8_t shop : std::initializer_list<std::uint8_t>{52, 53, 54, 55})
     {
         check(!find_list(catalog, "ITEM3.DAX", shop), "New Phlan's shops sell no magic items");
     }

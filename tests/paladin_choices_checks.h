@@ -222,9 +222,9 @@ void paladin_choices_checks()
               "Paladin level-up keeps its earlier preparation");
         party.advance(id, choice);
         const auto &sheet = party.member(id).character.sheet();
-        const auto access = rules->spell_access(sheet);
+        const auto at_level = rules->spell_access(sheet);
         check(slot_capacity(*rules, party.member(id)) == slots[level - 1] &&
-                  access.prepared_choices == level + 1,
+                  at_level.prepared_choices == level + 1,
               "Paladin slots and prepared spells follow the class table");
         // Paladin's Smite: Divine Smite is always prepared and not counted; the
         // Oath of Devotion adds its spells at level three.
@@ -232,9 +232,9 @@ void paladin_choices_checks()
             level >= 3 ? std::vector<std::string>{"divine_smite", "protection_from_evil_and_good",
                                                   "shield_of_faith"}
                        : std::vector<std::string>{"divine_smite"};
-        check(access.always_prepared == always &&
-                  std::find(access.prepared.begin(), access.prepared.end(), "divine_smite") ==
-                      access.prepared.end() &&
+        check(at_level.always_prepared == always &&
+                  std::find(at_level.prepared.begin(), at_level.prepared.end(), "divine_smite") ==
+                      at_level.prepared.end() &&
                   rules->character_profile(sheet, {}).data.find(" divine_smite ") !=
                       std::string::npos,
               "Divine Smite is always prepared from level two");

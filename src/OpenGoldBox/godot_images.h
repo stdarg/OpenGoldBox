@@ -54,8 +54,8 @@ inline void load_additional_portrait_heads(opengold::por::CharacterArt &art)
         source->convert(godot::Image::FORMAT_RGBA8);
         const auto pixels = source->get_data();
         opengold::Image decoded;
-        decoded.width = source->get_width();
-        decoded.height = source->get_height();
+        decoded.width = static_cast<uint16_t>(source->get_width());
+        decoded.height = static_cast<uint16_t>(source->get_height());
         decoded.rgba.assign(pixels.ptr(), pixels.ptr() + pixels.size());
         art.add_portrait_head(head.id, opengold::por::prepare_portrait_head(decoded, head.id));
     }

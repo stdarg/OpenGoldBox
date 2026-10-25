@@ -81,8 +81,8 @@ std::optional<WallArtSet> decode_wall_art(std::span<const std::uint8_t> definiti
         for (unsigned view = 0; view < 10; ++view)
         {
             auto &image = result.appearances[appearance][view];
-            image.width = columns[view] * 8;
-            image.height = rows[view] * 8;
+            image.width = static_cast<std::uint16_t>(columns[view] * 8);
+            image.height = static_cast<std::uint16_t>(rows[view] * 8);
             image.rgba.resize(image.width * image.height * 4);
             for (unsigned y = 0; y < image.height; ++y)
             {

@@ -72,7 +72,8 @@ void RolfTourSession::attach_restored_party(std::shared_ptr<opengold::CampaignPa
     campaign_ = std::move(party);
     if (campaign_)
     {
-        for (const std::uint8_t op : {11, 29, 30, 34, 35, 41, 46, 52, 54, 59})
+        for (const std::uint8_t op :
+             std::initializer_list<std::uint8_t>{11, 29, 30, 34, 35, 41, 46, 52, 54, 59})
         {
             machine_.enable_host(op);
         }
@@ -419,7 +420,8 @@ void RolfTourSession::configure_town()
     {
         machine_.bind_variable(w.address, w.value);
     }
-    for (const std::uint8_t op : {10, 28, 32, 33, 36, 39, 40, 50, 55, 56, 57, 60})
+    for (const std::uint8_t op :
+         std::initializer_list<std::uint8_t>{10, 28, 32, 33, 36, 39, 40, 50, 55, 56, 57, 60})
     {
         machine_.enable_host(op);
     }
@@ -430,7 +432,8 @@ void RolfTourSession::configure_town()
     machine_.ignore_cells(EclAddress{0x6300}, EclAddress{0x6AFF});
     if (campaign_)
     {
-        for (const std::uint8_t op : {11, 29, 30, 34, 35, 41, 46, 52, 54, 59})
+        for (const std::uint8_t op :
+             std::initializer_list<std::uint8_t>{11, 29, 30, 34, 35, 41, 46, 52, 54, 59})
         {
             machine_.enable_host(op);
         }
@@ -507,7 +510,7 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
         }
         fields[0x18] = 14; // Verified GBVM Constitution field; no guessed raw-record offsets.
         fields[0x100] = 1;
-        fields[0x119] = party_.hit_points;
+        fields[0x119] = static_cast<std::uint16_t>(party_.hit_points);
         for (unsigned n = 0; n < ecl_coin_addresses.size(); ++n)
         {
             fields[ecl_coin_addresses[n].location - ecl_character_record.location] =
@@ -562,8 +565,8 @@ void RolfTourSession::read_character()
 
 void RolfTourSession::bind_pose(PartyPose pose)
 {
-    machine_.bind_variable(ecl_party_x, pose.x);
-    machine_.bind_variable(ecl_party_y, pose.y);
+    machine_.bind_variable(ecl_party_x, static_cast<std::uint16_t>(pose.x));
+    machine_.bind_variable(ecl_party_y, static_cast<std::uint16_t>(pose.y));
     machine_.bind_variable(ecl_party_facing, static_cast<std::uint16_t>(index(pose.facing)));
     const auto &cell = map_.at(pose.x, pose.y);
     machine_.bind_variable(ecl_wall_ahead, cell.walls[index(pose.facing)]);
@@ -609,8 +612,8 @@ bool RolfTourSession::move_party(ExplorationCommand command)
         {
             return false;
         }
-        machine_.bind_variable(EclAddress{0x49F0}, pose.x);
-        machine_.bind_variable(EclAddress{0x49F1}, pose.y);
+        machine_.bind_variable(EclAddress{0x49F0}, static_cast<std::uint16_t>(pose.x));
+        machine_.bind_variable(EclAddress{0x49F1}, static_cast<std::uint16_t>(pose.y));
         pose.x = wrapped_x;
         pose.y = wrapped_y;
         pick_tried_ = false;
@@ -1653,7 +1656,9 @@ void RolfTourSession::show_encounter_menu()
     const auto &args = encounter_menu_->arguments;
     for (unsigned frame = 0; frame < 3; ++frame)
     {
-        auto image = decode_ega_sprite(area_resources().sprite_archive, args[0].number(), frame);
+        auto image = decode_ega_sprite(area_resources().sprite_archive,
+                                       static_cast<std::uint8_t>(args[0].number()),
+                                       static_cast<std::uint8_t>(frame));
         if (!image && frame > 0)
         {
             sprites_[frame] = sprites_[frame - 1];
@@ -2184,7 +2189,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         if (arg(0) >= 128)
         {
-            if ((arg(0) & 127) != selected_character_.index)
+            if (static_cast<unsigned>(arg(0) & 127) != selected_character_.index)
             {
                 throw EclError("Selected character store mismatch");
             }
@@ -2250,7 +2255,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // The Pitt's buccaneer names sprite 19, which SPRIT1 lacks: met face
         // to face, the original shows the head (0x6DE1) and body portrait.
         const auto head_id = machine_.variable(EclAddress{0x6DE1});
-        if (!decode_ega_sprite(area_resources().sprite_archive, arg(0), 0) &&
+        if (!decode_ega_sprite(area_resources().sprite_archive,
+                               static_cast<std::uint8_t>(arg(0)), 0) &&
             encounter_distance_ == 0 && head_id != 255)
         {
             snapshot_.sprite_frame = -1;
@@ -2262,7 +2268,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         for (unsigned n = 0; n < 3; ++n)
         {
-            auto image = decode_ega_sprite(area_resources().sprite_archive, arg(0), n);
+            auto image = decode_ega_sprite(area_resources().sprite_archive,
+                                           static_cast<std::uint8_t>(arg(0)),
+                                           static_cast<std::uint8_t>(n));
             // Beyond a sprite's last distance frame its farthest one shows.
             if (!image && n > 0)
             {
@@ -2343,7 +2351,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // combat_team): 0, the party's, only for Valhingen Graveyard's
         // efreeti, who helps a party carrying his bottle.
         const bool ally = creature.stored.raw.at(0x10E) == 0;
-        auto icon = decode_ega_combat_icon(area_resources().combat_archive, arg(2), 0);
+        auto icon = decode_ega_combat_icon(area_resources().combat_archive,
+                                           static_cast<std::uint8_t>(arg(2)), 0);
         if (!icon)
         {
             throw EclError("Invalid original combat icon");
@@ -2468,7 +2477,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         std::map<EclAddress, std::uint16_t> outputs;
         for (unsigned n = 0; n < 4; ++n)
         {
-            outputs[address_arg(n + 2)] = values[n];
+            outputs[address_arg(n + 2)] = static_cast<std::uint16_t>(values[n]);
         }
         for (const auto &[address, value] : outputs)
         {
@@ -3284,14 +3293,15 @@ void RolfTourSession::roll_plaza_group(const EclRequest &request, EclHostReply &
         size = std::min(size, 50u);
     }
     for (const auto &[address, value] :
-         std::array<std::pair<std::uint16_t, unsigned>, 6>{{{0x4A01, size},
+         std::array<std::pair<unsigned, unsigned>, 6>{{{0x4A01, size},
                                                             {0x4A02, table(0xB269, kind)},
                                                             {0x4A03, leaders},
                                                             {0x4A04, kind},
                                                             {0x4A08, table(0xB26F, kind)},
                                                             {0x4A0B, table(0xB27B, kind)}}})
     {
-        reply.writes.push_back({EclAddress{address}, static_cast<std::uint16_t>(value)});
+        reply.writes.push_back(
+            {EclAddress{static_cast<std::uint16_t>(address)}, static_cast<std::uint16_t>(value)});
     }
     reply.strings.emplace_back(EclAddress{0x9800}, std::string(name));
     plaza_group_rolled_ = true;
