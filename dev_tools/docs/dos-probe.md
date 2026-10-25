@@ -140,6 +140,24 @@ python3 dev_tools/dos_probe/experiments/battlefield.py \
     "$OPENGOLD_GAME_DIR" out/
 ```
 
+[wilderness.py](../dos_probe/experiments/wilderness.py) does the same on the
+wilderness map. A new party's first step in New Phlan runs a program at the
+town script's entry 0 that takes it onto the central wilderness map at the
+case's square, as the city's gates do (the window column to `0x49C3`, the row
+to `0x49C4`, 7 to `0x6E12`, `NEW ECL 26`). The wilderness script's arrival
+entry becomes EXIT and its step entry stages lizard men (MON7CHA record 57).
+An arrow key's step then starts the fight on the field the original grows
+from the square's terrain. That field is random, so it is read from the
+running game (50 by 25 combat tiles, row by row, 7 bytes into the heap block
+the far pointer at `148C:557E` names) and given to
+`opengold_maps --wild-formation` with the step's facing and distance 2.
+
+```bash
+python3 dev_tools/dos_probe/experiments/wilderness.py \
+    build-probe/dev_tools/dos_probe/opengold_dos_probe build-probe/opengold_maps \
+    "$OPENGOLD_GAME_DIR" out/
+```
+
 ## Findings
 
 Recorded 2026-10-24 with `START.EXE` SHA-1
@@ -176,6 +194,16 @@ Recorded 2026-10-24 with `START.EXE` SHA-1
   ranks, spilling into neighbouring squares and the distance capped by the view
   ahead. A random encounter of the original's own (one orc against one
   character at Slums (14,5) facing south) matched as well.
+- **Wilderness fights** (2026-10-25): in ten fights on the central wilderness
+  map, on six squares of different terrain, with parties of one to six and
+  groups of 4 to 30 lizard men, the original stood every combatant on the
+  square OpenGoldBox's formation gives on the original's own field, when that
+  formation faces the way the party stepped and uses distance 2. The original
+  ignores SETUP MONSTER's distance there: 0, 1, 2 and 3 all stood the monsters
+  at 2. OpenGoldBox's wilderness fights faced north and used SETUP MONSTER's
+  distance. The probe could not make the original step diagonally: the keypad's
+  9, Page Up and the top row's 9 reach the game through INT 16h and it ignores
+  them, so how a diagonal step faces is not known from the probe.
 - **Fight setup checks the keyboard** between combatants it places, so a key
   pressed then cuts the setup short and the rest of the group is left out.
   The probe therefore counts the game as waiting only after 3 million

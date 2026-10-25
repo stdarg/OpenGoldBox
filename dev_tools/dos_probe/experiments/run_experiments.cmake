@@ -15,4 +15,9 @@ execute_process(COMMAND "${PYTHON}" -B "${CMAKE_CURRENT_LIST_DIR}/battlefield.py
 if(NOT result STREQUAL "0")
     message(FATAL_ERROR "The original's fights start where OpenGoldBox's do not")
 endif()
+execute_process(COMMAND "${PYTHON}" -B "${CMAKE_CURRENT_LIST_DIR}/wilderness.py" "${PROBE}"
+    "${MAPS}" "$ENV{OPENGOLD_GAME_DIR}" "${WORK}/wilderness" RESULT_VARIABLE result)
+if(NOT result STREQUAL "0")
+    message(FATAL_ERROR "The original's wilderness fights start where OpenGoldBox's do not")
+endif()
 file(REMOVE_RECURSE "${WORK}")
