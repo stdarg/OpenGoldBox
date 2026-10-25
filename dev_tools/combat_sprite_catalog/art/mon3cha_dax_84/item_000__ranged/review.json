@@ -1,16 +1,16 @@
 {
-  "action_sha256": "568e94aaeb7855a31c9e5e982e2f3ea17de21e3a8386b356de131e5bf3f3cdae",
+  "action_sha256": "144f96c2207bfbe5510fb298f90724619a92b21ef69373f6d5c1bd06962fee8a",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_84/item_000__ranged/action.png",
     "ready": "art/mon3cha_dax_84/item_000__ranged/ready.png"
   },
   "metadata_sha256": "4c12ba69ba7f22ba964a5c2433017ac7598dacfa70eab65687cc8d5b2102c415",
-  "notes": "Accepted ready unchanged. Corrected action shows empty throwing hand extended toward screen right immediately after javelin release. Prior action lower-body pixels are retained. Reviewed exact PNGs at combat size on light, dark and magenta backgrounds and alternating in catalog. Ready raised javelin alone extends above its 1x1 square; action fits.",
+  "notes": "User explicitly approved the exact candidate after reviewing the correction in conversation. Action follows through with the former javelin arm from the viewer-left shoulder; offhand stays near chest. Ready is byte-for-byte unchanged, and action rows 67..127 match the prior installed action. Codex inspected final PNGs at combat size on light, dark, and magenta backgrounds and enlarged the waist. Godot app access was rejected by automatic computer-use approval, so in-catalog alternating review was not performed and that checklist item remains false. Installed at user direction with this exception recorded; no formal accept command claimed.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "ec1edc2e8092037222660a9384964b276f381da7ea6ae32839dc990c6d0a93a6",
-  "reviewed_at": "2026-10-25T00:59:38+00:00",
-  "reviewer": "Codex",
+  "reviewed_at": "2026-10-25T01:35:56+00:00",
+  "reviewer": "User approval in conversation; Codex direct PNG inspection",
   "source_key": "MON3CHA.DAX:84",
   "specification": "bipedal-v1",
   "variant_id": "item_000__ranged",
@@ -22,11 +22,11 @@
     "front_three_quarter_screen_right_chest_visible": true,
     "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
-    "pair_reviewed_alternating_in_catalog": true,
+    "pair_reviewed_alternating_in_catalog": false,
     "pixel_art_readable_at_combat_size": true,
     "planted_feet_same_xy_no_whole_body_translation": true,
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
+  "workflow_sha256": "e7f98f03faddfba4db29c94db6fe5b09818d246f9dd0a209f8a2a324b7152b5c"
 }
