@@ -18,6 +18,7 @@
   "format": "opengold-monster-art-v1",
   "name": "HOBGOBLIN",
   "preview_fallback_variant": "",
+  "preview_offset_x_by_variant": {"item_000__one_hand": 15},
   "source": {
     "art_archive": "CPIC2.DAX",
     "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
