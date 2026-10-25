@@ -54,10 +54,10 @@ GAME`, `opengold_maps GAME`, coab's `CMD_Program` (8), `CMD_LoadFiles` and
 | --- | --- | --- |
 | 31 | Troll | the Troll |
 | 45 | 1st Level Thief (HP 4) | Kovel Mansion's thief |
-| 49 | Medusa (HP 30) | **new:** SRD 5.2.1 Medusa with 30 Hit Points: two Claws or Poison Rays and its Petrifying Gaze (Snake Hair's poison not modeled) |
+| 49 | Medusa (HP 30) | **new:** SRD 5.2.1 Medusa with 30 Hit Points: two Claws and Snake Hair, or three Poison Rays, and its Petrifying Gaze |
 | 55, 56 | Hill Giant, Fire Giant | Stojanow Gate's and the old town's |
 | 60 | Giant Snake (HP 25) | the western wilderness's Giant Venomous Snake |
-| 66 | Tyranthraxus (HP 80) | **new:** SRD 5.2.1 Adult Bronze Dragon with 80 Hit Points: three Rends and its Lightning Breath (10d10 in a 90-foot Line, save DC 19, Recharge 5-6) |
+| 66 | Tyranthraxus (HP 80) | **new:** SRD 5.2.1 Adult Bronze Dragon with 80 Hit Points: three Rends, the last one Repulsion Breath when it catches two enemies, its Lightning Breath (10d10 in a 90-foot Line, save DC 19, Recharge 5-6), Legendary Actions (Guiding Light, Pounce, Thunderclap) and Legendary Resistance |
 | 75, 84, 87 | 6th Level Fighters, Envoy (HP 45) | the Pyramid's Warrior Veteran |
 | 85 | 8th Level Fighter (HP 87) | **new:** SRD 5.2.1 Knight with 87 Hit Points and its Parry |
 | 86, 88 | Al-Hyam Dazid, Genheeris (HP 22) | **new:** the nomad shaman's level-4 Wizard profile with 22 Hit Points |
@@ -90,6 +90,10 @@ Missing before this audit, now done:
    the repository, and another release's file leaves only the closing words.
 7. **A monster's breath weapon** (a `breath` row): Tyranthraxus's Lightning
    Breath, taken with his action and recharging on a 5 or 6.
+8. **Legendary Actions and Legendary Resistance** (`legendary` and
+   `legendary_resistance` rows) and **Repulsion Breath** for Tyranthraxus, and
+   **Snake Hair** for the medusa (her Multiattack's last attack), since
+   2026-10-25 ([MONSTER-2](../SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders)).
 
 ## Not done
 

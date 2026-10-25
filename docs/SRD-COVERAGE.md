@@ -122,47 +122,50 @@ the original's Hit Points, by
 [SITES-1](SRD-DECISIONS.md#sites-1-2026-10-25-the-western-wilderness-sites):
 the Pirate (two Daggers, Enthralling Panache), the Warrior Veteran, the
 Pirate Captain (three Rapier or Pistol attacks), the Guard and the Guard
-Captain (two Longsword or Javelin attacks). Not modeled yet: Captain's Charm,
-Riposte and the Rapier's Advantage.
+Captain (two Longsword or Javelin attacks). The Pirate Captain has Captain's
+Charm, Riposte and the Rapier's Advantage ([MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders)).
 
 ## Valjevo Castle monsters
 
-Valjevo Castle's Medusa (two Claws or Poison Rays, Petrifying Gaze), Knight
+Valjevo Castle's Medusa (two Claws and Snake Hair or three Poison Rays,
+Petrifying Gaze), Knight
 guards (two Greatsword or Heavy Crossbow attacks with radiant damage) and
 Tyranthraxus, the Adult Bronze Dragon (three Rends with lightning, Lightning
-Breath recharging on a 5 or 6, lightning immunity), keep the
-original's Hit Points, by
-[CASTLE-1](SRD-DECISIONS.md#castle-1-2026-10-25-valjevo-castle). Not modeled
-yet: Repulsion Breath, the dragon's spells and Legendary Resistance and Snake
-Hair's poison. The Knight parries.
+Breath recharging on a 5 or 6, Repulsion Breath, Legendary Actions (Guiding
+Light, Pounce, Thunderclap), Legendary Resistance, lightning immunity), keep
+the original's Hit Points, by
+[CASTLE-1](SRD-DECISIONS.md#castle-1-2026-10-25-valjevo-castle) and
+[MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders). Of the dragon's spells only Guiding Bolt acts in a fight. The Knight
+parries.
 
 ## Valjevo old town monsters
 
 The old town's Fire Giant (two Flame Sword or Hammer Throw attacks, fire
 immunity) is the SRD 5.2.1 stat block with the original's 59 Hit Points, by
 [TOWN-1](SRD-DECISIONS.md#town-1-2026-10-25-valjevos-old-town); its temple's
-priest is the Temple of Bane's Priest with 29. Not modeled yet: the Hammer
-Throw's push and Disadvantage.
+priest is the Temple of Bane's Priest with 29. The Hammer Throw pushes and
+gives Disadvantage on the next attack roll ([MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders)).
 
 ## Stojanow Gate monsters
 
 Stojanow Gate's Hill Giant (two Tree Club or Trash Lob attacks, a hit
 knocking a Large or smaller target Prone) and Ettin (Battleaxe and
 Morningstar) are SRD 5.2.1 stat blocks with the original's Hit Points, by
-[GATE-1](SRD-DECISIONS.md#gate-1-2026-10-25-stojanow-gate). Not modeled yet:
-Trash Lob's Poisoned and the Morningstar's Disadvantage.
+[GATE-1](SRD-DECISIONS.md#gate-1-2026-10-25-stojanow-gate). Trash Lob
+poisons and the Morningstar gives Disadvantage on the next attack roll
+([MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders)).
 
 ## Valhingen Graveyard monsters
 
 Valhingen Graveyard's undead are SRD 5.2.1 stat blocks with the original's Hit
 Points, by [GRAVE-1](SRD-DECISIONS.md#grave-1-2026-10-25-valhingen-graveyard):
-the Wraith (Life Drain, flying, Incorporeal Movement), the Minotaur Skeleton's
+the Wraith (Life Drain, flying, Incorporeal Movement, Create Specter), the Minotaur Skeleton's
 Slam for the giant skeleton, the Ogre Zombie for the juju zombie, the Mummy
 (two Rotting Fists and their curse, Dreadful Glare, Fire Vulnerability), the Vampire (two
 Grave Strikes, its Charm and its Bite on a creature it has Charmed or that is
-Incapacitated or Restrained) and the Wolf (Pack Tactics, a Bite that knocks
-Prone). Not modeled yet: Create Specter, the charging Gore, the Vampire's
-Beguile (a legendary action); the Vampire's grapple is
+Incapacitated or Restrained, Legendary Actions and Legendary Resistance) and
+the Wolf (Pack Tactics, a Bite that knocks Prone), with [MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders). Not modeled yet:
+the charging Gore; the Vampire's grapple is
 dropped with grappling ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)).
 The mystic who joins is a level-6 Wizard.
 

@@ -1014,6 +1014,30 @@ inline constexpr std::array spell_table{
              .save = Ability::constitution,
              .rider = Rider::petrifying_gaze,
              .cone = 30},
+    // An Adult Bronze Dragon's Thunderclap (SRD 5.2.1), a Legendary Action: a
+    // 20-foot Sphere within 90 feet; Constitution save or 3d6 Thunder (its
+    // Deafened does nothing here, DEAF-1). No one learns it as a spell.
+    SpellDef{.id = "thunderclap",
+             .label = "Thunderclap",
+             .level = 0,
+             .pattern = SpellPattern::save_damage,
+             .target = SpellTarget::area,
+             .range = 90,
+             .save = Ability::constitution,
+             .damage = DamageType::thunder,
+             .dice = {3, 6, 0},
+             .radius = 20},
+    // An Adult Bronze Dragon's Repulsion Breath (SRD 5.2.1), in place of an
+    // attack: a 30-foot Cone; Strength save or pushed 60 feet and Prone, with
+    // no damage. No one learns it as a spell.
+    SpellDef{.id = "repulsion_breath",
+             .label = "Repulsion Breath",
+             .level = 0,
+             .pattern = SpellPattern::save_damage,
+             .target = SpellTarget::area,
+             .range = 30,
+             .save = Ability::strength,
+             .cone = 30},
     SpellDef{.id = "breath_weapon_line",
              .label = "Breath Weapon",
              .level = 0,
@@ -3099,6 +3123,9 @@ inline constexpr std::string_view item_bonus_suffix = "_item_bonus";
 // slot, cast with the Action, or with a Bonus Action (a Priest's Divine Aid).
 inline constexpr std::string_view innate_suffix = "_innate";
 inline constexpr std::string_view innate_bonus_suffix = "_innate_bonus";
+// A monster's Legendary Action that casts a spell (a Vampire's Beguile), before
+// the "_N" of a higher slot: "guiding_bolt_legendary_2".
+inline constexpr std::string_view legendary_suffix = "_legendary";
 
 // Whether a verb uses a carried item, with the Action or a Bonus Action.
 inline constexpr bool item_verb(std::string_view verb)
@@ -3162,11 +3189,25 @@ inline constexpr std::string_view without_cast_suffix(std::string_view verb)
     {
         verb.remove_suffix(innate_bonus_suffix.size());
     }
+    if (verb.ends_with(legendary_suffix))
+    {
+        verb.remove_suffix(legendary_suffix.size());
+    }
     if (verb.ends_with(scroll_suffix))
     {
         verb.remove_suffix(scroll_suffix.size());
     }
     return verb;
+}
+
+// Whether a verb casts a spell as a monster's Legendary Action.
+inline constexpr bool legendary_verb(std::string_view verb)
+{
+    if (cast_slot_level(verb))
+    {
+        verb.remove_suffix(2);
+    }
+    return verb.ends_with(legendary_suffix);
 }
 
 // Whether a verb reads a spell from a scroll (MAGIC-6).

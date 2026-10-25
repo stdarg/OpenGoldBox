@@ -1678,6 +1678,11 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         }
         return nullptr;
     };
+    // A Wraith raises a Specter from a corpse beside it before it attacks.
+    if (const auto *raise = offers("create_specter"))
+    {
+        return *raise;
+    }
     const auto shows = [](const CombatantView &unit, std::string_view condition)
     {
         return std::any_of(unit.conditions.begin(), unit.conditions.end(),

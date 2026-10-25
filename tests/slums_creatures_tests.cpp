@@ -3,6 +3,7 @@
 // Regeneration, and the level-3 magic-user; Podol Plaza's buccaneer; and the
 // Cadorna Textile House's scorpions and Wight, and Sunlight Sensitivity; and
 // Mendor's Library's Specter and Basilisk.
+#include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <chrono>
@@ -842,6 +843,13 @@ void mummy_curses()
                                 3);
     const int lowered = 1000 - unit(*later, 2).max_hit_points;
     check(lowered >= 3 && lowered <= 18, "A day later the Hit Point maximum drops by 3d6");
+    module->elapse(hero, std::chrono::hours{48}, random);
+    auto much_later = module->create(
+        {{10, 4, std::vector<Terrain>(40)},
+         {{1, "target", "Other", Side::opposition, {8, 1}}, hero[0]}},
+        3);
+    check(1000 - unit(*much_later, 2).max_hit_points >= lowered + 6,
+          "Two days more lower it by 6d6 more, and the deeper curse still loads");
 }
 
 // Valhingen Graveyard's vampire charms and bites as the SRD Vampire does: its
@@ -917,6 +925,294 @@ void tyranthraxus_breathes()
     check(refused, "A breath row names a breath weapon, not a spell");
 }
 
+// Heroes who fail every save: -10 to each, so even a 20 misses DC 11.
+const std::string frail_heroes = "creature frail 1 1000 0 30 0 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
+                                 "saves frail -10 -10 -10 -10 -10 -10\n";
+
+// Ends the turns of everyone after `id` until `id`'s turn comes again.
+void round_after(CombatSession &c, EntityId id)
+{
+    check(c.snapshot().actor == id && submit(c, "end", id), "End the monster's turn");
+    for (unsigned turns = 0; c.snapshot().actor != id; ++turns)
+    {
+        check(turns < 8, "Come back to the monster");
+        check(submit(c, "end", c.snapshot().actor), "End a hero's turn");
+    }
+}
+
+// Legendary Resistance (SRD 5.2.1) turns a failed save into a success while a
+// use is left: here once a day, against the first of two mummies' glares.
+void legendary_resistance()
+{
+    const auto module = rules(frail_heroes + "legendary_resistance frail 1\n");
+    auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                             {{1, "mummy", "First", Side::opposition, {1, 1}},
+                              {3, "mummy", "Second", Side::opposition, {3, 1}},
+                              {2, "frail", "Hero", Side::party, {2, 1}}}},
+                            7);
+    turn_of(*c, 1);
+    check(submit(*c, "melee", 1, 2) &&
+              count_logged(*c, "Hero uses Legendary Resistance and succeeds instead (0 left).") ==
+                  1 &&
+              unit(*c, 2).status.find("Frightened") == std::string::npos,
+          "Legendary Resistance turns the first failed save into a success");
+    check(submit(*c, "end", 1), "The first mummy ends its turn");
+    turn_of(*c, 3);
+    check(submit(*c, "melee", 3, 2) && count_logged(*c, "Hero is Frightened.") == 1,
+          "With no use left the next failed save fails");
+}
+
+// Valhingen Graveyard's vampire takes the SRD Vampire's Legendary Actions:
+// right after each other creature's turn, three a round, a Deathless Strike at
+// a creature beside it (without moving), or Beguile, Command's Grovel, at one
+// farther off, once a round.
+void vampire_legendary_actions()
+{
+    const auto module = rules();
+    auto beside = module->create({{10, 4, std::vector<Terrain>(40)},
+                                  {{1, "vampire", "Monster", Side::opposition, {1, 1}},
+                                   {2, "target", "Hero A", Side::party, {2, 1}},
+                                   {3, "target", "Hero B", Side::party, {2, 2}},
+                                   {4, "target", "Hero C", Side::party, {2, 0}},
+                                   {5, "target", "Hero D", Side::party, {0, 1}}}},
+                                 7);
+    turn_of(*beside, 1);
+    const auto struck = count_logged(*beside, "uses Deathless Strike (Legendary Action).");
+    round_after(*beside, 1);
+    check(count_logged(*beside, "uses Deathless Strike (Legendary Action).") - struck == 3 &&
+              count_logged(*beside, "Monster uses Beguile") == 0,
+          "The vampire strikes after three of the four heroes' turns");
+    auto apart = module->create({{12, 5, std::vector<Terrain>(60)},
+                                 {{1, "vampire", "Monster", Side::opposition, {1, 1}},
+                                  {2, "target", "Hero A", Side::party, {9, 1}},
+                                  {3, "target", "Hero B", Side::party, {9, 3}}}},
+                                7);
+    turn_of(*apart, 1);
+    const auto beguiled = count_logged(*apart, "Monster uses Beguile (Legendary Action).");
+    round_after(*apart, 1);
+    check(count_logged(*apart, "Monster uses Beguile (Legendary Action).") - beguiled == 1 &&
+              count_logged(*apart, "Deathless Strike") == 0,
+          "The vampire Beguiles a creature out of reach once a round");
+}
+
+// Tyranthraxus takes the SRD Adult Bronze Dragon's Legendary Actions:
+// Thunderclap on two enemies or more (Constitution save, DC 17, or 3d6
+// Thunder), Pounce at one beside him, Guiding Light at one farther off.
+void tyranthraxus_legendary_actions()
+{
+    const auto module = rules(frail_heroes);
+    const auto first_action = [&](Cell a, Cell b)
+    {
+        auto c = module->create({{14, 6, std::vector<Terrain>(84)},
+                                 {{1, "tyranthraxus", "Monster", Side::opposition, {0, 2}},
+                                  {2, "frail", "Hero A", Side::party, a},
+                                  {3, "frail", "Hero B", Side::party, b}}},
+                                7);
+        turn_of(*c, 1);
+        const auto before = c->snapshot().log().size();
+        round_after(*c, 1);
+        const auto log = c->snapshot().log();
+        return std::vector<std::string>(log.begin() + static_cast<std::ptrdiff_t>(before),
+                                        log.end());
+    };
+    const auto logged = [](const std::vector<std::string> &log, std::string_view text)
+    {
+        return std::count_if(log.begin(), log.end(),
+                             [&](const auto &line)
+                             {
+                                 return line.find(text) != std::string::npos;
+                             });
+    };
+    const auto grouped = first_action({7, 2}, {7, 3});
+    check(logged(grouped, "Monster uses Thunderclap (Legendary Action).") == 2 &&
+              logged(grouped, "Hero A takes ") >= 1 && logged(grouped, "Hero B takes ") >= 1,
+          "Tyranthraxus thunders at two heroes together");
+    const auto close = first_action({1, 2}, {13, 5});
+    check(logged(close, "Monster uses Pounce (Legendary Action).") == 2,
+          "Tyranthraxus pounces on a hero beside him");
+    const auto far = first_action({9, 0}, {13, 5});
+    check(logged(far, "Monster uses Guiding Light (Legendary Action).") == 2 &&
+              logged(far, "Monster -> Hero A") == 2,
+          "Tyranthraxus casts Guiding Light at a hero out of reach");
+}
+
+// Tyranthraxus breathes Repulsion Breath for the last of his three Rends when
+// its 30-foot Cone catches two enemies: a Strength save (DC 19) or pushed 60
+// feet away and knocked Prone.
+void tyranthraxus_repels()
+{
+    const auto module = rules(frail_heroes);
+    auto c = module->create({{20, 4, std::vector<Terrain>(80)},
+                             {{1, "tyranthraxus", "Monster", Side::opposition, {1, 1}},
+                              {2, "frail", "Hero A", Side::party, {2, 1}},
+                              {3, "frail", "Hero B", Side::party, {3, 1}}}},
+                            7);
+    turn_of(*c, 1);
+    check(submit(*c, "melee", 1, 2) && count_logged(*c, "Monster -> Hero A") == 2 &&
+              count_logged(*c, "Monster uses Repulsion Breath.") == 1,
+          "Two Rends, then Repulsion Breath");
+    check(unit(*c, 2).cell.x > 3 && unit(*c, 3).cell.x > 3 &&
+              unit(*c, 2).status.find("Prone") != std::string::npos &&
+              unit(*c, 3).status.find("Prone") != std::string::npos,
+          "Both heroes are pushed away and knocked Prone");
+    auto alone = module->create({{20, 4, std::vector<Terrain>(80)},
+                                 {{1, "tyranthraxus", "Monster", Side::opposition, {1, 1}},
+                                  {2, "frail", "Hero A", Side::party, {2, 1}}}},
+                                7);
+    turn_of(*alone, 1);
+    check(submit(*alone, "melee", 1, 2) && count_logged(*alone, "Monster -> Hero A") == 3 &&
+              count_logged(*alone, "Repulsion Breath") == 0,
+          "With one enemy in reach he rends three times");
+}
+
+// An `off` row switches a monster ability off: for every creature, or for one.
+void abilities_switch_off()
+{
+    const auto off_for_one = rules("off legendary vampire\n");
+    auto c = fight(*off_for_one, "vampire", "target");
+    turn_of(*c, 1);
+    round_after(*c, 1);
+    check(count_logged(*c, "Legendary Action") == 0, "The vampire's Legendary Actions are off");
+    auto dragon = fight(*off_for_one, "tyranthraxus", "target");
+    turn_of(*dragon, 1);
+    round_after(*dragon, 1);
+    check(count_logged(*dragon, "Legendary Action") == 1,
+          "Tyranthraxus keeps his Legendary Actions");
+    const auto off_for_all = rules("off legendary\n");
+    auto none = fight(*off_for_all, "tyranthraxus", "target");
+    turn_of(*none, 1);
+    round_after(*none, 1);
+    check(count_logged(*none, "Legendary Action") == 0, "No one takes Legendary Actions");
+    bool refused = false;
+    try
+    {
+        (void)rules("off creature\n");
+    }
+    catch (const std::runtime_error &)
+    {
+        refused = true;
+    }
+    check(refused, "Only a monster ability can be switched off");
+}
+
+// Valjevo Castle's medusa makes the SRD Medusa's Multiattack: two Claws and
+// then Snake Hair (1d4 + 3 Piercing and 4d6 Poison), or three Poison Rays.
+void medusa_strikes()
+{
+    const auto module = rules();
+    auto close = fight(*module, "medusa", "target");
+    turn_of(*close, 1);
+    check(submit(*close, "melee", 1, 2) && count_logged(*close, "Monster -> Hero") == 3 &&
+              count_logged(*close, "Poison damage") >= 1,
+          "Two Claws, then the poisonous Snake Hair");
+    auto far = module->create({{12, 4, std::vector<Terrain>(48)},
+                               {{1, "medusa", "Monster", Side::opposition, {1, 1}},
+                                {2, "target", "Hero", Side::party, {8, 1}}}},
+                              7);
+    turn_of(*far, 1);
+    check(submit(*far, "ranged", 1, 2) && count_logged(*far, "Monster -> Hero") == 3,
+          "Three Poison Rays");
+}
+
+// The giants' hit riders (SRD 5.2.1): a Hill Giant's Trash Lob poisons until
+// the end of the target's next turn; an Ettin's Morningstar, its second
+// attack, and a Fire Giant's Hammer Throw give Disadvantage on the target's
+// next attack roll, and the Hammer Throw pushes 15 feet.
+void giants_hit_riders()
+{
+    const auto module = rules();
+    auto lob = module->create({{12, 4, std::vector<Terrain>(48)},
+                               {{1, "hill-giant", "Monster", Side::opposition, {1, 1}},
+                                {2, "target", "Hero", Side::party, {7, 1}}}},
+                              7);
+    turn_of(*lob, 1);
+    check(submit(*lob, "ranged", 1, 2) && count_logged(*lob, "Hero is Poisoned.") >= 1 &&
+              unit(*lob, 2).status.find("Poisoned") != std::string::npos,
+          "Trash Lob poisons");
+    auto ettin = fight(*module, "ettin", "target");
+    turn_of(*ettin, 1);
+    check(submit(*ettin, "melee", 1, 2) && count_logged(*ettin, "Hero is knocked Prone.") == 1 &&
+              count_logged(*ettin, "Hero has Disadvantage on its next attack roll.") == 1 &&
+              unit(*ettin, 2).status.find("Hampered") != std::string::npos,
+          "The Battleaxe knocks Prone and the Morningstar hampers");
+    check(submit(*ettin, "end", 1), "The ettin ends its turn");
+    turn_of(*ettin, 2);
+    check(submit(*ettin, "melee", 2, 1) &&
+              unit(*ettin, 2).status.find("Hampered") == std::string::npos,
+          "The hero's next attack roll spends the hampering");
+    auto hammer = module->create({{14, 4, std::vector<Terrain>(56)},
+                                  {{1, "fire-giant", "Monster", Side::opposition, {1, 1}},
+                                   {2, "target", "Hero", Side::party, {7, 1}}}},
+                                 7);
+    turn_of(*hammer, 1);
+    check(submit(*hammer, "ranged", 1, 2) && count_logged(*hammer, "Hero is pushed 15 feet.") >= 1 &&
+              unit(*hammer, 2).cell.x >= 10 &&
+              count_logged(*hammer, "Hero has Disadvantage on its next attack roll.") >= 1,
+          "The Hammer Throw pushes 15 feet and hampers");
+}
+
+// The Buccaneers' captain is the SRD Pirate Captain: Captain's Charm with its
+// Bonus Action (Wisdom save, DC 14, or Charmed until the start of its next
+// turn), Advantage after a Rapier hit on its next attack this turn, and
+// Riposte, which parries a melee hit with +3 AC and strikes back on the miss.
+void pirate_captain_fights()
+{
+    const auto module = rules(frail_heroes);
+    auto c = fight(*module, "pirate-captain", "frail");
+    turn_of(*c, 1);
+    check(submit(*c, "melee", 1, 2) &&
+              count_logged(*c, "Monster uses Captain's Charm on Hero.") == 1 &&
+              count_logged(*c, "Hero is Charmed by Monster.") == 1,
+          "The captain charms the creature it attacks");
+    check(count_logged(*c, "vs AC 1 (advantage)") >= 1,
+          "A Rapier hit gives Advantage on the next attack");
+    check(submit(*c, "end", 1), "The captain ends its turn");
+    turn_of(*c, 2);
+    check(!offered(*c, "melee", 2, 1), "The charmed hero cannot attack the captain");
+    const auto fencing = rules("creature fencer 10 1000 0 30 5 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+    bool riposted = false;
+    for (std::uint64_t seed = 1; seed < 120 && !riposted; ++seed)
+    {
+        auto duel = fencing->create({{10, 4, std::vector<Terrain>(40)},
+                                     {{1, "pirate-captain", "Monster", Side::opposition, {1, 1}},
+                                      {2, "fencer", "Hero", Side::party, {2, 1}}}},
+                                    seed);
+        turn_of(*duel, 2);
+        check(submit(*duel, "melee", 2, 1), "The fencer attacks the captain");
+        if (count_logged(*duel, "Monster parries Hero's attack.") == 1)
+        {
+            check(count_logged(*duel, "Monster ripostes.") == 1 &&
+                      count_logged(*duel, "Monster -> Hero") == 1,
+                  "The parried miss draws a Riposte");
+            riposted = true;
+        }
+    }
+    check(riposted, "The captain parries and ripostes");
+}
+
+// A Valhingen Graveyard wraith's Create Specter: a Humanoid corpse within 10
+// feet rises as an SRD Specter under its control; the computer does it before
+// attacking.
+void wraith_creates_specter()
+{
+    const auto module = rules();
+    auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                             {{1, "wraith", "Monster", Side::opposition, {1, 1}},
+                              {2, "target", "Hero", Side::party, {5, 1}},
+                              {3, "bandit", "Corpse", Side::party, {2, 2}, {}, VitalState{0, true, {}}}}},
+                            7);
+    turn_of(*c, 1);
+    const auto chosen = choose_demo_command(*c);
+    check(chosen.verb == "create_specter" && chosen.target == 3,
+          "The computer has the wraith raise the corpse");
+    check(c->submit(chosen) && count_logged(*c, "Monster uses Create Specter.") == 1 &&
+              count_logged(*c, "Corpse rises as a Specter.") == 1,
+          "The corpse rises as a Specter");
+    const auto risen = unit(*c, 3);
+    check(risen.side == Side::opposition && risen.hit_points == 22,
+          "The specter fights for the wraith with the SRD Specter's 22 Hit Points");
+}
+
 // The wilderness's tiger has the SRD Tiger's Nimble Escape: Disengage or
 // Hide as a Bonus Action, without Cunning Action's Dash.
 void tiger_escapes()
@@ -960,6 +1256,15 @@ int main()
         mummy_glares();
         mummy_curses();
         vampire_bites();
+        legendary_resistance();
+        vampire_legendary_actions();
+        tyranthraxus_legendary_actions();
+        tyranthraxus_repels();
+        abilities_switch_off();
+        medusa_strikes();
+        giants_hit_riders();
+        pirate_captain_fights();
+        wraith_creates_specter();
         std::cout << "Slums creature tests passed\n";
         return 0;
     }

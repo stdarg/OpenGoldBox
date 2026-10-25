@@ -53,9 +53,9 @@ GAME`, `opengold_maps GAME`, coab's `LoadWalldef`, `CMD_LoadFiles`,
 | --- | --- | --- |
 | 17 | Spectre (HP 38) | Mendor's Library's Specter |
 | 20 | Wight (HP 23) | the Wight |
-| 21 | Wraith (HP 24) | **new:** SRD 5.2.1 Wraith with 24 Hit Points: Life Drain, flying, Incorporeal Movement (Create Specter not modeled) |
+| 21 | Wraith (HP 24) | **new:** SRD 5.2.1 Wraith with 24 Hit Points: Life Drain, flying, Incorporeal Movement and Create Specter, raising the SRD Specter with 22 Hit Points |
 | 22 | Giant Skeleton (HP 28) | **new:** SRD 5.2.1 Minotaur Skeleton with 28 Hit Points, its Slam (the charging Gore not modeled) |
-| 23 | Vampire (HP 43) | **new:** SRD 5.2.1 Vampire with 43 Hit Points: two Grave Strikes, its Charm and its Bite on a creature it has Charmed or that is Incapacitated or Restrained (no grapple, SCOPE-2; Beguile not modeled) |
+| 23 | Vampire (HP 43) | **new:** SRD 5.2.1 Vampire with 43 Hit Points: two Grave Strikes, its Charm (Recharge 5-6), its Bite on a creature it has Charmed or that is Incapacitated or Restrained (no grapple, SCOPE-2), its Legendary Actions (Beguile, Deathless Strike) and Legendary Resistance |
 | 24 | Level 6 MU (HP 23) | **new:** the nomad shaman's level-4 Wizard profile with 23 Hit Points |
 | 29 | Juju Zombie (HP 24) | **new:** SRD 5.2.1 Ogre Zombie with 24 Hit Points, Medium as the original's is |
 | 34, 35, 72 | Skeleton, Zombie, Ghoul | the Slums' |
@@ -85,6 +85,9 @@ Missing before this audit, now done:
    efreeti, fights on the party's side, beside it, and the computer fights
    it, as the original's quick fight did (since 2026-10-25, after the
    graveyard's first increment).
+7. **The vampire's Legendary Actions and Legendary Resistance** and **the
+   wraith's Create Specter** (2026-10-25,
+   [MONSTER-2](../SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders)).
 
 ## Party level and balance
 

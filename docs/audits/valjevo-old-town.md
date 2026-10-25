@@ -42,7 +42,7 @@ fields (`0xD8`, alignment), and SRD 5.2.1.
 | --- | --- | --- |
 | 41 | 4th Level Fighter (HP 30) | the nomad guards' Bandit Captain |
 | 55 | Hill Giant (HP 41) | Stojanow Gate's Hill Giant |
-| 56 | Fire Giant (HP 59) | **new:** SRD 5.2.1 Fire Giant with 59 Hit Points: two Flame Sword or Hammer Throw attacks (the throw's push and Disadvantage not modeled) |
+| 56 | Fire Giant (HP 59) | **new:** SRD 5.2.1 Fire Giant with 59 Hit Points: two Flame Sword or Hammer Throw attacks, the throw pushing 15 feet and giving Disadvantage on the next attack roll |
 | 75 | 6th Level Fighter (HP 45) | the Pyramid's Warrior Veteran |
 | 90 | 1st Level Cleric (HP 8) | the Pyramid's Priest Acolyte |
 | 91 | Level 5 Cleric (HP 29) | **new:** the Temple of Bane's Priest with 29 Hit Points |

@@ -38,7 +38,7 @@ GAME`, `opengold_maps GAME`, and SRD 5.2.1.
 | 73 | Gnoll | the Gnoll Warrior |
 | 113 | Hippogriff (HP 18) | **new:** SRD 5.2.1 Hippogriff with 18 Hit Points (Flyby not modeled) |
 | 116 | Phase Spider (HP 35) | **new:** SRD 5.2.1 Phase Spider with 35 Hit Points (Ethereal Jaunt and its poison's paralysis not modeled) |
-| 121 | Wyvern (HP 42) | **new:** SRD 5.2.1 Wyvern with 42 Hit Points: Bite and Sting (the Sting's Poisoned not modeled) |
+| 121 | Wyvern (HP 42) | **new:** SRD 5.2.1 Wyvern with 42 Hit Points: Bite and Sting, which poisons until the start of the wyvern's next turn |
 
 ## Status
 
