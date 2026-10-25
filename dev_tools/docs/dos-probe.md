@@ -163,6 +163,9 @@ Recorded 2026-10-24 with `START.EXE` SHA-1
   instructions. None of the 1,936 IFs in the 29 original scripts is followed by
   one of these six commands, so both skip the same bytes on every original
   script.
+- **Area crossing:** a step west from New Phlan's west gate (0,4) enters the
+  Slums on (15,4) still facing west, where OpenGoldBox puts the party too;
+  every battlefield route above starts from that square.
 - **Entry 0 runs before the step moves the party:** it sees the old square
   (with the new facing); entry 1 runs on the new square. OpenGoldBox's session
   binds the same squares.
