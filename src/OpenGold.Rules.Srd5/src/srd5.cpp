@@ -1502,8 +1502,21 @@ struct Definition
         int bonus{};
         detail::DamageDice dice, extra;
         detail::DamageType type{}, extra_type{};
+        // Its hits' riders, from `hampering` and `poisoning` rows naming it.
+        bool hampering{}, poisoning{}, poisoning_own_turn{};
     };
     std::optional<LastAttack> last_attack;
+    // A monster's Legendary Actions (SRD 5.2.1): a Vampire's Beguile and
+    // Deathless Strike, an Adult Bronze Dragon's Guiding Light, Pounce and
+    // Thunderclap.
+    enum class LegendaryAction
+    {
+        beguile,
+        deathless_strike,
+        guiding_light,
+        pounce,
+        thunderclap
+    };
     // A monster's `sunlight_sensitivity` row: Disadvantage on attack rolls and
     // ability checks while in sunlight.
     bool sunlight_sensitive{};
@@ -1564,6 +1577,47 @@ struct Definition
     // DC, and the d6 roll that recharges it.
     std::string monster_breath;
     int breath_dc{}, breath_recharge{};
+    // A monster's `repulsion_breath` row: an Adult Bronze Dragon's Repulsion
+    // Breath in place of its Multiattack's last attack, its Strength save DC.
+    int repulsion_dc{};
+    // A monster's `legendary` row: its Legendary Action uses a round and the
+    // options it takes them with, one right after another creature's turn.
+    int legendary_uses{};
+    std::vector<LegendaryAction> legendary_actions;
+    // A monster's `legendary_resistance` row: the failed saves a day it turns
+    // into successes.
+    int legendary_resistance{};
+    // A monster's hit riders by the attack that carries them, from its
+    // `hampering`, `poisoning` and `pushing` rows: Disadvantage on the target's
+    // next attack roll before the end of its next turn (an Ettin's Morningstar),
+    // Poisoned until the end of the target's next turn or, `own_turn`, until the
+    // start of the monster's next turn (a Hill Giant's Trash Lob), and a push
+    // straight away (a Fire Giant's Hammer Throw).
+    enum class Strike
+    {
+        none,
+        melee,
+        ranged
+    };
+    Strike hampering{}, poisoning{}, pushing{};
+    bool poisoning_own_turn{};
+    int push_feet{};
+    // A monster's `hit_advantage` row: a melee hit gives Advantage on its next
+    // attack roll this turn (a Pirate Captain's Rapier).
+    bool hit_advantage{};
+    // A monster's `captains_charm` row: with its Attack action it uses its
+    // Bonus Action to charm the creature it attacks, seen within `charm_range`
+    // feet: a Wisdom save against `charm_dc` or Charmed until the start of its
+    // next turn (a Pirate Captain's Captain's Charm).
+    int charm_dc{}, charm_range{};
+    // A monster's `riposte` row: its Parry, and on the parried miss one melee
+    // attack at the attacker (a Pirate Captain's Riposte).
+    bool riposte{};
+    // A monster's `create_specter` row: it raises a Humanoid corpse within 10
+    // feet as the creature `specter_key` names, under its control, at most
+    // `specter_limit` of them (a Wraith's Create Specter).
+    int specter_limit{};
+    std::string specter_key;
     // A monster's `condition_immunity` row: the conditions it never suffers,
     // as effect labels name them ("Restrained", "Prone").
     std::vector<std::string> condition_immunities;
@@ -2755,6 +2809,11 @@ bool bonus_action_verb(std::string_view verb)
 // the level it is cast at, the turn's one slot.
 void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spell)
 {
+    // A Legendary Action's spell spends the Legendary Action alone.
+    if (detail::legendary_verb(verb))
+    {
+        return;
+    }
     // An innate spell spends a use of its pool.
     if (verb.ends_with(detail::innate_suffix) || verb.ends_with(detail::innate_bonus_suffix))
     {
@@ -2993,13 +3052,19 @@ bool suffers_poisoned(const Actor &a)
 
 // The conditions Restoring Touch ends, most disabling first, and the effects
 // that give each. Deafened is not modeled (DEAF-1).
-constexpr std::array<std::pair<std::string_view, std::array<detail::EffectKind, 2>>, 5>
+constexpr std::array<std::pair<std::string_view, std::array<detail::EffectKind, 3>>, 5>
     restorable_conditions{
-        {{"Paralyzed", {detail::EffectKind::hold_person, detail::EffectKind::paralysis_ray}},
-         {"Stunned", {detail::EffectKind::stunned, detail::EffectKind::stunned}},
-         {"Blinded", {detail::EffectKind::blindness, detail::EffectKind::dazzled}},
-         {"Frightened", {detail::EffectKind::frightened, detail::EffectKind::abjured}},
-         {"Charmed", {detail::EffectKind::charmed, detail::EffectKind::enthralled}}}};
+        {{"Paralyzed",
+          {detail::EffectKind::hold_person, detail::EffectKind::paralysis_ray,
+           detail::EffectKind::paralysis_ray}},
+         {"Stunned", {detail::EffectKind::stunned, detail::EffectKind::stunned,
+                      detail::EffectKind::stunned}},
+         {"Blinded",
+          {detail::EffectKind::blindness, detail::EffectKind::dazzled, detail::EffectKind::dazzled}},
+         {"Frightened", {detail::EffectKind::frightened, detail::EffectKind::abjured,
+                         detail::EffectKind::abjured}},
+         {"Charmed", {detail::EffectKind::charmed, detail::EffectKind::enthralled,
+                      detail::EffectKind::captain_charmed}}}};
 
 bool touch_restorable(const Actor &a)
 {
@@ -3199,6 +3264,7 @@ bool has_greater_harm(const Actor &a, std::size_t harm)
                                   : harm      ? curse(e.kind)
                                               : e.kind == detail::EffectKind::charmed ||
                                                     e.kind == detail::EffectKind::enthralled ||
+                                                    e.kind == detail::EffectKind::captain_charmed ||
                                                     e.kind == detail::EffectKind::dominated;
                        });
 }
@@ -5099,6 +5165,9 @@ class Session final : public CombatSession
     // True while perform() can undo the command to ask a question; damage
     // from turns ended outside it (a creature fled or fell) asks nothing.
     bool askable_{};
+    // While perform() carries out a command, whose reactions it can ask; turns
+    // ended outside one take no Legendary Actions after them.
+    bool performing_{};
     [[nodiscard]] const ReactionAnswer *answer_of(EntityId target, Asked asked) const;
     [[nodiscard]] bool can_shield(const Actor &target) const;
     [[nodiscard]] bool can_deflect(const Actor &target, bool deflectable) const;
@@ -5840,6 +5909,12 @@ class Session final : public CombatSession
     // conditions and armor are applied here.
     bool saving_throw_succeeds(const Actor &target, detail::Ability ability, int dc,
                                bool advantage = false, bool disadvantage = false);
+    // The saving throw itself, before Legendary Resistance.
+    bool rolled_save_succeeds(const Actor &target, detail::Ability ability, int dc,
+                              bool advantage, bool disadvantage);
+    // Legendary Resistance: a monster with a use left turns the failed save
+    // into a success, which it always does.
+    bool resists_legendarily(const Actor &target);
     // Heightened Spell: the creature saves against the caster's spell with
     // Disadvantage for as long as it lasts.
     void mark_heightened(const Actor &caster, const detail::SpellDef &spell);
@@ -6031,6 +6106,30 @@ class Session final : public CombatSession
     void drain_life(Actor &wight, Actor &target);
     void dreadful_glare(Actor &mummy, Actor &target);
     void bite(Actor &vampire, Actor &target);
+    // A monster's hit riders: its `hampering`, `poisoning`, `pushing` and
+    // `hit_advantage` rows for the attack that hit.
+    void strike_riders(Actor &a, Actor &target, bool ranged);
+    // A Pirate Captain's Captain's Charm at the creature it attacks.
+    void captains_charm(Actor &captain, Actor &target);
+    // A Wraith's Create Specter: the Humanoid corpses it can raise, and the
+    // specters it controls.
+    [[nodiscard]] bool specter_corpse(const Actor &wraith, const Actor &corpse) const;
+    [[nodiscard]] int specters_of(const Actor &wraith) const;
+    // Legendary Actions: right after a creature's turn, each other monster
+    // with a use left takes one, as the computer chooses.
+    void take_legendary_actions();
+    void take_legendary_action(Actor &monster);
+    // The living enemy of `a` it sees nearest, within `range` feet and, with
+    // `adjacent`, beside it; the weakest among those beside it.
+    [[nodiscard]] Actor *legendary_target(const Actor &a, int range, bool adjacent);
+    // Where an Adult Bronze Dragon's Thunderclap catches the most enemies,
+    // at least two, and none of its allies.
+    [[nodiscard]] std::optional<Cell> thunderclap_center(const Actor &dragon) const;
+    void thunderclap(Actor &dragon, Cell center);
+    // The enemies an Adult Bronze Dragon's Repulsion Breath toward `toward`
+    // would catch, none when it would catch one of its allies.
+    [[nodiscard]] int repulsion_catches(const Actor &dragon, Cell toward) const;
+    void repulsion_breath(Actor &dragon, Cell toward);
     void lower_hit_point_maximum(const Actor &drainer, Actor &target, int amount);
     void shed_immune_conditions();
     void recharge_gaze(Actor &a);
@@ -8051,6 +8150,8 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::snake_charmed, "Incapacitated (Snake Charm)"},
               std::pair{detail::EffectKind::envenomed, "Poisoned (Cunning Strike)"},
               std::pair{detail::EffectKind::enthralled, "Charmed (Enthralling Panache)"},
+              std::pair{detail::EffectKind::captain_charmed, "Charmed (Captain's Charm)"},
+              std::pair{detail::EffectKind::hampered, "Hampered"},
               std::pair{detail::EffectKind::lethargic, "Incapacitated (lethargy)"},
               std::pair{detail::EffectKind::entranced, "Charmed (Hypnotic Pattern)"},
               std::pair{detail::EffectKind::terrified, "Frightened (Fear)"},
@@ -8748,6 +8849,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                           {
                               return e.kind == detail::EffectKind::charmed ||
                                      e.kind == detail::EffectKind::enthralled ||
+                                     e.kind == detail::EffectKind::captain_charmed ||
                                      e.kind == detail::EffectKind::dominated;
                           });
             release(target);
@@ -11343,6 +11445,17 @@ std::vector<Command> Session::offered_commands() const
         commands.push_back(
             {revision_, id, 0, d.monster_breath, std::string(breath.label), Cell{}, 0, true});
         commands.back().spell = spell_facts(a, breath);
+    }
+    // A Wraith's Create Specter, while it controls fewer than its limit.
+    if (d.specter_limit && a.actions.available() && specters_of(a) < d.specter_limit)
+    {
+        for (const auto &corpse : actors_)
+        {
+            if (specter_corpse(a, corpse))
+            {
+                add(id, "create_specter", "Create Specter", corpse.source.id);
+            }
+        }
     }
     // Dragon Wings (Sorcerer 14): once per Long Rest, or for 3 Sorcery Points.
     if (a.bonus && d.dragon_wings &&
@@ -14445,6 +14558,11 @@ void Session::raise_undead(const Actor &caster, Actor &corpse, std::string_view 
         log(corpse.source.name + " rises as a Ghoul.",
             {"{name} rises as a Ghoul.", {{"name", corpse.source.name}}});
     }
+    else if (def(caster).specter_key == undead)
+    {
+        log(corpse.source.name + " rises as a Specter.",
+            {"{name} rises as a Specter.", {{"name", corpse.source.name}}});
+    }
     else
     {
         log(corpse.source.name + " rises as a Zombie.",
@@ -15628,6 +15746,366 @@ void Session::bite(Actor &vampire, Actor &target)
     }
 }
 
+void Session::strike_riders(Actor &a, Actor &target, bool ranged)
+{
+    const auto &d = def(a);
+    const auto strike = ranged ? Definition::Strike::ranged : Definition::Strike::melee;
+    const auto index = index_of(target.source.id);
+    const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
+    if (d.poisoning == strike && detail::can_apply(target.effects))
+    {
+        detail::apply_poisoned(target.effects, effect_source(a), a.source.name,
+                               d.poisoning_own_turn ? next_turn_ms(a)
+                                                    : next_turn_ms(target) + slot);
+        log(target.source.name + " is Poisoned.",
+            {"{name} is Poisoned.", {{"name", target.source.name}}});
+    }
+    if (d.hampering == strike && detail::can_apply(target.effects))
+    {
+        detail::apply_poisoned(target.effects, effect_source(a), a.source.name,
+                               next_turn_ms(target) + slot, detail::EffectKind::hampered);
+        log(target.source.name + " has Disadvantage on its next attack roll.",
+            {"{name} has Disadvantage on its next attack roll.", {{"name", target.source.name}}});
+    }
+    if (d.pushing == strike)
+    {
+        push_away(a, target, d.push_feet / 5);
+    }
+    // Until this turn ends: its next attack roll this turn has Advantage.
+    if (!ranged && d.hit_advantage && detail::can_apply(a.effects))
+    {
+        detail::apply_poisoned(a.effects, effect_source(a), a.source.name, 1,
+                               detail::EffectKind::poised);
+    }
+}
+
+// A Pirate Captain's Captain's Charm (SRD 5.2.1), a Bonus Action: a Wisdom
+// save or Charmed until the start of the captain's next turn.
+void Session::captains_charm(Actor &captain, Actor &target)
+{
+    const auto &d = def(captain);
+    if (!conscious(target) || invisible(target) || has_condition(captain, "blinded") ||
+        distance(captain.source.cell, target.source.cell) > d.charm_range ||
+        !line_of_sight(captain.source.cell, target.source.cell) ||
+        charmed_by(target, captain.source.id) || !detail::can_apply(target.effects))
+    {
+        return;
+    }
+    captain.bonus = false;
+    log(captain.source.name + " uses Captain's Charm on " + target.source.name + ".",
+        {"{name} uses Captain's Charm on {target}.",
+         {{"name", captain.source.name}, {"target", target.source.name}}});
+    if (mindless(target) || aura_of_devotion(target) ||
+        detail::has_effect(target.effects, detail::EffectKind::mind_blank))
+    {
+        log(target.source.name + " is immune to the charm.",
+            {"{name} is immune to the charm.", {{"name", target.source.name}}});
+        return;
+    }
+    if (charm_or_fear_save(target, detail::Ability::wisdom, d.charm_dc, def(target).fey_ancestry))
+    {
+        return;
+    }
+    detail::apply_poisoned(target.effects, effect_source(captain), captain.source.name,
+                           next_turn_ms(captain), detail::EffectKind::captain_charmed);
+    log(target.source.name + " is Charmed by " + captain.source.name + ".",
+        {"{name} is Charmed by {caster}.",
+         {{"name", target.source.name}, {"caster", captain.source.name}}});
+}
+
+bool Session::specter_corpse(const Actor &wraith, const Actor &corpse) const
+{
+    return corpse.life.dead && def(corpse).creature_type == "humanoid" && !absent(corpse) &&
+           !detail::has_effect(corpse.effects, detail::EffectKind::dust) &&
+           !detail::has_effect(corpse.effects, detail::EffectKind::petrified) &&
+           distance(wraith.source.cell, corpse.source.cell) <= 10;
+}
+
+int Session::specters_of(const Actor &wraith) const
+{
+    return static_cast<int>(
+        std::count_if(actors_.begin(), actors_.end(),
+                      [&](const auto &other)
+                      {
+                          return !other.life.dead &&
+                                 other.source.definition == def(wraith).specter_key &&
+                                 std::any_of(other.effects.active.begin(),
+                                             other.effects.active.end(),
+                                             [&](const auto &e)
+                                             {
+                                                 return e.kind == detail::EffectKind::raised &&
+                                                        e.source_actor == wraith.source.id;
+                                             });
+                      }));
+}
+
+void Session::take_legendary_actions()
+{
+    std::vector<EntityId> legendary;
+    for (const auto &a : actors_)
+    {
+        if (def(a).legendary_uses && a.source.id != actors_[turn_].source.id)
+        {
+            legendary.push_back(a.source.id);
+        }
+    }
+    for (const auto id : legendary)
+    {
+        if (find_actor(id) && outcome_ == Outcome::ongoing)
+        {
+            take_legendary_action(actor(id));
+            update_outcome();
+        }
+    }
+}
+
+// The computer prefers a Thunderclap on two enemies or more, then a strike at
+// an enemy beside the monster (which it takes without moving), then Beguile on
+// the nearest enemy, then Guiding Light.
+void Session::take_legendary_action(Actor &monster)
+{
+    using Option = Definition::LegendaryAction;
+    const auto &d = def(monster);
+    const auto spent_effect = [&]
+    {
+        return std::find_if(monster.effects.active.begin(), monster.effects.active.end(),
+                            [](const auto &e)
+                            {
+                                return e.kind == detail::EffectKind::legendary_spent;
+                            });
+    };
+    const auto spent = spent_effect();
+    const bool any_spent = spent != monster.effects.active.end();
+    const int taken = any_spent ? spent->dc & 15 : 0;
+    const bool once_taken = any_spent && (spent->dc & 16);
+    if (taken >= d.legendary_uses || !conscious(monster) || monster.fled || absent(monster) ||
+        detail::incapacitated(monster.effects) || has_condition(monster, "blinded") ||
+        (!any_spent && !detail::can_apply(monster.effects)))
+    {
+        return;
+    }
+    const auto offers = [&](Option option)
+    {
+        return std::find(d.legendary_actions.begin(), d.legendary_actions.end(), option) !=
+               d.legendary_actions.end();
+    };
+    std::optional<Option> chosen;
+    Actor *target = nullptr;
+    std::optional<Cell> center;
+    if (offers(Option::thunderclap) && (center = thunderclap_center(monster)))
+    {
+        chosen = Option::thunderclap;
+    }
+    else if ((offers(Option::deathless_strike) || offers(Option::pounce)) &&
+             (target = legendary_target(monster, 5, true)))
+    {
+        chosen = offers(Option::deathless_strike) ? Option::deathless_strike : Option::pounce;
+    }
+    else if (offers(Option::beguile) && !once_taken &&
+             (target = legendary_target(monster, detail::find_spell("command")->range, false)))
+    {
+        chosen = Option::beguile;
+    }
+    else if (offers(Option::guiding_light) &&
+             (target = legendary_target(monster, detail::find_spell("guiding_bolt")->range,
+                                        false)))
+    {
+        chosen = Option::guiding_light;
+    }
+    if (!chosen)
+    {
+        return;
+    }
+    if (!any_spent)
+    {
+        detail::apply_spell_benefit(monster.effects, effect_source(monster), monster.source.name,
+                                    detail::EffectKind::legendary_spent, 0);
+    }
+    spent_effect()->dc += 1 + (*chosen == Option::beguile ? 16 : 0);
+    constexpr std::array<std::string_view, 5> labels{"Beguile", "Deathless Strike",
+                                                     "Guiding Light", "Pounce", "Thunderclap"};
+    const std::string label(labels[static_cast<std::size_t>(*chosen)]);
+    log(monster.source.name + " uses " + label + " (Legendary Action).",
+        {"{name} uses {action} (Legendary Action).",
+         {{"name", monster.source.name}, {"action", label, true}}});
+    switch (*chosen)
+    {
+    case Option::thunderclap:
+        thunderclap(monster, *center);
+        return;
+    case Option::deathless_strike:
+    case Option::pounce:
+        attack(monster, *target, AttackRange::melee);
+        return;
+    case Option::beguile:
+        // Command's Grovel: the target falls Prone and loses its turn.
+        resolve_spell(*detail::find_spell("command"),
+                      std::string("command_grovel") + std::string(detail::legendary_suffix),
+                      monster, target->source.id);
+        return;
+    case Option::guiding_light:
+        // Guiding Bolt's level 2 version.
+        resolve_spell(*detail::find_spell("guiding_bolt"),
+                      std::string("guiding_bolt") + std::string(detail::legendary_suffix) + "_2",
+                      monster, target->source.id);
+        return;
+    }
+}
+
+Actor *Session::legendary_target(const Actor &a, int range, bool adjacent)
+{
+    Actor *chosen = nullptr;
+    for (auto &other : actors_)
+    {
+        if (other.source.side == a.source.side || other.life.hp <= 0 || other.life.dead ||
+            other.fled || absent(other) || invisible(other) ||
+            distance(a.source.cell, other.source.cell) > range ||
+            !line_of_sight(a.source.cell, other.source.cell))
+        {
+            continue;
+        }
+        if (!chosen ||
+            (adjacent ? other.life.hp < chosen->life.hp
+                      : distance(a.source.cell, other.source.cell) <
+                            distance(a.source.cell, chosen->source.cell)))
+        {
+            chosen = &other;
+        }
+    }
+    return chosen;
+}
+
+std::optional<Cell> Session::thunderclap_center(const Actor &dragon) const
+{
+    const auto &spell = *detail::find_spell("thunderclap");
+    std::optional<Cell> best;
+    int most = 1;
+    for (const auto &aimed : actors_)
+    {
+        if (aimed.source.side == dragon.source.side || aimed.life.dead || absent(aimed) ||
+            invisible(aimed) || distance(dragon.source.cell, aimed.source.cell) > spell.range ||
+            !line_of_sight(dragon.source.cell, aimed.source.cell))
+        {
+            continue;
+        }
+        const auto cells = area_cells(spell, spell.id, dragon.source.cell, aimed.source.cell);
+        int enemies = 0;
+        bool friendly = false;
+        for (const auto &other : actors_)
+        {
+            if (other.life.dead || absent(other) ||
+                std::find(cells.begin(), cells.end(), other.source.cell) == cells.end())
+            {
+                continue;
+            }
+            if (other.source.side == dragon.source.side)
+            {
+                friendly = true;
+            }
+            else if (other.life.hp > 0)
+            {
+                ++enemies;
+            }
+        }
+        if (!friendly && enemies > most)
+        {
+            most = enemies;
+            best = aimed.source.cell;
+        }
+    }
+    return best;
+}
+
+// An Adult Bronze Dragon's Thunderclap (SRD 5.2.1): each creature in a 20-foot
+// Sphere makes a Constitution save against the dragon's spell save DC or takes
+// 3d6 Thunder damage. Its Deafened has nothing to act on (DEAF-1).
+void Session::thunderclap(Actor &dragon, Cell center)
+{
+    const auto &spell = *detail::find_spell("thunderclap");
+    const auto cells = area_cells(spell, spell.id, dragon.source.cell, center);
+    const int dc = spell_dc(dragon);
+    std::vector<EntityId> caught;
+    for (const auto &other : actors_)
+    {
+        if (!other.life.dead && !absent(other) &&
+            std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+        {
+            caught.push_back(other.source.id);
+        }
+    }
+    for (const auto id : caught)
+    {
+        auto &target = actor(id);
+        if (target.life.dead || saving_throw_succeeds(target, detail::Ability::constitution, dc))
+        {
+            continue;
+        }
+        const auto type = detail::DamageType::thunder;
+        const int amount = resolved_damage(target, type, dice(spell.dice));
+        const auto name = std::string(detail::damage_name(type));
+        log(target.source.name + " takes " + std::to_string(amount) + " " + name + " damage.",
+            {"{name} takes {damage} {type} damage.",
+             {{"name", target.source.name}, {"damage", std::to_string(amount)}, {"type", name, true}}});
+        damage(target, amount, false);
+    }
+}
+
+int Session::repulsion_catches(const Actor &dragon, Cell toward) const
+{
+    const auto &spell = *detail::find_spell("repulsion_breath");
+    const auto cells = area_cells(spell, spell.id, dragon.source.cell, toward);
+    int enemies = 0;
+    for (const auto &other : actors_)
+    {
+        if (other.source.id == dragon.source.id || other.life.dead || absent(other) ||
+            std::find(cells.begin(), cells.end(), other.source.cell) == cells.end())
+        {
+            continue;
+        }
+        if (other.source.side == dragon.source.side)
+        {
+            return 0;
+        }
+        enemies += other.life.hp > 0;
+    }
+    return enemies;
+}
+
+// An Adult Bronze Dragon's Repulsion Breath (SRD 5.2.1): each creature in a
+// 30-foot Cone makes a Strength save or is pushed 60 feet straight away from
+// the dragon and knocked Prone.
+void Session::repulsion_breath(Actor &dragon, Cell toward)
+{
+    const auto &spell = *detail::find_spell("repulsion_breath");
+    const auto cells = area_cells(spell, spell.id, dragon.source.cell, toward);
+    log(dragon.source.name + " uses Repulsion Breath.",
+        {"{name} uses Repulsion Breath.", {{"name", dragon.source.name}}});
+    std::vector<EntityId> caught;
+    for (const auto &other : actors_)
+    {
+        if (other.source.id != dragon.source.id && !other.life.dead && !absent(other) &&
+            std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+        {
+            caught.push_back(other.source.id);
+        }
+    }
+    for (const auto id : caught)
+    {
+        auto &target = actor(id);
+        if (saving_throw_succeeds(target, detail::Ability::strength, def(dragon).repulsion_dc))
+        {
+            continue;
+        }
+        push_away(dragon, target, 12);
+        if (!target.effects.prone)
+        {
+            target.effects.prone = true;
+            log(target.source.name + " is knocked Prone.",
+                {"{name} is knocked Prone.", {{"name", target.source.name}}});
+        }
+    }
+}
+
 void Session::drain_life(Actor &wight, Actor &target)
 {
     log(wight.source.name + " uses Life Drain on " + target.source.name + ".",
@@ -15885,6 +16363,13 @@ Loadout Session::last_attack_loadout(const Actor &a) const
     d.melee_extra = profile.extra;
     d.melee_extra_type = profile.extra_type;
     d.melee_magic = 0;
+    // The last attack carries its own riders, not the other attacks' (an
+    // Ettin's Morningstar hampers where its Battleaxe knocks Prone).
+    d.prone_bite = d.prone_large = false;
+    d.hampering = profile.hampering ? Definition::Strike::melee : Definition::Strike::none;
+    d.poisoning = profile.poisoning ? Definition::Strike::melee : Definition::Strike::none;
+    d.poisoning_own_turn = profile.poisoning_own_turn;
+    d.pushing = Definition::Strike::none;
     return last;
 }
 
@@ -16350,7 +16835,8 @@ bool Session::otherworldly(const Actor &a) const
 bool Session::enchants(const detail::Effect &e) noexcept
 {
     return e.kind == detail::EffectKind::charmed || e.kind == detail::EffectKind::dominated ||
-           e.kind == detail::EffectKind::enthralled || e.kind == detail::EffectKind::frightened ||
+           e.kind == detail::EffectKind::enthralled ||
+           e.kind == detail::EffectKind::captain_charmed || e.kind == detail::EffectKind::frightened ||
            e.kind == detail::EffectKind::abjured || e.kind == detail::EffectKind::terrified ||
            e.kind == detail::EffectKind::entranced;
 }
@@ -18571,6 +19057,7 @@ bool Session::charmed_by(const Actor &a, EntityId other) const
                        {
                            return (e.kind == detail::EffectKind::charmed ||
                                    e.kind == detail::EffectKind::enthralled ||
+                                   e.kind == detail::EffectKind::captain_charmed ||
                                    e.kind == detail::EffectKind::dominated) &&
                                   e.source_actor == other && e.source_scope == scope_;
                        });
@@ -19638,6 +20125,7 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
         result.advantage = true;
     }
     if (helpless(target) || a.aim_ready || pack_tactics ||
+        detail::has_effect(a.effects, detail::EffectKind::poised) ||
         detail::vexed_by(target.effects, effect_source(a)) ||
         detail::studied_by(target.effects, effect_source(a)))
     {
@@ -20385,6 +20873,10 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         log(target.source.name + " is cursed.",
             {"{name} is cursed.", {{"name", target.source.name}}});
     }
+    if (hit && !spell && !target.life.dead)
+    {
+        strike_riders(a, target, ranged);
+    }
     // A Stirge's Proboscis attaches it to the creature it hits.
     if (hit && !ranged && !spell && d.attach_drain && !target.life.dead && !attached_host(a) &&
         detail::can_apply(a.effects))
@@ -20607,6 +21099,14 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         a.surges > 0 && !target.life.dead && target.life.hp > 0)
     {
         stunning_strike(a, target);
+    }
+    // A Pirate Captain's Riposte: having parried, it strikes back at the
+    // attacker within reach.
+    if (parry && def(target).riposte && conscious(target) && !a.life.dead && a.life.hp > 0 &&
+        distance(a.source.cell, target.source.cell) <= 5)
+    {
+        log(target.source.name + " ripostes.", {"{name} ripostes.", {{"name", target.source.name}}});
+        attack(target, a, AttackRange::melee);
     }
     // Hellish Rebuke and Storm's Thunder answer the damage once the attack is done.
     answer_damage();
@@ -21577,6 +22077,12 @@ bool Session::begin_turn()
         release(other);
     }
     auto &a = actors_[turn_];
+    // Legendary Actions return as the monster's turn starts.
+    std::erase_if(a.effects.active,
+                  [](const auto &e)
+                  {
+                      return e.kind == detail::EffectKind::legendary_spent;
+                  });
     if (a.fled)
     {
         return false;
@@ -22143,6 +22649,50 @@ void Session::log_save(const Actor &target, const detail::SaveResult &result)
 
 bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability, int dc,
                                     bool advantage, bool disadvantage)
+{
+    return rolled_save_succeeds(target, ability, dc, advantage, disadvantage) ||
+           resists_legendarily(target);
+}
+
+bool Session::resists_legendarily(const Actor &target)
+{
+    const int uses = def(target).legendary_resistance;
+    if (!uses || target.life.dead)
+    {
+        return false;
+    }
+    auto &resister = actor(target.source.id);
+    auto spent = std::find_if(resister.effects.active.begin(), resister.effects.active.end(),
+                              [](const auto &e)
+                              {
+                                  return e.kind == detail::EffectKind::legendary_resisted;
+                              });
+    if (spent == resister.effects.active.end())
+    {
+        if (!detail::can_apply(resister.effects))
+        {
+            return false;
+        }
+        detail::apply_spell_benefit(resister.effects, effect_source(resister),
+                                    resister.source.name, detail::EffectKind::legendary_resisted,
+                                    0);
+        spent = std::prev(resister.effects.active.end());
+    }
+    if (spent->dc >= uses)
+    {
+        return false;
+    }
+    ++spent->dc;
+    const auto left = std::to_string(uses - spent->dc);
+    log(resister.source.name + " uses Legendary Resistance and succeeds instead (" + left +
+            " left).",
+        {"{name} uses Legendary Resistance and succeeds instead ({count} left).",
+         {{"name", resister.source.name}, {"count", left}}});
+    return true;
+}
+
+bool Session::rolled_save_succeeds(const Actor &target, detail::Ability ability, int dc,
+                                   bool advantage, bool disadvantage)
 {
     if ((detail::paralyzed(target.effects) ||
          detail::has_effect(target.effects, detail::EffectKind::petrified)) &&
@@ -23011,6 +23561,14 @@ void Session::end_turn()
             tremor(zone);
         }
     }
+    if (performing_)
+    {
+        take_legendary_actions();
+    }
+    if (outcome_ != Outcome::ongoing)
+    {
+        return;
+    }
     for (std::size_t checked = 0; checked <= actors_.size() * 2; ++checked)
     {
         advance_turn_time();
@@ -23800,10 +24358,17 @@ void Session::perform(const Command &command)
                     {
                         return can_shield(other) || def(other).deflect ||
                                detail::knows_spell(def(other).spells, "hellish_rebuke") ||
+                               detail::knows_spell(def(other).spells, "counterspell") ||
                                def(other).giant != GiantBoon::none || def(other).retaliation ||
                                def(other).uncanny_dodge || def(other).superior_defense;
                     });
     damage_taken_.clear();
+    const struct Performing
+    {
+        bool &performing;
+        explicit Performing(bool &flag) : performing(flag) { performing = true; }
+        ~Performing() { performing = false; }
+    } performing{performing_};
     if (!askable)
     {
         dispatch_tracking_turn(command);
@@ -24242,6 +24807,14 @@ void Session::dispatch(const Command &command)
         (void)a.actions.spend(false);
         escape_ensnaring(a);
     }
+    else if (command.verb == "create_specter")
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend(false);
+        log(a.source.name + " uses Create Specter.",
+            {"{name} uses Create Specter.", {{"name", a.source.name}}});
+        raise_undead(a, actor(command.target), d.specter_key);
+    }
     else if (command.verb == "flurry_of_blows" || command.verb.starts_with("flurry_"))
     {
         // Two Unarmed Strikes; the second only if the first leaves the target up.
@@ -24487,6 +25060,7 @@ void Session::dispatch(const Command &command)
                           {
                               return e.kind == detail::EffectKind::charmed ||
                                      e.kind == detail::EffectKind::enthralled ||
+                                     e.kind == detail::EffectKind::captain_charmed ||
                                      e.kind == detail::EffectKind::turned ||
                                      e.kind == detail::EffectKind::frightened ||
                                      e.kind == detail::EffectKind::abjured ||
@@ -25447,9 +26021,22 @@ void Session::dispatch(const Command &command)
                 {
                     bite(a, target);
                 }
+                // A Pirate Captain charms the creature it attacks with its
+                // Bonus Action.
+                if (d.charm_dc && a.bonus)
+                {
+                    captains_charm(a, target);
+                }
                 for (; n < attacks && actor(command.target).life.hp > 0; ++n)
                 {
-                    if (melee && d.last_attack && n == attacks - 1)
+                    // An Adult Bronze Dragon breathes Repulsion Breath for
+                    // its last attack when it catches two enemies or more.
+                    if (melee && d.repulsion_dc && n == attacks - 1 &&
+                        repulsion_catches(a, actor(command.target).source.cell) >= 2)
+                    {
+                        repulsion_breath(a, actor(command.target).source.cell);
+                    }
+                    else if (melee && d.last_attack && n == attacks - 1)
                     {
                         attack_as(a, last_attack_loadout(a), actor(command.target),
                                   AttackRange::melee);
@@ -31612,6 +32199,58 @@ class Module final : public RulesModule
 };
 } // namespace
 
+namespace
+{
+// The monster ability rows an `off` row may leave out, so that one ability can
+// be switched off without deleting its rows.
+constexpr std::array switchable_abilities{
+    std::string_view{"advantage_damage"}, std::string_view{"attach"},
+    std::string_view{"bite"},             std::string_view{"bloodied_fury"},
+    std::string_view{"breath"},           std::string_view{"charge"},
+    std::string_view{"cunning_action"},   std::string_view{"dreadful_glare"},
+    std::string_view{"enthralling_panache"}, std::string_view{"incorporeal"},
+    std::string_view{"innate"},           std::string_view{"last_attack"},
+    std::string_view{"legendary"},        std::string_view{"legendary_resistance"},
+    std::string_view{"life_drain"},       std::string_view{"life_drain_attack"},
+    std::string_view{"nimble_escape"},    std::string_view{"pack_tactics"},
+    std::string_view{"parry"},            std::string_view{"petrifying_gaze"},
+    std::string_view{"prone_large"},      std::string_view{"prone_on_hit"},
+    std::string_view{"regeneration"},     std::string_view{"repulsion_breath"},
+    std::string_view{"rotting_curse"},    std::string_view{"sunlight_sensitivity"},
+    std::string_view{"undead_fortitude"}, std::string_view{"web_walker"},
+    std::string_view{"hampering"},        std::string_view{"poisoning"},
+    std::string_view{"pushing"},          std::string_view{"hit_advantage"},
+    std::string_view{"captains_charm"},   std::string_view{"riposte"},
+    std::string_view{"create_specter"}};
+
+// The rows `off ability [creature]` leave out: "ability" for every creature,
+// "ability creature" for one.
+std::set<std::string> switched_off(const std::string &bytes)
+{
+    std::set<std::string> off;
+    std::istringstream lines(bytes);
+    std::string line;
+    while (std::getline(lines, line))
+    {
+        std::istringstream row(line);
+        std::string tag, ability, creature;
+        row >> tag >> ability >> creature >> std::ws;
+        if (tag != "off")
+        {
+            continue;
+        }
+        if (std::find(switchable_abilities.begin(), switchable_abilities.end(), ability) ==
+                switchable_abilities.end() ||
+            !row.eof())
+        {
+            throw std::runtime_error("Invalid off row: " + line);
+        }
+        off.insert(creature.empty() ? ability : ability + " " + creature);
+    }
+    return off;
+}
+} // namespace
+
 std::unique_ptr<RulesModule> load(const std::filesystem::path &file)
 {
     if (std::filesystem::file_size(file) > 65536)
@@ -31663,6 +32302,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     }
     Content content;
     content.identity = {"opengold.srd5", "0.6.254", revision + "/" + std::to_string(hash)};
+    const auto off = switched_off(bytes);
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
@@ -31675,6 +32315,10 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         std::string tag, key;
         Definition d;
         row >> tag >> key;
+        if (tag == "off" || off.contains(tag) || off.contains(tag + " " + key))
+        {
+            continue;
+        }
         if (tag == "damage_types" || tag == "affinity")
         {
             const auto found = content.definitions.find(key);
@@ -31972,8 +32616,9 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             if (!row || found == content.definitions.end() || found->second.multiattack < 2 ||
                 last.bonus < -10 || last.bonus > 30 || last.dice.count < 1 ||
                 last.dice.count > 10 || last.dice.sides < 2 || last.dice.sides > 20 ||
-                last.dice.bonus < -10 || last.dice.bonus > 30 || last.extra.count < 1 ||
-                last.extra.count > 10 || last.extra.sides < 2 || last.extra.sides > 20 ||
+                last.dice.bonus < -10 || last.dice.bonus > 30 || last.extra.count < 0 ||
+                last.extra.count > 10 ||
+                (last.extra.count && (last.extra.sides < 2 || last.extra.sides > 20)) ||
                 !trait_rows.insert(tag + " " + key).second)
             {
                 throw std::runtime_error("Invalid last attack: " + key);
@@ -32121,6 +32766,189 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             {
                 throw std::runtime_error("Unknown breath weapon fields: " + key);
             }
+            continue;
+        }
+        // hampering creature melee|ranged|last, poisoning creature
+        // melee|ranged|last [own_turn], pushing creature melee|ranged feet: the
+        // riders of the attack's hits.
+        if (tag == "hampering" || tag == "poisoning" || tag == "pushing")
+        {
+            const auto found = content.definitions.find(key);
+            std::string strike, extra;
+            row >> strike;
+            int feet{};
+            if (tag == "pushing")
+            {
+                row >> feet;
+            }
+            else if (tag == "poisoning")
+            {
+                row >> extra;
+            }
+            row.clear();
+            row >> std::ws;
+            const bool last = strike == "last";
+            const auto kind = strike == "melee"    ? Definition::Strike::melee
+                              : strike == "ranged" ? Definition::Strike::ranged
+                                                   : Definition::Strike::none;
+            if (found == content.definitions.end() || !row.eof() ||
+                (kind == Definition::Strike::none && (!last || tag == "pushing")) ||
+                (last && !found->second.last_attack) ||
+                (tag == "pushing" && (feet < 5 || feet > 60 || feet % 5)) ||
+                (!extra.empty() && extra != "own_turn") ||
+                !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid hit rider: " + line);
+            }
+            auto &definition = found->second;
+            if (tag == "hampering" && last)
+            {
+                definition.last_attack->hampering = true;
+            }
+            else if (tag == "hampering")
+            {
+                definition.hampering = kind;
+            }
+            else if (tag == "poisoning")
+            {
+                if (last)
+                {
+                    definition.last_attack->poisoning = true;
+                    definition.last_attack->poisoning_own_turn = !extra.empty();
+                }
+                else
+                {
+                    definition.poisoning = kind;
+                    definition.poisoning_own_turn = !extra.empty();
+                }
+            }
+            else
+            {
+                definition.pushing = kind;
+                definition.push_feet = feet;
+            }
+            continue;
+        }
+        // hit_advantage creature, riposte creature bonus, create_specter
+        // creature limit undead, captains_charm creature dc range.
+        if (tag == "hit_advantage" || tag == "riposte" || tag == "create_specter" ||
+            tag == "captains_charm")
+        {
+            const auto found = content.definitions.find(key);
+            int first{}, second{};
+            std::string undead;
+            if (tag != "hit_advantage")
+            {
+                row >> first;
+            }
+            if (tag == "captains_charm")
+            {
+                row >> second;
+            }
+            if (tag == "create_specter")
+            {
+                row >> undead;
+            }
+            if (!row || found == content.definitions.end() ||
+                (tag == "riposte" && (first < 1 || first > 10 || found->second.parry)) ||
+                (tag == "create_specter" &&
+                 (first < 1 || first > 20 || !content.definitions.contains(undead))) ||
+                (tag == "captains_charm" && (first < 1 || first > 30 || second < 5 || second > 120)) ||
+                !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid monster ability: " + line);
+            }
+            auto &definition = found->second;
+            if (tag == "hit_advantage")
+            {
+                definition.hit_advantage = true;
+            }
+            else if (tag == "riposte")
+            {
+                definition.parry = first;
+                definition.riposte = true;
+            }
+            else if (tag == "create_specter")
+            {
+                definition.specter_limit = first;
+                definition.specter_key = undead;
+            }
+            else
+            {
+                definition.charm_dc = first;
+                definition.charm_range = second;
+            }
+            continue;
+        }
+        // repulsion_breath creature dc: an Adult Bronze Dragon's Repulsion
+        // Breath, its Strength save DC.
+        if (tag == "repulsion_breath")
+        {
+            const auto found = content.definitions.find(key);
+            int dc{};
+            row >> dc;
+            if (!row || found == content.definitions.end() || dc < 1 || dc > 30 ||
+                !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid Repulsion Breath: " + key);
+            }
+            found->second.repulsion_dc = dc;
+            continue;
+        }
+        // legendary creature uses option...: Legendary Actions, `uses` a round,
+        // with the options beguile, deathless_strike, guiding_light, pounce
+        // and thunderclap.
+        if (tag == "legendary")
+        {
+            const auto found = content.definitions.find(key);
+            int uses{};
+            row >> uses;
+            if (!row || found == content.definitions.end() || uses < 1 || uses > 5 ||
+                !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid Legendary Actions: " + key);
+            }
+            using Option = Definition::LegendaryAction;
+            constexpr std::array<std::pair<std::string_view, Option>, 5> options{
+                {{"beguile", Option::beguile},
+                 {"deathless_strike", Option::deathless_strike},
+                 {"guiding_light", Option::guiding_light},
+                 {"pounce", Option::pounce},
+                 {"thunderclap", Option::thunderclap}}};
+            std::string name;
+            while (row >> name)
+            {
+                const auto option = std::find_if(options.begin(), options.end(),
+                                                 [&](const auto &known)
+                                                 {
+                                                     return known.first == name;
+                                                 });
+                if (option == options.end())
+                {
+                    throw std::runtime_error("Unknown Legendary Action: " + name);
+                }
+                found->second.legendary_actions.push_back(option->second);
+            }
+            if (found->second.legendary_actions.empty())
+            {
+                throw std::runtime_error("Legendary Actions need an option: " + key);
+            }
+            found->second.legendary_uses = uses;
+            continue;
+        }
+        // legendary_resistance creature uses: Legendary Resistance, `uses` a
+        // day.
+        if (tag == "legendary_resistance")
+        {
+            const auto found = content.definitions.find(key);
+            int uses{};
+            row >> uses;
+            if (!row || found == content.definitions.end() || uses < 1 || uses > 10 ||
+                !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid Legendary Resistance: " + key);
+            }
+            found->second.legendary_resistance = uses;
             continue;
         }
         // condition_immunity creature condition...: SRD condition names

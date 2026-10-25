@@ -41,9 +41,9 @@ the direction halved), and SRD 5.2.1.
 | --- | --- | --- |
 | 24 | Level 6 MU (HP 23) | Valhingen Graveyard's mystic profile |
 | 53 | Aides (HP 18) | the Central Wilderness's Bandit Captain |
-| 55 | Hill Giant (HP 41) | **new:** SRD 5.2.1 Hill Giant with 41 Hit Points: Tree Club and Trash Lob (the Poisoned of Trash Lob not modeled) |
+| 55 | Hill Giant (HP 41) | **new:** SRD 5.2.1 Hill Giant with 41 Hit Points: Tree Club and Trash Lob, which poisons |
 | 63 | Bugbear (HP 16) | the Slums' Bugbear Warrior |
-| 71 | Ettin (HP 50) | **new:** SRD 5.2.1 Ettin with 50 Hit Points: Battleaxe and Morningstar, each hit knocking Prone (the Morningstar's Disadvantage not modeled) |
+| 71 | Ettin (HP 50) | **new:** SRD 5.2.1 Ettin with 50 Hit Points: Battleaxe, knocking Prone, and Morningstar, giving Disadvantage on the next attack roll |
 | 75 | 6th Level Fighter (HP 45) | the Pyramid's Warrior Veteran |
 | 89 | 5th Level MU (HP 20) | the nomad shaman's level-4 Wizard profile |
 

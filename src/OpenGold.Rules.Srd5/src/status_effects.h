@@ -512,9 +512,23 @@ enum class EffectKind : unsigned
     // maximum lowered by `dc`, 3d6 more as each day ends (`remaining_ms` to
     // the next), until Remove Curse; a Long Rest does not restore it.
     rotting_curse = 206,
+    // A monster's Legendary Actions taken since its turn started: `dc` counts
+    // them, plus 16 once it has taken one it may take only once a round.
+    legendary_spent = 207,
+    // A monster's Legendary Resistance: `dc` counts the failed saves it has
+    // turned into successes today.
+    legendary_resisted = 208,
+    // Disadvantage on its next attack roll before the end of its next turn (an
+    // Ettin's Morningstar, a Fire Giant's Hammer Throw).
+    hampered = 209,
+    // Advantage on its next attack roll this turn (a Pirate Captain's Rapier).
+    poised = 210,
+    // A Pirate Captain's Captain's Charm: Charmed until the start of the
+    // captain's next turn.
+    captain_charmed = 211,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = rotting_curse
+    last = captain_charmed
 };
 
 // Magic Circle's creature types, by `dc`.

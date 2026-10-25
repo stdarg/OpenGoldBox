@@ -1845,12 +1845,13 @@ they await the user's review ([audit](audits/valhingen-graveyard.md)):
   Points once its coffin is sanctified; and the Wolf.
 - **The mystic** joins as a level-6 Wizard with his record's scores and his
   Ring of Protection +2.
-- **Not modeled yet:** the Wraith's Create Specter, the Minotaur Skeleton's
-  charging Gore and the Vampire's Beguile. Since 2026-10-25 the Mummy glares
-  and its Rotting Fist curses (no Hit Points regained, the maximum 3d6 lower
-  each day until Remove Curse, dust at 0), and the Vampire charms and bites (a
-  creature it has Charmed or that is Incapacitated or Restrained, as it cannot
-  grapple: SCOPE-2).
+- **Not modeled yet:** the Minotaur Skeleton's charging Gore. Since
+  2026-10-25 the Mummy glares and its Rotting Fist curses (no Hit Points
+  regained, the maximum 3d6 lower each day until Remove Curse, dust at 0); the
+  Vampire charms (Recharge 5-6) and bites (a creature it has Charmed or that
+  is Incapacitated or Restrained, as it cannot grapple: SCOPE-2) and has its
+  Legendary Actions and Legendary Resistance; and the Wraith raises specters
+  ([MONSTER-2](#monster-2-2026-10-25-legendary-actions-and-monster-riders)).
 - **Samir Ahwahl** fights beside a party carrying his bottle as the computer
   plays him, as the original's quick fight did; the player does not command
   him.
@@ -1863,9 +1864,10 @@ they await the user's review ([audit](audits/stojanow-gate.md)):
 - **Monsters** keep the original's Hit Points on SRD stat blocks: the Hill
   Giant and the Ettin; the gate's magic-users, aides, fighter and bugbears
   reuse earlier areas' rows.
-- **Not modeled yet:** the Hill Giant's Poisoned Trash Lob and the Ettin's
-  Morningstar Disadvantage; every Ettin hit knocks Prone, as its Battleaxe's
-  does.
+- **The Hill Giant's Trash Lob** poisons and **the Ettin's Morningstar**
+  gives Disadvantage on the next attack roll since 2026-10-25; only the
+  Ettin's Battleaxe knocks Prone
+  ([MONSTER-2](#monster-2-2026-10-25-legendary-actions-and-monster-riders)).
 
 ## TOWN-1 (2026-10-25): Valjevo's old town
 
@@ -1876,7 +1878,9 @@ they await the user's review ([audit](audits/valjevo-old-town.md)):
   Giant, and the temple's priest as the Temple of Bane's Priest.
 - **Alignment** reaches the scripts in the original's order: the SRD's nine
   alignments map one to one.
-- **Not modeled yet:** the Fire Giant's Hammer Throw push and Disadvantage.
+- **The Fire Giant's Hammer Throw** pushes 15 feet and gives Disadvantage on
+  the next attack roll since 2026-10-25
+  ([MONSTER-2](#monster-2-2026-10-25-legendary-actions-and-monster-riders)).
 
 ## CASTLE-1 (2026-10-25): Valjevo Castle
 
@@ -1893,9 +1897,12 @@ they await the user's review ([audit](audits/valjevo-castle.md)):
   Genheeris.
 - **Genheeris** joins as a level-6 Wizard with his record's scores.
 - **The victory** heals the living only; the original also raised the dead.
-- **Not modeled yet:** the dragon's Repulsion Breath, spells and Legendary
-  Resistance and the Medusa's Snake Hair poison. The Knight's Parry is modeled
-  since 2026-10-25.
+- **Since 2026-10-25** the Knight parries, the Medusa bites with its Snake
+  Hair, and Tyranthraxus has the dragon's Repulsion Breath, Legendary Actions
+  and Legendary Resistance
+  ([MONSTER-2](#monster-2-2026-10-25-legendary-actions-and-monster-riders)).
+  Of its spells only Guiding Bolt, through Guiding Light, does anything in a
+  fight.
 
 ## SITES-1 (2026-10-25): the western wilderness sites
 
@@ -1906,6 +1913,43 @@ they await the user's review ([audit](audits/western-sites.md)):
   for the buccaneers, the Warrior Veteran for their mates, the Pirate Captain
   for their captain, the Guard for the outpost's guards and the Guard Captain
   for its commandant.
-- **Not modeled yet:** the Pirate Captain's Captain's Charm, Riposte and the
-  Rapier's Advantage.
+- **The Pirate Captain** has Captain's Charm, Riposte and the Rapier's
+  Advantage since 2026-10-25
+  ([MONSTER-2](#monster-2-2026-10-25-legendary-actions-and-monster-riders)).
+
+## MONSTER-2 (2026-10-25): legendary actions and monster riders
+
+The user asked on 2026-10-25 for Legendary Actions and for the missing
+monster abilities, each easy to turn off. Claude chose how the computer uses
+them; they await the user's review:
+
+- **A switch for each ability:** an `off` row in `combat.rules` leaves out an
+  ability's rows, for every creature (`off legendary`) or one
+  (`off legendary vampire`); the [rules README](../data/rules/srd-5.2.1/README.md)
+  lists the abilities it takes.
+- **Legendary Actions** come one at a time right after each other creature's
+  turn while a use is left, three a round, regained as the monster's own turn
+  starts; neither monster fights in a lair, so neither gets a fourth. The
+  computer prefers a Thunderclap that catches two enemies or more and none of
+  its allies, then a strike at an enemy beside it (Pounce, Deathless Strike),
+  then Beguile, then Guiding Light. It strikes without moving: the move is
+  optional, and moving would draw Opportunity Attacks between turns. A turn
+  that ends outside a command (a creature fleeing the field or dropping on its
+  own turn) is followed by none.
+- **Beguile** casts Command's Grovel, once a round. **Guiding Light** is the
+  level-2 Guiding Bolt at +9: the stat block's DC 17 and +10 disagree, and the
+  DC is kept.
+- **Thunderclap** deals its 3d6 Thunder; its Deafened has nothing to act on
+  (DEAF-1).
+- **Repulsion Breath** replaces Tyranthraxus's third Rend when its Cone
+  catches two enemies or more and none of his allies.
+- **Legendary Resistance** is always used on a failed save while a use is
+  left, three a day.
+- **Captain's Charm** is the Pirate Captain's Bonus Action on the creature its
+  Attack action targets, when it sees it within 30 feet.
+- **Create Specter** raises any Humanoid corpse within 10 feet that died in
+  the fight (the SRD's minute), as the SRD Specter with 22 Hit Points; the
+  computer does it before attacking.
+- **The Wyvern's Sting** poisons until the start of its next turn, as the SRD
+  says; its Poisoned was not modeled before.
 

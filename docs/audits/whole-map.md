@@ -87,7 +87,9 @@ Each stage starts with a save, so `--whole-map SAVE STAGE` plays on from one.
 
 - **Experience:** `reach_level()` tops the party up to each area's audit level
   where its own fights fall short, for the roaming fights and training a
-  player has between areas.
+  player has between areas. For the castle it goes to level 10, one above the
+  audit's: since Tyranthraxus's Legendary Actions (MONSTER-2) the party, worn
+  by his guards' fight with no rest between, lost to him at level 9.
 - **Healing:** the party is healed between fights and areas, as the per-area
   tests do.
 - **Companions:** the mad man who joins in New Phlan is left with Tyr's priest

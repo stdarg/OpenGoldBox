@@ -2,6 +2,9 @@ OPENGOLD_SRD5 1 srd-5.2.1-demo.2
 # creature key AC HP initiative speed melee_bonus melee_count melee_sides melee_modifier ranged_bonus ranged_count ranged_sides ranged_modifier range long_range second_winds spell_slots casting_bonus level spell_mask
 # A zero ranged profile means the creature has no ranged weapon.
 # spell_mask: 1=Fire Bolt, 2=Cure Wounds, 4=Magic Missile.
+# off ability [creature]: leaves out that monster ability's rows, every
+# creature's or one creature's, to switch the ability off ("off parry",
+# "off legendary vampire"). The README lists the abilities.
 creature bandit 12 11 1 30 3 1 6 1 3 1 8 1 80 320 0 0 0 1 0
 # Slums monsters are SRD stat blocks: Kobold Warrior, Goblin Warrior and Bugbear
 # Warrior (SRD 5.2.1) and Orc (SRD 5.1). A leader is its base stat block wearing
@@ -480,7 +483,8 @@ charge wild-boar
 bloodied_fury wild-boar
 # The eastern wilderness (docs/audits/eastern-wilderness.md, EAST-1), with the
 # original's Hit Points: the Hippogriff (its Flyby not modeled), the Wyvern
-# (Bite, then Sting with 7d6 Poison; the Sting's Poisoned not modeled) and the
+# (Bite, then Sting with 7d6 Poison, Poisoned until the start of its next
+# turn: poisoning creature melee|ranged|last [own_turn]) and the
 # Phase Spider (Ethereal Jaunt and its Poisoned paralysis not modeled).
 creature hippogriff 11 18 1 60 5 1 8 3 0 0 0 0 0 0 0 0 0 1 0
 saves hippogriff 3 1 1 -4 1 -1
@@ -498,6 +502,7 @@ type wyvern dragon
 flies wyvern
 multiattack wyvern 2
 last_attack wyvern 7 2 6 4 piercing 7 6 poison
+poisoning wyvern last own_turn
 perception wyvern 4
 creature phase-spider 14 35 3 30 5 1 10 3 0 0 0 0 0 0 0 0 0 1 0
 saves phase-spider 2 3 1 -2 0 -2
@@ -523,15 +528,37 @@ melee_extra_damage efreeti 2 12 fire
 affinity efreeti stat:fire immunity fire
 # Valhingen Graveyard (docs/audits/valhingen-graveyard.md, GRAVE-1), with the
 # original's Hit Points. The Wraith: Life Drain lowers the Hit Point maximum,
-# Fly 60, Incorporeal Movement (Create Specter not modeled). Giant skeletons are
+# Fly 60, Incorporeal Movement, and Create Specter (create_specter creature
+# limit undead), raising the SRD Specter with its 22 Hit Points. Giant skeletons are
 # the Minotaur Skeleton's Slam (its charging Gore not modeled); juju zombies
 # the Ogre Zombie, Medium as the original's are; mummies the Mummy with its
 # Dreadful Glare and the Rotting Fist's curse; the vampire the
 # Vampire's two Grave Strikes, its Bite on a creature it has Charmed or that is
-# Incapacitated or Restrained, and its Charm (no grapple, SCOPE-2; Beguile, a
-# legendary action, not modeled), and 15 Hit Points once its coffin is
-# consecrated; its wolves the Wolf; the mystic the nomad shaman's level-4
+# Incapacitated or Restrained, its Charm (Recharge 5-6; no grapple, SCOPE-2),
+# its Legendary Actions (legendary creature uses option...: Beguile, which is
+# Command's Grovel, once a round, and Deathless Strike, a Grave Strike without
+# moving) and Legendary Resistance (legendary_resistance creature uses_a_day),
+# and 15 Hit Points once its coffin is consecrated; its wolves the Wolf; the mystic the nomad shaman's level-4
 # Wizard profile.
+creature risen-specter 12 22 2 50 4 2 6 0 0 0 0 0 0 0 0 0 0 1 0
+saves risen-specter -5 2 0 0 0 0
+damage_types risen-specter necrotic necrotic
+affinity risen-specter stat:acid resistance acid
+affinity risen-specter stat:bludgeoning resistance bludgeoning
+affinity risen-specter stat:cold resistance cold
+affinity risen-specter stat:fire resistance fire
+affinity risen-specter stat:lightning resistance lightning
+affinity risen-specter stat:piercing resistance piercing
+affinity risen-specter stat:slashing resistance slashing
+affinity risen-specter stat:thunder resistance thunder
+affinity risen-specter stat:necrotic immunity necrotic
+affinity risen-specter stat:poison immunity poison
+condition_immunity risen-specter charmed exhaustion grappled paralyzed petrified poisoned prone restrained unconscious
+type risen-specter undead
+life_drain_attack risen-specter
+flies risen-specter
+incorporeal risen-specter
+sunlight_sensitivity risen-specter
 creature wraith 13 24 3 60 6 4 8 3 0 0 0 0 0 0 0 0 0 1 0
 saves wraith -2 3 3 1 2 2
 damage_types wraith necrotic necrotic
@@ -549,6 +576,7 @@ life_drain_attack wraith
 flies wraith
 incorporeal wraith
 sunlight_sensitivity wraith
+create_specter wraith 7 risen-specter
 creature giant-skeleton 12 28 0 40 6 2 10 4 0 0 0 0 0 0 0 0 0 1 0
 saves giant-skeleton 4 0 2 -2 -1 -3
 damage_types giant-skeleton bludgeoning bludgeoning
@@ -585,7 +613,9 @@ perception vampire 7
 multiattack vampire 2
 melee_extra_damage vampire 2 6 necrotic
 bite vampire 17 1 4 4 3 8
-innate vampire Charm 3 bonus charm_person
+innate vampire Charm recharge5 bonus charm_person
+legendary vampire 3 beguile deathless_strike
+legendary_resistance vampire 3
 creature weakened-vampire 16 15 14 40 9 1 8 4 0 0 0 0 0 0 0 0 9 1 0
 saves weakened-vampire 4 9 9 3 7 9
 damage_types weakened-vampire bludgeoning bludgeoning
@@ -595,7 +625,9 @@ perception weakened-vampire 7
 multiattack weakened-vampire 2
 melee_extra_damage weakened-vampire 2 6 necrotic
 bite weakened-vampire 17 1 4 4 3 8
-innate weakened-vampire Charm 3 bonus charm_person
+innate weakened-vampire Charm recharge5 bonus charm_person
+legendary weakened-vampire 3 beguile deathless_strike
+legendary_resistance weakened-vampire 3
 creature wolf 12 18 2 40 4 1 6 2 0 0 0 0 0 0 0 0 0 1 0
 saves wolf 2 2 1 -4 1 -2
 damage_types wolf piercing piercing
@@ -609,9 +641,11 @@ damage_types graveyard-mystic piercing piercing
 perception graveyard-mystic 1
 # Stojanow Gate (docs/audits/stojanow-gate.md, GATE-1), with the original's Hit
 # Points. The Hill Giant: two Tree Club or Trash Lob attacks, a Tree Club hit
-# knocking a Large or smaller target Prone (Trash Lob's Poisoned not modeled);
-# the Ettin: Battleaxe and Morningstar, a hit knocking Prone as the Battleaxe's
-# does (the Morningstar's Disadvantage not modeled).
+# knocking a Large or smaller target Prone, a Trash Lob hit poisoning until the
+# end of the target's next turn; the Ettin: Battleaxe, knocking Prone, then
+# Morningstar (its last attack, which needs no extra damage dice), whose hit
+# gives Disadvantage on the target's next attack roll (hampering creature
+# melee|ranged|last).
 creature hill-giant 13 41 2 40 8 3 8 5 8 2 10 5 60 240 0 0 0 1 0
 saves hill-giant 5 -1 4 -3 -1 -2
 damage_types hill-giant bludgeoning bludgeoning
@@ -621,6 +655,7 @@ multiattack hill-giant 2
 multiattack_ranged hill-giant
 perception hill-giant 2
 prone_large hill-giant
+poisoning hill-giant ranged
 creature ettin 12 50 -1 40 7 2 8 5 0 0 0 0 0 0 0 0 0 1 0
 saves ettin 5 -1 3 -2 0 -1
 damage_types ettin slashing slashing
@@ -629,9 +664,12 @@ type ettin giant
 multiattack ettin 2
 perception ettin 4
 prone_large ettin
+last_attack ettin 7 2 8 5 piercing 0 0 piercing
+hampering ettin last
 # Valjevo's old town (docs/audits/valjevo-old-town.md, TOWN-1), with the
 # original's Hit Points: the Fire Giant's two Flame Sword or Hammer Throw
-# attacks (the throw's push and Disadvantage not modeled); the temple's priest
+# attacks, a Hammer Throw hit pushing 15 feet (pushing creature melee|ranged
+# feet) and hampering; the temple's priest
 # the Temple of Bane's Priest.
 creature fire-giant 18 59 3 30 11 4 6 7 11 3 10 7 60 240 0 0 0 1 0
 saves fire-giant 7 3 10 0 2 5
@@ -642,6 +680,8 @@ multiattack fire-giant 2
 multiattack_ranged fire-giant
 melee_extra_damage fire-giant 3 6 fire
 ranged_extra_damage fire-giant 1 8 fire
+pushing fire-giant ranged 15
+hampering fire-giant ranged
 affinity fire-giant stat:fire immunity fire
 perception fire-giant 6
 creature bane-priest 13 29 0 30 5 1 6 3 5 2 10 0 60 60 0 0 5 1 0
@@ -654,20 +694,25 @@ innate bane-priest Spellcasting 1 action spirit_guardians
 innate bane-priest Divine_Aid 3 bonus bless dispel_magic healing_word lesser_restoration
 evil bane-priest
 # Valjevo Castle (docs/audits/valjevo-castle.md, CASTLE-1), with the original's
-# Hit Points. The Medusa: two Claws or Poison Rays and its Petrifying Gaze
-# (Snake Hair's poison not modeled). Tyranthraxus possesses an ancient bronze
-# dragon: the Adult Bronze Dragon's three Rends and its Lightning Breath
-# (Recharge 5-6, save DC 19; Repulsion Breath, spells and Legendary
-# Resistance not modeled). His guards are the Knight; his impostor the
+# Hit Points. The Medusa: two Claws and then Snake Hair (its last attack), or
+# three Poison Rays, and its Petrifying Gaze. Tyranthraxus possesses an ancient bronze
+# dragon: the Adult Bronze Dragon's three Rends, the last one Repulsion Breath
+# (repulsion_breath creature dc) when it catches two enemies or more, its
+# Lightning Breath (Recharge 5-6, save DC 19), its Legendary Actions (Guiding
+# Light, Pounce without moving, Thunderclap) and Legendary Resistance. Its
+# spell save DC 17 comes from casting bonus 9, which makes Guiding Light's
+# attack +9 where the stat block says +10; its other spells have no use in a
+# fight. His guards are the Knight; his impostor the
 # Warrior Veteran; his mages the nomad shaman's level-4 Wizard profile.
 creature medusa 15 30 6 30 6 2 6 3 5 2 8 2 150 150 0 0 0 1 0
 saves medusa 0 3 3 1 4 2
 damage_types medusa slashing poison
-multiattack medusa 2
+multiattack medusa 3
+last_attack medusa 6 1 4 3 piercing 4 6 poison
 multiattack_ranged medusa
 perception medusa 4
 petrifying_gaze medusa 13 5
-creature tyranthraxus 18 80 10 40 12 2 8 7 0 0 0 0 0 0 0 0 0 1 0
+creature tyranthraxus 18 80 10 40 12 2 8 7 0 0 0 0 0 0 0 0 9 1 0
 saves tyranthraxus 7 5 6 3 7 5
 damage_types tyranthraxus slashing slashing
 size tyranthraxus huge
@@ -678,6 +723,9 @@ melee_extra_damage tyranthraxus 1 10 lightning
 affinity tyranthraxus stat:lightning immunity lightning
 perception tyranthraxus 12
 breath tyranthraxus lightning_breath 19 5
+repulsion_breath tyranthraxus 19
+legendary tyranthraxus 3 guiding_light pounce thunderclap
+legendary_resistance tyranthraxus 3
 evil tyranthraxus
 creature castle-knight 18 87 0 30 5 2 6 3 2 2 10 0 100 400 0 0 0 1 0
 saves castle-knight 3 0 4 0 2 2
@@ -698,8 +746,11 @@ damage_types castle-mage piercing piercing
 perception castle-mage 1
 # The western wilderness's sites (docs/audits/western-sites.md, SITES-1), with
 # the original's Hit Points: buccaneers as the Pirate, their mates as the
-# Warrior Veteran, their captain as the Pirate Captain (Captain's Charm,
-# Riposte and the Rapier's Advantage not modeled); the Zhentil outpost's guards
+# Warrior Veteran, their captain as the Pirate Captain: Captain's Charm with
+# its Bonus Action at the creature it attacks (captains_charm creature dc
+# range), Riposte (riposte creature bonus: Parry that strikes back on the miss)
+# and the Rapier's Advantage on its next attack this turn (hit_advantage); the
+# Zhentil outpost's guards
 # as the Guard and its commandant as the Guard Captain.
 creature buccaneer-raider 14 4 5 30 5 1 4 3 5 1 4 3 20 60 0 0 0 1 0
 saves buccaneer-raider 0 5 1 -1 1 4
@@ -719,6 +770,9 @@ damage_types pirate-captain piercing piercing
 multiattack pirate-captain 3
 multiattack_ranged pirate-captain
 perception pirate-captain 5
+hit_advantage pirate-captain
+captains_charm pirate-captain 14 30
+riposte pirate-captain 3
 creature outpost-guard 16 4 1 30 3 1 6 1 3 1 6 1 20 60 0 0 0 1 0
 saves outpost-guard 1 1 1 0 0 0
 damage_types outpost-guard piercing piercing

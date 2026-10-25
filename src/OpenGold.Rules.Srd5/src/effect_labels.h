@@ -396,7 +396,11 @@ inline constexpr std::array effect_labels{
         EffectKind::envenomed, "Poisoned (Cunning Strike)",
         "Disadvantage on attack rolls and ability checks. A Constitution save at the end of each of its turns ends it."},
     EffectLabel{EffectKind::enthralled, "Charmed (Enthralling Panache)",
-                "Cannot attack the pirate until the start of the pirate's next turn."}};
+                "Cannot attack the pirate until the start of the pirate's next turn."},
+    EffectLabel{EffectKind::hampered, "Hampered",
+                "Disadvantage on its next attack roll before the end of its next turn."},
+    EffectLabel{EffectKind::captain_charmed, "Charmed (Captain's Charm)",
+                "Cannot attack the captain until the start of the captain's next turn."}};
 
 // Bookkeeping no player sees: a save already made against an area this turn,
 // a summoned spirit's breath, a casting's dice, or a double's secret. Every
@@ -409,7 +413,8 @@ inline constexpr std::array unlabeled_effects{
     EffectKind::groped,      EffectKind::wall_burned,  EffectKind::spirit_breath,
     EffectKind::breathed,    EffectKind::illusory,     EffectKind::elemental_spirit,
     EffectKind::hand_ready,  EffectKind::clouded,      EffectKind::eye_resisted,
-    EffectKind::thorned,     EffectKind::swum,         EffectKind::glare_resisted};
+    EffectKind::thorned,     EffectKind::swum,         EffectKind::glare_resisted,
+    EffectKind::legendary_spent, EffectKind::legendary_resisted, EffectKind::poised};
 
 // The kinds a Long Rest ends, which the sheet shows without a countdown.
 inline constexpr std::array long_rest_effects{

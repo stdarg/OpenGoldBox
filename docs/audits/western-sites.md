@@ -60,7 +60,7 @@ user's DOS installation and the current engine. Sources: `opengold_scripts
 | 96 | Guard (HP 4) | **new:** SRD 5.2.1 Guard with 4 Hit Points |
 | 99 | Buccaneer (HP 4) | **new:** SRD 5.2.1 Pirate with 4 Hit Points |
 | 101 | 5th Level Fighter (HP 39) | **new:** the Warrior Veteran with 39 Hit Points |
-| 102 | Captain (HP 110) | **new:** SRD 5.2.1 Pirate Captain with 110 Hit Points (Captain's Charm, Riposte and the Rapier's Advantage not modeled) |
+| 102 | Captain (HP 110) | **new:** SRD 5.2.1 Pirate Captain with 110 Hit Points: three Rapier or Pistol attacks, Captain's Charm, Riposte and the Rapier's Advantage |
 
 ## Engine support
 

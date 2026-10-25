@@ -151,6 +151,8 @@ void apply_poisoned(EffectState &effects, EffectSource source, std::string name,
          kind != EffectKind::lifted && kind != EffectKind::hand_ready &&
          kind != EffectKind::hurled && kind != EffectKind::fey_fright &&
          kind != EffectKind::glared && kind != EffectKind::enthralled &&
+         kind != EffectKind::hampered &&
+         kind != EffectKind::poised && kind != EffectKind::captain_charmed &&
          kind != EffectKind::thorned && kind != EffectKind::swum && kind != EffectKind::clouded &&
          kind != EffectKind::rooted && kind != EffectKind::jigging) ||
         !can_apply(effects) || !recorded(source, name) || !duration_ms ||
@@ -352,7 +354,7 @@ bool sapped(const EffectState &effects) noexcept
     return std::any_of(effects.active.begin(), effects.active.end(),
                        [](const auto &e)
                        {
-                           return e.kind == EffectKind::sap;
+                           return e.kind == EffectKind::sap || e.kind == EffectKind::hampered;
                        });
 }
 
@@ -458,7 +460,8 @@ void consume_attack_masteries(EffectState &attacker, EffectState &target, Effect
     std::erase_if(attacker.active,
                   [](const auto &e)
                   {
-                      return e.kind == EffectKind::sap;
+                      return e.kind == EffectKind::sap || e.kind == EffectKind::hampered ||
+                             e.kind == EffectKind::poised;
                   });
     std::erase_if(target.active,
                   [&](const auto &e)
@@ -652,8 +655,9 @@ int benefit_value_limit(EffectKind kind)
            : kind == EffectKind::contagion                                      ? 335
            : kind == EffectKind::returned                                       ? 4
            : kind == EffectKind::drained || kind == EffectKind::simulacrum ||
-                   kind == EffectKind::life_drained
+                   kind == EffectKind::life_drained || kind == EffectKind::rotting_curse
                ? 2000
+           : kind == EffectKind::legendary_spent ? 31
            : kind == EffectKind::feasted                                        ? 20
            : kind == EffectKind::animating                                      ? 19
            : kind == EffectKind::worded                                         ? 2
@@ -796,7 +800,8 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::word_stunned:
     case EffectKind::petrifying:
     case EffectKind::attached:
-        return 60000; // 1 minute
+    case EffectKind::legendary_spent: // until its next turn starts
+        return 60000;                 // 1 minute
     case EffectKind::giant_strength:
     case EffectKind::enhance_ability:
     case EffectKind::missile_ward:
@@ -809,6 +814,7 @@ unsigned benefit_duration_ms(EffectKind kind)
         return 600000; // Concentration, up to 10 minutes
     case EffectKind::mind_blank:
     case EffectKind::glare_resisted:
+    case EffectKind::legendary_resisted:
     case EffectKind::rotting_curse: // to the first day's end
         return 86400000;            // 24 hours
     case EffectKind::befuddled:
@@ -1183,6 +1189,8 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::lifted || kind == EffectKind::hand_ready ||
                            kind == EffectKind::hurled || kind == EffectKind::fey_fright ||
                            kind == EffectKind::glared || kind == EffectKind::enthralled ||
+                           kind == EffectKind::hampered ||
+                           kind == EffectKind::poised || kind == EffectKind::captain_charmed ||
                            kind == EffectKind::thorned || kind == EffectKind::swum ||
                            kind == EffectKind::clouded || kind == EffectKind::rooted ||
                            kind == EffectKind::jigging || kind == EffectKind::shocking_grasp ||

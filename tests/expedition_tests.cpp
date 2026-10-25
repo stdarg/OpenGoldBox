@@ -5632,8 +5632,8 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
 // player meets between areas.
 void reach_level(CampaignParty &party, int level, const std::string &reason)
 {
-    constexpr std::array<unsigned, 10> experience_for{0,    0,     300,   900,   2700,
-                                                      6500, 14000, 23000, 34000, 48000};
+    constexpr std::array<unsigned, 11> experience_for{0,     0,     300,   900,   2700, 6500,
+                                                      14000, 23000, 34000, 48000, 64000};
     unsigned lacking = 0;
     for (const auto id : party.state().slots)
     {
@@ -6032,6 +6032,9 @@ void whole_map(Expedition &trip, const std::filesystem::path &directory,
                      party->remove(id);
                  }
              }
+             // Tyranthraxus's Legendary Actions (MONSTER-2) beat a level-9
+             // party worn by his guards' fight, which no rest separates.
+             reach_level(*party, 10, "castle");
              through_taken_gate(trip);
              play_valjevo_castle(trip, heard);
          }},
