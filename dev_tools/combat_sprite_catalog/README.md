@@ -9,7 +9,9 @@ into the repository.
 
 The **Monsters and NPCs** tab lists all records from the eight `MONnCHA.DAX`
 archives, including records with no art match, plus unmatched `CPIC` ready/action
-pairs. It alternates ready and action images every second. Script-linked
+pairs. **Auto swap frames** starts on and alternates ready and action every
+second. Press **Show action frame** or **Show ready frame** to pause swapping and
+inspect the other pose; turn **Auto swap frames** back on to resume. Script-linked
 `LOAD MONSTER` icons take precedence. Without such evidence, a same-ID,
 same-bank pair is tried, followed by a same-ID pair from another bank and a
 same-name alias. These weaker matches are labeled as candidates. Records with
@@ -35,7 +37,7 @@ example, `MON3CHA.DAX:84/item_000__ranged/action` identifies this fighter's
 javelin action frame, while `MON3CHA.DAX:84/item_001__two_hand/action` identifies
 its sword action frame. The prefix before the first slash is the saved monster
 source key (`CUSTOM:...` for a copy). The field follows the selected weapon set
-and one-second ready/action animation. Select it and use Command+C on macOS,
+and the displayed ready/action frame. Select it and use Command+C on macOS,
 Ctrl+C on Linux or Windows, or its Copy context-menu command. It identifies the
 selected art slot even if the preview shows original fallback art; the source
 message below the preview identifies that fallback. The suffix is derived from
@@ -119,9 +121,8 @@ image, with complete setups such as **Mace + Shield** and **Bow**.
 Each one-handed weapon pairs with each available shield, and neither is offered
 alone when both are present. Ranged and two-handed weapons are separate setups;
 a lone one-handed weapon is offered alone when there is no shield. Each setup
-swaps the existing monster preview to its own ready/action images, which continue
-alternating every second. Changing the dropdown does not change the monster's
-gear. A creature without a weapon setup has one
+swaps the existing monster preview to its own ready/action images. Changing
+the dropdown does not change the monster's gear. A creature without a weapon setup has one
 **Default** pair. Put
 independently created PNGs at
 `dev_tools/combat_sprite_catalog/art/<source-key>/<variant-id>/ready.png` and
