@@ -49,6 +49,14 @@ bool save(const char *section, const char *key, const String &value)
         config->set_value("combat", "encounter_challenge",
                           static_cast<int>(opengold::default_encounter_challenge));
     }
+    for (const auto &[ability, from] : opengold::ability_defaults)
+    {
+        if (!config->has_section_key("monsters", String(std::string(ability).c_str())))
+        {
+            config->set_value("monsters", String(std::string(ability).c_str()),
+                              String(std::string(from).c_str()));
+        }
+    }
     if (!config->has_section_key("game", "difficulty"))
     {
         config->set_value(
@@ -141,6 +149,23 @@ opengold::Difficulty difficulty()
     const auto name = read("game", "difficulty").to_lower();
     return opengold::parse_difficulty(name.utf8().get_data())
         .value_or(opengold::default_difficulty);
+}
+
+std::vector<std::string> monster_abilities_off()
+{
+    std::vector<std::pair<std::string, std::string>> options;
+    Ref<ConfigFile> config;
+    config.instantiate();
+    if (config->load(path()) == OK && config->has_section("monsters"))
+    {
+        for (const auto &key : config->get_section_keys("monsters"))
+        {
+            const Variant value = config->get_value("monsters", key, String());
+            options.emplace_back(key.utf8().get_data(),
+                                 String(value).strip_edges().to_lower().utf8().get_data());
+        }
+    }
+    return opengold::abilities_off(difficulty(), options);
 }
 
 bool valid_language(const String &locale)

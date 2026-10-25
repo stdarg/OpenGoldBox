@@ -27816,11 +27816,25 @@ std::vector<TrainingChoiceGroup> only(TrainingChoiceGroup group)
     return result;
 }
 
+// The rules content `bytes` hold, without the monster ability rows its own
+// `off` rows and `switched` leave out ("ability" or "ability creature").
+Content read_content(std::string_view bytes, const std::set<std::string> &switched);
+
 class Module final : public RulesModule
 {
   public:
-    explicit Module(Content content) : content_(std::make_shared<const Content>(std::move(content)))
+    Module(Content content, std::string bytes)
+        : content_(std::make_shared<const Content>(std::move(content))), bytes_(std::move(bytes))
     {
+    }
+
+    // Re-reads the content without the abilities; its identity, which saves
+    // carry, stays the content's.
+    void switch_off_abilities(std::vector<std::string> abilities) override
+    {
+        content_ = std::make_shared<const Content>(
+            read_content(bytes_, {std::make_move_iterator(abilities.begin()),
+                                  std::make_move_iterator(abilities.end())}));
     }
 
     Identity identity() const override
@@ -32228,6 +32242,7 @@ class Module final : public RulesModule
 
   private:
     std::shared_ptr<const Content> content_;
+    std::string bytes_;
 
     // The Weapon Mastery kinds learned after level 1, through the sheet's level.
     static std::vector<TrainingChoiceGroup> later_masteries(CharacterClass klass,
@@ -32353,6 +32368,14 @@ constexpr std::array switchable_abilities{
     std::string_view{"flyby"},            std::string_view{"magic_resistance"},
     std::string_view{"protective_magic"}};
 
+// Whether `entry` names a switchable ability, "ability" or "ability creature".
+bool switchable(std::string_view entry)
+{
+    const auto ability = entry.substr(0, entry.find(' '));
+    return std::find(switchable_abilities.begin(), switchable_abilities.end(), ability) !=
+           switchable_abilities.end();
+}
+
 // The rows `off ability [creature]` leave out: "ability" for every creature,
 // "ability creature" for one.
 std::set<std::string> switched_off(const std::string &bytes)
@@ -32402,6 +32425,13 @@ std::unique_ptr<RulesModule> load(const std::filesystem::path &file)
 
 std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
 {
+    return std::make_unique<Module>(read_content(content_bytes, {}), std::string(content_bytes));
+}
+
+namespace
+{
+Content read_content(std::string_view content_bytes, const std::set<std::string> &switched)
+{
     if (content_bytes.size() > 65536)
     {
         throw std::runtime_error("Rules content exceeds size limit");
@@ -32432,7 +32462,13 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     }
     Content content;
     content.identity = {"opengold.srd5", "0.6.254", revision + "/" + std::to_string(hash)};
-    const auto off = switched_off(bytes);
+    auto off = switched_off(bytes);
+    // A game option naming no ability (a misspelt one) switches nothing off.
+    std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),
+                 [](const auto &entry)
+                 {
+                     return switchable(entry);
+                 });
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
@@ -33367,6 +33403,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         definition.reads_arcane_scrolls = definition.reads_divine_scrolls =
             !definition.spells.empty();
     }
-    return std::make_unique<Module>(std::move(content));
+    return content;
 }
+} // namespace
 } // namespace opengold::srd5

@@ -40,6 +40,11 @@ class ForwardingModule : public rules::RulesModule
         return rules_->restore(checkpoint);
     }
 
+    void switch_off_abilities(std::vector<std::string> abilities) override
+    {
+        rules_->switch_off_abilities(std::move(abilities));
+    }
+
     rules::CharacterProfile character_profile(const rules::CharacterSheet &sheet,
                                               std::span<const std::string> gear) const override
     {
@@ -253,6 +258,12 @@ class ForwardingModule : public rules::RulesModule
                         rules::TempleService service, RandomState &random_state) const override
     {
         rules_->temple_service(state, sheet, service, random_state);
+    }
+
+    void restore_after_victory(rules::VitalState &state,
+                               const rules::CharacterSheet &sheet) const override
+    {
+        rules_->restore_after_victory(state, sheet);
     }
 
     rules::HazardAttackResult hazard_attack(rules::VitalState &state,

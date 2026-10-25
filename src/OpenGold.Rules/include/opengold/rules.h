@@ -883,6 +883,15 @@ class RulesModule
                                                                 std::uint64_t seed) const = 0;
     [[nodiscard]] virtual std::unique_ptr<CombatSession>
     restore(std::string_view checkpoint) const = 0;
+
+    // Leaves monster abilities out of later fights: "ability" for every
+    // creature, "ability creature" for one (the game's options and its
+    // difficulty). The identity saves carry stays the same. A module without
+    // monster abilities has nothing to leave out.
+    virtual void switch_off_abilities(std::vector<std::string> abilities)
+    {
+        (void)abilities;
+    }
     [[nodiscard]] virtual CharacterProfile
     character_profile(const CharacterSheet &, std::span<const std::string>) const = 0;
     [[nodiscard]] virtual EquipmentInfo equipment_info(std::string_view) const = 0;

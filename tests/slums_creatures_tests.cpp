@@ -4,6 +4,7 @@
 // Cadorna Textile House's scorpions and Wight, and Sunlight Sensitivity; and
 // Mendor's Library's Specter and Basilisk.
 #include "opengold/combat_demo.h"
+#include "opengold/difficulty.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <chrono>
@@ -1095,6 +1096,42 @@ void abilities_switch_off()
     check(refused, "Only a monster ability can be switched off");
 }
 
+// The game's options switch monster abilities off in later fights without
+// changing the rules' identity, which saves carry; by default Legendary
+// Actions are on from Hard (MONSTER-2).
+void options_switch_abilities()
+{
+    auto module = rules();
+    const auto identity = module->identity();
+    module->switch_off_abilities({"legendary tyranthraxus", "no_such_ability"});
+    check(module->identity() == identity, "Switching abilities off keeps the identity");
+    auto dragon = fight(*module, "tyranthraxus", "target");
+    turn_of(*dragon, 1);
+    round_after(*dragon, 1);
+    check(count_logged(*dragon, "Legendary Action") == 0, "Tyranthraxus's are off");
+    auto vampire = fight(*module, "vampire", "target");
+    turn_of(*vampire, 1);
+    round_after(*vampire, 1);
+    check(count_logged(*vampire, "Legendary Action") == 1, "The vampire's stay on");
+    module->switch_off_abilities({});
+    auto again = fight(*module, "tyranthraxus", "target");
+    turn_of(*again, 1);
+    round_after(*again, 1);
+    check(count_logged(*again, "Legendary Action") == 1, "Switched back on");
+
+    using opengold::Difficulty;
+    const std::vector<std::pair<std::string, std::string>> none;
+    check(opengold::abilities_off(Difficulty::normal, none) ==
+                  std::vector<std::string>{"legendary"} &&
+              opengold::abilities_off(Difficulty::hard, none).empty(),
+          "Legendary Actions are off on Normal and on from Hard");
+    const std::vector<std::pair<std::string, std::string>> options{
+        {"legendary", "easy"}, {"parry", "never"}, {"bite", "nightmare"}, {"breath", "soon"}};
+    check(opengold::abilities_off(Difficulty::hard, options) ==
+              std::vector<std::string>{"parry", "bite"},
+          "Options set each ability's lowest difficulty, or never");
+}
+
 // Valjevo Castle's medusa makes the SRD Medusa's Multiattack: two Claws and
 // then Snake Hair (1d4 + 3 Piercing and 4d6 Poison), or three Poison Rays.
 void medusa_strikes()
@@ -1403,6 +1440,7 @@ int main()
         efreeti_resists_magic();
         quickling_charms();
         yarash_protects_himself();
+        options_switch_abilities();
         std::cout << "Slums creature tests passed\n";
         return 0;
     }
