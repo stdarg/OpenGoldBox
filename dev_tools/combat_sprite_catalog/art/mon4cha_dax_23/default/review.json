@@ -1,15 +1,15 @@
 {
-  "action_sha256": "c060613438f78fb5d08944bf8ef1e536d6a67c6907bf60f5d12b24cf0a0ab865",
+  "action_sha256": "cdca8b3dc69553ce7c63f057b698a660b60f7962792c79859360c3a0059a8514",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon4cha_dax_23/default/action.png",
     "ready": "art/mon4cha_dax_23/default/ready.png"
   },
-  "metadata_sha256": "ded4038bb67ff3a4dce424ba11bf57dc2dfa85a492288ca5cef24dc2a953526d",
-  "notes": "Female aristocratic vampire; no saved gear or bow. Ready: composed, empty hands. Action: bared fangs and both arms reaching to screen right with modest upper-body lean. Examined exact final PNGs at 128 px over light, dark, magenta; identical planted lower-body pixels from y=70 through y=127; isolated one-second catalog capture confirms default pair and selected 1x1 footprint. The weapon-specific fields are satisfied as not applicable to this natural-attack pair; ready is poised to grapple, action is late physical strike. Approved pose guide and independent new character art only.",
+  "metadata_sha256": "309e08b352c554e15f74abb89864b84999fc1ed8aba3613635a5e2bee1136b93",
+  "notes": "Regenerated both frames as the same female aristocratic vampire. Action mouth has fangs and arms reach toward screen right. Shared transform, body, dress, cape and planted feet retain identity; lower action rows match ready. Reviewed at combat size on light, dark and magenta backgrounds and alternating in catalog; both fit 1x1.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "6fe3562b12f7cd9eebf8ebcd2e5c9afe172a1a4a605142b067474f8fd5d0f608",
-  "reviewed_at": "2026-10-24T22:22:18+00:00",
+  "ready_sha256": "84e33b2a1bc6c28f16f4849f535efa4800a684e3deedc9a3eca57a7b5aed648e",
+  "reviewed_at": "2026-10-25T00:59:38+00:00",
   "reviewer": "Codex",
   "source_key": "MON4CHA.DAX:23",
   "specification": "bipedal-v1",

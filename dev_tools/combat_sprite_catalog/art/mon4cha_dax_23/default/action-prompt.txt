@@ -185,4 +185,14 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-FINAL APPROVED MONSTER-SPECIFIC POSE: Same female aristocratic vampire, no bow. Bare her fangs, reach both arms to screen right in a physical claw-and-bite attack, and lean only the upper body. Keep feet, scale, lower body, clothing, and one-square base fixed exactly to ready.
+PAIR-CONSISTENCY CORRECTION: Edit the newly generated ready image itself. Keep
+exactly the same vampire face, hair, outfit, cape, height, and base. Only open
+her mouth to show small fangs and extend both empty arms to attack screen right.
+The high-resolution action's upper region was shifted 7 source pixels left to
+align the head and shoulders with ready. Only source rows 0..63 of that aligned
+action were composited over the new ready image; rows 64..127, including the
+entire planted lower body and feet, are pixel-identical to ready. Inspect the
+join and reject any seam or different-character appearance.
+The same 118/128 nearest-neighbor canvas transform and (+5,+9) offset are
+applied to both final frames. Low alpha below 5% is cleared on both to remove
+nonvisible border pixels; no independent frame fitting or recentering occurs.

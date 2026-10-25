@@ -183,4 +183,11 @@ Reference 2, when available: this monster's first approved NEW ready sprite,
 for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.
 
-FINAL APPROVED MONSTER-SPECIFIC POSE: Female aristocratic vampire, empty hands, no bow. Composed, self-important ready stance with both arms near the body and fangs concealed. Face screen right. Keep the full normal-humanoid body within the one-square footprint and preserve planted feet at fixed coordinates.
+IDENTITY LOCK: Edit the previously independent ready art as the identity target.
+Female aristocratic vampire; retain her pale face, long black hair, black and
+crimson high-collared cape, ornate red dress, boots, camera, height, and planted
+feet. Empty hands; composed, self-important guard; no bow or other weapon.
+This new ready image is the sole identity reference for action.
+Both final frames receive the same 118/128 nearest-neighbor canvas transform
+with offset (+5,+9). Low alpha below 5% is cleared to transparency on both.
+This places the full-size Normal body within its 1x1 combat footprint.
