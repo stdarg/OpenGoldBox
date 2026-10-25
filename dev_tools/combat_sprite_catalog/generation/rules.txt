@@ -46,13 +46,13 @@ object has disappeared or the other hand points right. Keep the shoulder,
 elbow, wrist, and open hand visibly connected; do not detach the arm or move
 the whole figure to fit its reach.
 BARE-HANDED ATTACKS BY MONSTERS WITH ARMS: Before generating or regenerating
-the attack, ask the user to choose PUNCH or TWO-ARM GRAB for the exact monster
+the attack, ask the user to choose PUNCH or TWO-ARM FORWARD REACH for the exact monster
 and variant, unless that choice was already explicitly supplied by the user.
 Do not infer the choice from humanoid shape, a saved description, or earlier
-art. For PUNCH, lean the upper body toward screen right and extend the striking
-fist toward the target; the action must read as a forceful punch, not an idle
-reach. For TWO-ARM GRAB, lower and lean the upper body toward screen right and
-reach DOWN AND RIGHT WITH BOTH ARMS, hands open, as if grabbing the target.
+art. In EITHER ACTION, lean the UPPER BODY toward screen right into the attack.
+For PUNCH, extend the striking fist forward toward the target; the action must
+read as a forceful punch, not an idle reach. For TWO-ARM FORWARD REACH, extend
+BOTH ARMS FORWARD toward screen right with both hands outstretched.
 In READY, hold the arms poised for the chosen attack. Keep the planted feet at
 their exact ready-frame coordinates and preserve the body's scale and facing.
 If a magical or other unusual attack is unspecified, ask for its ready/action
