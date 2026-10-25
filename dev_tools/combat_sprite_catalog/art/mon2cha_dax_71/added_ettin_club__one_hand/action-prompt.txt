@@ -30,8 +30,24 @@ The projectile is no longer nocked, loaded or in the sling pouch; it may already
 be outside the image. Keep the bow, crossbow or sling in the character's hands.
 For a thrown weapon, ready holds it poised to throw; action is just after release
 and that thrown weapon is no longer in the hand. Do not turn a wand into a bow.
-If an unarmed, magical or unusual attack is not specified by the description,
-ask the user for its ready/action behavior before generating it.
+THROWN-WEAPON ARM CONTINUITY: Before drawing action, identify the arm that
+actually grips the thrown object in ready by tracing its shoulder, elbow,
+wrist, and hand. If the object has a two-handed grip, identify the primary
+throwing arm and the supporting arm. In action, that SAME throwing arm follows
+through toward screen right: its empty hand extends past the torso in the
+attack direction, near shoulder height or higher. The other arm cannot
+substitute for it. A lowered throwing hand is a failed throw even if the
+object has disappeared or the other hand points right. Keep the shoulder,
+elbow, wrist, and open hand visibly connected; do not detach the arm or move
+the whole figure to fit its reach.
+BARE-HANDED ATTACKS BY MONSTERS WITH ARMS: In ACTION, lean the upper body
+slightly toward screen right and show either a punch or an outstretched reach.
+A humanoid's bare-handed attack is ALWAYS a punch, never a reach. Keep the
+planted feet at their exact ready-frame coordinates and preserve the body's
+scale and facing. In READY, hold the arms poised for the chosen attack. If the
+description gives no direction for a non-humanoid's bare-handed attack, ask
+whether it should punch or reach before generating. If a magical or other
+unusual attack is unspecified, ask for its ready/action behavior.
 
 EQUIPMENT: Draw only the selected weapon/shield setup, plus appropriate other
 gear from the record. Retain the shield in both frames when the set includes it.
@@ -131,6 +147,16 @@ If the weapon cannot fit inside the PNG,
 revise the pose without changing body scale or foot anchor. Overlay the frames
 and play them at combat size to reject any jump.
 
+TORSO CONTINUITY: Keep a single connected figure from neck through chest,
+abdomen, waist and hips in BOTH frames. Derive action from the complete ready
+figure; do not paste an independently generated upper half onto a lower half
+at a straight horizontal boundary. When changing an attacking arm, preserve
+the torso and blend its shoulder into the original anatomy and clothing. Reject
+any visible shear, seam, gap, doubled edge, abrupt garment-pattern break or
+upper body that appears detached from the pelvis. Inspect the final exported
+action enlarged around the torso and at normal combat size, then alternate it
+with ready. Registered feet alone do not establish anatomical continuity.
+
 OUTPUT: A single full-body figure, genuine transparent background, no painted
 checkerboard, ground plane, labels, borders, scenery, shadows extending off the
 figure or motion blur. Keep all visible pixels inside the PNG canvas with
@@ -179,6 +205,10 @@ POSE TO GENERATE: ACTION only.
 Apply the ACTION rule for the selected weapon from the specification above.
 For melee, near the END of the swing or thrust, not a windup. For projectile
 weapons, just AFTER release, with no projectile remaining loaded. Keep any shield.
+For a thrown object, use the ready pose to identify its actual gripping hand.
+Extend THAT arm and empty hand toward screen right after release; do not drop
+that hand or extend only the opposite arm. Trace shoulder to elbow to wrist
+before accepting the pose.
 Only the moving attack weapon may cross the saved combat-square footprint line
 in ACTION. Keep the full-size body, planted feet, shield and other gear inside
 the footprint. The weapon may pass the dotted tile border but all its visible
@@ -196,11 +226,4 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-LOCALIZED ACTION-FRAME REPAIR (2026-10-24): The upper torso must visibly connect
-through the waist into the hips and loincloth. Use the existing accepted action
-as the edit target, the ready frame as the body/foot-registration reference,
-and the approved pose guide for attack direction only. Change only the torso-to-
-hip junction. Preserve the club swing, both heads, limbs, 128x128 canvas,
-transparent background, and exact planted-foot coordinates. The generated waist
-repair is composited into the accepted action only in source pixels x=32..64,
-y=50..75; all other source pixels remain untouched.
+Exact correction: MON2CHA.DAX:71/added_ettin_club__one_hand/action only. The previously installed action's waist had an apparent torso discontinuity despite a recorded local repair. The first imagegen edit was rejected because it switched the club to the opposite hand. The accepted imagegen action uses the accepted ready art and an annotated planning copy to keep the club in the raised viewer-left arm as it swings low toward screen right. The other arm remains bent. The complete upper body, chest strap, waist, hips, loincloth, and thighs come from this single continuous newly generated action image rather than a local rectangular waist patch. The final 128x128 image uses nearest-neighbor downsampling and preserves real transparency. Only rows 100..127 are copied from the accepted ready image, placing both feet at identical pixel coordinates; the join is below the knees and was inspected enlarged on a light background. No action club pixels cross this join. The ready PNG is unchanged. This is one action frame, not a new ready/action generation.
