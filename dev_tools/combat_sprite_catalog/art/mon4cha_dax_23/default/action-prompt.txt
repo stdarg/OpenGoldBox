@@ -29,9 +29,30 @@ projectile has been released toward screen right, with appropriate follow-throug
 The projectile is no longer nocked, loaded or in the sling pouch; it may already
 be outside the image. Keep the bow, crossbow or sling in the character's hands.
 For a thrown weapon, ready holds it poised to throw; action is just after release
-and that thrown weapon is no longer in the hand. Do not turn a wand into a bow.
-If an unarmed, magical or unusual attack is not specified by the description,
-ask the user for its ready/action behavior before generating it.
+and that thrown weapon is no longer in the hand. The SAME arm that holds the
+weapon in ready must follow through in action. Trace its hand back to its
+shoulder in both frames; do not extend the offhand while leaving the throwing
+arm bent behind the head or resting at the waist. An empty extended hand is
+not enough unless it belongs to the former weapon arm. Do not turn a wand into
+a bow.
+THROWN-WEAPON ARM CONTINUITY: Before drawing action, identify the arm that
+actually grips the thrown object in ready by tracing its shoulder, elbow,
+wrist, and hand. If the object has a two-handed grip, identify the primary
+throwing arm and the supporting arm. In action, that SAME throwing arm follows
+through toward screen right: its empty hand extends past the torso in the
+attack direction, near shoulder height or higher. The other arm cannot
+substitute for it. A lowered throwing hand is a failed throw even if the
+object has disappeared or the other hand points right. Keep the shoulder,
+elbow, wrist, and open hand visibly connected; do not detach the arm or move
+the whole figure to fit its reach.
+BARE-HANDED ATTACKS BY MONSTERS WITH ARMS: In ACTION, lean the upper body
+slightly toward screen right and show either a punch or an outstretched reach.
+A humanoid's bare-handed attack is ALWAYS a punch, never a reach. Keep the
+planted feet at their exact ready-frame coordinates and preserve the body's
+scale and facing. In READY, hold the arms poised for the chosen attack. If the
+description gives no direction for a non-humanoid's bare-handed attack, ask
+whether it should punch or reach before generating. If a magical or other
+unusual attack is unspecified, ask for its ready/action behavior.
 
 EQUIPMENT: Draw only the selected weapon/shield setup, plus appropriate other
 gear from the record. Retain the shield in both frames when the set includes it.
@@ -131,6 +152,16 @@ If the weapon cannot fit inside the PNG,
 revise the pose without changing body scale or foot anchor. Overlay the frames
 and play them at combat size to reject any jump.
 
+TORSO CONTINUITY: Keep a single connected figure from neck through chest,
+abdomen, waist and hips in BOTH frames. Derive action from the complete ready
+figure; do not paste an independently generated upper half onto a lower half
+at a straight horizontal boundary. When changing an attacking arm, preserve
+the torso and blend its shoulder into the original anatomy and clothing. Reject
+any visible shear, seam, gap, doubled edge, abrupt garment-pattern break or
+upper body that appears detached from the pelvis. Inspect the final exported
+action enlarged around the torso and at normal combat size, then alternate it
+with ready. Registered feet alone do not establish anatomical continuity.
+
 OUTPUT: A single full-body figure, genuine transparent background, no painted
 checkerboard, ground plane, labels, borders, scenery, shadows extending off the
 figure or motion blur. Keep all visible pixels inside the PNG canvas with
@@ -168,6 +199,10 @@ POSE TO GENERATE: ACTION only.
 Apply the ACTION rule for the selected weapon from the specification above.
 For melee, near the END of the swing or thrust, not a windup. For projectile
 weapons, just AFTER release, with no projectile remaining loaded. Keep any shield.
+For a thrown object, use the ready pose to identify its actual gripping hand.
+Extend THAT arm and empty hand toward screen right after release; do not drop
+that hand or extend only the opposite arm. Trace shoulder to elbow to wrist
+before accepting the pose.
 Only the moving attack weapon may cross the saved combat-square footprint line
 in ACTION. Keep the full-size body, planted feet, shield and other gear inside
 the footprint. The weapon may pass the dotted tile border but all its visible
@@ -185,14 +220,14 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-PAIR-CONSISTENCY CORRECTION: Edit the newly generated ready image itself. Keep
-exactly the same vampire face, hair, outfit, cape, height, and base. Only open
-her mouth to show small fangs and extend both empty arms to attack screen right.
-The high-resolution action's upper region was shifted 7 source pixels left to
-align the head and shoulders with ready. Only source rows 0..63 of that aligned
-action were composited over the new ready image; rows 64..127, including the
-entire planted lower body and feet, are pixel-identical to ready. Inspect the
-join and reject any seam or different-character appearance.
-The same 118/128 nearest-neighbor canvas transform and (+5,+9) offset are
-applied to both final frames. Low alpha below 5% is cleared on both to remove
-nonvisible border pixels; no independent frame fitting or recentering occurs.
+Localized correction for MON4CHA.DAX:23/default/action (2026-10-24):
+Keep the accepted ready frame unchanged. The existing action already has the intended
+fangs-bared, two-arm reach toward screen right and exactly preserves the ready
+frame's lower 52 pixel rows. Repair only the transparent wedge between the
+right shoulder/extended sleeve and continuous waist/hip. Use the approved
+ready sprite and independently generated action edit as references. Place a
+small alpha-masked underlay of matching dark cape and gold-trimmed bodice behind
+that wedge; keep the existing opaque action arm, face, torso and foot pixels.
+Reject a horizontal splice, opaque black patch, rectangular edge or shifted foot.
+Review the exported 128x128 pair at native size, enlarged on light/dark/magenta,
+and alternating in the catalog.
