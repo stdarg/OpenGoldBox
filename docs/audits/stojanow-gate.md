@@ -75,3 +75,8 @@ the bugbears at the default encounter challenge.
   the wagon bought and the toll paid, both towers climbed and their
   garrisons beaten, the way north refused, the passage south and the bugbears
   beyond, the gate taken, and the way back to Podol Plaza.
+- **The whole map (2026-10-25):** played by one party from Mendor's Library,
+  earning its commissions at City Hall ([the whole map](whole-map.md)). A
+  bugbear may see through the party (a d9 roll); the test drives up again.
+  Going back south raises the gate's alarm; the taken gate lets the party
+  through.

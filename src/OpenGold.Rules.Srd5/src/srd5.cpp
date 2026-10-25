@@ -2503,6 +2503,16 @@ bool arcanum_spent(const Actor &a, unsigned level)
 // and a wand only while one of its kind is held. Null when there is none.
 const detail::MagicItem *usable_item(const Actor &a, const detail::SpellDef &spell)
 {
+    // No item casts most spells: they are answered without reading every
+    // carried item's key, which a well-stocked party makes slow.
+    if (std::none_of(detail::magic_items.begin(), detail::magic_items.end(),
+                     [&](const auto &item)
+                     {
+                         return item.spell == spell.id;
+                     }))
+    {
+        return nullptr;
+    }
     for (const auto &carried : a.source.inventory)
     {
         const auto *item = detail::magic_item(carried.definition);
@@ -2595,7 +2605,9 @@ std::optional<ScrollEntry> readable_scroll(const Actor &a, const detail::SpellDe
                                            unsigned level = 0)
 {
     const auto &d = a.definition;
-    if (d.str_dex_disadvantage)
+    // One who reads no scroll is answered without reading every carried key.
+    if (d.str_dex_disadvantage ||
+        (!d.reads_arcane_scrolls && !d.reads_divine_scrolls && !d.use_magic_device))
     {
         return std::nullopt;
     }

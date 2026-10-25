@@ -143,7 +143,10 @@ saved rather than reset on load, so saving and reloading cannot reroll a camp.
 The d100 uses the saved script random state rather than the DOS generator.
 
 The original inn's **PROGRAM 9** request follows its own pre-camp subroutine and
-payment dialogue. A safe, eligible request completes a long rest. The script
+payment dialogue. A safe, eligible request completes a long rest; when no one
+may benefit from another Long Rest within a day (SRD 5.2.1), the night still
+passes, eight hours without its benefits, as the original's inn always let the
+party stay (since 2026-10-25). The script
 collects one platinum piece from the party purse, for the chosen member, and
 [makes change](PHLAN.md#coin-payments) from gold and silver when needed.
 Failed services restore the event checkpoint, including any payment.

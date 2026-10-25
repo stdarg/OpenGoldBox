@@ -73,3 +73,6 @@ the duel at the default encounter challenge.
   Pyramid's lizard men): the drawbridge, the old lizard man and SAVIOR, the
   duel with Drythh, the stairs down, a pool dived into under javelins, the
   tunnel back up, and the drawbridge out.
+- **The whole map (2026-10-25):** played by one party from Mendor's Library,
+  earning its commissions at City Hall ([the whole map](whole-map.md)). The
+  friend-word comes from the Pyramid's freed lizard men, not a set flag.

@@ -101,3 +101,7 @@ to the party's budget.
   tower's spectre, the mystic joining, the coffin sanctified after its scroll
   is read, the vampire beaten in his pit with Samir Ahwahl beside the
   party, destroyed at his coffin, and the west edge back out.
+- **The whole map (2026-10-25):** played by one party from Mendor's Library,
+  earning its commissions at City Hall ([the whole map](whole-map.md)). Samir
+  Ahwahl's bottle is the party's own from the kobold caves; the commission's
+  enchanted weapon is City Hall's script treasure.

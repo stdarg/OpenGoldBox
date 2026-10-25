@@ -88,3 +88,7 @@ the base's waves and captain at the default encounter challenge.
   commissions): Diogenes's advice, the outpost's escort, dinner, night attack
   and escape, and the base's slave pen, the Bivant heir freed, the waves and
   the captain fought, and the way out with him.
+- **The whole map (2026-10-25):** played by one party from Mendor's Library,
+  earning its commissions at City Hall ([the whole map](whole-map.md)). A party
+  that opened Cadorna's family treasure gets the Zhentil keep's message only
+  after the castle's evidence against him.

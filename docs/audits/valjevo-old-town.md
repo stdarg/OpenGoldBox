@@ -73,3 +73,8 @@ smithy's fire giants at the default encounter challenge.
   (`opengold_expedition_tests`, a new level-8 party through Stojanow Gate):
   the disguise, Bane's blessing and the priest's fireball, the altar, the
   smithy fought, the castle refused, and the way back to the gate.
+- **The whole map (2026-10-25):** played by one party from Mendor's Library,
+  earning its commissions at City Hall ([the whole map](whole-map.md)). The
+  smith and his fire giants work only until the fourteenth hour; its temple's
+  and smithy's alarms keep the castle's inner gate shut, so the run plays the
+  old town after the victory.

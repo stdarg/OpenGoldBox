@@ -84,8 +84,9 @@ that treasure. Ohlo pays 150 pp, 1 jewelry and 1 random item.
 
 - **Money and items** are awarded by that COMBAT through the same atomic loot
   service as encounter loot. Its stable identity is the script and instruction:
-  `por:ECL2:20:treasure:a390:v1`. Money goes to the party purse; each item to the living member
-  carrying the fewest items. Items keep their original record as provenance.
+  `por:ECL2:20:treasure:a390:v1`. Money goes to the party purse; each item to the living
+  player character carrying the fewest items, and to a companion only when no player
+  character lives: companions leave with what they carry. Items keep their original record as provenance.
 - **XP**: none. The original grants experience only for defeated monsters and
   this script awards none.
 - **A full party purse** (over 4 billion of a coin) defers the whole award, items included, as pending loot saved
@@ -93,7 +94,9 @@ that treasure. Ohlo pays 150 pp, 1 jewelry and 1 random item.
   It is never split or paid twice.
 - Claim, purses, items, pending loot and the ECL flags commit with the event. A
   later failure in the same event rolls all of them back. A script reaching an
-  already-claimed TREASURE again fails explicitly instead of paying twice.
+  already-claimed TREASURE again pays again, as the original did, under the
+  identity with `:award:2`, `:award:3`... appended: the script's flags guard
+  its rewards, and City Hall pays every reward through one instruction.
 - Non-shop item lists and treasure added to a fight are still unsupported and
   roll the event back with a diagnostic.
 

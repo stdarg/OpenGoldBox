@@ -72,3 +72,7 @@ Missing before this audit, now done:
   wyvern, the king's hall and his ballista, Fatima joining, the king's
   quarters, his death and the community's wealth, the wyvern's treasure, the
   brass bottle searched out, and the way out with Fatima leaving.
+- **The whole map (2026-10-25):** played by one party from Mendor's Library,
+  earning its commissions at City Hall ([the whole map](whole-map.md)). Loot
+  now goes to player characters first, so the brass bottle stays with the party
+  when Fatima leaves.
