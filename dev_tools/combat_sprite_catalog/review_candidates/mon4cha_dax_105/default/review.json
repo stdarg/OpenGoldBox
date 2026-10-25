@@ -1,0 +1,28 @@
+{
+  "format": "opengold-sprite-review-v1",
+  "specification": "bipedal-v1 user-approved cape-and-fangs action exception",
+  "source_key": "MON4CHA.DAX:105",
+  "variant_id": "default",
+  "install_paths": {
+    "ready": "art/mon4cha_dax_105/default/ready.png",
+    "action": "art/mon4cha_dax_105/default/action.png"
+  },
+  "metadata_sha256": "789225c87b2e53cbc4bbc2eb5dd9bb47709804fb92ee61ce0f2702e634048fff",
+  "ready_sha256": "dbc1850df60d3b09de8e3ce0510fcca0fc67fc8ae68d4c977d93cf064eb5d8f3",
+  "action_sha256": "cb90295db0c59aefe444ed411f0cfab0faee7beaf7c69dc462ff45d60f80db9b",
+  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-25T23:36:07.503140+00:00",
+  "notes": "User explicitly requested action-only exception: both hands hold up the red-lined cape, mouth bloody and open with fangs. Accepted ready frame unchanged. Final action inspected at 128 px and enlarged on gray, dark and magenta; connected torso/cape, no alpha boxes. Bottom 29 rows match ready pixel-for-pixel, including planted boots. Catalog alternation remains pending because Godot computer use was denied in this session.",
+  "technical_check": "sprite_art_workflow.gd check passed for staged pair",
+  "visual_checks": {
+    "cape_held_up_by_both_hands": true,
+    "bloody_open_mouth_and_fangs": true,
+    "ready_unchanged": true,
+    "planted_boot_pixels_same_xy": true,
+    "continuous_torso_and_cape": true,
+    "complete_transparent_silhouette": true,
+    "same_identity_scale_palette_and_camera": true,
+    "readable_at_combat_size": true,
+    "alternating_catalog_review": false
+  }
+}

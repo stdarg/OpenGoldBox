@@ -1,13 +1,16 @@
 {
-  "description": "A dangerous humanoid undead figure; use a composed, predatory stance rather than a mindless shuffle. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description": "A dangerous humanoid undead figure; use a composed, predatory stance rather than a mindless shuffle. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.\n\nIMAGEGEN PROMPT \u2014 MON4CHA.DAX:105/default/action\nUse case: stylized-concept. Asset type: OpenGold 128 x 128 transparent pixel-art combat sprite, MON4CHA.DAX:105/default/ACTION only. Edit the attached approved new READY vampire sprite as the exact identity and pose base. Exactly one vampire, one frame, no duplicate, no diptych or sprite sheet. Preserve the existing adult male vampire's pale face, dark hair, black clothing, red-lined black cape, colors, three-quarter screen-right orientation, camera scale, continuous torso, planted boots and both feet at exactly the same x/y pixel coordinates as the ready sprite. In this ACTION frame, he raises and spreads his cape with BOTH HANDS: each hand visibly grips and lifts one upper cape edge so the red lining opens around him like dramatic wings. His bloody mouth is WIDE OPEN, and two sharp upper fangs are clearly visible. The expression is predatory and threatening. Keep the neck, shoulders, arms, hands, cape and torso anatomically connected. The cape movement and lifted arms create the pose; the lower body remains fixed. Preserve the full figure within a 1 x 1 combat-square footprint where possible and leave transparent margin inside the 128 x 128 canvas. True alpha transparency, crisp pixel art readable at normal combat zoom; no extra weapons, scenery, background, ground plane, text, labels, black boxes, stray pixels or motion blur. This user-approved cape-and-fangs action is an explicit exception to the usual bare-handed punch-or-reach and late-strike pose rules. No original game art reference.\n\nIMAGEGEN PROMPT \u2014 MON4CHA.DAX:105/default/action face retry\nUse case: precise-object-edit. Asset type: OpenGold 128 x 128 transparent pixel-art combat sprite, MON4CHA.DAX:105/default/ACTION. Edit the attached new candidate action sprite. Keep the entire existing vampire, both hands gripping and lifting the two cape edges, spread red lining, body scale, camera, pose, cape shape, boots and exact feet pixel coordinates unchanged. Change only the face and mouth: open the mouth visibly wider toward screen right, add TWO distinct bright ivory upper fangs pointing downward, and put dark blood-red staining on the lips and around the teeth. The fangs and bloody open mouth must be recognizable at native 128 x 128 combat size. Keep his pale face, dark hair, connected neck, threatening expression and pixel-art palette. Genuine transparent background, no extra character, duplicate, sheet, scenery, text, glow or opaque background. Exactly one character and one frame. This user-approved cape-and-fangs action overrides the standard bare-handed action pose.",
   "humanoid_size": "normal",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 1
+  },
   "description_sources": [
     "Original game MON4CHA.DAX:105 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"
   ],
   "equipment": [],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "VAMPIRE",
   "source": {
