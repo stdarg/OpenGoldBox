@@ -1,32 +1,31 @@
 {
-  "action_sha256": "a99bf42303b3047829684851b4728e5e23d018dbc8047200602b7db78e139300",
+  "action_sha256": "ffca2e56b789bef583afaca1df4eff8e169da62940ed67a874a254350a60a82b",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon8cha_dax_62/default/action.png",
     "ready": "art/mon8cha_dax_62/default/ready.png"
   },
-  "metadata_sha256": "24450be009c3ca2cd82fe248544fab06d097e005b7b72e11de0839a9eeca5cff",
-  "notes": "Game decoded ready/action source is 24x48 pixels, so footprint is 1x2. Saved equipment empty; one natural horn-jab set. Approved original pose guide and newly accepted tall Fire Giant art were the only visual references; original game pixels were not generation references. Both Minotaur banks share the same type, dimensions and no-gear set, so this reviewed pair is reused. Ready and action use a common source crop and export transform. On exact 128x128 pixel-art exports, both hooves register at the same x/y positions; hips and legs remain fixed while head and shoulders dip for a short jab. Inspected both poses at combat size in the actual catalog for this bank; both report fitting 1x2.",
+  "metadata_sha256": "40fba3aa810edccb061260d2cf2a80e732c02eea049d6737c7b1da1a511df43f",
+  "notes": "Action-only correction for MON8CHA.DAX:62/default. Ready PNG remains byte-identical. User specified a two-arm forward reach, upper-body lean and open mouth; both open hands extend toward screen right and the bull muzzle roars. No gear saved. Built-in imagegen action draft was exported to 128x128, then the complete accepted ready lower body from row 70 through 127 was retained verbatim; lower-body AE=0. Exact final action inspected enlarged through neck, chest, abdomen, waist and pelvis and at combat size: no visible seam or shear. Reviewed on light gray, dark and magenta backgrounds. Isolated catalog loaded exact staged paths, ready fits 1x2, action arms alone exceed the right boundary by 0.50 square, and one-second auto swap reached action. Technical sprite and isolated catalog checks passed. No original game artwork was referenced.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "11cd7874fb885480dbf73cabec53c46d62310f2437b1b184e95bce62b36270d0",
-  "reviewed_at": "2026-10-21T01:32:03+00:00",
+  "reviewed_at": "2026-10-25T19:35:58+00:00",
   "reviewer": "Codex",
   "source_key": "MON8CHA.DAX:62",
-  "specification": "bipedal-v1",
+  "specification": "natural-in-place-v1",
   "variant_id": "default",
   "visual_checks": {
-    "action_late_strike_or_after_release": true,
-    "complete_silhouette_no_clipping_or_background": true,
-    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
-    "correct_equipment_grip_and_handedness": true,
-    "front_three_quarter_screen_right_chest_visible": true,
-    "humanoid_height_tier_or_na_reviewed": true,
-    "only_independent_art_used_as_references": true,
-    "pair_reviewed_alternating_in_catalog": true,
-    "pixel_art_readable_at_combat_size": true,
-    "planted_feet_same_xy_no_whole_body_translation": true,
-    "ready_weapon_raised_or_projectile_loaded": true,
-    "same_identity_clothing_palette_and_camera": true
+    "source_identity_and_independent_art": true,
+    "correct_equipment_or_no_equipment": true,
+    "same_body_scale_and_perspective": true,
+    "planted_base_registered": true,
+    "requested_ready_and_action_motion": true,
+    "footprint_and_attack_appendage_reviewed": true,
+    "complete_alpha_silhouette_on_light_magenta_dark": true,
+    "readable_at_combat_size": true,
+    "one_second_fixed_grid_catalog_review": true,
+    "continuous_torso_through_waist_and_pelvis": true,
+    "both_arms_outstretched_and_mouth_open": true
   },
   "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
 }
