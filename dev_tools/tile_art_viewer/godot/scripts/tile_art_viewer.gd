@@ -1301,6 +1301,9 @@ func _run_metadata_check(output_path: String) -> void:
     get_tree().quit()
 
 func _run_replacement_check(folder: String) -> void:
+    if DirAccess.make_dir_recursive_absolute(folder) != OK:
+        _map_check_fail("Cannot create the replacement check folder")
+        return
     hide_unused.button_pressed = false
     if (replacement_sets.size() != 4 and replacement_sets.size() != 168) or \
             not show_replacement.button_pressed or not catalog_show_replacement.button_pressed:
