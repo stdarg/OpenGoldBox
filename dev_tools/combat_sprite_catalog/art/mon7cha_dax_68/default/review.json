@@ -7,12 +7,12 @@
     "ready": "art/mon7cha_dax_68/default/ready.png",
     "action": "art/mon7cha_dax_68/default/action.png"
   },
-  "metadata_sha256": "9eaf44ddd351db8d8768bd1bc89437347fec1464b90f75e3e5c33a0734cd538c",
-  "workflow_sha256": "a768a0be59c5d1fba305a5943e718901140e2eaa81d0fac32484bf006202c63f",
-  "ready_sha256": "09c155ae04ec30dd3e0db791cde1261fb640d126217cc82da6aa281f59ea36c2",
-  "action_sha256": "a99241d06da8ca7288ca7e2de515082b4e94c68d70591ad76b0a2caaf5dcab21",
+  "metadata_sha256": "b773ed9e527b063db18f1beef059b5a6b427ae37a96b3c7a241e791074d50cd5",
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd",
+  "ready_sha256": "7398cb2ec7b911c7a3f726816c738e41bc6a91820cefa71e60e360aa87eb061e",
+  "action_sha256": "6dfbd902c6a3de749bc22e58d0df164fcc2246176a195ef0a086d6084988f7d7",
   "reviewer": "Codex",
-  "reviewed_at": "2026-10-25T06:13:50+00:00",
+  "reviewed_at": "2026-10-25T06:39:12+00:00",
   "visual_checks": {
     "source_identity_and_independent_art": true,
     "correct_equipment_or_no_equipment": true,
@@ -24,5 +24,5 @@
     "readable_at_combat_size": true,
     "one_second_fixed_grid_catalog_review": true
   },
-  "notes": "Geometry-only correction of the existing independent displacer beast ready/action pair. No saved gear; default is the only set. Identical nearest-neighbor 128x128 to 126x66 canvas transform, positioned at x=1 y=40, preserves relative pose alignment and transparent background. Ready used alpha bounds 124x64+1+41; action 122x62+4+42. Exact saved PNGs inspected at native and enlarged size over light gray, dark, and magenta. Isolated catalog loaded both exact paths, reported both frames fit the saved 2x1 footprint, and one-second auto swap reached action. Technical sprite check passed. Original source art was not used as a reference."
+  "notes": "Rebuilt independent Displacer Beast design from text informed by official D&D Beyond visual examples, without using original game art as input. Exactly six connected feline legs and six planted paws in three pairs, two shoulder tentacles, one tail; no gear. Action head and neck lunge screen right with mouth wide open. Both full 1536x1024 generated canvases used the same nearest-neighbor 114x76 export and x=7,y=44 placement on 128x128 alpha; 15% alpha threshold removes background haze. Final action foot contact rows 105-127 copied exactly from ready after export; body/neck continuity inspected at source and final sizes. Exact final pair inspected at 128px and enlarged over light, magenta and dark backgrounds. Catalog loaded these exact replacement paths, reported both fit 2x1, and swapped to action after one second."
 }

@@ -357,6 +357,12 @@ transparent space for the larger pose before exporting **both** frames with the
 same canvas transform. A leap, step, body slide, or independently recentered
 silhouette fails review.
 
+For four-legged animals, show a forward bite lunge in action: the head and neck
+reach toward screen right and the mouth opens wide. Keep the paws planted and
+the rear body registered; the lunge is an upper-body motion, not a translation
+of the whole animal. Use the same bite motion for the six-legged Displacer Beast,
+while retaining all six legs and both shoulder tentacles in both frames.
+
 The `bipedal-v1` pose guide and `accept` checklist have human-specific fields
 such as a visible chest and raised weapon. They do not certify quadrupeds or
 invertebrates. For those body plans, run the same `check` command, inspect the
