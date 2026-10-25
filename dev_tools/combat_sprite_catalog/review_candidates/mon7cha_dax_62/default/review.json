@@ -1,0 +1,29 @@
+{
+  "format": "opengold-sprite-review-v1",
+  "specification": "bipedal-v1 user-chosen two-arm forward reach",
+  "source_key": "MON7CHA.DAX:62",
+  "variant_id": "default",
+  "install_paths": {
+    "ready": "art/mon7cha_dax_62/default/ready.png",
+    "action": "art/mon7cha_dax_62/default/action.png"
+  },
+  "metadata_sha256": "5d78db4f7755c9f43fe8e2f6d2cd3e349254e0448450d442deb6bc5b6b3f047d",
+  "ready_sha256": "11cd7874fb885480dbf73cabec53c46d62310f2437b1b184e95bce62b36270d0",
+  "action_sha256": "9c88329bff77e4b357ffd1ce24a1b9bb6d27bef5873337bc850224dcab56e57c",
+  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-25T23:59:30.679247+00:00",
+  "technical_check": "sprite_art_workflow.gd check passed for staged pair",
+  "notes": "User specified both arms reach forward and mouth open in a scream for MON7CHA.DAX:62/default/action. Ready PNG unchanged. Final 128px action inspected at native size and enlarged on light, dark and magenta; both arms and open mouth read clearly, torso-to-waist join is continuous. Original ready pixels from row 70 downward are exact, retaining pelvis, legs, loincloth base and both planted hooves. Catalog alternation pending because Godot computer-use approval was previously denied in this session.",
+  "visual_checks": {
+    "two_arm_forward_reach": true,
+    "mouth_open_scream": true,
+    "upper_body_leans_screen_right": true,
+    "continuous_torso_waist_pelvis": true,
+    "planted_hooves_same_xy": true,
+    "ready_unchanged": true,
+    "same_identity_scale_palette": true,
+    "complete_transparent_silhouette": true,
+    "readable_at_combat_size": true,
+    "alternating_catalog_review": false
+  }
+}
