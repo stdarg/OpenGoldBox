@@ -55,14 +55,14 @@ GAME`, `opengold_maps GAME`, coab's `LoadWalldef`, `CMD_LoadFiles`,
 | 20 | Wight (HP 23) | the Wight |
 | 21 | Wraith (HP 24) | **new:** SRD 5.2.1 Wraith with 24 Hit Points: Life Drain, flying, Incorporeal Movement (Create Specter not modeled) |
 | 22 | Giant Skeleton (HP 28) | **new:** SRD 5.2.1 Minotaur Skeleton with 28 Hit Points, its Slam (the charging Gore not modeled) |
-| 23 | Vampire (HP 43) | **new:** SRD 5.2.1 Vampire with 43 Hit Points: two Grave Strikes (its grapple, Bite, Beguile and Charm not modeled) |
+| 23 | Vampire (HP 43) | **new:** SRD 5.2.1 Vampire with 43 Hit Points: two Grave Strikes, its Charm and its Bite on a creature it has Charmed or that is Incapacitated or Restrained (no grapple, SCOPE-2; Beguile not modeled) |
 | 24 | Level 6 MU (HP 23) | **new:** the nomad shaman's level-4 Wizard profile with 23 Hit Points |
 | 29 | Juju Zombie (HP 24) | **new:** SRD 5.2.1 Ogre Zombie with 24 Hit Points, Medium as the original's is |
 | 34, 35, 72 | Skeleton, Zombie, Ghoul | the Slums' |
 | 70 | Efreeti (an ally) | the kobold caves' Efreeti, fighting on the party's side |
 | 105 | Vampire (HP 15) | **new:** the Vampire with 15 Hit Points |
 | 106 | Wolf (HP 18) | **new:** SRD 5.2.1 Wolf with 18 Hit Points |
-| 114 | Mummy (HP 33) | **new:** SRD 5.2.1 Mummy with 33 Hit Points (Dreadful Glare and the Rotting Fist's curse not modeled) |
+| 114 | Mummy (HP 33) | **new:** SRD 5.2.1 Mummy with 33 Hit Points and its Dreadful Glare (the Rotting Fist's curse not modeled) |
 
 ## The companion
 

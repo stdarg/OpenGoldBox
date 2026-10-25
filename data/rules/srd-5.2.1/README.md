@@ -154,8 +154,7 @@ The Warrior Veteran's Open5E response was fetched on 2026-10-24 (`srd-2024`):
 | `nomad-guard` | Bandit Captain | `open5e-bandit-captain.json` | (above) |
 | `nomad-shaman` | the `slums-magic-user` Wizard profile | none | none |
 
-Each keeps the original's Hit Points (45, 30 and 20); the Warrior Veteran's
-and the Bandit Captain's Parry are omitted.
+Each keeps the original's Hit Points (45, 30 and 20).
 
 ## Pyramid monsters
 
@@ -229,6 +228,11 @@ PDF differ, the rows follow the PDF: the Wraith's Bludgeoning, Piercing and
 Slashing Resistances, the Minotaur Skeleton's Bludgeoning Vulnerability and
 the Mummy's Fire Vulnerability.
 
+New rows (2026-10-25): `dreadful_glare creature dc range`, a Mummy's Dreadful
+Glare with its Multiattack, and `bite creature dc count sides bonus count
+sides`, a Vampire's Bite, its Piercing then its Necrotic dice. The vampire's
+Charm is an `innate` Charm Person (DC 17).
+
 ## Stojanow Gate monsters
 
 Stojanow Gate's giants ([audit](../../../docs/audits/stojanow-gate.md)). Each
@@ -264,8 +268,10 @@ fetched on 2026-10-25 (`srd-2024`):
 | `tyranthraxus` | Adult Bronze Dragon | `open5e-adult-bronze-dragon.json` | `E99FDAE6AE9825FCCC6F5722B94152315C0EDF45B3B4CC9692B670C126E75116` |
 | `castle-knight` | Knight | `open5e-knight.json` | `A89C498B0F6B71AAFAE4FBEB291F7D50E3780E6D6D6C258269A5709D47585276` |
 
-Each keeps the original's Hit Points. New row: `breath creature spell dc
-recharge`, a monster's breath weapon (Tyranthraxus's `lightning_breath`).
+Each keeps the original's Hit Points. New rows: `breath creature spell dc
+recharge`, a monster's breath weapon (Tyranthraxus's `lightning_breath`), and
+`parry creature bonus`, the AC a monster's Reaction adds against a melee hit
+(the Bandit Captain's, Warrior Veteran's and Knight's 2).
 
 ## Western wilderness sites' monsters
 

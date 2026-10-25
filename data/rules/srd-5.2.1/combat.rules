@@ -100,9 +100,10 @@ size giant-lizard large
 type giant-lizard beast
 type gnoll-warrior fiend
 # Norris the Gray is the SRD 5.2.1 Bandit Captain in his studded leather (AC 15),
-# with his Scimitar; the stat block's Pistol and its Parry reaction are omitted.
+# with his Scimitar and its Parry; the stat block's Pistol is omitted.
 creature norris-the-gray 15 52 3 30 5 1 6 3 0 0 0 0 0 0 0 0 0 1 0
 saves norris-the-gray 4 5 2 2 2 2
+parry norris-the-gray 2
 damage_types norris-the-gray slashing piercing
 # Podol Plaza's buccaneer in the Pitt (PODOL-1) is the SRD 5.2.1 Pirate: two
 # Dagger attacks, thrown 20/60, one of them traded for Enthralling Panache.
@@ -275,8 +276,8 @@ damage_types mad-man piercing piercing
 perception mad-man 2
 # The Central Wilderness (docs/audits/central-wilderness.md, OVERLAND-1), with the
 # original's Hit Points. Mutant lizard men are Lizardfolk; bandits, nomads and
-# merchants the Bandit; their aides the Bandit Captain without its Pistol and
-# Parry, as Norris is.
+# merchants the Bandit; their aides the Bandit Captain without its Pistol, as
+# Norris is.
 creature mutant-lizardfolk 15 18 0 30 4 1 6 2 4 1 6 2 30 120 0 0 0 1 0
 saves mutant-lizardfolk 2 0 1 -2 1 -2
 damage_types mutant-lizardfolk piercing piercing
@@ -287,6 +288,7 @@ saves wilderness-bandit 0 1 1 0 0 0
 damage_types wilderness-bandit slashing piercing
 creature bandit-captain 15 18 3 30 5 1 6 3 0 0 0 0 0 0 0 0 0 1 0
 saves bandit-captain 4 5 2 2 2 2
+parry bandit-captain 2
 damage_types bandit-captain slashing piercing
 multiattack bandit-captain 2
 # Stirge: Proboscis, which attaches (attach creature count sides type: the
@@ -353,15 +355,17 @@ aggressive bane-orc-archer
 # Points: the headman Hassad is the SRD 5.2.1 Warrior Veteran (two Greatsword
 # or Heavy Crossbow attacks), his guards the Bandit Captain and his shaman
 # the Slums magic-user's Wizard profile at level 4, the highest a creature row
-# takes. Their Parry is omitted, as Norris's is.
+# takes.
 creature hassad 17 45 3 30 5 2 6 3 3 2 10 1 100 400 0 0 0 1 0
 saves hassad 3 1 2 0 0 0
+parry hassad 2
 damage_types hassad slashing piercing
 multiattack hassad 2
 multiattack_ranged hassad
 perception hassad 2
 creature nomad-guard 15 30 3 30 5 1 6 3 0 0 0 0 0 0 0 0 0 1 0
 saves nomad-guard 4 5 2 2 2 2
+parry nomad-guard 2
 damage_types nomad-guard slashing piercing
 multiattack nomad-guard 2
 creature nomad-shaman 12 20 2 30 4 1 4 2 0 0 0 0 0 0 0 4 5 4 5
@@ -383,12 +387,14 @@ perception minotaur 7
 melee_extra_damage minotaur 3 6 necrotic
 creature trapped-fighter 17 45 3 30 5 2 6 3 3 2 10 1 100 400 0 0 0 1 0
 saves trapped-fighter 3 1 2 0 0 0
+parry trapped-fighter 2
 damage_types trapped-fighter slashing piercing
 multiattack trapped-fighter 2
 multiattack_ranged trapped-fighter
 perception trapped-fighter 2
 creature trapped-veteran 17 50 3 30 5 2 6 3 3 2 10 1 100 400 0 0 0 1 0
 saves trapped-veteran 3 1 2 0 0 0
+parry trapped-veteran 2
 damage_types trapped-veteran slashing piercing
 multiattack trapped-veteran 2
 multiattack_ranged trapped-veteran
@@ -453,6 +459,7 @@ type giant-mantis beast
 multiattack giant-mantis 2
 creature thri-kreen 17 33 3 30 5 2 6 3 3 2 10 1 100 400 0 0 0 1 0
 saves thri-kreen 3 1 2 0 0 0
+parry thri-kreen 2
 damage_types thri-kreen slashing piercing
 multiattack thri-kreen 2
 multiattack_ranged thri-kreen
@@ -518,11 +525,13 @@ affinity efreeti stat:fire immunity fire
 # original's Hit Points. The Wraith: Life Drain lowers the Hit Point maximum,
 # Fly 60, Incorporeal Movement (Create Specter not modeled). Giant skeletons are
 # the Minotaur Skeleton's Slam (its charging Gore not modeled); juju zombies
-# the Ogre Zombie, Medium as the original's are; mummies the Mummy (Dreadful
-# Glare and the Rotting Fist's curse not modeled); the vampire the Vampire's
-# two Grave Strikes (its grapple, Bite, Beguile and Charm not modeled), and
-# 15 Hit Points once its coffin is consecrated; its wolves the Wolf; the mystic
-# the nomad shaman's level-4 Wizard profile.
+# the Ogre Zombie, Medium as the original's are; mummies the Mummy with its
+# Dreadful Glare (the Rotting Fist's curse not modeled); the vampire the
+# Vampire's two Grave Strikes, its Bite on a creature it has Charmed or that is
+# Incapacitated or Restrained, and its Charm (no grapple, SCOPE-2; Beguile, a
+# legendary action, not modeled), and 15 Hit Points once its coffin is
+# consecrated; its wolves the Wolf; the mystic the nomad shaman's level-4
+# Wizard profile.
 creature wraith 13 24 3 60 6 4 8 3 0 0 0 0 0 0 0 0 0 1 0
 saves wraith -2 3 3 1 2 2
 damage_types wraith necrotic necrotic
@@ -565,7 +574,8 @@ condition_immunity mummy charmed exhaustion frightened paralyzed poisoned
 type mummy undead
 multiattack mummy 2
 melee_extra_damage mummy 3 6 necrotic
-creature vampire 16 43 14 40 9 1 8 4 0 0 0 0 0 0 0 0 0 1 0
+dreadful_glare mummy 11 60
+creature vampire 16 43 14 40 9 1 8 4 0 0 0 0 0 0 0 0 9 1 0
 saves vampire 4 9 9 3 7 9
 damage_types vampire bludgeoning bludgeoning
 affinity vampire stat:necrotic resistance necrotic
@@ -573,7 +583,9 @@ type vampire undead
 perception vampire 7
 multiattack vampire 2
 melee_extra_damage vampire 2 6 necrotic
-creature weakened-vampire 16 15 14 40 9 1 8 4 0 0 0 0 0 0 0 0 0 1 0
+bite vampire 17 1 4 4 3 8
+innate vampire Charm 3 bonus charm_person
+creature weakened-vampire 16 15 14 40 9 1 8 4 0 0 0 0 0 0 0 0 9 1 0
 saves weakened-vampire 4 9 9 3 7 9
 damage_types weakened-vampire bludgeoning bludgeoning
 affinity weakened-vampire stat:necrotic resistance necrotic
@@ -581,6 +593,8 @@ type weakened-vampire undead
 perception weakened-vampire 7
 multiattack weakened-vampire 2
 melee_extra_damage weakened-vampire 2 6 necrotic
+bite weakened-vampire 17 1 4 4 3 8
+innate weakened-vampire Charm 3 bonus charm_person
 creature wolf 12 18 2 40 4 1 6 2 0 0 0 0 0 0 0 0 0 1 0
 saves wolf 2 2 1 -4 1 -2
 damage_types wolf piercing piercing
@@ -643,9 +657,8 @@ evil bane-priest
 # (Snake Hair's poison not modeled). Tyranthraxus possesses an ancient bronze
 # dragon: the Adult Bronze Dragon's three Rends and its Lightning Breath
 # (Recharge 5-6, save DC 19; Repulsion Breath, spells and Legendary
-# Resistance not modeled). His guards are the Knight (Parry not
-# modeled); his impostor the Warrior Veteran; his mages the nomad shaman's
-# level-4 Wizard profile.
+# Resistance not modeled). His guards are the Knight; his impostor the
+# Warrior Veteran; his mages the nomad shaman's level-4 Wizard profile.
 creature medusa 15 30 6 30 6 2 6 3 5 2 8 2 150 150 0 0 0 1 0
 saves medusa 0 3 3 1 4 2
 damage_types medusa slashing poison
@@ -667,6 +680,7 @@ breath tyranthraxus lightning_breath 19 5
 evil tyranthraxus
 creature castle-knight 18 87 0 30 5 2 6 3 2 2 10 0 100 400 0 0 0 1 0
 saves castle-knight 3 0 4 0 2 2
+parry castle-knight 2
 damage_types castle-knight slashing piercing
 multiattack castle-knight 2
 multiattack_ranged castle-knight
@@ -674,6 +688,7 @@ melee_extra_damage castle-knight 1 8 radiant
 ranged_extra_damage castle-knight 1 8 radiant
 creature impostor 17 40 3 30 5 2 6 3 3 2 10 1 100 400 0 0 0 1 0
 saves impostor 3 1 2 0 0 0
+parry impostor 2
 damage_types impostor slashing piercing
 multiattack impostor 2
 creature castle-mage 12 22 2 30 4 1 4 2 0 0 0 0 0 0 0 4 5 4 5
@@ -692,6 +707,7 @@ multiattack buccaneer-raider 2
 enthralling_panache buccaneer-raider 12
 creature buccaneer-mate 17 39 3 30 5 2 6 3 3 2 10 1 100 400 0 0 0 1 0
 saves buccaneer-mate 3 1 2 0 0 0
+parry buccaneer-mate 2
 damage_types buccaneer-mate slashing piercing
 multiattack buccaneer-mate 2
 multiattack_ranged buccaneer-mate

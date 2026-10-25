@@ -431,7 +431,8 @@ the earlier authored Slums conversions.
   Aggressive adds the orc's speed as a bonus action; only monsters have it, so
   "toward a hostile creature" is left to the monster's policy. The Lizardfolk's
   bite and club both deal piercing damage, and the Gnoll Warrior has no Rampage.
-  Norris has no Pistol (out of place in Phlan) and no Parry reaction.
+  Norris has no Pistol (out of place in Phlan); since 2026-10-25 he has his
+  Parry reaction, as every Bandit Captain, Warrior Veteran and Knight does.
 - **Encounter size:** when an original encounter is too strong, it is scaled
   back. The `[combat] encounter_challenge` setting in `settings.cfg` (0–200,
   default 33) is a percentage of the SRD 5.2.1 Moderate XP budget (p. 202). An
@@ -1712,8 +1713,8 @@ they await the user's review ([audit](audits/central-wilderness.md)):
   MENDOR-1: the Drider (with Magic of the Spider Queen and Web Walker), the
   Stirge (its Proboscis attaches and drains; a creature next to it pulls it
   off with an action), the Bandit for bandits, nomads and merchants, and the
-  Bandit Captain for their aides, without its Pistol and Parry as for Norris
-  the Gray. Mutant lizard men are the Lizardfolk with their 18 Hit Points.
+  Bandit Captain for their aides, without its Pistol as for Norris the Gray
+  (with its Parry since 2026-10-25). Mutant lizard men are the Lizardfolk with their 18 Hit Points.
 - **The displacer beast**, which SRD 5.2.1 lacks, keeps its art and name on
   the Owlbear's stat block (two Rends, CR 3), the nearest in strength to the
   original's.
@@ -1760,8 +1761,8 @@ they await the user's review ([audit](audits/nomad-camp.md)):
 - **The nomads** keep the original's Hit Points on SRD stat blocks: Hassad is
   the Warrior Veteran, his guards the Bandit Captain, the shaman the Slums
   magic-user's Wizard profile at level 4 (the highest a creature row takes),
-  and the nomads the Bandit. Hassad's and his guards' Parry is omitted, as
-  Norris's is.
+  and the nomads the Bandit. Hassad and his guards have their Parry since
+  2026-10-25.
 - **The script's clock:** when a script sets the hour, as the feast does,
   time moves on to it.
 - **The lodging** opens the camp, as the original's camp menu did; its rest
@@ -1845,8 +1846,9 @@ they await the user's review ([audit](audits/valhingen-graveyard.md)):
 - **The mystic** joins as a level-6 Wizard with his record's scores and his
   Ring of Protection +2.
 - **Not modeled yet:** the Wraith's Create Specter, the Minotaur Skeleton's
-  charging Gore, the Vampire's grapple, Bite, Beguile and Charm, the Mummy's
-  Dreadful Glare and curse.
+  charging Gore, the Vampire's Beguile and the Mummy's curse. Since 2026-10-25
+  the Mummy glares and the Vampire charms and bites (a creature it has Charmed
+  or that is Incapacitated or Restrained, as it cannot grapple: SCOPE-2).
 - **Samir Ahwahl** fights beside a party carrying his bottle as the computer
   plays him, as the original's quick fight did; the player does not command
   him.
@@ -1890,7 +1892,8 @@ they await the user's review ([audit](audits/valjevo-castle.md)):
 - **Genheeris** joins as a level-6 Wizard with his record's scores.
 - **The victory** heals the living only; the original also raised the dead.
 - **Not modeled yet:** the dragon's Repulsion Breath, spells and Legendary
-  Resistance, the Medusa's Snake Hair poison and the Knight's Parry.
+  Resistance and the Medusa's Snake Hair poison. The Knight's Parry is modeled
+  since 2026-10-25.
 
 ## SITES-1 (2026-10-25): the western wilderness sites
 

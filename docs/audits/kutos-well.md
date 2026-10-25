@@ -48,7 +48,7 @@ creature per living character (`encounter_challenge`).
 | MON8CHA 57 | Lizardman (HP 11, AC 4, 1d8) | **SRD 5.1 Lizardfolk** (CR 1/2) via Open5E: SRD 5.2.1 has no lizardfolk; precedent: the Slums Orc is SRD 5.1 |
 | MON8CHA 59 | Giant Lizard (HP 16, AC 5, 1d8) | SRD 5.2.1 Giant Lizard (CR 1/4) |
 | MON8CHA 73 | Gnoll | SRD 5.2.1 Gnoll Warrior (CR 1/2) |
-| MON8CHA 32 | Norris the Gray: long sword +1, shield, chain armor | SRD 5.2.1 **Bandit Captain** (CR 2) at its own AC 15, matching his portrait (the user chose this over chain mail and shield); no Pistol or Parry |
+| MON8CHA 32 | Norris the Gray: long sword +1, shield, chain armor | SRD 5.2.1 **Bandit Captain** (CR 2) at its own AC 15, matching his portrait (the user chose this over chain mail and shield); no Pistol; his Parry since 2026-10-25 |
 
 ## Engine support
 

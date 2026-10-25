@@ -1540,6 +1540,22 @@ struct Definition
     // A monster's `petrifying_gaze` row: a Basilisk's Bonus Action gaze, its
     // save DC, and the d6 roll that recharges it.
     int gaze_dc{}, gaze_recharge{};
+    // A monster's `parry` row: hit by a melee attack roll, it adds this to its
+    // AC with its Reaction (an SRD Knight's Parry, 2).
+    int parry{};
+    // A monster's `dreadful_glare` row: a Mummy's glare with its Multiattack
+    // at the creature it attacks, seen within `glare_range` feet. A failed
+    // Wisdom save against `glare_dc` leaves it Frightened until the end of the
+    // monster's next turn; a success makes it immune to that glare for a day.
+    int glare_dc{}, glare_range{};
+    // A monster's `bite` row: a Vampire's Bite with its Multiattack, before its
+    // attacks, at the adjacent creature it attacks when it has Charmed it or the
+    // creature is Incapacitated or Restrained. A failed Constitution save
+    // against `bite_dc` takes `bite_pierce` Piercing and `bite_necrotic`
+    // Necrotic damage; the Necrotic lowers the Hit Point maximum and heals the
+    // monster.
+    int bite_dc{};
+    detail::DamageDice bite_pierce, bite_necrotic;
     // A monster's `breath` row: its breath weapon's spell id, such as an
     // Adult Bronze Dragon's "lightning_breath", taken with its action, its save
     // DC, and the d6 roll that recharges it.
@@ -4571,6 +4587,7 @@ struct ResolvedAttack
     AttackRange range{AttackRange::melee};
     bool spell{};
     bool savage{}; // Savage Attacker rerolled the damage
+    int parry{};   // the AC a Parry added against this attack
 };
 
 // Character definitions by profile and equipment, each parsed once. A pure
@@ -6007,6 +6024,8 @@ class Session final : public CombatSession
     bool attack_as(Actor &a, Loadout loadout, Actor &target, AttackRange range);
     // A Wight's Life Drain on the creature (MON4CHA 20).
     void drain_life(Actor &wight, Actor &target);
+    void dreadful_glare(Actor &mummy, Actor &target);
+    void bite(Actor &vampire, Actor &target);
     void lower_hit_point_maximum(const Actor &drainer, Actor &target, int amount);
     void shed_immune_conditions();
     void recharge_gaze(Actor &a);
@@ -8015,8 +8034,7 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::cursed, "Cursed"},
               std::pair{detail::EffectKind::contagion, "Poisoned (Contagion)"},
               std::pair{detail::EffectKind::drained, "Hit Point maximum lowered (Harm)"},
-              std::pair{detail::EffectKind::life_drained,
-                        "Hit Point maximum lowered (Life Drain)"},
+              std::pair{detail::EffectKind::life_drained, "Hit Point maximum lowered (Life Drain)"},
               std::pair{detail::EffectKind::feasted, "Heroes' Feast"},
               std::pair{detail::EffectKind::true_seeing, "True Seeing"},
               std::pair{detail::EffectKind::regenerating, "Regenerate"},
@@ -8064,6 +8082,7 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::dragon_wings, "Dragon Wings"},
               std::pair{detail::EffectKind::hurled, "Hurled through the Lower Planes"},
               std::pair{detail::EffectKind::fey_fright, "Frightened (Conjure Fey)"},
+              std::pair{detail::EffectKind::glared, "Frightened (Dreadful Glare)"},
               std::pair{detail::EffectKind::animal_shaped, "Animal Shapes"},
               std::pair{detail::EffectKind::enlarged, "Enlarged"},
               std::pair{detail::EffectKind::reduced, "Reduced"},
@@ -15525,6 +15544,84 @@ void Session::enthrall(Actor &pirate, Actor &target)
          {{"name", target.source.name}, {"caster", pirate.source.name}}});
 }
 
+// A Mummy's Dreadful Glare (SRD 5.2.1) at a creature it sees within range.
+void Session::dreadful_glare(Actor &mummy, Actor &target)
+{
+    const auto &d = def(mummy);
+    const bool resisted = std::any_of(target.effects.active.begin(), target.effects.active.end(),
+                                      [&](const auto &e)
+                                      {
+                                          return e.kind == detail::EffectKind::glare_resisted &&
+                                                 e.source_actor == mummy.source.id;
+                                      });
+    if (!conscious(target) || resisted || invisible(target) || has_condition(mummy, "blinded") ||
+        distance(mummy.source.cell, target.source.cell) > d.glare_range ||
+        !line_of_sight(mummy.source.cell, target.source.cell) || fearless(target) ||
+        detail::has_effect(target.effects, detail::EffectKind::frightened) ||
+        detail::has_effect(target.effects, detail::EffectKind::glared) ||
+        !detail::can_apply(target.effects))
+    {
+        return;
+    }
+    log(mummy.source.name + " uses Dreadful Glare on " + target.source.name + ".",
+        {"{name} uses Dreadful Glare on {target}.",
+         {{"name", mummy.source.name}, {"target", target.source.name}}});
+    if (charm_or_fear_save(target, detail::Ability::wisdom, d.glare_dc, def(target).brave))
+    {
+        detail::apply_spell_benefit(target.effects, effect_source(mummy), mummy.source.name,
+                                    detail::EffectKind::glare_resisted, 0);
+        return;
+    }
+    // Until the end of the mummy's next turn.
+    const auto index = index_of(mummy.source.id);
+    const unsigned turn = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
+    detail::apply_poisoned(target.effects, effect_source(mummy), mummy.source.name,
+                           next_turn_ms(mummy) + turn, detail::EffectKind::glared);
+    log(target.source.name + " is Frightened.",
+        {"{name} is Frightened.", {{"name", target.source.name}}});
+}
+
+// A Vampire's Bite (SRD 5.2.1) at an adjacent creature it has Charmed or that
+// is Incapacitated or Restrained.
+void Session::bite(Actor &vampire, Actor &target)
+{
+    const auto &d = def(vampire);
+    if (target.life.dead || distance(vampire.source.cell, target.source.cell) > 5 ||
+        !(charmed_by(target, vampire.source.id) || detail::incapacitated(target.effects) ||
+          has_condition(target, "restrained")))
+    {
+        return;
+    }
+    log(vampire.source.name + " uses Bite on " + target.source.name + ".",
+        {"{name} uses Bite on {target}.",
+         {{"name", vampire.source.name}, {"target", target.source.name}}});
+    if (saving_throw_succeeds(target, detail::Ability::constitution, d.bite_dc))
+    {
+        return;
+    }
+    for (const auto &[type, rolled] : {std::pair{detail::DamageType::piercing, d.bite_pierce},
+                                       std::pair{detail::DamageType::necrotic, d.bite_necrotic}})
+    {
+        if (target.life.dead)
+        {
+            break;
+        }
+        const int amount = resolved_damage(target, type, dice(rolled));
+        const auto name = std::string(detail::damage_name(type));
+        log(target.source.name + " takes " + std::to_string(amount) + " " + name + " damage.",
+            {"{name} takes {damage} {type} damage.",
+             {{"name", target.source.name},
+              {"damage", std::to_string(amount)},
+              {"type", name, true}}});
+        damage(target, amount, false);
+        if (type == detail::DamageType::necrotic)
+        {
+            lower_hit_point_maximum(vampire, target, amount);
+            (void)heal(vampire, amount);
+        }
+    }
+}
+
 void Session::drain_life(Actor &wight, Actor &target)
 {
     log(wight.source.name + " uses Life Drain on " + target.source.name + ".",
@@ -18409,7 +18506,7 @@ std::vector<const Actor *> Session::fears_in_sight(const Actor &a) const
     {
         if ((e.kind == detail::EffectKind::frightened || e.kind == detail::EffectKind::abjured ||
              e.kind == detail::EffectKind::terrified || e.kind == detail::EffectKind::eye_panic ||
-             e.kind == detail::EffectKind::fey_fright) &&
+             e.kind == detail::EffectKind::fey_fright || e.kind == detail::EffectKind::glared) &&
             e.source_scope == scope_)
         {
             for (const auto &other : actors_)
@@ -19757,17 +19854,16 @@ void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
     const std::string modifier_label = mode < 0   ? " (disadvantage)"
                                        : mode > 0 ? " (advantage)"
                                                   : "";
+    // A Parry raises the AC against this attack only.
+    const int armor = armor_class(target) + resolved.parry;
     std::string message = a.source.name + " -> " + target.source.name + ": d20 " +
                           std::to_string(natural) + " + " + std::to_string(bonus) + " vs AC " +
-                          std::to_string(armor_class(target)) + modifier_label;
-    std::vector<MessageArgument> arguments{{"actor", a.source.name},
-                                           {"target", target.source.name},
-                                           {"roll", std::to_string(natural)},
-                                           {"bonus", std::to_string(bonus)},
-                                           {"ac", std::to_string(armor_class(target))},
-                                           {"disadvantage", modifier_label, true}};
-    if (!(!spell && natural >= def(a).critical_from) &&
-        !attack_hits(natural, bonus, armor_class(target)))
+                          std::to_string(armor) + modifier_label;
+    std::vector<MessageArgument> arguments{
+        {"actor", a.source.name},          {"target", target.source.name},
+        {"roll", std::to_string(natural)}, {"bonus", std::to_string(bonus)},
+        {"ac", std::to_string(armor)},     {"disadvantage", modifier_label, true}};
+    if (!(!spell && natural >= def(a).critical_from) && !attack_hits(natural, bonus, armor))
     {
         log(message + " misses.",
             {"{actor} -> {target}: d20 {roll} + {bonus} vs AC {ac}{disadvantage} misses.",
@@ -20127,6 +20223,20 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         log("The missile cannot touch " + target.source.name + ".",
             {"The missile cannot touch {name}.", {{"name", target.source.name}}});
     }
+    // Parry: a monster hit by a melee attack roll uses its Reaction when the
+    // bonus turns the hit into a miss. A critical hit stands.
+    int parry = 0;
+    if (hit && !ranged && !spell && !automatic && def(target).parry && target.reaction &&
+        conscious(target) && !detail::incapacitated(target.effects) &&
+        !attack_hits(natural, bonus, armor_class(target) + def(target).parry))
+    {
+        parry = def(target).parry;
+        target.reaction = false;
+        hit = false;
+        log(target.source.name + " parries " + a.source.name + "'s attack.",
+            {"{name} parries {attacker}'s attack.",
+             {{"name", target.source.name}, {"attacker", a.source.name}}});
+    }
     // Cloak of Displacement (MAGIC-4): the first attack roll against its wearer
     // in a fight misses. A natural 1 misses anyway and leaves it for the next.
     if (def(target).displacement && !target.displacement_spent && natural != 1)
@@ -20250,7 +20360,8 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                              .type = damage_type,
                              .range = range,
                              .spell = spell,
-                             .savage = savage});
+                             .savage = savage,
+                             .parry = parry});
     // A Specter's Life Drain: the damage taken lowers the Hit Point maximum.
     if (hit && !ranged && !spell && d.life_drain_attack)
     {
@@ -25305,6 +25416,16 @@ void Session::dispatch(const Command &command)
                 {
                     drain_life(a, target);
                     ++n;
+                }
+                // A Mummy glares besides its two Rotting Fists. A Vampire bites
+                // first, before its Grave Strikes' damage ends a Charm.
+                if (attacks > 1 && melee && d.glare_dc)
+                {
+                    dreadful_glare(a, target);
+                }
+                if (attacks > 1 && melee && d.bite_dc)
+                {
+                    bite(a, target);
                 }
                 for (; n < attacks && actor(command.target).life.hp > 0; ++n)
                 {
@@ -31851,6 +31972,58 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             {
                 throw std::runtime_error("Unknown Petrifying Gaze fields: " + key);
             }
+            continue;
+        }
+        // dreadful_glare creature dc range: a Mummy's Dreadful Glare.
+        if (tag == "dreadful_glare")
+        {
+            const auto found = content.definitions.find(key);
+            int dc{}, range{};
+            row >> dc >> range;
+            if (!row || found == content.definitions.end() || dc < 1 || dc > 30 || range < 5 ||
+                range > 300 || !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid Dreadful Glare: " + key);
+            }
+            found->second.glare_dc = dc;
+            found->second.glare_range = range;
+            continue;
+        }
+        // bite creature dc count sides bonus count sides: a Vampire's Bite, its
+        // Piercing dice and then its Necrotic dice.
+        if (tag == "bite")
+        {
+            const auto found = content.definitions.find(key);
+            int dc{};
+            detail::DamageDice pierce, necrotic;
+            row >> dc >> pierce.count >> pierce.sides >> pierce.bonus >> necrotic.count >>
+                necrotic.sides;
+            if (!row || found == content.definitions.end() || dc < 1 || dc > 30 ||
+                pierce.count < 1 || pierce.count > 10 || pierce.sides < 2 || pierce.sides > 20 ||
+                pierce.bonus < 0 || pierce.bonus > 30 || necrotic.count < 1 ||
+                necrotic.count > 10 || necrotic.sides < 2 || necrotic.sides > 20 ||
+                !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid Bite: " + key);
+            }
+            found->second.bite_dc = dc;
+            found->second.bite_pierce = pierce;
+            found->second.bite_necrotic = necrotic;
+            continue;
+        }
+        // parry creature bonus: a monster's Parry, the AC its Reaction adds
+        // against a melee attack roll that hits it.
+        if (tag == "parry")
+        {
+            const auto found = content.definitions.find(key);
+            int bonus{};
+            row >> bonus;
+            if (!row || found == content.definitions.end() || bonus < 1 || bonus > 10 ||
+                !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid Parry: " + key);
+            }
+            found->second.parry = bonus;
             continue;
         }
         // breath creature spell dc recharge: a monster's breath weapon, such as

@@ -85,7 +85,7 @@ The nomad camp's headman Hassad is the SRD 5.2.1 Warrior Veteran (two
 Greatsword or Heavy Crossbow attacks) with the original's 45 Hit Points, his
 guards the Bandit Captain with 30, and the shaman a level-4 Wizard profile
 with 20, by [NOMAD-1](SRD-DECISIONS.md#nomad-1-2026-10-24-the-nomad-camp).
-The Warrior Veteran's Parry is omitted, as the Bandit Captain's is.
+Both keep their Parry (a monster's `parry` row).
 
 ## Pyramid monsters
 
@@ -133,8 +133,8 @@ Tyranthraxus, the Adult Bronze Dragon (three Rends with lightning, Lightning
 Breath recharging on a 5 or 6, lightning immunity), keep the
 original's Hit Points, by
 [CASTLE-1](SRD-DECISIONS.md#castle-1-2026-10-25-valjevo-castle). Not modeled
-yet: Repulsion Breath, the dragon's spells and Legendary Resistance, Snake
-Hair's poison and Parry.
+yet: Repulsion Breath, the dragon's spells and Legendary Resistance and Snake
+Hair's poison. The Knight parries.
 
 ## Valjevo old town monsters
 
@@ -158,11 +158,13 @@ Valhingen Graveyard's undead are SRD 5.2.1 stat blocks with the original's Hit
 Points, by [GRAVE-1](SRD-DECISIONS.md#grave-1-2026-10-25-valhingen-graveyard):
 the Wraith (Life Drain, flying, Incorporeal Movement), the Minotaur Skeleton's
 Slam for the giant skeleton, the Ogre Zombie for the juju zombie, the Mummy
-(two Rotting Fists, Fire Vulnerability), the Vampire's two Grave Strikes and
-the Wolf (Pack Tactics, a Bite that knocks Prone). Not modeled yet: Create
-Specter, the charging Gore, the Vampire's grapple, Bite, Beguile and Charm,
-and the Mummy's Dreadful Glare and curse. The mystic who joins is a level-6
-Wizard.
+(two Rotting Fists, Dreadful Glare, Fire Vulnerability), the Vampire (two
+Grave Strikes, its Charm and its Bite on a creature it has Charmed or that is
+Incapacitated or Restrained) and the Wolf (Pack Tactics, a Bite that knocks
+Prone). Not modeled yet: Create Specter, the charging Gore, the Vampire's
+Beguile (a legendary action) and the Mummy's curse; the Vampire's grapple is
+dropped with grappling ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)).
+The mystic who joins is a level-6 Wizard.
 
 ## Mendor's Library monsters
 
