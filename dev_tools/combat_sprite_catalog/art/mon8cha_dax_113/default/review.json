@@ -1,0 +1,30 @@
+{
+  "format": "opengold-sprite-review-v1",
+  "source_key": "MON8CHA.DAX:113",
+  "variant_id": "default",
+  "specification": "natural-in-place-v1",
+  "install_paths": {
+    "ready": "art/mon8cha_dax_113/default/ready.png",
+    "action": "art/mon8cha_dax_113/default/action.png"
+  },
+  "metadata_sha256": "607df09321bc3027a0dde3c253a87313e8a6d860ba82d400c245fb1e14e81815",
+  "ready_sha256": "33ee8da6b3999899b9321b8a1f591b7cfbd863c052a43f43900a06c18582de4c",
+  "action_sha256": "a36d0ab58a08cab0a1a9756e440947898c3ec03e01ee6e3129d4feed10e9de68",
+  "reviewed_at": "2026-10-25T20:49:02.728393+00:00",
+  "reviewer": "Codex visual review",
+  "technical_check": "sprite_art_workflow.gd check; bipedal accept is not applicable to quadruped body plan",
+  "visual_checks": {
+    "natural_body_plan_and_identity": true,
+    "only_independent_art_references": true,
+    "same_scale_palette_and_camera": true,
+    "all_feet_or_base_contact_fixed_xy": true,
+    "appropriate_in_place_attack": true,
+    "continuous_neck_chest_torso_join": true,
+    "two_wide_one_high_footprint": true,
+    "complete_transparent_silhouette": true,
+    "readable_at_128_pixels": true,
+    "light_dark_and_contrasting_backgrounds": true,
+    "alternating_catalog_review": true
+  },
+  "notes": "No saved equipment; default is the only set. Ready has four planted contacts and folded wings. Action lowers and advances the eagle head/neck with beak open for a bite while the rear body and feet remain planted. Both frames fit the saved 2 by 1 footprint in the catalog at combat size. Exact generation prompts are preserved in the monster description and beside the pair. Reviewed exact hashes on dark catalog, light, and magenta backgrounds; automatic one-second swap checked."
+}
