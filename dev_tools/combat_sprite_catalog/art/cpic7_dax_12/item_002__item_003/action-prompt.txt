@@ -224,3 +224,5 @@ the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
 LINKED ICON PROVENANCE: CPIC7.DAX:12 references only MON7CHA.DAX:40, with identical Arrows, Long bow, Short sword, Shield, Leather armor and 15 cp. Use that record's exact previously reviewed newly generated sprite for this same set and pose; preserve 5-foot body and fixed feet.
+
+2026-10-25 ACTION INSTALL DECISION: Copy prior ready.png to action.png byte-for-byte. No image generation; the user selected this existing forward short-sword thrust as action.
