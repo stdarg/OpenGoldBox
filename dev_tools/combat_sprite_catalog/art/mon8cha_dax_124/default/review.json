@@ -1,32 +1,32 @@
 {
-  "action_sha256": "f9afa6f4201dd27d04401fabdc90c2d53efdf3ae4dd01e380771371957152d68",
   "format": "opengold-sprite-review-v1",
-  "install_paths": {
-    "action": "art/mon8cha_dax_124/default/action.png",
-    "ready": "art/mon8cha_dax_124/default/ready.png"
-  },
-  "metadata_sha256": "3ca0d265fe5b18473cb383c990ba28694a1ff16f2e102b1261a4f82c521db741",
-  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
-  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "2c378044b8ab28edb79e21cfec070215fa741101a1aabefa06f3f9d0c0a600dc",
-  "reviewed_at": "2026-10-21T21:51:07.213389+00:00",
-  "reviewer": "Codex visual review",
+  "specification": "natural-in-place-v1",
   "source_key": "MON8CHA.DAX:124",
-  "specification": "bipedal-v1",
   "variant_id": "default",
-  "visual_checks": {
-    "action_late_strike_or_after_release": true,
-    "complete_silhouette_no_clipping_or_background": true,
-    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
-    "correct_equipment_grip_and_handedness": true,
-    "front_three_quarter_screen_right_chest_visible": true,
-    "humanoid_height_tier_or_na_reviewed": true,
-    "only_independent_art_used_as_references": true,
-    "pair_reviewed_alternating_in_catalog": true,
-    "pixel_art_readable_at_combat_size": true,
-    "planted_feet_same_xy_no_whole_body_translation": true,
-    "ready_weapon_raised_or_projectile_loaded": true,
-    "same_identity_clothing_palette_and_camera": true
+  "install_paths": {
+    "ready": "art/mon8cha_dax_124/default/ready.png",
+    "action": "art/mon8cha_dax_124/default/action.png"
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "metadata_sha256": "99c6e24bff08042d72e4e8329506ed4ae2186a06dfd6971a39c99a4e1a17bd49",
+  "workflow_sha256": "93c3f890e59f099f6c38265a771ca145fab2d2523adb2ac7d3540315b0e05029",
+  "ready_sha256": "b6946289a4fb08bd165c9dc39505bc291c6044b37f657b92130183adacc94bed",
+  "action_sha256": "9b4415a7d4dba15e1ea80377412c97dd83d29a213931eee3b560db4a10dfaefc",
+  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-25T21:28:35+00:00",
+  "technical_check": "sprite_art_workflow.gd check passed; natural-in-place-v1 review used for a flame-bodied Efreeti with no legs or weapon",
+  "visual_checks": {
+    "same_efreeti_identity_and_pixel_art_style": true,
+    "ready_lower_body_entirely_flames": true,
+    "action_lower_flame_base_registered": true,
+    "two_distinct_outstretched_connected_arms": true,
+    "flames_rise_from_both_open_hands": true,
+    "continuous_torso_waist_and_flame_body": true,
+    "correct_empty_equipment": true,
+    "tall_body_scale_and_one_by_two_footprint_reviewed": true,
+    "attack_appendage_overflow_only": true,
+    "transparent_alpha_on_light_magenta_dark": true,
+    "readable_at_combat_size": true,
+    "one_second_catalog_swap_and_loaded_hashes_reviewed": true
+  },
+  "notes": "Ready and action generated from the accepted new Efreeti identity with one shared export transform. Rejected wider action drafts. The final action uses two separate hand flames and keeps the head, torso and waist aligned; its lower flame base is pixel-identical to ready from row 79 through the bottom. A local horizontal tightening of the attacking arms reduces action-only right-side overflow to 0.14 combat square while leaving the body inside the saved 1x2 footprint. Exact installed PNGs reviewed at 128 px and enlarged on light, magenta and dark backgrounds; no detached limbs, shear, opaque box or silhouette clipping. Headless catalog loaded the exact installed paths, auto-swapped after 1.1 seconds, and rendered image pixels equal to the installed PNGs."
 }

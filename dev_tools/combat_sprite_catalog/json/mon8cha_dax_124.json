@@ -1,7 +1,5 @@
 {
-  "description": "A powerful fire-associated genie with a tall, commanding outline and otherworldly presence. The original template records no carried items. Source wealth: 6 gp.",
-  "humanoid_size": "tall",
-  "sprite_size": {"height_squares": 2, "width_squares": 1},
+  "description": "A powerful fire-associated genie with a tall, commanding outline and otherworldly presence. The original template records no carried items. Source wealth: 6 gp. His entire lower body is living flame in both poses; ready is poised, while action reaches with both arms and rising flames.\n\nIMAGEGEN PROMPT - READY:\nUse case: precise-object-edit\nAsset type: exactly ONE READY frame for MON8CHA.DAX:124/default, a transparent 128x128 pixel-art combat sprite.\nInput Image 1 is this Efreeti's checked-in newly created READY sprite. It is the edit target and identity, camera, scale, upper-body, and canvas-position reference; it is not original game art.\nShow one tall fire genie facing screen right in front three-quarter view. Preserve his red muscular chest, dark hair, gold jewelry, facial identity, and poised bent arms from Input Image 1. Keep the head and torso at the same apparent size and the same pixel coordinates. No weapon, shield, armor, legs, or feet; the saved equipment list is empty. His source wealth is 6 gp, which is not an object to draw.\nChange the ENTIRE lower body below the waist into living flames, connected continuously to the torso: broad red and orange fire at the waist, narrower intertwined yellow-orange tongues, tapering to one lively flame tip at the existing bottom anchor near x=64,y=122. Absolutely no dark smoke spiral, cloth tail, solid legs, or boot shapes. The ready arms remain bent and poised with small controlled fire at the hands, leaving room for a stronger action pose.\nMaintain the original 1-square-wide by 2-squares-high body footprint: final occupied pixels approximately x=36..93 and y=18..122. Keep the same ground/base location, full-height scale and transparent canvas origin for the matching action frame. Crisp readable fantasy pixel-art clusters, not a smooth painting. Genuine transparent alpha. Exactly one Efreeti, one frame, no duplicate, sheet, diptych, text, border, scenery, floor, cast shadow, black box, or detached flames.\n\nIMAGEGEN PROMPT - ACTION:\nUse case: precise-object-edit\nAsset type: exactly ONE ACTION frame for MON8CHA.DAX:124/default, transparent 128x128 pixel-art combat sprite after export.\nInput Image 1 is the NEW READY Efreeti art for this same default pair. Treat it as a strict edit target: retain its full-size red torso, face, black hair, gold jewelry, flowing flame lower body, same centered canvas position, and pointed bottom flame tip. No original game art is attached.\nShow a compact, IN-PLACE attack by changing both arms. Both complete arms are OUTSTRETCHED from distinct shoulders into open hands, angled up and toward SCREEN RIGHT in front three-quarter perspective. The far arm reaches high near source x=810,y=300; the near arm reaches lower near x=880,y=410. Use foreshortening toward the viewer so both arms can extend without making the character wider. The shoulders and chest stay the same size as READY; only a modest upper-chest lean follows the attack. Keep the red torso anatomically continuous through the belt into the lower flames. Each hand has its OWN SEPARATE bright orange-yellow flame plume rising vertically from that hand. Leave a transparent gap between the two plumes. No sideways fire blast, beam, or fireball.\nSTRICT SHAPE LOCK: The reference is 1254x1254. Keep EVERY visible pixel, including hair, both outstretched arms, hands, and separate flame plumes, between x=399 and x=902. Keep the same flame-body base at x near 665,y near 1180; no translation, recentering, crop, shrink, rotation, legs or smoke. The final pair must share one export transform and fit a saved ONE-square-wide, TWO-squares-high footprint. The body height, head size and waist position stay identical to ready. If space is tight, raise and foreshorten the arms; never shrink or move the whole figure.\nCrisp fantasy pixel art matching Input Image 1. Genuine transparent alpha. Exactly one Efreeti, one action frame, no duplicate or sprite sheet, no scenery, floor, shadow, text, border, black box, detached flames, extra arms, weapon, shield, or armor.",
   "description_sources": [
     "Original game MON8CHA.DAX:124 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"
@@ -9,14 +7,22 @@
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
+  "height_feet": null,
+  "humanoid_size": "tall",
   "name": "EFREETI",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "CPIC4.DAX",
-    "art_basis": "Same name alias (weak candidate)",
+    "art_archive": "CPIC8.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
     "art_record": 70,
     "creature_archive": "MON8CHA.DAX",
     "creature_record": 124,
-    "key": "MON8CHA.DAX:124"
+    "key": "MON8CHA.DAX:124",
+    "linked_creature_keys": []
+  },
+  "sprite_size": {
+    "height_squares": 2,
+    "width_squares": 1
   },
   "variants": [
     {
