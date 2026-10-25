@@ -1,15 +1,15 @@
 {
-  "action_sha256": "dc8d89fe1b64ce968c62ddeccc5dc5f73ea938758079a3d1936dce4b8c6041ac",
+  "action_sha256": "b38b60e813c80e0e9465b6a024d6e3d3d8b9bd96c2fc7eb990abb6cbbab33033",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_71/added_ettin_club__one_hand/action.png",
     "ready": "art/mon2cha_dax_71/added_ettin_club__one_hand/ready.png"
   },
   "metadata_sha256": "3d198af162411c53719f193ba24f9a686c6cdff9bc48851ed9fa151a431a3715",
-  "notes": "Single-frame waist repair for MON2CHA.DAX:71/added_ettin_club__one_hand/action. Imagegen edited the accepted action with the accepted ready and approved pose guide as references. Only source pixels x=32..64, y=50..75 were composited into the action; every pixel outside that waist rectangle remains identical to the prior action. The ready PNG is byte-identical to the accepted ready. Inspected final ready/action at 128x128 on light, dark and magenta backgrounds and enlarged at the waist; no detached torso, opaque box, halo, or shifted feet. The catalog loaded the exact final files, retained image position and size, and alternated between their image data.",
+  "notes": "Exact action-only torso repair. The old action was rejected despite its earlier review: the upper body appeared detached at the waist. A first replacement was rejected for switching club hands. Final imagegen action traces the ready club from its viewer-left arm through a low screen-right swing. Head, neck, chest, diagonal strap, abdomen, waist, hips, loincloth and thighs form one continuous generated figure; only ready rows 100-127 replace the lower shins and planted feet. These lower pixels match ready exactly (AE 0). The saved final pair was inspected at 128x128 on light, dark, and magenta backgrounds and enlarged across the torso and knee join; no gap, displaced seam, opaque box, or shifted foot. Catalog loaded exact files, held their image position/size, alternated at one second, and reported only swinging-club overflow beyond the 1x2 footprint.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "e9eb2c58bee8899aa129c2000966c9a80259866878c95c47f8fa1b714ada6534",
-  "reviewed_at": "2026-10-25T00:27:39+00:00",
+  "reviewed_at": "2026-10-25T01:29:57+00:00",
   "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:71",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
+  "workflow_sha256": "11cc4625c78edf912cc29f9fc3182c8bccb50b1f7812dc6cf0599b29ade75205"
 }
