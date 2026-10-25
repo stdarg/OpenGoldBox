@@ -578,6 +578,9 @@ struct Effect
     EffectKind kind{EffectKind::blindness};
     int dc{};
     unsigned remaining_ms{}, save_in_ms{};
+    // The slot level a spell whose later damage grows with it was cast at,
+    // such as Acid Arrow's burn; 0 for every other effect.
+    unsigned slot{};
     bool operator==(const Effect &) const = default;
 };
 

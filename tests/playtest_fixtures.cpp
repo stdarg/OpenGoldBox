@@ -267,7 +267,7 @@ int main()
                       dying_ally,
                       VitalState{
                           0, false,
-                          "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 6000 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 1"}},
+                          "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 6000 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 1"}},
                      {98, "slums-kobold", "Kobold", Side::opposition, {2, 1}, {}, VitalState{1}}},
                     sword_and_shield),
                 "melee");

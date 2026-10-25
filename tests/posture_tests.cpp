@@ -100,10 +100,10 @@ void codec()
     state.prone = true;
     std::ostringstream out;
     fx::write_effects(out, state);
-    check(out.str() == "FX8 1 0 1", "Canonical posture codec");
+    check(out.str() == "FX9 1 0 1", "Canonical posture codec");
     std::istringstream in(out.str());
     check(fx::read_effects(in) == state, "Posture round trips");
-    for (const auto bad : {"FX8 1 0 2", "FX8 1 0 -1", "FX8 1 0", "FX7 1 0 0 1"})
+    for (const auto bad : {"FX9 1 0 2", "FX9 1 0 -1", "FX9 1 0", "FX7 1 0 0 1"})
     {
         rejects(
             [&]
@@ -198,7 +198,7 @@ void downed_keeps_gear()
 // A level-one Fighter at zero HP, dying, with its next death save due.
 VitalState dying()
 {
-    return {0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 6000 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 1"};
+    return {0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 6000 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 1"};
 }
 
 void bandaged_at_victory()

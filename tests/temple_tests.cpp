@@ -99,7 +99,7 @@ Temple temple(int hit_points, std::uint32_t gold,
     m.vitals.dead = dead;
     if (effects)
     {
-        const auto at = m.vitals.resources.find("FX8");
+        const auto at = m.vitals.resources.find("FX9");
         check(at != std::string::npos, "The record holds its effects");
         std::istringstream in(m.vitals.resources.substr(at));
         auto read = fx::read_effects(in);

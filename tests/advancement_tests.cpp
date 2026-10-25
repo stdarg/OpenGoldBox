@@ -199,10 +199,10 @@ void progression()
         wounded.roster[0].vitals.hit_points -= 3;
         wounded.roster[0].vitals.resources =
             std::string_view(klass) == "fighter"
-                ? "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"
+                ? "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"
             : std::string_view(klass) == "wizard"
-                ? "SRD13 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 1 0 0 0 0 FX8 1 0 0"
-                : "SRD13 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0";
+                ? "SRD13 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 1 0 0 0 0 FX9 1 0 0"
+                : "SRD13 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0";
         party.restore(std::move(wounded));
         party.begin_combat();
         check(!party.can_advance(id), "Advancement unavailable during combat");
@@ -274,11 +274,11 @@ void progression()
         check(!party.can_advance(id), "Supported progression stops at level four");
         check(party.member(id).vitals.resources ==
                   (std::string_view(klass) == "fighter"
-                       ? "SRD13 2 0 0 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0"
+                       ? "SRD13 2 0 0 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX9 1 0 0"
                    : std::string_view(klass) == "wizard"
-                       ? "SRD13 0 3 3 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 0 1 0 0 0 0 FX8 1 0 0"
+                       ? "SRD13 0 3 3 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 0 1 0 0 0 0 FX9 1 0 0"
                        // A Cleric's two Channel Divinity uses arrive at level two.
-                       : "SRD13 0 3 3 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 0 0 0 0 2 0 FX8 1 0 0"),
+                       : "SRD13 0 3 3 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 0 0 0 0 2 0 FX9 1 0 0"),
               "Only new resource capacity is added across three advancements");
     }
     CampaignParty capped(module());
@@ -355,8 +355,8 @@ void hp_history()
                                 unconscious ? 0 : party.member(id).character.sheet().hit_points - 2;
                             vital.resources =
                                 unconscious
-                                    ? "SRD13 0 1 1 0 0 0 0 0 0 0 1 2 0 3 6000 0 0 \"\" 0 0 1 0 0 0 0 FX8 1 0 0"
-                                    : "SRD13 0 1 1 0 0 0 0 0 0 0 0 0 0 3 0 0 0 \"\" 0 0 1 0 0 0 0 FX8 1 0 0";
+                                    ? "SRD13 0 1 1 0 0 0 0 0 0 0 1 2 0 3 6000 0 0 \"\" 0 0 1 0 0 0 0 FX9 1 0 0"
+                                    : "SRD13 0 1 1 0 0 0 0 0 0 0 0 0 0 3 0 0 0 \"\" 0 0 1 0 0 0 0 FX9 1 0 0";
                             party.restore(std::move(state));
                             choice.abilities = {};
                             choice.abilities[Ability::constitution] = example.increase;
@@ -408,8 +408,8 @@ void hp_history()
                 check(
                     member.vitals.resources ==
                         (unconscious
-                             ? "SRD13 0 1 2 0 0 0 0 0 0 0 1 2 0 4 6000 0 0 \"\" 0 0 1 0 0 0 0 FX8 1 0 0"
-                             : "SRD13 0 1 2 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 0 1 0 0 0 0 FX8 1 0 0"),
+                             ? "SRD13 0 1 2 0 0 0 0 0 0 0 1 2 0 4 6000 0 0 \"\" 0 0 1 0 0 0 0 FX9 1 0 0"
+                             : "SRD13 0 1 2 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 0 1 0 0 0 0 FX9 1 0 0"),
                     "HP growth preserves death saves and existing spell expenditure");
                 auto malformed = member.character.sheet();
                 ++malformed.hit_points;

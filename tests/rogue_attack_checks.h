@@ -384,7 +384,7 @@ void run()
     // Unconscious adjacent allies are living but Incapacitated.
     {
         const VitalState unconscious{
-            0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 1"};
+            0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 1"};
         bool checked = false;
         for (unsigned seed = 1; seed <= 64 && !checked; ++seed)
         {

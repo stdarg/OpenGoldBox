@@ -32,7 +32,7 @@ std::string creature_resources(int second_winds, int successes = 0, int failures
 {
     std::ostringstream out;
     out << "SRD13 " << second_winds << " 0 0 0 0 0 0 0 0 0 " << successes << ' ' << failures << ' '
-        << stable << " 0 " << death_save_in_ms << " 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0";
+        << stable << " 0 " << death_save_in_ms << " 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0";
     return out.str();
 }
 
@@ -215,7 +215,7 @@ void turn_budget_tests()
             const auto wizard = [](int slots, int slots2)
             {
                 return "SRD13 0 " + std::to_string(slots) + ' ' + std::to_string(slots2) +
-                       " 0 0 0 0 0 0 0 0 0 0 3 0 0 0 \"\" 0 0 1 0 0 0 0 FX8 1 0 0";
+                       " 0 0 0 0 0 0 0 0 0 0 3 0 0 0 \"\" 0 0 1 0 0 0 0 FX9 1 0 0";
             };
             const std::string resources = weapon ? creature_resources(2)
                                           : std::string_view(verb) == "fire_bolt" ? wizard(4, 2)
@@ -854,7 +854,7 @@ void death_save_turn_entry_tests()
                 check(
                     hero.hit_points == 1 && !hero.dead && hero.prone &&
                         hero.persistent.resources ==
-                            "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 1",
+                            "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 1",
                     "Natural 20 restores 1 HP and clears both counters without restoring spent resources");
                 check(combat->snapshot().actor == 1 && hero.action && hero.bonus_action &&
                           hero.reaction,
@@ -882,7 +882,7 @@ void death_save_turn_entry_tests()
                 const auto record = creature_resources(1, 2, 3);
                 check(hero.dead &&
                           hero.persistent.resources.starts_with(
-                              record.substr(0, record.find(" FX8 "))) &&
+                              record.substr(0, record.find(" FX9 "))) &&
                           std::any_of(hero.conditions.begin(), hero.conditions.end(),
                                       [](const auto &c)
                                       {

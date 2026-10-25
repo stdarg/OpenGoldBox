@@ -243,7 +243,7 @@ void cure_checks()
     const auto paladin = created("paladin", "Paladin");
     const auto ally = created("fighter", "Ally");
     auto vitals = unit(*battle(*rules, paladin, ally, ally.sheet().hit_points), 2).persistent;
-    const auto at = vitals.resources.find("FX8");
+    const auto at = vitals.resources.find("FX9");
     std::istringstream in(vitals.resources.substr(at));
     auto effects = fx::read_effects(in);
     fx::apply_poisoned(effects, {.scope = 5, .actor = 99}, "Enemy", 12000);

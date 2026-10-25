@@ -504,6 +504,40 @@ void upcast_checks()
               offered(*smite, "shining_smite_3") && submit(*smite, "divine_smite_3", 98) &&
               slots(*smite, 3) == 1,
           "Divine Smite from a level-3 slot");
+
+    // Searing Smite's burn keeps the slot's extra dice: 1d6 from a level-1
+    // slot, 3d6 from a level-3 one.
+    std::vector<int> burns;
+    const auto searing = paladin(9);
+    for (std::uint64_t seed = 1; seed <= 16; ++seed)
+    {
+        auto c = duel(*rules, searing, seed);
+        if (!submit(*c, "melee", 98) || !offered(*c, "searing_smite_3"))
+        {
+            continue; // A miss offers no smite.
+        }
+        check(submit(*c, "searing_smite_3", 98), "Searing Smite from a level-3 slot");
+        next_turn(*c);
+        for (const auto &line : c->snapshot().log())
+        {
+            if (const auto at = line.find(" burns for "); at != std::string::npos)
+            {
+                burns.push_back(std::stoi(line.substr(at + 11)));
+            }
+        }
+    }
+    check(!burns.empty() &&
+              std::all_of(burns.begin(), burns.end(),
+                          [](int amount)
+                          {
+                              return amount <= 18;
+                          }) &&
+              std::any_of(burns.begin(), burns.end(),
+                          [](int amount)
+                          {
+                              return amount > 6;
+                          }),
+          "Searing Smite's burn deals 3d6 from a level-3 slot");
 }
 
 // Abjure Foes: a Channel Divinity use against creatures chosen one at a time.
@@ -969,7 +1003,7 @@ void cursed_weapon_campaign_checks()
 // A dying character's vital state with two failed death saves.
 VitalState two_failures()
 {
-    return {0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0", {}};
+    return {0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0", {}};
 }
 
 // Revivify: an adjacent ally dead no more than a minute, for 300 gp times its

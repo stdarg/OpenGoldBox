@@ -2543,7 +2543,17 @@ bool upcast_matters(const detail::SpellDef &spell, unsigned level)
            spell.rider == detail::Rider::aid || spell.rider == detail::Rider::false_life ||
            spell.rider == detail::Rider::ice_knife || spell.rider == detail::Rider::dispel_magic ||
            spell.rider == detail::Rider::magic_circle ||
-           (spell.rider == detail::Rider::magic_weapon && level >= 4);
+           (spell.rider == detail::Rider::magic_weapon && level >= 4) ||
+           // Healing, later damage, summoned stat blocks and the Globe's warded
+           // levels grow with the slot; Bestow Curse drops Concentration from a
+           // level-5 slot.
+           spell.id == "heal" || spell.rider == detail::Rider::flame_blade ||
+           spell.rider == detail::Rider::dragons_breath ||
+           spell.rider == detail::Rider::giant_insect ||
+           spell.rider == detail::Rider::summon_dragon ||
+           spell.rider == detail::Rider::animate_objects ||
+           spell.rider == detail::Rider::globe_of_invulnerability ||
+           (spell.rider == detail::Rider::bestow_curse && level >= 5);
 }
 
 // The slot levels a spell is offered at: each level that changes it, and the
@@ -5670,7 +5680,7 @@ class Session final : public CombatSession
     void blow(const Zone &line, Actor &creature);
     // Flaming Sphere burns a creature ending its turn within 5 feet of it.
     void burn_beside_spheres(Actor &creature);
-    void sphere_burns(const Actor &caster, Actor &creature);
+    void sphere_burns(const Zone &sphere, Actor &creature);
     [[nodiscard]] std::vector<Cell> beam_cells(Cell center) const;
     // A save against the beam's Radiant damage, once per turn.
     void moonbeam_burns(const Zone &beam, Actor &creature);
@@ -5879,7 +5889,8 @@ class Session final : public CombatSession
     // Heat Metal targets only metal armor a creature wears.
     [[nodiscard]] bool wears_metal(const Actor &creature) const;
     // Heat Metal's 2d8 Fire and Constitution save.
-    void heat_metal(const Actor &caster, Actor &creature);
+    // Heat Metal's burn, of a spell cast with a slot of `slot`.
+    void heat_metal(const Actor &caster, Actor &creature, unsigned slot);
     void potent_cantrip(Actor &target, const detail::SpellDef &spell, detail::DamageDice rolled);
     [[nodiscard]] std::vector<EntityId> sculpted(const Actor &caster, const detail::SpellDef &spell,
                                                  unsigned slot_level,
@@ -8535,6 +8546,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::flame_blade:
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::flame_blade, 0);
+        target.effects.active.back().slot = slot_level_of(verb, spell);
         log(target.source.name + " gains Flame Blade.",
             {"{name} gains {spell}.",
              {{"name", target.source.name}, {"spell", "Flame Blade", true}}});
@@ -9157,6 +9169,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::dragons_breath,
                                     static_cast<int>(*detail::dragon_type(verb)));
+        target.effects.active.back().slot = slot_level_of(verb, spell);
         log(target.source.name + " gains Dragon's Breath.",
             {"{name} gains {spell}.",
              {{"name", target.source.name}, {"spell", "Dragon's Breath", true}}});
@@ -9207,6 +9220,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::acid_arrow:
         detail::apply_poisoned(target.effects, effect_source(a), a.source.name,
                                next_save_ms(target.source.id), detail::EffectKind::acid_arrow);
+        target.effects.active.back().slot = slot_level_of(verb, spell);
         return;
     case detail::Rider::ray_of_enfeeblement:
         detail::apply_repeating_condition(
@@ -9498,8 +9512,9 @@ void Session::strike_with_spell(const detail::SpellDef &spell, std::string_view 
     if (spell.rider == detail::Rider::spiritual_weapon)
     {
         begin_concentration(a, spell);
-        zones_.push_back(
-            {a.source.id, ZoneKind::spiritual_weapon, {spectral_cell(target, a.source.cell)}});
+        Zone force{a.source.id, ZoneKind::spiritual_weapon, {spectral_cell(target, a.source.cell)}};
+        force.slot = slot_level_of(verb, spell);
+        zones_.push_back(std::move(force));
     }
     // Arcane Sword's sword and Conjure Fey's spirit appear beside the target
     // the same way; they wait for the caster's later turns to strike again.
@@ -10069,8 +10084,9 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
             {
                 detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                             detail::EffectKind::heated, 1);
+                target.effects.active.back().slot = slot_level_of(verb, spell);
             }
-            heat_metal(a, target);
+            heat_metal(a, target, slot_level_of(verb, spell));
             return;
         }
         // Mind Blank: no charm or control takes hold of its creature.
@@ -12227,7 +12243,6 @@ std::vector<Command> Session::offered_commands() const
     // Smites, right after this actor's own melee hit on a creature still standing.
     if (a.bonus && a.smite_target && actor(a.smite_target).life.hp > 0 && !d.spells.empty())
     {
-        const bool slot = a.slots[1] > 0 && !a.spent_slot;
         const bool melee = a.smite_melee;
         // A smite from each slot level cast_levels() offers.
         const auto add_smite = [&](std::string_view id_of_spell)
@@ -12250,12 +12265,7 @@ std::vector<Command> Session::offered_commands() const
             add(id, "divine_smite_free", "Divine Smite (Paladin's Smite)", a.smite_target);
         }
         add_smite("divine_smite");
-        // Searing Smite's burn from a higher slot is not built yet: a level-1 slot only.
-        if (melee && detail::knows_spell(d.spells, "searing_smite") && slot)
-        {
-            add(id, "searing_smite", "Searing Smite", a.smite_target);
-            commands.back().spell = spell_facts(a, *detail::find_spell("searing_smite"));
-        }
+        add_smite("searing_smite");
         add_smite("shining_smite");
         // Ensnaring Strike follows a Ranged hit too.
         if (detail::knows_spell(d.spells, "ensnaring_strike") && !a.spent_slot)
@@ -13388,6 +13398,7 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
     if (searing && target.life.hp > 0 && detail::can_apply(target.effects))
     {
         detail::apply_searing_smite(target.effects, effect_source(a), a.source.name, spell_dc(a));
+        target.effects.active.back().slot = slot_level_of(verb, spell);
     }
     // Smite of Protection (Devotion 15): the aura shields until the
     // Paladin's next turn.
@@ -13728,9 +13739,19 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
     }
     auto rolled = spell.dice;
     rolled.count += static_cast<int>(upcast_steps(verb, spell) * spell.upcast.extra_dice);
+    // Dragon's Breath: 1d6 more for each slot level above 2 it was cast with.
+    for (const auto &e : caster.effects.active)
+    {
+        if (spell.id == "dragons_breath_exhale" && e.kind == detail::EffectKind::dragons_breath &&
+            e.slot > 2)
+        {
+            rolled.count += static_cast<int>(e.slot - 2);
+        }
+    }
     // A cantrip's dice, and a Breath Weapon's, grow with the caster's level;
-    // a monster's breath has its own.
-    if (!spell.level && spell.id != def(caster).monster_breath)
+    // a monster's breath has its own, and Dragon's Breath grows with its slot.
+    if (!spell.level && spell.id != def(caster).monster_breath &&
+        spell.id != "dragons_breath_exhale")
     {
         rolled.count *= cantrip_tier(def(caster));
     }
@@ -13953,21 +13974,24 @@ void Session::burn_beside_spheres(Actor &creature)
         if (zone.kind == ZoneKind::flaming_sphere &&
             distance(zone.cells.front(), creature.source.cell) <= 5)
         {
-            sphere_burns(actor(zone.caster), creature);
+            sphere_burns(zone, creature);
         }
     }
 }
 
-void Session::sphere_burns(const Actor &caster, Actor &creature)
+void Session::sphere_burns(const Zone &sphere, Actor &creature)
 {
     if (creature.life.dead || creature.life.hp == 0)
     {
         return;
     }
+    const auto &caster = actor(sphere.caster);
     const auto &spell = *detail::find_spell("flaming_sphere");
     const bool saved = saving_throw_succeeds(creature, spell.save, spell_dc(caster), false,
                                              heightened_against(creature, caster, spell.id));
-    const int rolled = dice({spell.dice.count, spell.dice.sides, 0});
+    // 1d6 more for each slot level above 2.
+    const int rolled =
+        dice({spell.dice.count + static_cast<int>(sphere.slot - spell.level), spell.dice.sides, 0});
     const int amount = resolved_damage(creature, spell.damage, saved ? rolled / 2 : rolled);
     log(creature.source.name + " takes " + std::to_string(amount) +
             " Fire damage from the Flaming Sphere.",
@@ -14170,10 +14194,13 @@ bool Session::wears_metal(const Actor &creature) const
                        });
 }
 
-void Session::heat_metal(const Actor &caster, Actor &creature)
+void Session::heat_metal(const Actor &caster, Actor &creature, unsigned slot)
 {
     const auto &spell = *detail::find_spell("heat_metal");
-    const int amount = resolved_damage(creature, spell.damage, dice(spell.dice));
+    // 1d8 more for each slot level above 2.
+    const int amount = resolved_damage(
+        creature, spell.damage,
+        dice({spell.dice.count + static_cast<int>(slot - spell.level), spell.dice.sides, 0}));
     log(creature.source.name + " takes " + std::to_string(amount) +
             " Fire damage from the hot metal.",
         {"{name} takes {damage} Fire damage from the hot metal.",
@@ -16986,7 +17013,9 @@ void Session::moonbeam_burns(const Zone &beam, Actor &creature)
     const auto &spell = *detail::find_spell("moonbeam");
     const bool saved = saving_throw_succeeds(creature, spell.save, spell_dc(caster), false,
                                              heightened_against(creature, caster, spell.id));
-    const int rolled = dice(spell.dice);
+    // 1d10 more for each slot level above 2.
+    const int rolled =
+        dice({spell.dice.count + static_cast<int>(beam.slot - spell.level), spell.dice.sides, 0});
     const int amount = resolved_damage(creature, spell.damage, saved ? rolled / 2 : rolled);
     log(creature.source.name + " takes " + std::to_string(amount) +
             " Radiant damage from the Moonbeam.",
@@ -17765,13 +17794,17 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     if (spell.rider == detail::Rider::flaming_sphere)
     {
         begin_concentration(a, spell);
-        zones_.push_back({a.source.id, ZoneKind::flaming_sphere, {aimed.center}});
+        Zone sphere{a.source.id, ZoneKind::flaming_sphere, {aimed.center}};
+        sphere.slot = slot_level_of(aimed.verb, spell);
+        zones_.push_back(std::move(sphere));
         return;
     }
     if (spell.rider == detail::Rider::moonbeam)
     {
         begin_concentration(a, spell);
-        zones_.push_back({a.source.id, ZoneKind::moonbeam, beam_cells(aimed.center)});
+        Zone moonbeam{a.source.id, ZoneKind::moonbeam, beam_cells(aimed.center)};
+        moonbeam.slot = slot_level_of(aimed.verb, spell);
+        zones_.push_back(std::move(moonbeam));
         const auto beam = zones_.back();
         for (auto &other : actors_)
         {
@@ -20090,7 +20123,9 @@ void Session::burn_searing_smites(Actor &a)
             continue;
         }
         const int dc = a.effects.active[n].dc;
-        const int amount = resolved_damage(a, detail::DamageType::fire, dice({1, 6, 0}));
+        // 1d6, and 1d6 more for each slot level above 1.
+        const int burn = static_cast<int>(std::max(1u, a.effects.active[n].slot));
+        const int amount = resolved_damage(a, detail::DamageType::fire, dice({burn, 6, 0}));
         log(a.source.name + " burns for " + std::to_string(amount) + " Fire damage.",
             {"{name} burns for {damage} Fire damage.",
              {{"name", a.source.name}, {"damage", std::to_string(amount)}}});
@@ -23060,7 +23095,8 @@ void Session::advance_turn_time()
     std::vector<detail::RecoverySubject> subjects;
     std::vector<EntityId> unconscious;
     // Acid Arrow burns once its effect runs out, after the effects are walked.
-    std::vector<EntityId> burned;
+    // Acid Arrow's targets, with the slot level each arrow was cast at.
+    std::vector<std::pair<EntityId, unsigned>> burned;
     // Banishment that has lasted its full minute.
     std::vector<EntityId> unbanished;
     // Magic Circles whose minute of casting is over, with their slot levels.
@@ -23192,7 +23228,7 @@ void Session::advance_turn_time()
             }
             if (event.removed && event.effect.kind == detail::EffectKind::acid_arrow)
             {
-                burned.push_back(event.target);
+                burned.push_back({event.target, event.effect.slot});
             }
         });
     // A Magic Circle cast for its full minute stands for an hour, and an hour
@@ -23295,14 +23331,16 @@ void Session::advance_turn_time()
             return_from_banishment(target);
         }
     }
-    for (const auto id : burned)
+    for (const auto &[id, slot] : burned)
     {
         auto &target = actor(id);
         if (target.life.dead)
         {
             continue;
         }
-        const int amount = resolved_damage(target, detail::DamageType::acid, dice({2, 4, 0}));
+        // 2d4, and 1d4 more for each slot level above 2.
+        const int count = static_cast<int>(std::max(2u, slot));
+        const int amount = resolved_damage(target, detail::DamageType::acid, dice({count, 4, 0}));
         log(target.source.name + " takes " + std::to_string(amount) +
                 " Acid damage from Acid Arrow.",
             {"{name} takes {damage} Acid damage from Acid Arrow.",
@@ -24974,12 +25012,19 @@ void Session::dispatch(const Command &command)
     }
     else if (command.verb == "flame_blade_strike")
     {
-        // A Magic action: 3d6 + the spellcasting modifier Fire on a hit.
+        // A Magic action: 3d6 + the spellcasting modifier Fire on a hit, 1d6
+        // more for each slot level above 2.
         a.nick_origin = 0;
         (void)a.actions.spend(true);
         end_sanctuary(a);
+        const auto blade = std::find_if(a.effects.active.begin(), a.effects.active.end(),
+                                        [](const auto &e)
+                                        {
+                                            return e.kind == detail::EffectKind::flame_blade;
+                                        });
+        const int count = 1 + static_cast<int>(std::max(2u, blade->slot));
         (void)attack(a, actor(command.target), AttackRange::melee,
-                     SpellAttack{.dice = {3, 6, casting_modifier(def(a))},
+                     SpellAttack{.dice = {count, 6, casting_modifier(def(a))},
                                  .type = detail::DamageType::fire});
     }
     else if (command.verb.starts_with("wild_shape_"))
@@ -25022,7 +25067,14 @@ void Session::dispatch(const Command &command)
         a.bonus = false;
         log(a.source.name + " heats the metal again.",
             {"{name} heats the metal again.", {{"name", a.source.name}}});
-        heat_metal(a, actor(command.target));
+        auto &target = actor(command.target);
+        const auto heated = std::find_if(target.effects.active.begin(), target.effects.active.end(),
+                                         [&](const auto &e)
+                                         {
+                                             return e.kind == detail::EffectKind::heated &&
+                                                    e.source_actor == a.source.id;
+                                         });
+        heat_metal(a, target, heated->slot);
     }
     else if (command.verb == "move_moonbeam")
     {
@@ -25210,7 +25262,9 @@ void Session::dispatch(const Command &command)
         log(a.source.name + " rolls the Flaming Sphere into " + target.source.name + ".",
             {"{name} rolls the Flaming Sphere into {target}.",
              {{"name", a.source.name}, {"target", target.source.name}}});
-        sphere_burns(a, target);
+        // A copy: the burn can end the caster's Concentration and the sphere.
+        const Zone rolled = sphere;
+        sphere_burns(rolled, target);
     }
     else if (command.verb == "hurl_through_hell" || command.verb == "hurl_through_hell_slot")
     {
@@ -25374,8 +25428,10 @@ void Session::dispatch(const Command &command)
         force.cells.front() = spectral_cell(target, force.cells.front());
         log(a.source.name + "'s Spiritual Weapon strikes.",
             {"{name}'s Spiritual Weapon strikes.", {{"name", a.source.name}}});
+        // 1d8 more for each slot level above 2.
         attack(a, target, AttackRange::melee,
-               SpellAttack{.dice = {1, 8, casting_modifier(d)}, .type = detail::DamageType::force});
+               SpellAttack{.dice = {static_cast<int>(force.slot) - 1, 8, casting_modifier(d)},
+                           .type = detail::DamageType::force});
     }
     else if (command.verb == "dispel_break" || command.verb == "dispel_dismissal")
     {
@@ -27642,6 +27698,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
              kind != static_cast<unsigned>(ZoneKind::storm) &&
              kind != static_cast<unsigned>(ZoneKind::fey) &&
              kind != static_cast<unsigned>(ZoneKind::thorns) &&
+             kind != static_cast<unsigned>(ZoneKind::spiritual_weapon) &&
+             kind != static_cast<unsigned>(ZoneKind::flaming_sphere) &&
+             kind != static_cast<unsigned>(ZoneKind::moonbeam) &&
              kind != static_cast<unsigned>(ZoneKind::wave)) ||
             (!circle && timed != (zone.ends_ms != 0)) || zone.warded >= detail::ward_types.size() ||
             (zone.warded && !circle) || zone.dealt < 0 || zone.dealt >= 60 ||
@@ -32461,7 +32520,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.254", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.255", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),

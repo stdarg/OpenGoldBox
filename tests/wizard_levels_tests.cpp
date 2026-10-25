@@ -1944,12 +1944,144 @@ void sculpt_checks()
               "Sculpt Spells from level 6");
     }
 }
+
+// The damage on each log line holding `text`, as "Foe takes 13 Acid damage
+// from Acid Arrow." reports it.
+std::vector<int> damage_taken(const CombatSession &c, std::string_view text)
+{
+    std::vector<int> amounts;
+    for (const auto &line : c.snapshot().log())
+    {
+        const auto at = line.find(" takes ");
+        if (line.find(text) != std::string::npos && at != std::string::npos)
+        {
+            amounts.push_back(std::stoi(line.substr(at + 7)));
+        }
+    }
+    return amounts;
+}
+
+// Whether every amount is at most `most`, and some exceed `fewer_dice_most`,
+// the most the spell's own slot could deal.
+bool grew(const std::vector<int> &amounts, int fewer_dice_most, int most)
+{
+    return std::all_of(amounts.begin(), amounts.end(),
+                       [&](int amount)
+                       {
+                           return amount <= most;
+                       }) &&
+           std::any_of(amounts.begin(), amounts.end(),
+                       [&](int amount)
+                       {
+                           return amount > fewer_dice_most;
+                       });
+}
+
+// Casting from higher slots (SRD 5.2.1's "Using a Higher-Level Spell Slot"):
+// one more ray or creature, or one more die, for each level above the spell's,
+// kept for the damage that comes later.
+void higher_slot_checks()
+{
+    const auto rules = dummy_rules();
+    const auto book = with_spells(wizard(9), {"scorching_ray", "hold_person", "acid_arrow",
+                                              "flaming_sphere", "dragons_breath", "bestow_curse"});
+    const std::vector<Participant> foes{{98, "dummy", "Foe", Side::opposition, {2, 2}},
+                                        {99, "dummy", "Second Foe", Side::opposition, {3, 3}}};
+    {
+        auto c = field(*rules, book, foes, 1);
+        check(offered(*c, "bestow_curse_strength_5", 98) &&
+                  !offered(*c, "bestow_curse_strength_4", 98),
+              "Bestow Curse is offered from a level-5 slot, which needs no Concentration");
+        unsigned rays = 0;
+        while (offered(*c, "scorching_ray_3", 98) && rays < 9)
+        {
+            check(submit(*c, "scorching_ray_3", 98), "Aim a ray");
+            ++rays;
+        }
+        const auto log = c->snapshot().log();
+        check(rays == 4 &&
+                  std::count_if(log.begin(), log.end(),
+                                [](const auto &line)
+                                {
+                                    return line.starts_with("Wizard -> Foe");
+                                }) == 4 &&
+                  slots(*c, 3) == 2,
+              "Scorching Ray from a level-3 slot fires four rays");
+        check(submit(*c, "end"), "End the turn");
+        to_turn(*c, 1);
+        check(submit(*c, "hold_person_3", 98) && submit(*c, "hold_person_3", 99) &&
+                  logged(*c, "Foe Wisdom save") && logged(*c, "Second Foe Wisdom save"),
+              "Hold Person from a level-3 slot holds two Humanoids");
+    }
+    std::vector<int> burns, spheres, breaths;
+    for (std::uint64_t seed = 1; seed <= 12; ++seed)
+    {
+        auto c = field(*rules, book, foes, seed);
+        check(submit(*c, "acid_arrow_4", 98) && submit(*c, "end"),
+              "Acid Arrow from a level-4 slot");
+        to_turn(*c, 1);
+        const auto burned = damage_taken(*c, "from Acid Arrow");
+        burns.insert(burns.end(), burned.begin(), burned.end());
+        check(submit(*c, "flaming_sphere_4") && submit_cell(*c, "area_move", Cell{3, 2}) &&
+                  submit(*c, "area_cast") && submit(*c, "end"),
+              "Flaming Sphere from a level-4 slot");
+        to_turn(*c, 1);
+        const auto sphered = damage_taken(*c, "from the Flaming Sphere");
+        spheres.insert(spheres.end(), sphered.begin(), sphered.end());
+        check(submit(*c, "dragons_breath_fire_3", 1) && submit(*c, "end"),
+              "Dragon's Breath from a level-3 slot");
+        to_turn(*c, 1);
+        check(offered(*c, "dragons_breath_exhale_fire") &&
+                  submit(*c, "dragons_breath_exhale_fire") &&
+                  submit_cell(*c, "area_move", Cell{2, 2}) && submit(*c, "area_cast"),
+              "The breath keeps the type chosen from the higher slot");
+        const auto breathed = damage_taken(*c, "Fire damage.");
+        breaths.insert(breaths.end(), breathed.begin(), breathed.end());
+    }
+    check(grew(burns, 8, 16), "Acid Arrow's burn deals 4d4 from a level-4 slot");
+    check(grew(spheres, 12, 24), "Flaming Sphere deals 4d6 from a level-4 slot");
+    check(grew(breaths, 18, 24),
+          "Dragon's Breath exhales 4d6 from a level-3 slot, not the caster's cantrip dice");
+
+    // One more creature for each slot level above the spell's.
+    {
+        auto c = field(*rules,
+                       with_spells(wizard(9), {"hideous_laughter", "blindness", "invisibility",
+                                               "shatter", "mind_spike"}),
+                       foes, 1);
+        check(offered(*c, "shatter_3") && offered(*c, "mind_spike_3", 98),
+              "Shatter and Mind Spike add a die from a higher slot");
+        check(submit(*c, "hideous_laughter_2", 98) && submit(*c, "hideous_laughter_2", 99) &&
+                  logged(*c, "Foe Wisdom save") && logged(*c, "Second Foe Wisdom save"),
+              "Hideous Laughter from a level-2 slot takes two creatures");
+        check(submit(*c, "end"), "End the turn");
+        to_turn(*c, 1);
+        check(submit(*c, "blindness_3", 98) && submit(*c, "blindness_3", 99) &&
+                  logged(*c, "Foe Constitution save") && logged(*c, "Second Foe Constitution save"),
+              "Blindness from a level-3 slot takes two creatures");
+        check(submit(*c, "end"), "End the turn");
+        to_turn(*c, 1);
+        check(offered(*c, "invisibility_3", 1) && submit(*c, "invisibility_3", 1) &&
+                  offered(*c, "invisibility_3"),
+              "Invisibility from a level-3 slot waits for a second creature");
+    }
+
+    // Summoned stat blocks, Animate Objects and the Globe grow with the slot.
+    const auto high = field(
+        *rules,
+        with_spells(wizard(13), {"summon_dragon", "animate_objects", "globe_of_invulnerability"}),
+        foes, 1);
+    check(offered(*high, "summon_dragon_fire_6") && offered(*high, "animate_objects_6") &&
+              offered(*high, "globe_of_invulnerability_7"),
+          "Spells that grow with the slot are offered from higher slots");
+}
 } // namespace
 
 int main()
 {
     try
     {
+        higher_slot_checks();
         progression_checks();
         memorize_spell_checks();
         arcane_recovery_checks();

@@ -612,7 +612,7 @@ VitalState shaped(const RulesModule &module, const CharacterSheet &sheet, unsign
 {
     namespace fx = opengold::srd5::detail;
     auto vitals = unit(*battle(module, sheet), 1).persistent;
-    const auto at = vitals.resources.find("FX8");
+    const auto at = vitals.resources.find("FX9");
     std::istringstream in(vitals.resources.substr(at));
     auto effects = fx::read_effects(in);
     fx::apply_spell_benefit(effects, {.scope = 3, .actor = 1}, "Druid", fx::EffectKind::wild_shape,
@@ -682,7 +682,7 @@ void wild_shape_end_checks()
                   c->snapshot().outcome == Outcome::victory,
               "The Wolf wins the fight");
         const auto vitals = unit(*c, 1).persistent;
-        std::istringstream in(vitals.resources.substr(vitals.resources.find("FX8")));
+        std::istringstream in(vitals.resources.substr(vitals.resources.find("FX9")));
         const auto effects = fx::read_effects(in);
         check(unit(*c, 1).form.empty() && logged(*c, "Druid leaves Wild Shape.") &&
                   std::none_of(effects.active.begin(), effects.active.end(),

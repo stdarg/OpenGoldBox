@@ -108,7 +108,7 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed,
            prone
                ? std::optional<
                      VitalState>{{h.sheet().hit_points, false,
-                                  "SRD13 2 0 0 0 0 0 0 0 0 0 0 0 0 3 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 1"}}
+                                  "SRD13 2 0 0 0 0 0 0 0 0 0 0 0 0 3 0 0 0 \"\" 0 1 0 0 0 0 0 FX9 1 0 1"}}
                : std::nullopt},
           {2, "dummy", "Target", Side::opposition, {3, 2}}}},
         seed);
@@ -166,7 +166,7 @@ std::string escape_line(unsigned level)
            rules->character_profile(h.sheet(), std::vector<std::string>{"longsword"}).data,
            VitalState{h.sheet().hit_points, false,
                       "SRD13 2 0 0 0 0 0 0 0 0 0 0 0 0 " + std::to_string(level) +
-                          " 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 2 1 1 19 77 99 \"Druid\" 15 60000 0 0"}},
+                          " 0 0 0 \"\" 0 1 0 0 0 0 0 FX9 2 1 1 19 77 99 \"Druid\" 15 60000 0 0 0"}},
           {2, "dummy", "Target", Side::opposition, {6, 6}}}},
         1);
     while (c->snapshot().actor != 1)

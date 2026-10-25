@@ -17,7 +17,8 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
 - Monk to level 9: done ([Monk](MONK.md#levels-515)).
 - Fighter, Barbarian, Monk and Rogue to level 15: done.
 - Spell slots of levels 1–9 and casting from higher slots: done
-  ([Spell slots](SPELL-SLOTS.md)).
+  ([Spell slots](SPELL-SLOTS.md)). Every kept spell's "Using a Higher-Level
+  Spell Slot" rule since 2026-10-25, with later damage that keeps its slot.
 - Paladin to level 15: done ([Paladin](PALADIN.md#levels-515)), with every
   kept Paladin spell.
 - Cleric to level 15: done ([Cleric](CLERIC.md#levels-515)).

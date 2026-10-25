@@ -258,7 +258,7 @@ void decisions()
     {
         auto bad = data;
         // Adrenaline Rush uses precede Action Surge and Arcane Recovery uses.
-        auto at = bad.resources.find(" FX8");
+        auto at = bad.resources.find(" FX9");
         check(at != bad.resources.npos, "Effect boundary");
         for (unsigned field = 0; field < 2; ++field)
         {

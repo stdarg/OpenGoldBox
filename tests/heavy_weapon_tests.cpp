@@ -134,7 +134,7 @@ auto battle(const RulesModule &rules, const Character &h, const std::vector<std:
 {
     const auto profile = rules.character_profile(h.sheet(), gear);
     const std::string effect = "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 "
-                               "0 FX8 2 1 1 1 77 99 \"Source caster\" 38 60000 6000 0";
+                               "0 FX9 2 1 1 1 77 99 \"Source caster\" 38 60000 6000 0 0";
     Encounter e{{40, 8, std::vector<Terrain>(320)},
                 {{1, "campaign-character", "Hero", Side::party, {1, 1}, profile.data},
                  {2, "target", "Target", Side::opposition, target}}};
@@ -341,7 +341,7 @@ void campaign()
     party.equip(id, sword);
     auto state = party.checkpoint();
     state.roster[0].vitals = {
-        5, false, "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
+        5, false, "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"};
     party.restore(std::move(state));
     const auto vitals = party.member(id).vitals;
     const auto saved = encode_campaign(party, nullptr, "heavy");

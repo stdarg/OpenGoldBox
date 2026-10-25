@@ -124,7 +124,7 @@ void class_dice_and_recharge()
     const auto fighter = hero("fighter", 4);
     const auto &sheet = fighter.sheet();
     VitalState state{1, false,
-                     "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0"};
+                     "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX9 1 0 0"};
     auto info = rules->recovery_info(sheet, state);
     check(info.hit_dice == 4 && pool(info, "second_wind").capacity == 3 &&
               pool(info, "second_wind").short_rest_recovery == 1,
@@ -139,7 +139,7 @@ void class_dice_and_recharge()
     }
     check(pool(rules->recovery_info(sheet, state), "second_wind").remaining == 3,
           "Repeated completed rests never exceed capacity");
-    state = {1, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0"};
+    state = {1, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX9 1 0 0"};
     RandomState rng{2};
     rules->spend_hit_die(state, sheet, rng);
     rules->spend_hit_die(state, sheet, rng);
@@ -151,7 +151,7 @@ void class_dice_and_recharge()
     {
         const auto caster = hero(klass, 4);
         VitalState slots{1, false,
-                         "SRD13 0 1 1 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
+                         "SRD13 0 1 1 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"};
         rules->recover_short_rest(slots, caster.sheet());
         info = rules->recovery_info(caster.sheet(), slots);
         check(pool(info, "spell_slot:1").remaining == 1 &&
@@ -195,8 +195,8 @@ void minimum_caps_and_rejection()
     for (const auto dead : {false, true})
     {
         state = {0, dead,
-                 dead ? "SRD13 0 0 0 0 0 0 0 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"
-                      : "SRD13 0 0 0 0 0 0 0 0 0 0 1 2 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
+                 dead ? "SRD13 0 0 0 0 0 0 0 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"
+                      : "SRD13 0 0 0 0 0 0 0 0 0 0 1 2 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"};
         const auto before = state;
         rng.value = 42;
         check(!rules->recovery_info(character.sheet(), state).can_rest,
@@ -220,11 +220,11 @@ void minimum_caps_and_rejection()
               "Rejected recovery never wakes, stabilizes or revives a character");
     }
     for (const auto malformed :
-         {"SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0",
-          "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0",
+         {"SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0",
+          "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0",
           "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0",
-          "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0 junk",
-          "SRD13 999 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"})
+          "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0 junk",
+          "SRD13 999 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0"})
     {
         state = {1, false, malformed};
         const auto before = state;
@@ -262,9 +262,9 @@ void persistence_and_advancement()
     auto state = party.checkpoint();
     state.roster[0].vitals = {1, false,
                               "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 "
-                              "0 FX8 2 1 1 1 77 99 \"Source caster\" 13 43000 2000 0"};
+                              "0 FX9 2 1 1 1 77 99 \"Source caster\" 13 43000 2000 0 0"};
     const auto effect =
-        state.roster[0].vitals.resources.substr(state.roster[0].vitals.resources.find("FX8"));
+        state.roster[0].vitals.resources.substr(state.roster[0].vitals.resources.find("FX9"));
     rules->spend_hit_die(state.roster[0].vitals, state.roster[0].character.sheet(),
                          state.random_state);
     party.restore(state);

@@ -386,7 +386,8 @@ inline constexpr std::array spell_table{
              .range = 120,
              .damage = DamageType::fire,
              .dice = {2, 6, 0},
-             .instances = 3},
+             .instances = 3,
+             .upcast = {.extra_instances = 1}},
     SpellDef{.id = "blindness",
              .label = "Blindness",
              .level = 2,
@@ -397,6 +398,7 @@ inline constexpr std::array spell_table{
              .requires_sight = true,
              .requires_effect_capacity = true,
              .save = Ability::constitution,
+             .upcast = {.extra_instances = 1},
              .rider = Rider::blindness},
     SpellDef{.id = "cure_wounds",
              .label = "Cure Wounds",
@@ -526,8 +528,8 @@ inline constexpr std::array spell_table{
              .rider = Rider::bane,
              .concentration = true},
     // SRD 5.2.1 p. 140: a Humanoid makes a Wisdom save or is Paralyzed,
-    // repeating it at the end of each of its turns. A higher slot's extra
-    // target waits for level-three slots.
+    // repeating it at the end of each of its turns; one more Humanoid for each
+    // slot level above 2.
     SpellDef{.id = "hold_person",
              .label = "Hold Person",
              .level = 2,
@@ -537,6 +539,7 @@ inline constexpr std::array spell_table{
              .requires_sight = true,
              .requires_effect_capacity = true,
              .save = Ability::wisdom,
+             .upcast = {.extra_instances = 1},
              .rider = Rider::hold_person,
              .concentration = true,
              .humanoid_only = true},
@@ -614,6 +617,7 @@ inline constexpr std::array spell_table{
              .damage = DamageType::force,
              .dice = {1, 8, 0},
              .add_casting_modifier = true,
+             .upcast = {.extra_dice = 1},
              .rider = Rider::spiritual_weapon,
              .concentration = true},
     // SRD 5.2.1 p. 155: ten minutes of prayer; up to five creatures regain
@@ -670,6 +674,7 @@ inline constexpr std::array spell_table{
              .half_on_success = true,
              .damage = DamageType::thunder,
              .dice = {3, 8, 0},
+             .upcast = {.extra_dice = 1},
              .radius = 10,
              .evocation = true},
     // SRD 5.2.1 p. 146: a willing unarmored creature's base AC is 13 + Dexterity.
@@ -765,6 +770,7 @@ inline constexpr std::array spell_table{
              .requires_sight = true,
              .requires_effect_capacity = true,
              .save = Ability::wisdom,
+             .upcast = {.extra_instances = 1},
              .rider = Rider::hideous_laughter,
              .concentration = true},
     // SRD 5.2.1 p. 116: a 15-foot cone; Blinded until the end of the caster's
@@ -831,6 +837,7 @@ inline constexpr std::array spell_table{
              .range = 90,
              .damage = DamageType::acid,
              .dice = {4, 4, 0},
+             .upcast = {.extra_dice = 1},
              .rider = Rider::acid_arrow,
              .evocation = true},
     // SRD 5.2.1 p. 149: a Wisdom save against 3d8 Psychic, half on a success.
@@ -846,6 +853,7 @@ inline constexpr std::array spell_table{
              .half_on_success = true,
              .damage = DamageType::psychic,
              .dice = {3, 8, 0},
+             .upcast = {.extra_dice = 1},
              .concentration = true},
     // SRD 5.2.1 p. 157: a failed Constitution save enfeebles the target; a
     // success gives Disadvantage on its next attack roll.
@@ -893,6 +901,7 @@ inline constexpr std::array spell_table{
              .pattern = SpellPattern::buff,
              .target = SpellTarget::ally,
              .range = 5,
+             .upcast = {.extra_instances = 1},
              .rider = Rider::invisibility,
              .concentration = true},
     // SRD 5.2.1 p. 160: the caster sees Invisible creatures for an hour.
@@ -925,6 +934,7 @@ inline constexpr std::array spell_table{
              .half_on_success = true,
              .damage = DamageType::fire,
              .dice = {2, 6, 0},
+             .upcast = {.extra_dice = 1},
              .rider = Rider::flaming_sphere,
              .concentration = true,
              .area = 5},
@@ -1393,6 +1403,7 @@ inline constexpr std::array spell_table{
              .half_on_success = true,
              .damage = DamageType::radiant,
              .dice = {2, 10, 0},
+             .upcast = {.extra_dice = 1},
              .rider = Rider::moonbeam,
              .concentration = true,
              .radius = 5},
@@ -1424,6 +1435,7 @@ inline constexpr std::array spell_table{
              .save = Ability::constitution,
              .damage = DamageType::fire,
              .dice = {2, 8, 0},
+             .upcast = {.extra_dice = 1},
              .rider = Rider::heat_metal,
              .concentration = true},
     // SRD 5.2.1 p. 146: a minute's casting, then for an hour a 10-foot-radius
@@ -2904,6 +2916,7 @@ inline constexpr std::array spell_table{
              .pattern = SpellPattern::buff,
              .target = SpellTarget::ally,
              .range = 5,
+             .upcast = {.extra_instances = 1},
              .rider = Rider::freedom_of_movement},
     // SRD 5.2.1 p. 137: a spectral guardian in an unoccupied square within 30
     // feet; an enemy that comes within 10 feet of it, or starts its turn there,
@@ -3285,6 +3298,7 @@ inline constexpr std::array<std::string_view, 3> restoration_conditions{"blinded
 // The condition a Lesser Restoration verb names, if it is one.
 inline std::optional<std::string_view> restoration_condition(std::string_view verb)
 {
+    verb = without_cast_suffix(verb);
     if (!verb.starts_with("lesser_restoration_"))
     {
         return std::nullopt;
@@ -3307,6 +3321,7 @@ inline constexpr std::array<std::string_view, 5> dragon_types{"acid", "cold", "f
 // The damage type a Dragon's Breath or exhale verb names, if it is one.
 inline std::optional<DamageType> dragon_type(std::string_view verb)
 {
+    verb = without_cast_suffix(verb);
     for (const std::string_view prefix : {"dragons_breath_exhale_", "dragons_breath_"})
     {
         if (verb.starts_with(prefix))
@@ -3490,6 +3505,7 @@ inline constexpr std::array<std::string_view, 10> wall_sides{
 // The side a wall verb names, as an index into wall_sides, if it names one.
 inline std::optional<std::size_t> wall_side(std::string_view verb)
 {
+    verb = without_cast_suffix(verb);
     for (std::size_t n = 0; n < wall_sides.size(); ++n)
     {
         if (verb.ends_with(wall_sides[n]) && verb.size() > wall_sides[n].size() &&

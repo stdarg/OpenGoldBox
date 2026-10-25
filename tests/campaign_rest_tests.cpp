@@ -51,15 +51,15 @@ Character hero(std::string klass = "fighter", unsigned level = 4)
 std::string spent_resources(std::string_view character_class)
 {
     return character_class == "Wizard"
-               ? "SRD13 0 0 3 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 0 1 0 0 0 0 FX8 1 0 0"
-               : "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0";
+               ? "SRD13 0 0 3 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 0 1 0 0 0 0 FX9 1 0 0"
+               : "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX9 1 0 0";
 }
 
 // A level-four human Fighter at 0 HP, still rolling death saves.
 std::string dying_resources(int successes, int failures)
 {
     return "SRD13 0 0 0 0 0 0 0 0 0 0 " + std::to_string(successes) + ' ' +
-           std::to_string(failures) + " 0 4 6000 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0";
+           std::to_string(failures) + " 0 4 6000 0 0 \"\" 0 1 0 0 0 0 0 FX9 1 0 0";
 }
 
 std::string saved(const CampaignParty &p)
@@ -165,7 +165,7 @@ void individual_eligibility()
     state.roster[1].last_rest_subminute_milliseconds = 4000;
     state.roster[2].vitals = {0, false, dying_resources(1, 2)};
     state.roster[3].vitals = {
-        0, true, "SRD13 0 0 0 0 0 0 0 0 0 0 0 3 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0"};
+        0, true, "SRD13 0 0 0 0 0 0 0 0 0 0 0 3 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX9 1 0 0"};
     party.restore(state);
     const auto before = saved(party);
     const auto info = party.rest_info(RestKind::long_rest);
@@ -200,7 +200,7 @@ void individual_eligibility()
 
     check(party.member(unconscious).vitals.dead &&
               party.member(unconscious).vitals.resources ==
-                  "SRD13 0 0 0 0 0 0 0 0 0 0 1 4 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0" &&
+                  "SRD13 0 0 0 0 0 0 0 0 0 0 1 4 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX9 1 0 0" &&
               !party.member(unconscious).last_rest_minutes,
           "Ineligible mortality continues without replenishing resources or recording a rest");
     check(
@@ -495,8 +495,8 @@ void effects_once()
     {
         m.vitals = {
             1, false,
-            "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 2 1 1 1 77 99 \"Source caster\" 13 "
-            "43000 2000 0"};
+            "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX9 2 1 1 1 77 99 \"Source caster\" 13 "
+            "43000 2000 0 0"};
     }
     for (const auto kind : {RestKind::short_rest, RestKind::long_rest})
     {
@@ -513,9 +513,9 @@ void effects_once()
         // A Long Rest leaves a Human only its Heroic Inspiration (kind 72).
         for (const auto &m : party.state().roster)
         {
-            check(m.vitals.resources.ends_with("FX8 2 0 0") ||
+            check(m.vitals.resources.ends_with("FX9 2 0 0") ||
                       (kind == RestKind::long_rest &&
-                       m.vitals.resources.find("FX8 3 1 2 72 1 1 ") != std::string::npos),
+                       m.vitals.resources.find("FX9 3 1 2 72 1 1 ") != std::string::npos),
                   "Timed effects expire during the rest");
         }
         check(party.member(reserve).vitals == elapsed.member(reserve).vitals,
