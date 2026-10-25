@@ -1,16 +1,37 @@
 {
-  "description": "Drythh is the young lizard-man challenger at the Lizard-Man Keep. Give him a distinct reptilian head, tail, and lean fighter build; show a guarded claw ready and a late claw strike.",
-  "humanoid_size": "normal",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "description": "Drythh is the young lizard-man challenger at the Lizard-Man Keep. Give him a distinct reptilian head, tail, and lean fighter build. In the selected weapon set he wears leather armor and wields a two-handed trident: raised guard in ready, late forward thrust in action.\n\nIMAGEGEN PROMPT READY:\nUse case: precise-object-edit\nAsset type: OpenGold combat sprite MON8CHA.DAX:95/added_55602892051__two_hand/ready, one transparent pixel-art frame.\nInput image 1: the newly generated trident-ready Drythh sprite is the edit target; preserve this exact character design, leather armor, reptilian head, red crest, tail, body scale, planted feet and 128x128 canvas. Input image 2: approved original pose guide; use its TWO-HANDED READY panel only for the raised two-hand guard and front three-quarter screen-right facing. Neither input is original game art.\nChange the TRIDENT POSITION substantially: tilt its straight long shaft upward into a STEEP RAISED GUARD. The three distinct prongs point up and slightly screen right, with the tip near the upper center-right of the canvas (x about 65-75% of canvas width), well inside the RIGHT boundary of Drythh's saved 1x1 combat footprint. Both hands must grip the shaft at distinct positions; upper hand near chest, lower hand near waist. This is ready BEFORE a forward thrust, clearly different from the action frame's horizontal, fully extended trident. Keep the ready weapon inside the footprint's left, right and bottom boundaries; it may cross the top tile line only. Do not shorten or turn it into a fork.\nPreserve Drythh's green scales, cream throat, red crest, lean five-foot fighter body, fitted leather armor, tail and planted feet. No shield, extra weapon, duplicate character, split sheet, scenery, ground, lettering, opaque background or cropped pixels. Genuine transparency and crisp pixel art. Keep the body, tail, and both feet within the saved 1x1 footprint and leave transparent canvas margin around the trident.\n\nIMAGEGEN PROMPT ACTION:\nUse case: precise-object-edit\nAsset type: OpenGold combat sprite MON8CHA.DAX:95/added_55602892051__two_hand/action, exactly one transparent pixel-art frame.\nInput image 1: the newly generated STEEP-GUARD trident ready image is the actual edit target. Keep its exact Drythh identity, leather armor, trident, camera, canvas, red crest, tail, waist garment, BOTH legs and BOTH planted feet. Input image 2: the newly generated horizontal-trident action draft is only a reference for the final trident position and late forward-thrust timing; do not copy its shifted body or feet. No original game art is a reference.\nChange only the upper attack: rotate the trident from steep raised guard into a clearly completed FORWARD THRUST toward screen right, with all THREE distinct metal prongs pointing right. Both hands visibly grip the SAME continuous shaft at two positions; extend both arms and lean the upper chest/head modestly right into the thrust. Keep the neck, chest, abdomen, waist, pelvis and loincloth connected as ONE continuous figure from the original ready image. No horizontal seam or independently pasted upper half.\nLOCK the ready image's tail, leather waist garment, pelvis, left and right thighs, knees, shins, ankles and foot-contact pixels at their exact x/y coordinates. Preserve body height, head and torso scale, front three-quarter screen-right facing and genuine alpha. The body and leather armor remain inside the saved 1x1 tile; the attacking trident may extend past its right boundary but all pixels remain inside the 128x128 transparent PNG. No shield, sword, extra arm, duplicate trident, cropped prong, scenery, ground, text, border, checkerboard or opaque backdrop. Crisp readable pixel art.",
   "description_sources": [
     "Original game MON8CHA.DAX:95 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"
   ],
-  "equipment": [],
+  "equipment": [
+    {
+      "id": "added_55602892051",
+      "kind": "weapon",
+      "name": "Trident",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": 39,
+      "weapon_role": "two_hand"
+    },
+    {
+      "id": "added_55628365597",
+      "kind": "gear",
+      "name": "Leather armor",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": 50,
+      "weapon_role": ""
+    }
+  ],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
+  "height_feet": null,
+  "humanoid_size": "normal",
   "name": "DRYTHH",
-  "preview_fallback_variant": "",
+  "preview_fallback_variant": "default",
   "source": {
     "art_archive": "CPIC8.DAX",
     "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
@@ -20,15 +41,19 @@
     "key": "MON8CHA.DAX:95",
     "linked_creature_keys": []
   },
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 1
+  },
   "variants": [
     {
-      "action": "art/mon8cha_dax_95/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon8cha_dax_95/default/ready.png",
+      "action": "art/mon8cha_dax_95/added_55602892051__two_hand/action.png",
+      "id": "added_55602892051__two_hand",
+      "label": "Trident",
+      "ready": "art/mon8cha_dax_95/added_55602892051__two_hand/ready.png",
       "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "weapon_id": "added_55602892051",
+      "weapon_role": "two_hand"
     }
   ],
   "wealth": {
