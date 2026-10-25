@@ -428,6 +428,11 @@ if(OPENGOLD_BUILD_TESTS)
         set_tests_properties(opengold_godot_creation_${name} PROPERTIES
             FIXTURES_REQUIRED "godot_project;advancement_ui_fixtures")
     endforeach()
+    opengold_creation_check(discovery_swap "Discovery swap view checks passed"
+        -DSCRIPT=discovery_swap_view_tests
+        "-DARGS=--discovery-fixture=${PROJECT_BINARY_DIR}/discovery-swap-ui.ogs")
+    set_tests_properties(opengold_godot_creation_discovery_swap PROPERTIES
+        FIXTURES_REQUIRED "godot_project;discovery_ui_fixtures")
     foreach(klass fighter paladin ranger)
         set(fixture "${PROJECT_BINARY_DIR}/style-${klass}-ui.ogs")
         opengold_original_check(creation_style_${klass}
