@@ -7,22 +7,24 @@
     "ready": "art/mon6cha_dax_65/default/ready.png",
     "action": "art/mon6cha_dax_65/default/action.png"
   },
-  "metadata_sha256": "69bc0111ab98bf354be4a6101ac1727b8250eb99112e745c1f7898642e7b031d",
-  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e",
+  "metadata_sha256": "e028233236b2c19b9e34696aec5548556e90b06d7c10631167ff9babcb744c4a",
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd",
+  "ready_sha256": "7f2928172b5cc3f9ee297e77e1a72a8e70c039810b1072ca68ec9a0df44d06fe",
+  "action_sha256": "51f4e4da210b70114a402d2575d42e2f5b17edfd4162be6cc843086ec79f64fe",
+  "reviewed_at": "2026-10-25T22:23:13.330136+00:00",
+  "reviewer": "Codex visual review",
+  "technical_check": "sprite_art_workflow.gd check; bipedal accept is inapplicable to an invertebrate body plan",
   "visual_checks": {
     "source_identity_and_independent_art": true,
     "correct_equipment_or_no_equipment": true,
-    "same_body_scale_and_perspective": true,
-    "planted_base_registered": true,
-    "requested_ready_and_action_motion": true,
+    "larger_ready_body_at_same_scale_as_action": true,
+    "planted_rear_and_middle_contacts_registered": true,
+    "forebody_rears_and_remains_connected": true,
+    "mandibles_open_and_upper_forelimbs_attack": true,
     "footprint_and_attack_appendage_reviewed": true,
     "complete_alpha_silhouette_on_light_magenta_dark": true,
     "readable_at_combat_size": true,
     "one_second_fixed_grid_catalog_review": true
   },
-  "ready_sha256": "9481283095284cb32e252ae1353a93da74df7eaaecbe3e820e3be1707ec29c58",
-  "action_sha256": "274ad0b3e1c28fdd3c8a333ccad42f84f3c0b45bf4066f74fb753f36857145c8",
-  "reviewer": "Codex",
-  "reviewed_at": "2026-10-24T19:52:42.208968+00:00",
-  "notes": "Low, elongated plated Ahnkheg fits 2x1; segmented body and walking-leg contacts stay fixed while right mandibles open for a bite. Native light, magenta and dark review and one-second catalog alternation passed. No gear or other set."
+  "notes": "Default is the only set; no carried gear. Prior ready silhouette 102x27 pixels, new ready 118x43; action 118x70. The same transform was used for both generated frames. Rear/middle walking-leg contact regions retain matching bounds and at least 94% alpha overlap; no visible base jump in the one-second catalog cycle. The action opens the mandibles wide and raises the connected armored forebody with upper forelimbs reaching toward screen right. Ready fits saved 2x1 footprint; moving action forebody exceeds it by up to 0.09 square while all pixels remain within PNG. Reviewed exact final images at native 128px and enlarged on light, dark catalog, and magenta backgrounds; loaded target paths verified."
 }
