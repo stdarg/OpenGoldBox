@@ -76,7 +76,6 @@ no preset) and runs tests only when asked:
 | *(none)* | macOS: build the game and re-export `mac-package/OpenGoldBox.app`. Linux: build the native core. No tests. |
 | `--test` | After building, run the native tests (everything except the Godot runtime checks). |
 | `--test-all` | After building, run every test, including the Godot runtime checks. |
-| `--werror` | Make every compiler warning fail the build. |
 | `default`, `debug`, `macos-universal` | Build that preset instead of the platform default. |
 
 Both scripts always build the checkout they live in, whatever the current
@@ -104,24 +103,10 @@ than every change:
 
 The project's own targets build at a high warning level: `-Wall -Wextra` with
 Clang and GCC (plus `-Wshorten-64-to-32` on Clang, which reports the narrowing
-MSVC warns about) and `/W4 /permissive-` with MSVC. Fetched code such as
-godot-cpp keeps its own flags. Pass `--werror` to either script, alone or beside
-a preset name, to make every compiler warning fail the build. The native and
-game builds are warning-free with Apple Clang; leaving the flag off on a later
-run turns warnings back into warnings:
-
-```bash
-./build.sh --werror                  # the game, on macOS
-./build.sh --werror default --test   # the native core and its tests
-```
-
-The demo build is warning-free too. Add `-DCMAKE_COMPILE_WARNING_AS_ERROR=ON`
-to its configure step (or to `.\build-opengoldbox.cmd` and
-`.\demos\build-rolf.cmd`, which pass CMake options through), for example:
-
-```bash
-cmake --preset macos-universal -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
-```
+MSVC warns about) and `/W4 /permissive-` with MSVC. Every warning in them is an
+error, in the native core, the game, the demo and the dev tools alike. Fetched
+code such as godot-cpp keeps its own flags. To build past a warning while
+investigating it, configure with `--compile-no-warning-as-error`.
 
 When running these by hand, check the build output for errors before trusting
 `ctest`: a target that fails to relink leaves its previous binary in place, and

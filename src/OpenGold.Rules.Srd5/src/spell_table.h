@@ -475,8 +475,8 @@ inline constexpr std::array spell_table{
              .save = Ability::strength,
              .damage = DamageType::piercing,
              .dice = {1, 6, 0},
-             .concentration = true,
-             .upcast = {.extra_dice = 1}},
+             .upcast = {.extra_dice = 1},
+             .concentration = true},
     // SRD 5.2.1 p. 128: a 20-foot square of Difficult Terrain; each creature
     // in it when cast makes a Strength save or is Restrained.
     SpellDef{.id = "entangle",

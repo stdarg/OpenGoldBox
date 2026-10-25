@@ -212,7 +212,7 @@ void progression_checks()
     const auto rules = module();
     check(fifteen.sheet().level == 15 && !rules->advancement_options(fifteen.sheet()).level,
           "Level 15 is the Rogue's cap");
-    const auto holds = [&](std::string_view id, int level)
+    const auto holds = [&](std::string_view id, unsigned level)
     {
         return std::any_of(fifteen.sheet().grants.begin(), fifteen.sheet().grants.end(),
                            [&](const auto &g)

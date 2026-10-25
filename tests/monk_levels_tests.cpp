@@ -175,7 +175,7 @@ void progression_checks()
     const auto fifteen = monk(15);
     check(fifteen.sheet().level == 15 && !rules->advancement_options(fifteen.sheet()).level,
           "Level 15 is the Monk's cap");
-    const auto holds = [&](std::string_view grant, int level)
+    const auto holds = [&](std::string_view grant, unsigned level)
     {
         return std::any_of(fifteen.sheet().grants.begin(), fifteen.sheet().grants.end(),
                            [&](const auto &g)

@@ -65,7 +65,7 @@ unsigned soldier_adjustment(const rules::CharacterRules &creation, const std::st
 // `draft` at `level`, each level after the first with the rules' default
 // choices for the level it reaches.
 Character advanced(const rules::CharacterRules &creation, const rules::RulesModule &rules,
-                   const rules::CharacterDraft &draft, unsigned level)
+                   const rules::CharacterDraft &draft, int level)
 {
     std::vector<rules::AdvancementChoice> history;
     Character companion(creation, draft, {});

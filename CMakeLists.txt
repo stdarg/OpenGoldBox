@@ -37,9 +37,9 @@ option(OPENGOLD_BUILD_GAME "Build the OpenGoldBox Windows game" OFF)
 option(OPENGOLD_BUILD_FUZZERS "Build isolated Clang libFuzzer targets with ASan/UBSan" OFF)
 
 # Effective C++ Item 53: the project's own targets build at a high warning
-# level, while fetched code such as godot-cpp keeps its own flags. Designated
-# initializers that leave fields at their defaults are idiomatic here, so that
-# one warning stays off.
+# level and fail on any warning, while fetched code such as godot-cpp keeps its
+# own flags. Designated initializers that leave fields at their defaults are
+# idiomatic here, so that one warning stays off.
 if(MSVC)
     set(OPENGOLD_WARNING_FLAGS /W4 /permissive-)
 else()
@@ -55,6 +55,7 @@ function(opengold_enable_warnings directory)
         get_target_property(type ${target} TYPE)
         if(type MATCHES "^(EXECUTABLE|STATIC_LIBRARY|SHARED_LIBRARY|MODULE_LIBRARY|OBJECT_LIBRARY)$")
             target_compile_options(${target} PRIVATE ${OPENGOLD_WARNING_FLAGS})
+            set_target_properties(${target} PROPERTIES COMPILE_WARNING_AS_ERROR ON)
         endif()
     endforeach()
 endfunction()
