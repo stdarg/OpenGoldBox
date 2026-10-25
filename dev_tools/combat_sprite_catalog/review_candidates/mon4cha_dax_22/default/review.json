@@ -1,0 +1,32 @@
+{
+  "action_sha256": "",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon4cha_dax_22/default/action.png",
+    "ready": "art/mon4cha_dax_22/default/ready.png"
+  },
+  "metadata_sha256": "13662acdac5db419b56b89828a698b30bc49a9d63158c0581c9ea42bdda2b167",
+  "notes": "Pending catalog visual review. Specific user direction: both arms outstretched in a screen-right reach with upper body leaning forward; ready within 1x2 footprint, action arms may spill over. Ready unchanged. Action rows 88..127 match ready exactly. Inspect final torso continuity, two arm connections, footprint, alpha and normal combat size before attesting.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "",
+  "reviewed_at": "",
+  "reviewer": "",
+  "source_key": "MON4CHA.DAX:22",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": false,
+    "complete_silhouette_no_clipping_or_background": false,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": false,
+    "correct_equipment_grip_and_handedness": false,
+    "front_three_quarter_screen_right_chest_visible": false,
+    "humanoid_height_tier_or_na_reviewed": false,
+    "only_independent_art_used_as_references": false,
+    "pair_reviewed_alternating_in_catalog": false,
+    "pixel_art_readable_at_combat_size": false,
+    "planted_feet_same_xy_no_whole_body_translation": false,
+    "ready_weapon_raised_or_projectile_loaded": false,
+    "same_identity_clothing_palette_and_camera": false
+  },
+  "workflow_sha256": "e7f98f03faddfba4db29c94db6fe5b09818d246f9dd0a209f8a2a324b7152b5c"
+}
