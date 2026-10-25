@@ -1,16 +1,16 @@
 {
-  "action_sha256": "950c5f7c8e2edcc6af7c80a047a978e193b53a09c9a47dffd20a0a2ac5fe4912",
+  "action_sha256": "4070d735753353d1995b72a944e8f727964fa6243ef2e829c6623ad79e702fe3",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon4cha_dax_8/default/action.png",
     "ready": "art/mon4cha_dax_8/default/ready.png"
   },
-  "metadata_sha256": "baceb3cb8017394947eea5b5ac1614ccaed2519ea998d99fef635a9dfedcdfcf",
-  "notes": "Keep the ready Ogre. In action it lowers and leans its upper body toward screen right, punching low to the right. The striking fist extends into the adjacent square; the torso and planted feet remain inside the 1x2 footprint. Final 128x128 PNGs checked on light gray, magenta, and dark backgrounds, at native combat size and in a one-second ready/action cycle in the isolated Godot catalog. Loaded path and exact file hashes matched the staged images. Full equipment and alternate weapon sets were inspected; unaffected sets remain unchanged.",
+  "metadata_sha256": "0b2db0311ab3fbf71ddbb24677e9b6502f7aa67b2e704acea7d24ef636668e27",
+  "notes": "Skin-only warm ochre-yellow recolor of the existing approved Ogre pair. No equipment; default is the sole saved set. Both final 128x128 exports retain alpha and silhouettes pixel for pixel; 2238 ready and 1988 action RGB pixels changed, with no alpha changes. Red hair and loincloth preserved. Ready fits the 1x2 footprint; the existing low punching fist in action extends 0.36 square rightward while torso and planted feet stay within it. Reviewed native size, enlarged on light gray and magenta, and on the dark catalog grid; exact loaded paths and one-second alternation checked. Existing pose, connected torso, and fixed feet retained.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "c777da545efaae578a379b094f2818b4e9e6c392cdea064e5724480661b0f193",
-  "reviewed_at": "2026-10-24T19:18:51.502295+00:00",
-  "reviewer": "Codex",
+  "ready_sha256": "16c4bbd645c9a37b7995777e969a41cd66ae9f27ced0341664f0af4bbd1d5564",
+  "reviewed_at": "2026-10-25T20:57:20.893514+00:00",
+  "reviewer": "Codex visual review",
   "source_key": "MON4CHA.DAX:8",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "602840ff35a5d3dc55e902fc3bad5f00522e9c6baa38ee4448710ec1c57e486e"
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
 }
