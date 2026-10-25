@@ -100,7 +100,7 @@ class LevelUpDialog : public godot::Window
     void advancement_swap_changed(std::int64_t unused = 0);
     // The cantrip, spell and option rows as picked. A row with something to
     // replace but no replacement yet stays out of the choice until complete.
-    std::array<opengold::rules::LevelSwap, 3> swap_rows_{};
+    std::array<opengold::rules::LevelSwap, 4> swap_rows_{};
     bool swap_incomplete_{};
     void advancement_skilled_toggled(bool selected, godot::String option);
     void advancement_back();

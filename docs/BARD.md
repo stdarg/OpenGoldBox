@@ -104,7 +104,9 @@ The Bard advances to level 15, the cap
   slot into one more use while some are spent.
 - **Magical Discoveries** (Lore 6): a level-up choice of two spells from the
   Cleric, Druid and Wizard lists, cantrips or of level 1 to 3, always
-  prepared. Replacing one on a later level-up is not offered yet.
+  prepared. On each later level-up the Replace page offers to replace one with
+  another from those lists, a cantrip or a spell of a level the Bard has slots
+  for ([Replacing choices](LEVEL-SWAPS.md)).
 - **Countercharm** (7): when the Bard or a creature of its side within 30
   feet fails a save against a spell that Charms or Frightens (Charm Person,
   Charm Monster, the Dominate spells, Hypnotic Pattern, Fear, Eyebite's

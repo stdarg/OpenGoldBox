@@ -29129,6 +29129,7 @@ class Module final : public RulesModule
             options.cantrip_swap = detail::cantrip_swap_offer(sheet);
             options.spell_swap = detail::spell_swap_offer(sheet);
             options.option_swap = detail::option_swap_offer(sheet);
+            options.discovery_swap = detail::discovery_swap_offer(sheet);
         }
         // Skilled's proficiency page exists only while Skilled is the selection,
         // so switching away from it drops the group and its unconfirmed picks.
@@ -29287,6 +29288,8 @@ class Module final : public RulesModule
         detail::apply_cantrip_swap(next, choice.cantrip_swap, detail::cantrip_swap_offer(sheet));
         detail::apply_spell_swap(next, choice.spell_swap, detail::spell_swap_offer(sheet));
         detail::apply_option_swap(next, choice.option_swap, detail::option_swap_offer(sheet));
+        detail::apply_discovery_swap(next, choice.discovery_swap,
+                                     detail::discovery_swap_offer(sheet));
         const auto held = [&](std::string_view id)
         {
             return std::any_of(next.grants.begin(), next.grants.end(),

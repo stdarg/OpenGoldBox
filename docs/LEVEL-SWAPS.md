@@ -11,6 +11,7 @@ The level-up window offers them on a **Replace** page, after any checkbox page
 | Bard, Sorcerer, Warlock | spell on its list | another class spell of a level it has slots for |
 | Warlock | Eldritch Invocation | any invocation it qualifies for at the new level |
 | Sorcerer (level 3 onward) | Metamagic option | one it does not know |
+| Bard (College of Lore, level 7 onward) | Magical Discoveries spell | another Cleric, Druid or Wizard cantrip or spell of a level it has slots for |
 
 The Cleric, Druid, Paladin, Ranger and Wizard change prepared spells on a Long
 Rest instead; the Wizard also swaps a cantrip on a Long Rest.
@@ -40,7 +41,8 @@ place is free to choose again.
   with that reason.
 - An invocation cannot be both swapped in and picked as one of the level's new
   invocations; the Replace list leaves out the ones picked.
-- Saves record each swap in the level's advancement (campaign format 29).
+- Saves record each swap in the level's advancement (campaign format 29; the
+  Magical Discoveries swap since format 41).
 
 ## Verification
 
@@ -48,4 +50,6 @@ place is free to choose again.
 refused swap, Pact of the Tome in and out, a Bard's cantrip and spell, Blessed
 and Druidic Warrior cantrips, save replay) and
 `opengold_godot_level_up_lab` (a Sorcerer's cantrip swap through the window,
-seen again in the next level's list).
+seen again in the next level's list). `opengold_bard_levels_tests` covers the
+Magical Discoveries swap: none before level 6, a level-4 spell offered at 7 but
+not a level-5 one, a refused swap and save replay.
