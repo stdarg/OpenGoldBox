@@ -3000,8 +3000,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             open_hall(request.id);
             return true;
         }
-        // Tyranthraxus defeated (coab CMD_Program 8): every living member is
-        // healed and the game is won (area byte 0x3FA, the cell 0x4AFD). The
+        // Tyranthraxus defeated (coab CMD_Program 8): every member is restored,
+        // the dead and the stoned too, and the game is won (area byte 0x3FA, the cell 0x4AFD). The
         // original pauses on its closing words; then the script goes on, back
         // to the civilized city.
         if (arg(0) == 8 && campaign_)
