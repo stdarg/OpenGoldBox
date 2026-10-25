@@ -215,6 +215,31 @@ Character mystic(const rules::CharacterRules &creation, const rules::RulesModule
                         original_ring_of_protection});
     return companion;
 }
+
+// Genheeris, Tyranthraxus's turncoat mage in Valjevo Castle (MON5CHA 88): a
+// level-6 Wizard with Intelligence 18 and 10 in the rest, as his record has
+// them; a Sage's +2 Intelligence and +1 Constitution and the level-4 Ability
+// Score Improvement's +2 Intelligence reach them from the rolls.
+Character genheeris(const rules::CharacterRules &creation, const rules::RulesModule &rules)
+{
+    rules::CharacterDraft draft;
+    draft.name = "Genheeris";
+    draft.race = "human";
+    draft.gender = "male";
+    draft.character_class = "wizard";
+    draft.alignment = "neutral_evil";
+    draft.background = "sage";
+    draft.rolled = true;
+    constexpr std::array<int, 6> rolled{10, 10, 9, 14, 10, 10};
+    for (unsigned ability = 0; ability < rolled.size(); ++ability)
+    {
+        draft.rolls[ability] = roll_of(rolled[ability]);
+    }
+    draft.adjustment = adjustment(creation, draft.background, rules::Ability::intelligence,
+                                  rules::Ability::constitution);
+    choose_training(creation, draft);
+    return advanced(creation, rules, draft, 6);
+}
 } // namespace
 
 std::optional<Character> original_companion(unsigned bank, unsigned record,
@@ -240,6 +265,10 @@ std::optional<Character> original_companion(unsigned bank, unsigned record,
     if (bank == 4 && record == 24)
     {
         return mystic(creation, rules);
+    }
+    if (bank == 5 && record == 88)
+    {
+        return genheeris(creation, rules);
     }
     return std::nullopt;
 }

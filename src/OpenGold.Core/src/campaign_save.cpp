@@ -613,9 +613,9 @@ template <bool Reading> struct SaveCodec
             require(area == 0 ? !std::any_of(v.town_->districts.begin(), v.town_->districts.end(),
                                              [&](const auto &d)
                                              {
-                                                 return d.second->script == v.current_script_;
+                                                 return d.second->loaded_by(v.current_script_);
                                              })
-                              : v.town_->districts.at(area)->script == v.current_script_,
+                              : v.town_->districts.at(area)->loaded_by(v.current_script_),
                     "Saved district and script disagree");
             v.current_area_ = 0;
             v.snapshot_.area_id = 0;
@@ -797,6 +797,7 @@ template <bool Reading> struct SaveCodec
             v.hall_visit_.reset();
             v.menu_request_ = v.delayed_request_ = v.who_request_ = v.shop_request_ =
                 v.damage_request_ = 0;
+            v.victory_ = false;
             v.remaining_delay_ = 0;
             v.transition_ = v.message_only_ = false;
             v.event_stage_ = por::RolfTourSession::EventStage::none;

@@ -129,6 +129,10 @@ constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_
     {
         return N_("Old Town");
     }
+    if (area_id == 3 || area_id == 4 || area_id == 5 || area_id == 7)
+    {
+        return N_("Valjevo Castle");
+    }
     return N_("New Phlan");
 }
 
@@ -1455,6 +1459,7 @@ String rest_notice(const std::string &resource, const std::string &text)
          N_("The way to the western wilderness is not in the game yet."),
          N_("The way to the eastern wilderness is not in the game yet."),
          N_("The river's stench drives you back."),
+         N_("Tyranthraxus is destroyed, and Phlan is free of him. You have won."),
          N_("The way to another area is not in the game yet.")})
     {
         result = result.replace(String::utf8(source), i18n::text(source));

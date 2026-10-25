@@ -2172,6 +2172,19 @@ unsigned CampaignParty::thieves_tools_chance(MemberId id) const
     return carries_thieves_tools(m) ? std::min(100U, chance * 2) : chance;
 }
 
+void CampaignParty::heal_after_victory()
+{
+    for (auto &member : state_.roster)
+    {
+        if (!member.vitals.dead)
+        {
+            rules_->set_hit_points(member.vitals, member.character.sheet(),
+                                   std::min(member.character.sheet().hit_points,
+                                            hit_point_maximum(member.id)));
+        }
+    }
+}
+
 int CampaignParty::hit_point_maximum(MemberId id) const
 {
     const auto &m = member(id);

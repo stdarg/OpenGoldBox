@@ -252,6 +252,20 @@ The Open5E response was fetched on 2026-10-25 (`srd-2024`):
 
 It keeps the original's 59 Hit Points.
 
+## Valjevo Castle monsters
+
+Valjevo Castle's medusa, guards and Tyranthraxus
+([audit](../../../docs/audits/valjevo-castle.md)). Each Open5E response was
+fetched on 2026-10-25 (`srd-2024`):
+
+| Rows | Stat block | Response | SHA-256 |
+| --- | --- | --- | --- |
+| `medusa` | Medusa | `open5e-medusa.json` | `21E6748CA7AB45E535562DDF8600CD5F01E030BE89752A45DDA9A5C880BAF63A` |
+| `tyranthraxus` | Adult Bronze Dragon | `open5e-adult-bronze-dragon.json` | `E99FDAE6AE9825FCCC6F5722B94152315C0EDF45B3B4CC9692B670C126E75116` |
+| `castle-knight` | Knight | `open5e-knight.json` | `A89C498B0F6B71AAFAE4FBEB291F7D50E3780E6D6D6C258269A5709D47585276` |
+
+Each keeps the original's Hit Points.
+
 ## Fixtures
 
 `vanguard`, `scout`, `adept`, and `healer` are authored combat fixtures, not

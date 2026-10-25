@@ -15,6 +15,7 @@
 #include "opengold/encounter_budget.h"
 #include "opengold/shop_data.h"
 #include "opengold/temple_catalog.h"
+#include <algorithm>
 #include <bitset>
 
 namespace opengold
@@ -103,6 +104,13 @@ struct PhlanResources
     std::map<unsigned, EncounterConversion> conversions;
     // A district's script, archive bank and LOAD PIECES wall banks; zero for the town.
     unsigned script{}, bank{};
+    // Other scripts that load this map: Valjevo Castle's share its quarters.
+    std::vector<unsigned> shared_with;
+    [[nodiscard]] bool loaded_by(unsigned id) const
+    {
+        return id == script || std::find(shared_with.begin(), shared_with.end(), id) !=
+                                   shared_with.end();
+    }
     std::array<unsigned, 3> pieces{};
     std::vector<std::uint8_t> combat_archive;
     std::vector<Image> terrain_art;
@@ -382,6 +390,9 @@ class RolfTourSession
     std::uint64_t who_request_{};
     // A DAMAGE volley waits here until its results are acknowledged.
     std::uint64_t damage_request_{};
+    // Tyranthraxus defeated: the game's won cell is written as the closing
+    // words are acknowledged (PROGRAM 8).
+    bool victory_{};
 
     // A training hall's PROGRAM 0: the script waits on `request` while the
     // party buys sessions of experience and skill lessons from the list.
