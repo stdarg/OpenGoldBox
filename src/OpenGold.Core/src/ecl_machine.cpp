@@ -179,6 +179,16 @@ void EclMachine::enable_host(std::uint8_t opcode)
     host_opcodes_.insert(opcode);
 }
 
+void EclMachine::ignore_cells(EclAddress first, EclAddress last)
+{
+    require_configurable();
+    if (last.location < first.location || program_address(first) || program_address(last))
+    {
+        throw EclError("Invalid ignored cells");
+    }
+    ignored_cells_.emplace_back(first.location, last.location);
+}
+
 void EclMachine::bind_variable(EclAddress address, std::uint16_t v)
 {
     require_configurable();
@@ -232,6 +242,14 @@ std::uint16_t EclMachine::variable(EclAddress address) const
         }
         return image_[offset];
     }
+    const auto ignored = [&](const auto &range)
+    {
+        return address.location >= range.first && address.location <= range.second;
+    };
+    if (std::any_of(ignored_cells_.begin(), ignored_cells_.end(), ignored))
+    {
+        return 0;
+    }
     const auto *bound = bound_variable(variables_, address.location);
     if (!bound)
     {
@@ -266,6 +284,14 @@ bool EclMachine::consume_script_write(EclAddress address)
 
 void EclMachine::write(EclAddress address, std::uint16_t v)
 {
+    if (std::any_of(ignored_cells_.begin(), ignored_cells_.end(),
+                    [&](const auto &range)
+                    {
+                        return address.location >= range.first && address.location <= range.second;
+                    }))
+    {
+        return;
+    }
     (void)variable(address);
     if (executing_)
     {

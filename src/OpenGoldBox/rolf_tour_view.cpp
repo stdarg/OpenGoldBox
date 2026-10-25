@@ -397,6 +397,16 @@ void RolfTourView::forward()
     movement(on_overland() ? ExplorationCommand::north : ExplorationCommand::forward);
 }
 
+void RolfTourView::toggle_search()
+{
+    if (!session_)
+    {
+        return;
+    }
+    session_->set_searching(!session_->snapshot().searching);
+    refresh();
+}
+
 void RolfTourView::look()
 {
     movement(ExplorationCommand::look);
@@ -1310,6 +1320,9 @@ void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
     case Key::KEY_L:
         look();
         break;
+    case Key::KEY_S:
+        toggle_search();
+        break;
     case Key::KEY_C:
         camp();
         break;
@@ -1656,11 +1669,15 @@ void RolfTourView::refresh()
         .set_text(s.tour_finished
                       ? i18n::format("OPENGOLDBOX  /  {district}", {{"district", district}})
                       : i18n::text("OPENGOLDBOX  /  Rolf's welcome"));
-    required_node<Label>(*this, "Coordinates")
-        .set_text(i18n::format("Party ({x}, {y})   {direction}",
-                               {{"x", s.pose.x},
-                                {"y", s.pose.y},
-                                {"direction", i18n::text(direction_name[index(s.pose.facing)])}}));
+    auto coordinates = i18n::format("Party ({x}, {y})   {direction}",
+                                    {{"x", s.pose.x},
+                                     {"y", s.pose.y},
+                                     {"direction", i18n::text(direction_name[index(s.pose.facing)])}});
+    if (s.searching)
+    {
+        coordinates += String("   ") + i18n::text(N_("Searching"));
+    }
+    required_node<Label>(*this, "Coordinates").set_text(coordinates);
     required_node<Label>(*this, "Speaker")
         .set_text(i18n::text(faulted           ? N_("Unable to continue")
                              : shopping        ? N_("Shop / select an item")

@@ -271,6 +271,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
     town->map = map->get();
     town->wall_art = *wall_art;
 
+    constexpr unsigned no_wall_bank = 255;
     // The districts beyond New Phlan, one row per area: its script, its archive
     // bank (ECLn, GEOn, WALLDEFn, MONnCHA and so on), the maps its script loads
     // with each map's three wall banks (`LOAD PIECES`), and the original
@@ -437,7 +438,30 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                     {40, "wilderness-bandit", 25, 25},
                     {41, "nomad-guard", 450, 450},
                     {42, "hassad", 700, 700},
-                    {43, "nomad-shaman", 200, 200}}}};
+                    {43, "nomad-shaman", 200, 200}}},
+        // The Pyramid (docs/audits/pyramid.md, PYRAMID-1): Yarash's prison of
+        // souls (map 22) and his laboratories (map 23).
+        AreaSource{22,
+                   7,
+                   {{22, {1, 3, no_wall_bank}}},
+                   {{57, "lizardfolk", 100, 100},
+                    {61, "stirge", 25, 25},
+                    {62, "minotaur", 700, 700},
+                    {68, "displacer-beast", 700, 700},
+                    {69, "drider", 2300, 2300},
+                    {75, "trapped-fighter", 700, 700},
+                    {76, "trapped-veteran", 700, 700},
+                    {77, "kovel-master-thief", 200, 200},
+                    {78, "trapped-acolyte", 50, 50},
+                    {79, "nomad-shaman", 200, 200},
+                    {80, "trapped-veteran", 700, 700},
+                    {123, "slums-kobold", 25, 25}}},
+        AreaSource{23,
+                   7,
+                   {{23, {1, 3, no_wall_bank}}},
+                   {{57, "lizardfolk", 100, 100},
+                    {58, "mutant-lizardfolk", 100, 100},
+                    {81, "yarash", 2300, 2300}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;
@@ -479,6 +503,14 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
             // by its own 70 tiles. Decode independently before concatenating.
             for (const auto id : geo.pieces)
             {
+                // Bank 255 loads nothing (the Pyramid's LOAD PIECES 1,3,255):
+                // its five appearances stay blank.
+                if (id == no_wall_bank)
+                {
+                    district->wall_art.appearances.resize(district->wall_art.appearances.size() +
+                                                          5);
+                    continue;
+                }
                 WallTiles walls(1);
                 auto common = decode_wall_tiles(find_record(shared, 203));
                 auto local_bank = decode_wall_tiles(find_record(tiles, id));

@@ -272,12 +272,14 @@ std::string script_damage_type(unsigned script, std::uint16_t address)
     throw EclError("No damage type for DAMAGE at " + std::to_string(address));
 }
 
-// The letters of a line of rune glyphs, two glyph tiles a letter ending at a
-// zero byte: A at tile 0x40, two tiles a letter, and S on from 0x67.
+// The letters of a line of rune glyphs ending at a zero byte. Elvish runes
+// take two glyph tiles a letter, A at tile 0x40 and S on from 0x67; dwarvish
+// runes one tile a letter, A at 0x79 (the Pyramid's NOKNOK, Valjevo's RHODIA).
 std::string rune_text(const EclMachine &machine, EclAddress address)
 {
+    constexpr std::uint16_t dwarvish_a = 0x79;
     std::string text;
-    for (unsigned n = 0; n < 64; n += 2)
+    for (unsigned n = 0; n < 64;)
     {
         const auto glyph =
             machine.variable(EclAddress{static_cast<std::uint16_t>(address.location + n)});
@@ -285,12 +287,19 @@ std::string rune_text(const EclMachine &machine, EclAddress address)
         {
             return text;
         }
+        if (glyph >= dwarvish_a && glyph < dwarvish_a + 26)
+        {
+            text += static_cast<char>('A' + (glyph - dwarvish_a));
+            ++n;
+            continue;
+        }
         if (glyph < 0x40 || (glyph > 0x63 && glyph < 0x67) || glyph > 0x76)
         {
             throw EclError("Unknown rune glyph " + std::to_string(glyph));
         }
         text += glyph >= 0x67 ? static_cast<char>('S' + (glyph - 0x67) / 2)
                               : static_cast<char>('A' + (glyph - 0x40) / 2);
+        n += 2;
     }
     throw EclError("Unterminated rune text");
 }
@@ -305,8 +314,6 @@ std::string_view area_beyond(unsigned script)
         return "Stojanow Gate";
     case 10:
         return "Valhingen Graveyard";
-    case 22:
-        return "the Pyramid";
     case 25:
         return "the western wilderness";
     case 27:
@@ -389,6 +396,11 @@ void RolfTourSession::configure_town()
     {
         machine_.enable_host(op);
     }
+    // When the Pyramid falls the Central Wilderness's script patches the
+    // original's colours of 36 wilderness tiles in two buffers (ECL7:26
+    // 0xAD54); the art here keeps them (PYRAMID-1).
+    machine_.ignore_cells(EclAddress{0xD000}, EclAddress{0xD7FF});
+    machine_.ignore_cells(EclAddress{0x6300}, EclAddress{0x6AFF});
     if (campaign_)
     {
         for (const std::uint8_t op : {11, 29, 30, 34, 35, 41, 46, 52, 54, 59})
@@ -578,7 +590,12 @@ bool RolfTourSession::move_party(ExplorationCommand command)
     }
     if (campaign_ && command == ExplorationCommand::forward)
     {
+        // A step in Search mode takes ten minutes more (coab MovePartyForward).
         campaign_->advance_time(step_time);
+        if (snapshot_.searching)
+        {
+            campaign_->advance_time(std::chrono::minutes{10});
+        }
     }
     bind_pose(pose);
     synchronize_clock();
@@ -637,7 +654,9 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
     machine_.bind_variable(EclAddress{0x6DD5}, off_map ? 1 : 0);
     // The original runs Look's search with its search flag at 1, as each step
     // in Search mode reads it (coab ovr003): the scripts test only 0 and 1.
-    machine_.bind_variable(EclAddress{0x6DCA}, trigger == EventTrigger::look ? 1 : 0);
+    const bool searching =
+        trigger == EventTrigger::look || (trigger == EventTrigger::step && snapshot_.searching);
+    machine_.bind_variable(EclAddress{0x6DCA}, searching ? 1 : 0);
     // The spokesman's reaction score (0x6DCF), which the scripts add to reaction
     // rolls. The original's formula is unknown; twice Charisma, as New Phlan's
     // own script doubles it, was chosen (LEADER-1).

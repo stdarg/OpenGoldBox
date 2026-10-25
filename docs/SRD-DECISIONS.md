@@ -1763,3 +1763,22 @@ they await the user's review ([audit](audits/nomad-camp.md)):
   time moves on to it.
 - **The lodging** opens the camp, as the original's camp menu did; its rest
   is broken when the script says the kobolds come.
+
+## PYRAMID-1 (2026-10-24): the Pyramid
+
+Claude chose these on 2026-10-24 while making the map playable area by area;
+they await the user's review ([audit](audits/pyramid.md)):
+
+- **Yarash** is the SRD Mage with the original's 27 Hit Points: three Arcane
+  Bursts, Fireball and Invisibility twice a day, Cone of Cold once, Misty Step
+  three times as a Bonus Action. His Fly and Protective Magic (Counterspell or
+  Shield as a Reaction) are not modeled yet.
+- **The minotaurs** are the Minotaur of Baphomet with 33 Hit Points and its
+  Abyssal Glaive; its Gore with the charge is not modeled yet.
+- **The souls Yarash keeps** keep the original's Hit Points: fighters as the
+  Warrior Veteran, the cleric as the Priest Acolyte, the thieves as the Spy
+  and Diane's elves as the level-4 Wizard profile.
+- **Search mode** follows the original's Search command (the S key for now):
+  each step searches and takes ten minutes more.
+- **The healed valley** opens its rivers; the original also recoloured 36
+  valley tiles, which keep their art here for now.

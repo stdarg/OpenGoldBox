@@ -3189,6 +3189,116 @@ void nomad_camp(const std::filesystem::path &directory)
           "The nomads send the party back out onto the wilderness map");
 }
 
+// The Pyramid (docs/audits/pyramid.md), in the poisoned valley west of the
+// camp: the rowboat in the reeds and the secret door, the souls Yarash keeps,
+// the teleporters into his laboratories, the password, the pumping room's
+// slaves, the fountain's equipment destroyed, Yarash beaten, and the valley
+// healing.
+void pyramid(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    buy_and_equip(trip);
+    auto &[party, town] = trip;
+    party->award_experience(6 * 14000, "test:pyramid-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->member(id).character.sheet().level < 6)
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    opengold::test::TourAccess::set_variable(town, por::EclAddress{0x4AA7}, 255);
+    walk_to(town, party, 11, 2);
+    step(town, party, 0, prefer({"WEST"}));
+    walk_to(town, party, 14, 1);
+    step(town, party, 1, prefer({"STAY"}));
+    travel_to(town, party, 6, 14, prefer({"YES", "ENTER"}));
+    check(town.snapshot().area_id == 22 && !town.snapshot().overland,
+          "The rowboat in the reeds and the secret door lead into the Pyramid");
+    // Every prompt the party answers, to check what the events said; the
+    // souls Yarash keeps are met in peace where they allow it.
+    std::string heard;
+    const Answer noting = [&](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        return prefer({"Parley", "YES", "Fight"})(s);
+    };
+    const auto at = [&](unsigned area, unsigned x, unsigned y)
+    {
+        const auto &s = town.snapshot();
+        return s.area_id == area && s.pose.x == x && s.pose.y == y;
+    };
+    const auto walk = [&](unsigned x, unsigned y, const Answer &answer,
+                          const std::function<bool()> &arrived, std::string_view typed = "0")
+    {
+        heal(*party);
+        walk_to(town, party, x, y, answer, true, false, typed, arrived);
+    };
+    // The prison of souls: the teleporters at (14,8) and (14,9), then the
+    // passage at (6,1) into the laboratories.
+    walk(14, 8, noting, [&] { return at(22, 5, 11); });
+    check(at(22, 5, 11), "The teleporter at (14,8) sends the party to (5,11)");
+    walk(14, 9, noting, [&] { return at(22, 0, 0); });
+    check(at(22, 0, 0), "The teleporter at (14,9) sends the party to (0,0)");
+    walk(6, 1, noting, [&] { return town.snapshot().area_id == 23; });
+    check(at(23, 0, 12), "The passage at (6,1) leads into Yarash's laboratories");
+    // The rocks send the party on by a flag's parity (0x4A4D bit 1); in
+    // Search mode a rock is noticed first (a strange tingle), and one may be
+    // thrown to flip the flag.
+    bool thrown = true;
+    const Answer rock = [&](const por::TourSnapshot &s)
+    {
+        if (std::find(s.choices.begin(), s.choices.end(), "THROW A ROCK") != s.choices.end())
+        {
+            heard += s.dialogue + "\n";
+            const auto choice = prefer({thrown ? "MOVE ON" : "THROW A ROCK"})(s);
+            thrown = true;
+            return choice;
+        }
+        return noting(s);
+    };
+    town.set_searching(true);
+    walk(15, 12, rock, [&] { return town.snapshot().area_id == 23 && town.snapshot().pose.y < 8; });
+    check(heard.find("STRANGE TINGLE") != std::string::npos && at(23, 11, 3),
+          "In Search mode the rocks at (15,12) are noticed; moving on sends the party to (11,3)");
+    thrown = false;
+    walk(12, 3, rock, [&] { return at(23, 0, 4); });
+    check(at(23, 0, 4), "A rock thrown at (12,3) flips the rocks: they send the party to (0,4)");
+    thrown = false;
+    walk(0, 2, rock, [&] { return at(23, 0, 0); });
+    check(at(23, 0, 0), "A rock thrown at (0,2) sends the party to (0,0)");
+    town.set_searching(false);
+    // The password door, read from dwarvish runes, the fountain, and Yarash.
+    walk(1, 1, noting, [] { return false; }, "NOKNOK");
+    check(heard.find("SIX DWARVISH RUNES") != std::string::npos &&
+              heard.find("NOKNOK") != std::string::npos,
+          "The door's six dwarvish runes read NOKNOK, the password");
+    walk(2, 1, prefer({"DESTROY THE EQUIPMENT"}), [] { return false; });
+    check(town.script_variable(por::EclAddress{0x4AB3}) == 254,
+          "The fountain's equipment is destroyed");
+    walk(4, 1, prefer({"Bash", "Fight"}), [] { return false; });
+    check((town.script_variable(por::EclAddress{0x4A52}) & 4) != 0, "Yarash is beaten");
+    walk(6, 1, noting, [] { return false; });
+    check(look_until(town, party,
+                     [&] { return (town.script_variable(por::EclAddress{0x4A52}) & 128) != 0; },
+                     noting),
+          "Searching Yarash's desk finds his papers");
+    // The dial's teleporter back to the prison, and its north door out.
+    walk(6, 0, noting, [&] { return town.snapshot().area_id == 22; });
+    check(at(22, 15, 8), "The dial's teleporter returns the party to the prison of souls");
+    walk(15, 0, noting, [] { return false; });
+    face(town, party, 0);
+    check(look_until(town, party,
+                     [&] { return (town.script_variable(por::EclAddress{0x4A4B}) & 1) != 0; },
+                     noting),
+          "Searching finds the prison's north door");
+    town.explore(por::ExplorationCommand::forward);
+    settle(town, party, noting);
+    check(town.snapshot().overland && town.script_variable(por::EclAddress{0x4AA2}) == 255 &&
+              heard.find("BEGINNING TO RECOVER") != std::string::npos,
+          "Leaving the Pyramid, the valley begins to heal and its rivers open");
+}
+
 // Mendor's Library (docs/audits/mendors-library.md), east of the Cadorna
 // Textile House: entered by the house's east edge and saved there, the
 // wizard-locked doors opened with Knock, a book of history found by looking in
@@ -4360,6 +4470,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         kovel_mansion(directory);
         temple_of_bane(directory);
         nomad_camp(directory);
+        pyramid(directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -4460,6 +4571,12 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--wilderness")
         {
             central_wilderness(directory);
+            return 0;
+        }
+        // Plays the Pyramid alone with a new party.
+        if (argc == 2 && std::string_view(argv[1]) == "--pyramid")
+        {
+            pyramid(directory);
             return 0;
         }
         // Plays the nomad camp alone with a new party.

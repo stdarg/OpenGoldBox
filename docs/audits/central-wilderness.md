@@ -109,7 +109,7 @@ up.
   [OVERLAND-1](../SRD-DECISIONS.md#overland-1-2026-10-24-the-wilderness-map). The
   sites lead to the areas already in the game (New Phlan, Podol Plaza, the
   Cadorna Textile House, and since 2026-10-24 Kovel Mansion, the Temple of
-  Bane and the nomad camp); the others are
+  Bane, the nomad camp and the Pyramid); the others are
   refused with a notice. Played
   (`opengold_expedition_tests`, a new level-5 party): the western boat from
   the harbor, a save on the map, the sea stopping a step, half a day a step,

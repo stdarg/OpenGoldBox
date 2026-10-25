@@ -143,6 +143,10 @@ class EclMachine
     void bind_string(EclAddress address, std::string_view value);
     void seed_random(std::uint32_t seed);
     void enable_host(std::uint8_t opcode);
+    // Cells from `first` to `last` the host does not model: writes to them are
+    // dropped and reads give 0, such as the original's tile colours a script
+    // patches when the Pyramid falls.
+    void ignore_cells(EclAddress first, EclAddress last);
     [[nodiscard]] std::uint16_t variable(EclAddress address) const;
     // Whether a script instruction (not a host reply or binding) wrote the
     // cell since the last call for it, such as a script setting the clock.
@@ -193,6 +197,7 @@ class EclMachine
     std::vector<std::uint8_t> image_;
     std::mt19937 random_{5489U}; // Reproducible OpenGoldBox RNG, not the DOS RNG sequence.
     std::set<std::uint8_t> host_opcodes_;
+    std::vector<std::pair<std::uint16_t, std::uint16_t>> ignored_cells_;
     // Cells script instructions wrote, and whether one is executing now.
     std::set<EclAddress> script_writes_;
     bool executing_{};

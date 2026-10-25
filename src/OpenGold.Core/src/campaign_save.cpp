@@ -16,7 +16,7 @@ namespace
 constexpr std::size_t limit = 16 * 1024 * 1024;
 // The only campaign format this build reads or writes. Pre-1.0 formats are
 // rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 39;
+constexpr unsigned campaign_format = 40;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -588,7 +588,7 @@ template <bool Reading> struct SaveCodec
                             !v.pending_movement_),
                 "Save only during idle town exploration");
         fields(v.current_script_, v.selected_character_, v.next_ticket_, v.rest_checks_,
-               v.travel_mode_);
+               v.travel_mode_, v.snapshot_.searching);
         // On the wilderness map only in a wilderness script, with its data.
         require(v.travel_mode_ >= 1 && v.travel_mode_ <= 4 &&
                     (v.travel_mode_ == 1 || (v.current_script_ == v.travel_mode_ + 23 &&

@@ -368,6 +368,45 @@ creature nomad-shaman 12 20 2 30 4 1 4 2 0 0 0 0 0 0 0 4 5 4 5
 saves nomad-shaman -1 2 1 5 3 0
 damage_types nomad-shaman piercing piercing
 perception nomad-shaman 1
+# The Pyramid (docs/audits/pyramid.md, PYRAMID-1), with the original's Hit
+# Points: the Minotaur of Baphomet's Abyssal Glaive (its Gore not modeled),
+# the trapped fighters as the Warrior Veteran, the trapped cleric as the
+# Priest Acolyte, and Yarash as the Mage (three Arcane Bursts; Fireball and
+# Invisibility twice a day, Cone of Cold once, Misty Step three times as a
+# Bonus Action; his Fly and Protective Magic not modeled).
+creature minotaur 14 33 0 40 6 1 12 4 0 0 0 0 0 0 0 0 0 1 0
+saves minotaur 4 0 3 -2 3 -1
+damage_types minotaur slashing slashing
+size minotaur large
+type minotaur monstrosity
+perception minotaur 7
+melee_extra_damage minotaur 3 6 necrotic
+creature trapped-fighter 17 45 3 30 5 2 6 3 3 2 10 1 100 400 0 0 0 1 0
+saves trapped-fighter 3 1 2 0 0 0
+damage_types trapped-fighter slashing piercing
+multiattack trapped-fighter 2
+multiattack_ranged trapped-fighter
+perception trapped-fighter 2
+creature trapped-veteran 17 50 3 30 5 2 6 3 3 2 10 1 100 400 0 0 0 1 0
+saves trapped-veteran 3 1 2 0 0 0
+damage_types trapped-veteran slashing piercing
+multiattack trapped-veteran 2
+multiattack_ranged trapped-veteran
+perception trapped-veteran 2
+creature trapped-acolyte 13 8 0 30 4 1 6 2 4 2 6 0 60 60 0 0 4 1 0
+saves trapped-acolyte 2 0 1 0 2 0
+damage_types trapped-acolyte bludgeoning radiant
+melee_extra_damage trapped-acolyte 1 4 radiant
+innate trapped-acolyte Divine_Aid 1 bonus bless healing_word sanctuary
+creature yarash 15 27 2 30 6 3 8 3 6 3 8 3 120 120 0 0 6 1 0
+saves yarash -1 2 0 6 4 0
+damage_types yarash force force
+multiattack yarash 3
+multiattack_ranged yarash
+innate yarash Fireball 2 action fireball
+innate yarash Invisibility 2 action invisibility
+innate yarash Cone_of_Cold 1 action cone_of_cold
+innate yarash Misty_Step 3 bonus misty_step
 # Summon Dragon's Draconic Spirit (SRD 5.2.1 p. 166), one stat block per
 # spell level: AC 14 + the level, 50 Hit Points and 10 more per level above 5,
 # Rend 1d6 + 4 + the level Piercing (reach 10 feet), half the level in Rends.
