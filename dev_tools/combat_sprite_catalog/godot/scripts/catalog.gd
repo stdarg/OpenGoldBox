@@ -38,6 +38,8 @@ var gear_source_hint: Label
 var add_type_choice: OptionButton
 var regeneration_flag: CheckButton
 var show_new_art: CheckButton
+var auto_swap_frames: CheckButton
+var manual_frame_button: Button
 var variant_choice: OptionButton
 var save_button: Button
 var metadata_status: Label
@@ -106,12 +108,22 @@ func _ready() -> void:
         _catalog_check()
 
 func _process(delta: float) -> void:
-    if selected < 0: return
+    if selected < 0 or not auto_swap_frames.button_pressed: return
     elapsed += delta
     if elapsed >= 1.0:
         elapsed = fmod(elapsed, 1.0)
         action = not action
         _show_monster_image()
+
+func _on_auto_swap_toggled(_enabled: bool) -> void:
+    elapsed = 0.0
+
+func _toggle_frame_manually() -> void:
+    if selected < 0: return
+    auto_swap_frames.button_pressed = false
+    action = not action
+    elapsed = 0.0
+    _show_monster_image()
 
 func _apply_script_bindings(evidence) -> void:
     var choices := {}
@@ -308,6 +320,21 @@ func _build_ui() -> void:
     show_new_art.button_pressed = true
     show_new_art.toggled.connect(func(_enabled: bool): _show_monster_image())
     preview.add_child(show_new_art)
+    var frame_controls := HBoxContainer.new()
+    frame_controls.add_theme_constant_override("separation", 16)
+    preview.add_child(frame_controls)
+    auto_swap_frames = CheckButton.new()
+    auto_swap_frames.text = "Auto swap frames"
+    auto_swap_frames.button_pressed = true
+    auto_swap_frames.tooltip_text = "Alternate ready and action every second"
+    auto_swap_frames.toggled.connect(_on_auto_swap_toggled)
+    frame_controls.add_child(auto_swap_frames)
+    manual_frame_button = Button.new()
+    manual_frame_button.text = "Show action frame"
+    manual_frame_button.tooltip_text = "Pause automatic swapping and show the other frame"
+    manual_frame_button.disabled = true
+    manual_frame_button.pressed.connect(_toggle_frame_manually)
+    frame_controls.add_child(manual_frame_button)
     image_frame = Control.new()
     image_frame.custom_minimum_size = Vector2(512, 416)
     image_frame.draw.connect(_draw_preview_grid)
@@ -445,6 +472,7 @@ func _rebuild_list() -> void:
         name_edit.text = ""
         monster_id_edit.text = ""
         variant_choice.clear()
+        manual_frame_button.disabled = true
         description_edit.text = ""
         sprite_size_choice.select(0)
         humanoid_size_choice.select(0)
@@ -469,6 +497,7 @@ func _select_monster(list_index: int) -> void:
     selected = visible_rows[list_index]
     action = false
     elapsed = 0.0
+    manual_frame_button.disabled = false
     var row: Dictionary = rows[selected]
     monster_title.text = "%s%s" % [row.name, "  ·  Unused" if not used.has(row.key) else ""]
     name_edit.text = str(row.name)
@@ -823,6 +852,7 @@ func _selected_variant() -> Dictionary:
 
 func _show_monster_image() -> void:
     if selected < 0: return
+    manual_frame_button.text = "Show ready frame" if action else "Show action frame"
     var row: Dictionary = rows[selected]
     var art: Dictionary = _art_for(selected)
     var source_note := ""
@@ -904,6 +934,17 @@ func _metadata_check() -> void:
     assert(_sprite_size_for_index(5) == {"width_squares": 3, "height_squares": 3})
     assert(rows.size() >= 170)
     assert(show_new_art.button_pressed)
+    assert(auto_swap_frames.button_pressed and not manual_frame_button.disabled)
+    assert(not action and manual_frame_button.text == "Show action frame")
+    _toggle_frame_manually()
+    assert(action and not auto_swap_frames.button_pressed)
+    assert(manual_frame_button.text == "Show ready frame")
+    _process(1.1)
+    assert(action)
+    auto_swap_frames.button_pressed = true
+    assert(elapsed == 0.0)
+    _process(1.0)
+    assert(not action and manual_frame_button.text == "Show action frame")
     assert(MonsterMetadata.source_weapon_role(36, 1) == "one_hand")
     assert(MonsterMetadata.source_weapon_role(43, 2) == "ranged")
     assert(MonsterMetadata.source_weapon_role(38, 2) == "two_hand")
