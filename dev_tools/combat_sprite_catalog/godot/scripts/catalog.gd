@@ -40,6 +40,7 @@ var regeneration_flag: CheckButton
 var show_new_art: CheckButton
 var auto_swap_frames: CheckButton
 var manual_frame_button: Button
+var reload_artwork_button: Button
 var variant_choice: OptionButton
 var save_button: Button
 var metadata_status: Label
@@ -124,6 +125,34 @@ func _toggle_frame_manually() -> void:
     action = not action
     elapsed = 0.0
     _show_monster_image()
+
+func _reload_monster_artwork() -> void:
+    if selected < 0: return
+    var row: Dictionary = rows[selected]
+    var variants: Array = draft_records[row.key].variants
+    var loaded := 0
+    var missing := 0
+    var unreadable: Array[String] = []
+    for variant in variants:
+        for is_action in [false, true]:
+            var path: String = MonsterMetadata.art_path(str(row.key), str(variant.id), is_action, metadata_root)
+            if not FileAccess.file_exists(path):
+                missing += 1
+                continue
+            var image := Image.new()
+            if image.load(path) != OK:
+                unreadable.append("%s/%s" % [variant.id, "action" if is_action else "ready"])
+            else:
+                loaded += 1
+    _show_monster_image()
+    var report := "Reloaded %d replacement frame(s) for %s across %d weapon set(s)." % [
+        loaded, row.name, variants.size()]
+    if missing > 0:
+        report += " %d frame(s) missing; original art remains available as fallback." % missing
+    if not unreadable.is_empty():
+        report += " Could not read: %s." % ", ".join(unreadable)
+    preview_status.text += "\n" + report
+    status.text = report
 
 func _apply_script_bindings(evidence) -> void:
     var choices := {}
@@ -335,6 +364,12 @@ func _build_ui() -> void:
     manual_frame_button.disabled = true
     manual_frame_button.pressed.connect(_toggle_frame_manually)
     frame_controls.add_child(manual_frame_button)
+    reload_artwork_button = Button.new()
+    reload_artwork_button.text = "Reload all artwork"
+    reload_artwork_button.tooltip_text = "Reread both replacement frames for every weapon set of the selected monster / NPC"
+    reload_artwork_button.disabled = true
+    reload_artwork_button.pressed.connect(_reload_monster_artwork)
+    frame_controls.add_child(reload_artwork_button)
     image_frame = Control.new()
     image_frame.custom_minimum_size = Vector2(512, 416)
     image_frame.draw.connect(_draw_preview_grid)
@@ -473,6 +508,7 @@ func _rebuild_list() -> void:
         monster_id_edit.text = ""
         variant_choice.clear()
         manual_frame_button.disabled = true
+        reload_artwork_button.disabled = true
         description_edit.text = ""
         sprite_size_choice.select(0)
         humanoid_size_choice.select(0)
@@ -498,6 +534,7 @@ func _select_monster(list_index: int) -> void:
     action = false
     elapsed = 0.0
     manual_frame_button.disabled = false
+    reload_artwork_button.disabled = false
     var row: Dictionary = rows[selected]
     monster_title.text = "%s%s" % [row.name, "  ·  Unused" if not used.has(row.key) else ""]
     name_edit.text = str(row.name)

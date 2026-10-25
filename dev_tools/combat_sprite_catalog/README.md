@@ -164,6 +164,12 @@ set and missing pose. Replacing a PNG while the tool is open refreshes the
 preview on its next update. Turn off **Show new art when available** to inspect
 the original image and binding in the source label. This tool prepares and
 previews art; it does not generate replacement images.
+**Reload all artwork** beside the frame controls rereads both replacement PNGs
+for every weapon set of the selected monster or NPC, then refreshes the visible
+frame without changing its ready/action selection. The preview status below the
+grid reports the number loaded and any missing or unreadable frames. It leaves
+unsaved metadata edits in place and does not write art or JSON.
+
 After removing a weapon or shield changes the selected set, the last replacement
 art remains visible as **Previous new art** until art for the new set is created.
 The fallback survives Save and a later launch, and the label warns that the
