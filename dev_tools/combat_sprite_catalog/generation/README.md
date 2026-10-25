@@ -83,6 +83,18 @@ change. The fixed-foot rule below is this project's specific requirement.
   generated character art for this composite. Reject a splice with doubled
   gear, a visible seam, displaced head/body height, or an inconsistent limb.
   Apply any final canvas translation or scale equally to both frames.
+- **Torso continuity gate:** Prefer an action edited from the complete ready
+  figure. Never attach an independently generated upper-body cutout at a straight
+  horizontal waist or chest boundary. If compositing is necessary, retain a
+  continuous ready torso from hips through neck and change only the attacking
+  arm and its shoulder, or redraw the transition by hand across an overlapping
+  region. Inspect the final action enlarged around the neck, chest, abdomen,
+  waist, hips and garment folds. Trace both outer contours and the central
+  clothing/skin details through that region; reject any offset, gap, doubled
+  edge, abrupt pattern break or apparent severing, even if the feet register.
+  Then inspect at normal combat size and alternate with ready. A technical PNG
+  check, matching silhouette or identical lower-body pixels cannot clear a
+  failed torso-continuity gate.
 - Do not center each silhouette independently, shift the whole cutout, crop to
   its changing bounds, or fit either pose separately into the canvas. Matching
   only the lowest occupied row does not prevent a horizontal shuffle.
@@ -234,6 +246,10 @@ wedges and boxes even when the PNG passes file checks.
 Review the pair overlaid at native pixel coordinates, side by side at normal
 combat size, and alternating every second in the catalog. Confirm the planted
 feet stay at the same x/y coordinates and the whole body does not slide or jump.
+For any action made with an edit or composite, apply the torso continuity gate
+above to the **exported action PNG** on a contrasting background before recording
+the visual review. Reopen the saved PNG after the last export or alpha operation;
+reviewing only a working image can miss a newly introduced waist seam.
 Inspect the **final exported files**, not an earlier draft, over light gray,
 magenta, and dark backgrounds. A dark-only preview can hide black boxes, seams,
 halos, and stray opaque pixels. For a sword correction, check the visible
