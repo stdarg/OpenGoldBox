@@ -2222,14 +2222,21 @@ void RolfTourView::check_town()
         {
             throw std::runtime_error("Town character sheet did not close");
         }
-        // M opens the Cast menu while exploring; a Fighter has nothing to cast.
+        // M opens the Cast menu while exploring; a Fighter has nothing to cast,
+        // but an Orc has Adrenaline Rush (RUSH-1).
         Ref<InputEventKey> magic;
         magic.instantiate();
         magic->set_keycode(Key::KEY_M);
         magic->set_pressed(true);
         respond_to_input(magic);
+        const auto &offers = required_node<OptionButton>(*this, "CastPanel/Action");
+        const bool orc = settings::flag("--adrenaline-check");
         if (!required_node<Control>(*this, "CastPanel").is_visible() ||
-            !required_node<Label>(*this, "CastPanel/Status").get_text().contains("Nothing to cast"))
+            (orc ? offers.get_item_count() != 1 ||
+                       offers.get_item_metadata(0) != Variant("adrenaline_rush")
+                 : !required_node<Label>(*this, "CastPanel/Status")
+                        .get_text()
+                        .contains("Nothing to cast")))
         {
             throw std::runtime_error("M must open the Cast menu");
         }
@@ -2854,6 +2861,10 @@ void RolfTourView::check_recovery()
                  .is_disabled())
         {
             throw std::runtime_error("Immediate repeated long rest must be denied");
+        }
+        if (settings::flag("--adrenaline-check"))
+        {
+            check_camp_adrenaline_rush(id);
         }
         required_node<Button>(required_node<Window>(*this, "RestDialog"), "Finish")
             .emit_signal("pressed");

@@ -1046,6 +1046,8 @@
   "Spell attacks and save DCs for these spells.",
   "Lay On Hands: cure Poisoned",
   "Lay On Hands: cure Poisoned (5)",
+  "Adrenaline Rush: keep current Temporary HP",
+  "Adrenaline Rush: use new Temporary HP",
   "Lay On Hands cures only a Poisoned member",
   "Pact of the Tome",
   "Three cantrips and two level 1 spells from any class's list, prepared as Warlock spells.",

@@ -349,6 +349,73 @@ void campaign()
           "Campaign recharge uses the shared rest operation");
 }
 
+std::vector<std::string> camp_ids(const CampaignParty &party, MemberId id)
+{
+    std::vector<std::string> ids;
+    for (const auto &action : party.camp_actions(id))
+    {
+        if (action.id.starts_with("adrenaline_rush"))
+        {
+            check(action.whole_party, "Adrenaline Rush in camp chooses no target");
+            ids.push_back(action.id);
+        }
+    }
+    return ids;
+}
+
+int temporary_hp(const CampaignParty &party, MemberId id)
+{
+    const auto &member = party.member(id);
+    return module()->recovery_info(member.character.sheet(), member.vitals).temporary_hp.amount;
+}
+
+// Outside combat Adrenaline Rush gives its Temporary HP from the Camp dialog;
+// with some already, the player keeps them or takes the new ones.
+void camp()
+{
+    CampaignParty party(module());
+    const auto id = party.add_pc(hero()), dwarf = party.add_pc(hero("fighter", "dwarf"));
+    check(camp_ids(party, dwarf).empty(), "Only an Orc has Adrenaline Rush in camp");
+    check(camp_ids(party, id) == std::vector<std::string>{"adrenaline_rush"},
+          "With no Temporary HP the Rush is offered once");
+    rejects([&] { party.use_camp_action(id, id, "adrenaline_rush_keep"); },
+            "Nothing to keep without Temporary HP");
+
+    party.use_camp_action(id, id, "adrenaline_rush");
+    check(temporary_hp(party, id) == 2 &&
+              pool(party.member(id).character, party.member(id).vitals).remaining == 1,
+          "The Rush spends a use for Temporary HP equal to the Proficiency Bonus");
+    check(camp_ids(party, id) ==
+              std::vector<std::string>{"adrenaline_rush_keep", "adrenaline_rush_use"},
+          "With Temporary HP the player keeps them or takes the new ones");
+
+    party.use_camp_action(id, id, "adrenaline_rush_keep");
+    check(temporary_hp(party, id) == 2 &&
+              pool(party.member(id).character, party.member(id).vitals).remaining == 0,
+          "Keeping the current Temporary HP still spends the use");
+    check(camp_ids(party, id).empty(), "No use left, no Rush");
+    rejects([&] { party.use_camp_action(id, id, "adrenaline_rush_use"); },
+            "A spent Rush cannot be used");
+
+    auto rules = module();
+    auto bytes = encode_campaign(party, nullptr, "rush-camp");
+    CampaignParty copy(module());
+    copy.restore(
+        decode_campaign(bytes, *srd5::character_rules(), *rules, "rush-camp", nullptr).party);
+    check(temporary_hp(copy, id) == 2 &&
+              pool(copy.member(id).character, copy.member(id).vitals).remaining == 0,
+          "A campaign save keeps camp Temporary HP and the spent use");
+
+    check(bool(copy.rest(RestKind::short_rest)), "Campaign Short Rest completes");
+    copy.finish_short_rest(copy.state().short_rest->ticket);
+    copy.use_camp_action(id, id, "adrenaline_rush_use");
+    check(temporary_hp(copy, id) == 2 &&
+              pool(copy.member(id).character, copy.member(id).vitals).remaining == 1,
+          "Taking the new Temporary HP replaces the pool");
+    check(bool(copy.rest(RestKind::long_rest)), "Campaign Long Rest completes");
+    check(temporary_hp(copy, id) == 0, "A Long Rest ends camp Temporary HP");
+}
+
 } // namespace
 
 int main()
@@ -359,6 +426,7 @@ int main()
         decisions();
         movement();
         campaign();
+        camp();
         std::cout << "Adrenaline Rush tests passed\n";
         return 0;
     }
