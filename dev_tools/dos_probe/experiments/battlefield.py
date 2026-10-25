@@ -1,13 +1,13 @@
 """Starts fights in the original's Slums and compares where both sides stand
 with OpenGoldBox's formation (PLACE-1 in docs/SRD-DECISIONS.md).
 
-    python3 battlefield.py [--large] PROBE MAPS_TOOL GAME_DIR OUTPUT_DIR
+    python3 battlefield.py PROBE MAPS_TOOL GAME_DIR OUTPUT_DIR
 
 PROBE is opengold_dos_probe and MAPS_TOOL opengold_maps. For each case a new
-party walks from New Phlan into the Slums, whose movement entry is replaced
-by a program that, on the case's square only, stages orcs at the case's
-distance and starts the fight. The original's combat occupancy map (50 by 25
-bytes: 0, or a combatant's number, party first) gives each side's squares.
+party walks from New Phlan into the Slums, whose step entries are replaced:
+no roaming monsters come, and on the case's square and facing a program
+stages orcs at the case's distance and starts the fight. The first square the original writes for
+each combatant into its combat occupancy map gives each side's squares.
 Exits 1 if any case differs.
 """
 
@@ -27,8 +27,9 @@ SLUMS = ('GEO2.DAX', 20)
 # at entry 1's code and an EXIT at entry 0's, which would otherwise roll
 # roaming monsters.
 ENTRY_MOVE, ENTRY_SEARCH, ENTRY_NEXT = 0x9914, 0x9975, 0x9A0E
-# Where the original keeps the combat occupancy map, found by moving a
-# combatant square by square (dev_tools/docs/dos-probe.md).
+# Where the original keeps the combat occupancy map (50 by 25 bytes: 0, or a
+# combatant's number), found by moving a combatant square by square
+# (dev_tools/docs/dos-probe.md).
 OCCUPANCY = 0x1A99B
 FACINGS = 'NESW'
 
@@ -45,15 +46,8 @@ CASES = [
     ((12, 8), 'E', 0, 3, 5),
     ((13, 7), 'W', 1, 4, 10),
     ((9, 8), 'S', 0, 1, 16),
-]
-
-# Larger groups than the original fields in full: it stands only the first 12
-# to 17 orcs, on the first of OpenGoldBox's squares in OpenGoldBox's order,
-# and leaves the rest out (dev_tools/docs/dos-probe.md). Run with --large.
-LARGE_GROUP_CASES = [
     ((13, 4), 'N', 2, 1, 30),
     ((13, 4), 'N', 2, 6, 20),
-    ((9, 8), 'S', 0, 1, 20),
     ((9, 8), 'S', 0, 6, 20),
     ((10, 8), 'E', 2, 1, 30),
     ((13, 7), 'W', 1, 1, 30),
@@ -126,22 +120,24 @@ def run_case(number, case, tools, cells, output):
     assert ENTRY_SEARCH + len(code) <= ENTRY_NEXT
     lines = party_keys(party) + ['key up', 'locate', f'poke {ENTRY_MOVE:X} 00',
                                  f'poke {ENTRY_SEARCH:X} {code.hex()}']
-    lines += [f'key {key}' for key in keys]
-    lines += ['shot start', 'key enter', 'shot combat', 'dump combat']
+    # Monsters may act before the party's first turn, so each combatant's
+    # square is the first the original writes into the occupancy map for it.
+    lines += [f'key {key}' for key in keys[:-1]]
+    lines += [f'watch {OCCUPANCY:X} {OCCUPANCY + 1249:X} occupancy', f'key {keys[-1]}',
+              'unwatch', 'shot start', 'key enter', 'shot combat']
     folder.mkdir(parents=True, exist_ok=True)
     (folder / 'scenario.txt').write_text('\n'.join(lines) + '\n')
     subprocess.run([tools['probe'], '--fresh', tools['game'], str(folder / 'scenario.txt'),
                     str(folder)], check=True, stdout=subprocess.DEVNULL)
 
-    memory = (folder / 'combat.bin').read_bytes()
     standing = {}
-    for index in range(1250):
-        who = memory[OCCUPANCY + index]
-        if who:
-            standing.setdefault(who, []).append((index % 50, index // 50))
-    original_party = [standing.get(n + 1, [None])[0] for n in range(party)]
-    original_orcs = sorted(cell for who, cells_of in standing.items() if who > party
-                           for cell in cells_of)
+    for line in (folder / 'occupancy.watch').read_text().splitlines():
+        address, who = (int(field, 16) for field in line.split()[:2])
+        if who and who not in standing:
+            index = address - OCCUPANCY
+            standing[who] = (index % 50, index // 50)
+    original_party = [standing.get(n + 1) for n in range(party)]
+    original_orcs = sorted(cell for who, cell in standing.items() if who > party)
 
     capped = min(distance, open_squares_ahead(cells, square[0], square[1], facing))
     expected = json.loads(subprocess.run(
@@ -160,8 +156,7 @@ def run_case(number, case, tools, cells, output):
 
 
 def main():
-    large = '--large' in sys.argv
-    arguments = [a for a in sys.argv[1:] if a != '--large']
+    arguments = sys.argv[1:]
     if len(arguments) != 4:
         print(__doc__)
         return 2
@@ -171,8 +166,7 @@ def main():
                                      capture_output=True, text=True).stdout)
     cells = next(m for m in maps['maps']
                  if m['archive'] == SLUMS[0] and m['id'] == SLUMS[1])['cells']
-    cases = LARGE_GROUP_CASES if large else CASES
-    results = [run_case(n, case, tools, cells, output) for n, case in enumerate(cases)]
+    results = [run_case(n, case, tools, cells, output) for n, case in enumerate(CASES)]
     return 0 if all(results) else 1
 
 

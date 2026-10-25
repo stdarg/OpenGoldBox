@@ -524,7 +524,7 @@ void Machine::keyboard_service()
         if (empty)
         {
             // Wait with interrupts on, as the BIOS does, by running the trap again.
-            ++idle_polls_;
+            note_idle_poll();
             cpu_.set_flag(Flag::interrupt, true);
             cpu_.set_ip(static_cast<std::uint16_t>(cpu_.ip() - 3));
             return;
@@ -541,7 +541,7 @@ void Machine::keyboard_service()
         set_stacked_flag(zero, empty);
         if (empty)
         {
-            ++idle_polls_;
+            note_idle_poll();
         }
         else
         {
@@ -803,10 +803,10 @@ void Machine::dos_service()
             if (ah == 0x06)
             {
                 set_stacked_flag(zero, true);
-                ++idle_polls_;
+                note_idle_poll();
                 return;
             }
-            ++idle_polls_;
+            note_idle_poll();
             cpu_.set_flag(Flag::interrupt, true);
             cpu_.set_ip(static_cast<std::uint16_t>(cpu_.ip() - 3));
             return;
@@ -842,7 +842,7 @@ void Machine::dos_service()
                                   (ram_[0x41A] != ram_[0x41C] || pending_scan_ ? 0xFF : 0)));
         if (ram_[0x41A] == ram_[0x41C])
         {
-            ++idle_polls_;
+            note_idle_poll();
         }
         return;
     case 0x0D:

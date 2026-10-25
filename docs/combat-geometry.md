@@ -53,11 +53,10 @@ the party and the monsters start ([PLACE-1](SRD-DECISIONS.md#place-1-2026-10-10-
 and how far ahead the party sees (the encounter distance, stopping at a wall or
 door) were read from the coab reimplementation and START.EXE's placement
 tables. The [DOS probe](../dev_tools/docs/dos-probe.md#findings) then compared
-them with fights in the running original (2026-10-24). In eleven Slums fights,
-all four facings, distances 0 to 2, parties of one to six and up to sixteen
-orcs, every combatant started on OpenGoldBox's square. Groups of 20 or 30 differ:
-the original stands only its first 12 to 17 monsters, by a rule not yet known,
-where OpenGoldBox places more. Other areas' battlefields have not been compared.
+them with fights in the running original (2026-10-24). In sixteen Slums fights,
+all four facings, distances 0 to 2, parties of one to six and groups of 1 to
+30 orcs, every combatant started on OpenGoldBox's square. Other areas'
+battlefields have not been compared.
 The user accepted this evidence on 2026-10-24 for closing issue #3.
 
 ## Validation and inspection
