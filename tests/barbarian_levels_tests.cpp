@@ -473,6 +473,120 @@ void retaliation_checks()
     }
     throw std::runtime_error("No seed's dummy hits the Barbarian");
 }
+
+// The Berserker (1) and a level-14 rival Barbarian (97) who frightens with
+// Intimidating Presence, before anyone has acted.
+std::unique_ptr<CombatSession> rivals(const RulesModule &rules, unsigned level, std::uint64_t seed)
+{
+    const std::vector<std::string> none;
+    return rules.create({{8, 3, std::vector<Terrain>(24)},
+                         {{1,
+                           "campaign-character",
+                           "Berserker",
+                           Side::party,
+                           {1, 1},
+                           rules.character_profile(barbarian(level).sheet(), none).data},
+                          {97,
+                           "campaign-character",
+                           "Rival",
+                           Side::opposition,
+                           {4, 1},
+                           rules.character_profile(barbarian(14).sheet(), none).data}}},
+                        seed);
+}
+
+void to_turn(CombatSession &c, EntityId id)
+{
+    for (unsigned turns = 0; c.snapshot().actor != id && turns < 6; ++turns)
+    {
+        check(submit(c, "initiative_keep") || submit(c, "end"), "Reach the turn");
+    }
+    check(c.snapshot().actor == id, "The turn comes");
+}
+
+bool frightened(const CombatSession &c)
+{
+    return unit(c, 1).status.find("Frightened") != std::string::npos;
+}
+
+// Mindless Rage (6): a raging Barbarian cannot be Frightened or Charmed, and
+// entering the Rage ends both. Feral Instinct (7): Advantage on Initiative.
+void mindless_and_feral_checks()
+{
+    const auto rules = module();
+    bool resisted = false, ended = false;
+    for (std::uint64_t seed = 1; seed < 40 && !(resisted && ended); ++seed)
+    {
+        // Raging first: a level-5 Barbarian can still be frightened, a level-6 one not.
+        for (const unsigned level : {5u, 6u})
+        {
+            auto c = rivals(*rules, level, seed);
+            to_turn(*c, 1);
+            check(submit(*c, "rage") && submit(*c, "end"), "Rage first");
+            to_turn(*c, 97);
+            check(submit(*c, "intimidating_presence"), "The rival tries to frighten");
+            if (level == 6)
+            {
+                check(!frightened(*c), "Mindless Rage: a raging Barbarian is not Frightened");
+            }
+            else if (frightened(*c))
+            {
+                resisted = true; // This seed's failed save frightens one without it.
+            }
+        }
+        // Frightened first: entering the Rage ends it.
+        auto c = rivals(*rules, 6, seed);
+        to_turn(*c, 97);
+        check(submit(*c, "intimidating_presence"), "The rival frightens first");
+        if (!frightened(*c))
+        {
+            continue;
+        }
+        to_turn(*c, 1);
+        check(submit(*c, "rage") && !frightened(*c), "Entering the Rage ends Frightened");
+        ended = true;
+    }
+    check(resisted && ended, "Some seed's Barbarian fails the save");
+
+    // The same first d20 with a second beside it: never lower, sometimes higher.
+    bool higher = false;
+    for (std::uint64_t seed = 1; seed <= 20; ++seed)
+    {
+        const int six = unit(*rivals(*rules, 6, seed), 1).initiative;
+        const int seven = unit(*rivals(*rules, 7, seed), 1).initiative;
+        check(seven >= six, "Feral Instinct never lowers Initiative");
+        higher |= seven > six;
+    }
+    check(higher, "Feral Instinct: Advantage on Initiative from level 7");
+}
+
+// A Barbarian's campaign save keeps its level-8 feat and Rage uses.
+void save_checks()
+{
+    CampaignParty party(module());
+    const auto id = party.add_pc(Character(*srd5::character_rules(), draft("barbarian"), {}));
+    party.award_experience(34000, "levels-xp");
+    while (party.can_advance(id))
+    {
+        party.advance(id, party.default_advancement(id));
+    }
+    const auto &sheet = party.member(id).character.sheet();
+    check(sheet.level == 8 &&
+              std::any_of(sheet.grants.begin(), sheet.grants.end(),
+                          [](const auto &g)
+                          {
+                              return g.source_id == "class:barbarian:ability_score_improvement" &&
+                                     g.level == 8;
+                          }),
+          "A feat or Ability Score Improvement at level 8");
+    const auto bytes = encode_campaign(party, nullptr, "barbarian-levels");
+    CampaignParty next(module());
+    next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
+                                 "barbarian-levels", nullptr)
+                     .party);
+    check(encode_campaign(next, nullptr, "barbarian-levels") == bytes,
+          "A level-8 Barbarian's campaign save replays exactly");
+}
 } // namespace
 
 int main()
@@ -488,6 +602,8 @@ int main()
         improved_brutal_checks();
         intimidating_checks();
         persistent_checks();
+        mindless_and_feral_checks();
+        save_checks();
     }
     catch (const std::exception &error)
     {

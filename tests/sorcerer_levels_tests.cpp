@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -338,6 +339,88 @@ void wings_checks()
     check(!offered(*c, "dragon_wings") && !offered(*c, "dragon_wings_points"),
           "The wings last their hour");
 }
+
+// A level-6 Sorcerer whose Elemental Affinity is `type`.
+CharacterSheet with_affinity(const std::string &type)
+{
+    Character hero(*srd5::character_rules(), draft(), {});
+    VitalState life{hero.sheet().hit_points, false, {}};
+    const auto rules = module();
+    while (hero.sheet().level < 6)
+    {
+        auto choice = rules->default_advancement(hero.sheet());
+        if (hero.sheet().level + 1 == 6)
+        {
+            choice.training["subclass:sorcerer:elemental_affinity"] = {type};
+        }
+        check(hero.advance(*rules, life, choice), "An ordinary level-up");
+    }
+    return hero.sheet();
+}
+
+// The damage the first hit on `target` reports, as "... hits for 12 damage.".
+std::optional<int> first_hit(const CombatSession &c, std::string_view target)
+{
+    for (const auto &line : c.snapshot().log())
+    {
+        const auto at = line.find(" hits for ");
+        if (line.find(std::string("-> ") + std::string(target) + ":") != std::string::npos &&
+            at != std::string::npos)
+        {
+            return std::stoi(line.substr(at + 10));
+        }
+    }
+    return std::nullopt;
+}
+
+// Elemental Affinity (6): the Charisma modifier added to the damage of a spell
+// of the chosen type, and Resistance to that type.
+void affinity_checks()
+{
+    const auto rules = dummy_rules();
+    const std::vector<std::string> gear{"quarterstaff"};
+    const auto fire = with_affinity("fire"), cold = with_affinity("cold");
+    const auto fight =
+        [&](const CharacterSheet &caster, const CharacterSheet &target, std::uint64_t seed)
+    {
+        auto c = rules->create({{14, 7, std::vector<Terrain>(98)},
+                                {{1,
+                                  "campaign-character",
+                                  "Sorcerer",
+                                  Side::party,
+                                  {1, 2},
+                                  rules->character_profile(caster, gear).data},
+                                 {98,
+                                  "campaign-character",
+                                  "Rival",
+                                  Side::opposition,
+                                  {6, 2},
+                                  rules->character_profile(target, gear).data}}},
+                               seed);
+        to_turn(*c, 1);
+        check(submit(*c, "fire_bolt", 98), "Fire Bolt at the rival");
+        return first_hit(*c, "Rival");
+    };
+    std::optional<int> bonus;
+    bool resisted = false;
+    for (std::uint64_t seed = 1; seed <= 12; ++seed)
+    {
+        const auto plain = fight(cold, cold, seed), affine = fight(fire, cold, seed);
+        if (plain && affine)
+        {
+            check(*affine > *plain && (!bonus || *bonus == *affine - *plain),
+                  "A fire Affinity adds the same Charisma modifier to each Fire Bolt");
+            bonus = *affine - *plain;
+        }
+        const auto into_fire = fight(cold, fire, seed);
+        if (plain && into_fire && *plain > 1)
+        {
+            check(*into_fire == *plain / 2, "A fire Affinity halves Fire damage");
+            resisted = true;
+        }
+    }
+    check(bonus && resisted, "Some seed's Fire Bolt hits");
+}
 } // namespace
 
 int main()
@@ -350,6 +433,7 @@ int main()
         restoration_checks();
         incarnate_checks();
         wings_checks();
+        affinity_checks();
     }
     catch (const std::exception &error)
     {

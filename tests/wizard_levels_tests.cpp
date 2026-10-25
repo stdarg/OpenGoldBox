@@ -1384,6 +1384,17 @@ void walls_checks()
     check(!offered(*c, "fire_bolt", 98), "Nothing passes through it");
     const auto saved = c->save();
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps the wall");
+
+    auto stone = field(*rules, with_spells(wizard(10), {"wall_of_force", "wall_of_stone"}),
+                       {{98, "dummy", "Foe", Side::opposition, {8, 2}}}, 1);
+    check(submit(*stone, "wall_of_stone_vertical") &&
+              submit_cell(*stone, "area_move", Cell{8, 2}) && submit(*stone, "area_cast") &&
+              logged(*stone, "A wall of stone rises.") &&
+              stone->snapshot().battlefield.at({8, 1}) == Terrain::obstacle &&
+              stone->snapshot().battlefield.at({8, 2}) != Terrain::obstacle,
+          "A Wall of Stone rises around a creature's square, not in it");
+    const auto kept = stone->save();
+    check(rules->restore(kept)->save() == kept, "A checkpoint keeps the stone");
 }
 
 void arcane_hand_checks()
@@ -2075,6 +2086,23 @@ void higher_slot_checks()
               offered(*high, "globe_of_invulnerability_7"),
           "Spells that grow with the slot are offered from higher slots");
 }
+
+// Dispel Magic also ends Darkness (LEVELS-1, with Daylight cut), as it does
+// any spell's area over the square it is aimed at.
+void dispel_darkness_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, with_spells(wizard(5), {"darkness", "dispel_magic"}),
+                   {{98, "dummy", "Foe", Side::opposition, {8, 2}}}, 1);
+    check(submit(*c, "darkness") && submit_cell(*c, "area_move", Cell{8, 2}) &&
+              submit(*c, "area_cast") && !c->snapshot().obscured.empty(),
+          "Darkness over the foe");
+    check(submit(*c, "end"), "End the turn");
+    to_turn(*c, 1);
+    check(submit(*c, "dispel_magic") && submit_cell(*c, "area_move", Cell{8, 2}) &&
+              submit(*c, "area_cast") && c->snapshot().obscured.empty(),
+          "Dispel Magic ends the Darkness");
+}
 } // namespace
 
 int main()
@@ -2082,6 +2110,7 @@ int main()
     try
     {
         higher_slot_checks();
+        dispel_darkness_checks();
         progression_checks();
         memorize_spell_checks();
         arcane_recovery_checks();
