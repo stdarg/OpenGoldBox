@@ -1858,3 +1858,14 @@ they await the user's review ([audit](audits/stojanow-gate.md)):
   Morningstar Disadvantage; every Ettin hit knocks Prone, as its Battleaxe's
   does.
 
+## TOWN-1 (2026-10-25): Valjevo's old town
+
+Claude chose these on 2026-10-25 while making the map playable area by area;
+they await the user's review ([audit](audits/valjevo-old-town.md)):
+
+- **Monsters** keep the original's Hit Points on SRD stat blocks: the Fire
+  Giant, and the temple's priest as the Temple of Bane's Priest.
+- **Alignment** reaches the scripts in the original's order: the SRD's nine
+  alignments map one to one.
+- **Not modeled yet:** the Fire Giant's Hammer Throw push and Disadvantage.
+

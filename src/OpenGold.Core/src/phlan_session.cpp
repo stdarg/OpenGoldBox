@@ -255,6 +255,11 @@ std::optional<ScriptDamage> listed_damage(unsigned script, std::uint16_t address
                                // Stojanow Gate (GATE-1).
                                ScriptDamage{9, 0xA155, "bludgeoning", "rock"}, // from the gate
                                ScriptDamage{9, 0xA94E, "bludgeoning"},         // a bugbear's punch
+                               // Valjevo's Temple of Bane (TOWN-1).
+                               ScriptDamage{6, 0xA579, "necrotic"}, // Bane's blessing
+                               ScriptDamage{6, 0xA62F, "fire"},     // the priest's fireball
+                               ScriptDamage{6, 0xA63A, "fire"},
+                               ScriptDamage{6, 0xA809, "necrotic"}, // the evil gaze
                                // Valhingen Graveyard's towers (GRAVE-1).
                                ScriptDamage{10, 0xA53E, "poison"},    // noxious fumes
                                ScriptDamage{10, 0xAA5F, "lightning"}, // a sharp crack
@@ -337,7 +342,7 @@ std::string_view area_beyond(unsigned script)
     {
     case 1:
         return "the Buccaneers' base";
-    case 6:
+    case 3:
         return "Valjevo Castle";
     case 19:
         return "the dragon's cave";

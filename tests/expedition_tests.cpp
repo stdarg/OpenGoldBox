@@ -3786,19 +3786,19 @@ void lizard_keep(const std::filesystem::path &directory)
           "The drawbridge leads back out to the eastern wilderness");
 }
 
-// Stojanow Gate (docs/audits/stojanow-gate.md): Podol Plaza's north edge, the
-// wagon bought and the toll paid, both towers' garrisons, the way north
-// refused, the bugbears beyond the passage and the gate taken, and the way
-// back south to Podol Plaza.
-void stojanow_gate(const std::filesystem::path &directory)
+// A new party of `level` by way of Podol Plaza's north edge to Stojanow
+// Gate, where the trader's wagon is bought and the toll paid: the gate opens
+// onto its north side. Every prompt the party meets is added to `heard`.
+Expedition through_stojanow_gate(const std::filesystem::path &directory, int level,
+                                 std::string &heard)
 {
     auto trip = create_party(directory);
     buy_and_equip(trip);
     auto &[party, town] = trip;
-    party->award_experience(6 * 23000, "test:gate-level");
+    party->award_experience(6 * (level == 7 ? 23000 : 34000), "test:gate-level");
     for (const auto id : party->state().slots)
     {
-        while (id && party->member(id).character.sheet().level < 7)
+        while (id && party->member(id).character.sheet().level < level)
         {
             party->advance(id, party->default_advancement(id));
         }
@@ -3810,19 +3810,9 @@ void stojanow_gate(const std::filesystem::path &directory)
     step(town, party, 1, prefer({"STAY"}));
     travel_to(town, party, 11, 28, prefer({"NORTH"}), [&] { return !town.snapshot().overland; });
     check(town.snapshot().area_id == 18, "The city's west edge leads into Podol Plaza");
-    std::string heard;
-    const Answer noting = [&](const por::TourSnapshot &s)
-    {
-        heard += s.dialogue + "\n";
-        return prefer({"ATTACK", "Fight", "Bash", "YES"})(s);
-    };
     walk_to(town, party, 4, 0, peaceful);
-    step(town, party, 0, noting);
+    step(town, party, 0, peaceful);
     check(town.snapshot().area_id == 9, "Podol Plaza's north edge leads to Stojanow Gate");
-    const auto gate = [&](std::uint16_t address)
-    {
-        return town.script_variable(por::EclAddress{address});
-    };
     // The wagon driver sells his wagon and warns of the bugbears; the toll
     // paid, the gate opens and the party drives through to the north side.
     const Answer paying = [&](const por::TourSnapshot &s)
@@ -3836,6 +3826,27 @@ void stojanow_gate(const std::filesystem::path &directory)
               heard.find("LETS HAVE THE 15 GOLD") != std::string::npos &&
               town.snapshot().pose.x == 8 && town.snapshot().pose.y == 5,
           "The wagon bought and the toll paid, the gate opens onto its north side");
+    return trip;
+}
+
+// Stojanow Gate (docs/audits/stojanow-gate.md): Podol Plaza's north edge, the
+// wagon bought and the toll paid, both towers' garrisons, the old town north
+// and back, the bugbears beyond the passage and the gate taken, and the way
+// back south to Podol Plaza.
+void stojanow_gate(const std::filesystem::path &directory)
+{
+    std::string heard;
+    auto trip = through_stojanow_gate(directory, 7, heard);
+    auto &[party, town] = trip;
+    const Answer noting = [&](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        return prefer({"ATTACK", "Fight", "Bash", "YES"})(s);
+    };
+    const auto gate = [&](std::uint16_t address)
+    {
+        return town.script_variable(por::EclAddress{address});
+    };
     // Each tower's stairs lead up to its garrison: a mage, an aide and three
     // ettins.
     const auto climb = [&](unsigned x)
@@ -3853,9 +3864,12 @@ void stojanow_gate(const std::filesystem::path &directory)
     climb(4);
     climb(11);
     check((gate(0x4A77) & 12) == 12, "Both towers' garrisons are beaten");
-    // North of the gate lies Valjevo Castle, not in the game yet.
+    // North of the gate lies Valjevo's old town.
     walk_to(town, party, 4, 0, noting);
-    refused_exit(town, party, 0, "Valjevo Castle");
+    step(town, party, 0, peaceful);
+    check(town.snapshot().area_id == 6, "The gate's north edge leads into Valjevo's old town");
+    step(town, party, 2, peaceful);
+    check(town.snapshot().area_id == 9, "The old town's south edge leads back to the gate");
     // South through the gate's passage, which opens from its north side, onto
     // the bugbears waiting beyond: with them beaten the gate is taken.
     heal(*party);
@@ -3875,6 +3889,59 @@ void stojanow_gate(const std::filesystem::path &directory)
     walk_to(town, party, 4, 15, noting, true);
     step(town, party, 2, noting);
     check(town.snapshot().area_id == 18, "The gate's south edge leads back to Podol Plaza");
+}
+
+// Valjevo's old town (docs/audits/valjevo-old-town.md): through Stojanow
+// Gate, the washerwomen's disguise, the Temple of Bane's blessing and altar,
+// the smithy's fire giants, the castle refused, and the way back to the gate.
+void valjevo_old_town(const std::filesystem::path &directory)
+{
+    std::string heard;
+    auto trip = through_stojanow_gate(directory, 8, heard);
+    auto &[party, town] = trip;
+    walk_to(town, party, 4, 0, peaceful);
+    step(town, party, 0, peaceful);
+    check(town.snapshot().area_id == 6, "The gate's north edge leads into Valjevo's old town");
+    const auto old_town = [&](std::uint16_t address)
+    {
+        return town.script_variable(por::EclAddress{address});
+    };
+    const auto answering = [&](std::vector<std::string> labels) -> Answer
+    {
+        return [&heard, labels](const por::TourSnapshot &s)
+        {
+            heard += s.dialogue + "\n";
+            return prefer(labels)(s);
+        };
+    };
+    // The washerwomen, spoken to nicely, give the party their clothes.
+    walk_to(town, party, 12, 13, answering({"NICE", "YES", "LEAVE"}), true);
+    check((old_town(0x4A65) & 1) != 0 &&
+              town.snapshot().dialogue.find("WE WILL KEEP SILENCE") != std::string::npos,
+          "The washerwomen disguise the party as townsfolk");
+    // The Temple of Bane's blessing hurts every member who is not evil, and
+    // the priest sees through the party.
+    heal(*party);
+    walk_to(town, party, 1, 2, answering({"ACCEPT BLESSING", "YES", "Fight", "Bash"}), true);
+    check(heard.find("DOUBLES UP IN AGONY") != std::string::npos &&
+              heard.find("A FIREBALL EXPLODES") != std::string::npos,
+          "Bane's blessing hurts the party's good members and the priest attacks");
+    // Behind the altar, the offering box and the crossed swords.
+    heal(*party);
+    walk_to(town, party, 1, 0, answering({"YES", "Fight", "Bash"}), true);
+    check(heard.find("CROSSED SWORDS") != std::string::npos,
+          "The altar keeps an offering box and two crossed swords");
+    // The smith and his fire giants, fought.
+    heal(*party);
+    walk_to(town, party, 1, 14, answering({"Fight", "YES", "Bash"}), true);
+    check((old_town(0x4A69) & 8) != 0, "The smith and his fire giants are beaten");
+    // North lies Valjevo Castle, not in the game yet; south, the gate.
+    heal(*party);
+    walk_to(town, party, 3, 0, peaceful, true);
+    refused_exit(town, party, 0, "Valjevo Castle");
+    walk_to(town, party, 4, 15, peaceful, true);
+    step(town, party, 2, peaceful);
+    check(town.snapshot().area_id == 9, "The old town's south edge leads back to Stojanow Gate");
 }
 
 // Valhingen Graveyard (docs/audits/valhingen-graveyard.md): the way in from
@@ -5202,6 +5269,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         lizard_keep(directory);
         valhingen_graveyard(directory);
         stojanow_gate(directory);
+        valjevo_old_town(directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
@@ -5308,6 +5376,12 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--wilderness")
         {
             central_wilderness(directory);
+            return 0;
+        }
+        // Plays Valjevo's old town alone with a new party.
+        if (argc == 2 && std::string_view(argv[1]) == "--old-town")
+        {
+            valjevo_old_town(directory);
             return 0;
         }
         // Plays Stojanow Gate alone with a new party.

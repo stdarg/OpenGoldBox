@@ -125,6 +125,10 @@ constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_
     {
         return N_("Stojanow Gate");
     }
+    if (area_id == 6)
+    {
+        return N_("Old Town");
+    }
     return N_("New Phlan");
 }
 

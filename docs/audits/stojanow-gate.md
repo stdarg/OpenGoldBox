@@ -14,7 +14,8 @@ the direction halved), and SRD 5.2.1.
 - **The way in:** Podol Plaza's north edge opens on the gate's south side at
   (4,15).
 - **The ways out:** the south edge leads back to Podol Plaza; the north edge
-  to Valjevo Castle's quarter (`ECL5:6`, not in the game yet).
+  to Valjevo Castle's old town (`ECL5:6`, in the game since 2026-10-25:
+  [Valjevo old town](valjevo-old-town.md)).
 - **The gate** (0x4A77 holds its state): a wall with two towers, its passage
   shut by gates that never open from the south. Bugbears lounge before it;
   hill giant patrols led by a human fighter roam, and give a password test
