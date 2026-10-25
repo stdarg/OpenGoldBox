@@ -59,7 +59,7 @@ GAME`, `opengold_maps GAME`, coab's `CMD_Program` (8), `CMD_LoadFiles` and
 | 60 | Giant Snake (HP 25) | the western wilderness's Giant Venomous Snake |
 | 66 | Tyranthraxus (HP 80) | **new:** SRD 5.2.1 Adult Bronze Dragon with 80 Hit Points: three Rends and its Lightning Breath (10d10 in a 90-foot Line, save DC 19, Recharge 5-6) |
 | 75, 84, 87 | 6th Level Fighters, Envoy (HP 45) | the Pyramid's Warrior Veteran |
-| 85 | 8th Level Fighter (HP 87) | **new:** SRD 5.2.1 Knight with 87 Hit Points (Parry not modeled) |
+| 85 | 8th Level Fighter (HP 87) | **new:** SRD 5.2.1 Knight with 87 Hit Points and its Parry |
 | 86, 88 | Al-Hyam Dazid, Genheeris (HP 22) | **new:** the nomad shaman's level-4 Wizard profile with 22 Hit Points |
 | 92 | the false Tyranthraxus (HP 40) | **new:** the Warrior Veteran with 40 Hit Points |
 | 93 | 6th Level Thief (HP 28) | Kovel Mansion's master thief |

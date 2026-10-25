@@ -99,7 +99,7 @@ up.
 | 68 | Displacer Beast (HP 30, two 2d4 tentacles) | **new:** not in SRD 5.2.1; the Owlbear's stat block (two Rends) with 30 Hit Points |
 | 69 | Drider (HP 36) | **new:** SRD 5.2.1 Drider with 36 Hit Points, Magic of the Spider Queen (Recharge 5-6) |
 | 97, 40, 98 | Bandit, Nomad, Merchant (HP 6) | **new:** SRD 5.2.1 Bandit with 6 Hit Points |
-| 53 | Aides (HP 18) | **new:** SRD 5.2.1 Bandit Captain with 18 Hit Points, without Pistol and Parry (as Norris) |
+| 53 | Aides (HP 18) | **new:** SRD 5.2.1 Bandit Captain with 18 Hit Points, without Pistol (as Norris), with its Parry since 2026-10-25 |
 
 ## Status
 

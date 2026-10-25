@@ -503,9 +503,14 @@ enum class EffectKind : unsigned
     // A Stirge clinging to the creature that is its source; it drains that
     // creature at the start of each of its turns and cannot attack.
     attached = 203,
+    // A Mummy's Dreadful Glare resisted: its source cannot glare at the
+    // creature again for a day.
+    glare_resisted = 204,
+    // A Mummy's Dreadful Glare: Frightened of it until the end of its next turn.
+    glared = 205,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = attached
+    last = glared
 };
 
 // Magic Circle's creature types, by `dc`.

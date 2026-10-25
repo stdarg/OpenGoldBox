@@ -745,6 +745,100 @@ void master_thief_strikes()
     check(poisoned, "The master thief's Shortsword adds Poison damage");
 }
 
+// Valjevo Castle's knights parry as the SRD Knight does: hit by a melee attack
+// roll, a knight adds 2 to its AC with its Reaction when that makes the attack
+// miss, once a round.
+void knight_parries()
+{
+    const auto module = rules("creature fencer 10 1000 0 30 5 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+    bool parried = false;
+    for (std::uint64_t seed = 1; seed < 80 && !parried; ++seed)
+    {
+        auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                                 {{1, "castle-knight", "Monster", Side::opposition, {1, 1}},
+                                  {2, "fencer", "Hero", Side::party, {2, 1}}}},
+                                seed);
+        turn_of(*c, 2);
+        check(submit(*c, "melee", 2, 1), "The fencer attacks the knight");
+        parried = count_logged(*c, "Monster parries Hero's attack.") == 1;
+        if (parried)
+        {
+            const auto log = c->snapshot().log();
+            check(std::any_of(log.begin(), log.end(),
+                              [](const auto &line)
+                              {
+                                  return line.find("Hero -> Monster") != std::string::npos &&
+                                         line.find("vs AC 20 misses") != std::string::npos;
+                              }),
+                  "The parried attack misses against AC 20");
+        }
+    }
+    check(parried, "A knight parries a melee hit that its Parry turns into a miss");
+}
+
+// Valhingen Graveyard's mummies glare as the SRD Mummy does: with its two
+// Rotting Fists, a Wisdom save (DC 11) or Frightened until the end of the
+// mummy's next turn; a success makes the creature immune to its glare.
+void mummy_glares()
+{
+    const auto module = rules();
+    bool frightened = false, resisted = false;
+    for (std::uint64_t seed = 1; seed < 80 && !(frightened && resisted); ++seed)
+    {
+        auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                                 {{1, "mummy", "Monster", Side::opposition, {1, 1}},
+                                  {2, "target", "Hero", Side::party, {2, 1}}}},
+                                seed);
+        turn_of(*c, 1);
+        check(submit(*c, "melee", 1, 2) &&
+                  count_logged(*c, "Monster uses Dreadful Glare on Hero.") == 1 &&
+                  count_logged(*c, "Monster -> Hero") == 2,
+              "The mummy glares besides its two Rotting Fists");
+        if (count_logged(*c, "Hero is Frightened.") == 1)
+        {
+            frightened = unit(*c, 2).status.find("Frightened") != std::string::npos;
+            continue;
+        }
+        check(submit(*c, "end", 1), "The mummy ends its turn");
+        turn_of(*c, 1);
+        check(submit(*c, "melee", 1, 2) &&
+                  count_logged(*c, "Monster uses Dreadful Glare on Hero.") == 1,
+              "A creature that resists the glare is immune to it");
+        resisted = true;
+    }
+    check(frightened && resisted, "The glare frightens on a failure and not after a success");
+}
+
+// Valhingen Graveyard's vampire charms and bites as the SRD Vampire does: its
+// Charm is Charm Person as a Bonus Action (DC 17), and with its two Grave
+// Strikes it bites a creature it has Charmed: a Constitution save or Piercing
+// and Necrotic damage, the Necrotic lowering the Hit Point maximum and healing
+// the vampire.
+void vampire_bites()
+{
+    const auto module = rules("creature hardy 10 300 0 30 0 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+    bool bitten = false;
+    for (std::uint64_t seed = 1; seed < 120 && !bitten; ++seed)
+    {
+        auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                                 {{1, "vampire", "Monster", Side::opposition, {1, 1}},
+                                  {2, "hardy", "Hero", Side::party, {2, 1}}}},
+                                seed);
+        turn_of(*c, 1);
+        check(offered_any(*c, "charm_person_innate_bonus", 1), "The vampire can Charm");
+        check(submit(*c, "charm_person_innate_bonus", 1, 2), "The vampire casts Charm Person");
+        if (unit(*c, 2).status.find("Charmed") == std::string::npos)
+        {
+            continue;
+        }
+        check(submit(*c, "melee", 1, 2) && count_logged(*c, "Monster uses Bite on Hero.") == 1,
+              "The vampire bites the creature it has Charmed with its Grave Strikes");
+        bitten = count_logged(*c, "Hero's Hit Point maximum drops by") == 1 &&
+                 unit(*c, 2).max_hit_points < 300;
+    }
+    check(bitten, "A failed save against the Bite lowers the Hit Point maximum");
+}
+
 // Tyranthraxus breathes as the SRD Adult Bronze Dragon does: Lightning Breath
 // with its action, 10d10 Lightning to each creature in its Line, half on a
 // DC 19 Dexterity save, recharging on a 5 or 6.
@@ -827,6 +921,9 @@ int main()
         master_thief_strikes();
         tiger_escapes();
         tyranthraxus_breathes();
+        knight_parries();
+        mummy_glares();
+        vampire_bites();
         std::cout << "Slums creature tests passed\n";
         return 0;
     }

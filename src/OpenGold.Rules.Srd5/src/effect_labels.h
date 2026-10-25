@@ -368,6 +368,8 @@ inline constexpr std::array effect_labels{
                 "The free Circle spell returns with a Long Rest."},
     EffectLabel{EffectKind::fey_fright, "Frightened (Conjure Fey)",
                 "Frightened of the caster until the start of its next turn."},
+    EffectLabel{EffectKind::glared, "Frightened (Dreadful Glare)",
+                "Frightened of the mummy until the end of its next turn."},
     EffectLabel{EffectKind::animal_shaped, "Animal Shapes", "In the form of a {value}.",
                 EffectValue::beast_form},
     EffectLabel{
@@ -403,7 +405,7 @@ inline constexpr std::array unlabeled_effects{
     EffectKind::groped,      EffectKind::wall_burned,  EffectKind::spirit_breath,
     EffectKind::breathed,    EffectKind::illusory,     EffectKind::elemental_spirit,
     EffectKind::hand_ready,  EffectKind::clouded,      EffectKind::eye_resisted,
-    EffectKind::thorned,     EffectKind::swum};
+    EffectKind::thorned,     EffectKind::swum,         EffectKind::glare_resisted};
 
 // The kinds a Long Rest ends, which the sheet shows without a countdown.
 inline constexpr std::array long_rest_effects{

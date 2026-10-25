@@ -61,8 +61,8 @@ Central Wilderness's `ECL7.DAX 26` (the way in), `opengold_creatures GAME`,
 | --- | --- | --- |
 | 0, 123 | Kobold | `slums-kobold` |
 | 40 | Nomad (level-1 fighter, HP 6) | the Bandit with 6 Hit Points, as on the wilderness map |
-| 41 | 4th Level Fighter (HP 30) | **new:** SRD 5.2.1 Bandit Captain with 30 Hit Points, without its Pistol and Parry |
-| 42 | Hassad (level-6 fighter, HP 45, AC 2) | **new:** SRD 5.2.1 Warrior Veteran with 45 Hit Points, without Parry |
+| 41 | 4th Level Fighter (HP 30) | **new:** SRD 5.2.1 Bandit Captain with 30 Hit Points, without its Pistol; its Parry since 2026-10-25 |
+| 42 | Hassad (level-6 fighter, HP 45, AC 2) | **new:** SRD 5.2.1 Warrior Veteran with 45 Hit Points; its Parry since 2026-10-25 |
 | 43 | Shaman (level-5 magic-user, HP 20) | **new:** the Slums magic-user's Wizard profile at level 4 with 20 Hit Points |
 
 ## Engine support
