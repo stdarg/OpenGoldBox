@@ -93,8 +93,9 @@ The Pyramid's Yarash is the SRD 5.2.1 Mage (three Arcane Bursts; Fireball,
 Invisibility, Cone of Cold and Misty Step as innate spells) with the original's
 27 Hit Points, its minotaurs the Minotaur of Baphomet (Abyssal Glaive), its
 trapped cleric the Priest Acolyte and its fighters the Warrior Veteran, by
-[PYRAMID-1](SRD-DECISIONS.md#pyramid-1-2026-10-24-the-pyramid). Not modeled
-yet: the Mage's Fly and Protective Magic, and the Minotaur's Gore.
+[PYRAMID-1](SRD-DECISIONS.md#pyramid-1-2026-10-24-the-pyramid). Yarash has
+the Mage's Protective Magic ([MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders)). Not modeled yet: the Minotaur's Gore; the
+game has no Fly.
 
 ## Wilderness window monsters
 
@@ -105,14 +106,16 @@ Ankheg, Centaur Trooper, Tiger, Boar, Hippogriff, Wyvern and Phase Spider, by
 [EAST-1](SRD-DECISIONS.md#east-1-2026-10-25-the-eastern-wilderness). The beast
 forms' traits become monster rows (`bloodied_fury`, `charge`, `prone_on_hit`,
 `prone_large`), and a new `nimble_escape` row gives Disengage or Hide as a
-Bonus Action.
+Bonus Action. The Sprite's bow charms, the Ankheg sprays acid, the
+Hippogriff has Flyby and the Wyvern's Sting poisons ([MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders)).
 
 ## Kobold caves monsters
 
 The kobold caves' efreeti is the SRD 5.2.1 Efreeti (three attacks, Heated
 Blade or Hurl Flame; fire immunity) with the original's 55 Hit Points, by
-[KOBOLD-1](SRD-DECISIONS.md#kobold-1-2026-10-25-the-kobold-caves). Its
-spells and Magic Resistance are not modeled yet. Princess Fatima, who joins,
+[KOBOLD-1](SRD-DECISIONS.md#kobold-1-2026-10-25-the-kobold-caves), with
+Magic Resistance ([MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders)); the computer casts none of its spells. Princess
+Fatima, who joins,
 is a level-4 Fighter.
 
 ## Western wilderness sites' monsters

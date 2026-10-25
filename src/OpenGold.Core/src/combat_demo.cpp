@@ -2081,14 +2081,15 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     const bool shoots = !enemy_beside && active.ranged_rating * 2 > active.melee_rating;
     // A thrown weapon is rated as a ranged one, as the original did (#269).
     const bool throws = !enemy_beside && active.thrown_rating * 2 > active.melee_rating;
-    // A Breath Weapon, Dragon's Breath, a dragon's Lightning Breath or a
-    // Basilisk's Petrifying Gaze goes off before the attacks, where it catches
-    // an enemy and no ally (#269).
+    // A Breath Weapon, Dragon's Breath, a dragon's Lightning Breath, an
+    // Ankheg's Acid Spray or a Basilisk's Petrifying Gaze goes off before the
+    // attacks, where it catches an enemy and no ally (#269).
     for (const auto &command : offered)
     {
         if ((command.verb.starts_with("breath_weapon_") ||
              command.verb.starts_with("dragons_breath_exhale_") ||
-             command.verb == "lightning_breath" || command.verb == "petrifying_gaze") &&
+             command.verb == "lightning_breath" || command.verb == "acid_spray" ||
+             command.verb == "petrifying_gaze") &&
             std::any_of(in_view.begin(), in_view.end(),
                         [&](const auto *enemy)
                         {

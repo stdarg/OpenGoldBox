@@ -284,18 +284,20 @@ of the Multiattack's last attack; `hampering creature melee|ranged|last` and
 `last_attack` row's attack, whose extra damage dice may now be `0 0 type`);
 `pushing creature melee|ranged feet`; `hit_advantage creature`;
 `captains_charm creature dc range`; `riposte creature bonus`, a Parry that
-strikes back; and `create_specter creature limit undead`.
+strikes back; `create_specter creature limit undead`; `charming creature
+melee|ranged`; `flyby creature`; `magic_resistance creature`; and
+`protective_magic creature uses`.
 
 `off ability [creature]` leaves out an ability's rows, every creature's or one
 creature's, to switch it off. It takes these abilities: `advantage_damage`,
 `attach`, `bite`, `bloodied_fury`, `breath`, `captains_charm`, `charge`,
-`create_specter`, `cunning_action`, `dreadful_glare`, `enthralling_panache`,
-`hampering`, `hit_advantage`, `incorporeal`, `innate`, `last_attack`,
-`legendary`, `legendary_resistance`, `life_drain`, `life_drain_attack`,
-`nimble_escape`, `pack_tactics`, `parry`, `petrifying_gaze`, `poisoning`,
-`prone_large`, `prone_on_hit`, `pushing`, `regeneration`, `repulsion_breath`,
-`riposte`, `rotting_curse`, `sunlight_sensitivity`, `undead_fortitude` and
-`web_walker`.
+`charming`, `create_specter`, `cunning_action`, `dreadful_glare`,
+`enthralling_panache`, `flyby`, `hampering`, `hit_advantage`, `incorporeal`,
+`innate`, `last_attack`, `legendary`, `legendary_resistance`, `life_drain`,
+`life_drain_attack`, `magic_resistance`, `nimble_escape`, `pack_tactics`,
+`parry`, `petrifying_gaze`, `poisoning`, `prone_large`, `prone_on_hit`,
+`protective_magic`, `pushing`, `regeneration`, `repulsion_breath`, `riposte`,
+`rotting_curse`, `sunlight_sensitivity`, `undead_fortitude` and `web_walker`.
 
 ## Western wilderness sites' monsters
 

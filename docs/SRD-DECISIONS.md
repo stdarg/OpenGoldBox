@@ -1775,8 +1775,9 @@ they await the user's review ([audit](audits/pyramid.md)):
 
 - **Yarash** is the SRD Mage with the original's 27 Hit Points: three Arcane
   Bursts, Fireball and Invisibility twice a day, Cone of Cold once, Misty Step
-  three times as a Bonus Action. His Fly and Protective Magic (Counterspell or
-  Shield as a Reaction) are not modeled yet.
+  three times as a Bonus Action, and Protective Magic (Counterspell or Shield
+  as a Reaction) three times a day since 2026-10-25 ([MONSTER-2](#monster-2-2026-10-25-legendary-actions-and-monster-riders)). The game has no
+  Fly.
 - **The minotaurs** are the Minotaur of Baphomet with 33 Hit Points and its
   Abyssal Glaive; its Gore with the charge is not modeled yet.
 - **The souls Yarash keeps** keep the original's Hit Points: fighters as the
@@ -1796,9 +1797,10 @@ they await the user's review ([audit](audits/western-wilderness.md)):
   5.2.1 has no such creature, the nearest in strength stands in under the
   original's name and art: quicklings as the Sprite, giant mantises on the
   Giant Scorpion's two Claws, thri-kreen as the Warrior Veteran.
-- **Not modeled yet:** the Sprite's charming bow and Invisibility, the
-  Ankheg's Acid Spray and grapple, and the Centaur Trooper's Trampling
-  Charge.
+- **Not modeled yet:** the Centaur Trooper's Trampling Charge. The Sprite's
+  bow charms and the Ankheg sprays acid since 2026-10-25 ([MONSTER-2](#monster-2-2026-10-25-legendary-actions-and-monster-riders)); the computer
+  casts no Invisibility, and the Ankheg's grapple is dropped with grappling
+  (SCOPE-2).
 
 ## EAST-1 (2026-10-25): the eastern wilderness
 
@@ -1807,8 +1809,9 @@ they await the user's review ([audit](audits/eastern-wilderness.md)):
 
 - **Monsters** keep the original's Hit Points on SRD stat blocks: the
   Hippogriff, the Wyvern and the Phase Spider.
-- **Not modeled yet:** the Hippogriff's Flyby, the Wyvern's Poisoned sting and
-  the Phase Spider's Ethereal Jaunt and paralysing poison.
+- **Not modeled yet:** the Phase Spider's Ethereal Jaunt and paralysing
+  poison. The Hippogriff's Flyby and the Wyvern's poisoning Sting are modeled
+  since 2026-10-25 ([MONSTER-2](#monster-2-2026-10-25-legendary-actions-and-monster-riders)).
 
 ## KOBOLD-1 (2026-10-25): the kobold caves
 
@@ -1817,8 +1820,9 @@ they await the user's review ([audit](audits/kobold-caves.md)):
 
 - **Princess Fatima** joins as a level-4 Fighter with her record's scores and
   gear.
-- **The efreeti** is the SRD Efreeti with the original's 55 Hit Points; its
-  spells and Magic Resistance are not modeled yet.
+- **The efreeti** is the SRD Efreeti with the original's 55 Hit Points and
+  Magic Resistance (since 2026-10-25, [MONSTER-2](#monster-2-2026-10-25-legendary-actions-and-monster-riders)); the computer casts none of its
+  spells.
 - **A member robbed alone** (the pool) costs the party that member's share of
   its purse, since the party shares one; as for the whole party (Kuto's
   Well), only money is taken.
@@ -1952,4 +1956,12 @@ them; they await the user's review:
   computer does it before attacking.
 - **The Wyvern's Sting** poisons until the start of its next turn, as the SRD
   says; its Poisoned was not modeled before.
+- **Protective Magic** casts Shield only when its +5 turns a hit into a miss,
+  and Counterspell only on a spell of level 1 or higher, never a cantrip.
+- **Magic Resistance** counts a spell while it is being cast; a lingering
+  spell's area (Spirit Guardians, Moonbeam) gives no Advantage on later saves.
+- **The Sprite's Enchanting Bow** charms on every hit, no save, as the SRD
+  says.
+- **Spells the computer never casts** (Invisibility, Wall of Fire, the
+  efreeti's others) are left out of the stat blocks, as they would do nothing.
 

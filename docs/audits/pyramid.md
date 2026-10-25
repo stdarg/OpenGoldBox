@@ -66,7 +66,7 @@ valley's healing), `opengold_creatures GAME`, `opengold_maps GAME`, coab's
 | 77 | 7th Level Thief (HP 28) | the Spy with 28 Hit Points, as Kovel Mansion's |
 | 78 | 2nd Level Cleric (HP 8) | **new:** SRD 5.2.1 Priest Acolyte with 8 Hit Points |
 | 79 | Diane (level-5 magic-user, HP 20) | the nomad shaman's level-4 Wizard profile |
-| 81 | Yarash (level-9 magic-user, HP 27) | **new:** SRD 5.2.1 Mage with 27 Hit Points: Arcane Burst, Fireball, Invisibility, Cone of Cold, Misty Step (Fly and Protective Magic not modeled) |
+| 81 | Yarash (level-9 magic-user, HP 27) | **new:** SRD 5.2.1 Mage with 27 Hit Points: Arcane Burst, Fireball, Invisibility, Cone of Cold, Misty Step and Protective Magic (the game has no Fly) |
 
 ## Engine support
 
