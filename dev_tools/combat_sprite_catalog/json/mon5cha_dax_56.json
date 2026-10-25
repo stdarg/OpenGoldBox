@@ -1,32 +1,49 @@
 {
-  "description": "A massive fire giant with a broad, imposing frame and heat-marked styling. The original template records no carried items. Source wealth: 2000 cp, 1000 sp, 4000 gp.",
-  "humanoid_size": "tall",
-  "sprite_size": {"height_squares": 2, "width_squares": 1},
+  "description": "A massive fire giant with a broad, imposing frame and heat-marked styling. The original template records no carried items; the current saved equipment adds a readied two-handed halberd. Source wealth: 2000 cp, 1000 sp, 4000 gp.\n\nREJECTED READY ATTEMPT 1 IMAGEGEN PROMPT (saved before generation; blade too high for giant height):\nGenerate EXACTLY ONE complete full-body combat sprite in ONE READY pose for FIRE GIANT MON5CHA.DAX:56/added_164509205__two_hand. A massive, intimidating but proportionate humanoid fire giant with broad shoulders, dark basalt skin crossed by subtle ember cracks, ember-red hair and beard, and dark forged iron armor with heat-marked trim. Saved equipment: exactly ONE halberd, a TWO-HANDED polearm with one continuous wooden/iron shaft, recognizable broad axe blade, rear hook and top spike. BOTH hands visibly grip this same shaft, one higher and one lower, in a raised guard poised to strike screen right. No shield or second weapon. Face screen right in front three-quarter view with chest partly visible; head, chest, waist, hips and feet share the same orientation. Tall body height target is about 1.7 combat squares. Its BODY and planted feet must fit within the saved ONE-square-wide by TWO-square-tall combat footprint, using a compact planted stance; do not shrink the giant into a small humanoid. Reserve transparent space on the RIGHT for the action halberd sweep, and above the head for the raised ready blade. All visible pixels must fit a 128x128 final PNG with transparent margin. Make crisp, readable pixel art with genuine transparent alpha; no black background, glow field, scenery, text, duplicate figure, diptych or second pose. The attached user-approved bipedal pose guide is ONLY a pose/facing reference, never a character, clothing, sword or shield reference. This ready image establishes the exact feet x/y coordinates and camera scale for the later action edit.\n\nREADY IMAGEGEN PROMPT:\nGenerate EXACTLY ONE complete full-body combat sprite in ONE READY pose for FIRE GIANT MON5CHA.DAX:56/added_164509205__two_hand. A massive, intimidating humanoid fire giant with broad shoulders, dark basalt skin crossed by subtle ember cracks, ember-red hair and beard, and dark forged iron armor with heat-marked trim. Saved equipment: exactly ONE two-handed halberd with a continuous shaft, broad axe blade, rear hook and top spike; BOTH hands visibly grip the same shaft in a raised guard poised to strike screen right. No shield or second weapon. Face screen right in front three-quarter view with chest partly visible. Use a compact grounded stance: feet shoulder-width apart rather than a wide lunge, so the BODY and feet fit within the saved ONE-square-wide by TWO-square-tall footprint while looking like a tall giant. At final 128x128 scale, plan about 100 pixels from planted feet to crown (roughly 1.7 catalog combat squares), excluding the weapon. Hold the halberd DIAGONALLY UP across the chest with its head just ABOVE and LEFT of the crown, no more than about one tenth of body height higher than the head; do not lift the head far overhead. This is still a clearly raised strike-ready guard, not a lowered resting polearm. Reserve transparent space rightward for a later full late-strike sweep; all ready pixels inside the PNG, and the blade head within the ready footprint side boundaries. Make crisp readable pixel art with transparent RGBA and clean cutout: no glow field, background, black box, scenery, text, duplicate figure, diptych or second pose. The attached approved bipedal pose guide is ONLY a facing/guard reference, never a character or equipment reference. This ready image establishes exact feet x/y and camera for action.\n\nACTION IMAGEGEN PROMPT:\nEdit attached reference image 1, the newly generated READY fire giant MON5CHA.DAX:56/added_164509205__two_hand, into EXACTLY ONE ACTION frame. Reference image 2 is the approved bipedal pose guide ONLY for front three-quarter screen-right facing and late-strike mechanics. Preserve the SAME giant identity, basalt skin, ember hair/beard, forged dark armor, full-body size, camera, and genuine transparent background. This is a two-handed HALBERD attack: BOTH hands remain visibly gripping the SAME continuous shaft while the axe blade, hook and top spike sweep toward screen right near the END of a forceful strike, clearly different from the raised ready guard. Let the upper body lean modestly toward screen right into the blow while neck, chest, abdomen, waist and hips remain one connected anatomical body. Freeze the READY lower body from waist through both legs, boots and planted feet at EXACTLY the same x/y pixels; no step, whole-body shift, recentering, independent resize, or new stance. Keep body and planted feet within the saved one-square-wide by two-square-tall footprint; the moving halberd alone may cross the right tile line, while remaining wholly inside the final 128x128 PNG. No shield, second weapon, punch, detached arm, missing hand, waist seam, doubled edge, opaque black wedge, background, labels or extra character. Edit the ready figure rather than composing a different giant.",
   "description_sources": [
     "Original game MON5CHA.DAX:56 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"
   ],
-  "equipment": [],
-  "flag_for_regeneration": true,
+  "equipment": [
+    {
+      "id": "added_164509205",
+      "kind": "weapon",
+      "name": "Halberd",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": 18,
+      "weapon_role": "two_hand"
+    }
+  ],
+  "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
+  "height_feet": null,
+  "humanoid_size": "tall",
   "name": "FIRE GIANT",
+  "preview_fallback_variant": "default",
   "source": {
     "art_archive": "CPIC5.DAX",
-    "art_basis": "Same ID, same bank (candidate)",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
     "art_record": 56,
     "creature_archive": "MON5CHA.DAX",
     "creature_record": 56,
-    "key": "MON5CHA.DAX:56"
+    "key": "MON5CHA.DAX:56",
+    "linked_creature_keys": []
+  },
+  "sprite_size": {
+    "height_squares": 2,
+    "width_squares": 1
   },
   "variants": [
     {
-      "action": "art/mon5cha_dax_56/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon5cha_dax_56/default/ready.png",
+      "action": "art/mon5cha_dax_56/added_164509205__two_hand/action.png",
+      "id": "added_164509205__two_hand",
+      "label": "Halberd",
+      "ready": "art/mon5cha_dax_56/added_164509205__two_hand/ready.png",
       "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "weapon_id": "added_164509205",
+      "weapon_role": "two_hand"
     }
   ],
   "wealth": {
