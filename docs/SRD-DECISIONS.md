@@ -1782,3 +1782,26 @@ they await the user's review ([audit](audits/pyramid.md)):
   each step searches and takes ten minutes more.
 - **The healed valley** opens its rivers; the original also recoloured 36
   valley tiles, which keep their art here for now.
+
+## WEST-1 (2026-10-25): the western wilderness
+
+Claude chose these on 2026-10-25 while making the map playable area by area;
+they await the user's review ([audit](audits/western-wilderness.md)):
+
+- **Monsters** keep the original's Hit Points on SRD stat blocks. Where SRD
+  5.2.1 has no such creature, the nearest in strength stands in under the
+  original's name and art: quicklings as the Sprite, giant mantises on the
+  Giant Scorpion's two Claws, thri-kreen as the Warrior Veteran.
+- **Not modeled yet:** the Sprite's charming bow and Invisibility, the
+  Ankheg's Acid Spray and grapple, and the Centaur Trooper's Trampling
+  Charge.
+
+## EAST-1 (2026-10-25): the eastern wilderness
+
+Claude chose these on 2026-10-25 while making the map playable area by area;
+they await the user's review ([audit](audits/eastern-wilderness.md)):
+
+- **Monsters** keep the original's Hit Points on SRD stat blocks: the
+  Hippogriff, the Wyvern and the Phase Spider.
+- **Not modeled yet:** the Hippogriff's Flyby, the Wyvern's Poisoned sting and
+  the Phase Spider's Ethereal Jaunt and paralysing poison.

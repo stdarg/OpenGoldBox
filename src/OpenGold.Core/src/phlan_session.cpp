@@ -308,16 +308,22 @@ std::string_view area_beyond(unsigned script)
 {
     switch (script)
     {
+    case 1:
+        return "the Buccaneers' base";
     case 6:
         return "Valjevo Castle";
     case 9:
         return "Stojanow Gate";
     case 10:
         return "Valhingen Graveyard";
-    case 25:
-        return "the western wilderness";
-    case 27:
-        return "the eastern wilderness";
+    case 13:
+        return "the kobold caves";
+    case 16:
+        return "the lizard men's keep";
+    case 19:
+        return "the dragon's cave";
+    case 28:
+        return "the Zhentil outpost";
     default:
         return "another area";
     }
@@ -1609,10 +1615,17 @@ void RolfTourSession::show_encounter_menu()
     // The first operand names the distance sprite, the third the close-up
     // picture (coab CMD_EncounterMenu); Sokal Keep's Ferran Martinez has a
     // picture of his own (19) and the Spectre's sprite (17).
+    // A sprite with fewer distance frames (the western wilderness's centaur
+    // has two) shows its farthest one beyond them.
     const auto &args = encounter_menu_->arguments;
     for (unsigned frame = 0; frame < 3; ++frame)
     {
         auto image = decode_ega_sprite(area_resources().sprite_archive, args[0].number(), frame);
+        if (!image && frame > 0)
+        {
+            sprites_[frame] = sprites_[frame - 1];
+            continue;
+        }
         if (!image)
         {
             throw EclError("Unsupported roaming encounter sprite");
@@ -2209,6 +2222,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         for (unsigned n = 0; n < 3; ++n)
         {
             auto image = decode_ega_sprite(area_resources().sprite_archive, arg(0), n);
+            // Beyond a sprite's last distance frame its farthest one shows.
+            if (!image && n > 0)
+            {
+                decoded[n] = decoded[n - 1];
+                continue;
+            }
             if (!image)
             {
                 throw EclError("Unsupported encounter sprite " + std::to_string(arg(0)));

@@ -744,6 +744,17 @@ void master_thief_strikes()
     }
     check(poisoned, "The master thief's Shortsword adds Poison damage");
 }
+
+// The wilderness's tiger has the SRD Tiger's Nimble Escape: Disengage or
+// Hide as a Bonus Action, without Cunning Action's Dash.
+void tiger_escapes()
+{
+    const auto module = rules();
+    auto c = fight(*module, "tiger", "target");
+    turn_of(*c, 1);
+    check(offered_any(*c, "cunning_disengage", 1) && !offered_any(*c, "cunning_dash", 1),
+          "The tiger may Disengage as a Bonus Action but not Dash");
+}
 } // namespace
 
 int main()
@@ -771,6 +782,7 @@ int main()
         stirge_attaches();
         drider_casts();
         master_thief_strikes();
+        tiger_escapes();
         std::cout << "Slums creature tests passed\n";
         return 0;
     }

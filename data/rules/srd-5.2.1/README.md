@@ -173,6 +173,31 @@ Each Open5E response was fetched on 2026-10-24 (`srd-2024`):
 Each keeps the original's Hit Points (33, 8, 27, 45 and 50). The Minotaur's
 Gore, and the Mage's Fly and Protective Magic, are not modeled.
 
+## Wilderness window monsters
+
+The western and eastern wilderness windows' monsters
+([west](../../../docs/audits/western-wilderness.md),
+[east](../../../docs/audits/eastern-wilderness.md)). Each Open5E response was
+fetched on 2026-10-25 (`srd-2024`):
+
+| Rows | Stat block | Response | SHA-256 |
+| --- | --- | --- | --- |
+| `quickling` | Sprite | `open5e-sprite.json` | `F84D181922F983953E081C78947FB4BB3794BBE3AA73D6678AAB33A9E07CFA80` |
+| `ankheg` | Ankheg | `open5e-ankheg.json` | `9656358FB2D77D4090876B514763BF3DECDE5BE0D8550C2D904FD7B171E75054` |
+| `centaur` | Centaur Trooper | `open5e-centaur-trooper.json` | `0EDB6E44FCB9820868911176F8340C288974BE2933AC0495AC242D5B0800970B` |
+| `venomous-snake` | Giant Venomous Snake | `open5e-giant-venomous-snake.json` | `05E93CF9FE16A5C9379D7738A555BA2DC0F020655FA3C554339A65710F5F764D` |
+| `tiger` | Tiger | `open5e-tiger.json` | `541CD5AC63B5C32675B863ED283BC618F06E1523C45B09DD04E66A9F6A67AE6D` |
+| `wild-boar` | Boar | `open5e-boar.json` | `375BDCEBEE3D8516BBE05E94281F4D578975542E743363AF9770E400D6D8570F` |
+| `hippogriff` | Hippogriff | `open5e-hippogriff.json` | `862C3FA8A3B91CD45DCBC7D20C5A613294487E12E34049AA20BF74C0A306948C` |
+| `wyvern` | Wyvern | `open5e-wyvern.json` | `27F3EC5A4E09EFE8F1609901413FBD418E3605B7C885992CBEEABC3818251F95` |
+| `phase-spider` | Phase Spider | `open5e-phase-spider.json` | `E3C63FF10C063B2C08E55772FF0AAD6F6A6987AB57139AB25022C3E9FEE9CD5E` |
+| `zhent-corporal` | Guard | `open5e-guard.json` | (above) |
+| `giant-mantis` | Giant Scorpion's Claws | `open5e-giant-scorpion.json` | (above) |
+| `thri-kreen` | Warrior Veteran | `open5e-warrior-veteran.json` | (above) |
+
+Each keeps the original's Hit Points. New rows: `bloodied_fury`, `charge`,
+`prone_on_hit`, `prone_large` and `nimble_escape`.
+
 ## Fixtures
 
 `vanguard`, `scout`, `adept`, and `healer` are authored combat fixtures, not

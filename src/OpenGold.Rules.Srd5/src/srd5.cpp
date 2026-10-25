@@ -1639,6 +1639,9 @@ struct Definition
     bool lands_aid{};
     bool prone_bite{}, bloodied_fury{}, charge{}; // a Beast form's attack traits
     bool prone_large{}; // the Tiger's: a Large or smaller target falls Prone
+    // Nimble Escape (the Tiger's, a monster's row): Disengage or Hide as a
+    // Bonus Action.
+    bool nimble_escape{};
     bool deflect{};     // Monk level 3: Deflect Attacks
     bool open_hand{};   // Warrior of the Open Hand, Monk level 3
     int focus_dc{};     // 8 + Wisdom + Proficiency, for Focus features' saves
@@ -7702,6 +7705,10 @@ Snapshot Session::snapshot() const
         {
             view.bonus_actions = {"cunning_dash", "cunning_disengage", "cunning_hide"};
         }
+        else if (def(a).nimble_escape)
+        {
+            view.bonus_actions = {"cunning_disengage", "cunning_hide"};
+        }
         if (def(a).sneak_level >= 3)
         {
             view.bonus_actions.push_back("steady_aim");
@@ -10978,6 +10985,14 @@ std::vector<Command> Session::offered_commands() const
         if (can_hide(a))
         {
             add(id, "cunning_hide", "Cunning Action: Hide");
+        }
+    }
+    else if (a.bonus && d.nimble_escape)
+    {
+        add(id, "cunning_disengage", "Nimble Escape: Disengage");
+        if (can_hide(a))
+        {
+            add(id, "cunning_hide", "Nimble Escape: Hide");
         }
     }
     if (a.bonus && a.rushes > 0)
@@ -31412,7 +31427,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.253", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.254", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
@@ -31829,7 +31844,8 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             tag == "undead_fortitude" || tag == "multiattack_ranged" ||
             tag == "sunlight_sensitivity" || tag == "evil" || tag == "life_drain_attack" ||
             tag == "flies" || tag == "incorporeal" || tag == "web_walker" ||
-            tag == "cunning_action")
+            tag == "cunning_action" || tag == "bloodied_fury" || tag == "charge" ||
+            tag == "prone_on_hit" || tag == "prone_large" || tag == "nimble_escape")
         {
             const auto found = content.definitions.find(key);
             if (found == content.definitions.end() || !trait_rows.insert(tag + " " + key).second)
@@ -31880,6 +31896,26 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             else if (tag == "cunning_action")
             {
                 definition.cunning = true;
+            }
+            // The beast forms' attack traits: Bloodied Fury, a Boar's charge
+            // (20 feet straight: 1d6 more and Prone), a melee hit that knocks
+            // a Medium or smaller target Prone (Large too with prone_large).
+            else if (tag == "bloodied_fury")
+            {
+                definition.bloodied_fury = true;
+            }
+            else if (tag == "charge")
+            {
+                definition.charge = true;
+            }
+            else if (tag == "prone_on_hit" || tag == "prone_large")
+            {
+                definition.prone_bite = true;
+                definition.prone_large = tag == "prone_large";
+            }
+            else if (tag == "nimble_escape")
+            {
+                definition.nimble_escape = true;
             }
             else
             {
