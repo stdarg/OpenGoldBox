@@ -1,0 +1,29 @@
+{
+  "action_sha256": "8821f1f067f39644331f59108fe245d39674e8cb197227f9ee3a9c52bbf338d3",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon7cha_dax_69/item_002__ranged/action.png",
+    "ready": "art/mon7cha_dax_69/item_002__ranged/ready.png"
+  },
+  "metadata_sha256": "467858faecb769eebb441bf951aecefa5d19a20943326718d811ace2fb9c180c",
+  "notes": "New transparent drider pair for the only saved weapon set, composite long bow; shield excluded from ranged set. Generated ready and action from approved guide and newly generated drider identity; no original game art was used. Both were exported with the same 1254x1254-to-124x80 nearest-neighbor transform and placed at x=2,y=24 on a transparent 128x128 canvas. The generated action moved spider legs, so its released-bow upper motion was composited onto the complete ready base; ready/action pixels below y=77 are identical (AE=0), preserving all planted contacts and continuous torso. The ready has a nocked arrow; the action has no arrow and a relaxed bowstring. Both exact PNGs were inspected at combat size, enlarged, and over light, dark, and magenta backgrounds. Isolated catalog loaded exact staged paths and one-second auto swap reached action. Both poses overrun the 2x1 footprint by 0.14 square only at the raised bow tip; the creature body and legs fit. PNG technical check and isolated catalog check passed.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "0e726cacab8f36df1276aeb3fe5202bb8e6b9c6224d982961c44f7137dcb2310",
+  "reviewed_at": "2026-10-25T06:47:19+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON7CHA.DAX:69",
+  "specification": "natural-in-place-v1",
+  "variant_id": "item_002__ranged",
+  "visual_checks": {
+    "source_identity_and_independent_art": true,
+    "correct_equipment_or_no_equipment": true,
+    "same_body_scale_and_perspective": true,
+    "planted_base_registered": true,
+    "requested_ready_and_action_motion": true,
+    "footprint_and_attack_appendage_reviewed": true,
+    "complete_alpha_silhouette_on_light_magenta_dark": true,
+    "readable_at_combat_size": true,
+    "one_second_fixed_grid_catalog_review": true
+  },
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
+}
