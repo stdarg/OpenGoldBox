@@ -1,16 +1,16 @@
 {
-  "action_sha256": "90c654451212218f7bdedc8183ef84bf03c9196b0324939fca394d3f123d0783",
+  "action_sha256": "fb630a0e892b86548f0a6bc613456956d5e3c547c55777d9ce16d53e2b9321c0",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon8cha_dax_72/default/action.png",
     "ready": "art/mon8cha_dax_72/default/ready.png"
   },
-  "metadata_sha256": "fa6f146c2f0c70303329a12836147862244fc011386bf14b0474b60faa78b76d",
-  "notes": "New independent ghoul artwork from approved pose guide, saved unarmed description and user-approved natural in-place attack. Initial action candidate rejected for moving whole body; second action used, and ready lower 56 rows copied to action for exact planted feet, legs, hips and cloth. Both frames exported using shared 121/1254 nearest-neighbor scale on 128 px canvas and shifted 3 px left together so ready claws remain inside 1 x 1 footprint. Gray undead ghoul in rags, claws raised in ready and modest left-claw late swipe toward screen right in action. Full Normal 5-foot head-to-foot span and fixed ground anchor checked at 128 px and alternating in catalog; both poses fit tile. MON8:72 has exact same saved description, body tier, footprint and empty gear as MON4:72, so the reviewed pair is shared.",
+  "metadata_sha256": "f6c18bdc8953374eaa9bf3967632f4d4a17de63132efad3beb95986d00f79b22",
+  "notes": "Action-only edit for MON8CHA.DAX:72/default. Existing ready PNG retained byte-for-byte. The ghoul has no gear and one default set. Approved pose guide used only for rightward facing/attack direction; checked-in newly created ready art was the edit target, and original game art was not used. Both arms extend screen right from connected shoulders, upper body leans into a near-end two-arm grasp, neck/chest/waist/pelvis remain connected. Original ready paw-contact rows y=107..127 copied exactly into action; feet and body remain registered, 1x1 Normal height preserved. Enlarged and combat-size visual checks on light, magenta and dark backgrounds found no alpha boxes, detached limbs or torso seam. Catalog loaded exact ready/action paths and one-second swap; ready fits 1x1, action hands alone extend 0.19 square past right dotted line while torso and feet fit.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "daca0eee5bafa85ae62296df1a0fc1f5726a7c19443ecdbd13e518472d1bb7f0",
-  "reviewed_at": "2026-10-23T06:58:08.343404+00:00",
-  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-25T19:40:42+00:00",
+  "reviewer": "Codex",
   "source_key": "MON8CHA.DAX:72",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
 }
