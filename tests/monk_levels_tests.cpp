@@ -450,6 +450,81 @@ void wholeness_checks()
               unit(*c, 1).hit_points > 5 && !unit(*c, 1).bonus_action,
           "Wholeness of Body heals for a Bonus Action");
 }
+
+// Evasion (7): where a Dragonborn's breath (Dexterity save, half on a success)
+// still hurts a level-6 Monk, the same roll leaves a level-7 Monk unhurt.
+void evasion_checks()
+{
+    const auto rules = dummy_rules();
+    auto dragonborn = draft("monk");
+    dragonborn.race = "dragonborn";
+    dragonborn.training.clear();
+    const auto character_rules = srd5::character_rules();
+    for (bool filled = true; filled;)
+    {
+        filled = false;
+        for (const auto &group : character_rules->training_options(dragonborn))
+        {
+            if (!dragonborn.training.contains(group.id))
+            {
+                for (unsigned i = 0; i < group.count; ++i)
+                {
+                    dragonborn.training[group.id].push_back(group.options.at(i).id);
+                }
+                filled = true;
+                break;
+            }
+        }
+    }
+    const std::vector<std::string> none;
+    const auto breather =
+        rules->character_profile(Character(*character_rules, dragonborn, {}).sheet(), none).data;
+    // The damage the breath deals the Monk of `level`, if it reaches it.
+    const auto breathed = [&](unsigned level, std::uint64_t seed) -> std::optional<int>
+    {
+        const auto evader = rules->character_profile(monk(level).sheet(), none).data;
+        auto c = rules->create(
+            {{8, 3, std::vector<Terrain>(24)},
+             {{1, "campaign-character", "Breather", Side::party, {1, 1}, breather},
+              {98, "campaign-character", "Evader", Side::opposition, {2, 1}, evader}}},
+            seed);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
+            check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the breather's turn");
+        }
+        if (c->snapshot().actor != 1 || !submit(*c, "breath_weapon_line"))
+        {
+            return std::nullopt;
+        }
+        for (const auto &command : c->legal_commands())
+        {
+            if (command.verb == "area_move" && command.destination == Cell{2, 1})
+            {
+                check(c->submit(command), "Aim the breath at the Evader");
+                break;
+            }
+        }
+        check(submit(*c, "area_cast"), "The breath is exhaled");
+        for (const auto &line : c->snapshot().log())
+        {
+            if (line.starts_with("Evader takes "))
+            {
+                return std::stoi(line.substr(13));
+            }
+        }
+        return std::nullopt;
+    };
+    for (std::uint64_t seed = 1; seed < 80; ++seed)
+    {
+        const auto six = breathed(6, seed), seven = breathed(7, seed);
+        if (six && seven && *six > 0 && *seven == 0)
+        {
+            return;
+        }
+    }
+    throw std::runtime_error(
+        "No seed's save leaves the evading Monk unhurt where it hurts one without Evasion");
+}
 } // namespace
 
 int main()
@@ -467,6 +542,7 @@ int main()
         perfect_focus_checks();
         carry_checks();
         disciplined_survivor_checks();
+        evasion_checks();
     }
     catch (const std::exception &error)
     {

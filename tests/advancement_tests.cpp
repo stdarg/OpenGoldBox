@@ -949,6 +949,58 @@ void spells()
 }
 } // namespace
 
+// Every class reaches the cap of 15 through ordinary level-ups, with a feat
+// or Ability Score Improvement at 4, 8 and 12 (the Fighter also at 6 and 14,
+// the Rogue also at 10), and a campaign save that replays it exactly.
+void improvements_to_fifteen()
+{
+    for (const auto &[klass, improvements] :
+         std::vector<std::pair<std::string, long>>{{"barbarian", 3},
+                                                   {"bard", 3},
+                                                   {"cleric", 3},
+                                                   {"druid", 3},
+                                                   {"fighter", 5},
+                                                   {"monk", 3},
+                                                   {"paladin", 3},
+                                                   {"ranger", 3},
+                                                   {"rogue", 4},
+                                                   {"sorcerer", 3},
+                                                   {"warlock", 3},
+                                                   {"wizard", 3}})
+    {
+        CampaignParty party(module());
+        const auto id = party.add_pc(character(klass));
+        party.award_experience(165000, "improvements-xp");
+        while (party.can_advance(id))
+        {
+            party.advance(id, party.default_advancement(id));
+        }
+        const auto &sheet = party.member(id).character.sheet();
+        const auto source = "class:" + klass + ":ability_score_improvement";
+        const auto at = [&](unsigned level)
+        {
+            return std::any_of(sheet.grants.begin(), sheet.grants.end(),
+                               [&](const auto &g)
+                               {
+                                   return g.source_id == source && g.level == level;
+                               });
+        };
+        check(sheet.level == 15 &&
+                  std::count_if(sheet.grants.begin(), sheet.grants.end(),
+                                [&](const auto &g)
+                                {
+                                    return g.source_id == source;
+                                }) == improvements &&
+                  at(4) && at(8) && at(12),
+              "A " + klass + " reaches 15 with its feats or improvements at 4, 8 and 12");
+        CampaignParty copy(module());
+        copy.restore(decode_campaign(saved(party), *srd5::character_rules(), party.rule_module(),
+                                     "advancement-fixture", nullptr)
+                         .party);
+        check(saved(copy) == saved(party), "A " + klass + "'s level 15 save replays exactly");
+    }
+}
+
 int main(int argc, char **argv)
 {
     try
@@ -967,6 +1019,7 @@ int main(int argc, char **argv)
         ability_sources();
         feats();
         spells();
+        improvements_to_fifteen();
         std::cout << "Manual advancement tests passed\n";
         return 0;
     }

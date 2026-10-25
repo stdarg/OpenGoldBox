@@ -83,5 +83,5 @@ func run_checks() -> void:
         if not output.is_empty():
             f = FileAccess.open(output, FileAccess.WRITE); f.store_buffer(FileAccess.get_file_as_bytes(slot)); f.close()
         await load_slot()
-        require(not current_scene.get_node("PartyPanel/Roster/Advance1").visible, "Reload retains level four and does not offer unimplemented level five")
+        require(not current_scene.get_node("PartyPanel/Roster/Advance1").visible, "Reload retains level four and offers no level five without its experience")
     restore_files(); print("Rogue advancement UI checks passed"); quit(0)
