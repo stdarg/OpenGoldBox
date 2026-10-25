@@ -192,3 +192,10 @@ Use case: precise-object-edit
 Asset type: OpenGold combat sprite MON4CHA.DAX:8/default/action, one 128x128 transparent PNG frame.
 Input image 1: the approved newly created Ogre action sprite. Edit this exact frame; no original game art is a reference.
 Apply the same distinctly more yellowish warm ochre skin tone used in the ready frame to the Ogre's exposed skin only. Retain the original shadows, highlights, texture, and dark outlines. Preserve the low screen-right punch and connected leaning torso exactly. Preserve every skin boundary, alpha pixel, silhouette, planted foot coordinate, head, hands, pose, scale, camera, and canvas placement exactly. Preserve the red hair, red/brown loincloth, and every non-skin color. No gear, extra character, duplicate frame, background, shadow, border, or new object. Exactly one character and one frame; genuine transparent background.
+
+2026-10-25 OGRE PALETTE MATCH PROMPT (exact imagegen request):
+Use case: precise-object-edit
+Asset type: OpenGold combat sprite MON4CHA.DAX:8/default/action, exactly one transparent 128x128 frame.
+Input image 1 is this Ogre's accepted ACTION PNG and the edit target. Inputs 2, 3, and 4 are approved newly created Ogre sprite art: MON1CHA.DAX:8, MON2CHA.DAX:8, and MON1CHA.DAX:9. Use those other Ogres ONLY as exposed-skin COLOR references. No original game artwork is supplied or used.
+Change only this Ogre's exposed skin to the same warm peach-orange palette as the other three Ogres and the revised ready frame. Representative reference skin colors are approximately #FCB96C, #F9C269, and #FDAD60. Avoid yellow-green, olive, or gray while retaining the target's skin shading and highlights.
+Preserve the accepted low screen-right punch, connected leaning upper body, exact pose, face, hair, red/brown loincloth, outlines, silhouette, alpha, planted foot coordinates, scale, camera, and canvas origin. Do not add another Ogre, clothing, gear, scenery, ground, labels, sheet, border, or background. Exactly one character, one frame, genuine transparency.
