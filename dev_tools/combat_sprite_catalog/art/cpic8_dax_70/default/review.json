@@ -1,32 +1,33 @@
 {
-  "action_sha256": "22a54ace600fef5745c114feb9136bdb676c7e17c3160266735c5e9b3eeddc0e",
   "format": "opengold-sprite-review-v1",
-  "install_paths": {
-    "action": "art/cpic8_dax_70/default/action.png",
-    "ready": "art/cpic8_dax_70/default/ready.png"
-  },
-  "metadata_sha256": "9adf18df42b3d0b28f43754bf1ccbcc2216e026e3eb8dd959dda346dc4c8fb95",
-  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
-  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "0e46cd9672059cf4ec7e01657d4ddf974f737a6ad510ca8cc8abba8bb33d5598",
-  "reviewed_at": "2026-10-21T21:50:43.116123+00:00",
-  "reviewer": "Codex visual review",
+  "specification": "natural-in-place-v1",
   "source_key": "CPIC8.DAX:70",
-  "specification": "bipedal-v1",
   "variant_id": "default",
-  "visual_checks": {
-    "action_late_strike_or_after_release": true,
-    "complete_silhouette_no_clipping_or_background": true,
-    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
-    "correct_equipment_grip_and_handedness": true,
-    "front_three_quarter_screen_right_chest_visible": true,
-    "humanoid_height_tier_or_na_reviewed": true,
-    "only_independent_art_used_as_references": true,
-    "pair_reviewed_alternating_in_catalog": true,
-    "pixel_art_readable_at_combat_size": true,
-    "planted_feet_same_xy_no_whole_body_translation": true,
-    "ready_weapon_raised_or_projectile_loaded": true,
-    "same_identity_clothing_palette_and_camera": true
+  "install_paths": {
+    "ready": "art/cpic8_dax_70/default/ready.png",
+    "action": "art/cpic8_dax_70/default/action.png"
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "metadata_sha256": "1beb9de12b3e6305e267d5cce0f9de39abfd2d0f87f2a7dd23f76b6b04ac9a7b",
+  "workflow_sha256": "93c3f890e59f099f6c38265a771ca145fab2d2523adb2ac7d3540315b0e05029",
+  "ready_sha256": "b6946289a4fb08bd165c9dc39505bc291c6044b37f657b92130183adacc94bed",
+  "action_sha256": "84d0d42da00af358d7bec78428261be708f74a3ac7915ab73a82dfae3921a260",
+  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-25T21:50:40+00:00",
+  "technical_check": "sprite_art_workflow.gd check passed; natural-in-place-v1 applies to a flame-bodied Efreeti with no feet or weapon",
+  "visual_checks": {
+    "script_linked_efreeti_identity_matches_mon8cha_124": true,
+    "ready_lower_body_entirely_flames": true,
+    "action_flame_base_registered": true,
+    "both_arms_horizontal_cross_and_anatomically_attached": true,
+    "flames_run_from_both_hands_to_shoulders": true,
+    "mouth_open_in_scream": true,
+    "continuous_torso_waist_and_flame_body": true,
+    "correct_empty_equipment": true,
+    "tall_body_scale_and_one_by_two_footprint_reviewed": true,
+    "attack_arm_and_fire_overflow_only": true,
+    "transparent_alpha_on_light_magenta_dark": true,
+    "readable_at_combat_size": true,
+    "one_second_catalog_swap_and_loaded_hashes_reviewed": true
+  },
+  "notes": "Ready.png is a byte-identical reuse of the reviewed MON8CHA.DAX:124/default/ready.png for the same script-linked Efreeti. A new action edits its approved replacement-art master. Both arms extend horizontally in a cross; flames remain connected from open hands along the arms to both shoulders; mouth is visibly open in a scream. The complete lower flame body is byte-identical to ready from row 79 down, and the torso remains connected through the waist. Action arms and fire intentionally extend about 0.50 combat square beyond each side of the saved 1x2 body footprint; the torso and flame body stay within. Exact installed 128px PNGs were inspected enlarged over light, magenta and dark backgrounds and side by side. Headless catalog loaded the exact ready/action paths and auto-swapped after 1.1 seconds; loaded pixels matched installed files."
 }
