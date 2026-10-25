@@ -3,13 +3,49 @@
   "creature_record": 29,
   "equipment": [
     {
-      "id": "item_000",
+      "id": "added_1466043237",
+      "kind": "weapon",
+      "name": "Broad sword",
+      "readied": false,
+      "source_index": -1,
+      "source_type": 35,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_1475742521",
+      "kind": "weapon",
+      "name": "Military pick",
+      "readied": false,
+      "source_index": -1,
+      "source_type": 26,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_1491125625",
       "kind": "weapon",
       "name": "Short bow",
       "readied": false,
-      "source_index": 0,
+      "source_index": -1,
       "source_type": 44,
       "weapon_role": "ranged"
+    },
+    {
+      "id": "added_1515127546",
+      "kind": "weapon",
+      "name": "Morning star",
+      "readied": false,
+      "source_index": -1,
+      "source_type": 24,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_1543484202",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": false,
+      "source_index": -1,
+      "source_type": 59,
+      "weapon_role": ""
     }
   ],
   "format": "opengold-monster-v1",
@@ -22,11 +58,32 @@
   },
   "variants": [
     {
-      "action": "item_000__ranged/action.png",
-      "id": "item_000__ranged",
-      "ready": "item_000__ranged/ready.png",
+      "action": "added_1466043237__added_1543484202/action.png",
+      "id": "added_1466043237__added_1543484202",
+      "ready": "added_1466043237__added_1543484202/ready.png",
+      "shield_id": "added_1543484202",
+      "weapon_id": "added_1466043237"
+    },
+    {
+      "action": "added_1475742521__added_1543484202/action.png",
+      "id": "added_1475742521__added_1543484202",
+      "ready": "added_1475742521__added_1543484202/ready.png",
+      "shield_id": "added_1543484202",
+      "weapon_id": "added_1475742521"
+    },
+    {
+      "action": "added_1515127546__added_1543484202/action.png",
+      "id": "added_1515127546__added_1543484202",
+      "ready": "added_1515127546__added_1543484202/ready.png",
+      "shield_id": "added_1543484202",
+      "weapon_id": "added_1515127546"
+    },
+    {
+      "action": "added_1491125625__ranged/action.png",
+      "id": "added_1491125625__ranged",
+      "ready": "added_1491125625__ranged/ready.png",
       "shield_id": "",
-      "weapon_id": "item_000"
+      "weapon_id": "added_1491125625"
     }
   ]
 }

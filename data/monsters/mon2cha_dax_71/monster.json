@@ -1,7 +1,17 @@
 {
   "creature_archive": "MON2CHA.DAX",
   "creature_record": 71,
-  "equipment": [],
+  "equipment": [
+    {
+      "id": "added_ettin_club",
+      "kind": "weapon",
+      "name": "Club",
+      "readied": true,
+      "source_index": -1,
+      "source_type": 7,
+      "weapon_role": "one_hand"
+    }
+  ],
   "format": "opengold-monster-v1",
   "humanoid_size": "tall",
   "key": "MON2CHA.DAX:71",
@@ -12,11 +22,11 @@
   },
   "variants": [
     {
-      "action": "default/action.png",
-      "id": "default",
-      "ready": "default/ready.png",
+      "action": "added_ettin_club__one_hand/action.png",
+      "id": "added_ettin_club__one_hand",
+      "ready": "added_ettin_club__one_hand/ready.png",
       "shield_id": "",
-      "weapon_id": ""
+      "weapon_id": "added_ettin_club"
     }
   ]
 }

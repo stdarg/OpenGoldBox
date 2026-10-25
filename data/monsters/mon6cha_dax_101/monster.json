@@ -1,7 +1,44 @@
 {
   "creature_archive": "MON6CHA.DAX",
   "creature_record": 101,
-  "equipment": [],
+  "equipment": [
+    {
+      "id": "added_5163707222",
+      "kind": "gear",
+      "name": "Chain armor",
+      "readied": true,
+      "source_index": -1,
+      "source_type": 55,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_5249940073",
+      "kind": "weapon",
+      "name": "Heavy crossbow",
+      "readied": false,
+      "source_index": -1,
+      "source_type": 45,
+      "weapon_role": "ranged"
+    },
+    {
+      "id": "added_5264957017",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": true,
+      "source_index": -1,
+      "source_type": 59,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_5278681468",
+      "kind": "weapon",
+      "name": "Spear",
+      "readied": true,
+      "source_index": -1,
+      "source_type": 31,
+      "weapon_role": "one_hand"
+    }
+  ],
   "format": "opengold-monster-v1",
   "humanoid_size": "normal",
   "key": "MON6CHA.DAX:101",
@@ -12,11 +49,18 @@
   },
   "variants": [
     {
-      "action": "default/action.png",
-      "id": "default",
-      "ready": "default/ready.png",
+      "action": "added_5278681468__added_5264957017/action.png",
+      "id": "added_5278681468__added_5264957017",
+      "ready": "added_5278681468__added_5264957017/ready.png",
+      "shield_id": "added_5264957017",
+      "weapon_id": "added_5278681468"
+    },
+    {
+      "action": "added_5249940073__ranged/action.png",
+      "id": "added_5249940073__ranged",
+      "ready": "added_5249940073__ranged/ready.png",
       "shield_id": "",
-      "weapon_id": ""
+      "weapon_id": "added_5249940073"
     }
   ]
 }
