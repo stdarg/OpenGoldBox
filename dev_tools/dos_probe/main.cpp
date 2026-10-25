@@ -27,13 +27,36 @@ struct Key
 const std::map<std::string, Key> &named_keys()
 {
     static const std::map<std::string, Key> keys{
-        {"enter", {0x1C, 0x0D}},     {"esc", {0x01, 0x1B}}, {"space", {0x39, 0x20}},
-        {"backspace", {0x0E, 0x08}}, {"tab", {0x0F, 0x09}}, {"up", {0x48, 0}},
-        {"down", {0x50, 0}},         {"left", {0x4B, 0}},   {"right", {0x4D, 0}},
-        {"home", {0x47, 0}},         {"end", {0x4F, 0}},    {"pgup", {0x49, 0}},
-        {"pgdn", {0x51, 0}},         {"ins", {0x52, 0}},    {"del", {0x53, 0}},
-        {"f1", {0x3B, 0}},           {"f2", {0x3C, 0}},     {"f3", {0x3D, 0}},
-        {"f4", {0x3E, 0}},           {"f5", {0x3F, 0}},     {"f10", {0x44, 0}},
+        {"enter", {0x1C, 0x0D}},
+        {"esc", {0x01, 0x1B}},
+        {"space", {0x39, 0x20}},
+        {"backspace", {0x0E, 0x08}},
+        {"tab", {0x0F, 0x09}},
+        {"up", {0x48, 0}},
+        {"down", {0x50, 0}},
+        {"left", {0x4B, 0}},
+        {"right", {0x4D, 0}},
+        {"home", {0x47, 0}},
+        {"end", {0x4F, 0}},
+        {"pgup", {0x49, 0}},
+        {"pgdn", {0x51, 0}},
+        {"ins", {0x52, 0}},
+        {"del", {0x53, 0}},
+        {"f1", {0x3B, 0}},
+        {"f2", {0x3C, 0}},
+        {"f3", {0x3D, 0}},
+        {"f4", {0x3E, 0}},
+        {"f5", {0x3F, 0}},
+        {"f10", {0x44, 0}},
+        // The keypad with Num Lock on: its scan codes, with digits.
+        {"kp1", {0x4F, '1'}},
+        {"kp2", {0x50, '2'}},
+        {"kp3", {0x51, '3'}},
+        {"kp4", {0x4B, '4'}},
+        {"kp6", {0x4D, '6'}},
+        {"kp7", {0x47, '7'}},
+        {"kp8", {0x48, '8'}},
+        {"kp9", {0x49, '9'}},
     };
     return keys;
 }
@@ -72,6 +95,9 @@ int run_scenario(Machine &machine, std::istream &scenario, const std::filesystem
                  const std::filesystem::path &output)
 {
     std::unique_ptr<opengold::probe::ScriptTrace> trace;
+    // Instructions run, by segment (high 16 bits) and offset.
+    std::map<std::uint32_t, std::uint64_t> coverage;
+    std::string coverage_name;
     // Where the running script was found; kept, since a poke into the script
     // changes the bytes it was found by.
     std::optional<opengold::probe::ScriptLocation> script;
@@ -167,6 +193,17 @@ int run_scenario(Machine &machine, std::istream &scenario, const std::filesystem
                             return machine.instructions() >= end;
                         });
         }
+        else if (command == "services")
+        {
+            // Logs the BIOS and DOS services called since the last `services`.
+            log << "services:";
+            for (const auto &[service, count] : machine.take_service_counts())
+            {
+                log << std::hex << " int " << unsigned{service.first} << '/'
+                    << unsigned{service.second} << std::dec << " x" << count;
+            }
+            log << '\n';
+        }
         else if (command == "locate")
         {
             // After the party enters another area, the script to trace changes.
@@ -176,6 +213,65 @@ int run_scenario(Machine &machine, std::istream &scenario, const std::filesystem
                 return 1;
             }
             log << "script " << script->archive << " record " << script->record << '\n';
+        }
+        else if (command == "watch")
+        {
+            // watch FIRST LAST NAME: logs every write to linear addresses FIRST
+            // to LAST (hex) with the writing instruction, until `unwatch`.
+            std::istringstream fields(argument);
+            std::string first, last, name;
+            fields >> first >> last >> name;
+            auto watch_log = std::make_shared<std::ofstream>(output / (name + ".watch"));
+            auto &cpu = machine.cpu();
+            machine.watch(static_cast<std::uint32_t>(std::stoul(first, nullptr, 16)),
+                          static_cast<std::uint32_t>(std::stoul(last, nullptr, 16)),
+                          [watch_log, &cpu](std::uint32_t linear, std::uint8_t value, bool written)
+                          {
+                              if (written)
+                              {
+                                  *watch_log << std::hex << linear << ' ' << unsigned{value} << " @"
+                                             << cpu.instruction_segment() << ':'
+                                             << cpu.instruction_offset() << std::dec << '\n';
+                              }
+                          });
+        }
+        else if (command == "coverage")
+        {
+            // coverage SEGMENT NAME: counts each instruction address run in the
+            // code segment (hex, or `all`), written to out/NAME.coverage at
+            // `uncoverage`.
+            std::istringstream fields(argument);
+            std::string segment;
+            fields >> segment >> coverage_name;
+            const bool every = segment == "all";
+            const auto code = every ? std::uint16_t{}
+                                    : static_cast<std::uint16_t>(std::stoul(segment, nullptr, 16));
+            coverage.clear();
+            machine.before_instruction(
+                [&coverage, code, every](const opengold::probe::Cpu &cpu)
+                {
+                    const auto cs = cpu.seg(opengold::probe::Seg::cs);
+                    if (every || cs == code)
+                    {
+                        ++coverage[(std::uint32_t{cs} << 16U) | cpu.ip()];
+                    }
+                });
+        }
+        else if (command == "uncoverage")
+        {
+            machine.before_instruction({});
+            std::ofstream file(output / (coverage_name + ".coverage"));
+            for (const auto &[address, count] : coverage)
+            {
+                file << std::hex << (address >> 16U) << ':' << (address & 0xFFFFU) << std::dec
+                     << ' ' << count << '\n';
+            }
+        }
+        else if (command == "unwatch")
+        {
+            // Ends every watch, a script trace's too.
+            trace.reset();
+            machine.clear_watches();
         }
         else if (command == "dump")
         {

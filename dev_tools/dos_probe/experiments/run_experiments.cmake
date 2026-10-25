@@ -10,4 +10,9 @@ execute_process(COMMAND "${PYTHON}" -B "${CMAKE_CURRENT_LIST_DIR}/vm_semantics.p
 if(NOT result STREQUAL "0")
     message(FATAL_ERROR "The original's ECL results differ from those recorded")
 endif()
+execute_process(COMMAND "${PYTHON}" -B "${CMAKE_CURRENT_LIST_DIR}/battlefield.py" "${PROBE}"
+    "${MAPS}" "$ENV{OPENGOLD_GAME_DIR}" "${WORK}/battlefield" RESULT_VARIABLE result)
+if(NOT result STREQUAL "0")
+    message(FATAL_ERROR "The original's fights start where OpenGoldBox's do not")
+endif()
 file(REMOVE_RECURSE "${WORK}")

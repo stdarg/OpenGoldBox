@@ -12,7 +12,7 @@ if(OPENGOLD_BUILD_TESTS)
     if(Python3_Interpreter_FOUND)
         add_test(NAME opengold_dos_probe_experiments
             COMMAND "${CMAKE_COMMAND}" "-DPYTHON=${Python3_EXECUTABLE}"
-            "-DPROBE=$<TARGET_FILE:opengold_dos_probe>"
+            "-DPROBE=$<TARGET_FILE:opengold_dos_probe>" "-DMAPS=$<TARGET_FILE:opengold_maps>"
             "-DWORK=${CMAKE_CURRENT_BINARY_DIR}/experiments"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/experiments/run_experiments.cmake")
         set_tests_properties(opengold_dos_probe_experiments PROPERTIES SKIP_RETURN_CODE 77)

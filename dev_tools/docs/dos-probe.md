@@ -44,7 +44,7 @@ A scenario is a text file of commands, one per line (`#` starts a comment):
 | Command | Effect |
 | --- | --- |
 | `wait [N]` | Runs until the game waits for a key (at most N thousand instructions). |
-| `key NAME` | Presses a key and waits: a character, or `enter`, `esc`, `space`, `backspace`, `tab`, `up`, `down`, `left`, `right`, `home`, `end`, `pgup`, `pgdn`, `ins`, `del`, `f1`-`f5`, `f10`. |
+| `key NAME` | Presses a key and waits: a character, or `enter`, `esc`, `space`, `backspace`, `tab`, `up`, `down`, `left`, `right`, `home`, `end`, `pgup`, `pgdn`, `ins`, `del`, `f1`-`f5`, `f10`, or `kp1`-`kp9` (the keypad with Num Lock on). |
 | `type TEXT` | Presses each character in turn. |
 | `run N` | Runs N thousand instructions. |
 | `shot NAME` | Saves the visible screen as `out/NAME.png` (320 by 200). |
@@ -55,9 +55,16 @@ A scenario is a text file of commands, one per line (`#` starts a comment):
 | `trace-bytes NAME` | As `trace`, with every script byte read on its own line, its value and the instruction that read it. |
 | `poke ADDRESS HEX` | Writes bytes at a data-segment offset, such as a program over the script. |
 | `peek ADDRESS N` | Logs N bytes from a data-segment offset to `run.log`. |
+| `watch FIRST LAST NAME` | Logs every write to linear addresses FIRST to LAST (hex) with the writing instruction to `out/NAME.watch`, until `unwatch`. |
+| `unwatch` | Ends every watch and any script trace. |
+| `coverage SEGMENT NAME` | Counts each instruction address run in a code segment (hex, or `all`) until `uncoverage`, which writes `out/NAME.coverage`. |
+| `services` | Logs how often each BIOS and DOS service was called since the last `services`. |
 
 `out/run.log` lists each command's instruction count, whether the game was
 waiting for a key, any text the program printed, and every file it opened.
+
+In the original, Up steps forward, Left and Right turn and Down turns around;
+in a list, End moves the highlight down and Home up.
 
 For example, the original's main menu, then the first saved game:
 
@@ -114,6 +121,25 @@ python3 dev_tools/dos_probe/experiments/vm_semantics.py \
     build-probe/dev_tools/dos_probe/opengold_dos_probe "$OPENGOLD_GAME_DIR" out/
 ```
 
+[battlefield.py](../dos_probe/experiments/battlefield.py) starts fights in
+the Slums and compares where both sides stand with OpenGoldBox's formation
+(`opengold_maps --formation`). For each case a new party of one to six walks
+into the Slums along a route [route.py](../dos_probe/experiments/route.py)
+plans over OpenGoldBox's map export. The Slums script's entry 0 is replaced by
+EXIT, so no roaming monsters come. Its entry 1 gets a program that, on the
+case's square and facing only, runs `SETUP MONSTER` with the case's distance,
+`LOAD MONSTER` with its orcs, and `COMBAT`. The original reads a script's entry
+addresses when it loads the script, so programs go at the entries' code, not in
+the jump table. The original's combat occupancy map gives each side's squares:
+50 by 25 bytes at linear `1A99B`, 0 or a combatant's number, party first.
+`--large` runs the cases with groups too big for the original (below).
+
+```bash
+python3 dev_tools/dos_probe/experiments/battlefield.py \
+    build-probe/dev_tools/dos_probe/opengold_dos_probe build-probe/opengold_maps \
+    "$OPENGOLD_GAME_DIR" out/
+```
+
 ## Findings
 
 Recorded 2026-10-24 with `START.EXE` SHA-1
@@ -137,6 +163,23 @@ Recorded 2026-10-24 with `START.EXE` SHA-1
   instructions. None of the 1,936 IFs in the 29 original scripts is followed by
   one of these six commands, so both skip the same bytes on every original
   script.
+- **Entry 0 runs before the step moves the party:** it sees the old square
+  (with the new facing); entry 1 runs on the new square. OpenGoldBox's session
+  binds the same squares.
+- **Starting positions** ([PLACE-1](../../docs/SRD-DECISIONS.md#place-1-2026-10-10-starting-positions-as-the-original-game-had-them)):
+  in eleven fights, facing each of the four directions at distances 0, 1 and 2,
+  with parties of one to six and up to sixteen orcs, the original stood every
+  combatant on the square OpenGoldBox's formation gives. This includes ranks,
+  spilling into neighbouring squares and the distance capped by the view ahead.
+  A random encounter of the original's own (one orc against one character at
+  Slums (14,5) facing south) matched as well.
+- **Large groups:** given 20 or 30 orcs, the original stands only 12 to 17 of
+  them, depending on the square, facing, distance and party, and leaves the
+  rest out. Those it stands take OpenGoldBox's first squares in OpenGoldBox's
+  order, in all sixteen cases tried; OpenGoldBox goes on to place more. The
+  creature list the original places already holds only those it stands
+  (`LOAD MONSTER` ran for all 30), so the cut is made earlier in the fight's
+  setup. Its rule is not known yet.
 
 ## Limits
 

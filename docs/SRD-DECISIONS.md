@@ -770,6 +770,10 @@ code was copied.
   for nothing; OpenGold keeps the band's first monster instead, on the nearest
   free square the party can reach. A party member with no room takes that
   nearest free square too.
+- Checked against the running original with the
+  [DOS probe](../dev_tools/docs/dos-probe.md#findings) (2026-10-24): the
+  squares match in eleven Slums fights of up to sixteen monsters. Given 20 or
+  30, the original stands only its first 12 to 17, by a rule not yet known.
 
 ## START-1 (2026-10-11): starting gold, as the original game gave it
 
