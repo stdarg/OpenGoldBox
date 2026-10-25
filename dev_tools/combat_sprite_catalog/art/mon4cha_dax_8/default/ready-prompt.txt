@@ -184,3 +184,9 @@ for identity, clothing, palette, scale and exact foot placement across weapon se
 Output one character only, not the guide sheet or multiple animation frames.
 
 REVISION-SPECIFIC DIRECTION (2026-10-24): MON4CHA.DAX:8 has no saved weapon or shield. Regenerate its unarmed ready pose with both bare arms slightly raised, elbows bent, and open fists near chest height in a grappling/punching guard. Keep the tall Ogre's narrow 1 x 2 footprint, front-three-quarter screen-right identity, and both planted feet fixed. No club or other invented equipment.
+
+2026-10-25 SKIN COLOR EDIT PROMPT (exact imagegen request):
+Use case: precise-object-edit
+Asset type: OpenGold combat sprite MON4CHA.DAX:8/default/ready, one 128x128 transparent PNG frame.
+Input image 1: the approved newly created Ogre ready sprite. Edit this exact frame; no original game art is a reference.
+Change only the Ogre's exposed skin from pale beige to a distinctly more yellowish warm ochre skin tone. Retain the original shadows, highlights, texture, and dark outlines so the skin reads naturally at combat size. Preserve every skin boundary, alpha pixel, silhouette, planted foot coordinate, head, hands, facial features, expression, pose, scale, camera, and canvas placement exactly. Preserve the red hair, red/brown loincloth, and every non-skin color. No gear, extra character, duplicate frame, background, shadow, border, or new object. Exactly one character and one frame; genuine transparent background.

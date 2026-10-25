@@ -186,3 +186,9 @@ the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
 REQUESTED 2026-10-24 CORRECTION: Keep the ready Ogre. In action it lowers and leans its upper body toward screen right, punching low to the right. The striking fist extends into the adjacent square; the torso and planted feet remain inside the 1x2 footprint.
+
+2026-10-25 SKIN COLOR EDIT PROMPT (exact imagegen request):
+Use case: precise-object-edit
+Asset type: OpenGold combat sprite MON4CHA.DAX:8/default/action, one 128x128 transparent PNG frame.
+Input image 1: the approved newly created Ogre action sprite. Edit this exact frame; no original game art is a reference.
+Apply the same distinctly more yellowish warm ochre skin tone used in the ready frame to the Ogre's exposed skin only. Retain the original shadows, highlights, texture, and dark outlines. Preserve the low screen-right punch and connected leaning torso exactly. Preserve every skin boundary, alpha pixel, silhouette, planted foot coordinate, head, hands, pose, scale, camera, and canvas placement exactly. Preserve the red hair, red/brown loincloth, and every non-skin color. No gear, extra character, duplicate frame, background, shadow, border, or new object. Exactly one character and one frame; genuine transparent background.
