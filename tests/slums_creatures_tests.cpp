@@ -745,6 +745,49 @@ void master_thief_strikes()
     check(poisoned, "The master thief's Shortsword adds Poison damage");
 }
 
+// Tyranthraxus breathes as the SRD Adult Bronze Dragon does: Lightning Breath
+// with its action, 10d10 Lightning to each creature in its Line, half on a
+// DC 19 Dexterity save, recharging on a 5 or 6.
+void tyranthraxus_breathes()
+{
+    const auto module = rules();
+    bool recharged = false, waited = false;
+    for (std::uint64_t seed = 1; seed < 60 && !(recharged && waited); ++seed)
+    {
+        auto c = module->create({{12, 5, std::vector<Terrain>(60)},
+                                 {{1, "tyranthraxus", "Monster", Side::opposition, {0, 1}},
+                                  {2, "target", "Hero", Side::party, {8, 2}}}},
+                                seed);
+        turn_of(*c, 1);
+        const auto before = unit(*c, 2).hit_points;
+        check(submit(*c, "lightning_breath", 1) && aim(*c, Cell{8, 2}) &&
+                  submit(*c, "area_cast", 1),
+              "Tyranthraxus breathes with his action");
+        const auto taken = before - unit(*c, 2).hit_points;
+        check(count_logged(*c, "Monster uses Lightning Breath.") == 1 &&
+                  count_logged(*c, "Hero takes ") == 1 && taken >= 5 && taken <= 100,
+              "The breath deals 10d10 Lightning, halved on a save");
+        check(!offered_any(*c, "lightning_breath", 1) && submit(*c, "end", 1),
+              "The breath is spent and Tyranthraxus ends his turn");
+        turn_of(*c, 1);
+        const bool back = offered_any(*c, "lightning_breath", 1);
+        check(back == (count_logged(*c, "Monster's Lightning Breath recharges") == 1),
+              "The breath is offered again exactly when it recharges");
+        (back ? recharged : waited) = true;
+    }
+    check(recharged && waited, "The breath recharges on some turns and not others");
+    bool refused = false;
+    try
+    {
+        (void)rules("breath target lightning_bolt 19 5\n");
+    }
+    catch (const std::runtime_error &)
+    {
+        refused = true;
+    }
+    check(refused, "A breath row names a breath weapon, not a spell");
+}
+
 // The wilderness's tiger has the SRD Tiger's Nimble Escape: Disengage or
 // Hide as a Bonus Action, without Cunning Action's Dash.
 void tiger_escapes()
@@ -783,6 +826,7 @@ int main()
         drider_casts();
         master_thief_strikes();
         tiger_escapes();
+        tyranthraxus_breathes();
         std::cout << "Slums creature tests passed\n";
         return 0;
     }

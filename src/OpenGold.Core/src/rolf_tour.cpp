@@ -10,6 +10,7 @@
 #include <fstream>
 #include <iterator>
 #include <optional>
+#include <span>
 
 namespace opengold::por
 {
@@ -26,6 +27,43 @@ std::vector<std::uint8_t> read_archive(const std::filesystem::path &path)
     return detail::read_archive_bytes<EclError>(path, "Archive exceeds size limit",
                                                 "Cannot open " + path.string(),
                                                 "Incomplete archive read");
+}
+
+// The original's closing story, told when Tyranthraxus falls (PROGRAM 8):
+// GAME.OVR's Pascal strings at a fixed place in the release this engine reads,
+// "FINAL" marking where its picture shows between the two pages. It is read
+// from the player's copy, never stored here; another release yields no story.
+std::vector<std::string> read_closing_story(std::span<const std::uint8_t> overlay)
+{
+    constexpr std::size_t release_size = 206105, story_offset = 0x207b1, story_lines = 12;
+    if (overlay.size() != release_size)
+    {
+        return {};
+    }
+    std::vector<std::string> pages(1);
+    std::size_t lines = 0;
+    for (auto at = story_offset; lines < story_lines;)
+    {
+        const std::size_t length = overlay[at];
+        if (length == 0 || at + 1 + length > overlay.size())
+        {
+            return {};
+        }
+        const std::string line(overlay.begin() + at + 1, overlay.begin() + at + 1 + length);
+        if (!std::all_of(line.begin(), line.end(), [](char c) { return c >= ' ' && c <= '~'; }))
+        {
+            return {};
+        }
+        at += 1 + length;
+        if (line == "FINAL")
+        {
+            pages.emplace_back();
+            continue;
+        }
+        pages.back() += (pages.back().empty() ? "" : " ") + line;
+        ++lines;
+    }
+    return pages;
 }
 
 } // namespace
@@ -167,6 +205,14 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
         item_words = std::move(*words);
         overland = read_overland_world(image);
     }
+    std::vector<std::string> closing_story;
+    try
+    {
+        closing_story = read_closing_story(read_archive(resolve_archive(directory, "GAME.OVR")));
+    }
+    catch (const EclError &)
+    {
+    }
     // An archive's fixed item lists (shop stock in town, script treasure in areas).
     const auto item_lists = [&](const std::string &name)
     {
@@ -270,6 +316,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
     }
     town->map = map->get();
     town->wall_art = *wall_art;
+    town->closing_story = std::move(closing_story);
 
     constexpr unsigned no_wall_bank = 255;
     // The districts beyond New Phlan, one row per area: its script, its archive
@@ -1202,6 +1249,10 @@ void RolfTourSession::handle_host(const EclRequest &request)
             if (selector == 8)
             {
                 ++snapshot_.footsteps; // Presentation plays an original OpenGoldBox footstep cue.
+            }
+            else
+            {
+                ++snapshot_.thunder;
             }
         }
         else if (service == EclAddress{0x0806} || service == EclAddress{0x2C4E} ||

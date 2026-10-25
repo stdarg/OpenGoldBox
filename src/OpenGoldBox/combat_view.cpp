@@ -249,6 +249,11 @@ bool CombatView::is_quick(EntityId id) const
     {
         return quick_.contains(id);
     }
+    // The computer fights a monster on the party's side, as the original did.
+    if (opengold::is_ally(id))
+    {
+        return true;
+    }
     const auto &slots = campaign_->state().slots;
     return id && std::find(slots.begin(), slots.end(), id) != slots.end() &&
            campaign_->member(id).quick;

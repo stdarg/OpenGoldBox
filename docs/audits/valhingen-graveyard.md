@@ -40,7 +40,8 @@ GAME`, `opengold_maps GAME`, coab's `LoadWalldef`, `CMD_LoadFiles`,
     the party finds him again: with only 15 Hit Points if the coffin was
     sanctified. His treasure trove lies there.
   - A party carrying the efreeti Samir Ahwahl's bottle (from the kobold
-    caves) has his help against the vampire (see Not done).
+    caves) has his help against the vampire in the pit: he fights on the
+    party's side.
 - **Two wall slots for one bank:** wall bank 21 is two blocks, its tiles in
   `8X8D4` records 211 and 212, and fills the first two wall slots; the script
   sets `0x49E7` and `0x49E8` so that the original loads no bank of its own
@@ -58,7 +59,7 @@ GAME`, `opengold_maps GAME`, coab's `LoadWalldef`, `CMD_LoadFiles`,
 | 24 | Level 6 MU (HP 23) | **new:** the nomad shaman's level-4 Wizard profile with 23 Hit Points |
 | 29 | Juju Zombie (HP 24) | **new:** SRD 5.2.1 Ogre Zombie with 24 Hit Points, Medium as the original's is |
 | 34, 35, 72 | Skeleton, Zombie, Ghoul | the Slums' |
-| 70 | Efreeti (an ally) | the kobold caves' Efreeti (not fielded yet) |
+| 70 | Efreeti (an ally) | the kobold caves' Efreeti, fighting on the party's side |
 | 105 | Vampire (HP 15) | **new:** the Vampire with 15 Hit Points |
 | 106 | Wolf (HP 18) | **new:** SRD 5.2.1 Wolf with 18 Hit Points |
 | 114 | Mummy (HP 33) | **new:** SRD 5.2.1 Mummy with 33 Hit Points (Dreadful Glare and the Rotting Fist's curse not modeled) |
@@ -75,20 +76,15 @@ Missing before this audit, now done:
 
 1. **The area row**, its conversions and the mystic.
 2. **A wall bank of several blocks**, filling that many wall slots.
-3. **The storm's sound selector** (`0x03DE` = 10) is accepted.
+3. **The storm's thunder** (sound selector `0x03DE` = 10) plays the
+   original's fireball sample from the player's game, as the original did.
 4. **The towers' damage types:** noxious fumes are poison, the sharp crack
    lightning.
 5. **A saving throw against a script's harm** reports its DC beside the roll.
-6. **An ally record** (byte `0x10E` = 0, the efreeti) is not fielded against
-   the party.
-
-## Not done
-
-- **Samir Ahwahl's help:** the original fields the efreeti on the party's
-  side when it carries his bottle. The engine has no allied monster in a
-  fight yet, so he stays out of it.
-- **The thunder:** the original plays its fireball sound for the storm; the
-  game view plays nothing yet.
+6. **Allied monsters:** a record whose team byte (`0x10E`) is 0, the
+   efreeti, fights on the party's side, beside it, and the computer fights
+   it, as the original's quick fight did (since 2026-10-25, after the
+   graveyard's first increment).
 
 ## Party level and balance
 
@@ -103,5 +99,5 @@ to the party's budget.
   Played (`opengold_expedition_tests`, a new level-8 party from the harbor's
   western boat): the city's north edge, the brass doors' spectres and a
   tower's spectre, the mystic joining, the coffin sanctified after its scroll
-  is read, the vampire beaten in his pit, destroyed at his coffin, and the
-  west edge back out.
+  is read, the vampire beaten in his pit with Samir Ahwahl beside the
+  party, destroyed at his coffin, and the west edge back out.

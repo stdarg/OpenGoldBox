@@ -2,12 +2,14 @@
 #define OPENGOLD_ROLF_TOUR_VIEW_H
 
 #include "opengold/rolf_tour.h"
+#include "opengold/sound_player.h"
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
 #include <godot_cpp/classes/texture2d.hpp>
 #include <godot_cpp/classes/audio_stream_wav.hpp>
 #include <map>
+#include <memory>
 #include <optional>
 #include <set>
 #include <functional>
@@ -136,7 +138,9 @@ class RolfTourView : public godot::Control
     godot::Rect2 scene_rect_, map_rect_, dialogue_rect_;
     godot::String error_;
     std::uint64_t shown_revision_{}, checked_ticket_{};
-    unsigned played_footsteps_{}, check_frames_{}, check_prompts_{};
+    unsigned played_footsteps_{}, played_thunder_{}, check_frames_{}, check_prompts_{};
+    // The original's sound effects from the player's game, when they have them.
+    std::unique_ptr<opengold::por::SoundPlayer> original_sound_;
     unsigned rendered_sprite_id_{999};
     std::uint64_t displayed_ticket_{};
     std::uint64_t rendered_picture_revision_{};

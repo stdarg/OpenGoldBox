@@ -846,6 +846,10 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                 unpaid_records.push_back(staged_records_.at(unit.id - 1000));
             }
         }
+        else if (unit.side == rules::Side::party && opengold::is_ally(unit.id))
+        {
+            continue;
+        }
         else if (unit.side != rules::Side::party || !expected_party.contains(unit.id) ||
                  !party_ids.insert(unit.id).second ||
                  campaign_->member(unit.id).vitals != unit.persistent)
@@ -1011,6 +1015,8 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     staged_enemies_.clear();
     staged_art_.clear();
     staged_records_.clear();
+    staged_allies_.clear();
+    staged_ally_art_.clear();
     // A later script fault must never restore pre-combat HP or erase a victory.
     event_checkpoint_.reset();
     snapshot_.phase = TourPhase::running;
@@ -2328,13 +2334,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         const auto &creature = area_resources().encounter_creatures.at(record);
         // Record byte 0x10E is the side a creature fights on (coab
         // combat_team): 0, the party's, only for Valhingen Graveyard's
-        // efreeti, who helps a party carrying his bottle. Allies are not in
-        // the game yet (GRAVE-1), so he stays out of the fight rather than
-        // joining the vampire's side.
-        if (creature.stored.raw.at(0x10E) == 0)
-        {
-            break;
-        }
+        // efreeti, who helps a party carrying his bottle.
+        const bool ally = creature.stored.raw.at(0x10E) == 0;
         auto icon = decode_ega_combat_icon(area_resources().combat_archive, arg(2), 0);
         if (!icon)
         {
@@ -2359,7 +2360,19 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             melee_weapon = wielded_key(creature, wielded.melee);
             ranged_weapon = wielded_key(creature, wielded.ranged);
         }
-        for (unsigned i = 0; i < count; ++i)
+        for (unsigned i = 0; ally && i < count; ++i)
+        {
+            const auto id =
+                static_cast<rules::EntityId>(opengold::first_ally_id + staged_allies_.size());
+            staged_allies_.push_back({id,
+                                      definition,
+                                      exported ? exported->name : creature.stored.name,
+                                      rules::Side::party,
+                                      {}});
+            staged_ally_art_.push_back(art);
+            staged_ally_art_.back().entity = id;
+        }
+        for (unsigned i = 0; !ally && i < count; ++i)
         {
             const auto id = static_cast<rules::EntityId>(1000 + staged_enemies_.size());
             staged_enemies_.push_back(
@@ -2391,6 +2404,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         staged_enemies_.clear();
         staged_art_.clear();
         staged_records_.clear();
+        staged_allies_.clear();
+        staged_ally_art_.clear();
         break;
     case 34:
     {
@@ -2604,6 +2619,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 overland() ? town_->wilderness_art : area_resources().terrain_art,
                 overland() ? MapDirection::north : p.facing,
                 script_surprise(machine_.variable(ecl_encounter_surprise))};
+            encounter_->allies = std::move(staged_allies_);
+            staged_allies_.clear();
+            for (auto &art : staged_ally_art_)
+            {
+                encounter_->art.push_back(std::move(art));
+            }
+            staged_ally_art_.clear();
             encounter_->party_resting = event_stage_ == EventStage::camp_interrupted;
             const auto hour = clock_minute_of_day(campaign_->state().time_minutes) / 60;
             encounter_->daylight = hour >= 6 && hour < 18;
@@ -2958,7 +2980,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             read_character();
             campaign_->heal_after_victory();
-            snapshot_.dialogue = "Tyranthraxus is destroyed, and Phlan is free of him. You have won.";
+            snapshot_.dialogue.clear();
+            for (const auto &page : town_->closing_story)
+            {
+                snapshot_.dialogue += page + "\n\n";
+            }
+            snapshot_.dialogue += "Tyranthraxus is destroyed, and Phlan is free of him. You have won.";
             victory_ = true;
             damage_request_ = request.id;
             snapshot_.phase = TourPhase::awaiting_continue;

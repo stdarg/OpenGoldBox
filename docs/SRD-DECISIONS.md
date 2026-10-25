@@ -1846,8 +1846,10 @@ they await the user's review ([audit](audits/valhingen-graveyard.md)):
   Ring of Protection +2.
 - **Not modeled yet:** the Wraith's Create Specter, the Minotaur Skeleton's
   charging Gore, the Vampire's grapple, Bite, Beguile and Charm, the Mummy's
-  Dreadful Glare and curse, and the efreeti Samir Ahwahl fighting beside a
-  party that carries his bottle.
+  Dreadful Glare and curse.
+- **Samir Ahwahl** fights beside a party carrying his bottle as the computer
+  plays him, as the original's quick fight did; the player does not command
+  him.
 
 ## GATE-1 (2026-10-25): Stojanow Gate
 
@@ -1879,8 +1881,8 @@ they await the user's review ([audit](audits/valjevo-castle.md)):
 
 - **Tyranthraxus** possesses an ancient bronze dragon: the SRD Adult Bronze
   Dragon (the Ancient's breath would kill a party outright) with the
-  original's 80 Hit Points, three Rends, and its Lightning Breath as an
-  innate Lightning Bolt once a fight.
+  original's 80 Hit Points, three Rends, and its Lightning Breath (a monster's
+  `breath` row since 2026-10-25, Recharge 5-6).
 - **Monsters** keep the original's Hit Points on SRD stat blocks: the Medusa;
   the Knight for the elite guards; the Warrior Veteran for the false
   Tyranthraxus; the nomad shaman's Wizard profile for Al-Hyam Dazid and

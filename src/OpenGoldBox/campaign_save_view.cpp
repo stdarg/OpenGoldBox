@@ -211,6 +211,7 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
     rendered_sprite_id_ = 999;
     rendered_picture_revision_ = 0;
     played_footsteps_ = session_->snapshot().footsteps;
+    played_thunder_ = session_->snapshot().thunder;
     refresh();
 }
 

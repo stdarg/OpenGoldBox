@@ -124,6 +124,9 @@ struct PhlanResources
     std::vector<Image> overland_tiles;
     Image party_icon;
     std::vector<Image> wilderness_art;
+    // On the town only: the original's closing story from GAME.OVR, one string
+    // per page. Empty without that file.
+    std::vector<std::string> closing_story;
     // The Combat Sprite Catalog's export (#274), on the town only: creatures'
     // names, gear and new art. Null without one.
     std::shared_ptr<const MonsterBundle> monsters;
@@ -152,6 +155,10 @@ struct TourSnapshot
     std::string dialogue, diagnostic;
     std::uint64_t revision{}, continue_ticket{};
     unsigned prompts{}, redraws{}, footsteps{};
+    // The storm's thunder in Valhingen Graveyard (the original's fireball
+    // sound), counted as footsteps are; not saved, as no sound is pending
+    // once a save is made.
+    unsigned thunder{};
     int sprite_frame{-1}; // -1 hidden; native near/medium/far frames are 0/1/2.
     bool tour_finished{};
     // The script opened the camp menu (PROGRAM 9 outside an inn): the party
@@ -518,6 +525,9 @@ class RolfTourSession
     std::map<unsigned, std::bitset<256>> seen_areas_;
     std::vector<rules::Participant> staged_enemies_;
     std::vector<opengold::CombatArt> staged_art_;
+    // Monsters a script fields on the party's side, and their art.
+    std::vector<rules::Participant> staged_allies_;
+    std::vector<opengold::CombatArt> staged_ally_art_;
     std::vector<unsigned> staged_records_;
     // A Magic Circle kept the camp's attackers away: the rest completes.
     bool rest_warded_{};
