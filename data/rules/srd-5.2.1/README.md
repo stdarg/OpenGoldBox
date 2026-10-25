@@ -266,6 +266,22 @@ fetched on 2026-10-25 (`srd-2024`):
 
 Each keeps the original's Hit Points.
 
+## Western wilderness sites' monsters
+
+The Buccaneers' base and the Zhentil outpost
+([audit](../../../docs/audits/western-sites.md)). Each Open5E response was
+fetched on 2026-10-25 (`srd-2024`):
+
+| Rows | Stat block | Response | SHA-256 |
+| --- | --- | --- | --- |
+| `pirate-captain` | Pirate Captain | `open5e-pirate-captain.json` | `D844B5DCC01395A9685CF39AF01C8849C9D618B3092700486B2664F65FFD8FA0` |
+| `commandant` | Guard Captain | `open5e-guard-captain.json` | `566EF8910B5C58D1C203B18AE1E82CB781F77201E0F79D74F07B04491D8DD2AF` |
+| `buccaneer-raider` | Pirate | `open5e-pirate.json` | `A4D01E2D3F75DDC3849B253B471A5EF8CE99A945456970F792EBE429C973E3D8` |
+| `buccaneer-mate` | Warrior Veteran | `open5e-warrior-veteran.json` | (above) |
+| `outpost-guard` | Guard | `open5e-guard.json` | (above) |
+
+Each keeps the original's Hit Points.
+
 ## Fixtures
 
 `vanguard`, `scout`, `adept`, and `healer` are authored combat fixtures, not

@@ -87,6 +87,9 @@ struct EncounterConversion
 struct PhlanResources
 {
     std::map<unsigned, std::shared_ptr<const EclProgram>> programs;
+    // Each area script's archive bank, including a script with no map of its
+    // own (the dragon's cave).
+    std::map<unsigned, unsigned> script_banks;
     std::map<unsigned, std::vector<Equipment>> treasure;
     // ITEMS templates, indexed by original item type, for generated treasure.
     std::vector<ItemTemplate> item_templates;

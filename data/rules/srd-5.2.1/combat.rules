@@ -680,6 +680,38 @@ creature castle-mage 12 22 2 30 4 1 4 2 0 0 0 0 0 0 0 4 5 4 5
 saves castle-mage -1 2 1 5 3 0
 damage_types castle-mage piercing piercing
 perception castle-mage 1
+# The western wilderness's sites (docs/audits/western-sites.md, SITES-1), with
+# the original's Hit Points: buccaneers as the Pirate, their mates as the
+# Warrior Veteran, their captain as the Pirate Captain (Captain's Charm,
+# Riposte and the Rapier's Advantage not modeled); the Zhentil outpost's guards
+# as the Guard and its commandant as the Guard Captain.
+creature buccaneer-raider 14 4 5 30 5 1 4 3 5 1 4 3 20 60 0 0 0 1 0
+saves buccaneer-raider 0 5 1 -1 1 4
+damage_types buccaneer-raider piercing piercing
+multiattack buccaneer-raider 2
+enthralling_panache buccaneer-raider 12
+creature buccaneer-mate 17 39 3 30 5 2 6 3 3 2 10 1 100 400 0 0 0 1 0
+saves buccaneer-mate 3 1 2 0 0 0
+damage_types buccaneer-mate slashing piercing
+multiattack buccaneer-mate 2
+multiattack_ranged buccaneer-mate
+perception buccaneer-mate 2
+creature pirate-captain 17 110 7 30 7 2 8 4 7 2 10 4 30 90 0 0 0 1 0
+saves pirate-captain 3 7 2 0 5 6
+damage_types pirate-captain piercing piercing
+multiattack pirate-captain 3
+multiattack_ranged pirate-captain
+perception pirate-captain 5
+creature outpost-guard 16 4 1 30 3 1 6 1 3 1 6 1 20 60 0 0 0 1 0
+saves outpost-guard 1 1 1 0 0 0
+damage_types outpost-guard piercing piercing
+perception outpost-guard 2
+creature commandant 18 100 4 30 6 2 10 4 6 3 6 4 30 120 0 0 0 1 0
+saves commandant 4 2 3 1 2 1
+damage_types commandant slashing piercing
+multiattack commandant 2
+multiattack_ranged commandant
+perception commandant 4
 # Summon Dragon's Draconic Spirit (SRD 5.2.1 p. 166), one stat block per
 # spell level: AC 14 + the level, 50 Hit Points and 10 more per level above 5,
 # Rend 1d6 + 4 + the level Piercing (reach 10 feet), half the level in Rends.

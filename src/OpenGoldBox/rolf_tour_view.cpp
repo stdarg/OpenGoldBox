@@ -133,6 +133,14 @@ constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_
     {
         return N_("Valjevo Castle");
     }
+    if (area_id == 1)
+    {
+        return N_("Buccaneers' Base");
+    }
+    if (area_id == 28)
+    {
+        return N_("Zhentil Outpost");
+    }
     return N_("New Phlan");
 }
 

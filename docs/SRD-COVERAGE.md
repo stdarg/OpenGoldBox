@@ -115,6 +115,16 @@ Blade or Hurl Flame; fire immunity) with the original's 55 Hit Points, by
 spells and Magic Resistance are not modeled yet. Princess Fatima, who joins,
 is a level-4 Fighter.
 
+## Western wilderness sites' monsters
+
+The Buccaneers' base and the Zhentil outpost use SRD 5.2.1 stat blocks with
+the original's Hit Points, by
+[SITES-1](SRD-DECISIONS.md#sites-1-2026-10-25-the-western-wilderness-sites):
+the Pirate (two Daggers, Enthralling Panache), the Warrior Veteran, the
+Pirate Captain (three Rapier or Pistol attacks), the Guard and the Guard
+Captain (two Longsword or Javelin attacks). Not modeled yet: Captain's Charm,
+Riposte and the Rapier's Advantage.
+
 ## Valjevo Castle monsters
 
 Valjevo Castle's Medusa (two Claws or Poison Rays, Petrifying Gaze), Knight
