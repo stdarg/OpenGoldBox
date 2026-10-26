@@ -47,20 +47,5 @@
     "height_squares": 1.0,
     "width_squares": 1.0
   },
-  "variants": [
-    {
-      "action": "added_5278681468__added_5264957017/action.png",
-      "id": "added_5278681468__added_5264957017",
-      "ready": "added_5278681468__added_5264957017/ready.png",
-      "shield_id": "added_5264957017",
-      "weapon_id": "added_5278681468"
-    },
-    {
-      "action": "added_5249940073__ranged/action.png",
-      "id": "added_5249940073__ranged",
-      "ready": "added_5249940073__ranged/ready.png",
-      "shield_id": "",
-      "weapon_id": "added_5249940073"
-    }
-  ]
+  "variants": []
 }
