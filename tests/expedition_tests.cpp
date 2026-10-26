@@ -775,6 +775,8 @@ struct FightStart
 };
 
 std::vector<FightStart> fights_started;
+// Fights that started on the wilderness map.
+unsigned wilderness_fights = 0;
 
 // The last encounter fight() played, as the town staged it.
 std::optional<CampaignEncounter> last_encounter;
@@ -814,6 +816,17 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     FightStart start{town.snapshot().pose, town.pending_encounter()->distance, {}};
     check(town.snapshot().overland || start.distance <= open_squares_ahead(town.map(), start.pose),
           "The monsters are never further away than the party can see");
+    // On the wilderness map the fight faces the step, a diagonal one the
+    // direction to its left, with the monsters 2 squares away (PLACE-2).
+    check(!town.snapshot().overland ||
+              (town.pending_encounter()->facing ==
+                   static_cast<por::MapDirection>(town.snapshot().overland_direction / 2) &&
+               start.distance == 2),
+          "A wilderness fight faces the step, 2 squares away");
+    if (town.snapshot().overland)
+    {
+        ++wilderness_fights;
+    }
     for (const auto &unit : combat.combat().snapshot().combatants)
     {
         start.cells[unit.id] = unit.cell;
@@ -6316,6 +6329,8 @@ void installed_first_expedition(const std::filesystem::path &executable,
             }
         }
         whole_map(podol, directory, folder);
+        std::cout << "Wilderness fights checked for facing and distance: " << wilderness_fights
+                  << '\n';
     }
 
     const auto program = "\"" + executable.string() + "\"";

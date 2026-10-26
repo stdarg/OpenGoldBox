@@ -1708,7 +1708,7 @@ they await the user's review ([audit](audits/central-wilderness.md)):
   buttons step west, north and east there, and the arrow keys, Home, Page Up,
   End and Page Down (or the keypad) step in all eight directions.
 - **Its fights** are on the field the original grows from the terrain under
-  the party.
+  the party, facing the step ([PLACE-2](#place-2-2026-10-25-wilderness-fights-face-the-step)).
 - **Monsters** keep the original's Hit Points on SRD stat blocks, as in
   MENDOR-1: the Drider (with Magic of the Spider Queen and Web Walker), the
   Stirge (its Proboscis attaches and drains; a creature next to it pulls it
@@ -1990,3 +1990,16 @@ The user chose to keep Greater Restoration, Stoneskin and Magic Circle free,
 although SRD 5.2.1 has each use up 100 gp of materials: [CLASS-11](#class-11-2026-10-06-no-spell-components)
 removed spell components. Only the resurrection spells take an offering from
 the party purse ([LEVELS-1](#levels-1-2026-10-14-levels-510)).
+
+## PLACE-2 (2026-10-25): wilderness fights face the step
+
+The DOS probe's wilderness experiment (dev_tools/docs/dos-probe.md) showed that
+the original faces a fight on the wilderness map the way the party stepped and
+stands the monsters as at distance 2, whatever SETUP MONSTER asked; in ten
+fights stepping north, east, south and west every combatant started where
+[PLACE-1](#place-1-2026-10-10-starting-positions-as-the-original-game-had-them)'s
+formation then puts it. OpenGoldBox now does the same; before, its wilderness
+fights faced north at the script's distance. The probe could not make the
+original step diagonally, so the user chose (2026-10-25) that a diagonal step
+faces the direction to its left: north-east faces north, south-east east,
+south-west south and north-west west.

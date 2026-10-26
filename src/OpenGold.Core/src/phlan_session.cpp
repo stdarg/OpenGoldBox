@@ -2623,6 +2623,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                            machine_.host_random(request.id, static_cast<unsigned>(sides))) +
                        1;
             };
+            // The original faces a wilderness fight the way the party stepped;
+            // a diagonal step faces the direction to its left (PLACE-2).
+            const auto wilderness_facing =
+                static_cast<MapDirection>(machine_.variable(ecl_overland_direction) % 8 / 2);
             auto field = overland()
                              ? wilderness_battlefield(
                                    *town_->overland,
@@ -2636,7 +2640,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 std::move(staged_enemies_),
                 std::move(staged_art_),
                 overland() ? town_->wilderness_art : area_resources().terrain_art,
-                overland() ? MapDirection::north : p.facing,
+                overland() ? wilderness_facing : p.facing,
                 script_surprise(machine_.variable(ecl_encounter_surprise))};
             encounter_->allies = std::move(staged_allies_);
             staged_allies_.clear();
@@ -2660,7 +2664,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             {
                 encounter_distance_ = std::min(encounter_distance_, open_squares_ahead(map_, p));
             }
-            encounter_->distance = encounter_distance_;
+            // On the wilderness map the original stands the monsters 2 squares
+            // away, whatever SETUP MONSTER asked (PLACE-2).
+            encounter_->distance = overland() ? 2u : encounter_distance_;
             // The script sets the encounter's morale before COMBAT.
             encounter_->morale = std::min<unsigned>(machine_.variable(ecl_encounter_morale), 100);
             announce_camp_attack();

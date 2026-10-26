@@ -201,7 +201,9 @@ Recorded 2026-10-24 with `START.EXE` SHA-1
   formation faces the way the party stepped and uses distance 2. The original
   ignores SETUP MONSTER's distance there: 0, 1, 2 and 3 all stood the monsters
   at 2. OpenGoldBox's wilderness fights faced north and used SETUP MONSTER's
-  distance. The probe could not make the original step diagonally: the keypad's
+  distance; they now do as the original
+  ([PLACE-2](../../docs/SRD-DECISIONS.md#place-2-2026-10-25-wilderness-fights-face-the-step)).
+  The probe could not make the original step diagonally: the keypad's
   9, Page Up and the top row's 9 reach the game through INT 16h and it ignores
   them, so how a diagonal step faces is not known from the probe.
 - **Fight setup checks the keyboard** between combatants it places, so a key
