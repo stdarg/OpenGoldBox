@@ -18,12 +18,10 @@
 #include "guarded_handlers.h"
 #include "godot_sound_output.h"
 #include "monster_picture_timing.h"
-#include "monster_ability_options.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/font.hpp>
-#include <godot_cpp/classes/h_box_container.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
@@ -155,8 +153,8 @@ constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_
 void RolfTourView::_bind_methods()
 {
     ADD_SIGNAL(MethodInfo("save_requested", PropertyInfo(Variant::BOOL, "saving")));
-    // The in-game menu's Exit to main menu: back to the party screen.
-    ADD_SIGNAL(MethodInfo("main_menu_requested"));
+    // The Menu button: the host opens the in-game menu.
+    ADD_SIGNAL(MethodInfo("menu_requested"));
     ADD_SIGNAL(MethodInfo("party_member_selected", PropertyInfo(Variant::INT, "slot")));
     ADD_SIGNAL(MethodInfo("level_up_requested", PropertyInfo(Variant::INT, "id")));
     // Reincarnate from camp: the new body's pages belong to the creation view.
@@ -258,30 +256,9 @@ void RolfTourView::prepare_view()
         .connect("close_requested", presentation::guarded(this, &RolfTourView::close_sheet));
     required_node<Button>(*this, "LeaveShop")
         .connect("pressed", presentation::guarded(this, &RolfTourView::leave_shop));
-    for (bool saving : {true, false})
-    {
-        auto &button = required_node<Button>(*this, saving ? "SaveGame" : "LoadGame");
-        button.set_text(i18n::text(saving ? N_("Save game") : N_("Load game")));
-        button.connect("pressed",
-                       presentation::guarded(this, &RolfTourView::request_save).bind(saving));
-        button.set_visible(embedded_party_);
-    }
-    for (bool saving : {true, false})
-    {
-        required_node<Button>(*this, saving ? "GameMenu/Save" : "GameMenu/Load")
-            .connect("pressed", presentation::guarded(this, &RolfTourView::menu_save).bind(saving));
-    }
-    required_node<Button>(*this, "GameMenu/Options")
-        .connect("pressed", presentation::guarded(this, &RolfTourView::open_options));
-    required_node<Button>(*this, "GameMenu/MainMenu")
-        .connect("pressed", presentation::guarded(this, &RolfTourView::exit_to_main_menu));
-    required_node<Button>(*this, "GameMenu/Desktop")
-        .connect("pressed", presentation::guarded(this, &RolfTourView::exit_to_desktop));
-    required_node<Button>(*this, "OptionsPanel/Close")
-        .connect("pressed", presentation::guarded(this, &RolfTourView::close_options));
-    required_node<Button>(*this, "OptionsPanel/Defaults")
-        .connect("pressed", presentation::guarded(this, &RolfTourView::restore_ability_defaults));
-    build_options();
+    auto &menu = required_node<Button>(*this, "Menu");
+    menu.connect("pressed", presentation::guarded(this, &RolfTourView::request_menu));
+    menu.set_visible(embedded_party_);
     ready_ = true;
     layout();
     if (Engine::get_singleton()->is_editor_hint())
@@ -493,152 +470,18 @@ void RolfTourView::toggle_search()
     refresh();
 }
 
-void RolfTourView::escape()
+void RolfTourView::request_menu()
 {
-    if (required_node<Control>(*this, "OptionsPanel").is_visible())
-    {
-        close_options();
-        return;
-    }
-    auto &menu = required_node<Control>(*this, "GameMenu");
-    menu.set_visible(!menu.is_visible());
-    if (menu.is_visible())
-    {
-        const bool exploring = session_ && session_->snapshot().phase == TourPhase::completed;
-        required_node<Button>(menu, "Save").set_disabled(!embedded_party_ || !exploring);
-        required_node<Button>(menu, "Load").set_disabled(!embedded_party_ || !exploring);
-        required_node<Button>(menu, "MainMenu").set_disabled(!embedded_party_ || !can_leave());
-        required_node<Button>(menu, "Save").grab_focus();
-    }
+    emit_signal("menu_requested");
 }
 
-void RolfTourView::close_menu()
+void RolfTourView::apply_settings()
 {
-    required_node<Control>(*this, "GameMenu").hide();
-}
-
-void RolfTourView::menu_save(bool saving)
-{
-    close_menu();
-    request_save(saving);
-}
-
-void RolfTourView::open_options()
-{
-    required_node<OptionButton>(*this, "OptionsPanel/Difficulty")
-        .select(static_cast<int>(settings::difficulty()));
-    // A SpinBox, which the game's Godot class list leaves out: called by name.
-    required_node<Control>(*this, "OptionsPanel/Challenge")
-        .call("set_value_no_signal", settings::encounter_challenge());
-    auto &rows = required_node<Control>(*this, "OptionsPanel/Abilities/Rows");
-    for (std::size_t row = 0; row < i18n::monster_ability_options.size(); ++row)
-    {
-        const auto value =
-            settings::monster_ability_option(i18n::monster_ability_options[row].ability);
-        auto &from = *Object::cast_to<OptionButton>(
-            rows.get_child(static_cast<int>(row))->get_node_or_null("From"));
-        from.select(value == "never"
-                        ? static_cast<int>(i18n::ability_from_names.size()) - 1
-                        : static_cast<int>(*opengold::parse_difficulty(value.utf8().get_data())));
-    }
-    close_menu();
-    required_node<Control>(*this, "OptionsPanel").show();
-    required_node<OptionButton>(*this, "OptionsPanel/Difficulty").grab_focus();
-}
-
-void RolfTourView::close_options()
-{
-    required_node<Control>(*this, "OptionsPanel").hide();
-    required_node<Control>(*this, "GameMenu").show();
-    required_node<Button>(*this, "GameMenu/Options").grab_focus();
-}
-
-void RolfTourView::build_options()
-{
-    auto &difficulty = required_node<OptionButton>(*this, "OptionsPanel/Difficulty");
-    difficulty.clear();
-    for (std::size_t n = 0; n + 1 < i18n::ability_from_names.size(); ++n)
-    {
-        difficulty.add_item(i18n::text(i18n::ability_from_names[n]));
-    }
-    difficulty.connect("item_selected",
-                       presentation::guarded(this, &RolfTourView::difficulty_selected));
-    required_node<Control>(*this, "OptionsPanel/Challenge")
-        .connect("value_changed", presentation::guarded(this, &RolfTourView::challenge_changed));
-    auto &rows = required_node<Control>(*this, "OptionsPanel/Abilities/Rows");
-    for (std::size_t row = 0; row < i18n::monster_ability_options.size(); ++row)
-    {
-        const auto &option = i18n::monster_ability_options[row];
-        auto *line = memnew(HBoxContainer);
-        line->set_custom_minimum_size({0, 46});
-        auto *name = memnew(Label);
-        name->set_text(i18n::text(option.label));
-        name->set_custom_minimum_size({440, 0});
-        auto *monsters = memnew(Label);
-        monsters->set_text(i18n::text(option.monsters));
-        monsters->set_theme_type_variation("LabelMuted");
-        monsters->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-        auto *from = memnew(OptionButton);
-        from->set_name("From");
-        from->set_custom_minimum_size({240, 40});
-        for (const auto *choice : i18n::ability_from_names)
-        {
-            from->add_item(i18n::text(choice));
-        }
-        from->connect("item_selected", presentation::guarded(this, &RolfTourView::ability_selected)
-                                           .bind(static_cast<std::int64_t>(row)));
-        line->add_child(name);
-        line->add_child(monsters);
-        line->add_child(from);
-        rows.add_child(line);
-    }
-}
-
-void RolfTourView::difficulty_selected(std::int64_t index)
-{
-    const auto difficulty = static_cast<opengold::Difficulty>(index);
-    settings::save_difficulty(difficulty);
     if (session_)
     {
-        session_->difficulty(difficulty);
+        session_->difficulty(settings::difficulty());
+        session_->encounter_challenge(settings::encounter_challenge());
     }
-}
-
-void RolfTourView::challenge_changed(double value)
-{
-    const auto challenge = static_cast<unsigned>(std::max(0.0, value));
-    settings::save_encounter_challenge(challenge);
-    if (session_)
-    {
-        session_->encounter_challenge(challenge);
-    }
-}
-
-void RolfTourView::ability_selected(std::int64_t index, std::int64_t row)
-{
-    const auto never = static_cast<std::int64_t>(i18n::ability_from_names.size()) - 1;
-    const String from =
-        index == never ? String("never")
-                       : String(opengold::difficulty_names[static_cast<std::size_t>(index)].data());
-    settings::save_monster_ability(
-        i18n::monster_ability_options[static_cast<std::size_t>(row)].ability, from);
-}
-
-void RolfTourView::restore_ability_defaults()
-{
-    settings::restore_monster_abilities();
-    open_options();
-}
-
-void RolfTourView::exit_to_main_menu()
-{
-    close_menu();
-    emit_signal("main_menu_requested");
-}
-
-void RolfTourView::exit_to_desktop()
-{
-    get_tree()->quit();
 }
 
 void RolfTourView::look()
@@ -1484,16 +1327,20 @@ void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
     {
         return;
     }
+    // Escape closes the inventory or the spell list first; with neither open
+    // it goes on to the host, which opens the in-game menu.
     if (key->get_keycode() == Key::KEY_ESCAPE && !shown_monster_picture_)
     {
-        escape();
-        get_viewport()->set_input_as_handled();
-        return;
-    }
-    // The menu and the Options screen take no other keys.
-    if (required_node<Control>(*this, "GameMenu").is_visible() ||
-        required_node<Control>(*this, "OptionsPanel").is_visible())
-    {
+        if (required_node<Control>(*this, "InventoryPanel").is_visible())
+        {
+            inventory();
+            get_viewport()->set_input_as_handled();
+        }
+        else if (required_node<Control>(*this, "CastPanel").is_visible())
+        {
+            cast_menu();
+            get_viewport()->set_input_as_handled();
+        }
         return;
     }
     if (shown_monster_picture_)
@@ -1912,8 +1759,6 @@ void RolfTourView::refresh()
         camp_offer_run_ = s.event_runs;
         camp();
     }
-    required_node<Button>(*this, "SaveGame").set_disabled(!completed);
-    required_node<Button>(*this, "LoadGame").set_disabled(!completed);
     const bool faulted = !loaded || s.phase == TourPhase::faulted;
     const bool shopping = loaded && s.phase == TourPhase::shopping;
     const bool answer = loaded && s.phase == TourPhase::awaiting_input;

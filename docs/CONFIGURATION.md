@@ -34,9 +34,10 @@ game reads it when exploration starts or a save is loaded, and new settings
 files receive the default. See
 [DIFF-1](SRD-DECISIONS.md#diff-1-2026-10-21-difficulty-and-monsters-that-use-their-items).
 
-The in-game menu's **Options** screen (Escape while exploring) sets
-`difficulty`, `encounter_challenge` and the `[monsters]` section below, and
-writes them at once.
+The in-game menu's **Options** screen (Escape) sets these settings and writes
+them at once: under Gameplay `difficulty`, `encounter_challenge` and the
+`[monsters]` section below; under Interface `language`, which takes effect the
+next time the game starts, and `combat_zoom`, read when a fight opens.
 
 `[monsters]` switches monster abilities by difficulty. Each key names an
 ability (`legendary`, `parry`, `breath`; the

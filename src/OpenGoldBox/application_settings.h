@@ -26,6 +26,7 @@ godot::String monster_ability_option(const std::string &ability);
 // The Options screen's writes; each keeps the other settings.
 bool save_difficulty(opengold::Difficulty difficulty);
 bool save_encounter_challenge(unsigned challenge);
+bool save_combat_zoom(int percent);
 bool save_monster_ability(const std::string &ability, const godot::String &from);
 // Every monster ability back to its default.
 bool restore_monster_abilities();

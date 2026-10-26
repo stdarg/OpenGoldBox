@@ -78,8 +78,10 @@ func load_fixture(name: String) -> void:
     DirAccess.make_dir_recursive_absolute(path.get_base_dir())
     var f := FileAccess.open(path, FileAccess.WRITE)
     f.store_buffer(FileAccess.get_file_as_bytes(fixtures.path_join(name + ("-strong" if strong else "") + ".ogs"))); f.close()
-    var load_button := "CampaignTown/LoadGame" if current_scene.has_node("CampaignTown") and town().visible else "PartyPanel/Load"
-    await press(load_button)
+    if current_scene.has_node("CampaignTown") and town().visible:
+        await press("CampaignTown/Menu"); await press("GameMenu/Menu/Load")
+    else:
+        await press("PartyPanel/Load")
     var list: ItemList = current_scene.get_node("SaveSlots/Slots")
     for i in range(list.item_count):
         if list.get_item_text(i) == slot:

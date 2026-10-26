@@ -203,6 +203,11 @@ bool save_difficulty(opengold::Difficulty difficulty)
                 String(opengold::difficulty_names[static_cast<std::size_t>(difficulty)].data()));
 }
 
+bool save_combat_zoom(int percent)
+{
+    return save("combat", "combat_zoom", std::clamp(percent, 10, 1000));
+}
+
 bool save_encounter_challenge(unsigned challenge)
 {
     return save("combat", "encounter_challenge",

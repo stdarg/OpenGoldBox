@@ -133,6 +133,7 @@ void CharacterCreationView::respond_to_notification(int what)
 void CharacterCreationView::_ready()
 {
     i18n::prepare_ui(*this);
+    attach_game_menu();
     ready_ = true;
     // All node pointers here and below are borrowed from the owning scene tree.
     required_node<Button>(*this, "Next")

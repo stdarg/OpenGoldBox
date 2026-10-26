@@ -58,9 +58,9 @@ func open_slot(slot: String) -> void:
     await press("SaveSlots/Action"); await press("SaveSlots/Action")
     require(not current_scene.get_node("SaveSlots").visible, "Save loaded: " + slot)
 
-# Saves through the town's Save game button and copies the file for the native check.
+# Saves through the in-game menu's Save game and copies the file for the native check.
 func save_as(slot: String, copy: String) -> void:
-    await press("CampaignTown/SaveGame")
+    await press("CampaignTown/Menu"); await press("GameMenu/Menu/Save")
     var saves: Window = current_scene.get_node("SaveSlots")
     require(saves.visible, "Save game opens the save slots")
     saves.get_node("Name").text = slot
@@ -130,7 +130,7 @@ func run_checks() -> void:
     require(shown.has("GIVE"), "Ohlo asks for the potion")
     await save_as(HANDED_IN_SLOT, "handed-in.ogs")
 
-    await press("CampaignTown/LoadGame"); await open_slot(HANDED_IN_SLOT)
+    await press("CampaignTown/Menu"); await press("GameMenu/Menu/Load"); await open_slot(HANDED_IN_SLOT)
     await explore()
     shown = await visit_ohlo("GIVE")
     require(not shown.has("GIVE"), "After the reload Ohlo does not ask for the potion again")
