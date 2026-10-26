@@ -276,14 +276,14 @@ void combat_and_campaign()
         {
             rules->validate_character_state(character.sheet(), {1, false, stable.resources});
         });
-    // Published actor field 28 is the death-save deadline; a conscious actor
+    // Published actor field 30 is the death-save deadline; a conscious actor
     // cannot carry one.
     auto bad = rows(combat->save());
     for (unsigned i = 4; i < 7; ++i)
     {
         if (bad[i].starts_with("1 "))
         {
-            bad[i] = with_field(bad[i], 28, "1");
+            bad[i] = with_field(bad[i], 30, "1");
         }
     }
     rejects(

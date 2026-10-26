@@ -17,26 +17,28 @@ func _cell_rect(cell: Vector2i, tile: float, inset: float = 0.0) -> Rect2:
         Vector2.ONE * (tile - 2.0 * inset))
 
 
-func _sprite_rect(texture: Texture2D, visible: Rect2, cell: Rect2, goliath: bool,
+# `area` is the squares the creature fills (FOOT-1): one, or two or four for
+# art the original draws over more than one.
+func _sprite_rect(texture: Texture2D, visible: Rect2, area: Rect2, tile: float, goliath: bool,
         planted_scale: float = 0.0, ground: float = 0.0) -> Rect2:
     if texture == null or visible.size.x <= 0 or visible.size.y <= 0:
         return Rect2()
     var source := texture.get_size()
     # New monster art stands as the Combat Sprite Catalog previews it: a fixed
-    # scale for both poses, centered, its feet on the square's bottom edge.
+    # scale for both poses, centered, its feet on the bottom edge of its squares.
     if planted_scale > 0.0:
-        var art_scale := cell.size.x / source.x * planted_scale
-        return Rect2(Vector2(cell.get_center().x - source.x * art_scale * 0.5,
-            cell.end.y - ground * art_scale), source * art_scale)
+        var art_scale := tile / source.x * planted_scale
+        return Rect2(Vector2(area.get_center().x - source.x * art_scale * 0.5,
+            area.end.y - ground * art_scale), source * art_scale)
     if goliath:
-        var extent := cell.size * Vector2(1.0, _metric("combat_goliath_height_percent") / 100.0)
+        var extent := area.size * Vector2(1.0, _metric("combat_goliath_height_percent") / 100.0)
         var scale := extent / visible.size
-        var top := cell.position + Vector2((cell.size.x - extent.x) * 0.5,
-            cell.size.y - extent.y)
+        var top := area.position + Vector2((area.size.x - extent.x) * 0.5,
+            area.size.y - extent.y)
         return Rect2(top - visible.position * scale, source * scale)
-    var scale := cell.size.x * _metric("combat_sprite_fit_percent") / 100.0 \
-        / maxf(visible.size.x, visible.size.y)
-    return Rect2(cell.get_center() - visible.get_center() * scale, source * scale)
+    var scale := _metric("combat_sprite_fit_percent") / 100.0 \
+        * minf(area.size.x / visible.size.x, area.size.y / visible.size.y)
+    return Rect2(area.get_center() - visible.get_center() * scale, source * scale)
 
 
 func _draw() -> void:
@@ -99,12 +101,14 @@ func _draw() -> void:
     var advance := _metric("combat_marker_digit_advance")
     for actor in data["actors"]:
         var cell: Vector2i = actor["cell"]
-        var rect := _cell_rect(cell, tile)
+        var footprint: Vector2i = actor.get("footprint", Vector2i.ONE)
+        var area := Rect2(Vector2(cell) * tile, Vector2(footprint) * tile)
+        var rect := Rect2(area.get_center() - Vector2.ONE * tile * 0.5, Vector2.ONE * tile)
         if actor.has("skull"):
             draw_texture_rect(actor["skull"], rect, false)
         elif actor.has("texture"):
             var texture: Texture2D = actor["texture"]
-            var sprite := _sprite_rect(texture, actor["visible"], rect, actor["goliath"],
+            var sprite := _sprite_rect(texture, actor["visible"], area, tile, actor["goliath"],
                 actor.get("planted_scale", 0.0), actor.get("ground", 0.0))
             draw_texture_rect(texture, sprite, false,
                 _palette("combat_reachable" if actor["conscious"] else "combat_unconscious"))

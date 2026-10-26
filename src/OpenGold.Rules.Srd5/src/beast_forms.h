@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_SRD5_BEAST_FORMS_H
 #define OPENGOLD_SRD5_BEAST_FORMS_H
 #include "damage_roll.h"
+#include "opengold/rules.h"
 #include <array>
 #include <string_view>
 
@@ -29,6 +30,9 @@ struct BeastForm
     int level{2};
     // Tiger: Slashing damage, and a Large or smaller target falls Prone.
     bool slashing{}, prone_large{};
+    // Every form's original combat art is wide, so the form fills two squares
+    // side by side (FOOT-1).
+    rules::Footprint footprint{2, 1};
 };
 
 inline constexpr std::array beast_forms{

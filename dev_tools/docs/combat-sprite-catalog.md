@@ -67,13 +67,14 @@ Tyranthraxus and the wyvern use 48 × 48 art and have a 2 × 2 footprint. Do not
 convert SRD Large/Huge creature spaces into sprite dimensions: those rules
 describe controlled ground area, not the source image's width and height.
 
-The game's [current battlefield renderer](../../src/OpenGoldBox/godot/scenes/combat_battlefield.gd)
-fits ordinary original monster icons inside one cell, regardless of source image
-dimensions. It draws [exported art](../../data/monsters/README.md) at the
-catalog's fixed scale, which uses the saved footprint for non-humanoids. The
-dropdown records the **game-art sprite footprint** for art preparation; it does
-not change game occupancy. The game code was
-read for this audit and was not modified. Run the read-only
+The game's [battlefield renderer](../../src/OpenGoldBox/godot/scenes/combat_battlefield.gd)
+fits an original monster icon inside the squares the creature fills, and draws
+[exported art](../../data/monsters/README.md) at the catalog's fixed scale,
+which uses the saved footprint for non-humanoids, standing on the bottom edge
+of those squares. The dropdown records the **game-art sprite footprint** for
+art preparation. The squares a creature fills in a fight come from byte 108 of
+its original record, which gives the same shape as its art
+([FOOT-1](../../docs/SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills)). Run the read-only
 [source-size audit](../combat_sprite_catalog/godot/scripts/source_size_audit.gd)
 after changing footprint JSON; it checks every saved size against both decoded
 original poses and fails if any record disagrees:

@@ -41,6 +41,26 @@ unsigned number(std::string_view text)
     return n;
 }
 
+// ENEMIES: a count, or a count and each one's footprint, as "3:1x2" for
+// three creatures filling two squares one above the other (FOOT-1).
+std::vector<opengold::rules::Footprint> enemy_footprints(std::string_view text)
+{
+    const auto colon = text.find(':');
+    opengold::rules::Footprint footprint;
+    if (colon != std::string_view::npos)
+    {
+        const auto size = text.substr(colon + 1);
+        const auto by = size.find('x');
+        if (by == std::string_view::npos)
+        {
+            throw std::runtime_error("Expected a footprint as WIDTHxHEIGHT");
+        }
+        footprint = {static_cast<int>(number(size.substr(0, by))),
+                     static_cast<int>(number(size.substr(by + 1)))};
+    }
+    return std::vector<opengold::rules::Footprint>(number(text.substr(0, colon)), footprint);
+}
+
 std::vector<std::uint8_t> read_file(const std::filesystem::path &path)
 {
     std::ifstream in(path, std::ios::binary);
@@ -102,9 +122,9 @@ int wild_formation(const std::filesystem::path &directory, char **argv)
     {
         throw std::runtime_error("Facing exceeds 3");
     }
-    const auto starts =
-        opengold::por::encounter_formation(field, static_cast<opengold::por::MapDirection>(facing),
-                                           number(argv[5]), number(argv[6]), number(argv[7]));
+    const auto starts = opengold::por::encounter_formation(
+        field, static_cast<opengold::por::MapDirection>(facing), number(argv[5]), number(argv[6]),
+        enemy_footprints(argv[7]));
     std::cout << "{\"party\":";
     print_cells(starts.party);
     std::cout << ",\"enemies\":";
@@ -127,7 +147,8 @@ int main(int argc, char **argv)
                      "DISTANCE PARTY ENEMIES\n"
                      "FACING is 0 (north) to 3 (west); --formation prints where a fight's "
                      "two sides start (PLACE-1); --wild-formation does it on a wilderness "
-                     "field of 50 by 25 combat tiles.\n";
+                     "field of 50 by 25 combat tiles. ENEMIES is a count, or COUNT:WxH for "
+                     "creatures filling W by H squares.\n";
         return 2;
     }
     try
@@ -164,7 +185,7 @@ int main(int argc, char **argv)
                 }
                 const auto starts = opengold::por::encounter_formation(
                     field, static_cast<opengold::por::MapDirection>(facing), number(argv[8]),
-                    number(argv[9]), number(argv[10]));
+                    number(argv[9]), enemy_footprints(argv[10]));
                 std::cout << "{\"party\":";
                 print_cells(starts.party);
                 std::cout << ",\"enemies\":";

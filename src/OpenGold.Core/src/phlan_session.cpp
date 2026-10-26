@@ -2385,6 +2385,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                                       exported ? exported->name : creature.stored.name,
                                       rules::Side::party,
                                       {}});
+            staged_allies_.back().footprint = combat_footprint(creature.stored);
             staged_ally_art_.push_back(art);
             staged_ally_art_.back().entity = id;
         }
@@ -2398,6 +2399,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                      std::to_string(staged_enemies_.size() + 1),
                  rules::Side::opposition,
                  {}});
+            staged_enemies_.back().footprint = combat_footprint(creature.stored);
             // Morale is record byte 0x84: from 0x80 up a creature's own is
             // (byte & 0x7F) * 2, and above 102 it has none (the encounter's
             // decides). Most monsters have none; a few never break.

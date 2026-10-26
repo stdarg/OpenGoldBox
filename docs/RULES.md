@@ -214,8 +214,10 @@ Standalone party profiles are authored combat fixtures, not finished
 character sheets. The orc conversion is authored for this demo; its AC/HP are
 not an automatic conversion of original AD&D values.
 
-Not yet implemented (as of 2026-10-25): partial cover and multi-square creature
-footprints (#45). Concentration spells
+Not yet implemented (as of 2026-10-26): partial cover. Creatures fill the
+squares their original art fills
+([FOOT-1](SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills)):
+a troll two, one above the other. Concentration spells
 ([CONCENTRATION.md](CONCENTRATION.md)), split-target Magic Missile and Scorching
 Ray, and the spells and conditions in the [SRD coverage ledger](SRD-COVERAGE.md)
 are implemented; that ledger, not this list, is the full account. Weapon mastery, typed damage and resistance, and

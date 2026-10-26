@@ -8,7 +8,8 @@
 
 namespace presentation
 {
-// Godot Y grows downward: draw lower rows first, then upper rows on top.
+// Godot Y grows downward: draw lower rows first, then upper rows on top. A
+// creature filling more than one row stands on its lowest (FOOT-1).
 // Sort indices so initiative order and rules snapshots remain untouched.
 inline std::vector<std::size_t>
 combat_sprite_draw_order(std::span<const opengold::rules::CombatantView> actors)
@@ -20,9 +21,11 @@ combat_sprite_draw_order(std::span<const opengold::rules::CombatantView> actors)
               {
                   const auto &a = actors[left];
                   const auto &b = actors[right];
-                  if (a.cell.y != b.cell.y)
+                  const int a_row = a.cell.y + a.footprint.height - 1;
+                  const int b_row = b.cell.y + b.footprint.height - 1;
+                  if (a_row != b_row)
                   {
-                      return a.cell.y > b.cell.y;
+                      return a_row > b_row;
                   }
                   if (a.cell.x != b.cell.x)
                   {

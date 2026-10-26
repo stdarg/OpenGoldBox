@@ -1,4 +1,5 @@
 #include "opengold/encounter_formation.h"
+#include <algorithm>
 #include <array>
 #include <set>
 
@@ -74,6 +75,7 @@ struct Side
     MapDirection facing;
     std::size_t size;
     bool is_party;
+    std::span<const rules::Footprint> footprints; // Empty: every member fills one square.
 };
 
 bool walled(const DungeonBattlefield &field, Cell square, MapDirection side)
@@ -182,7 +184,21 @@ std::vector<Cell> slots(const DungeonBattlefield &field, const Side &side)
     return result;
 }
 
-// Gives each member the first of the side's slots that is open and free.
+std::vector<Cell> squares_of(Cell start, rules::Footprint footprint)
+{
+    std::vector<Cell> squares;
+    for (int dy = 0; dy < footprint.height; ++dy)
+    {
+        for (int dx = 0; dx < footprint.width; ++dx)
+        {
+            squares.push_back({start.x + dx, start.y + dy});
+        }
+    }
+    return squares;
+}
+
+// Gives each member the first of the side's slots where all its squares are
+// open and free.
 std::vector<std::optional<Cell>> place(const DungeonBattlefield &field, const Side &side,
                                        std::set<Cell> &occupied)
 {
@@ -190,14 +206,21 @@ std::vector<std::optional<Cell>> place(const DungeonBattlefield &field, const Si
     std::vector<std::optional<Cell>> result;
     for (std::size_t member = 0; member < side.size; ++member)
     {
+        const auto footprint =
+            side.footprints.empty() ? rules::Footprint{} : side.footprints[member];
         auto &cell = result.emplace_back();
         for (const auto candidate : candidates)
         {
-            if (field.geometry.at(candidate) != rules::Terrain::obstacle &&
-                !occupied.contains(candidate))
+            const auto squares = squares_of(candidate, footprint);
+            if (std::all_of(squares.begin(), squares.end(),
+                            [&](Cell square)
+                            {
+                                return field.geometry.at(square) != rules::Terrain::obstacle &&
+                                       !occupied.contains(square);
+                            }))
             {
                 cell = candidate;
-                occupied.insert(candidate);
+                occupied.insert(squares.begin(), squares.end());
                 break;
             }
         }
@@ -208,14 +231,25 @@ std::vector<std::optional<Cell>> place(const DungeonBattlefield &field, const Si
 
 EncounterFormation encounter_formation(const DungeonBattlefield &field, MapDirection facing,
                                        unsigned distance, std::size_t party_size,
-                                       std::size_t enemy_count)
+                                       std::span<const rules::Footprint> enemy_footprints)
 {
     const int ahead = static_cast<int>(distance);
-    const Side party{{0, 0}, facing, party_size, true};
-    const Side enemies{
-        {step_x(facing) * ahead, step_y(facing) * ahead}, reversed(facing), enemy_count, false};
+    const Side party{{0, 0}, facing, party_size, true, {}};
+    const Side enemies{{step_x(facing) * ahead, step_y(facing) * ahead},
+                       reversed(facing),
+                       enemy_footprints.size(),
+                       false,
+                       enemy_footprints};
     std::set<Cell> occupied;
     auto placed_party = place(field, party, occupied);
     return {std::move(placed_party), place(field, enemies, occupied)};
+}
+
+EncounterFormation encounter_formation(const DungeonBattlefield &field, MapDirection facing,
+                                       unsigned distance, std::size_t party_size,
+                                       std::size_t enemy_count)
+{
+    const std::vector<rules::Footprint> squares(enemy_count);
+    return encounter_formation(field, facing, distance, party_size, squares);
 }
 } // namespace opengold::por

@@ -2011,3 +2011,47 @@ whenever exploration is idle, anywhere on the map, as the game has done since
 2026-09-08 ([saves](SAVES.md)). This replaces the saving clause of Q5–7, which
 allowed saves only while camping or at an inn. Saving during combat or an
 unfinished event stays refused; combat checkpoints remain internal.
+
+## FOOT-1 (2026-10-26): creatures fill the squares their art fills
+
+The DOS probe (dev_tools/docs/dos-probe.md) showed that the original fills
+combat squares by a creature's art: byte 108 of its MONnCHA record names the
+art's shape (1 one square, 2 two squares one above the other, 3 two side by
+side, 4 two by two) and its occupancy map holds the creature on all of them.
+The creature's position is the top-left square, and it moves with every square
+together. The user chose (2026-10-26) to follow the original rather than the
+SRD's Large 2 by 2 and Huge 3 by 3 spaces
+([#45](https://github.com/stdarg/OpenGoldBox/issues/45)):
+
+- **Every creature fills what its art fills.** Ogres, trolls, hill and fire
+  giants, giant skeletons, ettins, minotaurs, efreet and gnolls fill two
+  squares one above the other; displacer beasts, centaurs, driders,
+  hippogriffs, ankhegs, giant mantises, tigers, giant snakes and lizards,
+  wolves, basilisks, wild boars, phase spiders and the large and huge
+  scorpions two side by side; Tyranthraxus and the wyvern two by two. The
+  ogre leader's and the bugbear's art fills one. Gnolls, wolves, basilisks
+  and boars are Medium in the SRD but still fill two squares, as in the
+  original.
+- **Wild Shape and Polymorph forms and summoned creatures too.** The Beast
+  forms (wolf, boar, giant lizard, giant snake, tiger) and Giant Insect fill
+  two squares side by side; Summon Dragon's spirit two by two.
+- **Fights start as the original placed them.** Each monster takes the first
+  place in PLACE-1's order where all its squares are open and free; the probe
+  found the original's starting squares and footprints for gnolls, trolls,
+  basilisks, minotaurs and displacer beasts in 12 fights. The 2 by 2 footprint
+  is the art's (48 by 48 pixels) and the record's; no probed fight held one.
+
+The rules use the whole footprint: distance and reach run between the nearest
+squares, so a creature beside either of a troll's squares can strike it and
+leaving its reach provokes it; no one enters or stops on any of its squares;
+an area that covers any of its squares catches it; sight runs from any of its
+squares; and pushes, Telekinesis and teleports move or place every square.
+Choices the original and the SRD leave open, made by OpenGoldBox:
+
+- A step costs what its dearest square costs (Difficult Terrain under either
+  square slows it).
+- A creature whose new form fills more squares than it has room for takes the
+  nearest space with room, staying put when it fits.
+- An area a creature casts or breathes starts from its square nearest the
+  aim, and its range is measured from there; its emanations (Spirit
+  Guardians and the like) centre on its top-left square.

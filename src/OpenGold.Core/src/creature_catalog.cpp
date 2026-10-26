@@ -220,6 +220,21 @@ std::string CreatureId::key() const
     return archive() + ":" + std::to_string(record);
 }
 
+rules::Footprint combat_footprint(const CharacterRecord &character)
+{
+    switch (character.raw[108] & 0x7F)
+    {
+    case 2:
+        return {1, 2};
+    case 3:
+        return {2, 1};
+    case 4:
+        return {2, 2};
+    default:
+        return {};
+    }
+}
+
 AbilityModifiers ability_modifiers(const CharacterRecord &c)
 {
     AbilityModifiers result;

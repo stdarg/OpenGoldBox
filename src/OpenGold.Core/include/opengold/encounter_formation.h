@@ -3,6 +3,7 @@
 #include "opengold/dungeon_battlefield.h"
 #include <cstddef>
 #include <optional>
+#include <span>
 #include <vector>
 
 namespace opengold::por
@@ -18,7 +19,14 @@ struct EncounterFormation
 // (PLACE-1 in docs/SRD-DECISIONS.md): two groups facing each other, the
 // enemies `distance` exploration squares (0 to 2) ahead of a party facing
 // `facing`. A group that does not fit its square spills behind it, then
-// beside it, never around the other side.
+// beside it, never around the other side. Each enemy fills its footprint's
+// squares, its start the top-left one, and takes the first place where all
+// of them are open and free (FOOT-1).
+[[nodiscard]] EncounterFormation encounter_formation(const DungeonBattlefield &field,
+                                                     MapDirection facing, unsigned distance,
+                                                     std::size_t party_size,
+                                                     std::span<const rules::Footprint> enemies);
+// The same with `enemy_count` enemies of one square each.
 [[nodiscard]] EncounterFormation encounter_formation(const DungeonBattlefield &field,
                                                      MapDirection facing, unsigned distance,
                                                      std::size_t party_size,
