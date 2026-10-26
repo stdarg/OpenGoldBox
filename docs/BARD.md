@@ -100,12 +100,17 @@ The Bard advances to level 15, the cap
 - **Compulsion** (level 4, since 2026-10-25): the Bard picks creatures it can
   see within 30 feet one at a time, then casts; each makes a Wisdom save or is
   Charmed (Compulsion) while the Bard concentrates. A Bonus Action, "Compulsion:
-  north" and the other seven directions, names the way they go: on its next
+  name a direction", aims at a square as an area spell is aimed (the user's
+  choice, 2026-10-25); the direction from the Bard to it, to the nearest of
+  eight, is the way they go. The aim starts on the nearest foe, so the
+  computer sends the charmed away from its Bard. On its next
   turn each charmed creature's only move is the one taking it furthest that
   way, and then it saves again, ending the charm on a success. One that cannot
   move that way saves at the end of its turn. Adaptation: "the safest route"
   is not weighed. `opengold_bard_levels_tests` (compulsion) checks the
-  choice, the named move, the second save and a checkpoint.
+  choice, the aimed direction, the computer's aim, the named move, the second
+  save and a checkpoint; `opengold_godot_compulsion` aims it through the
+  combat window in English and Spanish.
 - **Bardic Inspiration's die:** d8 from 5, d10 from 10, d12 from 15, for
   Bardic Inspiration and Cutting Words alike.
 - **Font of Inspiration** (5): Bardic Inspiration's uses come back on a Short

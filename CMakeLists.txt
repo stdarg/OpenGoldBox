@@ -389,8 +389,10 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_bard_levels_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_bard_levels_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}" OPENGOLD_BINARY_DIR="${PROJECT_BINARY_DIR}")
     add_test(NAME opengold_bard_levels_tests COMMAND opengold_bard_levels_tests)
-    # With original files it also writes the Magical Discoveries swap screen's fixture.
-    set_tests_properties(opengold_bard_levels_tests PROPERTIES FIXTURES_SETUP discovery_ui_fixtures)
+    # It writes Compulsion's combat-window fixture, and with original files the
+    # Magical Discoveries swap screen's.
+    set_tests_properties(opengold_bard_levels_tests PROPERTIES
+        FIXTURES_SETUP "discovery_ui_fixtures;compulsion_fixtures")
     add_executable(opengold_druid_levels_tests tests/druid_levels_tests.cpp)
     target_link_libraries(opengold_druid_levels_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_druid_levels_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

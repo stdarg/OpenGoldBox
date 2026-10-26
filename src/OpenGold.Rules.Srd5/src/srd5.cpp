@@ -36,6 +36,7 @@
 #include <iomanip>
 #include <limits>
 #include <map>
+#include <numbers>
 #include <numeric>
 #include <set>
 #include <sstream>
@@ -528,7 +529,8 @@ std::string_view contingency_label(std::size_t trigger)
 // the field where they are offered.
 bool magical_command(std::string_view verb)
 {
-    constexpr std::array<std::string_view, 25> verbs{"dispel_break",
+    constexpr std::array<std::string_view, 26> verbs{"dispel_break",
+                                                     "compulsion_heading",
                                                      "dispel_dismissal",
                                                      "move_moonbeam",
                                                      "sunbeam_line",
@@ -3253,8 +3255,7 @@ std::string wall_direction_label(std::size_t direction)
     return std::string(labels.at(direction));
 }
 
-// The directions Compulsion names, 0 north and on clockwise to 7; offered as
-// "compel_<name>".
+// The directions Compulsion names, 0 north and on clockwise to 7.
 constexpr std::array<Cell, 8> compass{Cell{0, -1}, Cell{1, -1}, Cell{1, 0},  Cell{1, 1},
                                       Cell{0, 1},  Cell{-1, 1}, Cell{-1, 0}, Cell{-1, -1}};
 constexpr std::array<std::string_view, 8> compass_names{
@@ -11750,10 +11751,8 @@ std::vector<Command> Session::offered_commands() const
                                                       });
                                }))
     {
-        for (const auto name : compass_names)
-        {
-            add(id, "compel_" + std::string(name), "Compulsion: " + std::string(name));
-        }
+        commands.push_back({revision_, id, 0, "compulsion_heading", "Compulsion: name a direction",
+                            Cell{}, 0, true});
     }
     // Heat Metal: a Bonus Action on later turns heats the metal again.
     if (a.bonus)
@@ -13735,6 +13734,23 @@ bool Session::teleport_open(const Actor &caster, Cell cell) const
 
 Cell Session::default_area_center(const Actor &caster, const detail::SpellDef &spell) const
 {
+    // Compulsion's aim starts on the nearest foe, so the charmed go away from
+    // the Bard unless it is moved.
+    if (spell.id == "compulsion_heading")
+    {
+        const Actor *nearest = nullptr; // Borrowed from actors_.
+        for (const auto &other : actors_)
+        {
+            if (other.source.side != caster.source.side && other.life.hp > 0 &&
+                !other.life.dead &&
+                (!nearest || distance(caster.source.cell, other.source.cell) <
+                                 distance(caster.source.cell, nearest->source.cell)))
+            {
+                nearest = &other;
+            }
+        }
+        return nearest ? nearest->source.cell : caster.source.cell;
+    }
     // A teleport's preview starts on the caster; it must be moved before casting.
     if (spell.rider == detail::Rider::misty_step || spell.rider == detail::Rider::dimension_door)
     {
@@ -17711,6 +17727,19 @@ void Session::cast_area()
     if (aimed.verb == "lands_aid")
     {
         lands_aid(a, aimed.center);
+        return;
+    }
+    // Compulsion: the direction from the Bard to the aimed square, to the
+    // nearest of eight.
+    if (aimed.verb == "compulsion_heading")
+    {
+        const int dx = aimed.center.x - a.source.cell.x, dy = aimed.center.y - a.source.cell.y;
+        if (dx || dy)
+        {
+            a.bonus = false;
+            const double eighths = std::atan2(dx, -dy) / (std::numbers::pi / 4);
+            name_compulsion_heading(a, static_cast<std::size_t>((std::lround(eighths) + 8) % 8));
+        }
         return;
     }
     if (aimed.verb == "natures_sanctuary" || aimed.verb == "move_sanctuary")
@@ -25195,15 +25224,6 @@ void Session::dispatch(const Command &command)
     {
         a.bonus = false;
         end_wild_shape(a);
-    }
-    else if (command.verb.starts_with("compel_"))
-    {
-        a.bonus = false;
-        const auto name = std::string_view(command.verb).substr(7);
-        name_compulsion_heading(
-            a, static_cast<std::size_t>(
-                   std::find(compass_names.begin(), compass_names.end(), name) -
-                   compass_names.begin()));
     }
     else if (command.verb == "heat_metal_again")
     {
