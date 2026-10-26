@@ -1,7 +1,26 @@
 {
   "creature_archive": "MON8CHA.DAX",
   "creature_record": 95,
-  "equipment": [],
+  "equipment": [
+    {
+      "id": "added_55602892051",
+      "kind": "weapon",
+      "name": "Trident",
+      "readied": true,
+      "source_index": -1,
+      "source_type": 39,
+      "weapon_role": "two_hand"
+    },
+    {
+      "id": "added_55628365597",
+      "kind": "gear",
+      "name": "Leather armor",
+      "readied": true,
+      "source_index": -1,
+      "source_type": 50,
+      "weapon_role": ""
+    }
+  ],
   "format": "opengold-monster-v1",
   "humanoid_size": "normal",
   "key": "MON8CHA.DAX:95",
@@ -12,11 +31,11 @@
   },
   "variants": [
     {
-      "action": "default/action.png",
-      "id": "default",
-      "ready": "default/ready.png",
+      "action": "added_55602892051__two_hand/action.png",
+      "id": "added_55602892051__two_hand",
+      "ready": "added_55602892051__two_hand/ready.png",
       "shield_id": "",
-      "weapon_id": ""
+      "weapon_id": "added_55602892051"
     }
   ]
 }

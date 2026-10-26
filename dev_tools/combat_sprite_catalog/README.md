@@ -214,7 +214,10 @@ PNGs. Unsaved edits are not exported. A record flagged for regeneration exports
 its data but no art, and a set missing a 128 × 128 pose is left out. Records of
 shared `CPIC` icons are not exported. The headless `--export-to-game` mode does
 the same without the game files, and `--catalog-check` fails when the export is
-out of date.
+out of date. So does `opengold_monster_export_check` in the game's ctest suite,
+which needs neither the game files nor this tool's native library: after
+changing the catalog's records or art, export and commit `data/monsters` with
+them.
 
 Run `--metadata-check` in place of `--catalog-check` to verify JSON persistence,
 draft retention, paired one-handed setups, separate ranged and two-handed setups,

@@ -193,7 +193,7 @@ TWF selectors/automatic benefit. Do not ask these again.
 | Initial four decisions | Preserve remaining turn resources; SRD opportunity triggers without facing reactions; allied transit; Versatile grip/damage/shield behavior | [Implementation plan](SRD-IMPLEMENTATION.md); these do not settle unrelated campaign policies. |
 | Q1 / Grip | **Superseded by [AUTO-1](#auto-1-2026-09-30-automatic-choices-with-logging).** Labeled one/two-hand dropdown with actual dice, keyboard, immediate persistence; two hands unavailable with shield | [Implementation plan](SRD-IMPLEMENTATION.md). |
 | Old-save training / Q9–10 | Keep missing choices pending; approved Training step after Class and before Name; Back keeps valid choices, invalid choices pruned; presets pre-generate their training | [Training](TRAINING.md). Q11 superseded by approved Q28. |
-| Q5–7 / HP, Adrenaline and saving | HP colors/source tooltips and separate Temporary HP; Adrenaline Rush beside Dash; **player saves only at camp/inn** | [Temporary HP](TEMPORARY-HP.md). Internal combat checkpoint tests permitted; no player combat Save/Load controls. |
+| Q5–7 / HP, Adrenaline and saving | HP colors/source tooltips and separate Temporary HP; Adrenaline Rush beside Dash; **player saves only at camp/inn** (saving superseded by [SAVE-1](#save-1-2026-10-25-save-wherever-exploration-is-idle)) | [Temporary HP](TEMPORARY-HP.md). Internal combat checkpoint tests permitted; no player combat Save/Load controls. |
 | Q8 | **Superseded by [AUTO-1](#auto-1-2026-09-30-automatic-choices-with-logging).** Two-stage Savage Attacker hit/damage-choice dialog, keyboard, action/reaction retained as spent | [Savage Attacker](SAVAGE-ATTACKER.md). Does not approve Sneak Attack's new decision order. |
 | Q12–16 | Wizard/Cleric Spell Choices; supported selections, counts, Back, pending catalog choices, preset choices; approved casting row | [Cantrip controls](CANTRIP-CONTROLS.md), [Sacred Flame](SACRED-FLAME.md). |
 | Q17 | Action Surge beside Adrenaline Rush, remaining uses, disabled when unavailable, keyboard | [Action Surge](ACTION-SURGE.md). |
@@ -2003,3 +2003,11 @@ fights faced north at the script's distance. The probe could not make the
 original step diagonally, so the user chose (2026-10-25) that a diagonal step
 faces the direction to its left: north-east faces north, south-east east,
 south-west south and north-west west.
+
+## SAVE-1 (2026-10-25): save wherever exploration is idle
+
+The user chose that a player saves the campaign from the party roster or
+whenever exploration is idle, anywhere on the map, as the game has done since
+2026-09-08 ([saves](SAVES.md)). This replaces the saving clause of Q5–7, which
+allowed saves only while camping or at an inn. Saving during combat or an
+unfinished event stays refused; combat checkpoints remain internal.

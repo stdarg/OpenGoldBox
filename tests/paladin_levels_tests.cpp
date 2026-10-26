@@ -511,14 +511,14 @@ void upcast_checks()
     const auto searing = paladin(9);
     for (std::uint64_t seed = 1; seed <= 16; ++seed)
     {
-        auto c = duel(*rules, searing, seed);
-        if (!submit(*c, "melee", 98) || !offered(*c, "searing_smite_3"))
+        auto fight = duel(*rules, searing, seed);
+        if (!submit(*fight, "melee", 98) || !offered(*fight, "searing_smite_3"))
         {
             continue; // A miss offers no smite.
         }
-        check(submit(*c, "searing_smite_3", 98), "Searing Smite from a level-3 slot");
-        next_turn(*c);
-        for (const auto &line : c->snapshot().log())
+        check(submit(*fight, "searing_smite_3", 98), "Searing Smite from a level-3 slot");
+        next_turn(*fight);
+        for (const auto &line : fight->snapshot().log())
         {
             if (const auto at = line.find(" burns for "); at != std::string::npos)
             {

@@ -39,7 +39,7 @@ Temporary HP, Orc uses and effects.
 A Fighter acquires the fixed feature when its recorded advancement reaches
 level 2. Expenditure
 survives training, advancement, healing, elapsed time and campaign handoff.
-Saving remains restricted to camping or an inn; internal combat checkpoints are
+Player saving follows [SAVE-1](SRD-DECISIONS.md#save-1-2026-10-25-save-wherever-exploration-is-idle): wherever exploration is idle, never in combat. Internal combat checkpoints are
 for deterministic continuation and tests.
 
 ## Verification and remaining integration

@@ -545,6 +545,17 @@ else()
         COMMAND codesign --force --deep --sign - "${export_path}"
         COMMAND "${CMAKE_COMMAND}" "-DAPP_BUNDLE=${export_path}" -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_macos_package.cmake")
 endif()
+if(OPENGOLD_BUILD_TESTS)
+    # The game ships data/monsters, the Combat Sprite Catalog's export; catalog
+    # changes committed without exporting would never reach the game.
+    add_test(NAME opengold_monster_export_check COMMAND "${CMAKE_COMMAND}"
+        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${PROJECT_SOURCE_DIR}/dev_tools/combat_sprite_catalog/godot"
+        "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/monster_export_tests.gd"
+        "-DEXPECTED=Monster export checks passed" "-DUSER_HOME=${CMAKE_BINARY_DIR}/godot-home/monster_export"
+        -DTEST_TIMEOUT=100
+        -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
+    set_tests_properties(opengold_monster_export_check PROPERTIES TIMEOUT 120 LABELS godot)
+endif()
 if(WIN32 AND OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_windows_package_smoke COMMAND "${CMAKE_COMMAND}"
         "-DPACKAGE=${CMAKE_BINARY_DIR}/package/OpenGoldBox" "-DWORK=${CMAKE_BINARY_DIR}/package-smoke"

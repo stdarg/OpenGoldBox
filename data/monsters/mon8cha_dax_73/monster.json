@@ -1,7 +1,26 @@
 {
   "creature_archive": "MON8CHA.DAX",
   "creature_record": 73,
-  "equipment": [],
+  "equipment": [
+    {
+      "id": "added_55495049383",
+      "kind": "weapon",
+      "name": "Morning star",
+      "readied": true,
+      "source_index": -1,
+      "source_type": 24,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_55503699453",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": true,
+      "source_index": -1,
+      "source_type": 59,
+      "weapon_role": ""
+    }
+  ],
   "format": "opengold-monster-v1",
   "humanoid_size": "normal",
   "key": "MON8CHA.DAX:73",
@@ -12,11 +31,11 @@
   },
   "variants": [
     {
-      "action": "default/action.png",
-      "id": "default",
-      "ready": "default/ready.png",
-      "shield_id": "",
-      "weapon_id": ""
+      "action": "added_55495049383__added_55503699453/action.png",
+      "id": "added_55495049383__added_55503699453",
+      "ready": "added_55495049383__added_55503699453/ready.png",
+      "shield_id": "added_55503699453",
+      "weapon_id": "added_55495049383"
     }
   ]
 }

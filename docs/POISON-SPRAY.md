@@ -44,7 +44,7 @@ its existing controls; the shared creation step is available in both creators.
 Campaign saves store the creation cantrip choices. Profile recipes validate
 explicit cantrip grants against their listed spells.
 Loading never replenishes resources or automatically learns another cantrip.
-Player saving remains limited to camping or an inn.
+Player saving follows [SAVE-1](SRD-DECISIONS.md#save-1-2026-10-25-save-wherever-exploration-is-idle): wherever exploration is idle, never in combat.
 
 - [Native tests](../tests/poison_spray_tests.cpp): independent level-1–4 hit,
   miss and critical rolls, RNG consumption, defenses, range, path, casting hands,

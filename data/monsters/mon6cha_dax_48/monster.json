@@ -3,15 +3,6 @@
   "creature_record": 48,
   "equipment": [
     {
-      "id": "item_000",
-      "kind": "gear",
-      "name": "Gauntlets of Ogre Power",
-      "readied": true,
-      "source_index": 0,
-      "source_type": 63,
-      "weapon_role": ""
-    },
-    {
       "id": "item_001",
       "kind": "gear",
       "name": "Chain armor +1",
@@ -21,17 +12,17 @@
       "weapon_role": ""
     },
     {
-      "id": "item_002",
+      "id": "added_61186225371",
       "kind": "weapon",
-      "name": "Long sword +1",
-      "readied": true,
-      "source_index": 2,
-      "source_type": 36,
-      "weapon_role": "one_hand"
+      "name": "Battle axe",
+      "readied": false,
+      "source_index": -1,
+      "source_type": 1,
+      "weapon_role": "two_hand"
     }
   ],
   "format": "opengold-monster-v1",
-  "humanoid_size": "normal",
+  "humanoid_size": "small",
   "key": "MON6CHA.DAX:48",
   "name": "DWARVEN FIGHTER",
   "sprite_size": {
@@ -40,11 +31,11 @@
   },
   "variants": [
     {
-      "action": "item_002__one_hand/action.png",
-      "id": "item_002__one_hand",
-      "ready": "item_002__one_hand/ready.png",
+      "action": "added_61186225371__two_hand/action.png",
+      "id": "added_61186225371__two_hand",
+      "ready": "added_61186225371__two_hand/ready.png",
       "shield_id": "",
-      "weapon_id": "item_002"
+      "weapon_id": "added_61186225371"
     }
   ]
 }

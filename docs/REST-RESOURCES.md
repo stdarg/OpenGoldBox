@@ -529,7 +529,7 @@ verified guaranteed five-minute profile now begins/resumes an actual rest,
 advances that interval, explicitly wakes active members, and ends camping after
 successful GO. Failed/unsupported continuation rolls back the complete event.
 Unknown probabilistic profiles and the unsupported city-watch fight remain
-explicit. Camp/inn-only saving and paid-inn rollback stay unchanged.
+explicit. Saving and paid-inn rollback stay unchanged.
 
 Evidence: `safe_recovery` and `rest_ground_equipment` in
 `tests/natural_sleep_tests.cpp`; `watch_equipment_and_rollback` and

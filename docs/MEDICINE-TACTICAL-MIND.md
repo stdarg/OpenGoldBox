@@ -105,7 +105,7 @@ Action type along with resource/RNG state.
 The public snapshot exposes check-choice display data. Core's only new branch
 selects the first rule-offered choice for AI; it contains no SRD calculation,
 DC, resource cost or feature decision. New controls are confined to the approved
-game/demo views. Player saving remains camp/inn only.
+game/demo views. Player saving follows [SAVE-1](SRD-DECISIONS.md#save-1-2026-10-25-save-wherever-exploration-is-idle): wherever exploration is idle, never in combat.
 
 Focused native checks pass for all twelve starting classes, Fighters 1–4,
 proficient Medicine sources, actual roll extremes, both d10 outcomes, declined
