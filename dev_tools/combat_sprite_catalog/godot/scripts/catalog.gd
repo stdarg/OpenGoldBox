@@ -25,6 +25,7 @@ var monster_id_edit: LineEdit
 var monster_image: TextureRect
 var image_frame: Control
 var preview_is_replacement := false
+var preview_ready_top := 0.0
 var preview_ready_bottom := 128.0
 var preview_status: Label
 var monster_source: Label
@@ -856,8 +857,12 @@ func _refresh_monster_preview_layout() -> void:
         var offsets: Dictionary = record.get("preview_offset_x_by_variant", {})
         var variant := _selected_variant()
         offset_x = float(offsets.get(str(variant.get("id", "")), 0.0)) * scale
+    var image_y := ground_y - preview_ready_bottom * scale
+    if selected >= 0 and preview_is_replacement and \
+            str(draft_records[rows[selected].key].get("preview_vertical_alignment", "bottom")) == "top":
+        image_y = GRID_ORIGIN.y + (GRID_CELLS - footprint.y) * GRID_CELL - preview_ready_top * scale
     monster_image.position = Vector2(roundf(center_x - image_size.x * 0.5 + offset_x),
-        roundf(ground_y - preview_ready_bottom * scale))
+        roundf(image_y))
     monster_image.size = image_size
     if not chosen is Dictionary:
         preview_status.text = "Sprite footprint unknown; choose a size to check its bounds."
@@ -884,9 +889,17 @@ func _ready_bottom_for_image(image: Image) -> float:
     var used := image.get_used_rect()
     return float(used.end.y) if used.size.y > 0 else float(image.get_height())
 
+func _ready_top_for_image(image: Image) -> float:
+    var used := image.get_used_rect()
+    return float(used.position.y) if used.size.y > 0 else 0.0
+
 func _ready_bottom_for_path(path: String, fallback: float) -> float:
     var ready_image := Image.new()
     return _ready_bottom_for_image(ready_image) if ready_image.load(path) == OK else fallback
+
+func _ready_top_for_path(path: String, fallback: float) -> float:
+    var ready_image := Image.new()
+    return _ready_top_for_image(ready_image) if ready_image.load(path) == OK else fallback
 
 func _selected_variant() -> Dictionary:
     if selected < 0 or variant_choice.selected < 0: return {}
@@ -953,12 +966,14 @@ func _show_monster_image() -> void:
     preview_is_replacement = replacement_visible
     if replacement_visible:
         preview_ready_bottom = _ready_bottom_for_path(ready_path, float(monster_image.texture.get_height()))
+        preview_ready_top = _ready_top_for_path(ready_path, 0.0)
     else:
         var original_index := int(row.get("native_index", -1))
         if original_index < 0:
             original_index = int(native_index_by_key.get(row.get("origin_key", ""), -1))
         var ready_texture: Texture2D = catalog.monster_image(original_index, false) if original_index >= 0 else null
         preview_ready_bottom = _ready_bottom_for_image(ready_texture.get_image()) if ready_texture != null else 0.0
+        preview_ready_top = _ready_top_for_image(ready_texture.get_image()) if ready_texture != null else 0.0
     _refresh_monster_preview_layout()
     if art.is_empty():
         monster_source.text = source_note if replacement_visible else source_note + "No supported ready/action CPIC binding. Source: %s" % row.key
@@ -1379,6 +1394,26 @@ func _catalog_check() -> void:
         push_error(name_error)
         get_tree().quit(1)
         return
+    var stirge_list_index := -1
+    for list_index in range(visible_rows.size()):
+        if str(rows[visible_rows[list_index]].key) == "MON7CHA.DAX:61":
+            stirge_list_index = list_index
+            break
+    assert(stirge_list_index >= 0)
+    _select_monster(stirge_list_index)
+    show_new_art.set_pressed_no_signal(true)
+    action = false
+    _show_monster_image()
+    assert(preview_is_replacement)
+    var stirge_ready_rect := monster_image.texture.get_image().get_used_rect()
+    assert(stirge_ready_rect.size.x == 48)
+    var stirge_top := GRID_ORIGIN.y + (GRID_CELLS - 1) * GRID_CELL
+    assert(is_equal_approx(monster_image.position.y + stirge_ready_rect.position.y, stirge_top))
+    var stirge_ready_position := monster_image.position
+    action = true
+    _show_monster_image()
+    assert(monster_image.position == stirge_ready_position)
+    assert(monster_image.texture.get_image().get_used_rect().size.x == 48)
     var colors: Array = character_panel.colors.duplicate()
     for option in catalog.weapons():
         var both: Dictionary = catalog.character_art(0, 4, 1, option.type, true, colors)

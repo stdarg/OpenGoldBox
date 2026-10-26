@@ -7,11 +7,11 @@
     "ready": "art/mon7cha_dax_61/default/ready.png",
     "action": "art/mon7cha_dax_61/default/action.png"
   },
-  "metadata_sha256": "73a77dd978cd77c57e8ef393a99e598090a9281598792820e1d9b41c7265ff9b",
-  "ready_sha256": "8e5a620d11a1b865fec3543d2a35450f0f5abcc6b90f50a28e958534db2b751d",
-  "action_sha256": "8fbed410e530d0c749680a628a19f451c8940229c8de2b9f9099ccccc8a378f4",
-  "reviewer": "Codex",
-  "reviewed_at": "2026-10-26T00:07:40+00:00",
+  "metadata_sha256": "01af86fc0eeb3a34c9b1dc181e90e4096e88b0b7e9964a177894990c9614181a",
+  "ready_sha256": "e59655baca65e626130c0bb7bd60b3203f10ff425fb494fe2831e83ef3de5916",
+  "action_sha256": "0b8a594c82d99f0cade0a5d30133788b75137bcc4a2c4bdd64a2b8bc8194b956",
+  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-26T01:47:25+00:00",
   "visual_checks": {
     "source_identity_and_independent_art": true,
     "correct_equipment_or_no_equipment": true,
@@ -23,6 +23,6 @@
     "readable_at_combat_size": true,
     "one_second_fixed_grid_catalog_review": true
   },
-  "notes": "Both prior replacement-art frames were uniformly reduced from 128x128 to 32x32 with nearest-neighbor sampling, then composited at x=48,y=4 on the same transparent 128x128 canvas. This is exactly 25% linear scale, top centered. Existing pose and palette retained; both frames reviewed at native size and on light, dark and magenta. The catalog loaded both exact replacement paths and swapped frames after one second.",
+  "notes": "Placement-only revision of the accepted independent Stirge art. The same 32x32 source crop from x=48,y=4 was enlarged exactly 150% to 48x48 with nearest-neighbor sampling in both poses, then placed at x=40,y=4 in the 128x128 transparent PNG. Final visible ready bounds are 48x46+40+4 and action bounds 48x45+40+5; the one-pixel action offset is preserved. The saved top alignment setting anchors the ready visible top to the 1x1 catalog square top. Isolated catalog rendered both poses centered horizontally (visible x=136..184), ready top at grid y=272, and action at the same image position after the one-second swap. Both frames fit the footprint. Exact final PNGs inspected at native size and enlarged on light, magenta and dark backgrounds; no anatomy, gear, or alpha cutout changed beyond common nearest-neighbor scaling. Full catalog check and PNG technical check passed.",
   "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
 }
