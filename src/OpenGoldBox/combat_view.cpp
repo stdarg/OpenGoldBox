@@ -1420,12 +1420,12 @@ void CombatView::move_selected(Cell direction)
         }
         return;
     }
-    const auto enemy =
-        std::find_if(state.combatants.begin(), state.combatants.end(),
-                     [&](const auto &a)
-                     {
-                         return a.side != selected->side && !a.dead && a.cell == destination;
-                     });
+    const auto enemy = std::find_if(state.combatants.begin(), state.combatants.end(),
+                                    [&](const auto &a)
+                                    {
+                                        return a.side != selected->side && !a.dead &&
+                                               rules::covers(a.cell, a.footprint, destination);
+                                    });
     if (enemy != state.combatants.end())
     {
         const auto attack = std::find_if(offered.begin(), offered.end(),
@@ -1458,7 +1458,7 @@ void CombatView::move_selected(Cell direction)
     else if (std::any_of(state.combatants.begin(), state.combatants.end(),
                          [&](const auto &a)
                          {
-                             return !a.dead && a.cell == destination;
+                             return !a.dead && rules::covers(a.cell, a.footprint, destination);
                          }))
     {
         explain("That square is occupied.");
@@ -2111,7 +2111,8 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
     {
         for (const auto &a : s.combatants)
         {
-            if (a.side == rules::Side::party && !a.dead && !a.fled && a.cell == cell)
+            if (a.side == rules::Side::party && !a.dead && !a.fled &&
+                rules::covers(a.cell, a.footprint, cell))
             {
                 select_party(a.id);
                 get_viewport()->set_input_as_handled();
@@ -2208,13 +2209,14 @@ void CombatView::update_hover(const Vector2 &pointer)
                          });
         return member == roster.end() ? std::nullopt : std::optional{std::cref(*member)};
     };
-    const auto found = std::find_if(
-        state.combatants.begin(), state.combatants.end(),
-        [&](const auto &actor)
-        {
-            return !actor.dead && !actor.fled && !actor.surrendered && actor.cell == cell &&
-                   (actor.side == rules::Side::opposition || npc(actor.id).has_value());
-        });
+    const auto found = std::find_if(state.combatants.begin(), state.combatants.end(),
+                                    [&](const auto &actor)
+                                    {
+                                        return !actor.dead && !actor.fled && !actor.surrendered &&
+                                               rules::covers(actor.cell, actor.footprint, cell) &&
+                                               (actor.side == rules::Side::opposition ||
+                                                npc(actor.id).has_value());
+                                    });
     if (found == state.combatants.end())
     {
         return;
@@ -3228,6 +3230,17 @@ Dictionary CombatView::battlefield_visuals()
         entry["kind"] = kind;
         overlays.push_back(entry);
     };
+    // Every square a combatant fills (FOOT-1).
+    const auto add_squares = [&](const rules::CombatantView &a, const char *kind)
+    {
+        for (int dy = 0; dy < a.footprint.height; ++dy)
+        {
+            for (int dx = 0; dx < a.footprint.width; ++dx)
+            {
+                add_overlay({a.cell.x + dx, a.cell.y + dy}, kind);
+            }
+        }
+    };
     const auto active = std::find_if(s.combatants.begin(), s.combatants.end(),
                                      [&](const auto &a)
                                      {
@@ -3247,7 +3260,7 @@ Dictionary CombatView::battlefield_visuals()
                 add_overlay(cell, "reachable");
             }
         }
-        add_overlay(selected->cell, "selected");
+        add_squares(*selected, "selected");
     }
     if (active != s.combatants.end() && active->side == rules::Side::party && mode_ != "move")
     {
@@ -3263,7 +3276,7 @@ Dictionary CombatView::battlefield_visuals()
                                                  });
                 if (target != s.combatants.end())
                 {
-                    add_overlay(target->cell,
+                    add_squares(*target,
                                 (mode_ == "stabilize" || mode_ == "throw" ||
                                  mode_.starts_with("light_") || mode_.starts_with("nick_")) &&
                                         command.target == aid_target_
@@ -3323,21 +3336,22 @@ Dictionary CombatView::battlefield_visuals()
         {
             if (command.verb == s.effect_targeting->verb)
             {
-                auto cell = command.destination;
-                if (!s.effect_targeting->destination)
+                if (s.effect_targeting->destination)
                 {
-                    const auto target = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                                     [&](const auto &a)
-                                                     {
-                                                         return a.id == command.target;
-                                                     });
-                    if (target == s.combatants.end())
-                    {
-                        continue;
-                    }
-                    cell = target->cell;
+                    add_overlay(command.destination,
+                                index++ == effect_target_index_ ? "effect_focus" : "target");
+                    continue;
                 }
-                add_overlay(cell, index++ == effect_target_index_ ? "effect_focus" : "target");
+                const auto target = std::find_if(s.combatants.begin(), s.combatants.end(),
+                                                 [&](const auto &a)
+                                                 {
+                                                     return a.id == command.target;
+                                                 });
+                if (target != s.combatants.end())
+                {
+                    add_squares(*target,
+                                index++ == effect_target_index_ ? "effect_focus" : "target");
+                }
             }
         }
     }
@@ -3350,6 +3364,7 @@ Dictionary CombatView::battlefield_visuals()
         }
         Dictionary entry;
         entry["cell"] = Vector2i(actor.cell.x, actor.cell.y);
+        entry["footprint"] = Vector2i(actor.footprint.width, actor.footprint.height);
         entry["party"] = actor.side == rules::Side::party;
         if (actor.dead)
         {

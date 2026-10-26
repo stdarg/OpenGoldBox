@@ -687,7 +687,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 69;
+constexpr unsigned checkpoint_format = 70;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -1447,6 +1447,8 @@ struct Definition
     int ac{}, hp{}, initiative{}, speed{}, melee_bonus{};
     bool alert{};
     int melee_ability{}, ranged_ability{}, size{2};
+    // A Beast form's squares in place of the creature's own (FOOT-1).
+    std::optional<Footprint> footprint;
     std::string creature_type{"humanoid"}; // SRD creature type; player characters are Humanoid
     Dice melee;
     int ranged_bonus{};
@@ -2402,6 +2404,7 @@ Definition shaped(Definition d, const detail::BeastForm &form)
     d.mage_armor_ac = 0;
     d.speed = form.speed;
     d.size = form.size;
+    d.footprint = form.footprint;
     d.strength = form.strength;
     d.dexterity = form.dexterity;
     std::copy(form.saves.begin(), form.saves.end(), d.saves.begin());
@@ -4507,6 +4510,107 @@ constexpr int distance(Cell a, Cell b)
     return std::max(across, down) * 5;
 }
 
+// The squares a creature fills now: its Beast form's while it has one (FOOT-1).
+Footprint footprint(const Actor &a)
+{
+    return a.form && a.form->footprint ? *a.form->footprint : a.source.footprint;
+}
+
+std::vector<Cell> squares_of(Cell anchor, Footprint footprint)
+{
+    std::vector<Cell> squares;
+    for (int dy = 0; dy < footprint.height; ++dy)
+    {
+        for (int dx = 0; dx < footprint.width; ++dx)
+        {
+            squares.push_back({anchor.x + dx, anchor.y + dy});
+        }
+    }
+    return squares;
+}
+
+std::vector<Cell> squares_of(const Actor &a)
+{
+    return squares_of(a.source.cell, footprint(a));
+}
+
+bool occupies(const Actor &a, Cell cell)
+{
+    return covers(a.source.cell, footprint(a), cell);
+}
+
+// Whether any of the creature's squares is one of `cells`.
+bool touches(const std::vector<Cell> &cells, const Actor &a)
+{
+    return std::any_of(cells.begin(), cells.end(),
+                       [&](Cell cell)
+                       {
+                           return occupies(a, cell);
+                       });
+}
+
+// Feet between the nearest squares of two footprints: 5 when they touch.
+constexpr int distance(Cell a, Footprint a_size, Cell b, Footprint b_size)
+{
+    const int across =
+        std::max({0, a.x - (b.x + b_size.width - 1), b.x - (a.x + a_size.width - 1)});
+    const int down =
+        std::max({0, a.y - (b.y + b_size.height - 1), b.y - (a.y + a_size.height - 1)});
+    return std::max(across, down) * 5;
+}
+
+int distance(const Actor &a, const Actor &b)
+{
+    return distance(a.source.cell, footprint(a), b.source.cell, footprint(b));
+}
+
+int distance(const Actor &a, Cell cell)
+{
+    return distance(a.source.cell, footprint(a), cell, {});
+}
+
+int distance(Cell cell, const Actor &a)
+{
+    return distance(a, cell);
+}
+
+// To a creature of `size` with its top-left square at `anchor`, such as a
+// mover's next square.
+int distance(const Actor &a, Cell anchor, Footprint size)
+{
+    return distance(a.source.cell, footprint(a), anchor, size);
+}
+
+// The creature's square nearest `toward`: where an area it casts or breathes
+// starts and its range is measured from (FOOT-1).
+Cell origin_toward(const Actor &a, Cell toward)
+{
+    Cell nearest = a.source.cell;
+    for (const auto square : squares_of(a))
+    {
+        if (distance(square, toward) < distance(nearest, toward))
+        {
+            nearest = square;
+        }
+    }
+    return nearest;
+}
+
+// A summoned creature's squares, as its combat art fills them: a Giant
+// Insect's wide art, a Draconic Spirit's 2 by 2 (FOOT-1).
+Footprint summoned_footprint(std::string_view definition)
+{
+    if (definition.starts_with("giant-insect"))
+    {
+        return {2, 1};
+    }
+    if (definition.starts_with("draconic-spirit"))
+    {
+        return {2, 2};
+    }
+    return {};
+}
+
 // A creature holding the weapons its art shows (#274): their dice, damage
 // types, enchantment and range in place of its stat block's, with the stat
 // block's own attack and damage bonuses. Reach stays 5 feet (MELEE-1).
@@ -4780,8 +4884,19 @@ class Session final : public CombatSession
         std::set<Side> sides;
         for (auto &p : encounter.participants)
         {
-            if (!p.id || !ids.insert(p.id).second || (!cells.insert(p.cell).second && !restoring) ||
-                board_.at(p.cell) == Terrain::obstacle || p.side > Side::opposition ||
+            // Every square of its footprint is on the field and open, and
+            // none is another's (FOOT-1).
+            const bool sized = p.footprint.width >= 1 && p.footprint.width <= 3 &&
+                               p.footprint.height >= 1 && p.footprint.height <= 3;
+            const auto squares = sized ? squares_of(p.cell, p.footprint) : std::vector<Cell>{};
+            const bool placed =
+                sized && std::all_of(squares.begin(), squares.end(),
+                                     [&](Cell square)
+                                     {
+                                         return board_.at(square) != Terrain::obstacle &&
+                                                (cells.insert(square).second || restoring);
+                                     });
+            if (!p.id || !ids.insert(p.id).second || !placed || p.side > Side::opposition ||
                 p.name.empty() || p.name.size() > 160 ||
                 (p.character_profile.empty() && !content_->definitions.contains(p.definition)))
             {
@@ -5307,7 +5422,9 @@ class Session final : public CombatSession
     void ready_metamagic(Actor &a, std::string_view choice);
     void open_hand(const Actor &monk, Actor &target, std::string_view verb);
     bool weapon_reaction(const Actor &, const Definition &) const;
-    bool has_weapon_reaction(const Actor &, Cell, Cell) const;
+    // Whether `a` could make an Opportunity Attack on a creature of `size`
+    // leaving its reach from `from` to `to`.
+    bool has_weapon_reaction(const Actor &a, Cell from, Cell to, Footprint size) const;
     void validate_light() const;
     Loadout thrown_loadout(const Actor &, std::string_view weapon) const;
     void throw_weapon(Actor &, Actor &, unsigned item, bool light = false);
@@ -5326,6 +5443,9 @@ class Session final : public CombatSession
     [[nodiscard]] int current_speed(const Actor &) const;
     [[nodiscard]] bool can_run_off(const Actor &) const;
     [[nodiscard]] std::vector<Cell> off_field_steps(const Actor &) const;
+    // Whether `a` with its top-left square at `anchor` has a square off the
+    // field: a step there runs off it (FOOT-1).
+    [[nodiscard]] bool off_field(const Actor &a, Cell anchor) const;
     void run_off_field(Actor &);
     void remove_fled();
 
@@ -5454,6 +5574,37 @@ class Session final : public CombatSession
                             : line_of_sight(a, b);
     }
 
+    // From any square of one creature to any of another's, or to a square.
+    bool line_of_sight(const Actor &a, const Actor &b) const
+    {
+        return lines_between(a, squares_of(b), false);
+    }
+
+    bool line_of_sight(const Actor &a, Cell cell) const
+    {
+        return lines_between(a, {cell}, false);
+    }
+
+    bool line_of_effect(const Actor &a, const Actor &b) const
+    {
+        return lines_between(a, squares_of(b), true);
+    }
+
+    bool lines_between(const Actor &a, const std::vector<Cell> &targets, bool effect) const
+    {
+        for (const auto from : squares_of(a))
+        {
+            for (const auto to : targets)
+            {
+                if (effect ? line_of_effect(from, to) : line_of_sight(from, to))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     bool walled(bool force) const
     {
         return std::any_of(zones_.begin(), zones_.end(),
@@ -5496,8 +5647,21 @@ class Session final : public CombatSession
     // Heavily Obscured squares block sight into and out of them.
     bool clear_view(const Actor &a, const Actor &b) const
     {
-        return conscious(a) && !detail::blinded(a.effects) && !obscured(a, a.source.cell) &&
-               !obscured(a, b.source.cell) && line_of_sight(a.source.cell, b.source.cell);
+        if (!conscious(a) || detail::blinded(a.effects))
+        {
+            return false;
+        }
+        for (const auto from : squares_of(a))
+        {
+            for (const auto to : squares_of(b))
+            {
+                if (!obscured(a, from) && !obscured(a, to) && line_of_sight(from, to))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     bool can_see(const Actor &a, const Actor &b) const
@@ -5515,8 +5679,7 @@ class Session final : public CombatSession
         return (invisible(target) || hidden(target)) &&
                !detail::has_effect(viewer.effects, detail::EffectKind::see_invisibility) &&
                !detail::has_effect(viewer.effects, detail::EffectKind::true_seeing) &&
-               !(viewer.definition.witch_sight &&
-                 distance(viewer.source.cell, target.source.cell) <= 30) &&
+               !(viewer.definition.witch_sight && distance(viewer, target) <= 30) &&
                !detail::has_effect(target.effects, detail::EffectKind::outlined) &&
                !detail::has_effect(target.effects, detail::EffectKind::lit) &&
                !detail::has_effect(target.effects, detail::EffectKind::shining);
@@ -5594,7 +5757,7 @@ class Session final : public CombatSession
                            [&](const auto &other)
                            {
                                return other.source.id != who.source.id && !other.life.dead &&
-                                      other.source.cell == who.source.cell;
+                                      distance(other, who) == 0;
                            });
     }
 
@@ -5693,8 +5856,18 @@ class Session final : public CombatSession
     void ice_burst(Actor &caster, const Actor &target, unsigned steps);
     void condition_area(Actor &caster, const detail::SpellDef &spell,
                         const std::vector<Cell> &cells);
-    [[nodiscard]] bool teleport_open(const Actor &caster, Cell cell) const;
+    // An unoccupied space the caster can see, for a creature of `size` there.
+    [[nodiscard]] bool teleport_open(const Actor &caster, Cell cell, Footprint size) const;
+    // Every square of `size` at `anchor` is open, unguarded and holds no
+    // creature but `mover` (FOOT-1).
+    [[nodiscard]] bool room_for(const Actor *mover, Footprint size, Cell anchor) const;
+    // Whether `mover` cannot stand with its top-left square at `anchor`: one of
+    // its squares is off `board` or an obstacle there, or holds another
+    // creature (FOOT-1).
+    [[nodiscard]] bool blocked_for(const Actor &mover, Cell anchor, const Battlefield &board) const;
     [[nodiscard]] static bool in_zone(const Zone &zone, Cell cell) noexcept;
+    // Any of the creature's squares is in the zone (FOOT-1).
+    [[nodiscard]] static bool in_zone(const Zone &zone, const Actor &a);
     // Makes a creature in a Grease or Web zone save; true when it is caught.
     bool spring_zone(const Zone &zone, Actor &creature);
     void spring_zones(Actor &creature, ZoneKind kind);
@@ -5711,9 +5884,12 @@ class Session final : public CombatSession
     // pack's squares beside a creature within 30 feet of where it is, and
     // its move there, which strikes those it comes near.
     [[nodiscard]] static bool near_pack(const Zone &pack, Cell cell);
+    [[nodiscard]] static bool near_pack(const Zone &pack, const Actor &a);
     // Conjure Woodland Beings and Spirit Guardians: whether a square is within
     // the Emanation around their caster.
     [[nodiscard]] bool in_emanation(const Zone &zone, Cell cell) const;
+    // Any of the creature's squares is near or in it (FOOT-1).
+    [[nodiscard]] bool in_emanation(const Zone &zone, const Actor &a) const;
     [[nodiscard]] static bool emanates(const Zone &zone);
     // The spirits of Conjure Animals, Conjure Woodland Beings or Spirit
     // Guardians strike a creature that comes near or ends its turn there: a
@@ -5800,7 +5976,8 @@ class Session final : public CombatSession
     // spell attack bonus.
     Actor &summon(const Actor &caster, std::string definition, std::string name, Cell cell);
     // The free squares nearest the caster, nearest first.
-    [[nodiscard]] std::vector<Cell> free_squares_near(Cell from) const;
+    // Where a creature of `size` could stand, nearest `from` first.
+    [[nodiscard]] std::vector<Cell> free_squares_near(Cell from, Footprint size = {}) const;
     // Conjure Elemental: the spirit seizes a creature entering its space or
     // starting its turn beside it, while it holds no one.
     void engulf(const Zone &spirit, Actor &creature);
@@ -5990,7 +6167,7 @@ class Session final : public CombatSession
     bool critical_hit(const Actor &a, const Actor &target, int natural, bool spell = false) const
     {
         return natural == 20 || (!spell && natural >= def(a).critical_from) ||
-               (helpless(target) && distance(a.source.cell, target.source.cell) <= 5);
+               (helpless(target) && distance(a, target) <= 5);
     }
 
     // Unconscious (or asleep) or Paralyzed: attacked with Advantage, critically hit within
@@ -6651,7 +6828,7 @@ void Session::qualify_light(Actor &a, unsigned token)
     }
 }
 
-bool Session::has_weapon_reaction(const Actor &a, Cell from, Cell to) const
+bool Session::has_weapon_reaction(const Actor &a, Cell from, Cell to, Footprint size) const
 {
     if (aloft(a))
     {
@@ -6659,7 +6836,7 @@ bool Session::has_weapon_reaction(const Actor &a, Cell from, Cell to) const
     }
     const auto reaches = [&](int reach)
     {
-        return distance(a.source.cell, from) <= reach && distance(a.source.cell, to) > reach;
+        return distance(a, from, size) <= reach && distance(a, to, size) > reach;
     };
     if (reaches(def(a).reach))
     {
@@ -6684,8 +6861,8 @@ bool Session::weapon_reaction(const Actor &a, const Definition &weapon) const
     {
         return false;
     }
-    return distance(a.source.cell, mover().source.cell) <= weapon.reach &&
-           distance(a.source.cell, path_[path_index_]) > weapon.reach;
+    return distance(a, mover()) <= weapon.reach &&
+           distance(a, path_[path_index_], footprint(mover())) > weapon.reach;
 }
 
 void Session::validate_light() const
@@ -7030,13 +7207,22 @@ std::vector<Cell> Session::off_field_steps(const Actor &a) const
     std::vector<Cell> steps;
     for (const auto step : {Cell{0, -1}, Cell{1, 0}, Cell{0, 1}, Cell{-1, 0}})
     {
-        if (const Cell next{a.source.cell.x + step.x, a.source.cell.y + step.y};
-            !board_.contains(next))
+        if (const Cell next{a.source.cell.x + step.x, a.source.cell.y + step.y}; off_field(a, next))
         {
             steps.push_back(next);
         }
     }
     return steps;
+}
+
+bool Session::off_field(const Actor &a, Cell anchor) const
+{
+    const auto squares = squares_of(anchor, footprint(a));
+    return std::any_of(squares.begin(), squares.end(),
+                       [&](Cell square)
+                       {
+                           return !board_.contains(square);
+                       });
 }
 
 void Session::run_off_field(Actor &a)
@@ -7261,16 +7447,18 @@ Cell Session::spectral_cell(const Actor &target, Cell from) const
 {
     // The open, unoccupied square beside the target nearest `from`.
     std::optional<Cell> best;
-    for (int dy = -1; dy <= 1; ++dy)
+    const auto size = footprint(target);
+    for (int dy = -1; dy <= size.height; ++dy)
     {
-        for (int dx = -1; dx <= 1; ++dx)
+        for (int dx = -1; dx <= size.width; ++dx)
         {
             const Cell cell{target.source.cell.x + dx, target.source.cell.y + dy};
-            if ((!dx && !dy) || !board_.contains(cell) || board_.at(cell) == Terrain::obstacle ||
+            if (occupies(target, cell) || !board_.contains(cell) ||
+                board_.at(cell) == Terrain::obstacle ||
                 std::any_of(actors_.begin(), actors_.end(),
                             [&](const auto &other)
                             {
-                                return !other.life.dead && other.source.cell == cell;
+                                return !other.life.dead && occupies(other, cell);
                             }))
             {
                 continue;
@@ -7319,7 +7507,7 @@ bool Session::obscured(const Actor &viewer, Cell cell) const
                     zone.kind == ZoneKind::thorns ||
                     (zone.kind == ZoneKind::darkness && !def(viewer).devils_sight &&
                      !detail::has_effect(viewer.effects, detail::EffectKind::true_seeing) &&
-                     !(def(viewer).witch_sight && distance(viewer.source.cell, cell) <= 30))) &&
+                     !(def(viewer).witch_sight && distance(viewer, cell) <= 30))) &&
                    std::find(zone.cells.begin(), zone.cells.end(), cell) != zone.cells.end();
         });
 }
@@ -7350,15 +7538,14 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
         occupants.push_back(
             {other.source.cell,
              other.source.side != mover.source.side && !nimble_pass && !free_pass && !winged,
-             unconscious(other), other.life.hp == 0});
+             unconscious(other), other.life.hp == 0, footprint(other)});
     }
     // A finished Magic Circle: a creature of its type cannot enter it.
     std::vector<Cell> warded_cells;
     for (const auto &zone : zones_)
     {
         if (zone.kind == ZoneKind::circle && zone.ends_ms &&
-            def(mover).creature_type == detail::ward_types[zone.warded] &&
-            !in_zone(zone, mover.source.cell))
+            def(mover).creature_type == detail::ward_types[zone.warded] && !in_zone(zone, mover))
         {
             warded_cells.insert(warded_cells.end(), zone.cells.begin(), zone.cells.end());
         }
@@ -7425,7 +7612,7 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
     }
     for (const auto cell : warded_cells)
     {
-        if (cell != mover.source.cell)
+        if (!occupies(mover, cell))
         {
             board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
                 Terrain::obstacle;
@@ -7438,12 +7625,12 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
             zone.kind == ZoneKind::antilife && caster && caster->source.id != mover.source.id &&
             def(mover).creature_type != "construct" && def(mover).creature_type != "undead")
         {
-            const bool inside = distance(caster->source.cell, mover.source.cell) <= 10;
+            const bool inside = distance(*caster, mover) <= 10;
             for (int y = 0; y < board.height; ++y)
             {
                 for (int x = 0; x < board.width; ++x)
                 {
-                    if ((distance(caster->source.cell, Cell{x, y}) <= 10) != inside)
+                    if ((distance(*caster, Cell{x, y}) <= 10) != inside)
                     {
                         board.terrain[static_cast<std::size_t>(y * board.width + x)] =
                             Terrain::obstacle;
@@ -7461,7 +7648,7 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
             {
                 for (int x = 0; x < board.width; ++x)
                 {
-                    if (in_zone(zone, Cell{x, y}) != in_zone(zone, mover.source.cell))
+                    if (in_zone(zone, Cell{x, y}) != in_zone(zone, mover))
                     {
                         board.terrain[static_cast<std::size_t>(y * board.width + x)] =
                             Terrain::obstacle;
@@ -7476,8 +7663,7 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
         {
             for (int x = 0; x < board.width; ++x)
             {
-                if (distance({x, y}, fear->source.cell) <
-                    distance(mover.source.cell, fear->source.cell))
+                if (distance(Cell{x, y}, *fear) < distance(mover, *fear))
                 {
                     board.terrain[static_cast<std::size_t>(y * board.width + x)] =
                         Terrain::obstacle;
@@ -7485,8 +7671,13 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
             }
         }
     }
-    return {board,          mover.source.cell, occupants, mover.effects.prone,
-            def(mover).flies, def(mover).incorporeal};
+    return {board,
+            mover.source.cell,
+            occupants,
+            mover.effects.prone,
+            def(mover).flies,
+            def(mover).incorporeal,
+            footprint(mover)};
 }
 
 std::vector<Cell> Session::path_to(const Actor &actor, Cell destination) const
@@ -7627,15 +7818,16 @@ Snapshot Session::snapshot() const
     {
         s.actor = area_->caster;
         const auto &spell = *detail::find_spell(area_->verb);
-        s.area_targeting =
-            AreaTargeting{area_->caster,
-                          area_->verb,
-                          area_->center,
-                          spell.storm ? storm_cells(area_->cubes)
-                                      : area_cells(spell, area_->verb,
-                                                   actor(area_->caster).source.cell, area_->center),
-                          spell.storm ? 2 : 1,
-                          spell_facts(actor(area_->caster), spell)};
+        s.area_targeting = AreaTargeting{
+            area_->caster,
+            area_->verb,
+            area_->center,
+            spell.storm
+                ? storm_cells(area_->cubes)
+                : area_cells(spell, area_->verb, origin_toward(actor(area_->caster), area_->center),
+                             area_->center),
+            spell.storm ? 2 : 1,
+            spell_facts(actor(area_->caster), spell)};
     }
     if (!champion_move_ && effect_waiting())
     {
@@ -7708,14 +7900,14 @@ Snapshot Session::snapshot() const
         {
             status += " | Second Wind " + std::to_string(a.winds);
         }
-        s.combatants.push_back({a.source.id, a.source.name, a.source.definition, a.source.side,
-                                a.source.cell, a.life.hp, max_hp(a), armor_class(a), a.initiative,
-                                champion_move_ && champion_move_->actor == a.source.id
-                                    ? champion_move_->remaining
-                                    : movement_left(a),
-                                a.actions.available() && conscious(a), a.bonus && conscious(a),
-                                a.reaction && conscious(a), conscious(a), a.life.dead,
-                                a.facing_left, status, vitals(a)});
+        s.combatants.push_back(
+            {a.source.id, a.source.name, a.source.definition, a.source.side, a.source.cell,
+             footprint(a), a.life.hp, max_hp(a), armor_class(a), a.initiative,
+             champion_move_ && champion_move_->actor == a.source.id ? champion_move_->remaining
+                                                                    : movement_left(a),
+             a.actions.available() && conscious(a), a.bonus && conscious(a),
+             a.reaction && conscious(a), conscious(a), a.life.dead, a.facing_left, status,
+             vitals(a)});
         const auto display = combat_display(a.source.definition);
         auto &view = s.combatants.back();
         view.regenerates = def(a).regeneration > 0;
@@ -8381,8 +8573,8 @@ Snapshot Session::snapshot() const
     for (const auto &gone : fled_)
     {
         CombatantView view{gone.source.id,   gone.source.name, gone.source.definition,
-                           gone.source.side, gone.source.cell, gone.hp,
-                           gone.max_hp,      gone.armor_class};
+                           gone.source.side, gone.source.cell, gone.source.footprint,
+                           gone.hp,          gone.max_hp,      gone.armor_class};
         view.status = gone.surrendered ? "Surrendered" : "Fled";
         view.status_messages = {{view.status, {}}};
         view.persistent = gone.vitals;
@@ -8784,7 +8976,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         {
             for (int x = 0; x < board_.width; ++x)
             {
-                if (distance(a.source.cell, Cell{x, y}) <= 10)
+                if (distance(a, Cell{x, y}) <= 10)
                 {
                     cells.push_back({x, y});
                 }
@@ -9052,6 +9244,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                                     detail::EffectKind::animal_shaped,
                                     static_cast<int>(form - detail::beast_forms.data()) + 1);
         refresh_form(target);
+        target.source.cell = nearest_open(target);
         change_speed(target, old_speed);
         if (target.life.temporary_hp.amount < form->hit_points)
         {
@@ -9079,6 +9272,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                                     detail::EffectKind::polymorphed,
                                     static_cast<int>(form - detail::beast_forms.data()) + 1);
         refresh_form(target);
+        target.source.cell = nearest_open(target);
         change_speed(target, old_speed);
         // Temporary Hit Points equal to the Beast's Hit Points.
         if (target.life.temporary_hp.amount < form->hit_points)
@@ -9284,8 +9478,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         // casting a spell ends it, as Invisibility does.
         for (auto &ally : actors_)
         {
-            if (ally.source.side == a.source.side && !ally.life.dead &&
-                distance(a.source.cell, ally.source.cell) <= 10 &&
+            if (ally.source.side == a.source.side && !ally.life.dead && distance(a, ally) <= 10 &&
                 detail::can_apply(ally.effects) &&
                 !detail::has_effect(ally.effects, detail::EffectKind::invisible))
             {
@@ -9386,8 +9579,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         for (auto &ally : actors_)
         {
             if (ally.source.side == a.source.side && !ally.life.dead &&
-                distance(a.source.cell, ally.source.cell) <= spell.range &&
-                detail::can_apply(ally.effects))
+                distance(a, ally) <= spell.range && detail::can_apply(ally.effects))
             {
                 detail::apply_spell_benefit(ally.effects, effect_source(a), a.source.name,
                                             detail::EffectKind::hopeful, 0);
@@ -9849,10 +10041,8 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
                 {
                     if (!other.life.dead && other.life.hp > 0 &&
                         other.source.side != a.source.side && !absent(other) &&
-                        distance(a.source.cell, other.source.cell) <= spell_range(a, spell) &&
-                        line_of_sight(a.source.cell, other.source.cell) &&
-                        (!best || distance(a.source.cell, other.source.cell) <
-                                      distance(a.source.cell, best->source.cell)))
+                        distance(a, other) <= spell_range(a, spell) && line_of_sight(a, other) &&
+                        (!best || distance(a, other) < distance(a, *best)))
                     {
                         best = &other;
                     }
@@ -9890,14 +10080,13 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
             const Actor *best = nullptr;
             const auto rank = [&](const Actor &who)
             {
-                return std::pair{who.life.hp <= 0, distance(a.source.cell, who.source.cell)};
+                return std::pair{who.life.hp <= 0, distance(a, who)};
             };
             for (const auto &other : actors_)
             {
                 if (other.life.dead || other.source.side == a.source.side ||
-                    distance(a.source.cell, other.source.cell) > spell.range ||
-                    (spell.requires_sight ? !can_see(a, other)
-                                          : !line_of_sight(a.source.cell, other.source.cell)))
+                    distance(a, other) > spell.range ||
+                    (spell.requires_sight ? !can_see(a, other) : !line_of_sight(a, other)))
                 {
                     continue;
                 }
@@ -9976,7 +10165,7 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         {
             log(a.source.name + " casts " + name + ".",
                 {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", name, true}}});
-            const Cell first = actor(targets.front()).source.cell;
+            const auto first = actor(targets.front()).source.id;
             const int rolled_damage = spell_dice(a, rolled);
             const auto type = std::string(detail::damage_name(spell.damage));
             for (const auto id : targets)
@@ -9984,7 +10173,7 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
                 auto &struck = actor(id);
                 if (struck.life.dead || absent(struck) || sealed_off(struck) ||
                     globe_wards(a, struck.source.cell, slot_level_of(verb, spell)) ||
-                    (id != targets.front() && distance(first, struck.source.cell) > 30))
+                    (id != first && distance(actor(first), struck) > 30))
                 {
                     continue;
                 }
@@ -10298,7 +10487,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         }
         // No spell reaches into an Antimagic Field or through a Wall of Force.
         if (spell.target != detail::SpellTarget::area &&
-            (sealed_off(other) || !line_of_effect(a.source.cell, other.source.cell)))
+            (sealed_off(other) || !line_of_effect(a, other)))
         {
             continue;
         }
@@ -10706,8 +10895,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                 for (const auto &ally : actors_)
                 {
                     if (ally.source.side == a.source.side && ally.source.id != a.source.id &&
-                        !ally.life.dead && !absent(ally) &&
-                        distance(a.source.cell, ally.source.cell) <= 5)
+                        !ally.life.dead && !absent(ally) && distance(a, ally) <= 5)
                     {
                         for (const unsigned level : cast_levels(a, spell))
                         {
@@ -10866,11 +11054,21 @@ std::vector<Command> Session::offered_commands() const
     {
         const auto &caster = actor(area_->caster);
         const auto &spell = *detail::find_spell(area_->verb);
-        // Misty Step and Flaming Sphere need an unoccupied square.
+        // Misty Step, Flaming Sphere and the summoned need an unoccupied
+        // space, as large as the creature put there (FOOT-1).
         const bool open_square = spell.rider == detail::Rider::misty_step ||
                                  spell.rider == detail::Rider::flaming_sphere ||
                                  spell.rider == detail::Rider::guardian_of_faith ||
-                                 spell.rider == detail::Rider::faithful_hound;
+                                 spell.rider == detail::Rider::faithful_hound ||
+                                 spell.rider == detail::Rider::giant_insect ||
+                                 spell.rider == detail::Rider::summon_dragon;
+        const Footprint placed =
+            spell.rider == detail::Rider::giant_insect    ? summoned_footprint("giant-insect")
+            : spell.rider == detail::Rider::summon_dragon ? summoned_footprint("draconic-spirit")
+            : spell.rider == detail::Rider::misty_step ||
+                    spell.rider == detail::Rider::dimension_door
+                ? footprint(caster)
+                : Footprint{};
         // An area centered on a square needs a clear line to that square; a
         // cone, line or cube spreads from the caster and is only pointed.
         // Dimension Door needs only a free square, seen or not.
@@ -10878,22 +11076,16 @@ std::vector<Command> Session::offered_commands() const
         const bool centered = !spell.cone && !spell.line && !spell.cube && !door;
         const auto aimable = [&](Cell cell)
         {
-            const bool free = board_.at(cell) != Terrain::obstacle && !guarded_square(cell) &&
-                              std::none_of(actors_.begin(), actors_.end(),
-                                           [&](const auto &other)
-                                           {
-                                               return !other.life.dead && !absent(other) &&
-                                                      other.source.cell == cell;
-                                           });
+            const bool free = room_for(&caster, placed, cell);
             // Telekinesis moves its creature up to 30 feet.
             const bool within = spell.rider != detail::Rider::telekinesis ||
-                                distance(actor(area_->companion).source.cell, cell) <= 30;
-            return (!open_square || teleport_open(caster, cell)) && (!door || free) && within &&
-                   (!centered || line_of_sight(caster.source.cell, cell));
+                                distance(actor(area_->companion), cell) <= 30;
+            return (!open_square || teleport_open(caster, cell, placed)) && (!door || free) &&
+                   within && (!centered || line_of_sight(caster, cell));
         };
         // Call Lightning's later bolts strike under its cloud, wherever the
         // caster has gone.
-        Cell origin = caster.source.cell;
+        std::optional<Cell> origin;
         if (area_->verb == "call_lightning_again")
         {
             for (const auto &zone : zones_)
@@ -10920,9 +11112,10 @@ std::vector<Command> Session::offered_commands() const
         {
             for (int x = 0; x < board_.width; ++x)
             {
-                if (distance(origin, Cell{x, y}) <=
-                        (trees_move ? 60 : spell_range(caster, spell)) &&
-                    aimable(Cell{x, y}))
+                // From the caster's nearest square, or the cloud's or trees'.
+                const int away =
+                    origin ? distance(*origin, Cell{x, y}) : distance(caster, Cell{x, y});
+                if (away <= (trees_move ? 60 : spell_range(caster, spell)) && aimable(Cell{x, y}))
                 {
                     add(caster.source.id, "area_move", std::string(spell.label), 0, Cell{x, y});
                 }
@@ -10944,8 +11137,7 @@ std::vector<Command> Session::offered_commands() const
         const bool split = splits_among_targets(spell);
         for (const auto &other : actors_)
         {
-            if (other.life.dead || distance(caster.source.cell, other.source.cell) > spell.range ||
-                sealed_off(other))
+            if (other.life.dead || distance(caster, other) > spell.range || sealed_off(other))
             {
                 continue;
             }
@@ -10962,8 +11154,7 @@ std::vector<Command> Session::offered_commands() const
             if (split &&
                 (other.source.side == caster.source.side ||
                  (other.life.hp <= 0 && spell.pattern != detail::SpellPattern::repeat_attack) ||
-                 (spell.requires_sight ? !can_see(caster, other)
-                                       : !line_of_sight(caster.source.cell, other.source.cell))))
+                 (spell.requires_sight ? !can_see(caster, other) : !line_of_sight(caster, other))))
             {
                 continue;
             }
@@ -11133,10 +11324,9 @@ std::vector<Command> Session::offered_commands() const
         for (const auto cell : movement_reach(champion_move_->actor))
         {
             // Forceful Blow's move closes on its target the whole way.
-            if (!champion_move_->toward ||
-                distance(cell, actor(champion_move_->toward).source.cell) ==
-                    distance(mover_cell, actor(champion_move_->toward).source.cell) -
-                        distance(mover_cell, cell))
+            if (!champion_move_->toward || distance(cell, actor(champion_move_->toward)) ==
+                                               distance(mover_cell, actor(champion_move_->toward)) -
+                                                   distance(mover_cell, cell))
             {
                 add(champion_move_->actor, "move", "Free move", 0, cell);
             }
@@ -11223,7 +11413,7 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &other : actors_)
         {
             if (other.source.side == a.source.side && other.life.dead &&
-                distance(a.source.cell, other.source.cell) <= raise.range &&
+                distance(a, other) <= raise.range &&
                 detail::has_effect(other.effects, detail::EffectKind::fallen) &&
                 !detail::has_effect(other.effects, detail::EffectKind::dust) &&
                 std::cmp_less_equal(300 * def(other).level, gold_ - offerings_gold_))
@@ -11266,7 +11456,7 @@ std::vector<Command> Session::offered_commands() const
     {
         for (const auto &other : actors_)
         {
-            if (other.life.dead || distance(a.source.cell, other.source.cell) > 5)
+            if (other.life.dead || distance(a, other) > 5)
             {
                 continue;
             }
@@ -11287,7 +11477,7 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &other : actors_)
         {
             if (other.source.side != a.source.side && other.life.hp > 0 &&
-                distance(a.source.cell, other.source.cell) <= 60 && can_see(a, other))
+                distance(a, other) <= 60 && can_see(a, other))
             {
                 add(id, "abjure_foes", "Abjure Foes", other.source.id);
             }
@@ -11298,7 +11488,7 @@ std::vector<Command> Session::offered_commands() const
         bool undead = false;
         for (const auto &other : actors_)
         {
-            const int feet = distance(a.source.cell, other.source.cell);
+            const int feet = distance(a, other);
             if (other.source.id == a.source.id || other.life.dead || feet > 30)
             {
                 continue;
@@ -11322,14 +11512,14 @@ std::vector<Command> Session::offered_commands() const
             add(id, "turn_undead", "Turn Undead", id);
         }
         // Preserve Life (Life Domain) needs a Bloodied ally within 30 feet.
-        if (d.life_domain &&
-            std::any_of(actors_.begin(), actors_.end(),
-                        [&](const auto &other)
-                        {
-                            return other.source.side == a.source.side && !other.life.dead &&
-                                   other.life.hp * 2 <= max_hp(other) &&
-                                   distance(a.source.cell, other.source.cell) <= 30;
-                        }))
+        if (d.life_domain && std::any_of(actors_.begin(), actors_.end(),
+                                         [&](const auto &other)
+                                         {
+                                             return other.source.side == a.source.side &&
+                                                    !other.life.dead &&
+                                                    other.life.hp * 2 <= max_hp(other) &&
+                                                    distance(a, other) <= 30;
+                                         }))
         {
             add(id, "preserve_life", "Preserve Life", id);
         }
@@ -11358,7 +11548,7 @@ std::vector<Command> Session::offered_commands() const
     {
         for (const auto &other : actors_)
         {
-            if (other.source.id != a.source.id && distance(a.source.cell, other.source.cell) <= 5 &&
+            if (other.source.id != a.source.id && distance(a, other) <= 5 &&
                 ((other.source.side == a.source.side &&
                   (detail::has_effect(other.effects, detail::EffectKind::drowsy) ||
                    detail::has_effect(other.effects, detail::EffectKind::asleep) ||
@@ -11375,7 +11565,7 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &other : actors_)
         {
             if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
-                distance(a.source.cell, other.source.cell) <= 5)
+                distance(a, other) <= 5)
             {
                 add(id, "martial_arts", "Unarmed Strike", other.source.id);
             }
@@ -11481,7 +11671,7 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &other : actors_)
         {
             if (other.source.side == a.source.side && other.source.id != id && !other.life.dead &&
-                distance(a.source.cell, other.source.cell) <= 60 &&
+                distance(a, other) <= 60 &&
                 !detail::has_effect(other.effects, detail::EffectKind::inspired))
             {
                 add(id, "bardic_inspiration", "Bardic Inspiration", other.source.id);
@@ -11552,7 +11742,7 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &ally : actors_)
         {
             if (ally.source.side == a.source.side && ally.source.id != id && !ally.life.dead &&
-                def(ally).size <= 3 && distance(a.source.cell, ally.source.cell) <= 5)
+                def(ally).size <= 3 && distance(a, ally) <= 5)
             {
                 add(id, "step_of_the_wind_carry",
                     "Step of the Wind: Disengage and Dash, carrying an ally (1 Focus)",
@@ -11582,7 +11772,7 @@ std::vector<Command> Session::offered_commands() const
             for (const auto &other : actors_)
             {
                 if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
-                    distance(a.source.cell, other.source.cell) <= 5)
+                    distance(a, other) <= 5)
                 {
                     add(id, "flurry_of_blows", "Flurry of Blows", other.source.id);
                     // Open Hand Technique, chosen for the whole Flurry.
@@ -11728,7 +11918,7 @@ std::vector<Command> Session::offered_commands() const
             for (const auto &other : actors_)
             {
                 if (other.life.hp > 0 && !other.life.dead && other.source.id != id &&
-                    distance(zone.cells.front(), other.source.cell) <= 30)
+                    distance(zone.cells.front(), other) <= 30)
                 {
                     add(id, "roll_flaming_sphere", "Roll Flaming Sphere", other.source.id);
                 }
@@ -11759,8 +11949,7 @@ std::vector<Command> Session::offered_commands() const
     {
         for (const auto &other : actors_)
         {
-            if (!other.life.dead && other.life.hp > 0 &&
-                distance(a.source.cell, other.source.cell) <= 60 &&
+            if (!other.life.dead && other.life.hp > 0 && distance(a, other) <= 60 &&
                 std::any_of(other.effects.active.begin(), other.effects.active.end(),
                             [&](const auto &e)
                             {
@@ -11779,8 +11968,8 @@ std::vector<Command> Session::offered_commands() const
         {
             for (const auto &other : actors_)
             {
-                if (other.life.hp > 0 && !other.life.dead && !in_zone(zone, other.source.cell) &&
-                    distance(zone.cells.front(), other.source.cell) <= 60)
+                if (other.life.hp > 0 && !other.life.dead && !in_zone(zone, other) &&
+                    distance(zone.cells.front(), other) <= 60)
                 {
                     add(id, "move_moonbeam", "Move Moonbeam", other.source.id);
                 }
@@ -11851,7 +12040,7 @@ std::vector<Command> Session::offered_commands() const
         {
             if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                 !absent(other) && !sealed_off(other) && can_see(a, other) &&
-                distance(a.source.cell, other.source.cell) <= 60 &&
+                distance(a, other) <= 60 &&
                 !std::any_of(other.effects.active.begin(), other.effects.active.end(),
                              [&](const auto &e)
                              {
@@ -11893,7 +12082,7 @@ std::vector<Command> Session::offered_commands() const
             {
                 if (other.source.id != id && other.life.hp > 0 && !other.life.dead &&
                     !absent(other) && !sealed_off(other) && can_see(a, other) &&
-                    distance(zone.cells.front(), other.source.cell) <= 65)
+                    distance(zone.cells.front(), other) <= 65)
                 {
                     if (other.source.side != a.source.side)
                     {
@@ -11914,7 +12103,7 @@ std::vector<Command> Session::offered_commands() const
         {
             if (other.source.id != id && other.life.hp > 0 && !other.life.dead && !absent(other) &&
                 !sealed_off(other) && def(other).size <= 4 && can_see(a, other) &&
-                distance(a.source.cell, other.source.cell) <= 60)
+                distance(a, other) <= 60)
             {
                 commands.push_back({revision_, id, other.source.id, "telekinesis_again",
                                     "Telekinesis", Cell{}, 0, false});
@@ -11944,7 +12133,7 @@ std::vector<Command> Session::offered_commands() const
             {
                 if (other.source.id != id && other.source.id != twin.source.id &&
                     !other.life.dead && !absent(other) && can_see(a, other) &&
-                    distance(twin.source.cell, other.source.cell) <= 2 * d.speed + 5)
+                    distance(twin, other) <= 2 * d.speed + 5)
                 {
                     add(id, "move_double", "Move the double", other.source.id);
                 }
@@ -11961,8 +12150,8 @@ std::vector<Command> Session::offered_commands() const
             {
                 if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                     !absent(other) && can_see(a, other) &&
-                    distance(zone.cells.front(), other.source.cell) <= 55 &&
-                    distance(zone.cells.front(), other.source.cell) > 5)
+                    distance(zone.cells.front(), other) <= 55 &&
+                    distance(zone.cells.front(), other) > 5)
                 {
                     add(id, "move_hound", "Move Faithful Hound", other.source.id);
                 }
@@ -11975,7 +12164,7 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &other : actors_)
         {
             if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
-                !absent(other) && distance(a.source.cell, other.source.cell) <= d.reach)
+                !absent(other) && distance(a, other) <= d.reach)
             {
                 add(id, "vampiric_touch_again", "Vampiric Touch", other.source.id);
             }
@@ -11988,7 +12177,7 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &other : actors_)
         {
             if (other.source.side == a.source.side && !other.life.dead && !absent(other) &&
-                distance(a.source.cell, other.source.cell) <= 60)
+                distance(a, other) <= 60)
             {
                 add(id, "potent_vitality", "Potent Spellcasting: Temporary Hit Points",
                     other.source.id);
@@ -12002,7 +12191,7 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &other : actors_)
         {
             if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
-                distance(force->cells.front(), other.source.cell) <= 25)
+                distance(force->cells.front(), other) <= 25)
             {
                 add(id, "spiritual_weapon_strike", "Spiritual Weapon attack", other.source.id);
             }
@@ -12017,7 +12206,7 @@ std::vector<Command> Session::offered_commands() const
             for (const auto &other : actors_)
             {
                 if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
-                    !absent(other) && distance(zone.cells.front(), other.source.cell) <= 35)
+                    !absent(other) && distance(zone.cells.front(), other) <= 35)
                 {
                     add(id, "arcane_sword_strike", "Arcane Sword attack", other.source.id);
                 }
@@ -12033,7 +12222,7 @@ std::vector<Command> Session::offered_commands() const
             for (const auto &other : actors_)
             {
                 if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
-                    !absent(other) && distance(zone.cells.front(), other.source.cell) <= 35)
+                    !absent(other) && distance(zone.cells.front(), other) <= 35)
                 {
                     add(id, "conjure_fey_strike", "Fey spirit attack", other.source.id);
                 }
@@ -12095,7 +12284,7 @@ std::vector<Command> Session::offered_commands() const
         {
             if (other.source.id != origin.source.id && other.source.side != a.source.side &&
                 other.life.hp > 0 && !other.life.dead && can_see(a, other) &&
-                distance(origin.source.cell, other.source.cell) <= 30)
+                distance(origin, other) <= 30)
             {
                 add(id, "superior_hunters_prey", "Superior Hunter's Prey", other.source.id);
             }
@@ -12108,9 +12297,9 @@ std::vector<Command> Session::offered_commands() const
         const auto &origin = actor(a.horde_origin);
         for (const auto &other : actors_)
         {
-            const int feet = distance(a.source.cell, other.source.cell);
+            const int feet = distance(a, other);
             if (other.source.id != origin.source.id && other.source.side != a.source.side &&
-                other.life.hp > 0 && distance(origin.source.cell, other.source.cell) <= 5 &&
+                other.life.hp > 0 && distance(origin, other) <= 5 &&
                 (feet <= d.reach || (d.range > 0 && feet <= d.long_range)))
             {
                 add(id, "horde_breaker", "Horde Breaker", other.source.id);
@@ -12134,7 +12323,7 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &other : actors_)
         {
             if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
-                distance(a.source.cell, other.source.cell) <= 90 && can_see(a, other))
+                distance(a, other) <= 90 && can_see(a, other))
             {
                 add(id, "hex_move", "Move Hex", other.source.id);
             }
@@ -12145,8 +12334,7 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &other : actors_)
         {
             if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
-                distance(a.source.cell, other.source.cell) <= 90 && can_see(a, other) &&
-                !marked_by(other, a))
+                distance(a, other) <= 90 && can_see(a, other) && !marked_by(other, a))
             {
                 if (free_mark)
                 {
@@ -12194,7 +12382,7 @@ std::vector<Command> Session::offered_commands() const
         {
             if (other.source.side == a.source.side && !other.life.dead &&
                 other.life.hp < max_hp(other) && !detail::healing_blocked(other.effects) &&
-                distance(a.source.cell, other.source.cell) <= 5)
+                distance(a, other) <= 5)
             {
                 add(id, "lay_on_hands", "Lay On Hands", other.source.id);
             }
@@ -12206,7 +12394,7 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &other : actors_)
         {
             if (other.source.side == a.source.side && !other.life.dead &&
-                has_condition(other, "poisoned") && distance(a.source.cell, other.source.cell) <= 5)
+                has_condition(other, "poisoned") && distance(a, other) <= 5)
             {
                 add(id, "lay_on_hands_cure", "Lay On Hands: cure Poisoned", other.source.id);
             }
@@ -12218,7 +12406,7 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &other : actors_)
         {
             if (other.source.side == a.source.side && !other.life.dead && touch_restorable(other) &&
-                distance(a.source.cell, other.source.cell) <= 5)
+                distance(a, other) <= 5)
             {
                 add(id, "lay_on_hands_restore", "Lay On Hands: Restoring Touch (5 per condition)",
                     other.source.id);
@@ -12328,7 +12516,7 @@ std::vector<Command> Session::offered_commands() const
     }
     for (const auto &other : actors_)
     {
-        const int feet = distance(a.source.cell, other.source.cell);
+        const int feet = distance(a, other);
         for (const auto scope : {detail::SpellTarget::wounded_ally, detail::SpellTarget::ally,
                                  detail::SpellTarget::self, detail::SpellTarget::enemy})
         {
@@ -12336,7 +12524,7 @@ std::vector<Command> Session::offered_commands() const
         }
         // A spell aimed at any creature, such as a Quickened Poison Spray, needs
         // the same clear line as in the Action pass.
-        if (line_of_sight(a.source.cell, other.source.cell))
+        if (line_of_sight(a, other))
         {
             offer_spells(commands, a, other, feet, detail::SpellTarget::any_creature, true);
         }
@@ -12352,7 +12540,7 @@ std::vector<Command> Session::offered_commands() const
                 for (const auto &other : actors_)
                 {
                     if (other.source.side != a.source.side && !other.life.dead &&
-                        other.life.hp > 0 && line_of_sight(a.source.cell, other.source.cell))
+                        other.life.hp > 0 && line_of_sight(a, other))
                     {
                         const auto offer = [&](const char *light, const char *nick)
                         {
@@ -12368,7 +12556,7 @@ std::vector<Command> Session::offered_commands() const
                                 commands.back().item = item.id;
                             }
                         };
-                        const int feet = distance(a.source.cell, other.source.cell);
+                        const int feet = distance(a, other);
                         if (!item.stowed && !weapon->ranged && feet <= melee_reach)
                         {
                             offer("light_melee", "nick_melee");
@@ -12587,10 +12775,9 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &other : actors_)
         {
             if (!other.life.dead && other.source.side != a.source.side &&
-                (other.life.hp > 0 || may_rise(other)) &&
-                line_of_sight(a.source.cell, other.source.cell))
+                (other.life.hp > 0 || may_rise(other)) && line_of_sight(a, other))
             {
-                offer_attacks(other, distance(a.source.cell, other.source.cell));
+                offer_attacks(other, distance(a, other));
             }
         }
     }
@@ -12670,8 +12857,7 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &other : actors_)
         {
             if (const auto host = attached_host(other);
-                host && !other.life.dead && find_actor(*host) &&
-                distance(a.source.cell, actor(*host).source.cell) <= 5)
+                host && !other.life.dead && find_actor(*host) && distance(a, actor(*host)) <= 5)
             {
                 add(id, "detach", "Pull off", other.source.id);
             }
@@ -12679,11 +12865,11 @@ std::vector<Command> Session::offered_commands() const
         add(id, "disengage", "Disengage");
         for (const auto &other : actors_)
         {
-            if (other.life.dead || !line_of_sight(a.source.cell, other.source.cell))
+            if (other.life.dead || !line_of_sight(a, other))
             {
                 continue;
             }
-            const int feet = distance(a.source.cell, other.source.cell);
+            const int feet = distance(a, other);
             if (!a.source.character_profile.empty() && other.life.hp == 0 && !other.life.stable &&
                 !may_rise(other) && feet <= 5)
             {
@@ -12730,10 +12916,9 @@ std::vector<Command> Session::offered_commands() const
             for (const auto &other : actors_)
             {
                 if (!other.life.dead && other.source.side != a.source.side &&
-                    (other.life.hp > 0 || may_rise(other)) &&
-                    line_of_sight(a.source.cell, other.source.cell))
+                    (other.life.hp > 0 || may_rise(other)) && line_of_sight(a, other))
                 {
-                    offer_attacks(other, distance(a.source.cell, other.source.cell));
+                    offer_attacks(other, distance(a, other));
                 }
             }
         }
@@ -12761,7 +12946,7 @@ std::vector<Command> Session::offered_commands() const
                       [&](const Command &command)
                       {
                           return command.target && attack_action(command.verb) &&
-                                 !line_of_effect(a.source.cell, actor(command.target).source.cell);
+                                 !line_of_effect(a, actor(command.target));
                       });
     }
     // Forcecage: nothing crosses its box, and no weapon its cage's bars.
@@ -12793,8 +12978,8 @@ std::vector<Command> Session::offered_commands() const
                                   const auto *caster = find_actor(zone.caster);
                                   return zone.kind == ZoneKind::antilife && caster &&
                                          caster->source.id != id &&
-                                         (distance(caster->source.cell, a.source.cell) <= 10) !=
-                                             (distance(caster->source.cell, to) <= 10);
+                                         (distance(*caster, a) <= 10) !=
+                                             (distance(*caster, to) <= 10);
                               });
                       });
     }
@@ -12865,7 +13050,7 @@ void Session::obey_command(std::vector<Command> &commands, const Actor &a) const
     }
     const bool approach = command->kind == detail::EffectKind::command &&
                           command->dc == static_cast<int>(detail::CommandOption::approach);
-    const int start = distance(a.source.cell, caster->source.cell);
+    const int start = distance(a, *caster);
     // Approach ends the turn within 5 feet of the caster.
     const Command *best = nullptr;
     int best_feet = start;
@@ -12875,7 +13060,7 @@ void Session::obey_command(std::vector<Command> &commands, const Actor &a) const
         {
             if (offer.verb == "move")
             {
-                const int feet = distance(offer.destination, caster->source.cell);
+                const int feet = distance(offer.destination, *caster);
                 if (approach ? feet < best_feet : feet > best_feet)
                 {
                     best = &offer;
@@ -13719,17 +13904,47 @@ std::vector<Cell> Session::area_shape(const detail::SpellDef &spell, std::string
     return cells;
 }
 
-bool Session::teleport_open(const Actor &caster, Cell cell) const
+bool Session::teleport_open(const Actor &caster, Cell cell, Footprint size) const
 {
     // Misty Step: an unoccupied space the caster can see.
-    return cell != caster.source.cell && board_.at(cell) != Terrain::obstacle &&
-           line_of_sight(caster.source.cell, cell) && !obscured(caster, cell) &&
-           std::none_of(actors_.begin(), actors_.end(),
+    return cell != caster.source.cell && line_of_sight(caster, cell) && !obscured(caster, cell) &&
+           room_for(&caster, size, cell);
+}
+
+bool Session::blocked_for(const Actor &mover, Cell anchor, const Battlefield &board) const
+{
+    for (const auto square : squares_of(anchor, footprint(mover)))
+    {
+        if (board.at(square) == Terrain::obstacle ||
+            std::any_of(actors_.begin(), actors_.end(),
                         [&](const auto &other)
                         {
-                            return !other.life.dead && !absent(other) && other.source.cell == cell;
-                        }) &&
-           !guarded_square(cell);
+                            return other.source.id != mover.source.id && !other.life.dead &&
+                                   !absent(other) && occupies(other, square);
+                        }))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Session::room_for(const Actor *mover, Footprint size, Cell anchor) const
+{
+    for (const auto square : squares_of(anchor, size))
+    {
+        if (board_.at(square) == Terrain::obstacle || guarded_square(square) ||
+            std::any_of(actors_.begin(), actors_.end(),
+                        [&](const auto &other)
+                        {
+                            return &other != mover && !other.life.dead && !absent(other) &&
+                                   occupies(other, square);
+                        }))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 Cell Session::default_area_center(const Actor &caster, const detail::SpellDef &spell) const
@@ -13741,10 +13956,8 @@ Cell Session::default_area_center(const Actor &caster, const detail::SpellDef &s
         const Actor *nearest = nullptr; // Borrowed from actors_.
         for (const auto &other : actors_)
         {
-            if (other.source.side != caster.source.side && other.life.hp > 0 &&
-                !other.life.dead &&
-                (!nearest || distance(caster.source.cell, other.source.cell) <
-                                 distance(caster.source.cell, nearest->source.cell)))
+            if (other.source.side != caster.source.side && other.life.hp > 0 && !other.life.dead &&
+                (!nearest || distance(caster, other) < distance(caster, *nearest)))
             {
                 nearest = &other;
             }
@@ -13763,8 +13976,7 @@ Cell Session::default_area_center(const Actor &caster, const detail::SpellDef &s
         for (const auto &other : actors_)
         {
             if (other.source.side != caster.source.side && other.life.hp > 0 && !other.life.dead &&
-                (!nearest || distance(caster.source.cell, other.source.cell) <
-                                 distance(caster.source.cell, nearest->source.cell)))
+                (!nearest || distance(caster, other) < distance(caster, *nearest)))
             {
                 nearest = &other;
             }
@@ -13777,9 +13989,9 @@ Cell Session::default_area_center(const Actor &caster, const detail::SpellDef &s
     int best_feet = spell.range + 1;
     for (const auto &other : actors_)
     {
-        const int feet = distance(caster.source.cell, other.source.cell);
+        const int feet = distance(caster, other);
         if (other.source.side != caster.source.side && other.life.hp > 0 && feet < best_feet &&
-            line_of_sight(caster.source.cell, other.source.cell))
+            line_of_sight(caster, other))
         {
             best = other.source.cell;
             best_feet = feet;
@@ -13833,7 +14045,7 @@ std::vector<EntityId> Session::sculpted(const Actor &caster, const detail::Spell
     {
         if (spared.size() < 1 + slot_level && other.source.side == caster.source.side &&
             other.source.id != caster.source.id && !other.life.dead && can_see(caster, other) &&
-            std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+            touches(cells, other))
         {
             spared.push_back(other.source.id);
         }
@@ -13954,7 +14166,7 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
     for (auto &other : actors_)
     {
         if (other.life.dead || other.source.id == caster.source.id || absent(other) ||
-            std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
+            !touches(cells, other) ||
             std::find(spared.begin(), spared.end(), other.source.id) != spared.end() ||
             std::find(careful.begin(), careful.end(), other.source.id) != careful.end() ||
             sealed_off(other) ||
@@ -14048,8 +14260,7 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
     for (auto &other : actors_)
     {
         if (other.life.dead || other.life.hp == 0 || other.source.id == caster.source.id ||
-            absent(other) ||
-            std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
+            absent(other) || !touches(cells, other) ||
             std::find(careful.begin(), careful.end(), other.source.id) != careful.end() ||
             (sleep && other.source.side == caster.source.side) ||
             !detail::can_apply(other.effects) || sealed_off(other) ||
@@ -14117,8 +14328,7 @@ void Session::burn_beside_spheres(Actor &creature)
     const auto zones = zones_;
     for (const auto &zone : zones)
     {
-        if (zone.kind == ZoneKind::flaming_sphere &&
-            distance(zone.cells.front(), creature.source.cell) <= 5)
+        if (zone.kind == ZoneKind::flaming_sphere && distance(zone.cells.front(), creature) <= 5)
         {
             sphere_burns(zone, creature);
         }
@@ -14286,11 +14496,10 @@ void Session::lands_aid(Actor &druid, Cell center)
     // 2d6, 3d6 from Druid 10, 4d6 from 14.
     auto aid = *detail::find_spell("lands_aid");
     aid.dice.count = def(druid).level >= 14 ? 4 : def(druid).level >= 10 ? 3 : 2;
-    const auto cells = area_cells(aid, aid.id, druid.source.cell, center);
+    const auto cells = area_cells(aid, aid.id, origin_toward(druid, center), center);
     const auto inside = [&](const Actor &other)
     {
-        return !other.life.dead &&
-               std::find(cells.begin(), cells.end(), other.source.cell) != cells.end();
+        return !other.life.dead && touches(cells, other);
     };
     // The Druid chooses its enemies for the thorns and its most wounded ally
     // for the flowers.
@@ -14379,11 +14588,31 @@ void Session::move_moonbeam(Actor &caster, const Actor &onto)
         {"{name} moves the Moonbeam.", {{"name", caster.source.name}}});
     for (auto &other : actors_)
     {
-        if (in_zone(after, other.source.cell) && !in_zone(before, other.source.cell))
+        if (in_zone(after, other) && !in_zone(before, other))
         {
             moonbeam_burns(after, other);
         }
     }
+}
+
+bool Session::near_pack(const Zone &pack, const Actor &a)
+{
+    const auto squares = squares_of(a);
+    return std::any_of(squares.begin(), squares.end(),
+                       [&](Cell square)
+                       {
+                           return near_pack(pack, square);
+                       });
+}
+
+bool Session::in_emanation(const Zone &zone, const Actor &a) const
+{
+    const auto squares = squares_of(a);
+    return std::any_of(squares.begin(), squares.end(),
+                       [&](Cell square)
+                       {
+                           return in_emanation(zone, square);
+                       });
 }
 
 bool Session::near_pack(const Zone &pack, Cell cell)
@@ -14397,7 +14626,7 @@ bool Session::near_pack(const Zone &pack, Cell cell)
 
 bool Session::in_emanation(const Zone &zone, Cell cell) const
 {
-    return distance(actor(zone.caster).source.cell, cell) <=
+    return distance(actor(zone.caster), cell) <=
            (zone.kind == ZoneKind::holy                                             ? 30
             : zone.kind == ZoneKind::guardians || zone.kind == ZoneKind::elementals ? 15
                                                                                     : 10);
@@ -14496,7 +14725,7 @@ std::optional<std::vector<Cell>> Session::pack_destination(const Zone &pack,
         {
             const std::vector<Cell> cells{{x, y}, {x + 1, y}, {x, y + 1}, {x + 1, y + 1}};
             if (distance(cells.front(), pack.cells.front()) > 30 ||
-                !line_of_sight(caster.source.cell, cells.front()) ||
+                !line_of_sight(caster, cells.front()) ||
                 std::any_of(cells.begin(), cells.end(),
                             [&](Cell cell)
                             {
@@ -14505,7 +14734,7 @@ std::optional<std::vector<Cell>> Session::pack_destination(const Zone &pack,
                                                    [&](const auto &other)
                                                    {
                                                        return !other.life.dead && !absent(other) &&
-                                                              other.source.cell == cell;
+                                                              occupies(other, cell);
                                                    });
                             }))
             {
@@ -14514,7 +14743,7 @@ std::optional<std::vector<Cell>> Session::pack_destination(const Zone &pack,
             int feet = std::numeric_limits<int>::max();
             for (const auto cell : cells)
             {
-                feet = std::min(feet, distance(cell, onto.source.cell));
+                feet = std::min(feet, distance(cell, onto));
             }
             if (feet <= 10 && (!best || feet < best_feet))
             {
@@ -14543,7 +14772,7 @@ void Session::move_spirit_pack(Actor &caster, const Actor &onto)
         {"{name} moves the spirit pack.", {{"name", caster.source.name}}});
     for (auto &other : actors_)
     {
-        if (near_pack(after, other.source.cell) && !near_pack(before, other.source.cell))
+        if (near_pack(after, other) && !near_pack(before, other))
         {
             spirits_strike(after, other);
         }
@@ -14669,13 +14898,11 @@ bool Session::animatable(const Actor &corpse, const Actor &caster) const
     return corpse.life.dead && corpse.source.side != caster.source.side && !absent(corpse) &&
            !detail::has_effect(corpse.effects, detail::EffectKind::dust) &&
            def(corpse).creature_type == "humanoid" &&
-           (def(corpse).size == 1 || def(corpse).size == 2) &&
-           distance(caster.source.cell, corpse.source.cell) <= 10 &&
+           (def(corpse).size == 1 || def(corpse).size == 2) && distance(caster, corpse) <= 10 &&
            std::none_of(zones_.begin(), zones_.end(),
                         [&](const auto &zone)
                         {
-                            return zone.kind == ZoneKind::raising &&
-                                   in_zone(zone, corpse.source.cell);
+                            return zone.kind == ZoneKind::raising && in_zone(zone, corpse);
                         });
 }
 
@@ -14721,7 +14948,7 @@ void Session::finish_animating(Actor &caster, std::string_view undead)
     {
         for (auto &corpse : actors_)
         {
-            if (corpse.life.dead && corpse.source.cell == cell &&
+            if (corpse.life.dead && occupies(corpse, cell) &&
                 corpse.source.side != caster.source.side && !absent(corpse))
             {
                 raise_undead(caster, corpse, undead);
@@ -14932,9 +15159,8 @@ void Session::bathe(const Zone &pillar, Actor &creature)
 bool Session::pillar_reaches(const Zone &pillar, const Actor &onto) const
 {
     // It moves up to 30 feet, here onto a creature its caster can see.
-    return !onto.life.dead && !absent(onto) && !in_zone(pillar, onto.source.cell) &&
-           distance(pillar.cells.front(), onto.source.cell) <= 30 &&
-           can_see(actor(pillar.caster), onto);
+    return !onto.life.dead && !absent(onto) && !in_zone(pillar, onto) &&
+           distance(pillar.cells.front(), onto) <= 30 && can_see(actor(pillar.caster), onto);
 }
 
 void Session::move_pillar(Actor &caster, const Actor &onto)
@@ -14955,7 +15181,7 @@ void Session::move_pillar(Actor &caster, const Actor &onto)
         {"{name} moves the pillar of light.", {{"name", caster.source.name}}});
     for (auto &other : actors_)
     {
-        if (in_zone(after, other.source.cell) && !in_zone(before, other.source.cell))
+        if (in_zone(after, other) && !in_zone(before, other))
         {
             bathe(after, other);
         }
@@ -14970,7 +15196,7 @@ void Session::divine_word(Actor &cleric, int dc)
     for (auto &other : actors_)
     {
         if (other.source.side == cleric.source.side || other.life.dead || absent(other) ||
-            distance(cleric.source.cell, other.source.cell) > spell.range || sealed_off(other) ||
+            distance(cleric, other) > spell.range || sealed_off(other) ||
             saving_throw_succeeds(other, detail::Ability::charisma, dc, false,
                                   heightened_against(other, cleric, spell.id)))
         {
@@ -15036,8 +15262,7 @@ void Session::tremor(const Zone &quake)
     log("The ground shakes.", {"The ground shakes.", {}});
     for (auto &other : actors_)
     {
-        if (other.life.dead || absent(other) || !in_zone(quake, other.source.cell) ||
-            sealed_off(other) ||
+        if (other.life.dead || absent(other) || !in_zone(quake, other) || sealed_off(other) ||
             saving_throw_succeeds(other, spell.save, quake.save_dc, false,
                                   heightened_against(other, *caster, spell.id)))
         {
@@ -15082,7 +15307,7 @@ const Session::Zone *Session::holy_aura(const Actor &a) const
     for (const auto &zone : zones_)
     {
         if (zone.kind == ZoneKind::holy && actor(zone.caster).source.side == a.source.side &&
-            in_emanation(zone, a.source.cell) && !in_antimagic(a.source.cell))
+            in_emanation(zone, a) && !in_antimagic(a.source.cell))
         {
             return &zone;
         }
@@ -15327,14 +15552,7 @@ bool Session::confused_turn(Actor &a)
         int left = movement_left(a);
         const auto board = zoned_board();
         for (Cell next{a.source.cell.x + step.x, a.source.cell.y + step.y};
-             board_.contains(next) && board_.at(next) != Terrain::obstacle && left >= 5 &&
-             std::none_of(actors_.begin(), actors_.end(),
-                          [&](const auto &other)
-                          {
-                              return !other.life.dead && !absent(other) &&
-                                     other.source.cell == next;
-                          });
-             next = {next.x + step.x, next.y + step.y})
+             left >= 5 && !blocked_for(a, next, board_); next = {next.x + step.x, next.y + step.y})
         {
             left -= board.at(next) == Terrain::difficult ? 10 : 5;
             if (left < 0)
@@ -15358,8 +15576,7 @@ bool Session::confused_turn(Actor &a)
     for (const auto &other : actors_)
     {
         if (other.source.id != a.source.id && !other.life.dead && other.life.hp > 0 &&
-            !absent(other) && distance(a.source.cell, other.source.cell) <= def(a).reach &&
-            def(a).melee.count)
+            !absent(other) && distance(a, other) <= def(a).reach && def(a).melee.count)
         {
             near.push_back(other.source.id);
         }
@@ -15402,6 +15619,7 @@ Actor &Session::summon(const Actor &caster, std::string definition, std::string 
     creature.source.name = std::move(name);
     creature.source.side = caster.source.side;
     creature.source.cell = cell;
+    creature.source.footprint = summoned_footprint(creature.source.definition);
     creature.life.hp = creature.definition.hp;
     creature.initiative = caster.initiative;
     creature.movement = creature.definition.speed;
@@ -15421,24 +15639,28 @@ Actor &Session::summon(const Actor &caster, std::string definition, std::string 
     return actors_.back();
 }
 
-std::vector<Cell> Session::free_squares_near(Cell from) const
+std::vector<Cell> Session::free_squares_near(Cell from, Footprint size) const
 {
     std::vector<Cell> cells;
     const auto board = zoned_board();
+    const auto free = [&](Cell square)
+    {
+        return board.at(square) != Terrain::obstacle && !guarded_square(square) &&
+               std::none_of(actors_.begin(), actors_.end(),
+                            [&](const auto &other)
+                            {
+                                return !other.life.dead && !absent(other) &&
+                                       occupies(other, square);
+                            });
+    };
     for (int y = 0; y < board_.height; ++y)
     {
         for (int x = 0; x < board_.width; ++x)
         {
-            if (const Cell cell{x, y}; board.at(cell) != Terrain::obstacle &&
-                                       !guarded_square(cell) &&
-                                       std::none_of(actors_.begin(), actors_.end(),
-                                                    [&](const auto &other)
-                                                    {
-                                                        return !other.life.dead && !absent(other) &&
-                                                               other.source.cell == cell;
-                                                    }))
+            const auto squares = squares_of({x, y}, size);
+            if (std::all_of(squares.begin(), squares.end(), free))
             {
-                cells.push_back(cell);
+                cells.push_back({x, y});
             }
         }
     }
@@ -15581,13 +15803,7 @@ void Session::hurl(Actor &caster, Actor &creature, Cell to)
                                                      (to.x - creature.source.cell.x) * along)),
                         static_cast<int>(std::lround(creature.source.cell.y +
                                                      (to.y - creature.source.cell.y) * along))};
-        if (!board_.contains(next) || walled_board(true).at(next) == Terrain::obstacle ||
-            std::any_of(actors_.begin(), actors_.end(),
-                        [&](const auto &other)
-                        {
-                            return other.source.id != creature.source.id && !other.life.dead &&
-                                   !absent(other) && other.source.cell == next;
-                        }))
+        if (blocked_for(creature, next, walled_board(true)))
         {
             break;
         }
@@ -15613,7 +15829,7 @@ bool Session::globe_wards(const Actor &caster, Cell cell, unsigned level) const
                        [&](const auto &zone)
                        {
                            return zone.kind == ZoneKind::globe && in_zone(zone, cell) &&
-                                  !in_zone(zone, caster.source.cell) && level <= zone.slot - 1;
+                                  !in_zone(zone, caster) && level <= zone.slot - 1;
                        });
 }
 
@@ -15878,9 +16094,8 @@ void Session::dreadful_glare(Actor &mummy, Actor &target)
                                                  e.source_actor == mummy.source.id;
                                       });
     if (!conscious(target) || resisted || invisible(target) || has_condition(mummy, "blinded") ||
-        distance(mummy.source.cell, target.source.cell) > d.glare_range ||
-        !line_of_sight(mummy.source.cell, target.source.cell) || fearless(target) ||
-        detail::has_effect(target.effects, detail::EffectKind::frightened) ||
+        distance(mummy, target) > d.glare_range || !line_of_sight(mummy, target) ||
+        fearless(target) || detail::has_effect(target.effects, detail::EffectKind::frightened) ||
         detail::has_effect(target.effects, detail::EffectKind::glared) ||
         !detail::can_apply(target.effects))
     {
@@ -15909,7 +16124,7 @@ void Session::dreadful_glare(Actor &mummy, Actor &target)
 void Session::bite(Actor &vampire, Actor &target)
 {
     const auto &d = def(vampire);
-    if (target.life.dead || distance(vampire.source.cell, target.source.cell) > 5 ||
+    if (target.life.dead || distance(vampire, target) > 5 ||
         !(charmed_by(target, vampire.source.id) || detail::incapacitated(target.effects) ||
           has_condition(target, "restrained")))
     {
@@ -15995,8 +16210,7 @@ void Session::captains_charm(Actor &captain, Actor &target)
 {
     const auto &d = def(captain);
     if (!conscious(target) || invisible(target) || has_condition(captain, "blinded") ||
-        distance(captain.source.cell, target.source.cell) > d.charm_range ||
-        !line_of_sight(captain.source.cell, target.source.cell) ||
+        distance(captain, target) > d.charm_range || !line_of_sight(captain, target) ||
         charmed_by(target, captain.source.id) || !detail::can_apply(target.effects))
     {
         return;
@@ -16028,7 +16242,7 @@ bool Session::specter_corpse(const Actor &wraith, const Actor &corpse) const
     return corpse.life.dead && def(corpse).creature_type == "humanoid" && !absent(corpse) &&
            !detail::has_effect(corpse.effects, detail::EffectKind::dust) &&
            !detail::has_effect(corpse.effects, detail::EffectKind::petrified) &&
-           distance(wraith.source.cell, corpse.source.cell) <= 10;
+           distance(wraith, corpse) <= 10;
 }
 
 int Session::specters_of(const Actor &wraith) const
@@ -16168,16 +16382,13 @@ Actor *Session::legendary_target(const Actor &a, int range, bool adjacent)
     for (auto &other : actors_)
     {
         if (other.source.side == a.source.side || other.life.hp <= 0 || other.life.dead ||
-            other.fled || absent(other) || invisible(other) ||
-            distance(a.source.cell, other.source.cell) > range ||
-            !line_of_sight(a.source.cell, other.source.cell))
+            other.fled || absent(other) || invisible(other) || distance(a, other) > range ||
+            !line_of_sight(a, other))
         {
             continue;
         }
-        if (!chosen ||
-            (adjacent ? other.life.hp < chosen->life.hp
-                      : distance(a.source.cell, other.source.cell) <
-                            distance(a.source.cell, chosen->source.cell)))
+        if (!chosen || (adjacent ? other.life.hp < chosen->life.hp
+                                 : distance(a, other) < distance(a, *chosen)))
         {
             chosen = &other;
         }
@@ -16193,18 +16404,18 @@ std::optional<Cell> Session::thunderclap_center(const Actor &dragon) const
     for (const auto &aimed : actors_)
     {
         if (aimed.source.side == dragon.source.side || aimed.life.dead || absent(aimed) ||
-            invisible(aimed) || distance(dragon.source.cell, aimed.source.cell) > spell.range ||
-            !line_of_sight(dragon.source.cell, aimed.source.cell))
+            invisible(aimed) || distance(dragon, aimed) > spell.range ||
+            !line_of_sight(dragon, aimed))
         {
             continue;
         }
-        const auto cells = area_cells(spell, spell.id, dragon.source.cell, aimed.source.cell);
+        const auto cells = area_cells(spell, spell.id, origin_toward(dragon, aimed.source.cell),
+                                      aimed.source.cell);
         int enemies = 0;
         bool friendly = false;
         for (const auto &other : actors_)
         {
-            if (other.life.dead || absent(other) ||
-                std::find(cells.begin(), cells.end(), other.source.cell) == cells.end())
+            if (other.life.dead || absent(other) || !touches(cells, other))
             {
                 continue;
             }
@@ -16232,13 +16443,12 @@ std::optional<Cell> Session::thunderclap_center(const Actor &dragon) const
 void Session::thunderclap(Actor &dragon, Cell center)
 {
     const auto &spell = *detail::find_spell("thunderclap");
-    const auto cells = area_cells(spell, spell.id, dragon.source.cell, center);
+    const auto cells = area_cells(spell, spell.id, origin_toward(dragon, center), center);
     const int dc = spell_dc(dragon);
     std::vector<EntityId> caught;
     for (const auto &other : actors_)
     {
-        if (!other.life.dead && !absent(other) &&
-            std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+        if (!other.life.dead && !absent(other) && touches(cells, other))
         {
             caught.push_back(other.source.id);
         }
@@ -16263,12 +16473,12 @@ void Session::thunderclap(Actor &dragon, Cell center)
 int Session::repulsion_catches(const Actor &dragon, Cell toward) const
 {
     const auto &spell = *detail::find_spell("repulsion_breath");
-    const auto cells = area_cells(spell, spell.id, dragon.source.cell, toward);
+    const auto cells = area_cells(spell, spell.id, origin_toward(dragon, toward), toward);
     int enemies = 0;
     for (const auto &other : actors_)
     {
         if (other.source.id == dragon.source.id || other.life.dead || absent(other) ||
-            std::find(cells.begin(), cells.end(), other.source.cell) == cells.end())
+            !touches(cells, other))
         {
             continue;
         }
@@ -16287,14 +16497,14 @@ int Session::repulsion_catches(const Actor &dragon, Cell toward) const
 void Session::repulsion_breath(Actor &dragon, Cell toward)
 {
     const auto &spell = *detail::find_spell("repulsion_breath");
-    const auto cells = area_cells(spell, spell.id, dragon.source.cell, toward);
+    const auto cells = area_cells(spell, spell.id, origin_toward(dragon, toward), toward);
     log(dragon.source.name + " uses Repulsion Breath.",
         {"{name} uses Repulsion Breath.", {{"name", dragon.source.name}}});
     std::vector<EntityId> caught;
     for (const auto &other : actors_)
     {
         if (other.source.id != dragon.source.id && !other.life.dead && !absent(other) &&
-            std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+            touches(cells, other))
         {
             caught.push_back(other.source.id);
         }
@@ -16428,8 +16638,7 @@ void Session::drain_attached(Actor &a)
         return;
     }
     const auto *target = find_actor(*host);
-    if (!target || target->life.dead || a.life.hp == 0 ||
-        distance(a.source.cell, target->source.cell) > 5)
+    if (!target || target->life.dead || a.life.hp == 0 || distance(a, *target) > 5)
     {
         std::erase_if(a.effects.active,
                       [](const auto &e)
@@ -16502,13 +16711,13 @@ void Session::petrifying_gaze(Actor &basilisk, const PendingArea &aimed)
     log(basilisk.source.name + " uses Petrifying Gaze.",
         {"{name} uses Petrifying Gaze.", {{"name", basilisk.source.name}}});
     const auto &gaze = *detail::find_spell(aimed.verb);
-    const auto cells = area_cells(gaze, aimed.verb, basilisk.source.cell, aimed.center);
+    const auto cells =
+        area_cells(gaze, aimed.verb, origin_toward(basilisk, aimed.center), aimed.center);
     const int dc = def(basilisk).gaze_dc;
     for (auto &other : actors_)
     {
         if (other.life.dead || other.source.id == basilisk.source.id || absent(other) ||
-            std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
-            !detail::can_apply(other.effects) ||
+            !touches(cells, other) || !detail::can_apply(other.effects) ||
             saving_throw_succeeds(other, detail::Ability::constitution, dc))
         {
             continue;
@@ -16531,7 +16740,7 @@ void Session::exhale_breath(Actor &dragon, const PendingArea &aimed)
         {"{name} uses {feature}.",
          {{"name", dragon.source.name}, {"feature", std::string(breath.label), true}}});
     damage_area(dragon, breath, aimed.verb,
-                area_cells(breath, aimed.verb, dragon.source.cell, aimed.center),
+                area_cells(breath, aimed.verb, origin_toward(dragon, aimed.center), aimed.center),
                 def(dragon).breath_dc);
 }
 
@@ -16664,8 +16873,7 @@ void Session::enchant_area(Actor &caster, const detail::SpellDef &spell,
     for (auto &other : actors_)
     {
         if (other.life.dead || other.life.hp == 0 || other.source.id == caster.source.id ||
-            absent(other) || sealed_off(other) ||
-            std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
+            absent(other) || sealed_off(other) || !touches(cells, other) ||
             std::find(careful.begin(), careful.end(), other.source.id) != careful.end() ||
             !detail::can_apply(other.effects) || (pattern && detail::blinded(other.effects)) ||
             globe_wards(caster, other.source.cell, spell.level) ||
@@ -16703,8 +16911,7 @@ void Session::slow_area(Actor &caster, const detail::SpellDef &spell,
     for (const auto &other : actors_)
     {
         if (other.source.side != caster.source.side && !other.life.dead && other.life.hp > 0 &&
-            !absent(other) && !sealed_off(other) &&
-            std::find(cells.begin(), cells.end(), other.source.cell) != cells.end() &&
+            !absent(other) && !sealed_off(other) && touches(cells, other) &&
             !globe_wards(caster, other.source.cell, spell.level) &&
             !caged_apart(caster.source.cell, other.source.cell, false))
         {
@@ -16714,8 +16921,7 @@ void Session::slow_area(Actor &caster, const detail::SpellDef &spell,
     std::stable_sort(chosen.begin(), chosen.end(),
                      [&](EntityId left, EntityId right)
                      {
-                         return distance(center, actor(left).source.cell) <
-                                distance(center, actor(right).source.cell);
+                         return distance(center, actor(left)) < distance(center, actor(right));
                      });
     if (chosen.size() > 6)
     {
@@ -16808,9 +17014,8 @@ bool Session::protective_counter(const Actor &wizard, const Actor &caster,
     // Only a spell of level 1 or higher is worth a use.
     return def(wizard).protective_magic && trait_uses_left(wizard) > 0 && spell.level > 0 &&
            wizard.source.side != caster.source.side && conscious(wizard) && wizard.reaction &&
-           !detail::incapacitated(wizard.effects) &&
-           distance(wizard.source.cell, caster.source.cell) <= 60 && can_see(wizard, caster) &&
-           !sealed_off(wizard) && !absent(wizard);
+           !detail::incapacitated(wizard.effects) && distance(wizard, caster) <= 60 &&
+           can_see(wizard, caster) && !sealed_off(wizard) && !absent(wizard);
 }
 
 bool Session::can_counter(const Actor &wizard, const Actor &caster) const
@@ -16820,8 +17025,8 @@ bool Session::can_counter(const Actor &wizard, const Actor &caster) const
     return wizard.source.side != caster.source.side && conscious(wizard) && wizard.reaction &&
            !detail::incapacitated(wizard.effects) && lowest_slot(wizard, 3) && !wizard.spent_slot &&
            detail::knows_spell(def(wizard).spells, "counterspell") &&
-           distance(wizard.source.cell, caster.source.cell) <= 60 && can_see(wizard, caster) &&
-           !sealed_off(wizard) && !absent(wizard);
+           distance(wizard, caster) <= 60 && can_see(wizard, caster) && !sealed_off(wizard) &&
+           !absent(wizard);
 }
 
 bool Session::countered(Actor &caster, const detail::SpellDef &spell)
@@ -16989,7 +17194,7 @@ void Session::mass_cure(Actor &cleric, const detail::SpellDef &spell, std::strin
     {
         if (other.source.side == cleric.source.side && !other.life.dead && !absent(other) &&
             other.life.hp < max_hp(other) && !detail::healing_blocked(other.effects) &&
-            std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+            touches(cells, other))
         {
             hurt.push_back(&other);
         }
@@ -17185,6 +17390,16 @@ bool Session::in_zone(const Zone &zone, Cell cell) noexcept
     return std::find(zone.cells.begin(), zone.cells.end(), cell) != zone.cells.end();
 }
 
+bool Session::in_zone(const Zone &zone, const Actor &a)
+{
+    const auto squares = squares_of(a);
+    return std::any_of(squares.begin(), squares.end(),
+                       [&](Cell square)
+                       {
+                           return in_zone(zone, square);
+                       });
+}
+
 bool Session::spring_zone(const Zone &zone, Actor &creature)
 {
     // Grease knocks a creature Prone and Web Restrains it, each on a failed
@@ -17227,7 +17442,7 @@ void Session::spring_zones(Actor &creature, ZoneKind kind)
     const auto zones = zones_;
     for (const auto &zone : zones)
     {
-        if (zone.kind == kind && in_zone(zone, creature.source.cell))
+        if (zone.kind == kind && in_zone(zone, creature))
         {
             (void)spring_zone(zone, creature);
         }
@@ -17240,10 +17455,9 @@ void Session::ice_burst(Actor &caster, const Actor &target, unsigned steps)
     // 1d6 more for each slot level above 1.
     const int total = dice({2 + static_cast<int>(steps), 6, 0});
     const int dc = spell_dc(caster, "ice_knife");
-    const auto centre = target.source.cell;
     for (auto &other : actors_)
     {
-        if (other.life.dead || distance(centre, other.source.cell) > 5)
+        if (other.life.dead || distance(target, other) > 5)
         {
             continue;
         }
@@ -17263,11 +17477,16 @@ void Session::ice_burst(Actor &caster, const Actor &target, unsigned steps)
 
 void Session::push_away(const Actor &from, Actor &target, int squares)
 {
-    // Straight away from `from`.
-    const int sx =
-        (target.source.cell.x > from.source.cell.x) - (target.source.cell.x < from.source.cell.x);
-    const int sy =
-        (target.source.cell.y > from.source.cell.y) - (target.source.cell.y < from.source.cell.y);
+    // Straight away from `from`, centre from centre: doubled, a footprint's
+    // centre falls on a square.
+    const auto centre = [](const Actor &a)
+    {
+        const auto size = footprint(a);
+        return Cell{2 * a.source.cell.x + size.width - 1, 2 * a.source.cell.y + size.height - 1};
+    };
+    const auto away = centre(target), toward = centre(from);
+    const int sx = (away.x > toward.x) - (away.x < toward.x);
+    const int sy = (away.y > toward.y) - (away.y < toward.y);
     push_along(target, Cell{sx, sy}, squares);
 }
 
@@ -17280,12 +17499,7 @@ void Session::push_along(Actor &target, Cell step, int squares)
     {
         const Cell next{target.source.cell.x + sx, target.source.cell.y + sy};
         // A Wall of Force or of Stone stops a push as the map's walls do.
-        if (!board_.contains(next) || walled_board(true).at(next) == Terrain::obstacle ||
-            std::any_of(actors_.begin(), actors_.end(),
-                        [&](const auto &other)
-                        {
-                            return !other.life.dead && other.source.cell == next;
-                        }))
+        if (blocked_for(target, next, walled_board(true)))
         {
             break;
         }
@@ -17298,8 +17512,15 @@ void Session::push_along(Actor &target, Cell step, int squares)
              {{"name", target.source.name}, {"feet", std::to_string(5 * moved)}}});
     }
     // The battlefield's edge is open ground beyond, not a wall.
-    if (const Cell next{target.source.cell.x + sx, target.source.cell.y + sy};
-        moved < squares && (sx || sy) && board_.contains(next))
+    const auto beyond =
+        squares_of({target.source.cell.x + sx, target.source.cell.y + sy}, footprint(target));
+    if (moved < squares && (sx || sy) &&
+        std::all_of(
+            beyond.begin(), beyond.end(),
+            [&](Cell square)
+            {
+                return board_.contains(square);
+            }))
     {
         slam(target, 5 * (squares - moved));
     }
@@ -17351,8 +17572,7 @@ void Session::move_wave(EntityId caster)
     std::vector<EntityId> caught;
     for (const auto &other : actors_)
     {
-        if (!other.life.dead && !absent(other) && !sealed_off(other) &&
-            std::find(swept.begin(), swept.end(), other.source.cell) != swept.end())
+        if (!other.life.dead && !absent(other) && !sealed_off(other) && touches(swept, other))
         {
             caught.push_back(other.source.id);
         }
@@ -17404,12 +17624,11 @@ void Session::move_wave(EntityId caster)
 // for the turn.
 bool Session::held_by_wave(Actor &a)
 {
-    const auto wave =
-        std::find_if(zones_.begin(), zones_.end(),
-                     [&](const auto &zone)
-                     {
-                         return zone.kind == ZoneKind::wave && in_zone(zone, a.source.cell);
-                     });
+    const auto wave = std::find_if(zones_.begin(), zones_.end(),
+                                   [&](const auto &zone)
+                                   {
+                                       return zone.kind == ZoneKind::wave && in_zone(zone, a);
+                                   });
     if (wave == zones_.end() || detail::has_effect(a.effects, detail::EffectKind::swum))
     {
         return false;
@@ -17451,7 +17670,7 @@ bool Session::blocks_push(Cell cell, EntityId pushed) const
                                                  {
                                                      return !other.life.dead &&
                                                             other.source.id != pushed &&
-                                                            other.source.cell == cell;
+                                                            occupies(other, cell);
                                                  }));
 }
 
@@ -17483,8 +17702,8 @@ bool Session::provokes(const Actor &other, const Actor &moving, Cell from, Cell 
            other.reaction && (!boss || (boss->reaction && conscious(*boss))) &&
            !detail::has_effect(other.effects, detail::EffectKind::turned) &&
            !detail::incapacitated(other.effects) && !detail::opportunity_blocked(other.effects) &&
-           !charmed_by(other, moving.source.id) && has_weapon_reaction(other, from, to) &&
-           can_see(other, moving);
+           !charmed_by(other, moving.source.id) &&
+           has_weapon_reaction(other, from, to, footprint(moving)) && can_see(other, moving);
 }
 
 std::vector<Cell> Session::flight_route(const Actor &from, const Actor &target, int budget) const
@@ -17556,7 +17775,7 @@ std::vector<Cell> Session::flight_route(const Actor &from, const Actor &target, 
     const auto better = [&](std::size_t candidate)
     {
         const auto a = cell_of(candidate), b = cell_of(best);
-        const int far = distance(from.source.cell, a), best_far = distance(from.source.cell, b);
+        const int far = distance(from, a), best_far = distance(from, b);
         if (far != best_far)
         {
             return far > best_far;
@@ -17611,9 +17830,14 @@ void Session::lightning_javelin(Actor &a, Actor &target, unsigned token)
     const int rolled = dice({4, 6, 0});
     for (auto &other : actors_)
     {
+        const auto squares = squares_of(other);
         if (other.life.dead || absent(other) || other.source.id == a.source.id ||
             other.source.id == target.source.id ||
-            !in_line(a.source.cell, target.source.cell, other.source.cell))
+            std::none_of(squares.begin(), squares.end(),
+                         [&](Cell square)
+                         {
+                             return in_line(a.source.cell, target.source.cell, square);
+                         }))
         {
             continue;
         }
@@ -17745,7 +17969,7 @@ void Session::cast_area()
     if (aimed.verb == "natures_sanctuary" || aimed.verb == "move_sanctuary")
     {
         const auto &trees = *detail::find_spell("natures_sanctuary");
-        auto cells = area_cells(trees, trees.id, a.source.cell, aimed.center);
+        auto cells = area_cells(trees, trees.id, origin_toward(a, aimed.center), aimed.center);
         if (aimed.verb == "move_sanctuary")
         {
             a.bonus = false;
@@ -17814,9 +18038,10 @@ void Session::breath_weapon(Actor &dragonborn, const PendingArea &aimed)
     log(dragonborn.source.name + " uses Breath Weapon.",
         {"{name} uses Breath Weapon.", {{"name", dragonborn.source.name}}});
     const auto &breath = *detail::find_spell(aimed.verb);
-    damage_area(dragonborn, breath, aimed.verb,
-                area_cells(breath, aimed.verb, dragonborn.source.cell, aimed.center),
-                area_dc(dragonborn, breath));
+    damage_area(
+        dragonborn, breath, aimed.verb,
+        area_cells(breath, aimed.verb, origin_toward(dragonborn, aimed.center), aimed.center),
+        area_dc(dragonborn, breath));
 }
 
 std::optional<int> Session::heroic_reroll(Actor &a)
@@ -17862,7 +18087,8 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
                                detail::EffectKind::breathed);
         log(a.source.name + " breathes.", {"{name} breathes.", {{"name", a.source.name}}});
         damage_area(a, spell, aimed.verb,
-                    area_cells(spell, aimed.verb, a.source.cell, aimed.center), area_dc(a, spell));
+                    area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center),
+                    area_dc(a, spell));
         return;
     }
     // Quickened Spell casts an Action spell as a Bonus Action.
@@ -17935,13 +18161,14 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     // Heightened Spell takes the first enemy in the area.
     if (casting_with(Metamagic::heightened))
     {
-        for (const auto cell : spell.storm
-                                   ? storm_cells(aimed.cubes)
-                                   : area_cells(spell, aimed.verb, a.source.cell, aimed.center))
+        for (const auto cell :
+             spell.storm
+                 ? storm_cells(aimed.cubes)
+                 : area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center))
         {
             for (const auto &other : actors_)
             {
-                if (!heightened_target_ && !other.life.dead && other.source.cell == cell &&
+                if (!heightened_target_ && !other.life.dead && occupies(other, cell) &&
                     other.source.side != a.source.side)
                 {
                     heightened_target_ = other.source.id;
@@ -17967,7 +18194,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         const auto beam = zones_.back();
         for (auto &other : actors_)
         {
-            if (in_zone(beam, other.source.cell))
+            if (in_zone(beam, other))
             {
                 moonbeam_burns(beam, other);
             }
@@ -17977,12 +18204,13 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     if (spell.rider == detail::Rider::gust_of_wind)
     {
         begin_concentration(a, spell);
-        const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+        const auto cells =
+            area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center);
         zones_.push_back({a.source.id, ZoneKind::gust, cells});
         const auto line = zones_.back();
         for (auto &other : actors_)
         {
-            if (other.source.id != a.source.id && in_zone(line, other.source.cell))
+            if (other.source.id != a.source.id && in_zone(line, other))
             {
                 blow(line, other);
             }
@@ -18002,7 +18230,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
                                     detail::EffectKind::circling,
                                     static_cast<int>(slot_level_of(aimed.verb, spell)));
         Zone circle{a.source.id, ZoneKind::circle,
-                    area_cells(spell, aimed.verb, a.source.cell, aimed.center)};
+                    area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center)};
         circle.warded = static_cast<unsigned>(ward_of(aimed.verb));
         zones_.push_back(std::move(circle));
         log(a.source.name + " begins a Magic Circle against " + ward_label(ward_of(aimed.verb)) +
@@ -18027,7 +18255,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         // The pack strikes only creatures that later come near it.
         begin_concentration(a, spell);
         Zone pack{a.source.id, ZoneKind::animals,
-                  area_cells(spell, aimed.verb, a.source.cell, aimed.center)};
+                  area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center)};
         pack.save_dc = spell_dc(a, spell.id);
         pack.slot = slot_level_of(aimed.verb, spell);
         zones_.push_back(std::move(pack));
@@ -18039,13 +18267,13 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         // Everyone in the swarm when it appears saves, once this turn.
         begin_concentration(a, spell);
         Zone swarm{a.source.id, ZoneKind::swarm,
-                   area_cells(spell, aimed.verb, a.source.cell, aimed.center)};
+                   area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center)};
         swarm.save_dc = area_dc(a, spell);
         swarm.slot = slot_level_of(aimed.verb, spell);
         zones_.push_back(swarm);
         for (auto &other : actors_)
         {
-            if (in_zone(swarm, other.source.cell))
+            if (in_zone(swarm, other))
             {
                 swarm_strikes(swarm, other);
             }
@@ -18058,10 +18286,11 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         // the caster's turns.
         begin_concentration(a, spell);
         Zone wave{a.source.id, ZoneKind::wave,
-                  area_cells(spell, aimed.verb, a.source.cell, aimed.center)};
+                  area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center)};
         wave.save_dc = area_dc(a, spell);
         wave.slot = 5;
-        wave.dealt = static_cast<int>(wave_heading(aimed.verb, a.source.cell, aimed.center));
+        wave.dealt = static_cast<int>(
+            wave_heading(aimed.verb, origin_toward(a, aimed.center), aimed.center));
         log("A wall of water rises.", {"A wall of water rises.", {}});
         damage_area(a, spell, aimed.verb, wave.cells, wave.save_dc);
         // Caught in its own wave, the caster may lose Concentration at once.
@@ -18076,7 +18305,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         // The thorns pierce those in the wall as it rises; later they slash.
         begin_concentration(a, spell);
         Zone thorns{a.source.id, ZoneKind::thorns,
-                    area_cells(spell, aimed.verb, a.source.cell, aimed.center)};
+                    area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center)};
         thorns.save_dc = area_dc(a, spell);
         thorns.slot = slot_level_of(aimed.verb, spell);
         damage_area(a, spell, aimed.verb, thorns.cells, thorns.save_dc);
@@ -18089,13 +18318,13 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         // Everyone in the wall when it rises saves, once this turn.
         begin_concentration(a, spell);
         Zone blades{a.source.id, ZoneKind::blades,
-                    area_cells(spell, aimed.verb, a.source.cell, aimed.center)};
+                    area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center)};
         blades.save_dc = area_dc(a, spell);
         blades.slot = slot_level_of(aimed.verb, spell);
         zones_.push_back(blades);
         for (auto &other : actors_)
         {
-            if (in_zone(blades, other.source.cell))
+            if (in_zone(blades, other))
             {
                 swarm_strikes(blades, other);
             }
@@ -18123,7 +18352,8 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         }
         log("Lightning strikes from the storm cloud.",
             {"Lightning strikes from the storm cloud.", {}});
-        damage_area(a, bolt, bolt.id, area_cells(bolt, bolt.id, a.source.cell, aimed.center),
+        damage_area(a, bolt, bolt.id,
+                    area_cells(bolt, bolt.id, origin_toward(a, aimed.center), aimed.center),
                     area_dc(a, spell));
         return;
     }
@@ -18153,18 +18383,21 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
             zones_.push_back({a.source.id, ZoneKind::sunbeam, {a.source.cell}});
         }
         damage_area(a, spell, aimed.verb,
-                    area_cells(spell, aimed.verb, a.source.cell, aimed.center), area_dc(a, spell));
+                    area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center),
+                    area_dc(a, spell));
         return;
     }
     if (spell.rider == detail::Rider::mass_cure_wounds)
     {
-        mass_cure(a, spell, aimed.verb, area_cells(spell, aimed.verb, a.source.cell, aimed.center));
+        mass_cure(a, spell, aimed.verb,
+                  area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center));
         return;
     }
     if (spell.rider == detail::Rider::wind_wall)
     {
         begin_concentration(a, spell);
-        const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+        const auto cells =
+            area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center);
         zones_.push_back({a.source.id, ZoneKind::wind_wall, cells});
         damage_area(a, spell, aimed.verb, cells, area_dc(a, spell));
         return;
@@ -18173,7 +18406,8 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     if (spell.rider == detail::Rider::plant_growth)
     {
         std::vector<Cell> grown;
-        for (const auto cell : area_cells(spell, aimed.verb, a.source.cell, aimed.center))
+        for (const auto cell :
+             area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center))
         {
             if (!board_.plants.empty() &&
                 board_.plants[static_cast<std::size_t>(cell.y * board_.width + cell.x)])
@@ -18208,7 +18442,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     if (spell.rider == detail::Rider::cloudkill || spell.rider == detail::Rider::incendiary_cloud)
     {
         begin_concentration(a, spell);
-        auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+        auto cells = area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center);
         std::erase(cells, aimed.center);
         cells.insert(cells.begin(), aimed.center);
         Zone cloud{a.source.id,
@@ -18219,7 +18453,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         zones_.push_back(cloud);
         for (auto &other : actors_)
         {
-            if (in_zone(cloud, other.source.cell))
+            if (in_zone(cloud, other))
             {
                 choke_cloud(cloud, other);
             }
@@ -18280,12 +18514,12 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     {
         // A creature in its way is pushed aside and saves against the cold.
         begin_concentration(a, spell);
-        const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+        const auto cells =
+            area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center);
         std::vector<Cell> struck;
         for (const auto &other : actors_)
         {
-            if (!other.life.dead && other.source.id != a.source.id &&
-                std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+            if (!other.life.dead && other.source.id != a.source.id && touches(cells, other))
             {
                 struck.push_back(other.source.cell);
             }
@@ -18294,10 +18528,10 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         zones_.push_back({a.source.id, ZoneKind::ice_wall, cells});
         for (auto &other : actors_)
         {
-            if (!other.life.dead &&
-                std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+            if (!other.life.dead && touches(cells, other))
             {
-                if (const auto squares = free_squares_near(other.source.cell); !squares.empty())
+                if (const auto squares = free_squares_near(other.source.cell, footprint(other));
+                    !squares.empty())
                 {
                     other.source.cell = squares.front();
                     log(other.source.name + " is pushed aside by the wall.",
@@ -18314,7 +18548,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         // to the nearest free square beside the wall.
         begin_concentration(a, spell);
         const bool stone = spell.rider == detail::Rider::wall_of_stone;
-        auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+        auto cells = area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center);
         if (stone)
         {
             std::erase_if(cells,
@@ -18324,17 +18558,17 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
                                                  [&](const auto &other)
                                                  {
                                                      return !other.life.dead &&
-                                                            other.source.cell == cell;
+                                                            occupies(other, cell);
                                                  });
                           });
         }
         zones_.push_back({a.source.id, stone ? ZoneKind::stone_wall : ZoneKind::force_wall, cells});
         for (auto &other : actors_)
         {
-            if (!other.life.dead &&
-                std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+            if (!other.life.dead && touches(cells, other))
             {
-                if (const auto squares = free_squares_near(other.source.cell); !squares.empty())
+                if (const auto squares = free_squares_near(other.source.cell, footprint(other));
+                    !squares.empty())
                 {
                     other.source.cell = squares.front();
                     log(other.source.name + " is pushed aside by the wall.",
@@ -18400,13 +18634,13 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         // Everyone in the tentacles when they rise saves, once this turn.
         begin_concentration(a, spell);
         Zone tentacles{a.source.id, ZoneKind::tentacles,
-                       area_cells(spell, aimed.verb, a.source.cell, aimed.center)};
+                       area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center)};
         tentacles.save_dc = area_dc(a, spell);
         tentacles.slot = slot_level_of(aimed.verb, spell);
         zones_.push_back(tentacles);
         for (auto &other : actors_)
         {
-            if (in_zone(tentacles, other.source.cell))
+            if (in_zone(tentacles, other))
             {
                 grope(tentacles, other);
             }
@@ -18416,14 +18650,14 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     if (spell.rider == detail::Rider::confusion)
     {
         begin_concentration(a, spell);
-        const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+        const auto cells =
+            area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center);
         const int dc = area_dc(a, spell);
         const auto careful = careful_allies(a, cells);
         for (auto &other : actors_)
         {
             if (other.life.dead || other.life.hp == 0 || other.source.id == a.source.id ||
-                absent(other) || sealed_off(other) ||
-                std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
+                absent(other) || sealed_off(other) || !touches(cells, other) ||
                 std::find(careful.begin(), careful.end(), other.source.id) != careful.end() ||
                 !detail::can_apply(other.effects) ||
                 saving_throw_succeeds(other, spell.save, dc, false,
@@ -18442,7 +18676,8 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     }
     if (spell.rider == detail::Rider::slow)
     {
-        slow_area(a, spell, area_cells(spell, aimed.verb, a.source.cell, aimed.center),
+        slow_area(a, spell,
+                  area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center),
                   aimed.center);
         return;
     }
@@ -18451,8 +18686,8 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     {
         for (const auto &zone : zones_)
         {
-            if ((zone.kind == ZoneKind::cage || zone.kind == ZoneKind::box) &&
-                in_zone(zone, a.source.cell) && !in_zone(zone, aimed.center))
+            if ((zone.kind == ZoneKind::cage || zone.kind == ZoneKind::box) && in_zone(zone, a) &&
+                !in_zone(zone, aimed.center))
             {
                 if (saving_throw_succeeds(a, detail::Ability::charisma, zone.save_dc))
                 {
@@ -18469,7 +18704,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         // The bead waits for the spell to end, growing as each of the
         // caster's turns ends.
         begin_concentration(a, spell);
-        auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+        auto cells = area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center);
         std::erase(cells, aimed.center);
         cells.insert(cells.begin(), aimed.center);
         Zone bead{a.source.id, ZoneKind::bead, std::move(cells)};
@@ -18485,7 +18720,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         begin_concentration(a, spell);
         const bool box = detail::without_cast_suffix(aimed.verb).ends_with("_box");
         Zone prison{a.source.id, box ? ZoneKind::box : ZoneKind::cage,
-                    area_shape(spell, aimed.verb, a.source.cell, aimed.center)};
+                    area_shape(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center)};
         prison.save_dc = area_dc(a, spell);
         zones_.push_back(std::move(prison));
         if (box)
@@ -18503,12 +18738,12 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         // Each creature in the cylinder that fails a Dexterity save falls
         // upward and hangs out of melee reach (LEVELS-3).
         begin_concentration(a, spell);
-        const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+        const auto cells =
+            area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center);
         const int dc = area_dc(a, spell);
         for (auto &other : actors_)
         {
-            if (!other.life.dead && !absent(other) && !aloft(other) &&
-                std::find(cells.begin(), cells.end(), other.source.cell) != cells.end() &&
+            if (!other.life.dead && !absent(other) && !aloft(other) && touches(cells, other) &&
                 !sealed_off(other) && !caged_apart(a.source.cell, other.source.cell, false) &&
                 !globe_wards(a, other.source.cell, slot_level_of(aimed.verb, spell)) &&
                 detail::can_apply(other.effects) &&
@@ -18534,7 +18769,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         if (aimed.companion)
         {
             auto &friend_ = actor(aimed.companion);
-            if (!friend_.life.dead && distance(friend_.source.cell, from) <= 5)
+            if (!friend_.life.dead && distance(friend_, from) <= 5)
             {
                 friend_.source.cell = nearest_open(friend_, aimed.center);
                 log(friend_.source.name + " steps through with " + a.source.name + ".",
@@ -18550,7 +18785,8 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         // The wall burns those in it as it rises; its burning side burns
         // those that end their turns beside it.
         begin_concentration(a, spell);
-        const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+        const auto cells =
+            area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center);
         Zone wall{a.source.id, ZoneKind::fire_wall, cells};
         wall.slot = slot_level_of(aimed.verb, spell);
         Zone side{a.source.id, ZoneKind::fire_side, burning_side(aimed.verb, aimed.center, cells)};
@@ -18567,7 +18803,8 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     {
         // The hailstones make Difficult Terrain until the end of the caster's
         // next turn.
-        const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+        const auto cells =
+            area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center);
         const auto index = index_of(a.source.id);
         const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
         zones_.push_back(
@@ -18577,7 +18814,8 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     }
     if (spell.rider == detail::Rider::hypnotic_pattern || spell.rider == detail::Rider::fear)
     {
-        enchant_area(a, spell, area_cells(spell, aimed.verb, a.source.cell, aimed.center));
+        enchant_area(a, spell,
+                     area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center));
         return;
     }
     if (spell.rider == detail::Rider::sleet_storm || spell.rider == detail::Rider::stinking_cloud)
@@ -18587,7 +18825,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         begin_concentration(a, spell);
         Zone zone{a.source.id,
                   spell.rider == detail::Rider::sleet_storm ? ZoneKind::sleet : ZoneKind::stench,
-                  area_cells(spell, aimed.verb, a.source.cell, aimed.center)};
+                  area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center)};
         zone.save_dc = area_dc(a, spell);
         zones_.push_back(std::move(zone));
         return;
@@ -18602,7 +18840,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         zones_.push_back(pillar);
         for (auto &other : actors_)
         {
-            if (in_zone(pillar, other.source.cell))
+            if (in_zone(pillar, other))
             {
                 bathe(pillar, other);
             }
@@ -18614,7 +18852,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         // The tremor shakes the ground, without regard to walls, as it starts.
         begin_concentration(a, spell);
         Zone quake{a.source.id, ZoneKind::quake,
-                   area_shape(spell, aimed.verb, a.source.cell, aimed.center)};
+                   area_shape(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center)};
         quake.save_dc = area_dc(a, spell);
         zones_.push_back(quake);
         tremor(quake);
@@ -18628,7 +18866,8 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     if (spell.rider == detail::Rider::sunburst)
     {
         // Spell Darkness in the Sphere ends.
-        const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+        const auto cells =
+            area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center);
         std::vector<EntityId> darkened;
         for (const auto &zone : zones_)
         {
@@ -18660,7 +18899,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
             {"{name} steps through the mist.", {{"name", a.source.name}}});
         return;
     }
-    const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+    const auto cells = area_cells(spell, aimed.verb, origin_toward(a, aimed.center), aimed.center);
     if (spell.pattern == detail::SpellPattern::save_damage)
     {
         damage_area(a, spell, aimed.verb, cells, area_dc(a, spell));
@@ -18694,7 +18933,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         const auto zone = zones_.back();
         for (auto &other : actors_)
         {
-            if (other.source.id != a.source.id && in_zone(zone, other.source.cell))
+            if (other.source.id != a.source.id && in_zone(zone, other))
             {
                 (void)spring_zone(zone, other);
             }
@@ -18708,8 +18947,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     const int dc = spell_dc(a, spell.id);
     for (auto &other : actors_)
     {
-        if (other.life.dead || other.source.id == a.source.id ||
-            std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
+        if (other.life.dead || other.source.id == a.source.id || !touches(cells, other) ||
             !detail::can_apply(other.effects) || saving_throw_succeeds(other, spell.save, dc))
         {
             continue;
@@ -18756,8 +18994,7 @@ void Session::preserve_life(Actor &cleric)
     for (auto &other : actors_)
     {
         if (other.source.side == cleric.source.side && !other.life.dead &&
-            other.life.hp * 2 <= max_hp(other) &&
-            distance(cleric.source.cell, other.source.cell) <= 30 &&
+            other.life.hp * 2 <= max_hp(other) && distance(cleric, other) <= 30 &&
             def(other).creature_type != "undead" && def(other).creature_type != "construct")
         {
             bloodied.push_back(&other);
@@ -18820,8 +19057,7 @@ void Session::turn_undead(Actor &cleric)
     for (auto &other : actors_)
     {
         if (other.source.side != cleric.source.side && other.life.hp > 0 &&
-            def(other).creature_type == "undead" &&
-            distance(cleric.source.cell, other.source.cell) <= 30 &&
+            def(other).creature_type == "undead" && distance(cleric, other) <= 30 &&
             detail::can_apply(other.effects) &&
             !saving_throw_succeeds(other, detail::Ability::wisdom, spell_dc(cleric)))
         {
@@ -18898,13 +19134,13 @@ void Session::flee_turning(std::vector<Command> &commands, const Actor &a) const
         return;
     }
     const Command *farthest = nullptr;
-    int best = distance(a.source.cell, cleric->source.cell);
+    int best = distance(a, *cleric);
     for (const auto &offer : commands)
     {
-        if (offer.verb == "move" && distance(offer.destination, cleric->source.cell) > best)
+        if (offer.verb == "move" && distance(offer.destination, *cleric) > best)
         {
             farthest = &offer;
-            best = distance(offer.destination, cleric->source.cell);
+            best = distance(offer.destination, *cleric);
         }
     }
     const auto end = std::find_if(commands.begin(), commands.end(),
@@ -19264,7 +19500,7 @@ std::vector<const Actor *> Session::fears_in_sight(const Actor &a) const
             for (const auto &other : actors_)
             {
                 if (other.source.id == e.source_actor && !other.life.dead &&
-                    line_of_sight(a.source.cell, other.source.cell))
+                    line_of_sight(a, other))
                 {
                     result.push_back(&other);
                 }
@@ -19283,9 +19519,8 @@ void Session::intimidate(const Actor &barbarian)
     for (auto &other : actors_)
     {
         if (other.source.side == barbarian.source.side || !conscious(other) ||
-            distance(barbarian.source.cell, other.source.cell) > 30 ||
-            !line_of_sight(barbarian.source.cell, other.source.cell) || fearless(other) ||
-            detail::has_effect(other.effects, detail::EffectKind::frightened) ||
+            distance(barbarian, other) > 30 || !line_of_sight(barbarian, other) ||
+            fearless(other) || detail::has_effect(other.effects, detail::EffectKind::frightened) ||
             !detail::can_apply(other.effects))
         {
             continue;
@@ -19328,8 +19563,7 @@ bool Session::aura_covers(const Actor &paladin, const Actor &a) const
 {
     return def(paladin).aura_of_protection && paladin.source.side == a.source.side &&
            conscious(paladin) && !detail::incapacitated(paladin.effects) && !absent(a) &&
-           distance(paladin.source.cell, a.source.cell) <= 10 &&
-           line_of_sight(paladin.source.cell, a.source.cell);
+           distance(paladin, a) <= 10 && line_of_sight(paladin, a);
 }
 
 int Session::aura_of_protection(const Actor &a) const
@@ -19431,7 +19665,7 @@ void Session::guardian_tests(Actor &creature)
         if (guardian.kind != ZoneKind::guardian || creature.life.hp == 0 || creature.life.dead ||
             absent(creature) ||
             detail::has_effect(creature.effects, detail::EffectKind::faith_tested) ||
-            distance(guardian.cells.front(), creature.source.cell) > 10)
+            distance(guardian.cells.front(), creature) > 10)
         {
             continue;
         }
@@ -19472,24 +19706,26 @@ void Session::guardian_tests(Actor &creature)
 Cell Session::nearest_open(const Actor &a, std::optional<Cell> near) const
 {
     const Cell from = near.value_or(a.source.cell);
-    // Its own square, or the nearest one no creature or guardian holds.
+    // Its own square, or the nearest one with room for it that no creature or
+    // guardian holds.
     const auto open = [&](Cell cell)
     {
-        return board_.at(cell) != Terrain::obstacle && !guarded_square(cell) &&
-               std::none_of(actors_.begin(), actors_.end(),
-                            [&](const auto &other)
-                            {
-                                return other.source.id != a.source.id && !other.life.dead &&
-                                       !absent(other) && other.source.cell == cell;
-                            });
+        return room_for(&a, footprint(a), cell);
+    };
+    // Measured to the nearest of its squares there, a space that still
+    // covers `from` being no move at all; then by its top-left square, so a
+    // creature that fits stays put.
+    const auto away = [&](Cell cell)
+    {
+        return std::pair{distance(from, Footprint{}, cell, footprint(a)),
+                         distance(a.source.cell, cell)};
     };
     std::optional<Cell> best;
     for (int y = 0; y < board_.height; ++y)
     {
         for (int x = 0; x < board_.width; ++x)
         {
-            if (const Cell cell{x, y};
-                open(cell) && (!best || distance(from, cell) < distance(from, *best)))
+            if (const Cell cell{x, y}; open(cell) && (!best || away(cell) < away(*best)))
             {
                 best = cell;
             }
@@ -19525,8 +19761,7 @@ bool Session::in_aura_of_life(const Actor &a) const
                            return detail::has_effect(caster.effects,
                                                      detail::EffectKind::aura_of_life) &&
                                   caster.source.side == a.source.side &&
-                                  distance(caster.source.cell, a.source.cell) <= 30 &&
-                                  line_of_sight(caster.source.cell, a.source.cell);
+                                  distance(caster, a) <= 30 && line_of_sight(caster, a);
                        });
 }
 
@@ -19623,7 +19858,7 @@ void Session::dispel(Actor &caster, Cell cell, unsigned slot_level)
     };
     for (auto &target : actors_)
     {
-        if (target.life.dead || target.source.cell != cell)
+        if (target.life.dead || !occupies(target, cell))
         {
             continue;
         }
@@ -19751,7 +19986,7 @@ Session::affinities(const Actor &target, std::vector<detail::DamageAffinity> &ad
     {
         if (const auto *druid = find_actor(zone.caster);
             zone.kind == ZoneKind::sanctuary && druid && druid->source.side == target.source.side &&
-            in_zone(zone, target.source.cell))
+            in_zone(zone, target))
         {
             for (const auto &ward : def(*druid).affinities)
             {
@@ -19839,8 +20074,7 @@ std::vector<EntityId> Session::bonds_on(const Actor &target) const
             for (const auto &caster : actors_)
             {
                 if (caster.source.id == e.source_actor && caster.life.hp > 0 && !caster.life.dead &&
-                    caster.source.id != target.source.id &&
-                    distance(caster.source.cell, target.source.cell) <= 60)
+                    caster.source.id != target.source.id && distance(caster, target) <= 60)
                 {
                     casters.push_back(caster.source.id);
                 }
@@ -19911,25 +20145,33 @@ bool Session::can_hide(const Actor &a) const
         [&](const auto &enemy)
         {
             if (enemy.source.side == a.source.side || !conscious(enemy) ||
-                obscured(enemy, enemy.source.cell) || obscured(enemy, a.source.cell))
+                obscured(enemy, a.source.cell))
             {
                 return false;
-            }
-            if (!def(a).naturally_stealthy)
-            {
-                return detail::has_line_of_sight(board_, enemy.source.cell, a.source.cell);
             }
             auto board = board_;
             for (const auto &other : actors_)
             {
-                if (!other.life.dead && other.source.id != a.source.id &&
-                    other.source.id != enemy.source.id && def(other).size > def(a).size)
+                if (def(a).naturally_stealthy && !other.life.dead &&
+                    other.source.id != a.source.id && other.source.id != enemy.source.id &&
+                    def(other).size > def(a).size)
                 {
-                    board.terrain[other.source.cell.y * board_.width + other.source.cell.x] =
-                        Terrain::obstacle;
+                    for (const auto square : squares_of(other))
+                    {
+                        board
+                            .terrain[static_cast<std::size_t>(square.y * board_.width + square.x)] =
+                            Terrain::obstacle;
+                    }
                 }
             }
-            return detail::has_line_of_sight(board, enemy.source.cell, a.source.cell);
+            // From any of the enemy's squares (FOOT-1).
+            const auto eyes = squares_of(enemy);
+            return std::any_of(eyes.begin(), eyes.end(),
+                               [&](Cell eye)
+                               {
+                                   return !obscured(enemy, eye) &&
+                                          detail::has_line_of_sight(board, eye, a.source.cell);
+                               });
         });
 }
 
@@ -20355,14 +20597,14 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
                    (ranged ? d.ranged_heavy_disadvantage : d.melee_heavy_disadvantage));
     if (ranged)
     {
-        if (!spell && distance(a.source.cell, target.source.cell) > d.range)
+        if (!spell && distance(a, target) > d.range)
         {
             disadvantaged = true;
         }
         for (const auto &other : actors_)
         {
-            if (other.source.side != a.source.side && conscious(other) &&
-                distance(a.source.cell, other.source.cell) <= 5 && can_see(other, a))
+            if (other.source.side != a.source.side && conscious(other) && distance(a, other) <= 5 &&
+                can_see(other, a))
             {
                 disadvantaged = true;
             }
@@ -20433,7 +20675,7 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
                     {
                         return zone.kind == ZoneKind::circle && zone.ends_ms &&
                                def(a).creature_type == detail::ward_types[zone.warded] &&
-                               in_zone(zone, target.source.cell);
+                               in_zone(zone, target);
                     }))
     {
         result.disadvantage = true;
@@ -20516,7 +20758,7 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     }
     if (target.effects.prone || target.life.hp == 0)
     {
-        if (distance(a.source.cell, target.source.cell) <= 5)
+        if (distance(a, target) <= 5)
         {
             result.advantage = true;
         }
@@ -20597,8 +20839,7 @@ bool Session::charges(const Actor &a, const Actor &target) const
     // target, ending where the Boar stands.
     return def(a).charge && def(target).size <= 2 && a.run_feet >= 20 &&
            a.run_end == a.source.cell &&
-           distance(a.run_start, target.source.cell) - distance(a.run_end, target.source.cell) ==
-               a.run_feet;
+           distance(a.run_start, target) - distance(a.run_end, target) == a.run_feet;
 }
 
 void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
@@ -20637,7 +20878,7 @@ void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
         return;
     }
     const bool critical = critical_hit(a, target, natural, spell);
-    const bool helpless = unconscious(target) && distance(a.source.cell, target.source.cell) <= 5;
+    const bool helpless = unconscious(target) && distance(a, target) <= 5;
     if (savage)
     {
         message += " (Savage Attacker)";
@@ -20769,8 +21010,7 @@ bool Session::sneak_eligible(const Actor &a, const Actor &target, AttackRange ra
                                   {
                                       return other.source.id != a.source.id &&
                                              other.source.side == a.source.side &&
-                                             conscious(other) &&
-                                             distance(other.source.cell, target.source.cell) <= 5;
+                                             conscious(other) && distance(other, target) <= 5;
                                   });
     // A ranged weapon's fallback melee attack is unarmed, not that weapon.
     return detail::sneak_attack_eligible(
@@ -20786,7 +21026,7 @@ bool Session::ally_beside(const Actor &a, const Actor &target) const
                        {
                            return other.source.id != a.source.id &&
                                   other.source.side == a.source.side && conscious(other) &&
-                                  distance(other.source.cell, target.source.cell) <= 5;
+                                  distance(other, target) <= 5;
                        });
 }
 
@@ -20974,7 +21214,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     // (AMMO-UNLIMITED), so a bow's shot has the bow's magic.
     if (hit && ranged && !spell &&
         detail::has_effect(target.effects, detail::EffectKind::missile_ward) &&
-        distance(a.source.cell, target.source.cell) > 5 && weapon_magic == 0)
+        distance(a, target) > 5 && weapon_magic == 0)
     {
         hit = false;
         log("The missile cannot touch " + target.source.name + ".",
@@ -21194,8 +21434,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                                               return zone.kind == ZoneKind::elementals &&
                                                      zone.caster == a.source.id;
                                           });
-        hit && spirits != zones_.end() && !target.life.dead &&
-        in_emanation(*spirits, target.source.cell))
+        hit && spirits != zones_.end() && !target.life.dead && in_emanation(*spirits, target))
     {
         for (const auto &e : a.effects.active)
         {
@@ -21224,7 +21463,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                                              return e.kind == detail::EffectKind::fire_shield;
                                          });
         hit && !ranged && shield != target.effects.active.end() && !a.life.dead &&
-        distance(a.source.cell, target.source.cell) <= 5)
+        distance(a, target) <= 5)
     {
         const auto type = shield->dc ? detail::DamageType::cold : detail::DamageType::fire;
         const auto name = std::string(detail::damage_name(type));
@@ -21379,7 +21618,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     // A Pirate Captain's Riposte: having parried, it strikes back at the
     // attacker within reach.
     if (parry && def(target).riposte && conscious(target) && !a.life.dead && a.life.hp > 0 &&
-        distance(a.source.cell, target.source.cell) <= 5)
+        distance(a, target) <= 5)
     {
         log(target.source.name + " ripostes.", {"{name} ripostes.", {{"name", target.source.name}}});
         attack(target, a, AttackRange::melee);
@@ -21706,8 +21945,7 @@ std::vector<EntityId> Session::careful_allies(const Actor &caster,
     for (const auto &other : actors_)
     {
         if (spared.size() < most && other.source.side == caster.source.side &&
-            other.source.id != caster.source.id && !other.life.dead &&
-            std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+            other.source.id != caster.source.id && !other.life.dead && touches(cells, other))
         {
             spared.push_back(other.source.id);
         }
@@ -22326,8 +22564,7 @@ void Session::get_up(Actor &a)
                                       [&](const auto &other)
                                       {
                                           return other.source.id != a.source.id &&
-                                                 conscious(other) &&
-                                                 other.source.cell == a.source.cell;
+                                                 conscious(other) && distance(other, a) == 0;
                                       });
     if (static_cast<int>(round_) < a.rises_on_round || stood_on)
     {
@@ -22455,7 +22692,7 @@ bool Session::begin_turn()
             const auto &spell = *detail::find_spell(
                 zone.kind == ZoneKind::embers ? "incendiary_cloud" : "cloudkill");
             const auto before = zone;
-            auto cells = area_cells(spell, spell.id, a.source.cell, to);
+            auto cells = area_cells(spell, spell.id, origin_toward(a, to), to);
             std::erase(cells, to);
             cells.insert(cells.begin(), to);
             zone.cells = std::move(cells);
@@ -22463,7 +22700,7 @@ bool Session::begin_turn()
             log("The cloud drifts.", {"The cloud drifts.", {}});
             for (auto &other : actors_)
             {
-                if (in_zone(after, other.source.cell) && !in_zone(before, other.source.cell))
+                if (in_zone(after, other) && !in_zone(before, other))
                 {
                     choke_cloud(after, other);
                 }
@@ -22478,8 +22715,7 @@ bool Session::begin_turn()
         if (zone.kind == ZoneKind::elemental && std::any_of(zone.cells.begin(), zone.cells.end(),
                                                             [&](Cell cell)
                                                             {
-                                                                return distance(cell,
-                                                                                a.source.cell) <= 5;
+                                                                return distance(cell, a) <= 5;
                                                             }))
         {
             engulf(zone, a);
@@ -22781,7 +23017,7 @@ bool Session::begin_turn()
             {
                 if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                     !absent(other) && !sealed_off(other) &&
-                    distance(zone.cells.front(), other.source.cell) <= 5 && !prey)
+                    distance(zone.cells.front(), other) <= 5 && !prey)
                 {
                     prey = &other;
                 }
@@ -22814,11 +23050,11 @@ bool Session::begin_turn()
     // Sleet Storm and Stinking Cloud act on a creature starting its turn in them.
     for (const auto &zone : std::vector<Zone>(zones_))
     {
-        if (zone.kind == ZoneKind::sleet && in_zone(zone, a.source.cell))
+        if (zone.kind == ZoneKind::sleet && in_zone(zone, a))
         {
             sleet_falls(zone, a);
         }
-        else if (zone.kind == ZoneKind::stench && in_zone(zone, a.source.cell))
+        else if (zone.kind == ZoneKind::stench && in_zone(zone, a))
         {
             choke(zone, a);
         }
@@ -23073,7 +23309,7 @@ bool Session::rolled_save_succeeds(const Actor &target, detail::Ability ability,
                                    std::any_of(zone.cells.begin(), zone.cells.end(),
                                                [&](Cell cell)
                                                {
-                                                   return distance(cell, target.source.cell) <= 5;
+                                                   return distance(cell, target) <= 5;
                                                });
                         });
         modifiers.disadvantage |=
@@ -23166,7 +23402,7 @@ bool Session::charm_or_fear_save(const Actor &target, detail::Ability ability, i
     {
         if (def(bard).countercharm && bard.source.side == target.source.side && conscious(bard) &&
             bard.reaction && !detail::incapacitated(bard.effects) && !absent(bard) &&
-            distance(bard.source.cell, target.source.cell) <= 30)
+            distance(bard, target) <= 30)
         {
             bard.reaction = false;
             log(bard.source.name + " uses Countercharm: " + target.source.name +
@@ -23630,14 +23866,14 @@ void Session::end_turn()
     burn_beside_spheres(actors_[turn_]);
     for (const auto &zone : std::vector<Zone>(zones_))
     {
-        if (zone.kind == ZoneKind::moonbeam && in_zone(zone, actors_[turn_].source.cell))
+        if (zone.kind == ZoneKind::moonbeam && in_zone(zone, actors_[turn_]))
         {
             moonbeam_burns(zone, actors_[turn_]);
         }
     }
     for (const auto &zone : std::vector<Zone>(zones_))
     {
-        if (zone.kind == ZoneKind::gust && in_zone(zone, actors_[turn_].source.cell))
+        if (zone.kind == ZoneKind::gust && in_zone(zone, actors_[turn_]))
         {
             blow(zone, actors_[turn_]);
         }
@@ -23646,17 +23882,17 @@ void Session::end_turn()
     {
         if ((zone.kind == ZoneKind::swarm || zone.kind == ZoneKind::blades ||
              zone.kind == ZoneKind::thorns) &&
-            in_zone(zone, actors_[turn_].source.cell))
+            in_zone(zone, actors_[turn_]))
         {
             swarm_strikes(zone, actors_[turn_]);
         }
-        else if ((zone.kind == ZoneKind::animals && near_pack(zone, actors_[turn_].source.cell)) ||
+        else if ((zone.kind == ZoneKind::animals && near_pack(zone, actors_[turn_])) ||
                  (emanates(zone) && zone.caster != actors_[turn_].source.id &&
-                  in_emanation(zone, actors_[turn_].source.cell)))
+                  in_emanation(zone, actors_[turn_])))
         {
             spirits_strike(zone, actors_[turn_]);
         }
-        else if (zone.kind == ZoneKind::pillar && in_zone(zone, actors_[turn_].source.cell))
+        else if (zone.kind == ZoneKind::pillar && in_zone(zone, actors_[turn_]))
         {
             bathe(zone, actors_[turn_]);
         }
@@ -23745,9 +23981,8 @@ void Session::end_turn()
                                                        {
                                                            return other.source.id == e.source_actor;
                                                        });
-                      return caster == actors_.end() ||
-                             (distance(caster->source.cell, actors_[turn_].source.cell) >= 60 &&
-                              !can_see(actors_[turn_], *caster));
+                      return caster == actors_.end() || (distance(*caster, actors_[turn_]) >= 60 &&
+                                                         !can_see(actors_[turn_], *caster));
                   });
     // Phantasmal Killer: a Wisdom save at the end of each of its turns; a
     // failure deals the Psychic damage again, a success ends the spell.
@@ -23776,17 +24011,17 @@ void Session::end_turn()
     // turn in them.
     for (const auto &zone : std::vector<Zone>(zones_))
     {
-        if (zone.kind == ZoneKind::tentacles && in_zone(zone, actors_[turn_].source.cell))
+        if (zone.kind == ZoneKind::tentacles && in_zone(zone, actors_[turn_]))
         {
             grope(zone, actors_[turn_]);
         }
         else if ((zone.kind == ZoneKind::cloud || zone.kind == ZoneKind::embers) &&
-                 in_zone(zone, actors_[turn_].source.cell))
+                 in_zone(zone, actors_[turn_]))
         {
             choke_cloud(zone, actors_[turn_]);
         }
         else if ((zone.kind == ZoneKind::fire_wall || zone.kind == ZoneKind::fire_side) &&
-                 in_zone(zone, actors_[turn_].source.cell))
+                 in_zone(zone, actors_[turn_]))
         {
             wall_burns(zone, actors_[turn_]);
         }
@@ -23800,7 +24035,7 @@ void Session::end_turn()
                          [&](const auto &other)
                          {
                              return other.source.id == e.source_actor && !other.life.dead &&
-                                    line_of_sight(actors_[turn_].source.cell, other.source.cell);
+                                    line_of_sight(actors_[turn_], other);
                          }) &&
             saving_throw_succeeds(actors_[turn_], detail::Ability::wisdom,
                                   spell_dc(actor(e.source_actor), "fear")))
@@ -23892,7 +24127,7 @@ void Session::progress_movement()
         {
             return;
         }
-        if (!board_.contains(destination))
+        if (off_field(a, destination))
         {
             a.movement -= 5;
             ++path_index_;
@@ -23938,8 +24173,7 @@ void Session::progress_movement()
                             return other.source.id != a.source.id && !other.life.dead &&
                                    !absent(other) && def(other).creature_type != "construct" &&
                                    def(other).creature_type != "undead" &&
-                                   (distance(departed, other.source.cell) <= 10) !=
-                                       (distance(a.source.cell, other.source.cell) <= 10);
+                                   (distance(departed, other) <= 10) != (distance(a, other) <= 10);
                         }))
         {
             end_concentration(a);
@@ -24024,9 +24258,8 @@ void Session::progress_movement()
                 for (auto &other : actors_)
                 {
                     if (const int reach = zone.kind == ZoneKind::guardians ? 15 : 10;
-                        other.source.id != a.source.id &&
-                        distance(destination, other.source.cell) <= reach &&
-                        distance(departed, other.source.cell) > reach)
+                        other.source.id != a.source.id && distance(destination, other) <= reach &&
+                        distance(departed, other) > reach)
                     {
                         spirits_strike(zone, other);
                     }
@@ -24259,8 +24492,8 @@ int Session::deflected(const Actor &attacker, Actor &target, int amount, detail:
         {"{name} deflects {damage} damage.",
          {{"name", target.source.name}, {"damage", std::to_string(amount - left)}}});
     const int reach = ranged ? 60 : 5;
-    if (left || target.surges <= 0 || attacker.life.hp <= 0 ||
-        distance(target.source.cell, attacker.source.cell) > reach || !can_see(target, attacker))
+    if (left || target.surges <= 0 || attacker.life.hp <= 0 || distance(target, attacker) > reach ||
+        !can_see(target, attacker))
     {
         return left;
     }
@@ -24297,7 +24530,7 @@ void Session::bless_fiends(const Actor &fallen)
         const int amount = def(warlock).dark_ones_blessing;
         if (!amount || warlock.life.hp <= 0 || warlock.life.dead ||
             warlock.source.side == fallen.source.side ||
-            (by != warlock.source.id && distance(warlock.source.cell, fallen.source.cell) > 10) ||
+            (by != warlock.source.id && distance(warlock, fallen) > 10) ||
             amount <= warlock.life.temporary_hp.amount)
         {
             continue;
@@ -24350,7 +24583,7 @@ Actor *Session::cutting_bard(const Actor &roller)
     {
         if (def(bard).cutting_words && bard.source.side != roller.source.side && conscious(bard) &&
             bard.reaction && !detail::incapacitated(bard.effects) && bard.arcane > 0 &&
-            distance(bard.source.cell, roller.source.cell) <= 60 && can_see(bard, roller))
+            distance(bard, roller) <= 60 && can_see(bard, roller))
         {
             return &bard;
         }
@@ -24428,8 +24661,7 @@ bool Session::can_rebuke(const Actor &warlock, const Actor &attacker) const
            !detail::incapacitated(warlock.effects) &&
            (free || (lowest_slot(warlock, 1) && !warlock.spent_slot)) &&
            detail::knows_spell(def(warlock).spells, "hellish_rebuke") &&
-           distance(warlock.source.cell, attacker.source.cell) <= 60 &&
-           can_see(warlock, attacker) && !attacker.life.dead;
+           distance(warlock, attacker) <= 60 && can_see(warlock, attacker) && !attacker.life.dead;
 }
 
 void Session::rebuke(const Actor &attacker, Actor &warlock)
@@ -24561,7 +24793,7 @@ void Session::storms_thunder(const Actor &attacker, Actor &goliath)
     // Storm's Thunder: 1d8 Thunder damage to a creature within 60 feet that
     // damaged the Goliath.
     if (attacker.source.side == goliath.source.side || attacker.life.dead ||
-        attacker.life.hp <= 0 || distance(goliath.source.cell, attacker.source.cell) > 60 ||
+        attacker.life.hp <= 0 || distance(goliath, attacker) > 60 ||
         !can_use_giant_reaction(goliath, GiantBoon::storm))
     {
         return;
@@ -24590,8 +24822,7 @@ void Session::retaliate(const Actor &attacker, Actor &berserker)
     // within 5 feet that damaged the Berserker.
     if (!def(berserker).retaliation || attacker.source.side == berserker.source.side ||
         !conscious(berserker) || !berserker.reaction || detail::incapacitated(berserker.effects) ||
-        attacker.life.dead || attacker.life.hp <= 0 ||
-        distance(berserker.source.cell, attacker.source.cell) > 5)
+        attacker.life.dead || attacker.life.hp <= 0 || distance(berserker, attacker) > 5)
     {
         return;
     }
@@ -24723,7 +24954,7 @@ void Session::follow_carrier(const Actor &monk, Cell departed)
         return;
     }
     auto &ally = actor(monk.carried);
-    if (!ally.life.dead && distance(ally.source.cell, monk.source.cell) <= 10)
+    if (!ally.life.dead && distance(ally, monk) <= 10)
     {
         ally.source.cell = departed;
     }
@@ -25205,6 +25436,8 @@ void Session::dispatch(const Command &command)
                                     static_cast<int>(form - detail::beast_forms.data()) + 1);
         const int druid_speed = def(a).speed;
         refresh_form(a);
+        // A form too big for its space takes the nearest with room (FOOT-1).
+        a.source.cell = nearest_open(a);
         change_speed(a, druid_speed);
         log(a.source.name + " takes the shape of a " + std::string(form->label) + ".",
             {"{name} takes the shape of a {form}.",
@@ -25839,7 +26072,7 @@ void Session::dispatch(const Command &command)
         auto &target = actor(command.target);
         log(a.source.name + " uses Horde Breaker.",
             {"{name} uses Horde Breaker.", {{"name", a.source.name}}});
-        const bool beyond_reach = distance(a.source.cell, target.source.cell) > d.reach;
+        const bool beyond_reach = distance(a, target) > d.reach;
         attack(a, target, beyond_reach ? AttackRange::ranged : AttackRange::melee);
     }
     else if (command.verb == "hunters_mark_free")
@@ -26389,8 +26622,9 @@ std::string Session::save() const
     {
         out << a.source.id << ' ' << std::quoted(a.source.definition) << ' '
             << std::quoted(a.source.name) << ' ' << static_cast<unsigned>(a.source.side) << ' '
-            << a.source.cell.x << ' ' << a.source.cell.y << ' ' << a.life.hp << ' ' << a.initiative
-            << ' ' << a.movement << ' ' << a.winds << ' ';
+            << a.source.cell.x << ' ' << a.source.cell.y << ' ' << a.source.footprint.width << ' '
+            << a.source.footprint.height << ' ' << a.life.hp << ' ' << a.initiative << ' '
+            << a.movement << ' ' << a.winds << ' ';
         for (unsigned level = 1; level <= highest_slot_level; ++level)
         {
             out << a.slots[level] << ' ';
@@ -26639,8 +26873,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     auto &source = actor.source;
     unsigned side{}, light_count{};
     input >> source.id >> std::quoted(source.definition) >> std::quoted(source.name) >> side >>
-        source.cell.x >> source.cell.y >> actor.life.hp >> actor.initiative >> actor.movement >>
-        actor.winds;
+        source.cell.x >> source.cell.y >> source.footprint.width >> source.footprint.height >>
+        actor.life.hp >> actor.initiative >> actor.movement >> actor.winds;
     for (unsigned level = 1; level <= highest_slot_level; ++level)
     {
         input >> actor.slots[level];
@@ -26998,7 +27232,7 @@ bool Session::stop_illegal_route()
     for (auto i = path_index_; i < path_.size(); ++i)
     {
         // A fleeing route ends with a 5-foot step off the field.
-        if (!board_.contains(path_[i]))
+        if (off_field(moving, path_[i]))
         {
             valid = budget >= 5;
             leaves_field = true;
@@ -27048,7 +27282,7 @@ void Session::validate_champion_move() const
             c.actor != actors_[turn_].source.id || c.target != c.toward || c.natural || c.spell ||
             c.triggered || c.shift || !who->brutal_used || pending() || c.remaining < 0 ||
             c.remaining > budget || !board_.contains(c.origin) ||
-            distance(c.origin, who->source.cell) > budget - c.remaining ||
+            distance(c.origin, *who) > budget - c.remaining ||
             std::none_of(actors_.begin(), actors_.end(),
                          [&](const auto &a)
                          {
@@ -27070,7 +27304,7 @@ void Session::validate_champion_move() const
             c.actor != actors_[turn_].source.id || c.target != c.actor || c.natural || c.spell ||
             c.triggered || c.shift || c.toward || !who->sneak_used || pending() ||
             c.remaining < 0 || c.remaining > budget || !board_.contains(c.origin) ||
-            distance(c.origin, who->source.cell) > budget - c.remaining)
+            distance(c.origin, *who) > budget - c.remaining)
         {
             throw std::runtime_error("Invalid Withdraw movement");
         }
@@ -27086,8 +27320,7 @@ void Session::validate_champion_move() const
         if (who == actors_.end() || !def(*who).tactical_shift || !conscious(*who) ||
             c.actor != actors_[turn_].source.id || c.target != c.actor || c.natural || c.spell ||
             c.triggered || who->bonus || pending() || c.remaining < 0 || c.remaining > budget ||
-            !board_.contains(c.origin) ||
-            distance(c.origin, who->source.cell) > budget - c.remaining)
+            !board_.contains(c.origin) || distance(c.origin, *who) > budget - c.remaining)
         {
             throw std::runtime_error("Invalid Tactical Shift movement");
         }
@@ -27124,11 +27357,11 @@ void Session::validate_champion_move() const
     if ((c.actor == actors_[turn_].source.id &&
          (who->actions.surge || (who->actions.normal && !who->surge_used))) ||
         c.remaining < 0 || c.remaining > budget ||
-        distance(c.origin, who->source.cell) > budget - c.remaining ||
+        distance(c.origin, *who) > budget - c.remaining ||
         !(c.natural == 20 || (!c.spell && c.natural >= def(*who).critical_from) ||
           ((c.helpless || target->life.hp == 0) &&
-           distance(c.triggered ? c.trigger_origin : c.origin,
-                    c.triggered ? c.target_origin : target->source.cell) <= 5)) ||
+           (c.triggered ? distance(c.trigger_origin, c.target_origin)
+                        : distance(c.origin, *target)) <= 5)) ||
         (pending() ? (pending() != c.actor || who->reaction ||
                       (!c.cleave && c.target != mover().source.id))
                    : (c.actor != actors_[turn_].source.id &&
@@ -27156,9 +27389,8 @@ void Session::validate_check() const
     if (c.actor != a.source.id || !conscious(a) || !def(a).tactical_mind || a.winds <= 0 ||
         c.natural < 1 || c.natural > 20 || c.natural + def(a).medicine + c.guidance >= 10 ||
         target == actors_.end() || target->life.hp != 0 || target->life.dead ||
-        target->life.stable || distance(a.source.cell, target->source.cell) > 5 ||
-        !line_of_sight(a.source.cell, target->source.cell) || pending() || temporary_offer_ ||
-        outcome_ != Outcome::ongoing || a.actions.surge ||
+        target->life.stable || distance(a, *target) > 5 || !line_of_sight(a, *target) ||
+        pending() || temporary_offer_ || outcome_ != Outcome::ongoing || a.actions.surge ||
         (c.surge_spent ? !a.surge_used : a.actions.normal))
     {
         throw std::runtime_error("Invalid pending ability check");
@@ -27187,10 +27419,9 @@ void Session::validate_graze() const
     if (a == actors_.end() || t == actors_.end() || a == t || !conscious(*a) || t->life.dead ||
         weapon_mastery(*a, AttackRange::melee) != detail::Mastery::graze || g.natural < 1 ||
         g.natural > 20 || attack_hits(g.natural, def(*a).melee_bonus, armor_class(*t)) ||
-        g.natural >= def(*a).critical_from ||
-        distance(a->source.cell, t->source.cell) > def(*a).reach ||
-        !line_of_sight(a->source.cell, t->source.cell) || check_choice_ || temporary_offer_ ||
-        champion_move_ || outcome_ != Outcome::ongoing ||
+        g.natural >= def(*a).critical_from || distance(*a, *t) > def(*a).reach ||
+        !line_of_sight(*a, *t) || check_choice_ || temporary_offer_ || champion_move_ ||
+        outcome_ != Outcome::ongoing ||
         (pending() ? (pending() != g.actor || a->reaction || g.target != mover().source.id)
                    : (g.actor != actors_[turn_].source.id ||
                       (a->actions.normal && (!a->surge_used || a->actions.surge)))))
@@ -27345,7 +27576,7 @@ void Session::validate_restored_state() const
         for (const auto &other : actors_)
         {
             if (other.source.id <= actor.source.id || other.life.dead ||
-                actor.source.cell != other.source.cell)
+                distance(actor, other) != 0)
             {
                 continue;
             }
@@ -27409,11 +27640,16 @@ void Session::validate_pending_movement() const
                                      ? champion_move_->origin
                                      : other.source.cell,
                                  other.source.side != moving.source.side, unconscious(other),
-                                 other.life.hp == 0});
+                                 other.life.hp == 0, footprint(other)});
         }
     }
-    const detail::MovementGrid grid{board_,           moving.source.cell,    occupants,
-                                    moving.effects.prone, def(moving).flies, def(moving).incorporeal};
+    const detail::MovementGrid grid{board_,
+                                    moving.source.cell,
+                                    occupants,
+                                    moving.effects.prone,
+                                    def(moving).flies,
+                                    def(moving).incorporeal,
+                                    footprint(moving)};
     auto cell = moving.source.cell;
     int remaining =
         effect_reaction_origin_ ? effect_reaction_origin_->movement : mover_budget(moving);
@@ -27448,7 +27684,8 @@ void Session::validate_pending_movement() const
             auto original = actor;
             original.source.cell = effect_reaction_origin_->source;
             if (actor.source.side == moving.source.side || actor.reaction ||
-                !has_weapon_reaction(original, moving.source.cell, path_[path_index_]))
+                !has_weapon_reaction(original, moving.source.cell, path_[path_index_],
+                                     footprint(moving)))
             {
                 throw std::runtime_error("Invalid mastery reaction trigger");
             }
@@ -27457,7 +27694,7 @@ void Session::validate_pending_movement() const
         if (champion_move_ && i == reactor_index_ && actor.source.id == champion_move_->actor)
         {
             if (actor.source.side == moving.source.side ||
-                distance(champion_move_->origin, moving.source.cell) > def(actor).reach ||
+                distance(champion_move_->origin, moving) > def(actor).reach ||
                 distance(champion_move_->origin, path_[path_index_]) <= def(actor).reach)
             {
                 throw std::runtime_error("Invalid Champion reaction origin");
@@ -27468,7 +27705,8 @@ void Session::validate_pending_movement() const
             (!actor.reaction &&
              !(graze_ && graze_->actor == actor.source.id && i == reactor_index_)) ||
             actor.source.side == moving.source.side ||
-            !has_weapon_reaction(actor, moving.source.cell, path_[path_index_]) ||
+            !has_weapon_reaction(actor, moving.source.cell, path_[path_index_],
+                                 footprint(moving)) ||
             !can_see(actor, moving))
         {
             throw std::runtime_error("Invalid checkpoint opportunity attack");
@@ -32693,7 +32931,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.255", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.256", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),

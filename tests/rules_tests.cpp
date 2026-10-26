@@ -1182,9 +1182,9 @@ void checkpoint_validation_tests()
     std::istringstream actor_input(actor_line);
     EntityId id;
     std::string definition, name;
-    int side, x, y, hp, initiative, movement;
-    actor_input >> id >> std::quoted(definition) >> std::quoted(name) >> side >> x >> y >> hp >>
-        initiative >> std::ws;
+    int side, x, y, width, height, hp, initiative, movement;
+    actor_input >> id >> std::quoted(definition) >> std::quoted(name) >> side >> x >> y >> width >>
+        height >> hp >> initiative >> std::ws;
     const auto movement_start = static_cast<std::size_t>(actor_input.tellg());
     actor_input >> movement;
     const auto movement_end = static_cast<std::size_t>(actor_input.tellg());
@@ -1300,7 +1300,7 @@ void checkpoint_cutoff_tests()
         }
         return false;
     };
-    check(checkpoint.starts_with("OGCOMBAT 69 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 70 "), "Checkpoints use the current format");
     auto older_format = checkpoint;
     older_format.replace(9, 2, "26");
     check(refused_as_older(older_format), "Format 26 checkpoint is refused as older");

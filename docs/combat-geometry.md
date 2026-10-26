@@ -59,6 +59,11 @@ all four facings, distances 0 to 2, parties of one to six and groups of 1 to
 map, in ten fights on the original's own random fields, every combatant
 started on OpenGoldBox's square once the fight faces the step at distance 2
 ([PLACE-2](SRD-DECISIONS.md#place-2-2026-10-25-wilderness-fights-face-the-step)).
+Monsters whose art fills two squares (gnolls, trolls and basilisks in the
+Slums, minotaurs and displacer beasts in the wilderness) started on
+OpenGoldBox's squares in twelve more fights, each filling the squares its
+footprint gives
+([FOOT-1](SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills)).
 Other city and dungeon areas' battlefields have not been compared.
 The user accepted this evidence on 2026-10-24 for closing issue #3.
 

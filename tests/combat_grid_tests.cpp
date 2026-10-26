@@ -256,6 +256,40 @@ void allied_transit()
     check(!grid.reachable(60).cost_to({3, 0}), "Allied occupancy cannot bypass a wall");
 }
 
+// A creature filling two squares one above the other (FOOT-1) moves both
+// together: every square must be open, the dearest square sets the cost, and
+// it stops only where both squares are free.
+void tall_footprint()
+{
+    Battlefield board{5, 5, std::vector<Terrain>(25, Terrain::open)};
+    const Footprint tall{1, 2};
+    MovementGrid grid(board, {0, 0}, {}, false, false, false, tall);
+    check(grid.step_cost({0, 0}, {1, 0}) == 5 && !grid.step_cost({0, 0}, {0, 4}),
+          "Each step moves both squares one square");
+    check(!grid.can_stop_at({0, 4}) && grid.can_stop_at({0, 3}),
+          "The lower square cannot leave the field");
+    board.terrain[2 * 5 + 1] = Terrain::difficult;
+    grid = MovementGrid(board, {0, 0}, {}, false, false, false, tall);
+    check(grid.step_cost({0, 0}, {1, 1}) == 10 && grid.step_cost({0, 0}, {1, 0}) == 5,
+          "Difficult ground under either square slows the step");
+    board.terrain[2 * 5 + 1] = Terrain::obstacle;
+    grid = MovementGrid(board, {0, 0}, {}, false, false, false, tall);
+    check(!grid.step_cost({0, 0}, {1, 1}) && !grid.can_stop_at({1, 1}),
+          "An obstacle under the lower square shuts the step");
+    check(!grid.step_cost({0, 1}, {1, 0}),
+          "The lower square cannot cut the obstacle's corner on a diagonal");
+    board.terrain[2 * 5 + 1] = Terrain::open;
+    const std::vector<Occupant> enemy{{{2, 3}, true}};
+    grid = MovementGrid(board, {2, 0}, enemy, false, false, false, tall);
+    check(!grid.step_cost({2, 1}, {2, 2}) && grid.reachable(30).cost_to({2, 1}) == 5,
+          "An enemy below stops the lower square");
+    const std::vector<Occupant> ally{{{3, 1}, false, false, false, tall}};
+    grid = MovementGrid(board, {2, 0}, ally);
+    check(!grid.can_stop_at({3, 2}) && !grid.can_stop_at({3, 1}) && grid.can_stop_at({3, 3}) &&
+              grid.step_cost({2, 1}, {3, 2}) == 5,
+          "An occupant fills both of its squares, which an ally may cross");
+}
+
 void boundaries_and_ties()
 {
     Battlefield board{3, 3, std::vector<Terrain>(9)};
@@ -347,6 +381,7 @@ int main()
     try
     {
         allied_transit();
+        tall_footprint();
         boundaries_and_ties();
         exhaustive_movement();
         exhaustive_sight();

@@ -464,6 +464,22 @@ struct Cell
     auto operator<=>(const Cell &) const = default;
 };
 
+// The squares a creature fills, as its combat art fills them in the original
+// (FOOT-1): tall art 1 by 2, wide art 2 by 1, the largest 2 by 2. A creature's
+// cell is the top-left square of its footprint.
+struct Footprint
+{
+    int width{1}, height{1};
+    auto operator<=>(const Footprint &) const = default;
+};
+
+// Whether a creature at `anchor` with `footprint` fills `cell`.
+[[nodiscard]] constexpr bool covers(Cell anchor, Footprint footprint, Cell cell) noexcept
+{
+    return cell.x >= anchor.x && cell.x < anchor.x + footprint.width && cell.y >= anchor.y &&
+           cell.y < anchor.y + footprint.height;
+}
+
 // A square's geometry, named so a comparison cannot mistake one kind for
 // another (Effective C++ Item 18). The values are the combat checkpoint's
 // encoding and must not change.
@@ -548,6 +564,8 @@ struct Participant
     // dice, damage type and range replace its stat block's, which keeps its
     // own bonuses. Empty, or not a weapon of that kind, keeps the stat block's.
     std::string melee_weapon, ranged_weapon;
+    // The squares it fills, its cell the top-left one (FOOT-1).
+    Footprint footprint;
 };
 
 struct Encounter
@@ -604,6 +622,7 @@ struct CombatantView
     std::string name, definition;
     Side side{Side::party};
     Cell cell;
+    Footprint footprint; // Its Wild Shape or Polymorph form's while it has one.
     int hit_points{}, max_hit_points{}, armor_class{}, initiative{}, movement_feet{};
     bool action{}, bonus_action{}, reaction{}, conscious{}, dead{}, facing_left{};
     std::string status;

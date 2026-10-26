@@ -3,6 +3,7 @@
 
 #include "opengold/equipment.h"
 #include "opengold/pool_radiance.h"
+#include "opengold/rules.h"
 
 #include <compare>
 #include <filesystem>
@@ -37,6 +38,11 @@ struct AbilityModifiers
 };
 
 [[nodiscard]] AbilityModifiers ability_modifiers(const CharacterRecord &character);
+
+// The squares a monster fills in combat, as the original gives them: record
+// byte 108's low bits name its art's shape (1 one square, 2 tall, 3 wide, 4
+// two by two), which the DOS probe found its combat occupancy follows (FOOT-1).
+[[nodiscard]] rules::Footprint combat_footprint(const CharacterRecord &character);
 
 enum class EffectKind
 {

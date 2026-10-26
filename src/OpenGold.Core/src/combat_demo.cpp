@@ -7,6 +7,7 @@
 #include "opengold/encounter_formation.h"
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <fstream>
 #include <iterator>
 #include <limits>
@@ -67,6 +68,107 @@ std::optional<Image> original_icon(const std::filesystem::path &directory, unsig
     return std::nullopt;
 }
 
+std::vector<Cell> squares_of(Cell start, Footprint footprint)
+{
+    std::vector<Cell> squares;
+    for (int dy = 0; dy < footprint.height; ++dy)
+    {
+        for (int dx = 0; dx < footprint.width; ++dx)
+        {
+            squares.push_back({start.x + dx, start.y + dy});
+        }
+    }
+    return squares;
+}
+
+std::vector<Cell> squares_of(const CombatantView &a)
+{
+    return squares_of(a.cell, a.footprint);
+}
+
+// Squares from `cell` to the nearest square `a` fills: 1 when beside it.
+int squares_from(Cell cell, const CombatantView &a)
+{
+    const int across =
+        std::max({0, a.cell.x - cell.x, cell.x - (a.cell.x + a.footprint.width - 1)});
+    const int down = std::max({0, a.cell.y - cell.y, cell.y - (a.cell.y + a.footprint.height - 1)});
+    return std::max(across, down);
+}
+
+// Squares between the nearest squares two combatants fill: 1 when beside.
+int squares_apart(const CombatantView &a, const CombatantView &b)
+{
+    int nearest = std::numeric_limits<int>::max();
+    for (const auto square : squares_of(a))
+    {
+        nearest = std::min(nearest, squares_from(square, b));
+    }
+    return nearest;
+}
+
+// Whether any square `a` fills is one of `cells`.
+bool in_cells(const std::vector<Cell> &cells, const CombatantView &a)
+{
+    const auto squares = squares_of(a);
+    return std::any_of(squares.begin(), squares.end(),
+                       [&](Cell square)
+                       {
+                           return std::find(cells.begin(), cells.end(), square) != cells.end();
+                       });
+}
+
+// Whether any of `viewer`'s squares has a line of sight to any of `seen`'s.
+bool sees(const Battlefield &board, const CombatantView &viewer, const CombatantView &seen)
+{
+    for (const auto from : squares_of(viewer))
+    {
+        for (const auto to : squares_of(seen))
+        {
+            if (rules::has_line_of_sight(board, from, to))
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Stands `participant` on the square of `free` nearest `target` whose
+// footprint's squares are all free, and takes them from `free`.
+void stand_nearest(std::vector<Cell> &free, Participant &participant, Cell target)
+{
+    const auto distance = [&](Cell cell)
+    {
+        return std::abs(cell.x - target.x) + std::abs(cell.y - target.y);
+    };
+    const auto fits = [&](Cell start)
+    {
+        const auto squares = squares_of(start, participant.footprint);
+        return std::all_of(squares.begin(), squares.end(),
+                           [&](Cell square)
+                           {
+                               return std::find(free.begin(), free.end(), square) != free.end();
+                           });
+    };
+    std::optional<Cell> nearest;
+    for (const auto cell : free)
+    {
+        if (fits(cell) && (!nearest || distance(cell) < distance(*nearest)))
+        {
+            nearest = cell;
+        }
+    }
+    if (!nearest)
+    {
+        throw std::runtime_error("Original battlefield cannot fit the complete encounter");
+    }
+    participant.cell = *nearest;
+    for (const auto square : squares_of(*nearest, participant.footprint))
+    {
+        std::erase(free, square);
+    }
+}
+
 // Stands the party and the enemies where the original engine did (PLACE-1).
 // A monster it had no room for is left out of the fight, as there. A party
 // member without room takes the free square of `reachable` nearest the side's
@@ -74,9 +176,13 @@ std::optional<Image> original_icon(const std::filesystem::path &directory, unsig
 void place_as_original(CampaignEncounter &encounter, std::vector<Participant> &party,
                        std::vector<Cell> &reachable, Cell centre)
 {
-    const auto formation =
-        encounter_formation(encounter.field, encounter.facing, encounter.distance, party.size(),
-                            encounter.enemies.size());
+    std::vector<Footprint> footprints;
+    for (const auto &enemy : encounter.enemies)
+    {
+        footprints.push_back(enemy.footprint);
+    }
+    const auto formation = encounter_formation(encounter.field, encounter.facing,
+                                               encounter.distance, party.size(), footprints);
     const auto claim =
         [&](std::span<Participant> side, const std::vector<std::optional<Cell>> &starts)
     {
@@ -85,7 +191,10 @@ void place_as_original(CampaignEncounter &encounter, std::vector<Participant> &p
             if (starts[n])
             {
                 side[n].cell = *starts[n];
-                std::erase(reachable, *starts[n]);
+                for (const auto square : squares_of(*starts[n], side[n].footprint))
+                {
+                    std::erase(reachable, square);
+                }
             }
         }
     };
@@ -98,20 +207,7 @@ void place_as_original(CampaignEncounter &encounter, std::vector<Participant> &p
             {
                 continue;
             }
-            if (reachable.empty())
-            {
-                throw std::runtime_error("Original battlefield cannot fit the complete encounter");
-            }
-            const auto target = starts.front().value_or(centre);
-            const auto nearest =
-                std::min_element(reachable.begin(), reachable.end(),
-                                 [&](Cell a, Cell b)
-                                 {
-                                     return std::abs(a.x - target.x) + std::abs(a.y - target.y) <
-                                            std::abs(b.x - target.x) + std::abs(b.y - target.y);
-                                 });
-            side[n].cell = *nearest;
-            reachable.erase(nearest);
+            stand_nearest(reachable, side[n], starts.front().value_or(centre));
         }
     };
     // Every original square is claimed before any member falls back.
@@ -349,18 +445,15 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
         std::set<Cell> occupied;
         for (std::size_t i = 0; i < encounter.positions.size(); ++i)
         {
-            const auto cell = encounter.positions[i];
-            if (board.at(cell) == Terrain::obstacle || !occupied.insert(cell).second)
+            auto &placed = i < participants.size() ? participants[i]
+                                                   : encounter.enemies[i - participants.size()];
+            placed.cell = encounter.positions[i];
+            for (const auto square : squares_of(placed.cell, placed.footprint))
             {
-                throw std::runtime_error("Invalid authored combat position");
-            }
-            if (i < participants.size())
-            {
-                participants[i].cell = cell;
-            }
-            else
-            {
-                encounter.enemies[i - participants.size()].cell = cell;
+                if (board.at(square) == Terrain::obstacle || !occupied.insert(square).second)
+                {
+                    throw std::runtime_error("Invalid authored combat position");
+                }
             }
         }
     }
@@ -371,36 +464,30 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     // Allies take the free squares nearest the party's first member.
     for (auto &ally : encounter.allies)
     {
+        const auto covered = [](const Participant &p, Cell cell)
+        {
+            return covers(p.cell, p.footprint, cell);
+        };
         std::erase_if(cells,
                       [&](Cell cell)
                       {
                           return std::any_of(participants.begin(), participants.end(),
                                              [&](const auto &p)
                                              {
-                                                 return p.cell == cell;
+                                                 return covered(p, cell);
                                              }) ||
                                  std::any_of(encounter.enemies.begin(), encounter.enemies.end(),
                                              [&](const auto &e)
                                              {
-                                                 return e.cell == cell;
+                                                 return covered(e, cell);
                                              });
                       });
         if (cells.empty())
         {
             break;
         }
-        const auto target = participants.front().cell;
-        const auto nearest = std::min_element(cells.begin(), cells.end(),
-                                              [&](Cell a, Cell b)
-                                              {
-                                                  return std::abs(a.x - target.x) +
-                                                             std::abs(a.y - target.y) <
-                                                         std::abs(b.x - target.x) +
-                                                             std::abs(b.y - target.y);
-                                              });
-        ally.cell = *nearest;
+        stand_nearest(cells, ally, participants.front().cell);
         ally.side = Side::party;
-        cells.erase(nearest);
         participants.push_back(std::move(ally));
     }
     // Mutual surprise cancels out: Surprise::both marks neither side.
@@ -555,20 +642,26 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
         positions.begin() + static_cast<std::ptrdiff_t>(party->state().roster.size()));
     if (!enemies.empty())
     {
-        // In a row east of the party, with their original Slums icons.
+        // In a column east of the party, with their original Slums icons and
+        // the squares those fill (FOOT-1).
+        const auto creatures = CreatureCatalog::load(game_directory);
+        int row = 4;
         for (std::size_t n = 0; n < enemies.size(); ++n)
         {
             const auto &definition = enemies[n];
             const unsigned icon = definition == "troll" ? 31 : definition == "ogre" ? 8 : 0;
             const auto picture = original_icon(game_directory, icon);
-            if (!picture)
+            const auto creature = creatures.find({2, static_cast<std::uint8_t>(icon)});
+            if (!picture || !creature)
             {
                 throw std::runtime_error("Missing original combat icon for " + definition);
             }
             const auto id = static_cast<EntityId>(1000 + n);
-            const Cell cell{10, 4 + static_cast<int>(n)};
+            const Cell cell{10, row};
             result.encounter.enemies.push_back(
                 {id, definition, definition + " " + std::to_string(n + 1), Side::opposition, cell});
+            result.encounter.enemies.back().footprint = combat_footprint(creature->get().stored);
+            row += result.encounter.enemies.back().footprint.height;
             result.encounter.positions.push_back(cell);
             result.encounter.art.push_back(
                 {id, *picture, original_icon(game_directory, icon + 128)});
@@ -1119,8 +1212,7 @@ bool area_risks_side(const rules::Snapshot &state, const CombatantView &caster,
             }
             if (!spell.from_caster)
             {
-                return std::max(std::abs(a.cell.x - center.x), std::abs(a.cell.y - center.y)) <=
-                       reach;
+                return squares_from(center, a) <= reach;
             }
             if (a.id == caster.id)
             {
@@ -1141,11 +1233,25 @@ bool area_risks_side(const rules::Snapshot &state, const CombatantView &caster,
 bool safe_area_target(const rules::Snapshot &state, const CombatantView &caster,
                       const SpellFacts &spell, const CombatantView &target)
 {
-    const int distance = 5 * std::max(std::abs(target.cell.x - caster.cell.x),
-                                      std::abs(target.cell.y - caster.cell.y));
+    const int distance = 5 * squares_apart(caster, target);
+    // A cone or line runs from the caster's square nearest the aim, and its
+    // length is measured straight, as the rules draw it.
+    const auto squares_to_aim = [&](Cell square)
+    {
+        return std::max(std::abs(square.x - target.cell.x), std::abs(square.y - target.cell.y));
+    };
+    Cell origin = caster.cell;
+    for (const auto square : squares_of(caster))
+    {
+        if (squares_to_aim(square) < squares_to_aim(origin))
+        {
+            origin = square;
+        }
+    }
+    const double reach = 5.0 * std::hypot(target.cell.x - origin.x, target.cell.y - origin.y);
     return target.side != caster.side && target.conscious && distance <= spell.range_feet &&
-           (!spell.from_caster || distance <= spell.area_feet) &&
-           rules::has_line_of_sight(state.battlefield, caster.cell, target.cell) &&
+           (!spell.from_caster || reach <= spell.area_feet) &&
+           sees(state.battlefield, caster, target) &&
            !area_risks_side(state, caster, spell, target.cell);
 }
 
@@ -1286,7 +1392,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     for (const auto &enemy : state.combatants)
     {
         if (enemy.side != active.side && !enemy.dead && enemy.hit_points > 0 &&
-            rules::has_line_of_sight(board, active.cell, enemy.cell))
+            sees(board, active, enemy))
         {
             in_view.push_back(&enemy);
         }
@@ -1356,8 +1462,14 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     {
         if (kept == in_view.end() || enemy == *kept)
         {
-            routes[index(enemy->cell)] = 0;
-            frontier.push(enemy->cell);
+            for (const auto square : squares_of(*enemy))
+            {
+                if (board.contains(square))
+                {
+                    routes[index(square)] = 0;
+                    frontier.push(square);
+                }
+            }
         }
     }
     while (!frontier.empty())
@@ -1388,9 +1500,18 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             }
         }
     }
+    // From the nearest of the squares the creature would fill there.
     const auto nearest = [&](Cell p)
     {
-        return routes[index(p)];
+        int steps = 10000;
+        for (const auto square : squares_of(p, active.footprint))
+        {
+            if (board.contains(square))
+            {
+                steps = std::min(steps, routes[index(square)]);
+            }
+        }
+        return steps;
     };
     // A free move (a Champion's) is taken toward the enemy, not given up.
     if (state.free_movement)
@@ -1638,14 +1759,12 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         return *command;
     }
     // A dying ally who is not healed is stabilized when no enemy is within reach.
-    const bool threatened =
-        std::any_of(state.combatants.begin(), state.combatants.end(),
-                    [&](const auto &a)
-                    {
-                        const int dx = std::abs(a.cell.x - active.cell.x),
-                                  dy = std::abs(a.cell.y - active.cell.y);
-                        return a.side != active.side && a.conscious && std::max(dx, dy) <= 1;
-                    });
+    const bool threatened = std::any_of(state.combatants.begin(), state.combatants.end(),
+                                        [&](const auto &a)
+                                        {
+                                            return a.side != active.side && a.conscious &&
+                                                   squares_apart(a, active) <= 1;
+                                        });
     for (const auto &command : offered)
     {
         if (!threatened && command.verb == "stabilize")
@@ -1701,10 +1820,6 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                              });
     };
     const bool concentrating = shows(active, "Concentrating");
-    const auto beside = [](Cell a, Cell b)
-    {
-        return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)) <= 1;
-    };
     // Moonbeam's 5-foot radius is the target's square and those around it, so
     // it is aimed only at an enemy with no ally of the caster beside it.
     const auto clear_of_allies = [&](Cell center)
@@ -1712,7 +1827,8 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         return std::none_of(state.combatants.begin(), state.combatants.end(),
                             [&](const auto &a)
                             {
-                                return a.side == active.side && !a.dead && beside(a.cell, center);
+                                return a.side == active.side && !a.dead &&
+                                       squares_from(center, a) <= 1;
                             });
     };
     if (state.area_targeting)
@@ -1748,8 +1864,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         const auto &aimed = *state.area_targeting;
         const auto in_area = [&](const CombatantView &a)
         {
-            return !a.dead &&
-                   std::find(aimed.cells.begin(), aimed.cells.end(), a.cell) != aimed.cells.end();
+            return !a.dead && in_cells(aimed.cells, a);
         };
         if (aimed.verb != "moonbeam" && aimed.verb != "lands_aid")
         {
@@ -1879,8 +1994,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             std::any_of(state.combatants.begin(), state.combatants.end(),
                         [&](const auto &a)
                         {
-                            return a.side != active.side && a.conscious &&
-                                   std::find(beamed.begin(), beamed.end(), a.cell) != beamed.end();
+                            return a.side != active.side && a.conscious && in_cells(beamed, a);
                         });
         if (!burning)
         {
@@ -2072,13 +2186,12 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     // Attacks, the strongest kinds first. With no enemy beside it, a creature
     // whose ranged weapon rates more than half its melee weapon shoots, held
     // or drawn, as the original readied its bow (#266).
-    const bool enemy_beside = std::any_of(
-        in_view.begin(), in_view.end(),
-        [&](const auto *enemy)
-        {
-            return enemy->conscious && std::max(std::abs(enemy->cell.x - active.cell.x),
-                                                std::abs(enemy->cell.y - active.cell.y)) <= 1;
-        });
+    const bool enemy_beside =
+        std::any_of(in_view.begin(), in_view.end(),
+                    [&](const auto *enemy)
+                    {
+                        return enemy->conscious && squares_apart(*enemy, active) <= 1;
+                    });
     const bool shoots = !enemy_beside && active.ranged_rating * 2 > active.melee_rating;
     // A thrown weapon is rated as a ranged one, as the original did (#269).
     const bool throws = !enemy_beside && active.thrown_rating * 2 > active.melee_rating;
@@ -2272,14 +2385,12 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
     }
     // With an enemy beside it, it Disengages before running, so it is not hit
     // as it leaves (#269).
-    const bool enemy_beside =
-        std::any_of(state.combatants.begin(), state.combatants.end(),
-                    [&](const auto &other)
-                    {
-                        return other.side != active.side && other.conscious &&
-                               std::max(std::abs(other.cell.x - active.cell.x),
-                                        std::abs(other.cell.y - active.cell.y)) <= 1;
-                    });
+    const bool enemy_beside = std::any_of(state.combatants.begin(), state.combatants.end(),
+                                          [&](const auto &other)
+                                          {
+                                              return other.side != active.side && other.conscious &&
+                                                     squares_apart(other, active) <= 1;
+                                          });
     if (enemy_beside && !active.disengaged)
     {
         for (const auto verb : {"cunning_disengage", "disengage"})
@@ -2348,7 +2459,8 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
         {
             if (other.side != active.side && other.hit_points > 0 && !other.dead && !other.fled)
             {
-                opponents.push_back(other.cell);
+                const auto squares = squares_of(other);
+                opponents.insert(opponents.end(), squares.begin(), squares.end());
             }
         }
         const auto mine = distances({active.cell}), theirs = distances(opponents);
@@ -2427,7 +2539,7 @@ bool area_risks_ally(const rules::Snapshot &state, const CombatantView &active,
             }
             if (!lightning)
             {
-                return std::max(std::abs(a.cell.x - center.x), std::abs(a.cell.y - center.y)) <= 5;
+                return squares_from(center, a) <= 5;
             }
             if (a.id == active.id)
             {
@@ -2465,8 +2577,7 @@ std::optional<Command> choose_item(const rules::Snapshot &state, const Combatant
     {
         const auto in_area = [&](const CombatantView &a)
         {
-            return !a.dead &&
-                   std::find(aim->cells.begin(), aim->cells.end(), a.cell) != aim->cells.end();
+            return !a.dead && in_cells(aim->cells, a);
         };
         const bool ally = std::any_of(state.combatants.begin(), state.combatants.end(),
                                       [&](const auto &a)

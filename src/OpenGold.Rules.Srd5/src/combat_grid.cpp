@@ -31,12 +31,12 @@ void validate_battlefield(const Battlefield &board)
 
 MovementGrid::MovementGrid(const Battlefield &board, Cell origin,
                            std::span<const Occupant> occupants, bool crawling, bool flying,
-                           bool incorporeal)
+                           bool incorporeal, Footprint footprint)
     : board_(board), origin_(origin), crawling_(crawling), flying_(flying),
-      incorporeal_(incorporeal)
+      incorporeal_(incorporeal), footprint_(footprint)
 {
     validate_battlefield(board_);
-    if (board_.at(origin_) == Terrain::obstacle)
+    if (footprint_.width < 1 || footprint_.height < 1 || board_.at(origin_) == Terrain::obstacle)
     {
         throw std::runtime_error("Invalid movement origin");
     }
@@ -44,22 +44,29 @@ MovementGrid::MovementGrid(const Battlefield &board, Cell origin,
     held_.resize(board_.terrain.size());
     for (const auto &occupant : occupants)
     {
-        if (!board_.contains(occupant.cell))
+        for (int dy = 0; dy < occupant.footprint.height; ++dy)
         {
-            throw std::runtime_error("Invalid occupant cell");
+            for (int dx = 0; dx < occupant.footprint.width; ++dx)
+            {
+                const Cell square{occupant.cell.x + dx, occupant.cell.y + dy};
+                if (!board_.contains(square))
+                {
+                    throw std::runtime_error("Invalid occupant cell");
+                }
+                if (!occupant.downed)
+                {
+                    held_[index(square)] = true;
+                }
+                auto &entry = occupancy_[index(square)];
+                // Apply the strongest restriction when several creatures overlap:
+                // a conscious enemy blocks; an incapacitated enemy adds difficult terrain.
+                const auto candidate = occupant.hostile ? (occupant.incapacitated || incorporeal_
+                                                               ? Occupancy::incapacitated_enemy
+                                                               : Occupancy::enemy)
+                                                        : Occupancy::ally;
+                entry = std::max(entry, candidate);
+            }
         }
-        if (!occupant.downed)
-        {
-            held_[index(occupant.cell)] = true;
-        }
-        auto &entry = occupancy_[index(occupant.cell)];
-        // Apply the strongest restriction when several creatures overlap:
-        // a conscious enemy blocks; an incapacitated enemy adds difficult terrain.
-        const auto candidate =
-            occupant.hostile ? (occupant.incapacitated || incorporeal_ ? Occupancy::incapacitated_enemy
-                                                                       : Occupancy::enemy)
-                             : Occupancy::ally;
-        entry = std::max(entry, candidate);
     }
 }
 
@@ -70,11 +77,46 @@ int MovementGrid::index(Cell cell) const
 
 bool MovementGrid::can_stop_at(Cell destination) const
 {
-    return board_.at(destination) != Terrain::obstacle && destination != origin_ &&
-           !held_[index(destination)];
+    if (destination == origin_)
+    {
+        return false;
+    }
+    for (int dy = 0; dy < footprint_.height; ++dy)
+    {
+        for (int dx = 0; dx < footprint_.width; ++dx)
+        {
+            const Cell square{destination.x + dx, destination.y + dy};
+            if (board_.at(square) == Terrain::obstacle || held_[index(square)])
+            {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
+// The dearest square sets the step's cost: a large creature is slowed when any
+// of its squares is.
 std::optional<int> MovementGrid::step_cost(Cell from, Cell to) const
+{
+    int cost = 0;
+    for (int dy = 0; dy < footprint_.height; ++dy)
+    {
+        for (int dx = 0; dx < footprint_.width; ++dx)
+        {
+            const auto square =
+                square_step_cost({from.x + dx, from.y + dy}, {to.x + dx, to.y + dy});
+            if (!square)
+            {
+                return std::nullopt;
+            }
+            cost = std::max(cost, *square);
+        }
+    }
+    return cost;
+}
+
+std::optional<int> MovementGrid::square_step_cost(Cell from, Cell to) const
 {
     if (!board_.contains(from) || !board_.contains(to))
     {

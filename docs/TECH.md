@@ -394,6 +394,13 @@ selected in the [combat sprite demo](SPRITE-DEMO.md).
 
 The game draws a character this way when its combat icon size is **Large**, the
 size character creation gives Goliaths.
+
+A creature that fills more than one square
+([FOOT-1](SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills)),
+such as a troll filling two one above the other, is drawn over all of them:
+an original icon fitted to those squares, exported art at the catalog's scale
+standing on their bottom edge. It is drawn in the row of its lowest square,
+and a click on any of its squares picks it.
 The game battlefield fits sprites in `combat_battlefield.gd`; the demo preview uses
 `combat_sprite_canvas.gd`. Godot checks verify size, padding, anchoring, and zoom;
 the native draw-order check verifies row order. Party

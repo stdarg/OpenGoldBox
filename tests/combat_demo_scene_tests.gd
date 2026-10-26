@@ -26,7 +26,8 @@ func check_sprite_geometry(canvas: Control) -> void:
     for visible in [Rect2(2, 1, 20, 22), Rect2(1, 3, 22, 19), Rect2(6, 0, 12, 24)]:
         for tile in [2.4, 24.0, 60.0, 72.0, 240.0]:
             var occupied := Rect2(Vector2(4.0, 5.0) * tile, Vector2.ONE * tile)
-            var goliath: Rect2 = canvas.call("_sprite_rect", texture, visible, occupied, true)
+            var goliath: Rect2 = canvas.call("_sprite_rect", texture, visible, occupied, tile,
+                true)
             var rendered := Rect2(goliath.position + visible.position * goliath.size / 24.0,
                 visible.size * goliath.size / 24.0)
             require(rendered.size.is_equal_approx(Vector2(tile, 1.25 * tile)),
@@ -34,27 +35,48 @@ func check_sprite_geometry(canvas: Control) -> void:
             require(is_equal_approx(rendered.position.x, occupied.position.x) and
                 is_equal_approx(rendered.end.y, occupied.end.y),
                 "Goliath visible feet align with the occupied cell")
-            var normal: Rect2 = canvas.call("_sprite_rect", texture, visible, occupied, false)
+            var normal: Rect2 = canvas.call("_sprite_rect", texture, visible, occupied, tile,
+                false)
             var normal_art := Rect2(normal.position + visible.position * normal.size / 24.0,
                 visible.size * normal.size / 24.0)
             require(normal_art.get_center().is_equal_approx(occupied.get_center()),
                 "Normal visible art stays centered despite transparent padding")
             require(is_equal_approx(maxf(normal_art.size.x, normal_art.size.y), 0.9 * tile),
                 "Normal visible art fills 90 percent of its cell")
-    require(canvas.call("_sprite_rect", texture, Rect2(), Rect2(0, 0, 24, 24), true) == Rect2(),
-        "Empty visible art does not divide by zero")
+    require(canvas.call("_sprite_rect", texture, Rect2(), Rect2(0, 0, 24, 24), 24.0, true) ==
+        Rect2(), "Empty visible art does not divide by zero")
+    # Tall original art (a troll's 24 by 48) fills the two squares it stands
+    # on, one above the other (FOOT-1).
+    var tall_texture := ImageTexture.create_from_image(Image.create(24, 48, false,
+        Image.FORMAT_RGBA8))
+    for tile in [24.0, 72.0]:
+        var squares := Rect2(Vector2(4.0, 5.0) * tile, Vector2(1.0, 2.0) * tile)
+        var tall: Rect2 = canvas.call("_sprite_rect", tall_texture, Rect2(0, 0, 24, 48), squares,
+            tile, false)
+        require(tall.get_center().is_equal_approx(squares.get_center()) and
+            is_equal_approx(tall.size.y, 0.9 * 2.0 * tile),
+            "Tall art fills 90 percent of its two squares, centered on them")
     # New monster art (#274) stands as the Combat Sprite Catalog previews it:
     # 1.45 art squares for a Normal humanoid, centered, feet on the cell's edge.
     var art := ImageTexture.create_from_image(Image.create(128, 128, false, Image.FORMAT_RGBA8))
     for tile in [24.0, 72.0]:
         var occupied := Rect2(Vector2(4.0, 5.0) * tile, Vector2.ONE * tile)
         var planted: Rect2 = canvas.call("_sprite_rect", art, Rect2(0, 0, 128, 128), occupied,
-            false, 1.45, 120.0)
+            tile, false, 1.45, 120.0)
         require(is_equal_approx(planted.size.x, 1.45 * tile) and
             is_equal_approx(planted.get_center().x, occupied.get_center().x),
             "New art is drawn at its fixed scale, centered on its cell")
         require(is_equal_approx(planted.position.y + 120.0 * planted.size.y / 128.0, occupied.end.y),
             "New art's feet stand on the cell's bottom edge")
+        # A creature filling two squares one above the other stands on the
+        # lower one, at the catalog's scale for its footprint.
+        var squares := Rect2(Vector2(4.0, 5.0) * tile, Vector2(1.0, 2.0) * tile)
+        var troll: Rect2 = canvas.call("_sprite_rect", art, Rect2(0, 0, 128, 128), squares,
+            tile, false, 2.0, 120.0)
+        require(is_equal_approx(troll.size.x, 2.0 * tile) and
+            is_equal_approx(troll.get_center().x, squares.get_center().x) and
+            is_equal_approx(troll.position.y + 120.0 * troll.size.y / 128.0, squares.end.y),
+            "New art of a tall creature stands on its lower square's bottom edge")
 
 func check_demo() -> void:
     root.size = Vector2i(1920, 1080)

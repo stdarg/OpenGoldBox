@@ -133,6 +133,10 @@ addresses when it loads the script, so programs go at the entries' code, not in
 the jump table. Each combatant's square is the first the original writes for it into its
 combat occupancy map (50 by 25 bytes at linear `1A99B`, 0 or a combatant's
 number, party first), as monsters may move before the party's first turn.
+That first square is the top-left one; a monster whose art fills more than
+one square writes the rest right after it. Further cases stage gnolls, trolls
+and basilisks (MON2CHA records 73, 31 and 26) instead of orcs and check both
+its starting square and every square it fills.
 
 ```bash
 python3 dev_tools/dos_probe/experiments/battlefield.py \
@@ -151,6 +155,8 @@ from the square's terrain. That field is random, so it is read from the
 running game (50 by 25 combat tiles, row by row, 7 bytes into the heap block
 the far pointer at `148C:557E` names) and given to
 `opengold_maps --wild-formation` with the step's facing and distance 2.
+Further cases stage minotaurs and displacer beasts (MON7CHA records 62 and
+68) and check every square they fill.
 
 ```bash
 python3 dev_tools/dos_probe/experiments/wilderness.py \
@@ -206,6 +212,22 @@ Recorded 2026-10-24 with `START.EXE` SHA-1
   The probe could not make the original step diagonally: the keypad's
   9, Page Up and the top row's 9 reach the game through INT 16h and it ignores
   them, so how a diagonal step faces is not known from the probe.
+- **Large monsters** (2026-10-26): a monster fills the squares its art fills,
+  as byte 108 of its MONnCHA record names them: the low bits are 1 for one
+  square, 2 for two one above the other (24 by 48 pixels: gnolls, trolls,
+  ogres, giants, minotaurs), 3 for two side by side (48 by 24: basilisks,
+  wolves, displacer beasts) and 4 for two by two (Tyranthraxus, the wyvern).
+  The high bit (set on ogres and the bugbear, not on gnolls or basilisks)
+  plays no part: bugbears fill one square, gnolls two. In the occupancy map
+  the creature is on every square; its position is the top-left one; it
+  moves all its squares together, and fights from beside any of them. The
+  formation gives each monster the first place in its order where all its
+  squares are free: in twelve fights (gnolls, trolls and basilisks in the
+  Slums, minotaurs and displacer beasts in the wilderness, up to twelve of
+  them) every monster started on OpenGoldBox's squares
+  ([FOOT-1](../../docs/SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills)).
+  Changing `0x6E12` to stage another area's monsters on the wilderness map
+  moves the party elsewhere instead, so no 2 by 2 monster was probed.
 - **Fight setup checks the keyboard** between combatants it places, so a key
   pressed then cuts the setup short and the rest of the group is left out.
   The probe therefore counts the game as waiting only after 3 million

@@ -99,8 +99,11 @@ ability.
   - Giant Snake (the SRD Constrictor Snake, Large): AC 13, Speed 30, Bite +4
     for 1d8 + 2 Piercing. Constrict is not offered: grappling is not planned
     (SCOPE-2), and its Swim Speed goes unused.
-  - Large forms take one square until multi-square footprints
-    ([#45](https://github.com/stdarg/OpenGoldBox/issues/45)).
+  - Every form's original art is wide, so the form fills two squares side by
+    side, its top-left one the Druid's square
+    ([FOOT-1](SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills));
+    without room there, the Druid takes the nearest space with room. A move
+    puts the form's left square on the square chosen.
 - The form ends on "Leave Wild Shape", another Wild Shape, 0 Hit Points, being
   Incapacitated at the start of the Druid's turn, fleeing the battlefield, or
   when the fight ends

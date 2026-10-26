@@ -49,6 +49,13 @@ void ordering()
           "Initiative order cannot change sprite overlap");
     check(presentation::combat_sprite_draw_order({}).empty(),
           "Empty battlefield has no figures to draw");
+    // A troll filling rows 4 and 5 stands on row 5 (FOOT-1): it draws before
+    // a creature on row 4 above it and after one on row 6.
+    auto troll = actor(30, opposition, {6, 4});
+    troll.footprint = {1, 2};
+    actors = {actor(31, party, {6, 3}), troll, actor(32, party, {5, 6})};
+    check(ids() == std::vector<EntityId>{32, 30, 31},
+          "A tall creature draws in the row of its lower square");
 }
 } // namespace
 
