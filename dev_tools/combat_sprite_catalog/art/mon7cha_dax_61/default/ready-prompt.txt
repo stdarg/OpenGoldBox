@@ -1,0 +1,1 @@
+Deterministic art transform, no image generation: preserve the existing ready frame, scale its full 128x128 transparent canvas to 32x32 with nearest-neighbor sampling, and composite it at +48+4 on a fresh transparent 128x128 canvas. Keep palette and pose.

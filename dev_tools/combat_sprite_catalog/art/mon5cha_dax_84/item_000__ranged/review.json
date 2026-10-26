@@ -1,15 +1,15 @@
 {
-  "action_sha256": "7de66a060528cd3de429b5f9f060bb595f4e3018368df326245ca0f48d75a819",
+  "action_sha256": "395259dcdacacd4cb2353244649738852e64a36c5264beea58128f90cef93746",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon5cha_dax_84/item_000__ranged/action.png",
     "ready": "art/mon5cha_dax_84/item_000__ranged/ready.png"
   },
-  "metadata_sha256": "7c07d57ddd4601de78c98ea371b452192c008c1188e789791456ac2d9ea8a672",
-  "notes": "Exact MON5CHA.DAX:84/item_000__ranged pair rebuilt. Saved gear has Javelin +1 ranged and Two-handed sword +2 separate, plus Chain armor +1. Final javelin ready and action share one newly generated fighter body and identical pixels below y60 (AE=0); head-to-soles is about 89 source pixels and matches the two-handed-sword fighter height/identity. READY grips a full-length javelin in the viewer-right throwing arm, cocked upward/back. ACTION extends that SAME shoulder/arm toward screen right with empty hand after release; offhand stays near chest. Two rejected drafts swapped the arms. Final ready uses a feathered transparent composite of independently generated raised-arm art on the final action body; shoulder/neck/torso continuity inspected enlarged and at combat size. Both final 128px PNGs inspected on light, magenta, dark backgrounds, no stray alpha boxes; 5% alpha threshold removed invisible edge fringe. Catalog loaded exact ready/action paths; ready top overflow 0.22 square is javelin only, action 0.01 square is rounding; one-second auto swap reached action. Sword set was only a reference and remains unchanged.",
+  "metadata_sha256": "6d1d5150e52c790bad93aa867a25b135132e23057720ef1923c11822de1f746a",
+  "notes": "Ready has one full-length Javelin +1 gripped at its midpoint left of the head, silver metal tip up-right. The viewer-left shoulder, elbow and hand hold it. In action the same viewer-left shoulder connects through the chest to an empty hand extended toward screen right after release; offhand remains bent. Both soles and body scale register. Approved independent same-fighter MON3 javelin action informed arm path; no original game art. Final pair inspected at 128 px, enlarged on gray/magenta/dark, and verified through the catalog automatic one-second ready/action swap with exact replacement paths.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "d0fccf2f9b0cdad214843d9881436685b5da047b4896757ad0c6f6bf87bd442f",
-  "reviewed_at": "2026-10-25T06:07:57+00:00",
+  "ready_sha256": "928195dee9a71684420b0f57d5aae183b324beb835d0fa07240700da269d30cd",
+  "reviewed_at": "2026-10-26T00:07:18+00:00",
   "reviewer": "Codex",
   "source_key": "MON5CHA.DAX:84",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c19ac5526ae113ea3c69c40668ca6a4cfae3fd6eefb299b3d753008c0204213d"
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
 }
