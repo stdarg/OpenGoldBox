@@ -1,0 +1,32 @@
+{
+  "action_sha256": "b8de5dcc4d2ae18763607239f328718a4827d0e935a474b8797e5854066e3df6",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon6cha_dax_101/added_5278681468__added_5264957017/action.png",
+    "ready": "art/mon6cha_dax_101/added_5278681468__added_5264957017/ready.png"
+  },
+  "metadata_sha256": "de699adb81fcdb535bc411c61bf3d645dcafc38d7a2c3c6c36c7096d02baa197",
+  "notes": "Pending one-second alternating review in the Godot catalog; computer use of Godot was rejected by automatic approval review. Ready correction only: the non-throwing spear hand is near the shaft midpoint in a screen-right shoulder-height thrusting guard. The action PNG remains byte-identical to installed art. Ready examined at 128x128 and 4x on light, dark and magenta backgrounds; original planted lower body and shield retained. Do not install or clear regeneration flag until catalog acceptance. The spear grip follows Vikings Society practical spear guidance (whole hand within middle third, usual near halfway): https://wiki.vikingsonline.org.uk/Spear. User explicitly requested installation on 2026-10-25. Installed the exact candidate ready bytes; action remains unchanged. Catalog alternation remains unattested, so regeneration flag remains set.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "baf5ff0847b3d187e8e5062c56823f380dc06c715c0d99a583314b677263f594",
+  "reviewed_at": "",
+  "reviewer": "",
+  "source_key": "MON6CHA.DAX:101",
+  "specification": "bipedal-v1",
+  "variant_id": "added_5278681468__added_5264957017",
+  "visual_checks": {
+    "action_late_strike_or_after_release": false,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": false,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": false,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
+}
