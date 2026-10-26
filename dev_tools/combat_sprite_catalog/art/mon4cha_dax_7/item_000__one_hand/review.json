@@ -1,16 +1,16 @@
 {
-  "action_sha256": "1d3538c2d435785c74ddef0556166a677bbe23bbef49f4f8b32ef66946e96e3d",
+  "action_sha256": "4fee53bca487e82e2f561c47f0c324d895b51f617740bb03a6a1aba1c452a65d",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon4cha_dax_7/item_000__one_hand/action.png",
     "ready": "art/mon4cha_dax_7/item_000__one_hand/ready.png"
   },
-  "metadata_sha256": "b78dde9255ccb96cbb268e8702c08a707c63e8c97ce6947894c9a448308b7074",
-  "notes": "Height-corrected approved newly generated Hobgoblin art with identical nearest-neighbor 178/128 scale and (25, 46) canvas crop for both frames around planted feet. Original game art was not a reference. Inspected pair side by side and alternating in fixed-grid catalog, including foot anchor and 5-foot body fit. Matched alternate sets to same body height and compared leader against same-archive regular; leader is broader and more impressive through saved armor/gear. Only raised ready weapon or attacking action weapon crosses footprint. Rejected scaling trials retained in staging.",
+  "metadata_sha256": "b56c2eeaece6470375109288158a996eab3ecc067a7d0d3f2803bc5497909841",
+  "notes": "Placement-only correction for MON4CHA.DAX:7/item_000__one_hand: translated both accepted 128x128 RGBA frames exactly 13 pixels right, with no resampling or changed sprite pixels (inverse translation AE=0). Both poses have identical planted-foot bounds x=20..108, y=100..118; at the catalog preview scale their foot pixels fall within the 1x1 grid (screen x=96..224). Exact saved PNGs inspected at combat size, enlarged, and over light, magenta, and dark backgrounds; torso, weapon, and alpha are unchanged. Isolated catalog loaded this exact variant and auto-swapped after 1.1 seconds with identical image placement. Ready raised sword extends above the square; action sword extends right. The separate Long bow variant was deliberately left unchanged, so its x foot placement differs; its apparent scale and ground baseline remain consistent.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "12ba69d07baffa62829e93241767a2c2a1999de5293e9f450cb072b494b136f7",
-  "reviewed_at": "2026-10-23T03:38:11+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "e693df345772e138aed4c0967661b857e55c2f454025170fbc39db84ac519419",
+  "reviewed_at": "2026-10-26T01:39:55+00:00",
+  "reviewer": "Codex placement review",
   "source_key": "MON4CHA.DAX:7",
   "specification": "bipedal-v1",
   "variant_id": "item_000__one_hand",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
 }
