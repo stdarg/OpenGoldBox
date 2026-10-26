@@ -2,6 +2,10 @@ OpenGold combat sprite specification: bipedal-v1 (2026-10-17)
 
 Create one independently designed full-body monster combat sprite in crisp pixel
 art. Use the monster's current text description and the selected equipment set.
+Before every generation or regeneration, the exact full prompt sent to the
+image generator must be saved in that monster's description under an IMAGEGEN
+PROMPT heading. If this text changes for a retry, update and save the monster
+description before making the next request; prompt files alone are insufficient.
 No original game image, extracted sprite, or original-art contact sheet may be an
 input reference. Do not copy the pose-guide mannequin's identity or clothes.
 The saved sprite_size comes from the game's decoded combat-art dimensions,
@@ -29,9 +33,40 @@ projectile has been released toward screen right, with appropriate follow-throug
 The projectile is no longer nocked, loaded or in the sling pouch; it may already
 be outside the image. Keep the bow, crossbow or sling in the character's hands.
 For a thrown weapon, ready holds it poised to throw; action is just after release
-and that thrown weapon is no longer in the hand. Do not turn a wand into a bow.
-If an unarmed, magical or unusual attack is not specified by the description,
-ask the user for its ready/action behavior before generating it.
+and that thrown weapon is no longer in the hand. The SAME arm that holds the
+weapon in ready must follow through in action. Trace its hand back to its
+shoulder in both frames; do not extend the offhand while leaving the throwing
+arm bent behind the head or resting at the waist. An empty extended hand is
+not enough unless it belongs to the former weapon arm. Do not turn a wand into
+a bow.
+THROWN-WEAPON ARM CONTINUITY: Before drawing action, identify the arm that
+actually grips the thrown object in ready by tracing its shoulder, elbow,
+wrist, and hand. If the object has a two-handed grip, identify the primary
+throwing arm and the supporting arm. In action, that SAME throwing arm follows
+through toward screen right: its empty hand extends past the torso in the
+attack direction, near shoulder height or higher. The other arm cannot
+substitute for it. A lowered throwing hand is a failed throw even if the
+object has disappeared or the other hand points right. Keep the shoulder,
+elbow, wrist, and open hand visibly connected; do not detach the arm or move
+the whole figure to fit its reach.
+BARE-HANDED ATTACKS BY MONSTERS WITH ARMS: Before generating or regenerating
+the attack, ask the user to choose PUNCH or TWO-ARM FORWARD REACH for the exact monster
+and variant, unless that choice was already explicitly supplied by the user.
+Do not infer the choice from humanoid shape, a saved description, or earlier
+art. In EITHER ACTION, lean the UPPER BODY toward screen right into the attack.
+For PUNCH, extend the striking fist forward toward the target; the action must
+read as a forceful punch, not an idle reach. For TWO-ARM FORWARD REACH, extend
+BOTH ARMS FORWARD toward screen right with both hands outstretched.
+In READY, hold the arms poised for the chosen attack. Keep the planted feet at
+their exact ready-frame coordinates and preserve the body's scale and facing.
+If a magical or other unusual attack is unspecified, ask for its ready/action
+behavior before generating.
+
+FOUR-LEGGED ANIMAL BITES: In ACTION, lunge the head and neck toward screen right
+with the mouth OPEN WIDE. Keep the planted paws, rear body, camera, and scale
+registered to READY. Animate the upper body into the bite; do not slide or
+recenter the entire animal. Apply the same bite motion to the six-legged
+Displacer Beast while preserving all six legs and both shoulder tentacles.
 
 EQUIPMENT: Draw only the selected weapon/shield setup, plus appropriate other
 gear from the record. Retain the shield in both frames when the set includes it.
@@ -131,6 +166,16 @@ If the weapon cannot fit inside the PNG,
 revise the pose without changing body scale or foot anchor. Overlay the frames
 and play them at combat size to reject any jump.
 
+TORSO CONTINUITY: Keep a single connected figure from neck through chest,
+abdomen, waist and hips in BOTH frames. Derive action from the complete ready
+figure; do not paste an independently generated upper half onto a lower half
+at a straight horizontal boundary. When changing an attacking arm, preserve
+the torso and blend its shoulder into the original anatomy and clothing. Reject
+any visible shear, seam, gap, doubled edge, abrupt garment-pattern break or
+upper body that appears detached from the pelvis. Inspect the final exported
+action enlarged around the torso and at normal combat size, then alternate it
+with ready. Registered feet alone do not establish anatomical continuity.
+
 OUTPUT: A single full-body figure, genuine transparent background, no painted
 checkerboard, ground plane, labels, borders, scenery, shadows extending off the
 figure or motion blur. Keep all visible pixels inside the PNG canvas with
@@ -138,13 +183,17 @@ transparent margin. A raised READY weapon may cross the top tile line; the
 moving ACTION weapon may cross a footprint line. Final assets are 128 x 128
 PNGs with alpha. Larger working images are allowed; export with nearest-neighbor
 sampling and preserve alpha.
+The final ready and action cutouts must have no opaque black boxes, wedges,
+halos, or stray pixels; inspect both on light, dark, and contrasting backgrounds.
+For a sword, preserve its recognizable blade length and continuous hand-to-tip
+shape in BOTH frames at combat size; do not shorten it to fit a pose.
 Keep camera, character scale and exact planted-foot coordinates consistent across poses
 and weapon sets; do not resize each pose independently to fill the canvas. The
 action must read clearly at normal combat size, not only in a magnified preview.
 
 MONSTER AND SELECTED SET (current catalog JSON):
 {
-  "description": "A seasoned warrior with a practical stance and a full set of martial equipment. Source inventory: Shield, Long bow, Arrows, Battle axe, Banded armor. Readied: Shield, Arrows, Battle axe, Banded armor. Source wealth: 1 sp.",
+  "description": "A seasoned warrior with a practical stance and a full set of martial equipment. Source inventory: Shield, Long bow, Arrows, Battle axe, Banded armor. Readied: Shield, Arrows, Battle axe, Banded armor. Source wealth: 1 sp.\n\nIMAGEGEN PROMPT READY:\nUse case: precise-object-edit\nAsset type: exactly ONE corrected READY frame for MON3CHA.DAX:103/item_003__item_000, exported as transparent 128x128 pixel art.\nInput Image 1 is the existing independently generated ready sprite and exact edit target. Input Image 2 is its accepted action sprite for the same warrior and Battle axe + Shield equipment, for identity and axe size only. Input Image 3 is a nearest-neighbor enlargement of Image 1 for inspecting the metal joint. Input Image 4 is the approved independent bipedal pose guide for camera and raised guard only. No original game art is supplied.\nChange ONLY the METAL AXE HEAD at the top of the already raised wooden haft. The hand, shaft and socket stay near their current native 128x128 coordinates: hand (34,45), shaft end/socket (44,21). The current right-hand blade droops toward (57,28), making the head look crooked. Rotate/redraw the metal head UPWARD around its fixed socket by about 30 degrees: make the broad cutting edge on the SCREEN-RIGHT side run from approximately (54,9) to (59,20), above or level with the socket, with NO downward hooked tip below y22. The short rear poll is left of the socket near (38,18). A single solid metal crosspiece passes through the socket; the head must look rigidly attached, with its blade projecting UP-RIGHT toward the target. Preserve a broad readable battle-axe blade, not a sickle, pick, spear, sword, double axe or crescent staff. Keep the complete existing haft length, raised guard and one-handed grip.\nChange no pixels of the warrior's face, hair, shoulder, arm, shield, banded armor, quiver, torso, pelvis, boots, both planted-foot coordinates, palette, scale, camera, front three-quarter screen-right facing or 1x1 body footprint. The head may extend into the square above but stays inside the transparent 128x128 PNG margin. Exactly one full-body warrior and one READY frame; no action frame, duplicate, diptych, sheet, extra gear, magic, caption, floor, opaque background, black box, halos or stray pixels.\n\nACTION INSTALL DECISION: Keep item_003__item_000/action.png byte-for-byte unchanged; keep the long-bow pair unchanged.\n\nFINAL LOCAL PIXEL EDIT: The generator retained the crooked head. The final accepted-ready candidate rotates only the existing independent replacement-art metal axe head 25 degrees around its fixed socket, touching pixels only in x=37..57, y=7..29; hand, haft below socket, shield, body and feet retain their previous pixels. Action and long-bow pairs remain unchanged.",
   "height_feet": null,
   "height_reference": null,
   "humanoid_size": "normal",
@@ -220,11 +269,3 @@ Reference 1: approved original pose guide, for facing and ready-pose mechanics.
 Reference 2, when available: this monster's first approved NEW ready sprite,
 for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.
-
-PRODUCTION/HEIGHT AUDIT: Common nearest-neighbor 128-to-156 scale and identical (-18,-16) placement applied to the previously accepted independently generated axe/shield ready/action pair. At combat size, body head-to-feet about 88px in both; feet remain registered. Ready axe alone rises above top tile; action axe alone moves right. Compared with bow set in catalog.
-
-2026-10-25 AXE HEAD FACING CORRECTION (exact imagegen request):
-Use case: precise-object-edit
-Asset type: OpenGold combat sprite MON3CHA.DAX:103/item_003__item_000/ready, exactly one transparent 128x128 pixel-art frame.
-Input image 1 is the approved NEW ready sprite of this same warrior and the edit target; no original game art is supplied. Input image 2 is his approved NEW action sprite for the axe-head orientation reference only.
-Fix one local defect: the raised one-handed battle axe currently has its broad cutting blade on the SCREEN-LEFT/back side of the haft. Turn ONLY the metal axe head around the same raised wooden haft so the broad cutting blade faces SCREEN RIGHT, toward the enemy, like the action frame. Put the narrow poll/spike on the screen-left side. Keep a continuous metal head-to-wooden-haft connection and a recognizable full-size battle-axe blade at combat size. Do not move the haft, gripping hand, shoulder, head, torso, shield, banded armor, legs, or planted feet. Preserve exact identity, camera, palette, scale, alpha, 1x1 body footprint, and canvas registration. The raised axe head may cross the top footprint line but stay inside the 128x128 PNG with transparent margin. Exactly one character and one ready frame; no duplicate, diptych, sheet, new gear, text, background, checkerboard, shadow, border, or cropped pixels.
