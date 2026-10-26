@@ -1,15 +1,15 @@
 {
-  "action_sha256": "f4ea913f1f7f3702506e74e98c771acdaaef1434d9e194cf57360a086feec12d",
+  "action_sha256": "3c11ae5dd4605c15013c733a9d7f6d71a5cde8165b23d8dd03d06fb77ef96804",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon6cha_dax_48/added_61186225371__two_hand/action.png",
     "ready": "art/mon6cha_dax_48/added_61186225371__two_hand/ready.png"
   },
-  "metadata_sha256": "d6d1b762739b3b3651e560e97030a2279a444b4bb20de64792370093bd820007",
-  "notes": "Inspected the final exported 128x128 pair at combat size and enlarged over light gray, magenta, and dark backgrounds, and loaded the exact pixels in the catalog with one-second automatic alternation. Ready: both hands grip one full-length Battle axe in a high shoulder guard. Action: both hands retain that axe in a late low chop to screen right; torso and waist remain continuous. Same bearded identity, Chain armor +1, boots, camera, and four-foot body height. Pixel comparison confirms the left boot, right boot excluding the overlapping axe, and planted baseline are unchanged. No opaque boxes, stray pixels, or clipping; one 1x1 footprint. Source references were the approved independent bipedal pose guide and newly generated ready art only.",
+  "metadata_sha256": "787e170d2fec961d5687aa6b50f758fea732a41023a148894ccb91c6e8c7e9f7",
+  "notes": "Reviewed exact final PNGs at 128px and enlarged on light and dark backgrounds, and both loaded poses in the isolated catalog at 1x1 footprint. Solid single-blade battle axe in raised ready guard; late straight-ahead two-hand action. Lower torso is continuous. Boots share the same baseline and near-identical xy placement. Intermediate action drafts with whole-body translation were rejected. Saved gear has one weapon set: this two-handed battle axe with Chain armor +1.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "f6718d40a705e0eabe348b7f32ac83f7a779ba3e28c91494e50ee53ae3b2a5ad",
-  "reviewed_at": "2026-10-25T22:27:20+00:00",
+  "ready_sha256": "60f237fdbac2378979b107bf913be1303cde7ae59fd987fa8382df297ac863d3",
+  "reviewed_at": "2026-10-26T00:00:06+00:00",
   "reviewer": "Codex",
   "source_key": "MON6CHA.DAX:48",
   "specification": "bipedal-v1",
