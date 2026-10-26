@@ -58,7 +58,7 @@ func open_slot(slot: String) -> void:
     require(not current_scene.get_node("SaveSlots").visible, "Save loaded: " + slot)
 
 func save_as(slot: String, copy: String) -> void:
-    await press("CampaignTown/SaveGame")
+    await press("CampaignTown/Menu"); await press("GameMenu/Menu/Save")
     var saves: Window = current_scene.get_node("SaveSlots")
     require(saves.visible, "Save game opens the save slots")
     saves.get_node("Name").text = slot

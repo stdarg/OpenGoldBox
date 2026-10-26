@@ -80,6 +80,9 @@ class RolfTourView : public godot::Control
     void restore_campaign(std::shared_ptr<opengold::CampaignParty> party,
                           opengold::por::RolfTourSession session);
     void request_save(bool saving);
+    // Reads the difficulty and encounter challenge again, as the Options
+    // screen changed them.
+    void apply_settings();
 
     // The party check's save-and-reload hook; only that check sets one.
     void enable_save_check(std::function<void(const std::string &)> check)
@@ -236,20 +239,8 @@ class RolfTourView : public godot::Control
     bool rest_save_open_{};
     // The event whose camp offer the camp dialog last answered.
     unsigned camp_offer_run_{};
-    // The in-game menu: Escape opens it and closes it again; Escape over the
-    // Options screen goes back to the menu.
-    void escape();
-    void close_menu();
-    void menu_save(bool saving);
-    void open_options();
-    void close_options();
-    void build_options();
-    void difficulty_selected(std::int64_t index);
-    void challenge_changed(double value);
-    void ability_selected(std::int64_t index, std::int64_t row);
-    void restore_ability_defaults();
-    void exit_to_main_menu();
-    void exit_to_desktop();
+    // The Menu button asks the host for the in-game menu.
+    void request_menu();
     void inventory();
     void refresh_inventory();
     void inventory_selected(std::int64_t index);

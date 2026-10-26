@@ -5,6 +5,7 @@
 #include "opengold/combat_body_catalog.h"
 #include "portrait_catalog.h"
 #include <godot_cpp/classes/control.hpp>
+#include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
 #include <exception>
 #include <optional>
@@ -29,6 +30,8 @@ class CharacterCreationView : public godot::Control
     void _ready() override;
     void _draw() override;
     void _process(double delta) override;
+    // Escape that nothing else used opens the in-game menu.
+    void _unhandled_input(const godot::Ref<godot::InputEvent> &event) override;
     // Shows a failed handler's error; called by presentation::run_guarded.
     void report_failure(const std::exception &failure);
 
@@ -211,6 +214,19 @@ class CharacterCreationView : public godot::Control
     void refresh_party();
     void party_layout();
     void party_check();
+    // The in-game menu (game_menu_host.cpp): opened with what it allows, the
+    // exploration screen and the fight paused beneath it until it closes.
+    void attach_game_menu();
+    void open_game_menu();
+    void game_menu_closed();
+
+    struct Paused
+    {
+        const char *node;
+        bool process, input;
+    };
+
+    std::vector<Paused> paused_;
     void update_party_navigation();
 };
 #endif

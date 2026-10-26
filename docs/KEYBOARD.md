@@ -39,7 +39,7 @@ Both work in every window. Neither advances the splash screens.
 | Left / Right | Turn left / right. |
 | L | Look. |
 | S | Search mode on or off: each step searches as Look does and takes ten minutes more, as the original's Search command did. "Searching" shows beside the party's coordinates. |
-| Escape | The in-game menu: Save game, Load game, Options, Exit to main menu (the party screen) and Exit to desktop. Escape again closes it; over Options, Escape goes back to the menu. |
+| Escape | First closes what is open on top: the inventory or the spell list while exploring, or, in a fight, the area or creatures being aimed at. With nothing open it brings up the in-game menu, on the party screen, while exploring and in a fight: Return to game, Save game, Load game, Options, Exit to main menu (the party screen) and Exit to desktop. The game waits while it is open. Escape again closes it; over Options, Escape goes back to the menu. The Menu button at the top of the exploring screen opens it too. |
 | C | Camp: rest, and use Cast / Use. |
 | M | Cast menu: cast a spell or use a feature outside combat (the original's Magic menu). |
 | Enter | The bottom-right button: Continue, Choose, Submit, Buy or Leave temple. |

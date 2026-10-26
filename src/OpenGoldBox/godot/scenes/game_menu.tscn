@@ -1,0 +1,334 @@
+[gd_scene format=3]
+
+[node name="GameMenu" type="GameMenuView"]
+anchor_right = 1
+anchor_bottom = 1
+visible = false
+z_index = 10
+mouse_filter = 0
+
+[node name="Dim" type="ColorRect" parent="."]
+anchor_right = 1
+anchor_bottom = 1
+mouse_filter = 2
+color = Color(0, 0, 0, 0.55)
+
+[node name="Menu" type="Panel" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -200
+offset_right = 200
+offset_top = -260
+offset_bottom = 260
+theme_type_variation = &"PanelInventory"
+mouse_filter = 0
+
+[node name="Header" type="Label" parent="Menu"]
+anchor_right = 1
+offset_left = 20
+offset_right = -20
+offset_top = 18
+offset_bottom = 62
+theme_type_variation = &"LabelText24"
+text = "Menu"
+
+[node name="Resume" type="Button" parent="Menu"]
+offset_left = 40
+offset_top = 80
+offset_right = 360
+offset_bottom = 124
+focus_neighbor_top = NodePath("../Desktop")
+focus_neighbor_bottom = NodePath("../Save")
+focus_neighbor_left = NodePath(".")
+focus_neighbor_right = NodePath(".")
+text = "Return to game"
+
+[node name="Save" type="Button" parent="Menu"]
+offset_left = 40
+offset_top = 140
+offset_right = 360
+offset_bottom = 184
+focus_neighbor_top = NodePath("../Resume")
+focus_neighbor_bottom = NodePath("../Load")
+focus_neighbor_left = NodePath(".")
+focus_neighbor_right = NodePath(".")
+text = "Save game"
+
+[node name="Load" type="Button" parent="Menu"]
+offset_left = 40
+offset_top = 200
+offset_right = 360
+offset_bottom = 244
+focus_neighbor_top = NodePath("../Save")
+focus_neighbor_bottom = NodePath("../Options")
+focus_neighbor_left = NodePath(".")
+focus_neighbor_right = NodePath(".")
+text = "Load game"
+
+[node name="Options" type="Button" parent="Menu"]
+offset_left = 40
+offset_top = 260
+offset_right = 360
+offset_bottom = 304
+focus_neighbor_top = NodePath("../Load")
+focus_neighbor_bottom = NodePath("../MainMenu")
+focus_neighbor_left = NodePath(".")
+focus_neighbor_right = NodePath(".")
+text = "Options"
+
+[node name="MainMenu" type="Button" parent="Menu"]
+offset_left = 40
+offset_top = 320
+offset_right = 360
+offset_bottom = 364
+focus_neighbor_top = NodePath("../Options")
+focus_neighbor_bottom = NodePath("../Desktop")
+focus_neighbor_left = NodePath(".")
+focus_neighbor_right = NodePath(".")
+text = "Exit to main menu"
+
+[node name="Desktop" type="Button" parent="Menu"]
+offset_left = 40
+offset_top = 380
+offset_right = 360
+offset_bottom = 424
+focus_neighbor_top = NodePath("../MainMenu")
+focus_neighbor_bottom = NodePath("../Resume")
+focus_neighbor_left = NodePath(".")
+focus_neighbor_right = NodePath(".")
+text = "Exit to desktop"
+
+[node name="Hint" type="Label" parent="Menu"]
+anchor_right = 1
+offset_left = 20
+offset_right = -20
+offset_top = 450
+offset_bottom = 482
+theme_type_variation = &"LabelMuted"
+horizontal_alignment = 1
+text = "Escape: back to the game"
+
+[node name="Options" type="Panel" parent="."]
+anchor_right = 1
+anchor_bottom = 1
+offset_left = 64
+offset_right = -64
+offset_top = 90
+offset_bottom = -70
+theme_type_variation = &"PanelInventory"
+visible = false
+mouse_filter = 0
+
+[node name="Header" type="Label" parent="Options"]
+offset_left = 20
+offset_top = 18
+offset_right = 320
+offset_bottom = 62
+theme_type_variation = &"LabelText24"
+text = "Options"
+
+[node name="GameplayTab" type="Button" parent="Options"]
+offset_left = 340
+offset_top = 18
+offset_right = 520
+offset_bottom = 58
+toggle_mode = true
+text = "Gameplay"
+
+[node name="InterfaceTab" type="Button" parent="Options"]
+offset_left = 530
+offset_top = 18
+offset_right = 710
+offset_bottom = 58
+toggle_mode = true
+text = "Interface"
+
+[node name="Gameplay" type="Control" parent="Options"]
+anchor_right = 1
+anchor_bottom = 1
+mouse_filter = 2
+
+[node name="DifficultyLabel" type="Label" parent="Options/Gameplay"]
+offset_left = 20
+offset_top = 84
+offset_right = 280
+offset_bottom = 120
+text = "Difficulty"
+
+[node name="Difficulty" type="OptionButton" parent="Options/Gameplay"]
+offset_left = 290
+offset_top = 80
+offset_right = 510
+offset_bottom = 120
+
+[node name="DifficultyNote" type="Label" parent="Options/Gameplay"]
+anchor_right = 1
+offset_left = 540
+offset_right = -20
+offset_top = 76
+offset_bottom = 132
+autowrap_mode = 3
+theme_type_variation = &"LabelMuted"
+text = "From Hard: monsters use their potions, wands and scrolls, and temples cast no Resurrection. Each monster ability below has its own lowest difficulty."
+
+[node name="ChallengeLabel" type="Label" parent="Options/Gameplay"]
+offset_left = 20
+offset_top = 148
+offset_right = 280
+offset_bottom = 184
+text = "Encounter challenge"
+
+[node name="Challenge" type="SpinBox" parent="Options/Gameplay"]
+offset_left = 290
+offset_top = 144
+offset_right = 510
+offset_bottom = 184
+max_value = 200.0
+suffix = "%"
+
+[node name="ChallengeNote" type="Label" parent="Options/Gameplay"]
+anchor_right = 1
+offset_left = 540
+offset_right = -20
+offset_top = 140
+offset_bottom = 196
+autowrap_mode = 3
+theme_type_variation = &"LabelMuted"
+text = "How large an original encounter may be: a share of the SRD's Moderate XP budget for the party. Bigger groups shrink; experience and treasure stay the original's."
+
+[node name="AbilitiesHeader" type="Label" parent="Options/Gameplay"]
+offset_left = 20
+offset_top = 214
+offset_right = 780
+offset_bottom = 254
+theme_type_variation = &"LabelText20"
+text = "Monster abilities"
+
+[node name="AbilityColumn" type="Label" parent="Options/Gameplay"]
+offset_left = 20
+offset_top = 258
+offset_right = 440
+offset_bottom = 288
+theme_type_variation = &"LabelMuted"
+text = "Ability"
+
+[node name="MonstersColumn" type="Label" parent="Options/Gameplay"]
+offset_left = 460
+offset_top = 258
+offset_right = 1060
+offset_bottom = 288
+theme_type_variation = &"LabelMuted"
+text = "Monsters that have it"
+
+[node name="FromColumn" type="Label" parent="Options/Gameplay"]
+anchor_left = 1
+anchor_right = 1
+offset_left = -312
+offset_right = -52
+offset_top = 258
+offset_bottom = 288
+theme_type_variation = &"LabelMuted"
+text = "On from"
+
+[node name="Abilities" type="ScrollContainer" parent="Options/Gameplay"]
+anchor_right = 1
+anchor_bottom = 1
+offset_left = 20
+offset_right = -20
+offset_top = 292
+offset_bottom = -80
+horizontal_scroll_mode = 0
+
+[node name="Rows" type="VBoxContainer" parent="Options/Gameplay/Abilities"]
+size_flags_horizontal = 3
+
+[node name="Note" type="Label" parent="Options/Gameplay"]
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 20
+offset_right = 920
+offset_top = -58
+offset_bottom = -22
+theme_type_variation = &"LabelMuted"
+text = "Saved at once; they take effect from the next fight."
+
+[node name="Defaults" type="Button" parent="Options/Gameplay"]
+anchor_left = 1
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -420
+offset_right = -220
+offset_top = -62
+offset_bottom = -22
+text = "Restore defaults"
+
+[node name="Interface" type="Control" parent="Options"]
+anchor_right = 1
+anchor_bottom = 1
+mouse_filter = 2
+visible = false
+
+[node name="LanguageLabel" type="Label" parent="Options/Interface"]
+offset_left = 20
+offset_top = 84
+offset_right = 280
+offset_bottom = 120
+text = "Language"
+
+[node name="Language" type="OptionButton" parent="Options/Interface"]
+offset_left = 290
+offset_top = 80
+offset_right = 510
+offset_bottom = 120
+
+[node name="LanguageNote" type="Label" parent="Options/Interface"]
+anchor_right = 1
+offset_left = 540
+offset_right = -20
+offset_top = 76
+offset_bottom = 132
+autowrap_mode = 3
+theme_type_variation = &"LabelMuted"
+text = "Takes effect the next time the game starts."
+
+[node name="ZoomLabel" type="Label" parent="Options/Interface"]
+offset_left = 20
+offset_top = 148
+offset_right = 280
+offset_bottom = 184
+text = "Combat zoom"
+
+[node name="Zoom" type="SpinBox" parent="Options/Interface"]
+offset_left = 290
+offset_top = 144
+offset_right = 510
+offset_bottom = 184
+min_value = 10.0
+max_value = 1000.0
+step = 10.0
+value = 100.0
+suffix = "%"
+
+[node name="ZoomNote" type="Label" parent="Options/Interface"]
+anchor_right = 1
+offset_left = 540
+offset_right = -20
+offset_top = 140
+offset_bottom = 196
+autowrap_mode = 3
+theme_type_variation = &"LabelMuted"
+text = "The battlefield's size when a fight opens."
+
+[node name="Close" type="Button" parent="Options"]
+anchor_left = 1
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -200
+offset_right = -20
+offset_top = -62
+offset_bottom = -22
+text = "Close"
