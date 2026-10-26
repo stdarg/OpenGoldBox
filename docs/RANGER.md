@@ -1,6 +1,6 @@
 # Ranger
 
-Milestone [#8](https://github.com/stdarg/OpenGold/issues/8), delivered class by
+Milestone [#8](https://github.com/stdarg/OpenGoldBox/issues/8), delivered class by
 class ([CLASS-1](SRD-DECISIONS.md#class-1-2026-10-04-finishing-levels-14-for-all-classes)).
 SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
 
@@ -124,9 +124,8 @@ The Ranger advances to level 15, the game's cap
   A square has plants when the original's map square it comes from is open to
   the sky ([outdoor areas](OUTDOOR-AREAS.md), LEVELS-1); indoors the spell
   does nothing. The caster cannot exclude areas. The Scoured Lands' barren
-  ground, which grows plants only after Yarash is defeated, comes with the
-  Central Wilderness's fights, which the game does not have yet. Enrichment
-  has nothing to act on.
+  ground, which grows plants only after Yarash is defeated, is not modeled.
+  Enrichment has nothing to act on.
 - Combat checkpoints became `OGCOMBAT 56` (the battlefield's plants, each
   zone's slot level, Superior Hunter's Prey's state, a dominated creature's
   side).
@@ -162,9 +161,9 @@ The Ranger advances to level 15, the game's cap
   creation (Spell Choices step), added at each level-up with earlier choices
   locked, and after a Long Rest one prepared spell may be replaced, as for a
   Paladin.
-- The Ranger list in the game holds Cure Wounds, Ensnaring Strike, Entangle, Fog
-  Cloud, Goodberry, Hunter's Mark and Longstrider: every CRPG-relevant level-one
-  Ranger spell except Detect Magic, which waits for magic items.
+- The Ranger list in the game holds Cure Wounds, Detect Magic, Ensnaring Strike,
+  Entangle, Fog Cloud, Goodberry, Hunter's Mark and Longstrider: every
+  CRPG-relevant level-one Ranger spell.
 
 ## Favored Enemy and Hunter's Mark
 

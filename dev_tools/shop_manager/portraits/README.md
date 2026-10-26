@@ -1,6 +1,7 @@
 Place newly generated PNG portraits here. The Shop Manager lists these files and
-the existing portraits in `art/portraits/NPCs/`; it saves the selected relative
-path in the location's JSON record.
+the existing portraits in `art/portraits/NPCs/`. It exports a chosen portrait
+from here to `data/art/portraits/shops/` and saves it in the location's JSON
+record as `shops/<name>.png`.
 
 The three temple portraits are default selections for their JSON records:
 

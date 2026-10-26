@@ -1,6 +1,6 @@
 # SRD armor catalog and starting training
 
-[EQ01 / #53](https://github.com/stdarg/OpenGold/issues/53) implements the twelve
+[EQ01 / #53](https://github.com/stdarg/OpenGoldBox/issues/53) implements the twelve
 armor suits and Shield in [SRD 5.2.1 p. 92](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf).
 The private rules catalog records category, AC, Strength threshold, Stealth
 penalty, weight, copper-piece cost and don/doff time. Existing saved keys for
@@ -26,16 +26,16 @@ Starting training follows the twelve class tables:
 | Bard, Rogue, Warlock | Light |
 | Monk, Sorcerer, Wizard | None |
 
-Druid Warden, Cleric Protector and other optional feature grants remain with
-their class issues; this table describes starting core traits. Multiclass
-entry remains separate. Untrained suits impose Disadvantage on Strength and
+Druid Warden and Cleric Protector add training as class choices; this table
+describes starting core traits. Multiclassing is not planned.
+Untrained suits impose Disadvantage on Strength and
 Dexterity D20 Tests, including actual initiative and weapon attacks, and
 prevent casting. Saving throws use the existing shared modifier resolver.
 The equipped ability-check query combines training with these penalties and
 armor-specific Dexterity (Stealth) Disadvantage. Alternate-ability Stealth
 checks do not receive the armor-specific penalty. Sourced Advantage remains a
 separate flag so a roll can cancel opposing modifiers. Campaign skill
-actions consuming this query remain [#172](https://github.com/stdarg/OpenGold/issues/172).
+actions consuming this query were dropped ([#172](https://github.com/stdarg/OpenGoldBox/issues/172), SCOPE-2).
 
 Existing inventory equip/unequip and Modifiers presentation support every
 catalog key. Explanations and names are localized in English and Spanish.
@@ -45,10 +45,9 @@ next encounter. Original campaign item conversions and prices are preserved;
 this increment does not reinterpret unsupported original armor or award new
 starting packages. Those remain within equipment/starting-choice completion.
 
-Donning/removal is still instantaneous in the existing inventory flow. Catalog
-timing does not implement the campaign activity or shield Utilize action;
-that distinct flow is [#198](https://github.com/stdarg/OpenGold/issues/198), with
-reviewed controls, interruptions and time/resource persistence required.
+Donning/removal is instantaneous in the inventory flow. Don/doff timing is not
+planned ([#198](https://github.com/stdarg/OpenGoldBox/issues/198), SCOPE-1). In
+combat, taking off a shield to use a bow takes the Utilize action.
 No new controls or in-combat save access are introduced here.
 
 The previously missing Chain Mail Stealth penalty derives from the equipped

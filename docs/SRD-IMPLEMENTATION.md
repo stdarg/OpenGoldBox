@@ -9,38 +9,38 @@ increment” and child-splitting language below describes review boundaries,
 not mandatory new tickets or separate releases. Preserve all acceptance criteria.
 Use the [batch grouping](SRD-BATCHING-REVIEW.md) and [decision register](SRD-DECISIONS.md).
 
-The [GitHub issue index](https://github.com/stdarg/OpenGold/issues/186) links all
+The [GitHub issue index](https://github.com/stdarg/OpenGoldBox/issues/186) links all
 steps, labeled `SRD_improvements`. The [coverage ledger](SRD-COVERAGE.md) records
 completed work and verification. I01–I08 are delivered in
-[#20](https://github.com/stdarg/OpenGold/issues/20),
-[#21](https://github.com/stdarg/OpenGold/issues/21),
-[#22](https://github.com/stdarg/OpenGold/issues/22),
-[#23](https://github.com/stdarg/OpenGold/issues/23),
-[#24](https://github.com/stdarg/OpenGold/issues/24),
-[#25](https://github.com/stdarg/OpenGold/issues/25),
-[#26](https://github.com/stdarg/OpenGold/issues/26) and
-[#27](https://github.com/stdarg/OpenGold/issues/27).
-[F01, feature and feat provenance](https://github.com/stdarg/OpenGold/issues/28) is also delivered;
-F02 is split into [rules and persistence (#187)](https://github.com/stdarg/OpenGold/issues/187),
-[creation controls (#188)](https://github.com/stdarg/OpenGold/issues/188), and
-[missing-choice review (#189)](https://github.com/stdarg/OpenGold/issues/189).
+[#20](https://github.com/stdarg/OpenGoldBox/issues/20),
+[#21](https://github.com/stdarg/OpenGoldBox/issues/21),
+[#22](https://github.com/stdarg/OpenGoldBox/issues/22),
+[#23](https://github.com/stdarg/OpenGoldBox/issues/23),
+[#24](https://github.com/stdarg/OpenGoldBox/issues/24),
+[#25](https://github.com/stdarg/OpenGoldBox/issues/25),
+[#26](https://github.com/stdarg/OpenGoldBox/issues/26) and
+[#27](https://github.com/stdarg/OpenGoldBox/issues/27).
+[F01, feature and feat provenance](https://github.com/stdarg/OpenGoldBox/issues/28) is also delivered;
+F02 is split into [rules and persistence (#187)](https://github.com/stdarg/OpenGoldBox/issues/187),
+[creation controls (#188)](https://github.com/stdarg/OpenGoldBox/issues/188), and
+[missing-choice review (#189)](https://github.com/stdarg/OpenGoldBox/issues/189).
 The rules/persistence and creation-control children are delivered. See [training
 support](TRAINING.md) for the first Rogue/Criminal package and boundaries.
-F03 is split into [resource rules and persistence (#190)](https://github.com/stdarg/OpenGold/issues/190),
-[campaign rest transactions (#191)](https://github.com/stdarg/OpenGold/issues/191),
-[rest controls (#192)](https://github.com/stdarg/OpenGold/issues/192), and
-[interruption/resumption (#193)](https://github.com/stdarg/OpenGold/issues/193).
+F03 is split into [resource rules and persistence (#190)](https://github.com/stdarg/OpenGoldBox/issues/190),
+[campaign rest transactions (#191)](https://github.com/stdarg/OpenGoldBox/issues/191),
+[rest controls (#192)](https://github.com/stdarg/OpenGoldBox/issues/192), and
+[interruption/resumption (#193)](https://github.com/stdarg/OpenGoldBox/issues/193).
 All four children are delivered. [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)
 later removed resumption and Q37 safe recovery (an interrupted rest just ends), and
 [AUTO-1](SRD-DECISIONS.md#auto-1-2026-09-30-automatic-choices-with-logging) replaced
 per-die Hit Dice decisions with one Heal with Hit Dice action. The first
 resource rules are independent of the remaining F02 saved-choice controls.
 
-F04 is split into [recovery clocks (#194)](https://github.com/stdarg/OpenGold/issues/194)
-and [campaign scheduling (#195)](https://github.com/stdarg/OpenGold/issues/195).
+F04 is split into [recovery clocks (#194)](https://github.com/stdarg/OpenGoldBox/issues/194)
+and [campaign scheduling (#195)](https://github.com/stdarg/OpenGoldBox/issues/195).
 Both children are delivered. The separate
-[Help/Medicine follow-up (#32)](https://github.com/stdarg/OpenGold/issues/32) remains
-open. See [recovery clock support](RECOVERY-CLOCKS.md).
+[Help/Medicine follow-up (#32)](https://github.com/stdarg/OpenGoldBox/issues/32) is also
+delivered. See [recovery clock support](RECOVERY-CLOCKS.md).
 
 This breaks the [SRD audit](audits/srd-5.2.1-rules.md) into bounded changes.
 The target includes all twelve SRD classes, all nine species, backgrounds,
@@ -144,7 +144,7 @@ every abstraction before delivering additional character behavior.
 | F04 | Death saves and stable natural recovery continue outside combat. | Time partitioning, reserves, save/reload and encounter transitions agree. Add stabilization/Medicine as its own small follow-up if its controls or check flow are not yet available. |
 | F05 | Typed damage and resistance/vulnerability/immunity, verified with an actual species resistance. | Mixed damage, rounding, overlapping grants and zero damage resolve correctly. Temporary HP and its replacement choice form F05b, a separate increment. |
 | F06 | Extend conditions and source-based modifiers only for the next concrete feature. | One condition or closely coupled condition family per increment, including duration, removal, stacking and saves. Repeat until the coverage ledger is complete. |
-| F07 | Persist spell grants, cantrips, books and prepared lists, starting with the existing Wizard spells. | [F07a #199](https://github.com/stdarg/OpenGold/issues/199) separates Wizard cantrips/book/preparation; [F07c #200](https://github.com/stdarg/OpenGold/issues/200) adds source-specific free casts with a real granting feature. Parent #36 remains open until both are complete. Wizard learning/preparation controls are #37; adapting Cleric and each other preparation policy is separate. |
+| F07 | Persist spell grants, cantrips, books and prepared lists, starting with the existing Wizard spells. | [F07a #199](https://github.com/stdarg/OpenGoldBox/issues/199) separates Wizard cantrips/book/preparation; [F07c #200](https://github.com/stdarg/OpenGoldBox/issues/200) adds source-specific free casts with a real granting feature. Both are complete and parent #36 is closed. Wizard learning/preparation controls are #37; adapting Cleric and each other preparation policy is separate. |
 | F08 | Concentration, exercised by one representative, commonly cast low-level spell (not Silence; SCOPE-2). | Replacement, damage saves, incapacitation, voluntary release and save/reload work; one spell is enough to prove the mechanism. |
 | F09 | Spell components and casting eligibility. | Existing spells exercise V/S and hand availability; costly or consumed material components form a separate F09b increment using named spells. Non-costly materials, focus hands and speech-blocking sources are not pursued (SCOPE-1). |
 | F10 | Spell reaction windows, starting with Shield. | Trigger selection, decline, resource expenditure, one-slot-per-turn handling and checkpoint resumption are correct. Other reaction features are separate work. |
@@ -215,8 +215,8 @@ class/level is marked complete. First inventory every SRD spell accessible in
 the target tier, including species, feats and subclass grants. The inventory
 must link each spell to its implementation, tests and any reviewed adaptation.
 
-The [level-four spell inventory](SPELL-INVENTORY.md) records 106 distinct spells
-(139 before DM-1 removed 33 DM-adjudicated spells),
+The [level-four spell inventory](SPELL-INVENTORY.md) records 90 distinct spells
+(106 before DM-3 removed 17, 139 before DM-1 removed 33 DM-adjudicated spells),
 their class and additional grant routes, dependencies and current evidence.
 It reconciles the printed class lists with spell descriptions, including
 Phantasmal Force and Sorcerer access to Mind Spike. Current counts and delivery evidence live in the coverage ledger; do not
@@ -287,10 +287,10 @@ ledger entry within the level-15 scope. Passing a representative party test does
 not prove all spell interactions; targeted checks remain attached to their rules.
 
 F09's [spell component definitions and Somatic hands
-(#201)](https://github.com/stdarg/OpenGold/issues/201) are delivered. Costly or
-consumed material components remain [#40](https://github.com/stdarg/OpenGold/issues/40);
-non-costly materials, focus hands and speech-blocking sources (#39) are not pursued
-(SCOPE-1). See [spell components](SPELL-COMPONENTS.md).
+(#201)](https://github.com/stdarg/OpenGoldBox/issues/201) were delivered, then
+removed: spells have no components
+([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)), so
+[#40](https://github.com/stdarg/OpenGoldBox/issues/40) and #39 are not planned. See [spell components](SPELL-COMPONENTS.md).
 
 ## Recommended next execution
 
@@ -301,11 +301,11 @@ F03a–d are complete: #192's rest controls and #193's interruption handling
 complete #30; SIMPLIFY-1 later removed resumption, natural sleep, dropped gear and
 Q37 safe recovery. See [rest resources](REST-RESOURCES.md)
 for the implemented boundary and verification.
-F04a and F04c complete #31. Help/Medicine controls and checks remain #32.
+F04a and F04c complete #31. Help/Medicine controls and checks complete #32.
 F05 #33 supplies [typed damage and Dwarf Poison resistance](DAMAGE.md).
 F05b #34 is split into #196 (native Temporary HP state, absorption, expiry and
 persistence) and #197 (Orc Adrenaline Rush and the reviewed HP/replacement controls).
-Keep #34 open until its ordinary gameplay and campaign acceptance are complete.
+Both are delivered and #34 is closed.
 See [Temporary HP](TEMPORARY-HP.md).
 The later queues are refined
 into named increments from the verified state after each milestone, without

@@ -41,7 +41,7 @@ unless named otherwise. Test files: `ecl` [ecl_tests.cpp](../tests/ecl_tests.cpp
 | 1D | PARTY STRENGTH | `ecl_party_host.cpp` | `party` `script_handoff`; VM `ecl` | Podol's group sizes (`exp` `podol_group_rolls`) | — |
 | 1E | CHECK PARTY | `ecl_party_host.cpp` | `party` `script_handoff` (with rollback) | Slums parley Run (`exp` `slums_parley_outcomes`) | Other thief skills, effects and attributes |
 | 1F | (undefined) | Faults by design | `ecl` `por_operations` | — | Always |
-| 20 | NEW ECL | Script, previous script, bank `0x6E12` | `save` fog saves; VM `ecl` | West gate round trip (`exp` `defeat_four_orcs`); refused exits (`exp` `refused_exit`) | Areas not in the game yet |
+| 20 | NEW ECL | Script, previous script, bank `0x6E12` | `save` fog saves; VM `ecl` | West gate round trip (`exp` `defeat_four_orcs`) | — |
 | 21 | LOAD FILES | Map, wall art and map memory per area | `save`; `party` `rejected_combat_handoff` | West gate round trip; Kuto's Well (`exp` `enter_kutos_well`) | Resources outside the supported areas; invalid facing |
 | 22 | PARTY SURPRISE | Writes 0, 0 (converted parties have no surprise modifiers) | — | — | — |
 | 23 | SURPRISE | Stores the bits COMBAT reads | VM only | — | Unsupported surprise values, at COMBAT |
@@ -62,7 +62,7 @@ unless named otherwise. Test files: `ecl` [ecl_tests.cpp](../tests/ecl_tests.cpp
 | 37 | LOAD PIECES | Checks the district's wall banks | — | Runs at every area entry | Unverified wall banks |
 | 38 | PROGRAM 0 | Training hall | `party` `training_hall_service`; `exp` `hall_event_tests` | — | Halls without a known class word |
 | 38 | PROGRAM 9 | Inn and camp | `party` `recovery_hosts`; `campaign_rest_tests.cpp` | Inn (`exp` `rest_at_inn`); nomad camp | A party not eligible for a Long Rest |
-| 38 | PROGRAM 8 | **Not implemented** | `exp` `unsupported_program_tests` | — | Always |
+| 38 | PROGRAM 8 | Restores every member and wins the game ([audit](audits/valjevo-castle.md)) | `exp` `victory_program_tests` | Tyranthraxus's fall (`exp` `valjevo_castle`) | — |
 | 39 | WHO | Chooses the acting member | `party` `script_handoff`, `shop_buyer_switch` | Inn payer; the Pitt's champion | No member |
 | 3A | DELAY | rolf_tour.cpp | `tour` `synthetic` | Runs, unasserted | — |
 | 3B | SPELL | Knock (31) | VM only | Kovel's cabinet (`exp` `kovel_mansion`) | Every other spell |
@@ -70,7 +70,7 @@ unless named otherwise. Test files: `ecl` [ecl_tests.cpp](../tests/ecl_tests.cpp
 
 ## Gaps
 
-- **Not implemented:** CALL 0x8000, PROGRAM 8 and opcode 0x1F. Each stops the
+- **Not implemented:** CALL 0x8000 and opcode 0x1F. Each stops the
   event with an explicit error, and the event's checkpoint undoes it.
 - **No synthetic test:** PICTURE, CLEAR MONSTERS, PARTY SURPRISE, ENCOUNTER
   MENU, CALL 0xC01E, 0x8001 and 0xBA03, DAMAGE, LOAD PIECES, PROTECTION.

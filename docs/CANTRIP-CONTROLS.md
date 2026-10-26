@@ -1,6 +1,6 @@
 # Shared combat cantrip controls
 
-Approved in question 18 as preparation for [Ray of Frost #205](https://github.com/stdarg/OpenGold/issues/205).
+Approved in question 18 as preparation for [Ray of Frost #205](https://github.com/stdarg/OpenGoldBox/issues/205).
 The main game's Spell dropdown and Cast button replace the individual Fire Bolt,
 Poison Spray and Sacred Flame buttons. They occupy the existing row to the right
 of Adrenaline Rush; Action Surge occupies that space for eligible Fighters, who
@@ -23,7 +23,7 @@ labels are localized. No SRD costs or eligibility rules are duplicated in UI.
 Rules 0.6.25 adds the sourced [Ray of Frost](RAY-OF-FROST.md) choice to this list.
 
 Rules, grants and save formats are unchanged. No combat saving controls are
-exposed. The standalone demo keeps its previous controls. Ray of Frost's further source/component integrations remain tracked under #205.
+exposed. The standalone demo keeps its previous controls. Ray of Frost's further source/component integrations were completed under #205.
 
 ## Verification
 

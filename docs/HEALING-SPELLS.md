@@ -1,8 +1,8 @@
 # Cure Wounds and Healing Word
 
 Both healing spells are complete through character level 4 (2026-10-13,
-[#167](https://github.com/stdarg/OpenGold/issues/167) and
-[#169](https://github.com/stdarg/OpenGold/issues/169)). Authority:
+[#167](https://github.com/stdarg/OpenGoldBox/issues/167) and
+[#169](https://github.com/stdarg/OpenGoldBox/issues/169)). Authority:
 [SRD 5.2.1 pp. 121 and 139](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=121).
 
 ## The spells
@@ -54,5 +54,5 @@ healing kept across a save file (`opengold_save_tests`).
 ## Beyond level 4
 
 Slots above level 2 arrive with character levels 5 and up
-([#176](https://github.com/stdarg/OpenGold/issues/176)–178); each slot level
+([#176](https://github.com/stdarg/OpenGoldBox/issues/176)–178); each slot level
 adds 2d8 or 2d4.

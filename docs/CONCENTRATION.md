@@ -1,6 +1,6 @@
 # Concentration implementation
 
-[Foundation #207](https://github.com/stdarg/OpenGold/issues/207) implements shared
+[Foundation #207](https://github.com/stdarg/OpenGoldBox/issues/207) implements shared
 value-owned transitions in [concentration.h](../src/OpenGold.Rules.Srd5/src/concentration.h).
 Authority: [SRD 5.2.1 p. 179](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=179).
 
@@ -33,7 +33,7 @@ rejecting unknown versions, invalid presence flags, zero identifiers/duration,
 negative or overflowing numbers and malformed tokens. Tests verify canonical
 bytes and identical save/RNG/expiry continuation after a round trip.
 
-This is not yet embedded in combat or campaign saves. The enclosing reader must
+Combat checkpoints now embed it (below); campaign saves do not. The enclosing reader must
 validate the caster against the owner, the application against the area/effect
 registry, and duration against the named spell. It must reject trailing fields
 at its own record boundary. Existing save formats remain unchanged; embedding

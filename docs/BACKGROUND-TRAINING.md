@@ -1,6 +1,6 @@
 # Acolyte and Soldier fixed training
 
-[#212](https://github.com/stdarg/OpenGold/issues/212) supplies Acolyte Insight and
+[#212](https://github.com/stdarg/OpenGoldBox/issues/212) supplies Acolyte Insight and
 Religion, and Soldier Athletics and Intimidation. Acolyte's Calligrapher's Supplies
 and Soldier's Gaming Set were removed with all tool proficiencies
 ([DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells)).
@@ -27,7 +27,7 @@ actual choice groups, background switching, keyboard access and final party shee
 
 Acolyte's Magic Initiate (Cleric) is delivered; see [Magic Initiate](MAGIC-INITIATE.md).
 Starting gold replaced the equipment packages ([START-1](SRD-DECISIONS.md#start-1-2026-10-11-starting-gold-as-the-original-game-gave-it)).
-Soldier #64 retains Savage Attacker. Starting equipment/wealth remains open. This
+Soldier #64 retains Savage Attacker. This
 original increment completed only the fixed skill grants.
 
 Verification: all 40 native/tool regression checks pass; the final focused

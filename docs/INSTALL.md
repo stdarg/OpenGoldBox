@@ -4,8 +4,8 @@
 
 Install these tools and make sure each command is available in a new terminal:
 
-- Visual Studio 2022 Build Tools with **Desktop development with C++**, or an
-  equivalent C++20 compiler
+- Visual Studio Build Tools 2026 (version 18, which the helper scripts expect)
+  with **Desktop development with C++**, or an equivalent C++20 compiler
 - CMake 3.24 or newer
 - Ninja, if using the committed `default` preset
 - Godot 4.5+ for the presentation project and native tour

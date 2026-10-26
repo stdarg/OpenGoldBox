@@ -2,7 +2,7 @@
 
 Every magic item Pool of Radiance can give the party, decoded from the user's
 original files for issue
-[#234](https://github.com/stdarg/OpenGold/issues/234). The game's documents
+[#234](https://github.com/stdarg/OpenGoldBox/issues/234). The game's documents
 name only a few of them (the kobolds' bracers, rings of protection, the
 graveyard sword, Ohlo's potion), so this list comes from the data itself.
 
@@ -262,7 +262,7 @@ wilderness lairs.
 
 ## In OpenGoldBox
 
-Issue [#234](https://github.com/stdarg/OpenGold/issues/234) tracks the work;
+Issue [#234](https://github.com/stdarg/OpenGoldBox/issues/234) tracks the work;
 [MAGIC-1](SRD-DECISIONS.md#magic-1-2026-10-17-the-originals-enchanted-weapons-and-armor)
 records the decisions.
 

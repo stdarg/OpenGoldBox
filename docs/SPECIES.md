@@ -52,9 +52,8 @@ A Dragonborn replaces the Attack action's attack with a 15-foot Cone or a
 30-foot Line 5 feet wide, chosen each time (`breath_weapon_cone`,
 `breath_weapon_line`). Each creature in the area makes a Dexterity save against
 8 + Constitution modifier + Proficiency Bonus and takes 1d10 damage of the
-ancestry's type, or half on a success. The die grows only at level 5, past the
-level cap. Since no character makes Extra Attack's second attack before level 5,
-the breath spends the Action.
+ancestry's type, or half on a success. It deals 2d10 from level 5 and 3d10
+from level 11. The breath spends the whole Action, even with Extra Attack.
 
 Uses equal the Proficiency Bonus (2 through level 4) and return with a Long
 Rest. The spent count is a lasting effect (`trait_uses`), cleared by a Long

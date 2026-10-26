@@ -1,8 +1,8 @@
 # Poison Spray and starting Wizard cantrips
 
-[#206](https://github.com/stdarg/OpenGold/issues/206) supplies the native
-prerequisite for [#202](https://github.com/stdarg/OpenGold/issues/202) and
-[#37](https://github.com/stdarg/OpenGold/issues/37). Rules **0.6.22** also adds
+[#206](https://github.com/stdarg/OpenGoldBox/issues/206) supplies the native
+prerequisite for [#202](https://github.com/stdarg/OpenGoldBox/issues/202) and
+[#37](https://github.com/stdarg/OpenGoldBox/issues/37). Rules **0.6.22** also adds
 the creation and main-game casting controls approved in questions 12–14.
 This is a playable Wizard path, not completion of every source or component rule.
 
@@ -68,7 +68,7 @@ to the repository.
 ## Routes through level 4
 
 Poison Spray is complete through character level 4 for every route the game
-has (2026-10-13, [#202](https://github.com/stdarg/OpenGold/issues/202)). Each
+has (2026-10-13, [#202](https://github.com/stdarg/OpenGoldBox/issues/202)). Each
 casts with its own ability:
 
 | Route | Ability | Evidence |
@@ -80,13 +80,12 @@ casts with its own ability:
 | Ranger's Druidic Warrior, level 2 | Wisdom | [ranger_choices_checks.h](../tests/ranger_choices_checks.h) |
 | Magic Initiate (Druid or Wizard list) | The feat's ability | [MAGIC-INITIATE.md](MAGIC-INITIATE.md) |
 
-Routes still waiting on content the game does not have yet: High Elf
-([#67](https://github.com/stdarg/OpenGold/issues/67)), Abyssal Tiefling
-([#73](https://github.com/stdarg/OpenGold/issues/73)) and Pact of the Tome
-([#161](https://github.com/stdarg/OpenGold/issues/161)). Each of those issues
-brings Poison Spray with it.
+Later routes: an Abyssal Tiefling
+([#73](https://github.com/stdarg/OpenGoldBox/issues/73)) knows Poison Spray, and
+a High Elf ([#67](https://github.com/stdarg/OpenGoldBox/issues/67)) or a Pact of
+the Tome ([#161](https://github.com/stdarg/OpenGoldBox/issues/161)) can choose it.
 
 Spells have no components
 ([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)), so no
-speech or hand blocker applies. Damage above level 4 is
-[#176](https://github.com/stdarg/OpenGold/issues/176)–178.
+speech or hand blocker applies. Damage above level 4 follows
+[cantrip damage by level](SPELL-SLOTS.md#cantrip-damage-by-level).

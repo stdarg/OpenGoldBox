@@ -21,14 +21,14 @@ build-opengoldbox.cmd
 demos\review-combat.cmd
 ```
 
-The existing build helper builds both native Godot scenes and runs five test
-suites. Close any running OpenGoldBox scene before rebuilding its shared DLL.
+The existing build helper builds the game, including this scene, and runs the
+CTest suite. Close any running OpenGoldBox scene before rebuilding its shared DLL.
 See [native build prerequisites](ROLF.md#build-boundary).
 
 Training uses one martial fixture against an SRD Bandit and needs no original
 game files. Select **Slums event** for a fixed four-person party against the
 original event's four orcs. Original files come from `OPENGOLD_GAME_DIR`, falling
-back to `opengold/game_directory` in `demos/godot/project.godot`:
+back to the game folder saved in the game's `settings.cfg`:
 
 ```cmd
 set "OPENGOLD_GAME_DIR=C:\Games\POOLRAD"
@@ -98,7 +98,8 @@ the original event's persistent flag within this session. This scene is separate
 from Rolf's exploration scene. In the game, exploration starts combat itself; see
 [the expedition](EXPEDITION.md).
 
-Training **Save combat** / **Load combat** use `user-data/combat.save`, retaining
+Training **Save combat** / **Load combat** use `checks/combat.save` in the user
+data folder, retaining
 the previous save as `.bak`. Saves include pending reactions and RNG state. Older
 formats and other module or content identities reject; see the
 [format policy](SAVES.md#pre-10-format-policy). This demo does not save its
@@ -134,7 +135,7 @@ Deterministic SplitMix64 dice and stable initiative tie ordering make a seed plu
 the same accepted command sequence reproducible. Checkpoints include the RNG,
 turn budgets, HP, slots, death saves and unfinished opportunity reactions.
 
-Rules module **0.6.88** writes **OGCOMBAT 40**, including an
+Rules module **0.6.254** writes **OGCOMBAT 69**, including an
 involuntary shared-space marker, remaining Hit Dice, recovery clocks and sourced Temporary HP.
 A saved leave-reach queue retains its order, partially resolved position and
 deterministic continuation. Older formats and other module or content identities
@@ -153,13 +154,13 @@ training choices and entitlements are validated before combat. Campaign saves pe
 the selected choice groups.
 See [training support](TRAINING.md) for the Rogue/Criminal package and limits.
 
-SRD11 vital continuations preserve spent Hit Dice and the existing resource/effect
+SRD13 vital continuations preserve spent Hit Dice and the existing resource/effect
 state; [rest resources](REST-RESOURCES.md) describes the rules APIs and campaign
 rest transactions. Campaign saves persist completed Short Rest spending
-sessions. Player-facing rest controls remain #192.
+sessions. The game provides the player-facing rest controls (#192).
 Vital state also preserves death-save and Stable-recovery clocks at zero HP. See
 [recovery clocks](RECOVERY-CLOCKS.md) for combat support
-and the outstanding campaign scheduler.
+and the campaign scheduler.
 
 A reaction may pause an accepted route while the mover shares an allied space.
 The remaining path must still lead to a free cell within the movement budget.
@@ -198,7 +199,7 @@ co-occupancy remain in the condition/creature-state increments (#35/#44).
   instant death from excess damage, enemy defeat, and party incapacitation.
 - Complete training checkpoints and a basic AI that uses the same public
   commands as the player.
-- [Manual advancement](ADVANCEMENT.md) supports Fighter/Cleric/Wizard levels 2–4
+- [Manual advancement](ADVANCEMENT.md) supports every class to level 15
   after explicit confirmation. XP alone does not change the level. Supported
   feats, spells, HP and slots persist together. [Recovery](RECOVERY.md) restores
   supported resources after eligible eight-hour rests; repeated rests require
@@ -208,13 +209,13 @@ co-occupancy remain in the condition/creature-state increments (#35/#44).
   ([TEMPLE-1](SRD-DECISIONS.md#temple-1-2026-10-22-temple-services)).
 
 The fixed profiles are intentionally limited to levels 1–4 and ordinary Medium-sized
-ground combatants. Created campaign profiles support the documented level 1–4
-subset. Standalone party profiles are authored combat fixtures, not finished
+ground combatants. Created campaign profiles support levels 1–15.
+Standalone party profiles are authored combat fixtures, not finished
 character sheets. The orc conversion is authored for this demo; its AC/HP are
 not an automatic conversion of original AD&D values.
 
-Not yet implemented (as of 2026-10-24): partial cover, multi-square creature
-footprints (#45) and complete campaign encounter coverage. Concentration spells
+Not yet implemented (as of 2026-10-25): partial cover and multi-square creature
+footprints (#45). Concentration spells
 ([CONCENTRATION.md](CONCENTRATION.md)), split-target Magic Missile and Scorching
 Ray, and the spells and conditions in the [SRD coverage ledger](SRD-COVERAGE.md)
 are implemented; that ledger, not this list, is the full account. Weapon mastery, typed damage and resistance, and
@@ -297,12 +298,12 @@ Godot scene checks use the actual native action-button signal and target-input
 path, prevent Enter from skipping enemy turns, and finish combat automatically:
 
 ```cmd
-godot --headless --path demos/godot res://scenes/combat_demo.tscn -- --combat-check
-godot --headless --path demos/godot res://scenes/combat_demo.tscn -- --combat-check --slums
+godot --headless --path src/OpenGoldBox/godot res://scenes/combat_demo.tscn -- --combat-check
+godot --headless --path src/OpenGoldBox/godot res://scenes/combat_demo.tscn -- --combat-check --slums
 ```
 
 Add `--capture` to the user arguments in a graphical run (omit `--headless`) to
-save a local PNG in `user-data`. These checks exit automatically.
+save a local PNG in the user data folder's `checks` directory. These checks exit automatically.
 
 Next increments should extend [saving throws and conditions](STATUS-EFFECTS.md)
 and creature/spell coverage one tested encounter at a time. The [standalone character creator](CHARACTER-CREATION.md) now

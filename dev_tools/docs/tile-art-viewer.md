@@ -14,8 +14,9 @@ From the repository root, launch it with:
 ```
 
 The optional directory overrides `OPENGOLD_GAME_DIR` and `~/POOLRAD`. Set
-`GODOT_BIN` if Godot is outside `PATH` and the standard macOS location. The
-launcher builds the native extension and imports its Godot project when needed.
+`GODOT_BIN` if Godot is outside `PATH` and the standard macOS location. On
+Windows, run it from Git Bash. The launcher builds the native extension and
+imports its Godot project when needed.
 
 ## Files and workflow
 
@@ -26,4 +27,5 @@ launcher builds the native extension and imports its Godot project when needed.
 
 The [tool README](../tile_art_viewer/README.md) explains the filters, map
 navigation, original-size PNG export, metadata fields, build requirements, and
-headless checks (`--viewer-check`, `--map-check`, and `--metadata-check`).
+headless checks (`--viewer-check`, `--map-check`, `--metadata-check`, and
+`--replacement-check`).

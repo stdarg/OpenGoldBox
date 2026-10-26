@@ -16,6 +16,7 @@ From the repository root, launch it with:
 The game-data directory is optional for the Create tab; the Reference tab
 needs it. The launcher uses `OPENGOLD_GAME_DIR` or `~/POOLRAD` when available
 and accepts `GODOT_BIN` for a different Godot executable.
+On Windows, run it from Git Bash.
 
 ## Files and workflow
 

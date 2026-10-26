@@ -129,8 +129,9 @@ appearance, and other unspecified details are original designs. Generic guards,
 patrols, crowds, hirelings, and combat monsters are not distinct cluebook NPCs;
 the twelve shopkeepers were already created for the mapped stores.
 
-The game currently loads New Phlan (`ECL3:0,8,11`), the Slums (`ECL2:20`),
-and Kuto's Well (`ECL8:29`). Ten new portraits can be selected in those scripts:
+The game loads every area of the campaign. Ten new portraits are selected by
+scripts in New Phlan (`ECL3:0,8,11`), the Slums (`ECL2:20`) and Kuto's Well
+(`ECL8:29`):
 the council clerk, Bishop Braccio, Councilman Cadorna, Mayor Eberhard, Dirten,
 the harbor master, Ohlo, the Slums fortune teller, Ohlo's potion keeper, and
 the Kuto's Well seer. The script-specific dialogue opening selects the portrait
@@ -138,13 +139,12 @@ only when no approach sprite is active or the encounter has reached its nearest
 sprite pose. Other scenes keep their original artwork. Some of those
 lines are gated by later quests and are not yet reachable in normal play.
 
-The other 29 portraits are cataloged and installed, but their areas have no
-runtime route yet. When those districts are implemented, identify their exact
-script cues and connect the corresponding portrait before marking that scene
-covered. `cluebook-portraits.json` keeps this distinction explicit.
+The other 29 portraits are cataloged and installed, but no script cue selects
+them yet. Identify each one's exact script cue and connect the portrait before
+marking that scene covered. `cluebook-portraits.json` keeps this distinction explicit.
 
 To add one, put the 5:6 PNG in `art/portraits/NPCs/`, catalog it, and add its
-condition to `speaking_npc_portrait()` when its area can be played.
+condition to `speaking_npc_portrait()`.
 
 ## Heads and bodies (legacy)
 
@@ -235,7 +235,8 @@ Slums orc, `PIC2` record 4, has four frames with delays 15, 0, 7 and 0. It
 holds its ready pose for about 0.82 s and its strike for about 0.38 s, over and
 over.
 
-Only the Slums load animations today (`PIC2.DAX`). No table maps monsters to
+Every area loads the animations in its own `PIC` archive (`PIC2.DAX` for the
+Slums). No table maps monsters to
 pictures: the script's operand is the only link. Records 1 (treasure chest)
 and 29 (campfire) appear in every `PIC` archive.
 

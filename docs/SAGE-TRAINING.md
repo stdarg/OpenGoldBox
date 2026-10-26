@@ -1,6 +1,6 @@
 # Sage fixed training
 
-[#211](https://github.com/stdarg/OpenGold/issues/211) supplies the Sage background's
+[#211](https://github.com/stdarg/OpenGoldBox/issues/211) supplies the Sage background's
 Arcana and History proficiency grants. Authority:
 [SRD 5.2.1 p. 83](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=83).
 Each fixed grant records `background:sage` as its source at level 1.

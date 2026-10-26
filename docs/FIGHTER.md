@@ -51,7 +51,7 @@ every class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
   Critical Hits.
 
 Verification: `opengold_fighter_levels_tests` (ordinary level-ups to 15 and
-the campaign's stop at 8, grants, feats, Second Wind, Indomitable's uses,
+the campaign's stop at 15, grants, feats, Second Wind, Indomitable's uses,
 masteries, the Proficiency Bonus, save and reload, Extra Attack and Two Extra
 Attacks with Action Surge and a checkpoint, Tactical Shift, Tactical Master,
 Heroic Warrior, Indomitable, Studied Attacks, Superior Critical).

@@ -76,8 +76,8 @@ The item's original bytes and provenance are retained; no unsupported magic
 effect is invented. Script suppression of monster item drops is honored. A
 full party purse defers collection without losing loot; deferred rewards survive saving.
 
-This does not make every Slums quest, creature, robbery or parley outcome
-supported. Unsupported paths retain explicit diagnostics and event rollback.
+The whole campaign is now playable; see the [whole-map audit](audits/whole-map.md).
+Unsupported paths retain explicit diagnostics and event rollback.
 Combat is prepared before switching screens. If the rules, encounter, or art
 cannot initialize, exploration keeps its view and rolls the event back with a
 diagnostic. Acknowledge the message to continue or return to the party. The current
@@ -89,8 +89,8 @@ open so the party can be edited and retried.
 Leaving the Slums through a west doorway enters Kuto's Well (`ECL8:29`, maps
 `GEO8:29` and `GEO8:32`). Its fights, camping, the catacombs' arrow volleys,
 Norris the Gray's band (fought or surrendered to), his treasure and the hideout
-are supported; finds that seem to need the original Search mode are not, see the
-[Kuto's Well audit](audits/kutos-well.md).
+are supported, and so are the finds that need the original Search mode (the
+Search toggle or Look); see the [Kuto's Well audit](audits/kutos-well.md).
 
 `tests/playtest_kutos_well.gd` play-tests the area in the game window. The
 expedition test writes its two campaign fixtures when asked: beside the well
@@ -187,8 +187,8 @@ Native tests cover original geometry, host dice, string-copy semantics, surprise
 initiative, large-arena checkpoints, coin overflow and duplicate loot. The
 installed-data route also checks the four-orc flag, original silver award and
 return to New Phlan. Campaign saves retain district, visited maps, script state,
-RNG and uncollected loot; version-one saves and the preceding additive rules
-content pack remain accepted.
+RNG and uncollected loot. Older save formats are rejected; see
+[saves](SAVES.md#pre-10-format-policy).
 
 References: original installed ECL2/GEO2/MON2CHA/CPIC2/DUNGCOM resources;
 [Pool of Radiance technical FAQ](https://gamefaqs.gamespot.com/pc/564785-pool-of-radiance/faqs/73869)

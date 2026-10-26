@@ -157,7 +157,7 @@ SRD assumes. The default should be measured again when #91 lands.
 
 ## Re-measured with prepared Cleric spells (2026-10-02)
 
-With [#91](https://github.com/stdarg/OpenGold/issues/91) the mixed party's two
+With [#91](https://github.com/stdarg/OpenGoldBox/issues/91) the mixed party's two
 clerics prepare Cure Wounds, Healing Word and Inflict Wounds at creation, and
 Blindness as well at level three. The tool was run again with 40 seeds:
 
@@ -176,5 +176,5 @@ keeps every cell at 98% or better for both parties.
 The tool's clerics carry a mace and a shield, so no hand is free for a Somatic
 component: of their spells they cast only Healing Word, which has none. Cure
 Wounds, Inflict Wounds and Sacred Flame stay prepared but unusable with that
-grip, which is why making Inflict Wounds castable ([#230](https://github.com/stdarg/OpenGold/issues/230))
+grip, which is why making Inflict Wounds castable ([#230](https://github.com/stdarg/OpenGoldBox/issues/230))
 left these numbers unchanged.

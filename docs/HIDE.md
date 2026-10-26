@@ -1,6 +1,6 @@
 # Hide
 
-Scope: [#219](https://github.com/stdarg/OpenGold/issues/219). SRD 5.2.1's Hide
+Scope: [#219](https://github.com/stdarg/OpenGoldBox/issues/219). SRD 5.2.1's Hide
 action, the Rogue's Cunning Action Hide and the Search action, with the choices
 recorded in [HIDE-1](SRD-DECISIONS.md#hide-1-2026-10-14-finding-hidden-creatures).
 

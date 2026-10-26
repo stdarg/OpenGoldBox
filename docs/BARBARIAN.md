@@ -115,7 +115,7 @@ attack roll, as the SRD has it, now that a turn can hold two.
   Initiative dialog offers Persistent Rage, as it offers Uncanny Metabolism: all
   Rage uses come back, once per Long Rest. The Rage needs no extending, so
   "Extend Rage" is not offered.
-- Verification: `opengold_barbarian_levels_tests` (the campaign's stop at 8,
+- Verification: `opengold_barbarian_levels_tests` (the campaign's stop at 15,
   four Rages and the fifth at 12, Fast Movement, the level 11–15 grants and
   resources, Reckless Attack only first, Extra Attack, Instinctive Pounce and
   its checkpoint, both Brutal Strike blows and the follow-up move, Retaliation,

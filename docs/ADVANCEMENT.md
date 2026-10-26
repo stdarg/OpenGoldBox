@@ -79,7 +79,7 @@ described in [training support](TRAINING.md).
 
 Existing Second Wind, Spellcasting, Unarmored Defense, Dwarven Toughness and
 Goliath speed have source records. Fighting Style records the existing Defense
-prerequisite; its level-one selection/replacement flow remains FTR00/FTR01 work.
+prerequisite; its level-one selection and replacement are in [Fighting Styles](FIGHTER-STYLES.md).
 This does not add unimplemented class features, Origin feats or Human choices.
 New grant records must agree with creation and leveling history on load.
 

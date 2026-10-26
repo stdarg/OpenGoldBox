@@ -1,8 +1,8 @@
 # Wizard spell access
 
-Issue [#199](https://github.com/stdarg/OpenGold/issues/199) separates knowledge
+Issue [#199](https://github.com/stdarg/OpenGoldBox/issues/199) separates knowledge
 from preparation for the existing playable Wizard spells. It is the first part
-of [F07 #36](https://github.com/stdarg/OpenGold/issues/36), not complete Wizard
+of [F07 #36](https://github.com/stdarg/OpenGoldBox/issues/36), not complete Wizard
 spellcasting. Authority: [SRD 5.2.1 pp. 77–78](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=77).
 
 ## Implemented scope
@@ -66,16 +66,16 @@ spells and their source routes. The five Wizard spells described here are only
 a subset of that catalog; missing choices are not evidence of a smaller SRD
 entitlement.
 
-- [#37](https://github.com/stdarg/OpenGold/issues/37): full learning and
-  preparation controls and filling pending choices. This increment retains the
-  existing advancement selection flow; it does not add a Long Rest editor.
-- [#97](https://github.com/stdarg/OpenGold/issues/97): copying costs/time,
-  book objects, replacement books and the complete Wizard preparation lifecycle.
-- [#200](https://github.com/stdarg/OpenGold/issues/200): independent free casts,
-  source-specific use/recharge and an actual granting feature. No reserved
-  free-cast fields or test-only grants are counted as support.
-- Other class policies, all missing spells, rituals and subclass grants remain
-  their named increments. Parent #36 stays open.
+- [#37](https://github.com/stdarg/OpenGoldBox/issues/37): learning and
+  preparation controls are delivered
+  ([coverage](SRD-COVERAGE.md#wizard-spell-learning-and-preparation-controls)).
+- [#97](https://github.com/stdarg/OpenGoldBox/issues/97): spellbook copying and
+  book loss are not pursued
+  ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)).
+- [#200](https://github.com/stdarg/OpenGoldBox/issues/200): source-specific free
+  casts are delivered ([Magic Initiate](MAGIC-INITIATE.md)).
+- Other class policies, missing spells and subclass grants are in their own
+  documents. Parent #36 is closed.
 
 ## Verification
 

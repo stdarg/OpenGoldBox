@@ -2,40 +2,47 @@
 
 An open-source role-playing game engine for Gold Box games.
 
-The project was previously named OpenGold. The display name and documentation
+The project was previously named OpenGold. The display name, documentation
+and the GitHub repository ([stdarg/OpenGoldBox](https://github.com/stdarg/OpenGoldBox))
 now use OpenGoldBox. Existing `opengold` C++ namespaces, build targets,
-`OPENGOLD_GAME_DIR`, source-directory names, save-format identifiers, and the
-GitHub repository URL keep their original names. Campaign saves continue to use
-the original Godot user-data directory.
+`OPENGOLD_GAME_DIR`, source-directory names and save-format identifiers keep
+their original names. Settings and campaign saves use the Godot user-data
+folder `app_userdata/OpenGold`.
 
 A modern Godot-based reimplementation of SSI's Gold Box engine that reads the
 original game data and assets while adding a cleaner UI, improved rendering,
 and modern quality-of-life features.
 
-The current implementation targets **Pool of Radiance**. The game plays New
-Phlan, the Slums and Kuto's Well; the full campaign is not yet playable. The
-engine uses C++20 with Godot 4.x presentation and a shared GDExtension. Combat
-uses a bounded, replaceable **SRD 5.2.1** rules module. Original game files must come from your
-own installation and are decoded at runtime; they are not bundled.
+The current implementation targets **Pool of Radiance**, and the whole campaign
+is playable: every area of the map, through Tyranthraxus's fall and the old town
+after it. The engine uses C++20 with Godot 4.x presentation and a shared
+GDExtension. Combat uses a bounded, replaceable **SRD 5.2.1** rules module.
+Original game files must come from your own installation and are decoded at
+runtime; they are not bundled.
 
 ## Current status
 
-As of 2026-10-18. Each linked document holds the detail and its own evidence;
+As of 2026-10-25. Each linked document holds the detail and its own evidence;
 this section only summarizes.
 
 ### Play the game
 
 The game starts at
 character creation and needs your Pool of Radiance installation (the game asks
-for the folder on first run, or set `OPENGOLD_GAME_DIR`).
+for the language and the folder on first run, or set `OPENGOLD_GAME_DIR`).
+Settings and saves go to your user-data folder; see
+[configuration](docs/CONFIGURATION.md).
 
 - Windows (PowerShell): `.\build-opengoldbox.cmd`, then `.\win-package\opengoldbox.exe`.
+  The build also makes the package for players,
+  `build\game\OpenGoldBox-windows-x86_64.zip`, which runs from any folder,
+  including a read-only one ([the package](docs/BUILD.md#the-package-for-players)).
 - macOS (bash): `./build.sh`, then `open mac-package/OpenGoldBox.app`. `./build.sh`
   builds the game and re-exports the app without running tests.
 
-The last full test run was on 2026-10-16 (commit 5b5c199b, macOS, with original
-files): all 226 native and Godot checks passed. The Windows commands were not
-run for this summary.
+The last full test run was on 2026-10-25 (commit 6877f6f3, Windows, with original
+files): all 239 native and Godot checks passed, including the packaged game's
+smoke check. macOS was not run for this summary.
 
 See [building the game and each demo](docs/BUILD.md). The scenes under
 [`demos/`](demos/README.md) are frozen references, described under
@@ -53,28 +60,34 @@ See [building the game and each demo](docs/BUILD.md). The scenes under
   halls. Every armor the shops sell converts to SRD equipment; stock that cannot
   be equipped is marked before purchase. See [New Phlan](docs/PHLAN.md),
   [recovery](docs/RECOVERY.md) and [training halls](docs/TRAINING-HALL.md).
-- **Slums and Kuto's Well:** leave by the west gate and meet the original
-  roaming and scripted encounters, then go on into Kuto's Well, its catacombs'
-  arrow volleys and Norris the Gray's band. Monsters are SRD stat blocks, and
-  encounters are sized to an XP budget set by `encounter_challenge`. Fights use
-  the original battlefield geometry and award original loot and XP; locked
-  doors can be bashed or picked, and camping can be interrupted. See
-  [the expedition](docs/EXPEDITION.md).
+- **The campaign:** every area the original's map leads to, from the Slums,
+  Kuto's Well and Podol Plaza to Sokal Keep by boat, the Temple of Bane, the
+  nomad camp, Kovel Mansion, the Pyramid, the kobold caves, the lizard men's
+  keep, Valhingen Graveyard, the wilderness's sites, Stojanow Gate and Valjevo
+  Castle, travelled on the overland map. One party plays it all from area to
+  area in a single test run ([the whole map](docs/audits/whole-map.md)).
+  Monsters are SRD stat blocks, and encounters are sized to an XP budget set by
+  `encounter_challenge`. Fights use the original battlefield geometry and award
+  original loot and XP; locked doors can be bashed or picked, Search mode finds
+  what the original hides, and camping can be interrupted. See
+  [the expedition](docs/EXPEDITION.md) and [outdoor areas](docs/OUTDOOR-AREAS.md).
 - **Combat:** the original's placement, monster morale, parley through a party
   leader, Quick combat, and fleeing off the battlefield's edge (or with the
   **Flee** button). Trolls get back up unless fire or acid finishes them;
-  Torches, Acid, Alchemist's Fire and Oil can be used in a fight. See
-  [rules](docs/RULES.md).
-- **Quest:** Ohlo's potion delivery can be completed from acceptance to reward.
-  See [quests](docs/QUESTS.md).
+  Torches, Acid, Alchemist's Fire and Oil can be used in a fight. Five
+  difficulty levels; on Hard and above monsters use their potions, wands and
+  scrolls. See [rules](docs/RULES.md) and [configuration](docs/CONFIGURATION.md).
+- **Quests:** Ohlo's potion delivery and City Hall's commissions, from
+  acceptance to reward. See [quests](docs/QUESTS.md).
 - **Advancement:** every class levels up to 15 from the roster's Advance
   button, with its SRD subclass. Training halls sell experience sessions and
   skill lessons. See [advancement](docs/ADVANCEMENT.md),
   [levels 5–10](docs/LEVELS-5-10.md) and [training halls](docs/TRAINING-HALL.md).
-- **Magic items:** enchanted weapons, armor and shields keep their
-  bonus; the Flame Tongue needs attunement and lights for 2d6 Fire; the cursed
-  Broad Sword binds its wielder until Remove Curse. See
-  [magic items](docs/MAGIC_ITEMS.md#in-opengoldbox).
+- **Magic items:** enchanted weapons, armor and shields keep their bonus;
+  potions, wands, rings, bracers, necklaces and scrolls work; items are
+  identified at a shop or with Identify. No item needs attunement. The Flame
+  Tongue lights for 2d6 Fire; the cursed Broad Sword binds its wielder until
+  Remove Curse. See [magic items](docs/MAGIC_ITEMS.md#in-opengoldbox).
 - **Saves:** named campaign slots from the party roster and idle exploration;
   not during combat or an unfinished event. Older pre-release saves are
   refused. See [saves](docs/SAVES.md).
@@ -97,39 +110,31 @@ See [building the game and each demo](docs/BUILD.md). The scenes under
 | Wizard | Evoker | [Wizard](docs/WIZARD.md) |
 
 All twelve classes reach level 15, the game's cap. Spells and features a CRPG
-cannot resolve are cut, as [SRD-DECISIONS](docs/SRD-DECISIONS.md) records; a
-few wait on other systems (Teleport on travel beyond New Phlan, Use Magic
-Device on magic items). Per-feature status is in the
+cannot resolve are cut, as [SRD-DECISIONS](docs/SRD-DECISIONS.md) records;
+Teleport is not in yet ([Wizard](docs/WIZARD.md)). Per-feature status is in the
 [SRD coverage ledger](docs/SRD-COVERAGE.md), and every deliberate departure from
 the original is in [DEVIATIONS](docs/DEVIATIONS.md).
 
 ### Limits
 
-- Only New Phlan's civilized area, the Slums and Kuto's Well. Other districts
-  and boat destinations are not reachable. Some Slums quests and hostile
-  branches report a diagnostic and roll back, and finds that need the original
-  Search mode are not supported.
-- Wands, potions, rings, bracers, scrolls and other worn or charged magic items
-  have no effect yet, and items are not identified. Items cannot be sold or
-  dropped.
-- No multiclassing, no saving during combat, no importing original saves, no
-  full campaign.
+- Two engine commands are not implemented (CALL 0x8000 and opcode 0x1F,
+  which the original leaves undefined); an event that reaches one stops with
+  an error and is undone. The whole-map run reaches neither. See
+  [ECL coverage](docs/ECL-COVERAGE.md#gaps).
+- Items cannot be sold or dropped.
+- No multiclassing, no saving during combat, no importing original saves.
 
 ### Next work
 
-The first-adventure milestone [#11](https://github.com/stdarg/OpenGold/issues/11)
-is complete. Current work is magic items
-([#234](https://github.com/stdarg/OpenGold/issues/234): identification
-[#262](https://github.com/stdarg/OpenGold/issues/262), charged items
-[#263](https://github.com/stdarg/OpenGold/issues/263), worn items
-[#264](https://github.com/stdarg/OpenGold/issues/264) and scrolls
-[#265](https://github.com/stdarg/OpenGold/issues/265)). Candidates for the next
-milestone are broader original-script coverage beyond the town, the Slums and
-Kuto's Well ([#4](https://github.com/stdarg/OpenGold/issues/4)) and advanced
-combat interactions ([#5](https://github.com/stdarg/OpenGold/issues/5)). Reward
-mappings stay with [#9](https://github.com/stdarg/OpenGold/issues/9) and broader
-persistence with [#10](https://github.com/stdarg/OpenGold/issues/10). Class and
-spell work is indexed in [#186](https://github.com/stdarg/OpenGold/issues/186).
+The campaign's script coverage ([#4](https://github.com/stdarg/OpenGoldBox/issues/4)),
+advanced combat interactions ([#5](https://github.com/stdarg/OpenGoldBox/issues/5)),
+reward mappings ([#9](https://github.com/stdarg/OpenGoldBox/issues/9)) and magic
+items ([#234](https://github.com/stdarg/OpenGoldBox/issues/234)) are done. Open
+work: checking the Windows package on a clean machine
+([#7](https://github.com/stdarg/OpenGoldBox/issues/7)), the Combat Sprite
+Catalog's export into the game
+([#274](https://github.com/stdarg/OpenGoldBox/issues/274)), and the remaining SRD
+items indexed in [#186](https://github.com/stdarg/OpenGoldBox/issues/186).
 
 ## Reference demos
 
@@ -266,10 +271,9 @@ limits](docs/creature-catalog.md) for integration, required assets and tests.
 ## ECL script tools
 
 The [ECL runtime and engine design](docs/SCRIPTS.md) documents the native
-script interpreter and resumable engine requests. The bounded New Phlan host
-already runs location events, building transitions, dialogue and shops; the
-Slums combat adapter returns encounter outcomes to ECL. General campaign
-integration remains incomplete. After building,
+script interpreter and resumable engine requests. The game's host runs every
+area's location events, building transitions, dialogue, shops and fights;
+[ECL coverage](docs/ECL-COVERAGE.md) tracks each command. After building,
 run `.\build\opengold_scripts.exe --demo` for a self-contained arithmetic, text,
 and menu script. The tool also lists, inspects, and runs installed ECL records;
 missing gameplay host capabilities and unbound engine variables produce explicit faults.
@@ -281,7 +285,7 @@ GEO maps as a top-down grid with walls, doors, and numbered event markers. Click
 locations to inspect their raw data. The demo uses the configured game directory
 and the reusable native `MapCatalog` loader. Markers expose potential script
 triggers; this inspector does not execute ECL or provide collision-checked player
-movement. Those bounded gameplay capabilities are available in the New Phlan demo.
+movement, which the game does.
 See [map loading, demo controls, and tests](docs/MAPS.md).
 
 ## Monster art review tool
@@ -365,16 +369,24 @@ Save names before closing.
 ## Developer tools
 
 Standalone Godot tools under [`dev_tools/`](dev_tools) read your installed DAX
-files and are not linked into the game. Each `run.sh` builds its native
-extension and imports its project on first run.
+files and are not linked into the game. Each `run.sh` (bash; Git Bash on
+Windows) builds its native extension and imports its project on first run.
+Their native libraries are not built by the game's or the demos' builds; each
+tool's README has its build and self-check commands.
 
 - [Combat sprite catalog](dev_tools/combat_sprite_catalog/README.md): every
   monster and NPC record with its combat art, weapon sets and record editing.
+  Its export is the game's `data/monsters`.
 - [Tile art viewer and map browser](dev_tools/tile_art_viewer/README.md): the
   original first-person wall art and exploration maps.
 - [Replacement art creator](dev_tools/replacement_art_creator/README.md):
   briefs, imports and previews for new wall art; see
   [the workflow](docs/REPLACEMENT-ART-CREATOR.md).
+- [Shop & Temple Manager](dev_tools/shop_manager/README.md): the shops' and
+  temples' offerings, prices, quantities and portraits.
+- [DOS probe](dev_tools/dos_probe/README.md): a research-only headless PC that
+  runs your copy of the original game and records screenshots and script
+  traces to compare with OpenGoldBox.
 
 `opengold_magic_items GAME_DIR` lists every magic item the original can give the
 party; see [magic items](docs/MAGIC_ITEMS.md).
@@ -406,7 +418,8 @@ initializes Visual Studio and uses its installed CMake directly:
 .\build.cmd
 ```
 
-Open `demos/godot/project.godot` in Godot 4.x for the presentation shell. The native
+Open `src/OpenGoldBox/godot/project.godot` in Godot 4.x for the game, or
+`demos/godot/project.godot` for the reference demos. The native
 core is deliberately testable without launching Godot. The optional C++
 GDExtension (`.\build-opengoldbox.cmd`) contains the tour/town, character/party
 and combat scenes; the demos' research tools, such as the sound board, are built
@@ -418,7 +431,8 @@ CMake commands in a configured developer terminal and the
 [extension build options](docs/ROLF.md#build-boundary).
 
 Set the game directory before launching a demo or running tests against original
-data. The environment variable overrides `opengold/game_directory` in
+data; without it, about 70 of the Godot checks report Skipped. The environment
+variable overrides the game's saved folder and `opengold/game_directory` in
 `demos/godot/project.godot`; point it at the directory containing the DAX files:
 
 ```powershell
@@ -429,7 +443,7 @@ The shared party acceptance check exercises creation, the original shop, combat,
 level-two advancement, the temple, the inn and interrupted camping:
 
 ```powershell
-godot --headless --path demos/godot res://scenes/character_creation.tscn -- --party-check
+godot --headless --path src/OpenGoldBox/godot res://scenes/character_creation.tscn -- --party-check
 ```
 
 It requires the built extension and original game data. Individual feature docs

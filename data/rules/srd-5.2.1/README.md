@@ -1,7 +1,7 @@
 # SRD 5.2.1 demonstration content
 
 `combat.rules` is a small, offline, curated combat pack, revision
-`srd-5.2.1-demo.1`. The runtime validates it directly; it makes no HTTP requests.
+`srd-5.2.1-demo.2`. The runtime validates it directly; it makes no HTTP requests.
 Open5E provides reference data, while OpenGoldBox implements executable behavior.
 
 `open5e-bandit.json` is the complete Open5E response fetched on 2026-09-06 from:
@@ -18,8 +18,8 @@ download SHA-256:
 The Bandit profile retains AC 12, HP 11, initiative +1, speed 30, scimitar +3
 for 1d6+1, and light crossbow +3 for 1d8+1 at 80/320 feet. Damage types in
 this response require checking the action text: the structured primary type is
-null while the extra-damage-type field contains the type. The current module
-does not yet resolve typed damage.
+null while the extra-damage-type field contains the type. The pack's
+`damage_types` rows record each attack's type, and the module resolves it.
 
 ## Slums monsters
 
@@ -323,7 +323,7 @@ Each keeps the original's Hit Points.
 complete SRD class builds. None of these profiles claims to be an imported
 Open5E monster stat block. The party casters deliberately carry only two
 level-1 slots for this standalone example. Shared campaign characters instead
-use [manual level-1–4 advancement](../../../docs/ADVANCEMENT.md), including
+use [manual advancement to level 15](../../../docs/ADVANCEMENT.md), including
 level-two slots and selected supported spells/feats.
 
 To update content, fetch an explicitly filtered source, retain the response and

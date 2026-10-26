@@ -61,9 +61,8 @@ Art loads from the `OPENGOLD_GAME_DIR` environment variable.
    written to its right: a skill's check bonus once chosen (and its bonus now),
    a weapon's mastery property, or a style's or order's benefit. Hovering a
    choice for a second names the class or background that offers it.
-6. Wizards and Clerics choose supported cantrips in **Spell Choices**, after
-   Training. Wizard Fire Bolt/Poison Spray and Cleric Sacred Flame have labeled
-   checkboxes, counts and keyboard access.
+6. Spellcasting classes choose their cantrips and spells in **Spell Choices**,
+   after Training, with labeled checkboxes, counts and keyboard access.
    Back preserves selections; unfilled SRD choices remain explicitly pending.
    Class changes clear invalid choices and hide their controls. Presets receive
    their supported class cantrips. See
@@ -88,7 +87,7 @@ Art loads from the `OPENGOLD_GAME_DIR` environment variable.
    through later edits.
 9. Show the character sheet: race, gender, class, level, background, six scores,
     saving throws, Hit Dice, HP and inventory (initially empty), plus skill bonuses,
-    Expertise, tools, languages and their grant sources. Saving throws
+    Expertise and their grant sources. Saving throws
     include the class's level-one proficiency bonus where applicable.
     A note explains that SRD 5.2.1 uses the maximum class Hit Die plus applicable
     modifiers at level one. Only the HP numbers are colored: yellow for a
@@ -128,7 +127,7 @@ The [shared party preview](PARTY.md) now adds a roster, six PC/two NPC positions
 party sheets/inventories, town purchases/equipping and combat handoffs to this
 scene. Character creation itself retains the same choices. Supported combat
 profiles and remaining class/skill/spell/lineage limits are listed there.
-Persistence remains separate work.
+Campaign saves keep the party ([saves](SAVES.md)).
 
 ## Native boundaries and rules
 

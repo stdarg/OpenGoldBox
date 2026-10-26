@@ -87,7 +87,7 @@ Reproduction (Bash, from repository root):
 
 ```bash
 cmake --build build/mac-check --target opengold_advancement_tests -j6
-OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD build/mac-check/opengold_advancement_tests
+OPENGOLD_GAME_DIR=/path/to/POOLRAD build/mac-check/opengold_advancement_tests
 ctest --test-dir build/mac-check -R '^opengold_advancement_tests$' --output-on-failure
 ```
 

@@ -1,6 +1,6 @@
 # SRD weapon catalog
 
-[EQ02 / #54](https://github.com/stdarg/OpenGold/issues/54) supplies all **38**
+[EQ02 / #54](https://github.com/stdarg/OpenGoldBox/issues/54) supplies all **38**
 weapons in the [SRD 5.2.1 table, p. 91](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf),
 plus the existing plain Wand focus. New entries are Greatclub, Sickle,
 Greataxe, Lance, Maul, Rapier, Whip, Blowgun, Hand Crossbow, Heavy Crossbow,
@@ -21,8 +21,9 @@ damage dice to double on a critical or reroll with Savage Attacker (SRD p. 16).
 Its attack roll still uses Dexterity and applicable proficiency.
 
 Catalog metadata does not grant unimplemented property actions. Loading (#56),
-Light extra attacks (#59), mastery actions (#60), and starting-package choices
-remain tracked separately. [Ammunition tracking (#57)](AMMUNITION.md) was explicitly
+Light extra attacks (#59) and mastery actions (#60) were delivered separately;
+there are no starting packages: characters buy their gear
+([START-1](SRD-DECISIONS.md#start-1-2026-10-11-starting-gold-as-the-original-game-gave-it)). [Ammunition tracking (#57)](AMMUNITION.md) was explicitly
 declined: ranged ammunition is unlimited. [Thrown inventory (#58)](THROWN-WEAPONS.md)
 remains physical weapon inventory. Lance records its one-handed mounted exception;
 current actors are unmounted and use two hands. Mounted companion state and the
@@ -39,7 +40,7 @@ saved original provenance are regression-tested to prevent accidental remapping.
 
 Combat recipes lack original-item provenance and retain their saved weapon and
 exact outcome.
-Player saving remains restricted to camp/inn.
+Campaign saves are made from the party roster or idle exploration, not during combat; see [saves](SAVES.md).
 
 [weapon_catalog_tests.cpp](../tests/weapon_catalog_tests.cpp) checks the complete
 independent [source table](../tests/fixtures/weapons-srd-5.2.1.tsv), all twelve

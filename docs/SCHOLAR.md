@@ -84,9 +84,9 @@ Reproduction commands (from repository root):
 ```bash
 ctest --test-dir build/mac-check --output-on-failure -E '^opengold_godot_prepare$' --fixture-exclude-setup godot_project -j6
 python3 tools/localization.py --check
-OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD build/mac-check/opengold_training_tests
-OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD /Applications/Godot_mono.app/Contents/MacOS/Godot --path src/OpenGoldBox/godot --resolution 1120x800 --script /Users/edmond/src/OpenGold/tests/scholar_view_tests.gd -- --scholar-fixture=/Users/edmond/src/OpenGold/build/mac-check/scholar-ui.ogs --scholar-capture=/tmp/scholar-main-captures --scholar-output=/tmp/scholar-ui-result.ogs
-OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD build/mac-check/opengold_training_tests --verify-scholar /tmp/scholar-ui-result.ogs
+OPENGOLD_GAME_DIR=/path/to/POOLRAD build/mac-check/opengold_training_tests
+OPENGOLD_GAME_DIR=/path/to/POOLRAD /Applications/Godot_mono.app/Contents/MacOS/Godot --path src/OpenGoldBox/godot --resolution 1120x800 --script "$PWD/tests/scholar_view_tests.gd" -- --scholar-fixture="$PWD/build/mac-check/scholar-ui.ogs" --scholar-capture=/tmp/scholar-main-captures --scholar-output=/tmp/scholar-ui-result.ogs
+OPENGOLD_GAME_DIR=/path/to/POOLRAD build/mac-check/opengold_training_tests --verify-scholar /tmp/scholar-ui-result.ogs
 ```
 
 For the demo, use `--path demos/godot`, add `--scholar-demo` and distinct output/

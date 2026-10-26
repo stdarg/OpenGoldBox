@@ -1,9 +1,9 @@
 # Rest resources
 
-[F03a #190](https://github.com/stdarg/OpenGold/issues/190) implements Hit Dice and
-supported rest recharge in the rules layer. [F03b #191](https://github.com/stdarg/OpenGold/issues/191)
-adds individual campaign eligibility and a persistent spending session. The game and demo provide the [reviewed rest controls #192](https://github.com/stdarg/OpenGold/issues/192).
-The [#193 interruption/resumption](https://github.com/stdarg/OpenGold/issues/193)
+[F03a #190](https://github.com/stdarg/OpenGoldBox/issues/190) implements Hit Dice and
+supported rest recharge in the rules layer. [F03b #191](https://github.com/stdarg/OpenGoldBox/issues/191)
+adds individual campaign eligibility and a persistent spending session. The game and demo provide the [reviewed rest controls #192](https://github.com/stdarg/OpenGoldBox/issues/192).
+The [#193 interruption/resumption](https://github.com/stdarg/OpenGoldBox/issues/193)
 implementation included natural sleep, combat equipment handoff and Q37 safe
 recovery; [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation) removed all three. The current behavior is
 summarized first; the later sections are the delivery history.
@@ -25,8 +25,8 @@ healing outside combat happens in the Camp dialog (C), before a rest starts.
   spends its slot and heals its dice plus the spellcasting modifier. Spells need
   no free hand. A character in untrained armor cannot cast.
 - The row shares its place with Arcane Recovery, which appears only during a
-  Short Rest; Cast / Use appears only before one. Detect Magic and other
-  outside-combat spells will join this row.
+  Short Rest; Cast / Use appears only before one. Detect Magic, Identify,
+  Revivify and other outside-combat spells also appear in this row.
 - Rules: `RulesModule::camp_actions` and `use_camp_action`; Core:
   `CampaignParty::camp_actions` and the atomic `use_camp_action`. Verified by
   `opengold_camp_action_tests` and the Cast / Use stage of `opengold_godot_rest`.
@@ -49,7 +49,7 @@ healing outside combat happens in the Camp dialog (C), before a rest starts.
   [Recovery clocks](RECOVERY-CLOCKS.md) for death saves after combat.
 - The rest dialog has no Resume Long Rest or End Rest; it offers Start, then
   Heal with Hit Dice and Finish after a Short Rest.
-- Campaign format 21 stores no rest activity and no detached (ground) items. It
+- The campaign save stores no rest activity and no detached (ground) items. It
   stores the camp interruption step count.
 - Evidence: `alternate_rules_boundary`, `campaign_services`,
   `watch_interruption_and_rollback`, `safe_camp_profile`, `slums_street_profile`,
@@ -66,8 +66,7 @@ pp. 47–48 (Second Wind), 185 (Long Rest) and 187 (Short Rest).
 
 - Characters have one Hit Die per attained level: d12 for Barbarian; d10 for
   Fighter, Paladin and Ranger; d6 for Sorcerer and Wizard; d8 for the other six
-  classes. Supported progression remains levels 1–4 for Fighter, Cleric and
-  Wizard, and level 1 for the others.
+  classes. Every class advances to level 15.
 - A single-die spend rolls that die and adds current Constitution, restoring at
   least 1 HP before the maximum-HP cap, with one RNG draw per die. Dwarven
   Toughness does not add to the healing roll. The player does not choose per
@@ -161,10 +160,10 @@ Unknown probabilistic profiles never silently substitute an uninterrupted rest.
 
 ## Persistence
 
-The **SRD11** vital continuation stores slots, Second Wind and death-save state,
+The **SRD13** vital continuation stores slots, Second Wind and death-save state,
 the remaining die count, and an **FX8** effects record.
 
-**OGCOMBAT 40** stores each actor's remaining dice; authored combat definitions
+**OGCOMBAT 69** stores each actor's remaining dice; authored combat definitions
 without a character recipe receive zero, without inventing monster Hit Dice
 mechanics. **PC43** recipes derive capacity from class and level.
 

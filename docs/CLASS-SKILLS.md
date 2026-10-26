@@ -1,6 +1,6 @@
 # Starting class skill choices
 
-[#213](https://github.com/stdarg/OpenGold/issues/213) completes the starting skill
+[#213](https://github.com/stdarg/OpenGoldBox/issues/213) completes the starting skill
 choices from the [SRD 5.2.1 Core Traits tables](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf).
 
 | Class | Required choices | Printed page |
@@ -35,8 +35,8 @@ The existing Training checkbox groups show each class's skill list, selection
 count and limit. Next requires all supported choices. Keyboard selection keeps
 focus; Back and background changes preserve valid selections. Changing class
 keeps skills allowed by the new list, in selection order up to its limit, and
-records them under the new class entitlement. Other invalid choices clear. Fighter retains the approved style
-dropdown above languages. No new control type or independent layout is added.
+records them under the new class entitlement. Other invalid choices clear. Fighter retains the approved Fighting
+Style choice. No new control type or independent layout is added.
 
 The shared controls rebind callbacks when a row changes class and retain the
 catalog's option order. All 48 presets use the existing deterministic generator
@@ -59,7 +59,7 @@ existing Rogue/Fighter flow. Wizard/Cleric cantrip creation and main/demo party
 fixtures now make the required skill selections through their existing controls.
 
 Class tools and Druidic were removed by [DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells). Further Expertise features, spell choices, equipment,
-subclasses, higher levels and multiclass acquisition remain in their own issues.
+subclasses and higher levels came later; multiclassing is not planned.
 This increment does not complete the full starting-class trackers or #29/#52.
 
 Verification: all 41 native/tool regression checks pass, including every class

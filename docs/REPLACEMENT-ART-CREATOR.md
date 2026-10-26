@@ -17,8 +17,7 @@ there keeps its original art.
 Open a terminal and run these commands from the repository root:
 
 ```bash
-cd /Users/edmond/src/OpenGold
-OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD \
+OPENGOLD_GAME_DIR=/path/to/POOLRAD \
   /Applications/Godot_mono.app/Contents/MacOS/Godot \
   --path dev_tools/replacement_art_creator/godot
 ```
@@ -40,7 +39,6 @@ From the repository root, build the native extension and let Godot import this
 project once:
 
 ```bash
-cd /Users/edmond/src/OpenGold
 cmake -S . -B build/tile-art-viewer -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DOPENGOLD_BUILD_GODOT=ON -DOPENGOLD_BUILD_TESTS=OFF
@@ -108,8 +106,9 @@ exports.
 
 ## Walkthrough: create new art
 
-1. Open **Create** with an appearance selected. Four pilot appearances already
-   have new art; an untouched appearance starts without a wall image.
+1. Open **Create** with an appearance selected. The 168 appearances used by
+   the current maps already have new art; an untouched appearance starts
+   without a wall image.
 2. Enter a **New title**, choose the **Form**, and write an **Independent
    creative brief**. The form choices are **Solid**, **Door**, **Opening**, and
    **Landmark**. Describe the materials, mood, and distinguishing new design
@@ -150,7 +149,6 @@ projection can expose distortion or seams that are hard to see in the input.
 Build and import the Tile Art Viewer once if needed:
 
 ```bash
-cd /Users/edmond/src/OpenGold
 cmake --build build/tile-art-viewer --target opengold_tile_art_viewer -j6
 /Applications/Godot_mono.app/Contents/MacOS/Godot --headless --editor \
   --path dev_tools/tile_art_viewer/godot --import --quit
@@ -159,8 +157,7 @@ cmake --build build/tile-art-viewer --target opengold_tile_art_viewer -j6
 Launch it with the same game-file directory:
 
 ```bash
-cd /Users/edmond/src/OpenGold
-OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD \
+OPENGOLD_GAME_DIR=/path/to/POOLRAD \
   /Applications/Godot_mono.app/Contents/MacOS/Godot \
   --path dev_tools/tile_art_viewer/godot
 ```

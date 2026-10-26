@@ -32,8 +32,7 @@ default. Replacement requires an existing class-granted style.
 The [style-route packet](FIGHTING-STYLE-ROUTES.md) also covers actual Paladin and
 Ranger level-two entitlements and level-four feat selection. #85 is now completed by Two-Weapon Fighting and the
 [Weapon Mastery integration](WEAPON-MASTERY.md#optional-hit-mastery-integration).
-#140/#147 retain their remaining class and cantrip alternatives. Full class support
-is not claimed.
+#140/#147 later completed the Paladin and Ranger style and mastery choices.
 
 Verification: all 41 native/tool checks pass across the regression run and the
 focused rerun of six updated training-completion fixtures. All 16 Godot runtime

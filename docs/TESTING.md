@@ -42,7 +42,7 @@ ctest --test-dir build --output-on-failure -R '^<one_target>$'
 suite. Running only that and reporting "all checks passed" hides every Godot
 runtime check — the failure mode is silence, not an error.
 
-For the Godot checks, configure a second build directory with them enabled:
+For the demos' Godot checks, configure a second build directory with them enabled:
 
 ```
 cmake -S . -B build-godot -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
@@ -51,7 +51,10 @@ cmake --build build-godot -j6
 ctest --test-dir build-godot -R "^opengold_(demo_prepare|godot_)"
 ```
 
-Godot is located by `find_program`, which searches `PATH` and the usual install
+The game's Godot checks run in `build/game`, which `build-opengoldbox.cmd`
+configures with `OPENGOLD_BUILD_GAME=ON`; see [BUILD.md](BUILD.md).
+
+For the demos, Godot is located by `find_program`, which searches `PATH` and the usual install
 locations on each platform. If it is not found, CMake prints a status line and
 the checks are simply **not registered** — confirm they exist with
 `ctest -N` rather than assuming a clean run covered them. Set
@@ -72,8 +75,8 @@ a future change is not blamed for them:
 
 Both compare a UI-driven save against a native one, so both are candidates for a
 platform difference in how the checkpoint is written or read rather than a rules
-defect. Neither has been diagnosed. The expected result on Windows is therefore
-**42 of 44**; treat any other failure as new.
+defect. Neither has been diagnosed. Both have since passed: on 2026-10-25 all 239
+Windows ctest checks passed with original game data.
 
 Localization is a separate gate and needs Python:
 

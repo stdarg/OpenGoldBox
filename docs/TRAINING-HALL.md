@@ -7,7 +7,7 @@ sells **sessions of experience** and teaches **skill lessons**, all paid from
 the party's gold.
 
 **Status.** The halls' rules are in the game and saved with the campaign
-([#9](https://github.com/stdarg/OpenGold/issues/9)). Answering YES at a hall
+([#9](https://github.com/stdarg/OpenGoldBox/issues/9)). Answering YES at a hall
 lists its services in the dialogue, as the temple does
 ([At the hall](#at-the-hall)).
 
@@ -153,7 +153,7 @@ The user decided, departing from the original
 1. Halls train the SRD classes by AD&D 2nd edition class group.
 2. Levels are gained anywhere; halls grant experience and teach skills.
 3. All gold belongs to the party
-   ([#232](https://github.com/stdarg/OpenGold/issues/232), done).
+   ([#232](https://github.com/stdarg/OpenGoldBox/issues/232), done).
 4. Experience is kept after training.
 5. The hall lists its services in the dialogue, like the temple.
 6. One session per level: half the experience to the next level, 1,000 gp at

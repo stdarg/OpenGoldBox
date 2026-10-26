@@ -2,8 +2,8 @@
 
 Status: the native runtime now includes the PoR research corrections described
 below. It executes VM operations and exposes opt-in, resumable engine requests.
-General encounter integration, world-state mapping, and a Godot campaign scheduler still need concrete
-host implementations. The map inspector does not execute cell events. The
+The game's campaign host serves them through the whole campaign
+([whole-map audit](audits/whole-map.md)). The map inspector does not execute cell events. The
 [C++/Godot Rolf demo](ROLF.md) runs the original welcome through farewell, then
 schedules the three [New Phlan programs](PHLAN.md), with branching dialogue,
 building transitions, character selection and original-stock shop purchases.
@@ -190,7 +190,7 @@ refused.
 | 32 | FIND ITEM | Search actual party inventory and return the comparison flags. |
 | 36 | ADD NPC | Recruit the requested NPC with the correct live state and allegiance. |
 | 37 | LOAD PIECES | Load the selected wall artwork; retain all three operands pending the [operand investigation](#reverse-engineering-load-pieces-0x37). |
-| 38 | PROGRAM | 0 opens a training hall's services and 9 the inn's paid rest; 8, the victory after Tyranthraxus (`ECL5:7`), is refused as unsupported ([RECOVERY.md](RECOVERY.md#original-campaign-mappings)). |
+| 38 | PROGRAM | 0 opens a training hall's services and 9 the inn's paid rest; 8, the victory after Tyranthraxus (`ECL5:7`), wins the game and restores the party ([Valjevo Castle](audits/valjevo-castle.md)). |
 | 39 | WHO | Present character selection and change the selected character. |
 | 3A | DELAY | Provide presentation pacing without blocking the game update loop. |
 | 3C | PROTECTION | Display the requested rune text through the appropriate presentation service. |
@@ -206,7 +206,7 @@ campaign host it still faults.
 
 ## Validation
 
-`build.cmd` runs all five native suites. The ECL suite tests corrected indexing,
+`build.cmd` runs the native test suite. The ECL suite tests corrected indexing,
 condition flags, division, RNG bounds/reproducibility, embedded writable tables,
 string references and writes, input validation, host reply atomicity, transitions,
 limits, malformed records and independent ownership. Godot's
@@ -669,7 +669,7 @@ to party ownership and preserve its live state according to validated behavior.
 
 ## Persistence and debugging
 
-The shared party/New Phlan host now implements [versioned idle-boundary campaign saves](SAVES.md). Pending-request serialization, cross-area state and standalone Slums campaign persistence remain future work. The broader design below describes those extensions.
+The game's campaign host now implements [versioned idle-boundary campaign saves](SAVES.md) in every area. Pending-request serialization remains future work. The broader design below describes those extensions.
 
 A session snapshot includes asset identities/hashes, compatibility-profile
 version, active program, PC, return stack, comparison state, mutable VM regions,

@@ -12,7 +12,7 @@ The proposed Ranged feedback changes and recovery dialog are withdrawn. This
 retains existing gameplay rather than introducing an ammunition system.
 
 This is a deliberate exception to SRD 5.2.1's expenditure/recovery rules, not a
-claim to implement them. [#57](https://github.com/stdarg/OpenGold/issues/57) is no
+claim to implement them. [#57](https://github.com/stdarg/OpenGoldBox/issues/57) is no
 longer planned under the changed requirement. Other weapon properties remain
 separate. Since [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)
 (2026-09-30), [Thrown weapons](THROWN-WEAPONS.md) are treated the same way: a

@@ -6,7 +6,7 @@ Addresses are instruction addresses in that record; flags are ECL cells.
 
 ## Ohlo's potion delivery
 
-Issue [#14](https://github.com/stdarg/OpenGold/issues/14), recommended by the
+Issue [#14](https://github.com/stdarg/OpenGoldBox/issues/14), recommended by the
 [first-adventure audit](audits/issue13-first-adventure.md). Slums script
 `ECL2.DAX:20`, map `GEO2.DAX:20`. Coordinates are zero-based (east +X, south +Y).
 
@@ -67,8 +67,9 @@ The conversion here:
 - Every check (member, d20, total, DC) and whether the door opened are shown
   under "Locked." with localized messages. Rolls use the campaign service
   random state.
-- **Knock** is not offered yet: `RolfTourSession::show_locked_door` marks where it
-  joins the menu once the rules module has the Knock spell. Code 3 stays blocked.
+- **Knock** is offered when a member can cast it, and opens the door. Code 3
+  reads "Wizard locked."; Bash and Pick need DC 35 there
+  ([PODOL-1](SRD-DECISIONS.md#podol-1-2026-10-22-podol-plaza)).
 - A lock on either face of the edge offers the menu (the existing two-sided
   collision policy is kept). An opened door stays open until the party leaves
   the district or loads a save. If the destination's event fails, the move, the
@@ -97,8 +98,8 @@ that treasure. Ohlo pays 150 pp, 1 jewelry and 1 random item.
   already-claimed TREASURE again pays again, as the original did, under the
   identity with `:award:2`, `:award:3`... appended: the script's flags guard
   its rewards, and City Hall pays every reward through one instruction.
-- Non-shop item lists and treasure added to a fight are still unsupported and
-  roll the event back with a diagnostic.
+- Fixed item lists and treasure added to a fight are awarded the same way;
+  treasure added to a fight is won with it ([magic items](MAGIC_ITEMS.md#sources)).
 
 ### Random items
 
@@ -121,8 +122,8 @@ item type numbers match Pool of Radiance's (chain mail 55, shield 59, leather
 
 Dice come from the script's own saved random stream at the TREASURE
 instruction, so a reload or a rolled-back event generates the same items. The
-items are original records with empty names: enchanted items convert as
-`por:unsupported:<type>` and keep their bytes; no magic effect is invented.
+items are original records with empty names, converted like any found item
+([magic items](MAGIC_ITEMS.md#in-opengoldbox)); no magic effect is invented.
 
 ## Validation and limits
 
@@ -148,7 +149,7 @@ Guild; the [balance audit](audits/slums-encounter-balance.md) records why.
 
 ### Saving during the quest
 
-Issue [#15](https://github.com/stdarg/OpenGold/issues/15). The route saves at
+Issue [#15](https://github.com/stdarg/OpenGoldBox/issues/15). The route saves at
 three idle points in the Slums: after accepting the commission (outside Ohlo's
 door), after fetching the potion (in the booth) and back at Ohlo's door with the
 potion. Each save loads in a fresh process and re-encodes to the same bytes.

@@ -1,5 +1,5 @@
 ## Use the ./docs folder
-Read ./doc/PRD.md for context and know that useful docs outline key dynamics of game systems. Look at the documents for helpful context.
+Read ./docs/PRD.md for context and know that useful docs outline key dynamics of game systems. Look at the documents for helpful context.
 Do not blindly read all the documents, just search for relevant documents by name or keywords in the contents.
 
 ## 1. Think Before Coding

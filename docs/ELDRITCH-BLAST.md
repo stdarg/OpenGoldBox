@@ -1,8 +1,8 @@
 # Eldritch Blast through level 4
 
-Rules 0.6.37 delivers [#224](https://github.com/stdarg/OpenGold/issues/224), a
-bounded child of [Pact Magic #160](https://github.com/stdarg/OpenGold/issues/160)
-and [Eldritch Blast #204](https://github.com/stdarg/OpenGold/issues/204).
+Rules 0.6.37 delivers [#224](https://github.com/stdarg/OpenGoldBox/issues/224), a
+bounded child of [Pact Magic #160](https://github.com/stdarg/OpenGoldBox/issues/160)
+and [Eldritch Blast #204](https://github.com/stdarg/OpenGoldBox/issues/204).
 Authority: [SRD 5.2.1, pp. 71 and 127](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf).
 
 The approved Q26 Spell Choices step exposes Eldritch Blast to level-one Warlocks.
@@ -40,14 +40,14 @@ casts with Agonizing Blast, which adds its Charisma modifier to a hit's damage
 critical damage, Force resistance, vulnerability and immunity, atomic
 rejection, PC and NPC campaign handoff, and Short/Long Rest save and reload at
 every level. One beam is fired through level 4; more beams come at level 5
-([#176](https://github.com/stdarg/OpenGold/issues/176)–178). Agonizing Blast
+([#176](https://github.com/stdarg/OpenGoldBox/issues/176)–178). Agonizing Blast
 and Repelling Blast are also checked in `opengold_warlock_tests`
 ([WARLOCK.md](WARLOCK.md)).
 
 Eldritch Blast is on the Warlock's list only, so the Warlock is its one class
 route, casting with Charisma. Pact of the Tome, which can take any cantrip,
-is still pending ([#161](https://github.com/stdarg/OpenGold/issues/161)).
+came with [#161](https://github.com/stdarg/OpenGoldBox/issues/161); see [Warlock](WARLOCK.md).
 
 Objects are not targets: object targeting was dropped
 ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features);
-[#225](https://github.com/stdarg/OpenGold/issues/225) closed as not planned).
+[#225](https://github.com/stdarg/OpenGoldBox/issues/225) closed as not planned).

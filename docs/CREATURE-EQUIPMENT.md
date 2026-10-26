@@ -2,7 +2,7 @@
 
 Rules sometimes need to know what a monster carries. Heat Metal, for one, targets
 only a creature wearing metal armor
-([#231](https://github.com/stdarg/OpenGold/issues/231)). Player characters are
+([#231](https://github.com/stdarg/OpenGoldBox/issues/231)). Player characters are
 judged from their actual equipment; monsters from `equipment` rows in
 [combat.rules](../data/rules/srd-5.2.1/combat.rules), next to their stat lines:
 
@@ -24,7 +24,7 @@ block wearing that armor). `opengold_creatures` prints the rows from the
 player's install for review:
 
 ```sh
-build/default/opengold_creatures /path/to/POOLRAD --equipment
+build/opengold_creatures /path/to/POOLRAD --equipment
 ```
 
 It converts each record's readied armor with the game's own item conversion
@@ -54,7 +54,7 @@ art disagree; none do yet.
 
 Weapons come from the Combat Sprite Catalog's export, not from rows: a creature
 drawn at a humanoid height hits with the weapon it holds there, original or
-added in the catalog ([#274](https://github.com/stdarg/OpenGold/issues/274),
+added in the catalog ([#274](https://github.com/stdarg/OpenGoldBox/issues/274),
 [data/monsters](../data/monsters/README.md)). The game hands the rules module
 its melee and ranged weapons as item keys on the participant, and the weapon's
 dice, damage type and enchantment replace the stat line's while its bonuses

@@ -1,7 +1,7 @@
 # Medicine stabilization and Tactical Mind
 
-Existing issues: [#32](https://github.com/stdarg/OpenGold/issues/32) and
-[#87](https://github.com/stdarg/OpenGold/issues/87). Gameplay implementation is authorized. Q38/Q39 are approved; see [decisions](SRD-DECISIONS.md). The active goal
+Existing issues: [#32](https://github.com/stdarg/OpenGoldBox/issues/32) and
+[#87](https://github.com/stdarg/OpenGoldBox/issues/87). Gameplay implementation is authorized. Q38/Q39 are approved; see [decisions](SRD-DECISIONS.md). The active goal
 continuation selected this prepared batch on 2026-09-25 at 14:46 UTC after the
 Chill Touch delivery. Existing acceptance and original clock are retained.
 
@@ -123,6 +123,8 @@ Medicine proficiency to Bard, Cleric, Druid and Paladin; there is no legal
 Medicine Expertise acquisition route yet (Rogue class skills exclude Medicine,
 and the relevant Skilled/Bard progression remains in its existing backlog).
 Tests do not fabricate a supported route or mark those owning issues complete.
+(Later, training halls teach skills and Expertise, Medicine's included; see
+[skill lessons](TRAINING-HALL.md#skill-lessons).)
 Generic fixed monster demo profiles lack ability scores/training and do not gain
 an invented Medicine modifier; all actual PC/NPC character profiles can attempt
 stabilization, including on dying opponents.
@@ -158,11 +160,11 @@ Final verification commands and logs:
 - Scope/architecture/diff review: no new issues, unchanged frozen saves, mechanics
   in `opengold_rules_srd5`, no player combat saving, no new runtime or framework.
 
-The only rolled ability-check action currently supported is Medicine; future
-ability-check implementations must use the same failed-check decision boundary.
-Attack rolls, saving throws and death saves are excluded. Unsupported Medicine
-Expertise acquisition and generic monster ability-score authoring remain under
-their existing owners, not silently implemented or counted as complete here.
+Medicine is the only ability check Tactical Mind can boost; later rolled checks
+(Hide, Use Magic Device's Arcana check) do not offer it.
+Attack rolls, saving throws and death saves are excluded. Generic monster
+ability-score authoring remains under its existing owner, not silently
+implemented or counted as complete here.
 
 
 Tested runtime revision: `ce04673`. Final native regression passed by 15:20 UTC;

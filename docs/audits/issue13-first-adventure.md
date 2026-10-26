@@ -10,8 +10,8 @@ requires platinum. (Resolved for #17: scripts now
 survived a fresh process with byte-identical
 immediate re-saves. No gameplay changes were made for this audit.
 
-This completes the investigation in [#13](https://github.com/stdarg/OpenGold/issues/13),
-not the first-adventure milestone [#11](https://github.com/stdarg/OpenGold/issues/11).
+This completes the investigation in [#13](https://github.com/stdarg/OpenGoldBox/issues/13),
+not the first-adventure milestone [#11](https://github.com/stdarg/OpenGoldBox/issues/11).
 
 ## Baseline and method
 
@@ -212,20 +212,20 @@ After loading the post-orc checkpoint, Explore and Look at the completed event
 did not restart combat. The subsequent save still had 300 XP per member, 96
 silver, one item 62, the same two claims, and unchanged completion flags and map
 counts. No loss or duplication was observed. These two checkpoints provide
-evidence for [#10](https://github.com/stdarg/OpenGold/issues/10); they do not finish
-the broader quest restart matrix in [#15](https://github.com/stdarg/OpenGold/issues/15).
+evidence for [#10](https://github.com/stdarg/OpenGoldBox/issues/10); they do not finish
+the broader quest restart matrix in [#15](https://github.com/stdarg/OpenGoldBox/issues/15).
 
 ## Prioritized findings and ownership
 
 | Priority / category | Reproduction and bounded expected outcome | Follow-up |
 | --- | --- | --- |
-| 1 — recovery/progression blocker | Return with the audited gold/silver, accept the inn quote, select a payer with 0 pp; rejection repeats after restart. Establish a documented, attainable payment/recovery path without silent price changes or fixture funds. | [#17](https://github.com/stdarg/OpenGold/issues/17) |
-| 2 — proposed quest route blocker | Slums `(14,10)` West: Step twice and Look leave the party outside Ohlo's room. Original west edge has door code 2; `RolfTourSession::move_party` blocks codes greater than 1. Implement the required original door interaction and validate the delivery path. **Resolved for #14:** the original "Locked." menu with Bash (an SRD Strength (Athletics) check), Pick for Rogues and Exit; the booth needs two more forced doors. | [#14](https://github.com/stdarg/OpenGold/issues/14), broader ECL context [#4](https://github.com/stdarg/OpenGold/issues/4) |
-| 2 — proposed quest reward blocker, source-inspected | Ohlo's reward uses nonzero non-shop TREASURE operands, which the current host rejects. Implement transactional original reward handling and the subsequent service-only COMBAT continuation. This branch was not reached in game. **Resolved for #14:** 150 pp, 1 jewelry and 1 item from the original random tables through the loot service, no XP. See [QUESTS.md](../QUESTS.md#reward). | [#14](https://github.com/stdarg/OpenGold/issues/14), reusable mapping [#9](https://github.com/stdarg/OpenGold/issues/9) |
-| 2 — quest route survival | Walking from the gate to Ohlo and the booth meets roaming groups sized by PARTY STRENGTH; surprised groups cannot be fled, and the automated six-fighter party loses. With AD&D-equivalent PARTY STRENGTH it wins at `(14,7)` (eight goblins, four leaders) but loses the next Rope Guild fight while still wounded, with no way to recover in between. See [QUESTS.md](../QUESTS.md#validation-and-limits). | [#14](https://github.com/stdarg/OpenGold/issues/14), [#5](https://github.com/stdarg/OpenGold/issues/5) |
-| 3 — purchase usability/conversion | Buy Scale Mail for 45 gp, then Equip fails with `por:unsupported:54`; there was no pre-purchase support warning. Make conversion support clear before spending and preserve original item provenance. **Resolved for #18:** every arms-shop armor converts (Scale Mail to SRD Scale Mail); stock that still cannot be equipped is marked in the shop list. See [PHLAN.md](../PHLAN.md#equipment-conversion-in-the-game). | [#18](https://github.com/stdarg/OpenGold/issues/18) |
-| 4 — misleading location UI | Enter or reload Slums area 20; map title, view header and idle speaker still say New Phlan. Derive district labels from the current area. | [#19](https://github.com/stdarg/OpenGold/issues/19) |
-| Existing bounded conversion limit | Loot item 62 persists as an unsupported original item. Identify an explicit conversion if a later route requires its use; this audit does not invent a magic effect. | [#9](https://github.com/stdarg/OpenGold/issues/9), [expedition scope](../EXPEDITION.md) |
+| 1 — recovery/progression blocker | Return with the audited gold/silver, accept the inn quote, select a payer with 0 pp; rejection repeats after restart. Establish a documented, attainable payment/recovery path without silent price changes or fixture funds. | [#17](https://github.com/stdarg/OpenGoldBox/issues/17) |
+| 2 — proposed quest route blocker | Slums `(14,10)` West: Step twice and Look leave the party outside Ohlo's room. Original west edge has door code 2; `RolfTourSession::move_party` blocks codes greater than 1. Implement the required original door interaction and validate the delivery path. **Resolved for #14:** the original "Locked." menu with Bash (an SRD Strength (Athletics) check), Pick for Rogues and Exit; the booth needs two more forced doors. | [#14](https://github.com/stdarg/OpenGoldBox/issues/14), broader ECL context [#4](https://github.com/stdarg/OpenGoldBox/issues/4) |
+| 2 — proposed quest reward blocker, source-inspected | Ohlo's reward uses nonzero non-shop TREASURE operands, which the current host rejects. Implement transactional original reward handling and the subsequent service-only COMBAT continuation. This branch was not reached in game. **Resolved for #14:** 150 pp, 1 jewelry and 1 item from the original random tables through the loot service, no XP. See [QUESTS.md](../QUESTS.md#reward). | [#14](https://github.com/stdarg/OpenGoldBox/issues/14), reusable mapping [#9](https://github.com/stdarg/OpenGoldBox/issues/9) |
+| 2 — quest route survival | Walking from the gate to Ohlo and the booth meets roaming groups sized by PARTY STRENGTH; surprised groups cannot be fled, and the automated six-fighter party loses. With AD&D-equivalent PARTY STRENGTH it wins at `(14,7)` (eight goblins, four leaders) but loses the next Rope Guild fight while still wounded, with no way to recover in between. See [QUESTS.md](../QUESTS.md#validation-and-limits). | [#14](https://github.com/stdarg/OpenGoldBox/issues/14), [#5](https://github.com/stdarg/OpenGoldBox/issues/5) |
+| 3 — purchase usability/conversion | Buy Scale Mail for 45 gp, then Equip fails with `por:unsupported:54`; there was no pre-purchase support warning. Make conversion support clear before spending and preserve original item provenance. **Resolved for #18:** every arms-shop armor converts (Scale Mail to SRD Scale Mail); stock that still cannot be equipped is marked in the shop list. See [PHLAN.md](../PHLAN.md#equipment-conversion-in-the-game). | [#18](https://github.com/stdarg/OpenGoldBox/issues/18) |
+| 4 — misleading location UI | Enter or reload Slums area 20; map title, view header and idle speaker still say New Phlan. Derive district labels from the current area. | [#19](https://github.com/stdarg/OpenGoldBox/issues/19) |
+| Existing bounded conversion limit | Loot item 62 persists as an unsupported original item. Identify an explicit conversion if a later route requires its use; this audit does not invent a magic effect. | [#9](https://github.com/stdarg/OpenGoldBox/issues/9), [expedition scope](../EXPEDITION.md) |
 
 No crash, save-state loss or duplicate reward was observed. The normal encounter
 was winnable with this party, but Elin reached 1 HP and used all her first-level

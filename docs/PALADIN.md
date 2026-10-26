@@ -1,6 +1,6 @@
 # Paladin
 
-Milestone [#8](https://github.com/stdarg/OpenGold/issues/8), delivered class by
+Milestone [#8](https://github.com/stdarg/OpenGoldBox/issues/8), delivered class by
 class ([CLASS-1](SRD-DECISIONS.md#class-1-2026-10-04-finishing-levels-14-for-all-classes)).
 SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
 
@@ -76,9 +76,10 @@ campaign the Training Hall trains it to level 15.
   asked. A Concentration spell ends whole, on every creature it touched. A
   higher spell needs a check: d20 + the spellcasting modifier against 10 + its
   level, shown in the combat log.
-- **Remove Curse** (Action, touch): every curse on the creature ends. Hex is
-  the one curse in the game so far ("You place a curse", SRD p. 141), so the
-  spell is offered only on a hexed creature; curses to come join the list.
+- **Remove Curse** (Action, touch): every curse on the creature ends: Hex
+  ("You place a curse", SRD p. 141), Bestow Curse, a Mummy's Rotting Fist and
+  a cursed item's hold ([MAGIC_ITEMS.md](MAGIC_ITEMS.md#in-opengoldbox)). The
+  spell is offered only on a cursed creature.
 - **Revivify** (Action, 10 feet: the adjacent square and one more, in place
   of touch, [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)):
   on an ally who died no more than a minute (10 rounds) ago, while the party
@@ -112,8 +113,7 @@ campaign the Training Hall trains it to level 15.
   allows. No repeated save.
 - **Aura of Courage** (10): the Paladin and allies in its Aura of Protection
   cannot be Frightened, and a Frightened ally's fear has no effect while it is
-  there. Nothing in the current content frightens the party, so it is not yet
-  exercised in a fight.
+  there. A Mummy's Dreadful Glare, for one, frightens the party.
 - **Radiant Strikes** (11): a hit with a Melee weapon or an Unarmed Strike
   deals an extra 1d8 Radiant damage, doubled on a critical hit. Channel
   Divinity has three uses, and the Paladin a third level-3 slot.
@@ -128,8 +128,8 @@ campaign the Training Hall trains it to level 15.
   cast in camp from the Cast / Use list.
 - **Aura of Life** (Concentration, up to 10 minutes): allies within 30 feet of
   the Paladin, in a clear line, resist Necrotic damage, and one at 0 Hit Points
-  regains 1 as its turn starts ("stirs in the Aura of Life"). Nothing in the
-  game lowers a Hit Point maximum, so that part has nothing to stop yet.
+  regains 1 as its turn starts ("stirs in the Aura of Life"). Life Drain
+  cannot lower their Hit Point maximum.
 - **Freedom of Movement** (1 hour, touch): Difficult Terrain, an unconscious
   enemy's square included, costs nothing extra; Ray of Frost cannot slow the
   creature; and Hold Person, Web, Entangle and Ensnaring Strike, every
@@ -237,13 +237,12 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD cmake -DGODOT=godot -DPROJECT=$PWD/src/OpenGo
   at each level-up, with earlier choices locked.
 - After a Long Rest a Paladin may replace **one** prepared spell (a Cleric may
   replace any). The shared rest window enforces this.
-- The Paladin list in the game holds Bless, Command, Cure Wounds, Divine Favor,
-  Divine Smite, Heroism, Protection from Evil and Good, Searing Smite and Shield
-  of Faith. Detect Magic waits for spellcasting outside combat
-  ([CLASS-3](SRD-DECISIONS.md#class-3-2026-10-05-holy-water-and-casting-outside-combat)).
+- The Paladin list in the game holds Bless, Command, Cure Wounds, Detect Magic,
+  Divine Favor, Divine Smite, Heroism, Protection from Evil and Good, Searing
+  Smite and Shield of Faith. Detect Magic is cast outside combat
+  ([MAGIC_ITEMS.md](MAGIC_ITEMS.md#in-opengoldbox)).
 - Spells a feature keeps prepared (Divine Smite from level 2) are listed apart
   and not counted against the prepared spells.
-  Detect Magic waits for spellcasting outside combat.
 
 ## Lay On Hands
 
@@ -294,7 +293,7 @@ ally, in English and Spanish).
 - Monsters now carry an SRD creature type in the rules content (`type` rows):
   the Slums kobolds are Dragons, goblins and bugbears Fey, and the rest
   Humanoid. Characters are Humanoid.
-- The free use and Channel Divinity (not yet used) are saved in the vital state
+- The free use and Channel Divinity are saved in the vital state
   (`SRD11`); the open smite chance is saved in combat checkpoints (`OGCOMBAT 37`).
 
 Verification: `opengold_smite_tests` (the window after own-turn melee hits only,
@@ -302,16 +301,15 @@ closing on other commands, free and slot casts, the extra die against a Fiend,
 Searing Smite's burn and save with failing and succeeding saves, doubled smite
 dice after a critical hit, checkpoints,
 Long Rest recovery) and `opengold_godot_smite` (the Bonus Action list after a
-hit and Use, in English and Spanish). Critical doubling is applied but not yet
-forced in a test.
+hit and Use, in English and Spanish).
 
 ## Buffs and Concentration
 
 - **Shield of Faith** (Bonus Action, 60 feet, Concentration up to 10 minutes):
   +2 AC. **Heroism** (Action, touch, Concentration up to 1 minute): Temporary
   HP equal to the caster's spellcasting modifier at the start of each of the
-  target's turns, kept only when higher than what it has (Frightened is not yet
-  modeled). **Divine Favor** (Bonus Action, self, 1 minute): weapon hits deal an
+  target's turns, kept only when higher than what it has (its immunity to
+  Frightened is not modeled). **Divine Favor** (Bonus Action, self, 1 minute): weapon hits deal an
   extra 1d4 Radiant damage, doubled on a critical hit.
 - Concentration: a caster holds one Concentration spell; casting another ends
   the first and removes its effects. Damage calls for a Constitution save
@@ -331,8 +329,8 @@ forced in a test.
   minutes; Cleric and Paladin): Aberrations, Celestials, Elementals, Fey, Fiends
   and Undead attack the warded creature with Disadvantage. The spell needs no
   holy water (CLASS-3). Its protection against being Charmed, Frightened or
-  possessed waits until a creature can cause those. In the current content the
-  Slums goblins and bugbears (Fey) are affected.
+  possessed is not modeled. The undead and the Slums goblins and bugbears (Fey),
+  among others, are affected.
 - **Command** (Action, 60 feet; Cleric and Paladin): a creature
   the caster can see makes a Wisdom save or obeys on its next turn. Each option
   is its own entry in the A cycle (Command: Approach, Flee, Grovel, Halt).

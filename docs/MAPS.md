@@ -8,8 +8,8 @@ original game installation. GEO map decoding and a top-down inspection demo are
 implemented. The native [Rolf tour](ROLF.md) now assembles and displays the
 original Phlan wall artwork, ordinary-door traversal and the bounded
 [New Phlan location scheduler](PHLAN.md). A
-standalone ECL interpreter is also available; general area resource selection
-and full map-script integration remain future work.
+standalone ECL interpreter is also available, and the original map scripts
+run every area of the campaign ([whole-map audit](audits/whole-map.md)).
 
 This document describes the implementation and planned extensions. Format details below come from
 the pinned Gold Box Explorer reference implementation and must be validated
@@ -53,7 +53,7 @@ list and nonzero-byte count, so those counts overstate potential event locations
 ## Reusable native loader
 
 The demo's location labels are maintained separately in
-[`por_map_names.gd`](../godot/scripts/por_map_names.gd), using the pinned Gold Box
+[`por_map_names.gd`](../demos/godot/scripts/por_map_names.gd), using the pinned Gold Box
 Explorer Pool of Radiance name table and archive assignments from the inspected
 installation. They are reference labels, not names decoded from GEO or verified
 by running the original game. Full archive/record keys prevent names from leaking
@@ -217,7 +217,7 @@ state, and finishing an event must not automatically clear it.
 
 ### Format knowledge already used by OpenGoldBox
 
-The existing [PoR ECL inspector](../godot/scripts/por_ecl_decoder.gd) removes a
+The existing [PoR ECL inspector](../demos/godot/scripts/por_ecl_decoder.gd) removes a
 two-byte record prefix and interprets code at virtual origin `0x9900`. These
 virtual addresses are numeric offsets in the script model, never native pointers.
 The prefix's exact length convention still needs validation before a runtime
@@ -262,7 +262,7 @@ complete execution semantics. See [NPC art findings](npc-art-identification.md).
 | `PRINT`, `PRINTCLEAR`, menus, `PICTURE` | Supply dialogue, choices, and presentation requests. Input must be returned to the suspended script. |
 | `LOAD MONSTER` (`0x0B`) | Has distinct creature, count, and combat-icon operands. Resolve the creature bank before using `CreatureFactory`; keep artwork identity separate. |
 | `SETUP MONSTER` (`0x0C`) | Selects encounter presentation separately from combat creature loading. |
-| `COMBAT` (`0x24`) and `ADD NPC` (`0x36`) | Connect scripts to encounter resolution and recruitment; decoding these commands does not yet implement those behaviors. |
+| `COMBAT` (`0x24`) and `ADD NPC` (`0x36`) | Connect scripts to encounter resolution and recruitment; the game implements both as engine services. |
 | `CALL` (`0x2D`) | Requires explicit OpenGoldBox implementations of referenced engine services. Never execute a stored DOS address as native code. |
 
 To identify an area's script, follow decoded map-loading instructions and inspect
@@ -275,9 +275,8 @@ association until its bank context and execution path are resolved.
 OpenGoldBox has a native ECL loader and resumable interpreter for control flow,
 explicitly bound variables, arithmetic, table data, strings, input and menus,
 alongside the existing inspector and asset-evidence analysis. Engine services
-have opt-in host requests; their concrete gameplay implementations and mapped
-world state remain outstanding. The map demo's event list still does not execute
-handlers. Static paths must not be presented as observed gameplay.
+have opt-in host requests, which the game's area sessions answer. The map
+demo's event list still does not execute handlers. Static paths must not be presented as observed gameplay.
 
 The native engine separates shared `EclProgram` data, a resumable `EclMachine`
 with private writable script bytes, and typed presentation/input/engine requests.
@@ -334,8 +333,7 @@ it before the event.
 Tests: `defeat_four_orcs` in
 [expedition_tests.cpp](../tests/expedition_tests.cpp) checks the area, script,
 bank, square, facing, map, wall art and map memory on entering the Slums and on
-returning; `refused_exit` checks a refused crossing leaves all of them untouched;
-`missing_area_map` in [tour_tests.cpp](../tests/tour_tests.cpp) loads the game
+returning; `missing_area_map` in [tour_tests.cpp](../tests/tour_tests.cpp) loads the game
 without `GEO2.DAX`. `opengold_godot_area_crossing`
 ([area_crossing_tests.gd](../tests/area_crossing_tests.gd)) walks the same
 round trip with the game's controls, saves, and has the native suite check the
@@ -375,10 +373,10 @@ inspector shows the complete decoded layout.
 1. **Map inspector (implemented):** GEO decoding in `OpenGold.Formats` uses the
    existing `decode_dax_archive` infrastructure. The Godot demo shows selectable
    maps, walls, doors, event markers, an inspection cursor, and source IDs.
-2. **Movement:** add exploration state and edge-based movement rules to
+2. **Movement (implemented):** add exploration state and edge-based movement rules to
    `OpenGold.Core`. Validate open passages and blocked edges, then door behavior,
    ECL transitions, and scripted changes.
-3. **First-person artwork:** add 8X8D decoding and WALLDEF assembly, resolve the
+3. **First-person artwork (implemented):** add 8X8D decoding and WALLDEF assembly, resolve the
    selected wall sets, and composite the appropriate view pieces in Godot.
 
 Use value types and standard RAII containers for native data and owned resources.

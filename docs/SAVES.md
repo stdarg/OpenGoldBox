@@ -4,7 +4,7 @@ The OpenGoldBox rename preserves the original `user://` location using an explic
 custom user directory, so saves stay in the same folder.
 
 The shared character/party/New Phlan flow supports manual named campaign saves.
-The first Slums expedition also supports saving during idle exploration, including
+Exploration beyond New Phlan also supports saving when idle, including
 its district map, script continuation and deferred original loot.
 Use **Save game** or **Load game** on the party roster or during idle town
 exploration. Select an existing slot or enter a new name. Overwriting requires
@@ -41,8 +41,8 @@ change the current format in place.
 
 ## Supported boundaries and state
 
-Saving/loading is supported from the party roster and idle exploration in New Phlan
-or the Slums.
+Saving/loading is supported from the party roster and idle exploration anywhere
+in the campaign.
 Town controls are disabled while dialogue, input, shopping or services are pending.
 Combat must finish and return to the roster first. The core also rejects saving
 during combat or an unfinished town event. A completed Short Rest spending window
@@ -59,7 +59,7 @@ A campaign save stores:
   active/reserve membership, selected slot and character-pool candidate identities.
 - HP/death state, opaque rules-owned resources, XP, claimed reward IDs, recovery
   timers, campaign minutes/millisecond remainder and service RNG state.
-- Lasting effects in the rules-owned SRD11/FX8 state, including individual
+- Lasting effects in the rules-owned SRD13/FX8 state, including individual
   applications, source provenance, fixed DCs, remaining duration and recovery
   schedule. Encounter scope IDs distinguish reused monster IDs across fights.
 - A completed Short Rest's spending ticket, eligible members and completion time,
@@ -139,7 +139,7 @@ From PowerShell:
 ```
 
 The launcher uses an isolated profile under `user-data/save-check-profile`, writes
-fixtures under `user-data/save-check`, exits the writer process, then starts a
+fixtures to `checks/save-check` in that profile's user data folder, exits the writer process, then starts a
 fresh Godot reader. The writer runs the existing original-data party route and
 saves after advancement, interrupted rest, cancelled temple service, temple
 payment, inn rest, a rejected full-health healing request, denied repeated rest,
@@ -153,8 +153,8 @@ spending and the next committed die.
 `opengold_save_tests` writes actual files and covers inventory IDs, reserve members,
 HP/resources, levels, money, reward/rest continuity, ECL continuation, deterministic
 subsequent combat and service RNG, incompatible identities, malformed/truncated
-files, backup rotation and failed Windows replacement. The existing nine native
-suites remain in the build alongside this tenth suite.
+files, backup rotation and failed Windows replacement. It runs alongside the
+other native suites.
 
 Tests build saves and checkpoints with the current writer, check exact
 round-trips and continuation, and check that older formats and different rules
@@ -164,11 +164,12 @@ For visual checks, after the restart route:
 
 ```powershell
 $env:APPDATA = Join-Path $PWD 'user-data/save-check-profile'
-godot --path demos/godot --resolution 1280x900 res://scenes/character_creation.tscn -- --save-check-read --capture
+godot --path src/OpenGoldBox/godot --resolution 1280x900 res://scenes/character_creation.tscn -- --save-check-read --capture
 ```
 
 Run the visual command from a temporary PowerShell session so its profile override
-does not affect later interactive launches. Captures go to `user-data`; repeat at
+does not affect later interactive launches. Captures go to that profile's `checks`
+folder; repeat at
 1120x800. The tested Windows build uses Godot 4.7.2 and the repository's C++20
 MSVC/GDExtension configuration.
 

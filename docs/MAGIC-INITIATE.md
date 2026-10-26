@@ -1,8 +1,8 @@
 # Magic Initiate
 
-[FT02 / #75](https://github.com/stdarg/OpenGold/issues/75) delivers the Origin
+[FT02 / #75](https://github.com/stdarg/OpenGoldBox/issues/75) delivers the Origin
 feat, and with it the first source-specific free cast
-([#200](https://github.com/stdarg/OpenGold/issues/200)). Authority:
+([#200](https://github.com/stdarg/OpenGoldBox/issues/200)). Authority:
 [SRD 5.2.1 p. 87](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=87).
 
 ## The feat
@@ -32,8 +32,8 @@ rejects a second feat with the same list.
 | Level-four feat | Any list not already held | The level-up dialog's spell page |
 | Warlock's Lessons of the First Ones (level 2) | Any list not already held | The level-up dialog's spell page |
 
-The Human's Versatile Origin feat is [#71](https://github.com/stdarg/OpenGold/issues/71);
-Human traits are not in the game yet.
+A Human can also take it as its Versatile Origin feat
+([#71](https://github.com/stdarg/OpenGoldBox/issues/71)), chosen on the race page at creation.
 
 ## Choices
 
@@ -91,8 +91,8 @@ checkpoints (`OGCOMBAT 50`). Rules 0.6.158.
 ## Not offered
 
 The feat's **Spell Change**, replacing one of its spells on gaining a level, is
-not offered. No class can replace a spell, cantrip or invocation on level-up
-yet; the 2026-10-11 audit tracks this as a shared gap.
+not offered. Level-up replaces only a class's own spells, cantrips,
+invocations and Metamagic options.
 
 ## Verification
 

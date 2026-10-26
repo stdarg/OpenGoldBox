@@ -65,8 +65,9 @@ The local visual review sheet is `user-data/monster-art-review.png`.
 
 ## Remaining work
 
-1. Determine runtime archive selection from documented data or original-game
-   observations. Do not assume a monster uses only its own numbered archive.
+1. Confirm runtime archive selection with original-game observations. The game
+   now draws each fight's icon from `LOAD MONSTER`'s icon operand in the area's
+   own `CPIC` archive ([encounter conversion](EXPEDITION.md#encounter-conversion)).
 2. Resolve aliases and assembled icons. For example, monster ID 44 is named
    ORC but lacks a same-ID CPIC pair, whereas ID 4 has an orc pair. Similar
    names alone are not sufficient evidence to assign an alias.

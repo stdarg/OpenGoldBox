@@ -1,6 +1,6 @@
 # Monk
 
-Levels 1–4 of the SRD 5.2.1 Monk (pp. 48–50). Unarmored Defense came earlier;
+Levels 1–15 of the SRD 5.2.1 Monk (pp. 48–50). Unarmored Defense came earlier;
 see [Armor](ARMOR.md). Slow Fall is dropped (SRD-DECISIONS).
 
 ## Martial Arts (level 1)

@@ -1,6 +1,6 @@
 # Typed damage and defenses
 
-[F05 #33](https://github.com/stdarg/OpenGold/issues/33) supplies typed damage,
+[F05 #33](https://github.com/stdarg/OpenGoldBox/issues/33) supplies typed damage,
 resistance, vulnerability and immunity, including the Poison resistance part of
 Dwarven Resilience. It uses the existing C++20 rules module, value containers and
 Godot combat log/Modifiers dialog. There are no new controls or layout choices.
@@ -80,7 +80,7 @@ advancement are covered.
 The game `--party-check` now creates a Dwarf, verifies the existing Modifiers
 explanation, and continues through shopping, combat, advancement and recovery.
 
-Temporary HP and replacement choices are separate F05b #34 work. This increment
+Temporary HP and replacement choices came with F05b #34; see [Temporary HP](TEMPORARY-HP.md). This increment
 adds no new player spell entitlement, creature catalog encounter or UI action.
 
 Delivery checks: both native Godot libraries built; all 16 selected native suites
@@ -93,7 +93,7 @@ that existing integration-route cleanup warning.
 
 ## Dwarven Toughness source display
 
-[#210](https://github.com/stdarg/OpenGold/issues/210) corrects the racial section
+[#210](https://github.com/stdarg/OpenGoldBox/issues/210) corrects the racial section
 of the character sheet after leveling. It now shows the attained contribution
 (+1 through +4 maximum HP), using the same translated message as combat HP
 sources. The former level-one-only explanation could remain visible even when
@@ -105,7 +105,7 @@ save formats are unchanged. Reconstructing existing saved advancement choices
 also reconstructs the corrected explanation. Advancement tests verify all twelve
 classes at creation, Fighter/Cleric/Wizard levels 1–4, independent HP totals,
 Constitution increases, wounded/unconscious characters and campaign reloads.
-Other classes' advancement remains in their own issues. Dwarf tracker #66 still
+Other classes' advancement came later. Dwarf tracker #66 still
 requires Darkvision, Stonecunning and Poisoned-save Advantage.
 
 Validation for #210: rebuilt advancement, character and save tests pass; the

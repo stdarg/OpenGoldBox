@@ -36,7 +36,7 @@ records them and breaks the work below into bounded deliveries. Findings and
 policy tables here continue to describe the audited commit.
 
 Implementation progress is tracked in the [coverage ledger](../SRD-COVERAGE.md)
-and [GitHub issue index](https://github.com/stdarg/OpenGold/issues/186). E5 is
+and [GitHub issue index](https://github.com/stdarg/OpenGoldBox/issues/186). E5 is
 corrected by I01; E2 and E3 are corrected by I02; E1 is corrected by I03; E4 is
 corrected by I04. The coverage gaps retain their open status in the ledger.
 
@@ -341,7 +341,7 @@ cannot be expressed consistently. See
   Magic Initiate can repeat for different class spell lists; Skilled and Ability
   Score Improvement can repeat. Savage Attacker and Defense cannot simply stack.
 - Savage Attacker's decisions are delivered in
-  [FT03 #76](https://github.com/stdarg/OpenGold/issues/76): an eligible hit pauses
+  [FT03 #76](https://github.com/stdarg/OpenGoldBox/issues/76): an eligible hit pauses
   for use/skip, then the player can retain either damage result. Opportunity
   attacks preserve their spent Reaction and pending movement across both
   decisions. AI uses the higher result; player choice remains explicit. See
@@ -352,7 +352,7 @@ Authority: [SRD pp. 47–48, 87–88](https://media.dndbeyond.com/compendium-ima
 
 ### G4 — P1: Spell access, preparation and learning remain incomplete
 
-F07a [#199](https://github.com/stdarg/OpenGold/issues/199) now records sourced
+F07a [#199](https://github.com/stdarg/OpenGoldBox/issues/199) now records sourced
 Wizard cantrip/book knowledge independently of preparation and retains old book
 entries across advancement. Its entitlement counts expose unfilled choices;
 only the existing Fire Bolt/Magic Missile preset and two level-two spell

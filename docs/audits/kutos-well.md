@@ -122,7 +122,9 @@ campaign-arc simulator should get a Kuto's Well stage to measure it.
   hideout); until then, camping there brings his band. Journal entry 50 is
   text only. The rug's arms and armor (`TREASURE` list 58) and the plaza's
   "rain of arrows" need `0x6DCA` = 1, apparently the original Search mode (unverified), which the
-  engine does not have, so they are not reached yet.
+  engine did not have then. Search mode now sets `0x6DCA` to 1 while searching
+  (`RolfTourView::toggle_search`, `phlan_session.cpp`); no test reaches these
+  two finds yet.
 
 - **Increment 4 (done, 2026-10-08):** `opengold_campaign_sim` continues its
   Slums arc through Kuto's Well (see [CAMPAIGN-SIM.md](../CAMPAIGN-SIM.md)).

@@ -1,7 +1,7 @@
 # SRD implementation workflow
 
 Use [coverage](SRD-COVERAGE.md) as the entry point and as completion evidence, and
-[the issue index](https://github.com/stdarg/OpenGold/issues/186) as the backlog. Keep the
+[the issue index](https://github.com/stdarg/OpenGoldBox/issues/186) as the backlog. Keep the
 [full implementation plan](SRD-IMPLEMENTATION.md), all twelve classes and later
 level/multiclass milestones intact. Efficiency changes execution, not acceptance.
 
@@ -187,7 +187,7 @@ in a prompt does not dynamically switch reasoning effort.
 In the desktop app, select effort when starting the task. For a CLI task:
 
 ```bash
-codex -C /Users/edmond/src/OpenGold -c 'model_reasoning_effort="high"'
+codex -C . -c 'model_reasoning_effort="high"'
 ```
 
 This follows the [official configuration precedence and override guidance](https://learn.chatgpt.com/docs/config-file/config-advanced).

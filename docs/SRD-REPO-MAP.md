@@ -10,11 +10,11 @@ architecture document or completion ledger. See [TECH](TECH.md) for boundaries.
 | Feature/feat provenance | `src/OpenGold.Rules.Srd5/src/feature_grants.cpp` | `opengold_feature_grant_tests` |
 | Skills, tools, languages, starting styles | `src/OpenGold.Rules.Srd5/src/training.cpp` | `opengold_training_tests`; [training](TRAINING.md) |
 | Cantrips, books, preparation, source validation | `src/OpenGold.Rules.Srd5/src/spell_access.cpp` | `opengold_spell_access_tests`; per-spell tests |
-| Combat, legal commands, profiles, progression, saved-state validation | `src/OpenGold.Rules.Srd5/src/srd5.cpp`: `character_definition`, `legal_commands`, `character_profile`, `validate_saved_grants`, `Session::restore` | `opengold_rules_tests`; affected feature tests |
+| Combat, legal commands, profiles, progression, saved-state validation | `src/OpenGold.Rules.Srd5/src/srd5.cpp`: `character_definition`, `legal_commands`, `character_profile`, `detail::validate_grants`, `Session::restore` | `opengold_rules_tests`; affected feature tests |
 | Status lifecycles and codecs | `src/OpenGold.Rules.Srd5/src/status_effects.cpp` | `opengold_status_effect_tests` |
 | Movement/occupancy | `src/OpenGold.Rules.Srd5/src/combat_grid.cpp` | Locate grid/movement targets in root CMakeLists; [transit](UNCONSCIOUS-TRANSIT.md) |
-| Components and weapon/armor rules | `src/OpenGold.Rules.Srd5/src/spell_components.h`; adjacent catalog headers | `opengold_spell_component_tests`, `opengold_weapon_catalog_tests`, `opengold_armor_catalog_tests` |
-| Physical thrown inventory | SRD `Session::throw_weapon`, `ground_one`; Core `CampaignParty::apply_physical_items` | `opengold_thrown_weapon_tests`, `opengold_godot_thrown`; [packet](THROWN-WEAPONS.md) |
+| Spell table and weapon/armor rules | `src/OpenGold.Rules.Srd5/src/spell_table.h`, `weapons.h`, `armor.h` | `opengold_spell_component_tests`, `opengold_weapon_catalog_tests`, `opengold_armor_catalog_tests` |
+| Thrown weapons | SRD `Session::throw_weapon` | `opengold_thrown_weapon_tests`, `opengold_godot_thrown`; [packet](THROWN-WEAPONS.md) |
 | Campaign handoff, resources and saves | `src/OpenGold.Core/src/campaign_party.cpp`, `campaign_rest.cpp`, `campaign_save.cpp`, `combat_demo.cpp` | `opengold_campaign_rest_tests`, `opengold_rest_resource_tests`, `opengold_save_tests` |
 | Creator and training controls | `src/OpenGoldBox/character_creation_view.cpp`, `training_control.h`, `cantrip_control.h` | Asset-backed `tests/*cantrip_view_tests.gd`; [training](TRAINING.md) |
 | Combat UI and decisions | `src/OpenGoldBox/combat_view.cpp` | `tests/*view_tests.gd`; registered targets in `src/OpenGoldBox/CMakeLists.txt` |
@@ -30,13 +30,13 @@ and commands. C++20/RAII throughout; no new stack or general rules framework.
 ## Local build environment
 
 - Windows and macOS are both supported; main build `build` (the `default`
-  preset), demo build `build/sprite-demo`.
+  preset), demo build `build/godot` (Windows) or `build/sprite-demo` (macOS).
 - Godot `/Applications/Godot_mono.app/Contents/MacOS/Godot`.
-- Main project `src/OpenGoldBox/godot`; original assets `/Users/edmond/POOLRAD`.
+- Main project `src/OpenGoldBox/godot`; original assets in `OPENGOLD_GAME_DIR`.
 - Prepare `opengoldbox_test_project` after final native/scene/localization edits.
   Only then use `--fixture-exclude-setup godot_project` for affected Godot tests.
 - Godot tests run serially because they share user-data checkpoint paths.
-- Asset-backed creator checks need `OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD`;
+- Asset-backed creator checks need `OPENGOLD_GAME_DIR` set to the original game folder;
   they are not all registered in the asset-free CTest suite. Use
   `tests/run_godot_test.cmake`, which detects script failures as well as exit codes.
 - Creator training appears in `Description`; modifier details use `ModifiersModal`.

@@ -1,6 +1,6 @@
 # SRD spell inventory through character level 4
 
-Tracking issue: [#165](https://github.com/stdarg/OpenGold/issues/165). Inventory
+Tracking issue: [#165](https://github.com/stdarg/OpenGoldBox/issues/165). Inventory
 baseline: rules **0.6.21**, commit **1e89c1c**. This is a work inventory, not a
 claim that the listed spells are implemented. Current delivery adds the
 [0.6.22 Wizard Poison Spray path](POISON-SPRAY.md) and
@@ -22,7 +22,7 @@ spells that need a DM or have nothing to act on in this game, leaving **89 spell
 twelve partial, one implemented and 76 missing**. GUIDE-1 then restored
 Guidance. As the tables below stood on 2026-10-18, **89 of the 90 spells are
 implemented** and Chill Touch is partial; Detect Magic and Identify came with
-[#262](https://github.com/stdarg/OpenGold/issues/262).
+[#262](https://github.com/stdarg/OpenGoldBox/issues/262).
 
 ## Scope and counting
 
@@ -65,7 +65,7 @@ recharge must remain source-specific.
 - Scrolls, magic items, monster spellcasting and arbitrary campaign rewards can
   introduce other spells independently of character level. Those content and
   item inventories are separate; this is the class/species/background/feat
-  entitlement inventory required by [#165](https://github.com/stdarg/OpenGold/issues/165). Multiclassing remains [#179](https://github.com/stdarg/OpenGold/issues/179)–184.
+  entitlement inventory required by [#165](https://github.com/stdarg/OpenGoldBox/issues/165). Multiclassing remains [#179](https://github.com/stdarg/OpenGoldBox/issues/179)–184.
 
 ### Normal class-list cross-check
 
@@ -79,14 +79,14 @@ unchanged. See the source cautions below.
 
 | Class | Cantrips | Level 1 | Level 2 | SRD list pages | Access integration |
 | --- | ---: | ---: | ---: | --- | --- |
-| Bard (B) | 3 | 15 | 12 | 33–34 | [#126](https://github.com/stdarg/OpenGold/issues/126) |
-| Cleric (C) | 3 | 11 | 9 | 38–39 | [#91](https://github.com/stdarg/OpenGold/issues/91) |
-| Druid (D) | 6 | 12 | 12 | 44 | [#152](https://github.com/stdarg/OpenGold/issues/152) |
-| Paladin (P) | 0 | 10 | 0 | 55–56 | [#138](https://github.com/stdarg/OpenGold/issues/138) |
-| Ranger (R) | 0 | 8 | 0 | 60 | [#145](https://github.com/stdarg/OpenGold/issues/145) |
-| Sorcerer (S) | 8 | 16 | 18 | 67–68 | [#132](https://github.com/stdarg/OpenGold/issues/132) |
-| Warlock (K) | 4 | 8 | 7 | 75 | [#160](https://github.com/stdarg/OpenGold/issues/160) |
-| Wizard (W) | 7 | 20 | 20 | 79–80 | [#97](https://github.com/stdarg/OpenGold/issues/97), [#37](https://github.com/stdarg/OpenGold/issues/37) |
+| Bard (B) | 3 | 15 | 12 | 33–34 | [#126](https://github.com/stdarg/OpenGoldBox/issues/126) |
+| Cleric (C) | 3 | 11 | 9 | 38–39 | [#91](https://github.com/stdarg/OpenGoldBox/issues/91) |
+| Druid (D) | 6 | 12 | 12 | 44 | [#152](https://github.com/stdarg/OpenGoldBox/issues/152) |
+| Paladin (P) | 0 | 10 | 0 | 55–56 | [#138](https://github.com/stdarg/OpenGoldBox/issues/138) |
+| Ranger (R) | 0 | 8 | 0 | 60 | [#145](https://github.com/stdarg/OpenGoldBox/issues/145) |
+| Sorcerer (S) | 8 | 16 | 18 | 67–68 | [#132](https://github.com/stdarg/OpenGoldBox/issues/132) |
+| Warlock (K) | 4 | 8 | 7 | 75 | [#160](https://github.com/stdarg/OpenGoldBox/issues/160) |
+| Wizard (W) | 7 | 20 | 20 | 79–80 | [#97](https://github.com/stdarg/OpenGoldBox/issues/97), [#37](https://github.com/stdarg/OpenGoldBox/issues/37) |
 | Barbarian, Fighter, Monk, Rogue | 0 | 0 | 0 | 28–30, 47–53, 61–64 | Species/feat sources below |
 
 ## Additional grant routes
@@ -97,46 +97,46 @@ list column intentionally does not absorb subclass or species additions.
 
 | Tag | Availability / grant | Authority (SRD pages) | Integration issue |
 | --- | --- | --- | --- |
-| MI | Magic Initiate: two cantrips and one level-one spell from the same chosen Cleric, Druid or Wizard list; selected ability, one free leveled cast per Long Rest and slot casting (delivered; level-up replacement not offered, see [Magic Initiate](MAGIC-INITIATE.md)) | 87 | [#75](https://github.com/stdarg/OpenGold/issues/75), [#200](https://github.com/stdarg/OpenGold/issues/200) |
-| Tome | Pact of the Tome: three cantrips and two level-one Ritual-tagged spells from any class list, with the feature's preparation and book restrictions; ritual casting itself is removed by DM-1, so they use slots | 74 | [#161](https://github.com/stdarg/OpenGold/issues/161), [#160](https://github.com/stdarg/OpenGold/issues/160) |
-| Thaum | Cleric's Thaumaturge Divine Order: one extra Cleric cantrip at level 1 | 37 | [#91](https://github.com/stdarg/OpenGold/issues/91) |
-| Magician | Druid's Magician Primal Order: one extra Druid cantrip at level 1 | 42 | [#152](https://github.com/stdarg/OpenGold/issues/152) |
-| Blessed | Paladin's Blessed Warrior option: two Cleric cantrips at level 2 (delivered; Sacred Flame so far) | 54 | [#140](https://github.com/stdarg/OpenGold/issues/140) |
-| DruidicWarrior | Ranger's Druidic Warrior option: two Druid cantrips at level 2 (delivered; Poison Spray so far) | 59 | [#147](https://github.com/stdarg/OpenGold/issues/147) |
-| Smite | Paladin level 2 always prepares Divine Smite and gains its own free cast | 54 | [#141](https://github.com/stdarg/OpenGold/issues/141), [#200](https://github.com/stdarg/OpenGold/issues/200) |
-| Favored | Ranger level 1 always prepares Hunter's Mark and gains limited free casts (delivered) | 57–58 | [#146](https://github.com/stdarg/OpenGold/issues/146), [#200](https://github.com/stdarg/OpenGold/issues/200) |
-| Life | Cleric level 3: Aid, Bless, Cure Wounds, Lesser Restoration (delivered) | 40 | [#94](https://github.com/stdarg/OpenGold/issues/94) |
-| Arid | Land Druid level 3: Blur, Burning Hands, Fire Bolt | 46 | [#157](https://github.com/stdarg/OpenGold/issues/157) |
-| Polar | Land Druid level 3: Fog Cloud, Hold Person, Ray of Frost | 46 | [#157](https://github.com/stdarg/OpenGold/issues/157) |
-| Temperate | Land Druid level 3: Misty Step, Shocking Grasp, Sleep | 46 | [#157](https://github.com/stdarg/OpenGold/issues/157) |
-| Tropical | Land Druid level 3: Acid Splash, Ray of Sickness, Web | 46 | [#157](https://github.com/stdarg/OpenGold/issues/157) |
-| Devotion | Paladin level 3: Protection from Evil and Good, Shield of Faith (delivered, always prepared) | 56 | [#142](https://github.com/stdarg/OpenGold/issues/142) |
-| Draconic | Sorcerer level 3: Chromatic Orb, Command, Dragon's Breath (Alter Self removed by DM-3) | 70 | [#135](https://github.com/stdarg/OpenGold/issues/135) |
-| Fiend | Warlock level 3: Burning Hands, Command, Scorching Ray (Suggestion removed by DM-3) | 76 | [#163](https://github.com/stdarg/OpenGold/issues/163) |
-| Evoker | Level-3 Evocation Savant adds Wizard Evocation spellbook choices no higher than level 2; acquisition must follow the feature rather than automatic preparation | 82 | [#101](https://github.com/stdarg/OpenGold/issues/101) |
-| Shadows | Armor of Shadows: Mage Armor on self without a slot | 72 | [#161](https://github.com/stdarg/OpenGold/issues/161) |
-| Vigor | Fiendish Vigor at Warlock level 2: False Life on self without a slot, maximizing its die | 73 | [#161](https://github.com/stdarg/OpenGold/issues/161) |
+| MI | Magic Initiate: two cantrips and one level-one spell from the same chosen Cleric, Druid or Wizard list; selected ability, one free leveled cast per Long Rest and slot casting (delivered; level-up replacement not offered, see [Magic Initiate](MAGIC-INITIATE.md)) | 87 | [#75](https://github.com/stdarg/OpenGoldBox/issues/75), [#200](https://github.com/stdarg/OpenGoldBox/issues/200) |
+| Tome | Pact of the Tome: three cantrips and two level-one Ritual-tagged spells from any class list, with the feature's preparation and book restrictions; ritual casting itself is removed by DM-1, so they use slots | 74 | [#161](https://github.com/stdarg/OpenGoldBox/issues/161), [#160](https://github.com/stdarg/OpenGoldBox/issues/160) |
+| Thaum | Cleric's Thaumaturge Divine Order: one extra Cleric cantrip at level 1 | 37 | [#91](https://github.com/stdarg/OpenGoldBox/issues/91) |
+| Magician | Druid's Magician Primal Order: one extra Druid cantrip at level 1 | 42 | [#152](https://github.com/stdarg/OpenGoldBox/issues/152) |
+| Blessed | Paladin's Blessed Warrior option: two Cleric cantrips at level 2 (delivered) | 54 | [#140](https://github.com/stdarg/OpenGoldBox/issues/140) |
+| DruidicWarrior | Ranger's Druidic Warrior option: two Druid cantrips at level 2 (delivered) | 59 | [#147](https://github.com/stdarg/OpenGoldBox/issues/147) |
+| Smite | Paladin level 2 always prepares Divine Smite and gains its own free cast | 54 | [#141](https://github.com/stdarg/OpenGoldBox/issues/141), [#200](https://github.com/stdarg/OpenGoldBox/issues/200) |
+| Favored | Ranger level 1 always prepares Hunter's Mark and gains limited free casts (delivered) | 57–58 | [#146](https://github.com/stdarg/OpenGoldBox/issues/146), [#200](https://github.com/stdarg/OpenGoldBox/issues/200) |
+| Life | Cleric level 3: Aid, Bless, Cure Wounds, Lesser Restoration (delivered) | 40 | [#94](https://github.com/stdarg/OpenGoldBox/issues/94) |
+| Arid | Land Druid level 3: Blur, Burning Hands, Fire Bolt | 46 | [#157](https://github.com/stdarg/OpenGoldBox/issues/157) |
+| Polar | Land Druid level 3: Fog Cloud, Hold Person, Ray of Frost | 46 | [#157](https://github.com/stdarg/OpenGoldBox/issues/157) |
+| Temperate | Land Druid level 3: Misty Step, Shocking Grasp, Sleep | 46 | [#157](https://github.com/stdarg/OpenGoldBox/issues/157) |
+| Tropical | Land Druid level 3: Acid Splash, Ray of Sickness, Web | 46 | [#157](https://github.com/stdarg/OpenGoldBox/issues/157) |
+| Devotion | Paladin level 3: Protection from Evil and Good, Shield of Faith (delivered, always prepared) | 56 | [#142](https://github.com/stdarg/OpenGoldBox/issues/142) |
+| Draconic | Sorcerer level 3: Chromatic Orb, Command, Dragon's Breath (Alter Self removed by DM-3) | 70 | [#135](https://github.com/stdarg/OpenGoldBox/issues/135) |
+| Fiend | Warlock level 3: Burning Hands, Command, Scorching Ray (Suggestion removed by DM-3) | 76 | [#163](https://github.com/stdarg/OpenGoldBox/issues/163) |
+| Evoker | Level-3 Evocation Savant adds Wizard Evocation spellbook choices no higher than level 2; acquisition must follow the feature rather than automatic preparation | 82 | [#101](https://github.com/stdarg/OpenGoldBox/issues/101) |
+| Shadows | Armor of Shadows: Mage Armor on self without a slot | 72 | [#161](https://github.com/stdarg/OpenGoldBox/issues/161) |
+| Vigor | Fiendish Vigor at Warlock level 2: False Life on self without a slot, maximizing its die | 73 | [#161](https://github.com/stdarg/OpenGoldBox/issues/161) |
 | Drow | Dancing Lights at character level 1; Faerie Fire at 3 | 84–85 | Not offered ([DROW-1](SRD-DECISIONS.md#drow-1-2026-10-14-no-drow-lineage-for-now)) |
-| High | High Elf's Prestidigitation is removed by DM-1; it starts with a Wizard cantrip instead, replaceable at a Long Rest | 84–85 | [#67](https://github.com/stdarg/OpenGold/issues/67) |
-| HighFixed | High Elf gains Detect Magic at character level 3 | 84–85 | [#67](https://github.com/stdarg/OpenGold/issues/67) |
-| Wood | Longstrider at character level 3 (level-1 Druidcraft removed by DM-1) | 84–85 | [#67](https://github.com/stdarg/OpenGold/issues/67) |
-| Abyssal | Poison Spray at character level 1; Ray of Sickness at 3 | 86 | [#73](https://github.com/stdarg/OpenGold/issues/73) |
-| Chthonic | Chill Touch at character level 1; False Life at 3 | 86 | [#73](https://github.com/stdarg/OpenGold/issues/73) |
-| Infernal | Fire Bolt at character level 1; Hellish Rebuke at 3 | 86 | [#73](https://github.com/stdarg/OpenGold/issues/73) |
+| High | High Elf's Prestidigitation is removed by DM-1; it starts with a Wizard cantrip instead, replaceable at a Long Rest | 84–85 | [#67](https://github.com/stdarg/OpenGoldBox/issues/67) |
+| HighFixed | High Elf gains Detect Magic at character level 3 | 84–85 | [#67](https://github.com/stdarg/OpenGoldBox/issues/67) |
+| Wood | Longstrider at character level 3 (level-1 Druidcraft removed by DM-1) | 84–85 | [#67](https://github.com/stdarg/OpenGoldBox/issues/67) |
+| Abyssal | Poison Spray at character level 1; Ray of Sickness at 3 | 86 | [#73](https://github.com/stdarg/OpenGoldBox/issues/73) |
+| Chthonic | Chill Touch at character level 1; False Life at 3 | 86 | [#73](https://github.com/stdarg/OpenGoldBox/issues/73) |
+| Infernal | Fire Bolt at character level 1; Hellish Rebuke at 3 | 86 | [#73](https://github.com/stdarg/OpenGoldBox/issues/73) |
 
 Acolyte grants Magic Initiate (Cleric) and Sage grants Magic Initiate (Wizard);
 Criminal and Soldier do not grant spells. Warlock's level-2 Lessons of the First
 Ones and the level-four feat choice can also grant it (all four delivered);
-Human's chosen Origin feat will, with #71. Its repeatability uses different
-spell lists, not unrestricted duplication of free uses. See [#61](https://github.com/stdarg/OpenGold/issues/61), [#63](https://github.com/stdarg/OpenGold/issues/63), [#71](https://github.com/stdarg/OpenGold/issues/71), [#75](https://github.com/stdarg/OpenGold/issues/75),
-[#82](https://github.com/stdarg/OpenGold/issues/82) and [#161](https://github.com/stdarg/OpenGold/issues/161). Dragonborn, Dwarf, Goliath, Halfling and Orc add no spell names in
+Human's chosen Origin feat can too (#71). Its repeatability uses different
+spell lists, not unrestricted duplication of free uses. See [#61](https://github.com/stdarg/OpenGoldBox/issues/61), [#63](https://github.com/stdarg/OpenGoldBox/issues/63), [#71](https://github.com/stdarg/OpenGoldBox/issues/71), [#75](https://github.com/stdarg/OpenGoldBox/issues/75),
+[#82](https://github.com/stdarg/OpenGoldBox/issues/82) and [#161](https://github.com/stdarg/OpenGoldBox/issues/161). Dragonborn, Dwarf, Goliath, Halfling and Orc add no spell names in
 this tier; their supernatural abilities are not spells merely because they
 produce similar effects. Forest and Rock Gnome lineages and every Tiefling legacy's
 Thaumaturgy granted only spells DM-1 removed, so those grants are gone; the
 Druid's Druidic Speak with Animals, Wild Companion, Pact of the Chain, Mask of Many
 Faces, Misty Visions and the Wizard's Ritual Adept are removed with them.
 Elf/Tiefling leveled grants retain their own free use
-and selected casting ability; [#200](https://github.com/stdarg/OpenGold/issues/200) must preserve those sources independently.
+and selected casting ability; [#200](https://github.com/stdarg/OpenGoldBox/issues/200) must preserve those sources independently.
 
 ## Delivery and evidence
 
@@ -146,41 +146,42 @@ available, grant access and ordinary playable controls. Relevant exploration
 uses and camp/inn save continuation are part of completion. No reviewed
 adaptation has been approved for any missing spell in this inventory.
 
-Every row depends on the applicable access work ([#36](https://github.com/stdarg/OpenGold/issues/36) and the route issues
-above) and component rules ([#39](https://github.com/stdarg/OpenGold/issues/39); [#40](https://github.com/stdarg/OpenGold/issues/40) wherever Materials apply). The Dependencies
+Every row depends on the applicable access work ([#36](https://github.com/stdarg/OpenGoldBox/issues/36) and the route issues
+above) and component rules ([#39](https://github.com/stdarg/OpenGoldBox/issues/39); [#40](https://github.com/stdarg/OpenGoldBox/issues/40) wherever Materials apply). The Dependencies
 column highlights further capabilities, not an exhaustive substitute for the
-spell description. [#174](https://github.com/stdarg/OpenGold/issues/174) includes ritual timing/exploration; [#35](https://github.com/stdarg/OpenGold/issues/35) covers needed
-conditions/effect semantics; [#43](https://github.com/stdarg/OpenGold/issues/43) covers area targeting. These are capability
+spell description. [#174](https://github.com/stdarg/OpenGoldBox/issues/174) includes ritual timing/exploration; [#35](https://github.com/stdarg/OpenGoldBox/issues/35) covers needed
+conditions/effect semantics; [#43](https://github.com/stdarg/OpenGoldBox/issues/43) covers area targeting. These are capability
 trackers: depend on the relevant bounded child, not completion of every spell
 in the tracker. Avoid circular dependencies by choosing one representative
 spell to prove each new capability.
 
 **Partial** rows link to the existing code and tests below. **Missing** rows have
 no spell implementation/conformance test yet. A **queue** entry remains assigned
-to [#165](https://github.com/stdarg/OpenGold/issues/165) for decomposition, not a runnable implementation batch. Create its
+to [#165](https://github.com/stdarg/OpenGoldBox/issues/165) for decomposition, not a runnable implementation batch. Create its
 named batch checklist under the existing owner before coding: at most 3–5
 straightforward spells using verified
 mechanics, or one complex spell with explicit prerequisites. Separate tickets
 are optional when they represent genuinely independent deliverables; see
 [workflow](SRD-WORKFLOW.md). The first four
-new single-spell children are [#202](https://github.com/stdarg/OpenGold/issues/202)–205. Existing [#41](https://github.com/stdarg/OpenGold/issues/41), [#141](https://github.com/stdarg/OpenGold/issues/141), [#146](https://github.com/stdarg/OpenGold/issues/146) and [#166](https://github.com/stdarg/OpenGold/issues/166)–171
+new single-spell children are [#202](https://github.com/stdarg/OpenGoldBox/issues/202)–205. Existing [#41](https://github.com/stdarg/OpenGoldBox/issues/41), [#141](https://github.com/stdarg/OpenGoldBox/issues/141), [#146](https://github.com/stdarg/OpenGoldBox/issues/146) and [#166](https://github.com/stdarg/OpenGoldBox/issues/166)–171
 are reused rather than duplicated. Closing any one effect issue does not
 complete its still-pending class/species/feat integrations.
 
 | Partial spell | Implementation | Existing evidence | Remaining spell issue |
 | --- | --- | --- | --- |
-| Shocking Grasp | [scope](SHOCKING-GRASP.md), [rules](../src/OpenGold.Rules.Srd5/src/srd5.cpp) | [native](../tests/shocking_grasp_tests.cpp), [creator](../tests/shocking_cantrip_view_tests.gd), [combat UI](../tests/shocking_view_tests.gd) | Complete through level 4 ([#223](https://github.com/stdarg/OpenGold/issues/223)) |
-| Eldritch Blast | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp), [scope](ELDRITCH-BLAST.md) | [native](../tests/eldritch_blast_tests.cpp), [creator](../tests/warlock_cantrip_view_tests.gd), [combat UI](../tests/eldritch_view_tests.gd) | Complete through level 4 ([#204](https://github.com/stdarg/OpenGold/issues/204)) |
-| Sacred Flame | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp), [scope](SACRED-FLAME.md) | [native](../tests/sacred_flame_tests.cpp), [creator](../tests/cleric_cantrip_view_tests.gd), [combat UI](../tests/sacred_view_tests.gd) | Complete through level 4 ([#203](https://github.com/stdarg/OpenGold/issues/203)) |
-| Poison Spray | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp), [scope](POISON-SPRAY.md) | [native](../tests/poison_spray_tests.cpp), [creator](../tests/cantrip_view_tests.gd), [combat UI](../tests/poison_view_tests.gd) | Complete through level 4 for every route in the game ([#202](https://github.com/stdarg/OpenGold/issues/202)) |
-| Fire Bolt | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) | [rules tests](../tests/rules_tests.cpp), [typed damage](../tests/damage_tests.cpp), [components](../tests/spell_component_tests.cpp) | Complete through level 4 ([Fire Bolt](FIRE-BOLT.md), [#166](https://github.com/stdarg/OpenGold/issues/166)) |
-| Cure Wounds | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) | [rules tests](../tests/rules_tests.cpp), [components](../tests/spell_component_tests.cpp) | Complete through level 4 ([Healing spells](HEALING-SPELLS.md), [#167](https://github.com/stdarg/OpenGold/issues/167)) |
-| Magic Missile | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) | [rules tests](../tests/rules_tests.cpp), [typed damage](../tests/damage_tests.cpp), [components](../tests/spell_component_tests.cpp) | Complete through level 4 ([SPLIT-1](SRD-DECISIONS.md#split-1-2026-10-13-aiming-darts-and-rays), [#168](https://github.com/stdarg/OpenGold/issues/168)); level-3 slots #176 |
-| Healing Word | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) | [rules tests](../tests/rules_tests.cpp), [components](../tests/spell_component_tests.cpp) | Complete through level 4 ([Healing spells](HEALING-SPELLS.md), [#169](https://github.com/stdarg/OpenGold/issues/169)) |
-| Scorching Ray | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) | [rules tests](../tests/rules_tests.cpp), [typed damage](../tests/damage_tests.cpp), [components](../tests/spell_component_tests.cpp) | Complete through level 4 ([SPLIT-1](SRD-DECISIONS.md#split-1-2026-10-13-aiming-darts-and-rays), [#170](https://github.com/stdarg/OpenGold/issues/170)); level-3 slots #176 |
-| Blindness/Deafness | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp), [effects](../src/OpenGold.Rules.Srd5/src/status_effects.cpp) | [status tests](../tests/status_effect_tests.cpp), [components](../tests/spell_component_tests.cpp) | Complete through level 4 ([DEAF-1](SRD-DECISIONS.md#deaf-1-2026-10-13-blindnessdeafness-without-deafness), [#171](https://github.com/stdarg/OpenGold/issues/171)); higher-slot targets #176 |
+| Shocking Grasp | [scope](SHOCKING-GRASP.md), [rules](../src/OpenGold.Rules.Srd5/src/srd5.cpp) | [native](../tests/shocking_grasp_tests.cpp), [creator](../tests/shocking_cantrip_view_tests.gd), [combat UI](../tests/shocking_view_tests.gd) | Complete through level 4 ([#223](https://github.com/stdarg/OpenGoldBox/issues/223)) |
+| Eldritch Blast | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp), [scope](ELDRITCH-BLAST.md) | [native](../tests/eldritch_blast_tests.cpp), [creator](../tests/warlock_cantrip_view_tests.gd), [combat UI](../tests/eldritch_view_tests.gd) | Complete through level 4 ([#204](https://github.com/stdarg/OpenGoldBox/issues/204)) |
+| Sacred Flame | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp), [scope](SACRED-FLAME.md) | [native](../tests/sacred_flame_tests.cpp), [creator](../tests/cleric_cantrip_view_tests.gd), [combat UI](../tests/sacred_view_tests.gd) | Complete through level 4 ([#203](https://github.com/stdarg/OpenGoldBox/issues/203)) |
+| Poison Spray | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp), [scope](POISON-SPRAY.md) | [native](../tests/poison_spray_tests.cpp), [creator](../tests/cantrip_view_tests.gd), [combat UI](../tests/poison_view_tests.gd) | Complete through level 4 for every route in the game ([#202](https://github.com/stdarg/OpenGoldBox/issues/202)) |
+| Fire Bolt | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) | [rules tests](../tests/rules_tests.cpp), [typed damage](../tests/damage_tests.cpp), [components](../tests/spell_component_tests.cpp) | Complete through level 4 ([Fire Bolt](FIRE-BOLT.md), [#166](https://github.com/stdarg/OpenGoldBox/issues/166)) |
+| Cure Wounds | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) | [rules tests](../tests/rules_tests.cpp), [components](../tests/spell_component_tests.cpp) | Complete through level 4 ([Healing spells](HEALING-SPELLS.md), [#167](https://github.com/stdarg/OpenGoldBox/issues/167)) |
+| Magic Missile | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) | [rules tests](../tests/rules_tests.cpp), [typed damage](../tests/damage_tests.cpp), [components](../tests/spell_component_tests.cpp) | Complete through level 4 ([SPLIT-1](SRD-DECISIONS.md#split-1-2026-10-13-aiming-darts-and-rays), [#168](https://github.com/stdarg/OpenGoldBox/issues/168)); level-3 slots #176 |
+| Healing Word | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) | [rules tests](../tests/rules_tests.cpp), [components](../tests/spell_component_tests.cpp) | Complete through level 4 ([Healing spells](HEALING-SPELLS.md), [#169](https://github.com/stdarg/OpenGoldBox/issues/169)) |
+| Scorching Ray | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp) | [rules tests](../tests/rules_tests.cpp), [typed damage](../tests/damage_tests.cpp), [components](../tests/spell_component_tests.cpp) | Complete through level 4 ([SPLIT-1](SRD-DECISIONS.md#split-1-2026-10-13-aiming-darts-and-rays), [#170](https://github.com/stdarg/OpenGoldBox/issues/170)); level-3 slots #176 |
+| Blindness/Deafness | [srd5.cpp](../src/OpenGold.Rules.Srd5/src/srd5.cpp), [effects](../src/OpenGold.Rules.Srd5/src/status_effects.cpp) | [status tests](../tests/status_effect_tests.cpp), [components](../tests/spell_component_tests.cpp) | Complete through level 4 ([DEAF-1](SRD-DECISIONS.md#deaf-1-2026-10-13-blindnessdeafness-without-deafness), [#171](https://github.com/stdarg/OpenGoldBox/issues/171)); higher-slot targets #176 |
 
-Higher character levels and slots remain [#176](https://github.com/stdarg/OpenGold/issues/176)–178. Spells have no
+Higher character levels and slots are delivered under [#176](https://github.com/stdarg/OpenGoldBox/issues/176)
+([spell slots](SPELL-SLOTS.md)). Spells have no
 components ([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)). These existing tests
 are evidence of partial behavior, not certification of the full spell.
 
@@ -188,69 +189,69 @@ are evidence of partial behavior, not certification of the full spell.
 
 | Spell / SRD page | Normal lists | Additional routes | Further dependencies | Status / work |
 | --- | --- | --- | --- | --- |
-| [Acid Splash](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=107) (p. 107) | S, W | MI, Tome, High, Tropical | [#43](https://github.com/stdarg/OpenGold/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#ray-of-sickness-ice-knife-chromatic-orb-and-acid-splash) |
-| [Chill Touch](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=115) (p. 115) | S, K, W | MI, Tome, High, Chthonic | [#35](https://github.com/stdarg/OpenGold/issues/35) | Partial: Wizard 1–4, Sorcerer/Warlock 1; creature casting, healing prevention and Q40 earned recovery verified in [Chill Touch](CHILL-TOUCH.md). MI/Tome/species, objects and higher class progression remain open under [#165](https://github.com/stdarg/OpenGold/issues/165) |
-| [Eldritch Blast](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=127) (p. 127) | K | Tome | Objects [#225](https://github.com/stdarg/OpenGold/issues/225) | Implemented for Warlocks, levels 1–4; [Eldritch Blast](ELDRITCH-BLAST.md); also Pact of the Tome |
+| [Acid Splash](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=107) (p. 107) | S, W | MI, Tome, High, Tropical | [#43](https://github.com/stdarg/OpenGoldBox/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#ray-of-sickness-ice-knife-chromatic-orb-and-acid-splash) |
+| [Chill Touch](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=115) (p. 115) | S, K, W | MI, Tome, High, Chthonic | [#35](https://github.com/stdarg/OpenGoldBox/issues/35) | Partial: Wizard 1–4, Sorcerer/Warlock 1; creature casting, healing prevention and Q40 earned recovery verified in [Chill Touch](CHILL-TOUCH.md). MI/Tome/species, objects and higher class progression remain open under [#165](https://github.com/stdarg/OpenGoldBox/issues/165) |
+| [Eldritch Blast](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=127) (p. 127) | K | Tome | Objects [#225](https://github.com/stdarg/OpenGoldBox/issues/225) | Implemented for Warlocks, levels 1–4; [Eldritch Blast](ELDRITCH-BLAST.md); also Pact of the Tome |
 | [Fire Bolt](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=132) (p. 132) | S, W | MI, Tome, High, Arid, Infernal | — | Implemented for Wizards, Sorcerers, Arid Land and Magic Initiate; [Fire Bolt](FIRE-BOLT.md); also the High Elf, Infernal Tiefling and Pact of the Tome |
 | [Guidance](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=138) (p. 138) | C, D | MI, Tome, Thaum, Blessed, Magician, DruidicWarrior | — (fights only, by choice) | Implemented for combat Athletics and Medicine checks ([GUIDE-1](SRD-DECISIONS.md#guide-1-2026-10-12-guidance-restored)); [Cleric](CLERIC.md#resistance-and-silence) |
 | [Poison Spray](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=153) (p. 153) | D, S, K, W | MI, Tome, High, Magician, DruidicWarrior, Abyssal | — | Implemented for Wizards, Sorcerers, Warlocks, Druids, Druidic Warrior and Magic Initiate; [Poison Spray](POISON-SPRAY.md#routes-through-level-4); also the High Elf, Abyssal Tiefling and Pact of the Tome |
-| [Produce Flame](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=156) (p. 156) | D | MI, Tome, Magician, DruidicWarrior | [#46](https://github.com/stdarg/OpenGold/issues/46) | Implemented for Druids; [Druid](DRUID.md#spellcasting-primal-order-and-the-circle-of-the-land) |
-| [Ray of Frost](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=157) (p. 157) | S, W | MI, Tome, High, Polar | [#35](https://github.com/stdarg/OpenGold/issues/35) | Implemented for Wizards, Sorcerers, Polar Land and Magic Initiate; [Ray of Frost](RAY-OF-FROST.md#routes-through-level-4); also the High Elf and Pact of the Tome |
-| [Resistance](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=158) (p. 158) | C, D | MI, Tome, Thaum, Blessed, Magician, DruidicWarrior | [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Clerics; [Cleric](CLERIC.md#resistance-and-silence) |
+| [Produce Flame](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=156) (p. 156) | D | MI, Tome, Magician, DruidicWarrior | [#46](https://github.com/stdarg/OpenGoldBox/issues/46) | Implemented for Druids; [Druid](DRUID.md#spellcasting-primal-order-and-the-circle-of-the-land) |
+| [Ray of Frost](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=157) (p. 157) | S, W | MI, Tome, High, Polar | [#35](https://github.com/stdarg/OpenGoldBox/issues/35) | Implemented for Wizards, Sorcerers, Polar Land and Magic Initiate; [Ray of Frost](RAY-OF-FROST.md#routes-through-level-4); also the High Elf and Pact of the Tome |
+| [Resistance](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=158) (p. 158) | C, D | MI, Tome, Thaum, Blessed, Magician, DruidicWarrior | [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Clerics; [Cleric](CLERIC.md#resistance-and-silence) |
 | [Sacred Flame](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=159) (p. 159) | C | MI, Tome, Thaum, Blessed | — | Implemented for every route; [Sacred Flame](SACRED-FLAME.md) |
 | [Shillelagh](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=162) (p. 162) | D | MI, Tome, Magician, DruidicWarrior | — | Implemented for Druids; [Druid](DRUID.md#spellcasting-primal-order-and-the-circle-of-the-land) |
-| [Shocking Grasp](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=162) (p. 162) | S, W | MI, Tome, High, Temperate | [#39](https://github.com/stdarg/OpenGold/issues/39) | Implemented for Wizards, Sorcerers, Temperate Land and Magic Initiate; also the High Elf and Pact of the Tome ([#223](https://github.com/stdarg/OpenGold/issues/223)) |
+| [Shocking Grasp](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=162) (p. 162) | S, W | MI, Tome, High, Temperate | [#39](https://github.com/stdarg/OpenGoldBox/issues/39) | Implemented for Wizards, Sorcerers, Temperate Land and Magic Initiate; also the High Elf and Pact of the Tome ([#223](https://github.com/stdarg/OpenGoldBox/issues/223)) |
 | [Sorcerous Burst](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=163) (p. 163) | S | Tome | — | Implemented for Sorcerers; [Sorcerer](SORCERER.md#spellcasting-innate-sorcery-and-draconic-sorcery) |
-| [Spare the Dying](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=163) (p. 163) | C, D | MI, Tome, Thaum, Blessed, Magician, DruidicWarrior | [#32](https://github.com/stdarg/OpenGold/issues/32) | Implemented for Clerics (and Druid-list routes); [Cleric](CLERIC.md#guiding-bolt-bane-and-spare-the-dying) |
-| [Starry Wisp](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=165) (p. 165) | B, D | MI, Tome, Magician, DruidicWarrior | [#46](https://github.com/stdarg/OpenGold/issues/46) | Implemented for Bards; [Bard](BARD.md#spellcasting-jack-of-all-trades-and-the-college-of-lore) |
+| [Spare the Dying](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=163) (p. 163) | C, D | MI, Tome, Thaum, Blessed, Magician, DruidicWarrior | [#32](https://github.com/stdarg/OpenGoldBox/issues/32) | Implemented for Clerics (and Druid-list routes); [Cleric](CLERIC.md#guiding-bolt-bane-and-spare-the-dying) |
+| [Starry Wisp](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=165) (p. 165) | B, D | MI, Tome, Magician, DruidicWarrior | [#46](https://github.com/stdarg/OpenGoldBox/issues/46) | Implemented for Bards; [Bard](BARD.md#spellcasting-jack-of-all-trades-and-the-college-of-lore) |
 | [True Strike](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=171) (p. 171) | B, S, K, W | MI, Tome, High | — | Implemented for Wizards; [Wizard](WIZARD.md#true-strike) |
-| [Vicious Mockery](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=171) (p. 171) | B | Tome | [#35](https://github.com/stdarg/OpenGold/issues/35) | Implemented for Bards; [Bard](BARD.md#spellcasting-jack-of-all-trades-and-the-college-of-lore) |
+| [Vicious Mockery](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=171) (p. 171) | B | Tome | [#35](https://github.com/stdarg/OpenGoldBox/issues/35) | Implemented for Bards; [Bard](BARD.md#spellcasting-jack-of-all-trades-and-the-college-of-lore) |
 
 ## Level-one spells
 
 | Spell / SRD page | Normal lists | Additional routes | Further dependencies | Status / work |
 | --- | --- | --- | --- | --- |
-| [Bane](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=112) (p. 112) | B, C, K | MI | [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Clerics; [Cleric](CLERIC.md#guiding-bolt-bane-and-spare-the-dying) |
-| [Bless](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=113) (p. 113) | C, P | MI, Life | [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Clerics and Paladins; [Paladin](PALADIN.md#buffs-and-concentration) |
-| [Burning Hands](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=114) (p. 114) | S, W | MI, Evoker, Arid, Fiend | [#43](https://github.com/stdarg/OpenGold/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#burning-hands-thunderwave-and-shatter) |
-| [Charm Person](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=115) (p. 115) | B, D, S, K, W | MI | [#35](https://github.com/stdarg/OpenGold/issues/35) | Implemented for Wizards; [Wizard](WIZARD.md#charm-person) |
+| [Bane](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=112) (p. 112) | B, C, K | MI | [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Clerics; [Cleric](CLERIC.md#guiding-bolt-bane-and-spare-the-dying) |
+| [Bless](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=113) (p. 113) | C, P | MI, Life | [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Clerics and Paladins; [Paladin](PALADIN.md#buffs-and-concentration) |
+| [Burning Hands](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=114) (p. 114) | S, W | MI, Evoker, Arid, Fiend | [#43](https://github.com/stdarg/OpenGoldBox/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#burning-hands-thunderwave-and-shatter) |
+| [Charm Person](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=115) (p. 115) | B, D, S, K, W | MI | [#35](https://github.com/stdarg/OpenGoldBox/issues/35) | Implemented for Wizards; [Wizard](WIZARD.md#charm-person) |
 | [Chromatic Orb](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=115) (p. 115) | S, W | MI, Evoker, Draconic | — | Implemented for Wizards; [Wizard](WIZARD.md#ray-of-sickness-ice-knife-chromatic-orb-and-acid-splash) |
-| [Color Spray](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=116) (p. 116) | B, S, W | MI | [#35](https://github.com/stdarg/OpenGold/issues/35), [#43](https://github.com/stdarg/OpenGold/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#sleep-hideous-laughter-and-color-spray) |
-| [Command](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=116) (p. 116) | B, C, P | MI, Draconic, Fiend | [#35](https://github.com/stdarg/OpenGold/issues/35) | Implemented for Clerics and Paladins, without Drop; [Paladin](PALADIN.md#buffs-and-concentration) |
+| [Color Spray](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=116) (p. 116) | B, S, W | MI | [#35](https://github.com/stdarg/OpenGoldBox/issues/35), [#43](https://github.com/stdarg/OpenGoldBox/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#sleep-hideous-laughter-and-color-spray) |
+| [Command](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=116) (p. 116) | B, C, P | MI, Draconic, Fiend | [#35](https://github.com/stdarg/OpenGoldBox/issues/35) | Implemented for Clerics and Paladins, without Drop; [Paladin](PALADIN.md#buffs-and-concentration) |
 | [Cure Wounds](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=121) (p. 121) | B, C, D, P, R | MI, Life | — | Implemented through level 4; [Healing spells](HEALING-SPELLS.md) |
-| [Detect Magic](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=123) (p. 123) | B, C, D, P, R, S, K, W | MI, Tome, HighFixed | [#38](https://github.com/stdarg/OpenGold/issues/38), [#174](https://github.com/stdarg/OpenGold/issues/174) | Implemented outside combat, from the Cast menu or Camp; a High Elf casts it from level 3. [MAGIC_ITEMS](MAGIC_ITEMS.md#in-opengoldbox) |
+| [Detect Magic](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=123) (p. 123) | B, C, D, P, R, S, K, W | MI, Tome, HighFixed | [#38](https://github.com/stdarg/OpenGoldBox/issues/38), [#174](https://github.com/stdarg/OpenGoldBox/issues/174) | Implemented outside combat, from the Cast menu or Camp; a High Elf casts it from level 3. [MAGIC_ITEMS](MAGIC_ITEMS.md#in-opengoldbox) |
 | [Dissonant Whispers](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=124) (p. 124) | B | — | — | Implemented for Bards; [Bard](BARD.md#spellcasting-jack-of-all-trades-and-the-college-of-lore) |
 | [Divine Favor](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=125) (p. 125) | P | — | — | Implemented for Paladins; [Paladin](PALADIN.md#buffs-and-concentration) |
 | [Divine Smite](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=125) (p. 125) | P | Smite | — | Implemented for Paladins; [Paladin](PALADIN.md#smites) |
-| [Ensnaring Strike](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=128) (p. 128) | R | — | [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Rangers; [Ranger](RANGER.md#ensnaring-strike-and-restrained) |
-| [Entangle](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=128) (p. 128) | D, R | MI | [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43) | Implemented for Rangers; [Ranger](RANGER.md#entangle-and-aiming-area-spells) |
-| [Expeditious Retreat](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=129) (p. 129) | S, K, W | MI | [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Wizards; [Wizard](WIZARD.md#mage-armor-false-life-and-expeditious-retreat) |
-| [Faerie Fire](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=129) (p. 129) | B, D | MI, Drow | [#38](https://github.com/stdarg/OpenGold/issues/38), [#46](https://github.com/stdarg/OpenGold/issues/46) | Implemented for Bards; [Bard](BARD.md#spellcasting-jack-of-all-trades-and-the-college-of-lore) |
-| [False Life](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=129) (p. 129) | S, W | MI, Vigor, Chthonic | [#34](https://github.com/stdarg/OpenGold/issues/34) | Implemented for Wizards; [Wizard](WIZARD.md#mage-armor-false-life-and-expeditious-retreat) |
-| [Fog Cloud](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=133) (p. 133) | D, R, S, W | MI, Polar | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43), [#46](https://github.com/stdarg/OpenGold/issues/46) | Implemented for Rangers and Wizards; [Ranger](RANGER.md#fog-cloud) |
-| [Goodberry](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=137) (p. 137) | D, R | MI | [#174](https://github.com/stdarg/OpenGold/issues/174) | Implemented for Rangers as a camp heal (CLASS-6); [Ranger](RANGER.md#goodberry) |
-| [Grease](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=137) (p. 137) | S, W | MI | [#35](https://github.com/stdarg/OpenGold/issues/35) | Implemented for Wizards; [Wizard](WIZARD.md#grease-and-web) |
+| [Ensnaring Strike](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=128) (p. 128) | R | — | [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Rangers; [Ranger](RANGER.md#ensnaring-strike-and-restrained) |
+| [Entangle](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=128) (p. 128) | D, R | MI | [#35](https://github.com/stdarg/OpenGoldBox/issues/35), [#38](https://github.com/stdarg/OpenGoldBox/issues/38), [#43](https://github.com/stdarg/OpenGoldBox/issues/43) | Implemented for Rangers; [Ranger](RANGER.md#entangle-and-aiming-area-spells) |
+| [Expeditious Retreat](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=129) (p. 129) | S, K, W | MI | [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Wizards; [Wizard](WIZARD.md#mage-armor-false-life-and-expeditious-retreat) |
+| [Faerie Fire](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=129) (p. 129) | B, D | MI, Drow | [#38](https://github.com/stdarg/OpenGoldBox/issues/38), [#46](https://github.com/stdarg/OpenGoldBox/issues/46) | Implemented for Bards; [Bard](BARD.md#spellcasting-jack-of-all-trades-and-the-college-of-lore) |
+| [False Life](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=129) (p. 129) | S, W | MI, Vigor, Chthonic | [#34](https://github.com/stdarg/OpenGoldBox/issues/34) | Implemented for Wizards; [Wizard](WIZARD.md#mage-armor-false-life-and-expeditious-retreat) |
+| [Fog Cloud](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=133) (p. 133) | D, R, S, W | MI, Polar | [#38](https://github.com/stdarg/OpenGoldBox/issues/38), [#43](https://github.com/stdarg/OpenGoldBox/issues/43), [#46](https://github.com/stdarg/OpenGoldBox/issues/46) | Implemented for Rangers and Wizards; [Ranger](RANGER.md#fog-cloud) |
+| [Goodberry](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=137) (p. 137) | D, R | MI | [#174](https://github.com/stdarg/OpenGoldBox/issues/174) | Implemented for Rangers as a camp heal (CLASS-6); [Ranger](RANGER.md#goodberry) |
+| [Grease](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=137) (p. 137) | S, W | MI | [#35](https://github.com/stdarg/OpenGoldBox/issues/35) | Implemented for Wizards; [Wizard](WIZARD.md#grease-and-web) |
 | [Guiding Bolt](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=138) (p. 138) | C | MI | — | Implemented for Clerics; [Cleric](CLERIC.md#guiding-bolt-bane-and-spare-the-dying) |
 | [Healing Word](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=139) (p. 139) | B, C, D | MI | — | Implemented through level 4; [Healing spells](HEALING-SPELLS.md) |
-| [Hellish Rebuke](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=140) (p. 140) | K | Infernal | [#41](https://github.com/stdarg/OpenGold/issues/41) | Implemented for Warlocks; [Warlock](WARLOCK.md#pact-magic-hex-hellish-rebuke-and-magical-cunning) |
-| [Heroism](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=140) (p. 140) | B, P | — | [#34](https://github.com/stdarg/OpenGold/issues/34), [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Paladins; [Paladin](PALADIN.md#buffs-and-concentration) |
-| [Hex](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=140) (p. 140) | K | — | [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Warlocks; [Warlock](WARLOCK.md#pact-magic-hex-hellish-rebuke-and-magical-cunning) |
-| [Hideous Laughter](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=140) (p. 140) | B, K, W | MI | [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Wizards; [Wizard](WIZARD.md#sleep-hideous-laughter-and-color-spray) |
-| [Hunter’s Mark](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=141) (p. 141) | R | Favored | [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Rangers; [Ranger](RANGER.md#favored-enemy-and-hunters-mark) |
-| [Ice Knife](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=141) (p. 141) | D, S, W | MI | [#43](https://github.com/stdarg/OpenGold/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#ray-of-sickness-ice-knife-chromatic-orb-and-acid-splash) |
-| [Identify](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=142) (p. 142) | B, W | MI, Tome | [#174](https://github.com/stdarg/OpenGold/issues/174) | Implemented outside combat, cast on an item from the inventory. [MAGIC_ITEMS](MAGIC_ITEMS.md#in-opengoldbox) |
+| [Hellish Rebuke](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=140) (p. 140) | K | Infernal | [#41](https://github.com/stdarg/OpenGoldBox/issues/41) | Implemented for Warlocks; [Warlock](WARLOCK.md#pact-magic-hex-hellish-rebuke-and-magical-cunning) |
+| [Heroism](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=140) (p. 140) | B, P | — | [#34](https://github.com/stdarg/OpenGoldBox/issues/34), [#35](https://github.com/stdarg/OpenGoldBox/issues/35), [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Paladins; [Paladin](PALADIN.md#buffs-and-concentration) |
+| [Hex](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=140) (p. 140) | K | — | [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Warlocks; [Warlock](WARLOCK.md#pact-magic-hex-hellish-rebuke-and-magical-cunning) |
+| [Hideous Laughter](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=140) (p. 140) | B, K, W | MI | [#35](https://github.com/stdarg/OpenGoldBox/issues/35), [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Wizards; [Wizard](WIZARD.md#sleep-hideous-laughter-and-color-spray) |
+| [Hunter’s Mark](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=141) (p. 141) | R | Favored | [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Rangers; [Ranger](RANGER.md#favored-enemy-and-hunters-mark) |
+| [Ice Knife](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=141) (p. 141) | D, S, W | MI | [#43](https://github.com/stdarg/OpenGoldBox/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#ray-of-sickness-ice-knife-chromatic-orb-and-acid-splash) |
+| [Identify](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=142) (p. 142) | B, W | MI, Tome | [#174](https://github.com/stdarg/OpenGoldBox/issues/174) | Implemented outside combat, cast on an item from the inventory. [MAGIC_ITEMS](MAGIC_ITEMS.md#in-opengoldbox) |
 | [Inflict Wounds](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=143) (p. 143) | C | MI | — | Implemented; [Inflict Wounds](INFLICT-WOUNDS.md) |
-| [Longstrider](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=145) (p. 145) | B, D, R, W | MI, Wood | [#174](https://github.com/stdarg/OpenGold/issues/174) | Implemented for Rangers and Wizards; [Ranger](RANGER.md#longstrider) |
+| [Longstrider](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=145) (p. 145) | B, D, R, W | MI, Wood | [#174](https://github.com/stdarg/OpenGoldBox/issues/174) | Implemented for Rangers and Wizards; [Ranger](RANGER.md#longstrider) |
 | [Mage Armor](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=145) (p. 145) | S, W | MI, Shadows | — | Implemented for Wizards; [Wizard](WIZARD.md#mage-armor-false-life-and-expeditious-retreat) |
 | [Magic Missile](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=146) (p. 146) | S, W | MI, Evoker | — | Implemented: darts aimed one by one ([SPLIT-1](SRD-DECISIONS.md#split-1-2026-10-13-aiming-darts-and-rays)) |
-| [Protection from Evil and Good](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=157) (p. 157) | C, D, P, K, W | MI, Devotion | [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Clerics, Paladins and Wizards, no holy water (CLASS-3); [Paladin](PALADIN.md#buffs-and-concentration) |
-| [Ray of Sickness](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=158) (p. 158) | S, W | MI, Tropical, Abyssal | [#35](https://github.com/stdarg/OpenGold/issues/35) | Implemented for Wizards; [Wizard](WIZARD.md#ray-of-sickness-ice-knife-chromatic-orb-and-acid-splash) |
+| [Protection from Evil and Good](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=157) (p. 157) | C, D, P, K, W | MI, Devotion | [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Clerics, Paladins and Wizards, no holy water (CLASS-3); [Paladin](PALADIN.md#buffs-and-concentration) |
+| [Ray of Sickness](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=158) (p. 158) | S, W | MI, Tropical, Abyssal | [#35](https://github.com/stdarg/OpenGoldBox/issues/35) | Implemented for Wizards; [Wizard](WIZARD.md#ray-of-sickness-ice-knife-chromatic-orb-and-acid-splash) |
 | [Sanctuary](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=159) (p. 159) | C | MI | — | Implemented for Clerics; [Cleric](CLERIC.md#sanctuary-warding-bond-and-protection-from-poison) |
 | [Searing Smite](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=160) (p. 160) | P | — | — | Implemented for Paladins; [Paladin](PALADIN.md#smites) |
-| [Shield](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=161) (p. 161) | S, W | MI | [#41](https://github.com/stdarg/OpenGold/issues/41) | Implemented for Wizards; [Wizard](WIZARD.md#shield) |
-| [Shield of Faith](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=162) (p. 162) | C, P | MI, Devotion | [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Paladins and Clerics; [Paladin](PALADIN.md#buffs-and-concentration) |
-| [Sleep](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=163) (p. 163) | B, S, W | MI, Temperate | [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Wizards; [Wizard](WIZARD.md#sleep-hideous-laughter-and-color-spray) |
-| [Thunderwave](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=169) (p. 169) | B, D, S, W | MI, Evoker | [#43](https://github.com/stdarg/OpenGold/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#burning-hands-thunderwave-and-shatter) |
+| [Shield](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=161) (p. 161) | S, W | MI | [#41](https://github.com/stdarg/OpenGoldBox/issues/41) | Implemented for Wizards; [Wizard](WIZARD.md#shield) |
+| [Shield of Faith](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=162) (p. 162) | C, P | MI, Devotion | [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Paladins and Clerics; [Paladin](PALADIN.md#buffs-and-concentration) |
+| [Sleep](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=163) (p. 163) | B, S, W | MI, Temperate | [#35](https://github.com/stdarg/OpenGoldBox/issues/35), [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Wizards; [Wizard](WIZARD.md#sleep-hideous-laughter-and-color-spray) |
+| [Thunderwave](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=169) (p. 169) | B, D, S, W | MI, Evoker | [#43](https://github.com/stdarg/OpenGoldBox/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#burning-hands-thunderwave-and-shatter) |
 
 ## Level-two spells
 
@@ -259,35 +260,35 @@ are evidence of partial behavior, not certification of the full spell.
 | [Acid Arrow](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=107) (p. 107) | W | Evoker | — | Implemented for Wizards; [Wizard](WIZARD.md#acid-arrow-mind-spike-and-ray-of-enfeeblement) |
 | [Aid](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=107) (p. 107) | B, C, D | Life | — | Implemented for Clerics; [Cleric](CLERIC.md#aid) |
 | [Barkskin](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=112) (p. 112) | D | — | — | Implemented for Druids; [Druid](DRUID.md#spellcasting-primal-order-and-the-circle-of-the-land) |
-| [Blindness/Deafness](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=113) (p. 113) | B, C, S, W | — | [#35](https://github.com/stdarg/OpenGold/issues/35) | Implemented: blindness only ([DEAF-1](SRD-DECISIONS.md#deaf-1-2026-10-13-blindnessdeafness-without-deafness)); [Status effects](STATUS-EFFECTS.md) |
-| [Blur](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=114) (p. 114) | S, W | Arid | [#38](https://github.com/stdarg/OpenGold/issues/38), [#46](https://github.com/stdarg/OpenGold/issues/46) | Implemented for Wizards; [Wizard](WIZARD.md#blur-mirror-image-and-magic-weapon) |
-| [Darkness](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=122) (p. 122) | S, K, W | Evoker | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43), [#46](https://github.com/stdarg/OpenGold/issues/46) | Implemented for Wizards; [Wizard](WIZARD.md#invisibility-see-invisibility-and-darkness) |
-| [Dragon’s Breath](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=126) (p. 126) | S, W | Draconic | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#dragons-breath) |
-| [Enlarge/Reduce](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=127) (p. 127) | B, D, S, W | — | [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38), [#44](https://github.com/stdarg/OpenGold/issues/44) | Implemented for Wizards; [Wizard](WIZARD.md#enlargereduce) |
-| [Flame Blade](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=132) (p. 132) | D, S | — | [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Druids; [Druid](DRUID.md#flame-blade-moonbeam-spike-growth-and-heat-metal) |
-| [Flaming Sphere](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=132) (p. 132) | D, S, W | Evoker | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#flaming-sphere) |
-| [Gust of Wind](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=138) (p. 138) | D, S, W | Evoker | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#gust-of-wind) |
-| [Heat Metal](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=139) (p. 139) | B, D | — | [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Druids and Bards; monsters by [creature equipment](CREATURE-EQUIPMENT.md); [Druid](DRUID.md#flame-blade-moonbeam-spike-growth-and-heat-metal) |
-| [Hold Person](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=141) (p. 141) | B, C, D, S, K, W | Polar | [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Clerics and Wizards; [Cleric](CLERIC.md#hold-person-and-paralyzed) |
-| [Invisibility](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=143) (p. 143) | B, S, K, W | — | [#38](https://github.com/stdarg/OpenGold/issues/38), [#46](https://github.com/stdarg/OpenGold/issues/46) | Implemented for Wizards; [Wizard](WIZARD.md#invisibility-see-invisibility-and-darkness) |
-| [Knock](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=143) (p. 143) | B, S, W | — | [#174](https://github.com/stdarg/OpenGold/issues/174) | Implemented for Wizards; [Wizard](WIZARD.md#knock) |
-| [Lesser Restoration](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=144) (p. 144) | B, C, D | Life | [#35](https://github.com/stdarg/OpenGold/issues/35) | Implemented for Clerics (Blinded, Paralyzed, Poisoned; nothing deafens yet); [Cleric](CLERIC.md#life-domain-level-3) |
+| [Blindness/Deafness](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=113) (p. 113) | B, C, S, W | — | [#35](https://github.com/stdarg/OpenGoldBox/issues/35) | Implemented: blindness only ([DEAF-1](SRD-DECISIONS.md#deaf-1-2026-10-13-blindnessdeafness-without-deafness)); [Status effects](STATUS-EFFECTS.md) |
+| [Blur](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=114) (p. 114) | S, W | Arid | [#38](https://github.com/stdarg/OpenGoldBox/issues/38), [#46](https://github.com/stdarg/OpenGoldBox/issues/46) | Implemented for Wizards; [Wizard](WIZARD.md#blur-mirror-image-and-magic-weapon) |
+| [Darkness](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=122) (p. 122) | S, K, W | Evoker | [#38](https://github.com/stdarg/OpenGoldBox/issues/38), [#43](https://github.com/stdarg/OpenGoldBox/issues/43), [#46](https://github.com/stdarg/OpenGoldBox/issues/46) | Implemented for Wizards; [Wizard](WIZARD.md#invisibility-see-invisibility-and-darkness) |
+| [Dragon’s Breath](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=126) (p. 126) | S, W | Draconic | [#38](https://github.com/stdarg/OpenGoldBox/issues/38), [#43](https://github.com/stdarg/OpenGoldBox/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#dragons-breath) |
+| [Enlarge/Reduce](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=127) (p. 127) | B, D, S, W | — | [#35](https://github.com/stdarg/OpenGoldBox/issues/35), [#38](https://github.com/stdarg/OpenGoldBox/issues/38), [#44](https://github.com/stdarg/OpenGoldBox/issues/44) | Implemented for Wizards; [Wizard](WIZARD.md#enlargereduce) |
+| [Flame Blade](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=132) (p. 132) | D, S | — | [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Druids; [Druid](DRUID.md#flame-blade-moonbeam-spike-growth-and-heat-metal) |
+| [Flaming Sphere](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=132) (p. 132) | D, S, W | Evoker | [#38](https://github.com/stdarg/OpenGoldBox/issues/38), [#43](https://github.com/stdarg/OpenGoldBox/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#flaming-sphere) |
+| [Gust of Wind](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=138) (p. 138) | D, S, W | Evoker | [#38](https://github.com/stdarg/OpenGoldBox/issues/38), [#43](https://github.com/stdarg/OpenGoldBox/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#gust-of-wind) |
+| [Heat Metal](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=139) (p. 139) | B, D | — | [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Druids and Bards; monsters by [creature equipment](CREATURE-EQUIPMENT.md); [Druid](DRUID.md#flame-blade-moonbeam-spike-growth-and-heat-metal) |
+| [Hold Person](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=141) (p. 141) | B, C, D, S, K, W | Polar | [#35](https://github.com/stdarg/OpenGoldBox/issues/35), [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Clerics and Wizards; [Cleric](CLERIC.md#hold-person-and-paralyzed) |
+| [Invisibility](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=143) (p. 143) | B, S, K, W | — | [#38](https://github.com/stdarg/OpenGoldBox/issues/38), [#46](https://github.com/stdarg/OpenGoldBox/issues/46) | Implemented for Wizards; [Wizard](WIZARD.md#invisibility-see-invisibility-and-darkness) |
+| [Knock](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=143) (p. 143) | B, S, W | — | [#174](https://github.com/stdarg/OpenGoldBox/issues/174) | Implemented for Wizards; [Wizard](WIZARD.md#knock) |
+| [Lesser Restoration](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=144) (p. 144) | B, C, D | Life | [#35](https://github.com/stdarg/OpenGoldBox/issues/35) | Implemented for Clerics (Blinded, Paralyzed, Poisoned; nothing deafens yet); [Cleric](CLERIC.md#life-domain-level-3) |
 | [Magic Weapon](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=146) (p. 146) | S, W | — | — | Implemented for Wizards; [Wizard](WIZARD.md#blur-mirror-image-and-magic-weapon) |
-| [Mind Spike](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=149) (p. 149) | S†, K, W | — | [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Wizards; [Wizard](WIZARD.md#acid-arrow-mind-spike-and-ray-of-enfeeblement) |
-| [Mirror Image](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=150) (p. 150) | B, S, K, W | — | [#46](https://github.com/stdarg/OpenGold/issues/46) | Implemented for Wizards; [Wizard](WIZARD.md#blur-mirror-image-and-magic-weapon) |
+| [Mind Spike](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=149) (p. 149) | S†, K, W | — | [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Wizards; [Wizard](WIZARD.md#acid-arrow-mind-spike-and-ray-of-enfeeblement) |
+| [Mirror Image](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=150) (p. 150) | B, S, K, W | — | [#46](https://github.com/stdarg/OpenGoldBox/issues/46) | Implemented for Wizards; [Wizard](WIZARD.md#blur-mirror-image-and-magic-weapon) |
 | [Misty Step](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=150) (p. 150) | S, K, W | Temperate | — | Implemented for Wizards; [Wizard](WIZARD.md#misty-step) |
-| [Moonbeam](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=150) (p. 150) | D | — | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43) | Implemented for Druids; [Druid](DRUID.md#flame-blade-moonbeam-spike-growth-and-heat-metal) |
-| [Prayer of Healing](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=154) (p. 154) | C | — | [#30](https://github.com/stdarg/OpenGold/issues/30), [#174](https://github.com/stdarg/OpenGold/issues/174) | Implemented for Clerics as a camp spell; [Cleric](CLERIC.md#prayer-of-healing) |
-| [Protection from Poison](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=157) (p. 157) | C, D | — | [#35](https://github.com/stdarg/OpenGold/issues/35) | Implemented for Clerics; [Cleric](CLERIC.md#sanctuary-warding-bond-and-protection-from-poison) |
-| [Ray of Enfeeblement](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=157) (p. 157) | K, W | — | [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Wizards; [Wizard](WIZARD.md#acid-arrow-mind-spike-and-ray-of-enfeeblement) |
+| [Moonbeam](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=150) (p. 150) | D | — | [#38](https://github.com/stdarg/OpenGoldBox/issues/38), [#43](https://github.com/stdarg/OpenGoldBox/issues/43) | Implemented for Druids; [Druid](DRUID.md#flame-blade-moonbeam-spike-growth-and-heat-metal) |
+| [Prayer of Healing](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=154) (p. 154) | C | — | [#30](https://github.com/stdarg/OpenGoldBox/issues/30), [#174](https://github.com/stdarg/OpenGoldBox/issues/174) | Implemented for Clerics as a camp spell; [Cleric](CLERIC.md#prayer-of-healing) |
+| [Protection from Poison](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=157) (p. 157) | C, D | — | [#35](https://github.com/stdarg/OpenGoldBox/issues/35) | Implemented for Clerics; [Cleric](CLERIC.md#sanctuary-warding-bond-and-protection-from-poison) |
+| [Ray of Enfeeblement](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=157) (p. 157) | K, W | — | [#35](https://github.com/stdarg/OpenGoldBox/issues/35), [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Wizards; [Wizard](WIZARD.md#acid-arrow-mind-spike-and-ray-of-enfeeblement) |
 | [Scorching Ray](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=159) (p. 159) | S, W | Evoker, Fiend | — | Implemented: rays aimed one by one ([SPLIT-1](SRD-DECISIONS.md#split-1-2026-10-13-aiming-darts-and-rays)) |
-| [See Invisibility](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=160) (p. 160) | B, S, W | — | [#46](https://github.com/stdarg/OpenGold/issues/46) | Implemented for Wizards; [Wizard](WIZARD.md#invisibility-see-invisibility-and-darkness) |
-| [Shatter](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=161) (p. 161) | B, S, W | Evoker | [#43](https://github.com/stdarg/OpenGold/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#burning-hands-thunderwave-and-shatter) |
-| [Silence](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=162) (p. 162) | B, C | — | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43), [#174](https://github.com/stdarg/OpenGold/issues/174) | Implemented for Clerics; [Cleric](CLERIC.md#resistance-and-silence) |
-| [Spike Growth](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=164) (p. 164) | D | — | [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43) | Implemented for Druids; [Druid](DRUID.md#flame-blade-moonbeam-spike-growth-and-heat-metal) |
-| [Spiritual Weapon](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=165) (p. 165) | C | — | [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Clerics; [Cleric](CLERIC.md#spiritual-weapon) |
+| [See Invisibility](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=160) (p. 160) | B, S, W | — | [#46](https://github.com/stdarg/OpenGoldBox/issues/46) | Implemented for Wizards; [Wizard](WIZARD.md#invisibility-see-invisibility-and-darkness) |
+| [Shatter](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=161) (p. 161) | B, S, W | Evoker | [#43](https://github.com/stdarg/OpenGoldBox/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#burning-hands-thunderwave-and-shatter) |
+| [Silence](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=162) (p. 162) | B, C | — | [#38](https://github.com/stdarg/OpenGoldBox/issues/38), [#43](https://github.com/stdarg/OpenGoldBox/issues/43), [#174](https://github.com/stdarg/OpenGoldBox/issues/174) | Implemented for Clerics; [Cleric](CLERIC.md#resistance-and-silence) |
+| [Spike Growth](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=164) (p. 164) | D | — | [#38](https://github.com/stdarg/OpenGoldBox/issues/38), [#43](https://github.com/stdarg/OpenGoldBox/issues/43) | Implemented for Druids; [Druid](DRUID.md#flame-blade-moonbeam-spike-growth-and-heat-metal) |
+| [Spiritual Weapon](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=165) (p. 165) | C | — | [#38](https://github.com/stdarg/OpenGoldBox/issues/38) | Implemented for Clerics; [Cleric](CLERIC.md#spiritual-weapon) |
 | [Warding Bond](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=173) (p. 173) | C | — | — | Implemented for Clerics; [Cleric](CLERIC.md#sanctuary-warding-bond-and-protection-from-poison) |
-| [Web](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=174) (p. 174) | S, W | Tropical | [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38), [#43](https://github.com/stdarg/OpenGold/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#grease-and-web) |
+| [Web](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=174) (p. 174) | S, W | Tropical | [#35](https://github.com/stdarg/OpenGoldBox/issues/35), [#38](https://github.com/stdarg/OpenGoldBox/issues/38), [#43](https://github.com/stdarg/OpenGoldBox/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#grease-and-web) |
 
 ## Source cautions and verification
 
@@ -315,7 +316,7 @@ page and every partial spell has code/test evidence. Existing live component def
 confirm the six partial spell IDs. Repository links and issue assignments were
 checked; no runtime code or save schema is changed by this inventory.
 
-[#165](https://github.com/stdarg/OpenGold/issues/165) remains open until decomposition, implementations, source-route integration,
+[#165](https://github.com/stdarg/OpenGoldBox/issues/165) remains open until decomposition, implementations, source-route integration,
 independent tests and any explicitly reviewed adaptations satisfy its acceptance.
 The inventory alone does not close that tracker or the all-class milestone.
 
