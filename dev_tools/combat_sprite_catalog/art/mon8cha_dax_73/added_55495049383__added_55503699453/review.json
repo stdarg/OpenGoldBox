@@ -1,15 +1,15 @@
 {
-  "action_sha256": "f7a998c601d1c6ee9177b19c014e799ea24a66ea7e5d7d50af9175011fe69bcd",
+  "action_sha256": "e7dadd081138da0f6ec5a7df73a33fd5655ec7df3bc00a1390f6b45dfa2f4a07",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon8cha_dax_73/added_55495049383__added_55503699453/action.png",
     "ready": "art/mon8cha_dax_73/added_55495049383__added_55503699453/ready.png"
   },
-  "metadata_sha256": "774bd085d66c6a113fa6d63d848e07603be30623690710d8c35d3bdb82a3008e",
-  "notes": "One set only: readied one-handed Morning star + Shield. Preserved checked-in default PNGs byte-for-byte. Rejected full-body image-generation drafts because they changed the Gnoll body and clothing. Final pair composites newly generated gear onto the accepted original Gnoll art; the action raises the existing Gnoll weapon arm while retaining the complete ready torso, hips, legs, tail and planted feet. The rigid morning star stays in the image-left hand and swings down/right; the round shield stays on the image-right forearm. Compared exact final 128x128 files enlarged and at combat size on light gray, magenta and dark backgrounds. The lower 33 rows have zero changed pixels between ready/action. Head/torso/waist and shoulder connection were inspected for seams and black artifacts. A headless catalog run selected MON8CHA.DAX:73, loaded both new paths, auto-swapped ready to action after 1.1 seconds, and the loaded pixels matched the installed files (AE=0). Saved humanoid tier and 1x2 footprint retained from existing art as requested.",
+  "metadata_sha256": "9a9a605310725c3779182d67ad8b1a1c2f06dc83a1f88027a52c2737d2dbb266",
+  "notes": "Saved gear has one set, Morning star + Shield. Final pair uses generated rigid morning-star/closed-hand cutouts composited onto the existing independently created Gnoll body and preserved shield with genuine alpha. The ready grip is closed around the lower handle; the action grip is closed around the same handle with the spiked ball forward near the end of a strike. Rejected generated full-body replacements because they changed the accepted body. Exact final 128x128 PNGs reviewed enlarged and at combat size on light gray, magenta, and dark; no black box or stray opaque backing. Ready/action lower 38 rows compare pixel-identical (AE=0), including both feet. Torso and shoulder connections reviewed. Isolated catalog loaded both poses, auto-swapped after 1.1 seconds, and full catalog check passed. The catalog reports a 0.15-square ready and 0.21-square action footprint warning from the preserved shield/body placement and forward action reach; this focused correction does not change the saved 1x2 footprint or shield art.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "82c840866aa94a8529303f74971053b6c5df631db81d53c8d008c9b7b1acdf61",
-  "reviewed_at": "2026-10-25T20:29:43Z",
+  "ready_sha256": "4c2cc1c4f0dae350947c400a2676f5abd88c91bf906e1bc6df39f40395252b29",
+  "reviewed_at": "2026-10-26T00:14:18+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON8CHA.DAX:73",
   "specification": "bipedal-v1",
