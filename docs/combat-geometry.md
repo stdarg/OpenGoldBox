@@ -55,8 +55,11 @@ door) were read from the coab reimplementation and START.EXE's placement
 tables. The [DOS probe](../dev_tools/docs/dos-probe.md#findings) then compared
 them with fights in the running original (2026-10-24). In sixteen Slums fights,
 all four facings, distances 0 to 2, parties of one to six and groups of 1 to
-30 orcs, every combatant started on OpenGoldBox's square. Other areas'
-battlefields have not been compared.
+30 orcs, every combatant started on OpenGoldBox's square. On the wilderness
+map, in ten fights on the original's own random fields, every combatant
+started on OpenGoldBox's square once the fight faces the step at distance 2
+([PLACE-2](SRD-DECISIONS.md#place-2-2026-10-25-wilderness-fights-face-the-step)).
+Other city and dungeon areas' battlefields have not been compared.
 The user accepted this evidence on 2026-10-24 for closing issue #3.
 
 ## Validation and inspection
