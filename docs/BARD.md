@@ -89,14 +89,23 @@ The Bard advances to level 15, the cap
   9, 10, 11, 12, 14, 15, 16, 16, 17, 17 and 18 at levels 5–15; a fourth
   cantrip at 10. The kept Bard spells open with their slots: at 5 Bestow
   Curse, Dispel Magic, Fear, Hypnotic Pattern, Mass Healing Word, Plant
-  Growth, Stinking Cloud and Tiny Hut; at 7 Charm Monster, Confusion,
-  Dimension Door, Freedom of Movement, Greater Invisibility, Phantasmal Killer
-  and Polymorph; at 9 Animate Objects, Dominate Person, Greater Restoration,
+  Growth, Stinking Cloud and Tiny Hut; at 7 Charm Monster, Compulsion,
+  Confusion, Dimension Door, Freedom of Movement, Greater Invisibility,
+  Phantasmal Killer and Polymorph; at 9 Animate Objects, Dominate Person, Greater Restoration,
   Hold Monster, Mass Cure Wounds, Mislead and Raise Dead; at 11 Eyebite,
   Heroes' Feast, Irresistible Dance and True Seeing; at 13 Arcane Sword,
   Forcecage, Prismatic Spray, Regenerate and Resurrection; at 15
   Befuddlement, Dominate Monster, Mind Blank and Power Word Stun; Slow at 5,
   as for the Wizard. Teleport waits for travel beyond New Phlan.
+- **Compulsion** (level 4, since 2026-10-25): the Bard picks creatures it can
+  see within 30 feet one at a time, then casts; each makes a Wisdom save or is
+  Charmed (Compulsion) while the Bard concentrates. A Bonus Action, "Compulsion:
+  north" and the other seven directions, names the way they go: on its next
+  turn each charmed creature's only move is the one taking it furthest that
+  way, and then it saves again, ending the charm on a success. One that cannot
+  move that way saves at the end of its turn. Adaptation: "the safest route"
+  is not weighed. `opengold_bard_levels_tests` (compulsion) checks the
+  choice, the named move, the second save and a checkpoint.
 - **Bardic Inspiration's die:** d8 from 5, d10 from 10, d12 from 15, for
   Bardic Inspiration and Cutting Words alike.
 - **Font of Inspiration** (5): Bardic Inspiration's uses come back on a Short

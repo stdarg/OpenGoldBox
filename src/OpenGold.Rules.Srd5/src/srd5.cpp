@@ -326,7 +326,8 @@ constexpr bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::sickened || kind == detail::EffectKind::eye_resisted ||
            kind == detail::EffectKind::eyebiting || kind == detail::EffectKind::stoning ||
            kind == detail::EffectKind::petrified || kind == detail::EffectKind::dancing ||
-           kind == detail::EffectKind::aloft || kind == detail::EffectKind::mazed;
+           kind == detail::EffectKind::aloft || kind == detail::EffectKind::mazed ||
+           kind == detail::EffectKind::compelled;
 }
 
 // The level of the spell an effect comes from (0 for a cantrip), or none for
@@ -404,6 +405,7 @@ constexpr std::optional<unsigned> spell_level_of(detail::EffectKind kind)
         return 3u;
     case Kind::death_ward:
     case Kind::aura_of_life:
+    case Kind::compelled:
     case Kind::free_moving:
     case Kind::banished:
     case Kind::stoneskin:
@@ -1140,6 +1142,7 @@ constexpr std::array class_spell_access{
     SpellAccessRow{CharacterClass::bard, "tiny_hut", 5},
     // Bard level-4 spells, with the level-4 slot of Bard level 7.
     SpellAccessRow{CharacterClass::bard, "charm_monster", 7},
+    SpellAccessRow{CharacterClass::bard, "compulsion", 7},
     SpellAccessRow{CharacterClass::bard, "confusion", 7},
     SpellAccessRow{CharacterClass::bard, "dimension_door", 7},
     SpellAccessRow{CharacterClass::bard, "freedom_of_movement", 7},
@@ -3250,6 +3253,13 @@ std::string wall_direction_label(std::size_t direction)
     return std::string(labels.at(direction));
 }
 
+// The directions Compulsion names, 0 north and on clockwise to 7; offered as
+// "compel_<name>".
+constexpr std::array<Cell, 8> compass{Cell{0, -1}, Cell{1, -1}, Cell{1, 0},  Cell{1, 1},
+                                      Cell{0, 1},  Cell{-1, 1}, Cell{-1, 0}, Cell{-1, -1}};
+constexpr std::array<std::string_view, 8> compass_names{
+    "north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"};
+
 // Tsunami's headings, by the index its zone keeps in `dealt`.
 constexpr std::array<Cell, 8> wave_headings{Cell{0, 1}, Cell{0, -1},  Cell{1, 0},  Cell{-1, 0},
                                             Cell{1, 1}, Cell{-1, -1}, Cell{1, -1}, Cell{-1, 1}};
@@ -3290,6 +3300,7 @@ bool has_greater_harm(const Actor &a, std::size_t harm)
                                               : e.kind == detail::EffectKind::charmed ||
                                                     e.kind == detail::EffectKind::enthralled ||
                                                     e.kind == detail::EffectKind::turn_charmed ||
+                                                    e.kind == detail::EffectKind::compelled ||
                                                     e.kind == detail::EffectKind::dominated;
                        });
 }
@@ -5621,6 +5632,15 @@ class Session final : public CombatSession
     // Command's Approach and Flee: the commanded creature only moves toward or
     // away from the caster, then ends its turn.
     void obey_command(std::vector<Command> &commands, const Actor &a) const;
+    // Compulsion: the caster names a direction (an index into compass) that each
+    // creature its Compulsion charms moves on its next turn.
+    void name_compulsion_heading(const Actor &caster, std::size_t direction);
+    // While a named direction waits, a compelled creature's only move is the
+    // one taking it furthest that way.
+    void obey_compulsion(std::vector<Command> &commands, const Actor &a) const;
+    // After moving the named way, the creature saves again; a success ends the
+    // charm on it. The direction is spent either way.
+    void finish_compulsion(Actor &a);
     [[nodiscard]] bool marked_by(const Actor &target, const Actor &caster) const;
     // Whether the caster's Concentration holds a Hunter's Mark on a creature.
     [[nodiscard]] bool holds_hunters_mark(const Actor &caster) const;
@@ -8185,6 +8205,7 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::hampered, "Hampered"},
               std::pair{detail::EffectKind::lethargic, "Incapacitated (lethargy)"},
               std::pair{detail::EffectKind::entranced, "Charmed (Hypnotic Pattern)"},
+              std::pair{detail::EffectKind::compelled, "Charmed (Compulsion)"},
               std::pair{detail::EffectKind::terrified, "Frightened (Fear)"},
               std::pair{detail::EffectKind::retching, "Poisoned (Stinking Cloud)"},
               std::pair{detail::EffectKind::vampiric, "Vampiric Touch"},
@@ -8882,6 +8903,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                               return e.kind == detail::EffectKind::charmed ||
                                      e.kind == detail::EffectKind::enthralled ||
                                      e.kind == detail::EffectKind::turn_charmed ||
+                                     e.kind == detail::EffectKind::compelled ||
                                      e.kind == detail::EffectKind::dominated;
                           });
             release(target);
@@ -9133,6 +9155,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
             {"{name} is hexed.", {{"name", target.source.name}}});
         return;
     case detail::Rider::charm_person:
+    case detail::Rider::compulsion:
         // Mindless Rage: a raging Berserker cannot be Charmed.
         if (mindless(target))
         {
@@ -9148,7 +9171,10 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
             return;
         }
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
-                                    detail::EffectKind::charmed, 0);
+                                    spell.rider == detail::Rider::compulsion
+                                        ? detail::EffectKind::compelled
+                                        : detail::EffectKind::charmed,
+                                    0);
         log(target.source.name + " is Charmed by " + a.source.name + ".",
             {"{name} is Charmed by {caster}.",
              {{"name", target.source.name}, {"caster", a.source.name}}});
@@ -11708,6 +11734,27 @@ std::vector<Command> Session::offered_commands() const
             }
         }
     }
+    // Compulsion: a Bonus Action names the way its charmed creatures go next.
+    if (a.bonus && std::any_of(actors_.begin(), actors_.end(),
+                               [&](const auto &other)
+                               {
+                                   return !other.life.dead &&
+                                          std::any_of(other.effects.active.begin(),
+                                                      other.effects.active.end(),
+                                                      [&](const auto &e)
+                                                      {
+                                                          return e.kind ==
+                                                                     detail::EffectKind::compelled &&
+                                                                 e.source_actor == id &&
+                                                                 e.source_scope == scope_;
+                                                      });
+                               }))
+    {
+        for (const auto name : compass_names)
+        {
+            add(id, "compel_" + std::string(name), "Compulsion: " + std::string(name));
+        }
+    }
     // Heat Metal: a Bonus Action on later turns heats the metal again.
     if (a.bonus)
     {
@@ -12705,6 +12752,7 @@ std::vector<Command> Session::offered_commands() const
     }
     auto offered = filtered();
     obey_command(offered, a);
+    obey_compulsion(offered, a);
     flee_turning(offered, a);
     hold_still(offered, a);
     // Nothing passes through a Wall of Force or of Stone: no attack across it.
@@ -12851,6 +12899,88 @@ void Session::obey_command(std::vector<Command> &commands, const Actor &a) const
                                                                  : *offered("end");
     commands.clear();
     commands.push_back(std::move(kept));
+}
+
+void Session::name_compulsion_heading(const Actor &caster, std::size_t direction)
+{
+    for (auto &other : actors_)
+    {
+        for (auto &e : other.effects.active)
+        {
+            if (e.kind == detail::EffectKind::compelled && e.source_actor == caster.source.id &&
+                e.source_scope == scope_)
+            {
+                e.dc = static_cast<int>(direction) + 1;
+            }
+        }
+    }
+    const std::string name(compass_names.at(direction));
+    log(caster.source.name + " compels the charmed to go " + name + ".",
+        {"{name} compels the charmed to go {direction}.",
+         {{"name", caster.source.name}, {"direction", name, true}}});
+}
+
+void Session::obey_compulsion(std::vector<Command> &commands, const Actor &a) const
+{
+    const auto compelled = std::find_if(a.effects.active.begin(), a.effects.active.end(),
+                                        [](const auto &e)
+                                        {
+                                            return e.kind == detail::EffectKind::compelled && e.dc;
+                                        });
+    if (compelled == a.effects.active.end())
+    {
+        return;
+    }
+    // "Taking the safest route" is not weighed: the move that goes furthest.
+    const auto heading = compass.at(static_cast<std::size_t>(compelled->dc - 1));
+    const Command *best = nullptr;
+    int best_progress = 0;
+    for (const auto &offer : commands)
+    {
+        if (offer.verb == "move")
+        {
+            const int progress = (offer.destination.x - a.source.cell.x) * heading.x +
+                                 (offer.destination.y - a.source.cell.y) * heading.y;
+            if (progress > best_progress)
+            {
+                best = &offer;
+                best_progress = progress;
+            }
+        }
+    }
+    if (best)
+    {
+        auto kept = *best;
+        commands.clear();
+        commands.push_back(std::move(kept));
+    }
+}
+
+void Session::finish_compulsion(Actor &a)
+{
+    const auto compelled = std::find_if(a.effects.active.begin(), a.effects.active.end(),
+                                        [](const auto &e)
+                                        {
+                                            return e.kind == detail::EffectKind::compelled && e.dc;
+                                        });
+    if (compelled == a.effects.active.end() || a.life.dead || a.life.hp <= 0)
+    {
+        return;
+    }
+    compelled->dc = 0;
+    const auto id = compelled->id;
+    const auto &caster = actor(compelled->source_actor);
+    if (saving_throw_succeeds(a, detail::Ability::wisdom, spell_dc(caster, "compulsion"), false,
+                              heightened_against(a, caster, "compulsion")))
+    {
+        std::erase_if(a.effects.active,
+                      [&](const auto &e)
+                      {
+                          return e.id == id;
+                      });
+        log(a.source.name + " is no longer Charmed.",
+            {"{name} is no longer Charmed.", {{"name", a.source.name}}});
+    }
 }
 
 std::vector<Cell> Session::movement_reach(EntityId id) const
@@ -16925,7 +17055,7 @@ bool Session::enchants(const detail::Effect &e) noexcept
            e.kind == detail::EffectKind::enthralled ||
            e.kind == detail::EffectKind::turn_charmed || e.kind == detail::EffectKind::frightened ||
            e.kind == detail::EffectKind::abjured || e.kind == detail::EffectKind::terrified ||
-           e.kind == detail::EffectKind::entranced;
+           e.kind == detail::EffectKind::entranced || e.kind == detail::EffectKind::compelled;
 }
 
 bool Session::otherworldly_source(const detail::Effect &e) const
@@ -19157,6 +19287,7 @@ bool Session::charmed_by(const Actor &a, EntityId other) const
                            return (e.kind == detail::EffectKind::charmed ||
                                    e.kind == detail::EffectKind::enthralled ||
                                    e.kind == detail::EffectKind::turn_charmed ||
+                                   e.kind == detail::EffectKind::compelled ||
                                    e.kind == detail::EffectKind::dominated) &&
                                   e.source_actor == other && e.source_scope == scope_;
                        });
@@ -23406,6 +23537,7 @@ void Session::restore_self(Actor &a)
                                      std::pair{detail::EffectKind::abjured, "Frightened"},
                                      std::pair{detail::EffectKind::terrified, "Frightened"},
                                      std::pair{detail::EffectKind::entranced, "Charmed"},
+                                     std::pair{detail::EffectKind::compelled, "Charmed"},
                                      std::pair{detail::EffectKind::poisoned, "Poisoned"}})
     {
         const auto found = std::find_if(a.effects.active.begin(), a.effects.active.end(),
@@ -23428,6 +23560,8 @@ void Session::restore_self(Actor &a)
 void Session::end_turn()
 {
     actors_[turn_].actions.surge = false;
+    // A compelled creature that could not move the named way saves now.
+    finish_compulsion(actors_[turn_]);
     // A readied Metamagic option or Overchannel lapses with the turn.
     std::erase_if(actors_[turn_].effects.active,
                   [](const auto &e)
@@ -25062,6 +25196,15 @@ void Session::dispatch(const Command &command)
         a.bonus = false;
         end_wild_shape(a);
     }
+    else if (command.verb.starts_with("compel_"))
+    {
+        a.bonus = false;
+        const auto name = std::string_view(command.verb).substr(7);
+        name_compulsion_heading(
+            a, static_cast<std::size_t>(
+                   std::find(compass_names.begin(), compass_names.end(), name) -
+                   compass_names.begin()));
+    }
     else if (command.verb == "heat_metal_again")
     {
         a.bonus = false;
@@ -25200,7 +25343,8 @@ void Session::dispatch(const Command &command)
                                      e.kind == detail::EffectKind::frightened ||
                                      e.kind == detail::EffectKind::abjured ||
                                      e.kind == detail::EffectKind::terrified ||
-                                     e.kind == detail::EffectKind::entranced;
+                                     e.kind == detail::EffectKind::entranced ||
+                                     e.kind == detail::EffectKind::compelled;
                           });
         }
     }
@@ -25796,7 +25940,13 @@ void Session::dispatch(const Command &command)
         }
         path_ = path_to(a, command.destination);
         path_index_ = 0;
+        const auto mover = a.source.id;
         progress_movement();
+        // Compulsion's save follows the named move, once it is all walked.
+        if (path_index_ >= path_.size())
+        {
+            finish_compulsion(actor(mover));
+        }
     }
     else if (command.verb == "flee")
     {

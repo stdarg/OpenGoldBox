@@ -404,6 +404,72 @@ void discovery_swap_checks()
                      .party);
     check(encode_campaign(next, nullptr, "discovery-swap") == bytes, "The swap replays exactly");
 }
+// Compulsion (SRD 5.2.1 p. 117): creatures of the Bard's choice within 30
+// feet save or are Charmed; a Bonus Action names a direction, each Charmed
+// creature's only move on its next turn goes furthest that way, and then it
+// saves again.
+void compulsion_checks()
+{
+    const auto rules = dummy_rules();
+    const auto profile = rules->character_profile(bard(7, "compulsion").sheet(),
+                                                  std::vector<std::string>{"dagger"})
+                             .data;
+    for (std::uint64_t seed = 1; seed < 40; ++seed)
+    {
+        auto c = rules->create({{14, 7, std::vector<Terrain>(98)},
+                                {{1, "campaign-character", "Bard", Side::party, {1, 2}, profile},
+                                 {98, "dummy", "Foe", Side::opposition, {5, 2}},
+                                 {99, "dummy", "Second Foe", Side::opposition, {5, 4}},
+                                 {97, "dummy", "Far Foe", Side::opposition, {12, 2}}}},
+                               seed);
+        to_turn(*c, 1);
+        check(offered(*c, "compulsion", 98) && !offered(*c, "compulsion", 97),
+              "Compulsion reaches creatures within 30 feet");
+        check(submit(*c, "compulsion", 98) && submit(*c, "compulsion", 99) &&
+                  submit(*c, "spell_cast") && logged(*c, "Foe Wisdom save") &&
+                  logged(*c, "Second Foe Wisdom save"),
+              "The Bard chooses two creatures and casts");
+        if (!logged(*c, "Foe is Charmed by Bard."))
+        {
+            continue;
+        }
+        check(offered(*c, "compel_east"), "A Bonus Action names a direction");
+        check(submit(*c, "compel_east") && logged(*c, "Bard compels the charmed to go east.") &&
+                  !offered(*c, "compel_east"),
+              "Naming one spends the Bonus Action");
+        check(submit(*c, "end"), "End the Bard's turn");
+        // The other charmed creature may only make its named move, then end.
+        for (unsigned turns = 0; c->snapshot().actor != 98 && turns < 8; ++turns)
+        {
+            const auto offers = c->legal_commands();
+            check(submit(*c, "end") || (!offers.empty() && c->submit(offers.front())),
+                  "Another creature takes its turn");
+        }
+        check(c->snapshot().actor == 98, "The charmed foe's turn comes");
+        const auto commands = c->legal_commands();
+        check(commands.size() == 1 && commands.front().verb == "move" &&
+                  commands.front().destination.x > 5,
+              "The charmed creature's only move goes furthest east");
+        const auto earlier = c->snapshot().log();
+        const auto before = std::count_if(earlier.begin(), earlier.end(),
+                                          [](const auto &line)
+                                          {
+                                              return line.starts_with("Foe Wisdom save");
+                                          });
+        check(c->submit(commands.front()), "It moves");
+        const auto log = c->snapshot().log();
+        check(std::count_if(log.begin(), log.end(),
+                            [](const auto &line)
+                            {
+                                return line.starts_with("Foe Wisdom save");
+                            }) == before + 1,
+              "After moving it saves again");
+        const auto saved = c->save();
+        check(rules->restore(saved)->save() == saved, "A checkpoint keeps the charm");
+        return;
+    }
+    throw std::runtime_error("No seed's foe fails the save");
+}
 } // namespace
 
 int main()
@@ -412,6 +478,7 @@ int main()
     {
         progression_checks();
         discovery_swap_checks();
+        compulsion_checks();
         inspiration_checks();
         countercharm_checks();
         secrets_checks();

@@ -229,7 +229,8 @@ enum class Rider : unsigned
     snake_charm,
     missile_ward,
     // A Basilisk's Petrifying Gaze (MENDOR-1).
-    petrifying_gaze
+    petrifying_gaze,
+    compulsion
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -2023,6 +2024,22 @@ inline constexpr std::array spell_table{
              .save = Ability::wisdom,
              .upcast = {.extra_instances = 1},
              .rider = Rider::charm_person},
+    // SRD 5.2.1 p. 117: each creature of the caster's choice it can see within
+    // 30 feet makes a Wisdom save or is Charmed; a Bonus Action names a
+    // direction each Charmed creature moves on its next turn, after which it
+    // saves again. Any number may be chosen (`instances` caps the list).
+    SpellDef{.id = "compulsion",
+             .label = "Compulsion",
+             .level = 4,
+             .pattern = SpellPattern::save_condition,
+             .target = SpellTarget::enemy,
+             .range = 30,
+             .requires_sight = true,
+             .requires_effect_capacity = true,
+             .save = Ability::wisdom,
+             .instances = 12,
+             .rider = Rider::compulsion,
+             .concentration = true},
     // SRD 5.2.1 p. 117: a 10-foot-radius Sphere within 90 feet; a Wisdom save
     // or no Bonus Actions or Reactions and a d10 for each turn's behavior,
     // saving again at the end of each turn; 5 feet more radius per slot level.

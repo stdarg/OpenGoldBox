@@ -2136,6 +2136,31 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     {
         return *surge;
     }
+    // With the Action spent, a Bard's Compulsion sends its charmed creatures
+    // away, the way its nearest foe lies from it.
+    if (const auto *north = offers("compel_north"); north && !active.action && !in_view.empty())
+    {
+        // Squares apart, diagonals counting as one.
+        const auto apart = [&](Cell cell)
+        {
+            return std::max(std::abs(cell.x - active.cell.x), std::abs(cell.y - active.cell.y));
+        };
+        const auto nearest = *std::min_element(in_view.begin(), in_view.end(),
+                                               [&](const auto *x, const auto *y)
+                                               {
+                                                   return apart(x->cell) < apart(y->cell);
+                                               });
+        const int dx = (nearest->cell.x > active.cell.x) - (nearest->cell.x < active.cell.x),
+                  dy = (nearest->cell.y > active.cell.y) - (nearest->cell.y < active.cell.y);
+        static constexpr std::array<std::string_view, 9> ways{
+            "northwest", "north", "northeast", "west", "north", "east",
+            "southwest", "south", "southeast"};
+        if (const auto *command =
+                offers("compel_" + std::string(ways[static_cast<std::size_t>((dy + 1) * 3 + dx + 1)])))
+        {
+            return *command;
+        }
+    }
     // With the Action spent, a Bonus Action may still strike: Flurry of Blows,
     // a Martial Arts strike, Hex or Heat Metal again.
     if (!active.action)
