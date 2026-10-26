@@ -1,10 +1,11 @@
 {
-  "description": "A broad-shouldered orc from the hostile bands occupying Phlan; depict a rough, practical raider. Source inventory: Arrows, Short bow. Source wealth: 12 ep.",
+  "description": "A broad-shouldered orc from the hostile bands occupying Phlan; depict a rough, practical raider. Source inventory: Arrows, Short bow. Catalog-added melee equipment: Hand axe and Shield. Source wealth: 12 ep.\n\nIMAGEGEN PROMPT READY\nUse case: precise-object-edit. Make exactly ONE READY sprite frame for MON7CHA.DAX:44/added_hand_axe__added_shield, transparent pixel art exported to a 128x128 PNG. Input Image 1 is the existing independently generated ORC bow ready frame: it controls this exact orc's olive-green face, broad muscular body, brown leather harness and clothes, boots, front three-quarter facing toward screen right, five-foot normal body height, camera, 1x1 combat footprint, and exact planted-foot positions. Input Image 2 is the approved independent bipedal pose guide for melee guard and camera only; do not copy its character. Replace the bow in Image 1 with ONE short, clearly recognizable HAND AXE in the weapon hand, held UP in a ready-to-strike guard, and ONE round wood-and-metal SHIELD strapped to the other forearm. Keep arrows as a small back quiver if visible, but no bow is held or appears in this selected melee set. Preserve the orc's face, torso, hips, legs, palette, body scale and both sole coordinates. Shield and body stay in the one-square footprint. Only the raised axe may extend into the square above; it must stay inside the PNG canvas and within the footprint's side boundaries in ready. Exactly one full-body orc and one READY frame; no duplicate, diptych, sheet, text, effects, floor, opaque background, black box or original game art.\n\nIMAGEGEN PROMPT ACTION\nUse case: precise-object-edit. Make exactly ONE ACTION sprite frame for MON7CHA.DAX:44/added_hand_axe__added_shield, transparent pixel art exported to a 128x128 PNG. Input Image 1 is the accepted NEW hand-axe-and-shield READY sprite for this same Orc; EDIT IT IN PLACE at the same canvas origin. Input Image 2 is the approved independent bipedal pose guide for near-end-of-strike timing only; do not copy its character. Swing the SAME HAND AXE from its raised guard down and toward screen right, nearly completing a forceful one-handed chopping strike. Keep its short handle and axe head recognizable and consistent in size; the shield remains strapped to the opposite forearm, raised defensively. The orc faces screen right in front three-quarter view, with chest partly visible; allow only a modest upper-body lean into the swing. Keep the exact same olive-green identity, brown harness/clothes/boots, five-foot body height, body scale, continuous neck-through-hips anatomy, wide stance and planted sole x/y pixels from Image 1. Do not translate, recenter, crop or resize the whole figure; the action axe alone may cross the one-square footprint, while every pixel remains inside the 128x128 PNG. Arrows may remain in a small back quiver; no bow is held or visible. Exactly one full-body orc and one ACTION frame; no duplicate, diptych, sheet, text, effects, floor, opaque background, black box or original game art.",
   "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON7CHA.DAX:44 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed",
+    "Catalog-added Hand axe and Shield for user-requested melee variant"
   ],
   "equipment": [
     {
@@ -26,6 +27,26 @@
       "source_range": 16,
       "source_type": 44,
       "weapon_role": "ranged"
+    },
+    {
+      "id": "added_hand_axe",
+      "kind": "weapon",
+      "name": "Hand axe",
+      "readied": false,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": 2,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_shield",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": false,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": 59,
+      "weapon_role": ""
     }
   ],
   "flag_for_regeneration": false,
@@ -42,6 +63,15 @@
     "linked_creature_keys": []
   },
   "variants": [
+    {
+      "action": "art/mon7cha_dax_44/added_hand_axe__added_shield/action.png",
+      "id": "added_hand_axe__added_shield",
+      "label": "Hand axe + Shield",
+      "ready": "art/mon7cha_dax_44/added_hand_axe__added_shield/ready.png",
+      "shield_id": "added_shield",
+      "weapon_id": "added_hand_axe",
+      "weapon_role": "one_hand"
+    },
     {
       "action": "art/mon7cha_dax_44/item_001__ranged/action.png",
       "id": "item_001__ranged",

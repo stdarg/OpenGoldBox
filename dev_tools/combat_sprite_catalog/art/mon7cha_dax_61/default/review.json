@@ -1,0 +1,28 @@
+{
+  "format": "opengold-sprite-review-v1",
+  "specification": "natural-in-place-v1",
+  "source_key": "MON7CHA.DAX:61",
+  "variant_id": "default",
+  "install_paths": {
+    "ready": "art/mon7cha_dax_61/default/ready.png",
+    "action": "art/mon7cha_dax_61/default/action.png"
+  },
+  "metadata_sha256": "73a77dd978cd77c57e8ef393a99e598090a9281598792820e1d9b41c7265ff9b",
+  "ready_sha256": "8e5a620d11a1b865fec3543d2a35450f0f5abcc6b90f50a28e958534db2b751d",
+  "action_sha256": "8fbed410e530d0c749680a628a19f451c8940229c8de2b9f9099ccccc8a378f4",
+  "reviewer": "Codex",
+  "reviewed_at": "2026-10-26T00:07:40+00:00",
+  "visual_checks": {
+    "source_identity_and_independent_art": true,
+    "correct_equipment_or_no_equipment": true,
+    "same_body_scale_and_perspective": true,
+    "planted_base_registered": true,
+    "requested_ready_and_action_motion": true,
+    "footprint_and_attack_appendage_reviewed": true,
+    "complete_alpha_silhouette_on_light_magenta_dark": true,
+    "readable_at_combat_size": true,
+    "one_second_fixed_grid_catalog_review": true
+  },
+  "notes": "Both prior replacement-art frames were uniformly reduced from 128x128 to 32x32 with nearest-neighbor sampling, then composited at x=48,y=4 on the same transparent 128x128 canvas. This is exactly 25% linear scale, top centered. Existing pose and palette retained; both frames reviewed at native size and on light, dark and magenta. The catalog loaded both exact replacement paths and swapped frames after one second.",
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
+}

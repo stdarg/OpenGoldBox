@@ -1,0 +1,32 @@
+{
+  "action_sha256": "f5ae451c55bf7904b5cecb0f0f91189a8e4d0a47649a87db22f881dc4f67da13",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon7cha_dax_44/added_hand_axe__added_shield/action.png",
+    "ready": "art/mon7cha_dax_44/added_hand_axe__added_shield/ready.png"
+  },
+  "metadata_sha256": "8f469493d414549fde796d8040b37d740aa0d0dafa0c1ae0027a7d9402210d40",
+  "notes": "Saved equipment contains arrows, short bow, added Hand axe and Shield. Bow pair retained. New melee pair depicts one raised hand axe and round shield, followed by late downward/right chop; no bow in either melee frame. Both soles in action use exact ready-frame contact pixels. Alpha specks below 10% removed; final pair inspected at combat size, enlarged on gray/magenta/dark, and through catalog automatic one-second ready/action swap with exact replacement paths.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "d66c5991a1994354cae15480d2bc9f250bb21cf7893730ad099a8420bc52e468",
+  "reviewed_at": "2026-10-26T00:07:18+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON7CHA.DAX:44",
+  "specification": "bipedal-v1",
+  "variant_id": "added_hand_axe__added_shield",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
+}

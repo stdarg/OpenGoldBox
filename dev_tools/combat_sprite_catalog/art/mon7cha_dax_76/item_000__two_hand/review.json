@@ -5,12 +5,12 @@
     "action": "art/mon7cha_dax_76/item_000__two_hand/action.png",
     "ready": "art/mon7cha_dax_76/item_000__two_hand/ready.png"
   },
-  "metadata_sha256": "0655e6eb402f777fd2d403327f91db0b136c08a5dc9eecb392f7cc859c5930d2",
-  "notes": "The saved Lucern hammer +1 is the only set and is held with both hands in both frames. Ready hammer alone crosses top border; action hammer alone crosses right border. Head and wide planted boots stay fixed across alternating catalog frames, body is one full 5-foot square. Rejected previous action drafts with foot displacement or extra leg. No original game artwork used as generation reference.",
+  "metadata_sha256": "57c235dc15103b642e7f6cf845825adb0d091e1c4188cb58736aaf2f958fc870",
+  "notes": "Only ready hammer upper head/shaft region was replaced using newly generated straight Lucern hammer art, aligned to the existing two-hand grip. The accepted dwarf body, torso, armor and planted feet are pixel-identical outside the localized weapon mask; action frame bytes remain unchanged. Final straight hand-to-head shaft inspected at 128 px and enlarged on gray/magenta/dark; catalog automatic one-second ready/action swap loaded exact replacement paths.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "eac2f5d9085f4692ecff3f5162ba8b9f22e70eca0cc7b5a9797501ce8b272dce",
-  "reviewed_at": "2026-10-23T13:47:34+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "4075fc1addff40dae9dd6ed352251776dda138184c059d11d1ddcedc0f5df704",
+  "reviewed_at": "2026-10-26T00:07:18+00:00",
+  "reviewer": "Codex",
   "source_key": "MON7CHA.DAX:76",
   "specification": "bipedal-v1",
   "variant_id": "item_000__two_hand",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
 }

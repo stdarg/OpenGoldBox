@@ -1,0 +1,1 @@
+Deterministic art transform, no image generation: apply the identical full-canvas 25% transform and +48+4 top-center placement to the existing action frame. Keep the two-frame motion and palette.

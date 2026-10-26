@@ -1,0 +1,261 @@
+OpenGold combat sprite specification: bipedal-v1 (2026-10-17)
+
+Create one independently designed full-body monster combat sprite in crisp pixel
+art. Use the monster's current text description and the selected equipment set.
+Before every generation or regeneration, the exact full prompt sent to the
+image generator must be saved in that monster's description under an IMAGEGEN
+PROMPT heading. If this text changes for a retry, update and save the monster
+description before making the next request; prompt files alone are insufficient.
+No original game image, extracted sprite, or original-art contact sheet may be an
+input reference. Do not copy the pose-guide mannequin's identity or clothes.
+The saved sprite_size comes from the game's decoded combat-art dimensions,
+measured in 24-pixel source tiles; never replace it with an SRD creature-space
+category. Do not use original game artwork as a generation reference.
+
+FACING: Front three-quarter view toward the RIGHT EDGE OF THE IMAGE (screen
+right), approximately 45 degrees between frontal and right-side profile. The
+chest/front of the body remains partly visible. Keep head, torso and feet oriented
+consistently. Preserve this view in BOTH frames; do not turn away into a rear view
+or full side profile during the action. The attack travels toward screen right.
+
+MELEE READY: Hold the one-handed or two-handed weapon UP in a combat guard,
+poised to strike. It must not dangle at rest. One-handed weapons have one hand on
+the grip; two-handed weapons have both hands visibly and plausibly on the grip
+or shaft. A thrusting weapon can be held up and aimed forward, ready to thrust.
+MELEE ACTION: Show the weapon near the END of a strike: a late swing or a nearly
+completed thrust appropriate to the weapon. Show a clear change from ready, not
+another guard or windup. Maintain the appropriate grip through the strike.
+
+PROJECTILE READY: Hold the weapon loaded and ready to fire: arrow nocked on bow,
+bolt loaded on crossbow, or stone seated in sling pouch. This is before release.
+PROJECTILE ACTION: The instant just AFTER the arrow, bolt, stone or other
+projectile has been released toward screen right, with appropriate follow-through.
+The projectile is no longer nocked, loaded or in the sling pouch; it may already
+be outside the image. Keep the bow, crossbow or sling in the character's hands.
+For a thrown weapon, ready holds it poised to throw; action is just after release
+and that thrown weapon is no longer in the hand. The SAME arm that holds the
+weapon in ready must follow through in action. Trace its hand back to its
+shoulder in both frames; do not extend the offhand while leaving the throwing
+arm bent behind the head or resting at the waist. An empty extended hand is
+not enough unless it belongs to the former weapon arm. Do not turn a wand into
+a bow.
+THROWN-WEAPON ARM CONTINUITY: Before drawing action, identify the arm that
+actually grips the thrown object in ready by tracing its shoulder, elbow,
+wrist, and hand. If the object has a two-handed grip, identify the primary
+throwing arm and the supporting arm. In action, that SAME throwing arm follows
+through toward screen right: its empty hand extends past the torso in the
+attack direction, near shoulder height or higher. The other arm cannot
+substitute for it. A lowered throwing hand is a failed throw even if the
+object has disappeared or the other hand points right. Keep the shoulder,
+elbow, wrist, and open hand visibly connected; do not detach the arm or move
+the whole figure to fit its reach.
+BARE-HANDED ATTACKS BY MONSTERS WITH ARMS: Before generating or regenerating
+the attack, ask the user to choose PUNCH or TWO-ARM FORWARD REACH for the exact monster
+and variant, unless that choice was already explicitly supplied by the user.
+Do not infer the choice from humanoid shape, a saved description, or earlier
+art. In EITHER ACTION, lean the UPPER BODY toward screen right into the attack.
+For PUNCH, extend the striking fist forward toward the target; the action must
+read as a forceful punch, not an idle reach. For TWO-ARM FORWARD REACH, extend
+BOTH ARMS FORWARD toward screen right with both hands outstretched.
+In READY, hold the arms poised for the chosen attack. Keep the planted feet at
+their exact ready-frame coordinates and preserve the body's scale and facing.
+If a magical or other unusual attack is unspecified, ask for its ready/action
+behavior before generating.
+
+FOUR-LEGGED ANIMAL BITES: In ACTION, lunge the head and neck toward screen right
+with the mouth OPEN WIDE. Keep the planted paws, rear body, camera, and scale
+registered to READY. Animate the upper body into the bite; do not slide or
+recenter the entire animal. Apply the same bite motion to the six-legged
+Displacer Beast while preserving all six legs and both shoulder tentacles.
+
+EQUIPMENT: Draw only the selected weapon/shield setup, plus appropriate other
+gear from the record. Retain the shield in both frames when the set includes it.
+For a spellcaster whose saved wand is classified as gear, show that wand in the
+default casting pair without changing its equipment classification.
+Do not add a shield to a two-handed or ranged setup. Preserve the character's
+identity, clothing, colors, handedness and equipment across the pair and all its
+weapon sets. Treat conflicting descriptions/equipment as a question to resolve,
+not permission to invent a different setup.
+
+HUMANOID HEIGHT: Each combat square on the catalog's fixed 3 x 3 grid is 5 feet
+by 5 feet. The catalog's humanoid_size is a visual body-height tier, separate
+from sprite_size (combat squares) and from the SRD creature-type tag. "small"
+humanoids stand 2-4 feet tall (0.4-0.8 square), according to their species and
+the saved height_feet art target when present. Goblins are typically 3-4 feet;
+kobolds are typically 2-3 feet. A quickling's saved height is an art-direction
+estimate, not an exact current-SRD measurement. "normal" human-scale figures,
+including orcs, should stand a full 5 feet tall (one square), not 3-4 feet.
+"tall" figures, such as ogres and hill
+giants, should read taller than normal figures; aim for about 1.7 squares when
+their saved footprint permits. "na" means this humanoid-height comparison does
+not apply to the body plan. Compare with correctly scaled art from the same
+species and tier before choosing a body scale. Measure the figure from planted
+feet to the top of its head, excluding weapons, horns, raised arms and effects.
+For a small humanoid, use the individual record's height_feet, not a generic
+Small-tier midpoint. Read height_reference to distinguish a published species
+range from a chosen art target or an estimate.
+Keep that body height consistent across both poses and every weapon set for this
+creature; do not fill the 128 x 128 canvas independently for each sprite. Use
+only a correctly scaled comparison sprite as a reference: an older accepted
+image is not a height authority if it makes normal orcs 3-4 feet tall. These
+are body measurements, not canvas sizes. Never shrink a normal body below the
+5-foot target merely to make room for its weapon.
+
+FOOTPRINT BOUNDARY: The saved sprite_size is the creature's game-derived tile
+footprint, distinct from the 128 x 128 PNG canvas. In READY, a raised weapon
+may extend above the footprint into the combat square above. It may render over
+the combat sprite occupying that square. The ready weapon must stay within the
+footprint's side and bottom boundaries. In ACTION, the moving attack weapon may
+cross the dotted footprint boundary during its swing or thrust. In BOTH poses,
+keep the body, planted feet, shield, and non-attacking gear inside the footprint.
+This permitted weapon overflow is not a reason to shrink or recenter the figure.
+The weapon must still be visible inside the PNG canvas with transparent margin;
+pixels cannot be drawn outside the PNG. The grid never moves between monsters
+or frames. If the body cannot fit at the correct height, resolve that conflict
+before generating; never solve it by shrinking only one frame.
+
+LEADER COMPARISON: For every creature named Leader or Ldr, compare its body
+against regular creatures of the same kind in the same game archive. Make the
+leader broader and more impressive in both poses and every weapon set, with
+richer treatment of its saved armor and weapons. A 1 x 1 Normal leader and its
+regular counterpart both have 5-foot bodies: do not shrink the regular figure
+or push the leader's head above the square. Where the saved tier and footprint
+leave room, the leader may also be modestly taller. Keep the game-derived
+sprite_size unchanged and do not invent gameplay gear to signal rank.
+
+WEAPON-SET COVERAGE (generation workflow): Inspect the monster's entire current
+equipment list and enumerate every weapon set, including weapons not currently
+readied. Each set needs its own ready.png AND action.png. A one-handed weapon
+with an available shield is one unit; without a shield it is a weapon-only set.
+Each ranged weapon and each two-handed weapon is a separate set. Bow + mace +
+shield therefore needs a bow pair and a mace/shield pair. Bow + greatsword needs
+a bow pair and a greatsword pair. Ask the user if a set or equipment classification
+is unclear. This image request depicts ONLY its selected set and specified pose;
+create the other sets and poses in separate requests, not a combined sheet.
+
+PAIR REFERENCES: The approved original pose guide controls camera and pose.
+The approved new ready sprite controls this monster's identity, palette, scale
+and foot baseline when generating action. For another weapon set, also reference
+this monster's first approved NEW ready sprite to retain identity. Reference
+images must be supplied with the request, not merely named in its text.
+
+SHARED FRAME BUDGET: Plan BOTH poses before drawing either one. Identify the
+pose with the widest or tallest full-body-and-weapon silhouette, reserve a
+transparent margin around that larger pose in the PNG canvas, and use its
+camera distance for both images. The character's head, torso, limbs and
+equipment keep the same apparent pixel scale in ready and action. Do not
+shrink the whole action figure to fit a wider attack, and do not enlarge the
+ready figure to fill spare space. The raised ready weapon may cross the top
+tile-footprint line, and the moving action weapon may cross a tile-footprint
+line, while all pixels remain inside the PNG. Do not reduce the required
+humanoid body height to make room for the attack.
+
+FIXED ANIMATION REGISTRATION: These are successive frames of ONE character,
+not separately composed illustrations. Establish the ready figure's planted
+feet and ground contact at fixed x AND y pixel coordinates on the 128 x 128
+canvas. Make the action from the ready image at the SAME canvas origin: retain
+the planted feet at those exact coordinates and keep the hips and torso largely
+registered. Move only the limbs, weapon, clothing and modest upper-body lean
+needed to show the attack. Do not translate, recenter, crop, independently
+scale, or rotate the entire figure between frames. A matching foot baseline
+alone is insufficient if the character slides horizontally. For a stationary
+attack, do not invent a step or a new stance. Plan transparent space for the
+weapon's widest action sweep before making ready; a raised ready weapon may
+cross the top tile line, and the moving action weapon may cross a tile line.
+If the weapon cannot fit inside the PNG,
+revise the pose without changing body scale or foot anchor. Overlay the frames
+and play them at combat size to reject any jump.
+
+TORSO CONTINUITY: Keep a single connected figure from neck through chest,
+abdomen, waist and hips in BOTH frames. Derive action from the complete ready
+figure; do not paste an independently generated upper half onto a lower half
+at a straight horizontal boundary. When changing an attacking arm, preserve
+the torso and blend its shoulder into the original anatomy and clothing. Reject
+any visible shear, seam, gap, doubled edge, abrupt garment-pattern break or
+upper body that appears detached from the pelvis. Inspect the final exported
+action enlarged around the torso and at normal combat size, then alternate it
+with ready. Registered feet alone do not establish anatomical continuity.
+
+OUTPUT: A single full-body figure, genuine transparent background, no painted
+checkerboard, ground plane, labels, borders, scenery, shadows extending off the
+figure or motion blur. Keep all visible pixels inside the PNG canvas with
+transparent margin. A raised READY weapon may cross the top tile line; the
+moving ACTION weapon may cross a footprint line. Final assets are 128 x 128
+PNGs with alpha. Larger working images are allowed; export with nearest-neighbor
+sampling and preserve alpha.
+The final ready and action cutouts must have no opaque black boxes, wedges,
+halos, or stray pixels; inspect both on light, dark, and contrasting backgrounds.
+For a sword, preserve its recognizable blade length and continuous hand-to-tip
+shape in BOTH frames at combat size; do not shorten it to fit a pose.
+Keep camera, character scale and exact planted-foot coordinates consistent across poses
+and weapon sets; do not resize each pose independently to fill the canvas. The
+action must read clearly at normal combat size, not only in a magnified preview.
+
+MONSTER AND SELECTED SET (current catalog JSON):
+{
+  "description": "A broad-shouldered orc from the hostile bands occupying Phlan; depict a rough, practical raider. Source inventory: Arrows, Short bow. Catalog-added melee equipment: Hand axe and Shield. Source wealth: 12 ep.\n\nIMAGEGEN PROMPT READY\nUse case: precise-object-edit. Make exactly ONE READY sprite frame for MON7CHA.DAX:44/added_hand_axe__added_shield, transparent pixel art exported to a 128x128 PNG. Input Image 1 is the existing independently generated ORC bow ready frame: it controls this exact orc's olive-green face, broad muscular body, brown leather harness and clothes, boots, front three-quarter facing toward screen right, five-foot normal body height, camera, 1x1 combat footprint, and exact planted-foot positions. Input Image 2 is the approved independent bipedal pose guide for melee guard and camera only; do not copy its character. Replace the bow in Image 1 with ONE short, clearly recognizable HAND AXE in the weapon hand, held UP in a ready-to-strike guard, and ONE round wood-and-metal SHIELD strapped to the other forearm. Keep arrows as a small back quiver if visible, but no bow is held or appears in this selected melee set. Preserve the orc's face, torso, hips, legs, palette, body scale and both sole coordinates. Shield and body stay in the one-square footprint. Only the raised axe may extend into the square above; it must stay inside the PNG canvas and within the footprint's side boundaries in ready. Exactly one full-body orc and one READY frame; no duplicate, diptych, sheet, text, effects, floor, opaque background, black box or original game art.\n\nIMAGEGEN PROMPT ACTION\nUse case: precise-object-edit. Make exactly ONE ACTION sprite frame for MON7CHA.DAX:44/added_hand_axe__added_shield, transparent pixel art exported to a 128x128 PNG. Input Image 1 is the accepted NEW hand-axe-and-shield READY sprite for this same Orc; EDIT IT IN PLACE at the same canvas origin. Input Image 2 is the approved independent bipedal pose guide for near-end-of-strike timing only; do not copy its character. Swing the SAME HAND AXE from its raised guard down and toward screen right, nearly completing a forceful one-handed chopping strike. Keep its short handle and axe head recognizable and consistent in size; the shield remains strapped to the opposite forearm, raised defensively. The orc faces screen right in front three-quarter view, with chest partly visible; allow only a modest upper-body lean into the swing. Keep the exact same olive-green identity, brown harness/clothes/boots, five-foot body height, body scale, continuous neck-through-hips anatomy, wide stance and planted sole x/y pixels from Image 1. Do not translate, recenter, crop or resize the whole figure; the action axe alone may cross the one-square footprint, while every pixel remains inside the 128x128 PNG. Arrows may remain in a small back quiver; no bow is held or visible. Exactly one full-body orc and one ACTION frame; no duplicate, diptych, sheet, text, effects, floor, opaque background, black box or original game art.",
+  "height_feet": null,
+  "height_reference": null,
+  "humanoid_size": "normal",
+  "name": "ORC",
+  "other_gear": [
+    {
+      "id": "item_000",
+      "kind": "gear",
+      "name": "Arrows",
+      "readied": true,
+      "source_hands": 0.0,
+      "source_range": 0.0,
+      "source_type": 73.0,
+      "weapon_role": ""
+    }
+  ],
+  "selected_equipment": [
+    {
+      "id": "added_hand_axe",
+      "kind": "weapon",
+      "name": "Hand axe",
+      "readied": false,
+      "source_hands": -1.0,
+      "source_range": -1.0,
+      "source_type": 2.0,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_shield",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": false,
+      "source_hands": -1.0,
+      "source_range": -1.0,
+      "source_type": 59.0,
+      "weapon_role": ""
+    }
+  ],
+  "selected_set": "Hand axe + Shield",
+  "source_key": "MON7CHA.DAX:44",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "weapon_role": "one_hand"
+}
+
+POSE TO GENERATE: READY only.
+Apply the READY rule for the selected weapon from the specification above.
+For melee, weapon UP in a ready-to-strike guard, never lowered at rest.
+For projectile weapons, loaded before release. Preserve an included shield.
+Keep the body, feet, shield, and other gear inside the saved combat-square
+footprint. A raised weapon may extend above its top boundary into the square
+above, where it can render over another combat sprite. Do not let the ready
+weapon cross a side or bottom boundary. One square is 5 feet by 5 feet. A
+normal humanoid, including an orc, remains a full 5 feet tall; do not shrink
+the body to make room for the weapon.
+Leave enough canvas space for this set's later action pose at the SAME body
+scale. The larger pose determines the shared camera distance for both frames.
+Choose and retain exact planted-foot x/y coordinates on the canvas. This ready
+image is the registered base frame from which action must be derived.
+Reference 1: approved original pose guide, for facing and ready-pose mechanics.
+Reference 2, when available: this monster's first approved NEW ready sprite,
+for identity, clothing, palette, scale and exact foot placement across weapon sets.
+Output one character only, not the guide sheet or multiple animation frames.
