@@ -125,8 +125,9 @@ combat saves use the same storage service with their own size limit and codec.
 Temporary files are ignored by the slot list. If the newest save is damaged,
 explicitly choose its previous version in **Load game**.
 
-Player save policy: save while camping or at an inn. Do not expose saving during
-combat. Combat checkpoint codecs remain internal tools for deterministic testing
+Player save policy ([SAVE-1](SRD-DECISIONS.md#save-1-2026-10-25-save-wherever-exploration-is-idle)):
+save from the roster or wherever exploration is idle. Do not expose saving
+during combat. Combat checkpoint codecs remain internal tools for deterministic testing
 and continuation; their existence does not authorize an in-combat save control.
 
 ## Verification

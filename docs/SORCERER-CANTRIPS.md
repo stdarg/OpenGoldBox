@@ -22,7 +22,7 @@ caster's next turn. Both effects apply on a hit even through damage immunity.
 Only the Magic action is spent. Other resource pools remain unchanged.
 
 Profile recipes validate the new source and use Charisma for Sorcerers.
-No player combat saving controls were added; camp/inn saving remains the policy.
+No player combat saving controls were added. Player saving follows [SAVE-1](SRD-DECISIONS.md#save-1-2026-10-25-save-wherever-exploration-is-idle): wherever exploration is idle, never in combat.
 
 Evidence: [native checks](../tests/sorcerer_cantrip_tests.cpp),
 [creator checks](../tests/sorcerer_cantrip_view_tests.gd) and

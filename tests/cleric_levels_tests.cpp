@@ -1234,7 +1234,7 @@ void higher_slot_checks()
 {
     const auto rules = dummy_rules();
     const auto sheet = with_spells(cleric(9), {"spiritual_weapon", "freedom_of_movement"});
-    std::vector<int> strikes;
+    std::vector<int> strike_damage;
     for (std::uint64_t seed = 1; seed <= 12; ++seed)
     {
         auto c = chapel(*rules, sheet, "dummy", seed);
@@ -1252,16 +1252,16 @@ void higher_slot_checks()
         const auto hit = strike.find(" hits for ");
         if (hit != std::string::npos && strike.find("d20 20 ") == std::string::npos)
         {
-            strikes.push_back(std::stoi(strike.substr(hit + 10)));
+            strike_damage.push_back(std::stoi(strike.substr(hit + 10)));
         }
     }
     // 1d8 + 5 from a level-2 slot; 2d8 + 5 from a level-3 one.
-    check(std::all_of(strikes.begin(), strikes.end(),
+    check(std::all_of(strike_damage.begin(), strike_damage.end(),
                       [](int amount)
                       {
                           return amount <= 21;
                       }) &&
-              std::any_of(strikes.begin(), strikes.end(),
+              std::any_of(strike_damage.begin(), strike_damage.end(),
                           [](int amount)
                           {
                               return amount > 13;

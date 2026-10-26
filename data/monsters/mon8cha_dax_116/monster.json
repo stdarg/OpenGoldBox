@@ -10,5 +10,13 @@
     "height_squares": 1.0,
     "width_squares": 2.0
   },
-  "variants": []
+  "variants": [
+    {
+      "action": "default/action.png",
+      "id": "default",
+      "ready": "default/ready.png",
+      "shield_id": "",
+      "weapon_id": ""
+    }
+  ]
 }

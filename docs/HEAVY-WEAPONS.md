@@ -20,8 +20,8 @@ ability, current score and result in English and Spanish. No controls change.
 Equipping another weapon and ability increases recompute the requirement.
 
 The penalty is derived from the existing character recipe, so it adds no saved
-mutable state. Player saves remain restricted to camp or inn; checkpoints are
-internal tests.
+mutable state. Player saving follows [SAVE-1](SRD-DECISIONS.md#save-1-2026-10-25-save-wherever-exploration-is-idle): wherever exploration is idle, never in combat.
+Checkpoints are internal tests.
 
 [heavy_weapon_tests.cpp](../tests/heavy_weapon_tests.cpp) covers all twelve
 classes and all nine Heavy weapons, scores 12/13, independent seeded

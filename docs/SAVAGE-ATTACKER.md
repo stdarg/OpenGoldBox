@@ -44,8 +44,8 @@ flag is already part of combat state; those features must respect it.
 
 Nothing is pending between the attack roll and damage, so the combat checkpoint
 records only the spent once-per-turn flag. Campaign saves preserve all grants,
-equipment, wounds, pools and clocks. Player saving remains restricted to
-camping or an inn.
+equipment, wounds, pools and clocks.
+Player saving follows [SAVE-1](SRD-DECISIONS.md#save-1-2026-10-25-save-wherever-exploration-is-idle): wherever exploration is idle, never in combat.
 
 ## Verification
 

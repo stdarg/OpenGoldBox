@@ -57,7 +57,7 @@ Loading does not replenish resources or roll dice. See [saves](SAVES.md#pre-10-f
 
 Campaign saves and reloads preserve wounds,
 equipment, spent slots, Hit Dice, Adrenaline Rush, Temporary HP and clocks.
-Player saving remains restricted to camping or an inn.
+Player saving follows [SAVE-1](SRD-DECISIONS.md#save-1-2026-10-25-save-wherever-exploration-is-idle): wherever exploration is idle, never in combat.
 
 ## Remaining work
 

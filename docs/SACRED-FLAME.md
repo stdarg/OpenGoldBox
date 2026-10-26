@@ -39,8 +39,8 @@ demo retains its existing layout; both creators share the spell-choice control.
 ## Persistence and verification
 
 Profile recipes validate Cleric cantrips against their sourced grants.
-Loading never fills missing choices or replenishes resources. Player saving
-remains restricted to camping or an inn.
+Loading never fills missing choices or replenishes resources.
+Player saving follows [SAVE-1](SRD-DECISIONS.md#save-1-2026-10-25-save-wherever-exploration-is-idle): wherever exploration is idle, never in combat.
 
 - [Native tests](../tests/sacred_flame_tests.cpp) use independent level-1–4
   save/damage/RNG expectations, defenses, range, sight, hands, armor, Dodge,

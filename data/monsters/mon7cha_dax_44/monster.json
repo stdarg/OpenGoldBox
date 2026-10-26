@@ -19,6 +19,24 @@
       "source_index": 1,
       "source_type": 44,
       "weapon_role": "ranged"
+    },
+    {
+      "id": "added_hand_axe",
+      "kind": "weapon",
+      "name": "Hand axe",
+      "readied": false,
+      "source_index": -1,
+      "source_type": 2,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_shield",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": false,
+      "source_index": -1,
+      "source_type": 59,
+      "weapon_role": ""
     }
   ],
   "format": "opengold-monster-v1",
@@ -30,6 +48,13 @@
     "width_squares": 1.0
   },
   "variants": [
+    {
+      "action": "added_hand_axe__added_shield/action.png",
+      "id": "added_hand_axe__added_shield",
+      "ready": "added_hand_axe__added_shield/ready.png",
+      "shield_id": "added_shield",
+      "weapon_id": "added_hand_axe"
+    },
     {
       "action": "item_001__ranged/action.png",
       "id": "item_001__ranged",
