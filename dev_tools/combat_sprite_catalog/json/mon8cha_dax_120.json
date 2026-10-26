@@ -1,13 +1,16 @@
 {
-  "description": "A stocky wild boar with curved tusks and a forward-charging stance. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description": "A stocky wild boar with curved tusks and a forward-charging stance. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.\n\nIMAGEGEN PROMPT \u2014 MON8CHA.DAX:120/default/ready\nUse case: stylized-concept. Asset type: OpenGold wild boar combat sprite, MON8CHA.DAX:120/default/READY. The attached image is the current independent replacement boar art, used only as the species, dark-bristled palette and curved-tusk identity reference; change its orientation and proportions. Exactly one wild boar, one pose, one frame, no duplicate, diptych or sprite sheet. Draw a stocky quadruped in a clear RIGHT-FACING SIDE PROFILE, with the long horizontal body stretching left-to-right and the snout and both tusks aimed toward the RIGHT EDGE OF THE IMAGE. Show four planted hooves, a low muscular back with dark coarse bristles, short tail, and a head held alert but not biting. Preserve wild-boar identity; no saddle, armor, rider, gear or other animal. The game-derived footprint is TWO combat squares WIDE and ONE square HIGH. Plan a low wide silhouette that will fit about 110 pixels wide and 55 pixels high when exported on a 128 x 128 transparent canvas; leave open space ahead of the snout for the action bite. The body, hooves and rear will remain fixed between ready and action. Crisp readable pixel art, genuine transparent background and transparent margin; no ground plane, shadow, scenery, labels, checkerboard, opaque black boxes, stray pixels or motion blur. No original game art reference.\n\nIMAGEGEN PROMPT \u2014 MON8CHA.DAX:120/default/action\nUse case: precise-object-edit. Asset type: OpenGold wild boar combat sprite, MON8CHA.DAX:120/default/ACTION. Edit the attached approved NEW ready boar sprite as the exact identity and pose base. Exactly one boar, one pose, one frame, no duplicate, diptych or sprite sheet. Keep the same right-facing side profile, dark-bristled body, tusks, palette, camera, low-wide scale and 128 x 128 transparent canvas origin. Preserve all four planted hooves at their exact ready-frame x/y pixels; keep the rear body and pelvis registered and connected. Lunge only the head, neck and modest upper shoulders toward the RIGHT EDGE OF THE IMAGE, with the mouth OPEN WIDE in a forceful bite and the tusks clearly visible. The attack is aimed right, never toward the viewer. The whole animal does not hop, step, slide, recenter, rotate or shrink. Maintain the two-squares-wide by one-square-high footprint for the body; the moving head and tusks may briefly cross the right footprint boundary if needed, while all pixels stay inside the PNG with transparent margin. Preserve continuous anatomy through neck, chest, torso and hips. Crisp readable pixel art, true alpha transparency; no new gear, projectile, scenery, ground plane, labels, black boxes, stray pixels or motion blur. No original game art reference.",
   "humanoid_size": "na",
-  "sprite_size": {"height_squares": 1, "width_squares": 2},
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 2
+  },
   "description_sources": [
     "Original game MON8CHA.DAX:120 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"
   ],
   "equipment": [],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "WILD BOAR",
   "source": {

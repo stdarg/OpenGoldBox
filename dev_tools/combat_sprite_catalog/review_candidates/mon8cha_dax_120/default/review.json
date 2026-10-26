@@ -1,0 +1,28 @@
+{
+  "format": "opengold-sprite-review-v1",
+  "specification": "natural-in-place-v1",
+  "source_key": "MON8CHA.DAX:120",
+  "variant_id": "default",
+  "install_paths": {
+    "ready": "art/mon8cha_dax_120/default/ready.png",
+    "action": "art/mon8cha_dax_120/default/action.png"
+  },
+  "metadata_sha256": "d27ee1bb3bef30fa9a924fa0810986957a936299acf7cc8af876a59caa1a70a6",
+  "ready_sha256": "da1f885f91286c4a53e3d3401c9215d79b4113b124deb538adba62a35baf8ef7",
+  "action_sha256": "d59460e657968e0bc2f46b62b24f264ed9559ea6539db83e405786041a6122f7",
+  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-26T00:12:20.960664+00:00",
+  "technical_check": "sprite_art_workflow.gd check passed for staged pair",
+  "notes": "User approved right-facing side-profile quadruped ready and head/neck bite action in a 2-wide by 1-high footprint. Saved sprite_size was already 2x1. Shared source crop and export transform; final opaque bounds ready 107x56 px, action 120x56 px. At catalog 2x replacement scale these are 1.67x0.88 and 1.88x0.88 squares respectively. Last 16 PNG rows match exactly across poses, retaining all four hoof contacts. Final PNGs inspected at native size and enlarged on light, dark and magenta; boar identity, tusks, connected torso and open-mouth rightward bite are visible. Catalog alternation pending because Godot computer-use approval was previously denied in this session.",
+  "visual_checks": {
+    "quadruped_side_profile_faces_screen_right": true,
+    "ready_low_wide_2x1": true,
+    "action_head_neck_lunge_open_mouth": true,
+    "all_four_hoof_contacts_fixed_xy": true,
+    "rear_body_registered": true,
+    "complete_transparent_silhouette": true,
+    "readable_at_combat_size": true,
+    "no_original_game_art_reference": true,
+    "alternating_catalog_review": false
+  }
+}
