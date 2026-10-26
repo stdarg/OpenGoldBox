@@ -1073,6 +1073,10 @@ void CharacterCreationView::party_action(PartyAction action)
                     }
                     town->connect("save_requested",
                                   presentation::guarded(this, &CharacterCreationView::open_saves));
+                    town->connect(
+                        "main_menu_requested",
+                        presentation::guarded(this, &CharacterCreationView::party_button_pressed)
+                            .bind(static_cast<int>(PartyAction::return_to_party)));
                     auto *sheet = &required_node<TownSheetDialog>(*this, "TownSheet");
                     town->connect("party_member_selected",
                                   presentation::guarded(sheet, &TownSheetDialog::show_member));
