@@ -72,6 +72,10 @@ footprint shaded from its lower-left corner. Ready and action use one fixed
 scale and planted-base anchor; neither pose is automatically fitted to its own
 bounds. A message below the grid reports opaque pixels outside the selected
 footprint. See the [fixed preview and height targets](../docs/combat-sprite-catalog.md#fixed-combat-square-preview).
+Replacement art normally anchors the ready frame's lowest visible pixel to the
+bottom of the footprint. A saved `preview_vertical_alignment: "top"` instead
+anchors its highest visible pixel to the top; the action keeps the same canvas
+position. This is used for the flying Stirge and does not change `sprite_size`.
 
 Every built-in monster/NPC template and extra combat-icon row has a saved JSON
 record. Descriptions include the original inventory and wealth where a creature
