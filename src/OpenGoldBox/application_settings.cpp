@@ -9,6 +9,7 @@
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
 #include <algorithm>
+#include <functional>
 #include <optional>
 
 using namespace godot;
@@ -29,7 +30,9 @@ String read(const char *section, const char *key)
     return value.get_type() == Variant::STRING ? String(value).strip_edges() : String();
 }
 
-bool save(const char *section, const char *key, const String &value)
+// Applies `change` to the settings and writes them, the defaults of keys they
+// lack included.
+bool save_config(const std::function<void(ConfigFile &)> &change)
 {
     Ref<ConfigFile> config;
     config.instantiate();
@@ -39,7 +42,7 @@ bool save(const char *section, const char *key, const String &value)
     {
         return false;
     }
-    config->set_value(section, key, value);
+    change(**config);
     if (!config->has_section_key("combat", "combat_zoom"))
     {
         config->set_value("combat", "combat_zoom", 100);
@@ -76,6 +79,15 @@ bool save(const char *section, const char *key, const String &value)
     }
     DirAccess::remove_absolute(temporary);
     return false;
+}
+
+bool save(const char *section, const char *key, const Variant &value)
+{
+    return save_config(
+        [&](ConfigFile &config)
+        {
+            config.set_value(section, key, value);
+        });
 }
 } // namespace
 
@@ -166,6 +178,52 @@ std::vector<std::string> monster_abilities_off()
         }
     }
     return opengold::abilities_off(difficulty(), options);
+}
+
+String monster_ability_option(const std::string &ability)
+{
+    const auto key = String(ability.c_str());
+    const auto fallback =
+        std::find_if(opengold::ability_defaults.begin(), opengold::ability_defaults.end(),
+                     [&](const auto &option)
+                     {
+                         return option.first == ability;
+                     });
+    const String standard = fallback == opengold::ability_defaults.end()
+                                ? String(opengold::difficulty_names.front().data())
+                                : String(std::string(fallback->second).c_str());
+    const auto value = read("monsters", std::string(ability).c_str()).to_lower();
+    return value == "never" || opengold::parse_difficulty(value.utf8().get_data()) ? value
+                                                                                   : standard;
+}
+
+bool save_difficulty(opengold::Difficulty difficulty)
+{
+    return save("game", "difficulty",
+                String(opengold::difficulty_names[static_cast<std::size_t>(difficulty)].data()));
+}
+
+bool save_encounter_challenge(unsigned challenge)
+{
+    return save("combat", "encounter_challenge",
+                static_cast<int>(std::min(challenge, opengold::max_encounter_challenge)));
+}
+
+bool save_monster_ability(const std::string &ability, const String &from)
+{
+    return save("monsters", ability.c_str(), from);
+}
+
+bool restore_monster_abilities()
+{
+    return save_config(
+        [](ConfigFile &config)
+        {
+            if (config.has_section("monsters"))
+            {
+                config.erase_section("monsters");
+            }
+        });
 }
 
 bool valid_language(const String &locale)

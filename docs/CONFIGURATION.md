@@ -34,6 +34,10 @@ game reads it when exploration starts or a save is loaded, and new settings
 files receive the default. See
 [DIFF-1](SRD-DECISIONS.md#diff-1-2026-10-21-difficulty-and-monsters-that-use-their-items).
 
+The in-game menu's **Options** screen (Escape while exploring) sets
+`difficulty`, `encounter_challenge` and the `[monsters]` section below, and
+writes them at once.
+
 `[monsters]` switches monster abilities by difficulty. Each key names an
 ability (`legendary`, `parry`, `breath`; the
 [rules README](../data/rules/srd-5.2.1/README.md) lists them all) and its value

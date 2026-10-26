@@ -20,6 +20,15 @@ opengold::Difficulty difficulty();
 // [monsters]: each monster ability's lowest difficulty, or "never"; the
 // abilities off at the set difficulty (MONSTER-2).
 std::vector<std::string> monster_abilities_off();
+// One monster ability's option: a difficulty name or "never", its default
+// when unset or unreadable.
+godot::String monster_ability_option(const std::string &ability);
+// The Options screen's writes; each keeps the other settings.
+bool save_difficulty(opengold::Difficulty difficulty);
+bool save_encounter_challenge(unsigned challenge);
+bool save_monster_ability(const std::string &ability, const godot::String &from);
+// Every monster ability back to its default.
+bool restore_monster_abilities();
 bool valid_language(const godot::String &locale);
 bool save_game_path(const godot::String &directory);
 bool save_language(const godot::String &locale);

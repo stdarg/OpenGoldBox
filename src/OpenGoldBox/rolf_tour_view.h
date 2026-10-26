@@ -236,6 +236,20 @@ class RolfTourView : public godot::Control
     bool rest_save_open_{};
     // The event whose camp offer the camp dialog last answered.
     unsigned camp_offer_run_{};
+    // The in-game menu: Escape opens it and closes it again; Escape over the
+    // Options screen goes back to the menu.
+    void escape();
+    void close_menu();
+    void menu_save(bool saving);
+    void open_options();
+    void close_options();
+    void build_options();
+    void difficulty_selected(std::int64_t index);
+    void challenge_changed(double value);
+    void ability_selected(std::int64_t index, std::int64_t row);
+    void restore_ability_defaults();
+    void exit_to_main_menu();
+    void exit_to_desktop();
     void inventory();
     void refresh_inventory();
     void inventory_selected(std::int64_t index);
