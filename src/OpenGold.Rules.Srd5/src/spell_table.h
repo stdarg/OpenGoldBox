@@ -1086,6 +1086,16 @@ inline constexpr std::array spell_table{
              .bonus_action = true,
              .rider = Rider::misty_step,
              .area = 5},
+    // Compulsion's direction, aimed by its caster as "compulsion_heading" at
+    // one square: the charmed go the way it lies. No one learns it as a spell.
+    SpellDef{.id = "compulsion_heading",
+             .label = "Compulsion: name a direction",
+             .level = 0,
+             .pattern = SpellPattern::buff,
+             .target = SpellTarget::area,
+             .range = 300,
+             .bonus_action = true,
+             .area = 5},
     // Land's Aid (SRD 5.2.1 p. 46), aimed by a Circle of the Land Druid as
     // "lands_aid" with a use of Wild Shape. No one learns it as a spell.
     SpellDef{.id = "lands_aid",

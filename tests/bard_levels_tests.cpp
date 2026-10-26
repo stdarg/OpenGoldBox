@@ -2,6 +2,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/character.h"
 #include "opengold/character_creator.h"
+#include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <cstdlib>
@@ -107,6 +108,18 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
     for (const auto &command : c.legal_commands())
     {
         if (command.verb == verb && (!target || command.target == target))
+        {
+            return c.submit(command);
+        }
+    }
+    return false;
+}
+
+bool submit_cell(CombatSession &c, std::string_view verb, Cell cell)
+{
+    for (const auto &command : c.legal_commands())
+    {
+        if (command.verb == verb && command.destination == cell)
         {
             return c.submit(command);
         }
@@ -433,10 +446,24 @@ void compulsion_checks()
         {
             continue;
         }
-        check(offered(*c, "compel_east"), "A Bonus Action names a direction");
-        check(submit(*c, "compel_east") && logged(*c, "Bard compels the charmed to go east.") &&
-                  !offered(*c, "compel_east"),
-              "Naming one spends the Bonus Action");
+        check(offered(*c, "compulsion_heading"), "A Bonus Action names a direction");
+        // Played by the computer, the Bard aims at its nearest foe: east.
+        {
+            const auto saved = c->save();
+            auto played = rules->restore(saved);
+            for (unsigned n = 0; n < 4 && played->snapshot().actor == 1 &&
+                                 !logged(*played, "compels the charmed to go");
+                 ++n)
+            {
+                check(played->submit(choose_demo_command(*played)), "The computer plays the Bard");
+            }
+            check(logged(*played, "Bard compels the charmed to go east."),
+                  "The computer names the way its nearest foe lies");
+        }
+        check(submit(*c, "compulsion_heading") && submit_cell(*c, "area_move", Cell{9, 3}) &&
+                  submit(*c, "area_cast") && logged(*c, "Bard compels the charmed to go east.") &&
+                  !offered(*c, "compulsion_heading"),
+              "Aiming at a square to the east names east and spends the Bonus Action");
         check(submit(*c, "end"), "End the Bard's turn");
         // The other charmed creature may only make its named move, then end.
         for (unsigned turns = 0; c->snapshot().actor != 98 && turns < 8; ++turns)
@@ -470,6 +497,36 @@ void compulsion_checks()
     }
     throw std::runtime_error("No seed's foe fails the save");
 }
+
+// The combat window's fixture: the Bard's turn after Compulsion charmed a
+// foe, with the Bonus Action to name a direction (compulsion_view_tests.gd).
+void compulsion_fixture()
+{
+    const auto rules = module();
+    const auto profile = rules->character_profile(bard(7, "compulsion").sheet(),
+                                                  std::vector<std::string>{"dagger"})
+                             .data;
+    for (std::uint64_t seed = 1; seed < 60; ++seed)
+    {
+        auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
+                                {{1, "campaign-character", "Bard", Side::party, {1, 1}, profile},
+                                 {98, "vanguard", "Foe", Side::opposition, {4, 1}},
+                                 {99, "vanguard", "Second Foe", Side::opposition, {4, 3}}}},
+                               seed);
+        to_turn(*c, 1);
+        if (submit(*c, "compulsion", 98) && submit(*c, "compulsion", 99) &&
+            submit(*c, "spell_cast") && offered(*c, "compulsion_heading"))
+        {
+            const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "compulsion-fixtures";
+            std::filesystem::create_directories(path);
+            std::ofstream out(path / "compulsion.save", std::ios::binary);
+            out << c->save();
+            check(bool(out), "Write the combat window's fixture");
+            return;
+        }
+    }
+    throw std::runtime_error("No seed charms a foe for the fixture");
+}
 } // namespace
 
 int main()
@@ -479,6 +536,7 @@ int main()
         progression_checks();
         discovery_swap_checks();
         compulsion_checks();
+        compulsion_fixture();
         inspiration_checks();
         countercharm_checks();
         secrets_checks();
