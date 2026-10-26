@@ -209,6 +209,8 @@ void RolfTourView::prepare_view()
         .connect("pressed", presentation::guarded(this, &RolfTourView::look));
     required_node<Button>(*this, "Camp")
         .connect("pressed", presentation::guarded(this, &RolfTourView::camp));
+    required_node<Button>(*this, "Search")
+        .connect("pressed", presentation::guarded(this, &RolfTourView::toggle_search));
     required_node<Button>(*this, "Inventory")
         .connect("pressed", presentation::guarded(this, &RolfTourView::inventory));
     required_node<Button>(*this, "InventoryPanel/Close")
@@ -1798,10 +1800,12 @@ void RolfTourView::refresh()
                                                : i18n::text("Following the guide"));
     required_node<Label>(*this, "Movement")
         .set_text(i18n::text(completed ? N_("Explore  /  arrow keys") : N_("Movement paused")));
-    for (const char *name : {"Left", "Forward", "Right", "Look", "Camp", "Cast"})
+    for (const char *name : {"Left", "Forward", "Right", "Look", "Camp", "Cast", "Search"})
     {
         required_node<Button>(*this, name).set_disabled(!completed);
     }
+    // Pressed while Search mode is on, whether the button or S turned it on.
+    required_node<Button>(*this, "Search").set_pressed_no_signal(s.searching);
     const bool overland = s.overland;
     required_node<Button>(*this, "Left")
         .set_text(i18n::text(overland ? N_("← West") : N_("← Turn")));

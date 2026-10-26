@@ -1783,8 +1783,9 @@ they await the user's review ([audit](audits/pyramid.md)):
 - **The souls Yarash keeps** keep the original's Hit Points: fighters as the
   Warrior Veteran, the cleric as the Priest Acolyte, the thieves as the Spy
   and Diane's elves as the level-4 Wizard profile.
-- **Search mode** follows the original's Search command (the S key for now):
-  each step searches and takes ten minutes more.
+- **Search mode** follows the original's Search command (the S key, and the
+  Search button beside Cast since 2026-10-26): each step searches and takes
+  ten minutes more.
 - **The healed valley** opens its rivers; the original also recoloured 36
   valley tiles, which keep their art here for now.
 
