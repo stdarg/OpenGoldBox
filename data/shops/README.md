@@ -10,7 +10,7 @@ The [Shop & Temple Manager](../../dev_tools/shop_manager/README.md) edits these
 files. The game reads the temples' services, prices and `offered` switches
 ([TEMPLE-1](../../docs/SRD-DECISIONS.md#temple-1-2026-10-22-temple-services)),
 each shop's stock and prices, and every shopkeeper's and priest's portrait
-([#275](https://github.com/stdarg/OpenGold/issues/275)). It does not keep stock
+([#275](https://github.com/stdarg/OpenGoldBox/issues/275)). It does not keep stock
 limits yet: an item with quantity `0` is not sold and every other item is
 unlimited. A `portrait` is named as the game finds it in its portraits folder,
 such as `NPCs/bishop-braccio.png` from `art/portraits/`, or

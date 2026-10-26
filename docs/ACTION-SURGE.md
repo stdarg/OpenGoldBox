@@ -1,6 +1,6 @@
 # Fighter Action Surge through level four
 
-Issue [#86](https://github.com/stdarg/OpenGold/issues/86). Authority:
+Issue [#86](https://github.com/stdarg/OpenGoldBox/issues/86). Authority:
 [SRD 5.2.1 p. 48](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=48).
 
 ## Rules
@@ -62,6 +62,7 @@ class, spent uses, pending damage decisions, mouse and keyboard activation, two
 Dash actions and English/Spanish layouts at 1120 × 800 and 1920 × 1080. The UI
 follow-up passed eight affected Godot checks and five native fixture checks;
 the rendered control check also passed. #86's through-level-four scope is complete.
-The existing Short Rest and Hit Dice controls remain #192. Higher-level second
-uses remain #178; multiclass acquisition remains #179–184. This increment does
+#192 later delivered the Short Rest and Hit Dice controls. The second use comes
+at level 17, above the game's cap of 15 (#178 not planned); multiclassing is not
+planned (#179–184). This increment does
 not claim the rest of the Fighter feature set or the all-class milestone.

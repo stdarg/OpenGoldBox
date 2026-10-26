@@ -93,7 +93,7 @@ Add an entry whenever a new departure is decided.
   ([LOCK-1](SRD-DECISIONS.md#lock-1-2026-10-24-thieves-tools-double-the-chance-to-pick-a-lock)).
   No shop sells them by default; the Shop & Temple Manager can add them to any
   shop, and can make a shop a Rogue's Shop or a Magic User's Shop
-  ([#271](https://github.com/stdarg/OpenGold/issues/271)).
+  ([#271](https://github.com/stdarg/OpenGoldBox/issues/271)).
 
 - **Computer play** (2026-10-21). The original's AI walked toward an enemy it
   could not see, rolled each ally's saving throw to judge an area spell (so
@@ -127,7 +127,7 @@ Add an entry whenever a new departure is decided.
 - **Party gold** (2026-10-13). The original kept a purse per character, pooled
   for party purchases. OpenGoldBox keeps one purse for the party that pays for
   everything; scripts see it as every member's money
-  ([#232](https://github.com/stdarg/OpenGold/issues/232)). The user confirmed on
+  ([#232](https://github.com/stdarg/OpenGoldBox/issues/232)). The user confirmed on
   2026-10-22 that the party's money is always pooled and coins weigh nothing,
   where the original counted them toward a character's load; the original's
   Take, Pool and Share commands are not needed.
@@ -238,7 +238,7 @@ in the game: answering YES at a hall lists its services in the dialogue
   original's lists and values, plus the gear the game adds to general stores.
   Stock limits are not kept yet: every item a shop sells is unlimited, as in
   the original.
-  [#275](https://github.com/stdarg/OpenGold/issues/275).
+  [#275](https://github.com/stdarg/OpenGoldBox/issues/275).
 
 ## Interface and saves
 

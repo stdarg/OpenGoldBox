@@ -1,7 +1,7 @@
 # Transit through Unconscious enemies
 
-[#222](https://github.com/stdarg/OpenGold/issues/222) is a bounded child of
-[#44](https://github.com/stdarg/OpenGold/issues/44). SRD 5.2.1 p.14 permits
+[#222](https://github.com/stdarg/OpenGoldBox/issues/222) is a bounded child of
+[#44](https://github.com/stdarg/OpenGoldBox/issues/44). SRD 5.2.1 p.14 permits
 movement through an Incapacitated creature's space. Another creature's space
 is Difficult Terrain unless that creature is Tiny or an ally. Occupied spaces
 are not legal voluntary destinations. This increment uses the existing
@@ -45,9 +45,10 @@ occupied square and verifies the movement cost and unspent Action.
 
 ## Remaining parent scope
 
-#44 remains open for Tiny/size-difference rules and Prone when a turn ends in
-another creature's space; #45 covers large footprints and #35 other condition
-sources. The overlap marker preserves state and is not a claim of Prone support.
+#44, for Tiny/size-difference rules and Prone when a turn ends in another
+creature's space, is not planned
+([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features));
+#45 covers large footprints and #35 other condition sources. The overlap marker preserves state and is not a claim of Prone support.
 The current enemy-death policy is unchanged: ordinary side-one enemies die at
 zero HP. Actual knockout coverage therefore also exercises an enemy moving
 through an unconscious party member; explicit saved Unconscious enemies cover

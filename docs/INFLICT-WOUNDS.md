@@ -1,6 +1,6 @@
 # Inflict Wounds
 
-Issue [#230](https://github.com/stdarg/OpenGold/issues/230). Cleric level-one
+Issue [#230](https://github.com/stdarg/OpenGoldBox/issues/230). Cleric level-one
 spell, SRD 5.2.1 p. 143. Rules module 0.6.64.
 
 ## Rules

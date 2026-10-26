@@ -43,8 +43,8 @@ The resulting tile patterns establish these rules:
 
 The deterministic floor tile is DUNGCOM tile 22. Original random floor decoration
 uses passable tiles, so omitting that decoration preserves collision geometry.
-Wilderness generation and original creature-placement/morale rules are separate
-compatibility work; this geometry implementation does not claim those systems.
+Wilderness battlefields (`wilderness_battlefield`), creature placement and morale are separate
+systems; this geometry implementation does not claim them.
 
 ## Evidence limit
 
@@ -73,6 +73,6 @@ grid, for example from PowerShell after setting the installation environment:
 .\build\opengold_maps.exe $env:OPENGOLD_GAME_DIR --battlefield GEO2.DAX 20 12 1
 ```
 
-The shared campaign uses this geometry when the Slums script requests a supported
-fight. See [the expedition adapter](EXPEDITION.md) for formation, creature and
+The shared campaign uses this geometry when a script off the wilderness map
+requests a fight. See [the expedition adapter](EXPEDITION.md) for formation, creature and
 reward conversion boundaries.

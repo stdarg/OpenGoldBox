@@ -100,7 +100,7 @@ ability.
     for 1d8 + 2 Piercing. Constrict is not offered: grappling is not planned
     (SCOPE-2), and its Swim Speed goes unused.
   - Large forms take one square until multi-square footprints
-    ([#45](https://github.com/stdarg/OpenGold/issues/45)).
+    ([#45](https://github.com/stdarg/OpenGoldBox/issues/45)).
 - The form ends on "Leave Wild Shape", another Wild Shape, 0 Hit Points, being
   Incapacitated at the start of the Druid's turn, fleeing the battlefield, or
   when the fight ends

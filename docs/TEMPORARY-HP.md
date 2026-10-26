@@ -1,17 +1,17 @@
 # Temporary Hit Points
 
-The native foundation [#196](https://github.com/stdarg/OpenGold/issues/196) supplies
-the shared pool. [#197](https://github.com/stdarg/OpenGold/issues/197) adds a playable
+The native foundation [#196](https://github.com/stdarg/OpenGoldBox/issues/196) supplies
+the shared pool. [#197](https://github.com/stdarg/OpenGoldBox/issues/197) adds a playable
 source: a normally created Orc of any of the twelve classes can use Adrenaline
-Rush in combat. This is the activated-trait portion of [Orc #72](https://github.com/stdarg/OpenGold/issues/72),
+Rush in combat. This is the activated-trait portion of [Orc #72](https://github.com/stdarg/OpenGoldBox/issues/72),
 not Darkvision or Relentless Endurance.
 
 Authority: [SRD 5.2.1 pp. 17–18 and 86](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf).
 
 ## Adrenaline Rush and controls
 
-The sourced level-one Orc trait grants uses equal to proficiency bonus (two at
-the currently supported levels). It spends one use and a Bonus Action, performs
+The sourced level-one Orc trait grants uses equal to proficiency bonus (two to
+five at the supported levels 1–15). It spends one use and a Bonus Action, performs
 Dash using the actor's actual Speed, and grants Temporary HP equal to proficiency
 bonus. Ordinary Action Dash can also be used, for three movement allowances.
 Movement still provokes opportunity attacks. Short and Long Rests restore all
@@ -58,8 +58,8 @@ Temporary HP does not heal, stabilize or wake a creature. Absorbing HP loss does
 not mean that no damage was taken: at zero HP, positive resolved damage still
 ends Stable and causes one death-save failure, or two for a Critical Hit. Damage
 at zero HP reaching the HP maximum still causes death. Damage reduced to zero
-by defenses has none of these consequences. Future concentration checks must
-likewise use damage taken, not just the ordinary HP lost.
+by defenses has none of these consequences. Concentration checks likewise use
+damage taken, not just the ordinary HP lost ([concentration](CONCENTRATION.md)).
 
 The default pool lasts until depleted or until its recipient completes a Long
 Rest. Waiting eight hours, a Short Rest or another member's Long Rest does not
@@ -69,13 +69,13 @@ with a specific overriding lifetime must implement that lifetime when added.
 
 ## Persistence and architecture
 
-In **OGCOMBAT 28**, in addition to the sourced
+In **OGCOMBAT 69**, in addition to the sourced
 pool, actor rows retain Adrenaline Rush uses and whether its movement allowance
 was used this turn. A final section stores the optional unresolved offer. Restore
 validates entitlement, amount/source, spent costs, movement capacity, conscious
 recipient and absence of a competing opportunity queue before committing.
 **PC43** requires the fixed sourced Orc grant.
-**SRD9** records uses with existing resources, pool, Hit Dice, mortality clocks
+**SRD13** records uses with existing resources, pool, Hit Dice, mortality clocks
 and effects. Orc use counts survive reloads.
 Malformed counters, source IDs, pending offers and trailing fields reject before
 replacing live state.
@@ -84,7 +84,7 @@ The source and amount are available through `RecoveryInfo` and `CombatantView`.
 The shared life-cycle value type owns the pool; no ownership uses raw pointers,
 and Core/Godot do not decode the SRD resource string. Rules remain C++20 and
 independent of Godot. No new runtime or framework is introduced. Godot controls display rules-owned
-queries; Core and presentation never parse SRD9 themselves.
+queries; Core and presentation never parse SRD13 themselves.
 
 ## Verification and remaining delivery
 

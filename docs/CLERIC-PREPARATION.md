@@ -1,6 +1,6 @@
 # Cleric preparation and Divine Order
 
-Issue [#91](https://github.com/stdarg/OpenGold/issues/91), decided in
+Issue [#91](https://github.com/stdarg/OpenGoldBox/issues/91), decided in
 [CLERIC-1](SRD-DECISIONS.md#cleric-1-2026-10-02-cleric-preparation-and-divine-order).
 Rules module 0.6.63. SRD 5.2.1 Cleric, levels 1–4; counts as recorded in the
 [rules audit](audits/srd-5.2.1-rules.md).
@@ -16,10 +16,12 @@ Rules module 0.6.63. SRD 5.2.1 Cleric, levels 1–4; counts as recorded in the
 
 - **Preparation** is from the whole Cleric list, any spell of a level for
   which the Cleric has slots. There is no spellbook. The implemented Cleric
-  spells are Bless, Command, Cure Wounds, Healing Word, Inflict Wounds,
-  Protection from Evil and Good and Shield of Faith (level 1) and
-  Blindness/Deafness's blindness option (level 2). Places beyond those stay
-  pending, so a Cleric prepares every implemented spell it can.
+  spells are Bane, Bless, Command, Cure Wounds, Detect Magic, Guiding Bolt,
+  Healing Word, Inflict Wounds, Protection from Evil and Good, Sanctuary and
+  Shield of Faith (level 1) and Aid, Blindness/Deafness's blindness option,
+  Find Traps, Hold Person, Lesser Restoration, Prayer of Healing, Protection
+  from Poison, Silence, Snake Charm, Spiritual Weapon and Warding Bond (level 2);
+  higher levels are in [Cleric](CLERIC.md).
 - **Changing preparation:** creation chooses the first list. Gaining a level
   keeps the earlier list and adds to it. After a completed Long Rest the whole
   list may be changed, once per rest, through the shared spell window.
@@ -88,5 +90,5 @@ are rejected by the rules identity, as the
 ## Not covered
 
 Channel Divinity, the level-three subclass and its always-prepared spells, and
-the missing Cleric spells and cantrips are separate issues. Inflict Wounds is
+levels 5–15 are in [Cleric](CLERIC.md). Inflict Wounds is
 described in [its own page](INFLICT-WOUNDS.md).

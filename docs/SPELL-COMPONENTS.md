@@ -25,7 +25,7 @@ Consequences:
 
 ## History
 
-From rules 0.6.21 ([#201](https://github.com/stdarg/OpenGold/issues/201)) to
+From rules 0.6.21 ([#201](https://github.com/stdarg/OpenGoldBox/issues/201)) to
 0.6.128 each spell recorded its Verbal and Somatic components: a weapon or wand
 together with a shield blocked Somatic spells, and Silence blocked Verbal ones.
 Material components were never enforced. Rules 0.6.129 removes all of it. No

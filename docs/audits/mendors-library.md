@@ -140,8 +140,8 @@ Missing:
    search with the flag at 1, and every script tests only 0 and 1, so the jar
    and the buried book could not be found.
 7. **Search mode** (the original's Search toggle, `0x6DCA` = 1 on every step,
-   time doubled) is still missing; nothing in the library needs it beyond
-   what Look reaches.
+   time doubled) was still missing then; it exists now. Nothing in the library
+   needs it beyond what Look reaches.
 
 ## Party level and balance
 

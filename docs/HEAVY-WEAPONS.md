@@ -1,6 +1,6 @@
 # Heavy weapons
 
-[EQ03 / #55](https://github.com/stdarg/OpenGold/issues/55) implements the Heavy
+[EQ03 / #55](https://github.com/stdarg/OpenGoldBox/issues/55) implements the Heavy
 property from [SRD 5.2.1 pp. 89, 91](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf).
 A Heavy melee weapon requires Strength 13; a Heavy ranged weapon requires
 Dexterity 13. Below that score, attacks with the weapon have Disadvantage.

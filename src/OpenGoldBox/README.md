@@ -3,14 +3,15 @@
 This is the editable game application, copied from the character demo. It starts
 at character creation and retains the connected party, town, combat, inventory,
 save, and advancement flow. The reference demos remain under `demos/`.
-This starting point does not claim a complete campaign.
+The whole Pool of Radiance campaign is playable; see the
+[whole-map audit](../../docs/audits/whole-map.md).
 
 For interactive level-up review without original game files, run the
 [level-up review app](../../docs/LEVEL-UP-LAB.md). It opens the game's own
 advancement dialog for any class, race, or gender at starting levels 1–3.
 
 The C++20 code builds as a Godot GDExtension. `godot/` contains the game's own
-scenes and theme. Godot exports the Windows executable; no demo project or
+scenes and theme. Godot exports the Windows and macOS executables; no demo project or
 installed Godot editor is needed when running the exported game folder.
 
 ## Build
@@ -88,7 +89,8 @@ at the repository root with the PCK (scenes, theme, and portraits), GDExtension
 DLL, rules data and notices, and Visual C++ runtime DLLs. Keep the whole package
 folder together. Native code uses `RelWithDebInfo` and the redistributable runtime;
 the Godot debug template retains development checks. Visual Studio is not needed
-to run the package.
+to run the package. Each build also stages and zips the
+[package for players](../../docs/BUILD.md#the-package-for-players).
 To build the executable target directly after configuring:
 
 ```powershell
@@ -108,7 +110,7 @@ No original game assets are copied or exported. Diagnostic captures use
 The game copy delays resize handling until the town view's dynamic controls
 exist, avoiding the `SaveGame` startup crash observed in the reference demo.
 
-Validation: the game build and all 12 native test suites pass. The exported
+Validation: the game build and all native test suites pass. The exported
 `opengoldbox.exe` passes headless character and party integration checks,
 including tour, shops, combat, recovery, and XP awards, from the output folder.
 These automated checks do not establish full campaign completion.
@@ -249,9 +251,9 @@ canvas, native node ownership, and keyboard/window/dialog shutdown checks in
 headless Godot. Screenshot tests also cover input, pause, request/report handling,
 unavailable rendering, unwritable output, and the external helper's request cleanup.
 The setup fixture builds and imports the extension automatically;
-these checks require neither export templates nor original game files. Two
+these checks require neither export templates nor original game files. Other
 registered checks use original files and report Skipped without
-`OPENGOLD_GAME_DIR`: `opengold_godot_ohlo_save_route` and
+`OPENGOLD_GAME_DIR`, such as `opengold_godot_ohlo_save_route` and
 `opengold_godot_shop_disclosure`.
 
 To run only these Godot checks from a macOS bash shell:

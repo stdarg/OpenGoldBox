@@ -1,6 +1,6 @@
 # Campaign recovery and advancement subset
 
-Issue [#6](https://github.com/stdarg/OpenGold/issues/6) now has a bounded native
+Issue [#6](https://github.com/stdarg/OpenGoldBox/issues/6) now has a bounded native
 implementation and a Godot acceptance route. It is not full SRD advancement or
 complete original campaign service coverage.
 
@@ -75,7 +75,7 @@ Supported profiles:
   wakes up Prone ([SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation)).
   After a victory, the party returns to exploration and can rest again.
 
-Other nonzero profiles fail explicitly. A failure in the camp event rolls back
+Every other profile follows the same steps. A failure in the camp event rolls back
 the party, time, the step count and the script random state.
 
 ### Rewards
@@ -158,9 +158,9 @@ members advance from the roster. Leaving continues the hall's script, and a
 fault after a purchase restores the event checkpoint, purchase included.
 **PROGRAM 8** appears once, after Tyranthraxus falls in Valjevo Castle's inner
 tower (`ECL5:7` at `0xA82A`), where the original shows its victory and lets the
-party go on playing. Valjevo Castle is not playable yet, so OpenGoldBox refuses
-PROGRAM 8 as an unsupported service: the event fails and its checkpoint is
-restored, any payment included, rather than the request passing as done.
+party go on playing. OpenGoldBox does the same: every member is restored, the
+dead and the stoned too, the closing words are shown, and the script goes on,
+back to the civilized city ([Valjevo Castle audit](audits/valjevo-castle.md)).
 
 The original temple **COMBAT** request with `6DE2=1` opens the temple's **Heal
 list** ([TEMPLE-1](SRD-DECISIONS.md#temple-1-2026-10-22-temple-services)): its services with their prices, and **Leave**.

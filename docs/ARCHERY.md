@@ -6,7 +6,7 @@ Style feature and is not repeatable. The weapon category matters: darts qualify;
 throwing a dagger, handaxe, javelin, light hammer, spear or trident does not.
 The bonus changes neither damage nor natural-roll critical/miss behavior.
 
-This increment under [#78](https://github.com/stdarg/OpenGold/issues/78) adds
+This increment under [#78](https://github.com/stdarg/OpenGoldBox/issues/78) adds
 Archery to the existing level-four feat selector. Fighters have the prerequisite;
 Clerics and Wizards see it unavailable. Current character creation gives all
 twelve classes their existing entitlement data; it does not invent Fighting Style
@@ -39,8 +39,8 @@ when they do not already possess it. Provenance, nonrepeatability and the actual
 Ranged weapon effect share the same rules implementation.
 
 See the [style-route packet](FIGHTING-STYLE-ROUTES.md) for current acceptance,
-save formats and evidence. The class trackers retain other styles, mastery and
-cantrip alternatives; higher-level/multiclass requirements remain separate.
+save formats and evidence. The class trackers have since delivered the other
+styles, mastery and cantrip alternatives; multiclassing is not planned.
 
 Verification: 41 native/tool regression checks pass, followed by the final
 focused Archery checks for stale-command atomicity, forged feature masks and

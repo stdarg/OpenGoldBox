@@ -299,5 +299,5 @@ comparison scene by default.
   like a clean run; confirm with `ctest -N` in the build tree.
 - **Localization:** `python tools/localization.py --check` is a separate gate
   that no build runs. See [LOCALIZATION.md](LOCALIZATION.md).
-- **Tests needing original data** are not part of `ctest`. See
+- **Tests needing original data** use it only when `OPENGOLD_GAME_DIR` is set. See
   [TESTING.md](TESTING.md) and the game README.

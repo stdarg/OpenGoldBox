@@ -26,7 +26,7 @@ behavior; `0` means out of stock. The item picker can search decoded item lists
 from `ITEM1.DAX` through `ITEM8.DAX` and keeps each added item's source identity.
 It also offers the game's added gear, and the Poisoner's Kit (50 gp), Basic
 Poison (100 gp) and Thieves' Tools (25 gp), which no shop sells by default
-([#271](https://github.com/stdarg/OpenGold/issues/271)).
+([#271](https://github.com/stdarg/OpenGoldBox/issues/271)).
 
 The four temples each have the nine original curative services and
 OpenGoldBox's Resurrection, which the game offers only on Easy and Normal, with
@@ -55,7 +55,7 @@ marker list, a shop or temple kind, the editable type and portrait, and its
 offerings. The tool validates the fixed location and the shop/temple boundary
 before replacing a file. The game reads the temples' services, prices and
 **Offered** switches, each shop's stock and prices, and every shopkeeper's and
-priest's portrait ([#275](https://github.com/stdarg/OpenGold/issues/275)). It keeps no stock
+priest's portrait ([#275](https://github.com/stdarg/OpenGoldBox/issues/275)). It keeps no stock
 limits yet: Stock `0` hides an item and any other value sells it without limit.
 
 ## Run
@@ -68,6 +68,7 @@ From the repository root:
 
 The path defaults to `OPENGOLD_GAME_DIR`, then `~/POOLRAD`. Set `GODOT_BIN` if
 Godot is not on `PATH` or at `/Applications/Godot_mono.app/Contents/MacOS/Godot`.
+On Windows, run the launcher from Git Bash.
 The launcher builds the existing native tile/map decoder, copies its extension
 into this separate Godot project, and starts the editor. CMake, Ninja, and
 Godot 4.5+ are required. The tool reads the user's original game files locally

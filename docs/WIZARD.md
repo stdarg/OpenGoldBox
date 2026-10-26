@@ -1,6 +1,6 @@
 # Wizard
 
-Milestone [#8](https://github.com/stdarg/OpenGold/issues/8), delivered class by
+Milestone [#8](https://github.com/stdarg/OpenGoldBox/issues/8), delivered class by
 class ([CLASS-1](SRD-DECISIONS.md#class-1-2026-10-04-finishing-levels-14-for-all-classes)).
 SRD 5.2.1 pp. 77–80. The spellbook, preparation and cantrip replacement are
 described in [Wizard spell choices](WIZARD-SPELL-CHOICES.md).
@@ -19,7 +19,7 @@ described in [Wizard spell choices](WIZARD-SPELL-CHOICES.md).
 | 10 | Empowered Evocation (Evoker), fifth cantrip | Delivered (rules 0.6.220) |
 | 11 | Level-6 spells | Delivered (rules 0.6.221) |
 | 12 | Ability Score Improvement | Delivered (rules 0.6.221) |
-| 13 | Level-7 spells | Delivered (rules 0.6.222, Simulacrum 0.6.223); Teleport waits for travel |
+| 13 | Level-7 spells | Delivered (rules 0.6.222, Simulacrum 0.6.223); Teleport not implemented |
 | 14 | Overchannel (Evoker) | Delivered (rules 0.6.222) |
 | 15 | Level-8 spells | Delivered (rules 0.6.222) |
 
@@ -79,9 +79,8 @@ The Wizard advances to level 15, the cap
 - **Ability Score Improvement** (12): a feat or ability points.
 - **Level-7 spells** (13): one level-7 slot; prepared spells 17. Arcane
   Sword, Delayed Blast Fireball, Finger of Death, Forcecage, Prismatic Spray,
-  Reverse Gravity and Simulacrum (below). Teleport takes the party to towns
-  and areas it has visited (LEVELS-3); New Phlan is the only one built, so it
-  waits for travel beyond the city.
+  Reverse Gravity and Simulacrum (below). Teleport, which is to take the party to
+  towns and areas it has visited (LEVELS-3), is not implemented yet.
   Etherealness, Magnificent Mansion, Mirage Arcane, Plane Shift, Project
   Image, Sequester and Symbol are cut.
 - **Overchannel** (Evoker 14): **Overchannel (free)** in the turn's menu,
@@ -470,7 +469,7 @@ Mislead's double, the Wizard's own.
 
 ## Spells
 
-- The Wizard list in the game: the cantrips Chill Touch, Fire Bolt, Poison
+- The first Wizard list in the game: the cantrips Chill Touch, Fire Bolt, Poison
   Spray, Ray of Frost and Shocking Grasp; level 1 Fog Cloud, Longstrider, Magic
   Missile and Protection from Evil and Good; level 2 Blindness, Hold Person and
   Scorching Ray. The shared spells work as described for the
@@ -478,7 +477,7 @@ Mislead's double, the Wizard's own.
   [Cleric](CLERIC.md#hold-person-and-paralyzed).
 - Level-up and rest defaults learn and prepare the first available spells, so a
   default Wizard now learns more than Magic Missile.
-- The other CRPG-relevant Wizard spells come in later increments.
+- The other CRPG-relevant Wizard spells came in later increments (below).
 
 ## Burning Hands, Thunderwave and Shatter
 

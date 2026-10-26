@@ -22,6 +22,7 @@ From the repository root, launch it with:
 
 The game-data directory is required. The launcher uses `OPENGOLD_GAME_DIR` or
 `~/POOLRAD` by default and accepts `GODOT_BIN` for a different Godot executable.
+On Windows, run it from Git Bash.
 
 ## Files and workflow
 
@@ -67,9 +68,11 @@ convert SRD Large/Huge creature spaces into sprite dimensions: those rules
 describe controlled ground area, not the source image's width and height.
 
 The game's [current battlefield renderer](../../src/OpenGoldBox/godot/scenes/combat_battlefield.gd)
-fits ordinary visible monster art inside one cell, regardless of source image
-dimensions. The dropdown records the **game-art sprite footprint** for art
-preparation; it does not change game occupancy or rendering. The game code was
+fits ordinary original monster icons inside one cell, regardless of source image
+dimensions. It draws [exported art](../../data/monsters/README.md) at the
+catalog's fixed scale, which uses the saved footprint for non-humanoids. The
+dropdown records the **game-art sprite footprint** for art preparation; it does
+not change game occupancy. The game code was
 read for this audit and was not modified. Run the read-only
 [source-size audit](../combat_sprite_catalog/godot/scripts/source_size_audit.gd)
 after changing footprint JSON; it checks every saved size against both decoded

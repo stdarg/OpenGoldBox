@@ -1,6 +1,6 @@
 # Ray of Frost through level 4
 
-Rules 0.6.25 delivers the Wizard player path for [#205](https://github.com/stdarg/OpenGold/issues/205).
+Rules 0.6.25 delivers the Wizard player path for [#205](https://github.com/stdarg/OpenGoldBox/issues/205).
 Authority: [SRD 5.2.1, p. 157](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=157).
 
 ## Behavior and access
@@ -50,7 +50,7 @@ No player combat-saving controls were added.
 ## Routes through level 4
 
 Ray of Frost is complete through character level 4 for every route the game
-has (2026-10-13, [#205](https://github.com/stdarg/OpenGold/issues/205)):
+has (2026-10-13, [#205](https://github.com/stdarg/OpenGoldBox/issues/205)):
 
 | Route | Ability | Evidence |
 | --- | --- | --- |
@@ -59,11 +59,11 @@ has (2026-10-13, [#205](https://github.com/stdarg/OpenGold/issues/205)):
 | Polar Land Druid, level 3, always prepared | Wisdom | [druid_tests.cpp](../tests/druid_tests.cpp) |
 | Magic Initiate (Wizard list) | The feat's ability | [magic_initiate_tests.cpp](../tests/magic_initiate_tests.cpp) |
 
-Routes still waiting on content the game does not have yet: High Elf
-([#67](https://github.com/stdarg/OpenGold/issues/67)) and Pact of the Tome
-([#161](https://github.com/stdarg/OpenGold/issues/161)).
+Later routes: a High Elf ([#67](https://github.com/stdarg/OpenGoldBox/issues/67))
+or a Pact of the Tome ([#161](https://github.com/stdarg/OpenGoldBox/issues/161))
+can choose it.
 
 Spells have no components
 ([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)), so no
-speech or hand blocker applies. Damage above level 4 is
-[#176](https://github.com/stdarg/OpenGold/issues/176)–178.
+speech or hand blocker applies. Damage above level 4 follows
+[cantrip damage by level](SPELL-SLOTS.md#cantrip-damage-by-level).

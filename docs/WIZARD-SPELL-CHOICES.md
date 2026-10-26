@@ -119,8 +119,8 @@ comparisons pass.
 Reproduce the focused native checks with:
 
 ```bash
-cmake --build build/mac-check --target opengold_spell_access_tests -j6
-OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD build/mac-check/opengold_spell_access_tests
+cmake --build build --target opengold_spell_access_tests -j6
+OPENGOLD_GAME_DIR=/path/to/POOLRAD build/opengold_spell_access_tests
 ```
 
 Run `tests/wizard_choices_view_tests.gd` with the established Godot
@@ -165,7 +165,7 @@ lifecycle work is not claimed complete. Coverage is recorded once in
 
 #37 is verified CLOSED at 21:26:31 UTC: 52m37s from the original start.
 Runtime and evidence are pushed to the feature branch and main. The
-[closure record](https://github.com/stdarg/OpenGold/issues/37#issuecomment-5839861276)
+[closure record](https://github.com/stdarg/OpenGoldBox/issues/37#issuecomment-5839861276)
 links this evidence. #97 remains verified OPEN with its
-[remaining scope recorded](https://github.com/stdarg/OpenGold/issues/97#issuecomment-5839864140).
+[remaining scope recorded](https://github.com/stdarg/OpenGoldBox/issues/97#issuecomment-5839864140).
 The overall SRD goal remains active and incomplete.

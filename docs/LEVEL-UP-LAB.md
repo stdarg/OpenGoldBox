@@ -9,7 +9,7 @@ normal game saves.
 On macOS, from the repository root after configuring the game build:
 
 ```bash
-cmake --build build-game --target opengoldbox_test_project -j6
+cmake --build build/macos-universal --target opengoldbox_test_project -j6
 /Applications/Godot_mono.app/Contents/MacOS/Godot --path src/OpenGoldBox/godot res://scenes/level_up_lab.tscn
 ```
 

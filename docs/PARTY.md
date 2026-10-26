@@ -1,6 +1,6 @@
 # Shared campaign party preview
 
-Issue [#2](https://github.com/stdarg/OpenGold/issues/2) connects the existing
+Issue [#2](https://github.com/stdarg/OpenGoldBox/issues/2) connects the existing
 character creator, town and combat scenes through reusable C++20 classes.
 Run from PowerShell:
 
@@ -69,7 +69,8 @@ travel, automatic combat, original tactical geometry and persistent rewards.
    Down turns 180 degrees in place; Up steps forward and Left/Right turn 90 degrees.
 7. In town, **Inventory** offers **Equip** and **Unequip** for the selected item,
    with the training penalty visible when selecting and equipping it. The party
-   screen also offers **Equip selected**. Equipping a weapon replaces the previous weapon atomically. Unequip existing
+   screen also offers **Equip selected**. Equipping a second one-handed weapon asks
+   which hand holds it ([Light attacks](LIGHT-ATTACKS.md)); otherwise equipping a weapon replaces the previous weapon atomically. Unequip existing
    armor before equipping its replacement. Invalid combinations leave equipment
    unchanged. Ready/Action previews immediately reflect the equipped weapon and
    shield for PCs and recruited NPCs, using the same [artwork mappings](COMBAT-BODY-ASSIGNMENTS.md)
@@ -150,8 +151,8 @@ Barbarian, Fighter, Paladin and Ranger are proficient with all martial weapons.
 Rogue is proficient with martial weapons that have Finesse or Light; Monk is
 proficient with martial weapons that have Light. Shortsword and Scimitar therefore
 include their proficiency bonus for both classes. The catalog records Light
-for proficiency; its extra-attack mechanics remain unimplemented. Optional
-feature-granted and multiclass-entry training remain separate work.
+for proficiency and for its extra attack ([Light attacks](LIGHT-ATTACKS.md)).
+Multiclassing, and so its entry training, is not implemented.
 Weapon mastery, ammunition consumption/recovery,
 and charged magical wand effects are not added
 by this change. Bows and a plain focus retain unarmed melee; ranged weapons
@@ -183,10 +184,11 @@ Untrained use is allowed under [SRD 5.2.1](https://media.dndbeyond.com/compendiu
 Training uses the base level-one class traits; optional Cleric/Druid orders that
 add training are not selected by this creator. Equipping or removing gear rebuilds
 these effects from the current loadout. Duplicate weapon/armor/shield slots remain
-invalid in raw profiles; the campaign equip operation replaces the weapon slot, and heavy armor's low-Strength speed penalty is shown separately.
+invalid in raw profiles; the campaign equip operation replaces the weapon slot or fills the other hand, and heavy armor's low-Strength speed penalty is shown separately.
 
-Enchanted, cursed, effect-bearing and other types remain purchasable inventory
-but reject equipping until explicitly converted. The decoded original item and
+The original's enchanted, cursed and effect-bearing items convert
+([magic items](MAGIC_ITEMS.md#in-opengoldbox)); other unconverted types remain
+inventory but reject equipping. The decoded original item and
 template are retained as provenance, alongside the stable inventory item ID.
 Original records and raw AD&D statistics are never rewritten into SRD values.
 
@@ -216,7 +218,7 @@ and caster slots. The authored preview award is one-time, including across scene
 recreation; original rewards require explicit mappings. Roster, shop,
 equipment and script writes are locked during combat. When combat finishes,
 editing resumes; no fresh HP or spell resources are granted on the next fight.
-The module identity is now 0.3.0 and combat checkpoint format is version 2,
+The module identity is now 0.6.254 and combat checkpoint format is version 69,
 including character recipes. Old module saves fail the identity check explicitly.
 [Campaign file saves](SAVES.md) now retain the complete supported party and idle New Phlan state. Native `PartyState` checkpoints remain the in-session rollback mechanism. Pending dialogue/services and combat are not campaign save boundaries.
 
@@ -236,8 +238,9 @@ Movement CHECKPARTY returns minimum, maximum, mean and zero; aliased output
 addresses receive the last write. ADD NPC uses a monster ID and morale; the ID
 names a record of the area's own MONnCHA archive (MON3CHA in New Phlan). The
 original's NPCs who join are built by `original_companion` (`companions.cpp`)
-with the creation rules the host gives the session: so far Skullcrusher,
-MON4CHA 27, a level-4 Fighter (CADORNA-1).
+with the creation rules the host gives the session: Skullcrusher (MON4CHA 27,
+CADORNA-1), the mad fighter of Mendor's Library, Dirten, Princess Fatima, the
+mystic of Valhingen Graveyard and Genheeris.
 These contracts are reference-derived and synthetic-tested, not new DOS traces.
 
 The SRD compatibility mapping is explicit: script movement is speed in five-foot
@@ -274,7 +277,8 @@ original lacks read as half-orc 6, so the Orc, Dragonborn, Goliath and Tiefling
 count as non-human people, never as monsters (0). Podol Plaza's disguise check
 counts the members who are not human.
 
-Thief-skill/effect CHECKPARTY variants still fault. `PhlanResources::npc_profiles`
+CHECKPARTY reads the thief skills the scripts ask about (picking locks, finding
+and removing traps, climbing walls) and the Find Traps effect; other variants fault. `PhlanResources::npc_profiles`
 accepts explicit native character conversions for this bank; unregistered NPCs
 and the special hostile NPC 24 fault. General bank resolution, morale behavior
 and original NPC conversion coverage remain campaign work. An eligible,

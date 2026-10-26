@@ -1,9 +1,10 @@
 # Death saves and recovery clocks
 
-[F04a #194](https://github.com/stdarg/OpenGold/issues/194) adds rules-owned recovery
-clocks and shared vitality transitions. [Campaign scheduling #195](https://github.com/stdarg/OpenGold/issues/195)
-completes [F04 #31](https://github.com/stdarg/OpenGold/issues/31) by continuing them
-outside combat. Help/Medicine controls remain [#32](https://github.com/stdarg/OpenGold/issues/32).
+[F04a #194](https://github.com/stdarg/OpenGoldBox/issues/194) adds rules-owned recovery
+clocks and shared vitality transitions. [Campaign scheduling #195](https://github.com/stdarg/OpenGoldBox/issues/195)
+completes [F04 #31](https://github.com/stdarg/OpenGoldBox/issues/31) by continuing them
+outside combat. Help/Medicine controls came with [#32](https://github.com/stdarg/OpenGoldBox/issues/32)
+([Medicine stabilization](MEDICINE-TACTICAL-MIND.md)).
 No new controls or UI layout are introduced here. The existing all-unconscious
 party defeat policy is unchanged.
 

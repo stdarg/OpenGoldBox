@@ -2,8 +2,8 @@
 
 Rules 0.6.52 implements #112 through ordinary Rogue levels 1–4, including the
 acceptance of #220/#221. See the [frozen batch](ROGUE-ATTACKS.md) for approvals,
-verification and remaining Steady Aim demo placement. Full Rogue completion #116,
-Thief #115, Hide #219 and weapon mastery #60 remain separate requirements.
+verification and Steady Aim demo placement. Thief #115, Hide #219, weapon
+mastery #60 and Rogue levels 5–15 are covered in [Rogue](ROGUE.md).
 
 Authority: [SRD 5.2.1](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf),
 pp.16 and61–63. The sourced level-one grant is `feature:sneak_attack`.
@@ -13,7 +13,7 @@ pp.16 and61–63. The sourced level-one grant is `feature:sneak_attack`.
 Sneak Attack applies automatically to the first eligible weapon hit each turn
 ([AUTO-1](SRD-DECISIONS.md#auto-1-2026-09-30-automatic-choices-with-logging),
 superseding the ROGUE-1 dialog). It adds 1d6 at levels1/2 or 2d6 at levels3/4,
-and the combat log shows it, for example
+one more d6 every two levels after that (8d6 at level 15), and the combat log shows it, for example
 `Vex adds Sneak Attack: 2d6 for 7 extra damage.` Misses and ineligible attacks
 do not spend it. Each combatant turn resets the allowance, so an opportunity hit
 during another turn can use Sneak again. The attack's Action/Reaction is spent

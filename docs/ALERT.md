@@ -136,7 +136,7 @@ python3 tools/localization.py --check
 Rebuild all affected native targets before the full CTest run. Main preparation:
 `opengoldbox_test_project`; demo: `build/sprite-demo` target`opengold_godot`.
 Run `tests/run_godot_test.cmake` graphically with `alert_view_tests.gd`,
-`--nick-fixtures=/Users/edmond/src/OpenGold/build/mac-check/alert-fixtures`, and
+`--nick-fixtures=$PWD/build/mac-check/alert-fixtures`, and
 optionally `--nick-captures=/tmp/alert-captures`; add`--nick-demo` for the demo.
 Expected marker: `Alert UI tests passed`. These reuse hidden test checkpoint hooks,
 not player combat-save controls.

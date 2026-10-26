@@ -1,12 +1,13 @@
 # Skill grants
 
-F02 is split into the [rules/persistence layer (#187)](https://github.com/stdarg/OpenGold/issues/187),
-[creation controls (#188)](https://github.com/stdarg/OpenGold/issues/188), and
-[completion of missing saved choices (#189)](https://github.com/stdarg/OpenGold/issues/189).
-All three layers are now implemented, completing parent [#29](https://github.com/stdarg/OpenGold/issues/29).
+F02 is split into the [rules/persistence layer (#187)](https://github.com/stdarg/OpenGoldBox/issues/187),
+[creation controls (#188)](https://github.com/stdarg/OpenGoldBox/issues/188), and
+[completion of missing saved choices (#189)](https://github.com/stdarg/OpenGoldBox/issues/189).
+All three layers are now implemented, completing parent [#29](https://github.com/stdarg/OpenGoldBox/issues/29).
 The #189 party panel Review Training dialog, which completed training missing
 from old saves, was later removed with the [pre-1.0 save cutoff](SAVES.md#pre-10-format-policy).
-Training is selected at creation and level-up.
+Training is selected at creation and level-up, and
+[training halls](TRAINING-HALL.md) teach skill lessons.
 
 Tool proficiencies and languages were removed on 2026-09-30 as an intentional
 SRD exception ([DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells)):
@@ -26,9 +27,11 @@ this scripted campaign has no DM to adjudicate them. Skills and Expertise stay.
 
 The four supported backgrounds are covered by
 [class skills](CLASS-SKILLS.md), [background training](BACKGROUND-TRAINING.md) and
-[Sage](SAGE-TRAINING.md). Later class proficiency features, feats (including Criminal's Alert),
-starting equipment, higher-level Rogue features and campaign uses of skills remain
-in their respective plan issues. A completed training selection means only that
+[Sage](SAGE-TRAINING.md). Later class proficiency features, feats (including Criminal's Alert)
+and higher-level Rogue features came later; starting equipment is bought with gold
+([START-1](SRD-DECISIONS.md#start-1-2026-10-11-starting-gold-as-the-original-game-gave-it)).
+Campaign skill checks are not planned
+([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)). A completed training selection means only that
 the choices supported by this increment are filled, not that the class is complete.
 The project target remains all twelve SRD classes.
 

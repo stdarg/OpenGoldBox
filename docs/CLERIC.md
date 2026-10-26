@@ -1,6 +1,6 @@
 # Cleric
 
-Milestone [#8](https://github.com/stdarg/OpenGold/issues/8), delivered class by
+Milestone [#8](https://github.com/stdarg/OpenGoldBox/issues/8), delivered class by
 class ([CLASS-1](SRD-DECISIONS.md#class-1-2026-10-04-finishing-levels-14-for-all-classes)).
 SRD 5.2.1 pp. 34–37. Spell preparation, cantrips and Divine Order are described
 in [Cleric preparation](CLERIC-PREPARATION.md).
@@ -293,7 +293,7 @@ The Cleric advances to the game's cap of 15
   Frightened and Incapacitated, it can only move as far from the Cleric as it
   can, takes no Action or Reaction, and the effect ends when it takes damage or
   the Cleric is Incapacitated (Paralyzed, Sleep, Hideous Laughter or 0 Hit
-  Points). The current content has no Undead yet.
+  Points).
 - In the game: A cycles to **Divine Spark** (click the creature) or **Turn
   Undead** (Space). The party AI uses Divine Spark on an ally below half Hit
   Points before spending a spell slot, and Turn Undead whenever it is offered.
@@ -395,8 +395,7 @@ Rest) and
   60 feet away (checked at each turn), or when either is bonded again. Its rings
   are not required ([CLASS-8](SRD-DECISIONS.md#class-8-2026-10-05-costly-components-that-are-not-consumed)).
 - **Protection from Poison** (level 2, Action, touch, 1 hour): Resistance to
-  Poison damage. The game has no Poisoned condition yet, so its other benefits
-  wait for it.
+  Poison damage; it also ends the creature's Poisoned condition.
 - Effects that grant Resistance join the creature's own damage affinities.
 - Verification: `opengold_cleric_channel_tests` (a lost attack after a failed
   Wisdom save, Warding Bond's AC, resisted and shared damage and no bond on the

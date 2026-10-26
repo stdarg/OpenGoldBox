@@ -3,7 +3,7 @@
 Launch the standalone Godot tool with `./dev_tools/combat_sprite_catalog/run.sh`.
 Pass the Pool of Radiance directory as its only argument, or set
 `OPENGOLD_GAME_DIR`. Set `GODOT_BIN` if Godot is outside `PATH` and the standard
-macOS app location. The launcher builds its native extension and imports the
+macOS app location. On Windows, run it from Git Bash. The launcher builds its native extension and imports the
 Godot project on first run. Original game art is loaded locally and never copied
 into the repository.
 
@@ -150,9 +150,10 @@ and acceptance checks. The guide's user approval status is tracked separately.
   when their saved footprint permits. The complete ready silhouette, including
   its weapon, stays inside the selected footprint. In action, only the moving
   attack weapon may cross that tile boundary; all pixels remain inside the PNG.
-  The inspected original tactical icons are 24 x 24 pixels; the game currently
-  fits visible sprite bounds to about 90% of a combat cell. Detail must remain
-  readable when the 128 x 128 image is displayed at that size.
+  The inspected original tactical icons are 24 x 24 pixels; the game fits their
+  visible bounds to about 90% of a combat cell and draws exported art at the
+  catalog's fixed scale. Detail must remain readable when the 128 x 128 image
+  is displayed at combat size.
 
 The generated monster set and its selection criteria are documented in
 [`art/README.md`](art/README.md).

@@ -16,6 +16,6 @@ Afterwards, the review scene permits conservative exploration and replay.
 
 The implemented review layout has a 960 x 720 minimum window size, scrollable
 dialogue, nearest-neighbor sprite enlargement and a full/visited map switch.
-Wall rendering is schematic; assembling the original perspective art remains
-follow-on work. Full map visibility and the isolated tour entry are review
+Walls are assembled from Phlan's original perspective art
+([wall artwork](../phlan-wall-art.md)). Full map visibility and the isolated tour entry are review
 features, not established campaign discovery or triggering rules.

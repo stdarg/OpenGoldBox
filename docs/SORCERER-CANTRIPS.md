@@ -1,10 +1,10 @@
 # Level-one Sorcerer cantrips
 
-Rules 0.6.40 / PC28 implements [#228](https://github.com/stdarg/OpenGold/issues/228),
-a bounded child of [Sorcerer spellcasting #132](https://github.com/stdarg/OpenGold/issues/132).
+Rules 0.6.40 / PC28 implements [#228](https://github.com/stdarg/OpenGoldBox/issues/228),
+a bounded child of [Sorcerer spellcasting #132](https://github.com/stdarg/OpenGoldBox/issues/132).
 Authority: [SRD 5.2.1 pp.64–65,67](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf):
-four starting cantrips and Charisma spellcasting. The implemented eligible catalog
-contains Fire Bolt, Poison Spray, Ray of Frost and Shocking Grasp. This is not the
+four starting cantrips and Charisma spellcasting. At 0.6.40 the eligible catalog
+contained Fire Bolt, Poison Spray, Ray of Frost and Shocking Grasp. This is not the
 complete sixteen-cantrip Sorcerer catalog.
 
 Q27 approved the existing Spell Choices step, keyboard checkbox selection, counts,
@@ -34,9 +34,10 @@ Creator/combat checks cover keyboard selection,
 Back, all four spells, ally targeting and English/Spanish layouts at 1120×800
 and 1920×1080.
 
-Remaining #132 scope includes the other Sorcerer cantrips, leveled spells and
-slots, Innate Sorcery's activation/resources, level 2–4 advancement and replacement
-choices. General components remain #39; higher progression remains #176–178.
+The rest of #132 (more Sorcerer cantrips, leveled spells and slots, Innate
+Sorcery, advancement to level 15 and replacement choices) is in
+[Sorcerer](SORCERER.md). Spells have no components
+([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)).
 All four cantrips can target allied creatures and the caster; Fire Bolt gained
 this in rules 0.6.160 ([Fire Bolt](FIRE-BOLT.md)). This increment closes no parent spell
 or class conformance claim.

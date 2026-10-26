@@ -104,18 +104,19 @@ purchase charges the item's price and adds its stored item/bundle to inventory.
 Stock may be purchased repeatedly: the game keeps no stock limits yet.
 The demo has a 16-entry inventory limit and rejects invalid/stale requests,
 unaffordable purchases and purchases when full without charging gold.
-Selling, equipping and item activation are not implemented. Scripts that ask
+Items cannot be sold; see [party](PARTY.md) for equipping and using them. Scripts that ask
 for particular coins make change; see [coin payments](#coin-payments).
 
 ### Equipment conversion in the game
 
 In the game, a bought item converts to SRD equipment by its original type
-(`equipment_conversion`, `campaign_party.cpp`). Since [#18](https://github.com/stdarg/OpenGold/issues/18)
+(`equipment_conversion`, `campaign_party.cpp`). Since [#18](https://github.com/stdarg/OpenGoldBox/issues/18)
 ([SHOP-1](SRD-DECISIONS.md#shop-1-2026-10-02-shop-armor-and-unusable-stock))
 every armor the arms shop sells converts by name: Padded, Studded Leather, Ring
 Mail, Scale Mail, Splint Mail and Plate Mail (Silver Plate Mail too). SRD 5.2.1
 has no Banded Mail, so it becomes Splint, the SRD heavy armor with the same
-AD&D AC 4. Magic or cursed items keep their unsupported original record.
+AD&D AC 4. Magic and cursed items convert with their enchantment or curse
+([magic items](MAGIC_ITEMS.md#in-opengoldbox)).
 
 Each general store sells the original's Flask of Oil, which converts to SRD
 Oil, and items its record adds from the SRD's adventuring gear: Torches (ten
@@ -151,11 +152,11 @@ character. `ECL3.DAX` record 0, as listed by
 - Inn: `'IT WILL COST YOU 1 PLATINUM PIECE TO REST HERE.'`, then
   `COMPARE 1, [6BC3]` / `IF >` to `"YOU DON'T HAVE ENOUGH PLATINUM."`, otherwise
   `SUBTRACT 1 FROM [6BC3]`, `LOAD CHARACTER 128 + [6DB4]` (store) and PROGRAM 9.
-- Harbor: `'ROUND TRIP PASSAGE IS 1 PLATINUM PIECE.'` (travel itself is unsupported).
+- Harbor: `'ROUND TRIP PASSAGE IS 1 PLATINUM PIECE.'`
 - Gambling: the wager is asked in platinum; the script copies `[6BC3]` to a
   scratch cell and writes the result back to `[6BC3]`.
 
-The party owns all its money in one purse ([#232](https://github.com/stdarg/OpenGold/issues/232),
+The party owns all its money in one purse ([#232](https://github.com/stdarg/OpenGoldBox/issues/232),
 a [deviation](DEVIATIONS.md#money) from the original's purse per character).
 Every member a script reads shows the party purse, and every payment comes from
 it.
@@ -180,7 +181,8 @@ never be paid. Approved policy (issue #17), **make change automatically**:
   "Arden pays 10 gp for 1 pp." (localized), naming the member the script read.
 
 Reads that change nothing leave the purse alone. Shops price in gold and still
-charge the party's gold coins; the item goes to the chosen buyer. Robbery and pickpocketing remain unsupported and roll back.
+charge the party's gold coins; the item goes to the chosen buyer. Robbery other than a share of the coins remains unsupported and rolls back
+([ECL-COVERAGE.md](ECL-COVERAGE.md)).
 Native coverage: `tests/expedition_tests.cpp` (exchange rules, one charge across
 repeated reads, and the installed inn route: decline, refusal, payment, rest).
 

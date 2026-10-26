@@ -39,9 +39,9 @@ Kuto's Well. It is used for facts only; nothing here is quoted from it.
 
 ## Not done yet
 
-- **Search mode** (an exploration command; `0x6DCA` = 1). Without it the hag's
-  arms and armor, the plaza ambush and the guards' search trigger cannot be
-  reached.
+- **Search mode** (an exploration command; `0x6DCA` = 1) now exists, but no
+  test yet reaches the hag's arms and armor, the plaza ambush or the guards'
+  search trigger with it.
 - **Norris's position:** he waits wherever the party first reaches one of
   several spots; only the first spot the tests reach is checked.
 - **Clearing rewards:** the council pays for a cleared block (the Slums after

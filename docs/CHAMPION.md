@@ -116,10 +116,9 @@ and demo EN are rendered at 1120×800 and 1920×1080.
 
 Strength/Athletics Advantage is available through the existing public skill-check
 query with sourced evidence. The escape from Entangle, Web or Ensnaring Strike is
-the only action that rolls Athletics, and it has the Advantage. Supported Fighters have no spell-access
-source: Magic Initiate/multiclass features must later connect their actual spell
-routes and immediate per-hit movement, including multi-attack spells. This batch
-does not claim those future player paths. The current spell critical calculation
+the only action that rolls Athletics, and it has the Advantage. A Fighter's spells come
+from Magic Initiate, and a spell's critical hit offers the same free move.
+The current spell critical calculation
 retains natural 20, while weapon and Unarmed Strike thresholds expand to 19–20.
 
 Verification commands (run after rebuilding the affected targets):
@@ -129,7 +128,7 @@ Verification commands (run after rebuilding the affected targets):
 ctest --test-dir build/mac-check --output-on-failure -E '^opengold_godot_' -j6
 cmake --build build/mac-check --target opengoldbox_test_project -j6
 cmake --build build/sprite-demo --target opengold_godot -j6
-OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD ctest --test-dir build/mac-check --output-on-failure -R '^opengold_godot_' -E '^opengold_godot_prepare$' --fixture-exclude-setup godot_project
+OPENGOLD_GAME_DIR=/path/to/POOLRAD ctest --test-dir build/mac-check --output-on-failure -R '^opengold_godot_' -E '^opengold_godot_prepare$' --fixture-exclude-setup godot_project
 python3 tools/localization.py --check
 ```
 

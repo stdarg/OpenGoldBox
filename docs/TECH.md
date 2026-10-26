@@ -103,7 +103,7 @@ rest-completion precision. Effect processing orders simultaneous events by entit
 and application ID so different time-update sizes preserve RNG continuation.
 
 Rules 0.5.0 adds Blinded through the blindness option of Blindness/Deafness.
-The combat checkpoint (`OGCOMBAT 28`) stores all effect applications, timers, presentation
+The combat checkpoint (`OGCOMBAT 69`) stores all effect applications, timers, presentation
 facing, pending movement reactions, involuntary allied overlap, remaining Hit Dice, mortality recovery clocks and sourced Temporary HP.
 Movement queues retain their saved progress; future weapon attacks use
 the corrected [Heavy requirements](HEAVY-WEAPONS.md). The
@@ -112,7 +112,7 @@ original campaign conversions and prices. The [armor catalog](ARMOR.md)
 uses shared category definitions for equipment, AC and starting-class training;
 equipped ability checks combine these penalties with character skill/tool grants.
 Core only collects equipped IDs and delegates the query to the rules module. The campaign
-save (`OPENGOLD-CAMPAIGN 23`) stores the clock, encounter scopes, rules-owned effect state and
+save (`OPENGOLD-CAMPAIGN 40`) stores the clock, encounter scopes, rules-owned effect state and
 acquired feature/feat grants with source IDs, acquisition levels and choices.
 It also stores training selections and source grants, completed Short Rest
 spending tickets and individual eligibility records.
@@ -136,14 +136,14 @@ record replacement provenance. See
 Rules 0.6.19 derives [Wizard spell access](SPELL-ACCESS.md) from sourced grants,
 separating known cantrips and retained book entries from current preparation.
 Profile recipes validate casting access against those grants. Full selection controls and source-specific free
-casts remain separate work.
+casts came later.
 [The Savage Attacker decision](SAVAGE-ATTACKER.md) retains a value-based pending
 hit until a legal player choice resolves damage and any interrupted movement.
 Snapshots expose display values; rules validate choices and Godot owns the dialog.
 
 Rules 0.6.21 adds [Somatic hand eligibility](SPELL-COMPONENTS.md) to the existing
-spell command query. Component definitions remain in the SRD library; Core and
-Godot do not duplicate hand rules or spell requirements. Speech-blocking sources remain separate work.
+spell command query. Spell components were later removed
+([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)); speech-blocking sources are not pursued.
 
 Rules 0.6.23 adds [Sacred Flame](SACRED-FLAME.md) through the shared spell-access,
 saving-throw and typed-damage services. The class-driven Godot cantrip control
@@ -179,21 +179,25 @@ See [Action Surge](ACTION-SURGE.md) for persistence boundaries.
 
 ## 5. High-Level Architecture
 
-OpenGoldBox should be implemented as a small set of clearly separated modules:
+OpenGoldBox is a small set of clearly separated modules:
 
 ```text
 src/
-  OpenGold.Core/
+  OpenGold.Core/                  engine behavior; Pool of Radiance code in opengold::por
   OpenGold.Rules/
   OpenGold.Rules.Srd5/
   OpenGold.Formats/
-  OpenGold.Game.PoolOfRadiance/
-  OpenGold.Godot/
-  OpenGold.Tools/                 optional
-
-tests/
-  OpenGold.Tests/
+  OpenGoldBox/                    the game: GDExtension and Godot project
+demos/src/OpenGold.Godot/         the reference demos' GDExtension
+tools/                            native command-line tools
+dev_tools/                        standalone Godot tools
+tests/                            native and Godot checks
 ```
+
+The Pool of Radiance adapter described below as `OpenGold.Game.PoolOfRadiance`
+has no module of its own yet: its code lives in `OpenGold.Core` under the
+`opengold::por` namespace. The presentation layer described as
+`OpenGold.Godot` is the game's `src/OpenGoldBox`.
 
 ### `OpenGold.Formats`
 
@@ -486,8 +490,9 @@ initiative, spell memorization and class restrictions.
 Campaign adapters preserve original encounter identities/counts and script-visible
 results. They explicitly select converted combat definitions without rewriting
 raw `CreatureCatalog` data. Original maps, dialogue, quest flags and progression
-remain reverse-engineering targets. Original tactical geometry is pending; the
-first combat milestone uses an approved authored arena and fixed party.
+remain reverse-engineering targets. Campaign combat uses the original tactical
+geometry ([EXPEDITION.md](EXPEDITION.md)); the first combat milestone used an
+approved authored arena and fixed party.
 
 The UI and demonstration AI submit commands offered by the selected rules
 module. They do not calculate hit chances, damage or resource costs. Saves bind
@@ -694,15 +699,16 @@ Concretely:
   [CODING_STYLE.md](CODING_STYLE.md)). A procedure that depends on a tool must
   name how to get it, and a check that cannot run is recorded as unverified,
   never as passed.
-- **A check that does not register is not a check that passed.** The Godot
-  runtime tests are only added when `OPENGOLD_BUILD_GODOT` is on *and*
-  `find_program` locates Godot. Both failures are silent: `ctest` reports a clean
+- **A check that does not register is not a check that passed.** The game's
+  Godot runtime tests are only added when `OPENGOLD_BUILD_GAME` is on; the
+  demos' need `OPENGOLD_BUILD_GODOT` *and* `find_program` locating Godot. These
+  failures are silent: `ctest` reports a clean
   run over the tests that exist. Confirm with `ctest -N` before claiming Godot
   coverage. Search paths must cover every supported platform — listing only
   macOS bundles is what hid these checks on Windows.
 - **Keep the entry points symmetrical.** `build.cmd` is the Windows path
   (vcvars, configure, build, `ctest`, with `errorlevel` checked between steps).
-  macOS and Linux need an equivalent shell script with the same contract, so
+  `build.sh` is the macOS and Linux equivalent, with the same contract, so
   that "run the suite" is one documented command on every platform.
 - **Say which platform a check belongs to.** The Godot runtime tests and the
   rendered English/Spanish layout reviews require a Godot install; the native
@@ -810,7 +816,7 @@ replacement in combat format 12 and SRD7; see [Temporary HP](TEMPORARY-HP.md).
 Rules 0.6.22 adds [Poison Spray and explicit Wizard cantrip choices](POISON-SPRAY.md),
 with the approved creation and main combat controls. Campaign 11 stores choices;
 PC11 validates their grants. Combat 13 and existing resource formats remain.
-Full spell selection, speech blocking and other granting sources remain open.
+Full spell selection and other granting sources came later; speech blocking is not pursued.
 
 Rules 0.6.25 adds [Ray of Frost](RAY-OF-FROST.md) through sourced Wizard access,
 typed attacks and the shared effect/recovery timeline. Nonstacking Speed penalties
@@ -879,8 +885,8 @@ is validated against module version. See [Unconscious transit](UNCONSCIOUS-TRANS
 Rules 0.6.37 adds [level-one Warlock Eldritch Blast](ELDRITCH-BLAST.md) through
 explicit Pact Magic cantrip grants and the approved shared selection/casting
 controls. PC25 validates access and uses Charisma; campaign/combat formats stay
-unchanged. Object targets, later Warlock
-levels, slots, invocations and general speech blockers remain separate work.
+unchanged. Higher Warlock levels, slots and invocations came later; object
+targets and general speech blockers are not pursued.
 
 Rules 0.6.38 adds [Wizard Shocking Grasp](SHOCKING-GRASP.md) at levels 1–4.
 The shared value-owned effect model records sourced Opportunity Attack
@@ -897,7 +903,7 @@ Rules 0.6.40 adds [level-one Sorcerer cantrips](SORCERER-CANTRIPS.md): explicit
 source-owned Fire Bolt, Poison Spray, Ray of Frost and Shocking Grasp choices.
 PC28 validates access and Charisma attacks. Existing Spell Choices/Spell/Cast
 controls are reused under Q27; save schemas stay unchanged.
-Full Sorcerer spellcasting and Innate Sorcery remain #132.
+Full Sorcerer spellcasting and Innate Sorcery came later (#132).
 
 
 ## Static SRD library boundary
@@ -908,16 +914,15 @@ link Core, original game formats, or Godot. `opengold_core` links the interface,
 not the SRD implementation. The application selects/loads SRD at composition time
 and injects a `RulesModule`; presentation calls Core or the rules interfaces.
 
-SRD rest transitions live in `OpenGold.Rules.Srd5/src/rest_activity.cpp`.
-Core supplies progress and events and applies the returned continuation and
+SRD rest rules live in `OpenGold.Rules.Srd5/src/srd5.cpp` behind the
+`RulesModule` rest policies and recovery calls. Core applies the returned
 benefits transactionally. Core retains member IDs, tickets, campaign clocks and
-save serialization. Rest progress value types cross the interface without Core
-or Godot types. Save fields and existing SRD behavior remain unchanged. Character
+save serialization. Save fields and existing SRD behavior remain unchanged. Character
 preset ability priorities are queried from `CharacterRules`, not inferred from
 class names in Core.
 
 `alternate_rules_boundary` in `campaign_rest_tests.cpp` supplies intentionally
-non-SRD cancellation, continuation, default activity and completion benefits. It
+non-SRD rest policies and completion benefits. It
 checks that Core follows the injected implementation. Existing SRD activity and
 save fixtures verify that this separation preserves game behavior. Original game
 content IDs, art mappings and authored demo parties remain campaign content;

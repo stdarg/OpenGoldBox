@@ -6,7 +6,7 @@ Survey of 2026-10-14 for [Plant Growth](LEVELS-5-10-INVENTORY.md)'s Overgrowth, 
 
 Every GEO map square stores an "interior" bit, the high bit of its event byte.
 The ImHex Gold Box GEO pattern names it `IsInterior`; see `docs/MAPS.md`, "High
-bit: evidence for an indoor flag". OpenGold already reads it as
+bit: evidence for an indoor flag". OpenGoldBox already reads it as
 `MapCell::event_high_bit()` (`src/OpenGold.Formats/include/opengold/geo_map.h`).
 `src/OpenGold.Core/src/exploration_view.cpp` uses it to paint a gray ceiling
 (interior) or a cyan sky (exterior) in the 3D view. So the original's designers
@@ -81,7 +81,7 @@ the book's printed page numbers.
    doc for the wilderness generator (`docs/combat-geometry.md` says it is
    separate, unimplemented work). Treat every overland fight as outdoor.
 4. **What the flag means in combat.** The ImHex note says the bit also affects
-   combat tile selection. OpenGold's dungeon arena (`DUNGCOM`) does not yet use
+   combat tile selection. OpenGoldBox's dungeon arena (`DUNGCOM`) does not yet use
    it, and its effect in combat is not verified against the original.
    Roof/sky in the 3D view is verified in our renderer.
 5. **Sokal Keep and parts of the Slums** have cluebook "rooms" on open-sky

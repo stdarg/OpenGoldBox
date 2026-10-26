@@ -446,7 +446,7 @@ the earlier authored Slums conversions.
 - **Rewards:** experience and loot remain those of the original encounter,
   however many monsters fought. The user will later tie challenge to difficulty
   and to experience and treasure gain, and add a visible slider.
-- **Held weapons (2026-10-24, [#274](https://github.com/stdarg/OpenGold/issues/274)):**
+- **Held weapons (2026-10-24, [#274](https://github.com/stdarg/OpenGoldBox/issues/274)):**
   a human-shaped monster or NPC (one the Combat Sprite Catalog draws at a
   humanoid height) hits with the weapon it holds: the weapon's SRD dice, damage
   type and enchantment replace its stat block's, which keeps its own attack and
@@ -459,7 +459,7 @@ the earlier authored Slums conversions.
 
 ## CLERIC-1 (2026-10-02): Cleric preparation and Divine Order
 
-The user answered four questions for [#91](https://github.com/stdarg/OpenGold/issues/91),
+The user answered four questions for [#91](https://github.com/stdarg/OpenGoldBox/issues/91),
 each with the recommended option.
 
 1. **Divine Order** is chosen at creation in the Training step, with the same
@@ -473,9 +473,9 @@ each with the recommended option.
    spells", with no spellbook and no cantrip replacement at rest.
 3. **Spells not yet implemented** leave their places pending, as Cleric cantrips
    already did. Nothing is invented; the missing spells come with
-   [#165](https://github.com/stdarg/OpenGold/issues/165).
+   [#165](https://github.com/stdarg/OpenGoldBox/issues/165).
 4. **Inflict Wounds**' SRD conformance and combat button are a separate issue,
-   [#230](https://github.com/stdarg/OpenGold/issues/230).
+   [#230](https://github.com/stdarg/OpenGoldBox/issues/230).
 
 Replacing a cantrip on gaining a Cleric level waits for a second implemented
 Cleric cantrip; Sacred Flame is the only one, so there is nothing to replace it
@@ -485,7 +485,7 @@ unchanged.
 
 ## SHOP-1 (2026-10-02): shop armor and unusable stock
 
-For [#18](https://github.com/stdarg/OpenGold/issues/18) the user chose the
+For [#18](https://github.com/stdarg/OpenGoldBox/issues/18) the user chose the
 recommended answers:
 
 1. Original armor converts to the SRD armor of the same name: Padded, Studded
@@ -498,7 +498,7 @@ recommended answers:
 ## DM-3 (2026-10-04): spells a CRPG cannot use
 
 The user set the spell policy for finishing levels 1–4 for every class
-([#8](https://github.com/stdarg/OpenGold/issues/8)): every spell relevant to a
+([#8](https://github.com/stdarg/OpenGoldBox/issues/8)): every spell relevant to a
 computer role-playing game like Pool of Radiance is in the game, and anything
 that needs a DM is not. Applying it, the user removed 17 spells and asked that
 they not be supported: Suggestion, Phantasmal Force, Enthrall, Feather Fall,
@@ -510,7 +510,7 @@ the [spell inventory](SPELL-INVENTORY.md#removed-nothing-to-act-on-in-this-game)
 
 ## CLASS-1 (2026-10-04): finishing levels 1–4 for all classes
 
-For [#8](https://github.com/stdarg/OpenGold/issues/8) the user approved:
+For [#8](https://github.com/stdarg/OpenGoldBox/issues/8) the user approved:
 
 1. **One control pattern** instead of a question per feature. In combat, each
    class action joins the A cycle and a class-action dropdown with a Use button,
@@ -592,7 +592,7 @@ choose another target.
   dropdown.
 - **Heat Metal** targets only a creature wearing metal armor. Monsters' armor
   comes from `equipment` rows in combat.rules, derived from the armor their
-  original records ready ([#231](https://github.com/stdarg/OpenGold/issues/231);
+  original records ready ([#231](https://github.com/stdarg/OpenGoldBox/issues/231);
   [creature equipment](CREATURE-EQUIPMENT.md)). The user chose rows in the
   rules file over a separate JSON file on 2026-10-07.
 
@@ -719,7 +719,7 @@ kept playing it in later fights until the player took over; a key set the
 whole party to Quick, Space while the computer was moving a member returned
 every member to the player, and a Magic toggle decided whether Quick members
 cast spells (read from the original manual and cluebook; no text copied).
-OpenGold follows it, with the layout the user approved on 2026-10-09:
+OpenGoldBox follows it, with the layout the user approved on 2026-10-09:
 
 - On a member's turn, **Quick** (beside Flee) hands it to the computer at once.
   Q puts the whole party on Quick.
@@ -768,7 +768,7 @@ code was copied.
   the monsters that fight. It is not held back for later; whether the band
   meets the party again is the script's, as for any fight. The original could
   leave out a whole band and start an empty fight that the party won at once
-  for nothing; OpenGold keeps the band's first monster instead, on the nearest
+  for nothing; OpenGoldBox keeps the band's first monster instead, on the nearest
   free square the party can reach. A party member with no room takes that
   nearest free square too.
 - Checked against the running original with the
@@ -836,13 +836,13 @@ do nothing. The user agreed to drop it, as
 [DM-3](#dm-3-2026-10-04-spells-a-crpg-cannot-use) dropped spells with nothing
 to act on: Blindness/Deafness always blinds. The SRD gives the spell no early
 dismissal, and its extra targets from higher slots arrive with level-three
-slots at character level 5 ([#176](https://github.com/stdarg/OpenGold/issues/176)).
+slots at character level 5 ([#176](https://github.com/stdarg/OpenGoldBox/issues/176)).
 
 ## SPLIT-1 (2026-10-13): aiming darts and rays
 
 The user approved, from screenshots of the real combat screen, aiming Magic
 Missile's darts and Scorching Ray's rays one click at a time
-([#42](https://github.com/stdarg/OpenGold/issues/42)). It extends
+([#42](https://github.com/stdarg/OpenGoldBox/issues/42)). It extends
 [CLASS-2](#class-2-2026-10-04-choosing-several-targets): each click on a foe
 aims the next dart or ray, the same foe again if wanted; the spell is cast once
 all are aimed (Cast spell stays greyed out until then); Escape cancels for
@@ -1041,7 +1041,7 @@ class's cap rises to 10 only when its features work. Decisions on the
 - **Cunning Strike's Poison** is offered to a Rogue carrying a Poisoner's Kit
   (#233); the user decided on 2026-10-22 that carrying it is enough, with no
   tool proficiency. A Rogue's shop will sell it
-  ([#271](https://github.com/stdarg/OpenGold/issues/271)).
+  ([#271](https://github.com/stdarg/OpenGoldBox/issues/271)).
 - **Supreme Sneak:** the game has no cover, so a Thief's Stealth Attack keeps
   it hidden whenever it is hidden.
 - **Adrenaline Rush** is also offered in the Camp dialog's Cast / Use list
@@ -1110,7 +1110,7 @@ it:
 - **Heightened Focus** (Monk 10): Step of the Wind with Focus can carry an
   adjacent ally, offered as more A-cycle entries.
 - **Use Magic Device** (Thief 13) is granted and waits for magic items
-  ([#234](https://github.com/stdarg/OpenGold/issues/234)), as Fast Hands does.
+  ([#234](https://github.com/stdarg/OpenGoldBox/issues/234)), as Fast Hands does.
 - **Aura of Protection** in the combat log: each save line names the aura's
   share of the bonus ("+ 5 (Aura of Protection +3)").
 - **Revivify** reaches 10 feet, the adjacent square and one more (the
@@ -1248,7 +1248,7 @@ built, Telekinesis. The battlefield's edge is open ground, not a wall.
 
 The user chose how the original's enchanted weapons, armor and shields
 ([MAGIC_ITEMS.md](MAGIC_ITEMS.md#weapons), issue
-[#261](https://github.com/stdarg/OpenGold/issues/261)) work:
+[#261](https://github.com/stdarg/OpenGoldBox/issues/261)) work:
 
 - **+N as the original has it.** A weapon's bonus adds to its attack and
   damage rolls; armor's and a shield's add to Armor Class. The original's +4
@@ -1270,7 +1270,7 @@ The user chose how the original's enchanted weapons, armor and shields
 ## MAGIC-2 (2026-10-18): identifying magic items
 
 The user chose how found magic items are identified (issue
-[#262](https://github.com/stdarg/OpenGold/issues/262),
+[#262](https://github.com/stdarg/OpenGoldBox/issues/262),
 [MAGIC_ITEMS.md](MAGIC_ITEMS.md#in-opengoldbox)):
 
 - **Hidden names as the original has them.** Until it is identified, an item
@@ -1299,7 +1299,7 @@ The user chose how found magic items are identified (issue
 ## MAGIC-3 (2026-10-19): wands, potions and other charged items
 
 The user chose how the original's charged and single-use items work (issue
-[#263](https://github.com/stdarg/OpenGold/issues/263),
+[#263](https://github.com/stdarg/OpenGoldBox/issues/263),
 [MAGIC_ITEMS.md](MAGIC_ITEMS.md#wands)):
 
 - **SRD 5.2.1 effects, the original's charges.** Each item does what its SRD
@@ -1336,12 +1336,12 @@ The user chose how the original's charged and single-use items work (issue
   equipped magic items, whether or not Quick magic is on, when the item makes
   sense (an attack needs a target in range, healing needs a wounded ally, and
   an area effect is skipped when it could catch an ally). The full
-  specification of the AI is [#266](https://github.com/stdarg/OpenGold/issues/266).
+  specification of the AI is [#266](https://github.com/stdarg/OpenGoldBox/issues/266).
 
 ## MAGIC-4 (2026-10-20): no attunement
 
 The user decided that OpenGoldBox has no attunement at all (issue
-[#264](https://github.com/stdarg/OpenGold/issues/264)). This changes SRD 5.2.1,
+[#264](https://github.com/stdarg/OpenGoldBox/issues/264)). This changes SRD 5.2.1,
 where many magic items need a creature attuned to them and a creature is
 attuned to at most three items:
 
@@ -1358,7 +1358,7 @@ attuned to at most three items:
 
 The user chose how the original's worn items
 ([MAGIC_ITEMS.md](MAGIC_ITEMS.md#rings-and-worn-items), issue
-[#264](https://github.com/stdarg/OpenGold/issues/264)) work:
+[#264](https://github.com/stdarg/OpenGoldBox/issues/264)) work:
 
 - **Slots as the original has them.** A character wears two rings and one
   each of bracers, a cloak, gauntlets and a necklace. Worn items need no hand.
@@ -1382,13 +1382,13 @@ The user chose how the original's worn items
   throw. Once worn it cannot be taken off until Remove Curse; then it is lost,
   like the cursed sword (MAGIC-1).
 - **The alignment-bound swords** the same research found wait for
-  [#267](https://github.com/stdarg/OpenGold/issues/267).
+  [#267](https://github.com/stdarg/OpenGoldBox/issues/267).
 
 ## MAGIC-6 (2026-10-20): spell scrolls
 
 The user chose how the original's scrolls
 ([MAGIC_ITEMS.md](MAGIC_ITEMS.md#scrolls), issue
-[#265](https://github.com/stdarg/OpenGold/issues/265)) work:
+[#265](https://github.com/stdarg/OpenGoldBox/issues/265)) work:
 
 - **Spells as SRD 5.2.1 spells.** Each of the original's 56 spells becomes an
   SRD spell: Restoration is Greater Restoration, Cause Disease is Contagion,
@@ -1456,7 +1456,7 @@ The user chose how the original's scrolls
   creature at half its Hit Points or lower, a spell at an enemy, an area only
   where no ally can be caught. Spells that help an ally otherwise wait for the
   player. Monsters carry no items into a fight yet
-  ([#268](https://github.com/stdarg/OpenGold/issues/268)).
+  ([#268](https://github.com/stdarg/OpenGoldBox/issues/268)).
 
 
 
@@ -1608,7 +1608,7 @@ can still pick a lock, as in the original.
 - A lock no roll can open (a wizard lock's DC 35 for most Rogues) stays shut.
 - **The item:** SRD 5.2.1 Thieves' Tools, authored item 214, carried gear at
   25 gp. No shop sells it by default; the Shop & Temple Manager can add it
-  ([#271](https://github.com/stdarg/OpenGold/issues/271)).
+  ([#271](https://github.com/stdarg/OpenGoldBox/issues/271)).
 
 ## CADORNA-1 (2026-10-24): the Cadorna Textile House
 

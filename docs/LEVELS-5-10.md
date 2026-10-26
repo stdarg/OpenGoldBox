@@ -1,6 +1,6 @@
 # Levels 5–10 plan
 
-Raising the level cap from 4 to 10 ([#176](https://github.com/stdarg/OpenGold/issues/176)),
+Raising the level cap from 4 to 10 ([#176](https://github.com/stdarg/OpenGoldBox/issues/176)),
 toward the level-15 cap of [SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations).
 The facts (XP, slots, every class and subclass feature at levels 5–10, and all
 114 spells of levels 3–5 with a proposed triage) are in the
@@ -26,17 +26,15 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
 - Bard to level 15: done ([Bard](BARD.md#levels-515)), with Expertise at 2.
 - Druid to level 15: done ([Druid](DRUID.md#levels-515)).
 - Wizard to level 15: done ([Wizard](WIZARD.md#levels-515)), with Memorize
-  Spell and summoned creatures (LEVELS-4); Teleport waits for travel beyond
-  New Phlan.
+  Spell and summoned creatures (LEVELS-4); Teleport is not implemented.
 - Cantrip damage by character level (5, 11, 17): done ([Spell slots](SPELL-SLOTS.md#cantrip-damage-by-level)).
 - Ranger to level 15: done ([Ranger](RANGER.md#levels-515)), with the first
   wall (Wind Wall), Plant Growth's Overgrowth and the shared system for
   controlled creatures (Dominate Beast).
 - [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15) raises the cap
   to 15 for every class; the facts for 11–15 are in the
-  [levels 11–15 inventory](LEVELS-11-15-INVENTORY.md). Fighter, Barbarian,
-  Rogue, Monk, Paladin and Ranger are at 15; the casters follow in the same
-  order, starting with the Cleric.
+  [levels 11–15 inventory](LEVELS-11-15-INVENTORY.md). All twelve classes are
+  at 15.
 
 ## How the work runs
 

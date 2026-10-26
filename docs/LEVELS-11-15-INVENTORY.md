@@ -1,4 +1,4 @@
-# Levels 11–15: SRD 5.2.1 inventory for OpenGold
+# Levels 11–15: SRD 5.2.1 inventory for OpenGoldBox
 
 Planning inventory for raising the cap from level 10 to level 15 for the twelve
 SRD classes and their twelve SRD subclasses: Berserker, Lore, Life, Land,

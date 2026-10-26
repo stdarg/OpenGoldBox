@@ -1,10 +1,10 @@
 # Combat AI
 
-Scope: [#266](https://github.com/stdarg/OpenGold/issues/266). How the computer
+Scope: [#266](https://github.com/stdarg/OpenGoldBox/issues/266). How the computer
 plays monsters and the party members on Quick, what the original Gold Box
 engine did, and where we depart from it. The choices are recorded in
 [AI-1](SRD-DECISIONS.md#ai-1-2026-10-21-computer-play-as-the-original-game-had-it);
-[#269](https://github.com/stdarg/OpenGold/issues/269) added the features the
+[#269](https://github.com/stdarg/OpenGoldBox/issues/269) added the features the
 computer had never used.
 
 Sources: our policy is `choose_from` and `choose_in_sight` in

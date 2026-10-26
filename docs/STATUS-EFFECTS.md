@@ -42,8 +42,8 @@ Base statistics stay unchanged when effects are applied or removed. Queries
 derive sight and attack modifiers from current effects. Blind attackers have
 disadvantage; attacks against blinded targets have advantage. Opposing sources
 cancel, and repeated sources never add extra d20s. Blinded creatures cannot
-perform opportunity attacks or cast the supported spells requiring sight
-(Blindness, Magic Missile and Healing Word). Fire Bolt, Scorching Ray and weapon
+perform opportunity attacks or cast spells requiring sight (such as
+Blindness, Magic Missile and Healing Word). Fire Bolt, Scorching Ray and weapon
 attacks remain available against known creatures with a clear path, subject to
 disadvantage. Touch-range Cure Wounds remains usable.
 
@@ -83,25 +83,25 @@ are prepared in an owned candidate before replacing live campaign state.
 
 ## Persistence and boundaries
 
-- **OGCOMBAT 40** checkpoints contain source scope,
+- **OGCOMBAT 69** checkpoints contain source scope,
   elapsed time and each actor's effect collection. The checkpoint byte limit is
   4 MiB; each creature supports at most 128 simultaneous applications. A full
   collection offers no further Blindness command.
-- Rules-owned **SRD11** continuation embeds the structured **FX8** effect codec.
+- Rules-owned **SRD13** continuation embeds the structured **FX8** effect codec.
   Effect counters remain saved after expiration.
 - FX8 ends with a single Prone flag. The natural-sleep flag and sleeping
   combatants were removed by
   [SIMPLIFY-1](SRD-DECISIONS.md#simplify-1-2026-09-30-tabletop-time-and-body-simulation):
   a character whose rest an encounter interrupts starts awake and Prone, and
   Prone does not outlast combat.
-- **OPENGOLD-CAMPAIGN 23** stores sub-minute time, precise rest-completion offsets
+- **OPENGOLD-CAMPAIGN 40** stores sub-minute time, precise rest-completion offsets
   and the next encounter scope. Older formats and other rules identities reject;
   see the [pre-1.0 format policy](SAVES.md#pre-10-format-policy).
 - Campaign saves and PC43 profiles store acquired feature/feat provenance and
   choices, separately from spent resources and timed effects.
 - They also store training choices and sources alongside effects, wounds and
   resources; see [training support](TRAINING.md).
-- SRD11 combines spent Hit Dice with the existing resources and FX8 effect state.
+- SRD13 combines spent Hit Dice with the existing resources and FX8 effect state.
   The combat checkpoint retains remaining dice through turns and campaign handoff.
   See [rest resources](REST-RESOURCES.md).
 - PCs and recruited NPCs carry effects through campaign handoff, reserve status,
@@ -144,8 +144,8 @@ Reference: [official SRD 5.2.1](https://media.dndbeyond.com/compendium-images/sr
 Blindness/Deafness p. 113, Blinded p. 177, combining spell effects p. 106.
 Existing content attribution in `data/rules/srd-5.2.1/NOTICE.md` applies.
 
-Recovery clocks in SRD11 and the combat checkpoint preserve death-save cadence and
-natural Stable recovery independently of FX8. The [campaign scheduler #195](https://github.com/stdarg/OpenGold/issues/195)
+Recovery clocks in SRD13 and the combat checkpoint preserve death-save cadence and
+natural Stable recovery independently of FX8. The [campaign scheduler #195](https://github.com/stdarg/OpenGoldBox/issues/195)
 merges those deadlines chronologically; entity order and mortality-before-effect
 ordering make time partitions deterministic, including death suppressing saves. See [recovery clock support](RECOVERY-CLOCKS.md).
 

@@ -16,12 +16,12 @@ build-opengoldbox.cmd
 demos\review-rolf.cmd
 ```
 
-The first command builds the C++ GDExtension and runs all five native test suites.
+The first command builds the game and its C++ GDExtension and runs the CTest suite.
 The second imports the extension and opens the Godot scene. Once built, use only
 `demos\review-rolf.cmd` to run it again. Close the scene before rebuilding its DLL.
 
-Game data uses `OPENGOLD_GAME_DIR`, falling back to `opengold/game_directory` in
-`demos/godot/project.godot`. To override it in CMD:
+Game data uses `OPENGOLD_GAME_DIR`, falling back to the game folder saved in the
+game's `settings.cfg` ([CONFIGURATION.md](CONFIGURATION.md)). To override it in CMD:
 
 ```cmd
 set "OPENGOLD_GAME_DIR=C:\Games\POOLRAD"
@@ -50,16 +50,16 @@ sprite decoder. Core code has no Godot dependency. Scene nodes own their childre
 the wrapper uses Godot `Ref` values for textures/audio and value-owned session
 state. All original resources remain local.
 
-The optional CMake target is enabled by `OPENGOLD_BUILD_GODOT=ON`. Prerequisites
+The optional CMake target is enabled by `OPENGOLD_BUILD_GAME=ON`. Prerequisites
 are a C++20 toolchain, CMake, Ninja, Git, Python 3.8+ for binding generation, and
 Godot 4.5 or later with the standard single-precision build. The CMD helper uses
 the same installed Visual Studio Build Tools location as `build.cmd`. With a
 configured developer environment, the equivalent commands are:
 
 ```cmd
-cmake -S . -B build/godot -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GODOT=ON
-cmake --build build/godot
-ctest --test-dir build/godot --output-on-failure -j 8
+cmake -S . -B build/game -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GAME=ON
+cmake --build build/game
+ctest --test-dir build/game --output-on-failure -j 8
 ```
 
 The first configure fetches official MIT-licensed
@@ -67,10 +67,10 @@ The first configure fetches official MIT-licensed
 `e83fd0904c13356ed1d4c3d09f8bb9132bdc6b77` (`godot-4.5-stable`). Supply
 `-DPython3_EXECUTABLE=C:/path/to/python.exe` if Python is not on PATH. A local
 checkout can be supplied with `-DFETCHCONTENT_SOURCE_DIR_GODOT_CPP=...`.
-Libraries and the generated extension descriptor go in ignored `demos/godot/bin/`.
+Libraries and the extension descriptor go in ignored `src/OpenGoldBox/godot/bin/`.
 The default native-only build requires neither Python nor Godot bindings.
 
-Verified here on Windows x64 with Godot 4.7.2 and MSVC. Linux/macOS builds have
+Verified here on Windows x64 with Godot 4.7.2 and MSVC, and on macOS. Linux builds have
 not been verified. See the official [CMake integration documentation](https://docs.godotengine.org/en/stable/tutorials/scripting/cpp/build_system/cmake.html).
 
 ## Evidence and deliberate limits
@@ -115,8 +115,9 @@ occlusion case, and original audio are not yet verified. See
 
 After the tour, ordinary doors permit movement and original location events
 run. Solid walls, locked doors and the town boundary remain blocking. State
-persists through movement and building visits within the current session;
-save/load, travel outside New Phlan and town combat remain unimplemented.
+persists through movement and building visits. In the game this view also saves
+and loads, travels beyond New Phlan and runs combat; the whole campaign plays
+through it ([whole-map audit](audits/whole-map.md)).
 
 ## Verification
 
@@ -144,6 +145,7 @@ To capture its eight rendered pauses for local inspection:
 demos\review-rolf.cmd -- --tour-check --capture
 ```
 
-Screenshots go to ignored `user-data/rolf-tour-1.png` through `rolf-tour-8.png`.
+Screenshots go to `checks/rolf-tour-1.png` through `rolf-tour-8.png` in the user
+data folder (`%APPDATA%\Godot\app_userdata\OpenGold` on Windows).
 The check exits automatically and verifies Enter with another button focused,
 held-key rejection, movement locking and turning after the tour.

@@ -1,7 +1,7 @@
 # Sacred Flame and starting Cleric cantrips
 
 Rules **0.6.23** adds a playable Cleric path for
-[#203](https://github.com/stdarg/OpenGold/issues/203), using the creation and
+[#203](https://github.com/stdarg/OpenGoldBox/issues/203), using the creation and
 combat controls approved in questions 15–16.
 
 ## Rules and controls
@@ -9,8 +9,8 @@ combat controls approved in questions 15–16.
 Authority: [SRD 5.2.1 pp. 36–37, 159, 191](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf).
 Sacred Flame uses an Action. A visible, living
 creature within 60 feet makes a Dexterity save against 8 + proficiency bonus +
-Wisdom modifier. Failure deals 1d8 Radiant damage through character level 4;
-success deals none. Typed defenses apply. This is a saving throw, so natural
+Wisdom modifier. Failure deals 1d8 Radiant damage, 2d8 from character level 5
+and 3d8 from level 11; success deals none. Typed defenses apply. This is a saving throw, so natural
 1/20 have no automatic result, damage gains no ability modifier or critical
 dice, and adjacent enemies do not impose ranged-attack Disadvantage.
 
@@ -25,7 +25,7 @@ Cleric creation uses the existing Spell Choices step after Training and before
 Name. Sacred Flame has a labeled checkbox, keyboard access and selection counts.
 Back retains selections; changing class clears invalid choices and hides their
 checkboxes. The base entitlement is three cantrips, increasing to four at level
-4. Missing catalog choices remain pending. Preset Clerics receive the supported
+4 and five at level 10. Missing catalog choices remain pending. Preset Clerics receive the supported
 choice. Grants carry the source
 `class:cleric:spellcasting` and acquisition level 1.
 
@@ -73,6 +73,5 @@ Magic Initiate, Pact of the Tome, the Thaumaturge and Blessed Warrior grant
 Sacred Flame through their own choices.
 Cleric preparation, Divine Order and the fourth selection are in
 [Cleric preparation](CLERIC-PREPARATION.md). A cantrip is replaced on gaining a
-level as [Replacing choices](LEVEL-SWAPS.md) describes. Higher-level damage scaling
-remains #176–178. The zero-HP save rule does not complete all conditions in #35.
+level as [Replacing choices](LEVEL-SWAPS.md) describes. The zero-HP save rule does not complete all conditions in #35.
 Sacred Flame is complete through level 4.

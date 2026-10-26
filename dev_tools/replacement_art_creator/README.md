@@ -47,7 +47,8 @@ cmake --build build/tile-art-viewer --target opengold_replacement_art_creator -j
 OPENGOLD_GAME_DIR=/path/to/POOLRAD /Applications/Godot_mono.app/Contents/MacOS/Godot --path dev_tools/replacement_art_creator/godot
 ```
 
-On this Mac, `/Users/edmond/POOLRAD` is the game-file path. On Linux,
+Without an argument the game files default to `~/POOLRAD`. On Windows, run
+`run.sh` from Git Bash. On Linux,
 substitute the installed `godot` executable. The creator needs Godot 4.5 or
 newer. A first headless editor import may crash on exit after registering the
 extension; the viewer's README describes the same behavior. If

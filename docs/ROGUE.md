@@ -33,7 +33,7 @@ every class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
   DC or is Poisoned for up to a minute, repeating the save at the end of each
   of its turns. Carrying the kit is enough, as the SRD says; there is no tool
   proficiency (DM-1). No shop sells the kit yet
-  ([#271](https://github.com/stdarg/OpenGold/issues/271)).
+  ([#271](https://github.com/stdarg/OpenGoldBox/issues/271)).
 - **Uncanny Dodge:** when an attack hits the Rogue, React halves its damage
   with the Reaction; a Blinded Rogue cannot use it.
 - **Expertise (6):** a Training page choice of two proficient skills.

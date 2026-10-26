@@ -1,8 +1,8 @@
 # Level-one Warlock Poison Spray
 
-Rules 0.6.39 delivers [#227](https://github.com/stdarg/OpenGold/issues/227), a child
-of [Poison Spray #202](https://github.com/stdarg/OpenGold/issues/202) and
-[Pact Magic #160](https://github.com/stdarg/OpenGold/issues/160).
+Rules 0.6.39 delivers [#227](https://github.com/stdarg/OpenGoldBox/issues/227), a child
+of [Poison Spray #202](https://github.com/stdarg/OpenGoldBox/issues/202) and
+[Pact Magic #160](https://github.com/stdarg/OpenGoldBox/issues/160).
 Authority: [SRD 5.2.1 pp.75,153](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf).
 
 The approved Q26 Warlock Spell Choices pattern now lists Eldritch Blast and Poison
@@ -29,12 +29,14 @@ Charisma 18 rather than Intelligence 15, d12 12 versus the same seed's d10 8,
 critical/miss/typed defenses, rejection without mutation, explicit choices,
 PC/NPC campaign handoff and Short/Long Rest save-reload.
 
-This is the currently playable **Warlock level-one** source, not proof of Warlock
-levels two through four or full Pact Magic. Those remain #160. Parent #202 retains
-Druid #152, Sorcerer #132, High Elf #67, Abyssal Tiefling #73, Magic Initiate #75,
-Tome #161, Magician #152 and Druidic Warrior #147 integrations, plus remaining
-speech/component enforcement #39. The Wizard levels 1–4 path remains documented
-in [Poison Spray](POISON-SPRAY.md). Higher scaling stays #176–178.
+This delivered the **Warlock level-one** source. Higher Warlock levels and full
+Pact Magic came later (#160; see [Warlock](WARLOCK.md)), as did the Druid #152,
+Sorcerer #132, High Elf #67, Abyssal Tiefling #73, Magic Initiate #75, Tome #161,
+Magician #152 and Druidic Warrior #147 integrations; parent #202 is closed.
+Speech/component enforcement #39 is not planned: spells have no components
+([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)). The Wizard
+path remains documented in [Poison Spray](POISON-SPRAY.md). Cantrip damage by
+character level is done ([Spell slots](SPELL-SLOTS.md#cantrip-damage-by-level)).
 
 Verification: all 43 native/tool checks and 19 headless Godot checks plus ten
 native prerequisites pass. The asset-backed Warlock creator and bilingual combat

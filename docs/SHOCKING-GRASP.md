@@ -1,8 +1,8 @@
 # Wizard Shocking Grasp through level four
 
 Rules 0.6.38 delivers the ordinary Wizard path in
-[#226](https://github.com/stdarg/OpenGold/issues/226), a child of
-[#223](https://github.com/stdarg/OpenGold/issues/223).
+[#226](https://github.com/stdarg/OpenGoldBox/issues/226), a child of
+[#223](https://github.com/stdarg/OpenGoldBox/issues/223).
 Authority: [SRD 5.2.1 p.162](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=162).
 
 The approved shared Spell Choices step includes Shocking Grasp. It requires an
@@ -44,12 +44,12 @@ Routes through level 4 (2026-10-13):
 | Temperate Land Druid, level 3, always prepared | Wisdom | [druid_tests.cpp](../tests/druid_tests.cpp) |
 | Magic Initiate (Wizard list) | The feat's ability | [MAGIC-INITIATE.md](MAGIC-INITIATE.md) |
 
-[#223](https://github.com/stdarg/OpenGold/issues/223) asks for every route, so it
-stays open for High Elf ([#67](https://github.com/stdarg/OpenGold/issues/67)) and
-Pact of the Tome ([#161](https://github.com/stdarg/OpenGold/issues/161)), which
-the game does not have yet. Spells have no components
+[#223](https://github.com/stdarg/OpenGoldBox/issues/223) asks for every route. The
+High Elf's cantrip ([#67](https://github.com/stdarg/OpenGoldBox/issues/67)) and
+Pact of the Tome ([#161](https://github.com/stdarg/OpenGoldBox/issues/161)) can now
+choose it too. Spells have no components
 ([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)), so no
-speech or hand blocker applies; higher damage scaling is #176–178.
+speech or hand blocker applies; damage gains a die at levels 5 and 11.
 
 Verification: all 43 native/tool checks and all 19 headless Godot runtime checks
 plus ten native prerequisites pass. The new creator and existing Wizard creator

@@ -108,6 +108,7 @@ game files. To use another directory, pass it as an argument:
 ```
 
 Set `GODOT_BIN` if Godot is outside `PATH` and the standard macOS app location.
+On Windows, run the script from Git Bash.
 CMake, Ninja, Python, Git, and Godot 4.5+ are required. The manual commands are:
 
 ```bash
@@ -117,7 +118,7 @@ godot --headless --editor --path dev_tools/tile_art_viewer/godot --import --quit
 OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --path dev_tools/tile_art_viewer/godot
 ```
 
-On this Mac, replace `godot` with
+On macOS, replace `godot` with
 `/Applications/Godot_mono.app/Contents/MacOS/Godot` if it is not on `PATH`.
 The import step is needed once per checkout: Godot loads the native extension
 only after an import lists it in `.godot/extension_list.cfg`. Without it the
@@ -174,6 +175,14 @@ plus both regen flag states to a temporary CSV without changing the catalog:
 
 ```bash
 OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --headless --path dev_tools/tile_art_viewer/godot -- --metadata-check=/tmp/opengold-tile-metadata-check.csv
+```
+
+The replacement check confirms that the new wall art loads at startup, shows
+and exports a replacement piece, falls back to original art for a missing set,
+and selects new-art tiles in the Map Browser:
+
+```bash
+OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --headless --path dev_tools/tile_art_viewer/godot -- --replacement-check=/tmp/opengold-replacement-check
 ```
 
 For a visual review, run Godot with a display and append

@@ -1,4 +1,4 @@
-# Levels 5–10: SRD 5.2.1 inventory for OpenGold
+# Levels 5–10: SRD 5.2.1 inventory for OpenGoldBox
 
 Planning inventory for raising the cap from level 4 to level 10 for the twelve
 SRD classes and their twelve SRD subclasses ([plan](LEVELS-5-10.md), #176). It
