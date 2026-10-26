@@ -781,6 +781,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::knitting:
     case EffectKind::hasted:
     case EffectKind::entranced:
+    case EffectKind::compelled:
     case EffectKind::terrified:
     case EffectKind::vampiric:
     case EffectKind::blinking:

@@ -221,6 +221,7 @@ constexpr std::array spells{
     Spell{"blight", "Blight", 4, 0, druid_list | sorcerer_list | warlock_list | wizard_list},
     Spell{"charm_monster", "Charm Monster", 4, 0,
           bard_list | druid_list | sorcerer_list | warlock_list | wizard_list},
+    Spell{"compulsion", "Compulsion", 4, 0, bard_list},
     Spell{"confusion", "Confusion", 4, 0, bard_list | druid_list | sorcerer_list | wizard_list},
     Spell{"dimension_door", "Dimension Door", 4, 0,
           bard_list | sorcerer_list | warlock_list | wizard_list},

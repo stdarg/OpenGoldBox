@@ -526,9 +526,13 @@ enum class EffectKind : unsigned
     // Charmed by its source until the start of the source's next turn (a
     // Pirate Captain's Captain's Charm, a Sprite's Enchanting Bow).
     turn_charmed = 211,
+    // Charmed by Compulsion while its caster concentrates; `dc` is the
+    // direction the caster last named for its next turn (1 north and on
+    // clockwise to 8), 0 when none waits.
+    compelled = 212,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = turn_charmed
+    last = compelled
 };
 
 // Magic Circle's creature types, by `dc`.
