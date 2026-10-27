@@ -2051,7 +2051,18 @@ Choices the original and the SRD leave open, made by OpenGoldBox:
 - A step costs what its dearest square costs (Difficult Terrain under either
   square slows it).
 - A creature whose new form fills more squares than it has room for takes the
-  nearest space with room, staying put when it fits.
+  nearest space with room, staying put when it fits (approved by the user,
+  2026-10-26).
 - An area a creature casts or breathes starts from its square nearest the
   aim, and its range is measured from there; its emanations (Spirit
   Guardians and the like) centre on its top-left square.
+
+## LIGHT-1 (2026-10-26): no dark areas
+
+SCOPE-2 kept Darkvision and light only where the campaign marks dark areas.
+The original has no light rules: "dark" appears only in the text of the two
+wilderness cave lairs (GEO6:25, GEO8:27) and Skullcrusher's cell in the
+Cadorna Textile House. The user chose (2026-10-26) to follow the original:
+no area is dark, so Darkvision, Dim Light and a Torch's light have no effect,
+and [#46](https://github.com/stdarg/OpenGoldBox/issues/46) is closed. Magical
+Darkness and Fog Cloud still hide what they cover.

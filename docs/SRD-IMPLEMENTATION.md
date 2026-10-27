@@ -150,8 +150,8 @@ every abstraction before delivering additional character behavior.
 | F10 | Spell reaction windows, starting with Shield. | Trigger selection, decline, resource expenditure, one-slot-per-turn handling and checkpoint resumption are correct. Other reaction features are separate work. |
 | F11 | Multiple targets using Magic Missile and Scorching Ray. | Legal allocation, dead/invalid targets, resource use and deterministic damage work through the reviewed targeting controls. |
 | F12 | Area targeting and effect resolution using one simple spell. | Bounds, target eligibility, cover/line of effect, saves and persistence work. New shapes or ongoing areas are separate increments when they add distinct mechanics. |
-| F13 | Multi-square creature footprints (#45): the campaign has trolls, giants, ettins and a small dragon. | Movement, reach, occupancy, targeting and saves use the whole footprint, proven with one actual large creature. Remaining Tiny/size-difference transit cases are not planned (SCOPE-2). |
-| F14 | Darkvision and light, only where the campaign marks dark areas. | Attacks, targeting, reactions and Hide (#219) use the same visibility queries. Nonvisual senses (#47) are not planned (SCOPE-2). |
+| F13 | Multi-square creature footprints (#45), delivered as [FOOT-1](SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills): the campaign has trolls, giants, ettins and a small dragon. | Movement, reach, occupancy, targeting and saves use the whole footprint, proven with one actual large creature. Remaining Tiny/size-difference transit cases are not planned (SCOPE-2). |
+| F14 | Darkvision and light, only where the campaign marks dark areas. | Closed by [LIGHT-1](SRD-DECISIONS.md#light-1-2026-10-26-no-dark-areas): as in the original, no area is dark. Nonvisual senses (#47) are not planned (SCOPE-2). |
 
 The coverage ledger records dependencies between instantiated increments. For
 example, Shield follows spell grants and reaction support; Rage follows typed
