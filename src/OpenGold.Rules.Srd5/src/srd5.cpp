@@ -1514,6 +1514,43 @@ struct Definition
         bool hampering{}, poisoning{}, poisoning_own_turn{};
     };
     std::optional<LastAttack> last_attack;
+    // A monster's `paralyzing_claw` row: the attack it makes instead of its
+    // Multiattack at a creature it can paralyze, a hit being a Constitution
+    // save against `claw_dc` or Paralyzed until the end of the target's next
+    // turn (a Ghoul's Claw). `paralysis_dc` is set while the Claw is made.
+    std::optional<LastAttack> claw;
+    int claw_dc{}, paralysis_dc{};
+    // A monster's `gore` row: the attack it makes at a Large or smaller
+    // creature it has just charged `gore_feet` or more, the charge adding
+    // `gore_charge` and knocking it Prone (a Minotaur's Gore).
+    std::optional<LastAttack> gore;
+    int gore_feet{};
+    detail::DamageDice gore_charge;
+    // A monster's `paralyzing_venom` row: a melee hit that drops a creature to
+    // 0 Hit Points leaves it Stable, and Poisoned and Paralyzed for an hour (a
+    // Phase Spider's Bite).
+    bool paralyzing_venom{};
+    // A monster's `bonus_charge` row: a Bonus Action that moves it up to half
+    // its Speed toward an enemy it sees (a Troll's Charge). Its `rampage` row:
+    // once a day, its `trait_uses`, dealing damage to a creature already
+    // Bloodied on its turn spends its Bonus Action on moving up to half its
+    // Speed and one melee attack (a Gnoll Warrior's Rampage).
+    bool bonus_charge{}, rampage{};
+    // A monster's `loathsome_limbs` row: the creature a severed limb becomes,
+    // its `trait_uses` a day. Ending any turn Bloodied, having taken 15 or more
+    // Slashing damage during it, the creature loses a limb (a Troll's
+    // Loathsome Limbs).
+    std::string limb_key;
+    // A monster's `trampling_charge` row: a Bonus Action, Recharge
+    // `trample_recharge`, moving it up to its Speed without provoking
+    // Opportunity Attacks through Medium or smaller creatures, each a Strength
+    // save against `trample_dc` or `trample_damage` Bludgeoning and Prone (a
+    // Centaur Trooper's Trampling Charge). Its use is its `trait_uses`.
+    int trample_dc{}, trample_recharge{};
+    detail::DamageDice trample_damage;
+    // A monster's `ethereal_jaunt` row: a Bonus Action that takes it to the
+    // Ethereal Plane, and back (a Phase Spider's Ethereal Jaunt).
+    bool ethereal_jaunt{};
     // A monster's Legendary Actions (SRD 5.2.1): a Vampire's Beguile and
     // Deathless Strike, an Adult Bronze Dragon's Guiding Light, Pounce and
     // Thunderclap.
@@ -1738,6 +1775,10 @@ struct Definition
     int wild_shapes{};
     bool lands_aid{};
     bool prone_bite{}, bloodied_fury{}, charge{}; // a Beast form's attack traits
+    // A charge's run, its extra damage and the largest size it knocks Prone:
+    // a Boar's unless a Gore is being made.
+    int charge_feet{20}, charge_size{2};
+    detail::DamageDice charge_dice{1, 6, 0};
     bool prone_large{}; // the Tiger's: a Large or smaller target falls Prone
     // Nimble Escape (the Tiger's, a monster's row): Disengage or Hide as a
     // Bonus Action.
@@ -1783,6 +1824,7 @@ struct Definition
     bool improved_brutal{};
     bool brave{}; // Halfling: Advantage on saves to avoid or end Frightened
     bool fey_ancestry{}; // Elf: Advantage on saves to avoid Charmed
+    bool elf{};          // a Ghoul's Claw cannot paralyze an elf
     // Rogue levels 5-10.
     bool cunning_strike{}, uncanny_dodge{}, evasion{}, supreme_sneak{};
     bool fast_hands{}; // Thief: a magic item used as a Bonus Action (MAGIC-3)
@@ -2961,6 +3003,7 @@ bool absent(const Actor &a)
 {
     return detail::has_effect(a.effects, detail::EffectKind::banished) ||
            detail::has_effect(a.effects, detail::EffectKind::ethereal) ||
+           detail::has_effect(a.effects, detail::EffectKind::jaunted) ||
            detail::has_effect(a.effects, detail::EffectKind::mazed) ||
            detail::has_effect(a.effects, detail::EffectKind::hurled);
 }
@@ -3054,11 +3097,13 @@ bool gives_condition(detail::EffectKind kind, std::string_view condition)
     }
     if (condition == "paralyzed")
     {
-        return kind == detail::EffectKind::hold_person || kind == detail::EffectKind::paralysis_ray;
+        return kind == detail::EffectKind::hold_person || kind == detail::EffectKind::paralysis_ray ||
+               kind == detail::EffectKind::clawed ||
+               kind == detail::EffectKind::envenomed_paralyzed;
     }
     return kind == detail::EffectKind::poisoned || kind == detail::EffectKind::contagion ||
            kind == detail::EffectKind::retching || kind == detail::EffectKind::sickened ||
-           kind == detail::EffectKind::envenomed;
+           kind == detail::EffectKind::envenomed || kind == detail::EffectKind::envenomed_paralyzed;
 }
 
 std::string condition_name(std::string_view condition)
@@ -3089,7 +3134,7 @@ constexpr std::array<std::pair<std::string_view, std::array<detail::EffectKind, 
     restorable_conditions{
         {{"Paralyzed",
           {detail::EffectKind::hold_person, detail::EffectKind::paralysis_ray,
-           detail::EffectKind::paralysis_ray}},
+           detail::EffectKind::clawed}},
          {"Stunned", {detail::EffectKind::stunned, detail::EffectKind::stunned,
                       detail::EffectKind::stunned}},
          {"Blinded",
@@ -3558,6 +3603,7 @@ character_definition(std::string_view bytes,
     d.resourceful = race == "Human";
     d.lucky = d.brave = race == "Halfling";
     d.fey_ancestry = race == "Elf";
+    d.elf = race == "Elf";
     d.nimble = race == "Halfling";
     d.naturally_stealthy = race == "Halfling";
     // Gnomes and Halflings are Small.
@@ -6368,8 +6414,45 @@ class Session final : public CombatSession
     void petrifying_gaze(Actor &basilisk, const PendingArea &aimed);
     void exhale_breath(Actor &dragon, const PendingArea &aimed);
     void resist_petrifying(Actor &a);
-    // The attacker wearing its stat block's `last_attack` statistics.
-    [[nodiscard]] Loadout last_attack_loadout(const Actor &a) const;
+    // The attacker wearing the statistics of another attack of its stat block:
+    // its `last_attack`, Claw or Gore.
+    [[nodiscard]] Loadout attack_loadout(const Actor &a,
+                                         const Definition::LastAttack &profile) const;
+    // A Ghoul's Claw, carrying its paralysis.
+    [[nodiscard]] Loadout claw_loadout(const Actor &a) const;
+    // A Minotaur's Gore, carrying its charge.
+    [[nodiscard]] Loadout gore_loadout(const Actor &a) const;
+    // Whether a Ghoul's Claw can paralyze the creature.
+    [[nodiscard]] bool claw_paralyzes(const Actor &target) const;
+    // Paralyzed by a Ghoul's Claw on a failed Constitution save.
+    void paralyze(Actor &ghoul, Actor &target);
+    // A Phase Spider's venom in a creature its Bite dropped to 0 Hit Points.
+    void envenom(Actor &spider, Actor &target);
+    // A Gnoll's Rampage begins: half its Speed and one Rend left this turn.
+    void start_rampage(Actor &gnoll);
+    // Loathsome Limbs as a turn ends: each Troll that qualifies loses a limb,
+    // which joins the fight right after it. The turn's Slashing tallies end.
+    void sever_limbs();
+    void sever_limb(std::size_t troll_index);
+    // A Troll regaining Hit Points grows its severed limbs back.
+    void regrow_limbs(Actor &troll);
+    // Exhaustion's penalty to d20 tests: 2 for each level.
+    [[nodiscard]] static int exhaustion_penalty(const Actor &a);
+    // A Trampling Charge's straight run: where it ends, the creatures whose
+    // space it enters, and the conscious enemies and allies among them.
+    struct Trample
+    {
+        Cell end;
+        std::vector<EntityId> entered;
+        int enemies{}, allies{};
+    };
+    // The straight run trampling the most conscious enemies and no ally.
+    [[nodiscard]] std::optional<Trample> trampling_run(const Actor &centaur) const;
+    void trample(Actor &centaur, const Trample &run);
+    // A Phase Spider's Ethereal Jaunt away, and back as its turn starts; true
+    // when it came back.
+    void jaunt_away(Actor &spider);
+    bool jaunt_back(Actor &spider);
 
     // The statistics an attack with the loadout uses: a Wild Shape form's
     // still, as def() gives.
@@ -6390,6 +6473,8 @@ class Session final : public CombatSession
     void apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved);
     static void extend_run(Actor &a, Cell from, Cell to);
     [[nodiscard]] bool charges(const Actor &a, const Actor &target) const;
+    [[nodiscard]] bool charge_run(const Actor &a, const Actor &target, int feet,
+                                  int largest) const;
     bool sneak_eligible(const Actor &a, const Actor &target, AttackRange range, int mode) const;
     bool ally_beside(const Actor &a, const Actor &target) const;
     int roll_advantage_damage(const Actor &a, const Actor &target, int natural);
@@ -7266,8 +7351,10 @@ void Session::remove_fled()
         {
             continue;
         }
-        // A summoned creature vanishes; it never leaves the fight as one that fled.
-        if (detail::has_effect(a.effects, detail::EffectKind::summoned))
+        // A summoned creature or a severed Troll Limb vanishes; it never leaves
+        // the fight as one that fled.
+        if (detail::has_effect(a.effects, detail::EffectKind::summoned) ||
+            detail::has_effect(a.effects, detail::EffectKind::severed))
         {
             actors_.erase(actors_.begin() + static_cast<std::ptrdiff_t>(i));
             if (i < turn_)
@@ -8396,6 +8483,9 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::enthralled, "Charmed (Enthralling Panache)"},
               std::pair{detail::EffectKind::turn_charmed, "Charmed"},
               std::pair{detail::EffectKind::hampered, "Hampered"},
+              std::pair{detail::EffectKind::clawed, "Paralyzed (Claw)"},
+              std::pair{detail::EffectKind::limbs_lost, "Exhaustion (severed limbs)"},
+              std::pair{detail::EffectKind::envenomed_paralyzed, "Poisoned and Paralyzed (venom)"},
               std::pair{detail::EffectKind::lethargic, "Incapacitated (lethargy)"},
               std::pair{detail::EffectKind::entranced, "Charmed (Hypnotic Pattern)"},
               std::pair{detail::EffectKind::compelled, "Charmed (Compulsion)"},
@@ -8404,6 +8494,7 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::vampiric, "Vampiric Touch"},
               std::pair{detail::EffectKind::blinking, "Blink"},
               std::pair{detail::EffectKind::ethereal, "Ethereal"},
+              std::pair{detail::EffectKind::jaunted, "Ethereal (Ethereal Jaunt)"},
               std::pair{detail::EffectKind::tentacled, "Restrained (Black Tentacles)"},
               std::pair{detail::EffectKind::confused, "Confused"},
               std::pair{detail::EffectKind::time_slowed, "Slow"},
@@ -8501,7 +8592,8 @@ Snapshot Session::snapshot() const
                 s.combatants.back().form = std::string(
                     detail::beast_forms.at(static_cast<std::size_t>(effect.dc - 1)).key);
             }
-            else if (effect.kind == detail::EffectKind::illusory)
+            else if (effect.kind == detail::EffectKind::illusory ||
+                     effect.kind == detail::EffectKind::severed)
             {
                 s.combatants.back().form = "copy:" + std::to_string(effect.source_actor);
             }
@@ -12360,6 +12452,23 @@ std::vector<Command> Session::offered_commands() const
     {
         add(id, "aggressive", "Aggressive");
     }
+    if (a.bonus && d.bonus_charge && speed > 0 && enemy_in_sight(a))
+    {
+        add(id, "bonus_charge", "Charge");
+    }
+    // A Rampage's Rend at a creature within reach.
+    if (detail::has_effect(a.effects, detail::EffectKind::rampaging) && !attached_host(a))
+    {
+        for (const auto &other : actors_)
+        {
+            if (!other.life.dead && other.source.side != a.source.side &&
+                (other.life.hp > 0 || may_rise(other)) && line_of_sight(a, other) &&
+                distance(a, other) <= d.reach)
+            {
+                add(id, "rampage", "Rampage", other.source.id);
+            }
+        }
+    }
     if (a.bonus && a.winds > 0 && a.life.hp < max_hp(a))
     {
         add(id, "second_wind", "Second Wind", id);
@@ -13262,6 +13371,26 @@ int Session::resolved_damage(Actor &target, detail::DamageType type, int amount,
     {
         target.regeneration_blocked = true;
     }
+    if (!def(target).limb_key.empty() && result.total > 0 &&
+        type == detail::DamageType::slashing)
+    {
+        const auto slashed =
+            std::find_if(target.effects.active.begin(), target.effects.active.end(),
+                         [](const auto &e)
+                         {
+                             return e.kind == detail::EffectKind::slashed;
+                         });
+        if (slashed != target.effects.active.end())
+        {
+            slashed->dc = std::min(slashed->dc + result.total, 2000);
+        }
+        else if (detail::can_apply(target.effects))
+        {
+            detail::apply_spell_benefit(target.effects, effect_source(target),
+                                        target.source.name, detail::EffectKind::slashed,
+                                        std::min(result.total, 2000));
+        }
+    }
     if (result.total != amount)
     {
         const auto name = std::string(detail::damage_name(type));
@@ -13652,6 +13781,10 @@ int Session::heal(Actor &target, int amount)
     log(target.source.name + " recovers " + std::to_string(restored) + " HP.",
         {"{name} recovers {hp} HP.",
          {{"name", target.source.name}, {"hp", std::to_string(restored)}}});
+    if (restored)
+    {
+        regrow_limbs(target);
+    }
     return restored;
 }
 
@@ -15972,7 +16105,7 @@ void Session::seek_maze_exit(Actor &a)
                                  detail::d20({false, check_disadvantage(a), def(a).lucky}, rng_));
     const int bonus =
         (a.source.character_profile.empty() ? def(a).saves[3] : def(a).investigation) +
-        guidance_bonus(a, "investigation");
+        guidance_bonus(a, "investigation") - exhaustion_penalty(a);
     const bool escaped = natural + bonus >= 20;
     log(a.source.name + " Investigation check: d20 " + std::to_string(natural) + " + " +
             std::to_string(bonus) + " vs DC 20" + (escaped ? " (escapes)." : " (still lost)."),
@@ -16184,6 +16317,10 @@ void Session::strike_riders(Actor &a, Actor &target, bool ranged)
     if (d.pushing == strike)
     {
         push_away(a, target, d.push_feet / 5);
+    }
+    if (!ranged && d.paralysis_dc)
+    {
+        paralyze(a, target);
     }
     if (d.charming == strike && conscious(target) && !mindless(target) &&
         !aura_of_devotion(target) &&
@@ -16600,7 +16737,9 @@ void Session::shed_immune_conditions()
 void Session::recharge_gaze(Actor &a)
 {
     const auto &d = def(a);
-    const int recharge = d.gaze_recharge ? d.gaze_recharge : d.breath_recharge;
+    const int recharge = d.gaze_recharge     ? d.gaze_recharge
+                         : d.breath_recharge ? d.breath_recharge
+                                             : d.trample_recharge;
     if (!recharge || trait_uses_left(a) > 0)
     {
         return;
@@ -16615,9 +16754,11 @@ void Session::recharge_gaze(Actor &a)
                   {
                       return e.kind == detail::EffectKind::trait_uses;
                   });
-    if (d.breath_recharge)
+    if (d.breath_recharge || d.trample_recharge)
     {
-        const std::string label(detail::find_spell(d.monster_breath)->label);
+        const std::string label = d.breath_recharge
+                                      ? std::string(detail::find_spell(d.monster_breath)->label)
+                                      : std::string("Trampling Charge");
         log(a.source.name + "'s " + label + " recharges (" + std::to_string(rolled) + ").",
             {"{name}'s {ability} recharges ({roll}).",
              {{"name", a.source.name}, {"ability", label, true}, {"roll", std::to_string(rolled)}}});
@@ -16771,11 +16912,10 @@ void Session::resist_petrifying(Actor &a)
     log(a.source.name + " turns to stone.", {"{name} turns to stone.", {{"name", a.source.name}}});
 }
 
-Loadout Session::last_attack_loadout(const Actor &a) const
+Loadout Session::attack_loadout(const Actor &a, const Definition::LastAttack &profile) const
 {
     Loadout last{a.definition, a.selected_weapon, a.light_damage};
     auto &d = last.definition;
-    const auto &profile = *d.last_attack;
     d.melee_bonus = profile.bonus;
     d.melee = profile.dice;
     d.melee_type = profile.type;
@@ -16790,6 +16930,298 @@ Loadout Session::last_attack_loadout(const Actor &a) const
     d.poisoning_own_turn = profile.poisoning_own_turn;
     d.pushing = Definition::Strike::none;
     return last;
+}
+
+Loadout Session::claw_loadout(const Actor &a) const
+{
+    auto claw = attack_loadout(a, *def(a).claw);
+    claw.definition.paralysis_dc = def(a).claw_dc;
+    return claw;
+}
+
+Loadout Session::gore_loadout(const Actor &a) const
+{
+    const auto &d = def(a);
+    auto gore = attack_loadout(a, *d.gore);
+    gore.definition.charge = true;
+    gore.definition.charge_feet = d.gore_feet;
+    gore.definition.charge_size = 3;
+    gore.definition.charge_dice = d.gore_charge;
+    return gore;
+}
+
+std::optional<Session::Trample> Session::trampling_run(const Actor &centaur) const
+{
+    const auto size = footprint(centaur);
+    const auto &board = walled_board(true);
+    std::optional<Trample> best;
+    for (const Cell step : {Cell{1, 0}, Cell{-1, 0}, Cell{0, 1}, Cell{0, -1}, Cell{1, 1},
+                            Cell{1, -1}, Cell{-1, 1}, Cell{-1, -1}})
+    {
+        Trample run;
+        for (int squares = 1; squares <= def(centaur).speed / 5; ++squares)
+        {
+            const Cell anchor{centaur.source.cell.x + step.x * squares,
+                              centaur.source.cell.y + step.y * squares};
+            const auto covered = squares_of(anchor, size);
+            if (std::any_of(covered.begin(), covered.end(),
+                            [&](Cell square)
+                            {
+                                return board.at(square) == Terrain::obstacle;
+                            }))
+            {
+                break;
+            }
+            bool open = true, blocked = false;
+            for (const auto &other : actors_)
+            {
+                if (other.source.id == centaur.source.id || other.life.dead || absent(other) ||
+                    std::none_of(covered.begin(), covered.end(),
+                                 [&](Cell square)
+                                 {
+                                     return occupies(other, square);
+                                 }))
+                {
+                    continue;
+                }
+                open = false;
+                blocked |= def(other).size > 2;
+                if (std::find(run.entered.begin(), run.entered.end(), other.source.id) ==
+                    run.entered.end())
+                {
+                    run.entered.push_back(other.source.id);
+                    if (conscious(other))
+                    {
+                        ++(other.source.side == centaur.source.side ? run.allies : run.enemies);
+                    }
+                }
+            }
+            if (blocked)
+            {
+                break;
+            }
+            if (open && room_for(&centaur, size, anchor) && run.allies == 0 &&
+                (!best || run.enemies > best->enemies))
+            {
+                run.end = anchor;
+                best = run;
+            }
+        }
+    }
+    return best;
+}
+
+void Session::trample(Actor &centaur, const Trample &run)
+{
+    const auto &d = def(centaur);
+    centaur.bonus = false;
+    spend_trait_use(centaur);
+    centaur.source.cell = run.end;
+    log(centaur.source.name + " uses Trampling Charge.",
+        {"{name} uses Trampling Charge.", {{"name", centaur.source.name}}});
+    for (const auto id : run.entered)
+    {
+        auto &target = actor(id);
+        if (target.life.dead ||
+            saving_throw_succeeds(target, detail::Ability::strength, d.trample_dc))
+        {
+            continue;
+        }
+        const int amount =
+            resolved_damage(target, detail::DamageType::bludgeoning, dice(d.trample_damage));
+        log(target.source.name + " takes " + std::to_string(amount) + " Bludgeoning damage.",
+            {"{name} takes {damage} {type} damage.",
+             {{"name", target.source.name},
+              {"damage", std::to_string(amount)},
+              {"type", "Bludgeoning", true}}});
+        damage(target, amount, false);
+        if (!target.life.dead && !target.effects.prone)
+        {
+            target.effects.prone = true;
+            log(target.source.name + " is knocked Prone.",
+                {"{name} is knocked Prone.", {{"name", target.source.name}}});
+        }
+    }
+}
+
+void Session::jaunt_away(Actor &spider)
+{
+    spider.bonus = false;
+    detail::apply_spell_benefit(spider.effects, effect_source(spider), spider.source.name,
+                                detail::EffectKind::jaunted, 0);
+    log(spider.source.name + " slips into the Ethereal Plane.",
+        {"{name} slips into the Ethereal Plane.", {{"name", spider.source.name}}});
+}
+
+bool Session::jaunt_back(Actor &spider)
+{
+    if (!std::erase_if(spider.effects.active,
+                       [](const auto &e)
+                       {
+                           return e.kind == detail::EffectKind::jaunted;
+                       }))
+    {
+        return false;
+    }
+    spider.source.cell = nearest_open(spider);
+    log(spider.source.name + " returns from the Ethereal Plane.",
+        {"{name} returns from the Ethereal Plane.", {{"name", spider.source.name}}});
+    return true;
+}
+
+int Session::exhaustion_penalty(const Actor &a)
+{
+    return 2 * detail::exhaustion_levels(a.effects);
+}
+
+void Session::sever_limbs()
+{
+    for (std::size_t index = 0; index < actors_.size(); ++index)
+    {
+        const auto &troll = actors_[index];
+        const auto slashed = std::find_if(troll.effects.active.begin(), troll.effects.active.end(),
+                                          [](const auto &e)
+                                          {
+                                              return e.kind == detail::EffectKind::slashed;
+                                          });
+        if (!def(troll).limb_key.empty() && !troll.life.dead && !absent(troll) &&
+            slashed != troll.effects.active.end() && slashed->dc >= 15 &&
+            troll.life.hp * 2 <= max_hp(troll) && trait_uses_left(troll) > 0)
+        {
+            sever_limb(index);
+        }
+    }
+    for (auto &a : actors_)
+    {
+        std::erase_if(a.effects.active,
+                      [](const auto &e)
+                      {
+                          return e.kind == detail::EffectKind::slashed;
+                      });
+    }
+}
+
+void Session::sever_limb(std::size_t troll_index)
+{
+    auto &troll = actors_[troll_index];
+    spend_trait_use(troll);
+    const auto lost = std::find_if(troll.effects.active.begin(), troll.effects.active.end(),
+                                   [](const auto &e)
+                                   {
+                                       return e.kind == detail::EffectKind::limbs_lost;
+                                   });
+    if (lost != troll.effects.active.end())
+    {
+        ++lost->dc;
+    }
+    else
+    {
+        detail::apply_spell_benefit(troll.effects, effect_source(troll), troll.source.name,
+                                    detail::EffectKind::limbs_lost, 1);
+    }
+    log(troll.source.name + " loses a limb.",
+        {"{name} loses a limb.", {{"name", troll.source.name}}});
+    const auto squares = free_squares_near(troll.source.cell, {});
+    if (squares.empty() || actors_.size() == actors_.capacity())
+    {
+        return;
+    }
+    EntityId id = 1;
+    for (const auto &a : actors_)
+    {
+        id = std::max(id, a.source.id + 1);
+    }
+    for (const auto &gone : fled_)
+    {
+        id = std::max(id, gone.source.id + 1);
+    }
+    const auto &key = def(troll).limb_key;
+    Actor limb;
+    limb.definition = content_->definitions.at(key);
+    limb.source.id = id;
+    limb.source.definition = key;
+    limb.source.name = "Troll Limb";
+    limb.source.side = troll.source.side;
+    limb.source.cell = squares.front();
+    limb.life.hp = limb.definition.hp;
+    limb.initiative = troll.initiative;
+    limb.movement = limb.definition.speed;
+    detail::apply_spell_benefit(limb.effects, effect_source(troll), troll.source.name,
+                                detail::EffectKind::severed, 0);
+    refresh_form(limb);
+    log(limb.source.name + " fights on.", {"{name} fights on.", {{"name", limb.source.name}}});
+    // It acts right after the Troll's turn; the turn now under way stays put.
+    const auto at = troll_index + 1;
+    if (at <= turn_)
+    {
+        ++turn_;
+    }
+    actors_.insert(actors_.begin() + static_cast<std::ptrdiff_t>(at), std::move(limb));
+}
+
+void Session::regrow_limbs(Actor &troll)
+{
+    if (std::erase_if(troll.effects.active,
+                      [](const auto &e)
+                      {
+                          return e.kind == detail::EffectKind::limbs_lost;
+                      }))
+    {
+        log(troll.source.name + " grows its limbs back.",
+            {"{name} grows its limbs back.", {{"name", troll.source.name}}});
+    }
+}
+
+void Session::start_rampage(Actor &gnoll)
+{
+    gnoll.bonus = false;
+    spend_trait_use(gnoll);
+    gnoll.movement += def(gnoll).speed / 2;
+    ++gnoll.dashes;
+    const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
+    detail::apply_poisoned(gnoll.effects, effect_source(gnoll), gnoll.source.name, rest_of_turn,
+                           detail::EffectKind::rampaging);
+    log(gnoll.source.name + " rampages.", {"{name} rampages.", {{"name", gnoll.source.name}}});
+}
+
+void Session::envenom(Actor &spider, Actor &target)
+{
+    detail::stabilize(target.life, rng_);
+    const auto &immunities = def(target).condition_immunities;
+    if (!detail::can_apply(target.effects) ||
+        std::find(immunities.begin(), immunities.end(), "Poisoned") != immunities.end())
+    {
+        return;
+    }
+    detail::apply_spell_benefit(target.effects, effect_source(spider), spider.source.name,
+                                detail::EffectKind::envenomed_paralyzed, 0);
+    log(target.source.name + " is Stable, and Poisoned and Paralyzed for an hour.",
+        {"{name} is Stable, and Poisoned and Paralyzed for an hour.",
+         {{"name", target.source.name}}});
+}
+
+bool Session::claw_paralyzes(const Actor &target) const
+{
+    const auto &d = def(target);
+    return conscious(target) && d.creature_type != "undead" && !d.elf &&
+           !detail::paralyzed(target.effects) &&
+           std::find(d.condition_immunities.begin(), d.condition_immunities.end(), "Paralyzed") ==
+               d.condition_immunities.end();
+}
+
+void Session::paralyze(Actor &ghoul, Actor &target)
+{
+    if (!claw_paralyzes(target) || !detail::can_apply(target.effects) ||
+        saving_throw_succeeds(target, detail::Ability::constitution, def(ghoul).paralysis_dc))
+    {
+        return;
+    }
+    const auto index = index_of(target.source.id);
+    const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
+    detail::apply_poisoned(target.effects, effect_source(ghoul), ghoul.source.name,
+                           next_turn_ms(target) + slot, detail::EffectKind::clawed);
+    log(target.source.name + " is Paralyzed.",
+        {"{name} is Paralyzed.", {{"name", target.source.name}}});
 }
 
 void Session::ward_nature()
@@ -19244,7 +19676,7 @@ Session::AthleticsRoll Session::roll_athletics(Actor &a, int dc)
     check.natural = reliable(
         a, "athletics", detail::d20({check.advantage, check_disadvantage(a), def(a).lucky}, rng_));
     check.bonus = (a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics) +
-                  guidance_bonus(a, "athletics");
+                  guidance_bonus(a, "athletics") - exhaustion_penalty(a);
     check.success = check.natural + check.bonus >= dc;
     // An enemy Lore Bard's Cutting Words may spoil it; the check's line shows
     // the lowered bonus, as an attack's does.
@@ -20231,7 +20663,7 @@ void Session::search(Actor &searcher)
     const int natural =
         detail::d20({false, check_disadvantage(searcher), d.lucky}, rng_, &lucky_reroll);
     log_luck(searcher, lucky_reroll);
-    int bonus = d.perception;
+    int bonus = d.perception - exhaustion_penalty(searcher);
     // An enemy Lore Bard's Cutting Words may keep the best-hidden creature the
     // search would find hidden.
     int margin = 6;
@@ -20835,10 +21267,15 @@ void Session::study(const Actor &fighter, Actor &target)
 
 bool Session::charges(const Actor &a, const Actor &target) const
 {
-    // 20 feet or more in one straight line, each step 5 feet closer to the
-    // target, ending where the Boar stands.
-    return def(a).charge && def(target).size <= 2 && a.run_feet >= 20 &&
-           a.run_end == a.source.cell &&
+    const auto &d = def(a);
+    return d.charge && charge_run(a, target, d.charge_feet, d.charge_size);
+}
+
+bool Session::charge_run(const Actor &a, const Actor &target, int feet, int largest) const
+{
+    // `feet` or more in one straight line, each step 5 feet closer to the
+    // target, ending where the charger stands.
+    return def(target).size <= largest && a.run_feet >= feet && a.run_end == a.source.cell &&
            distance(a.run_start, target) - distance(a.run_end, target) == a.run_feet;
 }
 
@@ -21154,7 +21591,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                  : ranged                   ? d.ranged_bonus
                                             : d.melee_bonus) +
                 blessing_die(a) + (spell || ranged ? 0 : sacred_weapon_bonus(a)) + weapon_magic -
-                return_penalty(a);
+                return_penalty(a) - exhaustion_penalty(a);
     // Sundering Blow: +5 to the next attack roll another creature makes against it.
     if (detail::spend_sundering(target.effects, effect_source(a)))
     {
@@ -21339,7 +21776,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     }
     if (hit && charging)
     {
-        const int extra = dice({1, 6, 0}, critical_hit(a, target, natural));
+        const int extra = dice(d.charge_dice, critical_hit(a, target, natural));
         weapon_damage += extra;
         log("The charge adds " + std::to_string(extra) + " damage.",
             {"The charge adds {damage} damage.", {{"damage", std::to_string(extra)}}});
@@ -21492,6 +21929,19 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
               {"damage", std::to_string(extra)},
               {"type", name, true}}});
         damage(target, extra, false);
+    }
+    // A Gnoll rampages after damaging a creature that was already Bloodied.
+    if (hit && amount > 0 && d.rampage && a.bonus && trait_uses_left(a) > 0 &&
+        actors_[turn_].source.id == a.source.id && hit_points_before > 0 &&
+        hit_points_before * 2 <= max_hp(target))
+    {
+        start_rampage(a);
+    }
+    // A Phase Spider's Bite, its Poison damage too, dropped the creature to 0.
+    if (hit && !ranged && !spell && d.paralyzing_venom && hit_points_before > 0 &&
+        target.life.hp == 0 && !target.life.dead)
+    {
+        envenom(a, target);
     }
     // Hunter's Mark: any attack-roll hit on the caster's quarry deals 1d6 Force.
     if (hit && marked_by(target, a) && !target.life.dead)
@@ -22450,6 +22900,15 @@ void Session::update_outcome()
                     {"{name} falls again.", {{"name", a.source.name}}});
             }
         }
+        // A Troll's severed limbs leave with the fight: they were never part of
+        // the encounter, and their Troll Spawn is not modeled.
+        for (auto &a : actors_)
+        {
+            if (detail::has_effect(a.effects, detail::EffectKind::severed))
+            {
+                a.fled = true;
+            }
+        }
         champion_move_.reset();
         mastery_.reset();
         champion_offers_.clear();
@@ -22553,6 +23012,7 @@ void Session::regenerate(Actor &a)
     log(a.source.name + " regenerates " + std::to_string(healed) + " Hit Points.",
         {"{name} regenerates {amount} Hit Points.",
          {{"name", a.source.name}, {"amount", std::to_string(healed)}}});
+    regrow_limbs(a);
 }
 
 // As in the original game, a downed creature with Regeneration gets back up with
@@ -22581,6 +23041,7 @@ void Session::get_up(Actor &a)
         a.involuntary_overlap = true;
     }
     log(a.source.name + " gets back up.", {"{name} gets back up.", {{"name", a.source.name}}});
+    regrow_limbs(a);
 }
 
 bool Session::begin_turn()
@@ -22624,6 +23085,8 @@ bool Session::begin_turn()
         seek_maze_exit(a);
         return false;
     }
+    // A Phase Spider's Ethereal Jaunt back takes this turn's Bonus Action.
+    const bool jaunted_back = !a.life.dead && jaunt_back(a);
     if (a.life.dead || absent(a))
     {
         return false;
@@ -22958,7 +23421,7 @@ bool Session::begin_turn()
     }
     a.actions = {};
     a.surge_used = false;
-    a.bonus = true;
+    a.bonus = !jaunted_back;
     // Slow: no Reactions.
     a.reaction = !detail::has_effect(a.effects, detail::EffectKind::time_slowed);
     a.dodge = a.disengaged = false;
@@ -23248,7 +23711,7 @@ bool Session::rolled_save_succeeds(const Actor &target, detail::Ability ability,
     // Warding Bond: +1 to saving throws; Smite of Protection +2 to Dexterity
     // saves, Slow -2.
     const int bless =
-        blessing_die(target) - return_penalty(target) +
+        blessing_die(target) - return_penalty(target) - exhaustion_penalty(target) +
         (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0) +
         aura_of_protection(target) +
         (ability == detail::Ability::dexterity && smite_protected(target) ? 2 : 0) +
@@ -24088,6 +24551,7 @@ void Session::end_turn()
     {
         return;
     }
+    sever_limbs();
     for (std::size_t checked = 0; checked <= actors_.size() * 2; ++checked)
     {
         advance_turn_time();
@@ -25284,6 +25748,24 @@ void Session::dispatch(const Command &command)
             a.disengaged = true;
             log(a.source.name + " disengages.", {"{name} disengages.", {{"name", a.source.name}}});
         }
+    }
+    else if (command.verb == "bonus_charge")
+    {
+        // Only monsters charge and the policy spends it closing in, as with
+        // Aggressive, so "straight toward an enemy" is not enforced.
+        a.bonus = false;
+        a.movement += d.speed / 2;
+        ++a.dashes;
+        log(a.source.name + " charges.", {"{name} charges.", {{"name", a.source.name}}});
+    }
+    else if (command.verb == "rampage")
+    {
+        std::erase_if(a.effects.active,
+                      [](const auto &e)
+                      {
+                          return e.kind == detail::EffectKind::rampaging;
+                      });
+        attack(a, actor(command.target), AttackRange::melee);
     }
     else if (command.verb == "aggressive")
     {
@@ -26569,6 +27051,18 @@ void Session::dispatch(const Command &command)
                 {
                     captains_charm(a, target);
                 }
+                // A Ghoul claws a creature it can paralyze instead of biting
+                // it twice; a Minotaur gores the creature it has charged.
+                if (melee && d.claw && claw_paralyzes(target))
+                {
+                    attack_as(a, claw_loadout(a), target, AttackRange::melee);
+                    n = attacks;
+                }
+                else if (melee && d.gore && charge_run(a, target, d.gore_feet, 3))
+                {
+                    attack_as(a, gore_loadout(a), target, AttackRange::melee);
+                    n = attacks;
+                }
                 for (; n < attacks && actor(command.target).life.hp > 0; ++n)
                 {
                     // An Adult Bronze Dragon breathes Repulsion Breath for
@@ -26580,14 +27074,29 @@ void Session::dispatch(const Command &command)
                     }
                     else if (melee && d.last_attack && n == attacks - 1)
                     {
-                        attack_as(a, last_attack_loadout(a), actor(command.target),
-                                  AttackRange::melee);
+                        attack_as(a, attack_loadout(a, *d.last_attack),
+                                  actor(command.target), AttackRange::melee);
                     }
                     else
                     {
                         attack(a, actor(command.target),
                                melee ? AttackRange::melee : AttackRange::ranged);
                     }
+                }
+                // A Centaur tramples with its Bonus Action after its attacks
+                // when a straight run tramples two enemies or more.
+                if (d.trample_dc && a.bonus && trait_uses_left(a) > 0 && conscious(a))
+                {
+                    if (const auto run = trampling_run(a); run && run->enemies >= 2)
+                    {
+                        trample(a, *run);
+                    }
+                }
+                // A Phase Spider slips away with its Bonus Action after its
+                // attacks; it comes back as its next turn starts.
+                if (d.ethereal_jaunt && a.bonus && conscious(a) && detail::can_apply(a.effects))
+                {
+                    jaunt_away(a);
                 }
                 if (qualifies)
                 {
@@ -26999,6 +27508,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     // spend the bonus action on a Dash. Effects are read later, so knowing the
     // spell is enough here.
     const bool bonus_dash = (definition.cunning || definition.aggressive || definition.focus ||
+                             definition.bonus_charge || definition.rampage ||
                              detail::knows_spell(definition.spells, "expeditious_retreat")) &&
                             !actor.bonus;
     if (actor.dashes < 0 ||
@@ -32836,7 +33346,11 @@ constexpr std::array switchable_abilities{
     std::string_view{"captains_charm"},   std::string_view{"riposte"},
     std::string_view{"create_specter"},   std::string_view{"charming"},
     std::string_view{"flyby"},            std::string_view{"magic_resistance"},
-    std::string_view{"protective_magic"}};
+    std::string_view{"protective_magic"}, std::string_view{"paralyzing_claw"},
+    std::string_view{"gore"},             std::string_view{"paralyzing_venom"},
+    std::string_view{"bonus_charge"},     std::string_view{"rampage"},
+    std::string_view{"loathsome_limbs"},  std::string_view{"trampling_charge"},
+    std::string_view{"ethereal_jaunt"}};
 
 // Whether `entry` names a switchable ability, "ability" or "ability creature".
 bool switchable(std::string_view entry)
@@ -32931,7 +33445,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.256", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.257", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),
@@ -33237,6 +33751,100 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
             if (!row.eof())
             {
                 throw std::runtime_error("Unknown Life Drain fields: " + key);
+            }
+            continue;
+        }
+        // paralyzing_claw creature dc bonus count sides modifier type: a
+        // Ghoul's Claw. gore creature feet charge_count charge_sides bonus
+        // count sides modifier type: a Minotaur's Gore after a charge.
+        if (tag == "paralyzing_claw" || tag == "gore")
+        {
+            const auto found = content.definitions.find(key);
+            Definition::LastAttack attack;
+            int first{};
+            detail::DamageDice charge;
+            std::string type;
+            row >> first;
+            if (tag == "gore")
+            {
+                row >> charge.count >> charge.sides;
+            }
+            row >> attack.bonus >> attack.dice.count >> attack.dice.sides >> attack.dice.bonus >>
+                type;
+            if (!row || found == content.definitions.end() || first < 1 || first > 30 ||
+                (tag == "gore" && (first % 5 || charge.count < 1 || charge.count > 10 ||
+                                   charge.sides < 2 || charge.sides > 20)) ||
+                attack.bonus < -10 || attack.bonus > 30 || attack.dice.count < 1 ||
+                attack.dice.count > 10 || attack.dice.sides < 2 || attack.dice.sides > 20 ||
+                attack.dice.bonus < -10 || attack.dice.bonus > 30 ||
+                !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid " + tag + ": " + key);
+            }
+            attack.type = detail::damage_type(type);
+            if (tag == "gore")
+            {
+                found->second.gore = attack;
+                found->second.gore_feet = first;
+                found->second.gore_charge = charge;
+            }
+            else
+            {
+                found->second.claw = attack;
+                found->second.claw_dc = first;
+            }
+            row >> std::ws;
+            if (!row.eof())
+            {
+                throw std::runtime_error("Unknown " + tag + " fields: " + key);
+            }
+            continue;
+        }
+        // trampling_charge creature dc count sides modifier recharge: a
+        // Centaur Trooper's Trampling Charge.
+        if (tag == "trampling_charge")
+        {
+            const auto found = content.definitions.find(key);
+            int dc{}, recharge{};
+            detail::DamageDice damage;
+            row >> dc >> damage.count >> damage.sides >> damage.bonus >> recharge;
+            if (!row || found == content.definitions.end() || dc < 1 || dc > 30 ||
+                damage.count < 1 || damage.count > 10 || damage.sides < 2 || damage.sides > 20 ||
+                damage.bonus < 0 || damage.bonus > 30 || recharge < 2 || recharge > 6 ||
+                !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid Trampling Charge: " + key);
+            }
+            found->second.trample_dc = dc;
+            found->second.trample_damage = damage;
+            found->second.trample_recharge = recharge;
+            found->second.trait_uses = 1;
+            row >> std::ws;
+            if (!row.eof())
+            {
+                throw std::runtime_error("Unknown Trampling Charge fields: " + key);
+            }
+            continue;
+        }
+        // loathsome_limbs creature limb uses: a Troll's Loathsome Limbs, each
+        // severed limb the `limb` creature, `uses` a day.
+        if (tag == "loathsome_limbs")
+        {
+            const auto found = content.definitions.find(key);
+            std::string limb;
+            int uses{};
+            row >> limb >> uses;
+            if (!row || found == content.definitions.end() || !content.definitions.contains(limb) ||
+                uses < 1 || uses > 4 || !trait_rows.insert(tag + " " + key).second)
+            {
+                throw std::runtime_error("Invalid Loathsome Limbs: " + key);
+            }
+            found->second.limb_key = limb;
+            found->second.trait_uses = uses;
+            row >> std::ws;
+            if (!row.eof())
+            {
+                throw std::runtime_error("Unknown Loathsome Limbs fields: " + key);
             }
             continue;
         }
@@ -33674,7 +34282,9 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
             tag == "sunlight_sensitivity" || tag == "evil" || tag == "life_drain_attack" ||
             tag == "flies" || tag == "incorporeal" || tag == "web_walker" ||
             tag == "cunning_action" || tag == "bloodied_fury" || tag == "charge" ||
-            tag == "prone_on_hit" || tag == "prone_large" || tag == "nimble_escape")
+            tag == "prone_on_hit" || tag == "prone_large" || tag == "nimble_escape" ||
+            tag == "paralyzing_venom" || tag == "bonus_charge" || tag == "rampage" ||
+            tag == "ethereal_jaunt")
         {
             const auto found = content.definitions.find(key);
             if (found == content.definitions.end() || !trait_rows.insert(tag + " " + key).second)
@@ -33745,6 +34355,23 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
             else if (tag == "nimble_escape")
             {
                 definition.nimble_escape = true;
+            }
+            else if (tag == "paralyzing_venom")
+            {
+                definition.paralyzing_venom = true;
+            }
+            else if (tag == "bonus_charge")
+            {
+                definition.bonus_charge = true;
+            }
+            else if (tag == "ethereal_jaunt")
+            {
+                definition.ethereal_jaunt = true;
+            }
+            else if (tag == "rampage")
+            {
+                definition.rampage = true;
+                definition.trait_uses = 1;
             }
             else
             {

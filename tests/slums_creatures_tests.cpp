@@ -171,6 +171,10 @@ std::pair<EntityId, EntityId> heroes(const CombatSession &c)
     return {now, now == 2 ? 3 : 2};
 }
 
+// The getting-up tests' slashers fell the Troll, which would lose limbs to
+// them (Loathsome Limbs, tested on its own).
+const std::string keeps_limbs = "off loathsome_limbs\n";
+
 // Ends turns until the downed Troll gets up; returns the round it does.
 unsigned round_troll_gets_up(CombatSession &c)
 {
@@ -187,7 +191,7 @@ unsigned round_troll_gets_up(CombatSession &c)
 // with all its Hit Points.
 void troll_gets_up_later()
 {
-    const auto module = rules();
+    const auto module = rules(keeps_limbs);
     auto c = troll_fight(*module, "slasher", "slasher");
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1), "A hero attacks the Troll");
@@ -209,7 +213,7 @@ void troll_gets_up_later()
 // The rounds a downed Troll has left before it gets up survive a checkpoint.
 void troll_delay_saved()
 {
-    const auto module = rules();
+    const auto module = rules(keeps_limbs);
     auto c = troll_fight(*module, "slasher", "slasher");
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1) && unit(*c, 1).hit_points == 0, "A hero fells the Troll");
@@ -256,7 +260,7 @@ bool move_to(CombatSession &c, EntityId id, Cell destination)
 // gets up on its turn.
 void troll_held_down()
 {
-    const auto module = rules();
+    const auto module = rules(keeps_limbs);
     auto c = troll_fight(*module, "slasher", "slasher");
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1) && submit(*c, "end", first), "A hero fells the Troll");
@@ -1393,6 +1397,315 @@ void tiger_escapes()
     check(offered_any(*c, "cunning_disengage", 1) && !offered_any(*c, "cunning_dash", 1),
           "The tiger may Disengage as a Bonus Action but not Dash");
 }
+
+// A Ghoul claws a creature it can paralyze (SRD 5.2.1): a Constitution save
+// (DC 10) or Paralyzed until the end of the target's next turn. It bites twice
+// at an Undead, which its Claw cannot paralyze, and when the Claw is off.
+void ghoul_claws()
+{
+    const auto module = rules(frail_heroes);
+    auto c = fight(*module, "ghoul", "frail");
+    turn_of(*c, 1);
+    check(submit(*c, "melee", 1, 2) && count_logged(*c, "Monster -> Hero") == 1 &&
+              count_logged(*c, "Hero is Paralyzed.") == 1 &&
+              unit(*c, 2).status.find("Paralyzed (Claw)") != std::string::npos,
+          "The Claw paralyzes");
+    check(submit(*c, "end", 1) && c->snapshot().actor == 2 && submit(*c, "end", 2) &&
+              unit(*c, 2).status.find("Paralyzed") == std::string::npos,
+          "The paralysis ends with the target's next turn");
+    auto undead = fight(*module, "ghoul", "zombie");
+    turn_of(*undead, 1);
+    check(submit(*undead, "melee", 1, 2) && count_logged(*undead, "Monster -> Hero") == 2 &&
+              count_logged(*undead, "Paralyzed") == 0,
+          "Two Bites at an Undead");
+    const auto off = rules(frail_heroes + "off paralyzing_claw\n");
+    auto bites = fight(*off, "ghoul", "frail");
+    turn_of(*bites, 1);
+    check(submit(*bites, "melee", 1, 2) && count_logged(*bites, "Monster -> Hero") == 2,
+          "Two Bites with the Claw off");
+}
+
+// A Minotaur Skeleton gores a Large or smaller creature it has charged 20 feet
+// or more straight at, adding 2d8 and knocking it Prone, and slams one it has
+// not; the Minotaur of Baphomet's charge is 10 feet (SRD 5.2.1).
+void minotaurs_gore()
+{
+    const auto module = rules();
+    std::vector<Terrain> corridor(36, Terrain::obstacle);
+    for (int x = 0; x < 12; ++x)
+    {
+        corridor[12 + x] = Terrain::open;
+    }
+    // The first seed whose attack hits, `creature` from (`from`,1) moving to
+    // (7,1) beside the hero on (8,1).
+    const auto charge = [&](const std::string &creature, int from)
+    {
+        for (std::uint64_t seed = 1; seed < 40; ++seed)
+        {
+            auto c = module->create({{12, 3, corridor},
+                                     {{1, creature, "Monster", Side::opposition, {from, 1}},
+                                      {2, "target", "Hero", Side::party, {8, 1}}}},
+                                    seed);
+            turn_of(*c, 1);
+            check((from == 7 || move_to(*c, 1, {7, 1})) && submit(*c, "melee", 1, 2),
+                  "The monster runs at the hero and attacks");
+            if (count_logged(*c, " hits for ") || count_logged(*c, " CRITICAL for "))
+            {
+                return c;
+            }
+        }
+        throw std::runtime_error("No seed's attack hits");
+    };
+    const auto gored = charge("giant-skeleton", 3);
+    check(count_logged(*gored, "The charge adds") == 1 && unit(*gored, 2).prone,
+          "20 feet straight: the Gore's 2d8 more and Prone");
+    const auto slammed = charge("giant-skeleton", 5);
+    check(count_logged(*slammed, "The charge adds") == 0 && !unit(*slammed, 2).prone,
+          "10 feet is too short: the Slam");
+    const auto minotaur = charge("minotaur", 5);
+    check(count_logged(*minotaur, "The charge adds") == 1 && unit(*minotaur, 2).prone,
+          "The Minotaur of Baphomet charges 10 feet");
+    check(count_logged(*charge("minotaur", 7), "The charge adds") == 0,
+          "Without a run, the Abyssal Glaive");
+}
+
+// A Phase Spider's Bite that drops a creature to 0 Hit Points leaves it Stable,
+// and Poisoned and Paralyzed for an hour (SRD 5.2.1): it makes no death saves.
+void phase_spider_envenoms()
+{
+    const auto module =
+        rules("creature weakling 1 12 0 30 0 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+    for (std::uint64_t seed = 1; seed < 40; ++seed)
+    {
+        auto c = module->create({{10, 4, std::vector<Terrain>(40)},
+                                 {{1, "phase-spider", "Monster", Side::opposition, {1, 1}},
+                                  {2, "weakling", "Hero", Side::party, {2, 1}},
+                                  {3, "target", "Friend", Side::party, {9, 3}}}},
+                                seed);
+        turn_of(*c, 1);
+        check(submit(*c, "melee", 1, 2), "The spider bites");
+        if (unit(*c, 2).hit_points != 0 || unit(*c, 2).dead)
+        {
+            continue;
+        }
+        check(count_logged(*c, "Hero is Stable, and Poisoned and Paralyzed for an hour.") == 1 &&
+                  unit(*c, 2).status.find("Poisoned and Paralyzed (venom)") != std::string::npos,
+              "The venom paralyzes");
+        round_after(*c, 1);
+        check(count_logged(*c, "Hero death save") == 0 &&
+                  unit(*c, 2).status.find("Paralyzed") != std::string::npos,
+              "Stable, it makes no death save, and stays Paralyzed");
+        return;
+    }
+    throw std::runtime_error("No seed's Bite drops the hero");
+}
+
+// A Troll's Charge (SRD 5.2.1): a Bonus Action moving up to half its Speed.
+void troll_charges()
+{
+    const auto module = rules();
+    auto c = fight(*module, "troll", "target", {1, 1}, {9, 1});
+    turn_of(*c, 1);
+    const int feet = unit(*c, 1).movement_feet;
+    check(submit(*c, "bonus_charge", 1) && unit(*c, 1).movement_feet == feet + 15 &&
+              !offered_any(*c, "bonus_charge", 1),
+          "The Charge adds 15 feet, once");
+    const auto off = rules("off bonus_charge\n");
+    auto without = fight(*off, "troll", "target", {1, 1}, {9, 1});
+    turn_of(*without, 1);
+    check(!offered_any(*without, "bonus_charge", 1), "No Charge when it is off");
+}
+
+// A Gnoll Warrior's Rampage (SRD 5.2.1), once a day: dealing damage to a
+// creature already Bloodied, it moves up to half its Speed and makes one Rend.
+void gnoll_rampages()
+{
+    const auto module = rules();
+    // A gnoll beside a Bloodied hero, `friend_cell` the other hero's square.
+    const auto gnoll_fight = [&](int hero_hit_points, std::uint64_t seed)
+    {
+        return module->create({{10, 4, std::vector<Terrain>(40)},
+                               {{1, "gnoll-warrior", "Monster", Side::opposition, {1, 1}},
+                                {2, "target", "Hero", Side::party, {2, 1}, {},
+                                 VitalState{hero_hit_points}},
+                                {3, "target", "Friend", Side::party, {4, 1}}}},
+                              seed);
+    };
+    for (std::uint64_t seed = 1; seed < 40; ++seed)
+    {
+        auto c = gnoll_fight(400, seed);
+        turn_of(*c, 1);
+        const int feet = unit(*c, 1).movement_feet;
+        check(submit(*c, "melee", 1, 2), "The gnoll attacks");
+        if (!count_logged(*c, "Monster -> Hero: ") || count_logged(*c, "misses"))
+        {
+            continue;
+        }
+        check(count_logged(*c, "Monster rampages.") == 1 &&
+                  unit(*c, 1).movement_feet == feet + 15 && offered(*c, "rampage", 1, 2),
+              "Hitting a Bloodied hero sets off the Rampage");
+        check(move_to(*c, 1, {3, 1}) && submit(*c, "rampage", 1, 3) &&
+                  count_logged(*c, "Monster -> Friend") == 1 && !offered_any(*c, "rampage", 1),
+              "The gnoll moves and Rends the other hero");
+        round_after(*c, 1);
+        check(submit(*c, "melee", 1, 2) && count_logged(*c, "Monster rampages.") == 1,
+              "Once a day");
+        auto fresh = gnoll_fight(1000, seed);
+        turn_of(*fresh, 1);
+        check(submit(*fresh, "melee", 1, 2) && count_logged(*fresh, "rampages") == 0,
+              "No Rampage on a creature not yet Bloodied");
+        auto computer = gnoll_fight(400, seed);
+        turn_of(*computer, 1);
+        for (unsigned commands = 0; computer->snapshot().actor == 1; ++commands)
+        {
+            check(commands < 10 && computer->submit(choose_demo_command(*computer)),
+                  "The computer plays the gnoll");
+        }
+        check(count_logged(*computer, "Monster rampages.") == 1 &&
+                  count_logged(*computer, "Monster -> ") == 2,
+              "The computer Rends with the Rampage");
+        return;
+    }
+    throw std::runtime_error("No seed's attack hits");
+}
+
+// A Troll's Loathsome Limbs (SRD 5.2.1): ending a turn Bloodied, having taken
+// 15 or more Slashing damage during it, the Troll loses a limb, which fights
+// on as a Troll Limb right after the Troll's turn; the Troll has an Exhaustion
+// level for each missing limb until it regains Hit Points. The limbs leave
+// with the fight.
+void troll_loses_limbs()
+{
+    const auto module =
+        rules("creature cutter 30 1000 20 30 30 4 6 11 0 0 0 0 0 0 0 0 0 1 0\n"
+              "damage_types cutter slashing slashing\n");
+    const auto troll_fight = [&](int troll_hit_points, const std::string &hero)
+    {
+        return module->create({{10, 4, std::vector<Terrain>(40)},
+                               {{1, "troll", "Monster", Side::opposition, {1, 1}, {},
+                                 VitalState{troll_hit_points}},
+                                {2, hero, "Hero", Side::party, {2, 1}},
+                                {3, "target", "Friend", Side::party, {8, 3}}}},
+                              7);
+    };
+    auto c = troll_fight(40, "cutter");
+    turn_of(*c, 2);
+    check(submit(*c, "melee", 2, 1) && unit(*c, 1).hit_points > 0 &&
+              count_logged(*c, "loses a limb") == 0,
+          "The cut lands; the limb goes as the turn ends");
+    const auto checkpoint = c->save();
+    check(module->restore(checkpoint)->save() == checkpoint, "The cut survives a checkpoint");
+    check(submit(*c, "end", 2) && count_logged(*c, "Monster loses a limb.") == 1 &&
+              count_logged(*c, "Troll Limb fights on.") == 1 &&
+              unit(*c, 4).definition == "troll-limb",
+          "The Bloodied Troll loses a limb, which fights on");
+    check(c->snapshot().actor == 1 && count_logged(*c, "Monster grows its limbs back.") == 1,
+          "The Troll's turn comes next: regenerating, it grows the limb back");
+    check(submit(*c, "end", 1) && c->snapshot().actor == 4, "The limb acts right after the Troll");
+
+    const auto unhealing = rules("creature cutter 30 1000 20 30 30 4 6 11 0 0 0 0 0 0 0 0 0 1 0\n"
+                                 "damage_types cutter slashing slashing\n"
+                                 "off regeneration troll\n");
+    auto tired = unhealing->create({{10, 4, std::vector<Terrain>(40)},
+                                    {{1, "troll", "Monster", Side::opposition, {1, 1}, {},
+                                      VitalState{40}},
+                                     {2, "cutter", "Hero", Side::party, {2, 1}},
+                                     {3, "target", "Friend", Side::party, {8, 3}}}},
+                                   7);
+    turn_of(*tired, 2);
+    check(submit(*tired, "melee", 2, 1) && submit(*tired, "end", 2), "The cutter cuts");
+    turn_of(*tired, 1);
+    check(unit(*tired, 1).status.find("Exhaustion (severed limbs)") != std::string::npos &&
+              unit(*tired, 1).movement_feet == 25,
+          "Missing a limb, the Troll is Exhausted: 5 feet less Speed");
+
+    auto whole = troll_fight(94, "cutter");
+    turn_of(*whole, 2);
+    check(submit(*whole, "melee", 2, 1) && submit(*whole, "end", 2) &&
+              count_logged(*whole, "loses a limb") == 0,
+          "A Troll not yet Bloodied keeps its limbs");
+
+    auto beaten = troll_fight(40, "slasher");
+    turn_of(*beaten, 2);
+    for (unsigned turns = 0; beaten->snapshot().outcome == Outcome::ongoing; ++turns)
+    {
+        check(turns < 60, "The fight ends");
+        const auto actor = beaten->snapshot().actor;
+        const auto commands = beaten->legal_commands();
+        const auto melee = std::find_if(commands.begin(), commands.end(),
+                                        [&](const auto &command)
+                                        {
+                                            return command.actor == 2 && command.verb == "melee" &&
+                                                   unit(*beaten, command.target).hit_points > 0;
+                                        });
+        check(actor == 2 && melee != commands.end() ? beaten->submit(*melee)
+                                                    : submit(*beaten, "end", actor),
+              "The fight goes on");
+    }
+    const auto after = beaten->snapshot();
+    check(after.outcome == Outcome::victory &&
+              std::none_of(after.combatants.begin(), after.combatants.end(),
+                           [](const auto &u)
+                           {
+                               return u.definition == "troll-limb";
+                           }),
+          "The limbs leave with the fight");
+}
+
+// A Centaur Trooper's Trampling Charge (SRD 5.2.1), a Bonus Action with
+// Recharge 5-6: after its attacks it runs straight through two enemies or
+// more, each a Strength save (DC 14) or 1d6 + 4 Bludgeoning and Prone. It
+// does not trample a lone enemy, or run through an ally.
+void centaur_tramples()
+{
+    const auto module = rules(frail_heroes);
+    const auto centaur_fight = [&](const std::string &second, Side side)
+    {
+        return module->create({{12, 4, std::vector<Terrain>(48)},
+                               {{1, "centaur", "Monster", Side::opposition, {1, 1}},
+                                {2, "frail", "Hero", Side::party, {2, 1}},
+                                {3, second, "Second", side, {3, 1}},
+                                {4, "target", "Friend", Side::party, {10, 3}}}},
+                              7);
+    };
+    auto c = centaur_fight("frail", Side::party);
+    turn_of(*c, 1);
+    check(submit(*c, "melee", 1, 2) && count_logged(*c, "Monster uses Trampling Charge.") == 1 &&
+              unit(*c, 1).cell.x == 4 && unit(*c, 2).prone && unit(*c, 3).prone &&
+              count_logged(*c, "Bludgeoning damage") == 2,
+          "The centaur tramples both heroes");
+    auto lone = fight(*module, "centaur", "frail");
+    turn_of(*lone, 1);
+    check(submit(*lone, "melee", 1, 2) && count_logged(*lone, "Trampling Charge") == 0,
+          "A lone enemy is not trampled");
+    auto ally = centaur_fight("bandit", Side::opposition);
+    turn_of(*ally, 1);
+    check(submit(*ally, "melee", 1, 2) && count_logged(*ally, "Monster uses Trampling") == 0,
+          "It does not run through an ally");
+}
+
+// A Phase Spider's Ethereal Jaunt (SRD 5.2.1), a Bonus Action: after biting it
+// slips into the Ethereal Plane, out of reach; it comes back as its next turn
+// starts, which takes that turn's Bonus Action, so it stays to be struck.
+void phase_spider_jaunts()
+{
+    const auto module = rules();
+    auto c = fight(*module, "phase-spider", "target");
+    turn_of(*c, 1);
+    check(submit(*c, "melee", 1, 2) &&
+              count_logged(*c, "Monster slips into the Ethereal Plane.") == 1,
+          "It bites and slips away");
+    check(submit(*c, "end", 1) && c->snapshot().actor == 2 && !offered(*c, "melee", 2, 1),
+          "The hero cannot reach it");
+    check(submit(*c, "end", 2) && c->snapshot().actor == 1 &&
+              count_logged(*c, "Monster returns from the Ethereal Plane.") == 1 &&
+              !unit(*c, 1).bonus_action,
+          "It comes back with its Bonus Action");
+    check(submit(*c, "melee", 1, 2) &&
+              count_logged(*c, "Monster slips into the Ethereal Plane.") == 1 &&
+              submit(*c, "end", 1) && offered(*c, "melee", 2, 1),
+          "Back, it bites and stays within reach");
+}
 } // namespace
 
 int main()
@@ -1441,6 +1754,14 @@ int main()
         quickling_charms();
         yarash_protects_himself();
         options_switch_abilities();
+        ghoul_claws();
+        minotaurs_gore();
+        phase_spider_envenoms();
+        troll_charges();
+        gnoll_rampages();
+        troll_loses_limbs();
+        centaur_tramples();
+        phase_spider_jaunts();
         std::cout << "Slums creature tests passed\n";
         return 0;
     }

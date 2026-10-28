@@ -60,7 +60,7 @@ valley's healing), `opengold_creatures GAME`, `opengold_maps GAME`, coab's
 | Record | Original | Conversion |
 | --- | --- | --- |
 | 57, 58, 61, 68, 69, 123 | lizard men, mutants, stirges, displacer beasts, driders, kobolds | the Central Wilderness's |
-| 62 | Minotaur (HP 33) | **new:** SRD 5.2.1 Minotaur of Baphomet with 33 Hit Points, its Abyssal Glaive (Gore not modeled) |
+| 62 | Minotaur (HP 33) | **new:** SRD 5.2.1 Minotaur of Baphomet with 33 Hit Points, its Abyssal Glaive, or its Gore after a charge ([MONSTER-3](../SRD-DECISIONS.md#monster-3-2026-10-28-the-last-monster-abilities)) |
 | 75 | 6th Level Fighter (HP 45) | **new:** SRD 5.2.1 Warrior Veteran with 45 Hit Points |
 | 76, 80 | 7th Level Dwarf Fighters (HP 50) | **new:** SRD 5.2.1 Warrior Veteran with 50 Hit Points |
 | 77 | 7th Level Thief (HP 28) | the Spy with 28 Hit Points, as Kovel Mansion's |

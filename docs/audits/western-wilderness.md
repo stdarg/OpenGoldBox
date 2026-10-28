@@ -44,7 +44,7 @@ sites), `opengold_creatures GAME`, `opengold_maps GAME`, and SRD 5.2.1.
 | 54 | Corporal (HP 13) | **new:** SRD 5.2.1 Guard with 13 Hit Points |
 | 60 | Giant Snake (HP 25) | **new:** SRD 5.2.1 Giant Venomous Snake with 25 Hit Points |
 | 65 | Ankheg (HP 40) | **new:** SRD 5.2.1 Ankheg with 40 Hit Points and its Acid Spray (no grapple, SCOPE-2) |
-| 67 | Centaur (HP 20) | **new:** SRD 5.2.1 Centaur Trooper with 20 Hit Points (Trampling Charge not modeled) |
+| 67 | Centaur (HP 20) | **new:** SRD 5.2.1 Centaur Trooper with 20 Hit Points and its Trampling Charge ([MONSTER-3](../SRD-DECISIONS.md#monster-3-2026-10-28-the-last-monster-abilities)) |
 | 74 | Giant Mantis (HP 55) | **new:** the Giant Scorpion's two Claws with 55 Hit Points (SRD 5.2.1 has no mantis) |
 | 100 | 3rd Level Fighter (HP 18) | the Bandit Captain with 18 Hit Points |
 | 118 | Thri-kreen (HP 33) | **new:** the Warrior Veteran with 33 Hit Points (SRD 5.2.1 has no thri-kreen) |

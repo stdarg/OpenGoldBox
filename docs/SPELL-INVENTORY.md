@@ -22,7 +22,10 @@ spells that need a DM or have nothing to act on in this game, leaving **89 spell
 twelve partial, one implemented and 76 missing**. GUIDE-1 then restored
 Guidance. As the tables below stood on 2026-10-18, **89 of the 90 spells are
 implemented** and Chill Touch is partial; Detect Magic and Identify came with
-[#262](https://github.com/stdarg/OpenGoldBox/issues/262).
+[#262](https://github.com/stdarg/OpenGoldBox/issues/262). Checked on 2026-10-28,
+**all 90 are implemented**: Chill Touch's other routes (Magic Initiate, Pact of
+the Tome and the High Elf through the class lists, the Chthonic Tiefling through
+its lineage) and its progression to level 15 are in place.
 
 ## Scope and counting
 
@@ -190,7 +193,7 @@ are evidence of partial behavior, not certification of the full spell.
 | Spell / SRD page | Normal lists | Additional routes | Further dependencies | Status / work |
 | --- | --- | --- | --- | --- |
 | [Acid Splash](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=107) (p. 107) | S, W | MI, Tome, High, Tropical | [#43](https://github.com/stdarg/OpenGoldBox/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#ray-of-sickness-ice-knife-chromatic-orb-and-acid-splash) |
-| [Chill Touch](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=115) (p. 115) | S, K, W | MI, Tome, High, Chthonic | [#35](https://github.com/stdarg/OpenGoldBox/issues/35) | Partial: Wizard 1–4, Sorcerer/Warlock 1; creature casting, healing prevention and Q40 earned recovery verified in [Chill Touch](CHILL-TOUCH.md). MI/Tome/species, objects and higher class progression remain open under [#165](https://github.com/stdarg/OpenGoldBox/issues/165) |
+| [Chill Touch](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=115) (p. 115) | S, K, W | MI, Tome, High, Chthonic | [#35](https://github.com/stdarg/OpenGoldBox/issues/35) | Implemented for Wizards, Sorcerers and Warlocks to level 15, Magic Initiate, Pact of the Tome, the High Elf and the Chthonic Tiefling; [Chill Touch](CHILL-TOUCH.md) |
 | [Eldritch Blast](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=127) (p. 127) | K | Tome | Objects [#225](https://github.com/stdarg/OpenGoldBox/issues/225) | Implemented for Warlocks, levels 1–4; [Eldritch Blast](ELDRITCH-BLAST.md); also Pact of the Tome |
 | [Fire Bolt](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=132) (p. 132) | S, W | MI, Tome, High, Arid, Infernal | — | Implemented for Wizards, Sorcerers, Arid Land and Magic Initiate; [Fire Bolt](FIRE-BOLT.md); also the High Elf, Infernal Tiefling and Pact of the Tome |
 | [Guidance](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=138) (p. 138) | C, D | MI, Tome, Thaum, Blessed, Magician, DruidicWarrior | — (fights only, by choice) | Implemented for combat Athletics and Medicine checks ([GUIDE-1](SRD-DECISIONS.md#guide-1-2026-10-12-guidance-restored)); [Cleric](CLERIC.md#resistance-and-silence) |

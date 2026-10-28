@@ -47,7 +47,8 @@ at every difficulty, and a value that is neither a difficulty nor `never` keeps
 the default. By default Legendary Actions (Tyranthraxus's and the vampire's)
 are on from `hard`; new settings files receive that key. The combat screen
 reads the section when a fight starts. See
-[MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders).
+[MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders)
+and [MONSTER-3](SRD-DECISIONS.md#monster-3-2026-10-28-the-last-monster-abilities).
 
 The combat screen reads `combat_zoom` from `[combat]` when it opens. The value
 is a percentage, clamped to 10–1000. The default is 100, also recorded in the

@@ -530,9 +530,28 @@ enum class EffectKind : unsigned
     // direction the caster last named for its next turn (1 north and on
     // clockwise to 8), 0 when none waits.
     compelled = 212,
+    // Paralyzed until the end of its next turn (a Ghoul's Claw), which is no
+    // magic Freedom of Movement keeps off.
+    clawed = 213,
+    // Poisoned for an hour, and Paralyzed while Poisoned (a Phase Spider's
+    // Bite that dropped it to 0 Hit Points).
+    envenomed_paralyzed = 214,
+    // A Gnoll's Rampage under way: one Rend left to make this turn.
+    rampaging = 215,
+    // The Slashing damage a creature with Loathsome Limbs has taken this turn,
+    // in `dc`.
+    slashed = 216,
+    // A Troll's severed limbs, in `dc`: as many Exhaustion levels, until it
+    // regains Hit Points and grows them back.
+    limbs_lost = 217,
+    // A Troll Limb, severed from its source.
+    severed = 218,
+    // On the Ethereal Plane by a Phase Spider's Ethereal Jaunt, until its next
+    // turn starts.
+    jaunted = 219,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = compelled
+    last = jaunted
 };
 
 // Magic Circle's creature types, by `dc`.
@@ -668,6 +687,8 @@ void apply_shocking_grasp(EffectState &effects, EffectSource source, std::string
 // The net Speed reduction from effects; negative when Longstrider raises Speed,
 // and enough to bring any Speed to 0 while Restrained.
 [[nodiscard]] int speed_penalty(const EffectState &effects) noexcept;
+// Exhaustion levels: a Troll's severed limbs.
+[[nodiscard]] int exhaustion_levels(const EffectState &effects) noexcept;
 [[nodiscard]] bool slowed(const EffectState &effects) noexcept;
 [[nodiscard]] bool frosted(const EffectState &effects) noexcept;
 void apply_ray_of_frost(EffectState &effects, EffectSource source, std::string name,

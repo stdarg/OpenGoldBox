@@ -2066,3 +2066,47 @@ Cadorna Textile House. The user chose (2026-10-26) to follow the original:
 no area is dark, so Darkvision, Dim Light and a Torch's light have no effect,
 and [#46](https://github.com/stdarg/OpenGoldBox/issues/46) is closed. Magical
 Darkness and Fog Cloud still hide what they cover.
+
+## MONSTER-3 (2026-10-28): the last monster abilities
+
+The user asked on 2026-10-28 for the monster abilities MONSTER-2 left out.
+Each is a game option, like MONSTER-2's ([CONFIGURATION](CONFIGURATION.md)),
+on at every difficulty by default. Claude chose how the computer uses them;
+they await the user's review:
+
+- **A Ghoul's Claw** replaces its two Bites at a creature it can paralyze: a
+  Constitution save (DC 10) or Paralyzed until the end of the target's next
+  turn. Undead, elves and creatures immune to Paralyzed are bitten instead.
+  The paralysis is no magic, so Freedom of Movement does not keep it off;
+  Lesser Restoration and Restoring Touch end it.
+- **A Minotaur's Gore** follows a charge: 20 feet straight at the target for
+  the Minotaur Skeleton (2d8 more), 10 feet for the Minotaur of Baphomet (3d6
+  more), and a Large or smaller target falls Prone. Without the run they
+  Slam or swing the Abyssal Glaive, which deal more.
+- **A Phase Spider's Bite** that drops a creature to 0 Hit Points leaves it
+  Stable, and Poisoned and Paralyzed for an hour. Its **Ethereal Jaunt** is
+  its Bonus Action after its attacks; it comes back as its next turn starts,
+  which takes that turn's Bonus Action, so it then stays within reach until
+  its following turn. It does not move on the Ethereal Plane first.
+- **A Troll's Charge** is its Bonus Action toward an enemy in view, taken as
+  the Orc's Aggressive is: "straight toward an enemy" is the computer's way
+  of spending it, not enforced.
+- **A Troll's Loathsome Limbs:** ending any turn Bloodied, having taken 15
+  or more Slashing damage during it, the Troll loses a limb, four times a
+  day. The limb is the SRD Troll Limb, in the free square nearest the Troll,
+  acting right after the Troll's turn and drawn in the Troll's own art until
+  it has its own. The Troll has an Exhaustion level for each missing limb (2
+  less on d20 tests, 5 feet less Speed) until it regains Hit Points, which its
+  Regeneration usually does as its next turn starts. A downed Troll is still
+  Bloodied, so a Troll felled by a blade loses a limb too. The limbs leave the
+  field when the fight ends; their Troll Spawn is not modeled. Exhaustion
+  exists for this alone: no other effect gives it.
+- **A Gnoll Warrior's Rampage**, once a day: dealing damage to a creature
+  already Bloodied on its turn, it spends its Bonus Action on moving up to
+  half its Speed and one Rend at once; the computer closes in to use it.
+- **A Centaur Trooper's Trampling Charge** (Bonus Action, Recharge 5-6)
+  follows its attacks when a straight run of up to its Speed tramples two
+  enemies or more and no ally. The run passes through Medium or smaller
+  creatures, draws no Opportunity Attacks and ends in an open square; each
+  creature it enters makes a Strength save (DC 14) or takes 1d6 + 4
+  Bludgeoning and falls Prone. The computer only charges in straight lines.

@@ -2213,7 +2213,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             return command;
         }
     }
-    std::vector<std::string_view> attacks{"eldritch_blast", "sorcerous_burst_fire",
+    std::vector<std::string_view> attacks{"rampage", "eldritch_blast", "sorcerous_burst_fire",
                                           "flame_blade_strike", "hurl_flame", "heat_metal_again"};
     if (shoots)
     {
@@ -2269,8 +2269,9 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         }
     }
     // With no action left, approaching for another attack cannot help this
-    // turn. The bonus-action recovery choices above still get their chance.
-    if (!active.action)
+    // turn, unless a Gnoll's Rampage still has its Rend to make. The
+    // bonus-action recovery choices above still get their chance.
+    if (!active.action && !shows_spell(active, "Rampaging"))
     {
         for (const auto &command : offered)
         {
@@ -2303,11 +2304,12 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             }
         }
     }
-    // With nothing to attack yet, Aggressive covers more ground toward an
-    // enemy in view.
+    // With nothing to attack yet, Aggressive or a Troll's Charge covers more
+    // ground toward an enemy in view.
     for (const auto &command : offered)
     {
-        if (command.verb == "aggressive" && !in_view.empty() && !stays_back)
+        if ((command.verb == "aggressive" || command.verb == "bonus_charge") && !in_view.empty() &&
+            !stays_back)
         {
             return command;
         }

@@ -88,8 +88,8 @@ equipment slums-goblin-leader metal_armor MON2CHA.DAX:3 scale_mail
 equipment slums-orc-leader metal_armor MON2CHA.DAX:5 chain_mail
 equipment slums-orc-leader-archer metal_armor MON2CHA.DAX:5 chain_mail
 # Kuto's Well (docs/audits/kutos-well.md): Lizardfolk (SRD 5.1: two melee
-# attacks a turn, a javelin at range), Giant Lizard and Gnoll Warrior (SRD 5.2.1;
-# the gnoll's once-a-day Rampage is not modeled).
+# attacks a turn, a javelin at range), Giant Lizard and Gnoll Warrior (SRD 5.2.1,
+# with its once-a-day Rampage: rampage creature).
 creature lizardfolk 15 22 0 30 4 1 6 2 4 1 6 2 30 120 0 0 0 1 0
 creature giant-lizard 12 19 1 40 4 1 8 2 0 0 0 0 0 0 0 0 0 1 0
 creature gnoll-warrior 15 27 1 30 4 1 6 2 3 1 10 1 150 600 0 0 0 1 0
@@ -102,6 +102,7 @@ damage_types gnoll-warrior piercing piercing
 size giant-lizard large
 type giant-lizard beast
 type gnoll-warrior fiend
+rampage gnoll-warrior
 # Norris the Gray is the SRD 5.2.1 Bandit Captain in his studded leather (AC 15),
 # with his Scimitar and its Parry; the stat block's Pistol is omitted.
 creature norris-the-gray 15 52 3 30 5 1 6 3 0 0 0 0 0 0 0 0 0 1 0
@@ -122,8 +123,13 @@ multiattack buccaneer 2
 enthralling_panache buccaneer 12
 # Slums set encounters (docs/audits/cluebook-check.md): Hobgoblin Warrior, Ogre and
 # Troll (SRD 5.2.1). Hobgoblin leaders are the same stat block: their record
-# readies no armor. The Troll's three Rends and Regeneration are rows; its Charge
-# and Loathsome Limbs are not modeled. The magic-user defending Ohlo is a
+# readies no armor. The Troll's three Rends, Regeneration, Charge (a Bonus
+# Action moving half its Speed: bonus_charge creature) and Loathsome Limbs
+# (loathsome_limbs creature limb uses: ending any turn Bloodied, having taken
+# 15 or more Slashing damage during it, it loses a limb, which acts right after
+# it as the Troll Limb; an Exhaustion level for each missing limb until it
+# regains Hit Points) are rows. The Troll Limb's Troll Spawn, a day after the
+# fight, is not modeled. The magic-user defending Ohlo is a
 # level-3 Wizard profile (SRD 5.2.1 has no apprentice mage): Fire Bolt and Magic
 # Missile with four level-one slots, Intelligence 16, a dagger.
 creature slums-hobgoblin 18 11 3 30 3 2 10 1 3 1 8 1 150 600 0 0 0 1 0
@@ -150,6 +156,14 @@ ranged_extra_damage slums-hobgoblin 3 4 poison
 # adjacent squares only (MELEE-1), so the Troll's 10-foot reach is not used.
 regeneration troll 15
 multiattack troll 3
+bonus_charge troll
+creature troll-limb 13 14 1 20 6 2 4 4 0 0 0 0 0 0 0 0 0 1 0
+saves troll-limb 4 1 0 -5 -1 -5
+damage_types troll-limb slashing slashing
+size troll-limb small
+type troll-limb giant
+regeneration troll-limb 5
+loathsome_limbs troll troll-limb 4
 # perception creature bonus: the Perception skill of a stat block that has it
 # (Passive Perception is 10 + bonus); others use their Wisdom save (HIDE-1).
 perception scout 5
@@ -165,7 +179,9 @@ affinity zombie stat:poison immunity poison
 type zombie undead
 undead_fortitude zombie
 # Create Undead's Ghoul (SRD 5.2.1): two Bites, each 1d6 + 2 Piercing and 1d6
-# Necrotic; its Claw's paralysis is a second action the game leaves out.
+# Necrotic, or its Claw at a creature it can paralyze (paralyzing_claw creature
+# dc bonus count sides modifier type): a Constitution save or Paralyzed until
+# the end of the target's next turn; Undead and elves are immune.
 creature ghoul 12 22 2 30 4 1 6 2 0 0 0 0 0 0 0 0 0 1 0
 saves ghoul 1 2 0 -2 0 -2
 damage_types ghoul piercing piercing
@@ -173,6 +189,7 @@ affinity ghoul stat:poison immunity poison
 type ghoul undead
 multiattack ghoul 2
 melee_extra_damage ghoul 1 6 necrotic
+paralyzing_claw ghoul 10 4 1 4 2 slashing
 # The Cadorna Textile House's Skeleton (SRD 5.2.1): Shortsword and Shortbow,
 # Vulnerability to Bludgeoning, Immunity to Poison.
 creature skeleton 14 13 3 30 5 1 6 3 5 1 6 3 80 320 0 0 0 1 0
@@ -376,7 +393,10 @@ saves nomad-shaman -1 2 1 5 3 0
 damage_types nomad-shaman piercing piercing
 perception nomad-shaman 1
 # The Pyramid (docs/audits/pyramid.md, PYRAMID-1), with the original's Hit
-# Points: the Minotaur of Baphomet's Abyssal Glaive (its Gore not modeled),
+# Points: the Minotaur of Baphomet's Abyssal Glaive, or its Gore after a
+# charge of 10 feet or more (gore creature feet charge_count charge_sides bonus
+# count sides modifier type: the charge's dice and Prone on a Large or smaller
+# creature),
 # the trapped fighters as the Warrior Veteran, the trapped cleric as the
 # Priest Acolyte, and Yarash as the Mage (three Arcane Bursts; Fireball and
 # Invisibility twice a day, Cone of Cold once, Misty Step three times as a
@@ -390,6 +410,7 @@ size minotaur large
 type minotaur monstrosity
 perception minotaur 7
 melee_extra_damage minotaur 3 6 necrotic
+gore minotaur 10 3 6 6 4 6 4 piercing
 creature trapped-fighter 17 45 3 30 5 2 6 3 3 2 10 1 100 400 0 0 0 1 0
 saves trapped-fighter 3 1 2 0 0 0
 parry trapped-fighter 2
@@ -425,7 +446,9 @@ protective_magic yarash 3
 # turn: charming creature melee|ranged; the computer casts no Invisibility),
 # Zhentil corporals as the Guard, giant snakes as the Giant Venomous Snake,
 # ankhegs (Acid Spray, Recharge 6, as a breath row; no grapple, SCOPE-2),
-# centaurs as the Centaur Trooper (Trampling Charge not modeled), giant
+# centaurs as the Centaur Trooper (its Trampling Charge, a Bonus Action after
+# its attacks when a straight run tramples two enemies or more:
+# trampling_charge creature dc count sides modifier recharge), giant
 # mantises on the Giant Scorpion's claws, thri-kreen as the Warrior Veteran,
 # tigers and wild boars.
 creature quickling 15 7 4 40 6 1 4 4 6 1 2 -1 40 160 0 0 0 1 0
@@ -460,6 +483,7 @@ size centaur large
 type centaur fey
 multiattack centaur 2
 multiattack_ranged centaur
+trampling_charge centaur 14 1 6 4 5
 perception centaur 3
 creature giant-mantis 15 55 1 40 5 1 8 3 0 0 0 0 0 0 0 0 0 1 0
 saves giant-mantis 3 1 2 -5 -1 -4
@@ -492,7 +516,11 @@ bloodied_fury wild-boar
 # original's Hit Points: the Hippogriff (Flyby: flyby creature), the Wyvern
 # (Bite, then Sting with 7d6 Poison, Poisoned until the start of its next
 # turn: poisoning creature melee|ranged|last [own_turn]) and the
-# Phase Spider (Ethereal Jaunt and its Poisoned paralysis not modeled).
+# Phase Spider: its Ethereal Jaunt (ethereal_jaunt creature), a Bonus Action
+# after its attacks that takes it out of reach until its next turn starts,
+# when it comes back with that turn's Bonus Action; and its Bite's venom, when
+# it drops a creature to 0 Hit Points, leaves it Stable, and Poisoned and
+# Paralyzed for an hour (paralyzing_venom creature).
 creature hippogriff 11 18 1 60 5 1 8 3 0 0 0 0 0 0 0 0 0 1 0
 saves hippogriff 3 1 1 -4 1 -1
 damage_types hippogriff slashing slashing
@@ -520,6 +548,8 @@ type phase-spider monstrosity
 multiattack phase-spider 2
 melee_extra_damage phase-spider 2 8 poison
 web_walker phase-spider
+paralyzing_venom phase-spider
+ethereal_jaunt phase-spider
 # The kobold caves (docs/audits/kobold-caves.md, KOBOLD-1): the efreeti Samir
 # Ahwahl is the SRD 5.2.1 Efreeti with the original's 55 Hit Points: three
 # attacks, Heated Blade or Hurl Flame, and Magic Resistance (magic_resistance
@@ -540,7 +570,7 @@ magic_resistance efreeti
 # original's Hit Points. The Wraith: Life Drain lowers the Hit Point maximum,
 # Fly 60, Incorporeal Movement, and Create Specter (create_specter creature
 # limit undead), raising the SRD Specter with its 22 Hit Points. Giant skeletons are
-# the Minotaur Skeleton's Slam (its charging Gore not modeled); juju zombies
+# the Minotaur Skeleton's Slam, or its Gore after a charge of 20 feet or more; juju zombies
 # the Ogre Zombie, Medium as the original's are; mummies the Mummy with its
 # Dreadful Glare and the Rotting Fist's curse; the vampire the
 # Vampire's two Grave Strikes, its Bite on a creature it has Charmed or that is
@@ -595,6 +625,7 @@ affinity giant-skeleton stat:bludgeoning vulnerability bludgeoning
 affinity giant-skeleton stat:poison immunity poison
 condition_immunity giant-skeleton exhaustion poisoned
 type giant-skeleton undead
+gore giant-skeleton 20 2 8 6 2 6 4 piercing
 creature juju-zombie 8 24 -2 30 6 2 8 4 0 0 0 0 0 0 0 0 0 1 0
 saves juju-zombie 4 -2 4 -4 0 -3
 damage_types juju-zombie bludgeoning bludgeoning
