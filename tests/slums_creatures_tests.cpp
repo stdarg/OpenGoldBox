@@ -1126,13 +1126,18 @@ void options_switch_abilities()
     using opengold::Difficulty;
     const std::vector<std::pair<std::string, std::string>> none;
     check(opengold::abilities_off(Difficulty::normal, none) ==
-                  std::vector<std::string>{"legendary"} &&
+                  std::vector<std::string>{"legendary", "legendary_resistance"} &&
               opengold::abilities_off(Difficulty::hard, none).empty(),
-          "Legendary Actions are off on Normal and on from Hard");
+          "Legendary Actions and Resistance are off on Normal and on from Hard");
+    const auto easy = opengold::abilities_off(Difficulty::easy, none);
+    check(easy.size() == opengold::ability_defaults.size() &&
+              std::find(easy.begin(), easy.end(), "paralyzing_claw") != easy.end() &&
+              std::find(easy.begin(), easy.end(), "parry") == easy.end(),
+          "On Easy the disabling abilities are off too, the rest on");
     const std::vector<std::pair<std::string, std::string>> options{
         {"legendary", "easy"}, {"parry", "never"}, {"bite", "nightmare"}, {"breath", "soon"}};
     check(opengold::abilities_off(Difficulty::hard, options) ==
-              std::vector<std::string>{"parry", "bite"},
+              std::vector<std::string>{"bite", "parry"},
           "Options set each ability's lowest difficulty, or never");
 }
 
