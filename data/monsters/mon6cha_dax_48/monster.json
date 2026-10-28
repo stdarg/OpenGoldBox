@@ -29,13 +29,5 @@
     "height_squares": 1.0,
     "width_squares": 1.0
   },
-  "variants": [
-    {
-      "action": "added_61186225371__two_hand/action.png",
-      "id": "added_61186225371__two_hand",
-      "ready": "added_61186225371__two_hand/ready.png",
-      "shield_id": "",
-      "weapon_id": "added_61186225371"
-    }
-  ]
+  "variants": []
 }
