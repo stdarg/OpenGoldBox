@@ -94,8 +94,8 @@ Invisibility, Cone of Cold and Misty Step as innate spells) with the original's
 27 Hit Points, its minotaurs the Minotaur of Baphomet (Abyssal Glaive), its
 trapped cleric the Priest Acolyte and its fighters the Warrior Veteran, by
 [PYRAMID-1](SRD-DECISIONS.md#pyramid-1-2026-10-24-the-pyramid). Yarash has
-the Mage's Protective Magic ([MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders)). Not modeled yet: the Minotaur's Gore; the
-game has no Fly.
+the Mage's Protective Magic ([MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders)) and the minotaurs their Gore
+after a charge ([MONSTER-3](SRD-DECISIONS.md#monster-3-2026-10-28-the-last-monster-abilities)). The game has no Fly.
 
 ## Wilderness window monsters
 
@@ -107,7 +107,8 @@ Ankheg, Centaur Trooper, Tiger, Boar, Hippogriff, Wyvern and Phase Spider, by
 forms' traits become monster rows (`bloodied_fury`, `charge`, `prone_on_hit`,
 `prone_large`), and a new `nimble_escape` row gives Disengage or Hide as a
 Bonus Action. The Sprite's bow charms, the Ankheg sprays acid, the
-Hippogriff has Flyby and the Wyvern's Sting poisons ([MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders)).
+Hippogriff has Flyby and the Wyvern's Sting poisons ([MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders)). The
+Centaur Trooper tramples and the Phase Spider jaunts and paralyzes ([MONSTER-3](SRD-DECISIONS.md#monster-3-2026-10-28-the-last-monster-abilities)).
 
 ## Kobold caves monsters
 
@@ -167,9 +168,9 @@ Slam for the giant skeleton, the Ogre Zombie for the juju zombie, the Mummy
 (two Rotting Fists and their curse, Dreadful Glare, Fire Vulnerability), the Vampire (two
 Grave Strikes, its Charm and its Bite on a creature it has Charmed or that is
 Incapacitated or Restrained, Legendary Actions and Legendary Resistance) and
-the Wolf (Pack Tactics, a Bite that knocks Prone), with [MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders). Not modeled yet:
-the charging Gore; the Vampire's grapple is
-dropped with grappling ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)).
+the Wolf (Pack Tactics, a Bite that knocks Prone), with [MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders);
+the giant skeleton gores after a charge and the Ghoul's Claw paralyzes
+([MONSTER-3](SRD-DECISIONS.md#monster-3-2026-10-28-the-last-monster-abilities)). The Vampire's grapple is dropped with grappling ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)).
 The mystic who joins is a level-6 Wizard.
 
 ## Mendor's Library monsters
@@ -387,7 +388,11 @@ targeted; it dies if its turn starts at 0 HP without regenerating. Combat
 checkpoints become `OGCOMBAT 41`. Rules 0.6.134 follows the original game for
 killing trolls: a fight ends once every enemy is down (downed trolls then stay
 dead), a downed troll's square can be stood on, and standing there keeps it
-from regenerating.
+from regenerating. Rules 0.6.257 adds the Troll's Charge and Loathsome Limbs
+(the Troll Limb, and Exhaustion for each missing limb), the Gnoll Warrior's
+Rampage, the Ghoul's paralyzing Claw, the minotaurs' Gore, the Phase
+Spider's Ethereal Jaunt and paralyzing venom, and the Centaur Trooper's
+Trampling Charge ([MONSTER-3](SRD-DECISIONS.md#monster-3-2026-10-28-the-last-monster-abilities)).
 
 ## Creature equipment
 
@@ -1127,12 +1132,12 @@ commit-specific findings as historical evidence.
 | G2: species/background grants | Open | [Species #51](https://github.com/stdarg/OpenGoldBox/issues/51), [backgrounds #50](https://github.com/stdarg/OpenGoldBox/issues/50) |
 | G3: feat entitlements/choices | Complete: Alert, Magic Initiate, Savage Attacker, Skilled, Ability Score Improvement and the four Fighting Style feats (#74–#82); Grappler removed by SCOPE-2; Epic Boons come at level 19, beyond the level-15 cap (SCOPE-1) | [Feats #49](https://github.com/stdarg/OpenGoldBox/issues/49) |
 | G4: spell access/learning/preparation | Delivered for every spellcasting class and grant route; spellbook copying not pursued ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)) | [F07 #36](https://github.com/stdarg/OpenGoldBox/issues/36) and class-specific integration |
-| G5: spells/shared casting mechanics | Open | [Spell inventory #165](https://github.com/stdarg/OpenGoldBox/issues/165) and named spell/mechanic issues |
+| G5: spells/shared casting mechanics | Every spell through character level 4 is implemented ([inventory](SPELL-INVENTORY.md)); of the higher-level spells kept, Teleport remains | [Spell inventory #165](https://github.com/stdarg/OpenGoldBox/issues/165) and named spell/mechanic issues |
 | G6: full progression/multiclassing | Every class reaches level 15 (the cap); multiclassing deferred ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)) | [Higher levels #176](https://github.com/stdarg/OpenGoldBox/issues/176); multiclassing [#179](https://github.com/stdarg/OpenGoldBox/issues/179) deferred |
 | G7: rests/recharge | Open | [F03 #30](https://github.com/stdarg/OpenGoldBox/issues/30) |
 | G8: death/recovery outside combat | Fixed, including Help/Medicine #32 | [F04 #31](https://github.com/stdarg/OpenGoldBox/issues/31) |
 | G9: equipment/properties | Open; E5 and Versatile corrections delivered | [Equipment #48](https://github.com/stdarg/OpenGoldBox/issues/48), [Versatile I08 #27](https://github.com/stdarg/OpenGoldBox/issues/27) |
-| G10: conditions/effects/creature state | Open | [Conditions #35](https://github.com/stdarg/OpenGoldBox/issues/35), [damage #33](https://github.com/stdarg/OpenGoldBox/issues/33), multi-square footprints delivered ([#45](https://github.com/stdarg/OpenGoldBox/issues/45), [FOOT-1](SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills)); grappling and size-difference transit not planned ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)) |
+| G10: conditions/effects/creature state | Every SRD condition is modeled, Exhaustion only for a Troll's lost limbs ([MONSTER-3](SRD-DECISIONS.md#monster-3-2026-10-28-the-last-monster-abilities)); Deafened is cut ([DEAF-1](SRD-DECISIONS.md#deaf-1-2026-10-13-blindnessdeafness-without-deafness)) | [Conditions #35](https://github.com/stdarg/OpenGoldBox/issues/35), [damage #33](https://github.com/stdarg/OpenGoldBox/issues/33), multi-square footprints delivered ([#45](https://github.com/stdarg/OpenGoldBox/issues/45), [FOOT-1](SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills)); grappling and size-difference transit not planned ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)) |
 | G11: precise capability/documentation coverage | In progress: ledger and issue index established | Update with every increment; reconcile remaining support claims at [final closure #185](https://github.com/stdarg/OpenGoldBox/issues/185) |
 | G12: turn/facing/transit policies | I05–I07 delivered; remaining creature-state rules are tracked separately | [I05 #24](https://github.com/stdarg/OpenGoldBox/issues/24), [I06 #25](https://github.com/stdarg/OpenGoldBox/issues/25), [I07 #26](https://github.com/stdarg/OpenGoldBox/issues/26) |
 

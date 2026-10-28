@@ -26,8 +26,8 @@ there are no starting packages: characters buy their gear
 ([START-1](SRD-DECISIONS.md#start-1-2026-10-11-starting-gold-as-the-original-game-gave-it)). [Ammunition tracking (#57)](AMMUNITION.md) was explicitly
 declined: ranged ammunition is unlimited. [Thrown inventory (#58)](THROWN-WEAPONS.md)
 remains physical weapon inventory. Lance records its one-handed mounted exception;
-current actors are unmounted and use two hands. Mounted companion state and the
-exception's activation belong to #173 before mounted play is claimed. Missing
+actors are unmounted and use two hands, and the mounted Lance rules are not
+pursued ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)). Missing
 weapon artwork uses the existing fallback; this increment adds no art or UI.
 
 Original campaign conversions and prices remain intact. Type **45** keeps its

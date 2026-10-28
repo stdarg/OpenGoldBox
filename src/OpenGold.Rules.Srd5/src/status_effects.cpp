@@ -153,6 +153,7 @@ void apply_poisoned(EffectState &effects, EffectSource source, std::string name,
          kind != EffectKind::glared && kind != EffectKind::enthralled &&
          kind != EffectKind::hampered &&
          kind != EffectKind::poised && kind != EffectKind::turn_charmed &&
+         kind != EffectKind::clawed && kind != EffectKind::rampaging &&
          kind != EffectKind::thorned && kind != EffectKind::swum && kind != EffectKind::clouded &&
          kind != EffectKind::rooted && kind != EffectKind::jigging) ||
         !can_apply(effects) || !recorded(source, name) || !duration_ms ||
@@ -241,10 +242,21 @@ int speed_penalty(const EffectState &effects) noexcept
     }
     // Freedom of Movement: magic (Ray of Frost) cannot lower its Speed.
     const bool free = has_effect(effects, EffectKind::free_moving);
-    return (frosted(effects) && !free ? 10 : 0) + (slowed(effects) ? 10 : 0) +
+    return 5 * exhaustion_levels(effects) + (frosted(effects) && !free ? 10 : 0) +
+           (slowed(effects) ? 10 : 0) +
            (has_effect(effects, EffectKind::frosts_chill) ? 10 : 0) +
            (has_effect(effects, EffectKind::hamstrung) ? 15 : 0) -
            (has_effect(effects, EffectKind::longstrider) ? 10 : 0);
+}
+
+int exhaustion_levels(const EffectState &effects) noexcept
+{
+    const auto found = std::find_if(effects.active.begin(), effects.active.end(),
+                                    [](const auto &e)
+                                    {
+                                        return e.kind == EffectKind::limbs_lost;
+                                    });
+    return found == effects.active.end() ? 0 : found->dc;
 }
 
 bool slowed(const EffectState &effects) noexcept
@@ -471,13 +483,14 @@ void consume_attack_masteries(EffectState &attacker, EffectState &target, Effect
                   });
 }
 
-// Every Paralyzed and Restrained effect in the game is magic, which Freedom of
-// Movement keeps off.
+// Freedom of Movement keeps off the magic Paralyzed effects, not a Ghoul's Claw.
 bool paralyzed(const EffectState &effects) noexcept
 {
-    return (has_effect(effects, EffectKind::hold_person) ||
-            has_effect(effects, EffectKind::paralysis_ray)) &&
-           !has_effect(effects, EffectKind::free_moving);
+    return ((has_effect(effects, EffectKind::hold_person) ||
+             has_effect(effects, EffectKind::paralysis_ray)) &&
+            !has_effect(effects, EffectKind::free_moving)) ||
+           has_effect(effects, EffectKind::clawed) ||
+           has_effect(effects, EffectKind::envenomed_paralyzed);
 }
 
 bool stunned(const EffectState &effects) noexcept
@@ -658,6 +671,8 @@ int benefit_value_limit(EffectKind kind)
                    kind == EffectKind::life_drained || kind == EffectKind::rotting_curse
                ? 2000
            : kind == EffectKind::legendary_spent ? 31
+           : kind == EffectKind::slashed         ? 2000
+           : kind == EffectKind::limbs_lost      ? 4
            : kind == EffectKind::feasted                                        ? 20
            : kind == EffectKind::animating                                      ? 19
            : kind == EffectKind::worded                                         ? 2
@@ -707,7 +722,9 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::true_seeing:
     case EffectKind::worded:
     case EffectKind::regenerating:
-        return 3600000; // 1 hour
+    case EffectKind::envenomed_paralyzed:
+    case EffectKind::jaunted: // ended as its next turn starts
+        return 3600000;       // 1 hour
     case EffectKind::sheltered:
         return 28800000; // 8 hours
     case EffectKind::polymorphed:
@@ -817,7 +834,11 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::glare_resisted:
     case EffectKind::legendary_resisted:
     case EffectKind::rotting_curse: // to the first day's end
-        return 86400000;            // 24 hours
+    case EffectKind::limbs_lost:    // until it regains Hit Points
+    case EffectKind::severed:
+        return 86400000; // 24 hours
+    case EffectKind::slashed:
+        return 2 * round_ms; // cleared as each turn ends
     case EffectKind::befuddled:
         return 2592000000u; // 30 days
     case EffectKind::produce_flame:
@@ -1199,6 +1220,7 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::glared || kind == EffectKind::enthralled ||
                            kind == EffectKind::hampered ||
                            kind == EffectKind::poised || kind == EffectKind::turn_charmed ||
+                           kind == EffectKind::clawed || kind == EffectKind::rampaging ||
                            kind == EffectKind::thorned || kind == EffectKind::swum ||
                            kind == EffectKind::clouded || kind == EffectKind::rooted ||
                            kind == EffectKind::jigging || kind == EffectKind::shocking_grasp ||

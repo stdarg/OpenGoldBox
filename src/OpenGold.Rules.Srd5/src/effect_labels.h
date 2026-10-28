@@ -401,6 +401,16 @@ inline constexpr std::array effect_labels{
                 "Disadvantage on its next attack roll before the end of its next turn."},
     EffectLabel{EffectKind::turn_charmed, "Charmed",
                 "Cannot attack its charmer until the start of the charmer's next turn."},
+    EffectLabel{EffectKind::clawed, "Paralyzed (Claw)",
+                "Cannot move or act until the end of its next turn; attack rolls against it have Advantage, and hits from within 5 feet are critical."},
+    EffectLabel{EffectKind::envenomed_paralyzed, "Poisoned and Paralyzed (venom)",
+                "Cannot move or act for an hour; attack rolls against it have Advantage, and hits from within 5 feet are critical."},
+    EffectLabel{EffectKind::limbs_lost, "Exhaustion (severed limbs)",
+                "2 less on d20 tests and 5 feet less Speed for each missing limb, until it regains Hit Points."},
+    EffectLabel{EffectKind::jaunted, "Ethereal (Ethereal Jaunt)",
+                "Out of reach on the Ethereal Plane until its next turn."},
+    EffectLabel{EffectKind::rampaging, "Rampaging",
+                "Moves up to half its Speed and makes one Rend this turn."},
     EffectLabel{EffectKind::compelled, "Charmed (Compulsion)",
                 "Moves as far as it can the way its charmer names, then saves again."}};
 
@@ -416,7 +426,8 @@ inline constexpr std::array unlabeled_effects{
     EffectKind::breathed,    EffectKind::illusory,     EffectKind::elemental_spirit,
     EffectKind::hand_ready,  EffectKind::clouded,      EffectKind::eye_resisted,
     EffectKind::thorned,     EffectKind::swum,         EffectKind::glare_resisted,
-    EffectKind::legendary_spent, EffectKind::legendary_resisted, EffectKind::poised};
+    EffectKind::legendary_spent, EffectKind::legendary_resisted, EffectKind::poised,
+    EffectKind::slashed,     EffectKind::severed};
 
 // The kinds a Long Rest ends, which the sheet shows without a countdown.
 inline constexpr std::array long_rest_effects{

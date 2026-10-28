@@ -54,7 +54,7 @@ GAME`, `opengold_maps GAME`, coab's `LoadWalldef`, `CMD_LoadFiles`,
 | 17 | Spectre (HP 38) | Mendor's Library's Specter |
 | 20 | Wight (HP 23) | the Wight |
 | 21 | Wraith (HP 24) | **new:** SRD 5.2.1 Wraith with 24 Hit Points: Life Drain, flying, Incorporeal Movement and Create Specter, raising the SRD Specter with 22 Hit Points |
-| 22 | Giant Skeleton (HP 28) | **new:** SRD 5.2.1 Minotaur Skeleton with 28 Hit Points, its Slam (the charging Gore not modeled) |
+| 22 | Giant Skeleton (HP 28) | **new:** SRD 5.2.1 Minotaur Skeleton with 28 Hit Points, its Slam, or its Gore after a charge ([MONSTER-3](../SRD-DECISIONS.md#monster-3-2026-10-28-the-last-monster-abilities)) |
 | 23 | Vampire (HP 43) | **new:** SRD 5.2.1 Vampire with 43 Hit Points: two Grave Strikes, its Charm (Recharge 5-6), its Bite on a creature it has Charmed or that is Incapacitated or Restrained (no grapple, SCOPE-2), its Legendary Actions (Beguile, Deathless Strike) and Legendary Resistance |
 | 24 | Level 6 MU (HP 23) | **new:** the nomad shaman's level-4 Wizard profile with 23 Hit Points |
 | 29 | Juju Zombie (HP 24) | **new:** SRD 5.2.1 Ogre Zombie with 24 Hit Points, Medium as the original's is |

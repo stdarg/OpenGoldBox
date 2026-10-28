@@ -181,7 +181,7 @@ MON4CHA 6-8 match MON2CHA 6-8 (the Slums' hobgoblins and ogre).
 | MON4CHA 8 | Ogre (HP 21, AC 5, 1d10) | `ogre` (SRD 5.2.1), 450 XP |
 | MON4CHA 34 | Skeleton (HP 5, AC 7, 1d6) | **new:** SRD 5.2.1 Skeleton (CR 1/4, 50 XP) |
 | MON4CHA 35 | Zombie (HP 10, AC 8, 1d8) | `zombie` (SRD 5.2.1, Animate Dead's), 50 XP |
-| MON4CHA 72 | Ghoul (HP 10, AC 6, two claws 1d3, bite 1d6) | `ghoul` (SRD 5.2.1, Create Undead's; its paralysing Claw is left out), 200 XP |
+| MON4CHA 72 | Ghoul (HP 10, AC 6, two claws 1d3, bite 1d6) | `ghoul` (SRD 5.2.1, Create Undead's, with its paralysing Claw since [MONSTER-3](../SRD-DECISIONS.md#monster-3-2026-10-28-the-last-monster-abilities)), 200 XP |
 | MON4CHA 38 | Poisonous Frog (HP 4, AC 8, a 1-point bite) | **new; question 2:** SRD 5.2.1 Giant Frog (CR 1/4, 50 XP) |
 | MON4CHA 39 | Huge Scorpion (HP 20, AC 4, two claws 1d8, sting 1d3) | **new; question 3:** SRD 5.2.1 Giant Scorpion (CR 3, 700 XP) |
 | MON4CHA 20 | Wight (HP 23, AC 5, 1d4) | **new; question 1:** SRD 5.2.1 Wight (CR 3, 700 XP, 82 HP) |
