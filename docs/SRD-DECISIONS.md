@@ -2110,3 +2110,27 @@ they await the user's review:
   creatures, draws no Opportunity Attacks and ends in an open square; each
   creature it enters makes a Strength save (DC 14) or takes 1d6 + 4
   Bludgeoning and falls Prone. The computer only charges in straight lines.
+
+## MONSTER-4 (2026-10-28): monster abilities by difficulty
+
+The user asked on 2026-10-28 for Claude's best guess of the difficulty each
+monster ability is on from. Each stays a game option
+([CONFIGURATION](CONFIGURATION.md)); these are the defaults:
+
+- **From Hard:** Legendary Actions (the user's choice, MONSTER-2) and
+  Legendary Resistance, which belongs with them.
+- **From Normal**, so off on Easy: what takes a character out of the fight
+  for long or leaves a harm that outlasts it, and what adds foes or keeps a
+  monster out of reach. Petrifying Gaze, the Ghoul's Claw and the Phase
+  Spider's venom; Life Drain, the draining hits and the Vampire's Bite
+  (Hit Point maximum); the Rotting Fist's curse; Create Specter and Loathsome
+  Limbs; Dreadful Glare, Captain's Charm and Enthralling Panache; Repulsion
+  Breath, Trampling Charge, Rampage and Riposte; the Ethereal Jaunt; and the
+  Mage's Protective Magic.
+- **Always:** the rest, which are how a stat block fights rather than a
+  setback for the party: Multiattack riders, breath weapons, Parry, Pack
+  Tactics, Regeneration, Undead Fortitude, flying and the charges, and the
+  weaknesses (Sunlight Sensitivity), which help the party.
+
+Normal plays as before except that Legendary Resistance now waits for Hard
+with the Legendary Actions.

@@ -44,8 +44,11 @@ ability (`legendary`, `parry`, `breath`; the
 [rules README](../data/rules/srd-5.2.1/README.md) lists them all) and its value
 the lowest difficulty it is on at, or `never`. An ability without a key is on
 at every difficulty, and a value that is neither a difficulty nor `never` keeps
-the default. By default Legendary Actions (Tyranthraxus's and the vampire's)
-are on from `hard`; new settings files receive that key. The combat screen
+the default. By default Legendary Actions and Legendary Resistance
+(Tyranthraxus's and the vampire's) are on from `hard`, and the abilities that
+take a character out of the fight for long, leave a lasting harm or add foes
+from `normal` ([MONSTER-4](SRD-DECISIONS.md#monster-4-2026-10-28-monster-abilities-by-difficulty));
+new settings files receive those keys. The combat screen
 reads the section when a fight starts. See
 [MONSTER-2](SRD-DECISIONS.md#monster-2-2026-10-25-legendary-actions-and-monster-riders)
 and [MONSTER-3](SRD-DECISIONS.md#monster-3-2026-10-28-the-last-monster-abilities).
