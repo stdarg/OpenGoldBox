@@ -1,15 +1,15 @@
 {
-  "action_sha256": "3c11ae5dd4605c15013c733a9d7f6d71a5cde8165b23d8dd03d06fb77ef96804",
+  "action_sha256": "1b68ba987fe32d3590db318ae77f9ed7a8cb93c0569b8160d80a75f776a90be1",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon6cha_dax_48/added_61186225371__two_hand/action.png",
     "ready": "art/mon6cha_dax_48/added_61186225371__two_hand/ready.png"
   },
-  "metadata_sha256": "787e170d2fec961d5687aa6b50f758fea732a41023a148894ccb91c6e8c7e9f7",
-  "notes": "Reviewed exact final PNGs at 128px and enlarged on light and dark backgrounds, and both loaded poses in the isolated catalog at 1x1 footprint. Solid single-blade battle axe in raised ready guard; late straight-ahead two-hand action. Lower torso is continuous. Boots share the same baseline and near-identical xy placement. Intermediate action drafts with whole-body translation were rejected. Saved gear has one weapon set: this two-handed battle axe with Chain armor +1.",
+  "metadata_sha256": "b5ad6b40e1f6e998415450f19c6b817790d97a13055ebabeb14904449de9d75a",
+  "notes": "Localized action correction: compressed upper 90 source rows into 80 rows with a transparent top margin; original lower 38 rows retain exact geometry. Reduced color saturation to match ready. Ready frame unchanged. Inspected final pair at 128px and enlarged on light, magenta, and dark backgrounds. Head height and boot baseline now align; continuous torso and single two-hand battle axe remain visible. Catalog alternation is pending because the Godot window did not accept input during this review.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "60f237fdbac2378979b107bf913be1303cde7ae59fd987fa8382df297ac863d3",
-  "reviewed_at": "2026-10-26T00:00:06+00:00",
+  "reviewed_at": "2026-10-28T01:55:06Z",
   "reviewer": "Codex",
   "source_key": "MON6CHA.DAX:48",
   "specification": "bipedal-v1",
@@ -22,7 +22,7 @@
     "front_three_quarter_screen_right_chest_visible": true,
     "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
-    "pair_reviewed_alternating_in_catalog": true,
+    "pair_reviewed_alternating_in_catalog": false,
     "pixel_art_readable_at_combat_size": true,
     "planted_feet_same_xy_no_whole_body_translation": true,
     "ready_weapon_raised_or_projectile_loaded": true,

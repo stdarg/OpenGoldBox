@@ -26,7 +26,7 @@
       "weapon_role": "two_hand"
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "height_feet": 4.0,
   "height_reference": {
