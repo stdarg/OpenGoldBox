@@ -167,6 +167,10 @@ std::string attack_ability(std::string_view key)
                                   : "Strength";
 }
 
+// Magic Lock Picks (SECRET-1, OpenGoldBox's own): a Rogue picking a lock with
+// them has Advantage, and one set is used up.
+constexpr std::string_view magic_lock_picks = "magic_lock_picks";
+
 bool trained(CharacterClass klass, std::span<const FeatureGrant> grants, std::string_view key)
 {
     // Starting-class grants, SRD 5.2.1 pp. 49 and 61, plus the Protector Divine
@@ -186,8 +190,9 @@ bool trained(CharacterClass klass, std::span<const FeatureGrant> grants, std::st
                (protector && armor->category == detail::ArmorCategory::heavy) ||
                (warden && armor->category == detail::ArmorCategory::medium);
     }
-    // Anyone can wear a ring, bracers, a cloak, gauntlets or a necklace.
-    if (detail::worn_item(key))
+    // Anyone can wear a ring, bracers, a cloak, gauntlets or a necklace, and
+    // carry Magic Lock Picks.
+    if (detail::worn_item(key) || key == magic_lock_picks)
     {
         return true;
     }
@@ -617,6 +622,10 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
     if (item == thieves_tools)
     {
         return "A Rogue carrying them has twice the chance to pick a lock.";
+    }
+    if (item == magic_lock_picks)
+    {
+        return "A Rogue picking a lock uses one set for Advantage on the check.";
     }
     if (rules::magic_ink_level(item))
     {
@@ -1466,6 +1475,12 @@ struct Definition
     // fight misses.
     bool fire_ward{}, displacement{};
     int item_saves{}; // What worn items add to every saving throw.
+    // The Rogue's Shop's gear (SECRET-1): Boots or a Cloak of Elvenkind give
+    // Stealth checks Advantage, and the cloak gives checks to find its hidden
+    // wearer Disadvantage; a Stone of Good Luck adds to every ability check;
+    // Magic Lock Picks give the check to pick a lock Advantage.
+    bool stealth_advantage{}, hard_to_perceive{}, pick_advantage{};
+    int check_bonus{};
     int reach{5};
     Dice ranged;
     int range{}, long_range{}, winds{}, casting{}, level{};
@@ -3992,7 +4007,7 @@ character_definition(std::string_view bytes,
     // Worn items (MAGIC-4): the better Ring of Protection, the better bracers'
     // Armor Class, and flat Armor Class and save changes.
     int ring_bonus = 0, bracers_ac = 0, worn_ac = 0, worn_saves = 0;
-    std::array<unsigned, 5> worn_count{};
+    std::array<unsigned, 7> worn_count{};
     for (const auto &key : d.equipment_keys)
     {
         const auto enchantment = rules::parse_item_key(key);
@@ -4083,6 +4098,11 @@ character_definition(std::string_view bytes,
             shield_magic = enchantment.bonus;
             ++hands;
         }
+        else if (key == magic_lock_picks)
+        {
+            // Carried, and in the gear only for the check to pick a lock.
+            d.pick_advantage = true;
+        }
         else if (const auto *worn = detail::worn_item(key))
         {
             auto &worn_of_kind = worn_count[static_cast<std::size_t>(worn->kind)];
@@ -4111,6 +4131,13 @@ character_definition(std::string_view bytes,
                 worn_ac += enchantment.bonus;
                 worn_saves += enchantment.bonus;
             }
+            else if (base == "stone_of_good_luck")
+            {
+                d.check_bonus += 1;
+                worn_saves += 1;
+            }
+            d.stealth_advantage |= base == "boots_of_elvenkind" || base == "cloak_of_elvenkind";
+            d.hard_to_perceive |= base == "cloak_of_elvenkind";
             d.fire_ward |= base == "ring_of_fire_resistance";
         }
         else
@@ -4163,6 +4190,10 @@ character_definition(std::string_view bytes,
                                  return skill.id == "stealth";
                              })
                     ->bonus;
+    // A Stone of Good Luck: Initiative is a Dexterity check too.
+    d.perception += d.check_bonus;
+    d.stealth += d.check_bonus;
+    d.initiative += d.check_bonus;
     if (klass == CharacterClass::rogue && level >= 7)
     {
         for (const auto &skill : training.skills)
@@ -20474,11 +20505,15 @@ void Session::hide(Actor &a)
     const auto &d = def(a);
     bool lucky_reroll = false;
     const bool hindered = d.stealth_disadvantage || check_disadvantage(a);
-    int natural = detail::d20({false, hindered, d.lucky}, rng_, &lucky_reroll);
+    int natural = detail::d20({d.stealth_advantage, hindered, d.lucky}, rng_, &lucky_reroll);
     log_luck(a, lucky_reroll);
     natural = reliable(a, "stealth", natural);
     int total = natural + d.stealth;
-    const std::string disadvantage = hindered ? " (disadvantage)" : "";
+    // Elvenkind boots or cloak give the check Advantage; with Disadvantage too
+    // both cancel.
+    const std::string disadvantage = hindered && !d.stealth_advantage   ? " (disadvantage)"
+                                     : d.stealth_advantage && !hindered ? " (advantage)"
+                                                                        : "";
     log(a.source.name + " Stealth check: d20 " + std::to_string(natural) + disadvantage + " + " +
             std::to_string(d.stealth) + " vs DC 15.",
         {"{name} Stealth check: d20 {roll}{disadvantage} + {bonus} vs DC {dc}.",
@@ -20543,12 +20578,31 @@ void Session::search(Actor &searcher)
           {"roll", std::to_string(natural)},
           {"bonus", std::to_string(bonus)},
           {"total", std::to_string(total)}}});
+    // A Cloak of Elvenkind gives the check Disadvantage against its wearer:
+    // the lower of the two d20s counts against it.
+    std::optional<int> second;
     for (auto &other : actors_)
     {
         if (other.source.side != searcher.source.side && hidden(other) &&
-            clear_view(searcher, other) && total >= stealth_total(other))
+            clear_view(searcher, other))
         {
-            find_hidden(other, searcher);
+            int against = total;
+            if (def(other).hard_to_perceive && !check_disadvantage(searcher))
+            {
+                if (!second)
+                {
+                    second = detail::d20({false, false, d.lucky}, rng_);
+                    log(searcher.source.name + " rolls again against a Cloak of Elvenkind: d20 " +
+                            std::to_string(*second) + ".",
+                        {"{name} rolls again against a Cloak of Elvenkind: d20 {roll}.",
+                         {{"name", searcher.source.name}, {"roll", std::to_string(*second)}}});
+                }
+                against = std::min(natural, *second) + bonus;
+            }
+            if (against >= stealth_total(other))
+            {
+                find_hidden(other, searcher);
+            }
         }
     }
 }
@@ -20559,8 +20613,12 @@ void Session::notice_hidden()
     {
         for (const auto &enemy : actors_)
         {
+            // Disadvantage against a Cloak of Elvenkind takes 5 from Passive
+            // Perception.
+            const int passive =
+                10 + def(enemy).perception - (def(hider).hard_to_perceive ? 5 : 0);
             if (hidden(hider) && enemy.source.side != hider.source.side &&
-                clear_view(enemy, hider) && 10 + def(enemy).perception >= stealth_total(hider))
+                clear_view(enemy, hider) && passive >= stealth_total(hider))
             {
                 find_hidden(hider, enemy);
             }
@@ -32245,7 +32303,7 @@ class Module final : public RulesModule
         // Tools used from it.
         if (detail::thrown_gear(key) || rules::magic_ink_level(key) ||
             rules::parse_scroll_key(key) || key == poisoners_kit || key == basic_poison ||
-            key == thieves_tools)
+            key == thieves_tools || key == magic_lock_picks)
         {
             return {EquipmentSlot::carried, 0};
         }
@@ -32409,6 +32467,9 @@ class Module final : public RulesModule
         result.disadvantage =
             (strength_or_dexterity && d.str_dex_disadvantage) ||
             (ability == Ability::dexterity && skill == "stealth" && d.stealth_disadvantage);
+        result.advantage |= (skill == "stealth" && d.stealth_advantage) ||
+                            (skill == "sleight_of_hand" && d.pick_advantage);
+        result.total += d.check_bonus;
         return result;
     }
 

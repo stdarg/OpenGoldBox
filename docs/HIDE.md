@@ -39,6 +39,13 @@ hidden side may lower it with Cutting Words ([Bard](BARD.md#bardic-inspiration-a
 and Stealth come from its skills; a monster's Perception is its stat block's
 skill (the `perception` rows in `combat.rules`) or else its Wisdom save.
 
+The Rogue's Shop's gear
+([SECRET-1](SRD-DECISIONS.md#secret-1-2026-10-29-the-rogues-shop-and-its-secret-door)):
+Boots or a Cloak of Elvenkind give the Stealth check Advantage. Against a
+hidden creature wearing the cloak, Passive Perception counts 5 less, and a
+search rolls a second d20, the lower counting against it. A Stone of Good
+Luck adds 1 to Perception, Stealth and Initiative, as to every ability check.
+
 The AI never targets or approaches a hidden creature; with no other enemy
 left, it searches. Hiding does not outlast the fight: the saved character state
 after combat drops it.

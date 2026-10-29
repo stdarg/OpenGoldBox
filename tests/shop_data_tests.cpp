@@ -84,12 +84,15 @@ void shipped_records()
     // as the map's door wall 7 once found, and wall 6 closing it from the inn.
     const auto &rogue = shop_at(data, 4, 13);
     check(rogue.id == "phlan-rogue-04-13" &&
-              rogue.entrance == HiddenEntrance{por::MapDirection::south, 7,
-                                               {{por::MapDirection::north, 6}}} &&
-              rogue.portrait == "NPCs/kovel-old-thief.png" && rogue.offerings.size() == 3 &&
+              rogue.entrance ==
+                  HiddenEntrance{por::MapDirection::south, 7, {{por::MapDirection::north, 6}}} &&
+              rogue.portrait == "NPCs/kovel-old-thief.png" && rogue.offerings.size() == 11 &&
               offering(rogue, "Poisoner's Kit").price_gp == 50 &&
               offering(rogue, "Thieves' Tools").price_gp == 25 &&
-              offering(rogue, "Basic Poison").price_gp == 100,
+              offering(rogue, "Basic Poison").price_gp == 100 &&
+              offering(rogue, "Magic Lock Picks").item_type == 215 &&
+              offering(rogue, "Dagger +1").archive == "ITEM3.DAX" &&
+              offering(rogue, "Dust of Disappearance").index == 2,
           "The Rogue's Shop, its hidden entrance and its stock");
     check(std::none_of(data.shops.begin(), data.shops.end(),
                        [&](const auto &shop)

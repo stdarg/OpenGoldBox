@@ -75,8 +75,9 @@ struct RestResult
 
 // How the party tries a locked door: Bash is Strength (Athletics) by anyone
 // conscious; Pick is Dexterity (Sleight of Hand) by a conscious Rogue, whose
-// Thieves' Tools double the chance (LOCK-1); Knock is the spell, cast by a
-// member who has it prepared, and always opens it.
+// Thieves' Tools double the chance (LOCK-1) and Magic Lock Picks give
+// Advantage (SECRET-1); Knock is the spell, cast by a member who has it
+// prepared, and always opens it.
 enum class DoorMethod
 {
     bash,
@@ -92,6 +93,7 @@ struct DoorAttempt
     rules::AbilityCheckRoll roll;
     int difficulty{};
     bool thieves_tools{};
+    bool magic_lock_picks{}; // used up for Advantage on the check (SECRET-1)
 };
 
 // One member's d6 roll to find a secret door: found when the die is at most

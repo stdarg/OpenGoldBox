@@ -673,6 +673,14 @@ std::string equipment_conversion(const por::Equipment &item)
         return "basic_poison";
     case authored_item::thieves_tools:
         return "thieves_tools";
+    case authored_item::magic_lock_picks:
+        return "magic_lock_picks";
+    case authored_item::boots_of_elvenkind:
+        return "boots_of_elvenkind";
+    case authored_item::cloak_of_elvenkind:
+        return "cloak_of_elvenkind";
+    case authored_item::stone_of_good_luck:
+        return "stone_of_good_luck";
     default:
         return unsupported;
     }
@@ -1977,6 +1985,18 @@ bool carries_thieves_tools(const PartyMember &m)
                        [](const auto &item) { return item.definition_id == "thieves_tools"; });
 }
 
+// The Magic Lock Picks a member carries, if any (SECRET-1).
+std::optional<std::uint64_t> magic_lock_picks(const PartyMember &m)
+{
+    const auto &items = m.character.inventory().items();
+    const auto picks = std::find_if(items.begin(), items.end(),
+                                    [](const auto &item)
+                                    {
+                                        return item.definition_id == "magic_lock_picks";
+                                    });
+    return picks == items.end() ? std::nullopt : std::optional{picks->id};
+}
+
 // The difficulty that gives a check with `modifier` twice as many winning d20
 // faces as `difficulty` does, which doubles the chance (LOCK-1).
 int doubled_chance_difficulty(int difficulty, int modifier)
@@ -2023,8 +2043,13 @@ std::vector<DoorAttempt> CampaignParty::try_door(DoorMethod method, int difficul
         {
             continue;
         }
-        const auto gear = equipped_definitions(m);
-
+        auto gear = equipped_definitions(m);
+        // A Rogue with Magic Lock Picks picks with Advantage and uses a set up.
+        const auto picks = method == DoorMethod::pick ? magic_lock_picks(m) : std::nullopt;
+        if (picks)
+        {
+            gear.emplace_back("magic_lock_picks");
+        }
         const auto roll =
             method == DoorMethod::bash
                 ? rules_->roll_ability_check(m.character.sheet(), m.vitals, gear,
@@ -2036,7 +2061,12 @@ std::vector<DoorAttempt> CampaignParty::try_door(DoorMethod method, int difficul
         const int needed = thieves_tools
                                ? doubled_chance_difficulty(difficulty, roll.total - roll.die)
                                : difficulty;
-        attempts.push_back({id, roll, needed, thieves_tools});
+        attempts.push_back({id, roll, needed, thieves_tools, picks.has_value()});
+        if (picks)
+        {
+            keep_item_uses(member_in(state_, id), *picks,
+                           m.character.inventory().find(*picks)->get().quantity - 1);
+        }
         if (roll.total >= needed)
         {
             break;

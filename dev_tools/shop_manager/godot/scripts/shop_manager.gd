@@ -39,6 +39,10 @@ const PICKER_GEAR := [
     ["Poisoner's Kit", 50, 1, 212],
     ["Basic Poison", 100, 1, 213],
     ["Thieves' Tools", 25, 1, 214],
+    ["Magic Lock Picks", 50, 1, 215],
+    ["Boots of Elvenkind", 400, 1, 216],
+    ["Cloak of Elvenkind", 400, 1, 217],
+    ["Stone of Good Luck", 400, 1, 218],
 ]
 const SIDES := ["north", "east", "south", "west"]
 const LOCATION_COUNT := 17

@@ -148,7 +148,7 @@ struct DoorCheck
     std::string member;
     opengold::DoorMethod method{};
     int die{}, total{}, difficulty{};
-    bool thieves_tools{};
+    bool thieves_tools{}, magic_lock_picks{};
 };
 
 // One member's roll to find a secret door, for the player's log (SECRET-1).

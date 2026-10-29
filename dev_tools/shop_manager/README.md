@@ -28,8 +28,10 @@ JSON record, even if it shares an original stock list with other shops. Use
 **Stock** to change it. Stock `-1` means unlimited, matching the original shop
 behavior; `0` means out of stock. The item picker can search decoded item lists
 from `ITEM1.DAX` through `ITEM8.DAX` and keeps each added item's source identity.
-It also offers the game's added gear, and the Poisoner's Kit (50 gp), Basic
-Poison (100 gp) and Thieves' Tools (25 gp), with which the Rogue's Shop starts
+It also offers the game's added gear: the Poisoner's Kit (50 gp), Basic Poison
+(100 gp), Thieves' Tools (25 gp), Magic Lock Picks (50 gp), Boots and a Cloak
+of Elvenkind and a Stone of Good Luck (400 gp each), which a new Rogue's Shop
+record starts with
 ([#271](https://github.com/stdarg/OpenGoldBox/issues/271)).
 
 The four temples each have the nine original curative services and

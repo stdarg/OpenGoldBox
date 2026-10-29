@@ -30,7 +30,9 @@ graveyard sword, Ohlo's potion), so this list comes from the data itself.
   47 Fireball, 51 Lightning Bolt, 56 Restoration, and so on.
 
 The shops sell no magic items: none of the shop lists (`ITEM3.DAX` 52 to 55,
-`ITEM1.DAX` 53) contains one.
+`ITEM1.DAX` 53) contains one. OpenGoldBox's Rogue's Shop sells a few, known by
+name
+([SECRET-1](SRD-DECISIONS.md#secret-1-2026-10-29-the-rogues-shop-and-its-secret-door)).
 
 ### Regenerating the list
 
