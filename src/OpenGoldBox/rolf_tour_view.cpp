@@ -1708,6 +1708,17 @@ String door_check_notice(const DoorCheck &check)
     {
         return i18n::format("{name} casts Knock, and the lock opens.", {{"name", name}});
     }
+    if (check.method == opengold::DoorMethod::pick && check.magic_lock_picks)
+    {
+        return i18n::format(
+            "{name} uses up a set of Magic Lock Picks for Advantage{tools}: Dexterity (Sleight of Hand) {total} (d20 {die}) against DC {dc}.",
+            {{"name", name},
+             {"tools", check.thieves_tools ? i18n::text(N_(", with Thieves' Tools doubling the chance"))
+                                           : String()},
+             {"total", check.total},
+             {"die", check.die},
+             {"dc", check.difficulty}});
+    }
     if (check.method == opengold::DoorMethod::pick && check.thieves_tools)
     {
         return i18n::format(

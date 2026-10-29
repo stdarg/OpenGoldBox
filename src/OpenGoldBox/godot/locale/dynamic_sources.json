@@ -1628,5 +1628,18 @@
   "Basic Poison: coat weapon",
   "In combat, a Bonus Action coats your weapon: its next Piercing or Slashing hit within a minute deals 1d4 extra Poison damage.",
   "Thieves' Tools",
-  "A Rogue carrying them has twice the chance to pick a lock."
+  "A Rogue carrying them has twice the chance to pick a lock.",
+  "Magic Lock Picks",
+  "A Rogue picking a lock uses one set for Advantage on the check.",
+  "Boots of Elvenkind",
+  "Cloak of Elvenkind",
+  "Stone of Good Luck",
+  "Boots",
+  "Stone",
+  "Worn: Advantage on Dexterity (Stealth) checks.",
+  "Worn: Advantage on Dexterity (Stealth) checks, and Wisdom (Perception) checks to find the hidden wearer have Disadvantage.",
+  "Worn: +1 to ability checks, Initiative included, and saving throws.",
+  "Dagger +1",
+  "Short Sword +1",
+  "Short Bow +1"
 ]

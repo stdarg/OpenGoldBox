@@ -2172,7 +2172,22 @@ in ([#271](https://github.com/stdarg/OpenGoldBox/issues/271)):
 - **The shop sells** Thieves' Tools (25 gp), the Poisoner's Kit (50 gp) and
   Basic Poison (100 gp), edited, with its shopkeeper's portrait, in the Shop &
   Temple Manager, which draws the shop's new wall and secret door. The game
-  opens the shop itself when the party steps or looks on its square.
+  opens the shop itself when the party steps or looks on its square, and
+  sells its items identified.
+- **Its magic items**, at the SRD's prices (400 gp uncommon, half for an item
+  used up):
+  - **Magic Lock Picks** (50 gp), OpenGoldBox's own: a Rogue picking a lock
+    with them has Advantage, and each Pick uses up a set.
+  - The original's **Dagger +1, Short Sword +1 and Short Bow +1** (400 gp)
+    and **Dust of Disappearance** (200 gp), sold from the item lists that
+    hold them.
+  - **Boots of Elvenkind** and a **Cloak of Elvenkind** (400 gp): Advantage
+    on Stealth checks; against the cloak's hidden wearer Passive Perception
+    counts 5 less and a search rolls with Disadvantage.
+  - A **Stone of Good Luck** (400 gp): +1 to ability checks, Initiative
+    included, and saving throws. It is worn like a ring, needing no hand,
+    where the SRD's works anywhere on the wearer.
+  - Leather Armor +1 is not sold: no original item list holds one.
 - `data/shops/locations.json` records the way in: the side of the secret
   door, the map's wall that draws it as a door once found, and the walls
   that close the square's other open sides.

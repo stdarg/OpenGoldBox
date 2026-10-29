@@ -245,7 +245,11 @@ in the game: answering YES at a hall lists its services in the dialogue
   runs there, and its way in is a secret, locked door in the south wall, from
   the alley. The party finds the door with the original's search rolls, a
   Rogue picks it or a member casts Knock, and once open it stays open. It
-  sells Thieves' Tools, the Poisoner's Kit and Basic Poison.
+  sells Thieves' Tools, the Poisoner's Kit and Basic Poison, and magic items,
+  which no shop of the original sells: Magic Lock Picks (OpenGoldBox's own),
+  the original's Dagger, Short Sword and Short Bow +1 and Dust of
+  Disappearance, and the SRD's Boots and Cloak of Elvenkind and Stone of Good
+  Luck.
   [SECRET-1](SRD-DECISIONS.md#secret-1-2026-10-29-the-rogues-shop-and-its-secret-door),
   [#271](https://github.com/stdarg/OpenGoldBox/issues/271).
 

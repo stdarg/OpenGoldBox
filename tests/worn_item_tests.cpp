@@ -331,11 +331,56 @@ void fire_resistance()
 }
 } // namespace
 
+// The Rogue's Shop's gear (SECRET-1): Boots and a Cloak of Elvenkind give
+// Stealth checks Advantage, a Stone of Good Luck adds 1 to ability checks and
+// saving throws, and Magic Lock Picks give the check to pick a lock Advantage.
+void rogue_shop_gear()
+{
+    check(equipment_conversion(original(215, 0)) == "magic_lock_picks" &&
+              equipment_conversion(original(216, 0)) == "boots_of_elvenkind" &&
+              equipment_conversion(original(217, 0)) == "cloak_of_elvenkind" &&
+              equipment_conversion(original(218, 0)) == "stone_of_good_luck",
+          "The shop's gear converts");
+    const auto rules = module();
+    const auto sheet = fighter().sheet();
+    const auto check_with = [&](std::vector<std::string> gear, std::string_view skill)
+    {
+        return rules->ability_check(sheet, gear, Ability::dexterity, skill);
+    };
+    check(!check_with({}, "stealth").advantage &&
+              check_with({"boots_of_elvenkind"}, "stealth").advantage &&
+              check_with({"cloak_of_elvenkind"}, "stealth").advantage &&
+              !check_with({"boots_of_elvenkind"}, "acrobatics").advantage,
+          "Elvenkind boots and cloak give Stealth checks Advantage");
+    check(check_with({"stone_of_good_luck"}, "acrobatics").total ==
+                  check_with({}, "acrobatics").total + 1 &&
+              profile(*rules, {"stone_of_good_luck"}).item_save_bonus == 1 &&
+              profile(*rules, {"stone_of_good_luck"}).armor_class == profile(*rules, {}).armor_class,
+          "A Stone of Good Luck adds 1 to ability checks and saving throws");
+    check(check_with({"magic_lock_picks"}, "sleight_of_hand").advantage &&
+              !check_with({}, "sleight_of_hand").advantage &&
+              rules->equipment_info("magic_lock_picks").slot == EquipmentSlot::carried,
+          "Magic Lock Picks are carried and give picking a lock Advantage");
+    check(profile(*rules, {"boots_of_elvenkind", "cloak_of_elvenkind", "stone_of_good_luck",
+                           "ring_of_protection+1"})
+                      .armor_class > 0 &&
+              rules->equipment_info("boots_of_elvenkind").slot == EquipmentSlot::worn &&
+              rules->equipment_info("stone_of_good_luck").hands == 0,
+          "The boots, cloak and stone are worn together, needing no hand");
+    test::rejects(
+        [&]
+        {
+            (void)profile(*rules, {"cloak_of_elvenkind", "cloak_of_displacement"});
+        },
+        "Only one cloak is worn");
+}
+
 int main()
 {
     try
     {
         conversion();
+        rogue_shop_gear();
         armor_class();
         saves();
         strength();

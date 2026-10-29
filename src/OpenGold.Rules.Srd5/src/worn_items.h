@@ -14,10 +14,13 @@ enum class WornKind
     bracers,
     cloak,
     gauntlets,
-    necklace
+    necklace,
+    boots,
+    stone
 };
 
-// The original's rings, bracers, cloak, gauntlets and necklaces (MAGIC-4). A
+// The original's rings, bracers, cloak, gauntlets and necklaces (MAGIC-4), and
+// the Rogue's Shop's boots, cloak and stone (SECRET-1, SRD 5.2.1). A
 // key's enchantment is the item's number: "ring_of_protection+2",
 // "bracers+4" (the original's Bracers AC 6), "necklace-5:cursed". None needs
 // attunement, and none needs a hand.
@@ -49,7 +52,14 @@ inline constexpr std::array worn_items{
     WornItem{"gauntlets_of_ogre_power", "Gauntlets of Ogre Power", WornKind::gauntlets,
              "Gauntlets", "Worn: Strength is 19 unless it is already higher."},
     WornItem{"necklace", "Necklace", WornKind::necklace, "Necklace",
-             "Worn: its curse adds its penalty to Armor Class and saving throws."}};
+             "Worn: its curse adds its penalty to Armor Class and saving throws."},
+    WornItem{"boots_of_elvenkind", "Boots of Elvenkind", WornKind::boots, "Boots",
+             "Worn: Advantage on Dexterity (Stealth) checks."},
+    WornItem{"cloak_of_elvenkind", "Cloak of Elvenkind", WornKind::cloak, "Cloak",
+             "Worn: Advantage on Dexterity (Stealth) checks, and Wisdom (Perception) checks to "
+             "find the hidden wearer have Disadvantage."},
+    WornItem{"stone_of_good_luck", "Stone of Good Luck", WornKind::stone, "Stone",
+             "Worn: +1 to ability checks, Initiative included, and saving throws."}};
 
 // The worn item a key names, with or without its enchantment and flags.
 inline constexpr const WornItem *worn_item(std::string_view key)

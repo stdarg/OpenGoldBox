@@ -143,7 +143,8 @@ bool logged(const CombatSession &c, std::string_view text)
 }
 
 std::unique_ptr<CombatSession> fight(const RulesModule &rules, const Character &hero,
-                                     std::string_view foe, Cell foe_cell, std::uint64_t seed)
+                                     std::string_view foe, Cell foe_cell, std::uint64_t seed,
+                                     std::vector<std::string> gear = {"dagger"})
 {
     auto c = rules.create(
         {{12, 6, walled()},
@@ -152,7 +153,7 @@ std::unique_ptr<CombatSession> fight(const RulesModule &rules, const Character &
            "Rogue",
            Side::party,
            {3, 1},
-           rules.character_profile(hero.sheet(), std::vector<std::string>{"dagger"}).data},
+           rules.character_profile(hero.sheet(), gear).data},
           {98, std::string(foe), "Foe", Side::opposition, foe_cell}}},
         seed);
     // The Rogue's Alert offers an initiative swap first; it keeps its place.
@@ -400,6 +401,53 @@ void poisoned_checks()
     }
     check(lower, "Poisoned lowers some door checks");
 }
+
+// The Rogue's Shop's gear (SECRET-1): Boots of Elvenkind give the Stealth
+// check Advantage; a Cloak of Elvenkind takes 5 from an enemy's Passive
+// Perception against its hidden wearer, and a search rolls again against it.
+void elvenkind_checks()
+{
+    const auto rules = module();
+    const auto hero = rogue();
+    auto c = fight(*rules, hero, "target", {8, 1}, 1, {"dagger", "boots_of_elvenkind"});
+    check(submit(*c, "cunning_hide") && logged(*c, "Rogue Stealth check: d20 ") &&
+              logged(*c, "(advantage)"),
+          "Boots of Elvenkind give the Stealth check Advantage");
+
+    // The keen enemy's Passive Perception is 30, 25 through the cloak.
+    bool passed_unseen = false;
+    for (std::uint64_t seed = 1; seed < 400 && !passed_unseen; ++seed)
+    {
+        c = fight(*rules, hero, "keen", {8, 1}, seed, {"dagger", "cloak_of_elvenkind"});
+        if (!submit(*c, "cunning_hide") || !unit(*c, 1).hidden ||
+            (!logged(*c, "(Stealth 26)") && !logged(*c, "(Stealth 27)") &&
+             !logged(*c, "(Stealth 28)") && !logged(*c, "(Stealth 29)") &&
+             !logged(*c, "(Stealth 30)")))
+        {
+            continue;
+        }
+        check(move_to(*c, {3, 2}) && move_to(*c, {3, 3}) && move_to(*c, {3, 4}) &&
+                  unit(*c, 1).hidden && !logged(*c, "finds Rogue"),
+              "Through the cloak, the keen enemy misses a Stealth total it would see bare");
+        passed_unseen = true;
+    }
+    check(passed_unseen, "A cloaked Rogue hides with a Stealth total from 26 to 30");
+
+    bool rolled_again = false;
+    for (std::uint64_t seed = 1; seed < 60 && !rolled_again; ++seed)
+    {
+        c = fight(*rules, hero, "dull", {8, 1}, seed, {"dagger", "cloak_of_elvenkind"});
+        if (!submit(*c, "cunning_hide") || !unit(*c, 1).hidden)
+        {
+            continue;
+        }
+        check(move_to(*c, {3, 2}) && move_to(*c, {3, 3}) && move_to(*c, {3, 4}) &&
+                  submit(*c, "end") && c->submit(choose_demo_command(*c)),
+              "The monster searches for the cloaked Rogue");
+        rolled_again = logged(*c, "Foe rolls again against a Cloak of Elvenkind: d20 ");
+    }
+    check(rolled_again, "A search rolls again against the cloak");
+}
 } // namespace
 
 int main()
@@ -411,6 +459,7 @@ int main()
         search_checks();
         spell_checks();
         poisoned_checks();
+        elvenkind_checks();
     }
     catch (const std::exception &error)
     {

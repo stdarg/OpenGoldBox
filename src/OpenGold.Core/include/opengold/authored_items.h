@@ -29,7 +29,9 @@ namespace authored_item
 {
 inline constexpr std::uint8_t torch = 200, acid = 201, alchemists_fire = 202, magic_ink = 203,
                               poisoners_kit = 212, basic_poison = 213,
-                              thieves_tools = 214;
+                              thieves_tools = 214, magic_lock_picks = 215,
+                              boots_of_elvenkind = 216, cloak_of_elvenkind = 217,
+                              stone_of_good_luck = 218;
 
 // The level of Magic Ink an item type is, if it is Magic Ink.
 [[nodiscard]] inline constexpr unsigned magic_ink_level(std::uint8_t type) noexcept

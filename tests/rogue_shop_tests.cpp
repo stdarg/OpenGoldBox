@@ -257,7 +257,7 @@ std::shared_ptr<CampaignParty> party_with(std::vector<Character> members)
         party->add_pc(std::move(member));
     }
     auto state = party->checkpoint();
-    coins(state.wealth, Coin::gold) = 500;
+    coins(state.wealth, Coin::gold) = 2000;
     party->restore(std::move(state));
     return party;
 }
@@ -400,6 +400,20 @@ void rogue_checks(const char *directory)
                                       return item.stored.type == 212;
                                   });
     check(kit != stock.end() && kit->stored.value == 50, "The shop sells the Poisoner's Kit for 50 gp");
+    const auto sells = [&](std::string_view label, unsigned price)
+    {
+        return std::any_of(stock.begin(), stock.end(),
+                           [&](const auto &item)
+                           {
+                               return item.label() == label && item.stored.value == price;
+                           });
+    };
+    check(sells("Magic Lock Picks", 50) && sells("Dagger +1", 400) && sells("Short Sword +1", 400) &&
+              sells("Short Bow +1", 400) && sells("Dust of Disappearance", 200) &&
+              sells("Boots of Elvenkind", 400) &&
+              sells("Cloak of Elvenkind", 400) && sells("Stone of Good Luck", 400) &&
+              sells("Thieves' Tools", 25) && sells("Basic Poison", 100) && stock.size() == 11,
+          "The shop sells its rogue's gear, the magic items known by name");
     const auto gold = coins(party->state().wealth, Coin::gold);
     check(town.buy(town.snapshot().continue_ticket, static_cast<std::size_t>(kit - stock.begin())),
           "The party buys the kit");
@@ -411,6 +425,35 @@ void rogue_checks(const char *directory)
                               return item.definition_id == "poisoners_kit";
                           }),
           "The kit costs 50 gp and joins the buyer's pack");
+    // Bought, the magic dagger and the boots are what they say, and the boots
+    // are worn.
+    for (const std::string_view label : {"Dagger +1", "Boots of Elvenkind"})
+    {
+        const auto item = std::find_if(stock.begin(), stock.end(),
+                                       [&](const auto &offered)
+                                       {
+                                           return offered.label() == label;
+                                       });
+        check(town.buy(town.snapshot().continue_ticket,
+                       static_cast<std::size_t>(item - stock.begin())),
+              "The party buys " + std::string(label));
+    }
+    const auto buyer = party->selected();
+    const auto &pack = party->member(buyer).character.inventory().items();
+    const auto bought = [&](std::string_view definition)
+    {
+        return std::find_if(pack.begin(), pack.end(),
+                            [&](const auto &item)
+                            {
+                                return item.definition_id == definition;
+                            });
+    };
+    check(bought("dagger+1") != pack.end() && bought("boots_of_elvenkind") != pack.end() &&
+              bought("dagger+1")->name == "Dagger +1",
+          "The dagger is a Dagger +1, named so");
+    party->equip(buyer, bought("boots_of_elvenkind")->id);
+    check(party->profile(buyer).item_modifiers.find("Boots of Elvenkind") != std::string::npos,
+          "The boots are worn");
     check(town.leave_shop(town.snapshot().continue_ticket) &&
               town.snapshot().phase == TourPhase::completed,
           "Leaving the shop ends the visit");
@@ -428,6 +471,34 @@ void rogue_checks(const char *directory)
     step(town, ExplorationCommand::forward);
     check(town.snapshot().phase == TourPhase::shopping, "The open door leads straight into the shop");
     check(town.leave_shop(town.snapshot().continue_ticket), "The party leaves again");
+}
+
+// A Rogue with Magic Lock Picks picks with Advantage and uses up one set.
+void lock_pick_checks()
+{
+    auto party = party_with({rogue()});
+    const auto id = party->state().slots[0];
+    por::Equipment picks;
+    picks.stored.type = 215;
+    picks.stored.stored_name = "Magic Lock Picks";
+    picks.stored.stack_size = 1;
+    check(party->award_loot({}, {picks, picks}, "test:picks"), "The Rogue carries two sets");
+    const auto sets = [&]
+    {
+        std::uint32_t count = 0;
+        for (const auto &item : party->member(id).character.inventory().items())
+        {
+            count += item.definition_id == "magic_lock_picks" ? item.quantity : 0;
+        }
+        return count;
+    };
+    check(sets() == 2, "Two sets of picks in the pack");
+    const auto attempts = party->try_door(DoorMethod::pick, 15);
+    check(attempts.size() == 1 && attempts[0].magic_lock_picks && sets() == 1,
+          "Picking a lock uses up one set for Advantage");
+    (void)party->try_door(DoorMethod::pick, 15);
+    check(sets() == 0 && !party->try_door(DoorMethod::pick, 15).at(0).magic_lock_picks,
+          "With no picks left the Rogue picks without them");
 }
 
 // A party with no Rogue opens the door with Knock.
@@ -454,6 +525,7 @@ int main()
     }
     try
     {
+        lock_pick_checks();
         rogue_checks(directory);
         knock_checks(directory);
     }

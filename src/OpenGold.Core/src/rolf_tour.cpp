@@ -901,6 +901,14 @@ void RolfTourSession::shops(std::vector<opengold::ShopSite> sites)
             stock.push_back(offering.archive.empty() ? authored_offering(offering)
                                                      : original_offering(*town_, offering));
             stock.back().index = stock.size() - 1;
+            // A shop says what it sells: the Rogue's Shop's magic weapons and
+            // dust are known by their full names (SECRET-1).
+            auto &item = stock.back();
+            item.identify();
+            if (!item.decoded_name.empty())
+            {
+                item.stored.stored_name = item.decoded_name;
+            }
         }
     }
     shops_ = std::move(sites);
