@@ -213,6 +213,11 @@ class RolfTourView : public godot::Control
     void cast_use();
     void read_or_copy_scroll(const std::string &id, opengold::MemberId patient, const godot::String &label);
     bool refresh_rest_use(const std::vector<opengold::MemberRestInfo> &infos, bool spending);
+    // Teleport's cheapest offer becomes one entry for each place the party has
+    // been (TELEPORT-1), its id followed by "@" and the map; its other slots'
+    // offers go.
+    void expand_teleport(std::vector<opengold::rules::CampAction> &actions,
+                         std::vector<godot::String> &labels) const;
     void refresh_rest_spells();
     void rest_spell_toggled(bool selected, godot::String group, godot::String option);
     void rest_spell_replaced(std::int64_t index);

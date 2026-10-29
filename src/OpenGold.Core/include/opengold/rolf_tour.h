@@ -11,6 +11,7 @@
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_encounter.h"
 #include "opengold/difficulty.h"
+#include "opengold/teleport.h"
 #include "opengold/monster_bundle.h"
 #include "opengold/encounter_budget.h"
 #include "opengold/shop_data.h"
@@ -246,6 +247,16 @@ class RolfTourSession
     {
         return sanctuary_.has_value();
     }
+
+    // Teleport (TELEPORT-1): the maps with a teleport spot that the party has
+    // been on, in the spots' order.
+    [[nodiscard]] std::vector<unsigned> teleport_destinations() const;
+    // Teleport from camp or exploring, `action` its camp action ("teleport",
+    // or "teleport_8" from a higher slot): the whole party goes to the map's
+    // spot, through the map's own way in when it is another script's. Throws
+    // when the party cannot leave or has not been on that map, before
+    // spending anything.
+    void teleport(opengold::MemberId caster, const std::string &action, unsigned map);
 
     // Outside events, and while shopping to choose the buyer. The shop script
     // receives whoever is selected when the shop closes.
@@ -613,6 +624,17 @@ class RolfTourSession
     };
 
     std::optional<Sanctuary> temple_square_, sanctuary_;
+
+    // Teleport's map and spot, waiting for the map's entry script to finish.
+    struct TeleportArrival
+    {
+        unsigned map{};
+        PartyPose pose;
+    };
+
+    std::optional<TeleportArrival> teleport_arrival_;
+    // Puts the party on a Teleport's spot on its map.
+    void arrive(const TeleportArrival &arrival);
     std::uint64_t shop_request_{};
     void configure_town();
     void synchronize_clock();

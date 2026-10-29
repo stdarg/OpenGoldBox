@@ -51,6 +51,13 @@ struct TourAccess
         return town.town_->closing_story;
     }
 
+    // Records a square of `map` as one the party has stood on.
+    static void mark_visited(por::RolfTourSession &town, unsigned map, unsigned x, unsigned y)
+    {
+        (map == town.current_area_ ? town.snapshot_.visited
+                                   : town.visited_areas_[map])[y * 16 + x] = true;
+    }
+
     // Reseeds the script's dice, so a test can try an event on several rolls.
     static void seed_dice(por::RolfTourSession &town, std::uint32_t seed)
     {

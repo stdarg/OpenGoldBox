@@ -110,7 +110,7 @@ The Sorcerer advances to level 15, the cap
   Gravity; at 15 Dominate Monster, Earthquake, Incendiary Cloud, Power Word
   Stun and Sunburst. They work as for the [Wizard](WIZARD.md#levels-515) and
   the [Cleric](CLERIC.md#levels-515). Slow (level 5) works as for the
-  Wizard; Teleport waits for travel beyond New Phlan; the cut spells stay cut.
+  Wizard, Teleport too ([TELEPORT-1](SRD-DECISIONS.md#teleport-1-2026-10-29-teleport-to-a-maps-central-spot)); the cut spells stay cut.
 - **Replacing choices:** on gaining any level up to 15, a cantrip, a spell
   and a Metamagic option may each be replaced
   ([Replacing choices](LEVEL-SWAPS.md)); the offers used to stop at level 4.

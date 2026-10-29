@@ -268,6 +268,7 @@ constexpr std::array spells{
     Spell{"prismatic_spray", "Prismatic Spray", 7, 0, bard_list | sorcerer_list | wizard_list},
     Spell{"reverse_gravity", "Reverse Gravity", 7, 0, druid_list | sorcerer_list | wizard_list},
     Spell{"simulacrum", "Simulacrum", 7, 0, wizard_list},
+    Spell{"teleport", "Teleport", 7, 0, bard_list | sorcerer_list | wizard_list},
     Spell{"call_lightning", "Call Lightning", 3, 0, druid_list},
     Spell{"giant_insect", "Giant Insect", 4, 0, druid_list},
     Spell{"antilife_shell", "Antilife Shell", 5, 0, druid_list},

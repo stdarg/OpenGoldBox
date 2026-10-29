@@ -966,6 +966,7 @@ constexpr std::array class_spell_access{
     SpellAccessRow{CharacterClass::wizard, "prismatic_spray", 13},
     SpellAccessRow{CharacterClass::wizard, "reverse_gravity", 13},
     SpellAccessRow{CharacterClass::wizard, "simulacrum", 13},
+    SpellAccessRow{CharacterClass::wizard, "teleport", 13},
     // Wizard level-8 spells, with the level-8 slot of Wizard level 15.
     SpellAccessRow{CharacterClass::wizard, "antimagic_field", 15},
     SpellAccessRow{CharacterClass::wizard, "befuddlement", 15},
@@ -1074,6 +1075,7 @@ constexpr std::array class_spell_access{
     SpellAccessRow{CharacterClass::sorcerer, "fire_storm", 13},
     SpellAccessRow{CharacterClass::sorcerer, "prismatic_spray", 13},
     SpellAccessRow{CharacterClass::sorcerer, "reverse_gravity", 13},
+    SpellAccessRow{CharacterClass::sorcerer, "teleport", 13},
     // Sorcerer level-8 spells, with the level-8 slot of Sorcerer level 15.
     SpellAccessRow{CharacterClass::sorcerer, "dominate_monster", 15},
     SpellAccessRow{CharacterClass::sorcerer, "earthquake", 15},
@@ -1170,6 +1172,7 @@ constexpr std::array class_spell_access{
     SpellAccessRow{CharacterClass::bard, "prismatic_spray", 13},
     SpellAccessRow{CharacterClass::bard, "regenerate", 13},
     SpellAccessRow{CharacterClass::bard, "resurrection", 13},
+    SpellAccessRow{CharacterClass::bard, "teleport", 13},
     // Bard level-8 spells, with the level-8 slot of Bard level 15.
     SpellAccessRow{CharacterClass::bard, "befuddlement", 15},
     SpellAccessRow{CharacterClass::bard, "dominate_monster", 15},
@@ -32052,7 +32055,7 @@ class Module final : public RulesModule
             chosen.erase(chosen.begin());
         }
         const auto &spell = *detail::find_spell(action);
-        if (spell.id == "word_of_recall")
+        if (spell.id == "word_of_recall" || spell.id == "teleport")
         {
             // The campaign moves the party (LEVELS-3); the rules spend the slot.
             pay_for_spell(caster, action, spell);
@@ -33310,7 +33313,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.258", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.259", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),

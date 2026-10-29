@@ -2128,3 +2128,21 @@ monster ability is on from. Each stays a game option
 
 Normal plays as before except that Legendary Resistance now waits for Hard
 with the Legendary Actions.
+
+## TELEPORT-1 (2026-10-29): Teleport to a map's central spot
+
+LEVELS-3 kept Teleport as fast travel without mishaps to places the party has
+visited. The user chose on 2026-10-29 how it works:
+
+- **Cast anywhere outside fights**, from the Cast menu or the Camp dialog, by
+  a Bard, Sorcerer or Wizard with a level-7 slot; it takes the whole party.
+- **One known spot on each map**: each of the game's 29 maps, the several
+  maps of one place (Valjevo Castle's quarters and tower, the Pyramid's two
+  floors, Kuto's Well's plaza and catacombs) each with its own. The wilderness
+  map has none.
+- **Only maps the party has been on**; the spots are not marked on the map.
+- The spot is the open square nearest the map's center with no event of its
+  own, joined to the rest of the map ([teleport.h](../src/OpenGold.Core/include/opengold/teleport.h)).
+  The map's own way in runs, as when the party walks in, and the party then
+  stands on the spot, facing north.
+- A refused Teleport spends nothing.

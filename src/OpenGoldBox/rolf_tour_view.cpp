@@ -148,6 +148,46 @@ constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_
     return N_("New Phlan");
 }
 
+// A Teleport destination's name: its place, and which of the place's maps.
+[[nodiscard]] const char *teleport_place(unsigned map)
+{
+    switch (map)
+    {
+    case 29:
+        return N_("Kuto's Well, the plaza");
+    case 32:
+        return N_("Kuto's Well, the catacombs");
+    case 31:
+        return N_("Temple of Bane, the street east of the temple");
+    case 24:
+        return N_("Temple of Bane, the temple's block");
+    case 26:
+        return N_("Central Wilderness, the grove");
+    case 22:
+        return N_("Pyramid, the prison of souls");
+    case 23:
+        return N_("Pyramid, the laboratories");
+    case 25:
+        return N_("Western wilderness, the cave");
+    case 27:
+        return N_("Eastern wilderness, the cave");
+    case 16:
+        return N_("Lizard Men's Keep, the first level");
+    case 30:
+        return N_("Lizard Men's Keep, the flooded level");
+    case 3:
+        return N_("Valjevo Castle, the northwest quarter");
+    case 4:
+        return N_("Valjevo Castle, the northeast quarter");
+    case 5:
+        return N_("Valjevo Castle, the southeast quarter");
+    case 7:
+        return N_("Valjevo Castle, the tower's upper level");
+    default:
+        return district_name(map);
+    }
+}
+
 } // namespace
 
 void RolfTourView::_bind_methods()
@@ -1106,9 +1146,16 @@ void RolfTourView::refresh_cast()
     }
     else
     {
-        for (const auto &offered : campaign_->camp_actions(caster))
+        auto actions = campaign_->camp_actions(caster);
+        std::vector<String> labels;
+        for (const auto &offered : actions)
         {
-            add(i18n::render(offered.label), offered.id, offered.whole_party);
+            labels.push_back(i18n::render(offered.label));
+        }
+        expand_teleport(actions, labels);
+        for (std::size_t n = 0; n < actions.size(); ++n)
+        {
+            add(labels[n], actions[n].id, actions[n].whole_party);
         }
     }
     for (const auto id : campaign_->state().slots)
@@ -1128,6 +1175,47 @@ void RolfTourView::refresh_cast()
             .set_text(i18n::text(N_("Nothing to cast or use outside combat.")));
     }
     cast_action_selected(action->get_selected());
+}
+
+void RolfTourView::expand_teleport(std::vector<opengold::rules::CampAction> &actions,
+                                   std::vector<String> &labels) const
+{
+    const auto teleport = [](const std::string &id)
+    {
+        return id == "teleport" || id.starts_with("teleport_");
+    };
+    const auto first = std::find_if(actions.begin(), actions.end(),
+                                    [&](const auto &offered)
+                                    {
+                                        return teleport(offered.id);
+                                    });
+    if (first == actions.end())
+    {
+        return;
+    }
+    const auto at = static_cast<std::size_t>(first - actions.begin());
+    const auto cheapest = actions[at];
+    const auto label = labels[at];
+    for (std::size_t n = actions.size(); n-- > 0;)
+    {
+        if (teleport(actions[n].id))
+        {
+            actions.erase(actions.begin() + static_cast<std::ptrdiff_t>(n));
+            labels.erase(labels.begin() + static_cast<std::ptrdiff_t>(n));
+        }
+    }
+    const auto destinations =
+        session_ ? session_->teleport_destinations() : std::vector<unsigned>{};
+    for (std::size_t n = 0; n < destinations.size(); ++n)
+    {
+        auto entry = cheapest;
+        entry.id += "@" + std::to_string(destinations[n]);
+        actions.insert(actions.begin() + static_cast<std::ptrdiff_t>(at + n), entry);
+        labels.insert(labels.begin() + static_cast<std::ptrdiff_t>(at + n),
+                      i18n::format(N_("{spell}: {place}"),
+                                   {{"spell", label},
+                                    {"place", i18n::text(teleport_place(destinations[n]))}}));
+    }
 }
 
 void RolfTourView::cast_action_selected(std::int64_t index)

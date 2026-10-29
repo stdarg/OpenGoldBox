@@ -96,7 +96,7 @@ The Bard advances to level 15, the cap
   Heroes' Feast, Irresistible Dance and True Seeing; at 13 Arcane Sword,
   Forcecage, Prismatic Spray, Regenerate and Resurrection; at 15
   Befuddlement, Dominate Monster, Mind Blank and Power Word Stun; Slow at 5,
-  as for the Wizard. Teleport waits for travel beyond New Phlan.
+  as for the Wizard, Teleport too ([TELEPORT-1](SRD-DECISIONS.md#teleport-1-2026-10-29-teleport-to-a-maps-central-spot)).
 - **Compulsion** (level 4, since 2026-10-25): the Bard picks creatures it can
   see within 30 feet one at a time, then casts; each makes a Wisdom save or is
   Charmed (Compulsion) while the Bard concentrates. A Bonus Action, "Compulsion:
