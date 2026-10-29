@@ -1536,11 +1536,6 @@ struct Definition
     // Bloodied on its turn spends its Bonus Action on moving up to half its
     // Speed and one melee attack (a Gnoll Warrior's Rampage).
     bool bonus_charge{}, rampage{};
-    // A monster's `loathsome_limbs` row: the creature a severed limb becomes,
-    // its `trait_uses` a day. Ending any turn Bloodied, having taken 15 or more
-    // Slashing damage during it, the creature loses a limb (a Troll's
-    // Loathsome Limbs).
-    std::string limb_key;
     // A monster's `trampling_charge` row: a Bonus Action, Recharge
     // `trample_recharge`, moving it up to its Speed without provoking
     // Opportunity Attacks through Medium or smaller creatures, each a Strength
@@ -6430,14 +6425,6 @@ class Session final : public CombatSession
     void envenom(Actor &spider, Actor &target);
     // A Gnoll's Rampage begins: half its Speed and one Rend left this turn.
     void start_rampage(Actor &gnoll);
-    // Loathsome Limbs as a turn ends: each Troll that qualifies loses a limb,
-    // which joins the fight right after it. The turn's Slashing tallies end.
-    void sever_limbs();
-    void sever_limb(std::size_t troll_index);
-    // A Troll regaining Hit Points grows its severed limbs back.
-    void regrow_limbs(Actor &troll);
-    // Exhaustion's penalty to d20 tests: 2 for each level.
-    [[nodiscard]] static int exhaustion_penalty(const Actor &a);
     // A Trampling Charge's straight run: where it ends, the creatures whose
     // space it enters, and the conscious enemies and allies among them.
     struct Trample
@@ -7351,10 +7338,8 @@ void Session::remove_fled()
         {
             continue;
         }
-        // A summoned creature or a severed Troll Limb vanishes; it never leaves
-        // the fight as one that fled.
-        if (detail::has_effect(a.effects, detail::EffectKind::summoned) ||
-            detail::has_effect(a.effects, detail::EffectKind::severed))
+        // A summoned creature vanishes; it never leaves the fight as one that fled.
+        if (detail::has_effect(a.effects, detail::EffectKind::summoned))
         {
             actors_.erase(actors_.begin() + static_cast<std::ptrdiff_t>(i));
             if (i < turn_)
@@ -8484,7 +8469,6 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::turn_charmed, "Charmed"},
               std::pair{detail::EffectKind::hampered, "Hampered"},
               std::pair{detail::EffectKind::clawed, "Paralyzed (Claw)"},
-              std::pair{detail::EffectKind::limbs_lost, "Exhaustion (severed limbs)"},
               std::pair{detail::EffectKind::envenomed_paralyzed, "Poisoned and Paralyzed (venom)"},
               std::pair{detail::EffectKind::lethargic, "Incapacitated (lethargy)"},
               std::pair{detail::EffectKind::entranced, "Charmed (Hypnotic Pattern)"},
@@ -8592,8 +8576,7 @@ Snapshot Session::snapshot() const
                 s.combatants.back().form = std::string(
                     detail::beast_forms.at(static_cast<std::size_t>(effect.dc - 1)).key);
             }
-            else if (effect.kind == detail::EffectKind::illusory ||
-                     effect.kind == detail::EffectKind::severed)
+            else if (effect.kind == detail::EffectKind::illusory)
             {
                 s.combatants.back().form = "copy:" + std::to_string(effect.source_actor);
             }
@@ -13371,26 +13354,6 @@ int Session::resolved_damage(Actor &target, detail::DamageType type, int amount,
     {
         target.regeneration_blocked = true;
     }
-    if (!def(target).limb_key.empty() && result.total > 0 &&
-        type == detail::DamageType::slashing)
-    {
-        const auto slashed =
-            std::find_if(target.effects.active.begin(), target.effects.active.end(),
-                         [](const auto &e)
-                         {
-                             return e.kind == detail::EffectKind::slashed;
-                         });
-        if (slashed != target.effects.active.end())
-        {
-            slashed->dc = std::min(slashed->dc + result.total, 2000);
-        }
-        else if (detail::can_apply(target.effects))
-        {
-            detail::apply_spell_benefit(target.effects, effect_source(target),
-                                        target.source.name, detail::EffectKind::slashed,
-                                        std::min(result.total, 2000));
-        }
-    }
     if (result.total != amount)
     {
         const auto name = std::string(detail::damage_name(type));
@@ -13781,10 +13744,6 @@ int Session::heal(Actor &target, int amount)
     log(target.source.name + " recovers " + std::to_string(restored) + " HP.",
         {"{name} recovers {hp} HP.",
          {{"name", target.source.name}, {"hp", std::to_string(restored)}}});
-    if (restored)
-    {
-        regrow_limbs(target);
-    }
     return restored;
 }
 
@@ -16105,7 +16064,7 @@ void Session::seek_maze_exit(Actor &a)
                                  detail::d20({false, check_disadvantage(a), def(a).lucky}, rng_));
     const int bonus =
         (a.source.character_profile.empty() ? def(a).saves[3] : def(a).investigation) +
-        guidance_bonus(a, "investigation") - exhaustion_penalty(a);
+        guidance_bonus(a, "investigation");
     const bool escaped = natural + bonus >= 20;
     log(a.source.name + " Investigation check: d20 " + std::to_string(natural) + " + " +
             std::to_string(bonus) + " vs DC 20" + (escaped ? " (escapes)." : " (still lost)."),
@@ -17067,109 +17026,6 @@ bool Session::jaunt_back(Actor &spider)
     log(spider.source.name + " returns from the Ethereal Plane.",
         {"{name} returns from the Ethereal Plane.", {{"name", spider.source.name}}});
     return true;
-}
-
-int Session::exhaustion_penalty(const Actor &a)
-{
-    return 2 * detail::exhaustion_levels(a.effects);
-}
-
-void Session::sever_limbs()
-{
-    for (std::size_t index = 0; index < actors_.size(); ++index)
-    {
-        const auto &troll = actors_[index];
-        const auto slashed = std::find_if(troll.effects.active.begin(), troll.effects.active.end(),
-                                          [](const auto &e)
-                                          {
-                                              return e.kind == detail::EffectKind::slashed;
-                                          });
-        if (!def(troll).limb_key.empty() && !troll.life.dead && !absent(troll) &&
-            slashed != troll.effects.active.end() && slashed->dc >= 15 &&
-            troll.life.hp * 2 <= max_hp(troll) && trait_uses_left(troll) > 0)
-        {
-            sever_limb(index);
-        }
-    }
-    for (auto &a : actors_)
-    {
-        std::erase_if(a.effects.active,
-                      [](const auto &e)
-                      {
-                          return e.kind == detail::EffectKind::slashed;
-                      });
-    }
-}
-
-void Session::sever_limb(std::size_t troll_index)
-{
-    auto &troll = actors_[troll_index];
-    spend_trait_use(troll);
-    const auto lost = std::find_if(troll.effects.active.begin(), troll.effects.active.end(),
-                                   [](const auto &e)
-                                   {
-                                       return e.kind == detail::EffectKind::limbs_lost;
-                                   });
-    if (lost != troll.effects.active.end())
-    {
-        ++lost->dc;
-    }
-    else
-    {
-        detail::apply_spell_benefit(troll.effects, effect_source(troll), troll.source.name,
-                                    detail::EffectKind::limbs_lost, 1);
-    }
-    log(troll.source.name + " loses a limb.",
-        {"{name} loses a limb.", {{"name", troll.source.name}}});
-    const auto squares = free_squares_near(troll.source.cell, {});
-    if (squares.empty() || actors_.size() == actors_.capacity())
-    {
-        return;
-    }
-    EntityId id = 1;
-    for (const auto &a : actors_)
-    {
-        id = std::max(id, a.source.id + 1);
-    }
-    for (const auto &gone : fled_)
-    {
-        id = std::max(id, gone.source.id + 1);
-    }
-    const auto &key = def(troll).limb_key;
-    Actor limb;
-    limb.definition = content_->definitions.at(key);
-    limb.source.id = id;
-    limb.source.definition = key;
-    limb.source.name = "Troll Limb";
-    limb.source.side = troll.source.side;
-    limb.source.cell = squares.front();
-    limb.life.hp = limb.definition.hp;
-    limb.initiative = troll.initiative;
-    limb.movement = limb.definition.speed;
-    detail::apply_spell_benefit(limb.effects, effect_source(troll), troll.source.name,
-                                detail::EffectKind::severed, 0);
-    refresh_form(limb);
-    log(limb.source.name + " fights on.", {"{name} fights on.", {{"name", limb.source.name}}});
-    // It acts right after the Troll's turn; the turn now under way stays put.
-    const auto at = troll_index + 1;
-    if (at <= turn_)
-    {
-        ++turn_;
-    }
-    actors_.insert(actors_.begin() + static_cast<std::ptrdiff_t>(at), std::move(limb));
-}
-
-void Session::regrow_limbs(Actor &troll)
-{
-    if (std::erase_if(troll.effects.active,
-                      [](const auto &e)
-                      {
-                          return e.kind == detail::EffectKind::limbs_lost;
-                      }))
-    {
-        log(troll.source.name + " grows its limbs back.",
-            {"{name} grows its limbs back.", {{"name", troll.source.name}}});
-    }
 }
 
 void Session::start_rampage(Actor &gnoll)
@@ -19676,7 +19532,7 @@ Session::AthleticsRoll Session::roll_athletics(Actor &a, int dc)
     check.natural = reliable(
         a, "athletics", detail::d20({check.advantage, check_disadvantage(a), def(a).lucky}, rng_));
     check.bonus = (a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics) +
-                  guidance_bonus(a, "athletics") - exhaustion_penalty(a);
+                  guidance_bonus(a, "athletics");
     check.success = check.natural + check.bonus >= dc;
     // An enemy Lore Bard's Cutting Words may spoil it; the check's line shows
     // the lowered bonus, as an attack's does.
@@ -20663,7 +20519,7 @@ void Session::search(Actor &searcher)
     const int natural =
         detail::d20({false, check_disadvantage(searcher), d.lucky}, rng_, &lucky_reroll);
     log_luck(searcher, lucky_reroll);
-    int bonus = d.perception - exhaustion_penalty(searcher);
+    int bonus = d.perception;
     // An enemy Lore Bard's Cutting Words may keep the best-hidden creature the
     // search would find hidden.
     int margin = 6;
@@ -21591,7 +21447,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                  : ranged                   ? d.ranged_bonus
                                             : d.melee_bonus) +
                 blessing_die(a) + (spell || ranged ? 0 : sacred_weapon_bonus(a)) + weapon_magic -
-                return_penalty(a) - exhaustion_penalty(a);
+                return_penalty(a);
     // Sundering Blow: +5 to the next attack roll another creature makes against it.
     if (detail::spend_sundering(target.effects, effect_source(a)))
     {
@@ -22900,15 +22756,6 @@ void Session::update_outcome()
                     {"{name} falls again.", {{"name", a.source.name}}});
             }
         }
-        // A Troll's severed limbs leave with the fight: they were never part of
-        // the encounter, and their Troll Spawn is not modeled.
-        for (auto &a : actors_)
-        {
-            if (detail::has_effect(a.effects, detail::EffectKind::severed))
-            {
-                a.fled = true;
-            }
-        }
         champion_move_.reset();
         mastery_.reset();
         champion_offers_.clear();
@@ -23012,7 +22859,6 @@ void Session::regenerate(Actor &a)
     log(a.source.name + " regenerates " + std::to_string(healed) + " Hit Points.",
         {"{name} regenerates {amount} Hit Points.",
          {{"name", a.source.name}, {"amount", std::to_string(healed)}}});
-    regrow_limbs(a);
 }
 
 // As in the original game, a downed creature with Regeneration gets back up with
@@ -23041,7 +22887,6 @@ void Session::get_up(Actor &a)
         a.involuntary_overlap = true;
     }
     log(a.source.name + " gets back up.", {"{name} gets back up.", {{"name", a.source.name}}});
-    regrow_limbs(a);
 }
 
 bool Session::begin_turn()
@@ -23711,7 +23556,7 @@ bool Session::rolled_save_succeeds(const Actor &target, detail::Ability ability,
     // Warding Bond: +1 to saving throws; Smite of Protection +2 to Dexterity
     // saves, Slow -2.
     const int bless =
-        blessing_die(target) - return_penalty(target) - exhaustion_penalty(target) +
+        blessing_die(target) - return_penalty(target) +
         (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0) +
         aura_of_protection(target) +
         (ability == detail::Ability::dexterity && smite_protected(target) ? 2 : 0) +
@@ -24551,7 +24396,6 @@ void Session::end_turn()
     {
         return;
     }
-    sever_limbs();
     for (std::size_t checked = 0; checked <= actors_.size() * 2; ++checked)
     {
         advance_turn_time();
@@ -33326,31 +33170,52 @@ namespace
 {
 // The monster ability rows an `off` row may leave out, so that one ability can
 // be switched off without deleting its rows.
-constexpr std::array switchable_abilities{
-    std::string_view{"advantage_damage"}, std::string_view{"attach"},
-    std::string_view{"bite"},             std::string_view{"bloodied_fury"},
-    std::string_view{"breath"},           std::string_view{"charge"},
-    std::string_view{"cunning_action"},   std::string_view{"dreadful_glare"},
-    std::string_view{"enthralling_panache"}, std::string_view{"incorporeal"},
-    std::string_view{"innate"},           std::string_view{"last_attack"},
-    std::string_view{"legendary"},        std::string_view{"legendary_resistance"},
-    std::string_view{"life_drain"},       std::string_view{"life_drain_attack"},
-    std::string_view{"nimble_escape"},    std::string_view{"pack_tactics"},
-    std::string_view{"parry"},            std::string_view{"petrifying_gaze"},
-    std::string_view{"prone_large"},      std::string_view{"prone_on_hit"},
-    std::string_view{"regeneration"},     std::string_view{"repulsion_breath"},
-    std::string_view{"rotting_curse"},    std::string_view{"sunlight_sensitivity"},
-    std::string_view{"undead_fortitude"}, std::string_view{"web_walker"},
-    std::string_view{"hampering"},        std::string_view{"poisoning"},
-    std::string_view{"pushing"},          std::string_view{"hit_advantage"},
-    std::string_view{"captains_charm"},   std::string_view{"riposte"},
-    std::string_view{"create_specter"},   std::string_view{"charming"},
-    std::string_view{"flyby"},            std::string_view{"magic_resistance"},
-    std::string_view{"protective_magic"}, std::string_view{"paralyzing_claw"},
-    std::string_view{"gore"},             std::string_view{"paralyzing_venom"},
-    std::string_view{"bonus_charge"},     std::string_view{"rampage"},
-    std::string_view{"loathsome_limbs"},  std::string_view{"trampling_charge"},
-    std::string_view{"ethereal_jaunt"}};
+constexpr std::array switchable_abilities{std::string_view{"advantage_damage"},
+                                          std::string_view{"attach"},
+                                          std::string_view{"bite"},
+                                          std::string_view{"bloodied_fury"},
+                                          std::string_view{"breath"},
+                                          std::string_view{"charge"},
+                                          std::string_view{"cunning_action"},
+                                          std::string_view{"dreadful_glare"},
+                                          std::string_view{"enthralling_panache"},
+                                          std::string_view{"incorporeal"},
+                                          std::string_view{"innate"},
+                                          std::string_view{"last_attack"},
+                                          std::string_view{"legendary"},
+                                          std::string_view{"legendary_resistance"},
+                                          std::string_view{"life_drain"},
+                                          std::string_view{"life_drain_attack"},
+                                          std::string_view{"nimble_escape"},
+                                          std::string_view{"pack_tactics"},
+                                          std::string_view{"parry"},
+                                          std::string_view{"petrifying_gaze"},
+                                          std::string_view{"prone_large"},
+                                          std::string_view{"prone_on_hit"},
+                                          std::string_view{"regeneration"},
+                                          std::string_view{"repulsion_breath"},
+                                          std::string_view{"rotting_curse"},
+                                          std::string_view{"sunlight_sensitivity"},
+                                          std::string_view{"undead_fortitude"},
+                                          std::string_view{"web_walker"},
+                                          std::string_view{"hampering"},
+                                          std::string_view{"poisoning"},
+                                          std::string_view{"pushing"},
+                                          std::string_view{"hit_advantage"},
+                                          std::string_view{"captains_charm"},
+                                          std::string_view{"riposte"},
+                                          std::string_view{"create_specter"},
+                                          std::string_view{"charming"},
+                                          std::string_view{"flyby"},
+                                          std::string_view{"magic_resistance"},
+                                          std::string_view{"protective_magic"},
+                                          std::string_view{"paralyzing_claw"},
+                                          std::string_view{"gore"},
+                                          std::string_view{"paralyzing_venom"},
+                                          std::string_view{"bonus_charge"},
+                                          std::string_view{"rampage"},
+                                          std::string_view{"trampling_charge"},
+                                          std::string_view{"ethereal_jaunt"}};
 
 // Whether `entry` names a switchable ability, "ability" or "ability creature".
 bool switchable(std::string_view entry)
@@ -33445,7 +33310,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.257", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.258", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),
@@ -33823,28 +33688,6 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
             if (!row.eof())
             {
                 throw std::runtime_error("Unknown Trampling Charge fields: " + key);
-            }
-            continue;
-        }
-        // loathsome_limbs creature limb uses: a Troll's Loathsome Limbs, each
-        // severed limb the `limb` creature, `uses` a day.
-        if (tag == "loathsome_limbs")
-        {
-            const auto found = content.definitions.find(key);
-            std::string limb;
-            int uses{};
-            row >> limb >> uses;
-            if (!row || found == content.definitions.end() || !content.definitions.contains(limb) ||
-                uses < 1 || uses > 4 || !trait_rows.insert(tag + " " + key).second)
-            {
-                throw std::runtime_error("Invalid Loathsome Limbs: " + key);
-            }
-            found->second.limb_key = limb;
-            found->second.trait_uses = uses;
-            row >> std::ws;
-            if (!row.eof())
-            {
-                throw std::runtime_error("Unknown Loathsome Limbs fields: " + key);
             }
             continue;
         }

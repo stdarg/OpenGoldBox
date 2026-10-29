@@ -401,12 +401,12 @@ inline constexpr std::array effect_labels{
                 "Disadvantage on its next attack roll before the end of its next turn."},
     EffectLabel{EffectKind::turn_charmed, "Charmed",
                 "Cannot attack its charmer until the start of the charmer's next turn."},
-    EffectLabel{EffectKind::clawed, "Paralyzed (Claw)",
-                "Cannot move or act until the end of its next turn; attack rolls against it have Advantage, and hits from within 5 feet are critical."},
-    EffectLabel{EffectKind::envenomed_paralyzed, "Poisoned and Paralyzed (venom)",
-                "Cannot move or act for an hour; attack rolls against it have Advantage, and hits from within 5 feet are critical."},
-    EffectLabel{EffectKind::limbs_lost, "Exhaustion (severed limbs)",
-                "2 less on d20 tests and 5 feet less Speed for each missing limb, until it regains Hit Points."},
+    EffectLabel{
+        EffectKind::clawed, "Paralyzed (Claw)",
+        "Cannot move or act until the end of its next turn; attack rolls against it have Advantage, and hits from within 5 feet are critical."},
+    EffectLabel{
+        EffectKind::envenomed_paralyzed, "Poisoned and Paralyzed (venom)",
+        "Cannot move or act for an hour; attack rolls against it have Advantage, and hits from within 5 feet are critical."},
     EffectLabel{EffectKind::jaunted, "Ethereal (Ethereal Jaunt)",
                 "Out of reach on the Ethereal Plane until its next turn."},
     EffectLabel{EffectKind::rampaging, "Rampaging",
@@ -417,17 +417,33 @@ inline constexpr std::array effect_labels{
 // Bookkeeping no player sees: a save already made against an area this turn,
 // a summoned spirit's breath, a casting's dice, or a double's secret. Every
 // other kind has a label.
-inline constexpr std::array unlabeled_effects{
-    EffectKind::moonlit,     EffectKind::faith_tested, EffectKind::ensnaring,
-    EffectKind::pack_tested, EffectKind::pack_moved,   EffectKind::beings_tested,
-    EffectKind::guarded,     EffectKind::swarmed,      EffectKind::bladed,
-    EffectKind::bathed,      EffectKind::vitality,     EffectKind::sleeted,
-    EffectKind::groped,      EffectKind::wall_burned,  EffectKind::spirit_breath,
-    EffectKind::breathed,    EffectKind::illusory,     EffectKind::elemental_spirit,
-    EffectKind::hand_ready,  EffectKind::clouded,      EffectKind::eye_resisted,
-    EffectKind::thorned,     EffectKind::swum,         EffectKind::glare_resisted,
-    EffectKind::legendary_spent, EffectKind::legendary_resisted, EffectKind::poised,
-    EffectKind::slashed,     EffectKind::severed};
+inline constexpr std::array unlabeled_effects{EffectKind::moonlit,
+                                              EffectKind::faith_tested,
+                                              EffectKind::ensnaring,
+                                              EffectKind::pack_tested,
+                                              EffectKind::pack_moved,
+                                              EffectKind::beings_tested,
+                                              EffectKind::guarded,
+                                              EffectKind::swarmed,
+                                              EffectKind::bladed,
+                                              EffectKind::bathed,
+                                              EffectKind::vitality,
+                                              EffectKind::sleeted,
+                                              EffectKind::groped,
+                                              EffectKind::wall_burned,
+                                              EffectKind::spirit_breath,
+                                              EffectKind::breathed,
+                                              EffectKind::illusory,
+                                              EffectKind::elemental_spirit,
+                                              EffectKind::hand_ready,
+                                              EffectKind::clouded,
+                                              EffectKind::eye_resisted,
+                                              EffectKind::thorned,
+                                              EffectKind::swum,
+                                              EffectKind::glare_resisted,
+                                              EffectKind::legendary_spent,
+                                              EffectKind::legendary_resisted,
+                                              EffectKind::poised};
 
 // The kinds a Long Rest ends, which the sheet shows without a countdown.
 inline constexpr std::array long_rest_effects{

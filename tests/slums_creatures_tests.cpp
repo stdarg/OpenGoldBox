@@ -171,10 +171,6 @@ std::pair<EntityId, EntityId> heroes(const CombatSession &c)
     return {now, now == 2 ? 3 : 2};
 }
 
-// The getting-up tests' slashers fell the Troll, which would lose limbs to
-// them (Loathsome Limbs, tested on its own).
-const std::string keeps_limbs = "off loathsome_limbs\n";
-
 // Ends turns until the downed Troll gets up; returns the round it does.
 unsigned round_troll_gets_up(CombatSession &c)
 {
@@ -191,7 +187,7 @@ unsigned round_troll_gets_up(CombatSession &c)
 // with all its Hit Points.
 void troll_gets_up_later()
 {
-    const auto module = rules(keeps_limbs);
+    const auto module = rules();
     auto c = troll_fight(*module, "slasher", "slasher");
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1), "A hero attacks the Troll");
@@ -213,7 +209,7 @@ void troll_gets_up_later()
 // The rounds a downed Troll has left before it gets up survive a checkpoint.
 void troll_delay_saved()
 {
-    const auto module = rules(keeps_limbs);
+    const auto module = rules();
     auto c = troll_fight(*module, "slasher", "slasher");
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1) && unit(*c, 1).hit_points == 0, "A hero fells the Troll");
@@ -260,7 +256,7 @@ bool move_to(CombatSession &c, EntityId id, Cell destination)
 // gets up on its turn.
 void troll_held_down()
 {
-    const auto module = rules(keeps_limbs);
+    const auto module = rules();
     auto c = troll_fight(*module, "slasher", "slasher");
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1) && submit(*c, "end", first), "A hero fells the Troll");
@@ -1574,89 +1570,6 @@ void gnoll_rampages()
     throw std::runtime_error("No seed's attack hits");
 }
 
-// A Troll's Loathsome Limbs (SRD 5.2.1): ending a turn Bloodied, having taken
-// 15 or more Slashing damage during it, the Troll loses a limb, which fights
-// on as a Troll Limb right after the Troll's turn; the Troll has an Exhaustion
-// level for each missing limb until it regains Hit Points. The limbs leave
-// with the fight.
-void troll_loses_limbs()
-{
-    const auto module =
-        rules("creature cutter 30 1000 20 30 30 4 6 11 0 0 0 0 0 0 0 0 0 1 0\n"
-              "damage_types cutter slashing slashing\n");
-    const auto troll_fight = [&](int troll_hit_points, const std::string &hero)
-    {
-        return module->create({{10, 4, std::vector<Terrain>(40)},
-                               {{1, "troll", "Monster", Side::opposition, {1, 1}, {},
-                                 VitalState{troll_hit_points}},
-                                {2, hero, "Hero", Side::party, {2, 1}},
-                                {3, "target", "Friend", Side::party, {8, 3}}}},
-                              7);
-    };
-    auto c = troll_fight(40, "cutter");
-    turn_of(*c, 2);
-    check(submit(*c, "melee", 2, 1) && unit(*c, 1).hit_points > 0 &&
-              count_logged(*c, "loses a limb") == 0,
-          "The cut lands; the limb goes as the turn ends");
-    const auto checkpoint = c->save();
-    check(module->restore(checkpoint)->save() == checkpoint, "The cut survives a checkpoint");
-    check(submit(*c, "end", 2) && count_logged(*c, "Monster loses a limb.") == 1 &&
-              count_logged(*c, "Troll Limb fights on.") == 1 &&
-              unit(*c, 4).definition == "troll-limb",
-          "The Bloodied Troll loses a limb, which fights on");
-    check(c->snapshot().actor == 1 && count_logged(*c, "Monster grows its limbs back.") == 1,
-          "The Troll's turn comes next: regenerating, it grows the limb back");
-    check(submit(*c, "end", 1) && c->snapshot().actor == 4, "The limb acts right after the Troll");
-
-    const auto unhealing = rules("creature cutter 30 1000 20 30 30 4 6 11 0 0 0 0 0 0 0 0 0 1 0\n"
-                                 "damage_types cutter slashing slashing\n"
-                                 "off regeneration troll\n");
-    auto tired = unhealing->create({{10, 4, std::vector<Terrain>(40)},
-                                    {{1, "troll", "Monster", Side::opposition, {1, 1}, {},
-                                      VitalState{40}},
-                                     {2, "cutter", "Hero", Side::party, {2, 1}},
-                                     {3, "target", "Friend", Side::party, {8, 3}}}},
-                                   7);
-    turn_of(*tired, 2);
-    check(submit(*tired, "melee", 2, 1) && submit(*tired, "end", 2), "The cutter cuts");
-    turn_of(*tired, 1);
-    check(unit(*tired, 1).status.find("Exhaustion (severed limbs)") != std::string::npos &&
-              unit(*tired, 1).movement_feet == 25,
-          "Missing a limb, the Troll is Exhausted: 5 feet less Speed");
-
-    auto whole = troll_fight(94, "cutter");
-    turn_of(*whole, 2);
-    check(submit(*whole, "melee", 2, 1) && submit(*whole, "end", 2) &&
-              count_logged(*whole, "loses a limb") == 0,
-          "A Troll not yet Bloodied keeps its limbs");
-
-    auto beaten = troll_fight(40, "slasher");
-    turn_of(*beaten, 2);
-    for (unsigned turns = 0; beaten->snapshot().outcome == Outcome::ongoing; ++turns)
-    {
-        check(turns < 60, "The fight ends");
-        const auto actor = beaten->snapshot().actor;
-        const auto commands = beaten->legal_commands();
-        const auto melee = std::find_if(commands.begin(), commands.end(),
-                                        [&](const auto &command)
-                                        {
-                                            return command.actor == 2 && command.verb == "melee" &&
-                                                   unit(*beaten, command.target).hit_points > 0;
-                                        });
-        check(actor == 2 && melee != commands.end() ? beaten->submit(*melee)
-                                                    : submit(*beaten, "end", actor),
-              "The fight goes on");
-    }
-    const auto after = beaten->snapshot();
-    check(after.outcome == Outcome::victory &&
-              std::none_of(after.combatants.begin(), after.combatants.end(),
-                           [](const auto &u)
-                           {
-                               return u.definition == "troll-limb";
-                           }),
-          "The limbs leave with the fight");
-}
-
 // A Centaur Trooper's Trampling Charge (SRD 5.2.1), a Bonus Action with
 // Recharge 5-6: after its attacks it runs straight through two enemies or
 // more, each a Strength save (DC 14) or 1d6 + 4 Bludgeoning and Prone. It
@@ -1764,7 +1677,6 @@ int main()
         phase_spider_envenoms();
         troll_charges();
         gnoll_rampages();
-        troll_loses_limbs();
         centaur_tramples();
         phase_spider_jaunts();
         std::cout << "Slums creature tests passed\n";

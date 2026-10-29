@@ -52,17 +52,26 @@ inline constexpr std::array<std::string_view, 5> difficulty_names{"easy", "norma
 // character out of the fight for long, leave a lasting harm or add foes are
 // on from Normal (MONSTER-4); every ability without an option is on at every
 // difficulty.
-inline constexpr std::array<std::pair<std::string_view, std::string_view>, 20> ability_defaults{
-    {{"legendary", "hard"},           {"legendary_resistance", "hard"},
-     {"petrifying_gaze", "normal"},   {"paralyzing_claw", "normal"},
-     {"paralyzing_venom", "normal"},  {"life_drain", "normal"},
-     {"life_drain_attack", "normal"}, {"bite", "normal"},
-     {"rotting_curse", "normal"},     {"create_specter", "normal"},
-     {"loathsome_limbs", "normal"},   {"dreadful_glare", "normal"},
-     {"captains_charm", "normal"},    {"enthralling_panache", "normal"},
-     {"repulsion_breath", "normal"},  {"trampling_charge", "normal"},
-     {"ethereal_jaunt", "normal"},    {"riposte", "normal"},
-     {"rampage", "normal"},           {"protective_magic", "normal"}}};
+inline constexpr std::array<std::pair<std::string_view, std::string_view>, 19> ability_defaults{
+    {{"legendary", "hard"},
+     {"legendary_resistance", "hard"},
+     {"petrifying_gaze", "normal"},
+     {"paralyzing_claw", "normal"},
+     {"paralyzing_venom", "normal"},
+     {"life_drain", "normal"},
+     {"life_drain_attack", "normal"},
+     {"bite", "normal"},
+     {"rotting_curse", "normal"},
+     {"create_specter", "normal"},
+     {"dreadful_glare", "normal"},
+     {"captains_charm", "normal"},
+     {"enthralling_panache", "normal"},
+     {"repulsion_breath", "normal"},
+     {"trampling_charge", "normal"},
+     {"ethereal_jaunt", "normal"},
+     {"riposte", "normal"},
+     {"rampage", "normal"},
+     {"protective_magic", "normal"}}};
 
 // The monster abilities off at `difficulty`, given the options as (ability,
 // value) pairs. An option whose value is no difficulty and not "never" keeps

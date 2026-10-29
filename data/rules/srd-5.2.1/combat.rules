@@ -123,13 +123,9 @@ multiattack buccaneer 2
 enthralling_panache buccaneer 12
 # Slums set encounters (docs/audits/cluebook-check.md): Hobgoblin Warrior, Ogre and
 # Troll (SRD 5.2.1). Hobgoblin leaders are the same stat block: their record
-# readies no armor. The Troll's three Rends, Regeneration, Charge (a Bonus
-# Action moving half its Speed: bonus_charge creature) and Loathsome Limbs
-# (loathsome_limbs creature limb uses: ending any turn Bloodied, having taken
-# 15 or more Slashing damage during it, it loses a limb, which acts right after
-# it as the Troll Limb; an Exhaustion level for each missing limb until it
-# regains Hit Points) are rows. The Troll Limb's Troll Spawn, a day after the
-# fight, is not modeled. The magic-user defending Ohlo is a
+# readies no armor. The Troll's three Rends, Regeneration and Charge (a Bonus
+# Action moving half its Speed: bonus_charge creature) are rows; by the user's
+# choice its Loathsome Limbs are left out (MONSTER-3). The magic-user defending Ohlo is a
 # level-3 Wizard profile (SRD 5.2.1 has no apprentice mage): Fire Bolt and Magic
 # Missile with four level-one slots, Intelligence 16, a dagger.
 creature slums-hobgoblin 18 11 3 30 3 2 10 1 3 1 8 1 150 600 0 0 0 1 0
@@ -157,13 +153,6 @@ ranged_extra_damage slums-hobgoblin 3 4 poison
 regeneration troll 15
 multiattack troll 3
 bonus_charge troll
-creature troll-limb 13 14 1 20 6 2 4 4 0 0 0 0 0 0 0 0 0 1 0
-saves troll-limb 4 1 0 -5 -1 -5
-damage_types troll-limb slashing slashing
-size troll-limb small
-type troll-limb giant
-regeneration troll-limb 5
-loathsome_limbs troll troll-limb 4
 # perception creature bonus: the Perception skill of a stat block that has it
 # (Passive Perception is 10 + bonus); others use their Wisdom save (HIDE-1).
 perception scout 5

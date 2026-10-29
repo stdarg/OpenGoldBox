@@ -40,7 +40,6 @@ inline constexpr std::array monster_ability_options{
     MonsterAbilityOption{"create_specter", N_("Create Specter"), N_("wraiths")},
     MonsterAbilityOption{"incorporeal", N_("Incorporeal Movement"), N_("specters, wraiths")},
     MonsterAbilityOption{"regeneration", N_("Regeneration"), N_("trolls")},
-    MonsterAbilityOption{"loathsome_limbs", N_("Loathsome Limbs"), N_("trolls")},
     MonsterAbilityOption{"undead_fortitude", N_("Undead Fortitude"), N_("zombies, juju zombies")},
     MonsterAbilityOption{"pack_tactics", N_("Pack Tactics"),
                          N_("kobolds, hobgoblins, wolves, Skullcrusher")},
