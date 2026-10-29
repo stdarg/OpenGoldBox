@@ -905,6 +905,7 @@ void RolfTourSession::shops(std::vector<opengold::ShopSite> sites)
     }
     shops_ = std::move(sites);
     shop_stocks_ = std::move(stocks);
+    apply_entrances();
 }
 
 void RolfTourSession::restart()
@@ -916,6 +917,7 @@ void RolfTourSession::restart()
     }
     machine_ = EclMachine(program_);
     reset_run();
+    apply_entrances();
 }
 
 void RolfTourSession::reset_run()
@@ -958,6 +960,7 @@ void RolfTourSession::reset_run()
     hall_visit_.reset();
     pending_movement_.reset();
     teleport_arrival_.reset();
+    entrances_.clear();
     transition_ = message_only_ = false;
     shop_request_ = 0;
     if (town_ && !town_->sprite_archive.empty())
@@ -1050,6 +1053,7 @@ void RolfTourSession::roll_back_event()
     door_choices_.clear();
     visited_areas_ = std::move(saved.visited_areas);
     seen_areas_ = std::move(saved.seen_areas);
+    entrances_ = std::move(saved.entrances);
     rest_checks_ = saved.rest_checks;
     travel_mode_ = saved.travel_mode;
     const auto revision = snapshot_.revision + 1;

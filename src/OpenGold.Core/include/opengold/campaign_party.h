@@ -94,6 +94,14 @@ struct DoorAttempt
     bool thieves_tools{};
 };
 
+// One member's d6 roll to find a secret door: found when the die is at most
+// `needed` (SECRET-1).
+struct SecretDoorRoll
+{
+    MemberId member{};
+    int die{}, needed{};
+};
+
 struct PartyMember
 {
     MemberId id{};
@@ -369,6 +377,11 @@ class CampaignParty
     // the difficulty. Returns every attempt; the door opens if the last succeeded.
     [[nodiscard]] std::vector<DoorAttempt> try_door(DoorMethod method, int difficulty);
     [[nodiscard]] bool can_try_door(DoorMethod method) const;
+    // The original's search for a secret door (SECRET-1): each conscious
+    // active member in party order rolls a d6 and finds it on 1 while the
+    // party searches, an elf on 1 or 2, or not at all otherwise, an elf on 1.
+    // Rolls stop at the first find; the door is found if the last succeeded.
+    [[nodiscard]] std::vector<SecretDoorRoll> search_for_secret_door(bool searching);
     // Minutes, seconds and milliseconds all convert; a bare number does not
     // (Effective C++ Item 18).
     void advance_time(std::chrono::milliseconds elapsed);

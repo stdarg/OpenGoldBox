@@ -1611,6 +1611,10 @@ String rest_notice(const std::string &resource, const std::string &text)
          N_("You have lost the fight."),
          N_("Locked."),
          N_("Wizard locked."),
+         N_("You find a secret door in the north wall."),
+         N_("You find a secret door in the east wall."),
+         N_("You find a secret door in the south wall."),
+         N_("You find a secret door in the west wall."),
          N_("The way to Stojanow Gate is not in the game yet."),
          N_("The way to Valjevo Castle is not in the game yet."),
          N_("The way to Valhingen Graveyard is not in the game yet."),
@@ -1721,8 +1725,16 @@ String door_check_notice(const DoorCheck &check)
         {{"name", name}, {"total", check.total}, {"die", check.die}, {"dc", check.difficulty}});
 }
 
-// Script dialogue followed by the coins the party's purses exchanged for it
-// and any checks made against a locked door.
+String secret_door_search_notice(const SecretDoorSearch &search)
+{
+    return i18n::format("{name} searches for a secret door: d6 {die}, needing {needed} or less.",
+                        {{"name", String::utf8(search.member.c_str())},
+                         {"die", search.die},
+                         {"needed", search.needed}});
+}
+
+// Script dialogue followed by the coins the party's purses exchanged for it,
+// any checks made against a locked door and any search for a secret door.
 String event_dialogue(const std::string &resource, const TourSnapshot &s)
 {
     // Our campaign host's own dialogue, such as a training hall's, is
@@ -1741,6 +1753,10 @@ String event_dialogue(const std::string &resource, const TourSnapshot &s)
     {
         result +=
             "\n" + i18n::text(s.door_opened ? N_("The door opens.") : N_("The door stays locked."));
+    }
+    for (const auto &search : s.secret_door_searches)
+    {
+        result += (result.is_empty() ? "" : "\n") + secret_door_search_notice(search);
     }
     return result;
 }
@@ -1896,7 +1912,8 @@ void RolfTourView::refresh()
                       i18n::text(
                           "Restart with --reset-game-path to choose your Pool of Radiance data folder.")
             : shown_monster_picture_ ? i18n::text("Press any key to fight.")
-            : s.dialogue.empty() ? (s.tour_finished ? String() : i18n::text("Following Rolf..."))
+            : s.dialogue.empty() && s.secret_door_searches.empty()
+                ? (s.tour_finished ? String() : i18n::text("Following Rolf..."))
                                  : event_dialogue(resource + "/dialogue", s));
     required_node<Button>(*this, "Continue")
         .set_disabled(!waiting && !shopping && !answer && !shown_monster_picture_);

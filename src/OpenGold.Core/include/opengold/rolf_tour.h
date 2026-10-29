@@ -18,6 +18,8 @@
 #include "opengold/temple_catalog.h"
 #include <algorithm>
 #include <bitset>
+#include <map>
+#include <string>
 
 namespace opengold
 {
@@ -149,6 +151,13 @@ struct DoorCheck
     bool thieves_tools{};
 };
 
+// One member's roll to find a secret door, for the player's log (SECRET-1).
+struct SecretDoorSearch
+{
+    std::string member;
+    int die{}, needed{};
+};
+
 struct TourSnapshot
 {
     PartyPose pose;
@@ -181,6 +190,9 @@ struct TourSnapshot
     // This step's checks against a locked door and whether it opened.
     std::vector<DoorCheck> door_checks;
     bool door_opened{};
+    // This event's rolls to find a secret door, and whether one was found.
+    std::vector<SecretDoorSearch> secret_door_searches;
+    bool secret_door_found{};
     // On the wilderness map: the party's square in its window's coordinates
     // and the direction it last moved, 0 north and on clockwise to 7.
     bool overland{};
@@ -479,6 +491,16 @@ class RolfTourSession
     std::shared_ptr<const rules::CharacterRules> companion_rules_;
     std::vector<opengold::ShopSite> shops_;
     std::vector<std::vector<Equipment>> shop_stocks_; // each shop's items, as shops_
+    // OpenGoldBox's shops with a hidden entrance (SECRET-1): each entrance's
+    // state by its shop's data/shops id (saved).
+    enum class EntranceState : std::uint8_t
+    {
+        hidden,
+        found, // a locked door
+        open
+    };
+
+    std::map<std::string, EntranceState> entrances_;
     [[nodiscard]] bool standing_at(const std::string &archive, unsigned record,
                                    const std::vector<std::pair<unsigned, unsigned>> &markers) const;
     std::optional<TempleVisit> temple_visit_;
@@ -506,6 +528,7 @@ class RolfTourSession
         std::optional<opengold::PartyState> campaign;
         unsigned script{}, area{};
         std::map<unsigned, std::bitset<256>> visited_areas, seen_areas;
+        std::map<std::string, EntranceState> entrances;
         unsigned rest_checks{};
         unsigned travel_mode{};
         GeoMap map;
@@ -636,7 +659,25 @@ class RolfTourSession
     std::optional<TeleportArrival> teleport_arrival_;
     // Puts the party on a Teleport's spot on its map.
     void arrive(const TeleportArrival &arrival);
+    // The script's shop request the party is shopping for; 0 at a shop
+    // OpenGoldBox opens itself (SECRET-1).
     std::uint64_t shop_request_{};
+    // Whether this event searched: a Look, or a step in Search mode.
+    bool event_searched_{};
+    // Whether a data/shops location's map is the one the party is on.
+    [[nodiscard]] bool on_map(const std::string &archive, unsigned record) const;
+    // Changes the loaded map for the hidden entrances on it: the walls that
+    // close each shop's square, the square's original event cleared, and the
+    // secret door as a wall, a locked door once found, or an open one.
+    void apply_entrances();
+    // The shop whose secret door is on the edge ahead of the party, if any.
+    [[nodiscard]] const opengold::ShopSite *entrance_ahead() const;
+    // After a step or a Look: the rolls to find a hidden secret door the
+    // party stands outside of, and OpenGoldBox's shop on its square opening.
+    void search_for_secret_door();
+    void open_own_shop();
+    // The leader deals with shopkeepers unless the event already asked who.
+    void choose_shopper();
     void configure_town();
     void synchronize_clock();
     // Moves the campaign clock on to a time a script instruction wrote into

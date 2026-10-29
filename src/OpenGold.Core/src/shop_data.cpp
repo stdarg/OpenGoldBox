@@ -1,6 +1,7 @@
 #include "opengold/shop_data.h"
 #include "json_document.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <stdexcept>
 #include <string_view>
@@ -70,6 +71,41 @@ std::string game_portrait(const std::string &path)
         throw std::runtime_error("A shop portrait is outside the game's portraits: " + path);
     }
     return path;
+}
+
+por::MapDirection side(const std::string &name)
+{
+    static constexpr std::array<std::string_view, 4> names{"north", "east", "south", "west"};
+    const auto match = std::ranges::find(names, name);
+    if (match == names.end())
+    {
+        throw std::runtime_error("Invalid shop data side: " + name);
+    }
+    return por::MapDirection{static_cast<std::size_t>(match - names.begin())};
+}
+
+// A location's hidden entrance (SECRET-1), if it has one.
+std::optional<HiddenEntrance> entrance(const Json &location)
+{
+    const auto *data_member = location.find("entrance");
+    if (!data_member)
+    {
+        return std::nullopt;
+    }
+    const auto &data = *data_member;
+    HiddenEntrance result{side(field<std::string>(data, "secret_door")),
+                          static_cast<std::uint8_t>(whole(data, "door_wall", 1, 255)),
+                          {}};
+    for (const auto &[name, wall] : field<Json::Object>(data, "walls"))
+    {
+        const auto *number = std::get_if<double>(&wall.value);
+        if (!number || *number != std::floor(*number) || *number < 1 || *number > 255)
+        {
+            throw std::runtime_error("Invalid shop data wall");
+        }
+        result.walls.emplace_back(side(name), static_cast<std::uint8_t>(*number));
+    }
+    return result;
 }
 
 std::vector<TempleOffering> temple_offerings(const Json &record)
@@ -156,8 +192,8 @@ ShopData load_shop_data(const std::filesystem::path &directory)
         }
         else if (kind == "shop")
         {
-            data.shops.push_back(
-                {archive, record, markers(location), portrait, shop_offerings(file)});
+            data.shops.push_back({id, archive, record, markers(location), portrait,
+                                  shop_offerings(file), entrance(location)});
         }
         else
         {

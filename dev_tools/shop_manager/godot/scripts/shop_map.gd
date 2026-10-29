@@ -47,6 +47,8 @@ func _draw() -> void:
                 if int(face["wall_id"]) == 0 and int(face["door_code"]) == 0:
                     continue
                 var color := Color("d6ad60") if int(face["door_code"]) != 0 else Color("63879a")
+                if face.get("secret", false):
+                    color = Color("e0605a")
                 var inset := 2.0
                 var a: Vector2
                 var b: Vector2
@@ -63,7 +65,7 @@ func _draw() -> void:
                     _:
                         a = origin + Vector2(inset, inset)
                         b = origin + Vector2(inset, unit - inset)
-                draw_line(a, b, color, 1.5)
+                draw_line(a, b, color, 3.0 if face.get("secret", false) else 1.5)
     for location in locations:
         var is_temple := String(location["kind"]) == "temple"
         var color := Color("8d9df2") if is_temple else Color("66c7a7")

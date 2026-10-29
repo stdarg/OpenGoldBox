@@ -1,0 +1,51 @@
+{
+  "fixed_location": {
+    "archive": "GEO3.DAX",
+    "map": "New Phlan",
+    "markers": [
+      [
+        4.0,
+        13.0
+      ]
+    ],
+    "record": 0.0
+  },
+  "id": "phlan-rogue-04-13",
+  "kind": "shop",
+  "name": "Rogue's Shop (4,13)",
+  "offerings": [
+    {
+      "bundle_quantity": 1,
+      "item_type": 212,
+      "name": "Poisoner's Kit",
+      "price_gp": 50,
+      "quantity": -1,
+      "source_archive": "OpenGold authored gear",
+      "source_index": -1,
+      "source_record": -1
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 213,
+      "name": "Basic Poison",
+      "price_gp": 100,
+      "quantity": -1,
+      "source_archive": "OpenGold authored gear",
+      "source_index": -1,
+      "source_record": -1
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 214,
+      "name": "Thieves' Tools",
+      "price_gp": 25,
+      "quantity": -1,
+      "source_archive": "OpenGold authored gear",
+      "source_index": -1,
+      "source_record": -1
+    }
+  ],
+  "portrait": "NPCs/kovel-old-thief.png",
+  "type": "Rogue's Shop",
+  "version": 1
+}

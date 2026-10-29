@@ -53,6 +53,7 @@ void RolfTourSession::change_area(unsigned id)
     snapshot_.area_id = id;
     map_ = *resource.map;
     wall_art_ = resource.wall_art;
+    apply_entrances();
     snapshot_.visited = visited_areas_[id];
     snapshot_.seen = seen_areas_[id];
     picture_.reset();
@@ -640,6 +641,8 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
     snapshot_.payments.clear();
     snapshot_.door_checks.clear();
     snapshot_.door_opened = false;
+    snapshot_.secret_door_searches.clear();
+    snapshot_.secret_door_found = false;
     snapshot_.camp_offered = false;
     std::optional<opengold::PartyState> campaign;
     if (campaign_)
@@ -658,6 +661,7 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
                                         .area = current_area_,
                                         .visited_areas = visited_areas_,
                                         .seen_areas = seen_areas_,
+                                        .entrances = entrances_,
                                         .rest_checks = rest_checks_,
                                         .travel_mode = travel_mode_,
                                         .map = map_,
@@ -688,6 +692,7 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
     const bool searching =
         trigger == EventTrigger::look || (trigger == EventTrigger::step && snapshot_.searching);
     machine_.bind_variable(EclAddress{0x6DCA}, searching ? 1 : 0);
+    event_searched_ = searching;
     // The spokesman's reaction score (0x6DCF), which the scripts add to reaction
     // rolls. The original's formula is unknown; twice Charisma, as New Phlan's
     // own script doubles it, was chosen (LEADER-1).
@@ -1435,6 +1440,11 @@ void RolfTourSession::finish_event()
     snapshot_.choices.clear();
     snapshot_.continue_ticket = 0;
     ++snapshot_.revision;
+    if (event_stage_ == EventStage::search && !overland())
+    {
+        search_for_secret_door();
+        open_own_shop();
+    }
 }
 
 // After a script's entry, the original travels the wilderness map when the
@@ -1568,8 +1578,14 @@ bool RolfTourSession::wizard_locked_ahead() const
 void RolfTourSession::show_locked_door()
 {
     door_menu_ = true;
-    door_choices_ = {DoorMethod::bash};
-    snapshot_.choices = {"Bash"};
+    door_choices_.clear();
+    snapshot_.choices.clear();
+    // A hidden entrance's lock is picked or opened by Knock (SECRET-1).
+    if (!entrance_ahead())
+    {
+        door_choices_.push_back(DoorMethod::bash);
+        snapshot_.choices.push_back("Bash");
+    }
     if (!pick_tried_ && campaign_->can_try_door(DoorMethod::pick))
     {
         door_choices_.push_back(DoorMethod::pick);
@@ -1607,6 +1623,11 @@ void RolfTourSession::try_locked_door(DoorMethod method)
         return;
     }
     snapshot_.door_opened = true;
+    // A hidden entrance stays open for good (SECRET-1).
+    if (const auto *shop = entrance_ahead())
+    {
+        entrances_[shop->id] = EntranceState::open;
+    }
     // The original unlocks both faces in its loaded map; reloading the district relocks them.
     const auto edge = edge_ahead(snapshot_.pose);
     const auto unlock = [](std::uint8_t &door)
@@ -2161,6 +2182,14 @@ bool RolfTourSession::leave_shop(std::uint64_t ticket)
     if (snapshot_.phase != TourPhase::shopping || !ticket || ticket != snapshot_.continue_ticket)
     {
         return false;
+    }
+    if (!shop_request_)
+    {
+        // OpenGoldBox's own shop: no script waits on it.
+        snapshot_.continue_ticket = 0;
+        snapshot_.phase = TourPhase::completed;
+        ++snapshot_.revision;
+        return true;
     }
     const auto selected = campaign_ ? campaign_->state().selected_slot : PartySlot{};
     auto reply = character_reply(selected);
@@ -2788,19 +2817,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         if (machine_.variable(ecl_shop_service) == 1)
         {
-            // The leader deals with shopkeepers unless the event already asked who;
-            // another buyer can still be chosen.
-            if (campaign_ && !member_chosen_)
-            {
-                for (unsigned slot = 0; slot < 8; ++slot)
-                {
-                    if (campaign_->state().slots[slot] &&
-                        campaign_->state().slots[slot] == campaign_->leader())
-                    {
-                        campaign_->select(PartySlot{slot});
-                    }
-                }
-            }
+            // Another buyer can still be chosen.
+            choose_shopper();
             if (campaign_ && !campaign_->state().slots.at(campaign_->state().selected_slot.index))
             {
                 throw EclError("Shopping requires a selected party member");
@@ -3406,13 +3424,168 @@ void RolfTourSession::roll_plaza_group(const EclRequest &request, EclHostReply &
     plaza_group_rolled_ = true;
 }
 
+bool RolfTourSession::on_map(const std::string &archive, unsigned record) const
+{
+    const auto here = "GEO" + std::to_string(current_area_ ? area_resources().bank : 3) + ".DAX";
+    return archive == here && record == current_area_;
+}
+
 bool RolfTourSession::standing_at(const std::string &archive, unsigned record,
                                   const std::vector<std::pair<unsigned, unsigned>> &markers) const
 {
-    const auto here = "GEO" + std::to_string(current_area_ ? area_resources().bank : 3) + ".DAX";
-    return archive == here && record == current_area_ &&
+    return on_map(archive, record) &&
            std::find(markers.begin(), markers.end(),
                      std::pair{snapshot_.pose.x, snapshot_.pose.y}) != markers.end();
+}
+
+void RolfTourSession::apply_entrances()
+{
+    if (!town_)
+    {
+        return;
+    }
+    // Sets one side of a square and the facing side of its neighbour.
+    const auto set_edge = [this](unsigned x, unsigned y, MapDirection side, std::uint8_t wall,
+                                 std::uint8_t door)
+    {
+        auto &cell = map_.cells[y * 16 + x];
+        cell.walls[index(side)] = wall;
+        cell.doors[index(side)] = door;
+        const int nx = static_cast<int>(x) + step_x(side), ny = static_cast<int>(y) + step_y(side);
+        if (nx >= 0 && ny >= 0 && nx < 16 && ny < 16)
+        {
+            auto &other = map_.cells[static_cast<unsigned>(ny) * 16 + static_cast<unsigned>(nx)];
+            other.walls[index(reversed(side))] = wall;
+            other.doors[index(reversed(side))] = door;
+        }
+    };
+    for (const auto &shop : shops_)
+    {
+        if (!shop.entrance || !on_map(shop.archive, shop.record))
+        {
+            continue;
+        }
+        const auto &entrance = *shop.entrance;
+        const auto state = entrances_[shop.id];
+        for (const auto &[x, y] : shop.markers)
+        {
+            map_.cells[y * 16 + x].event_raw = 0;
+            for (const auto &[side, wall] : entrance.walls)
+            {
+                set_edge(x, y, side, wall, 0);
+            }
+            if (state != EntranceState::hidden)
+            {
+                set_edge(x, y, entrance.secret_door, entrance.door_wall,
+                         state == EntranceState::found ? locked_door : 1);
+            }
+        }
+    }
+}
+
+const opengold::ShopSite *RolfTourSession::entrance_ahead() const
+{
+    const auto edge = edge_ahead(snapshot_.pose);
+    for (const auto &shop : shops_)
+    {
+        if (!shop.entrance || !on_map(shop.archive, shop.record))
+        {
+            continue;
+        }
+        for (const auto &[x, y] : shop.markers)
+        {
+            const bool from_inside = edge.x == x && edge.y == y && edge.side == shop.entrance->secret_door;
+            const bool from_outside = edge.next_x == x && edge.next_y == y &&
+                                      edge.other == shop.entrance->secret_door;
+            if (from_inside || from_outside)
+            {
+                return &shop;
+            }
+        }
+    }
+    return nullptr;
+}
+
+void RolfTourSession::search_for_secret_door()
+{
+    if (!campaign_)
+    {
+        return;
+    }
+    for (const auto &shop : shops_)
+    {
+        if (!shop.entrance || !on_map(shop.archive, shop.record) ||
+            entrances_[shop.id] != EntranceState::hidden)
+        {
+            continue;
+        }
+        const auto side = shop.entrance->secret_door;
+        for (const auto &[x, y] : shop.markers)
+        {
+            const int outside_x = static_cast<int>(x) + step_x(side),
+                      outside_y = static_cast<int>(y) + step_y(side);
+            if (outside_x != static_cast<int>(snapshot_.pose.x) ||
+                outside_y != static_cast<int>(snapshot_.pose.y))
+            {
+                continue;
+            }
+            const auto rolls = campaign_->search_for_secret_door(event_searched_);
+            for (const auto &roll : rolls)
+            {
+                snapshot_.secret_door_searches.push_back(
+                    {campaign_->member(roll.member).character.sheet().name, roll.die, roll.needed});
+            }
+            if (rolls.empty() || rolls.back().die > rolls.back().needed)
+            {
+                return;
+            }
+            snapshot_.secret_door_found = true;
+            entrances_[shop.id] = EntranceState::found;
+            apply_entrances();
+            constexpr std::array<std::string_view, 4> found{
+                "You find a secret door in the north wall.", "You find a secret door in the east wall.",
+                "You find a secret door in the south wall.", "You find a secret door in the west wall."};
+            snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") +
+                                  std::string(found[index(reversed(side))]);
+            return;
+        }
+    }
+}
+
+void RolfTourSession::open_own_shop()
+{
+    for (std::size_t n = 0; n < shops_.size(); ++n)
+    {
+        if (!shops_[n].entrance || !standing_at(shops_[n].archive, shops_[n].record, shops_[n].markers))
+        {
+            continue;
+        }
+        choose_shopper();
+        treasure_ = shop_stocks_[n];
+        shop_request_ = 0;
+        snapshot_.phase = TourPhase::shopping;
+        snapshot_.continue_ticket = ++next_ticket_;
+        snapshot_.choices.clear();
+        snapshot_.diagnostic.clear();
+        ++snapshot_.revision;
+        return;
+    }
+}
+
+void RolfTourSession::choose_shopper()
+{
+    if (!campaign_ || member_chosen_)
+    {
+        return;
+    }
+    for (unsigned slot = 0; slot < 8; ++slot)
+    {
+        if (campaign_->state().slots[slot] &&
+            campaign_->state().slots[slot] == campaign_->leader())
+        {
+            campaign_->select(PartySlot{slot});
+        }
+    }
 }
 
 void RolfTourSession::open_temple(std::uint64_t request)

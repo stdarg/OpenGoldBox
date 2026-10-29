@@ -2146,3 +2146,34 @@ visited. The user chose on 2026-10-29 how it works:
   The map's own way in runs, as when the party walks in, and the party then
   stands on the spot, facing north.
 - A refused Teleport spends nothing.
+
+## SECRET-1 (2026-10-29): the Rogue's Shop and its secret door
+
+The user chose on 2026-10-29 where the Rogue's Shop is and how the party gets
+in ([#271](https://github.com/stdarg/OpenGoldBox/issues/271)):
+
+- **The shop is New Phlan's (4,13)**, the back half of the inn whose front is
+  (4,12). A wall closes it from the inn, and the inn's event no longer runs
+  on (4,13).
+- **Its way in is a secret door in its south wall**, from the alley at
+  (4,14). Until found it is the wall it hides in.
+- **Finding it** follows the original's search for its secret doors, which
+  the Pyramid's scripts roll: after a step or a Look in the alley, each
+  conscious member in party order (the original rolls for every living one)
+  rolls a d6 and finds the door on a 1 while
+  the party searches (Look, or a step in Search mode), an elf on a 1 or 2.
+  Without searching only an elf can find it, on a 1. The rolls stop at the
+  first find and show in the log; SRD 5.2.1 has no half-elf.
+- **The door is locked.** The "Locked." menu offers Pick, for a conscious
+  Rogue as at every lock (DC 15, Thieves' Tools doubling the chance, LOCK-1),
+  and Knock, but no Bash. A party with neither cannot get in.
+- **Once found the door stays found, and once open it stays open**, in saves
+  too (campaign format 42).
+- **The shop sells** Thieves' Tools (25 gp), the Poisoner's Kit (50 gp) and
+  Basic Poison (100 gp), edited, with its shopkeeper's portrait, in the Shop &
+  Temple Manager, which draws the shop's new wall and secret door. The game
+  opens the shop itself when the party steps or looks on its square.
+- `data/shops/locations.json` records the way in: the side of the secret
+  door, the map's wall that draws it as a door once found, and the walls
+  that close the square's other open sides.
+

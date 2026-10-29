@@ -78,8 +78,25 @@ void portraits_ship(const ShopData &data)
 void shipped_records()
 {
     const auto data = load_shop_data(root / "data/shops");
-    check(data.temples.size() == 4 && data.shops.size() == 12,
-          "Four temples and twelve shops are recorded");
+    check(data.temples.size() == 4 && data.shops.size() == 13,
+          "Four temples and thirteen shops are recorded");
+    // The Rogue's Shop behind the inn (SECRET-1): a secret door south, drawn
+    // as the map's door wall 7 once found, and wall 6 closing it from the inn.
+    const auto &rogue = shop_at(data, 4, 13);
+    check(rogue.id == "phlan-rogue-04-13" &&
+              rogue.entrance == HiddenEntrance{por::MapDirection::south, 7,
+                                               {{por::MapDirection::north, 6}}} &&
+              rogue.portrait == "NPCs/kovel-old-thief.png" && rogue.offerings.size() == 3 &&
+              offering(rogue, "Poisoner's Kit").price_gp == 50 &&
+              offering(rogue, "Thieves' Tools").price_gp == 25 &&
+              offering(rogue, "Basic Poison").price_gp == 100,
+          "The Rogue's Shop, its hidden entrance and its stock");
+    check(std::none_of(data.shops.begin(), data.shops.end(),
+                       [&](const auto &shop)
+                       {
+                           return shop.entrance && &shop != &rogue;
+                       }),
+          "Only OpenGoldBox's shop has a hidden entrance");
     const auto &tyr = data.temples.front();
     check(tyr.archive == "GEO3.DAX" && tyr.record == 0 &&
               tyr.markers == std::vector<std::pair<unsigned, unsigned>>{{11, 3}, {8, 4}, {8, 6}},
