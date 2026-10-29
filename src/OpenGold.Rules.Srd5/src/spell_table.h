@@ -3156,7 +3156,17 @@ inline constexpr std::array spell_table{
              .target = SpellTarget::ally,
              .range = 5,
              .requires_effect_capacity = true,
-             .rider = Rider::missile_ward}};
+             .rider = Rider::missile_ward},
+    // SRD 5.2.1 p. 168: outside fights, the party goes to the central spot of
+    // a map it has been on, without mishaps (LEVELS-3, TELEPORT-1). Last in
+    // the table, as effects keep spells by their place in it.
+    SpellDef{.id = "teleport",
+             .label = "Teleport",
+             .level = 7,
+             .pattern = SpellPattern::camp,
+             .target = SpellTarget::self,
+             .range = 5,
+             .instances = 8}};
 
 // A verb casting a spell from a slot above its level ends in "_N", the slot's
 // level (2 to 9); one casting it with Magic Initiate's free use ends in

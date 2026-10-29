@@ -6093,6 +6093,130 @@ void whole_map(Expedition &trip, const std::filesystem::path &directory,
           "One party plays the whole map from Mendor's Library to the victory");
 }
 
+// A level-13 Wizard with Teleport prepared.
+Character teleport_wizard()
+{
+    rules::CharacterDraft d;
+    d.race = "human";
+    d.gender = "female";
+    d.character_class = "wizard";
+    d.background = "sage";
+    d.alignment = "neutral_good";
+    d.name = "Tamsin";
+    d.rolled = true;
+    for (auto &r : d.rolls)
+    {
+        r = {{6, 5, 4, 1}, 3};
+    }
+    d.cantrips = std::vector<std::string>{"fire_bolt", "ray_of_frost", "chill_touch"};
+    const std::vector<std::string> spells{"magic_missile"};
+    d.spells = rules::SpellChoices{{{"spellbook:1", spells}}, spells, {}, {}};
+    d.training = {{"class:wizard", {"medicine", "nature"}}};
+    CampaignParty party(module());
+    const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
+    party.award_experience(120000, "wizard-xp");
+    while (party.member(id).character.sheet().level < 13)
+    {
+        auto choice = party.default_advancement(id);
+        if (party.member(id).character.sheet().level == 12)
+        {
+            (*choice.spell_learning)["spellbook:13"] = {"teleport", "finger_of_death"};
+            if (std::find(choice.spells.begin(), choice.spells.end(), "teleport") ==
+                choice.spells.end())
+            {
+                choice.spells.back() = "teleport";
+            }
+        }
+        party.advance(id, choice);
+    }
+    return party.member(id).character;
+}
+
+// Teleport (TELEPORT-1) after the whole map, which has been on every map with
+// a spot: a level-13 Wizard takes the party to each spot in turn. Each map's own way in runs, and
+// the party stands on the spot.
+void teleport_everywhere(Expedition &trip, const std::filesystem::path &directory)
+{
+    auto &[party, town] = trip;
+    MemberId last{};
+    for (const auto id : party->state().slots)
+    {
+        last = id && party->member(id).npc_source.empty() ? id : last;
+    }
+    party->remove(last);
+    const auto wizard = party->add_pc(teleport_wizard());
+    // Kuto's Well's catacombs, where this party has not been, are refused and
+    // cost nothing.
+    const auto vitals = party->member(wizard).vitals;
+    bool refused = false;
+    try
+    {
+        town.teleport(wizard, "teleport", 32);
+    }
+    catch (const std::runtime_error &)
+    {
+        refused = true;
+    }
+    check(refused && party->member(wizard).vitals == vitals,
+          "Teleport goes only where the party has been, and a refusal spends nothing");
+    // The expedition went down into the catacombs before this party took
+    // over; it stood on that map's spot.
+    test::TourAccess::mark_visited(town, 32, por::teleport_spot(32)->x, por::teleport_spot(32)->y);
+    const auto destinations = town.teleport_destinations();
+    std::string missing;
+    for (const auto &spot : por::teleport_spots)
+    {
+        if (std::find(destinations.begin(), destinations.end(), spot.map) == destinations.end())
+        {
+            missing += " " + std::to_string(spot.map);
+        }
+    }
+    check(missing.empty(),
+          "The whole map has been on every map with a Teleport spot; not on" + missing);
+
+    // Some maps allow no camping (the Pyramid's), so the Wizard gets back the
+    // slots it joined with, standing in for the rest a player takes between
+    // casts.
+    const auto rested = party->member(wizard).vitals.resources;
+    for (const auto map : destinations)
+    {
+        auto state = party->checkpoint();
+        for (auto &member : state.roster)
+        {
+            if (member.id == wizard)
+            {
+                member.vitals.resources = rested;
+            }
+        }
+        party->restore(std::move(state));
+        town.teleport(wizard, "teleport", map);
+        settle(town, party);
+        const auto &s = town.snapshot();
+        const auto &spot = *por::teleport_spot(map);
+        check(s.area_id == map && s.pose.x == spot.x && s.pose.y == spot.y,
+              "Teleport lands on map " + std::to_string(map) + "'s spot, not on map " +
+                  std::to_string(s.area_id) + " at " + std::to_string(s.pose.x) + "," +
+                  std::to_string(s.pose.y));
+    }
+    std::cout << "Teleport reached all " << destinations.size() << " maps' spots\n";
+    // A save with the Wizard rested, for a look at Teleport's places in the
+    // game's Cast menu.
+    if (const auto *fixture = std::getenv("OPENGOLD_TELEPORT_FIXTURE"))
+    {
+        auto state = party->checkpoint();
+        for (auto &member : state.roster)
+        {
+            if (member.id == wizard)
+            {
+                member.vitals.resources = rested;
+            }
+        }
+        party->restore(std::move(state));
+        write_campaign_file(fixture,
+                            encode_campaign(*party, &town, campaign_asset_identity(directory)));
+    }
+}
+
 // The Combat Sprite Catalog's export (#274) in the four-orc fight. A renamed
 // creature fights under its new name, in its new art for the weapon set it
 // readies, standing as the catalog previews it; one without exported art
@@ -6329,6 +6453,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
             }
         }
         whole_map(podol, directory, folder);
+        teleport_everywhere(podol, directory);
         std::cout << "Wilderness fights checked for facing and distance: " << wilderness_fights
                   << '\n';
     }
@@ -6437,6 +6562,7 @@ int main(int argc, char **argv)
             std::filesystem::create_directories(folder);
             auto trip = load_expedition(argv[2], directory);
             whole_map(trip, directory, folder, argc == 4 ? argv[3] : "");
+            teleport_everywhere(trip, directory);
             return 0;
         }
         // Plays the Central Wilderness alone with a new party.

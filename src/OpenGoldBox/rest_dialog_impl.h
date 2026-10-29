@@ -362,6 +362,7 @@ bool RolfTourView::refresh_rest_use(const std::vector<opengold::MemberRestInfo> 
     {
         labels.push_back(rest_text(offered.label.source));
     }
+    expand_teleport(actions, labels);
     // Writing a scroll (MAGIC-6) is offered in camp, not from the Cast menu.
     if (!spending && rest_member_)
     {
@@ -433,6 +434,16 @@ std::optional<String> RolfTourView::use_outside_combat(opengold::MemberId user,
         presentation::required_node<Control>(*this, "CastPanel").hide();
         rest_result_ = String();
     };
+    // Teleport takes the whole party to the place chosen; the camp ends with
+    // the trip.
+    if (const auto at = id.find("@"); at >= 0 && id.begins_with("teleport") && session_)
+    {
+        session_->teleport(user, id.substr(0, at).utf8().get_data(),
+                           static_cast<unsigned>(id.substr(at + 1).to_int()));
+        leave_dialogs();
+        refresh();
+        return std::nullopt;
+    }
     // Word of Recall prepares the sanctuary or takes the party to it; the
     // camp ends with the trip.
     if (id == String("word_of_recall") && session_)

@@ -19,7 +19,7 @@ described in [Wizard spell choices](WIZARD-SPELL-CHOICES.md).
 | 10 | Empowered Evocation (Evoker), fifth cantrip | Delivered (rules 0.6.220) |
 | 11 | Level-6 spells | Delivered (rules 0.6.221) |
 | 12 | Ability Score Improvement | Delivered (rules 0.6.221) |
-| 13 | Level-7 spells | Delivered (rules 0.6.222, Simulacrum 0.6.223); Teleport not implemented |
+| 13 | Level-7 spells | Delivered (rules 0.6.222, Simulacrum 0.6.223, Teleport 0.6.259) |
 | 14 | Overchannel (Evoker) | Delivered (rules 0.6.222) |
 | 15 | Level-8 spells | Delivered (rules 0.6.222) |
 
@@ -79,8 +79,9 @@ The Wizard advances to level 15, the cap
 - **Ability Score Improvement** (12): a feat or ability points.
 - **Level-7 spells** (13): one level-7 slot; prepared spells 17. Arcane
   Sword, Delayed Blast Fireball, Finger of Death, Forcecage, Prismatic Spray,
-  Reverse Gravity and Simulacrum (below). Teleport, which is to take the party to
-  towns and areas it has visited (LEVELS-3), is not implemented yet.
+  Reverse Gravity and Simulacrum (below), and Teleport, cast from the Cast
+  menu or the Camp dialog outside fights: the whole party goes to the central
+  spot of a map it has been on ([TELEPORT-1](SRD-DECISIONS.md#teleport-1-2026-10-29-teleport-to-a-maps-central-spot)).
   Etherealness, Magnificent Mansion, Mirage Arcane, Plane Shift, Project
   Image, Sequester and Symbol are cut.
 - **Overchannel** (Evoker 14): **Overchannel (free)** in the turn's menu,

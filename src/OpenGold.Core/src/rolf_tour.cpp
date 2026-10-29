@@ -957,6 +957,7 @@ void RolfTourSession::reset_run()
     temple_visit_.reset();
     hall_visit_.reset();
     pending_movement_.reset();
+    teleport_arrival_.reset();
     transition_ = message_only_ = false;
     shop_request_ = 0;
     if (town_ && !town_->sprite_archive.empty())
@@ -1031,6 +1032,7 @@ void RolfTourSession::roll_back_event()
 {
     auto saved = std::move(*event_checkpoint_);
     event_checkpoint_.reset();
+    teleport_arrival_.reset();
     // The steps that can throw come first: the party's restore checks before
     // it changes anything, and the area change needs the district's map.
     if (campaign_ && saved.campaign)

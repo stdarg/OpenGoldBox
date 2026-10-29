@@ -758,6 +758,93 @@ void RolfTourSession::recall(opengold::MemberId caster)
     event_stage_ = EventStage::area_entry;
 }
 
+std::vector<unsigned> RolfTourSession::teleport_destinations() const
+{
+    std::vector<unsigned> maps;
+    if (!town_)
+    {
+        return maps;
+    }
+    for (const auto &spot : teleport_spots)
+    {
+        if (spot.map && !town_->districts.contains(spot.map))
+        {
+            continue;
+        }
+        const auto saved = visited_areas_.find(spot.map);
+        const bool been = spot.map == current_area_
+                              ? snapshot_.visited.any()
+                              : saved != visited_areas_.end() && saved->second.any();
+        if (been)
+        {
+            maps.push_back(spot.map);
+        }
+    }
+    return maps;
+}
+
+void RolfTourSession::teleport(opengold::MemberId caster, const std::string &action, unsigned map)
+{
+    if (action != "teleport" && !action.starts_with("teleport_"))
+    {
+        throw std::runtime_error("Not a Teleport");
+    }
+    if (!campaign_ || campaign_->in_combat() || !can_leave())
+    {
+        throw std::runtime_error("Teleport needs a quiet moment outside events");
+    }
+    const auto destinations = teleport_destinations();
+    if (std::find(destinations.begin(), destinations.end(), map) == destinations.end())
+    {
+        throw std::runtime_error("Teleport goes only to a place the party has been.");
+    }
+    const auto &spot = *teleport_spot(map);
+    const TeleportArrival arrival{map, PartyPose{spot.x, spot.y, MapDirection::north}};
+    const unsigned script = map ? town_->districts.at(map)->script : 0;
+    campaign_->use_camp_action(caster, caster, action);
+    snapshot_.dialogue = "Teleport takes the party away.";
+    if (script == current_script_)
+    {
+        arrive(arrival);
+        update_travel_mode();
+        return;
+    }
+    // Another script's map: its script takes over and its entry runs, as when
+    // the party walks in, and then the party stands on the spot.
+    const auto program = town_->programs.find(script);
+    if (program == town_->programs.end())
+    {
+        throw std::runtime_error("The map's script is missing");
+    }
+    const auto bank = town_->script_banks.find(script);
+    machine_.switch_program(program->second);
+    machine_.bind_variable(EclAddress{0x49F2}, static_cast<std::uint16_t>(current_script_));
+    machine_.bind_variable(
+        ecl_script_bank,
+        static_cast<std::uint16_t>(bank == town_->script_banks.end() ? 3 : bank->second));
+    current_script_ = script;
+    snapshot_.script_id = current_script_;
+    teleport_arrival_ = arrival;
+    arrive(arrival);
+    begin_event(EventTrigger::step, 4);
+    event_stage_ = EventStage::area_entry;
+}
+
+void RolfTourSession::arrive(const TeleportArrival &arrival)
+{
+    change_area(arrival.map);
+    if (arrival.map)
+    {
+        machine_.bind_variable(ecl_current_map, static_cast<std::uint16_t>(arrival.map));
+    }
+    // A wilderness script's cave or grove is a 3D area, not the wilderness map.
+    if (current_script_ >= 25 && current_script_ <= 27)
+    {
+        machine_.bind_variable(ecl_in_3d_area, 1);
+    }
+    bind_pose(arrival.pose);
+}
+
 void RolfTourSession::claim_loot()
 {
     if (!campaign_)
@@ -1251,6 +1338,10 @@ void RolfTourSession::finish_event()
     }
     if (event_stage_ == EventStage::area_entry)
     {
+        if (teleport_arrival_)
+        {
+            arrive(*std::exchange(teleport_arrival_, std::nullopt));
+        }
         update_travel_mode();
         event_stage_ = EventStage::search;
         if (!machine_.start(1))
