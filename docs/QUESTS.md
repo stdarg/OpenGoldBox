@@ -67,6 +67,9 @@ The conversion here:
 - Every check (member, d20, total, DC) and whether the door opened are shown
   under "Locked." with localized messages. Rolls use the campaign service
   random state.
+- **The Rogue's Shop's secret door** offers Pick and Knock but no Bash
+  ([SECRET-1](SRD-DECISIONS.md#secret-1-2026-10-29-the-rogues-shop-and-its-secret-door)),
+  and stays open once opened.
 - **Knock** is offered when a member can cast it, and opens the door. Code 3
   reads "Wizard locked."; Bash and Pick need DC 35 there
   ([PODOL-1](SRD-DECISIONS.md#podol-1-2026-10-22-podol-plaza)).

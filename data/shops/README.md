@@ -1,4 +1,12 @@
-Each JSON file is an independent shop or temple record. `fixed_location`,
+Each JSON file is an independent shop or temple record. Every location but
+one is the original's; `phlan-rogue-04-13`, the Rogue's Shop, is
+OpenGoldBox's, and its entry in `locations.json` has an `entrance`: the side
+of its square with the secret, locked door (`secret_door`), the map's wall
+that draws that door once found (`door_wall`), and the walls that close its
+other open sides (`walls`, by side). The game changes the map to match and
+opens the shop itself on its square
+([SECRET-1](../../docs/SRD-DECISIONS.md#secret-1-2026-10-29-the-rogues-shop-and-its-secret-door)).
+`fixed_location`,
 `kind`, and `id` identify an existing place and are immutable in the editor.
 Retail `type`, `portrait`, and `offerings` are editable. Temple `type` is always
 `Temple`; service price and `offered` are editable. Stock quantity `-1` means

@@ -2046,6 +2046,32 @@ std::vector<DoorAttempt> CampaignParty::try_door(DoorMethod method, int difficul
     return attempts;
 }
 
+std::vector<SecretDoorRoll> CampaignParty::search_for_secret_door(bool searching)
+{
+    editable();
+    std::vector<SecretDoorRoll> rolls;
+    for (const auto id : state_.slots)
+    {
+        if (!id)
+        {
+            continue;
+        }
+        const auto &m = member(id);
+        const int needed =
+            (searching ? 1 : 0) + (m.character.creation_data().race == "elf" ? 1 : 0);
+        if (m.vitals.dead || m.vitals.hit_points <= 0 || needed == 0)
+        {
+            continue;
+        }
+        rolls.push_back({id, roll_die(state_.random_state, 6), needed});
+        if (rolls.back().die <= needed)
+        {
+            break;
+        }
+    }
+    return rolls;
+}
+
 std::vector<DoorAttempt> CampaignParty::cast_knock(int difficulty)
 {
     // The first active member able to cast it does; the lock always opens.

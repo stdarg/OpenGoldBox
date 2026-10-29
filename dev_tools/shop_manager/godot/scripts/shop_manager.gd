@@ -33,13 +33,15 @@ const ADDED_GEAR := [
     ["Vial of Acid", 25, 1, 201],
     ["Flask of Alchemist's Fire", 50, 1, 202],
 ]
-# Gear the game knows that no default stock holds; the picker offers it to
-# any shop (#271).
+# Gear the game knows that no original stock holds; the picker offers it to
+# any shop, and the Rogue's Shop starts with it (#271).
 const PICKER_GEAR := [
     ["Poisoner's Kit", 50, 1, 212],
     ["Basic Poison", 100, 1, 213],
     ["Thieves' Tools", 25, 1, 214],
 ]
+const SIDES := ["north", "east", "south", "west"]
+const LOCATION_COUNT := 17
 
 var manifest: Dictionary = {}
 var records: Dictionary = {}
@@ -80,7 +82,7 @@ func _ready() -> void:
         _fatal("Cannot read fixed shop locations")
         return
     manifest = parsed
-    if int(manifest.get("version", 0)) != 1 or manifest.get("locations", []).size() != 16:
+    if int(manifest.get("version", 0)) != 1 or manifest.get("locations", []).size() != LOCATION_COUNT:
         _fatal("Unexpected fixed shop location manifest")
         return
     var game_dir := OS.get_environment("OPENGOLD_GAME_DIR")
@@ -117,7 +119,7 @@ func _ready() -> void:
             if not FileAccess.file_exists(_record_path(id)) and not _write_record(id):
                 get_tree().quit(1)
                 return
-        print("Seeded 16 fixed shops and temples")
+        print("Seeded %d fixed shops and temples" % LOCATION_COUNT)
         get_tree().quit()
         return
     if "--export-portraits" in OS.get_cmdline_user_args():
@@ -237,6 +239,9 @@ func _default_record(location: Dictionary) -> Dictionary:
         for service in TEMPLE_SERVICES:
             offerings.append({"service_id": service[0], "name": service[1],
                               "price_gp": service[2], "offered": true})
+    elif location.has("entrance"):
+        # OpenGoldBox's own shop has no original list (SECRET-1).
+        offerings = _gear_offerings(PICKER_GEAR)
     else:
         offerings = _without_ammunition(shop_stock(int(location["source_record"])))
         if int(location["source_record"]) == 54:
@@ -373,7 +378,7 @@ func _build_ui() -> void:
     map_widget.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     map_widget.location_selected.connect(_select_location)
     left.add_child(map_widget)
-    left.add_child(_make_label("■ Shop    ✚ Temple    Gold lines: doors    Blue lines: walls"))
+    left.add_child(_make_label("■ Shop    ✚ Temple    Gold: doors    Red: secret doors    Blue: walls"))
     left.add_child(_make_label("Locations on this map"))
     location_list = ItemList.new()
     location_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -478,6 +483,9 @@ func _select_map(name: String) -> void:
     for y in 16:
         for x in 16:
             map_cells.append(map_cell(index, 0, x, y, 0))
+    for location in manifest["locations"]:
+        if String(location["map"]) == name and location.has("entrance"):
+            _draw_entrance(location)
     visible_ids.clear()
     location_list.clear()
     for location in manifest["locations"]:
@@ -487,6 +495,27 @@ func _select_map(name: String) -> void:
         visible_ids.append(id)
         location_list.add_item(String(location["name"]))
     _update_map()
+
+# The game's changes for a shop with a hidden entrance (SECRET-1): walls that
+# close its square's other sides, and the secret door, which the map marks.
+func _draw_entrance(location: Dictionary) -> void:
+    var entrance: Dictionary = location["entrance"]
+    for marker in location["markers"]:
+        var x := int(marker[0])
+        var y := int(marker[1])
+        for side_name in entrance["walls"]:
+            _set_face(x, y, SIDES.find(side_name), int(entrance["walls"][side_name]), 0, false)
+        _set_face(x, y, SIDES.find(String(entrance["secret_door"])), int(entrance["door_wall"]), 2, true)
+
+# Sets one side of a square, and the facing side of its neighbour.
+func _set_face(x: int, y: int, side: int, wall: int, door: int, secret: bool) -> void:
+    var steps: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
+    var other: Vector2i = Vector2i(x, y) + steps[side]
+    for face in [[x, y, side], [other.x, other.y, (side + 2) % 4]]:
+        if face[0] < 0 or face[1] < 0 or face[0] >= 16 or face[1] >= 16:
+            continue
+        var cell: Dictionary = map_cells[face[1] * 16 + face[0]]
+        cell["faces"][face[2]] = {"wall_id": wall, "door_code": door, "secret": secret}
 
 func _update_map() -> void:
     var locations: Array = []
@@ -520,6 +549,8 @@ func _select_location(id: String) -> void:
         points.append("(%d,%d)" % [int(marker[0]), int(marker[1])])
     fixed_label.text = "Fixed location: %s:%d at %s" % [record["fixed_location"]["archive"],
         int(record["fixed_location"]["record"]), ", ".join(points)]
+    if meta.has("entrance"):
+        fixed_label.text += " · OpenGoldBox's shop: a secret, locked door on its %s side" % String(meta["entrance"]["secret_door"])
     type_choice.disabled = String(meta["kind"]) == "temple"
     type_choice.clear()
     if type_choice.disabled:
@@ -727,7 +758,7 @@ func _run_check() -> void:
             if cell.is_empty():
                 _fatal("Invalid map marker for " + id)
                 return
-    if shops != 12 or temples != 4 or records["podol-temple-ilmater"]["offerings"].size() != 10:
+    if shops != 13 or temples != 4 or records["podol-temple-ilmater"]["offerings"].size() != 10:
         _fatal("Shop/temple inventory mismatch")
         return
     if not catalog_items.any(func(item: Dictionary) -> bool:
@@ -741,6 +772,14 @@ func _run_check() -> void:
     if not catalog_items.any(func(item: Dictionary) -> bool:
             return int(item["item_type"]) == 214 and int(item["price_gp"]) == 25):
         _fatal("The item picker lacks Thieves' Tools")
+        return
+    var rogue: Dictionary = records["phlan-rogue-04-13"]
+    if rogue["type"] != "Rogue's Shop" or not rogue["offerings"].any(func(item: Dictionary) -> bool:
+            return int(item["item_type"]) == 212 and int(item["price_gp"]) == 50):
+        _fatal("The Rogue's Shop does not sell the Poisoner's Kit")
+        return
+    if not _entrance_drawn():
+        _fatal("The map lacks the Rogue's Shop's secret door or wall")
         return
     var saved_type: String = records["phlan-arms-13-08"]["type"]
     records["phlan-arms-13-08"]["type"] = "Temple"
@@ -779,5 +818,23 @@ func _run_check() -> void:
     if not _portraits_exported():
         _fatal("The game lacks an exported portrait: run --export-portraits")
         return
-    print("Shop manager checks passed: 12 shops, 4 temples, 2 maps, fixed locations, original stock, exported portraits")
+    print("Shop manager checks passed: 13 shops, 4 temples, 2 maps, fixed locations, original stock, the Rogue's Shop's secret door, exported portraits")
     get_tree().quit()
+
+# The map shows the Rogue's Shop's secret door south of (4,13) and the wall
+# that closes its north side.
+func _entrance_drawn() -> bool:
+    var saved := map_cells.duplicate(true)
+    var meta := _map_meta("New Phlan")
+    var index: int = map_indices[String(meta["archive"]) + ":" + str(int(meta["record"]))]
+    map_cells.clear()
+    for y in 16:
+        for x in 16:
+            map_cells.append(map_cell(index, 0, x, y, 0))
+    _draw_entrance(_location_meta("phlan-rogue-04-13"))
+    var door: Dictionary = map_cells[13 * 16 + 4]["faces"][2]
+    var outside: Dictionary = map_cells[14 * 16 + 4]["faces"][0]
+    var wall: Dictionary = map_cells[13 * 16 + 4]["faces"][0]
+    var front: Dictionary = map_cells[12 * 16 + 4]["faces"][2]
+    map_cells = saved
+    return door.get("secret", false) and outside.get("secret", false) and int(wall["wall_id"]) != 0 and int(front["wall_id"]) != 0

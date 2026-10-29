@@ -239,6 +239,15 @@ in the game: answering YES at a hall lists its services in the dialogue
   Stock limits are not kept yet: every item a shop sells is unlimited, as in
   the original.
   [#275](https://github.com/stdarg/OpenGoldBox/issues/275).
+- **The Rogue's Shop** (2026-10-29). The original has no rogue's shop and no
+  secret door in New Phlan. OpenGoldBox opens one at (4,13), the back half of
+  the inn at (4,12): a wall now closes it from the inn, whose event no longer
+  runs there, and its way in is a secret, locked door in the south wall, from
+  the alley. The party finds the door with the original's search rolls, a
+  Rogue picks it or a member casts Knock, and once open it stays open. It
+  sells Thieves' Tools, the Poisoner's Kit and Basic Poison.
+  [SECRET-1](SRD-DECISIONS.md#secret-1-2026-10-29-the-rogues-shop-and-its-secret-door),
+  [#271](https://github.com/stdarg/OpenGoldBox/issues/271).
 
 ## Interface and saves
 

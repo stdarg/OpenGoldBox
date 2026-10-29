@@ -1,21 +1,25 @@
 # Shop & Temple Manager
 
-This standalone Godot 4 tool edits the existing merchandise shops and service
-temples. It does not move, create, or delete locations, and it does not alter
-the game application. Its compact overhead map is a selector; the larger panel
+This standalone Godot 4 tool edits the merchandise shops and service temples.
+It does not move, create, or delete locations, and it does not alter the game
+application. Its compact overhead map is a selector; the larger panel
 edits one location's offerings, prices, quantities or service availability,
 type (shops only), and portrait.
 
 Choose **New Phlan** or **Podol Plaza** in the map dropdown. Click a colored
-marker or use the location list. The map contains twelve New Phlan shops, three
-New Phlan temples, and the hidden Temple of Ilmater in Podol Plaza. Multiple
+marker or use the location list. The map contains twelve original New Phlan
+shops, OpenGoldBox's Rogue's Shop at (4,13), three New Phlan temples, and the
+hidden Temple of Ilmater in Podol Plaza. Multiple
 entrances to one temple select the same record. Green markers are shops and
-violet crosses are temples. The walls and doors come from locally decoded
+violet crosses are temples. The Rogue's Shop's secret door is the red line
+south of its marker, and the map shows the wall that closes the shop from the
+inn at (4,12), as the game changes them
+([SECRET-1](../../docs/SRD-DECISIONS.md#secret-1-2026-10-29-the-rogues-shop-and-its-secret-door)). The walls and doors come from locally decoded
 `GEO*.DAX` files; the fixed locations are recorded in
 [`data/shops/locations.json`](../../data/shops/locations.json). There are no
 position controls.
 
-All twelve shops start with stock decoded from `ITEM3.DAX` records 52–55. The
+The twelve original shops start with stock decoded from `ITEM3.DAX` records 52–55. The
 general shops also start with the current game's added gear: ten Torches, Acid,
 Alchemist's Fire, and eight levels of Magic Ink priced at 1,000 gp per level.
 Every shop has an independent
@@ -25,7 +29,7 @@ JSON record, even if it shares an original stock list with other shops. Use
 behavior; `0` means out of stock. The item picker can search decoded item lists
 from `ITEM1.DAX` through `ITEM8.DAX` and keeps each added item's source identity.
 It also offers the game's added gear, and the Poisoner's Kit (50 gp), Basic
-Poison (100 gp) and Thieves' Tools (25 gp), which no shop sells by default
+Poison (100 gp) and Thieves' Tools (25 gp), with which the Rogue's Shop starts
 ([#271](https://github.com/stdarg/OpenGoldBox/issues/271)).
 
 The four temples each have the nine original curative services and
