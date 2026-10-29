@@ -1668,7 +1668,7 @@ msgstr "No puede hacer ataques de oportunidad, y su siguiente tirada de salvaci�
 msgid "Cannot make Opportunity Attacks."
 msgstr "No puede hacer ataques de oportunidad."
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:406
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:408
 msgid "Cannot move or act for an hour; attack rolls against it have Advantage, and hits from within 5 feet are critical."
 msgstr "No puede moverse ni actuar durante una hora; las tiradas de ataque contra él tienen ventaja, y los impactos a 5 pies o menos son críticos."
 
@@ -1676,7 +1676,7 @@ msgstr "No puede moverse ni actuar durante una hora; las tiradas de ataque contr
 msgid "Cannot move or act until the end of its next turn, as Haste wears off."
 msgstr "No puede moverse ni actuar hasta el final de su siguiente turno, mientras Acelerar se desvanece."
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:404
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:405
 msgid "Cannot move or act until the end of its next turn; attack rolls against it have Advantage, and hits from within 5 feet are critical."
 msgstr "No puede moverse ni actuar hasta el final de su siguiente turno; las tiradas de ataque contra él tienen ventaja, y los impactos a 5 pies o menos son críticos."
 
@@ -1934,7 +1934,7 @@ msgstr "Hechizar persona (espacio de nivel 2)"
 msgid "Charmed"
 msgstr "Hechizado"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:412
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:414
 msgid "Charmed (Compulsion)"
 msgstr "Hechizado (Compulsión)"
 
@@ -3470,7 +3470,7 @@ msgstr "Escapa con una prueba de Inteligencia (Investigación) CD 20 o cuando te
 msgid "Ethereal"
 msgstr "Etéreo"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:408
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:410
 msgid "Ethereal (Ethereal Jaunt)"
 msgstr "Etéreo (Salto etéreo)"
 
@@ -6199,11 +6199,11 @@ msgstr "Muévete hasta {feet} pies sin ataques de oportunidad ni gastar movimien
 msgid "Movement paused"
 msgstr "Movimiento en pausa"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:412
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:414
 msgid "Moves as far as it can the way its charmer names, then saves again."
 msgstr "Se mueve todo lo que puede hacia donde le indica quien lo hechizó y luego vuelve a salvar."
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:410
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:412
 msgid "Moves up to half its Speed and makes one Rend this turn."
 msgstr "Se mueve hasta la mitad de su Velocidad y hace un Desgarrar este turno."
 
@@ -6716,7 +6716,7 @@ msgstr "Los demás rasgos de raza y efectos condicionales no están implementado
 msgid "Out of melee reach until the spell ends."
 msgstr "Fuera del alcance cuerpo a cuerpo hasta que termine el conjuro."
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:408
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:410
 msgid "Out of reach on the Ethereal Plane until its next turn."
 msgstr "Fuera de alcance en el Plano Etéreo hasta su siguiente turno."
 
@@ -6838,7 +6838,7 @@ msgstr "Castigo del paladín"
 msgid "Paralyzed"
 msgstr "Paralizado"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:404
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:405
 msgid "Paralyzed (Claw)"
 msgstr "Paralizado (Garra)"
 
@@ -7029,7 +7029,7 @@ msgstr "Envenenado (Mal de ojo)"
 msgid "Poisoned (Stinking Cloud)"
 msgstr "Envenenado (Nube apestosa)"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:406
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:408
 msgid "Poisoned and Paralyzed (venom)"
 msgstr "Envenenado y Paralizado (veneno)"
 
@@ -7415,7 +7415,7 @@ msgstr "Alzado (zombi)"
 msgid "Rampage"
 msgstr "Desenfreno"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:410
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:412
 msgid "Rampaging"
 msgstr "Desenfrenado"
 

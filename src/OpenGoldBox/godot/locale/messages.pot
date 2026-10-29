@@ -1668,7 +1668,7 @@ msgstr ""
 msgid "Cannot make Opportunity Attacks."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:406
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:408
 msgid "Cannot move or act for an hour; attack rolls against it have Advantage, and hits from within 5 feet are critical."
 msgstr ""
 
@@ -1676,7 +1676,7 @@ msgstr ""
 msgid "Cannot move or act until the end of its next turn, as Haste wears off."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:404
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:405
 msgid "Cannot move or act until the end of its next turn; attack rolls against it have Advantage, and hits from within 5 feet are critical."
 msgstr ""
 
@@ -1934,7 +1934,7 @@ msgstr ""
 msgid "Charmed"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:412
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:414
 msgid "Charmed (Compulsion)"
 msgstr ""
 
@@ -3470,7 +3470,7 @@ msgstr ""
 msgid "Ethereal"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:408
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:410
 msgid "Ethereal (Ethereal Jaunt)"
 msgstr ""
 
@@ -6199,11 +6199,11 @@ msgstr ""
 msgid "Movement paused"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:412
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:414
 msgid "Moves as far as it can the way its charmer names, then saves again."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:410
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:412
 msgid "Moves up to half its Speed and makes one Rend this turn."
 msgstr ""
 
@@ -6716,7 +6716,7 @@ msgstr ""
 msgid "Out of melee reach until the spell ends."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:408
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:410
 msgid "Out of reach on the Ethereal Plane until its next turn."
 msgstr ""
 
@@ -6838,7 +6838,7 @@ msgstr ""
 msgid "Paralyzed"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:404
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:405
 msgid "Paralyzed (Claw)"
 msgstr ""
 
@@ -7029,7 +7029,7 @@ msgstr ""
 msgid "Poisoned (Stinking Cloud)"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:406
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:408
 msgid "Poisoned and Paralyzed (venom)"
 msgstr ""
 
@@ -7415,7 +7415,7 @@ msgstr ""
 msgid "Rampage"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:410
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:412
 msgid "Rampaging"
 msgstr ""
 
