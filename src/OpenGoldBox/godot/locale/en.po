@@ -1668,7 +1668,7 @@ msgstr "Cannot make Opportunity Attacks, and its next saving throw has Disadvant
 msgid "Cannot make Opportunity Attacks."
 msgstr "Cannot make Opportunity Attacks."
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:406
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:408
 msgid "Cannot move or act for an hour; attack rolls against it have Advantage, and hits from within 5 feet are critical."
 msgstr "Cannot move or act for an hour; attack rolls against it have Advantage, and hits from within 5 feet are critical."
 
@@ -1676,7 +1676,7 @@ msgstr "Cannot move or act for an hour; attack rolls against it have Advantage, 
 msgid "Cannot move or act until the end of its next turn, as Haste wears off."
 msgstr "Cannot move or act until the end of its next turn, as Haste wears off."
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:404
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:405
 msgid "Cannot move or act until the end of its next turn; attack rolls against it have Advantage, and hits from within 5 feet are critical."
 msgstr "Cannot move or act until the end of its next turn; attack rolls against it have Advantage, and hits from within 5 feet are critical."
 
@@ -1934,7 +1934,7 @@ msgstr "Charm Person (level 2 slot)"
 msgid "Charmed"
 msgstr "Charmed"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:412
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:414
 msgid "Charmed (Compulsion)"
 msgstr "Charmed (Compulsion)"
 
@@ -3470,7 +3470,7 @@ msgstr "Escapes with a DC 20 Intelligence (Investigation) check or when the spel
 msgid "Ethereal"
 msgstr "Ethereal"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:408
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:410
 msgid "Ethereal (Ethereal Jaunt)"
 msgstr "Ethereal (Ethereal Jaunt)"
 
@@ -6199,11 +6199,11 @@ msgstr "Move up to {feet} feet without Opportunity Attacks or spending normal mo
 msgid "Movement paused"
 msgstr "Movement paused"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:412
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:414
 msgid "Moves as far as it can the way its charmer names, then saves again."
 msgstr "Moves as far as it can the way its charmer names, then saves again."
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:410
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:412
 msgid "Moves up to half its Speed and makes one Rend this turn."
 msgstr "Moves up to half its Speed and makes one Rend this turn."
 
@@ -6716,7 +6716,7 @@ msgstr "Other racial traits and conditional effects are not implemented."
 msgid "Out of melee reach until the spell ends."
 msgstr "Out of melee reach until the spell ends."
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:408
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:410
 msgid "Out of reach on the Ethereal Plane until its next turn."
 msgstr "Out of reach on the Ethereal Plane until its next turn."
 
@@ -6838,7 +6838,7 @@ msgstr "Paladin's Smite"
 msgid "Paralyzed"
 msgstr "Paralyzed"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:404
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:405
 msgid "Paralyzed (Claw)"
 msgstr "Paralyzed (Claw)"
 
@@ -7029,7 +7029,7 @@ msgstr "Poisoned (Eyebite)"
 msgid "Poisoned (Stinking Cloud)"
 msgstr "Poisoned (Stinking Cloud)"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:406
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:408
 msgid "Poisoned and Paralyzed (venom)"
 msgstr "Poisoned and Paralyzed (venom)"
 
@@ -7415,7 +7415,7 @@ msgstr "Raised (Zombie)"
 msgid "Rampage"
 msgstr "Rampage"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:410
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:412
 msgid "Rampaging"
 msgstr "Rampaging"
 
