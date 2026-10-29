@@ -294,15 +294,13 @@ Monster ability rows (2026-10-28,
 in place of its Multiattack at a creature it can paralyze; `gore creature
 feet charge_count charge_sides bonus count sides modifier type`, a Minotaur's
 Gore after a charge; `paralyzing_venom creature`; `ethereal_jaunt creature`;
-`bonus_charge creature`, a Troll's Charge; `loathsome_limbs creature limb
-uses`, the limb being the `troll-limb` row; `rampage creature`; and
+`bonus_charge creature`, a Troll's Charge; `rampage creature`; and
 `trampling_charge creature dc count sides modifier recharge`. Their stat
 blocks' Open5E responses were fetched on 2026-10-28 (`srd-2024`):
 
 | Rows | Stat block | Response | SHA-256 |
 | --- | --- | --- | --- |
 | `troll` | Troll | `open5e-troll.json` | `E8216613425FA9EEDE12CCB4B9ADEA271D3484B3A46A77BC7F62BB6FAD7868C5` |
-| `troll-limb` | Troll Limb | `open5e-troll-limb.json` | `C28399B264C461F0B605677D38346127087268744AC37EAE909E205CBA388876` |
 | `gnoll-warrior` | Gnoll Warrior | `open5e-gnoll-warrior.json` | `DAAEA4C66E97C6A625BE9FA1F62CBCF0F01574C2C3666EAF05CEF098363B899D` |
 | `ghoul` | Ghoul | `open5e-ghoul.json` | `D304321AA9404C622D397358CBCB97696A3A7765130633A935574905A5FA9195` |
 
@@ -316,9 +314,8 @@ file. It takes these abilities: `advantage_damage`,
 `charge`, `charming`, `create_specter`, `cunning_action`, `dreadful_glare`,
 `enthralling_panache`, `ethereal_jaunt`, `flyby`, `gore`, `hampering`,
 `hit_advantage`, `incorporeal`, `innate`, `last_attack`, `legendary`,
-`legendary_resistance`, `life_drain`, `life_drain_attack`, `loathsome_limbs`,
-`magic_resistance`, `nimble_escape`, `pack_tactics`, `paralyzing_claw`,
-`paralyzing_venom`, `parry`, `petrifying_gaze`, `poisoning`, `prone_large`,
+`legendary_resistance`, `life_drain`, `life_drain_attack`, `magic_resistance`,
+`nimble_escape`, `pack_tactics`, `paralyzing_claw`, `paralyzing_venom`, `parry`, `petrifying_gaze`, `poisoning`, `prone_large`,
 `prone_on_hit`, `protective_magic`, `pushing`, `rampage`, `regeneration`,
 `repulsion_breath`, `riposte`, `rotting_curse`, `sunlight_sensitivity`,
 `trampling_charge`, `undead_fortitude` and `web_walker`.

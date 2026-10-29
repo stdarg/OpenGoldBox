@@ -388,11 +388,12 @@ targeted; it dies if its turn starts at 0 HP without regenerating. Combat
 checkpoints become `OGCOMBAT 41`. Rules 0.6.134 follows the original game for
 killing trolls: a fight ends once every enemy is down (downed trolls then stay
 dead), a downed troll's square can be stood on, and standing there keeps it
-from regenerating. Rules 0.6.257 adds the Troll's Charge and Loathsome Limbs
-(the Troll Limb, and Exhaustion for each missing limb), the Gnoll Warrior's
+from regenerating. Rules 0.6.257 adds the Troll's Charge, the Gnoll Warrior's
 Rampage, the Ghoul's paralyzing Claw, the minotaurs' Gore, the Phase
 Spider's Ethereal Jaunt and paralyzing venom, and the Centaur Trooper's
 Trampling Charge ([MONSTER-3](SRD-DECISIONS.md#monster-3-2026-10-28-the-last-monster-abilities)).
+It also added the Troll's Loathsome Limbs, which rules 0.6.258 takes out
+again by the user's choice.
 
 ## Creature equipment
 
@@ -1137,7 +1138,7 @@ commit-specific findings as historical evidence.
 | G7: rests/recharge | Open | [F03 #30](https://github.com/stdarg/OpenGoldBox/issues/30) |
 | G8: death/recovery outside combat | Fixed, including Help/Medicine #32 | [F04 #31](https://github.com/stdarg/OpenGoldBox/issues/31) |
 | G9: equipment/properties | Open; E5 and Versatile corrections delivered | [Equipment #48](https://github.com/stdarg/OpenGoldBox/issues/48), [Versatile I08 #27](https://github.com/stdarg/OpenGoldBox/issues/27) |
-| G10: conditions/effects/creature state | Every SRD condition is modeled, Exhaustion only for a Troll's lost limbs ([MONSTER-3](SRD-DECISIONS.md#monster-3-2026-10-28-the-last-monster-abilities)); Deafened is cut ([DEAF-1](SRD-DECISIONS.md#deaf-1-2026-10-13-blindnessdeafness-without-deafness)) | [Conditions #35](https://github.com/stdarg/OpenGoldBox/issues/35), [damage #33](https://github.com/stdarg/OpenGoldBox/issues/33), multi-square footprints delivered ([#45](https://github.com/stdarg/OpenGoldBox/issues/45), [FOOT-1](SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills)); grappling and size-difference transit not planned ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)) |
+| G10: conditions/effects/creature state | Every SRD condition is modeled except Exhaustion, which nothing in the game gives ([MONSTER-3](SRD-DECISIONS.md#monster-3-2026-10-28-the-last-monster-abilities)); Deafened is cut ([DEAF-1](SRD-DECISIONS.md#deaf-1-2026-10-13-blindnessdeafness-without-deafness)) | [Conditions #35](https://github.com/stdarg/OpenGoldBox/issues/35), [damage #33](https://github.com/stdarg/OpenGoldBox/issues/33), multi-square footprints delivered ([#45](https://github.com/stdarg/OpenGoldBox/issues/45), [FOOT-1](SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills)); grappling and size-difference transit not planned ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)) |
 | G11: precise capability/documentation coverage | In progress: ledger and issue index established | Update with every increment; reconcile remaining support claims at [final closure #185](https://github.com/stdarg/OpenGoldBox/issues/185) |
 | G12: turn/facing/transit policies | I05–I07 delivered; remaining creature-state rules are tracked separately | [I05 #24](https://github.com/stdarg/OpenGoldBox/issues/24), [I06 #25](https://github.com/stdarg/OpenGoldBox/issues/25), [I07 #26](https://github.com/stdarg/OpenGoldBox/issues/26) |
 

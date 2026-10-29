@@ -242,21 +242,10 @@ int speed_penalty(const EffectState &effects) noexcept
     }
     // Freedom of Movement: magic (Ray of Frost) cannot lower its Speed.
     const bool free = has_effect(effects, EffectKind::free_moving);
-    return 5 * exhaustion_levels(effects) + (frosted(effects) && !free ? 10 : 0) +
-           (slowed(effects) ? 10 : 0) +
+    return (frosted(effects) && !free ? 10 : 0) + (slowed(effects) ? 10 : 0) +
            (has_effect(effects, EffectKind::frosts_chill) ? 10 : 0) +
            (has_effect(effects, EffectKind::hamstrung) ? 15 : 0) -
            (has_effect(effects, EffectKind::longstrider) ? 10 : 0);
-}
-
-int exhaustion_levels(const EffectState &effects) noexcept
-{
-    const auto found = std::find_if(effects.active.begin(), effects.active.end(),
-                                    [](const auto &e)
-                                    {
-                                        return e.kind == EffectKind::limbs_lost;
-                                    });
-    return found == effects.active.end() ? 0 : found->dc;
 }
 
 bool slowed(const EffectState &effects) noexcept
@@ -670,18 +659,16 @@ int benefit_value_limit(EffectKind kind)
            : kind == EffectKind::drained || kind == EffectKind::simulacrum ||
                    kind == EffectKind::life_drained || kind == EffectKind::rotting_curse
                ? 2000
-           : kind == EffectKind::legendary_spent ? 31
-           : kind == EffectKind::slashed         ? 2000
-           : kind == EffectKind::limbs_lost      ? 4
-           : kind == EffectKind::feasted                                        ? 20
-           : kind == EffectKind::animating                                      ? 19
-           : kind == EffectKind::worded                                         ? 2
-           : kind == EffectKind::knitting                                       ? 9
-           : kind == EffectKind::fire_shield                                    ? 1
-           : kind == EffectKind::haunted                                        ? 13
-           : kind == EffectKind::summoned                                       ? 30
-           : kind == EffectKind::illusory || kind == EffectKind::petrified      ? 1
-           : kind == EffectKind::stoning                                        ? 32
+           : kind == EffectKind::legendary_spent                           ? 31
+           : kind == EffectKind::feasted                                   ? 20
+           : kind == EffectKind::animating                                 ? 19
+           : kind == EffectKind::worded                                    ? 2
+           : kind == EffectKind::knitting                                  ? 9
+           : kind == EffectKind::fire_shield                               ? 1
+           : kind == EffectKind::haunted                                   ? 13
+           : kind == EffectKind::summoned                                  ? 30
+           : kind == EffectKind::illusory || kind == EffectKind::petrified ? 1
+           : kind == EffectKind::stoning                                   ? 32
            : kind == EffectKind::contingency ? static_cast<int>(spell_table.size()) * 4
            : kind == EffectKind::polymorphed || kind == EffectKind::animal_shaped
                ? static_cast<int>(beast_forms.size())
@@ -834,11 +821,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::glare_resisted:
     case EffectKind::legendary_resisted:
     case EffectKind::rotting_curse: // to the first day's end
-    case EffectKind::limbs_lost:    // until it regains Hit Points
-    case EffectKind::severed:
-        return 86400000; // 24 hours
-    case EffectKind::slashed:
-        return 2 * round_ms; // cleared as each turn ends
+        return 86400000;            // 24 hours
     case EffectKind::befuddled:
         return 2592000000u; // 30 days
     case EffectKind::produce_flame:

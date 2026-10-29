@@ -411,8 +411,8 @@ the earlier authored Slums conversions.
   on its first turn after the delay with its square clear. Standing, it
   regenerates as the SRD says. The Hobgoblin's poisoned arrows as
   written, and, as SRD 5.2.1 has no apprentice mage, a level-3 Wizard profile
-  for the magic-user defending Ohlo. The Troll's Charge and Loathsome Limbs
-  are not modeled.
+  for the magic-user defending Ohlo. The Troll's Charge came later
+  (MONSTER-3); its Loathsome Limbs are left out (MONSTER-3).
 - **Script hazards and robbery (Kuto's Well, the user, 2026-10-08):** an
   original `DAMAGE` arrow volley is one SRD attack roll per arrow, at +4 (the
   hidden archers are Norris's kobolds, as the SRD Kobold Warrior; corrected
@@ -2091,16 +2091,10 @@ they await the user's review:
 - **A Troll's Charge** is its Bonus Action toward an enemy in view, taken as
   the Orc's Aggressive is: "straight toward an enemy" is the computer's way
   of spending it, not enforced.
-- **A Troll's Loathsome Limbs:** ending any turn Bloodied, having taken 15
-  or more Slashing damage during it, the Troll loses a limb, four times a
-  day. The limb is the SRD Troll Limb, in the free square nearest the Troll,
-  acting right after the Troll's turn and drawn in the Troll's own art until
-  it has its own. The Troll has an Exhaustion level for each missing limb (2
-  less on d20 tests, 5 feet less Speed) until it regains Hit Points, which its
-  Regeneration usually does as its next turn starts. A downed Troll is still
-  Bloodied, so a Troll felled by a blade loses a limb too. The limbs leave the
-  field when the fight ends; their Troll Spawn is not modeled. Exhaustion
-  exists for this alone: no other effect gives it.
+- **A Troll's Loathsome Limbs are left out:** the user decided on
+  2026-10-29 that severed limbs never become monsters that fight. With them
+  went the Exhaustion they gave the Troll; nothing in the game gives
+  Exhaustion.
 - **A Gnoll Warrior's Rampage**, once a day: dealing damage to a creature
   already Bloodied on its turn, it spends its Bonus Action on moving up to
   half its Speed and one Rend at once; the computer closes in to use it.
@@ -2123,8 +2117,8 @@ monster ability is on from. Each stays a game option
   for long or leaves a harm that outlasts it, and what adds foes or keeps a
   monster out of reach. Petrifying Gaze, the Ghoul's Claw and the Phase
   Spider's venom; Life Drain, the draining hits and the Vampire's Bite
-  (Hit Point maximum); the Rotting Fist's curse; Create Specter and Loathsome
-  Limbs; Dreadful Glare, Captain's Charm and Enthralling Panache; Repulsion
+  (Hit Point maximum); the Rotting Fist's curse; Create Specter; Dreadful
+  Glare, Captain's Charm and Enthralling Panache; Repulsion
   Breath, Trampling Charge, Rampage and Riposte; the Ethereal Jaunt; and the
   Mage's Protective Magic.
 - **Always:** the rest, which are how a stat block fights rather than a
