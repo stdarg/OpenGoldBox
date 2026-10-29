@@ -446,9 +446,9 @@ std::optional<String> RolfTourView::use_outside_combat(opengold::MemberId user,
     }
     // Word of Recall prepares the sanctuary or takes the party to it; the
     // camp ends with the trip.
-    if (id == String("word_of_recall") && session_)
+    if (id.begins_with("word_of_recall") && session_)
     {
-        session_->recall(user);
+        session_->recall(user, id.utf8().get_data());
         leave_dialogs();
         refresh();
         return std::nullopt;

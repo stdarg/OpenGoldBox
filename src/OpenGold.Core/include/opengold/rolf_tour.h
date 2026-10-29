@@ -240,8 +240,9 @@ class RolfTourSession
     // Word of Recall from camp (LEVELS-3): cast on the square where the party
     // used a temple of New Phlan, it prepares the party's sanctuary there;
     // elsewhere it takes the whole party back to that sanctuary. Throws when
-    // it can do neither, before spending anything.
-    void recall(opengold::MemberId caster);
+    // it can do neither, before spending anything. `action` is its camp
+    // action: "word_of_recall", or "word_of_recall_7" from a higher slot.
+    void recall(opengold::MemberId caster, const std::string &action);
 
     [[nodiscard]] bool has_sanctuary() const
     {
