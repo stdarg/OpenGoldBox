@@ -712,7 +712,7 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
     ++snapshot_.revision;
 }
 
-void RolfTourSession::recall(opengold::MemberId caster)
+void RolfTourSession::recall(opengold::MemberId caster, const std::string &action)
 {
     if (!campaign_ || campaign_->in_combat() || !can_leave())
     {
@@ -726,7 +726,7 @@ void RolfTourSession::recall(opengold::MemberId caster)
         throw std::runtime_error(
             "No sanctuary is prepared: cast Word of Recall in a temple of New Phlan first.");
     }
-    campaign_->use_camp_action(caster, caster, "word_of_recall");
+    campaign_->use_camp_action(caster, caster, action);
     if (at_temple)
     {
         sanctuary_ = temple_square_;

@@ -40,8 +40,8 @@ std::unique_ptr<rules::RulesModule> module()
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
 
-// A level-11 Cleric who prepared Word of Recall at level 11.
-Character cleric(std::string name = "Cleric")
+// A Cleric of `level` (11 or more) who prepared Word of Recall at level 11.
+Character cleric(std::string name = "Cleric", int level = 11)
 {
     rules::CharacterDraft d;
     d.race = "human";
@@ -62,7 +62,7 @@ Character cleric(std::string name = "Cleric")
     Character hero(*srd5::character_rules(), d, {});
     rules::VitalState life{hero.sheet().hit_points, false, {}};
     const auto rules = module();
-    while (hero.sheet().level < 11)
+    while (hero.sheet().level < level)
     {
         auto choice = rules->default_advancement(hero.sheet());
         if (hero.sheet().level == 10)
@@ -219,17 +219,17 @@ bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool *temple = nul
 void recall_checks(const char *directory)
 {
     auto party = std::make_shared<CampaignParty>(module());
-    // Each Cleric has one level-6 slot: one prepares the sanctuary, the other
-    // recalls the party to it.
-    const auto id = party->add_pc(cleric());
-    const auto other = party->add_pc(cleric("Healer"));
+    // A level-13 Cleric prepares the sanctuary from its level-6 slot, then
+    // recalls the party to it from its level-7 slot, offered once the
+    // level-6 slot is spent.
+    const auto id = party->add_pc(cleric("Cleric", 13));
     auto town = RolfTourSession::load(directory);
     town.campaign_party(party);
     settle(town);
     bool refused = false;
     try
     {
-        town.recall(id);
+        town.recall(id, "word_of_recall");
     }
     catch (const std::exception &)
     {
@@ -251,17 +251,20 @@ void recall_checks(const char *directory)
     }
     check(temple_x < 16, "The party finds the temple");
     const auto slot_before = party->member(id).vitals.resources;
-    town.recall(id);
+    town.recall(id, "word_of_recall");
     check(town.has_sanctuary() && party->member(id).vitals.resources != slot_before,
           "Cast on the temple's square, Word of Recall prepares the sanctuary");
     settle(town);
     check(walk_to(town, 5, 2), "The party walks to the training schools");
     check(town.snapshot().pose.x != temple_x || town.snapshot().pose.y != temple_y,
           "The party has left the temple");
-    town.recall(other);
+    const auto level_7_before = party->member(id).vitals.resources;
+    town.recall(id, "word_of_recall_7");
     settle(town);
     check(town.snapshot().pose.x == temple_x && town.snapshot().pose.y == temple_y,
-          "Word of Recall brings the party back to its sanctuary");
+          "Word of Recall from a level-7 slot brings the party back to its sanctuary");
+    check(party->member(id).vitals.resources != level_7_before,
+          "The recall spends the level-7 slot");
 }
 
 // Picks the choice that starts with `label`; false when there is none.
