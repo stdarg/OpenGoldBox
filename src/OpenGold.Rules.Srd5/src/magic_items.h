@@ -64,7 +64,8 @@ inline constexpr std::array magic_items{
               "spent."},
     MagicItem{"wand_of_secrets", "Wand of Secrets", ItemUse::point, "", "charges",
               "Use it while exploring, a charge each time: it points out the nearest hidden "
-              "secret door within 60 feet. Each Long Rest gives back 1d3 charges, up to 3."}};
+              "secret door or trap within 60 feet. Each Long Rest gives back 1d3 charges, up to "
+              "3."}};
 
 // The item a key names, whether or not the campaign marked it ":unidentified".
 inline const MagicItem *magic_item(std::string_view key)

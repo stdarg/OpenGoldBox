@@ -29,7 +29,9 @@ eastern wilderness's `ECL8.DAX 27` (the way in), `opengold_creatures GAME`,
   - the wyvern's roost and its treasure (14,6), the barracks and its map
     (journal entry 28), a crippled kobold's tale (entry 20), living areas.
   - **Traps** with a chance to see them (Find Traps, or the party's best
-    chance to find traps) and disarm them (the chosen member's chance).
+    chance to find traps) and disarm them (the chosen member's chance). A
+    trap a Wand of Secrets pointed out is seen as by Find Traps
+    ([SECRET-1](../SRD-DECISIONS.md#secret-1-2026-10-29-the-rogues-shop-and-its-secret-door)).
 - **Surrender:** the king offers it after his ballista fire; surrendering, the
   party is robbed, thrown in a cell, and may fight its way out with Fatima.
 

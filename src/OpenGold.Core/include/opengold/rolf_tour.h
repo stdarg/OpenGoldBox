@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <bitset>
 #include <map>
+#include <set>
 #include <string>
 
 namespace opengold
@@ -158,12 +159,14 @@ struct SecretDoorSearch
     int die{}, needed{};
 };
 
-// Where a Wand of Secrets points (SECRET-1): a secret door in the `side` wall
-// of square (x, y), the square on its side nearer the party.
-struct SecretDoorSign
+// Where a Wand of Secrets points (SECRET-1): a trap on square (x, y), or a
+// secret door in its `side` wall, the square on the door's side nearer the
+// party.
+struct WandSign
 {
     unsigned x{}, y{};
     MapDirection side{};
+    bool trap{};
 };
 
 struct TourSnapshot
@@ -280,12 +283,13 @@ class RolfTourSession
     void teleport(opengold::MemberId caster, const std::string &action, unsigned map);
 
     // The Wand of Secrets (SECRET-1): while the party explores, `member` spends
-    // a charge of the wand `item`, and the hidden secret door nearest the
-    // party within 60 feet, six of the map's ten-foot squares, is found. It
-    // returns where the door is, or nothing when no hidden door is that near.
+    // a charge of the wand `item`, and the hidden secret door or armed trap
+    // nearest the party within 60 feet, six of the map's ten-foot squares, is
+    // found: the door shows, and the trap's script sees it as Find Traps
+    // would. It returns where it is, or nothing when none is that near.
     // Throws, spending nothing, when the party is busy or the wand is empty.
-    [[nodiscard]] std::optional<SecretDoorSign> point_wand_of_secrets(opengold::MemberId member,
-                                                                      std::uint64_t item);
+    [[nodiscard]] std::optional<WandSign> point_wand_of_secrets(opengold::MemberId member,
+                                                                std::uint64_t item);
 
     // Outside events, and while shopping to choose the buyer. The shop script
     // receives whoever is selected when the shop closes.
@@ -517,6 +521,10 @@ class RolfTourSession
     };
 
     std::map<std::string, EntranceState> entrances_;
+    // The traps a Wand of Secrets pointed out (saved), as map * 256 + y * 16
+    // + x: on such a square a script asking for Find Traps finds it.
+    std::set<unsigned> wand_traps_;
+    [[nodiscard]] bool on_wand_trap() const;
     [[nodiscard]] bool standing_at(const std::string &archive, unsigned record,
                                    const std::vector<std::pair<unsigned, unsigned>> &markers) const;
     std::optional<TempleVisit> temple_visit_;
@@ -545,6 +553,7 @@ class RolfTourSession
         unsigned script{}, area{};
         std::map<unsigned, std::bitset<256>> visited_areas, seen_areas;
         std::map<std::string, EntranceState> entrances;
+        std::set<unsigned> wand_traps;
         unsigned rest_checks{};
         unsigned travel_mode{};
         GeoMap map;

@@ -4,7 +4,7 @@
 #include "opengold/character.h"
 #include "opengold/npc_portraits.h"
 #include "opengold/rolf_tour.h"
-#include "opengold/script_secret_doors.h"
+#include "opengold/script_secrets.h"
 #include "opengold/shop_data.h"
 #include "opengold/srd5.h"
 #include "test_support.h"
@@ -28,7 +28,7 @@ using namespace opengold::por;
 // bashed, and stays open in saves. The shop sells the Poisoner's Kit for
 // 50 gp, and magic gear: Leather Armor +1, a Stone of Good Luck that works
 // from the pack, and a Wand of Secrets that points out the shop's door and the
-// original's script-held secret doors. Needs the installed game
+// original's script-held secret doors and traps. Needs the installed game
 // (OPENGOLD_GAME_DIR); without it the test passes.
 namespace
 {
@@ -141,6 +141,9 @@ void add_knock_wizard(CampaignParty &party)
     }
 }
 
+// Every dialogue settle() answered, for checks on what a step said.
+std::string transcript;
+
 // Runs the town until it waits on the player. Dialogue choices take the
 // last (leaving, or the inn's NO); the locked menu is left to the caller.
 void settle(RolfTourSession &town)
@@ -156,6 +159,7 @@ void settle(RolfTourSession &town)
         }
         if (s.phase == TourPhase::awaiting_continue)
         {
+            transcript += s.dialogue + "\n";
             town.choose(s.continue_ticket, s.choices.empty() ? 0 : s.choices.size() - 1);
         }
         else if (s.phase == TourPhase::awaiting_input)
@@ -582,17 +586,32 @@ MemberId add_teleport_wizard(CampaignParty &party)
     return id;
 }
 
-// A Wand of Secrets with `charges` for the party's first member; its ID.
-std::uint64_t give_wand(CampaignParty &party, unsigned charges)
+// A Wand of Secrets with `charges` for the party: who takes it, and its ID.
+std::pair<MemberId, std::uint64_t> give_wand(CampaignParty &party, unsigned charges)
 {
-    const auto id = party.state().slots[0];
     por::Equipment wand;
     wand.stored.type = 219;
     wand.stored.stored_name = "Wand of Secrets";
     wand.stored.stack_size = static_cast<std::uint8_t>(charges);
-    check(party.award_loot({}, {wand}, "test:wand:" + std::to_string(charges)),
+    const auto before = party.state().roster;
+    // Each award is a reward of its own, or a second would be refused.
+    static unsigned wands = 0;
+    check(party.award_loot({}, {wand}, "test:wand:" + std::to_string(++wands)),
           "The party takes the wand");
-    return party.member(id).character.inventory().items().back().id;
+    for (const auto &member : party.state().roster)
+    {
+        const auto was = std::find_if(before.begin(), before.end(),
+                                      [&](const auto &m)
+                                      {
+                                          return m.id == member.id;
+                                      });
+        const auto items = member.character.inventory().items();
+        if (was != before.end() && items.size() > was->character.inventory().items().size())
+        {
+            return {member.id, items.back().id};
+        }
+    }
+    throw std::runtime_error("Nobody took the wand");
 }
 
 // The Wand of Secrets (SECRET-1): pointed in the alley it finds the hidden
@@ -601,8 +620,7 @@ std::uint64_t give_wand(CampaignParty &party, unsigned charges)
 void wand_in_town_checks(const char *directory)
 {
     auto party = party_with({rogue()});
-    const auto user = party->state().slots[0];
-    const auto wand = give_wand(*party, 3);
+    const auto [user, wand] = give_wand(*party, 3);
     auto town = town_with_shops(directory);
     town.campaign_party(party);
     settle(town);
@@ -638,10 +656,9 @@ void wand_in_town_checks(const char *directory)
 
 // Points the wand where Teleport took the party: the door it finds must be
 // `expected`, and the script's flag for it is then set.
-void point_on_map(RolfTourSession &town, CampaignParty &party, std::uint64_t wand,
-                  const ScriptSecretDoor &expected, SecretDoorSign at)
+void point_on_map(RolfTourSession &town, MemberId user, std::uint64_t wand,
+                  const ScriptSecretDoor &expected, WandSign at)
 {
-    const auto user = party.state().slots[0];
     const auto sign = town.point_wand_of_secrets(user, wand);
     check(sign && sign->x == at.x && sign->y == at.y && sign->side == at.side,
           "The wand points to the nearest secret door on map " + std::to_string(expected.map));
@@ -652,11 +669,12 @@ void point_on_map(RolfTourSession &town, CampaignParty &party, std::uint64_t wan
 
 // The original's script-held secret doors, the Pyramid's and Kuto's Well's
 // catacombs': the wand sets the flag each script lets the party through by
-// (script_door_table_checks).
+// (script_door_table_checks). And the traps of Kovel Mansion and the kobold
+// caves.
 void wand_on_script_doors(const char *directory)
 {
     auto party = party_with({rogue()});
-    const auto wand = give_wand(*party, 3);
+    const auto [holder, wand] = give_wand(*party, 3);
     const auto wizard = add_teleport_wizard(*party);
     auto town = town_with_shops(directory);
     town.campaign_party(party);
@@ -689,16 +707,51 @@ void wand_on_script_doors(const char *directory)
     // From the prison of souls' spot (7,8) the nearest is the door between
     // (4,10) and (5,10), two squares away at (5,10).
     teleport(22);
-    point_on_map(town, *party, wand, door(22, 4, 10), {5, 10, MapDirection::west});
+    point_on_map(town, holder, wand, door(22, 4, 10), {5, 10, MapDirection::west});
     // Kuto's Well's catacombs: the door south of (5,7), four squares from
     // the spot (7,3).
     teleport(32);
-    point_on_map(town, *party, wand, door(32, 5, 7), {5, 7, MapDirection::south});
+    point_on_map(town, holder, wand, door(32, 5, 7), {5, 7, MapDirection::south});
+
+    // Traps whose scripts ask for Find Traps. In Kovel Mansion, from the spot
+    // (2,7), the doorway trap at (5,6) is as near as the weapons' at (3,4)
+    // and comes first; pointed out, the next use points to the weapons'.
+    const auto [user, traps_wand] = give_wand(*party, 3);
+    teleport(14);
+    const auto doorway = town.point_wand_of_secrets(user, traps_wand);
+    check(doorway && doorway->trap && doorway->x == 5 && doorway->y == 6,
+          "The wand points to Kovel Mansion's nearest trap");
+    const auto weapons = town.point_wand_of_secrets(user, traps_wand);
+    check(weapons && weapons->trap && weapons->x == 3 && weapons->y == 4,
+          "A trap pointed out is not pointed to again");
+    // A save keeps the traps pointed out: the next nearest is the caskets'.
+    const auto bytes = encode_campaign(*party, &town, "wand-traps");
+    auto loaded = decode_campaign(bytes, *srd5::character_rules(), *module(), "wand-traps", &town);
+    auto reloaded = std::make_shared<CampaignParty>(module());
+    reloaded->restore(std::move(loaded.party));
+    loaded.town->attach_restored_party(reloaded);
+    const auto caskets = loaded.town->point_wand_of_secrets(user, traps_wand);
+    check(caskets && caskets->trap && caskets->x == 6 && caskets->y == 7,
+          "A save keeps the traps the wand pointed out");
+    // In the kobold caves, from (7,7), the net at (10,9) is disarmed, so the
+    // wand points to the spikes at (11,9); stepping there, the script sees
+    // the trap as Find Traps would.
+    teleport(13);
+    test::TourAccess::set_variable(town, EclAddress{0x4A04}, 1);
+    const auto spikes = town.point_wand_of_secrets(user, traps_wand);
+    check(spikes && spikes->trap && spikes->x == 11 && spikes->y == 9,
+          "The wand points past a disarmed trap to the next");
+    check(walk_to(town, 10, 9), "The party reaches the disarmed net");
+    face(town, MapDirection::east);
+    transcript.clear();
+    step(town, ExplorationCommand::forward);
+    check(transcript.find("YOU FIND A TRAP") != std::string::npos,
+          "The trap the wand pointed out is seen");
 }
 
 // The doors the wand knows are the ones the scripts search: each is on its
 // map's squares with the script's search events, facing the way the
-// script's table says.
+// script's table says. The traps are on their events' squares.
 void script_door_table_checks(const char *directory)
 {
     const auto maps = MapCatalog::load(directory);
@@ -743,6 +796,22 @@ void script_door_table_checks(const char *directory)
                                  std::to_string(y) + " of map " + std::to_string(table.map));
             }
         }
+    }
+    // Each trap is on a square whose event springs one: Kovel Mansion's
+    // doorways (3-8), cabinets (10, 12), caskets (13) and weapons (14), the
+    // kobold caves' pit (1), deadfall (3), net (4) and spikes (5).
+    for (const auto &trap : script_traps)
+    {
+        const auto archive = trap.map == 14 ? "GEO3.DAX" : "GEO8.DAX";
+        const auto event = maps.find({archive, static_cast<std::uint8_t>(trap.map)})
+                               ->get()
+                               .at(trap.x, trap.y)
+                               .event_number();
+        const bool springs = trap.map == 14 ? (event >= 3 && event <= 8) || event == 10 ||
+                                                  event == 12 || event == 13 || event == 14
+                                            : event == 1 || (event >= 3 && event <= 5);
+        check(springs, "A trap's square has its event at " + std::to_string(trap.x) + "," +
+                           std::to_string(trap.y) + " of map " + std::to_string(trap.map));
     }
 }
 

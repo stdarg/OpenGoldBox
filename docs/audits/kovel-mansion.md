@@ -60,7 +60,9 @@ Central Wilderness's `ECL7.DAX 26` for the way in), `opengold_creatures GAME`,
   - **20** (4,5): a map of the northeast castle's maze (journal entry 29).
 - **Traps** (`0xB3A2`): before each trap the party may see it, by Find Traps
   in effect or on d100 below the party's best chance to find traps; then it
-  may avoid the trap or disarm it, on d100 below that same chance.
+  may avoid the trap or disarm it, on d100 below that same chance. A trap a
+  Wand of Secrets pointed out is seen as by Find Traps
+  ([SECRET-1](../SRD-DECISIONS.md#secret-1-2026-10-29-the-rogues-shop-and-its-secret-door)).
 - **The guild beaten:** with 21 thieves beaten, the guild no longer troubles
   the party's camps (`0x4AB2` = 254 at `0xB359`).
 

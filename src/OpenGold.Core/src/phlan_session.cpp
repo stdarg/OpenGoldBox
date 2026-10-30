@@ -1,5 +1,5 @@
 #include "opengold/rolf_tour.h"
-#include "opengold/script_secret_doors.h"
+#include "opengold/script_secrets.h"
 #include "opengold/random_treasure.h"
 #include "opengold/ecl_party_host.h"
 #include "opengold/scroll_key.h"
@@ -663,6 +663,7 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
                                         .visited_areas = visited_areas_,
                                         .seen_areas = seen_areas_,
                                         .entrances = entrances_,
+                                        .wand_traps = wand_traps_,
                                         .rest_checks = rest_checks_,
                                         .travel_mode = travel_mode_,
                                         .map = map_,
@@ -2597,7 +2598,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         read_character();
         reply = character_reply(selected_character_);
-        const auto values = check_party(*campaign_, address_arg(0), arg(1));
+        auto values = check_party(*campaign_, address_arg(0), arg(1));
+        // A trap the Wand of Secrets pointed out is seen as Find Traps sees it.
+        constexpr unsigned find_traps_effect = 19;
+        if (address_arg(0) == EclAddress{0} && arg(1) == find_traps_effect && on_wand_trap())
+        {
+            values[3] = 1;
+        }
         std::map<EclAddress, std::uint16_t> outputs;
         for (unsigned n = 0; n < 4; ++n)
         {
@@ -3508,51 +3515,73 @@ const opengold::ShopSite *RolfTourSession::entrance_ahead() const
     return nullptr;
 }
 
-std::optional<SecretDoorSign> RolfTourSession::point_wand_of_secrets(MemberId member,
-                                                                    std::uint64_t item)
+bool RolfTourSession::on_wand_trap() const
+{
+    return wand_traps_.contains(current_area_ * 256 + snapshot_.pose.y * 16 + snapshot_.pose.x);
+}
+
+std::optional<WandSign> RolfTourSession::point_wand_of_secrets(MemberId member, std::uint64_t item)
 {
     if (!campaign_ || !can_leave())
     {
         throw std::runtime_error("The wand can be used only while exploring.");
     }
     campaign_->use_wand_of_secrets(member, item);
-    // Squares count as the SRD counts them, diagonals too; a door is as near
-    // as the nearer of its two squares, from which the sign names its wall.
-    // Of two squares as near, the one fewer steps away is nearer.
+    // Squares count as the SRD counts them, diagonals too; of two squares as
+    // near, the one fewer steps away is nearer.
     constexpr int reach = 6;
-    const auto near_side = [this](unsigned x, unsigned y, MapDirection side)
+    const auto squares = [this](unsigned x, unsigned y)
     {
-        const auto squares = [this](int sx, int sy)
-        {
-            const int dx = std::abs(sx - static_cast<int>(snapshot_.pose.x)),
-                      dy = std::abs(sy - static_cast<int>(snapshot_.pose.y));
-            return std::pair{std::max(dx, dy), dx + dy};
-        };
-        const int ox = static_cast<int>(x) + step_x(side), oy = static_cast<int>(y) + step_y(side);
-        const auto inside = squares(static_cast<int>(x), static_cast<int>(y)),
-                   outside = squares(ox, oy);
-        return outside < inside
-                   ? std::pair{outside.first, SecretDoorSign{static_cast<unsigned>(ox),
-                                                             static_cast<unsigned>(oy),
-                                                             reversed(side)}}
-                   : std::pair{inside.first, SecretDoorSign{x, y, side}};
+        const int dx = std::abs(static_cast<int>(x) - static_cast<int>(snapshot_.pose.x)),
+                  dy = std::abs(static_cast<int>(y) - static_cast<int>(snapshot_.pose.y));
+        return std::pair{std::max(dx, dy), dx + dy};
     };
-    std::optional<SecretDoorSign> sign;
-    int nearest = reach + 1;
+    // A door is as near as the nearer of its two squares, from which the
+    // sign names its wall.
+    const auto door_sign = [&](unsigned x, unsigned y, MapDirection side)
+    {
+        const auto ox = static_cast<unsigned>(static_cast<int>(x) + step_x(side)),
+                   oy = static_cast<unsigned>(static_cast<int>(y) + step_y(side));
+        return squares(ox, oy) < squares(x, y) ? std::pair{squares(ox, oy), WandSign{ox, oy, reversed(side)}}
+                                               : std::pair{squares(x, y), WandSign{x, y, side}};
+    };
+    std::optional<WandSign> sign;
+    std::pair nearest{reach + 1, 0};
     const ScriptSecretDoor *script_door = nullptr;
     const opengold::ShopSite *shop = nullptr;
+    const ScriptTrap *trap = nullptr;
+    const auto consider = [&](std::pair<std::pair<int, int>, WandSign> candidate)
+    {
+        if (candidate.first >= nearest)
+        {
+            return false;
+        }
+        nearest = candidate.first;
+        sign = candidate.second;
+        script_door = nullptr;
+        shop = nullptr;
+        trap = nullptr;
+        return true;
+    };
     for (const auto &door : script_secret_doors)
     {
         const auto found = machine_.variable(EclAddress{door.flag});
-        if (overland() || door.map != current_area_ || (found & door.found) == door.found)
+        if (!overland() && door.map == current_area_ && (found & door.found) != door.found &&
+            consider(door_sign(door.x, door.y, door.side)))
         {
-            continue;
-        }
-        if (const auto [squares, at] = near_side(door.x, door.y, door.side); squares < nearest)
-        {
-            nearest = squares;
-            sign = at;
             script_door = &door;
+        }
+    }
+    for (const auto &candidate : script_traps)
+    {
+        const auto state = machine_.variable(EclAddress{candidate.flag}) & candidate.mask;
+        const auto key = candidate.map * 256 + candidate.y * 16 + candidate.x;
+        if (!overland() && candidate.map == current_area_ && state != candidate.sprung &&
+            !wand_traps_.contains(key) &&
+            consider({squares(candidate.x, candidate.y),
+                      WandSign{candidate.x, candidate.y, MapDirection::north, true}}))
+        {
+            trap = &candidate;
         }
     }
     for (const auto &site : shops_)
@@ -3564,12 +3593,8 @@ std::optional<SecretDoorSign> RolfTourSession::point_wand_of_secrets(MemberId me
         }
         for (const auto &[x, y] : site.markers)
         {
-            if (const auto [squares, at] = near_side(x, y, site.entrance->secret_door);
-                squares < nearest)
+            if (consider(door_sign(x, y, site.entrance->secret_door)))
             {
-                nearest = squares;
-                sign = at;
-                script_door = nullptr;
                 shop = &site;
             }
         }
@@ -3578,6 +3603,10 @@ std::optional<SecretDoorSign> RolfTourSession::point_wand_of_secrets(MemberId me
     {
         const EclAddress flag{script_door->flag};
         machine_.bind_variable(flag, machine_.variable(flag) | script_door->found);
+    }
+    else if (trap)
+    {
+        wand_traps_.insert(trap->map * 256 + trap->y * 16 + trap->x);
     }
     else if (shop)
     {

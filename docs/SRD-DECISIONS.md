@@ -2172,7 +2172,7 @@ in ([#271](https://github.com/stdarg/OpenGoldBox/issues/271)):
   Rogue as at every lock (DC 15, Thieves' Tools doubling the chance, LOCK-1),
   and Knock, but no Bash. A party with neither cannot get in.
 - **Once found the door stays found, and once open it stays open**, in saves
-  too (campaign format 42).
+  too.
 - **The shop sells** Thieves' Tools (25 gp), the Poisoner's Kit (50 gp) and
   Basic Poison (100 gp), edited, with its shopkeeper's portrait, in the Shop &
   Temple Manager, which draws the shop's new wall and secret door. The game
@@ -2188,15 +2188,23 @@ in ([#271](https://github.com/stdarg/OpenGoldBox/issues/271)):
   - **Leather Armor +1** (4,000 gp, the SRD's price for Armor +1, which is
     rare): the armory's Leather Armor with +1, as no original list holds one.
   - A **Wand of Secrets** (400 gp): 3 charges. Used from the pack while
-    exploring, a charge each time, it points out the hidden secret door
-    nearest the party within 60 feet, six of the map's ten-foot squares
-    counted as the SRD counts squares, and the door is found. It knows the
-    Rogue's Shop's door and the original's doors that scripts keep shut
-    until found: the Pyramid's and the one in Kuto's Well's catacombs. The
-    kobold caves' door is left out, as its script keeps it shut even once
-    found. A spent wand stays in the pack, and each Long Rest, in place of
-    the SRD's dawn, gives it back 1d3 charges, up to 3. It finds no traps:
-    the original's traps are each script's own.
+    exploring, a charge each time, it points out the hidden secret door or
+    armed trap nearest the party within 60 feet, six of the map's ten-foot
+    squares counted as the SRD counts squares.
+    - **Doors:** the door is found. The wand knows the Rogue's Shop's door
+      and the original's doors that scripts keep shut until found: the
+      Pyramid's and the one in Kuto's Well's catacombs. The kobold caves'
+      door is left out, as its script keeps it shut even once found.
+    - **Traps** (the user, 2026-10-30): the original's traps whose scripts
+      ask for Find Traps, Kovel Mansion's (its doorways, two cabinets, the
+      caskets and the weapons) and the kobold caves' (the pit, the deadfall,
+      the net and the spikes). On the trap's square its script sees the trap
+      as Find Traps would ("YOUR MAGIC DETECTS A TRAP!"), and the party may
+      avoid or disarm it. A trap counts as armed until its script records it
+      sprung, disarmed or its treasure taken.
+    - A spent wand stays in the pack, and each Long Rest, in place of the
+      SRD's dawn (the user, 2026-10-30), gives it back 1d3 charges, up to 3.
+    - Campaign format 43 saves the traps it pointed out.
   - **Boots of Elvenkind** and a **Cloak of Elvenkind** (400 gp): Advantage
     on Stealth checks; against the cloak's hidden wearer Passive Perception
     counts 5 less and a search rolls with Disadvantage.
