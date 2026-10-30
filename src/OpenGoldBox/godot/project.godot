@@ -11,6 +11,7 @@ config_version=5
 [application]
 
 config/name="OpenGoldBox"
+config/icon="res://bin/splashes/OpenGoldBoxIcon.png"
 boot_splash/show_image=false
 ; Keep existing saves accessible after the display-name change.
 config/use_custom_user_dir=true
