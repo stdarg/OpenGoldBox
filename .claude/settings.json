@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR/tools/session_board.py\" ] && python3 \"$CLAUDE_PROJECT_DIR/tools/session_board.py\" hook || true"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR/tools/session_board.py\" ] && python3 \"$CLAUDE_PROJECT_DIR/tools/session_board.py\" hook || true"
+          }
+        ]
+      }
+    ]
+  }
+}

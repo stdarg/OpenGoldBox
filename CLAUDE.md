@@ -98,3 +98,23 @@ Always adhere to the rules laid out in Scott Meyers' Effective Modern C++.
 ## 8. Keep the Git Repository Tidy
 
 - Do a git pull from origin / main before working.
+
+## 9. Coordinate with other sessions
+
+Several Claude and Codex sessions work on this repository at once, each in its
+own git worktree. `tools/session_board.py` keeps a board of what each one is
+doing, in `.sessions/` at the main checkout's root (ignored by git, shared by
+every worktree).
+
+- Before starting a task, claim it from your worktree: the task, its issue, the
+  areas it touches (files, folders or systems) and the shared numbers it will
+  raise (campaign format, rules version, combat format). Pass your ListAgents
+  name so others can message you:
+  `tools/session_board.py claim --name opengold-08 --task "Wand traps" --issue 4 --areas "src/OpenGold.Core/src/phlan_session.cpp, Kovel Mansion" --versions "campaign format"`
+- Update the claim with `update` when the work spreads to new areas, and claim
+  a shared number before raising it.
+- An overlap is a warning, not a block: message the other session (SendMessage)
+  or ask the user before working in the same area.
+- Release the claim with `release` once the work is pushed.
+- The project's hooks show the board at session start and whenever another
+  session's claim changes; `tools/session_board.py list` shows it any time.
