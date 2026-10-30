@@ -4,6 +4,7 @@
 #include "opengold/rolf_tour.h"
 #include "opengold/sound_player.h"
 #include <godot_cpp/classes/control.hpp>
+#include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
 #include <godot_cpp/classes/texture2d.hpp>
@@ -106,6 +107,8 @@ class RolfTourView : public godot::Control
 
     // Redraws from the session and party, e.g. after the leader changes.
     void refresh();
+    // The 3D view art setting changed: the walls follow it at once (#274).
+    void show_original_walls(bool original);
 
     [[nodiscard]] godot::Dictionary tour_visuals();
 
@@ -135,6 +138,8 @@ class RolfTourView : public godot::Control
     double monster_picture_seconds_{};
     unsigned monster_picture_check_frames_{};
     std::optional<opengold::por::PartyPose> rendered_pose_;
+    bool original_walls_{};
+    godot::Ref<godot::Image> wall_image_; // what wall_view_ shows
     // The wilderness square and direction last drawn: x, y, direction.
     std::array<unsigned, 3> rendered_overland_{};
     godot::Ref<godot::AudioStreamWAV> footstep_;

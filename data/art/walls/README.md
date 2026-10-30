@@ -9,7 +9,8 @@ piece's size: `far_front`, `far_left`, `far_right`, `middle_front`,
 `far_extension`. Its `manifest.json` records the brief the set was made from.
 
 An appearance without a folder keeps its original art from the player's game
-files, enlarged four times. The game refuses a folder it cannot use, such as
+files, enlarged four times. With 3D view art set to Original (Options,
+Interface) every wall shows its original art. The game refuses a folder it cannot use, such as
 one with a missing piece or a piece of the wrong size.
 
 The [Replacement Art Creator](../../../dev_tools/replacement_art_creator/README.md)

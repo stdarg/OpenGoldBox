@@ -29,6 +29,10 @@ struct WallArtSet
     std::vector<std::array<Image, 10>> appearances;
     // Pixels per original pixel: 1 for decoded art, more for new art.
     unsigned scale{1};
+    // For each appearance new art replaced, its original pieces at the same
+    // scale, so the view can show the original instead (#274); empty images
+    // for the others.
+    std::vector<std::array<Image, 10>> originals;
 };
 
 // Inputs are decompressed DAX records. Resource selection belongs to the host.

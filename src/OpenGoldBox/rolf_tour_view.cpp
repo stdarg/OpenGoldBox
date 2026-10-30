@@ -227,8 +227,16 @@ void RolfTourView::_ready()
     presentation::run_guarded(*this,
                               [&]
                               {
+                                  original_walls_ = settings::original_wall_art();
                                   prepare_view();
                               });
+}
+
+void RolfTourView::show_original_walls(bool original)
+{
+    original_walls_ = original;
+    rendered_pose_.reset();
+    refresh();
 }
 
 void RolfTourView::prepare_view()
@@ -1853,6 +1861,10 @@ void RolfTourView::refresh()
 {
     layout();
     sync_monster_picture();
+    if (session_)
+    {
+        session_->show_original_walls(original_walls_);
+    }
     if (session_ && rendered_sprite_id_ != session_->snapshot().sprite_id)
     {
         for (unsigned n = 0; n < 3; ++n)
@@ -1875,6 +1887,7 @@ void RolfTourView::refresh()
             const auto source =
                 session_->picture() ? *session_->picture() : session_->observe_view();
             const auto image = presentation::rgba_image(source);
+            wall_image_ = image;
             if (wall_view_.is_null())
             {
                 wall_view_ = ImageTexture::create_from_image(image);
@@ -2146,6 +2159,8 @@ Dictionary RolfTourView::tour_visuals()
     }
     const auto &state = session_->snapshot();
     data["wall"] = wall_view_;
+    // The image itself: a headless check cannot read a texture's pixels back.
+    data["wall_image"] = wall_image_;
     if (shown_monster_picture_ && !monster_frames_.empty())
     {
         data["picture"] = monster_frames_[current_monster_frame()];

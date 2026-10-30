@@ -219,6 +219,8 @@ class CharacterCreationView : public godot::Control
     void attach_game_menu();
     void open_game_menu();
     void game_menu_closed();
+    // The town's walls and a fight's creatures take the new art setting.
+    void art_changed();
 
     struct Paused
     {

@@ -22,6 +22,13 @@ struct PlantedArt
     unsigned ground{};
 };
 
+// A creature's original icon and its action pose.
+struct OriginalArt
+{
+    Image image;
+    std::optional<Image> action;
+};
+
 struct CombatArt
 {
     rules::EntityId entity{};
@@ -29,6 +36,8 @@ struct CombatArt
     std::optional<Image> action;
     std::string missing_combination;
     std::optional<PlantedArt> planted; // empty for art fitted to the square
+    // The original icon new art replaced, for showing that instead (#274).
+    std::optional<OriginalArt> original;
 };
 
 // Who an encounter caught unaware. The values are the original script's

@@ -21,6 +21,10 @@ encounter_challenge=33
 
 [monsters]
 legendary="hard"
+
+[art]
+walls="new"
+combat="new"
 ```
 
 Use the actual folder containing `START.EXE`, `ITEMS`, and the original `.DAX`
@@ -37,7 +41,15 @@ files receive the default. See
 The in-game menu's **Options** screen (Escape) sets these settings and writes
 them at once: under Gameplay `difficulty`, `encounter_challenge` and the
 `[monsters]` section below; under Interface `language`, which takes effect the
-next time the game starts, and `combat_zoom`, read when a fight opens.
+next time the game starts, `combat_zoom`, read when a fight opens, and the
+`[art]` section below, which takes effect at once.
+
+`[art]` chooses between the new art and the original game's (#274): `walls`
+for the walls of the 3D view, `combat` for the creatures in a fight (monsters
+and Wild Shape's and summoned forms; party members keep theirs). Each is `new`
+or `original`; the default, also used for any other value, is `new`, and new
+settings files receive it. The Options screen's 3D view art and Combat art
+switch them, redrawing the view or the fight on screen at once.
 
 `[monsters]` switches monster abilities by difficulty. Each key names an
 ability (`legendary`, `parry`, `breath`; the

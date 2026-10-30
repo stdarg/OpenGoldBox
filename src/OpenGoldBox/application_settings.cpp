@@ -47,6 +47,13 @@ bool save_config(const std::function<void(ConfigFile &)> &change)
     {
         config->set_value("combat", "combat_zoom", 100);
     }
+    for (const char *key : {"walls", "combat"})
+    {
+        if (!config->has_section_key("art", key))
+        {
+            config->set_value("art", key, "new");
+        }
+    }
     if (!config->has_section_key("combat", "encounter_challenge"))
     {
         config->set_value("combat", "encounter_challenge",
@@ -201,6 +208,26 @@ bool save_difficulty(opengold::Difficulty difficulty)
 {
     return save("game", "difficulty",
                 String(opengold::difficulty_names[static_cast<std::size_t>(difficulty)].data()));
+}
+
+bool original_wall_art()
+{
+    return read("art", "walls").to_lower() == "original";
+}
+
+bool original_combat_art()
+{
+    return read("art", "combat").to_lower() == "original";
+}
+
+bool save_original_wall_art(bool original)
+{
+    return save("art", "walls", original ? "original" : "new");
+}
+
+bool save_original_combat_art(bool original)
+{
+    return save("art", "combat", original ? "original" : "new");
 }
 
 bool save_combat_zoom(int percent)

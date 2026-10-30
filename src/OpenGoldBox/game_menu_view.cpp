@@ -30,6 +30,8 @@ void GameMenuView::_bind_methods()
     ADD_SIGNAL(MethodInfo("save_requested", PropertyInfo(Variant::BOOL, "saving")));
     ADD_SIGNAL(MethodInfo("main_menu_requested"));
     ADD_SIGNAL(MethodInfo("closed"));
+    // The 3D view art or the Combat art setting changed (#274).
+    ADD_SIGNAL(MethodInfo("art_changed"));
 }
 
 void GameMenuView::_ready()
@@ -147,6 +149,10 @@ void GameMenuView::open_options()
         .call("set_value_no_signal", settings::encounter_challenge());
     required_node<Control>(*this, "Options/Interface/Zoom")
         .call("set_value_no_signal", settings::combat_zoom_percent());
+    required_node<OptionButton>(*this, "Options/Interface/WallArt")
+        .select(settings::original_wall_art() ? 1 : 0);
+    required_node<OptionButton>(*this, "Options/Interface/CombatArt")
+        .select(settings::original_combat_art() ? 1 : 0);
     const auto language = settings::language();
     const auto found = std::find_if(language_codes.begin(), language_codes.end(),
                                     [&](const char *code)
@@ -234,6 +240,16 @@ void GameMenuView::build_options()
                      presentation::guarded(this, &GameMenuView::language_selected));
     required_node<Control>(*this, "Options/Interface/Zoom")
         .connect("value_changed", presentation::guarded(this, &GameMenuView::zoom_changed));
+    // The new art or the original game's (#274).
+    for (const auto &[path, selected] :
+         {std::pair{"Options/Interface/WallArt", &GameMenuView::wall_art_selected},
+          std::pair{"Options/Interface/CombatArt", &GameMenuView::combat_art_selected}})
+    {
+        auto &art = required_node<OptionButton>(*this, path);
+        art.add_item(i18n::text(N_("New")));
+        art.add_item(i18n::text(N_("Original")));
+        art.connect("item_selected", presentation::guarded(this, selected));
+    }
 }
 
 void GameMenuView::difficulty_selected(std::int64_t index)
@@ -270,4 +286,16 @@ void GameMenuView::language_selected(std::int64_t index)
 void GameMenuView::zoom_changed(double value)
 {
     settings::save_combat_zoom(static_cast<int>(value));
+}
+
+void GameMenuView::wall_art_selected(std::int64_t index)
+{
+    settings::save_original_wall_art(index == 1);
+    emit_signal("art_changed");
+}
+
+void GameMenuView::combat_art_selected(std::int64_t index)
+{
+    settings::save_original_combat_art(index == 1);
+    emit_signal("art_changed");
 }

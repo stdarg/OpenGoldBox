@@ -30,6 +30,9 @@ size and humanoid height, its equipment and its weapon sets:
   wear the art of the creature drawn with their original icon (a Wolf form,
   `mon4cha_dax_106`'s).
 - **Copies** keep their own name, gear and art; no encounter places them yet.
+- **Original art.** With Combat art set to Original (Options, Interface), a
+  fight shows each creature's original icon instead; names, gear and weapons
+  stay as exported.
 
 A record flagged for regeneration exports its data but no art. Do not edit
 these files; change the catalog and export again. The catalog's

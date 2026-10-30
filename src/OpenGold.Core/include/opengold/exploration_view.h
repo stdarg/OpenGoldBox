@@ -28,8 +28,10 @@ struct ExplorationView
 
 // Visibility comes from the same clipped, occluded wall pixels and floor
 // projection as the image. The caller records it only when showing this view.
+// `original` shows the original pieces of walls new art replaced (#274).
 [[nodiscard]] ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art,
-                                                      unsigned x, unsigned y, MapDirection facing);
+                                                      unsigned x, unsigned y, MapDirection facing,
+                                                      bool original = false);
 // Perspective pieces are composed on an 88x88 logical canvas, enlarged by the
 // art's scale. The UI controls display scaling; this function never changes
 // map, door or encounter state.

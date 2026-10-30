@@ -147,6 +147,7 @@ void CombatView::_bind_methods()
     ClassDB::bind_method(D_METHOD("selected_character_cell"), &CombatView::selected_character_cell);
     ClassDB::bind_method(D_METHOD("cell_pixels"), &CombatView::cell_pixels);
     ClassDB::bind_method(D_METHOD("enemy_cells"), &CombatView::enemy_cells);
+    ClassDB::bind_method(D_METHOD("enemy_sprite_widths"), &CombatView::enemy_sprite_widths);
     ClassDB::bind_method(D_METHOD("attack_pose_active", "id"), &CombatView::attack_pose_active);
     ClassDB::bind_method(D_METHOD("sprite_facing_left", "id"), &CombatView::sprite_facing_left);
     ClassDB::bind_method(D_METHOD("battlefield_visuals"), &CombatView::battlefield_visuals);
@@ -172,6 +173,24 @@ Array CombatView::enemy_cells() const
         }
     }
     return cells;
+}
+
+Array CombatView::enemy_sprite_widths() const
+{
+    Array widths;
+    if (!demo_ || !demo_->has_combat())
+    {
+        return widths;
+    }
+    for (const auto &a : demo_.snapshot().combatants)
+    {
+        if (a.side != rules::Side::party && a.hit_points > 0)
+        {
+            const auto *art = combatant_art(a);
+            widths.push_back(art && art->texture.is_valid() ? art->texture->get_width() : 0);
+        }
+    }
+    return widths;
 }
 
 Vector2i CombatView::selected_character_cell() const
@@ -825,6 +844,12 @@ void CombatView::revisit()
     }
 }
 
+void CombatView::refresh_art()
+{
+    sync_art(true);
+    refresh();
+}
+
 void CombatView::sync_art(bool preserve_effects)
 {
     // The art is built off to the side and moved in at the end, so a missing
@@ -956,8 +981,21 @@ CombatView::ArtSet CombatView::build_art() const
         }
         art[source.entity] = build(source, goliath);
     };
+    // The Combat art setting shows the original icons new art replaced (#274).
+    const bool original_art = settings::original_combat_art();
     for (const auto &source : demo_->art())
     {
+        if (original_art && source.original)
+        {
+            install({source.entity,
+                     source.original->image,
+                     source.original->action,
+                     source.missing_combination,
+                     {},
+                     {}},
+                    false);
+            continue;
+        }
         install(source, false);
     }
     if (campaign_)
@@ -1005,6 +1043,10 @@ CombatView::ArtSet CombatView::build_art() const
     const auto monsters = game_monsters();
     for (const auto &entry : por::form_icons)
     {
+        if (original_art)
+        {
+            break;
+        }
         const auto *exported = monsters->creature(entry.bank, entry.icon);
         if (const auto *variant = exported ? por::readied_variant(*exported, false) : nullptr)
         {

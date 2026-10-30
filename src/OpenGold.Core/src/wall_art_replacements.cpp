@@ -153,6 +153,7 @@ WallArtSet with_replacements(WallArtSet original, std::span<const std::string> k
         throw std::invalid_argument("Wall art keys do not match its appearances");
     }
     constexpr auto scale = WallArtReplacements::scale;
+    original.originals.resize(original.appearances.size());
     for (std::size_t appearance = 0; appearance < keys.size(); ++appearance)
     {
         auto &pieces = original.appearances[appearance];
@@ -164,6 +165,7 @@ WallArtSet with_replacements(WallArtSet original, std::span<const std::string> k
                 pieces[view] = enlarged(pieces[view], scale);
                 continue;
             }
+            original.originals[appearance][view] = enlarged(pieces[view], scale);
             const auto &piece = found->second[view];
             if (piece.width != pieces[view].width * scale ||
                 piece.height != pieces[view].height * scale)

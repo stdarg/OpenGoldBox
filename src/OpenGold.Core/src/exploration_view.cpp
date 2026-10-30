@@ -6,8 +6,19 @@
 namespace opengold::por
 {
 ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art, unsigned x,
-                                        unsigned y, MapDirection facing)
+                                        unsigned y, MapDirection facing, bool original)
 {
+    // An appearance new art replaced keeps its original pieces; a piece of
+    // those may be blank, so any piece marks the appearance.
+    const auto has_original = [&](std::size_t at)
+    {
+        return at < art.originals.size() && std::any_of(
+                                                art.originals[at].begin(), art.originals[at].end(),
+                                                [](const Image &piece)
+                                                {
+                                                    return piece.width != 0;
+                                                });
+    };
     if (x >= 16 || y >= 16)
     {
         throw std::out_of_range("Invalid exploration view pose");
@@ -100,7 +111,10 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
         {
             throw std::runtime_error("Missing map wall appearance");
         }
-        const auto &piece = art.appearances[sample.id - 1][static_cast<unsigned>(perspective)];
+        const auto at = sample.id - 1;
+        const auto pose = static_cast<unsigned>(perspective);
+        const bool replaced = original && has_original(at);
+        const auto &piece = replaced ? art.originals[at][pose] : art.appearances[at][pose];
         if (!consistent(piece))
         {
             throw std::runtime_error("Invalid wall image");

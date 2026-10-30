@@ -32,6 +32,8 @@ class CombatView : public godot::Control
     [[nodiscard]] double cell_pixels();
     // Squares of the enemies still standing, for play-test scripts.
     [[nodiscard]] godot::Array enemy_cells() const;
+    // Their ready sprites' widths, for checks of the Combat art setting.
+    [[nodiscard]] godot::Array enemy_sprite_widths() const;
     [[nodiscard]] bool sprite_facing_left(std::int64_t id) const;
     [[nodiscard]] godot::Ref<godot::Texture2D> sprite_texture(opengold::rules::EntityId id,
                                                               opengold::por::IconPose pose) const;
@@ -43,6 +45,8 @@ class CombatView : public godot::Control
 
     // Prepare while detached so the caller can keep its current screen on failure.
     void prepare_combat();
+    // The Combat art setting changed: the creatures follow it at once (#274).
+    void refresh_art();
 
     void campaign_party(std::shared_ptr<opengold::CampaignParty> party,
                         std::vector<opengold::CombatArt> art)
