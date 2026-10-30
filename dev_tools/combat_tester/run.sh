@@ -24,6 +24,11 @@ mkdir -p "$project_dir/bin" "$project_dir/data/art" "$project_dir/data/rules" "$
 mkdir -p "$project_dir/bin/portraits"
 cp "$tool_dir/godot/combat_tester.gdextension" "$project_dir/bin/zz_combat_tester.gdextension"
 cp "$tool_dir/godot/"*.gd "$tool_dir/godot/setup.tscn" "$project_dir/combat_tester/"
+cp "$tool_dir/godot/icon.png" "$project_dir/combat_tester/icon.png"
+sed -e 's|^config/name=.*|config/name="OpenGold Combat Tester"|' \
+    -e 's|^config/icon=.*|config/icon="res://combat_tester/icon.png"|' \
+    "$project_dir/project.godot" > "$project_dir/project.godot.icon-tmp"
+mv "$project_dir/project.godot.icon-tmp" "$project_dir/project.godot"
 cp "$repo_dir/data/art/combat-body-looks.tsv" "$repo_dir/data/art/combat-weapon-options.tsv" "$project_dir/data/art/"
 rsync -a --delete "$repo_dir/data/rules/srd-5.2.1/" "$project_dir/data/rules/srd-5.2.1/"
 rsync -a --delete "$repo_dir/data/monsters/" "$project_dir/data/monsters/"

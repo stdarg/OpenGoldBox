@@ -2,6 +2,7 @@ config_version=5
 
 [application]
 config/name="OpenGold Tile Art Viewer"
+config/icon="res://icon.png"
 run/main_scene="res://scenes/tile_art_viewer.tscn"
 config/features=PackedStringArray("4.5")
 
