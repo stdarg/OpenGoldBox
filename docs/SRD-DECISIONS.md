@@ -2029,9 +2029,12 @@ SRD's Large 2 by 2 and Huge 3 by 3 spaces
   hippogriffs, ankhegs, giant mantises, tigers, giant snakes and lizards,
   wolves, basilisks, wild boars, phase spiders and the large and huge
   scorpions two side by side; Tyranthraxus and the wyvern two by two. The
-  ogre leader's and the bugbear's art fills one. Gnolls, wolves, basilisks
-  and boars are Medium in the SRD but still fill two squares, as in the
-  original.
+  bugbear's art fills one. Gnolls, wolves, basilisks and boars are Medium in
+  the SRD but still fill two squares, as in the original.
+- **Every ogre fills two squares one above the other.** The ogre leader's
+  record says one square, but its art stands as tall as the other ogres';
+  the user chose (2026-10-29) that all ogres fill 1 by 2. The probe never
+  staged an ogre leader.
 - **Wild Shape and Polymorph forms and summoned creatures too.** The Beast
   forms (wolf, boar, giant lizard, giant snake, tiger) and Giant Insect fill
   two squares side by side; Summon Dragon's spirit two by two.
