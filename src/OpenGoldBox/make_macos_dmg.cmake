@@ -24,6 +24,20 @@ run_or_stop(hdiutil create -ov -volname OpenGoldBox -fs APFS -format ULFO
     -srcfolder "${WORK}/image" "${DMG}")
 run_or_stop(hdiutil verify "${DMG}")
 
+# macOS services can hold a freshly opened image for a moment after the app has
+# quit, which makes the first attempts to close it fail as busy.
+function(detach_image mount_point)
+    foreach(attempt RANGE 1 12)
+        execute_process(COMMAND hdiutil detach "${mount_point}" RESULT_VARIABLE result
+            ERROR_VARIABLE errors OUTPUT_QUIET)
+        if(result EQUAL 0)
+            return()
+        endif()
+        execute_process(COMMAND sleep 5)
+    endforeach()
+    message(FATAL_ERROR "Cannot close the disk image at ${mount_point}: ${errors}")
+endfunction()
+
 set(mount_point "${WORK}/mounted")
 file(MAKE_DIRECTORY "${mount_point}")
 run_or_stop(hdiutil attach -nobrowse -readonly -mountpoint "${mount_point}" "${DMG}")
@@ -34,7 +48,7 @@ set(ENV{HOME} "${WORK}/home")
 execute_process(
     COMMAND "${mount_point}/OpenGoldBox.app/Contents/MacOS/OpenGoldBox" --headless --quit-after 30
     RESULT_VARIABLE launch_result OUTPUT_QUIET ERROR_VARIABLE launch_errors TIMEOUT 120)
-run_or_stop(hdiutil detach "${mount_point}")
+detach_image("${mount_point}")
 if(NOT signature_result EQUAL 0)
     message(FATAL_ERROR "The app in the disk image does not verify: ${signature_errors}")
 endif()

@@ -94,7 +94,7 @@ foreach(source IN LISTS shop_portrait_sources)
 endforeach()
 set(splash_outputs)
 foreach(name OpenGoldBoxSplashBackground OpenGoldBoxEngineLettering OpenGoldBoxGameLettering
-    OpenGoldBoxEngineLettering.es OpenGoldBoxGameLettering.es)
+    OpenGoldBoxEngineLettering.es OpenGoldBoxGameLettering.es OpenGoldBoxIcon)
     set(source "${PROJECT_SOURCE_DIR}/art/${name}.png")
     set(output "${game_project}/bin/splashes/${name}.png")
     add_custom_command(OUTPUT "${output}"

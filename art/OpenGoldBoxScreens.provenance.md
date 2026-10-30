@@ -50,3 +50,8 @@ The five runtime PNGs are tracked in the repository. The build copies the
 shared backdrop and lettering overlays into the game package. Background rights and
 trademark clearance have not been independently verified; provenance is not
 legal clearance.
+
+`OpenGoldBoxIcon.png`, the app icon, is the dragon-shadow corner of
+`OpenGoldBoxSplashBackground.png` cropped to a square, enlarged to 824 x 824 and
+given rounded corners on a transparent 1024 x 1024 canvas, the margin macOS
+expects. It carries the same unverified rights status as the background.
