@@ -19,8 +19,9 @@ ability.
   feet; the flame stays. Casting it again replaces it.
 - **Shillelagh** (cantrip, Bonus Action, 1 minute): offered only while holding
   a Club or Quarterstaff. Melee attacks with it use the spellcasting ability
-  for the attack and damage rolls and a d8. The weapon keeps its Bludgeoning
-  damage; the Force alternative is not offered.
+  for the attack and damage rolls and a d8. "Melee attack (Force)" deals Force
+  damage instead of the weapon's Bludgeoning
+  ([CLOSE-1](SRD-DECISIONS.md#close-1-2026-10-29-the-last-srd-choices)).
 - **Barkskin** (level 2, Bonus Action, touch, 1 hour): the creature's AC is 17
   if it was lower.
 - **Circle of the Land** (level 3), the SRD's only Druid subclass: the land

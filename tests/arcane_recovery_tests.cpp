@@ -319,9 +319,6 @@ void recovery_transactions()
 void eligibility_and_effects()
 {
     auto rules = module();
-    const auto features = rules->supported_features();
-    check(std::find(features.begin(), features.end(), "arcane_recovery") != features.end(),
-          "Module advertises the implemented capability");
     CampaignParty party(module());
     party.restore(baseline(3));
     const auto &sheet = party.member(1).character.sheet();

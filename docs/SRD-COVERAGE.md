@@ -1187,11 +1187,14 @@ starting class's 13 minimum and unlimited rerolls
 Hit Points ([ADVANCEMENT](ADVANCEMENT.md)), and a level-up that keeps spent
 resources and wakes no one ([RECOVERY](RECOVERY.md)).
 
-Waiting on the user's decisions before #185 closes: Find Steed and Faithful
-Steed, which are cut without a decision of their own; the Gaze of Two Minds
-invocation; the High Elf's Long Rest cantrip swap; Shillelagh's Force damage;
-the defeat when every party member is down; which creatures attacks and
-healing may target; and what `supported_features()` should promise.
+The last open choices were settled by
+[CLOSE-1](SRD-DECISIONS.md#close-1-2026-10-29-the-last-srd-choices): Find
+Steed, Faithful Steed and Gaze of Two Minds stay out; the High Elf changes its
+cantrip after a Long Rest (`opengold_species_tests`); Shillelagh offers a
+Force strike (`opengold_druid_tests`); the defeat when every party member is
+down stays; `supported_features()` is gone from the rules interface. Attacks
+and healing on any target, with difficulty-based monster targeting, follow
+before #185 closes.
 
 SRD-derived rules use the attribution in
 [NOTICE](../data/rules/srd-5.2.1/NOTICE.md); see the

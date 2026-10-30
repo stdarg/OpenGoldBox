@@ -899,7 +899,6 @@ class RulesModule
   public:
     virtual ~RulesModule() = default;
     [[nodiscard]] virtual Identity identity() const = 0;
-    [[nodiscard]] virtual std::vector<std::string> supported_features() const = 0;
     [[nodiscard]] virtual std::unique_ptr<CombatSession> create(Encounter encounter,
                                                                 std::uint64_t seed) const = 0;
     [[nodiscard]] virtual std::unique_ptr<CombatSession>

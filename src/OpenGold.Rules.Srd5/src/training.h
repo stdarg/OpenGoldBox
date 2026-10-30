@@ -57,6 +57,10 @@ rules::TrainingChoiceGroup arcanum_options(unsigned level);
 rules::TrainingChoiceGroup discovery_options(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup lore_options(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup land_options();
+// A High Elf's Wizard cantrip, chosen at creation and replaceable after a Long
+// Rest (SRD 5.2.1 p. 85).
+inline constexpr std::string_view high_elf_cantrip = "species:elf:cantrip";
+rules::TrainingChoiceGroup high_elf_cantrip_options();
 rules::TrainingChoiceGroup hunters_prey_options();
 rules::TrainingChoiceGroup defensive_tactics_options();
 rules::TrainingChoiceGroup blessed_strikes_options();

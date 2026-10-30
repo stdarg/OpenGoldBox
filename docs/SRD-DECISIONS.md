@@ -2216,3 +2216,25 @@ in ([#271](https://github.com/stdarg/OpenGoldBox/issues/271)):
   door, the map's wall that draws it as a door once found, and the walls
   that close the square's other open sides.
 
+## CLOSE-1 (2026-10-29): the last SRD choices
+
+The final SRD reconciliation
+([#185](https://github.com/stdarg/OpenGoldBox/issues/185)) found choices no
+earlier decision covered. The user decided on 2026-10-29:
+
+- **Find Steed and Faithful Steed** (Paladin 5) stay out of the game. The
+  docs had cited SCOPE-1, which cut only the mounted Lance rules.
+- **Gaze of Two Minds** (Warlock invocation) is not implemented: the whole
+  party is always in view, so seeing through an ally's senses adds nothing.
+- **The High Elf's cantrip** changes after a Long Rest, in the rest window
+  with the other choices a rest can change.
+- **Shillelagh's Force damage:** a "Melee attack (Force)" command, as the
+  pact weapon offers its damage types.
+- **Defeat when every party member is down**, even with none dead, stays.
+- **Any target:** attacks and healing may target any creature, a party
+  member or one at 0 Hit Points included. Above Normal, monsters and NPCs
+  target well, going after characters low on Hit Points or AC; on the two
+  hardest levels they also concentrate their attacks to take characters out.
+- **`supported_features()`** is removed from the rules interface: nothing in
+  the game read it, and its list had stopped matching the rules.
+

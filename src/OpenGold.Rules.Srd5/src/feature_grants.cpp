@@ -261,7 +261,7 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
             add("feature:slippery_mind", "class:rogue");
         }
     }
-    // Faithful Steed (Paladin 5) is cut with Find Steed (SCOPE-1: no mounts).
+    // Faithful Steed (Paladin 5) is cut with Find Steed (CLOSE-1).
     if (klass == CharacterClass::paladin)
     {
         if (level == 5)

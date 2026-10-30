@@ -493,6 +493,39 @@ void lineage_spell_checks()
     check(offered(*high, "ray_of_frost") && !offered(*fight(fighter("elf")), "ray_of_frost"),
           "A High Elf casts the Wizard cantrip it chose");
 
+    // After a Long Rest, not a Short one, the High Elf may change that cantrip.
+    auto elf_sheet = fighter("elf", {{"species:elf:lineage", "high_elf"},
+                                     {"species:elf:ability", "intelligence"},
+                                     {"species:elf:cantrip", "ray_of_frost"}})
+                         .sheet();
+    const auto offers_cantrip = [&](RestKind kind)
+    {
+        const auto choices = rules->rest_training_options(elf_sheet, kind);
+        return std::any_of(choices.begin(), choices.end(),
+                           [](const auto &choice)
+                           {
+                               return choice.group.id == "species:elf:cantrip" &&
+                                      choice.selected ==
+                                          std::vector<std::string>{"ray_of_frost"};
+                           });
+    };
+    check(offers_cantrip(RestKind::long_rest) && !offers_cantrip(RestKind::short_rest),
+          "A Long Rest offers the High Elf's cantrip");
+    const std::vector<std::string> fire{"fire_bolt"};
+    rules->replace_rest_training(elf_sheet, fire);
+    const auto rested = rules->create(
+        {{12, 6, std::vector<Terrain>(72)},
+         {{1, "campaign-character", "Hero", Side::party, {1, 1},
+           rules->character_profile(elf_sheet, std::vector<std::string>{}).data},
+          {98, "bandit", "Bandit", Side::opposition, {2, 1}}}},
+        3);
+    for (unsigned turns = 0; rested->snapshot().actor != 1 && turns < 4; ++turns)
+    {
+        check(submit(*rested, "end"), "Reach the hero's turn");
+    }
+    check(offered(*rested, "fire_bolt") && !offered(*rested, "ray_of_frost"),
+          "The new cantrip replaces the old");
+
     // At level 3 the Tiefling gains Hellish Rebuke, cast once per Long Rest
     // without a slot: a Fighter has no slots.
     CampaignParty party(module());
