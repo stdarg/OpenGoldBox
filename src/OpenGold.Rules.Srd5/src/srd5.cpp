@@ -518,6 +518,27 @@ bool contingent(const detail::SpellDef &spell)
            spell.rider != detail::Rider::animate_objects && spell.rider != detail::Rider::mislead;
 }
 
+// A feature's command that strikes the creature it targets (CLOSE-1).
+bool struck_by(std::string_view verb)
+{
+    constexpr std::array<std::string_view, 12> verbs{
+        "martial_arts",           "flurry_",           "evil_eye_",
+        "vampiric_touch_again",   "spiritual_weapon_strike", "arcane_sword_strike",
+        "conjure_fey_strike",     "light_",            "nick_",
+        "divine_spark_radiant",   "superior_hunters_prey", "horde_breaker"};
+    return verb == "rampage" || std::any_of(verbs.begin(), verbs.end(),
+                                            [&](std::string_view prefix)
+                                            {
+                                                return verb.starts_with(prefix);
+                                            });
+}
+
+// And one that heals it.
+bool healed_by(std::string_view verb)
+{
+    return verb == "divine_spark" || verb.starts_with("lay_on_hands") || verb == "potent_vitality";
+}
+
 // A spell that charms its creature or controls its mind, which Mind Blank stops.
 bool charms(const detail::SpellDef &spell)
 {
@@ -543,7 +564,7 @@ std::string_view contingency_label(std::size_t trigger)
 // the field where they are offered.
 bool magical_command(std::string_view verb)
 {
-    constexpr std::array<std::string_view, 26> verbs{"dispel_break",
+    constexpr std::array<std::string_view, 27> verbs{"dispel_break",
                                                      "compulsion_heading",
                                                      "dispel_dismissal",
                                                      "move_moonbeam",
@@ -555,6 +576,7 @@ bool magical_command(std::string_view verb)
                                                      "fiendish_vigor",
                                                      "lands_aid",
                                                      "divine_spark",
+                                                     "divine_spark_radiant",
                                                      "turn_undead",
                                                      "preserve_life",
                                                      "abjure_foes",
@@ -5921,7 +5943,7 @@ class Session final : public CombatSession
     [[nodiscard]] bool holds_hunters_mark(const Actor &caster) const;
     void reveal_lore(const Actor &caster, const Actor &target);
     void resolve_ensnaring_strike(Actor &a, std::string_view verb);
-    void divine_spark(Actor &cleric, Actor &target);
+    void divine_spark(Actor &cleric, Actor &target, bool harm);
     [[nodiscard]] int disciple_of_life(const Actor &caster, unsigned slot_level) const;
     void blessed_healer(Actor &cleric, const detail::SpellDef &spell, std::string_view verb,
                         std::span<const EntityId> healed);
@@ -10546,6 +10568,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
     {
         return;
     }
+    const auto first = commands.size();
     const bool spells_blocked =
         rage_of(a) || detail::has_effect(a.effects, detail::EffectKind::befuddled);
     const auto &d = def(a);
@@ -10602,15 +10625,15 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         switch (spell.target)
         {
         case detail::SpellTarget::enemy:
-            // Scorching Ray may strike a downed but living foe (the user's call).
-            if (other.source.side == a.source.side ||
-                (other.life.hp <= 0 && spell.pattern != detail::SpellPattern::repeat_attack))
+            // Any creature but the caster, a downed one included (CLOSE-1).
+            if (other.source.id == a.source.id)
             {
                 continue;
             }
             break;
         case detail::SpellTarget::wounded_ally:
-            if (other.source.side != a.source.side || other.life.hp >= max_hp(other))
+            // Healing takes any wounded creature (CLOSE-1).
+            if (other.life.hp >= max_hp(other))
             {
                 continue;
             }
@@ -10632,7 +10655,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         case detail::SpellTarget::area:
             break; // Aimed at a point after it is chosen.
         case detail::SpellTarget::dying_ally:
-            if (other.source.side != a.source.side || other.life.hp != 0 || other.life.stable)
+            if (other.life.hp != 0 || other.life.stable)
             {
                 continue;
             }
@@ -11122,6 +11145,15 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         }
         offer_leveled(std::string(spell.id), std::string(spell.label));
     }
+    const auto intent = scope == detail::SpellTarget::enemy ? Intent::hostile
+                        : scope == detail::SpellTarget::wounded_ally ||
+                                scope == detail::SpellTarget::dying_ally
+                            ? Intent::friendly
+                            : Intent::neutral;
+    for (auto i = first; i < commands.size(); ++i)
+    {
+        commands[i].intent = intent;
+    }
 }
 
 std::vector<Command> Session::legal_commands() const
@@ -11138,6 +11170,34 @@ std::vector<Command> Session::legal_commands() const
                                              return a.source.id == command.target && absent(a);
                                          });
                   });
+    // The features that strike or heal one creature, offered apart from the
+    // weapon attacks and spells that mark their own.
+    for (auto &command : commands)
+    {
+        if (command.intent == Intent::neutral && command.target)
+        {
+            command.intent = struck_by(command.verb)   ? Intent::hostile
+                             : healed_by(command.verb) ? Intent::friendly
+                                                       : Intent::neutral;
+        }
+    }
+    // The targets CLOSE-1 opened come after the rest, which keep their order:
+    // an attack on the actor's own side or on a downed character, healing on a
+    // foe.
+    std::stable_partition(commands.begin(), commands.end(),
+                          [&](const Command &command)
+                          {
+                              const auto *target = find_actor(command.target);
+                              const auto *actor = find_actor(command.actor);
+                              if (!target || !actor || command.intent == Intent::neutral)
+                              {
+                                  return true;
+                              }
+                              const bool ally = target->source.side == actor->source.side;
+                              return command.intent == Intent::friendly
+                                         ? ally
+                                         : !ally && (target->life.hp > 0 || may_rise(*target));
+                          });
     return commands;
 }
 
@@ -11659,14 +11719,17 @@ std::vector<Command> Session::offered_commands() const
             {
                 undead = true;
             }
-            const bool wounded_ally = other.source.side == a.source.side &&
-                                      other.life.hp < max_hp(other) &&
-                                      !detail::healing_blocked(other.effects);
-            const bool enemy = other.source.side != a.source.side && other.life.hp > 0;
-            if ((wounded_ally || enemy) && can_see(a, other))
+            // Divine Spark heals any wounded creature or strikes any creature
+            // (CLOSE-1).
+            if (!can_see(a, other))
+            {
+                continue;
+            }
+            if (other.life.hp < max_hp(other) && !detail::healing_blocked(other.effects))
             {
                 add(id, "divine_spark", "Divine Spark", other.source.id);
             }
+            add(id, "divine_spark_radiant", "Divine Spark (Radiant)", other.source.id);
         }
         if (undead)
         {
@@ -11725,7 +11788,7 @@ std::vector<Command> Session::offered_commands() const
     {
         for (const auto &other : actors_)
         {
-            if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
+            if (other.source.id != a.source.id && !other.life.dead &&
                 distance(a, other) <= 5)
             {
                 add(id, "martial_arts", "Unarmed Strike", other.source.id);
@@ -11932,7 +11995,7 @@ std::vector<Command> Session::offered_commands() const
             add(id, "step_of_the_wind_focus", "Step of the Wind: Disengage and Dash (1 Focus)");
             for (const auto &other : actors_)
             {
-                if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
+                if (other.source.id != a.source.id && !other.life.dead &&
                     distance(a, other) <= 5)
                 {
                     add(id, "flurry_of_blows", "Flurry of Blows", other.source.id);
@@ -12199,9 +12262,8 @@ std::vector<Command> Session::offered_commands() const
     {
         for (const auto &other : actors_)
         {
-            if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
-                !absent(other) && !sealed_off(other) && can_see(a, other) &&
-                distance(a, other) <= 60 &&
+            if (other.source.id != a.source.id && !other.life.dead && !absent(other) &&
+                !sealed_off(other) && can_see(a, other) && distance(a, other) <= 60 &&
                 !std::any_of(other.effects.active.begin(), other.effects.active.end(),
                              [&](const auto &e)
                              {
@@ -12324,7 +12386,7 @@ std::vector<Command> Session::offered_commands() const
     {
         for (const auto &other : actors_)
         {
-            if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
+            if (other.source.id != a.source.id && !other.life.dead &&
                 !absent(other) && distance(a, other) <= d.reach)
             {
                 add(id, "vampiric_touch_again", "Vampiric Touch", other.source.id);
@@ -12337,8 +12399,7 @@ std::vector<Command> Session::offered_commands() const
     {
         for (const auto &other : actors_)
         {
-            if (other.source.side == a.source.side && !other.life.dead && !absent(other) &&
-                distance(a, other) <= 60)
+            if (!other.life.dead && !absent(other) && distance(a, other) <= 60)
             {
                 add(id, "potent_vitality", "Potent Spellcasting: Temporary Hit Points",
                     other.source.id);
@@ -12351,7 +12412,7 @@ std::vector<Command> Session::offered_commands() const
     {
         for (const auto &other : actors_)
         {
-            if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
+            if (other.source.id != a.source.id && !other.life.dead &&
                 distance(force->cells.front(), other) <= 25)
             {
                 add(id, "spiritual_weapon_strike", "Spiritual Weapon attack", other.source.id);
@@ -12366,7 +12427,7 @@ std::vector<Command> Session::offered_commands() const
         {
             for (const auto &other : actors_)
             {
-                if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
+                if (other.source.id != a.source.id && !other.life.dead &&
                     !absent(other) && distance(zone.cells.front(), other) <= 35)
                 {
                     add(id, "arcane_sword_strike", "Arcane Sword attack", other.source.id);
@@ -12382,7 +12443,7 @@ std::vector<Command> Session::offered_commands() const
         {
             for (const auto &other : actors_)
             {
-                if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
+                if (other.source.id != a.source.id && !other.life.dead &&
                     !absent(other) && distance(zone.cells.front(), other) <= 35)
                 {
                     add(id, "conjure_fey_strike", "Fey spirit attack", other.source.id);
@@ -12443,9 +12504,8 @@ std::vector<Command> Session::offered_commands() const
         const auto &origin = actor(a.prey_origin);
         for (const auto &other : actors_)
         {
-            if (other.source.id != origin.source.id && other.source.side != a.source.side &&
-                other.life.hp > 0 && !other.life.dead && can_see(a, other) &&
-                distance(origin, other) <= 30)
+            if (other.source.id != origin.source.id && other.source.id != a.source.id &&
+                !other.life.dead && can_see(a, other) && distance(origin, other) <= 30)
             {
                 add(id, "superior_hunters_prey", "Superior Hunter's Prey", other.source.id);
             }
@@ -12459,8 +12519,8 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &other : actors_)
         {
             const int feet = distance(a, other);
-            if (other.source.id != origin.source.id && other.source.side != a.source.side &&
-                other.life.hp > 0 && distance(origin, other) <= 5 &&
+            if (other.source.id != origin.source.id && other.source.id != a.source.id &&
+                !other.life.dead && distance(origin, other) <= 5 &&
                 (feet <= d.reach || (d.range > 0 && feet <= d.long_range)))
             {
                 add(id, "horde_breaker", "Horde Breaker", other.source.id);
@@ -12530,8 +12590,7 @@ std::vector<Command> Session::offered_commands() const
     {
         for (const auto &other : actors_)
         {
-            if (!other.life.dead && other.source.side != a.source.side &&
-                (other.life.hp > 0 || may_rise(other)) && line_of_sight(a, other) &&
+            if (!other.life.dead && other.source.id != a.source.id && line_of_sight(a, other) &&
                 distance(a, other) <= d.reach)
             {
                 add(id, "rampage", "Rampage", other.source.id);
@@ -12552,15 +12611,14 @@ std::vector<Command> Session::offered_commands() const
     {
         add(id, "tireless", "Tireless", id);
     }
-    // Lay On Hands: touch yourself or an adjacent wounded ally whose healing
+    // Lay On Hands: touch yourself or any adjacent wounded creature whose healing
     // can take effect, including one at 0 Hit Points.
     if (a.bonus && d.lay_on_hands && a.lay_on_hands > 0)
     {
         for (const auto &other : actors_)
         {
-            if (other.source.side == a.source.side && !other.life.dead &&
-                other.life.hp < max_hp(other) && !detail::healing_blocked(other.effects) &&
-                distance(a, other) <= 5)
+            if (!other.life.dead && other.life.hp < max_hp(other) &&
+                !detail::healing_blocked(other.effects) && distance(a, other) <= 5)
             {
                 add(id, "lay_on_hands", "Lay On Hands", other.source.id);
             }
@@ -12571,8 +12629,7 @@ std::vector<Command> Session::offered_commands() const
     {
         for (const auto &other : actors_)
         {
-            if (other.source.side == a.source.side && !other.life.dead &&
-                has_condition(other, "poisoned") && distance(a, other) <= 5)
+            if (!other.life.dead && has_condition(other, "poisoned") && distance(a, other) <= 5)
             {
                 add(id, "lay_on_hands_cure", "Lay On Hands: cure Poisoned", other.source.id);
             }
@@ -12583,8 +12640,7 @@ std::vector<Command> Session::offered_commands() const
     {
         for (const auto &other : actors_)
         {
-            if (other.source.side == a.source.side && !other.life.dead && touch_restorable(other) &&
-                distance(a, other) <= 5)
+            if (!other.life.dead && touch_restorable(other) && distance(a, other) <= 5)
             {
                 add(id, "lay_on_hands_restore", "Lay On Hands: Restoring Touch (5 per condition)",
                     other.source.id);
@@ -12717,8 +12773,8 @@ std::vector<Command> Session::offered_commands() const
                 const auto *weapon = detail::weapon(item.definition);
                 for (const auto &other : actors_)
                 {
-                    if (other.source.side != a.source.side && !other.life.dead &&
-                        other.life.hp > 0 && line_of_sight(a, other))
+                    if (other.source.id != a.source.id && !other.life.dead &&
+                        line_of_sight(a, other))
                     {
                         const auto offer = [&](const char *light, const char *nick)
                         {
@@ -12816,10 +12872,10 @@ std::vector<Command> Session::offered_commands() const
             }
         }
     };
-    // The Attack action's attacks on one foe, with the Magic actions that
+    // The Attack action's attacks on one creature, with the Magic actions that
     // attack (which need the Action itself); Extra Attack offers the weapon
     // attacks again after the action's first attack.
-    const auto offer_attacks = [&](const Actor &other, int feet)
+    const auto offer_weapon_attacks = [&](const Actor &other, int feet)
     {
         // Reverse Gravity: no melee attack reaches up to a creature fallen
         // upward, or down from it.
@@ -12953,6 +13009,16 @@ std::vector<Command> Session::offered_commands() const
             offer_cunning(AttackRange::ranged, true, other);
         }
     };
+    // Every attack it offers is hostile.
+    const auto offer_attacks = [&](const Actor &other, int feet)
+    {
+        const auto first = commands.size();
+        offer_weapon_attacks(other, feet);
+        for (auto i = first; i < commands.size(); ++i)
+        {
+            commands[i].intent = Intent::hostile;
+        }
+    };
     // Breath Weapon takes the place of one of the Attack action's attacks.
     const auto offer_breath = [&]
     {
@@ -12973,8 +13039,7 @@ std::vector<Command> Session::offered_commands() const
         offer_breath();
         for (const auto &other : actors_)
         {
-            if (!other.life.dead && other.source.side != a.source.side &&
-                (other.life.hp > 0 || may_rise(other)) && line_of_sight(a, other))
+            if (!other.life.dead && other.source.id != a.source.id && line_of_sight(a, other))
             {
                 offer_attacks(other, distance(a, other));
             }
@@ -13066,25 +13131,18 @@ std::vector<Command> Session::offered_commands() const
                 add(id, "stabilize", "Stabilize", other.source.id);
             }
             offer_spells(commands, a, other, feet, detail::SpellTarget::any_creature, false);
-            if (other.source.side != a.source.side && (other.life.hp > 0 || may_rise(other)))
+            // Attacks and healing may take any creature, a party member or one
+            // at 0 Hit Points included (CLOSE-1).
+            if (other.source.id != a.source.id)
             {
                 offer_attacks(other, feet);
                 offer_spells(commands, a, other, feet, detail::SpellTarget::enemy, false);
             }
-            // A downed foe is struck only by Scorching Ray (the user's call);
-            // the spell offers filter out everything else.
-            else if (other.source.side != a.source.side)
+            for (const auto scope :
+                 {detail::SpellTarget::wounded_ally, detail::SpellTarget::ally,
+                  detail::SpellTarget::self, detail::SpellTarget::dying_ally})
             {
-                offer_spells(commands, a, other, feet, detail::SpellTarget::enemy, false);
-            }
-            else
-            {
-                for (const auto scope :
-                     {detail::SpellTarget::wounded_ally, detail::SpellTarget::ally,
-                      detail::SpellTarget::self, detail::SpellTarget::dying_ally})
-                {
-                    offer_spells(commands, a, other, feet, scope, false);
-                }
+                offer_spells(commands, a, other, feet, scope, false);
             }
         }
     }
@@ -13105,8 +13163,7 @@ std::vector<Command> Session::offered_commands() const
         {
             for (const auto &other : actors_)
             {
-                if (!other.life.dead && other.source.side != a.source.side &&
-                    (other.life.hp > 0 || may_rise(other)) && line_of_sight(a, other))
+                if (!other.life.dead && other.source.id != a.source.id && line_of_sight(a, other))
                 {
                     offer_attacks(other, distance(a, other));
                 }
@@ -19415,17 +19472,17 @@ void Session::preserve_life(Actor &cleric)
     }
 }
 
-void Session::divine_spark(Actor &cleric, Actor &target)
+void Session::divine_spark(Actor &cleric, Actor &target, bool harm)
 {
-    // 1d8 + Wisdom modifier (2d8 from Cleric 7, 3d8 from 13): restored to an
-    // ally, or Radiant to an enemy (the SRD's Necrotic is not offered,
-    // SPARK-1), halved on a Constitution save.
+    // 1d8 + Wisdom modifier (2d8 from Cleric 7, 3d8 from 13): restored, or
+    // Radiant damage (the SRD's Necrotic is not offered, SPARK-1) halved on a
+    // Constitution save.
     const int sparks = def(cleric).level >= 13 ? 3 : def(cleric).level >= 7 ? 2 : 1;
     const int total = std::max(0, dice({sparks, 8, 0}) + casting_modifier(def(cleric)));
     log(cleric.source.name + " uses Divine Spark on " + target.source.name + ".",
         {"{name} uses Divine Spark on {target}.",
          {{"name", cleric.source.name}, {"target", target.source.name}}});
-    if (target.source.side == cleric.source.side)
+    if (!harm)
     {
         heal(target,
              detail::has_effect(target.effects, detail::EffectKind::hopeful)
@@ -25800,12 +25857,12 @@ void Session::dispatch(const Command &command)
         log(a.source.name + " moves aggressively.",
             {"{name} moves aggressively.", {{"name", a.source.name}}});
     }
-    else if (command.verb == "divine_spark")
+    else if (command.verb == "divine_spark" || command.verb == "divine_spark_radiant")
     {
         a.nick_origin = 0;
         (void)a.actions.spend(false);
         --a.channel_divinity;
-        divine_spark(a, actor(command.target));
+        divine_spark(a, actor(command.target), command.verb == "divine_spark_radiant");
     }
     else if (command.verb == "preserve_life")
     {
@@ -27059,6 +27116,14 @@ void Session::dispatch(const Command &command)
                 const bool melee = command.verb == "melee";
                 const int attacks = melee || d.multiattack_ranged ? d.multiattack : 1;
                 auto &target = actor(command.target);
+                // The attacks follow on while the target stands or, aimed at
+                // one already down (CLOSE-1), while it lives.
+                const bool downed = target.life.hp == 0;
+                const auto goes_on = [&]
+                {
+                    const auto &aimed = actor(command.target);
+                    return aimed.life.hp > 0 || (downed && !aimed.life.dead);
+                };
                 int n = 0;
                 if (attacks > 1 && d.panache_dc && !has_condition(a, "blinded") &&
                     !invisible(target) && !charmed_by(target, a.source.id))
@@ -27099,7 +27164,7 @@ void Session::dispatch(const Command &command)
                     attack_as(a, gore_loadout(a), target, AttackRange::melee);
                     n = attacks;
                 }
-                for (; n < attacks && actor(command.target).life.hp > 0; ++n)
+                for (; n < attacks && goes_on(); ++n)
                 {
                     // An Adult Bronze Dragon breathes Repulsion Breath for
                     // its last attack when it catches two enemies or more.
@@ -33450,7 +33515,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.261", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.262", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),

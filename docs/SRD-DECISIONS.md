@@ -2232,9 +2232,16 @@ earlier decision covered. The user decided on 2026-10-29:
   pact weapon offers its damage types.
 - **Defeat when every party member is down**, even with none dead, stays.
 - **Any target:** attacks and healing may target any creature, a party
-  member or one at 0 Hit Points included. Above Normal, monsters and NPCs
-  target well, going after characters low on Hit Points or AC; on the two
-  hardest levels they also concentrate their attacks to take characters out.
+  member or one at 0 Hit Points included. A hit on a downed creature within 5
+  feet is a Critical Hit, as the SRD's Unconscious condition has it. Divine
+  Spark splits into "Divine Spark", which heals, and "Divine Spark (Radiant)",
+  which harms. The newly opened targets are offered after the others.
+- **Monsters, NPCs and Quick party members target by difficulty.** Above
+  Normal they go after the weakest enemy, the one with the fewest Hit Points
+  and then the lowest AC: on Hard once their own target drops, on Nightmare
+  and Infernal at once, every creature turning on the same weakest enemy
+  until it falls. On those two levels they also finish downed characters. The
+  computer never attacks its own side or heals a foe.
 - **`supported_features()`** is removed from the rules interface: nothing in
   the game read it, and its list had stopped matching the rules.
 

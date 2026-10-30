@@ -1,6 +1,7 @@
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
 #include "opengold/character.h"
+#include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <chrono>
@@ -166,13 +167,19 @@ void divine_spark_checks()
           "Divine Spark heals an ally and spends a use and the Action");
 
     auto harm = battle(*module, cleric(2));
-    check(submit(*harm, "divine_spark", 99) && logged(*harm, "Enemy Constitution save") &&
+    check(submit(*harm, "divine_spark_radiant", 99) && logged(*harm, "Enemy Constitution save") &&
               logged(*harm, "Radiant damage") && unit(*harm, 99).hit_points < 1000,
           "Divine Spark harms an enemy, a Constitution save for half");
+    // Any creature may be struck or healed (CLOSE-1): the Cleric's own ally
+    // too, and an unhurt enemy is not offered healing.
+    auto ally = battle(*module, cleric(2));
+    check(submit(*ally, "divine_spark_radiant", 2) && logged(*ally, "Radiant damage") &&
+              !submit(*harm, "divine_spark", 99),
+          "Divine Spark strikes an ally when chosen; healing needs a wound");
     check(!submit(*harm, "turn_undead", 1), "Turn Undead needs an Undead");
 
     auto resisted = battle(*module, cleric(2), "shade");
-    check(submit(*resisted, "divine_spark", 99) && logged(*resisted, "Radiant damage") &&
+    check(submit(*resisted, "divine_spark_radiant", 99) && logged(*resisted, "Radiant damage") &&
               !logged(*resisted, "Necrotic damage"),
           "Divine Spark deals Radiant even to a creature that resists it (SPARK-1)");
 }
@@ -787,7 +794,7 @@ void channel_divinity_rest_checks()
         {
             check(submit(*c, "end"), "Reach the Cleric's turn");
         }
-        check(submit(*c, "divine_spark", 99), "Divine Spark at the enemy");
+        check(submit(*c, "divine_spark_radiant", 99), "Divine Spark at the enemy");
         party.begin_combat();
         party.apply_combat(c->snapshot());
         party.end_combat();
@@ -808,6 +815,77 @@ void channel_divinity_rest_checks()
     copy.advance_time(std::chrono::hours{24});
     check(bool(copy.rest(RestKind::long_rest)) && uses(copy, id) == 2,
           "A Long Rest restores all of them");
+}
+
+// Any creature may be attacked or healed (CLOSE-1): the Cleric strikes its
+// own ally, strikes a downed one (a hit within 5 feet is a Critical Hit),
+// heals a wounded foe; the computer still attacks only foes and heals only
+// its own side.
+void any_target_checks()
+{
+    const auto module = rules();
+    const auto hero = cleric(1);
+    const auto profile =
+        module->character_profile(hero.sheet(), std::vector<std::string>{"mace"}).data;
+    const auto fight = [&](int ally_hp, int enemy_hp)
+    {
+        auto c = module->create(
+            {{12, 4, std::vector<Terrain>(48)},
+             {{1, "campaign-character", "Cleric", Side::party, {1, 1}, profile},
+              {2, "target", "Ally", Side::party, {1, 2}, {}, VitalState{ally_hp, false, {}}},
+              {99, "target", "Enemy", Side::opposition, {2, 1}, {},
+               VitalState{enemy_hp, false, {}}}}},
+            5);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        {
+            check(submit(*c, "end"), "Reach the Cleric's turn");
+        }
+        return c;
+    };
+    auto strike = fight(1000, 1000);
+    check(submit(*strike, "melee", 2) && logged(*strike, "Cleric -> Ally: d20"),
+          "The Cleric strikes its own ally");
+    auto downed = fight(0, 1000);
+    check(submit(*downed, "melee", 2) && logged(*downed, "Cleric -> Ally: d20") &&
+              logged(*downed, "CRITICAL"),
+          "A hit on a downed ally within 5 feet is a Critical Hit");
+    auto heal = fight(1000, 500);
+    check(submit(*heal, "cure_wounds", 99) && unit(*heal, 99).hit_points > 500,
+          "Cure Wounds heals a wounded foe");
+
+    // The computer, playing the Cleric with its ally hurt beside it and a
+    // wounded foe in reach, aims no attack at the ally and no healing at the
+    // foe.
+    for (std::uint64_t seed = 1; seed <= 12; ++seed)
+    {
+        auto c = fight(10, 500);
+        for (unsigned turn = 0; turn < 4 && c->snapshot().outcome == Outcome::ongoing; ++turn)
+        {
+            const auto state = c->snapshot();
+            const auto chosen = choose_demo_command(*c, Searching::everyone);
+            const auto side = [&](EntityId id)
+            {
+                for (const auto &a : state.combatants)
+                {
+                    if (a.id == id)
+                    {
+                        return a.side;
+                    }
+                }
+                return Side::party;
+            };
+            if (chosen.target && chosen.target != chosen.actor)
+            {
+                check(chosen.intent != Intent::hostile ||
+                          side(chosen.target) != side(chosen.actor),
+                      "The computer attacks only foes");
+                check(chosen.intent != Intent::friendly ||
+                          side(chosen.target) == side(chosen.actor),
+                      "The computer heals only its own side");
+            }
+            check(c->submit(chosen), "The computer's choice is legal");
+        }
+    }
 }
 
 } // namespace
@@ -835,6 +913,7 @@ int main()
         guidance_checks();
         silence_checks();
         spiritual_weapon_checks();
+        any_target_checks();
         write_ui_fixture();
         std::cout << "Cleric Channel Divinity tests passed\n";
     }

@@ -15,6 +15,7 @@
 #include <set>
 #include <span>
 #include <stdexcept>
+#include <tuple>
 
 namespace opengold
 {
@@ -1036,9 +1037,9 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
 // the commands open to it. It submits nothing, so it takes no session
 // (Effective C++ Item 32).
 Command choose_from(const rules::Snapshot &state, const std::vector<Command> &offered,
-                    Searching searching);
+                    Searching searching, Difficulty difficulty);
 Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command> &offered,
-                        Searching searching);
+                        Searching searching, Difficulty difficulty);
 std::optional<Command> choose_item(const rules::Snapshot &state, const CombatantView &active,
                                    const std::vector<Command> &offered);
 
@@ -1268,29 +1269,69 @@ bool shows_spell(const CombatantView &unit, std::string_view label)
 }
 } // namespace
 
-Command choose_demo_command(const CombatSession &session, Searching searching)
+Command choose_demo_command(const CombatSession &session, Searching searching,
+                            Difficulty difficulty)
 {
-    return choose_from(session.snapshot(), session.legal_commands(), searching);
+    return choose_from(session.snapshot(), session.legal_commands(), searching, difficulty);
 }
 
 Command choose_demo_command(const rules::Snapshot &state, const std::vector<Command> &offered,
-                            Searching searching)
+                            Searching searching, Difficulty difficulty)
 {
-    return choose_from(state, offered, searching);
+    return choose_from(state, offered, searching, difficulty);
 }
 
 namespace
 {
+// Any creature may be attacked or healed (CLOSE-1), but the computer keeps its
+// attacks off its own side and its healing off its foes, and strikes a
+// character already down only on Nightmare and Infernal, to finish it; a
+// monster at 0 Hit Points still up is a regenerating one, which it may.
+std::vector<Command> aimed_as_before(const rules::Snapshot &state,
+                                     const std::vector<Command> &offered, Difficulty difficulty)
+{
+    const bool finishing = difficulty >= Difficulty::nightmare;
+    const auto side_of = [&](EntityId id) -> const CombatantView *
+    {
+        const auto found = std::find_if(state.combatants.begin(), state.combatants.end(),
+                                        [&](const auto &a)
+                                        {
+                                            return a.id == id;
+                                        });
+        return found == state.combatants.end() ? nullptr : &*found;
+    };
+    const auto *active = side_of(state.actor);
+    std::vector<Command> result;
+    std::copy_if(offered.begin(), offered.end(), std::back_inserter(result),
+                 [&](const Command &command)
+                 {
+                     const auto *target = side_of(command.target);
+                     if (!active || !target || command.intent == rules::Intent::neutral)
+                     {
+                         return true;
+                     }
+                     const bool ally = target->side == active->side;
+                     if (command.intent == rules::Intent::friendly)
+                     {
+                         return ally;
+                     }
+                     return !ally && (target->hit_points > 0 || finishing ||
+                                      target->side == Side::opposition);
+                 });
+    return result;
+}
+
 // The AI does not know where a hidden enemy is (HIDE-1): it chooses as if the
 // enemy were absent, and with no other enemy left it takes the Search action.
-Command choose_from(const rules::Snapshot &state, const std::vector<Command> &offered,
-                    Searching searching)
+Command choose_from(const rules::Snapshot &state, const std::vector<Command> &every,
+                    Searching searching, Difficulty difficulty)
 {
     const auto active = std::find_if(state.combatants.begin(), state.combatants.end(),
                                      [&](const auto &a)
                                      {
                                          return a.id == state.actor;
                                      });
+    const auto offered = aimed_as_before(state, every, difficulty);
     const auto hidden_enemy = [&](EntityId id)
     {
         return std::any_of(state.combatants.begin(), state.combatants.end(),
@@ -1306,7 +1347,7 @@ Command choose_from(const rules::Snapshot &state, const std::vector<Command> &of
                          return hidden_enemy(a.id);
                      }))
     {
-        return choose_in_sight(state, offered, searching);
+        return choose_in_sight(state, offered, searching, difficulty);
     }
     auto seen = state;
     std::erase_if(seen.combatants,
@@ -1335,11 +1376,11 @@ Command choose_from(const rules::Snapshot &state, const std::vector<Command> &of
             }
         }
     }
-    return choose_in_sight(seen, open, searching);
+    return choose_in_sight(seen, open, searching, difficulty);
 }
 
 Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command> &offered,
-                        Searching searching)
+                        Searching searching, Difficulty difficulty)
 {
     if (offered.empty())
     {
@@ -1388,10 +1429,12 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     const auto &board = state.battlefield;
     // The enemies the creature can see: it goes for those, and with none in
     // view it holds its ground (#266).
+    // On Nightmare and Infernal a downed enemy is one to finish (CLOSE-1).
+    const bool finishing = difficulty >= Difficulty::nightmare;
     std::vector<const CombatantView *> in_view;
     for (const auto &enemy : state.combatants)
     {
-        if (enemy.side != active.side && !enemy.dead && enemy.hit_points > 0 &&
+        if (enemy.side != active.side && !enemy.dead && (enemy.hit_points > 0 || finishing) &&
             sees(board, active, enemy))
         {
             in_view.push_back(&enemy);
@@ -1406,19 +1449,34 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     {
         for (const auto &enemy : state.combatants)
         {
-            if (enemy.side != active.side && !enemy.dead && enemy.hit_points > 0)
+            if (enemy.side != active.side && !enemy.dead && (enemy.hit_points > 0 || finishing))
             {
                 in_view.push_back(&enemy);
             }
         }
     }
     // It keeps its target while that target stands in view, as the original
-    // did; otherwise any enemy in view.
-    const auto kept = std::find_if(in_view.begin(), in_view.end(),
+    // did; otherwise any enemy in view. Above Normal it goes after the weakest
+    // enemy, the one with the fewest Hit Points and then the lowest AC: on
+    // Hard once its target is gone, on Nightmare and Infernal at once, so the
+    // side's attacks converge on one enemy until it drops (CLOSE-1).
+    const auto weaker = [](const CombatantView *a, const CombatantView *b)
+    {
+        return std::tie(a->hit_points, a->armor_class, a->id) <
+               std::tie(b->hit_points, b->armor_class, b->id);
+    };
+    const auto weakest = std::min_element(in_view.begin(), in_view.end(), weaker);
+    auto kept = difficulty >= Difficulty::nightmare
+                    ? weakest
+                    : std::find_if(in_view.begin(), in_view.end(),
                                    [&](const auto *enemy)
                                    {
                                        return enemy->id == active.last_target;
                                    });
+    if (kept == in_view.end() && difficulty == Difficulty::hard)
+    {
+        kept = weakest;
+    }
     // One of the creatures commands with `verb` are aimed at: its target if one
     // is, else one at random from the other side (#266).
     const auto aim = [&](std::string_view verb) -> const Command *
@@ -1436,17 +1494,38 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                                  return a.id == command.target;
                                              });
             if (target == state.combatants.end() || target->side == active.side ||
-                target->hit_points <= 0)
+                (target->hit_points <= 0 && !finishing))
             {
                 continue;
             }
-            if (kept != in_view.end() && command.target == active.last_target)
+            if (kept != in_view.end() && command.target == (*kept)->id)
             {
                 return &command;
             }
             aims.push_back(&command);
         }
-        return aims.empty() ? nullptr : aims[pick(state, active.id, verb.size(), aims.size())];
+        if (aims.empty())
+        {
+            return nullptr;
+        }
+        if (difficulty <= Difficulty::normal)
+        {
+            return aims[pick(state, active.id, verb.size(), aims.size())];
+        }
+        // Above Normal the weakest of those it can reach.
+        const auto view_of = [&](const Command *command)
+        {
+            return &*std::find_if(state.combatants.begin(), state.combatants.end(),
+                                  [&](const auto &a)
+                                  {
+                                      return a.id == command->target;
+                                  });
+        };
+        return *std::min_element(aims.begin(), aims.end(),
+                                 [&](const Command *a, const Command *b)
+                                 {
+                                     return weaker(view_of(a), view_of(b));
+                                 });
     };
     // Rank offered destinations by a geometric route around obstacles to its
     // target, or to the nearest enemy in view. Straight distance alone can
@@ -2727,17 +2806,20 @@ std::vector<Command> without_spells(const rules::Snapshot &state, std::vector<Co
 }
 } // namespace
 
-Command choose_quick_command(const CombatSession &session, bool magic, Searching searching)
+Command choose_quick_command(const CombatSession &session, bool magic, Searching searching,
+                             Difficulty difficulty)
 {
     if (magic)
     {
-        return choose_demo_command(session, searching);
+        return choose_demo_command(session, searching, difficulty);
     }
     const auto state = session.snapshot();
-    return choose_from(state, without_spells(state, session.legal_commands()), searching);
+    return choose_from(state, without_spells(state, session.legal_commands()), searching,
+                       difficulty);
 }
 
-Command choose_flee_command(const CombatSession &session, bool magic, Searching searching)
+Command choose_flee_command(const CombatSession &session, bool magic, Searching searching,
+                            Difficulty difficulty)
 {
     const auto state = session.snapshot();
     const auto offered = session.legal_commands();
@@ -2755,7 +2837,7 @@ Command choose_flee_command(const CombatSession &session, bool magic, Searching 
     if (active == state.combatants.end() || active->side != Side::party || !active->can_flee ||
         state.reaction_pending || end == offered.end())
     {
-        return choose_quick_command(session, magic, searching);
+        return choose_quick_command(session, magic, searching, difficulty);
     }
     if (const auto run = run_for_edge(state, offered, *active))
     {

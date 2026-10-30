@@ -91,6 +91,65 @@ void target_checks()
     check(second && third, "With no target, it picks among the enemies at random");
 }
 
+// Above Normal it goes after the weakest enemy, fewest Hit Points then lowest
+// AC: on Hard once its target is gone, on Nightmare and Infernal at once. An
+// attack on its own side, now offered (CLOSE-1), it never takes.
+void difficulty_target_checks()
+{
+    auto state = field({unit(1, Side::party, {5, 4}), unit(2, Side::opposition, {6, 4}, 3),
+                        unit(3, Side::opposition, {4, 4}), unit(4, Side::party, {5, 5}, 1)});
+    std::vector<Command> offered{command("melee", 2), command("melee", 3), command("melee", 4),
+                                 command("end")};
+    for (auto &c : offered)
+    {
+        c.intent = c.target ? Intent::hostile : Intent::neutral;
+    }
+    state.combatants[0].last_target = 3;
+    check(choose_demo_command(state, offered, Searching::by_sight, Difficulty::hard).target == 3,
+          "On Hard it keeps its target while it stands");
+    check(choose_demo_command(state, offered, Searching::by_sight, Difficulty::nightmare).target ==
+              2,
+          "On Nightmare it turns on the weakest enemy");
+    state.combatants[0].last_target = 0;
+    for (std::uint64_t revision = 1; revision <= 20; ++revision)
+    {
+        state.revision = revision;
+        for (const auto level : {Difficulty::hard, Difficulty::infernal})
+        {
+            const auto target =
+                choose_demo_command(state, offered, Searching::by_sight, level).target;
+            check(target == 2, "Above Normal it always takes the weakest enemy");
+        }
+        check(choose_demo_command(state, offered).target != 4, "It never attacks its own side");
+    }
+    // Hit Points tied, the lower AC.
+    state.combatants[1].hit_points = 10;
+    state.combatants[1].armor_class = 15;
+    state.combatants[2].armor_class = 12;
+    check(choose_demo_command(state, offered, Searching::by_sight, Difficulty::hard).target == 3,
+          "With Hit Points tied it takes the lower AC");
+
+    // A downed enemy, still alive: finished on Nightmare and Infernal, left
+    // alone below them.
+    auto downed = field({unit(1, Side::opposition, {5, 4}), unit(2, Side::party, {6, 4}, 0),
+                         unit(3, Side::party, {4, 4})});
+    std::vector<Command> strikes{command("melee", 2), command("melee", 3), command("end")};
+    for (auto &c : strikes)
+    {
+        c.intent = c.target ? Intent::hostile : Intent::neutral;
+    }
+    for (const auto level : {Difficulty::nightmare, Difficulty::infernal})
+    {
+        check(choose_demo_command(downed, strikes, Searching::by_sight, level).target == 2,
+              "On the hardest levels it finishes a downed character");
+    }
+    for (const auto level : {Difficulty::easy, Difficulty::normal, Difficulty::hard})
+    {
+        check(choose_demo_command(downed, strikes, Searching::by_sight, level).target == 3,
+              "Below them it leaves a downed character be");
+    }
+}
+
 void sight_checks()
 {
     const std::vector<Command> offered{command("move", 0, {1, 2}), command("end")};
@@ -421,6 +480,7 @@ int main()
     try
     {
         target_checks();
+        difficulty_target_checks();
         sight_checks();
         stay_back_checks();
         ranged_checks();

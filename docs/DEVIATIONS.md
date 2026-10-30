@@ -27,6 +27,12 @@ Add an entry whenever a new departure is decided.
 - **Monsters** (2026-10-02). The original's AD&D monster records become SRD
   stat blocks, unchanged.
   [MON-1](SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks).
+- **Targets** (2026-10-29). In the original a creature kept its target, else
+  took a random enemy in view, and never read Hit Points or AC. OpenGoldBox
+  keeps that on Easy and Normal; above Normal every creature the computer
+  plays goes after the weakest enemy, and on Nightmare and Infernal they all
+  go after the same one and finish downed characters.
+  [CLOSE-1](SRD-DECISIONS.md#close-1-2026-10-29-the-last-srd-choices).
 - **Ogre leader's squares** (2026-10-29). Each monster fills the squares its
   record names, as in the original, but the ogre leader's record names one
   square while its art stands two tall. OpenGoldBox gives it two squares, one

@@ -124,6 +124,22 @@ while it can reach it; otherwise it attacks an enemy in reach at random. As in
 the original, it does not pick the weakest. The rules keep each creature's
 target in the fight and in saves.
 
+Above Normal, every creature the computer plays (monsters, NPCs and party
+members on Quick) picks the weakest enemy, the one with the fewest Hit Points
+and then the lowest AC
+([CLOSE-1](SRD-DECISIONS.md#close-1-2026-10-29-the-last-srd-choices)). On Hard a
+creature still keeps its target while it stands and turns to the weakest
+once it drops. On Nightmare and Infernal every creature turns at once to the
+weakest enemy in view and moves toward it, so the side's attacks converge on
+one enemy until it falls, and a downed character counts as an enemy: having
+the fewest Hit Points, it is finished first.
+
+The rules offer attacks and healing on any creature, a party member or one at
+0 Hit Points included (CLOSE-1). The computer still attacks only the other
+side, heals only its own, and strikes a character already down only on
+Nightmare and Infernal; the rules mark each such command hostile or friendly
+for it.
+
 **Original.** The same: it kept its target while that target was visible and in
 the fight, otherwise picked a random visible enemy, and enemies within reach
 came first. It never read Hit Points or AC.
@@ -274,7 +290,7 @@ hidden enemy's position, or anything the game does not show.
   in sight it Searches.
 - **Sight:** it goes only for enemies it can see.
 - **Hit Points and AC** are shown to the player, so the policy may read them;
-  it no longer uses them to choose a target.
+  above Normal it uses them to choose a target (section 2).
 - **Dice:** the policy reads none, and rolls no hidden save to judge an area; a
   reaction is asked only after the hit is known, with the total shown.
 - **Enemy states** it reads (burning, oiled, regenerating, conditions, status
