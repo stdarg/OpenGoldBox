@@ -985,6 +985,7 @@ void RolfTourSession::reset_run()
     pending_movement_.reset();
     teleport_arrival_.reset();
     entrances_.clear();
+    wand_traps_.clear();
     transition_ = message_only_ = false;
     shop_request_ = 0;
     if (town_ && !town_->sprite_archive.empty())
@@ -1078,6 +1079,7 @@ void RolfTourSession::roll_back_event()
     visited_areas_ = std::move(saved.visited_areas);
     seen_areas_ = std::move(saved.seen_areas);
     entrances_ = std::move(saved.entrances);
+    wand_traps_ = std::move(saved.wand_traps);
     rest_checks_ = saved.rest_checks;
     travel_mode_ = saved.travel_mode;
     const auto revision = snapshot_.revision + 1;

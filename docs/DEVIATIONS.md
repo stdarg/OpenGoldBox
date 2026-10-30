@@ -255,7 +255,8 @@ in the game: answering YES at a hall lists its services in the dialogue
   the original's Dagger, Short Sword and Short Bow +1 and Dust of
   Disappearance, Leather Armor +1, and the SRD's Boots and Cloak of
   Elvenkind, Stone of Good Luck and Wand of Secrets, which also points out
-  the Pyramid's and Kuto's Well's secret doors.
+  the Pyramid's and Kuto's Well's secret doors and Kovel Mansion's and the
+  kobold caves' traps.
   [SECRET-1](SRD-DECISIONS.md#secret-1-2026-10-29-the-rogues-shop-and-its-secret-door),
   [#271](https://github.com/stdarg/OpenGoldBox/issues/271).
 

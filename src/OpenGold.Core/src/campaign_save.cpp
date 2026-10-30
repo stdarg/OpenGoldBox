@@ -17,7 +17,7 @@ namespace
 constexpr std::size_t limit = 16 * 1024 * 1024;
 // The only campaign format this build reads or writes. Pre-1.0 formats are
 // rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 42;
+constexpr unsigned campaign_format = 43;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -677,6 +677,14 @@ template <bool Reading> struct SaveCodec
                 v.entrances_[id] = static_cast<por::RolfTourSession::EntranceState>(state);
             }
             v.apply_entrances();
+        }
+        // The traps a Wand of Secrets pointed out (SECRET-1).
+        std::vector<unsigned> wand_traps(v.wand_traps_.begin(), v.wand_traps_.end());
+        field(wand_traps);
+        if constexpr (reading)
+        {
+            require(wand_traps.size() <= 256 * 256, "Too many saved wand traps");
+            v.wand_traps_ = std::set<unsigned>(wand_traps.begin(), wand_traps.end());
         }
         std::uint64_t pending = v.pending_loot_.size();
         field(pending);

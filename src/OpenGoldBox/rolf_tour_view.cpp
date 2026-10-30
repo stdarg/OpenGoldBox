@@ -960,13 +960,19 @@ void RolfTourView::check_identification_spells()
 namespace
 {
 // Where the Wand of Secrets points (SECRET-1), or that it found nothing.
-String wand_of_secrets_notice(const String &name, const std::optional<SecretDoorSign> &sign)
+String wand_of_secrets_notice(const String &name, const std::optional<WandSign> &sign)
 {
     if (!sign)
     {
         return i18n::format(
-            N_("{name} points the Wand of Secrets. It does not pulse: no hidden secret door is within 60 feet."),
+            N_("{name} points the Wand of Secrets. It does not pulse: no hidden secret door or trap is within 60 feet."),
             {{"name", name}});
+    }
+    if (sign->trap)
+    {
+        return i18n::format(
+            N_("{name} points the Wand of Secrets. It pulses toward a trap at ({x}, {y})."),
+            {{"name", name}, {"x", sign->x}, {"y", sign->y}});
     }
     constexpr std::array<const char *, 4> walls{
         N_("{name} points the Wand of Secrets. It pulses toward a secret door in the north wall of ({x}, {y})."),
