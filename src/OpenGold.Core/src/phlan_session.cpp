@@ -1213,9 +1213,10 @@ std::string wielded_key(const Creature &creature, const MonsterItem *item)
                                                      : std::string{};
 }
 
-// A staged creature's art: the export's weapon set for what it readies, drawn
-// as the catalog previews it, or else the original icon with its action pose,
-// the icon 128 records on.
+// A staged creature's art: the export's weapon set for what it readies, and
+// the sets its melee attacks and shots show, drawn as the catalog previews
+// them; or else the original icon with its action pose, the icon 128 records
+// on.
 opengold::CombatArt staged_creature_art(const std::vector<std::uint8_t> &archive, unsigned icon,
                                         Image ready, const ExportedMonster *exported, bool archer)
 {
@@ -1228,16 +1229,32 @@ opengold::CombatArt staged_creature_art(const std::vector<std::uint8_t> &archive
         }
     }
     // New art keeps the original, which the Combat art setting can show.
-    if (const auto *variant = exported ? readied_variant(*exported, archer) : nullptr)
+    const auto *variant = exported ? readied_variant(*exported, archer) : nullptr;
+    if (!variant)
     {
-        return {0,
-                variant->ready,
-                variant->action,
-                {},
-                opengold::PlantedArt{art_scale(*exported), planted_ground(variant->ready)},
-                opengold::OriginalArt{std::move(art.image), std::move(art.action)}};
+        return art;
     }
-    return art;
+    const auto planted = [&](const MonsterVariant &set)
+    {
+        return opengold::PlantedArt{art_scale(*exported), planted_ground(set.ready)};
+    };
+    const auto weapon_set = [&](const MonsterVariant *set) -> std::optional<opengold::WeaponSetArt>
+    {
+        if (!set)
+        {
+            return std::nullopt;
+        }
+        return opengold::WeaponSetArt{set->ready, set->action, planted(*set)};
+    };
+    const auto attacks = attack_variants(*exported);
+    return {0,
+            variant->ready,
+            variant->action,
+            {},
+            planted(*variant),
+            opengold::OriginalArt{std::move(art.image), std::move(art.action)},
+            weapon_set(attacks.melee),
+            weapon_set(attacks.ranged)};
 }
 } // namespace
 

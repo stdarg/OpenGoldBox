@@ -20,13 +20,16 @@
 #include <bitset>
 #include <chrono>
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <functional>
 #include <iostream>
 #include <map>
 #include <queue>
 #include <set>
+#include <span>
 #include <stdexcept>
+#include <string_view>
 
 using namespace opengold;
 
@@ -5144,6 +5147,18 @@ void write_slums_fixtures(const std::filesystem::path &save, const std::filesyst
     const auto entry = folder / "slums-entry.ogs";
     write_campaign_file(entry, encode_campaign(*party, &town, campaign_asset_identity(directory)));
     write_approach_fixture(entry, 1, 5, folder / "leaders.ogs", directory, true, bash);
+    // The four orcs, who carry swords and bows, argue at (13, 1). The route
+    // has fought them, so a new party meets them, heading west from the gate.
+    {
+        auto orcs = create_party(directory);
+        walk_to(orcs.town, orcs.party, 0, 4);
+        step(orcs.town, orcs.party, 3);
+        walk_to(orcs.town, orcs.party, 14, 1);
+        face(orcs.town, orcs.party, 3);
+        write_campaign_file(
+            folder / "orcs.ogs",
+            encode_campaign(*orcs.party, &orcs.town, campaign_asset_identity(directory)));
+    }
     // The hobgoblins argue at (0, 2) and are met coming south from (0, 1).
     {
         auto hobgoblins = load_expedition(entry, directory);
@@ -5158,7 +5173,7 @@ void write_slums_fixtures(const std::filesystem::path &save, const std::filesyst
     face(town, party, 0);
     write_campaign_file(folder / "trolls.ogs",
                         encode_campaign(*party, &town, campaign_asset_identity(directory)));
-    for (const auto *name : {"hobgoblins.ogs", "leaders.ogs", "trolls.ogs"})
+    for (const auto *name : {"hobgoblins.ogs", "leaders.ogs", "orcs.ogs", "trolls.ogs"})
     {
         write_strong_fixture(folder / name, directory);
     }
@@ -6277,6 +6292,36 @@ void exported_monsters(const std::filesystem::path &directory)
     check(renamed, "The renamed orc fights under its new name");
     check(exported_items == original_items,
           "The renamed orc leaves its added scimitar behind, but not its scroll");
+
+    // The shipped orcs carry a sword and shield and a bow (#274). Each file's
+    // stand-in image starts with a hash of the file, so sets can be told apart.
+    const auto marked = [](std::span<const std::uint8_t> bytes)
+    {
+        auto image = test::png_size_only(bytes);
+        if (image)
+        {
+            const auto mark = std::hash<std::string_view>{}(
+                std::string_view(reinterpret_cast<const char *>(bytes.data()), bytes.size()));
+            std::memcpy(image->rgba.data(), &mark, sizeof mark);
+        }
+        return image;
+    };
+    const auto [shipped, shipped_items] =
+        orc_fight(std::make_shared<const por::MonsterBundle>(por::load_monster_bundle(
+            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters", marked)));
+    bool armed_both_ways = false;
+    for (const auto &art : shipped.art)
+    {
+        if (art.melee && art.ranged)
+        {
+            armed_both_ways = true;
+            check(art.melee->image.rgba == art.image.rgba &&
+                      art.melee->action.rgba == art.action->rgba &&
+                      art.ranged->image.rgba != art.image.rgba && art.ranged->action.width == 128,
+                  "An orc stands with its sword and shield and holds its bow to shoot");
+        }
+    }
+    check(armed_both_ways, "The orcs fight with their sword and shield or their bow");
 }
 
 void installed_first_expedition(const std::filesystem::path &executable,

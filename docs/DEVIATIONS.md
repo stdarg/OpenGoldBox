@@ -287,7 +287,9 @@ in the game: answering YES at a hall lists its services in the dialogue
   [data/art/walls](../data/art/walls/README.md).
 - **Monsters from the Combat Sprite Catalog** (2026-10-23). A creature the
   catalog exported to `data/monsters` fights under the catalog's name, in its
-  new art for the weapon set it readies, and carries only the original items
+  new art for the weapon set it readies, and switches to the set it attacks
+  with: its sword and shield to strike, its bow to shoot (2026-10-30), where
+  the original showed one icon throughout. It carries only the original items
   the catalog kept: an item left out is neither used in the fight nor left
   behind. Gear the catalog added as an original item type is carried and left
   behind as a plain item of that type, when New Phlan's shop lists hold one. A

@@ -14,8 +14,12 @@ size and humanoid height, its equipment and its weapon sets:
 - **Name.** A creature the game stages fights and is logged under this name.
 - **Art.** The game shows the weapon set of what the creature readies (an
   archer's bow), alternating its ready and action poses, at the catalog's
-  fixed scale with both poses' feet on the square. A creature without art
-  here keeps its original combat icon, with the icon's action pose.
+  fixed scale with both poses' feet on the square. Once it attacks, it shows
+  the set it attacks with and keeps it until its next attack: a melee attack
+  shows its melee weapon's set, with its readied shield where a set has it,
+  and a shot or throw its ranged weapon's. A creature whose art has no set for
+  the attack keeps the set it shows. A creature without art here keeps its
+  original combat icon, with the icon's action pose.
 - **Equipment.** Each original item names its `MONnITM` slot
   (`source_index`); one the catalog left out is not carried into a fight and
   is not left behind after it. Gear added in the catalog has `source_index`

@@ -125,6 +125,30 @@ const MonsterItem *readied(const ExportedMonster &monster, std::string_view kind
                                             });
     return found == monster.equipment.end() ? nullptr : &*found;
 }
+
+// The first set whose weapon is wanted, with the readied shield if any set has
+// it.
+template <typename Wanted>
+const MonsterVariant *weapon_set(const ExportedMonster &monster, Wanted wanted)
+{
+    const auto *shield = readied(monster, "shield");
+    const MonsterVariant *without_shield = nullptr;
+    for (const auto &variant : monster.variants)
+    {
+        const auto weapon =
+            std::ranges::find(monster.equipment, variant.weapon_id, &MonsterItem::id);
+        if (weapon == monster.equipment.end() || !wanted(*weapon))
+        {
+            continue;
+        }
+        if (!shield || variant.shield_id == shield->id)
+        {
+            return &variant;
+        }
+        without_shield = without_shield ? without_shield : &variant;
+    }
+    return without_shield;
+}
 } // namespace
 
 const ExportedMonster *MonsterBundle::creature(unsigned bank, unsigned record) const
@@ -162,47 +186,29 @@ const MonsterVariant *readied_variant(const ExportedMonster &monster, bool arche
     {
         return nullptr;
     }
-    const auto *shield = readied(monster, "shield");
-    // The first set whose weapon is wanted, with the readied shield if any set
-    // has it.
-    const auto first_set = [&](auto wanted) -> const MonsterVariant *
-    {
-        const MonsterVariant *without_shield = nullptr;
-        for (const auto &variant : monster.variants)
-        {
-            const auto weapon = std::ranges::find(monster.equipment, variant.weapon_id, &MonsterItem::id);
-            if (weapon == monster.equipment.end() || !wanted(*weapon))
-            {
-                continue;
-            }
-            if (!shield || variant.shield_id == shield->id)
-            {
-                return &variant;
-            }
-            without_shield = without_shield ? without_shield : &variant;
-        }
-        return without_shield;
-    };
     // An archer shoots whether or not the original readied its bow.
-    if (const auto *bow = archer ? first_set([](const MonsterItem &weapon)
-                                             {
-                                                 return weapon.weapon_role == "ranged";
-                                             })
+    if (const auto *bow = archer ? weapon_set(monster,
+                                              [](const MonsterItem &weapon)
+                                              {
+                                                  return weapon.weapon_role == "ranged";
+                                              })
                                  : nullptr)
     {
         return bow;
     }
-    if (const auto *melee = first_set([](const MonsterItem &weapon)
-                                      {
-                                          return weapon.readied && weapon.weapon_role != "ranged";
-                                      }))
+    if (const auto *melee = weapon_set(monster,
+                                       [](const MonsterItem &weapon)
+                                       {
+                                           return weapon.readied && weapon.weapon_role != "ranged";
+                                       }))
     {
         return melee;
     }
-    const auto *armed = first_set([](const MonsterItem &weapon)
-                                  {
-                                      return weapon.readied;
-                                  });
+    const auto *armed = weapon_set(monster,
+                                   [](const MonsterItem &weapon)
+                                   {
+                                       return weapon.readied;
+                                   });
     return armed ? armed : &monster.variants.front();
 }
 
@@ -241,6 +247,27 @@ WieldedItems wielded_items(const ExportedMonster &monster, bool archer)
         result.ranged = first(ranged);
     }
     return result;
+}
+
+AttackVariants attack_variants(const ExportedMonster &monster)
+{
+    const auto wielded = wielded_items(monster, true);
+    const auto set_of = [&](const MonsterItem *weapon, bool ranged)
+    {
+        const auto *held = weapon ? weapon_set(monster,
+                                               [&](const MonsterItem &item)
+                                               {
+                                                   return item.id == weapon->id;
+                                               })
+                                  : nullptr;
+        return held ? held
+                    : weapon_set(monster,
+                                 [&](const MonsterItem &item)
+                                 {
+                                     return (item.weapon_role == "ranged") == ranged;
+                                 });
+    };
+    return {set_of(wielded.melee, false), set_of(wielded.ranged, true)};
 }
 
 bool human_shaped(const ExportedMonster &monster)

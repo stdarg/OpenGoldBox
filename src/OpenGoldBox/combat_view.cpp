@@ -148,6 +148,7 @@ void CombatView::_bind_methods()
     ClassDB::bind_method(D_METHOD("cell_pixels"), &CombatView::cell_pixels);
     ClassDB::bind_method(D_METHOD("enemy_cells"), &CombatView::enemy_cells);
     ClassDB::bind_method(D_METHOD("enemy_sprite_widths"), &CombatView::enemy_sprite_widths);
+    ClassDB::bind_method(D_METHOD("enemy_weapon_sets"), &CombatView::enemy_weapon_sets);
     ClassDB::bind_method(D_METHOD("attack_pose_active", "id"), &CombatView::attack_pose_active);
     ClassDB::bind_method(D_METHOD("sprite_facing_left", "id"), &CombatView::sprite_facing_left);
     ClassDB::bind_method(D_METHOD("battlefield_visuals"), &CombatView::battlefield_visuals);
@@ -191,6 +192,34 @@ Array CombatView::enemy_sprite_widths() const
         }
     }
     return widths;
+}
+
+// Which art each living enemy is drawn with, by id: "melee" or "ranged" once
+// it attacked with a weapon set of its new art, else "staged" (#274).
+Dictionary CombatView::enemy_weapon_sets() const
+{
+    Dictionary sets;
+    if (!demo_ || !demo_->has_combat())
+    {
+        return sets;
+    }
+    for (const auto &a : demo_.snapshot().combatants)
+    {
+        if (a.side == rules::Side::party || a.hit_points <= 0)
+        {
+            continue;
+        }
+        const auto *art = combatant_art(a);
+        const auto shows = [&](const std::map<EntityId, SpriteArt> &weapon_sets)
+        {
+            const auto set = weapon_sets.find(a.id);
+            return set != weapon_sets.end() && art == &set->second;
+        };
+        sets[static_cast<std::int64_t>(a.id)] = shows(ranged_art_)  ? "ranged"
+                                                : shows(melee_art_) ? "melee"
+                                                                    : "staged";
+    }
+    return sets;
 }
 
 Vector2i CombatView::selected_character_cell() const
@@ -237,6 +266,14 @@ const CombatView::SpriteArt *CombatView::combatant_art(const CombatantView &a) c
     if (const auto form = form_art_.find(a.form); !a.form.empty() && form != form_art_.end())
     {
         return &form->second;
+    }
+    if (const auto attacked = shot_last_.find(a.id); attacked != shot_last_.end())
+    {
+        const auto &sets = attacked->second ? ranged_art_ : melee_art_;
+        if (const auto set = sets.find(a.id); set != sets.end())
+        {
+            return &set->second;
+        }
     }
     const auto found = art_.find(a.id);
     return found == art_.end() ? nullptr : &found->second;
@@ -859,6 +896,8 @@ void CombatView::sync_art(bool preserve_effects)
     missing_art_ = std::move(built.missing);
     art_ = std::move(built.sprites);
     form_art_ = std::move(built.forms);
+    melee_art_ = std::move(built.melee);
+    ranged_art_ = std::move(built.ranged);
     portraits_ = std::move(built.portraits);
     terrain_art_ = std::move(built.terrain);
     skull_art_ = std::move(built.skull);
@@ -872,6 +911,7 @@ void CombatView::sync_art(bool preserve_effects)
         known_dead_.clear();
         skull_seconds_.clear();
         action_seconds_.clear();
+        shot_last_.clear();
     }
 }
 
@@ -997,6 +1037,18 @@ CombatView::ArtSet CombatView::build_art() const
             continue;
         }
         install(source, false);
+        const auto weapon_set = [&](const WeaponSetArt &set)
+        {
+            return build({source.entity, set.image, set.action, {}, set.planted, {}}, false);
+        };
+        if (source.melee)
+        {
+            result.melee[source.entity] = weapon_set(*source.melee);
+        }
+        if (source.ranged)
+        {
+            result.ranged[source.entity] = weapon_set(*source.ranged);
+        }
     }
     if (campaign_)
     {
@@ -1659,6 +1711,18 @@ void CombatView::act(Command command)
                      command.verb == "inflict_wounds_2")
             {
                 sound = 2;
+            }
+            // A monster shows the weapon set it attacks with (#274), and keeps
+            // the set it shows when its art has none for the attack.
+            if ((command.verb == "melee" || command.verb == "opportunity") &&
+                melee_art_.contains(command.actor))
+            {
+                shot_last_[command.actor] = false;
+            }
+            else if ((command.verb == "ranged" || command.verb.starts_with("throw")) &&
+                     ranged_art_.contains(command.actor))
+            {
+                shot_last_[command.actor] = true;
             }
             if (sound)
             {

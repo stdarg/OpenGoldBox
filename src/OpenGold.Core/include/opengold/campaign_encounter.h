@@ -29,6 +29,13 @@ struct OriginalArt
     std::optional<Image> action;
 };
 
+// One weapon set's new art, planted as the catalog previews it.
+struct WeaponSetArt
+{
+    Image image, action;
+    PlantedArt planted;
+};
+
 struct CombatArt
 {
     rules::EntityId entity{};
@@ -38,6 +45,8 @@ struct CombatArt
     std::optional<PlantedArt> planted; // empty for art fitted to the square
     // The original icon new art replaced, for showing that instead (#274).
     std::optional<OriginalArt> original;
+    // The weapon sets the creature shows once it attacks in melee or shoots.
+    std::optional<WeaponSetArt> melee, ranged;
 };
 
 // Who an encounter caught unaware. The values are the original script's
