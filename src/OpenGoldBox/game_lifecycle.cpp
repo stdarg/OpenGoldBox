@@ -1,4 +1,6 @@
 #include "game_lifecycle.h"
+#include "application_settings.h"
+#include "crash_reports.h"
 #include "localization.h"
 #include "screenshot_service.h"
 #include "guarded_handlers.h"
@@ -25,8 +27,23 @@ void GameLifecycle::_ready()
                               });
 }
 
+void GameLifecycle::_exit_tree()
+{
+    presentation::run_guarded(*this,
+                              [&]
+                              {
+                                  crash_reports::end_session();
+                              });
+}
+
 void GameLifecycle::start_lifecycle()
 {
+    crash_reports::install_terminate_handler();
+    crash_reports::begin_session();
+    if (settings::flag("--crash-check"))
+    {
+        crash_reports::crash_for_check();
+    }
     i18n::initialize();
     set_process_mode(PROCESS_MODE_ALWAYS);
     auto *tree = get_tree(); // borrowed; SceneTree owns this autoload

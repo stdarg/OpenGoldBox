@@ -17,6 +17,7 @@ class GameLifecycle : public godot::Node
     }
 
     void _ready() override;
+    void _exit_tree() override;
     void _input(const godot::Ref<godot::InputEvent> &event) override;
 
   protected:

@@ -52,10 +52,11 @@ configure_file("${export_config}" "${game_project}/export_presets.cfg" @ONLY)
 
 add_library(opengoldbox_game SHARED rolf_tour_view.cpp combat_view.cpp character_creation_view.cpp
     portrait_picker.cpp portrait_catalog.cpp party_preview.cpp equipment_choice_dialog.cpp level_up_view.cpp level_up_dialog.cpp level_up_lab_view.cpp campaign_save_view.cpp save_slots.cpp
-    character_pool_dialog.cpp town_sheet_dialog.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp startup_view.cpp game_lifecycle.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp)
+    character_pool_dialog.cpp town_sheet_dialog.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp startup_view.cpp game_lifecycle.cpp crash_reports.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp)
 target_link_libraries(opengoldbox_game PRIVATE opengold_core opengold_rules_srd5 godot-cpp)
 target_compile_features(opengoldbox_game PRIVATE cxx_std_20)
-target_compile_definitions(opengoldbox_game PRIVATE $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+target_compile_definitions(opengoldbox_game PRIVATE $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
+    OPENGOLDBOX_VERSION="${PROJECT_VERSION}")
 set_target_properties(opengoldbox_game PROPERTIES PREFIX "" RUNTIME_OUTPUT_DIRECTORY "${game_project}/bin" LIBRARY_OUTPUT_DIRECTORY "${game_project}/bin")
 
 file(GLOB portrait_sources CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/art/portraits/*.png"
@@ -549,8 +550,13 @@ else()
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${export_path}/Contents/Resources/data/art"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_body_source}" "${export_path}/Contents/Resources/data/art/combat-body-looks.tsv"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_weapon_source}" "${export_path}/Contents/Resources/data/art/combat-weapon-options.tsv"
-        COMMAND codesign --force --deep --sign - "${export_path}"
-        COMMAND "${CMAKE_COMMAND}" "-DAPP_BUNDLE=${export_path}" -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_macos_package.cmake")
+        COMMAND "${CMAKE_COMMAND}" "-DAPP_BUNDLE=${export_path}" "-DGODOT=${OPENGOLDBOX_GODOT}"
+            "-DNOTICES_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/write_engine_notices.gd"
+            "-DPROJECT_LICENSE=${PROJECT_SOURCE_DIR}/LICENSE"
+            "-DGODOT_CPP_LICENSE=${godot_cpp_SOURCE_DIR}/LICENSE.md"
+            "-DMD5_MANIFEST=${game_project}/config/por-pc13-md5.json"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/package_macos.cmake"
+        COMMAND codesign --force --deep --sign - "${export_path}")
 endif()
 if(OPENGOLD_BUILD_TESTS)
     # The game ships data/monsters, the Combat Sprite Catalog's export; catalog
@@ -570,6 +576,13 @@ if(WIN32 AND OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_windows_package_smoke PROPERTIES
         TIMEOUT 900 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
 endif()
+if(APPLE AND OPENGOLD_BUILD_TESTS)
+    add_test(NAME opengold_macos_package_smoke COMMAND "${CMAKE_COMMAND}"
+        "-DAPP_BUNDLE=${export_path}" "-DWORK=${CMAKE_BINARY_DIR}/package-smoke"
+        -P "${PROJECT_SOURCE_DIR}/tests/macos_package_smoke.cmake")
+    set_tests_properties(opengold_macos_package_smoke PROPERTIES
+        TIMEOUT 900 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
+endif()
 add_custom_target(OpenGoldBox ALL
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/opengold.gdextension" "${game_project}/bin/opengold.gdextension"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${game_project}/data/rules/srd-5.2.1"
@@ -582,5 +595,16 @@ add_custom_target(OpenGoldBox ALL
     ${package_commands}
     DEPENDS opengoldbox_game opengoldbox_assets
     VERBATIM)
+if(APPLE)
+    # Not part of every build: compressing the disk image takes a few minutes.
+    add_custom_target(opengoldbox_macos_dmg
+        COMMAND "${CMAKE_COMMAND}" "-DAPP_BUNDLE=${export_path}" "-DLIBRARY=$<TARGET_FILE:opengoldbox_game>"
+            "-DDMG=${CMAKE_BINARY_DIR}/OpenGoldBox-${PROJECT_VERSION}-macos.dmg"
+            "-DSYMBOLS=${CMAKE_BINARY_DIR}/OpenGoldBox-${PROJECT_VERSION}-macos-symbols.zip"
+            "-DWORK=${CMAKE_BINARY_DIR}/dmg"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/make_macos_dmg.cmake"
+        VERBATIM)
+    add_dependencies(opengoldbox_macos_dmg OpenGoldBox)
+endif()
 
 opengold_enable_warnings("${CMAKE_CURRENT_SOURCE_DIR}")

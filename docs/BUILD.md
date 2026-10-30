@@ -76,6 +76,7 @@ no preset) and runs tests only when asked:
 | *(none)* | macOS: build the game and re-export `mac-package/OpenGoldBox.app`. Linux: build the native core. No tests. |
 | `--test` | After building, run the native tests (everything except the Godot runtime checks). |
 | `--test-all` | After building, run every test, including the Godot runtime checks. |
+| `--package` | macOS: also write [the disk image players download](#the-package-for-players-1). |
 | `default`, `debug`, `macos-universal` | Build that preset instead of the platform default. |
 
 Both scripts always build the checkout they live in, whatever the current
@@ -214,6 +215,60 @@ This builds a universal (`arm64` and `x86_64`) app bundle, ad hoc signed for
 local testing. The preset uses Ninja, which compiles on every core; a tree
 configured earlier with Unix Makefiles must be deleted once
 (`rm -rf build/macos-universal`) before it configures again.
+
+#### The package for players
+
+```bash
+./build.sh --package
+```
+
+This also writes two files in `build/macos-universal/`:
+
+- `OpenGoldBox-<version>-macos.dmg`, about 1.4 GB, for players: the app and a
+  link to Applications to drag it onto. The build opens the finished image,
+  verifies the app's signature and starts it once.
+- `OpenGoldBox-<version>-macos-symbols.zip`, for you: keep it with the release.
+  It reads [crash reports](CONFIGURATION.md#crash-reports) down to source lines.
+
+Each build of the app adds `LICENSE.txt` and `THIRD-PARTY-NOTICES.txt` to its
+`Contents/Resources`, and fails if the bundle holds any file the original game's
+MD5 manifest names, any `.DAX`, a `settings.cfg` or a `.TMP` file. As on Windows,
+the app uses the debug export template, so a crash leaves a full backtrace. The
+version comes from `project()` in the top-level `CMakeLists.txt`; raise it for a
+release, since it is the only thing in a crash report that names the build.
+
+The app is ad hoc signed, not notarized, because that takes an Apple Developer ID
+certificate. macOS therefore refuses to open a downloaded copy at first. The
+player opens it once, sees the refusal, then chooses **Open Anyway** in System
+Settings > Privacy & Security.
+
+`opengold_macos_package_smoke`, a ctest check that needs `OPENGOLD_GAME_DIR`,
+installs the app under `Programme Prüfung 冒険` and a copy of the original files
+under `Pool of Radiance Daten ü 冒険`, makes both read-only, and runs the app with
+a fresh home folder, a `PATH` of only the system's tools and no `OPENGOLD_*`
+overrides. It checks that the first launch waits in setup without writing
+settings, then plays character creation, shops, combat and recovery, saves,
+restarts and restores the saves. It also runs two copies at once and crashes the
+game on purpose to check the report. Nothing may be written into the app. Run it
+alone with:
+
+```bash
+OPENGOLD_GAME_DIR=/path/to/POOLRAD ctest --preset macos-universal -R macos_package_smoke --output-on-failure
+```
+
+On another Mac, or a clean user account, which that check cannot stand in for,
+download the image from a browser and check by hand:
+
+1. Drag the app to Applications. Opening it is refused once, and **Open Anyway**
+   starts it, with no Godot or developer tools installed.
+2. It asks for the language, then the game folder. A folder in Documents or on an
+   external drive brings up macOS's permission request, and the game reads it.
+3. After **Continue**, quit and start again: setup is not asked again, and a saved
+   campaign loads.
+
+Checked automatically on 2026-10-30: macOS 26.6.2 on Apple silicon, and the Intel
+build started under Rosetta, Godot 4.7.2-stable (official) with its debug export
+template. The hand steps have not been run yet.
 
 ## The demos
 

@@ -5,6 +5,7 @@
 #
 #   --test      after building, run the native test suite
 #   --test-all  after building, run every test, including the Godot checks
+#   --package   macOS: also write the disk image players download
 #   <preset>    build another CMake preset: default (native core and tests,
 #               build/), debug (the same, unoptimized) or macos-universal
 #
@@ -26,12 +27,14 @@ JOBS="${JOBS:-$( (command -v sysctl >/dev/null 2>&1 && sysctl -n hw.ncpu) \
 
 PRESET=
 TESTS=none
+PACKAGE=no
 for arg in "$@"; do
     case "$arg" in
         --test) TESTS=native ;;
         --test-all) TESTS=all ;;
+        --package) PACKAGE=yes ;;
         -*)
-            echo "Unknown option: $arg (use --test, --test-all or a preset name)" >&2
+            echo "Unknown option: $arg (use --test, --test-all, --package or a preset name)" >&2
             exit 2
             ;;
         *) PRESET="$arg" ;;
@@ -49,6 +52,9 @@ fi
 "$CMAKE" --build --preset "$PRESET" --parallel "$JOBS"
 if [ "$PRESET" = macos-universal ]; then
     echo "Game exported: mac-package/OpenGoldBox.app"
+    if [ "$PACKAGE" = yes ]; then
+        "$CMAKE" --build --preset "$PRESET" --target opengoldbox_macos_dmg
+    fi
 fi
 
 case "$TESTS" in
