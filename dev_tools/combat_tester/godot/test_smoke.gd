@@ -35,6 +35,11 @@ func run_check() -> void:
             push_error("Game combat view was not attached")
             quit(1)
             return
+        var enemy_widths: Array = setup.get_node("CombatTestFight").enemy_sprite_widths()
+        if enemy_widths.is_empty() or not enemy_widths.all(func(w): return w == 128):
+            push_error("The tester's orcs must wear the game's new art: %s" % enemy_widths)
+            quit(1)
+            return
         print("COMBAT_TEST_SMOKE_OK level=", level + 1, " map=", request.map)
         bridge.leave()
         await process_frame
