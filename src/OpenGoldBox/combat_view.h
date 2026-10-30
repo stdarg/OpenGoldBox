@@ -130,7 +130,8 @@ class CombatView : public godot::Control
     [[nodiscard]] ArtSet build_art() const;
 
     std::map<opengold::rules::EntityId, SpriteArt> art_;
-    // Wild Shape's Beast forms, by form key, from the original combat icons.
+    // Wild Shape's Beast forms and summoned creatures, by form key: the catalog's
+    // new art, else the original combat icons.
     std::map<std::string, SpriteArt> form_art_;
     [[nodiscard]] const SpriteArt *combatant_art(const opengold::rules::CombatantView &a) const;
     godot::Ref<godot::ImageTexture> skull_art_;

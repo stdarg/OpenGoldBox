@@ -3,6 +3,8 @@
 
 #include "opengold/formats.h"
 #include "opengold/png_decoder.h"
+#include <array>
+#include <cstdint>
 #include <filesystem>
 #include <map>
 #include <string>
@@ -84,5 +86,23 @@ struct WieldedItems
 
 // The row below a pose's lowest opaque pixel, where its feet stand.
 [[nodiscard]] unsigned planted_ground(const Image &pose);
+
+// The original combat icon CPIC<bank>.DAX `icon` a Wild Shape or summoned form
+// wears (docs/monster-art-mapping.md). The creature MON<bank>CHA record `icon`
+// is drawn with the same icon, so the form wears that creature's new art.
+struct FormIcon
+{
+    std::string_view form;
+    unsigned bank;
+    std::uint8_t icon;
+};
+
+// Summon Dragon's spirit wears Tyranthraxus's icon, Animate Objects' objects
+// the Skeleton's (LEVELS-4), Giant Insect's insects the Large Scorpion's.
+inline constexpr std::array form_icons{
+    FormIcon{"wolf", 4, 106},           FormIcon{"boar", 6, 120},
+    FormIcon{"giant_lizard", 8, 59},    FormIcon{"giant_snake", 5, 60},
+    FormIcon{"tiger", 6, 119},          FormIcon{"giant_insect", 4, 18},
+    FormIcon{"draconic_spirit", 5, 66}, FormIcon{"animated_object", 4, 34}};
 } // namespace opengold::por
 #endif

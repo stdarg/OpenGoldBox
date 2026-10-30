@@ -12,6 +12,7 @@
 #include "godot_nodes.h"
 #include <godot_cpp/classes/popup_menu.hpp>
 #include "game_resources.h"
+#include "game_monsters.h"
 #include "combat_view.h"
 #include "combat_sprite_layout.h"
 #include "godot_sound_output.h"
@@ -997,22 +998,25 @@ CombatView::ArtSet CombatView::build_art() const
         install(source, large);
     }
 
-    // Wild Shape's Beast forms use the original combat icons the art research
-    // matched to those monsters (docs/monster-art-mapping.md); the action pose
-    // is the icon 128 records on.
-    struct FormIcon
+    // Wild Shape's Beast forms and summoned creatures wear the new art of the
+    // creature that shares their original icon, as it stands on the
+    // battlefield (#274); without it, the original icon, whose action pose is
+    // the icon 128 records on.
+    const auto monsters = game_monsters();
+    for (const auto &entry : por::form_icons)
     {
-        const char *form, *archive;
-        std::uint8_t icon;
-    };
-
-    // Summon Dragon's spirit wears Tyranthraxus's icon, Animate Objects' objects
-    // the Skeleton's (LEVELS-4), Giant Insect's insects the Large Scorpion's.
-    constexpr std::array form_icons{
-        FormIcon{"wolf", "CPIC4.DAX", 106},           FormIcon{"boar", "CPIC6.DAX", 120},
-        FormIcon{"giant_lizard", "CPIC8.DAX", 59},    FormIcon{"giant_snake", "CPIC5.DAX", 60},
-        FormIcon{"tiger", "CPIC6.DAX", 119},          FormIcon{"giant_insect", "CPIC4.DAX", 18},
-        FormIcon{"draconic_spirit", "CPIC5.DAX", 66}, FormIcon{"animated_object", "CPIC4.DAX", 34}};
+        const auto *exported = monsters->creature(entry.bank, entry.icon);
+        if (const auto *variant = exported ? por::readied_variant(*exported, false) : nullptr)
+        {
+            form_art[std::string(entry.form)] =
+                build({0,
+                       variant->ready,
+                       variant->action,
+                       {},
+                       PlantedArt{por::art_scale(*exported), por::planted_ground(variant->ready)}},
+                      false);
+        }
+    }
     if (std::filesystem::is_directory(directory))
     {
         for (const auto &file : std::filesystem::directory_iterator(directory))
@@ -1025,9 +1029,10 @@ CombatView::ArtSet CombatView::build_art() const
                     c -= 32;
                 }
             }
-            for (const auto &entry : form_icons)
+            for (const auto &entry : por::form_icons)
             {
-                if (name != entry.archive)
+                if (name != "CPIC" + std::to_string(entry.bank) + ".DAX" ||
+                    form_art.contains(std::string(entry.form)))
                 {
                     continue;
                 }
@@ -1053,7 +1058,7 @@ CombatView::ArtSet CombatView::build_art() const
                 {
                     source.action = std::move(action.image);
                 }
-                form_art[entry.form] = build(source, false);
+                form_art[std::string(entry.form)] = build(source, false);
             }
         }
     }

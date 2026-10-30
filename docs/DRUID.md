@@ -105,6 +105,11 @@ ability.
     ([FOOT-1](SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills));
     without room there, the Druid takes the nearest space with room. A move
     puts the form's left square on the square chosen.
+  - A form wears the Combat Sprite Catalog's new art of the creature drawn
+    with its original icon (the wolf's, the wild boar's), as that creature
+    stands on the battlefield; without it, the original icon
+    ([#274](https://github.com/stdarg/OpenGoldBox/issues/274)). Summoned
+    creatures and Animate Objects' objects do the same.
 - The form ends on "Leave Wild Shape", another Wild Shape, 0 Hit Points, being
   Incapacitated at the start of the Druid's turn, fleeing the battlefield, or
   when the fight ends
