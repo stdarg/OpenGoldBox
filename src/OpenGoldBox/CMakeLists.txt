@@ -327,6 +327,13 @@ if(OPENGOLD_BUILD_TESTS)
         -P "${PROJECT_SOURCE_DIR}/tests/slums_encounter.cmake")
     set_tests_properties(opengold_godot_slums_encounter PROPERTIES FIXTURES_REQUIRED godot_project
         TIMEOUT 300 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
+    add_test(NAME opengold_godot_weapon_sets COMMAND "${CMAKE_COMMAND}"
+        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
+        "-DWORK=${CMAKE_BINARY_DIR}/weapon-sets"
+        -P "${PROJECT_SOURCE_DIR}/tests/weapon_sets.cmake")
+    set_tests_properties(opengold_godot_weapon_sets PROPERTIES FIXTURES_REQUIRED godot_project
+        TIMEOUT 300 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_slums_ui_audit COMMAND "${CMAKE_COMMAND}"
         "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
         "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"

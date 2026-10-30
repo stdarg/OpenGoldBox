@@ -77,6 +77,16 @@ struct WieldedItems
 
 [[nodiscard]] WieldedItems wielded_items(const ExportedMonster &monster, bool archer);
 
+// The weapon sets a creature shows as it attacks: a melee attack its melee
+// weapon's, with the readied shield where a set has it, and a shot its ranged
+// weapon's. Each falls back to the first set of its kind; null without one.
+struct AttackVariants
+{
+    const MonsterVariant *melee{}, *ranged{};
+};
+
+[[nodiscard]] AttackVariants attack_variants(const ExportedMonster &monster);
+
 // Whether the catalog draws the creature human-shaped, at a humanoid height.
 [[nodiscard]] bool human_shaped(const ExportedMonster &monster);
 

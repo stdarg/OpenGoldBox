@@ -61,6 +61,16 @@ void shipped()
           "An orc leader swings its battle axe and shoots its bow only as the archer");
     check(wielded_items(kobold, false).melee == &kobold.equipment.front(),
           "With no weapon readied, a creature fights with its first");
+    const auto orc_attacks = attack_variants(orc), leader_attacks = attack_variants(leader);
+    check(orc_attacks.melee == armed && orc_attacks.ranged &&
+              orc_attacks.ranged->id.ends_with("__ranged") && orc_attacks.ranged->shield_id.empty(),
+          "An orc swings its sword behind its shield and shoots its bow");
+    check(leader_attacks.melee && leader_attacks.melee->id == "item_000__one_hand" &&
+              leader_attacks.ranged == bow,
+          "An orc leader swings its axe and shoots its bow, archer or not");
+    const auto ogre_attacks = attack_variants(slums(bundle, 8));
+    check(!ogre_attacks.melee && !ogre_attacks.ranged,
+          "A creature without weapons keeps its one pair");
     check(human_shaped(kobold) && human_shaped(slums(bundle, 8)) &&
               !human_shaped(*bundle.creature(3, 106)),
           "Kobolds and ogres are human-shaped; wolves are not");
