@@ -725,6 +725,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                 {
                     district->wall_art.appearances.resize(district->wall_art.appearances.size() +
                                                           5);
+                    district->wall_art.originals.resize(district->wall_art.appearances.size());
                     ++slot;
                     continue;
                 }
@@ -763,13 +764,17 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                 {
                     throw EclError("Invalid wall definition bank " + std::to_string(id));
                 }
-                const auto with_new_art = with_replacements(
+                auto with_new_art = with_replacements(
                     std::move(*decoded),
                     wall_appearance_keys("WALLDEF" + bank + ".DAX", id, 5 * blocks), new_wall_art);
                 district->wall_art.scale = with_new_art.scale;
                 district->wall_art.appearances.insert(district->wall_art.appearances.end(),
                                                       with_new_art.appearances.begin(),
                                                       with_new_art.appearances.end());
+                with_new_art.originals.resize(with_new_art.appearances.size());
+                district->wall_art.originals.insert(district->wall_art.originals.end(),
+                                                    with_new_art.originals.begin(),
+                                                    with_new_art.originals.end());
                 slot += blocks;
             }
             district->sprite_archive =
@@ -1175,7 +1180,8 @@ Image RolfTourSession::observe_view()
                                       view);
     }
     const auto pose = snapshot_.pose;
-    auto view = render_exploration_view(map_, wall_art_, pose.x, pose.y, pose.facing);
+    auto view =
+        render_exploration_view(map_, wall_art_, pose.x, pose.y, pose.facing, original_walls_);
     // Before the opening script publishes a pose, (0,0) is only a default
     // value. An early UI refresh must not record it as explored territory.
     if (snapshot_.visited.none())

@@ -1,6 +1,7 @@
 // The creation scene's in-game menu: Escape that nothing else used opens it
 // over the party screen, the exploration screen or a fight.
 #include "character_creation_view.h"
+#include "application_settings.h"
 #include "combat_view.h"
 #include "game_menu_view.h"
 #include "godot_nodes.h"
@@ -29,6 +30,7 @@ void CharacterCreationView::attach_game_menu()
                   presentation::guarded(this, &CharacterCreationView::party_button_pressed)
                       .bind(static_cast<int>(PartyAction::return_to_party)));
     menu->connect("closed", presentation::guarded(this, &CharacterCreationView::game_menu_closed));
+    menu->connect("art_changed", presentation::guarded(this, &CharacterCreationView::art_changed));
     presentation::attach_child(*this, std::move(owned));
 }
 
@@ -86,6 +88,18 @@ void CharacterCreationView::open_game_menu()
         }
     }
     move_child(&menu, get_child_count() - 1);
+}
+
+void CharacterCreationView::art_changed()
+{
+    if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown")))
+    {
+        town->show_original_walls(settings::original_wall_art());
+    }
+    if (auto *combat = Object::cast_to<CombatView>(get_node_or_null("CampaignCombat")))
+    {
+        combat->refresh_art();
+    }
 }
 
 void CharacterCreationView::game_menu_closed()

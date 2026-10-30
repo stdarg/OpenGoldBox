@@ -6264,10 +6264,13 @@ void exported_monsters(const std::filesystem::path &directory)
                   "The renamed orc stands in its new art, scaled as the catalog previews it");
             check(enemy.melee_weapon == "scimitar" && enemy.ranged_weapon.empty(),
                   "The renamed orc fights with the scimitar the catalog gave it");
+            check(art.original && art.original->image.width < 128 && art.original->action,
+                  "Its original icon and action pose stay for the Combat art setting");
         }
         else
         {
-            check(!art.planted, enemy.name + " has no exported art and keeps its original icon");
+            check(!art.planted && !art.original,
+                  enemy.name + " has no exported art and keeps its original icon");
             check(enemy.melee_weapon.empty(), enemy.name + " keeps its stat block's attacks");
         }
     }

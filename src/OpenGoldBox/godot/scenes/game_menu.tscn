@@ -322,6 +322,52 @@ autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "The battlefield's size when a fight opens."
 
+[node name="WallArtLabel" type="Label" parent="Options/Interface"]
+offset_left = 20
+offset_top = 212
+offset_right = 280
+offset_bottom = 248
+text = "3D view art"
+
+[node name="WallArt" type="OptionButton" parent="Options/Interface"]
+offset_left = 290
+offset_top = 208
+offset_right = 510
+offset_bottom = 248
+
+[node name="WallArtNote" type="Label" parent="Options/Interface"]
+anchor_right = 1
+offset_left = 540
+offset_right = -20
+offset_top = 204
+offset_bottom = 260
+autowrap_mode = 3
+theme_type_variation = &"LabelMuted"
+text = "The walls of the town and the dungeons: the new art, or the original game's."
+
+[node name="CombatArtLabel" type="Label" parent="Options/Interface"]
+offset_left = 20
+offset_top = 276
+offset_right = 280
+offset_bottom = 312
+text = "Combat art"
+
+[node name="CombatArt" type="OptionButton" parent="Options/Interface"]
+offset_left = 290
+offset_top = 272
+offset_right = 510
+offset_bottom = 312
+
+[node name="CombatArtNote" type="Label" parent="Options/Interface"]
+anchor_right = 1
+offset_left = 540
+offset_right = -20
+offset_top = 268
+offset_bottom = 324
+autowrap_mode = 3
+theme_type_variation = &"LabelMuted"
+text = "The monsters' figures in a fight: the new art, or the original game's. Party members keep theirs."
+
 [node name="Close" type="Button" parent="Options"]
 anchor_left = 1
 anchor_right = 1

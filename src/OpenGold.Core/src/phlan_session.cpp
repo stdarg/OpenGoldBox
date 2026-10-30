@@ -1219,19 +1219,23 @@ std::string wielded_key(const Creature &creature, const MonsterItem *item)
 opengold::CombatArt staged_creature_art(const std::vector<std::uint8_t> &archive, unsigned icon,
                                         Image ready, const ExportedMonster *exported, bool archer)
 {
+    opengold::CombatArt art{0, std::move(ready), {}, {}, {}, {}};
+    if (icon < 128)
+    {
+        if (auto action = decode_ega_combat_icon(archive, static_cast<std::uint8_t>(icon + 128), 0))
+        {
+            art.action = std::move(action.image);
+        }
+    }
+    // New art keeps the original, which the Combat art setting can show.
     if (const auto *variant = exported ? readied_variant(*exported, archer) : nullptr)
     {
-        return {0, variant->ready, variant->action, {},
-                opengold::PlantedArt{art_scale(*exported), planted_ground(variant->ready)}};
-    }
-    opengold::CombatArt art{0, std::move(ready), {}, {}, {}};
-    if (icon >= 128)
-    {
-        return art;
-    }
-    if (auto action = decode_ega_combat_icon(archive, static_cast<std::uint8_t>(icon + 128), 0))
-    {
-        art.action = std::move(action.image);
+        return {0,
+                variant->ready,
+                variant->action,
+                {},
+                opengold::PlantedArt{art_scale(*exported), planted_ground(variant->ready)},
+                opengold::OriginalArt{std::move(art.image), std::move(art.action)}};
     }
     return art;
 }

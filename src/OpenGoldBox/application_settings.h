@@ -28,6 +28,13 @@ bool save_difficulty(opengold::Difficulty difficulty);
 bool save_encounter_challenge(unsigned challenge);
 bool save_combat_zoom(int percent);
 bool save_monster_ability(const std::string &ability, const godot::String &from);
+// [art] walls and combat: "original" shows the original game's art in the 3D
+// view and for the creatures in a fight in place of the new art (#274). Party
+// members keep theirs either way.
+bool original_wall_art();
+bool original_combat_art();
+bool save_original_wall_art(bool original);
+bool save_original_combat_art(bool original);
 // Every monster ability back to its default.
 bool restore_monster_abilities();
 bool valid_language(const godot::String &locale);

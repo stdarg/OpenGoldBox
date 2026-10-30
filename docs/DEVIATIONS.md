@@ -268,6 +268,12 @@ in the game: answering YES at a hall lists its services in the dialogue
 
 ## Interface and saves
 
+- **New art** (2026-10-29). The original drew its own walls and combat icons.
+  OpenGoldBox shows new walls in the 3D view and new figures for monsters in a
+  fight; the Options screen's 3D view art and Combat art bring back the
+  original game's, at once. Party members keep their figures either way
+  ([#274](https://github.com/stdarg/OpenGoldBox/issues/274),
+  [CONFIGURATION](CONFIGURATION.md)).
 - **Modern shell.** A Godot interface that follows the Gold Box screens'
   structure without their DOS-era limits.
   [PRD §5.2](PRD.md#52-modern-shell-original-game).

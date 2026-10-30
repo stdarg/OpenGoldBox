@@ -133,6 +133,9 @@ void replacement_and_fallback()
     check(mixed.appearances[1][6].rgba[0] == 30, "The appearance with new art shows it");
     check(mixed.appearances[0][6].rgba[0] == 10 && mixed.appearances[0][6].width == 56 * 4,
           "An appearance without new art falls back to its enlarged original");
+    check(mixed.originals.size() == 2 && mixed.originals[0][6].width == 0 &&
+              mixed.originals[1][6].rgba[0] == 20 && mixed.originals[1][6].width == 56 * 4,
+          "The replaced appearance keeps its original pieces at the new scale");
 
     replacements.sets.begin()->second[3] = solid(24, 32, 30);
     check(throws(
@@ -171,6 +174,22 @@ void scaled_view()
         }
     }
     check(same, "Enlarged original art draws exactly the original view, four times larger");
+
+    // The 3D view art setting: with new art loaded, the original view shows
+    // the replaced appearance's original pieces, at the same scale (#274).
+    WallArtReplacements matching;
+    auto pieces = one_appearance(70).appearances.front();
+    for (auto &piece : pieces)
+    {
+        piece = solid(piece.width * 4u, piece.height * 4u, 70);
+    }
+    matching.sets.emplace("WALLDEF1.DAX:1:1", pieces);
+    const auto replaced =
+        with_replacements(original, std::vector<std::string>{"WALLDEF1.DAX:1:1"}, matching);
+    const auto fresh = render_exploration_view(corridor, replaced, 8, 8, MapDirection::north);
+    const auto old = render_exploration_view(corridor, replaced, 8, 8, MapDirection::north, true);
+    check(old.image.rgba == large.image.rgba && fresh.image.rgba != large.image.rgba,
+          "The original view draws the original walls in place of the new art");
     check(large.visible == small.visible, "Scale does not change what the party sees");
     const auto &hit = large.wall_hits[(44 * 4) * 352 + 44 * 4];
     check(hit.cell == small.wall_hits[44 * 88 + 44].cell &&
@@ -190,6 +209,13 @@ void game_uses_new_art(const std::filesystem::path &directory)
           "New Phlan's first appearance is the shipped set, not its original");
     check(RolfTourSession::load(directory).wall_art().scale == 1,
           "Without new art the game loads the original pieces");
+    auto shown = RolfTourSession::load(directory, shipped);
+    const auto with_new = shown.observe_view();
+    shown.show_original_walls(true);
+    const auto with_original = shown.observe_view();
+    shown.show_original_walls(false);
+    check(with_new.rgba != with_original.rgba && shown.observe_view().rgba == with_new.rgba,
+          "The session switches between the new and the original walls at once");
 }
 } // namespace
 

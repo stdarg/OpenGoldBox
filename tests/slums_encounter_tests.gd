@@ -95,6 +95,28 @@ func lose_the_fight() -> void:
                 b.pressed.emit(); break
     require(false, "The trolls defeat a party that only ends its turns")
 
+# The 3D view art setting (#274): the Slums' walls switch to the original art
+# at once when the in-game menu sets Original, and back.
+func check_wall_art() -> void:
+    var art: OptionButton = current_scene.get_node("GameMenu/Options/Interface/WallArt")
+    var fresh: PackedByteArray = town().tour_visuals()["wall_image"].get_data()
+    art.select(1); art.item_selected.emit(1); await settle()
+    var old: PackedByteArray = town().tour_visuals()["wall_image"].get_data()
+    require(old != fresh, "Original 3D view art redraws the walls at once")
+    art.select(0); art.item_selected.emit(0); await settle()
+    require(town().tour_visuals()["wall_image"].get_data() == fresh, "New 3D view art comes back at once")
+
+# The Combat art setting (#274): the trolls stand in their new art, switch to
+# their original icons at once when the in-game menu sets Original, and back.
+func check_combat_art() -> void:
+    var combat: Node = current_scene.get_node("CampaignCombat")
+    var art: OptionButton = current_scene.get_node("GameMenu/Options/Interface/CombatArt")
+    require(not combat.enemy_sprite_widths().is_empty() and combat.enemy_sprite_widths().all(func(w): return w == 128), "The trolls stand in their new art: " + str(combat.enemy_sprite_widths()))
+    art.select(1); art.item_selected.emit(1); await settle()
+    require(combat.enemy_sprite_widths().all(func(w): return w > 0 and w < 128), "Original combat art shows the trolls' original icons at once: " + str(combat.enemy_sprite_widths()))
+    art.select(0); art.item_selected.emit(0); await settle()
+    require(combat.enemy_sprite_widths().all(func(w): return w == 128), "New combat art comes back at once")
+
 func run_checks() -> void:
     require(not fixture.is_empty(), "--slums-fixture required")
     var path := slot_path(SLOT)
@@ -111,11 +133,13 @@ func run_checks() -> void:
     require(town().get_node("Title").text == "OPENGOLDBOX  /  Slums", "The title names the area: " + town().get_node("Title").text)
     require(not dialogue().contains("Rolf"), "Exploring the Slums does not follow Rolf: " + dialogue())
     await check_leader()
+    await check_wall_art()
     await reach_close_up()
     var continue_button: Button = town().get_node("Continue")
     require(not continue_button.disabled, "Continue can start the fight from the close-up")
     continue_button.pressed.emit(); await settle(30)
     require(in_combat(), "Continue leaves the close-up for combat")
+    await check_combat_art()
     await lose_the_fight()
     var log: String = current_scene.get_node("CampaignCombat/LogStack/Log").get_parsed_text()
     require(not log.contains(tr("A: next action | Space: use | Z: spell slot | Enter: end turn")), "A finished fight shows no key hints")

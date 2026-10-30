@@ -370,6 +370,13 @@ class RolfTourSession
         return sprites_;
     }
 
+    // The walls new art replaced shown in their original art (#274); the
+    // view's setting, not saved with the game.
+    void show_original_walls(bool original) noexcept
+    {
+        original_walls_ = original;
+    }
+
     [[nodiscard]] const WallArtSet &wall_art() const noexcept
     {
         return wall_art_;
@@ -433,6 +440,7 @@ class RolfTourSession
     std::shared_ptr<const EclProgram> program_;
     std::array<opengold::Image, 3> sprites_;
     WallArtSet wall_art_;
+    bool original_walls_{};
     EclMachine machine_;
     std::uint32_t entry_;
     TourSnapshot snapshot_;

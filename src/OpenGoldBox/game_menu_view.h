@@ -44,5 +44,7 @@ class GameMenuView : public godot::Control
     void restore_ability_defaults();
     void language_selected(std::int64_t index);
     void zoom_changed(double value);
+    void wall_art_selected(std::int64_t index);
+    void combat_art_selected(std::int64_t index);
 };
 #endif
