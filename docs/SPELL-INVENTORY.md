@@ -68,7 +68,7 @@ recharge must remain source-specific.
 - No spell above level 2 is granted by these routes through character level 4.
   Unique level-two Paladin/Ranger spells unavailable through another included
   route came at Paladin level 5: Shining Smite is in the game; Find Steed is
-  not (see the [final reconciliation](SRD-COVERAGE.md#final-reconciliation-185)).
+  not ([CLOSE-1](SRD-DECISIONS.md#close-1-2026-10-29-the-last-srd-choices)).
 - Scrolls, magic items, monster spellcasting and arbitrary campaign rewards can
   introduce other spells independently of character level. Those content and
   item inventories are separate; this is the class/species/background/feat

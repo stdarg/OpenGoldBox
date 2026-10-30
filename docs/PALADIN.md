@@ -14,7 +14,7 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
 | 3 | Channel Divinity, Oath of Devotion | Delivered (rules 0.6.73): Sacred Weapon and the oath spells; Divine Sense left out (CLASS-4) |
 | 4 | Ability Score Improvement | Delivered earlier |
 | 5 | Extra Attack, level-2 spells | Delivered (rules 0.6.203) |
-| 5 | Faithful Steed | Cut with Find Steed: no mounts (SCOPE-1) |
+| 5 | Faithful Steed | Cut with Find Steed ([CLOSE-1](SRD-DECISIONS.md#close-1-2026-10-29-the-last-srd-choices)) |
 | 6 | Aura of Protection | Delivered (rules 0.6.203) |
 | 7 | Aura of Devotion | Delivered (rules 0.6.203) |
 | 8 | Ability Score Improvement | Delivered (rules 0.6.203) |
@@ -38,7 +38,7 @@ campaign the Training Hall trains it to level 15.
   and 6, three from 7. Prepared spells 6, 6, 7, 7. The Paladin list gains its
   level-2 spells: Aid, Lesser Restoration, Magic Weapon, Prayer of Healing,
   Protection from Poison, Shining Smite and Warding Bond. Find Steed, Gentle
-  Repose, Locate Object and Zone of Truth are cut (SCOPE-1, DM-1, DM-3).
+  Repose, Locate Object and Zone of Truth are cut (CLOSE-1, DM-1, DM-3).
 - **Oath of Devotion spells** (5): Aid is always prepared (Zone of Truth is
   cut).
 - **Smites from a level-2 slot:** after a melee hit the Bonus Action list also

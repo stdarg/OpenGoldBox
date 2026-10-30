@@ -214,6 +214,28 @@ void cantrip_checks()
           "Shillelagh, then a staff strike");
     check(attack_bonus(*c) == strength_bonus + 2,
           "Shillelagh attacks with Wisdom (+4) instead of Strength (+2)");
+    // Its damage may be Force instead of the staff's Bludgeoning: a target
+    // immune to Bludgeoning takes only the Force strike's.
+    const auto immune = srd5::parse_content(
+        read(root / "data/rules/srd-5.2.1/combat.rules") +
+        "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
+        "affinity target test immunity bludgeoning\n");
+    const auto strike = [&](std::string_view verb)
+    {
+        auto force = battle(*immune, sheet, {"quarterstaff"}, true);
+        const auto commands = force->legal_commands();
+        check(std::none_of(commands.begin(), commands.end(),
+                           [](const auto &command)
+                           {
+                               return command.verb == "melee_force";
+                           }),
+              "No Force strike before Shillelagh");
+        check(submit(*force, "shillelagh") && submit(*force, verb, 98),
+              "Shillelagh, then a staff strike");
+        return logged(*force, "hits for 0 damage");
+    };
+    check(strike("melee") && !strike("melee_force"),
+          "Shillelagh's strike deals Force damage when chosen, else Bludgeoning");
 }
 
 // A level-one Druid knows two cantrips (three as a Magician) and prepares four

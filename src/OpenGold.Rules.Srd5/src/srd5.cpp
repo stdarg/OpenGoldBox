@@ -12894,6 +12894,11 @@ std::vector<Command> Session::offered_commands() const
             add(id, "melee_psychic", "Melee attack (Psychic)", other.source.id);
             add(id, "melee_radiant", "Melee attack (Radiant)", other.source.id);
         }
+        // Shillelagh: the weapon may deal Force damage instead of its own type.
+        if (feet <= d.reach && shillelagh(a))
+        {
+            add(id, "melee_force", "Melee attack (Force)", other.source.id);
+        }
         offer_tactical(AttackRange::melee, feet <= d.reach, other);
         offer_cunning(AttackRange::melee, feet <= d.reach, other);
         // Stunning Strike: a Monk weapon or Unarmed Strike, once a turn, 1 Focus on a hit.
@@ -25554,7 +25559,7 @@ void Session::dispatch(const Command &command)
         }
     }
     if (command.verb == "melee_necrotic" || command.verb == "melee_psychic" ||
-        command.verb == "melee_radiant")
+        command.verb == "melee_radiant" || command.verb == "melee_force")
     {
         pact_damage_ = detail::damage_type(std::string_view(command.verb).substr(6));
         auto melee = command;
@@ -28857,81 +28862,6 @@ class Module final : public RulesModule
         return content_->identity;
     }
 
-    std::vector<std::string> supported_features() const override
-    {
-        return {"alert",
-                "skilled",
-                "light",
-                "two_weapon_fighting",
-                "loading",
-                "scholar",
-                "arcane_recovery",
-                "champion",
-                "stabilize",
-                "tactical_mind",
-                "chill_touch",
-                "shocking_grasp",
-                "eldritch_blast",
-                "initiative",
-                "movement",
-                "unconscious_enemy_transit",
-                "melee",
-                "ranged",
-                "critical_hits",
-                "dodge",
-                "dash",
-                "disengage",
-                "opportunity_attacks",
-                "facing",
-                "turn_opportunity_attacks",
-                "death_saves",
-                "second_wind",
-                "action_surge",
-                "cunning_dash",
-                "cunning_disengage",
-                "pack_tactics",
-                "aggressive",
-                "advantage_damage",
-                "sneak_attack",
-                "steady_aim",
-                "great_weapon_fighting",
-                "ray_of_frost",
-                "fire_bolt",
-                "poison_spray",
-                "sacred_flame",
-                "cure_wounds",
-                "magic_missile",
-                "healing_word",
-                "scorching_ray",
-                "level_two_slots",
-                "manual_advancement",
-                "ability_score_improvement",
-                "defense",
-                "archery",
-                "savage_attacker",
-                "saving_throws",
-                "blinded",
-                "blindness",
-                "timed_effects",
-                "versatile",
-                "feature_grants",
-                "training_grants",
-                "rest_resources",
-                "hit_dice",
-                "recovery_clocks",
-                "campaign_recovery",
-                "typed_damage",
-                "damage_affinities",
-                "dwarven_poison_resistance",
-                "temporary_hp",
-                "adrenaline_rush",
-                "heavy_weapons",
-                "weapon_catalog",
-                "armor_catalog",
-                "wizard_spellbook",
-                "checkpoint"};
-    }
-
     std::unique_ptr<CombatSession> create(Encounter e, std::uint64_t seed) const override
     {
         return std::make_unique<Session>(content_, std::move(e), seed);
@@ -29001,9 +28931,9 @@ class Module final : public RulesModule
     std::vector<TrainingReplacementOptions> rest_training_options(const CharacterSheet &sheet,
                                                                   RestKind kind) const override
     {
-        // Weapon Mastery and the Druid's land change after a Long Rest; the
-        // Hunter's Prey and Defensive Tactics after any rest (SRD 5.2.1 pp.
-        // 46, 61).
+        // Weapon Mastery, the Druid's land and the High Elf's cantrip change
+        // after a Long Rest; the Hunter's Prey and Defensive Tactics after any
+        // rest (SRD 5.2.1 pp. 46, 61, 85).
         std::vector<TrainingReplacementOptions> result;
         if (kind == RestKind::long_rest)
         {
@@ -29030,6 +28960,11 @@ class Module final : public RulesModule
             if (auto land = subclass_rest_choice(sheet, detail::land_options()))
             {
                 result.push_back(std::move(*land));
+            }
+            // A High Elf's Wizard cantrip changes after a Long Rest too.
+            if (auto cantrip = subclass_rest_choice(sheet, detail::high_elf_cantrip_options()))
+            {
+                result.push_back(std::move(*cantrip));
             }
         }
         return result;
@@ -33330,6 +33265,7 @@ class Module final : public RulesModule
         return group == "subclass:ranger:hunter"      ? "prey:"
                : group == detail::defensive_tactics   ? "tactics:"
                : group == detail::fiendish_resilience ? "resilience:"
+               : group == detail::high_elf_cantrip    ? "cantrip:"
                                                       : "land:";
     }
 
@@ -33514,7 +33450,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.260", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.261", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),

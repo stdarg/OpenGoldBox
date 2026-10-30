@@ -80,7 +80,8 @@ that does not fit is asked about with screenshots first.
   Steed (the Paladin's Faithful Steed), Phantom Steed, Druid fly forms,
   Dragonborn Draconic Flight, Monk Acrobatic Movement, Ranger climb and swim
   Speeds ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations),
-  [SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)).
+  [SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features);
+  Find Steed by [CLOSE-1](SRD-DECISIONS.md#close-1-2026-10-29-the-last-srd-choices)).
 
 ## Open decisions
 

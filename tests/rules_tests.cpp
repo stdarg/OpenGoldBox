@@ -1435,11 +1435,6 @@ class CombatOnlyModule : public RulesModule
         return {"test.combat-only", "1", "none"};
     }
 
-    std::vector<std::string> supported_features() const override
-    {
-        return {};
-    }
-
     std::unique_ptr<CombatSession> create(Encounter, std::uint64_t) const override
     {
         throw std::runtime_error("Unused test create");

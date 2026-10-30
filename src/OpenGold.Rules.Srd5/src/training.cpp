@@ -326,9 +326,7 @@ std::vector<TrainingChoiceGroup> species_options(std::string_view race, std::str
         const auto &lineage = selected(choices, "species:elf:lineage");
         if (std::find(lineage.begin(), lineage.end(), "high_elf") != lineage.end())
         {
-            auto cantrip = starting_cantrip_options(CharacterClass::wizard);
-            result.push_back(
-                one_of("species:elf:cantrip", "High Elf cantrip", std::move(cantrip.options)));
+            result.push_back(high_elf_cantrip_options());
         }
     }
     if (species == "tiefling")
@@ -961,6 +959,12 @@ TrainingChoiceGroup blessed_strikes_options()
         {"potent_spellcasting", "Potent Spellcasting",
          "Add your Wisdom modifier to the damage of your Cleric cantrips."}};
     return group;
+}
+
+TrainingChoiceGroup high_elf_cantrip_options()
+{
+    return one_of(std::string(high_elf_cantrip), "High Elf cantrip",
+                  starting_cantrip_options(CharacterClass::wizard).options);
 }
 
 // Circle of the Land: the land type that picks the Circle Spells (SRD 5.2.1 p. 46).

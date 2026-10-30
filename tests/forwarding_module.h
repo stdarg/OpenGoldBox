@@ -24,11 +24,6 @@ class ForwardingModule : public rules::RulesModule
         return rules_->identity();
     }
 
-    std::vector<std::string> supported_features() const override
-    {
-        return rules_->supported_features();
-    }
-
     std::unique_ptr<rules::CombatSession> create(rules::Encounter encounter,
                                                  std::uint64_t seed) const override
     {

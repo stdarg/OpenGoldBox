@@ -46,6 +46,8 @@ are always prepared. The cantrip comes at level 1 (a Tiefling's from its legacy,
 the High Elf's chosen Wizard cantrip); the level-1 spell comes at level 3 and
 is cast once per Long Rest without a slot (a Tiefling's Hellish Rebuke, Ray of
 Sickness or False Life; a High Elf's Detect Magic; a Wood Elf's Longstrider).
+A High Elf may change its Wizard cantrip after a Long Rest, in the rest
+window ([CLOSE-1](SRD-DECISIONS.md#close-1-2026-10-29-the-last-srd-choices)).
 The level-2 spell comes at level 5 the same way: an Infernal Tiefling's
 Darkness, an Abyssal one's Hold Person, a Chthonic one's Ray of Enfeeblement,
 a High Elf's Misty Step (a Wood Elf's Pass without Trace is cut, DM-3). A class
