@@ -69,8 +69,23 @@ func start_the_fight() -> void:
             continue_button.pressed.emit(); await settle(20)
     require(in_combat(), "The orcs' fight starts")
 
+# A shot flies from the shooter: to its target on a hit, past it on a miss.
+var hit_seen := false
+var miss_seen := false
+
+func check_missiles(combat: Control) -> void:
+    for flight in combat.missiles_in_flight():
+        require(flight["missile"] == "arrow", "An orc shoots an arrow from its bow: " + str(flight))
+        require(flight["texture"] is Texture2D, "The arrow has its art")
+        var to_target: Vector2 = flight["target"] - flight["from"]
+        var flown: Vector2 = flight["to"] - flight["from"]
+        if flight["to"] == flight["target"]: hit_seen = true
+        else:
+            miss_seen = true
+            require(flown.length() > to_target.length() and flown.normalized().dot(to_target.normalized()) > 0.999, "A miss sails on past its target: " + str(flight))
+
 # Ends the party's turns until an orc has shot, checking the set each
-# enemy shows along the way.
+# enemy shows along the way, and has both hit and missed with its arrows.
 func check_weapon_sets() -> void:
     var combat: Control = current_scene.get_node("CampaignCombat")
     var sets: Dictionary = combat.enemy_weapon_sets()
@@ -79,13 +94,14 @@ func check_weapon_sets() -> void:
     for step in range(3000):
         await settle(2)
         sets = combat.enemy_weapon_sets()
-        if sets.values().has("ranged"): return
+        check_missiles(combat)
+        if sets.values().has("ranged") and hit_seen and miss_seen: return
         require(not combat.get_node("StatusStack/Turn").text.contains(tr("Party incapacitated / defeat")), "An orc shoots before the party falls: " + str(sets))
         for name in ["Decline", "End"]:
             var b: Button = combat.get_node(name)
             if b.is_visible_in_tree() and not b.disabled:
                 b.pressed.emit(); break
-    require(false, "An orc holds its bow to shoot: " + str(sets))
+    require(false, "An orc holds its bow, hits and misses: " + str(sets) + " " + str(hit_seen) + " " + str(miss_seen))
 
 func run_checks() -> void:
     require(not fixture.is_empty(), "--slums-fixture required")

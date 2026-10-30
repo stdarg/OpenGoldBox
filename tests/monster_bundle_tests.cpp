@@ -55,11 +55,11 @@ void shipped()
           "With no weapon readied, the first weapon set shows");
     check(slums(bundle, 8).variants.size() == 1 && slums(bundle, 8).variants[0].id == "default",
           "A creature without weapons has one default pair");
-    const auto archer = wielded_items(leader, true), fighter = wielded_items(leader, false);
-    check(archer.melee && archer.melee->name == "Battle axe" && archer.ranged &&
-              archer.ranged->name == "Long bow" && fighter.melee == archer.melee && !fighter.ranged,
-          "An orc leader swings its battle axe and shoots its bow only as the archer");
-    check(wielded_items(kobold, false).melee == &kobold.equipment.front(),
+    const auto wielded = wielded_items(leader);
+    check(wielded.melee && wielded.melee->name == "Battle axe" && wielded.ranged &&
+              wielded.ranged->name == "Long bow",
+          "An orc leader swings its battle axe and shoots the bow it carries");
+    check(wielded_items(kobold).melee == &kobold.equipment.front(),
           "With no weapon readied, a creature fights with its first");
     const auto orc_attacks = attack_variants(orc), leader_attacks = attack_variants(leader);
     check(orc_attacks.melee == armed && orc_attacks.ranged &&

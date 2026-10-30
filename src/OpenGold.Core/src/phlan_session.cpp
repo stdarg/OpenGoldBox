@@ -2452,7 +2452,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // combat_team): 0, the party's, only for Valhingen Graveyard's
         // efreeti, who helps a party carrying his bottle.
         const bool ally = creature.stored.raw.at(0x10E) == 0;
-        // A leader shoots a bow only when its art shows one: of the Slums
+        // A leader readies a bow only when its art shows one: of the Slums
         // combat icons, only the orc leader's icon 5 does.
         auto definition = area_resources().conversions.at(record).definition;
         if (definition == "slums-orc-leader" && arg(2) == 5)
@@ -2466,13 +2466,18 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             throw EclError("Invalid original combat icon");
         }
-        // A human-shaped creature fights with the weapons it holds (#274).
+        // A human-shaped creature fights with the weapons it holds (#274), and
+        // shoots only with a ranged weapon it carries.
         std::string melee_weapon, ranged_weapon;
         if (exported && human_shaped(*exported))
         {
-            const auto wielded = wielded_items(*exported, definition.ends_with("-archer"));
+            const auto wielded = wielded_items(*exported);
             melee_weapon = wielded_key(creature, wielded.melee);
             ranged_weapon = wielded_key(creature, wielded.ranged);
+            if (ranged_weapon.empty())
+            {
+                ranged_weapon = rules::no_ranged_weapon;
+            }
         }
         for (unsigned i = 0; ally && i < count; ++i)
         {

@@ -306,6 +306,12 @@ blocks' Open5E responses were fetched on 2026-10-28 (`srd-2024`):
 
 Query: `https://api.open5e.com/v2/creatures/?key=srd-2024_<name>&depth=1`.
 
+`innate_ranged creature [boulder]` marks a ranged attack that is no carried
+weapon, a spell or a thrown rock, so a human-shaped creature from
+[data/monsters](../../monsters/README.md) keeps it without a ranged weapon;
+`boulder` is drawn flying. Every other human-shaped creature shoots only with a
+ranged weapon in its gear.
+
 `off ability [creature]` leaves out an ability's rows, every creature's or one
 creature's, to switch it off. The game's options (`settings.cfg`'s
 `[monsters]`) switch the same abilities by difficulty without editing this

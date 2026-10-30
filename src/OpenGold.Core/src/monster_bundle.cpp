@@ -212,7 +212,7 @@ const MonsterVariant *readied_variant(const ExportedMonster &monster, bool arche
     return armed ? armed : &monster.variants.front();
 }
 
-WieldedItems wielded_items(const ExportedMonster &monster, bool archer)
+WieldedItems wielded_items(const ExportedMonster &monster)
 {
     const auto first = [&](auto wanted) -> const MonsterItem *
     {
@@ -242,7 +242,7 @@ WieldedItems wielded_items(const ExportedMonster &monster, bool archer)
         {
             return ranged(item) && item.readied;
         });
-    if (!result.ranged && archer)
+    if (!result.ranged)
     {
         result.ranged = first(ranged);
     }
@@ -251,7 +251,7 @@ WieldedItems wielded_items(const ExportedMonster &monster, bool archer)
 
 AttackVariants attack_variants(const ExportedMonster &monster)
 {
-    const auto wielded = wielded_items(monster, true);
+    const auto wielded = wielded_items(monster);
     const auto set_of = [&](const MonsterItem *weapon, bool ranged)
     {
         const auto *held = weapon ? weapon_set(monster,

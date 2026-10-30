@@ -27,9 +27,12 @@ size and humanoid height, its equipment and its weapon sets:
   item of that type, copied from New Phlan's shop lists (a type they lack is
   not); without one it only picks the art.
 - **Weapons.** A creature drawn at a humanoid height hits with the weapon it
-  holds, original or added: its readied melee weapon (else its first), and a
-  readied ranged weapon or an archer's bow. The weapon's dice and damage type
-  replace its stat block's; the stat block keeps its bonuses.
+  holds, original or added: its readied melee weapon (else its first), and its
+  readied ranged weapon (else its first). The weapon's dice and damage type
+  replace its stat block's; the stat block keeps its bonuses. Without a ranged
+  weapon it cannot shoot or throw, unless its stat block's ranged attack is no
+  carried weapon (`innate_ranged` in
+  [combat.rules](../rules/srd-5.2.1/combat.rules): a spell or a thrown rock).
 - **Forms.** Wild Shape's and Polymorph's Beast forms and summoned creatures
   wear the art of the creature drawn with their original icon (a Wolf form,
   `mon4cha_dax_106`'s).

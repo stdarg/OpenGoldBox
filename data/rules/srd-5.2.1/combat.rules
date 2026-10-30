@@ -6,9 +6,12 @@ OPENGOLD_SRD5 1 srd-5.2.1-demo.2
 # creature's or one creature's, to switch the ability off ("off parry",
 # "off legendary vampire"). The README lists the abilities.
 creature bandit 12 11 1 30 3 1 6 1 3 1 8 1 80 320 0 0 0 1 0
+# innate_ranged creature [boulder]: its ranged attack is no carried weapon, a
+# spell or a thrown rock (boulder, drawn flying), so a human-shaped creature
+# keeps it without a ranged weapon in its gear. Rows follow its creature row.
 # Slums monsters are SRD stat blocks: Kobold Warrior, Goblin Warrior and Bugbear
 # Warrior (SRD 5.2.1) and Orc (SRD 5.1). A leader is its base stat block wearing
-# the armor its original record readies; it shoots a bow only if its art shows one.
+# the armor its original record readies; a Longbow row is the leader whose art readies a bow.
 creature slums-orc 13 15 1 30 5 1 12 3 5 1 6 3 30 120 0 0 0 1 0
 creature slums-kobold 14 7 2 30 4 1 4 2 4 1 4 2 20 60 0 0 0 1 0
 creature slums-goblin 15 10 2 30 4 1 6 2 4 1 6 2 80 320 0 0 0 1 0
@@ -1007,3 +1010,16 @@ type giant-insect-wasp-8 beast
 damage_types giant-insect-wasp-8 piercing bludgeoning
 multiattack giant-insect-wasp-8 4
 melee_extra_damage giant-insect-wasp-8 1 4 poison
+
+# Ranged attacks that are no carried weapon: Radiant Flame, Arcane Burst, Poison
+# Ray, Poison Burst, Hurl Flame, Trash Lob and Hammer Throw.
+innate_ranged grishnak
+innate_ranged bane-cleric
+innate_ranged bane-priest
+innate_ranged trapped-acolyte
+innate_ranged yarash
+innate_ranged medusa
+innate_ranged drider
+innate_ranged efreeti
+innate_ranged hill-giant boulder
+innate_ranged fire-giant boulder

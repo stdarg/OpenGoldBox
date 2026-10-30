@@ -6,9 +6,11 @@
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
 #include <godot_cpp/classes/texture2d.hpp>
+#include <array>
 #include <exception>
 #include <map>
 #include <set>
+#include <vector>
 #include "opengold/sound_player.h"
 
 class CombatView : public godot::Control
@@ -35,6 +37,7 @@ class CombatView : public godot::Control
     // Their ready sprites' widths, for checks of the Combat art setting.
     [[nodiscard]] godot::Array enemy_sprite_widths() const;
     [[nodiscard]] godot::Dictionary enemy_weapon_sets() const;
+    [[nodiscard]] godot::Array missiles_in_flight() const;
     [[nodiscard]] bool sprite_facing_left(std::int64_t id) const;
     [[nodiscard]] godot::Ref<godot::Texture2D> sprite_texture(opengold::rules::EntityId id,
                                                               opengold::por::IconPose pose) const;
@@ -120,6 +123,14 @@ class CombatView : public godot::Control
         double ground{};
     };
 
+    // The original's missile art (COMSPR): an arrow for each of eight facings,
+    // clockwise from north, and the two frames of what tumbles as it flies.
+    struct MissileArt
+    {
+        std::array<godot::Ref<godot::ImageTexture>, 8> arrow;
+        std::map<opengold::rules::Missile, std::array<godot::Ref<godot::ImageTexture>, 2>> tumbling;
+    };
+
     // Everything sync_art() installs, built off to the side first.
     struct ArtSet
     {
@@ -131,6 +142,7 @@ class CombatView : public godot::Control
         std::vector<godot::Ref<godot::ImageTexture>> terrain;
         godot::Ref<godot::ImageTexture> skull;
         std::vector<opengold::CombatArt> campaign;
+        MissileArt missiles;
     };
 
     [[nodiscard]] ArtSet build_art() const;
@@ -148,6 +160,24 @@ class CombatView : public godot::Control
     std::map<opengold::rules::EntityId, bool> known_dead_;
     std::map<opengold::rules::EntityId, double> skull_seconds_;
     std::map<opengold::rules::EntityId, double> action_seconds_;
+
+    // A shot on its way, in combat squares. Its rules are already settled: a
+    // hit ends on the target, a miss sails past it.
+    struct MissileFlight
+    {
+        opengold::rules::Missile missile{};
+        godot::Vector2 from, to, target;
+        double elapsed{}, seconds{};
+    };
+
+    void launch_missile(const opengold::rules::Command &command,
+                        const opengold::rules::Snapshot &before,
+                        const opengold::rules::Snapshot &after);
+    [[nodiscard]] godot::Ref<godot::ImageTexture>
+    missile_texture(const MissileFlight &flight) const;
+
+    MissileArt missile_art_;
+    std::vector<MissileFlight> missile_flights_;
     std::unique_ptr<opengold::por::SoundPlayer> attack_sound_;
     std::unique_ptr<opengold::por::SoundPlayer> effect_sound_;
     std::unique_ptr<opengold::por::SoundPlayer> death_sound_;

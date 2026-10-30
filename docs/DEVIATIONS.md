@@ -295,6 +295,14 @@ in the game: answering YES at a hall lists its services in the dialogue
   behind as a plain item of that type, when New Phlan's shop lists hold one. A
   human-shaped creature hits with the weapon it holds, at its stat block's
   bonuses ([MON-1](SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks)).
+  It shoots or throws only with a ranged weapon in its gear (2026-10-30),
+  though its SRD stat block has a shot; spells and a giant's rocks need none.
   A creature without new art shows its original icon with its action
   pose. [#274](https://github.com/stdarg/OpenGoldBox/issues/274),
   [data/monsters](../data/monsters/README.md).
+- **Missiles that miss fly on** (2026-10-30). Shots and throws fly with the
+  original's `COMSPR.DAX` art: an arrow for bows and crossbows, the axe for every
+  thrown weapon, a stone for slings, a flask for thrown oil, acid and alchemist's
+  fire, a boulder for giants' rocks. A hit ends on the target. A miss sails four
+  squares past it, which is new; a spell-like ranged attack shows nothing flying.
+  The next creature acts once the shot has landed.

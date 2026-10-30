@@ -120,3 +120,7 @@ func _draw() -> void:
             for digit in number:
                 draw_char(font, cursor, digit, marker_size, color)
                 cursor.x += advance
+    for missile in data["missiles"]:
+        var center: Vector2 = missile["center"]
+        draw_texture_rect(missile["texture"],
+            Rect2((center - Vector2.ONE * 0.5) * tile, Vector2.ONE * tile), false)
