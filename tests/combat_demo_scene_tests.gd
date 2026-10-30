@@ -91,6 +91,10 @@ func check_demo() -> void:
         await process_frame
     var combat := current_scene
     await keep_initiative(combat)
+    # The demo's fight gets its art the way every fight does, so it shows what players see.
+    var enemy_widths: Array = combat.enemy_sprite_widths()
+    require(not enemy_widths.is_empty() and enemy_widths.all(func(w): return w == 128),
+        "The demo's kobolds stand in their new art: " + str(enemy_widths))
     check_sprite_geometry(combat.get_node("BattlefieldScroll/Canvas"))
     require(not combat.has_node("Title") and not combat.has_node("Subtitle"),
         "Demo uses the header-free campaign combat layout")

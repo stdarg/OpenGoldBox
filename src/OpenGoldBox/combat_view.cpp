@@ -13,6 +13,7 @@
 #include <godot_cpp/classes/popup_menu.hpp>
 #include "game_resources.h"
 #include "game_monsters.h"
+#include "opengold/creature_art.h"
 #include "combat_view.h"
 #include "combat_sprite_layout.h"
 #include "godot_sound_output.h"
@@ -504,7 +505,8 @@ void CombatView::prepare_combat()
              .classes = std::move(classes),
              .level = level,
              .enemies = std::move(enemies),
-             .gear = std::move(gear)});
+             .gear = std::move(gear),
+             .monsters = game_monsters()});
         campaign_ = std::move(showcase.party);
         encounter_ = std::move(showcase.encounter);
     }
@@ -518,7 +520,7 @@ void CombatView::prepare_combat()
     }
     else if (OS::get_singleton()->get_cmdline_user_args().has("--slums"))
     {
-        next->slums(presentation::path_from_godot(settings::game_path()));
+        next->slums(presentation::path_from_godot(settings::game_path()), 42, game_monsters());
     }
     else
     {
@@ -825,7 +827,7 @@ void CombatView::slums()
     {
         error_.clear();
         const auto directory = settings::game_path();
-        demo_.change().slums(presentation::path_from_godot(directory));
+        demo_.change().slums(presentation::path_from_godot(directory), 42, game_monsters());
         mode_ = "move";
         sync_art();
         refresh();
@@ -1023,17 +1025,20 @@ CombatView::ArtSet CombatView::build_art() const
     };
     // The Combat art setting shows the original icons new art replaced (#274).
     const bool original_art = settings::original_combat_art();
+    const auto original_of = [](const CombatArt &source) -> CombatArt
+    {
+        return {source.entity,
+                source.original->image,
+                source.original->action,
+                source.missing_combination,
+                {},
+                {}};
+    };
     for (const auto &source : demo_->art())
     {
         if (original_art && source.original)
         {
-            install({source.entity,
-                     source.original->image,
-                     source.original->action,
-                     source.missing_combination,
-                     {},
-                     {}},
-                    false);
+            install(original_of(source), false);
             continue;
         }
         install(source, false);
@@ -1088,29 +1093,10 @@ CombatView::ArtSet CombatView::build_art() const
         install(source, large);
     }
 
-    // Wild Shape's Beast forms and summoned creatures wear the new art of the
-    // creature that shares their original icon, as it stands on the
-    // battlefield (#274); without it, the original icon, whose action pose is
-    // the icon 128 records on.
+    // Wild Shape's Beast forms and summoned creatures wear the art of the
+    // creature that shares their original icon, as it stands on the battlefield
+    // (#274).
     const auto monsters = game_monsters();
-    for (const auto &entry : por::form_icons)
-    {
-        if (original_art)
-        {
-            break;
-        }
-        const auto *exported = monsters->creature(entry.bank, entry.icon);
-        if (const auto *variant = exported ? por::readied_variant(*exported, false) : nullptr)
-        {
-            form_art[std::string(entry.form)] =
-                build({0,
-                       variant->ready,
-                       variant->action,
-                       {},
-                       PlantedArt{por::art_scale(*exported), por::planted_ground(variant->ready)}},
-                      false);
-        }
-    }
     if (std::filesystem::is_directory(directory))
     {
         for (const auto &file : std::filesystem::directory_iterator(directory))
@@ -1125,8 +1111,7 @@ CombatView::ArtSet CombatView::build_art() const
             }
             for (const auto &entry : por::form_icons)
             {
-                if (name != "CPIC" + std::to_string(entry.bank) + ".DAX" ||
-                    form_art.contains(std::string(entry.form)))
+                if (name != "CPIC" + std::to_string(entry.bank) + ".DAX")
                 {
                     continue;
                 }
@@ -1140,19 +1125,13 @@ CombatView::ArtSet CombatView::build_art() const
                 {
                     throw std::runtime_error("Cannot read combat art");
                 }
-                auto ready = decode_ega_combat_icon(bytes, entry.icon, 0);
-                auto action =
-                    decode_ega_combat_icon(bytes, static_cast<std::uint8_t>(entry.icon + 128), 0);
-                if (!ready)
+                const auto source = por::creature_art(
+                    bytes, entry.icon, monsters->creature(entry.bank, entry.icon), false);
+                if (source)
                 {
-                    continue;
+                    form_art[std::string(entry.form)] = build(
+                        original_art && source->original ? original_of(*source) : *source, false);
                 }
-                CombatArt source{0, std::move(ready.image), {}, {}};
-                if (action)
-                {
-                    source.action = std::move(action.image);
-                }
-                form_art[std::string(entry.form)] = build(source, false);
             }
         }
     }

@@ -2,6 +2,7 @@
 #include "opengold/path_text.h"
 #include "opengold/authored_items.h"
 #include "opengold/combat_demo.h"
+#include "opengold/creature_art.h"
 #include "opengold/combat_body_catalog.h"
 #include "opengold/character_pool.h"
 #include "opengold/encounter_formation.h"
@@ -47,7 +48,10 @@ std::vector<Participant> party()
             {4, "healer", "Healer", Side::party, {1, 5}}};
 }
 
-std::optional<Image> original_icon(const std::filesystem::path &directory, unsigned record)
+// The art of a creature of the Slums' bank (2), as any fight makes it.
+std::optional<CombatArt> slums_bank_art(const std::filesystem::path &directory,
+                                        const por::MonsterBundle *monsters, unsigned record,
+                                        unsigned icon)
 {
     for (const auto &file : std::filesystem::directory_iterator(directory))
     {
@@ -56,15 +60,16 @@ std::optional<Image> original_icon(const std::filesystem::path &directory, unsig
         {
             continue;
         }
-        auto bytes = por::detail::read_archive_bytes<std::runtime_error>(
+        const auto bytes = por::detail::read_archive_bytes<std::runtime_error>(
             file.path(), "Combat art archive exceeds limit", "Cannot read combat art",
             "Cannot read combat art");
-        auto decoded = decode_ega_combat_icon(bytes, static_cast<std::uint8_t>(record), 0);
-        if (!decoded)
+        auto art = por::creature_art(bytes, icon,
+                                     monsters ? monsters->creature(2, record) : nullptr, false);
+        if (!art)
         {
             throw std::runtime_error("Cannot decode the script-selected combat icon");
         }
-        return std::move(decoded.image);
+        return art;
     }
     return std::nullopt;
 }
@@ -643,15 +648,15 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
         positions.begin() + static_cast<std::ptrdiff_t>(party->state().roster.size()));
     if (!enemies.empty())
     {
-        // In a column east of the party, with their original Slums icons and
-        // the squares those fill (FOOT-1).
+        // In a column east of the party, with their Slums art and the squares
+        // those fill (FOOT-1).
         const auto creatures = CreatureCatalog::load(game_directory);
         int row = 4;
         for (std::size_t n = 0; n < enemies.size(); ++n)
         {
             const auto &definition = enemies[n];
             const unsigned icon = definition == "troll" ? 31 : definition == "ogre" ? 8 : 0;
-            const auto picture = original_icon(game_directory, icon);
+            auto picture = slums_bank_art(game_directory, options.monsters.get(), icon, icon);
             const auto creature = creatures.find({2, static_cast<std::uint8_t>(icon)});
             if (!picture || !creature)
             {
@@ -664,15 +669,13 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
             result.encounter.enemies.back().footprint = combat_footprint(creature->get().stored);
             row += result.encounter.enemies.back().footprint.height;
             result.encounter.positions.push_back(cell);
-            result.encounter.art.push_back(
-                {id, *picture, original_icon(game_directory, icon + 128)});
+            picture->entity = id;
+            result.encounter.art.push_back(std::move(*picture));
         }
         return result;
     }
-    const auto kobold = original_icon(game_directory, 0);
-    const auto kobold_action = original_icon(game_directory, 128);
-    const auto leader = original_icon(game_directory, 1);
-    const auto leader_action = original_icon(game_directory, 129);
+    const auto kobold = slums_bank_art(game_directory, options.monsters.get(), 0, 0);
+    const auto leader = slums_bank_art(game_directory, options.monsters.get(), 1, 1);
     if (!kobold || !leader)
     {
         throw std::runtime_error("Missing original Kobold combat icon");
@@ -699,8 +702,8 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
                  is_leader ? "Kobold Leader" : "Kobold " + std::to_string(++number),
                  Side::opposition, cell});
             result.encounter.positions.push_back({x, y});
-            result.encounter.art.push_back(
-                {id, is_leader ? *leader : *kobold, is_leader ? leader_action : kobold_action});
+            result.encounter.art.push_back(is_leader ? *leader : *kobold);
+            result.encounter.art.back().entity = id;
         }
     }
     return result;
@@ -749,7 +752,8 @@ void CombatDemo::training(std::uint64_t seed, bool conditions)
     status_ = conditions ? "Blindness training" : "Training arena";
 }
 
-void CombatDemo::slums(const std::filesystem::path &directory, std::uint64_t seed)
+void CombatDemo::slums(const std::filesystem::path &directory, std::uint64_t seed,
+                       std::shared_ptr<const por::MonsterBundle> monsters)
 {
     if (campaign_combat_)
     {
@@ -796,6 +800,7 @@ void CombatDemo::slums(const std::filesystem::path &directory, std::uint64_t see
     seed_ = seed;
     encounters_ = 0;
     game_directory_ = directory;
+    monsters_ = std::move(monsters);
     dialogue_.clear();
     status_ = "Slums event 1";
     pump();
@@ -866,8 +871,8 @@ void CombatDemo::pump()
                 }
                 const auto &creature =
                     creatures_->find({2, static_cast<std::uint8_t>(record)})->get();
-                const auto icon = original_icon(game_directory_, a[2].number());
-                const auto action = original_icon(game_directory_, a[2].number() + 128);
+                const auto art =
+                    slums_bank_art(game_directory_, monsters_.get(), record, a[2].number());
                 for (unsigned i = 0; i < count; ++i)
                 {
                     const auto id = static_cast<EntityId>(1000 + enemies_.size());
@@ -877,9 +882,10 @@ void CombatDemo::pump()
                          creature.stored.name + " " + std::to_string(enemies_.size() + 1),
                          Side::opposition,
                          {9, 2 + static_cast<int>(enemies_.size())}});
-                    if (icon)
+                    if (art)
                     {
-                        art_.push_back({id, *icon, action});
+                        art_.push_back(*art);
+                        art_.back().entity = id;
                     }
                 }
             }
