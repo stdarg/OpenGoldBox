@@ -68,14 +68,14 @@ struct MonsterBundle
 // the first set. Null without art.
 [[nodiscard]] const MonsterVariant *readied_variant(const ExportedMonster &monster, bool archer);
 
-// The weapons a creature fights with: a readied ranged weapon, else an
-// archer's bow; a readied melee weapon, else its first. Null where it has none.
+// The weapons a creature fights with: a readied ranged weapon, else its first;
+// a readied melee weapon, else its first. Null where it has none.
 struct WieldedItems
 {
     const MonsterItem *melee{}, *ranged{};
 };
 
-[[nodiscard]] WieldedItems wielded_items(const ExportedMonster &monster, bool archer);
+[[nodiscard]] WieldedItems wielded_items(const ExportedMonster &monster);
 
 // The weapon sets a creature shows as it attacks: a melee attack its melee
 // weapon's, with the readied shield where a set has it, and a shot its ranged

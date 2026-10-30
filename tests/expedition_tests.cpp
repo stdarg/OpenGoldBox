@@ -6277,8 +6277,9 @@ void exported_monsters(const std::filesystem::path &directory)
             check(art.planted && art.planted->scale == por::art_scale(tusker_art) && art.image.width == 128 &&
                       art.action->width == 128,
                   "The renamed orc stands in its new art, scaled as the catalog previews it");
-            check(enemy.melee_weapon == "scimitar" && enemy.ranged_weapon.empty(),
-                  "The renamed orc fights with the scimitar the catalog gave it");
+            check(enemy.melee_weapon == "scimitar" &&
+                      enemy.ranged_weapon == rules::no_ranged_weapon,
+                  "The renamed orc fights with the scimitar the catalog gave it, and has no bow");
             check(art.original && art.original->image.width < 128 && art.original->action,
                   "Its original icon and action pose stay for the Combat art setting");
         }

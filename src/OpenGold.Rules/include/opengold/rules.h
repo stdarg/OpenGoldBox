@@ -562,7 +562,9 @@ struct Participant
     unsigned intelligence{10};
     // Item keys of the weapons a human-shaped creature holds (#274): their
     // dice, damage type and range replace its stat block's, which keeps its
-    // own bonuses. Empty, or not a weapon of that kind, keeps the stat block's.
+    // own bonuses. An empty key keeps the stat block's. A ranged key that is
+    // no ranged weapon, such as no_ranged_weapon, takes away the stat block's
+    // shot unless that attack is not a carried weapon (innate_ranged).
     std::string melee_weapon, ranged_weapon;
     // The squares it fills, its cell the top-left one (FOOT-1).
     Footprint footprint;
@@ -601,6 +603,20 @@ enum class Outcome
     fled // No party member is left on the field and at least one got away.
 };
 
+// The ranged_weapon of a human-shaped creature that carries none.
+inline constexpr std::string_view no_ranged_weapon = "none";
+
+// What flies from a shooter to its target, drawn by the presentation.
+enum class Missile : std::uint8_t
+{
+    none,
+    arrow,
+    axe,
+    flask,
+    stone,
+    boulder
+};
+
 struct ThrownWeaponOption
 {
     unsigned item{};
@@ -632,6 +648,7 @@ struct CombatantView
     std::vector<StatusEffectView> status_effects;       // Every effect a player would notice.
     std::string type_name, melee_weapon, ranged_weapon; // Rules-owned combat display data.
     bool ranged_attack_available{};
+    Missile ranged_missile{}; // What its ranged attack or drawn bow sends flying.
     TemporaryHitPoints temporary_hp;
     std::vector<ResourcePool> resources;
     std::vector<Message> hp_messages;

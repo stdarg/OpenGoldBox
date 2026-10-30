@@ -55,6 +55,7 @@
 #include <cmath>
 #include <fstream>
 #include <limits>
+#include <numbers>
 #include <utility>
 using namespace godot;
 using namespace opengold;
@@ -150,6 +151,7 @@ void CombatView::_bind_methods()
     ClassDB::bind_method(D_METHOD("enemy_cells"), &CombatView::enemy_cells);
     ClassDB::bind_method(D_METHOD("enemy_sprite_widths"), &CombatView::enemy_sprite_widths);
     ClassDB::bind_method(D_METHOD("enemy_weapon_sets"), &CombatView::enemy_weapon_sets);
+    ClassDB::bind_method(D_METHOD("missiles_in_flight"), &CombatView::missiles_in_flight);
     ClassDB::bind_method(D_METHOD("attack_pose_active", "id"), &CombatView::attack_pose_active);
     ClassDB::bind_method(D_METHOD("sprite_facing_left", "id"), &CombatView::sprite_facing_left);
     ClassDB::bind_method(D_METHOD("battlefield_visuals"), &CombatView::battlefield_visuals);
@@ -903,6 +905,7 @@ void CombatView::sync_art(bool preserve_effects)
     portraits_ = std::move(built.portraits);
     terrain_art_ = std::move(built.terrain);
     skull_art_ = std::move(built.skull);
+    missile_art_ = std::move(built.missiles);
     // Without a combat the campaign's art stays as it is.
     if (demo_)
     {
@@ -913,6 +916,7 @@ void CombatView::sync_art(bool preserve_effects)
         known_dead_.clear();
         skull_seconds_.clear();
         action_seconds_.clear();
+        missile_flights_.clear();
         shot_last_.clear();
     }
 }
@@ -965,6 +969,33 @@ CombatView::ArtSet CombatView::build_art() const
                 throw std::runtime_error("Cannot decode original skull combat effect");
             }
             skull_art = ImageTexture::create_from_image(presentation::rgba_image(decoded.image));
+            const auto missile_image = [&](std::uint8_t record)
+            {
+                const auto missile = decode_ega_combat_icon(bytes, record, 0);
+                if (!missile)
+                {
+                    throw std::runtime_error("Cannot decode original missile art");
+                }
+                return presentation::rgba_image(missile.image);
+            };
+            const auto mirrored_missile = [&](std::uint8_t record)
+            {
+                const auto image = missile_image(record);
+                image->flip_x();
+                return ImageTexture::create_from_image(image);
+            };
+            const auto missile_art = [&](std::uint8_t record)
+            {
+                return ImageTexture::create_from_image(missile_image(record));
+            };
+            // The art holds six facings; north-west and south-west are mirrors.
+            result.missiles.arrow = {missile_art(0),   missile_art(1),     missile_art(2),
+                                     missile_art(129), missile_art(128),   mirrored_missile(129),
+                                     missile_art(130), mirrored_missile(1)};
+            result.missiles.tumbling[rules::Missile::axe] = {missile_art(3), missile_art(131)};
+            result.missiles.tumbling[rules::Missile::flask] = {missile_art(4), missile_art(132)};
+            result.missiles.tumbling[rules::Missile::boulder] = {missile_art(7), missile_art(135)};
+            result.missiles.tumbling[rules::Missile::stone] = {missile_art(8), missile_art(136)};
             break;
         }
         if (skull_art.is_null())
@@ -1650,6 +1681,134 @@ void CombatView::immediate(String verb)
     }
 }
 
+namespace
+{
+constexpr double missile_squares_per_second = 14.0;
+constexpr double missile_shortest_seconds = 0.12;
+constexpr double missile_tumble_seconds = 0.08;
+// How far a miss flies on beyond its target.
+constexpr float missile_miss_squares = 4.0F;
+
+Missile missile_of(const std::string &verb, const CombatantView &shooter)
+{
+    if (verb.starts_with("throw_"))
+    {
+        return Missile::flask;
+    }
+    if (verb == "throw" || verb == "light_throw" || verb == "nick_throw")
+    {
+        return Missile::axe;
+    }
+    if (verb == "light_ranged" || verb == "nick_ranged")
+    {
+        return Missile::arrow;
+    }
+    return verb == "shoot" || verb == "ranged" || verb.starts_with("ranged_")
+               ? shooter.ranged_missile
+               : Missile::none;
+}
+
+Vector2 combatant_center(const CombatantView &combatant)
+{
+    return Vector2(combatant.cell.x, combatant.cell.y) +
+           Vector2(combatant.footprint.width, combatant.footprint.height) * 0.5F;
+}
+
+const CombatantView *combatant_of(const Snapshot &snapshot, EntityId id)
+{
+    const auto found = std::find_if(snapshot.combatants.begin(), snapshot.combatants.end(),
+                                    [&](const auto &combatant)
+                                    {
+                                        return combatant.id == id;
+                                    });
+    return found == snapshot.combatants.end() ? nullptr : &*found;
+}
+
+const char *missile_name(Missile missile)
+{
+    switch (missile)
+    {
+    case Missile::arrow:
+        return "arrow";
+    case Missile::axe:
+        return "axe";
+    case Missile::flask:
+        return "flask";
+    case Missile::stone:
+        return "stone";
+    case Missile::boulder:
+        return "boulder";
+    case Missile::none:
+        break;
+    }
+    return "none";
+}
+} // namespace
+
+void CombatView::launch_missile(const Command &command, const Snapshot &before,
+                                const Snapshot &after)
+{
+    const auto *shooter = combatant_of(after, command.actor);
+    const auto *target = combatant_of(after, command.target);
+    const auto *target_before = combatant_of(before, command.target);
+    if (!shooter || !target || !target_before || missile_art_.arrow[0].is_null())
+    {
+        return;
+    }
+    const auto missile = missile_of(command.verb, *shooter);
+    if (missile == Missile::none)
+    {
+        return;
+    }
+    const auto from = combatant_center(*shooter), aim = combatant_center(*target);
+    const auto line = aim - from;
+    if (line.length() <= 0.0F)
+    {
+        return;
+    }
+    // A reaction is offered only against a roll that hit, and waits for the
+    // player; the hit shows as the shot arrives.
+    const bool hit = after.reaction_pending ||
+                     target->hit_points + target->temporary_hp.amount <
+                         target_before->hit_points + target_before->temporary_hp.amount;
+    const auto to = hit ? aim : aim + line.normalized() * missile_miss_squares;
+    missile_flights_.push_back(
+        {missile, from, to, aim, 0.0,
+         std::max(missile_shortest_seconds,
+                  static_cast<double>(from.distance_to(to)) / missile_squares_per_second)});
+}
+
+Ref<ImageTexture> CombatView::missile_texture(const MissileFlight &flight) const
+{
+    if (flight.missile == Missile::arrow)
+    {
+        // The nearest of eight facings, clockwise from north; +y is south.
+        const auto line = flight.to - flight.from;
+        const auto octant =
+            static_cast<int>(std::lround(std::atan2(line.x, -line.y) / (std::numbers::pi / 4.0)));
+        return missile_art_.arrow[static_cast<std::size_t>((octant + 8) % 8)];
+    }
+    const auto frame = static_cast<std::size_t>(flight.elapsed / missile_tumble_seconds) % 2;
+    return missile_art_.tumbling.at(flight.missile)[frame];
+}
+
+// What is in the air, for the checks.
+Array CombatView::missiles_in_flight() const
+{
+    Array flights;
+    for (const auto &flight : missile_flights_)
+    {
+        Dictionary entry;
+        entry["missile"] = missile_name(flight.missile);
+        entry["from"] = flight.from;
+        entry["to"] = flight.to;
+        entry["target"] = flight.target;
+        entry["texture"] = missile_texture(flight);
+        flights.push_back(entry);
+    }
+    return flights;
+}
+
 void CombatView::act(Command command)
 {
     try
@@ -1703,6 +1862,7 @@ void CombatView::act(Command command)
             {
                 shot_last_[command.actor] = true;
             }
+            launch_missile(command, before, after);
             if (sound)
             {
                 action_seconds_[command.actor] = 1.0;
@@ -3489,6 +3649,16 @@ Dictionary CombatView::battlefield_visuals()
     data["terrain_textures"] = terrain_textures;
     data["overlays"] = overlays;
     data["actors"] = actors;
+    Array missiles;
+    for (const auto &flight : missile_flights_)
+    {
+        Dictionary entry;
+        entry["center"] = flight.from.lerp(
+            flight.to, static_cast<float>(std::min(flight.elapsed / flight.seconds, 1.0)));
+        entry["texture"] = missile_texture(flight);
+        missiles.push_back(entry);
+    }
+    data["missiles"] = missiles;
     return data;
 }
 
@@ -3524,6 +3694,19 @@ void CombatView::_process(double delta)
             {
                 ++it;
             }
+            required_node<Control>(*this, "BattlefieldScroll/Canvas").queue_redraw();
+        }
+        for (auto &flight : missile_flights_)
+        {
+            flight.elapsed += delta;
+        }
+        if (!missile_flights_.empty())
+        {
+            std::erase_if(missile_flights_,
+                          [](const auto &flight)
+                          {
+                              return flight.elapsed >= flight.seconds;
+                          });
             required_node<Control>(*this, "BattlefieldScroll/Canvas").queue_redraw();
         }
         if ((checking_ || expedition_check_) && !error_.empty())
@@ -3724,7 +3907,9 @@ void CombatView::_process(double delta)
             flee_mode_ || quick_turn(s))
         {
             ai_delay_ += delta;
-            if (!checking_ && !party_check_ && !defeat_check_ && ai_delay_ < .65)
+            // The next creature acts only once what was shot has landed.
+            if (!checking_ && !party_check_ && !defeat_check_ &&
+                (ai_delay_ < .65 || !missile_flights_.empty()))
             {
                 return;
             }

@@ -401,8 +401,35 @@ void held_weapons()
     check(unit(*armed, 1).melee_rating == 8 + 8 && unit(*armed, 1).ranged_rating == 8,
           "The orc fights with its +1 Longsword and shoots its Longbow");
     const auto wrong = unit(*orc("longbow", "longsword"), 1);
-    check(wrong.melee_rating == 12 && wrong.ranged_rating == 6,
-          "A weapon of the wrong kind leaves the stat block's");
+    check(wrong.melee_rating == 12 && wrong.ranged_rating == 0 && !wrong.ranged_attack_available,
+          "A melee weapon keeps the stat block's Greataxe and shoots nothing");
+    const auto unarmed = unit(*orc("", std::string(no_ranged_weapon)), 1);
+    check(!unarmed.ranged_attack_available && unarmed.ranged_missile == Missile::none,
+          "An orc without a ranged weapon cannot throw its stat block's Javelins");
+    check(plain.ranged_missile == Missile::axe && unit(*armed, 1).ranged_missile == Missile::arrow,
+          "Javelins fly as the thrown axe, a Longbow's shot as an arrow");
+    check(unit(*orc("", "sling"), 1).ranged_missile == Missile::stone,
+          "A sling's shot flies as a stone");
+    const auto innate = [&](const std::string &definition)
+    {
+        return unit(*module->create({{10, 4, std::vector<Terrain>(40)},
+                                     [&]
+                                     {
+                                         std::vector<Participant> participants{
+                                             {1, definition, "Foe", Side::opposition, {1, 1}},
+                                             {2, "target", "Hero", Side::party, {2, 1}}};
+                                         participants[0].ranged_weapon = no_ranged_weapon;
+                                         return participants;
+                                     }()},
+                                    7),
+                    1);
+    };
+    check(innate("hill-giant").ranged_attack_available &&
+              innate("hill-giant").ranged_missile == Missile::boulder,
+          "A hill giant throws rocks without a ranged weapon");
+    check(innate("medusa").ranged_attack_available &&
+              innate("medusa").ranged_missile == Missile::none,
+          "A medusa's Poison Ray needs no weapon and sends nothing flying");
     const auto checkpoint = armed->save();
     const auto restored = module->restore(checkpoint);
     check(restored->save() == checkpoint && unit(*restored, 1).melee_rating == 16,

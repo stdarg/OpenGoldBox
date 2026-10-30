@@ -1905,6 +1905,11 @@ struct Definition
     unsigned sneak_level{};
     bool finesse{}, ranged_weapon{};
     bool ranged_loading{}; // the ranged weapon is a Loading one: one shot per action
+    // Its ranged attack is no carried weapon, such as a spell or a thrown rock,
+    // so it keeps it without one.
+    bool innate_ranged{};
+    // What its ranged attack sends flying; unset, a stat block's weapon by range.
+    std::optional<rules::Missile> ranged_missile;
     int medicine{};
     int athletics{};     // a character's Strength (Athletics) check bonus
     int investigation{}; // and Intelligence (Investigation) check bonus
@@ -1928,6 +1933,17 @@ struct Definition
     // for the next turn, and the creature dies only at 0 HP without regenerating.
     int regeneration{};
 };
+
+// What a weapon sends flying: the original's missile art has a stone for a
+// sling and one thrown weapon, the axe, for every thrown weapon.
+rules::Missile weapon_missile(const detail::Weapon &weapon)
+{
+    if (weapon.key == "sling")
+    {
+        return rules::Missile::stone;
+    }
+    return weapon.thrown ? rules::Missile::axe : rules::Missile::arrow;
+}
 
 struct CombatDisplay
 {
@@ -2508,6 +2524,7 @@ Definition shaped(Definition d, const detail::BeastForm &form)
     d.reach = 5;
     d.weapon_label = std::string(form.attack_label);
     d.finesse = d.ranged_weapon = d.ranged_loading = d.shield = d.other_weapon = false;
+    d.ranged_missile.reset();
     d.weapon_hands = 0;
     d.versatile_sides = 0;
     d.melee_magic = d.ranged_magic = 0;
@@ -4078,6 +4095,7 @@ character_definition(std::string_view bytes,
             d.finesse = item->finesse;
             d.ranged_weapon = item->ranged;
             d.ranged_loading = item->ranged && item->loading;
+            d.ranged_missile = weapon_missile(*item);
             d.weapon_hands = item->hands;
             d.versatile_sides = item->versatile_sides;
             hands += d.weapon_hands;
@@ -4740,6 +4758,11 @@ Footprint summoned_footprint(std::string_view definition)
 // block's own attack and damage bonuses. Reach stays 5 feet (MELEE-1).
 Definition wielding(Definition d, std::string_view melee_key, std::string_view ranged_key)
 {
+    const auto *ranged = detail::weapon(ranged_key);
+    if (!ranged_key.empty() && !(ranged && ranged->ranged && ranged->dice) && !d.innate_ranged)
+    {
+        d.range = d.long_range = 0;
+    }
     if (const auto *melee = detail::weapon(melee_key); melee && !melee->ranged && melee->dice)
     {
         const auto enchantment = rules::parse_item_key(melee_key);
@@ -4749,7 +4772,7 @@ Definition wielding(Definition d, std::string_view melee_key, std::string_view r
         d.melee_magic = enchantment.bonus;
         d.bane_undead = enchantment.power == rules::ItemPower::bane_undead;
     }
-    if (const auto *ranged = detail::weapon(ranged_key); ranged && ranged->ranged && ranged->dice)
+    if (ranged && ranged->ranged && ranged->dice)
     {
         // A stat block without a ranged weapon shoots with its melee bonuses.
         if (!d.range)
@@ -4763,6 +4786,7 @@ Definition wielding(Definition d, std::string_view melee_key, std::string_view r
         d.ranged_magic = rules::parse_item_key(ranged_key).bonus;
         d.range = ranged->range;
         d.long_range = ranged->long_range;
+        d.ranged_missile = weapon_missile(*ranged);
     }
     return d;
 }
@@ -5567,6 +5591,7 @@ class Session final : public CombatSession
     // A ranged weapon a character carries while wielding no ranged weapon, and
     // has the hands for; empty when there is none.
     std::string_view carried_ranged_weapon(const Actor &) const;
+    rules::Missile ranged_missile(const Actor &) const;
     // Whether taking off its shield would free a character to draw a carried
     // two-handed bow or crossbow.
     bool shield_blocks_bow(const Actor &) const;
@@ -7242,6 +7267,18 @@ bool Session::carries(const Actor &a, std::string_view key) const
                        });
 }
 
+rules::Missile Session::ranged_missile(const Actor &a) const
+{
+    const auto &d = def(a);
+    if (!d.range)
+    {
+        const auto bow = carried_ranged_weapon(a);
+        return bow.empty() ? rules::Missile::none : weapon_missile(*detail::weapon(bow));
+    }
+    // A stat block's weapon without an item: its short range is a thrown one's.
+    return d.ranged_missile.value_or(d.range <= 30 ? rules::Missile::axe : rules::Missile::arrow);
+}
+
 std::string_view Session::carried_ranged_weapon(const Actor &a) const
 {
     if (a.source.character_profile.empty() || def(a).range)
@@ -8432,6 +8469,7 @@ Snapshot Session::snapshot() const
             view.ranged_weapon = display.ranged;
         }
         view.ranged_attack_available = def(a).range > 0;
+        view.ranged_missile = ranged_missile(a);
         auto &messages = s.combatants.back().status_messages;
         messages.push_back({a.life.dead ? "Dead"
                             : a.life.hp == 0
@@ -33515,7 +33553,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.262", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.263", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),
@@ -34323,6 +34361,21 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
             {
                 throw std::runtime_error("Unknown Enthralling Panache fields: " + key);
             }
+            continue;
+        }
+        if (tag == "innate_ranged")
+        {
+            const auto found = content.definitions.find(key);
+            std::string missile;
+            row >> missile;
+            if (found == content.definitions.end() || !row.eof() ||
+                (!missile.empty() && missile != "boulder"))
+            {
+                throw std::runtime_error("Invalid innate_ranged row: " + key);
+            }
+            found->second.innate_ranged = true;
+            found->second.ranged_missile =
+                missile.empty() ? rules::Missile::none : rules::Missile::boulder;
             continue;
         }
         if (tag == "pack_tactics" || tag == "aggressive" || tag == "advantage_damage" ||
