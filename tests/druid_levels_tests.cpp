@@ -75,10 +75,16 @@ CharacterDraft draft()
 }
 
 // An arid Druid of the level through the default level-ups, with Primal
-// Strike at 7 and `spell` prepared at the last.
-Character druid(unsigned level, const std::string &spell = {}, std::string fury = "primal_strike")
+// Strike at 7 and `spell` prepared at the last; `cantrips` replace its first.
+Character druid(unsigned level, const std::string &spell = {}, std::string fury = "primal_strike",
+                std::vector<std::string> cantrips = {})
 {
-    Character hero(*srd5::character_rules(), draft(), {});
+    auto start = draft();
+    if (!cantrips.empty())
+    {
+        start.cantrips = std::move(cantrips);
+    }
+    Character hero(*srd5::character_rules(), start, {});
     VitalState life{hero.sheet().hit_points, false, {}};
     const auto rules = module();
     while (hero.sheet().level < static_cast<int>(level))
@@ -383,6 +389,22 @@ void tsunami_checks()
 
 // Reincarnate (LEVELS-5): a dead member returns whole in a body of a rolled
 // species, which the dice read beforehand name; Raise Dead's offering.
+// Improved Elemental Fury (15): Potent Spellcasting's Druid cantrips with a
+// range of 10 feet or more reach 300 feet farther.
+void potent_range_checks()
+{
+    const auto rules = dummy_rules();
+    const std::vector<std::string> cantrips{"poison_spray", "shillelagh"};
+    const auto reaches = [&](unsigned level, std::string fury)
+    {
+        auto c = field(*rules, druid(level, {}, std::move(fury), cantrips).sheet(), {11, 2});
+        return offered(*c, "poison_spray", 98);
+    };
+    check(reaches(15, "potent_spellcasting") && !reaches(14, "potent_spellcasting") &&
+              !reaches(15, "primal_strike"),
+          "Poison Spray reaches 50 feet only with Improved Elemental Fury's range");
+}
+
 void reincarnate_checks()
 {
     CampaignParty party(module());
@@ -612,6 +634,7 @@ int main()
         high_checks();
         tsunami_checks();
         reincarnate_checks();
+        potent_range_checks();
     }
     catch (const std::exception &error)
     {

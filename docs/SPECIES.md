@@ -2,9 +2,11 @@
 
 The species traits a party member gets from SRD 5.2.1 pp. 83-86, as the game
 plays them. [SRD-DECISIONS](SRD-DECISIONS.md) records the traits that were cut
-(Elf Trance, Goliath Powerful Build and Large Form, Dragonborn Draconic Flight,
+(Elf Trance's shorter rest, Goliath Powerful Build and Large Form, Dragonborn Draconic Flight,
 Dwarf Stonecunning, the Forest and Rock Gnome lineages, Tiefling Thaumaturgy and
-High Elf Prestidigitation).
+High Elf Prestidigitation). Trance's other half stays: magic cannot put an Elf
+to sleep. Darkvision has no effect, since the game has no dark places
+([LIGHT-1](SRD-DECISIONS.md#light-1-2026-10-26-no-dark-areas)).
 
 ## Choices at creation
 
@@ -43,8 +45,11 @@ An Elf's or Tiefling's lineage spells use the chosen spellcasting ability and
 are always prepared. The cantrip comes at level 1 (a Tiefling's from its legacy,
 the High Elf's chosen Wizard cantrip); the level-1 spell comes at level 3 and
 is cast once per Long Rest without a slot (a Tiefling's Hellish Rebuke, Ray of
-Sickness or False Life; a Wood Elf's Longstrider). A class with slots may also
-cast it with a slot. The rest window shows the free cast as "Lineage: {spell}".
+Sickness or False Life; a High Elf's Detect Magic; a Wood Elf's Longstrider).
+The level-2 spell comes at level 5 the same way: an Infernal Tiefling's
+Darkness, an Abyssal one's Hold Person, a Chthonic one's Ray of Enfeeblement,
+a High Elf's Misty Step (a Wood Elf's Pass without Trace is cut, DM-3). A class
+with slots may also cast them with a slot. The rest window shows the free cast as "Lineage: {spell}".
 
 ## Breath Weapon
 
@@ -53,7 +58,9 @@ A Dragonborn replaces the Attack action's attack with a 15-foot Cone or a
 `breath_weapon_line`). Each creature in the area makes a Dexterity save against
 8 + Constitution modifier + Proficiency Bonus and takes 1d10 damage of the
 ancestry's type, or half on a success. It deals 2d10 from level 5 and 3d10
-from level 11. The breath spends the whole Action, even with Extra Attack.
+from level 11. With Extra Attack the breath replaces one of the attacks, and
+the others are still made; only one attack of each Attack action can be a
+breath (#185).
 
 Uses equal the Proficiency Bonus (2 through level 4) and return with a Long
 Rest. The spent count is a lasting effect (`trait_uses`), cleared by a Long
@@ -88,12 +95,15 @@ The Quick-play AI uses each boon at its first chance.
 
 ## Saves against conditions
 
-Dwarven Resilience (Advantage against Poisoned) has nothing to act on yet: no
-save in the game makes a party member Poisoned. Fey Ancestry gives Advantage on
-the save against Podol Plaza's buccaneer's Enthralling Panache; Charm Person
-already gives its target Advantage while the caster's side fights it. A new
-save against one of those conditions must check the trait. Brave gives Advantage on the saves against Frightened
-(Intimidating Presence), the first and the repeated ones.
+Dwarven Resilience gives Advantage on the saves against Poisoned: Stinking
+Cloud, Contagion and its repeated saves, Eyebite's sickness and a Rogue's
+Cunning Strike poison with its repeated saves. Fey Ancestry gives Advantage on
+the saves against Charmed: Podol Plaza's buccaneer's Enthralling Panache,
+monsters' charms, Charm Person and the other charming spells, Hypnotic Pattern,
+and the saves that end Dominate and Irresistible Dance. Brave gives Advantage
+on the saves against Frightened: Intimidating Presence (the first and the
+repeated ones), Fear and Eyebite's panic. A new save against one of those
+conditions must check the trait.
 
 ## Naturally Stealthy
 

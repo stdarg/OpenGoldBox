@@ -617,6 +617,8 @@ struct EffectSubject
     bool mental_advantage{};
     bool lucky{}; // Halfling Luck, for repeated saves and death saves
     bool brave{}; // Halfling Brave: Advantage on saves to end Frightened
+    // Dwarven Resilience: Advantage on saves to end Poisoned.
+    bool poison_resilient{};
 };
 
 struct EffectEvent

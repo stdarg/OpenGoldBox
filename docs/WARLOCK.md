@@ -150,7 +150,9 @@ The Warlock advances to level 15, the cap
 - **Dark One's Own Luck** (Fiend 6): a failed saving throw (Concentration's
   too) that 10 more could pass gains 1d10 without asking, as roll effects do,
   shown with the save; as many times as the Charisma modifier (at least once)
-  per Long Rest. Ability checks in fights are left out.
+  per Long Rest. Ability checks in fights gain it the same way: Athletics to
+  break free, Stealth to hide, Investigation to leave a Maze and the Dispel
+  Magic check (#185).
 - **Contact Patron** (9) is cut with Contact Other Plane (DM-2).
 - **Fiendish Resilience** (Fiend 10): a level-up choice of any damage type but
   Force, resisted from then on; after any rest the rest's training choices

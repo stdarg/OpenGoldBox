@@ -2,9 +2,14 @@
 
 Planning inventory for raising the cap from level 4 to level 10 for the twelve
 SRD classes and their twelve SRD subclasses ([plan](LEVELS-5-10.md), #176). It
-is a factual extract plus a proposed spell triage. Nothing here is a decision:
-every KEEP, CUT and UNSURE is a proposal; decisions are recorded in
-[SRD-DECISIONS](SRD-DECISIONS.md).
+is a factual extract plus a proposed spell triage. The triage itself is a
+proposal; the decisions are recorded in [SRD-DECISIONS](SRD-DECISIONS.md).
+[LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510) adopted it and kept
+all nine UNSURE spells; later entries (LEVELS-2 to LEVELS-5) settled the rest.
+Every kept spell is implemented
+([final reconciliation](SRD-COVERAGE.md#final-reconciliation-185)). The
+grep findings and open decisions below describe the code and questions as
+they stood before that work.
 
 **Sources.** [SRD 5.2.1](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf), extracted with `pdftotext`. Page numbers are
 the printed page numbers in the page footers ("NN System Reference Document
@@ -139,20 +144,26 @@ Faithful Hound (level 4); Animate Objects, Mislead, Reincarnate, Telekinesis
 2. **Pre-fight buffs.** Should long buffs (Death Ward, Stoneskin, Protection
    from Energy, Freedom of Movement) cast in camp persist into the next fight?
    CLASS-2 ends Concentration at the end of combat.
+   Answered by LEVELS-1: long buffs without Concentration last.
 3. **Summons and control.** Approve one shared "allied creature takes its turn
    after its caster" system for Giant Insect, Summon Dragon, Animate Objects,
    Animate Dead and Dominate Beast/Person? Or defer some of them?
+   Answered by LEVELS-1: one shared system for all of them.
 4. **The nine UNSURE spells** (reasons in section 3).
+   Answered by LEVELS-1: all nine are kept.
 5. **More Expertise** at Rogue 6, Bard 9 and Ranger 9. SCOPE-2 says
    "Expertise … no further work; already implemented Expertise stays" and cuts
    Ranger Deft Explorer's Expertise. Does that cover the new picks?
    Answered by LEVELS-1: the new picks are implemented.
 6. **Daylight.** It is cut with Light under DM-3, but it is the counter to
    Darkness (which the game keeps). Keep it for that?
+   Answered by LEVELS-1: Daylight is cut; Dispel Magic also ends Darkness.
 7. **Slow's 25% spell failure** applies to spells with a Somatic component,
    which CLASS-11 removed. Apply it to every spell, or drop it?
+   Answered by LEVELS-1 and LEVELS-5: a Wisdom save instead of the chance.
 8. **Banishment** of extraplanar creatures that never return: count them as
    defeated for XP and loot?
+   Answered by LEVELS-1.
 
 ---
 
@@ -459,7 +470,7 @@ New invocation prerequisites in levels 5–10 (pp. 72–74):
 | Gift of the Depths | 5 | Breathe underwater, Swim Speed, one free Water Breathing | Cut candidate |
 | Investment of the Chain Master | 5, Pact of the Chain | Familiar upgrades | Pact of the Chain removed by DM-1 |
 | Master of Myriad Forms | 5 | Alter Self at will | Alter Self cut by DM-3 |
-| One with Shadows | 5 | Invisibility on self in Dim Light or Darkness | Needs light levels on battle maps (SCOPE-2 #46); UNSURE |
+| One with Shadows | 5 | Invisibility on self in Dim Light or Darkness | Cut by LEVELS-5: battle maps have no dark areas (LIGHT-1) |
 | Thirsting Blade | 5, Pact of the Blade | Extra Attack with the pact weapon | KEEP candidate |
 | Whispers of the Grave | 7 | Speak with Dead at will | Speak with Dead cut by DM-2 |
 | Gift of the Protectors | 9, Pact of the Tome | Names on a page; the first named creature dropped to 0 HP (not killed outright) goes to 1 HP instead, once per Long Rest | KEEP candidate (TOME-1: book not modeled) |

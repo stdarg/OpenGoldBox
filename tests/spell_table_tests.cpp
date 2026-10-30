@@ -377,8 +377,9 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
 
     // Range is inclusive at `range` and excludes the next square. An
     // out-of-range submission must change nothing at all. A spell on the
-    // caster alone has no distance to exceed.
-    if (row.target != SpellTarget::self)
+    // caster alone has no distance to exceed, and a range a feature extends
+    // (Improved Elemental Fury) is checked with that feature.
+    if (row.target != SpellTarget::self && offer->spell.range_feet == row.range)
     {
         auto beyond = battle(rules, sheet, row.range + 5);
         check(!find(*beyond, row.id, target), "A spell is not offered past its range");

@@ -8,9 +8,11 @@
 #include <chrono>
 #include <filesystem>
 #include <iostream>
+#include <set>
 #include <iterator>
 #include <fstream>
 #include <map>
+#include <set>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -533,10 +535,62 @@ void lineage_spell_checks()
     }
     check(asked && submit(*rebuke, "rebuke") && logged(*rebuke, "casts Hellish Rebuke at Bandit"),
           "A hit asks about Hellish Rebuke, paid by the free cast");
+
+    // Each lineage's later spells come with their free casts: a Tiefling's at
+    // levels 3 and 5, a High Elf's Detect Magic and Misty Step, a Wood Elf's
+    // Longstrider.
+    const auto lineage_pools = [&](const std::map<std::string, std::string> &choices,
+                                   std::string_view species, unsigned level)
+    {
+        CampaignParty grown(module());
+        const auto member = grown.add_pc(fighter(std::string(species), choices));
+        grown.award_experience(level >= 5 ? 6500 : 900, "lineage-xp");
+        for (unsigned n = 1; n < level; ++n)
+        {
+            grown.advance(member, grown.default_advancement(member));
+        }
+        std::set<std::string> free;
+        for (const auto &pool : rules->recovery_info(grown.member(member).character.sheet(),
+                                                     grown.member(member).vitals)
+                                    .resources)
+        {
+            if (pool.id.starts_with("magic_initiate:") && pool.remaining == 1)
+            {
+                free.insert(pool.id.substr(15));
+            }
+        }
+        return free;
+    };
+    check(lineage_pools(infernal, "tiefling", 5) ==
+              std::set<std::string>{"hellish_rebuke", "darkness"},
+          "An Infernal Tiefling casts Darkness free from level 5");
+    check(lineage_pools({{"species:tiefling:legacy", "abyssal"},
+                         {"species:tiefling:ability", "charisma"}},
+                        "tiefling", 5) == std::set<std::string>{"ray_of_sickness", "hold_person"},
+          "An Abyssal Tiefling casts Hold Person free from level 5");
+    check(lineage_pools({{"species:tiefling:legacy", "chthonic"},
+                         {"species:tiefling:ability", "charisma"}},
+                        "tiefling", 5) ==
+              std::set<std::string>{"false_life", "ray_of_enfeeblement"},
+          "A Chthonic Tiefling casts Ray of Enfeeblement free from level 5");
+    const std::map<std::string, std::string> high_elf{{"species:elf:lineage", "high_elf"},
+                                                      {"species:elf:ability", "intelligence"},
+                                                      {"species:elf:cantrip", "ray_of_frost"}};
+    check(lineage_pools(high_elf, "elf", 3) == std::set<std::string>{"detect_magic"} &&
+              lineage_pools(high_elf, "elf", 5) ==
+                  std::set<std::string>{"detect_magic", "misty_step"},
+          "A High Elf casts Detect Magic free from level 3 and Misty Step from level 5");
+    check(lineage_pools({{"species:elf:lineage", "wood_elf"}, {"species:elf:ability", "wisdom"}},
+                        "elf", 3) == std::set<std::string>{"longstrider"},
+          "A Wood Elf casts Longstrider free from level 3");
+    auto chthonic = fight(fighter("tiefling", {{"species:tiefling:legacy", "chthonic"},
+                                               {"species:tiefling:ability", "charisma"}}));
+    check(offered(*chthonic, "chill_touch"), "A Chthonic Tiefling knows Chill Touch");
 }
 
 // Breath Weapon: a Red Dragonborn exhales a 5-foot-wide line of fire in place
-// of its attack, DC 8 + Constitution + Proficiency Bonus, twice per Long Rest.
+// of its attack, DC 8 + Constitution + Proficiency Bonus, twice per Long Rest
+// at level 1.
 void breath_weapon_checks()
 {
     // Targets with 1000 Hit Points that do not fight back.
@@ -626,6 +680,33 @@ void breath_weapon_checks()
     check(uses_left() == 0, "The spent uses outlast the fight");
     rules->recover(state, hero.sheet());
     check(uses_left() == 2, "A Long Rest restores both uses");
+
+    // With Extra Attack the exhalation replaces only one of the attacks, and
+    // only one per Attack action.
+    CampaignParty party(module());
+    const auto id = party.add_pc(fighter("dragonborn", {{"species:dragonborn:ancestry", "red"}}));
+    party.award_experience(6500, "breath-xp");
+    for (unsigned n = 1; n < 5; ++n)
+    {
+        party.advance(id, party.default_advancement(id));
+    }
+    c = rules->create({{12, 6, std::vector<Terrain>(72)},
+                       {{1,
+                         "campaign-character",
+                         "Hero",
+                         Side::party,
+                         {1, 1},
+                         rules
+                             ->character_profile(party.member(id).character.sheet(),
+                                                 std::vector<std::string>{})
+                             .data},
+                        {98, "target", "Near", Side::opposition, {2, 1}},
+                        {99, "target", "Aside", Side::opposition, {2, 0}}}},
+                      3);
+    check(breathe() && offered("melee") && !offered("breath_weapon_line"),
+          "Extra Attack's attack follows the exhalation, but no second breath");
+    check(submit(*c, "melee", 98) && !offered("melee"), "The Attack action's two attacks are made");
+    check(rules->restore(c->save())->save() == c->save(), "A checkpoint keeps the exhalation");
 }
 
 // Versatile: a Human's Origin feat, not the background's, with Skilled's

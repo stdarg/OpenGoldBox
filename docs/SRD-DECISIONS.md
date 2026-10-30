@@ -204,7 +204,7 @@ TWF selectors/automatic benefit. Do not ask these again.
 | Q32 | **Superseded by [SIMPLIFY-1](#simplify-1-2026-09-30-tabletop-time-and-body-simulation).** Repeated Long Rest interruptions grant Short Rest benefits only for a fresh uninterrupted segment of at least one hour; earlier credited time cannot qualify again. Each interruption adds one required hour. | Approved for #193; 70-minute/10-minute/60-minute example in user reply. |
 | Q28 | #29/#189 Review Training button beside Grip below inventory, visible for missing training; centered dialog reuses checkbox groups and Fighting Style dropdown, fixed grants, counts and keyboard; locks prior choices; Apply requires all supported choices; Cancel/Escape discards; combat blocks edits; preserve wounds/resources/equipment/advancement | Approved; supersedes pending Q11. The dialog was removed by the 2026-09-30 save cutoff. |
 | Q27 | Sorcerer existing Spell Choices and Spell/Cast with four supported cantrips, Charisma, presets, old selections pending | [Sorcerer cantrips](SORCERER-CANTRIPS.md). |
-| Workflow adoption | User authorized efficiency implementation after backlog review | Batch workflow adopted; later pause takes precedence. #192 is closed; #30/#193 remain open. No authorization to discard save compatibility, create a fresh task or spawn agents. |
+| Workflow adoption | User authorized efficiency implementation after backlog review | Batch workflow adopted; later pause takes precedence. #192 is closed; #30/#193 remained open then and were later delivered. No authorization to discard save compatibility, create a fresh task or spawn agents. |
 
 Before a new question, check this register and the relevant feature doc. Ask a
 numbered question only for a material undecided layout/control/policy choice,
@@ -323,8 +323,8 @@ The user approved on 2026-09-30 the following scope limits.
 
 - **Level cap 15:** level 15 is both the rules-library target and the campaign's
   playable cap. Levels 16–20, Epic Boons and the level 17–20 capstones are not
-  planned. Progression currently stops at level 4; the next milestones are
-  levels 5–10 and 11–15. See [the plan](SRD-IMPLEMENTATION.md#higher-levels-and-multiclassing).
+  planned. Progression then stopped at level 4; levels 5–10 and 11–15 were
+  delivered later (LEVELS-1, LEVELS-2). See [the plan](SRD-IMPLEMENTATION.md#higher-levels-and-multiclassing).
 - **Multiclassing deferred:** M01–M06 are not part of the current plan.
 - **Pre-1.0 save compatibility:** a hard cutoff. Each save kind has one current
   format; older saves are rejected with a clear message and are not migrated.
@@ -332,8 +332,9 @@ The user approved on 2026-09-30 the following scope limits.
 - **Rare-situation features not pursued:** Wizard spellbook copying and book
   loss (the copying part of #97; learning and preparation stay), the mounted
   Lance rules, armor don/doff timing (#198), non-costly material components and
-  focus hands (#40; costly or consumed material components still count), and
-  speech-blocking sources (#39).
+  focus hands (#40; costly or consumed material components still counted
+  until [CLASS-11](#class-11-2026-10-06-no-spell-components) removed all
+  components), and speech-blocking sources (#39).
 
 ## DM-2 (2026-09-30): DM-adjudicated spells at levels 3–8
 

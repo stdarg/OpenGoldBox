@@ -15,7 +15,9 @@ These catalog prices do not replace original campaign shop prices.
 All weapon names and equipment explanations have English/Spanish translations.
 
 The existing attack resolver applies ability/proficiency bonuses, damage,
-critical hits, range, reach, handedness, Versatile and Heavy requirements.
+critical hits, range, handedness, Versatile and Heavy requirements. Reach is
+kept as data; melee reaches only adjacent squares
+([MELEE-1](SRD-DECISIONS.md#melee-1-2026-10-08-adjacent-only-melee)).
 Blowgun deals **1 Piercing damage** on a hit, with no ability modifier and no
 damage dice to double on a critical or reroll with Savage Attacker (SRD p. 16).
 Its attack roll still uses Dexterity and applicable proficiency.

@@ -30,10 +30,11 @@ layout question), with class access patterns Q12/Q26/Q27. No new dialog or
 control. Render existing choices/status in English and Spanish at both sizes. The shared
 creator is used by game/demo; combat Spell/Cast is main-game only, as explicitly
 recorded in CANTRIP-CONTROLS.md. Standalone demo combat controls remain unchanged.
-Creature combat casting uses the existing targeting system. Object targeting,
-Magic Initiate, Tome, High Elf, Chthonic Tiefling and higher class progression
-retain their recorded owners; the inventory stays explicitly incomplete for
-those routes. Do not silently declare the entire spell or #165 complete.
+Creature combat casting uses the existing targeting system. Magic Initiate,
+Pact of the Tome, the High Elf, the Chthonic Tiefling and the class progression
+to level 15 came later, which completed the spell
+([SPELL-INVENTORY](SPELL-INVENTORY.md)); object targeting was dropped
+(SCOPE-2).
 
 ## Execution
 

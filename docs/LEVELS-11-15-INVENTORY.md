@@ -5,9 +5,13 @@ SRD classes and their twelve SRD subclasses: Berserker, Lore, Life, Land,
 Champion, Open Hand, Devotion, Hunter, Thief, Draconic, Fiend and Evoker (the
 same set as the [levels 5–10 inventory](LEVELS-5-10-INVENTORY.md)). Level 15
 is SCOPE-1's rules-library target. This file is a factual extract plus a
-proposed triage. Nothing here is a decision: every KEEP, CUT and UNSURE, and
-every feature note, is a proposal; decisions are recorded in
-[SRD-DECISIONS](SRD-DECISIONS.md).
+proposed triage. The triage and feature notes are proposals; the decisions
+are recorded in [SRD-DECISIONS](SRD-DECISIONS.md), where
+[LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15) and
+[LEVELS-3](SRD-DECISIONS.md#levels-3-2026-10-15-the-open-decisions-of-levels-1115)
+settled them: every UNSURE spell is kept but Clone, which is cut. Every kept
+spell and feature is implemented
+([final reconciliation](SRD-COVERAGE.md#final-reconciliation-185)).
 
 **Sources.** [SRD 5.2.1](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf), extracted with `pdftotext` in reading order and
 with `-layout`. Page numbers are the printed footer numbers, which match the
@@ -502,7 +506,7 @@ decision; the question is in the notes.
 | Antimagic Field | 109 | C, W | Conc 1 h, 10-ft emanation around you: no spells, Magic actions or magical effects inside; magic items stop working; ongoing spells are suppressed; no teleport in or out. | **KEEP** | Needs the 5–10 ongoing-spell registry plus suppression; it also blocks the caster's own spells. |
 | Antipathy/Sympathy | 109 | B, D, W | 1-hour cast, 10 days: a creature or object repels (Frightened) or attracts (Charmed) a named kind of creature that fails a Wis save within 120 ft. | **CUT** | A lure or ward set up over an hour; where the creatures go needs a DM. |
 | Befuddlement | 112 | B, D, K, W | Int save: 10d12 Psychic and no spellcasting or Magic actions, resaving every 30 days; Greater Restoration, Heal or Wish end it; half damage only on a success. | **KEEP** | A lasting effect like Contagion; Heal and Greater Restoration end it. |
-| Clone | 115 | W | 1-hour cast (1,000 gp diamond consumed, 2,000 gp vessel): an inert copy grows for 120 days; if the original dies after that, its soul moves into the copy, without equipment. | **UNSURE** | Resurrection insurance (#175). Needs a stored vessel and 120 days of campaign time. Worth it under the cap? |
+| Clone | 115 | W | 1-hour cast (1,000 gp diamond consumed, 2,000 gp vessel): an inert copy grows for 120 days; if the original dies after that, its soul moves into the copy, without equipment. | **CUT** (LEVELS-3) | Resurrection insurance (#175). Needs a stored vessel and 120 days of campaign time. Worth it under the cap? |
 | Control Weather | 120 | C, D, W | 10-minute cast outdoors, Conc 8 h: shift precipitation, temperature and wind within 5 miles. | **CUT** | Weather is not modeled. |
 | Demiplane | 122 | S, K, W | 1 h: a door to an empty 30-ft room, new or made earlier. | **CUT** | Storage and hiding; Tiny Hut already gives an uninterruptible rest (LEVELS-1). |
 | Dominate Monster | 125 | B, S, K, W | Conc 1 h: any creature, Wis save (Advantage if fighting you) or Charmed and commanded; resaves when damaged. | **KEEP** | LEVELS-1's shared control system. |
@@ -600,9 +604,12 @@ Every spell below was already triaged in the 5–10 inventory.
    declined; Superior Hunter's Defense uses React/Decline like Uncanny Dodge;
    Superior Hunter's Prey and Improved Blessed Strikes' Temporary HP pick
    their target by click. Approve?
+   Answered by LEVELS-2: approved as proposed.
 8. **Use Magic Device** (Thief 13) needs magic items, charges and Spell
    Scrolls, which the game lacks though the original's treasure has scrolls
    and wands. Defer it until magic items exist, or build scrolls with it?
+   Answered by LEVELS-2: granted, and working since scrolls and wands came
+   (MAGIC-3, MAGIC-6).
 9. **Animal Shapes** lasts 24 hours without Concentration. Do its forms end
    with the fight, as Wild Shape does (WILD-1), or last into later fights like
    other long buffs (LEVELS-1)? It also needs CR 2–4 beast forms with art.

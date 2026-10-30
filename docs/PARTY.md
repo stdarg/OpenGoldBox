@@ -89,9 +89,10 @@ The rules module evaluates the created scores and equipment; these characters
 do not select the old Vanguard/Adept/Healer fixture statistics. All twelve
 classes can enter combat using their derived HP, AC, equipment, movement and
 basic attacks. The classes with further features and the levels they reach are
-summarized in the [README's current status](../README.md#current-status) (as of
-2026-10-02); the [SRD coverage ledger](SRD-COVERAGE.md) has the detail. The list
-below describes this party increment as first delivered, at levels 1–2.
+summarized in the [README's current status](../README.md#current-status); the
+[SRD coverage ledger](SRD-COVERAGE.md) has the detail. The list below describes
+this party increment as first delivered, at levels 1–2; everything it calls
+unimplemented has since been built or decided.
 
 - Fighter: ordinary attacks and two Second Wind uses.
 - Cleric: ordinary attacks and Cure Wounds, with two level-one spell slots
@@ -129,8 +130,10 @@ Legacy names absent from SRD 5.2.1 use these explicit SRD equivalents:
 | 50 / 51 / 52 / 53 / 54 | leather / padded / studded_leather / ring_mail / scale_mail |
 | 55 / 56, 57 / 58 / 59 | chain_mail / splint (Banded Mail has no SRD armor) / plate / shield |
 
-Damage dice, finesse, thrown/ranged distances, reach and mandatory two-hand
-requirements follow the SRD weapon table.
+Damage dice, finesse, thrown/ranged distances and mandatory two-hand
+requirements follow the SRD weapon table. Reach is kept as data, but melee
+reaches only adjacent squares
+([MELEE-1](SRD-DECISIONS.md#melee-1-2026-10-08-adjacent-only-melee)).
 
 ### Versatile grip
 
@@ -153,9 +156,9 @@ proficient with martial weapons that have Light. Shortsword and Scimitar therefo
 include their proficiency bonus for both classes. The catalog records Light
 for proficiency and for its extra attack ([Light attacks](LIGHT-ATTACKS.md)).
 Multiclassing, and so its entry training, is not implemented.
-Weapon mastery, ammunition consumption/recovery,
-and charged magical wand effects are not added
-by this change. Bows and a plain focus retain unarmed melee; ranged weapons
+This change added neither weapon mastery nor charged wand effects; both came
+later ([Weapon Mastery](WEAPON-MASTERY.md), MAGIC-3), and ammunition is
+unlimited ([#57](AMMUNITION.md)). Bows and a plain focus retain unarmed melee; ranged weapons
 provide actual ranged combat commands. Enchanted/effect-bearing original items
 still require a supported conversion rather than silently receiving plain stats.
 
@@ -212,14 +215,14 @@ live vitals into combat. The SRD session owns turn state and exposes an opaque,
 versioned resource continuation for each actor in its snapshot.
 
 `CombatDemo` synchronizes accepted combat changes into the party. Campaign
-victories award 300 XP once under a stable encounter key; reaching 300 XP
-advances the supported character to level 2 and updates the rules profile's HP
-and caster slots. The authored preview award is one-time, including across scene
+victories award 300 XP once under a stable encounter key; a character with
+enough XP advances when the player chooses Advance
+([ADVANCEMENT](ADVANCEMENT.md)), up to level 15. The authored preview award is one-time, including across scene
 recreation; original rewards require explicit mappings. Roster, shop,
 equipment and script writes are locked during combat. When combat finishes,
 editing resumes; no fresh HP or spell resources are granted on the next fight.
-The module identity is now 0.6.254 and combat checkpoint format is version 69,
-including character recipes. Old module saves fail the identity check explicitly.
+The module identity is in `srd5.cpp` (0.6.260 as of 2026-10-29), and the
+combat checkpoint format (71) includes character recipes. Old module saves fail the identity check explicitly.
 [Campaign file saves](SAVES.md) now retain the complete supported party and idle New Phlan state. Native `PartyState` checkpoints remain the in-session rollback mechanism. Pending dialogue/services and combat are not campaign save boundaries.
 
 ## ECL adapter

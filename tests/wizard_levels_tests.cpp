@@ -11,6 +11,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <vector>
 
 using namespace opengold;
@@ -587,6 +588,73 @@ void cloud_checks()
         }
     }
     check(retched, "A seed where the foe fails its save");
+}
+
+// Species save traits against an enemy's spell, with the same rolls as a
+// Human ally's, so Advantage keeps the first die or a higher one: Dwarven
+// Resilience against Stinking Cloud's Poisoned, Fey Ancestry against Hypnotic
+// Pattern's Charmed and Brave against Fear's Frightened.
+void species_save_checks()
+{
+    const auto rules = dummy_rules();
+    const auto ally_save = [&](std::string_view spell, Cell aim, std::string_view ability,
+                               std::string race, std::uint64_t seed)
+    {
+        auto d = draft("Ally");
+        d.race = std::move(race);
+        const Character ally(*srd5::character_rules(), d, {});
+        const std::vector<std::string> gear{"quarterstaff"};
+        auto c = field(*rules, with_spells(wizard(5), {std::string(spell)}),
+                       {{2, "campaign-character", "Ally", Side::party, aim,
+                         rules->character_profile(ally.sheet(), gear).data},
+                        {98, "dummy", "Foe", Side::opposition, {13, 6}}},
+                       seed);
+        check(submit(*c, spell) && submit_cell(*c, "area_move", aim) && submit(*c, "area_cast"),
+              "A spell over an ally");
+        to_turn(*c, 2);
+        const auto prefix = "Ally " + std::string(ability) + " save: d20 ";
+        for (const auto &line : c->snapshot().log())
+        {
+            if (const auto at = line.find(prefix); at != std::string::npos)
+            {
+                return std::stoi(line.substr(at + prefix.size()));
+            }
+        }
+        throw std::runtime_error("No save in the spell");
+    };
+    for (const auto &[spell, aim, ability, race] :
+         std::vector<std::tuple<std::string, Cell, std::string, std::string>>{
+             {"stinking_cloud", Cell{9, 2}, "Constitution", "dwarf"},
+             {"hypnotic_pattern", Cell{9, 2}, "Wisdom", "elf"},
+             {"fear", Cell{4, 2}, "Wisdom", "halfling"}})
+    {
+        bool higher = false;
+        for (std::uint64_t seed = 1; seed <= 24; ++seed)
+        {
+            const int plain = ally_save(spell, aim, ability, "human", seed),
+                      helped = ally_save(spell, aim, ability, race, seed);
+            check(helped >= plain, "A species save trait never lowers the save");
+            // A Halfling's Luck rerolls only a 1, so a higher die over another
+            // first roll is Advantage's.
+            higher |= helped > plain && plain > 1;
+        }
+        check(higher, "A " + race + " ally has Advantage against " + spell);
+    }
+
+    // Trance: magic cannot put an Elf to sleep.
+    for (const auto &[race, sleeps] : {std::pair{"elf", false}, std::pair{"human", true}})
+    {
+        auto d = draft("Sleeper");
+        d.race = race;
+        const Character sleeper(*srd5::character_rules(), d, {});
+        auto c = field(*rules, with_spells(wizard(5), {"sleep"}),
+                       {{2, "campaign-character", "Sleeper", Side::opposition, {6, 2},
+                         rules->character_profile(sleeper.sheet(), {}).data}},
+                       1);
+        check(submit(*c, "sleep") && submit_cell(*c, "area_move", Cell{6, 2}) &&
+                  submit(*c, "area_cast") && logged(*c, "Sleeper does not sleep.") != sleeps,
+              "Sleep passes over an Elf and not a Human");
+    }
 }
 
 void vampiric_touch_checks()
@@ -1432,6 +1500,12 @@ void level_six_checks()
     check(submit(*circle, "circle_of_death") && submit_cell(*circle, "area_move", Cell{9, 2}) &&
               submit(*circle, "area_cast") && logged(*circle, " Necrotic damage."),
           "Circle of Death");
+    auto sphere = field(*rules, with_spells(wizard(11), {"freezing_sphere"}),
+                        {{98, "dummy", "Foe", Side::opposition, {9, 2}}}, 1);
+    check(submit(*sphere, "freezing_sphere") && submit_cell(*sphere, "area_move", Cell{9, 2}) &&
+              submit(*sphere, "area_cast") && logged(*sphere, "Foe Constitution save: d20 ") &&
+              logged(*sphere, " Cold damage."),
+          "Freezing Sphere");
     // Disintegrate turns a creature it drops to dust.
     bool dust = false;
     for (std::uint64_t seed = 1; seed < 40 && !dust; ++seed)
@@ -2120,6 +2194,7 @@ int main()
         hypnotic_pattern_checks();
         fear_checks();
         cloud_checks();
+        species_save_checks();
         vampiric_touch_checks();
         blink_checks();
         tiny_hut_checks();

@@ -165,6 +165,43 @@ void class_dice_and_recharge()
     }
 }
 
+// Every class pool a Short Rest refills: spent Rage, Relentless Rage and Focus
+// come back, and Pact Magic and Font of Inspiration report their full return.
+void short_rest_class_pools()
+{
+    auto rules = module();
+    // Second Wind, nine slot levels, death saves, Hit Dice, recovery clocks and
+    // Temporary HP, then Adrenaline Rush, the surge store (Focus), the arcane
+    // store, the shared Lay On Hands store (Relentless Rage), free casts and the
+    // Channel Divinity store (Rage).
+    const auto spent = [](unsigned level)
+    {
+        return "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 " + std::to_string(level) +
+               " 0 0 0 \"\" 0 0 0 0 0 0 0 FX9 1 0 0";
+    };
+    const auto barbarian = hero("barbarian", 11);
+    VitalState state{1, false, spent(11)};
+    rules->recover_short_rest(state, barbarian.sheet());
+    auto info = rules->recovery_info(barbarian.sheet(), state);
+    check(pool(info, "relentless_rage").remaining == pool(info, "relentless_rage").capacity,
+          "A Short Rest resets Relentless Rage's DC");
+    check(pool(info, "rage").remaining == 1, "A Short Rest returns one spent Rage");
+    const auto monk = hero("monk", 5);
+    state = {1, false, spent(5)};
+    rules->recover_short_rest(state, monk.sheet());
+    info = rules->recovery_info(monk.sheet(), state);
+    check(pool(info, "focus").remaining == 5, "A Short Rest returns every Focus Point");
+    const auto warlock = hero("warlock", 5);
+    info = rules->recovery_info(warlock.sheet(), {1, false, {}});
+    check(pool(info, "spell_slot:3").short_rest_recovery == 2,
+          "Pact Magic reports its slots' full Short Rest return");
+    const auto bard = hero("bard", 5);
+    info = rules->recovery_info(bard.sheet(), {1, false, {}});
+    check(pool(info, "bardic_inspiration").short_rest_recovery ==
+              pool(info, "bardic_inspiration").capacity,
+          "Font of Inspiration reports Bardic Inspiration's full Short Rest return");
+}
+
 void minimum_caps_and_rejection()
 {
     auto rules = module();
@@ -330,7 +367,7 @@ void persistence_and_advancement()
     members.push_back({99, "vanguard", "Enemy", Side::opposition, {5, 1}});
     auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, members}, 42);
     const auto checkpoint = combat->save();
-    check(checkpoint.starts_with("OGCOMBAT 70 ") &&
+    check(checkpoint.starts_with("OGCOMBAT 71 ") &&
               rules->restore(checkpoint)->save() == checkpoint,
           "Combat checkpoint stores remaining dice exactly");
     auto copy = rules->restore(checkpoint);
@@ -390,6 +427,7 @@ int main()
     try
     {
         class_dice_and_recharge();
+        short_rest_class_pools();
         minimum_caps_and_rejection();
         persistence_and_advancement();
         std::cout << "Rest resource tests passed\n";

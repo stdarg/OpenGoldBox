@@ -53,8 +53,8 @@ struct InitiateSpells
 
 std::vector<InitiateSpells> magic_initiate_spells(std::span<const rules::FeatureGrant>);
 // An Elf's or a Tiefling's lineage spells at a character level (SRD 5.2.1
-// pp. 84, 86): its cantrip, and from level 3 a spell cast once per Long Rest
-// without a slot. `feat` names the species; the ability is the one chosen.
+// pp. 84, 86): its cantrip, and from levels 3 and 5 a spell each, cast once
+// per Long Rest without a slot. `feat` names the species; the ability is the one chosen.
 std::vector<InitiateSpells> lineage_spells(std::span<const rules::FeatureGrant>, unsigned level);
 // Gaining a level lets a Bard, Cleric, Druid, Sorcerer or Warlock replace one
 // cantrip of its class, and a Paladin or Ranger one of its Fighting Style's

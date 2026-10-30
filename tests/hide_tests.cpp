@@ -80,6 +80,20 @@ Character pool_character(std::string_view klass, unsigned level)
     throw std::runtime_error("No pool character of the class");
 }
 
+// A Fiend Warlock at level 6, with Dark One's Own Luck.
+Character fiend()
+{
+    auto hero = pool_character("warlock", 1);
+    CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
+    const auto id = party.add_pc(hero);
+    party.award_experience(14000, "luck-xp");
+    while (party.member(id).character.sheet().level < 6)
+    {
+        party.advance(id, party.default_advancement(id));
+    }
+    return party.member(id).character;
+}
+
 // The Rogue at level 2, with Cunning Action.
 Character rogue()
 {
@@ -450,6 +464,64 @@ void elvenkind_checks()
 }
 } // namespace
 
+// Naturally Stealthy: a Halfling hides behind a creature larger than itself,
+// here a Medium ally between it and the foe.
+void naturally_stealthy_checks()
+{
+    const auto rules = module();
+    const auto offered_behind_ally = [&](std::string race)
+    {
+        auto data = rogue().creation_data();
+        data.race = std::move(race);
+        std::erase_if(data.training,
+                      [](const auto &choice)
+                      {
+                          return choice.first.starts_with("species:");
+                      });
+        const Character hero(*srd5::character_rules(), data, {});
+        const auto ally = rogue();
+        const std::vector<std::string> gear{"dagger"};
+        auto c = rules->create({{12, 6, std::vector<Terrain>(72)},
+                                {{1,
+                                  "campaign-character",
+                                  "Rogue",
+                                  Side::party,
+                                  {3, 1},
+                                  rules->character_profile(hero.sheet(), gear).data},
+                                 {2,
+                                  "campaign-character",
+                                  "Ally",
+                                  Side::party,
+                                  {4, 1},
+                                  rules->character_profile(ally.sheet(), gear).data},
+                                 {98, "target", "Foe", Side::opposition, {8, 1}}}},
+                               1);
+        for (unsigned turns = 0;
+             turns < 6 && (c->snapshot().actor != 1 || offered(*c, "initiative_keep")); ++turns)
+        {
+            check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Rogue's turn");
+        }
+        return offered(*c, "hide");
+    };
+    check(offered_behind_ally("halfling") && !offered_behind_ally("human"),
+          "A Halfling hides behind a larger ally; a Human cannot");
+}
+
+// Dark One's Own Luck adds 1d10 to a failed Stealth check it could still pass.
+void luck_checks()
+{
+    const auto rules = module();
+    const auto hero = fiend();
+    bool lucky = false;
+    for (std::uint64_t seed = 1; seed < 80 && !lucky; ++seed)
+    {
+        auto c = fight(*rules, hero, "target", {8, 1}, seed);
+        check(submit(*c, "hide"), "The Warlock tries to hide");
+        lucky = logged(*c, "to the check (Dark One's Own Luck).");
+    }
+    check(lucky, "Dark One's Own Luck adds 1d10 to a failed check it could still pass");
+}
+
 int main()
 {
     try
@@ -460,6 +532,8 @@ int main()
         spell_checks();
         poisoned_checks();
         elvenkind_checks();
+        naturally_stealthy_checks();
+        luck_checks();
     }
     catch (const std::exception &error)
     {
