@@ -6,6 +6,7 @@
 #include "opengold/creature_catalog.h"
 #include "opengold/formats.h"
 #include "opengold/campaign_party.h"
+#include "opengold/difficulty.h"
 #include "opengold/dungeon_battlefield.h"
 #include <filesystem>
 #include <string>
@@ -156,23 +157,29 @@ enum class Searching
 };
 
 // Demonstration AI consumes only public state/commands. No rolls or damage here.
+// Above Normal difficulty it targets the weakest enemies, and on Nightmare and
+// Infernal finishes downed ones (CLOSE-1).
 [[nodiscard]] rules::Command choose_demo_command(const rules::CombatSession &session,
-                                                 Searching searching = Searching::by_sight);
+                                                 Searching searching = Searching::by_sight,
+                                                 Difficulty difficulty = default_difficulty);
 // The same choice from a snapshot and the commands already read, so a caller
 // that has them does not build them again.
 [[nodiscard]] rules::Command choose_demo_command(const rules::Snapshot &state,
                                                  const std::vector<rules::Command> &offered,
-                                                 Searching searching = Searching::by_sight);
+                                                 Searching searching = Searching::by_sight,
+                                                 Difficulty difficulty = default_difficulty);
 // The party's flee policy: a member fast enough to flee runs for the nearest
 // open edge of the field (Dashing when it must, whatever reactions it
 // provokes) and steps off it; everyone else acts as choose_quick_command does,
 // casting no spells unless `magic` (Quick magic).
 [[nodiscard]] rules::Command choose_flee_command(const rules::CombatSession &session,
                                                  bool magic = true,
-                                                 Searching searching = Searching::by_sight);
+                                                 Searching searching = Searching::by_sight,
+                                                 Difficulty difficulty = default_difficulty);
 // Quick combat, as in the original: the computer plays the active party
 // member as choose_demo_command does, casting no spells unless `magic`.
 [[nodiscard]] rules::Command choose_quick_command(const rules::CombatSession &session, bool magic,
-                                                  Searching searching = Searching::by_sight);
+                                                  Searching searching = Searching::by_sight,
+                                                  Difficulty difficulty = default_difficulty);
 } // namespace opengold
 #endif

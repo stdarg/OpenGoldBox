@@ -135,7 +135,7 @@ Deterministic SplitMix64 dice and stable initiative tie ordering make a seed plu
 the same accepted command sequence reproducible. Checkpoints include the RNG,
 turn budgets, HP, slots, death saves and unfinished opportunity reactions.
 
-Rules module **0.6.261** writes **OGCOMBAT 71**, including an
+Rules module **0.6.262** writes **OGCOMBAT 71**, including an
 involuntary shared-space marker, remaining Hit Dice, recovery clocks and sourced Temporary HP.
 A saved leave-reach queue retains its order, partially resolved position and
 deterministic continuation. Older formats and other module or content identities
@@ -227,8 +227,9 @@ Prone are implemented; grappling was dropped
 ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)). The shared campaign now includes named saves,
 surprise initiative disadvantage, original dungeon geometry and bounded original
 loot; see [the expedition adapter](EXPEDITION.md) and [campaign saves](SAVES.md).
-Unconscious enemies are currently treated as defeated, and attacks against
-unconscious party members are not offered. Allied transit and diagonal geometry
+A monster dies at 0 Hit Points unless it regenerates. Attacks and healing may
+target any creature, a party member or one at 0 Hit Points included
+([CLOSE-1](SRD-DECISIONS.md#close-1-2026-10-29-the-last-srd-choices)). Allied transit and diagonal geometry
 use the documented grid adjudication; this is not an implementation of every
 SRD movement exception. Unsupported creature definitions fail explicitly.
 

@@ -854,6 +854,16 @@ struct Snapshot
     }
 };
 
+// Whether a command harms or helps the creature it targets. Any creature may
+// be attacked or healed (CLOSE-1); a computer player reads this to keep its
+// attacks off its own side and its healing off its foes.
+enum class Intent
+{
+    neutral,
+    hostile,
+    friendly
+};
+
 // Verbs are owned by a module, not an enumeration of edition-specific rules.
 // Presentation submits only currently offered commands. The module revalidates.
 struct Command
@@ -865,6 +875,7 @@ struct Command
     unsigned item{};
     bool aims_area{}; // Starts aiming an area spell (CLASS-5).
     SpellFacts spell; // Zero unless it casts a spell.
+    Intent intent{};
 };
 
 class CombatSession

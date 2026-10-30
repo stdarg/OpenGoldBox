@@ -9,7 +9,9 @@ wizard-1 @ 5ft
     fire_bolt|1
     fire_bolt|2
     fire_bolt|3
+    magic_missile|2
     magic_missile|3
+    melee|2
     melee|3
     poison_spray|1
     poison_spray|2
@@ -26,6 +28,7 @@ wizard-1 @ 30ft
     fire_bolt|1
     fire_bolt|2
     fire_bolt|3
+    magic_missile|2
     magic_missile|3
     poison_spray|1
     poison_spray|2
@@ -42,6 +45,7 @@ wizard-1 @ 60ft
     fire_bolt|1
     fire_bolt|2
     fire_bolt|3
+    magic_missile|2
     magic_missile|3
     poison_spray|1
     ray_of_frost|1
@@ -56,6 +60,7 @@ wizard-1 @ 120ft
     fire_bolt|1
     fire_bolt|2
     fire_bolt|3
+    magic_missile|2
     magic_missile|3
     poison_spray|1
     ray_of_frost|1
@@ -70,6 +75,7 @@ wizard-1 @ 125ft
     ray_of_frost|1
 wizard-4 @ 5ft
     adrenaline_rush|1
+    blindness|2
     blindness|3
     chill_touch|1
     chill_touch|2
@@ -83,25 +89,31 @@ wizard-4 @ 5ft
     fire_bolt|3
     fog_cloud_2|0
     fog_cloud|0
+    hold_person|2
     hold_person|3
     longstrider_2|1
     longstrider_2|2
     longstrider|1
     longstrider|2
+    magic_missile_2|2
     magic_missile_2|3
+    magic_missile|2
     magic_missile|3
+    melee|2
     melee|3
     protection_from_evil_and_good|1
     protection_from_evil_and_good|2
     ray_of_frost|1
     ray_of_frost|2
     ray_of_frost|3
+    scorching_ray|2
     scorching_ray|3
     shocking_grasp|1
     shocking_grasp|2
     shocking_grasp|3
 wizard-4 @ 30ft
     adrenaline_rush|1
+    blindness|2
     blindness|3
     chill_touch|1
     dash|0
@@ -113,19 +125,24 @@ wizard-4 @ 30ft
     fire_bolt|3
     fog_cloud_2|0
     fog_cloud|0
+    hold_person|2
     hold_person|3
     longstrider_2|1
     longstrider|1
+    magic_missile_2|2
     magic_missile_2|3
+    magic_missile|2
     magic_missile|3
     protection_from_evil_and_good|1
     ray_of_frost|1
     ray_of_frost|2
     ray_of_frost|3
+    scorching_ray|2
     scorching_ray|3
     shocking_grasp|1
 wizard-4 @ 60ft
     adrenaline_rush|1
+    blindness|2
     blindness|3
     chill_touch|1
     dash|0
@@ -137,19 +154,24 @@ wizard-4 @ 60ft
     fire_bolt|3
     fog_cloud_2|0
     fog_cloud|0
+    hold_person|2
     hold_person|3
     longstrider_2|1
     longstrider|1
+    magic_missile_2|2
     magic_missile_2|3
+    magic_missile|2
     magic_missile|3
     protection_from_evil_and_good|1
     ray_of_frost|1
     ray_of_frost|2
     ray_of_frost|3
+    scorching_ray|2
     scorching_ray|3
     shocking_grasp|1
 wizard-4 @ 120ft
     adrenaline_rush|1
+    blindness|2
     blindness|3
     chill_touch|1
     dash|0
@@ -163,10 +185,13 @@ wizard-4 @ 120ft
     fog_cloud|0
     longstrider_2|1
     longstrider|1
+    magic_missile_2|2
     magic_missile_2|3
+    magic_missile|2
     magic_missile|3
     protection_from_evil_and_good|1
     ray_of_frost|1
+    scorching_ray|2
     scorching_ray|3
     shocking_grasp|1
 wizard-4 @ 125ft
@@ -191,6 +216,7 @@ cleric-1 @ 5ft
     disengage|0
     dodge|0
     end|0
+    melee|2
     melee|3
     sacred_flame|1
     sacred_flame|2
@@ -238,17 +264,20 @@ cleric-4 @ 5ft
     bless|1
     bless|2
     bless|3
+    blindness|2
     blindness|3
     cure_wounds_2|2
     cure_wounds|2
     dash|0
     disengage|0
+    divine_spark_radiant|2
+    divine_spark_radiant|3
     divine_spark|2
-    divine_spark|3
     dodge|0
     end|0
     healing_word_2|2
     healing_word|2
+    melee|2
     melee|3
     preserve_life|1
     sacred_flame|1
@@ -265,11 +294,13 @@ cleric-4 @ 30ft
     bless|1
     bless|2
     bless|3
+    blindness|2
     blindness|3
     dash|0
     disengage|0
+    divine_spark_radiant|2
+    divine_spark_radiant|3
     divine_spark|2
-    divine_spark|3
     dodge|0
     end|0
     healing_word_2|2
@@ -283,6 +314,7 @@ cleric-4 @ 60ft
     aid|1
     bless_2|1
     bless|1
+    blindness|2
     blindness|3
     dash|0
     disengage|0
@@ -298,6 +330,7 @@ cleric-4 @ 120ft
     aid|1
     bless_2|1
     bless|1
+    blindness|2
     blindness|3
     dash|0
     disengage|0
@@ -323,6 +356,7 @@ warlock-1 @ 5ft
     eldritch_blast|2
     eldritch_blast|3
     end|0
+    melee|2
     melee|3
     poison_spray|1
     poison_spray|2
@@ -377,6 +411,7 @@ sorcerer-1 @ 5ft
     fire_bolt|2
     fire_bolt|3
     innate_sorcery|0
+    melee|2
     melee|3
     poison_spray|1
     poison_spray|2
@@ -445,6 +480,7 @@ sorcerer-1 @ 125ft
     shocking_grasp|1
 wizard-4+shield @ 5ft
     adrenaline_rush|1
+    blindness|2
     blindness|3
     chill_touch|1
     chill_touch|2
@@ -458,25 +494,31 @@ wizard-4+shield @ 5ft
     fire_bolt|3
     fog_cloud_2|0
     fog_cloud|0
+    hold_person|2
     hold_person|3
     longstrider_2|1
     longstrider_2|2
     longstrider|1
     longstrider|2
+    magic_missile_2|2
     magic_missile_2|3
+    magic_missile|2
     magic_missile|3
+    melee|2
     melee|3
     protection_from_evil_and_good|1
     protection_from_evil_and_good|2
     ray_of_frost|1
     ray_of_frost|2
     ray_of_frost|3
+    scorching_ray|2
     scorching_ray|3
     shocking_grasp|1
     shocking_grasp|2
     shocking_grasp|3
 wizard-4+shield @ 30ft
     adrenaline_rush|1
+    blindness|2
     blindness|3
     chill_touch|1
     dash|0
@@ -488,19 +530,24 @@ wizard-4+shield @ 30ft
     fire_bolt|3
     fog_cloud_2|0
     fog_cloud|0
+    hold_person|2
     hold_person|3
     longstrider_2|1
     longstrider|1
+    magic_missile_2|2
     magic_missile_2|3
+    magic_missile|2
     magic_missile|3
     protection_from_evil_and_good|1
     ray_of_frost|1
     ray_of_frost|2
     ray_of_frost|3
+    scorching_ray|2
     scorching_ray|3
     shocking_grasp|1
 wizard-4+shield @ 60ft
     adrenaline_rush|1
+    blindness|2
     blindness|3
     chill_touch|1
     dash|0
@@ -512,19 +559,24 @@ wizard-4+shield @ 60ft
     fire_bolt|3
     fog_cloud_2|0
     fog_cloud|0
+    hold_person|2
     hold_person|3
     longstrider_2|1
     longstrider|1
+    magic_missile_2|2
     magic_missile_2|3
+    magic_missile|2
     magic_missile|3
     protection_from_evil_and_good|1
     ray_of_frost|1
     ray_of_frost|2
     ray_of_frost|3
+    scorching_ray|2
     scorching_ray|3
     shocking_grasp|1
 wizard-4+shield @ 120ft
     adrenaline_rush|1
+    blindness|2
     blindness|3
     chill_touch|1
     dash|0
@@ -538,10 +590,13 @@ wizard-4+shield @ 120ft
     fog_cloud|0
     longstrider_2|1
     longstrider|1
+    magic_missile_2|2
     magic_missile_2|3
+    magic_missile|2
     magic_missile|3
     protection_from_evil_and_good|1
     ray_of_frost|1
+    scorching_ray|2
     scorching_ray|3
     shocking_grasp|1
 wizard-4+shield @ 125ft
@@ -565,6 +620,7 @@ wizard-4+plate @ 5ft
     disengage|0
     dodge|0
     end|0
+    melee|2
     melee|3
 wizard-4+plate @ 30ft
     adrenaline_rush|1

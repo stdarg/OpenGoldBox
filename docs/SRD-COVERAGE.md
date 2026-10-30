@@ -1192,9 +1192,11 @@ The last open choices were settled by
 Steed, Faithful Steed and Gaze of Two Minds stay out; the High Elf changes its
 cantrip after a Long Rest (`opengold_species_tests`); Shillelagh offers a
 Force strike (`opengold_druid_tests`); the defeat when every party member is
-down stays; `supported_features()` is gone from the rules interface. Attacks
-and healing on any target, with difficulty-based monster targeting, follow
-before #185 closes.
+down stays; `supported_features()` is gone from the rules interface; attacks
+and healing take any creature, and above Normal the computer's creatures
+target the weakest enemy, converging on it and finishing downed characters
+on the two hardest levels
+(`opengold_cleric_channel_tests`, `opengold_ai_policy_tests`).
 
 SRD-derived rules use the attribution in
 [NOTICE](../data/rules/srd-5.2.1/NOTICE.md); see the
