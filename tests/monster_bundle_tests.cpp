@@ -3,6 +3,7 @@
 #include "opengold/monster_bundle.h"
 #include "png_size_only.h"
 #include "test_support.h"
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -162,6 +163,32 @@ void handmade()
         "Art that is not 128 x 128 is refused");
 }
 
+// Each Wild Shape and summoned form wears the new art of the creature drawn
+// with its original icon.
+void forms()
+{
+    const auto bundle = load_monster_bundle(root / "data/monsters", png_size_only);
+    for (const auto &entry : form_icons)
+    {
+        const auto *creature = bundle.creature(entry.bank, entry.icon);
+        check(creature && readied_variant(*creature, false),
+              "The " + std::string(entry.form) + " form has new art");
+    }
+    const auto wearer = [&](std::string_view form)
+    {
+        const auto found = std::find_if(form_icons.begin(), form_icons.end(),
+                                        [&](const auto &entry)
+                                        {
+                                            return entry.form == form;
+                                        });
+        return bundle.creature(found->bank, found->icon)->name;
+    };
+    check(wearer("wolf") == "WOLF" && wearer("giant_insect") == "LARGE SCORPION" &&
+              wearer("draconic_spirit") == "Tyranthraxus" &&
+              wearer("animated_object") == "SKELETON",
+          "Forms wear the wolf's, the scorpion's, Tyranthraxus's and the skeleton's art");
+}
+
 // Feet stand on the row below the lowest opaque pixel.
 void planted()
 {
@@ -180,6 +207,7 @@ int main()
         shipped();
         handmade();
         planted();
+        forms();
     }
     catch (const std::exception &error)
     {

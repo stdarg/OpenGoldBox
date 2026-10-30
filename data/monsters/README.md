@@ -26,6 +26,9 @@ size and humanoid height, its equipment and its weapon sets:
   holds, original or added: its readied melee weapon (else its first), and a
   readied ranged weapon or an archer's bow. The weapon's dice and damage type
   replace its stat block's; the stat block keeps its bonuses.
+- **Forms.** Wild Shape's and Polymorph's Beast forms and summoned creatures
+  wear the art of the creature drawn with their original icon (a Wolf form,
+  `mon4cha_dax_106`'s).
 - **Copies** keep their own name, gear and art; no encounter places them yet.
 
 A record flagged for regeneration exports its data but no art. Do not edit
