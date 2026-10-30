@@ -34,7 +34,8 @@ packed scenes and artwork, and native rules files are all inside that app bundle
 The build checks for those files before reporting success. The app is ad hoc signed for local
 testing. Settings are saved
 in Godot's per-user data directory because app bundles are not writable after
-installation. Distribution signing and notarization are separate release steps.
+installation. Notarization is a separate release step, and needs an Apple Developer
+ID. See [the package for players](../../docs/BUILD.md#the-package-for-players-1).
 
 ### Windows
 

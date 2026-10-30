@@ -152,6 +152,30 @@ authenticity guarantee. The reference is bundled and never relearned from an
 arbitrary folder selected by a player. Adding a supported revision requires a
 reviewed manifest change and decoder validation.
 
+## Crash reports
+
+When a session does not shut down normally, whether from a crash, a force quit or
+a power loss, the next launch writes a report to `crash-reports/` in the user data
+folder, beside `settings.cfg`. Each is a text file named
+`crash-<date>-<process id>.txt`, holding the game version, engine, system, and the
+last 400 lines of that session's log, with the backtrace when the game crashed.
+The ten newest are kept. The log is also in `logs/` in the same folder, where the
+engine keeps the last five.
+
+Nothing is sent anywhere; a player attaches the file to a bug report. Logs can
+hold folder names, such as the player's account name in the path to the game files.
+
+To read a macOS backtrace down to source lines, unzip the release's
+`-macos-symbols.zip` and pass the `opengoldbox_game.dylib+<offset>` offsets from the
+report (`arm64`, or `x86_64` on an Intel Mac):
+
+```bash
+atos -arch arm64 -l 0 -o opengoldbox_game.dylib.dSYM/Contents/Resources/DWARF/opengoldbox_game.dylib 0x10aa1c
+```
+
+A running session marks itself in `sessions/` and clears the mark on a clean exit.
+A second copy of the game leaves the first one's mark alone while it is running.
+
 ## Development and checks
 
 Godot editor runs use `src/OpenGoldBox/godot/settings.cfg` rather than placing
