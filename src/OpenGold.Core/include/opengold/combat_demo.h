@@ -8,7 +8,9 @@
 #include "opengold/campaign_party.h"
 #include "opengold/difficulty.h"
 #include "opengold/dungeon_battlefield.h"
+#include "opengold/monster_bundle.h"
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -23,7 +25,8 @@ class CombatDemo
     ~CombatDemo();
     void campaign_party(std::shared_ptr<CampaignParty> party);
     void training(std::uint64_t seed = 42, bool conditions = false);
-    void slums(const std::filesystem::path &game_directory, std::uint64_t seed = 42);
+    void slums(const std::filesystem::path &game_directory, std::uint64_t seed = 42,
+               std::shared_ptr<const por::MonsterBundle> monsters = {});
     void encounter(CampaignEncounter encounter, std::uint64_t seed);
 
     [[nodiscard]] const auto &battlefield_tiles() const
@@ -110,6 +113,7 @@ class CombatDemo
     std::vector<std::uint8_t> battlefield_tiles_;
     std::vector<Image> terrain_art_;
     std::filesystem::path game_directory_;
+    std::shared_ptr<const por::MonsterBundle> monsters_;
     std::string dialogue_, status_;
     std::uint64_t menu_ticket_{}, combat_ticket_{}, seed_{};
     unsigned encounters_{};
@@ -139,6 +143,7 @@ struct CombatDemoOptions
     std::vector<std::string> classes;
     unsigned level{1};
     std::vector<std::string> enemies, gear;
+    std::shared_ptr<const por::MonsterBundle> monsters;
 };
 
 [[nodiscard]] CombatDemoSetup make_combat_demo(std::unique_ptr<rules::RulesModule> rules,

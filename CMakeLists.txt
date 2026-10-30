@@ -133,7 +133,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/npc_portraits.cpp
     src/OpenGold.Core/src/shop_data.cpp
     src/OpenGold.Core/src/json_document.cpp
-    src/OpenGold.Core/src/monster_bundle.cpp
+    src/OpenGold.Core/src/creature_art.cpp src/OpenGold.Core/src/monster_bundle.cpp
     src/OpenGold.Core/src/coin_purse.cpp
     src/OpenGold.Core/src/training_hall.cpp
     src/OpenGold.Core/src/campaign_rest.cpp

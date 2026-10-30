@@ -1,4 +1,5 @@
 #include "opengold/rolf_tour.h"
+#include "opengold/creature_art.h"
 #include "opengold/script_secrets.h"
 #include "opengold/random_treasure.h"
 #include "opengold/ecl_party_host.h"
@@ -1211,50 +1212,6 @@ std::string wielded_key(const Creature &creature, const MonsterItem *item)
     const auto &original = creature.equipment[static_cast<std::size_t>(item->source_index)];
     return original.stored.type == item->source_type ? equipment_conversion(original)
                                                      : std::string{};
-}
-
-// A staged creature's art: the export's weapon set for what it readies, and
-// the sets its melee attacks and shots show, drawn as the catalog previews
-// them; or else the original icon with its action pose, the icon 128 records
-// on.
-opengold::CombatArt staged_creature_art(const std::vector<std::uint8_t> &archive, unsigned icon,
-                                        Image ready, const ExportedMonster *exported, bool archer)
-{
-    opengold::CombatArt art{0, std::move(ready), {}, {}, {}, {}};
-    if (icon < 128)
-    {
-        if (auto action = decode_ega_combat_icon(archive, static_cast<std::uint8_t>(icon + 128), 0))
-        {
-            art.action = std::move(action.image);
-        }
-    }
-    // New art keeps the original, which the Combat art setting can show.
-    const auto *variant = exported ? readied_variant(*exported, archer) : nullptr;
-    if (!variant)
-    {
-        return art;
-    }
-    const auto planted = [&](const MonsterVariant &set)
-    {
-        return opengold::PlantedArt{art_scale(*exported), planted_ground(set.ready)};
-    };
-    const auto weapon_set = [&](const MonsterVariant *set) -> std::optional<opengold::WeaponSetArt>
-    {
-        if (!set)
-        {
-            return std::nullopt;
-        }
-        return opengold::WeaponSetArt{set->ready, set->action, planted(*set)};
-    };
-    const auto attacks = attack_variants(*exported);
-    return {0,
-            variant->ready,
-            variant->action,
-            {},
-            planted(*variant),
-            opengold::OriginalArt{std::move(art.image), std::move(art.action)},
-            weapon_set(attacks.melee),
-            weapon_set(attacks.ranged)};
 }
 } // namespace
 
@@ -2495,12 +2452,6 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // combat_team): 0, the party's, only for Valhingen Graveyard's
         // efreeti, who helps a party carrying his bottle.
         const bool ally = creature.stored.raw.at(0x10E) == 0;
-        auto icon = decode_ega_combat_icon(area_resources().combat_archive,
-                                           static_cast<std::uint8_t>(arg(2)), 0);
-        if (!icon)
-        {
-            throw EclError("Invalid original combat icon");
-        }
         // A leader shoots a bow only when its art shows one: of the Slums
         // combat icons, only the orc leader's icon 5 does.
         auto definition = area_resources().conversions.at(record).definition;
@@ -2509,9 +2460,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             definition = "slums-orc-leader-archer";
         }
         const auto *exported = exported_creature(area_resources(), record);
-        const auto art = staged_creature_art(area_resources().combat_archive, arg(2),
-                                             std::move(icon.image), exported,
-                                             definition.ends_with("-archer"));
+        const auto art = creature_art(area_resources().combat_archive, arg(2), exported,
+                                      definition.ends_with("-archer"));
+        if (!art)
+        {
+            throw EclError("Invalid original combat icon");
+        }
         // A human-shaped creature fights with the weapons it holds (#274).
         std::string melee_weapon, ranged_weapon;
         if (exported && human_shaped(*exported))
@@ -2530,7 +2484,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                                       rules::Side::party,
                                       {}});
             staged_allies_.back().footprint = combat_footprint(creature.stored);
-            staged_ally_art_.push_back(art);
+            staged_ally_art_.push_back(*art);
             staged_ally_art_.back().entity = id;
         }
         for (unsigned i = 0; !ally && i < count; ++i)
@@ -2554,7 +2508,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 std::min<unsigned>(creature.stored.abilities.intelligence, 30);
             staged_enemies_.back().melee_weapon = melee_weapon;
             staged_enemies_.back().ranged_weapon = ranged_weapon;
-            staged_art_.push_back(art);
+            staged_art_.push_back(*art);
             staged_art_.back().entity = id;
             staged_records_.push_back(record);
         }
