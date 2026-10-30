@@ -24,6 +24,8 @@ add_library(opengold_combat_tester SHARED
 target_include_directories(opengold_combat_tester PRIVATE "${repo_root}/src/OpenGoldBox")
 target_link_libraries(opengold_combat_tester PRIVATE opengold_core opengold_rules_srd5 godot-cpp)
 target_compile_features(opengold_combat_tester PRIVATE cxx_std_20)
+get_target_property(game_definitions opengoldbox_game COMPILE_DEFINITIONS)
+target_compile_definitions(opengold_combat_tester PRIVATE ${game_definitions})
 set_target_properties(opengold_combat_tester PROPERTIES PREFIX ""
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/project/bin"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/project/bin")
