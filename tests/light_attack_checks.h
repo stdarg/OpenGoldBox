@@ -282,6 +282,26 @@ void run()
               "Loading allows distinct Action, Surge Action and Light Bonus Action");
         exact_restore(*c);
     }
+    // Loading: Extra Attack's later attacks cannot fire the crossbow again,
+    // and a restored fight still knows it has fired.
+    {
+        auto p = party();
+        p.equip(1, 4);
+        p.award_experience(6500, "loading");
+        for (unsigned n = 0; n < 4; ++n)
+        {
+            p.advance(1, p.default_advancement(1));
+        }
+        auto c = battle(p, 13, {5, 1});
+        act(*c, "ranged");
+        settle(*c);
+        check(!offered(*c, "ranged"), "A Loading weapon fires once per Attack action");
+        auto restored = rules()->restore(c->save());
+        check(!offered(*restored, "ranged") && restored->save() == c->save(),
+              "A restored fight keeps the Loading shot");
+        act(*c, "action_surge");
+        check(offered(*c, "ranged"), "Action Surge's action fires the crossbow again");
+    }
     // A reaction made while another Light weapon is held cannot earn Light. With
     // adjacent-only melee (MELEE-1), leaving the Whip's square provokes directly.
     {

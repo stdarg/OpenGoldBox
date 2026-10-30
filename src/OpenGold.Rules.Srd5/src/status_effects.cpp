@@ -1066,6 +1066,10 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                         {
                             modifiers.advantage |= subject.brave;
                         }
+                        if (e.kind == EffectKind::envenomed)
+                        {
+                            modifiers.advantage |= subject.poison_resilient;
+                        }
                         else if (e.kind != EffectKind::knocked_out &&
                                  e.kind != EffectKind::envenomed)
                         {

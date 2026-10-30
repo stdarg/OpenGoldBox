@@ -38,7 +38,10 @@ complete original campaign service coverage.
   members gain no rest benefits. Time, effects and mortality advance once for
   the whole roster.
   If nobody is eligible, the request changes nothing. Removal/rejoin preserves
-  individual timers. Short Rest transactions recharge one Second Wind and
+  individual timers. Short Rest transactions recharge each class resource the
+  SRD restores on a Short Rest (one Second Wind, Rage, Channel Divinity or Wild
+  Shape use; all of Action Surge, Focus, Adrenaline Rush, Pact Magic slots,
+  Relentless Rage's DC and, from Font of Inspiration, Bardic Inspiration) and
   offer Heal with Hit Dice after the hour, with persistent tickets and
   immediate resource/RNG commits. A rest completes in one step or is interrupted
   and grants nothing; it never unequips gear. See [rest support](REST-RESOURCES.md)

@@ -51,13 +51,13 @@ enum class CharacterClass
 // label no class has, rather than treating the character as classless.
 [[nodiscard]] CharacterClass class_of(const rules::CharacterSheet &sheet);
 
-// The highest level the class reaches: 10 once its features through level 10
-// work, 4 until then (LEVELS-1).
+// The highest level the class reaches: 15, the game's cap, for every class
+// (LEVELS-2).
 [[nodiscard]] unsigned level_cap(CharacterClass character_class);
 
 // Whether the class gains an Ability Score Improvement, or another feat, on
-// reaching the level: 4 and 8 for every class, 6 for a Fighter too, 10 for a
-// Rogue too (SRD 5.2.1 class tables).
+// reaching the level: 4, 8, 12, 16 and 19 for every class, 6 and 14 for a
+// Fighter too, 10 for a Rogue too (SRD 5.2.1 class tables).
 [[nodiscard]] bool gains_feat(CharacterClass character_class, unsigned level);
 
 // How many feats the class has gained by the level.

@@ -53,6 +53,7 @@ healing kept across a save file (`opengold_save_tests`).
 
 ## Beyond level 4
 
-Slots above level 2 arrive with character levels 5 and up
-([#176](https://github.com/stdarg/OpenGoldBox/issues/176)–178); each slot level
-adds 2d8 or 2d4.
+Slots above level 2 came with character levels 5 to 15
+([#176](https://github.com/stdarg/OpenGoldBox/issues/176),
+[#177](https://github.com/stdarg/OpenGoldBox/issues/177)); each slot level adds
+2d8 or 2d4.

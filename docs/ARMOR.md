@@ -42,8 +42,9 @@ catalog key. Explanations and names are localized in English and Spanish.
 Campaign tests equip each entry, reject conflicting armor, retain spent
 resources and wounds, save/reconstruct, and adapt the same equipment into the
 next encounter. Original campaign item conversions and prices are preserved;
-this increment does not reinterpret unsupported original armor or award new
-starting packages. Those remain within equipment/starting-choice completion.
+this increment does not reinterpret unsupported original armor or award
+starting packages; characters buy their gear
+([START-1](SRD-DECISIONS.md#start-1-2026-10-11-starting-gold-as-the-original-game-gave-it)).
 
 Donning/removal is instantaneous in the inventory flow. Don/doff timing is not
 planned ([#198](https://github.com/stdarg/OpenGoldBox/issues/198), SCOPE-1). In

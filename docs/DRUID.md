@@ -248,9 +248,9 @@ The Druid advances to level 15, the cap ([LEVELS-1](SRD-DECISIONS.md#levels-1-20
   Resistance; **Move Nature's Sanctuary** (a Bonus Action) moves it up to 60
   feet. Its Half Cover is cut (COVER-1).
 - **Land's Aid** deals and heals 4d6 from 14.
-- **Improved Elemental Fury** (15): Primal Strike deals 2d8. Potent
-  Spellcasting's 300 more feet of cantrip range outreach every battle map, so
-  it adds nothing.
+- **Improved Elemental Fury** (15): Primal Strike deals 2d8; Potent
+  Spellcasting's Druid cantrips with a range of 10 feet or more reach 300 feet
+  farther, across any battle map (#185).
 - Verification: `opengold_druid_levels_tests` (the campaign to 15,
   prepared counts, the features' grants, level 5's description, a level-10
   round trip, Fireball as an arid Circle Spell and Natural Recovery's free

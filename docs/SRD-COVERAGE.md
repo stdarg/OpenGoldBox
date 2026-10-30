@@ -12,12 +12,10 @@ spells** (106 before [DM-3](SRD-DECISIONS.md#dm-3-2026-10-04-spells-a-crpg-canno
 removed 17, and 139 before [DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells)
 removed 33 DM-adjudicated spells; [GUIDE-1](SRD-DECISIONS.md#guide-1-2026-10-12-guidance-restored)
 restored Guidance), including source discrepancies between class tables and
-descriptions. As its tables stood on 2026-10-18, 89 are implemented and Chill
-Touch is partial. Spells of levels 3–9 for
-levels 5–15 are tracked in the [levels 5–10](LEVELS-5-10-INVENTORY.md) and
-[levels 11–15](LEVELS-11-15-INVENTORY.md) inventories. It links grant routes,
-dependencies, current evidence and bounded child issues; inventory work alone
-does not close [#165](https://github.com/stdarg/OpenGoldBox/issues/165).
+descriptions; all 90 are implemented. Spells of levels 3–8 for levels 5–15 are
+tracked in the [levels 5–10](LEVELS-5-10-INVENTORY.md) and
+[levels 11–15](LEVELS-11-15-INVENTORY.md) inventories; every spell kept there
+is implemented ([final reconciliation](#final-reconciliation-185)).
 
 Scope since the [2026-09-30 simplification](SRD-DECISIONS.md#2026-09-30-simplification):
 progression targets level 15 and multiclassing is deferred ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)).
@@ -25,7 +23,10 @@ Tools, languages, DM-adjudicated spells and Ritual Adept are removed (DM-1);
 Savage Attacker, Sneak Attack, Hit Dice and Versatile grip are automatic (AUTO-1);
 natural sleep, dropped gear and rest resumption are gone (SIMPLIFY-1); spells
 have no components and Subtle Spell is gone (CLASS-11). Entries below that
-describe those features are delivery history, not current behavior.
+describe those features are delivery history, not current behavior. So are the
+dated delivery entries generally: they describe the code when they were
+written. The [audit finding status](#audit-finding-status) table and the
+[final reconciliation](#final-reconciliation-185) describe it now.
 
 ## Basic Poison
 
@@ -1128,23 +1129,69 @@ commit-specific findings as historical evidence.
 | E2: initial death save | Fixed | [I02 #21](https://github.com/stdarg/OpenGoldBox/issues/21) |
 | E3: stabilization counters | Fixed | [I02 #21](https://github.com/stdarg/OpenGoldBox/issues/21) |
 | E4: bonus provenance | Fixed | [I04 #23](https://github.com/stdarg/OpenGoldBox/issues/23) |
-| E5: Rogue/Monk weapon proficiency | Fixed for implemented weapons | [I01 #20](https://github.com/stdarg/OpenGoldBox/issues/20) |
+| E5: Rogue/Monk weapon proficiency | Fixed for all 38 SRD weapons (Rapier: Rogue, not Monk) | [I01 #20](https://github.com/stdarg/OpenGoldBox/issues/20) |
 | G1: complete class features/advancement | All twelve classes advance to level 15 ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)) | [Level-four milestone #8](https://github.com/stdarg/OpenGoldBox/issues/8) and its class issues |
-| G2: species/background grants | Open | [Species #51](https://github.com/stdarg/OpenGoldBox/issues/51), [backgrounds #50](https://github.com/stdarg/OpenGoldBox/issues/50) |
+| G2: species/background grants | Complete: every species trait and background grant is implemented or decided (tools and languages DM-1, Darkvision LIGHT-1, Draconic Flight, Large Form, Powerful Build, Stonecunning and the Gnome lineages SCOPE-2, Drow DROW-1, starting packages START-1); the level-5 lineage spells, Dwarven Resilience against Poisoned and Breath Weapon with Extra Attack came with #185 | [Species #51](https://github.com/stdarg/OpenGoldBox/issues/51), [backgrounds #50](https://github.com/stdarg/OpenGoldBox/issues/50), [SPECIES](SPECIES.md) |
 | G3: feat entitlements/choices | Complete: Alert, Magic Initiate, Savage Attacker, Skilled, Ability Score Improvement and the four Fighting Style feats (#74–#82); Grappler removed by SCOPE-2; Epic Boons come at level 19, beyond the level-15 cap (SCOPE-1) | [Feats #49](https://github.com/stdarg/OpenGoldBox/issues/49) |
 | G4: spell access/learning/preparation | Delivered for every spellcasting class and grant route; spellbook copying not pursued ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)) | [F07 #36](https://github.com/stdarg/OpenGoldBox/issues/36) and class-specific integration |
 | G5: spells/shared casting mechanics | Every spell through character level 4 is implemented ([inventory](SPELL-INVENTORY.md)), and every higher-level spell kept, Teleport last ([TELEPORT-1](SRD-DECISIONS.md#teleport-1-2026-10-29-teleport-to-a-maps-central-spot)) | [Spell inventory #165](https://github.com/stdarg/OpenGoldBox/issues/165) and named spell/mechanic issues |
 | G6: full progression/multiclassing | Every class reaches level 15 (the cap); multiclassing deferred ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)) | [Higher levels #176](https://github.com/stdarg/OpenGoldBox/issues/176); multiclassing [#179](https://github.com/stdarg/OpenGoldBox/issues/179) deferred |
-| G7: rests/recharge | Open | [F03 #30](https://github.com/stdarg/OpenGoldBox/issues/30) |
+| G7: rests/recharge | Complete: Short and Long Rests, the Hit Dice pool (spent automatically, AUTO-1), every class resource's Short or Long Rest recharge, Arcane Recovery and its kin (AR-1); Trance's shorter rest cut (SCOPE-2); interrupted rests simply end (SIMPLIFY-1); Relentless Rage's Short Rest reset came with #185 | [F03 #30](https://github.com/stdarg/OpenGoldBox/issues/30), [RECOVERY](RECOVERY.md) |
 | G8: death/recovery outside combat | Fixed, including Help/Medicine #32 | [F04 #31](https://github.com/stdarg/OpenGoldBox/issues/31) |
-| G9: equipment/properties | Open; E5 and Versatile corrections delivered | [Equipment #48](https://github.com/stdarg/OpenGoldBox/issues/48), [Versatile I08 #27](https://github.com/stdarg/OpenGoldBox/issues/27) |
+| G9: equipment/properties | Complete: all 38 weapons and their properties, the eight masteries, all armor; melee is adjacent only (MELEE-1), ammunition unlimited (#57), mounted Lance and armor don/doff timing not pursued (SCOPE-1), starting packages START-1, components removed (CLASS-11); Loading's one shot per action came with #185 | [Equipment #48](https://github.com/stdarg/OpenGoldBox/issues/48), [Versatile I08 #27](https://github.com/stdarg/OpenGoldBox/issues/27) |
 | G10: conditions/effects/creature state | Every SRD condition is modeled except Exhaustion, which nothing in the game gives ([MONSTER-3](SRD-DECISIONS.md#monster-3-2026-10-28-the-last-monster-abilities)); Deafened is cut ([DEAF-1](SRD-DECISIONS.md#deaf-1-2026-10-13-blindnessdeafness-without-deafness)) | [Conditions #35](https://github.com/stdarg/OpenGoldBox/issues/35), [damage #33](https://github.com/stdarg/OpenGoldBox/issues/33), multi-square footprints delivered ([#45](https://github.com/stdarg/OpenGoldBox/issues/45), [FOOT-1](SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills)); grappling and size-difference transit not planned ([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)) |
-| G11: precise capability/documentation coverage | In progress: ledger and issue index established | Update with every increment; reconcile remaining support claims at [final closure #185](https://github.com/stdarg/OpenGoldBox/issues/185) |
-| G12: turn/facing/transit policies | I05–I07 delivered; remaining creature-state rules are tracked separately | [I05 #24](https://github.com/stdarg/OpenGoldBox/issues/24), [I06 #25](https://github.com/stdarg/OpenGoldBox/issues/25), [I07 #26](https://github.com/stdarg/OpenGoldBox/issues/26) |
+| G11: precise capability/documentation coverage | Reconciled at [final closure #185](https://github.com/stdarg/OpenGoldBox/issues/185): stale support claims in the docs and the game's own text corrected | [Final reconciliation](#final-reconciliation-185) |
+| G12: turn/facing/transit policies | Fixed: attacks keep the rest of the turn, turning provokes nothing, allies can be crossed (the initial four decisions); size-difference transit not planned (SCOPE-2) | [I05 #24](https://github.com/stdarg/OpenGoldBox/issues/24), [I06 #25](https://github.com/stdarg/OpenGoldBox/issues/25), [I07 #26](https://github.com/stdarg/OpenGoldBox/issues/26) |
 
 Each subsequent delivery adds a feature row with the SRD source, actual class/
 level/options supported, code/tests, save version and any reviewed adaptation.
 Do not mark a tracking issue complete solely because its first child works.
+
+## Final reconciliation (#185)
+
+On 2026-10-29 every audit finding (E1–E5, G1–G12), every species trait and
+background grant, every class and subclass feature from level 1 to 15, every
+feat and every spell the three inventories keep was checked against the code
+and its tests. The [audit finding status](#audit-finding-status) table above
+gives the result. What the check found missing was built (rules 0.6.260,
+`OGCOMBAT 71`):
+
+- **Loading:** a Loading weapon fires once per action, so Extra Attack's later
+  attacks cannot fire a crossbow again; Action Surge's action, Haste's action
+  and a Light Bonus Action can (`opengold_training_tests`).
+- **Relentless Rage** resets on a Short Rest; the rest screen reports the full
+  Short Rest return of Pact Magic slots and, from Font of Inspiration, Bardic
+  Inspiration (`opengold_rest_resource_tests`).
+- **Lineage spells at level 5:** Darkness, Hold Person or Ray of Enfeeblement
+  for a Tiefling, Misty Step for a High Elf, each with its free cast
+  (`opengold_species_tests`).
+- **Dwarven Resilience** on saves against Poisoned, **Fey Ancestry** on spells'
+  charms and the saves that end Dominate and Irresistible Dance, **Brave** on
+  Fear and Eyebite's panic (`opengold_wizard_levels_tests`).
+- **Breath Weapon** replaces one attack of an Attack action, leaving Extra
+  Attack's others (`opengold_species_tests`).
+- **Dark One's Own Luck** on ability checks: Athletics, Stealth,
+  Investigation and the Dispel Magic check (`opengold_hide_tests`).
+- **Improved Elemental Fury:** Potent Spellcasting's 300 more feet of cantrip
+  range (`opengold_druid_levels_tests`).
+- Tests for traits that had none: Freezing Sphere, Naturally Stealthy, Trance's
+  sleep immunity, the Chthonic Tiefling's Chill Touch, the High Elf's Detect
+  Magic and the Wood Elf's Longstrider, and a Short Rest's Rage and Focus.
+
+The game's own text that still called species, background and class features
+unimplemented was corrected, as were the stale claims in these docs.
+
+The audit's other departures are recorded where the user asked for them: the
+starting class's 13 minimum and unlimited rerolls
+([CHARACTER-CREATION](CHARACTER-CREATION.md)), Confirm to advance with fixed
+Hit Points ([ADVANCEMENT](ADVANCEMENT.md)), and a level-up that keeps spent
+resources and wakes no one ([RECOVERY](RECOVERY.md)).
+
+Waiting on the user's decisions before #185 closes: Find Steed and Faithful
+Steed, which are cut without a decision of their own; the Gaze of Two Minds
+invocation; the High Elf's Long Rest cantrip swap; Shillelagh's Force damage;
+the defeat when every party member is down; which creatures attacks and
+healing may target; and what `supported_features()` should promise.
 
 SRD-derived rules use the attribution in
 [NOTICE](../data/rules/srd-5.2.1/NOTICE.md); see the

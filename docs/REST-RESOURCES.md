@@ -73,8 +73,9 @@ pp. 47–48 (Second Wind), 185 (Long Rest) and 187 (Short Rest).
   die ([AUTO-1](SRD-DECISIONS.md#auto-1-2026-09-30-automatic-choices-with-logging)):
   one **Heal with Hit Dice** action spends dice until full HP or none remain,
   and never spends a die at full HP.
-- A completed Short Rest restores one spent Second Wind use, up to capacity.
-  It restores neither Hit Dice nor ordinary Cleric/Wizard slots. Spending zero
+- A completed Short Rest restores one spent Second Wind use, up to capacity,
+  and the other Short Rest resources [RECOVERY](RECOVERY.md) lists. It restores
+  neither Hit Dice nor ordinary Cleric/Wizard slots. Spending zero
   dice still allows feature recharge.
 - A completed Long Rest restores all spent dice, HP and supported slots/Second
   Wind uses. Existing campaign timing remains eight hours with a sixteen-hour
@@ -163,7 +164,7 @@ Unknown probabilistic profiles never silently substitute an uninterrupted rest.
 The **SRD13** vital continuation stores slots, Second Wind and death-save state,
 the remaining die count, and an **FX9** effects record.
 
-**OGCOMBAT 69** stores each actor's remaining dice; authored combat definitions
+**OGCOMBAT 71** stores each actor's remaining dice; authored combat definitions
 without a character recipe receive zero, without inventing monster Hit Dice
 mechanics. **PC43** recipes derive capacity from class and level.
 

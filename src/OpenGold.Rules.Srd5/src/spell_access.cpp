@@ -2002,12 +2002,13 @@ std::vector<InitiateSpells> lineage_spells(std::span<const FeatureGrant> grants,
 
     struct Legacy
     {
-        std::string_view choice, cantrip, third;
+        std::string_view choice, cantrip, third, fifth;
     };
 
-    constexpr std::array legacies{Legacy{"legacy:abyssal", "poison_spray", "ray_of_sickness"},
-                                  Legacy{"legacy:chthonic", "chill_touch", "false_life"},
-                                  Legacy{"legacy:infernal", "fire_bolt", "hellish_rebuke"}};
+    constexpr std::array legacies{
+        Legacy{"legacy:abyssal", "poison_spray", "ray_of_sickness", "hold_person"},
+        Legacy{"legacy:chthonic", "chill_touch", "false_life", "ray_of_enfeeblement"},
+        Legacy{"legacy:infernal", "fire_bolt", "hellish_rebuke", "darkness"}};
     std::vector<InitiateSpells> result;
     for (const auto &legacy : legacies)
     {
@@ -2023,6 +2024,13 @@ std::vector<InitiateSpells> lineage_spells(std::span<const FeatureGrant> grants,
                 entry.free_spell = legacy.third;
             }
             result.push_back(std::move(entry));
+            if (level >= 5)
+            {
+                result.push_back({"species:tiefling",
+                                  ability_of("tiefling", Ability::charisma),
+                                  {std::string(legacy.fifth)},
+                                  std::string(legacy.fifth)});
+            }
         }
     }
     if (chose("lineage:high_elf"))
@@ -2045,6 +2053,14 @@ std::vector<InitiateSpells> lineage_spells(std::span<const FeatureGrant> grants,
                           ability_of("elf", Ability::intelligence),
                           {"detect_magic"},
                           "detect_magic"});
+    }
+    // And Misty Step from level 5.
+    if (chose("lineage:high_elf") && level >= 5)
+    {
+        result.push_back({"species:elf",
+                          ability_of("elf", Ability::intelligence),
+                          {"misty_step"},
+                          "misty_step"});
     }
     if (chose("lineage:wood_elf") && level >= 3)
     {

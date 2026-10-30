@@ -103,7 +103,7 @@ rest-completion precision. Effect processing orders simultaneous events by entit
 and application ID so different time-update sizes preserve RNG continuation.
 
 Rules 0.5.0 adds Blinded through the blindness option of Blindness/Deafness.
-The combat checkpoint (`OGCOMBAT 69`) stores all effect applications, timers, presentation
+The combat checkpoint (`OGCOMBAT 71`) stores all effect applications, timers, presentation
 facing, pending movement reactions, involuntary allied overlap, remaining Hit Dice, mortality recovery clocks and sourced Temporary HP.
 Movement queues retain their saved progress; future weapon attacks use
 the corrected [Heavy requirements](HEAVY-WEAPONS.md). The

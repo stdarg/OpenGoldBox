@@ -146,7 +146,7 @@ void CharacterCreationView::show_modifiers()
     catch (const std::exception &e)
     {
         text += i18n::utf8(
-            "\n\n[theme_emphasis]Items[/theme_emphasis]\nNo equipped item modifiers.\n\n[theme_emphasis]Spells[/theme_emphasis]\nNo active spell modifiers. Persistent spell effects are not implemented.");
+            "\n\n[theme_emphasis]Items[/theme_emphasis]\nNo equipped item modifiers.\n\n[theme_emphasis]Spells[/theme_emphasis]\nNo active spell modifiers.");
         text += "\n\n" + rich_text_literal(e.what());
     }
     required_node<RichTextLabel>(*this, "ModifiersModal/Text").call("render", gs(text));
@@ -238,6 +238,6 @@ void CharacterCreationView::update_saving_throws(String value)
         text += "\n\n";
     }
     text += i18n::utf8(
-        "No additional racial or spell bonuses are currently applied to these saves. Conditional traits and persistent spell effects are not implemented.\n\nOrdinary saving throws: a natural 1 or 20 does not automatically fail or succeed. Death saves use separate rules.");
+        "Bonuses that hold only for some saves, such as a species' Advantage against being Charmed or a spell's bonus, apply when the save is rolled and are not in these totals.\n\nOrdinary saving throws: a natural 1 or 20 does not automatically fail or succeed. Death saves use separate rules.");
     label->call("render", gs(text));
 }

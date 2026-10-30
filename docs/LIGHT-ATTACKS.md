@@ -243,7 +243,8 @@ Paladin/Ranger level-two choices grant the feat, with independent level-four
 acquisition, source checks and nonrepeatability. Other classes can use Light
 without the feat. Loading follows the existing single attack per consumed action:
 normal Action, separate Action Surge action and Light Bonus Action are distinct.
-No level-five Extra Attack or ammunition bookkeeping is introduced.
+No level-five Extra Attack or ammunition bookkeeping is introduced. When Extra
+Attack came, a Loading weapon kept to one shot per Attack action (#185).
 
 PC38 is conditional on the new feat. Combat22 records selected weapon, qualifying
 physical identities and pending Light damage context.

@@ -13,6 +13,11 @@ struct ActionBudget
     // Extra Attack: the current Attack action's attacks after its first.
     // Spending another action ends that Attack action.
     unsigned extra_attacks{};
+    // Loading: a crossbow or other Loading weapon fired in this action cannot
+    // fire again until another action, whatever attacks remain.
+    bool loading_fired{};
+    // Breath Weapon: one of the action's attacks became an exhalation.
+    bool exhaled{};
 
     bool available(bool magic = false) const noexcept
     {
@@ -22,6 +27,8 @@ struct ActionBudget
     bool spend(bool magic = false) noexcept
     {
         extra_attacks = 0;
+        loading_fired = false;
+        exhaled = false;
         if (!magic && surge)
         {
             surge = false;

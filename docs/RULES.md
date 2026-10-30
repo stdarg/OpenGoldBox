@@ -135,7 +135,7 @@ Deterministic SplitMix64 dice and stable initiative tie ordering make a seed plu
 the same accepted command sequence reproducible. Checkpoints include the RNG,
 turn budgets, HP, slots, death saves and unfinished opportunity reactions.
 
-Rules module **0.6.254** writes **OGCOMBAT 69**, including an
+Rules module **0.6.260** writes **OGCOMBAT 71**, including an
 involuntary shared-space marker, remaining Hit Dice, recovery clocks and sourced Temporary HP.
 A saved leave-reach queue retains its order, partially resolved position and
 deterministic continuation. Older formats and other module or content identities
@@ -183,7 +183,8 @@ co-occupancy remain in the condition/creature-state increments (#35/#44).
   before that step, provided the enemy has its Reaction. Disengage prevents it;
   a Blinded enemy cannot see the departure. If a reaction incapacitates the mover,
   the movement and remaining reaction queue stop.
-- One melee or ranged attack per Attack action, ascending AC, natural 1/20,
+- One melee or ranged attack per Attack action, more with Extra Attack; a
+  Loading weapon fires once per action, Bonus Action or Reaction. Ascending AC, natural 1/20,
   doubled damage dice on critical hits, Dodge and ranged disadvantage from long
   range or an adjacent visible enemy. No hidden dice in the UI or AI.
 - Versatile one-/two-handed melee damage chosen automatically from the other
@@ -214,7 +215,8 @@ Standalone party profiles are authored combat fixtures, not finished
 character sheets. The orc conversion is authored for this demo; its AC/HP are
 not an automatic conversion of original AD&D values.
 
-Not yet implemented (as of 2026-10-26): partial cover. Creatures fill the
+Partial cover is cut
+([COVER-1](SRD-DECISIONS.md#cover-1-2026-10-14-no-half-or-three-quarters-cover)). Creatures fill the
 squares their original art fills
 ([FOOT-1](SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills)):
 a troll two, one above the other. Concentration spells

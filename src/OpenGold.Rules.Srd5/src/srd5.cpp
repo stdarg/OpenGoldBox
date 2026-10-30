@@ -711,7 +711,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 70;
+constexpr unsigned checkpoint_format = 71;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -1882,6 +1882,7 @@ struct Definition
         two_weapon_fighting{};
     unsigned sneak_level{};
     bool finesse{}, ranged_weapon{};
+    bool ranged_loading{}; // the ranged weapon is a Loading one: one shot per action
     int medicine{};
     int athletics{};     // a character's Strength (Athletics) check bonus
     int investigation{}; // and Intelligence (Investigation) check bonus
@@ -2484,7 +2485,7 @@ Definition shaped(Definition d, const detail::BeastForm &form)
     d.melee_type = detail::DamageType::piercing;
     d.reach = 5;
     d.weapon_label = std::string(form.attack_label);
-    d.finesse = d.ranged_weapon = d.shield = d.other_weapon = false;
+    d.finesse = d.ranged_weapon = d.ranged_loading = d.shield = d.other_weapon = false;
     d.weapon_hands = 0;
     d.versatile_sides = 0;
     d.melee_magic = d.ranged_magic = 0;
@@ -2510,6 +2511,16 @@ Definition shaped(Definition d, const detail::BeastForm &form)
     return d;
 }
 
+// Pact Magic slots and, from Font of Inspiration, Bardic Inspiration come back
+// whole on a Short Rest, though other classes' slots and uses do not.
+unsigned short_rest_recovery(const ResourceDescriptor &descriptor, const Definition &d,
+                             unsigned capacity)
+{
+    const bool whole = descriptor.short_rest < 0 || (descriptor.slot_level && d.pact_magic) ||
+                       (descriptor.id == "bardic_inspiration" && d.font_of_inspiration);
+    return whole ? capacity : static_cast<unsigned>(descriptor.short_rest);
+}
+
 rules::ResourcePool resource_pool(const ResourceDescriptor &descriptor, const Actor &actor,
                                   const Definition &d)
 {
@@ -2518,7 +2529,7 @@ rules::ResourcePool resource_pool(const ResourceDescriptor &descriptor, const Ac
             {std::string(descriptor.label), {}},
             static_cast<unsigned>(remaining_of(descriptor, actor)),
             capacity,
-            descriptor.short_rest < 0 ? capacity : static_cast<unsigned>(descriptor.short_rest)};
+            short_rest_recovery(descriptor, d, capacity)};
 }
 
 // Magic Initiate's free casts: one pool per feat, named for its spell.
@@ -4044,6 +4055,7 @@ character_definition(std::string_view bytes,
             d.shillelagh_weapon = enchantment.base == "club" || enchantment.base == "quarterstaff";
             d.finesse = item->finesse;
             d.ranged_weapon = item->ranged;
+            d.ranged_loading = item->ranged && item->loading;
             d.weapon_hands = item->hands;
             d.versatile_sides = item->versatile_sides;
             hands += d.weapon_hands;
@@ -4831,6 +4843,13 @@ const CunningOption &cunning_option(CunningStrike kind)
     return cunning_strikes.at(static_cast<std::size_t>(kind));
 }
 
+// Loading: a weapon fired in this action shoots again only with another
+// action, such as an Action Surge's or Haste's.
+bool reloaded(const Actor &a)
+{
+    return !a.actions.loading_fired || a.actions.available() || a.actions.haste;
+}
+
 // An attack the Attack action makes, which Extra Attack repeats; Reckless
 // Attack and the pact weapon's damage types arrive here as "melee".
 bool attack_action(std::string_view verb)
@@ -5412,6 +5431,8 @@ class Session final : public CombatSession
     bool performing_{};
     // While a spell is cast: Magic Resistance gives Advantage on its saves.
     bool against_magic_{};
+    // The save in progress avoids or ends Poisoned (Dwarven Resilience).
+    bool against_poisoned_{};
     [[nodiscard]] const ReactionAnswer *answer_of(EntityId target, Asked asked) const;
     [[nodiscard]] bool can_shield(const Actor &target) const;
     [[nodiscard]] bool can_deflect(const Actor &target, bool deflectable) const;
@@ -6082,6 +6103,10 @@ class Session final : public CombatSession
     void fire_contingency(Actor &a);
     // Dark One's Own Luck (Fiend 6): 1d10 on a failed save it could still pass.
     void dark_ones_luck(Actor &warlock, detail::SaveResult &result);
+    // And on a failed ability check `shortfall` short: the die rolled, or 0.
+    int dark_luck_check(Actor &warlock, int shortfall);
+    // Spends one of Dark One's Own Luck's uses, if one is left.
+    bool spend_dark_luck(Actor &warlock);
     // The combatant with the id, or none once it has left the field.
     [[nodiscard]] const Actor *find_actor(EntityId id) const;
     // A save against an effect that Charms or Frightens: Countercharm (Bard 7)
@@ -9746,7 +9771,8 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         }();
         const bool holds =
             contagion && condition == "poisoned" &&
-            !saving_throw_succeeds(target, detail::Ability::constitution, spell_dc(a, "contagion"));
+            !saving_throw_succeeds(target, detail::Ability::constitution, spell_dc(a, "contagion"),
+                                   def(target).dwarf);
         std::erase_if(target.effects.active,
                       [&](const auto &e)
                       {
@@ -10443,11 +10469,22 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         // Countercharm may give a save against a charm or a fright a second try.
         const bool charm_or_fear =
             charms(spell) || detail::without_cast_suffix(verb) == "eyebite_panicked";
+        // Contagion's and Eyebite's sickness Poison those who fail.
+        against_poisoned_ = spell.rider == detail::Rider::contagion ||
+                            detail::without_cast_suffix(verb) == "eyebite_sickened";
+        const struct AgainstPoisonedReset
+        {
+            bool &against_poisoned;
+            ~AgainstPoisonedReset() { against_poisoned = false; }
+        } against_poisoned_reset{against_poisoned_};
         if (verb == "enlarge" || spell.rider == detail::Rider::maze ||
             spell.rider == detail::Rider::power_word_stun ||
             (!construct &&
              !(charm_or_fear
-                   ? charm_or_fear_save(target, spell.save, dc, fought_advantage(spell))
+                   ? charm_or_fear_save(target, spell.save, dc,
+                                        fought_advantage(spell) ||
+                                            (charms(spell) ? def(target).fey_ancestry
+                                                           : def(target).brave))
                    : saving_throw_succeeds(target, spell.save, dc, fought_advantage(spell)))))
         {
             apply_rider(spell, verb, a, target, dc);
@@ -12803,7 +12840,8 @@ std::vector<Command> Session::offered_commands() const
         // A cursed weapon cannot be put down to draw it.
         if (const auto bow = wields_equipment && !bound_to_cursed_item(a, true) ? carried_ranged_weapon(a)
                                                                          : std::string_view{};
-            !bow.empty() && feet <= detail::weapon(bow)->long_range)
+            !bow.empty() && feet <= detail::weapon(bow)->long_range &&
+            (!detail::weapon(bow)->loading || reloaded(a)))
         {
             add(id, "shoot", "Shoot", other.source.id);
         }
@@ -12903,16 +12941,31 @@ std::vector<Command> Session::offered_commands() const
             add(id, "true_strike", "True Strike", other.source.id);
             add(id, "true_strike_radiant", "True Strike (Radiant)", other.source.id);
         }
-        if (d.range > 0 && feet <= d.long_range)
+        if (d.range > 0 && feet <= d.long_range && (!d.ranged_loading || reloaded(a)))
         {
             add(id, "ranged", "Ranged attack", other.source.id);
             offer_tactical(AttackRange::ranged, true, other);
             offer_cunning(AttackRange::ranged, true, other);
         }
     };
+    // Breath Weapon takes the place of one of the Attack action's attacks.
+    const auto offer_breath = [&]
+    {
+        if (!def(a).breath || trait_uses_left(a) <= 0 || a.actions.exhaled)
+        {
+            return;
+        }
+        commands.push_back(
+            {revision_, id, 0, "breath_weapon_cone", "Breath Weapon (cone)", Cell{}, 0, true});
+        commands.back().spell = spell_facts(a, *detail::find_spell("breath_weapon_cone"));
+        commands.push_back(
+            {revision_, id, 0, "breath_weapon_line", "Breath Weapon (line)", Cell{}, 0, true});
+        commands.back().spell = spell_facts(a, *detail::find_spell("breath_weapon_line"));
+    };
     // Extra Attack: the Attack action's later attacks, once its first is made.
     if (!a.actions.available() && a.actions.extra_attacks > 0)
     {
+        offer_breath();
         for (const auto &other : actors_)
         {
             if (!other.life.dead && other.source.side != a.source.side &&
@@ -12962,16 +13015,7 @@ std::vector<Command> Session::offered_commands() const
                 }
             }
         }
-        // Breath Weapon takes the place of the Attack action's one attack.
-        if (def(a).breath && trait_uses_left(a) > 0 && a.actions.available())
-        {
-            commands.push_back(
-                {revision_, id, 0, "breath_weapon_cone", "Breath Weapon (cone)", Cell{}, 0, true});
-            commands.back().spell = spell_facts(a, *detail::find_spell("breath_weapon_cone"));
-            commands.push_back(
-                {revision_, id, 0, "breath_weapon_line", "Breath Weapon (line)", Cell{}, 0, true});
-            commands.back().spell = spell_facts(a, *detail::find_spell("breath_weapon_line"));
-        }
+        offer_breath();
         add(id, "dash", "Dash");
         add(id, "dodge", "Dodge");
         if (can_hide(a))
@@ -13560,7 +13604,8 @@ void Session::damage(Actor &target, int amount, bool critical)
     if (const auto *boss = controller(target);
         boss && dominated != target.effects.active.end() && target.life.hp > 0 && !target.life.dead)
     {
-        if (saving_throw_succeeds(target, detail::Ability::wisdom, dominated->dc))
+        if (saving_throw_succeeds(target, detail::Ability::wisdom, dominated->dc,
+                              def(target).fey_ancestry))
         {
             auto &caster = actor(boss->source.id);
             end_concentration(caster);
@@ -16111,9 +16156,12 @@ void Session::seek_maze_exit(Actor &a)
     // save bonus stands in for Investigation.
     const int natural = reliable(a, "investigation",
                                  detail::d20({false, check_disadvantage(a), def(a).lucky}, rng_));
-    const int bonus =
-        (a.source.character_profile.empty() ? def(a).saves[3] : def(a).investigation) +
-        guidance_bonus(a, "investigation");
+    int bonus = (a.source.character_profile.empty() ? def(a).saves[3] : def(a).investigation) +
+                guidance_bonus(a, "investigation");
+    if (natural + bonus < 20)
+    {
+        bonus += dark_luck_check(a, 20 - natural - bonus);
+    }
     const bool escaped = natural + bonus >= 20;
     log(a.source.name + " Investigation check: d20 " + std::to_string(natural) + " + " +
             std::to_string(bonus) + " vs DC 20" + (escaped ? " (escapes)." : " (still lost)."),
@@ -17216,7 +17264,8 @@ void Session::enchant_area(Actor &caster, const detail::SpellDef &spell,
             globe_wards(caster, other.source.cell, spell.level) ||
             caged_apart(caster.source.cell, other.source.cell, false) ||
             (pattern && detail::has_effect(other.effects, detail::EffectKind::mind_blank)) ||
-            charm_or_fear_save(other, spell.save, dc, false,
+            charm_or_fear_save(other, spell.save, dc,
+                               pattern ? def(other).fey_ancestry : def(other).brave,
                                heightened_against(other, caster, spell.id)))
         {
             continue;
@@ -17330,7 +17379,8 @@ void Session::choke(const Zone &cloud, Actor &creature)
                                      });
     if (caster == actors_.end() || creature.life.dead || creature.life.hp == 0 ||
         absent(creature) || sealed_off(creature) || !detail::can_apply(creature.effects) ||
-        saving_throw_succeeds(creature, detail::Ability::constitution, cloud.save_dc, false,
+        saving_throw_succeeds(creature, detail::Ability::constitution, cloud.save_dc,
+                              def(creature).dwarf,
                               heightened_against(creature, *caster, "stinking_cloud")))
     {
         return;
@@ -17575,7 +17625,7 @@ void Session::contagion_save(Actor &a)
                                          return other.source.id == found->source_actor;
                                      });
     const int dc = caster != actors_.end() ? spell_dc(*caster, "contagion") : 15;
-    const bool saved = saving_throw_succeeds(a, detail::Ability::constitution, dc);
+    const bool saved = saving_throw_succeeds(a, detail::Ability::constitution, dc, def(a).dwarf);
     // Re-found: the save may have changed the effects.
     found = std::find_if(a.effects.active.begin(), a.effects.active.end(),
                          [](const auto &e)
@@ -18367,10 +18417,17 @@ void Session::cast_area()
 
 void Session::breath_weapon(Actor &dragonborn, const PendingArea &aimed)
 {
-    // The exhalation replaces the Attack action's one attack; Extra Attack,
-    // which would leave others, comes after the level cap.
-    dragonborn.nick_origin = 0;
-    (void)dragonborn.actions.spend();
+    // The exhalation replaces one of the Attack action's attacks: a later one,
+    // or the first, which leaves Extra Attack's others to make.
+    if (!dragonborn.actions.attack_again())
+    {
+        dragonborn.nick_origin = 0;
+        (void)dragonborn.actions.spend();
+        dragonborn.actions.extra_attacks =
+            def(dragonborn).thirsting_blade ? 0u
+                                            : static_cast<unsigned>(def(dragonborn).extra_attacks);
+    }
+    dragonborn.actions.exhaled = true;
     spend_trait_use(dragonborn);
     log(dragonborn.source.name + " uses Breath Weapon.",
         {"{name} uses Breath Weapon.", {{"name", dragonborn.source.name}}});
@@ -19590,12 +19647,19 @@ Session::AthleticsRoll Session::roll_athletics(Actor &a, int dc)
         check.bonus -= cutting_words(a, check.natural + check.bonus - dc, CutRoll::check);
         check.success = check.natural + check.bonus >= dc;
     }
+    int kept = check.natural;
     if (!check.success && check.bonus + 20 >= dc)
     {
         if (const auto again = heroic_reroll(a))
         {
+            kept = *again;
             check.success = *again + check.bonus >= dc;
         }
+    }
+    if (!check.success)
+    {
+        check.bonus += dark_luck_check(a, dc - kept - check.bonus);
+        check.success = kept + check.bonus >= dc;
     }
     return check;
 }
@@ -20178,7 +20242,8 @@ void Session::dispel(Actor &caster, Cell cell, unsigned slot_level)
               {"roll", std::to_string(natural)},
               {"bonus", std::to_string(bonus)},
               {"dc", std::to_string(dc)}}});
-        return natural + bonus >= dc;
+        return natural + bonus >= dc ||
+               natural + bonus + dark_luck_check(caster, dc - natural - bonus) >= dc;
     };
     // A Concentration spell ends for every creature and area it holds.
     const auto end_spell = [&](EntityId source)
@@ -20551,6 +20616,10 @@ void Session::hide(Actor &a)
     if (total < dc)
     {
         total += peerless_skill(a, dc - total);
+    }
+    if (total < dc)
+    {
+        total += dark_luck_check(a, dc - total);
     }
     if (total < dc)
     {
@@ -22257,9 +22326,16 @@ void Session::take_metamagic(Actor &caster, const detail::SpellDef &spell)
 
 int Session::spell_range(const Actor &caster, const detail::SpellDef &spell) const
 {
+    const auto &d = def(caster);
     // Eldritch Spear: 30 feet more per Warlock level for its cantrip.
-    const int range =
-        spell.range + (def(caster).eldritch_spear.contains(spell.id) ? 30 * def(caster).level : 0);
+    int range = spell.range + (d.eldritch_spear.contains(spell.id) ? 30 * d.level : 0);
+    // Improved Elemental Fury (Druid 15): Potent Spellcasting's Druid
+    // cantrips with a range of 10 feet or more reach 300 feet farther.
+    if (d.druid_potent && d.level >= 15 && !spell.level && spell.range >= 10 &&
+        detail::on_class_list(CharacterClass::druid, spell.id))
+    {
+        range += 300;
+    }
     // Distant Spell: double the range, or 30 feet for Touch.
     if (!readies(caster, Metamagic::distant, spell))
     {
@@ -22497,7 +22573,8 @@ void Session::cunning_effect(Actor &rogue, Actor &target, CunningStrike kind)
     }
     if (kind == CunningStrike::poison)
     {
-        if (!standing || saving_throw_succeeds(target, detail::Ability::constitution, dc))
+        if (!standing ||
+            saving_throw_succeeds(target, detail::Ability::constitution, dc, def(target).dwarf))
         {
             return;
         }
@@ -23662,6 +23739,8 @@ bool Session::rolled_save_succeeds(const Actor &target, detail::Ability ability,
     modifiers.advantage |= def(target).gnomish_cunning && detail::mental(ability);
     // Magic Resistance: Advantage on saves against a spell being cast.
     modifiers.advantage |= against_magic_ && def(target).magic_resistance;
+    // Dwarven Resilience: Advantage on saves to avoid or end Poisoned.
+    modifiers.advantage |= against_poisoned_ && def(target).dwarf;
     // Holy Aura: Advantage on every save.
     modifiers.advantage |= holy_aura(target) != nullptr;
     // Beacon of Hope: Advantage on Wisdom saves.
@@ -23821,15 +23900,8 @@ int Session::peerless_skill(Actor &bard, int shortfall)
     return fixed ? die : 0;
 }
 
-void Session::dark_ones_luck(Actor &warlock, detail::SaveResult &result)
+bool Session::spend_dark_luck(Actor &warlock)
 {
-    // Dark One's Own Luck (Fiend 6): 1d10 added to a failed save it could
-    // still pass, without asking, once a roll.
-    if (!def(warlock).dark_luck || !conscious(warlock) ||
-        result.natural + result.bonus + 10 < result.dc)
-    {
-        return;
-    }
     const auto used = std::find_if(warlock.effects.active.begin(), warlock.effects.active.end(),
                                    [](const auto &e)
                                    {
@@ -23837,20 +23909,30 @@ void Session::dark_ones_luck(Actor &warlock, detail::SaveResult &result)
                                    });
     if (used == warlock.effects.active.end() && !detail::can_apply(warlock.effects))
     {
-        return;
+        return false;
     }
     if (used == warlock.effects.active.end())
     {
         detail::apply_spell_benefit(warlock.effects, effect_source(warlock), warlock.source.name,
                                     detail::EffectKind::luck_used, 1);
+        return true;
     }
-    else if (used->dc >= def(warlock).dark_luck)
+    if (used->dc >= def(warlock).dark_luck)
+    {
+        return false;
+    }
+    ++used->dc;
+    return true;
+}
+
+void Session::dark_ones_luck(Actor &warlock, detail::SaveResult &result)
+{
+    // Dark One's Own Luck (Fiend 6): 1d10 added to a failed save it could
+    // still pass, without asking, once a roll.
+    if (!def(warlock).dark_luck || !conscious(warlock) ||
+        result.natural + result.bonus + 10 < result.dc || !spend_dark_luck(warlock))
     {
         return;
-    }
-    else
-    {
-        ++used->dc;
     }
     const int die = roll(10);
     result.bonus += die;
@@ -23860,6 +23942,22 @@ void Session::dark_ones_luck(Actor &warlock, detail::SaveResult &result)
         {"{name} adds {die} to the save (Dark One's Own Luck).",
          {{"name", warlock.source.name}, {"die", std::to_string(die)}}});
     log_save(warlock, result);
+}
+
+int Session::dark_luck_check(Actor &warlock, int shortfall)
+{
+    // As for saves: a failed check it could still pass, without asking.
+    if (!def(warlock).dark_luck || !conscious(warlock) || shortfall < 1 || shortfall > 10 ||
+        !spend_dark_luck(warlock))
+    {
+        return 0;
+    }
+    const int die = roll(10);
+    log(warlock.source.name + " adds " + std::to_string(die) +
+            " to the check (Dark One's Own Luck).",
+        {"{name} adds {die} to the check (Dark One's Own Luck).",
+         {{"name", warlock.source.name}, {"die", std::to_string(die)}}});
+    return die;
 }
 
 void Session::advance_turn_time()
@@ -23900,7 +23998,7 @@ void Session::advance_turn_time()
         }
         subjects.push_back(
             {{a.source.id, a.effects, saves, a.life.dead, def(a).str_dex_disadvantage, a.dodge,
-              def(a).gnomish_cunning, def(a).lucky, def(a).brave},
+              def(a).gnomish_cunning, def(a).lucky, def(a).brave, def(a).dwarf},
              a.life});
         if (a.life.hp == 0)
         {
@@ -26342,7 +26440,9 @@ void Session::dispatch(const Command &command)
         log(a.source.name + " turns its eyes on " + target.source.name + ".",
             {"{name} turns its eyes on {target}.",
              {{"name", a.source.name}, {"target", target.source.name}}});
-        if (!saving_throw_succeeds(target, spell.save, spell_dc(a, spell.id)))
+        // Dwarven Resilience helps against the sickness, which Poisons.
+        if (!saving_throw_succeeds(target, spell.save, spell_dc(a, spell.id),
+                                   effect == "eyebite_sickened" && def(target).dwarf))
         {
             apply_rider(spell, effect, a, target, spell_dc(a, spell.id));
         }
@@ -26362,7 +26462,8 @@ void Session::dispatch(const Command &command)
                                             return e.kind == detail::EffectKind::dancing;
                                         });
         if (saving_throw_succeeds(a, detail::Ability::wisdom,
-                                  spell_dc(actor(dance->source_actor), "irresistible_dance")))
+                                  spell_dc(actor(dance->source_actor), "irresistible_dance"),
+                                  def(a).fey_ancestry))
         {
             std::erase_if(a.effects.active,
                           [](const auto &e)
@@ -26786,8 +26887,13 @@ void Session::dispatch(const Command &command)
     else
     {
         // Extra Attack: a later attack of the same Attack action spends nothing.
+        // A Loading weapon already fired in it shoots again with a new action.
         const bool attacking = attack_action(command.verb);
-        const bool later_attack = attacking && a.actions.attack_again();
+        const bool loading_shot =
+            (command.verb == "ranged" && d.ranged_loading) ||
+            (command.verb == "shoot" && detail::weapon(carried_ranged_weapon(a))->loading);
+        const bool later_attack = attacking && !(loading_shot && a.actions.loading_fired) &&
+                                  a.actions.attack_again();
         // Haste's action takes a Dash, Disengage, Hide or Utilize first, and
         // a single attack once the Action is spent.
         const bool hasty =
@@ -26799,6 +26905,7 @@ void Session::dispatch(const Command &command)
         {
             a.nick_origin = 0;
             a.actions.haste = false;
+            a.actions.loading_fired = false;
         }
         else if (!later_attack)
         {
@@ -26811,6 +26918,10 @@ void Session::dispatch(const Command &command)
                                               ? 0u
                                               : static_cast<unsigned>(d.extra_attacks);
             }
+        }
+        if (loading_shot)
+        {
+            a.actions.loading_fired = true;
         }
         if (command.verb == "dash")
         {
@@ -27067,7 +27178,9 @@ std::string Session::save() const
             << detail::encode_stable_recovery(a.life.recovery) << ' ' << a.life.temporary_hp.amount
             << ' ' << std::quoted(a.life.temporary_hp.source_id) << ' ' << a.rushes << ' '
             << a.rush_used << ' ' << a.surges << ' ' << a.surge_used << ' ' << a.actions.surge
-            << ' ' << a.actions.extra_attacks << ' ' << a.dashes << ' ' << a.arcane << ' '
+            << ' ' << a.actions.extra_attacks << ' ' << a.actions.loading_fired << ' '
+            << a.actions.exhaled << ' ' << a.dashes
+            << ' ' << a.arcane << ' '
             << a.lay_on_hands << ' ' << a.free_casts << ' ' << a.channel_divinity << ' '
             << a.initiate_casts << ' ' << a.innate_spent << ' ' << a.smite_target << ' '
             << a.smite_critical << ' '
@@ -27316,7 +27429,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.life.recovery.stable_recovery_in_ms >> actor.life.temporary_hp.amount >>
         std::quoted(actor.life.temporary_hp.source_id) >> actor.rushes >> actor.rush_used >>
         actor.surges >> actor.surge_used >> actor.actions.surge >> actor.actions.extra_attacks >>
-        actor.dashes >> actor.arcane >> actor.lay_on_hands >> actor.free_casts >>
+        actor.actions.loading_fired >> actor.actions.exhaled >> actor.dashes >> actor.arcane >> actor.lay_on_hands >> actor.free_casts >>
         actor.channel_divinity >> actor.initiate_casts >> actor.innate_spent >> actor.smite_target >>
         actor.smite_critical >> actor.sneak_used >> actor.aim_used >> actor.aim_ready >>
         actor.moved >> actor.attacked >> actor.pounce >> actor.brutal_used >> actor.stun_used >>
@@ -27447,6 +27560,11 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         (actor.actions.extra_attacks && actor.actions.normal && !actor.surge_used))
     {
         throw std::runtime_error("Invalid Extra Attack count");
+    }
+    if ((actor.actions.loading_fired || actor.actions.exhaled) && actor.actions.normal &&
+        !actor.surge_used)
+    {
+        throw std::runtime_error("Invalid Loading shot or exhalation");
     }
     if (actor.fleet_step && (!definition.fleet_step || actor.bonus))
     {
@@ -29276,7 +29394,7 @@ class Module final : public RulesModule
         if (klass == CharacterClass::warlock && result.level == 6)
         {
             result.description =
-                "Dark One's Own Luck: a failed save you could still pass gains 1d10, as many times as your Charisma modifier (at least once) per Long Rest.";
+                "Dark One's Own Luck: a failed save or ability check you could still pass gains 1d10, as many times as your Charisma modifier (at least once) per Long Rest.";
         }
         if (klass == CharacterClass::warlock && result.level == 7)
         {
@@ -29348,7 +29466,7 @@ class Module final : public RulesModule
         if (klass == CharacterClass::druid && result.level == 15)
         {
             result.description =
-                "A level 8 spell slot and Druid spells: Befuddlement, Earthquake, Incendiary Cloud, Sunburst and Tsunami.\nImproved Elemental Fury: Primal Strike deals 2d8.";
+                "A level 8 spell slot and Druid spells: Befuddlement, Earthquake, Incendiary Cloud, Sunburst and Tsunami.\nImproved Elemental Fury: Primal Strike deals 2d8, or Potent Spellcasting's Druid cantrips reach 300 feet farther.";
         }
         if (klass == CharacterClass::bard && result.level == 5)
         {
@@ -29727,7 +29845,7 @@ class Module final : public RulesModule
         if (klass == CharacterClass::rogue && (result.level == 3 || result.level == 4))
         {
             result.description =
-                "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands uses a wand, potion or other magic item as a Bonus Action. Hide remains unavailable.";
+                "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands uses a wand, potion or other magic item as a Bonus Action.";
         }
         if (klass == CharacterClass::paladin && result.level <= 4)
         {
@@ -30547,9 +30665,9 @@ class Module final : public RulesModule
         if (klass == CharacterClass::rogue && next.level == 2)
         {
             next.class_modifiers +=
-                "\nCunning Action: Dash or Disengage as a Bonus Action on your turn. Hide remains unavailable.";
+                "\nCunning Action: Dash, Disengage or Hide as a Bonus Action on your turn.";
             next.class_messages.push_back(
-                {"Cunning Action: Dash or Disengage as a Bonus Action on your turn. Hide remains unavailable.",
+                {"Cunning Action: Dash, Disengage or Hide as a Bonus Action on your turn.",
                  {}});
         }
         if (klass == CharacterClass::rogue && next.level == 3)
@@ -30690,7 +30808,7 @@ class Module final : public RulesModule
             subjects.push_back(
                 {{a.source.id, a.effects, a.definition.saves, a.life.dead,
                   a.definition.str_dex_disadvantage, false, a.definition.gnomish_cunning,
-                  a.definition.lucky, a.definition.brave},
+                  a.definition.lucky, a.definition.brave, a.definition.dwarf},
                  a.life});
         }
         auto rng = random_state.value;
@@ -30910,6 +31028,12 @@ class Module final : public RulesModule
         if (d.pact_magic)
         {
             actor.slots = d.slots;
+        }
+        // Relentless Rage's DC drops back to 10; a Barbarian's shared store
+        // holds nothing else.
+        if (d.relentless_rage)
+        {
+            actor.lay_on_hands = lay_capacity(d);
         }
         state = vitals(actor);
     }
@@ -33390,7 +33514,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.259", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.260", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),

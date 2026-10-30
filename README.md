@@ -110,8 +110,8 @@ See [building the game and each demo](docs/BUILD.md). The scenes under
 | Wizard | Evoker | [Wizard](docs/WIZARD.md) |
 
 All twelve classes reach level 15, the game's cap. Spells and features a CRPG
-cannot resolve are cut, as [SRD-DECISIONS](docs/SRD-DECISIONS.md) records;
-Teleport is not in yet ([Wizard](docs/WIZARD.md)). Per-feature status is in the
+cannot resolve are cut, as [SRD-DECISIONS](docs/SRD-DECISIONS.md) records.
+Per-feature status is in the
 [SRD coverage ledger](docs/SRD-COVERAGE.md), and every deliberate departure from
 the original is in [DEVIATIONS](docs/DEVIATIONS.md).
 
