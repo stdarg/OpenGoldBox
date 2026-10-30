@@ -238,6 +238,13 @@ std::string CreatureId::key() const
 
 rules::Footprint combat_footprint(const CharacterRecord &character)
 {
+    // The ogre leader's record says one square, but its art stands as tall
+    // as every other ogre's, and every ogre fills 1 by 2 (FOOT-1).
+    if (detail::upper_ascii(character.name).starts_with("OGRE"))
+    {
+        return {1, 2};
+    }
+
     switch (character.raw[108] & 0x7F)
     {
     case 2:

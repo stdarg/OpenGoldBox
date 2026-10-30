@@ -41,7 +41,8 @@ struct AbilityModifiers
 
 // The squares a monster fills in combat, as the original gives them: record
 // byte 108's low bits name its art's shape (1 one square, 2 tall, 3 wide, 4
-// two by two), which the DOS probe found its combat occupancy follows (FOOT-1).
+// two by two), which the DOS probe found its combat occupancy follows. Every
+// ogre fills 1 by 2, the ogre leader included (FOOT-1).
 [[nodiscard]] rules::Footprint combat_footprint(const CharacterRecord &character);
 
 enum class EffectKind

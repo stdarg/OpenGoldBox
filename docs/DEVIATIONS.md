@@ -27,6 +27,11 @@ Add an entry whenever a new departure is decided.
 - **Monsters** (2026-10-02). The original's AD&D monster records become SRD
   stat blocks, unchanged.
   [MON-1](SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks).
+- **Ogre leader's squares** (2026-10-29). Each monster fills the squares its
+  record names, as in the original, but the ogre leader's record names one
+  square while its art stands two tall. OpenGoldBox gives it two squares, one
+  above the other, like every other ogre.
+  [FOOT-1](SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills).
 - **Encounter size** (2026-10-02). The original ran its groups as written.
   OpenGoldBox shrinks an encounter over the SRD budget or with more creatures
   than living characters, and never grows one. Experience and treasure stay the
