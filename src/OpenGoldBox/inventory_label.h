@@ -32,6 +32,13 @@ inline godot::String inventory_label(const opengold::InventoryItem &item)
 inline godot::String inventory_label(const opengold::PartyMember &member,
                                      const opengold::InventoryItem &item)
 {
+    // A Wand of Secrets counts its charges down to 0 (SECRET-1).
+    if (item.definition_id == "wand_of_secrets")
+    {
+        return i18n::plural("{item} ({count} charge)", "{item} ({count} charges)",
+                            static_cast<int>(opengold::wand_charges(member, item.id)),
+                            {{"item", i18n::text(item.name)}});
+    }
     // The parsed key's spell names point into `key`.
     const auto key = opengold::rules_definition(member, item);
     const auto scroll = opengold::rules::parse_scroll_key(key);

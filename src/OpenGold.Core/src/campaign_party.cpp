@@ -189,7 +189,9 @@ bool holds_cursed_item(const PartyMember &member)
                        });
 }
 
-// The definitions of a member's equipped items, which the rules read as gear.
+// The definitions of a member's equipped items, which the rules read as gear,
+// and of a Stone of Good Luck it carries, which works from the pack
+// (SECRET-1); a second stone adds nothing.
 std::vector<std::string> equipped_definitions(const PartyMember &member)
 {
     std::vector<std::string> definitions;
@@ -201,6 +203,15 @@ std::vector<std::string> equipped_definitions(const PartyMember &member)
             throw std::runtime_error("Equipped item is missing");
         }
         definitions.push_back(rules_definition(member, item->get()));
+    }
+    const auto items = member.character.inventory().items();
+    if (std::any_of(items.begin(), items.end(),
+                    [](const auto &item)
+                    {
+                        return item.definition_id == "stone_of_good_luck";
+                    }))
+    {
+        definitions.emplace_back("stone_of_good_luck");
     }
     return definitions;
 }
@@ -603,6 +614,28 @@ std::optional<por::Equipment> item_after_uses(por::Equipment item, unsigned left
     return item;
 }
 
+// The wand's record counts its charges, down to 0; the pack shows at least one.
+unsigned wand_charges(const PartyMember &member, std::uint64_t item)
+{
+    const auto carried = member.character.inventory().find(item);
+    const auto source = member.item_sources.find(item);
+    if (!carried || carried->get().definition_id != "wand_of_secrets" ||
+        source == member.item_sources.end())
+    {
+        throw std::runtime_error("That is not a Wand of Secrets");
+    }
+    return source->second.stored.stack_size;
+}
+
+void set_wand_charges(PartyMember &member, std::uint64_t item, unsigned charges)
+{
+    (void)wand_charges(member, item);
+    member.item_sources.at(item).stored.stack_size = static_cast<std::uint8_t>(charges);
+    auto inventory = member.character.inventory();
+    inventory.set_quantity(item, std::max(charges, 1U));
+    member.character.replace_inventory(std::move(inventory));
+}
+
 bool identify_item(PartyMember &member, std::uint64_t item)
 {
     if (!member.character.inventory().find(item))
@@ -681,6 +714,8 @@ std::string equipment_conversion(const por::Equipment &item)
         return "cloak_of_elvenkind";
     case authored_item::stone_of_good_luck:
         return "stone_of_good_luck";
+    case authored_item::wand_of_secrets:
+        return "wand_of_secrets";
     default:
         return unsupported;
     }
@@ -1416,6 +1451,24 @@ void CampaignParty::drink_potion(MemberId id, std::uint64_t item)
                          next.random_state);
     keep_item_uses(drinker, item, left);
     state_ = std::move(next);
+}
+
+void CampaignParty::use_wand_of_secrets(MemberId id, std::uint64_t item)
+{
+    editable();
+    outside_combat();
+    auto user = member(id);
+    const auto charges = wand_charges(user, item);
+    if (user.vitals.dead || user.vitals.hit_points <= 0)
+    {
+        throw std::runtime_error("Only a conscious member can use the wand.");
+    }
+    if (!charges)
+    {
+        throw std::runtime_error("The Wand of Secrets has no charges left.");
+    }
+    set_wand_charges(user, item, charges - 1);
+    edit(id) = std::move(user);
 }
 
 bool CampaignParty::identify_at_shop(MemberId id, std::uint64_t item)

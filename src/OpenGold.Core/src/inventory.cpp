@@ -64,6 +64,20 @@ void Inventory::redefine(std::uint64_t id, std::string definition_id)
     it->definition_id = std::move(definition_id);
 }
 
+void Inventory::set_quantity(std::uint64_t id, std::uint32_t quantity)
+{
+    const auto it = std::find_if(items_.begin(), items_.end(),
+                                 [&](const auto &item)
+                                 {
+                                     return item.id == id;
+                                 });
+    if (!quantity || it == items_.end())
+    {
+        throw std::runtime_error("Unknown item or empty quantity");
+    }
+    it->quantity = quantity;
+}
+
 void Inventory::remove(std::uint64_t id, std::uint32_t quantity)
 {
     const auto it = std::find_if(items_.begin(), items_.end(),

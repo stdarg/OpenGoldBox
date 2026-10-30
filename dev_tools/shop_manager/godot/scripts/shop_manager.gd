@@ -43,6 +43,14 @@ const PICKER_GEAR := [
     ["Boots of Elvenkind", 400, 1, 216],
     ["Cloak of Elvenkind", 400, 1, 217],
     ["Stone of Good Luck", 400, 1, 218],
+    ["Wand of Secrets", 400, 3, 219],
+]
+# An original item sold enchanted: the armory's Leather Armor with +1, which
+# no original stock holds (SECRET-1).
+const PICKER_ENCHANTED := [
+    {"source_archive": "ITEM3.DAX", "source_record": 53, "source_index": 9,
+     "name": "Leather Armor +1", "item_type": 50, "magic_bonus": 1, "price_gp": 4000,
+     "bundle_quantity": 1, "quantity": -1},
 ]
 const SIDES := ["north", "east", "south", "west"]
 const LOCATION_COUNT := 17
@@ -117,6 +125,7 @@ func _ready() -> void:
     catalog_items = _without_ammunition(item_catalog())
     catalog_items.append_array(_authored_gear())
     catalog_items.append_array(_gear_offerings(PICKER_GEAR))
+    catalog_items.append_array(PICKER_ENCHANTED.duplicate(true))
     if "--seed" in OS.get_cmdline_user_args():
         for location in manifest["locations"]:
             var id := String(location["id"])
@@ -777,10 +786,18 @@ func _run_check() -> void:
             return int(item["item_type"]) == 214 and int(item["price_gp"]) == 25):
         _fatal("The item picker lacks Thieves' Tools")
         return
+    if not catalog_items.any(func(item: Dictionary) -> bool:
+            return int(item["item_type"]) == 219 and int(item["bundle_quantity"]) == 3):
+        _fatal("The item picker lacks the Wand of Secrets")
+        return
     var rogue: Dictionary = records["phlan-rogue-04-13"]
     if rogue["type"] != "Rogue's Shop" or not rogue["offerings"].any(func(item: Dictionary) -> bool:
             return int(item["item_type"]) == 212 and int(item["price_gp"]) == 50):
         _fatal("The Rogue's Shop does not sell the Poisoner's Kit")
+        return
+    if not rogue["offerings"].any(func(item: Dictionary) -> bool:
+            return int(item["item_type"]) == 50 and int(item.get("magic_bonus", 0)) == 1):
+        _fatal("The Rogue's Shop does not sell Leather Armor +1")
         return
     if not _entrance_drawn():
         _fatal("The map lacks the Rogue's Shop's secret door or wall")

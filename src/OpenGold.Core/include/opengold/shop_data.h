@@ -12,7 +12,9 @@
 namespace opengold
 {
 // An item a shop's record sells: an original item from an ITEMn.DAX list, or
-// gear OpenGoldBox adds (an authored item type, with no source list).
+// gear OpenGoldBox adds (an authored item type, with no source list). An
+// original item may be sold enchanted, as the Rogue's Shop sells the armory's
+// Leather Armor with +1 (SECRET-1).
 struct ShopOffering
 {
     std::string archive; // "ITEM3.DAX", or empty for authored gear
@@ -21,6 +23,7 @@ struct ShopOffering
     std::string name;
     std::uint32_t price_gp{};
     unsigned bundle_quantity{1};
+    int magic_bonus{}; // added to an original item's own
     bool operator==(const ShopOffering &) const = default;
 };
 

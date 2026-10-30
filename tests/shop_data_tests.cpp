@@ -86,13 +86,17 @@ void shipped_records()
     check(rogue.id == "phlan-rogue-04-13" &&
               rogue.entrance ==
                   HiddenEntrance{por::MapDirection::south, 7, {{por::MapDirection::north, 6}}} &&
-              rogue.portrait == "NPCs/kovel-old-thief.png" && rogue.offerings.size() == 11 &&
+              rogue.portrait == "NPCs/kovel-old-thief.png" && rogue.offerings.size() == 13 &&
               offering(rogue, "Poisoner's Kit").price_gp == 50 &&
               offering(rogue, "Thieves' Tools").price_gp == 25 &&
               offering(rogue, "Basic Poison").price_gp == 100 &&
               offering(rogue, "Magic Lock Picks").item_type == 215 &&
               offering(rogue, "Dagger +1").archive == "ITEM3.DAX" &&
-              offering(rogue, "Dust of Disappearance").index == 2,
+              offering(rogue, "Dust of Disappearance").index == 2 &&
+              offering(rogue, "Leather Armor +1").magic_bonus == 1 &&
+              offering(rogue, "Leather Armor +1").price_gp == 4000 &&
+              offering(rogue, "Wand of Secrets").bundle_quantity == 3 &&
+              offering(rogue, "Dagger +1").magic_bonus == 0,
           "The Rogue's Shop, its hidden entrance and its stock");
     check(std::none_of(data.shops.begin(), data.shops.end(),
                        [&](const auto &shop)
@@ -239,6 +243,10 @@ void broken_records()
     auto sourceless = shop_record;
     sourceless.replace(sourceless.find("\"item_type\": 212"), 16, "\"item_type\": 36");
     rejected(temple_record, sourceless, "An original item without its list is refused");
+    auto enchanted_gear = shop_record;
+    enchanted_gear.replace(enchanted_gear.find("\"item_type\": 212"), 16,
+                           "\"item_type\": 212, \"magic_bonus\": 1");
+    rejected(temple_record, enchanted_gear, "Only an original item is sold enchanted");
 }
 } // namespace
 

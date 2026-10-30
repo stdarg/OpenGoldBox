@@ -2160,13 +2160,14 @@ in ([#271](https://github.com/stdarg/OpenGoldBox/issues/271)):
   on (4,13).
 - **Its way in is a secret door in its south wall**, from the alley at
   (4,14). Until found it is the wall it hides in.
-- **Finding it** follows the original's search for its secret doors, which
-  the Pyramid's scripts roll: after a step or a Look in the alley, each
-  conscious member in party order (the original rolls for every living one)
-  rolls a d6 and finds the door on a 1 while
-  the party searches (Look, or a step in Search mode), an elf on a 1 or 2.
-  Without searching only an elf can find it, on a 1. The rolls stop at the
-  first find and show in the log; SRD 5.2.1 has no half-elf.
+- **Finding it** follows the original's search for its secret doors as Kuto's
+  Well's and the kobold caves' scripts roll it (the Pyramid's give one more
+  chance in six): after a step or a Look in the alley, each conscious member
+  in party order (the original rolls for every living one) rolls a d6 and
+  finds the door on a 1 while the party searches (Look, or a step in Search
+  mode), an elf on a 1 or 2. Without searching only an elf can find it, on a
+  1. The rolls stop at the first find and show in the log; SRD 5.2.1 has no
+  half-elf.
 - **The door is locked.** The "Locked." menu offers Pick, for a conscious
   Rogue as at every lock (DC 15, Thieves' Tools doubling the chance, LOCK-1),
   and Knock, but no Bash. A party with neither cannot get in.
@@ -2184,13 +2185,24 @@ in ([#271](https://github.com/stdarg/OpenGoldBox/issues/271)):
   - The original's **Dagger +1, Short Sword +1 and Short Bow +1** (400 gp)
     and **Dust of Disappearance** (200 gp), sold from the item lists that
     hold them.
+  - **Leather Armor +1** (4,000 gp, the SRD's price for Armor +1, which is
+    rare): the armory's Leather Armor with +1, as no original list holds one.
+  - A **Wand of Secrets** (400 gp): 3 charges. Used from the pack while
+    exploring, a charge each time, it points out the hidden secret door
+    nearest the party within 60 feet, six of the map's ten-foot squares
+    counted as the SRD counts squares, and the door is found. It knows the
+    Rogue's Shop's door and the original's doors that scripts keep shut
+    until found: the Pyramid's and the one in Kuto's Well's catacombs. The
+    kobold caves' door is left out, as its script keeps it shut even once
+    found. A spent wand stays in the pack, and each Long Rest, in place of
+    the SRD's dawn, gives it back 1d3 charges, up to 3. It finds no traps:
+    the original's traps are each script's own.
   - **Boots of Elvenkind** and a **Cloak of Elvenkind** (400 gp): Advantage
     on Stealth checks; against the cloak's hidden wearer Passive Perception
     counts 5 less and a search rolls with Disadvantage.
   - A **Stone of Good Luck** (400 gp): +1 to ability checks, Initiative
-    included, and saving throws. It is worn like a ring, needing no hand,
-    where the SRD's works anywhere on the wearer.
-  - Leather Armor +1 is not sold: no original item list holds one.
+    included, and saving throws, while it is anywhere in the member's pack
+    (the user, 2026-10-30). A second stone adds nothing.
 - `data/shops/locations.json` records the way in: the side of the secret
   door, the map's wall that draws it as a door once found, and the walls
   that close the square's other open sides.

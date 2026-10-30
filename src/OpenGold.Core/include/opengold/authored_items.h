@@ -24,14 +24,15 @@ inline constexpr std::uint8_t quarrels = 28, arrows = 73, flask_of_oil = 86;
 // copies a scroll's spell into a Wizard's spellbook (MAGIC-6). Magic Ink of
 // level 1 is magic_ink; levels 2 to 9 follow it. A Poisoner's Kit lets a Rogue
 // poison with Cunning Strike (#233); Basic Poison coats a weapon (#271);
-// Thieves' Tools double a Rogue's chance to pick a lock (LOCK-1).
+// Thieves' Tools double a Rogue's chance to pick a lock (LOCK-1). The Rogue's
+// Shop's magic items follow them (SECRET-1).
 namespace authored_item
 {
 inline constexpr std::uint8_t torch = 200, acid = 201, alchemists_fire = 202, magic_ink = 203,
                               poisoners_kit = 212, basic_poison = 213,
                               thieves_tools = 214, magic_lock_picks = 215,
                               boots_of_elvenkind = 216, cloak_of_elvenkind = 217,
-                              stone_of_good_luck = 218;
+                              stone_of_good_luck = 218, wand_of_secrets = 219;
 
 // The level of Magic Ink an item type is, if it is Magic Ink.
 [[nodiscard]] inline constexpr unsigned magic_ink_level(std::uint8_t type) noexcept

@@ -44,7 +44,8 @@ The Rogue's Shop's gear
 Boots or a Cloak of Elvenkind give the Stealth check Advantage. Against a
 hidden creature wearing the cloak, Passive Perception counts 5 less, and a
 search rolls a second d20, the lower counting against it. A Stone of Good
-Luck adds 1 to Perception, Stealth and Initiative, as to every ability check.
+Luck in the pack adds 1 to Perception, Stealth and Initiative, as to every
+ability check.
 
 The AI never targets or approaches a hidden creature; with no other enemy
 left, it searches. Hiding does not outlast the fight: the saved character state

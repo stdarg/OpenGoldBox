@@ -86,6 +86,17 @@
     },
     {
       "bundle_quantity": 1,
+      "item_type": 50,
+      "magic_bonus": 1,
+      "name": "Leather Armor +1",
+      "price_gp": 4000,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 9,
+      "source_record": 53
+    },
+    {
+      "bundle_quantity": 1,
       "item_type": 70,
       "name": "Dust of Disappearance",
       "price_gp": 200,
@@ -93,6 +104,16 @@
       "source_archive": "ITEM1.DAX",
       "source_index": 2,
       "source_record": 9
+    },
+    {
+      "bundle_quantity": 3,
+      "item_type": 219,
+      "name": "Wand of Secrets",
+      "price_gp": 400,
+      "quantity": -1,
+      "source_archive": "OpenGold authored gear",
+      "source_index": -1,
+      "source_record": -1
     },
     {
       "bundle_quantity": 1,

@@ -957,6 +957,26 @@ void RolfTourView::check_identification_spells()
     shop_check_stage_ = 3;
 }
 
+namespace
+{
+// Where the Wand of Secrets points (SECRET-1), or that it found nothing.
+String wand_of_secrets_notice(const String &name, const std::optional<SecretDoorSign> &sign)
+{
+    if (!sign)
+    {
+        return i18n::format(
+            N_("{name} points the Wand of Secrets. It does not pulse: no hidden secret door is within 60 feet."),
+            {{"name", name}});
+    }
+    constexpr std::array<const char *, 4> walls{
+        N_("{name} points the Wand of Secrets. It pulses toward a secret door in the north wall of ({x}, {y})."),
+        N_("{name} points the Wand of Secrets. It pulses toward a secret door in the east wall of ({x}, {y})."),
+        N_("{name} points the Wand of Secrets. It pulses toward a secret door in the south wall of ({x}, {y})."),
+        N_("{name} points the Wand of Secrets. It pulses toward a secret door in the west wall of ({x}, {y}).")};
+    return i18n::format(walls[index(sign->side)], {{"name", name}, {"x", sign->x}, {"y", sign->y}});
+}
+} // namespace
+
 void RolfTourView::use_inventory_item()
 {
     try
@@ -992,6 +1012,14 @@ void RolfTourView::use_inventory_item()
             result = i18n::format(
                 N_("{name} reads the Manual of Bodily Health: Constitution rises by 2."),
                 {{"name", name}});
+        }
+        else if (item.definition_id == "wand_of_secrets")
+        {
+            if (!session_)
+            {
+                throw std::runtime_error("The wand can be used only while exploring.");
+            }
+            result = wand_of_secrets_notice(name, session_->point_wand_of_secrets(id, item.id));
         }
         else
         {

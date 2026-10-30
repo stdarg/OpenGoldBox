@@ -13,11 +13,13 @@ enum class ItemUse
     wand,   // held: the Magic action spends a charge
     missile, // the Necklace of Missiles: a Magic action throws a missile
     dust,   // the Utilize action throws it into the air
-    read    // the Manual of Bodily Health, read in camp
+    read,   // the Manual of Bodily Health, read in camp
+    point   // the Wand of Secrets, pointed while exploring (SECRET-1)
 };
 
-// The original's charged and single-use items as their SRD 5.2.1 counterparts.
-// The Javelin of Lightning is a javelin with a power instead (item_key.h).
+// The original's charged and single-use items as their SRD 5.2.1 counterparts,
+// and the Rogue's Shop's Wand of Secrets (SECRET-1). The Javelin of Lightning
+// is a javelin with a power instead (item_key.h).
 // The inventory's quantity counts the charges, missiles or potions left; `noun`
 // names them when one item holds several ("23 charges", "6 missiles").
 struct MagicItem
@@ -59,7 +61,10 @@ inline constexpr std::array magic_items{
               "Throw a missile with the Magic action: it explodes as a Fireball (save DC 15)."},
     MagicItem{"manual_of_bodily_health", "Manual of Bodily Health", ItemUse::read, "", "",
               "Read it in camp: Constitution and its maximum rise by 2. Its magic is then "
-              "spent."}};
+              "spent."},
+    MagicItem{"wand_of_secrets", "Wand of Secrets", ItemUse::point, "", "charges",
+              "Use it while exploring, a charge each time: it points out the nearest hidden "
+              "secret door within 60 feet. Each Long Rest gives back 1d3 charges, up to 3."}};
 
 // The item a key names, whether or not the campaign marked it ":unidentified".
 inline const MagicItem *magic_item(std::string_view key)

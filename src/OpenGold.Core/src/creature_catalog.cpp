@@ -130,6 +130,10 @@ std::string_view item_type_name(std::uint8_t type)
     {
         return "Stone of Good Luck";
     }
+    if (type == authored_item::wand_of_secrets)
+    {
+        return "Wand of Secrets";
+    }
     // Type IDs, not names of particular enchanted items. Name components remain exposed.
     constexpr std::string_view names[] = {"Unarmed",
                                           "Battle axe",

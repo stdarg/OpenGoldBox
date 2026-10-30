@@ -57,6 +57,8 @@ class Inventory
     void rename(std::uint64_t id, std::string name);
     // An item whose definition changes, such as a scroll a spell was read from.
     void redefine(std::uint64_t id, std::string definition_id);
+    // A new count for an item, such as a recharged wand's charges.
+    void set_quantity(std::uint64_t id, std::uint32_t quantity);
 
   private:
     template <bool Reading> friend struct opengold::SaveCodec;

@@ -241,6 +241,9 @@ class CampaignParty
     void read_manual(MemberId id, std::uint64_t item);
     // Drinks one of a potion stack the member carries, outside combat (MAGIC-3).
     void drink_potion(MemberId id, std::uint64_t item);
+    // Spends a charge of a Wand of Secrets the member carries, outside combat
+    // (SECRET-1). Throws when the wand has none left or the member cannot act.
+    void use_wand_of_secrets(MemberId id, std::uint64_t item);
     // The shop's ID: for 200 gp from the party purse, any item's hidden name
     // words are revealed, as in the original. False when there were none.
     bool identify_at_shop(MemberId id, std::uint64_t item);
@@ -493,6 +496,10 @@ class CampaignParty
 // The item's key as the rules see it: ":unidentified" is added while its magic
 // is not identified (#262).
 [[nodiscard]] std::string rules_definition(const PartyMember &member, const InventoryItem &item);
+// The charges a member's Wand of Secrets has left (SECRET-1). A spent wand
+// stays in the pack, and each Long Rest gives it back 1d3, up to 3.
+[[nodiscard]] unsigned wand_charges(const PartyMember &member, std::uint64_t item);
+void set_wand_charges(PartyMember &member, std::uint64_t item, unsigned charges);
 // Reveals the item's hidden name words, so it takes its full name. False when
 // nothing was hidden.
 bool identify_item(PartyMember &member, std::uint64_t item);

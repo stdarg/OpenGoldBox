@@ -1635,11 +1635,16 @@
   "Cloak of Elvenkind",
   "Stone of Good Luck",
   "Boots",
-  "Stone",
   "Worn: Advantage on Dexterity (Stealth) checks.",
   "Worn: Advantage on Dexterity (Stealth) checks, and Wisdom (Perception) checks to find the hidden wearer have Disadvantage.",
-  "Worn: +1 to ability checks, Initiative included, and saving throws.",
+  "Carried: +1 to ability checks, Initiative included, and saving throws. A second stone adds nothing.",
   "Dagger +1",
   "Short Sword +1",
-  "Short Bow +1"
+  "Short Bow +1",
+  "Leather Armor +1",
+  "Wand of Secrets",
+  "Use it while exploring, a charge each time: it points out the nearest hidden secret door within 60 feet. Each Long Rest gives back 1d3 charges, up to 3.",
+  "The wand can be used only while exploring.",
+  "The Wand of Secrets has no charges left.",
+  "Only a conscious member can use the wand."
 ]
