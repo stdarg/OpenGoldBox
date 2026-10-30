@@ -8,6 +8,21 @@
   to `origin`, unless the user explicitly asks otherwise. Include only your own
   changes and complete relevant checks before committing.
 
+## Coordinating with other sessions
+
+Several Claude and Codex sessions work on this repository at once, each in its
+own git worktree. `tools/session_board.py` keeps a board of what each one is
+doing, in `.sessions/` at the main checkout's root (ignored by git).
+
+- At the start of a task, run `tools/session_board.py list` and read the other
+  sessions' claims.
+- Claim the task from your worktree before changing files, naming the areas it
+  touches and the shared numbers it will raise:
+  `tools/session_board.py claim --agent codex --task "Frog art" --areas "data/monsters, dev_tools/combat_sprite_catalog/json/cpic4_dax_18.json"`
+- An overlap is a warning, not a block: tell the user before working in the
+  same area as another session.
+- Run `update` when the work spreads, and `release` once it is pushed.
+
 ## Scope and review boundaries
 
 - Answer questions and provide suggestions without treating them as
