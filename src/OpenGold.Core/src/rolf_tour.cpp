@@ -844,6 +844,18 @@ namespace
 {
 // The original item a shop's record names, at the record's price. Its type
 // must still match the list's, so a record made from other files fails here.
+// An original item the shop sells with its record's enchantment added, and
+// named by the record, such as "Leather Armor +1".
+void enchant(Equipment &item, const opengold::ShopOffering &offering)
+{
+    auto &stored = item.stored;
+    stored.magic_bonus += offering.magic_bonus;
+    stored.raw[50] = static_cast<std::uint8_t>(static_cast<std::int8_t>(stored.magic_bonus));
+    item.bonuses = equipment_bonuses(stored, item.base);
+    item.decoded_name = offering.name;
+    item.unidentified_name = offering.name;
+}
+
 Equipment original_offering(const PhlanResources &town, const opengold::ShopOffering &offering)
 {
     const std::map<unsigned, std::vector<Equipment>> *lists = nullptr;
@@ -866,6 +878,10 @@ Equipment original_offering(const PhlanResources &town, const opengold::ShopOffe
         {
             auto item = list->second[offering.index];
             item.stored.value = static_cast<std::uint16_t>(offering.price_gp);
+            if (offering.magic_bonus)
+            {
+                enchant(item, offering);
+            }
             return item;
         }
     }

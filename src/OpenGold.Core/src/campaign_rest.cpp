@@ -1,4 +1,5 @@
 #include "opengold/campaign_party.h"
+#include "opengold/dice.h"
 #include <algorithm>
 #include <limits>
 
@@ -73,6 +74,28 @@ bool CampaignParty::rest()
 
 namespace
 {
+// A Wand of Secrets regains 1d3 charges, up to 3 (SECRET-1).
+void recharge_wands(PartyMember &member, RandomState &random)
+{
+    std::vector<std::uint64_t> wands;
+    for (const auto &item : member.character.inventory().items())
+    {
+        if (item.definition_id == "wand_of_secrets")
+        {
+            wands.push_back(item.id);
+        }
+    }
+    for (const auto wand : wands)
+    {
+        const auto charges = wand_charges(member, wand);
+        if (charges < 3)
+        {
+            set_wand_charges(member, wand,
+                             std::min(3U, charges + static_cast<unsigned>(roll_die(random, 3))));
+        }
+    }
+}
+
 RestTicket new_ticket(PartyState &state)
 {
     if (state.next_rest_session == std::numeric_limits<std::uint64_t>::max())
@@ -157,6 +180,7 @@ void CampaignParty::long_rest_benefits(PartyState &state, const std::vector<Memb
             continue;
         }
         rules_->recover(member.vitals, member.character.sheet());
+        recharge_wands(member, state.random_state);
         const auto choices = rules_->spell_choice_options(member.character.sheet(),
                                                           rules::SpellChoiceContext::long_rest);
         if (choices.may_prepare || choices.may_replace)

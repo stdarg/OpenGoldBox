@@ -4,8 +4,11 @@
 #include "opengold/character.h"
 #include "opengold/npc_portraits.h"
 #include "opengold/rolf_tour.h"
+#include "opengold/script_secret_doors.h"
 #include "opengold/shop_data.h"
 #include "opengold/srd5.h"
+#include "test_support.h"
+#include "tour_access.h"
 #include <algorithm>
 #include <array>
 #include <cstdlib>
@@ -23,8 +26,10 @@ using namespace opengold::por;
 // closes it from the inn, and its secret door in the south wall is found by
 // the original's search rolls, picked by a Rogue or opened by Knock, never
 // bashed, and stays open in saves. The shop sells the Poisoner's Kit for
-// 50 gp. Needs the installed game (OPENGOLD_GAME_DIR); without it the test
-// passes.
+// 50 gp, and magic gear: Leather Armor +1, a Stone of Good Luck that works
+// from the pack, and a Wand of Secrets that points out the shop's door and the
+// original's script-held secret doors. Needs the installed game
+// (OPENGOLD_GAME_DIR); without it the test passes.
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
@@ -257,7 +262,7 @@ std::shared_ptr<CampaignParty> party_with(std::vector<Character> members)
         party->add_pc(std::move(member));
     }
     auto state = party->checkpoint();
-    coins(state.wealth, Coin::gold) = 2000;
+    coins(state.wealth, Coin::gold) = 6000;
     party->restore(std::move(state));
     return party;
 }
@@ -409,10 +414,11 @@ void rogue_checks(const char *directory)
                            });
     };
     check(sells("Magic Lock Picks", 50) && sells("Dagger +1", 400) && sells("Short Sword +1", 400) &&
-              sells("Short Bow +1", 400) && sells("Dust of Disappearance", 200) &&
+              sells("Short Bow +1", 400) && sells("Leather Armor +1", 4000) &&
+              sells("Dust of Disappearance", 200) && sells("Wand of Secrets", 400) &&
               sells("Boots of Elvenkind", 400) &&
               sells("Cloak of Elvenkind", 400) && sells("Stone of Good Luck", 400) &&
-              sells("Thieves' Tools", 25) && sells("Basic Poison", 100) && stock.size() == 11,
+              sells("Thieves' Tools", 25) && sells("Basic Poison", 100) && stock.size() == 13,
           "The shop sells its rogue's gear, the magic items known by name");
     const auto gold = coins(party->state().wealth, Coin::gold);
     check(town.buy(town.snapshot().continue_ticket, static_cast<std::size_t>(kit - stock.begin())),
@@ -425,9 +431,10 @@ void rogue_checks(const char *directory)
                               return item.definition_id == "poisoners_kit";
                           }),
           "The kit costs 50 gp and joins the buyer's pack");
-    // Bought, the magic dagger and the boots are what they say, and the boots
-    // are worn.
-    for (const std::string_view label : {"Dagger +1", "Boots of Elvenkind"})
+    // Bought, the magic dagger, the armor, the boots and the wand are what
+    // they say; the boots are worn and the armor protects one point better.
+    for (const std::string_view label :
+         {"Dagger +1", "Boots of Elvenkind", "Leather Armor +1", "Wand of Secrets"})
     {
         const auto item = std::find_if(stock.begin(), stock.end(),
                                        [&](const auto &offered)
@@ -454,6 +461,17 @@ void rogue_checks(const char *directory)
     party->equip(buyer, bought("boots_of_elvenkind")->id);
     check(party->profile(buyer).item_modifiers.find("Boots of Elvenkind") != std::string::npos,
           "The boots are worn");
+    const auto rules = module();
+    const auto &sheet = party->member(buyer).character.sheet();
+    const std::array<std::string, 1> plain{"leather"}, magic{"leather+1"};
+    check(bought("leather+1") != pack.end() && bought("leather+1")->name == "Leather Armor +1" &&
+              rules->character_profile(sheet, magic).armor_class ==
+                  rules->character_profile(sheet, plain).armor_class + 1,
+          "The armor is Leather Armor +1, one point better than plain leather");
+    const auto wand = bought("wand_of_secrets");
+    check(wand != pack.end() && wand->quantity == 3 &&
+              wand_charges(party->member(buyer), wand->id) == 3,
+          "The Wand of Secrets comes with 3 charges");
     check(town.leave_shop(town.snapshot().continue_ticket) &&
               town.snapshot().phase == TourPhase::completed,
           "Leaving the shop ends the visit");
@@ -501,6 +519,233 @@ void lock_pick_checks()
           "With no picks left the Rogue picks without them");
 }
 
+// A Stone of Good Luck works from the pack, and a second adds nothing.
+void stone_checks()
+{
+    auto party = party_with({rogue()});
+    const auto id = party->state().slots[0];
+    const auto before = party->profile(id);
+    const auto check_before = party->ability_check(id, rules::Ability::strength, "athletics");
+    por::Equipment stone;
+    stone.stored.type = 218;
+    stone.stored.stored_name = "Stone of Good Luck";
+    stone.stored.stack_size = 1;
+    check(party->award_loot({}, {stone}, "test:stone"), "The Rogue carries a stone");
+    const auto with_stone = party->profile(id);
+    check(party->member(id).equipped.empty() &&
+              with_stone.item_save_bonus == before.item_save_bonus + 1 &&
+              party->ability_check(id, rules::Ability::strength, "athletics").total ==
+                  check_before.total + 1 &&
+              with_stone.item_modifiers.find("Source: carried Stone of Good Luck") !=
+                  std::string::npos,
+          "A carried Stone of Good Luck adds 1 to checks and saving throws");
+    check(party->award_loot({}, {stone}, "test:second-stone") &&
+              party->profile(id).item_save_bonus == with_stone.item_save_bonus,
+          "A second stone adds nothing");
+}
+
+// Adds a level-13 Wizard who prepared Teleport.
+MemberId add_teleport_wizard(CampaignParty &party)
+{
+    rules::CharacterDraft d;
+    d.race = "human";
+    d.gender = "female";
+    d.character_class = "wizard";
+    d.background = "sage";
+    d.alignment = "neutral_good";
+    d.name = "Tamsin";
+    d.rolled = true;
+    for (auto &r : d.rolls)
+    {
+        r = {{6, 5, 4, 1}, 3};
+    }
+    d.cantrips = std::vector<std::string>{"fire_bolt", "ray_of_frost", "chill_touch"};
+    const std::vector<std::string> spells{"magic_missile"};
+    d.spells = rules::SpellChoices{{{"spellbook:1", spells}}, spells, {}, {}};
+    d.training = {{"class:wizard", {"medicine", "nature"}}};
+    const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
+    party.award_experience(120000, "wizard-xp");
+    while (party.member(id).character.sheet().level < 13)
+    {
+        auto choice = party.default_advancement(id);
+        if (party.member(id).character.sheet().level == 12)
+        {
+            (*choice.spell_learning)["spellbook:13"] = {"teleport", "finger_of_death"};
+            if (std::find(choice.spells.begin(), choice.spells.end(), "teleport") ==
+                choice.spells.end())
+            {
+                choice.spells.back() = "teleport";
+            }
+        }
+        party.advance(id, choice);
+    }
+    return id;
+}
+
+// A Wand of Secrets with `charges` for the party's first member; its ID.
+std::uint64_t give_wand(CampaignParty &party, unsigned charges)
+{
+    const auto id = party.state().slots[0];
+    por::Equipment wand;
+    wand.stored.type = 219;
+    wand.stored.stored_name = "Wand of Secrets";
+    wand.stored.stack_size = static_cast<std::uint8_t>(charges);
+    check(party.award_loot({}, {wand}, "test:wand:" + std::to_string(charges)),
+          "The party takes the wand");
+    return party.member(id).character.inventory().items().back().id;
+}
+
+// The Wand of Secrets (SECRET-1): pointed in the alley it finds the hidden
+// door of the Rogue's Shop; pointed again it finds nothing; spent it stays
+// in the pack, and a Long Rest gives back 1d3 charges.
+void wand_in_town_checks(const char *directory)
+{
+    auto party = party_with({rogue()});
+    const auto user = party->state().slots[0];
+    const auto wand = give_wand(*party, 3);
+    auto town = town_with_shops(directory);
+    town.campaign_party(party);
+    settle(town);
+    check(walk_to(town, shop_x, shop_y + 1), "The party stands in the alley");
+    face(town, MapDirection::north);
+    write_fixture(*party, town, directory, "alley-wand");
+    // Two squares east, the door is as near as the shop's square behind it,
+    // but fewer steps away from the alley.
+    check(walk_to(town, shop_x + 2, shop_y + 1) && !door_found(town),
+          "The party stands further down the alley");
+    const auto sign = town.point_wand_of_secrets(user, wand);
+    check(sign && sign->x == shop_x && sign->y == shop_y + 1 &&
+              sign->side == MapDirection::north && door_found(town),
+          "The wand points to the shop's door in the north wall of the alley, and it is found");
+    check(!town.point_wand_of_secrets(user, wand), "No other hidden door is near");
+    check(wand_charges(party->member(user), wand) == 1, "Each use spends a charge");
+    (void)town.point_wand_of_secrets(user, wand);
+    const auto &pack = party->member(user).character.inventory();
+    check(pack.find(wand) && wand_charges(party->member(user), wand) == 0,
+          "The spent wand stays in the pack");
+    test::rejects(
+        [&]
+        {
+            (void)town.point_wand_of_secrets(user, wand);
+        },
+        "A spent wand cannot be used");
+    check(party->rest(RestKind::long_rest).has_value(), "The party takes a Long Rest");
+    const auto charges = wand_charges(party->member(user), wand);
+    check(charges >= 1 && charges <= 3 &&
+              party->member(user).character.inventory().find(wand)->get().quantity == charges,
+          "A Long Rest gives the wand back 1d3 charges");
+}
+
+// Points the wand where Teleport took the party: the door it finds must be
+// `expected`, and the script's flag for it is then set.
+void point_on_map(RolfTourSession &town, CampaignParty &party, std::uint64_t wand,
+                  const ScriptSecretDoor &expected, SecretDoorSign at)
+{
+    const auto user = party.state().slots[0];
+    const auto sign = town.point_wand_of_secrets(user, wand);
+    check(sign && sign->x == at.x && sign->y == at.y && sign->side == at.side,
+          "The wand points to the nearest secret door on map " + std::to_string(expected.map));
+    check((test::TourAccess::machine(town).variable(EclAddress{expected.flag}) & expected.found) ==
+              expected.found,
+          "The door the wand points to is found");
+}
+
+// The original's script-held secret doors, the Pyramid's and Kuto's Well's
+// catacombs': the wand sets the flag each script lets the party through by
+// (script_door_table_checks).
+void wand_on_script_doors(const char *directory)
+{
+    auto party = party_with({rogue()});
+    const auto wand = give_wand(*party, 3);
+    const auto wizard = add_teleport_wizard(*party);
+    auto town = town_with_shops(directory);
+    town.campaign_party(party);
+    settle(town);
+    const auto rested = party->member(wizard).vitals.resources;
+    const auto teleport = [&](unsigned map)
+    {
+        test::TourAccess::mark_visited(town, map, teleport_spot(map)->x, teleport_spot(map)->y);
+        auto state = party->checkpoint();
+        for (auto &member : state.roster)
+        {
+            if (member.id == wizard)
+            {
+                member.vitals.resources = rested;
+            }
+        }
+        party->restore(std::move(state));
+        town.teleport(wizard, "teleport", map);
+        settle(town);
+        check(town.snapshot().area_id == map, "Teleport reaches map " + std::to_string(map));
+    };
+    const auto door = [](unsigned map, unsigned x, unsigned y)
+    {
+        return *std::find_if(script_secret_doors.begin(), script_secret_doors.end(),
+                             [&](const auto &d)
+                             {
+                                 return d.map == map && d.x == x && d.y == y;
+                             });
+    };
+    // From the prison of souls' spot (7,8) the nearest is the door between
+    // (4,10) and (5,10), two squares away at (5,10).
+    teleport(22);
+    point_on_map(town, *party, wand, door(22, 4, 10), {5, 10, MapDirection::west});
+    // Kuto's Well's catacombs: the door south of (5,7), four squares from
+    // the spot (7,3).
+    teleport(32);
+    point_on_map(town, *party, wand, door(32, 5, 7), {5, 7, MapDirection::south});
+}
+
+// The doors the wand knows are the ones the scripts search: each is on its
+// map's squares with the script's search events, facing the way the
+// script's table says.
+void script_door_table_checks(const char *directory)
+{
+    const auto maps = MapCatalog::load(directory);
+    const auto scripts = EclCatalog::load(directory);
+    struct Table
+    {
+        unsigned map, events, directions, masks;
+        std::uint16_t flag;
+    };
+    for (const auto &table : {Table{22, 11, 0x9C95, 0x9CA0, 0x4A4B}, Table{23, 10, 0x9C40, 0x9C4A, 0x4A4F}})
+    {
+        const auto &geo = maps.find({"GEO7.DAX", static_cast<std::uint8_t>(table.map)})->get();
+        const auto &raw = scripts.find({"ECL7.DAX", static_cast<std::uint8_t>(table.map)})->raw();
+        const auto byte = [&](unsigned address)
+        {
+            return raw.at(address - EclProgram::origin + 2);
+        };
+        for (unsigned y = 0; y < 16; ++y)
+        {
+            for (unsigned x = 0; x < 16; ++x)
+            {
+                const auto event = geo.at(x, y).event_number();
+                if (!event || event > table.events)
+                {
+                    continue;
+                }
+                const auto side = MapDirection{byte(table.directions + event - 1)};
+                const auto mask = byte(table.masks + event - 1);
+                const auto known = std::any_of(
+                    script_secret_doors.begin(), script_secret_doors.end(),
+                    [&](const auto &d)
+                    {
+                        const bool here = d.x == x && d.y == y && d.side == side;
+                        const bool facing =
+                            static_cast<int>(d.x) + step_x(d.side) == static_cast<int>(x) &&
+                            static_cast<int>(d.y) + step_y(d.side) == static_cast<int>(y) &&
+                            reversed(d.side) == side;
+                        return d.map == table.map && d.flag == table.flag && d.found == mask &&
+                               (here || facing);
+                    });
+                check(known, "The wand knows the secret door at " + std::to_string(x) + "," +
+                                 std::to_string(y) + " of map " + std::to_string(table.map));
+            }
+        }
+    }
+}
+
 // A party with no Rogue opens the door with Knock.
 void knock_checks(const char *directory)
 {
@@ -526,8 +771,12 @@ int main()
     try
     {
         lock_pick_checks();
+        stone_checks();
         rogue_checks(directory);
         knock_checks(directory);
+        script_door_table_checks(directory);
+        wand_in_town_checks(directory);
+        wand_on_script_doors(directory);
     }
     catch (const std::exception &e)
     {

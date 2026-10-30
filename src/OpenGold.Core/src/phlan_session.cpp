@@ -1,4 +1,5 @@
 #include "opengold/rolf_tour.h"
+#include "opengold/script_secret_doors.h"
 #include "opengold/random_treasure.h"
 #include "opengold/ecl_party_host.h"
 #include "opengold/scroll_key.h"
@@ -3505,6 +3506,88 @@ const opengold::ShopSite *RolfTourSession::entrance_ahead() const
         }
     }
     return nullptr;
+}
+
+std::optional<SecretDoorSign> RolfTourSession::point_wand_of_secrets(MemberId member,
+                                                                    std::uint64_t item)
+{
+    if (!campaign_ || !can_leave())
+    {
+        throw std::runtime_error("The wand can be used only while exploring.");
+    }
+    campaign_->use_wand_of_secrets(member, item);
+    // Squares count as the SRD counts them, diagonals too; a door is as near
+    // as the nearer of its two squares, from which the sign names its wall.
+    // Of two squares as near, the one fewer steps away is nearer.
+    constexpr int reach = 6;
+    const auto near_side = [this](unsigned x, unsigned y, MapDirection side)
+    {
+        const auto squares = [this](int sx, int sy)
+        {
+            const int dx = std::abs(sx - static_cast<int>(snapshot_.pose.x)),
+                      dy = std::abs(sy - static_cast<int>(snapshot_.pose.y));
+            return std::pair{std::max(dx, dy), dx + dy};
+        };
+        const int ox = static_cast<int>(x) + step_x(side), oy = static_cast<int>(y) + step_y(side);
+        const auto inside = squares(static_cast<int>(x), static_cast<int>(y)),
+                   outside = squares(ox, oy);
+        return outside < inside
+                   ? std::pair{outside.first, SecretDoorSign{static_cast<unsigned>(ox),
+                                                             static_cast<unsigned>(oy),
+                                                             reversed(side)}}
+                   : std::pair{inside.first, SecretDoorSign{x, y, side}};
+    };
+    std::optional<SecretDoorSign> sign;
+    int nearest = reach + 1;
+    const ScriptSecretDoor *script_door = nullptr;
+    const opengold::ShopSite *shop = nullptr;
+    for (const auto &door : script_secret_doors)
+    {
+        const auto found = machine_.variable(EclAddress{door.flag});
+        if (overland() || door.map != current_area_ || (found & door.found) == door.found)
+        {
+            continue;
+        }
+        if (const auto [squares, at] = near_side(door.x, door.y, door.side); squares < nearest)
+        {
+            nearest = squares;
+            sign = at;
+            script_door = &door;
+        }
+    }
+    for (const auto &site : shops_)
+    {
+        if (!site.entrance || !on_map(site.archive, site.record) ||
+            entrances_[site.id] != EntranceState::hidden)
+        {
+            continue;
+        }
+        for (const auto &[x, y] : site.markers)
+        {
+            if (const auto [squares, at] = near_side(x, y, site.entrance->secret_door);
+                squares < nearest)
+            {
+                nearest = squares;
+                sign = at;
+                script_door = nullptr;
+                shop = &site;
+            }
+        }
+    }
+    if (script_door)
+    {
+        const EclAddress flag{script_door->flag};
+        machine_.bind_variable(flag, machine_.variable(flag) | script_door->found);
+    }
+    else if (shop)
+    {
+        // The door now shows in the wall.
+        entrances_[shop->id] = EntranceState::found;
+        apply_entrances();
+        ++snapshot_.picture_revision;
+        ++snapshot_.revision;
+    }
+    return sign;
 }
 
 void RolfTourSession::search_for_secret_door()

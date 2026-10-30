@@ -19,7 +19,8 @@ namespace opengold::srd5
 // A spell's English label, such as "Fireball"; empty for an unknown id.
 [[nodiscard]] std::string_view spell_label(std::string_view spell) noexcept;
 // Whether the inventory's Use works for the item outside combat: the Manual of
-// Bodily Health, or a healing or Giant Strength potion (MAGIC-3).
+// Bodily Health, a healing or Giant Strength potion (MAGIC-3), or a Wand of
+// Secrets (SECRET-1).
 [[nodiscard]] bool usable_outside_combat(std::string_view item) noexcept;
 [[nodiscard]] int ability_modifier(int score) noexcept;
 // Ordinary saving throws: 1 means every roll saves; 21 means no d20 roll saves.

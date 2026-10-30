@@ -22,7 +22,9 @@ valley's healing), `opengold_creatures GAME`, `opengold_maps GAME`, coab's
 - **Secret doors** (events 1-11 outside, 1-10 inside): each square's door in
   one direction is held shut (`0x6DC9` = 255) until found. A search finds it:
   each living member rolls d6, needing at most 1 when searching (0 otherwise),
-  plus 1 for an elf or half-elf.
+  plus 1 for an elf or half-elf. A Wand of Secrets from the Rogue's Shop
+  finds the nearest one within 60 feet
+  ([SECRET-1](../SRD-DECISIONS.md#secret-1-2026-10-29-the-rogues-shop-and-its-secret-door)).
 - **Teleporters:** the outer (14,8) to (5,11), (14,9) to (0,0) and (6,1) into
   the laboratories at (0,12); inside, (15,8) to (3,13), and three to the dial's
   room (6,0), whose dial (blue, copper, silver, gold) sends the party back

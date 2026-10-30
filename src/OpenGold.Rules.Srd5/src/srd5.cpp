@@ -81,6 +81,10 @@ std::string weapon_label(std::string_view key)
     {
         label = rules::parse_item_key(key).unidentified ? worn->unidentified_label : worn->label;
     }
+    else if (key == "stone_of_good_luck")
+    {
+        return "Stone of Good Luck";
+    }
     else
     {
         return std::string(key);
@@ -171,6 +175,11 @@ std::string attack_ability(std::string_view key)
 // them has Advantage, and one set is used up.
 constexpr std::string_view magic_lock_picks = "magic_lock_picks";
 
+// A Stone of Good Luck (SECRET-1, SRD 5.2.1) works from the pack: +1 to
+// ability checks and saving throws. The campaign adds it to the gear of a
+// member who carries one; a second stone adds nothing.
+constexpr std::string_view stone_of_good_luck = "stone_of_good_luck";
+
 bool trained(CharacterClass klass, std::span<const FeatureGrant> grants, std::string_view key)
 {
     // Starting-class grants, SRD 5.2.1 pp. 49 and 61, plus the Protector Divine
@@ -191,8 +200,8 @@ bool trained(CharacterClass klass, std::span<const FeatureGrant> grants, std::st
                (warden && armor->category == detail::ArmorCategory::medium);
     }
     // Anyone can wear a ring, bracers, a cloak, gauntlets or a necklace, and
-    // carry Magic Lock Picks.
-    if (detail::worn_item(key) || key == magic_lock_picks)
+    // carry Magic Lock Picks or a Stone of Good Luck.
+    if (detail::worn_item(key) || key == magic_lock_picks || key == stone_of_good_luck)
     {
         return true;
     }
@@ -576,7 +585,8 @@ bool is_smite(std::string_view verb)
 bool usable_outside_combat(std::string_view item) noexcept
 {
     return item == "manual_of_bodily_health" || item == "potion_of_healing" ||
-           item == "potion_of_greater_healing" || item == "potion_of_giant_strength";
+           item == "potion_of_greater_healing" || item == "potion_of_giant_strength" ||
+           item == "wand_of_secrets";
 }
 
 std::string_view spell_label(std::string_view spell) noexcept
@@ -626,6 +636,11 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
     if (item == magic_lock_picks)
     {
         return "A Rogue picking a lock uses one set for Advantage on the check.";
+    }
+    if (item == stone_of_good_luck)
+    {
+        return "Carried: +1 to ability checks, Initiative included, and saving throws. A second "
+               "stone adds nothing.";
     }
     if (rules::magic_ink_level(item))
     {
@@ -4007,7 +4022,7 @@ character_definition(std::string_view bytes,
     // Worn items (MAGIC-4): the better Ring of Protection, the better bracers'
     // Armor Class, and flat Armor Class and save changes.
     int ring_bonus = 0, bracers_ac = 0, worn_ac = 0, worn_saves = 0;
-    std::array<unsigned, 7> worn_count{};
+    std::array<unsigned, 6> worn_count{};
     for (const auto &key : d.equipment_keys)
     {
         const auto enchantment = rules::parse_item_key(key);
@@ -4103,6 +4118,11 @@ character_definition(std::string_view bytes,
             // Carried, and in the gear only for the check to pick a lock.
             d.pick_advantage = true;
         }
+        else if (key == stone_of_good_luck)
+        {
+            d.check_bonus = 1;
+            worn_saves += 1;
+        }
         else if (const auto *worn = detail::worn_item(key))
         {
             auto &worn_of_kind = worn_count[static_cast<std::size_t>(worn->kind)];
@@ -4130,11 +4150,6 @@ character_definition(std::string_view bytes,
             {
                 worn_ac += enchantment.bonus;
                 worn_saves += enchantment.bonus;
-            }
-            else if (base == "stone_of_good_luck")
-            {
-                d.check_bonus += 1;
-                worn_saves += 1;
             }
             d.stealth_advantage |= base == "boots_of_elvenkind" || base == "cloak_of_elvenkind";
             d.hard_to_perceive |= base == "cloak_of_elvenkind";
@@ -32299,11 +32314,12 @@ class Module final : public RulesModule
     EquipmentInfo equipment_info(std::string_view key) const override
     {
         // Magic Ink is spent writing or copying a scroll (MAGIC-6); a scroll
-        // is read from the pack, and a Poisoner's Kit, Basic Poison or Thieves'
-        // Tools used from it.
+        // is read from the pack, and a Poisoner's Kit, Basic Poison, Thieves'
+        // Tools or a Wand of Secrets used from it.
         if (detail::thrown_gear(key) || rules::magic_ink_level(key) ||
             rules::parse_scroll_key(key) || key == poisoners_kit || key == basic_poison ||
-            key == thieves_tools || key == magic_lock_picks)
+            key == thieves_tools || key == magic_lock_picks || key == stone_of_good_luck ||
+            key == "wand_of_secrets")
         {
             return {EquipmentSlot::carried, 0};
         }
@@ -32787,8 +32803,8 @@ class Module final : public RulesModule
         }
         for (const auto &key : gear)
         {
-            result.item_modifiers +=
-                "Source: equipped " + weapon_label(key) + ". " + equipment_note(sheet, key) + "\n";
+            result.item_modifiers += (key == stone_of_good_luck ? "Source: carried " : "Source: equipped ") +
+                                     weapon_label(key) + ". " + equipment_note(sheet, key) + "\n";
         }
         if (features & 1)
         {

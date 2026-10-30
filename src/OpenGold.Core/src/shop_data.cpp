@@ -155,6 +155,14 @@ std::vector<ShopOffering> shop_offerings(const Json &record)
         {
             throw std::runtime_error("A shop item has no original source: " + offering.name);
         }
+        if (item.find("magic_bonus"))
+        {
+            if (offering.archive.empty())
+            {
+                throw std::runtime_error("Only an original item is sold enchanted: " + offering.name);
+            }
+            offering.magic_bonus = static_cast<int>(whole(item, "magic_bonus", 1, 5));
+        }
         result.push_back(std::move(offering));
     }
     return result;

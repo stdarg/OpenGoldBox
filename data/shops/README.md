@@ -10,7 +10,9 @@ opens the shop itself on its square
 `kind`, and `id` identify an existing place and are immutable in the editor.
 Retail `type`, `portrait`, and `offerings` are editable. Temple `type` is always
 `Temple`; service price and `offered` are editable. Stock quantity `-1` means
-unlimited, `0` means unavailable, and positive values set a limit. Prices use
+unlimited, `0` means unavailable, and positive values set a limit. An original
+item may carry a `magic_bonus`, added to its own enchantment: the Rogue's Shop
+sells the armory's Leather Armor with `magic_bonus` 1 as Leather Armor +1. Prices use
 integer gold pieces. New portraits live in
 [`dev_tools/shop_manager/portraits/`](../../dev_tools/shop_manager/portraits/).
 

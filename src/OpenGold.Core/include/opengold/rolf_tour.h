@@ -158,6 +158,14 @@ struct SecretDoorSearch
     int die{}, needed{};
 };
 
+// Where a Wand of Secrets points (SECRET-1): a secret door in the `side` wall
+// of square (x, y), the square on its side nearer the party.
+struct SecretDoorSign
+{
+    unsigned x{}, y{};
+    MapDirection side{};
+};
+
 struct TourSnapshot
 {
     PartyPose pose;
@@ -270,6 +278,14 @@ class RolfTourSession
     // when the party cannot leave or has not been on that map, before
     // spending anything.
     void teleport(opengold::MemberId caster, const std::string &action, unsigned map);
+
+    // The Wand of Secrets (SECRET-1): while the party explores, `member` spends
+    // a charge of the wand `item`, and the hidden secret door nearest the
+    // party within 60 feet, six of the map's ten-foot squares, is found. It
+    // returns where the door is, or nothing when no hidden door is that near.
+    // Throws, spending nothing, when the party is busy or the wand is empty.
+    [[nodiscard]] std::optional<SecretDoorSign> point_wand_of_secrets(opengold::MemberId member,
+                                                                      std::uint64_t item);
 
     // Outside events, and while shopping to choose the buyer. The shop script
     // receives whoever is selected when the shop closes.
