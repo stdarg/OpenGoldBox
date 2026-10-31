@@ -152,6 +152,8 @@ void CombatView::_bind_methods()
     ClassDB::bind_method(D_METHOD("enemy_sprite_widths"), &CombatView::enemy_sprite_widths);
     ClassDB::bind_method(D_METHOD("enemy_weapon_sets"), &CombatView::enemy_weapon_sets);
     ClassDB::bind_method(D_METHOD("missiles_in_flight"), &CombatView::missiles_in_flight);
+    ClassDB::bind_method(D_METHOD("spell_effects_in_play"), &CombatView::spell_effects_in_play);
+    ClassDB::bind_method(D_METHOD("spell_effect_rows"), &CombatView::spell_effect_rows);
     ClassDB::bind_method(D_METHOD("attack_pose_active", "id"), &CombatView::attack_pose_active);
     ClassDB::bind_method(D_METHOD("sprite_facing_left", "id"), &CombatView::sprite_facing_left);
     ClassDB::bind_method(D_METHOD("battlefield_visuals"), &CombatView::battlefield_visuals);
@@ -917,6 +919,7 @@ void CombatView::sync_art(bool preserve_effects)
         skull_seconds_.clear();
         action_seconds_.clear();
         missile_flights_.clear();
+        spell_casts_.clear();
         shot_last_.clear();
     }
 }
@@ -1812,6 +1815,168 @@ Array CombatView::missiles_in_flight() const
     return flights;
 }
 
+namespace
+{
+constexpr double spell_squares_per_second = 12.0;
+constexpr double spell_shortest_travel_seconds = 0.3;
+// Darts and blessings land one after another, not as a single flash.
+constexpr double spell_target_delay_seconds = 0.14;
+// An area spreads out from its center or its caster.
+constexpr double spell_spread_seconds_per_square = 0.04;
+constexpr double spell_longest_spread_seconds = 0.7;
+// How far a spell attack that misses flies on beyond its target.
+constexpr float spell_miss_squares = 3.0F;
+// Huge areas show this many arrivals, each drawn larger, to keep drawing cheap.
+constexpr std::size_t spell_most_arrivals = 40;
+
+Color effect_color(std::uint32_t rgb)
+{
+    return Color(static_cast<float>((rgb >> 16) & 0xFF) / 255.0F,
+                 static_cast<float>((rgb >> 8) & 0xFF) / 255.0F,
+                 static_cast<float>(rgb & 0xFF) / 255.0F);
+}
+
+String effect_text(std::string_view text)
+{
+    return String::utf8(text.data(), static_cast<int64_t>(text.size()));
+}
+
+// The squares of an aimed area, spreading out from where it starts.
+PackedVector3Array area_arrivals(const AreaTargeting &area, Vector2 origin, float &size)
+{
+    const std::size_t stride = (area.cells.size() + spell_most_arrivals - 1) / spell_most_arrivals;
+    size = std::sqrt(static_cast<float>(std::max<std::size_t>(stride, 1)));
+    PackedVector3Array arrivals;
+    for (std::size_t index = 0; index < area.cells.size();
+         index += std::max<std::size_t>(stride, 1))
+    {
+        const Vector2 square(static_cast<float>(area.cells[index].x) + 0.5F,
+                             static_cast<float>(area.cells[index].y) + 0.5F);
+        const auto delay = std::min(static_cast<double>(square.distance_to(origin)) *
+                                        spell_spread_seconds_per_square,
+                                    spell_longest_spread_seconds);
+        arrivals.push_back(Vector3(square.x, square.y, static_cast<float>(delay)));
+    }
+    return arrivals;
+}
+} // namespace
+
+// Starts what a cast spell looks like, once it has really been cast: choosing its
+// creatures or aiming its area shows nothing yet.
+void CombatView::launch_spell_effects(const Command &command, const Snapshot &before,
+                                      const Snapshot &after)
+{
+    if (command.verb == "spell_cancel" || after.spell_targeting || after.area_targeting)
+    {
+        return;
+    }
+    std::string verb = command.verb;
+    std::vector<EntityId> targets{command.target};
+    const AreaTargeting *area = nullptr;
+    if (before.area_targeting)
+    {
+        area = &*before.area_targeting;
+        verb = area->verb;
+    }
+    else if (before.spell_targeting)
+    {
+        verb = before.spell_targeting->verb;
+        targets = before.spell_targeting->chosen;
+        if (command.verb != "spell_cast")
+        {
+            targets.push_back(command.target);
+        }
+    }
+    const auto *effect = presentation::spell_effect_for_verb(verb);
+    const auto *caster = combatant_of(before, command.actor);
+    if (!effect || !caster)
+    {
+        return;
+    }
+    const auto from = combatant_center(*caster);
+    const auto start = [&](Vector2 to, PackedVector3Array arrivals, double delay, bool missed)
+    {
+        SpellCast cast{effect, from, to, std::move(arrivals), missed, -delay};
+        if (!effect->travel.empty())
+        {
+            cast.travel_seconds =
+                std::max(spell_shortest_travel_seconds,
+                         static_cast<double>(from.distance_to(to)) / spell_squares_per_second);
+        }
+        cast.seconds = cast.travel_seconds;
+        if (!missed)
+        {
+            double latest = 0.0;
+            for (int64_t index = 0; index < cast.arrivals.size(); ++index)
+            {
+                latest = std::max(latest, static_cast<double>(cast.arrivals[index].z));
+            }
+            cast.seconds += latest + static_cast<double>(effect->seconds);
+        }
+        spell_casts_.push_back(std::move(cast));
+    };
+    if (area)
+    {
+        const Vector2 center(static_cast<float>(area->center.x) + 0.5F,
+                             static_cast<float>(area->center.y) + 0.5F);
+        float size = 1.0F;
+        auto arrivals = area_arrivals(*area, area->spell.from_caster ? from : center, size);
+        start(center, std::move(arrivals), 0.0, false);
+        spell_casts_.back().size_scale = size;
+        return;
+    }
+    double delay = 0.0;
+    for (const auto target : targets)
+    {
+        // A creature can leave the fight by the spell, so look where it stood.
+        const auto *target_before = combatant_of(before, target);
+        const auto *target_after = combatant_of(after, target);
+        const auto &aimed_at = target_before ? *target_before : *caster;
+        const auto to = combatant_center(aimed_at);
+        const bool struck = after.reaction_pending || !target_before || !target_after ||
+                            target_after->hit_points + target_after->temporary_hp.amount <
+                                target_before->hit_points + target_before->temporary_hp.amount;
+        const bool missed = effect->flies_past && !struck && to != from;
+        const auto line = to - from;
+        PackedVector3Array arrivals;
+        arrivals.push_back(Vector3(to.x, to.y, 0.0F));
+        start(missed ? to + line.normalized() * spell_miss_squares : to, std::move(arrivals), delay,
+              missed);
+        delay += spell_target_delay_seconds;
+    }
+}
+
+// The spells being shown, for the checks.
+PackedStringArray CombatView::spell_effects_in_play() const
+{
+    PackedStringArray names;
+    for (const auto &cast : spell_casts_)
+    {
+        names.push_back(effect_text(cast.effect->spell));
+    }
+    return names;
+}
+
+// Every spell's look, for the checks and the contact sheet.
+Array CombatView::spell_effect_rows() const
+{
+    Array rows;
+    for (const auto &effect : presentation::spell_effects)
+    {
+        Dictionary row;
+        row["spell"] = effect_text(effect.spell);
+        row["travel"] = effect_text(effect.travel);
+        row["arrive"] = effect_text(effect.arrive);
+        row["color"] = effect_color(effect.color);
+        row["accent"] = effect_color(effect.accent);
+        row["seconds"] = effect.seconds;
+        row["size"] = effect.size;
+        row["amount"] = effect.amount;
+        rows.push_back(row);
+    }
+    return rows;
+}
+
 void CombatView::act(Command command)
 {
     try
@@ -1866,6 +2031,7 @@ void CombatView::act(Command command)
                 shot_last_[command.actor] = true;
             }
             launch_missile(command, before, after);
+            launch_spell_effects(command, before, after);
             if (sound)
             {
                 action_seconds_[command.actor] = 1.0;
@@ -3662,6 +3828,27 @@ Dictionary CombatView::battlefield_visuals()
         missiles.push_back(entry);
     }
     data["missiles"] = missiles;
+    Array effects;
+    for (const auto &cast : spell_casts_)
+    {
+        Dictionary entry;
+        entry["travel"] = effect_text(cast.effect->travel);
+        entry["arrive"] = effect_text(cast.effect->arrive);
+        entry["color"] = effect_color(cast.effect->color);
+        entry["accent"] = effect_color(cast.effect->accent);
+        entry["amount"] = cast.effect->amount;
+        entry["size"] = cast.effect->size * cast.size_scale;
+        entry["seed"] = static_cast<double>(cast.effect->color % 97);
+        entry["seconds"] = cast.effect->seconds;
+        entry["time"] = cast.elapsed;
+        entry["travel_seconds"] = cast.travel_seconds;
+        entry["from"] = cast.from;
+        entry["to"] = cast.to;
+        entry["arrivals"] = cast.arrivals;
+        entry["missed"] = cast.missed;
+        effects.push_back(entry);
+    }
+    data["spell_effects"] = effects;
     return data;
 }
 
@@ -3709,6 +3896,19 @@ void CombatView::_process(double delta)
                           [](const auto &flight)
                           {
                               return flight.elapsed >= flight.seconds;
+                          });
+            required_node<Control>(*this, "BattlefieldScroll/Canvas").queue_redraw();
+        }
+        for (auto &cast : spell_casts_)
+        {
+            cast.elapsed += delta;
+        }
+        if (!spell_casts_.empty())
+        {
+            std::erase_if(spell_casts_,
+                          [](const auto &cast)
+                          {
+                              return cast.elapsed >= cast.seconds;
                           });
             required_node<Control>(*this, "BattlefieldScroll/Canvas").queue_redraw();
         }
@@ -3910,9 +4110,9 @@ void CombatView::_process(double delta)
             flee_mode_ || quick_turn(s))
         {
             ai_delay_ += delta;
-            // The next creature acts only once what was shot has landed.
+            // The next creature acts only once what was shot or cast has landed.
             if (!checking_ && !party_check_ && !defeat_check_ &&
-                (ai_delay_ < .65 || !missile_flights_.empty()))
+                (ai_delay_ < .65 || !missile_flights_.empty() || !spell_casts_.empty()))
             {
                 return;
             }
@@ -3957,8 +4157,8 @@ void CombatView::_process(double delta)
             // Every creature the computer plays targets by the difficulty
             // (CLOSE-1).
             const auto difficulty = settings::difficulty();
-            act(flee_mode_ ? choose_flee_command(demo_->combat(), quick_magic(), searching,
-                                                 difficulty)
+            act(flee_mode_
+                    ? choose_flee_command(demo_->combat(), quick_magic(), searching, difficulty)
                 : quick_turn(s)
                     ? choose_quick_command(demo_->combat(), quick_magic(), searching, difficulty)
                     : choose_demo_command(demo_->combat(), searching, difficulty));

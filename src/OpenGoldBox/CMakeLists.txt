@@ -185,6 +185,17 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_adrenaline PROPERTIES FIXTURES_REQUIRED "godot_project;adrenaline_fixtures")
     opengold_godot_test(components spell_component_view_tests "Spell component view checks passed" "--component-fixtures=${PROJECT_BINARY_DIR}/component-fixtures")
     set_tests_properties(opengold_godot_components PROPERTIES FIXTURES_REQUIRED "godot_project;component_fixtures")
+    # Drawn to a real window: the check reads the pixels a player would see.
+    add_test(NAME opengold_godot_spell_effects COMMAND "${CMAKE_COMMAND}"
+        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/spell_effects_view_tests.gd"
+        "-DEXPECTED=Spell effect view checks passed" -DGRAPHICAL=ON -DTEST_TIMEOUT=110
+        "-DARGS=--component-fixtures=${PROJECT_BINARY_DIR}/component-fixtures"
+        "-DUSER_HOME=${CMAKE_BINARY_DIR}/godot-home/spell_effects"
+        -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
+    set_tests_properties(opengold_godot_spell_effects PROPERTIES
+        FIXTURES_REQUIRED "godot_project;component_fixtures" TIMEOUT 120 LABELS godot
+        RESOURCE_LOCK godot_project ENVIRONMENT "OPENGOLD_GAME_DIR=;OPENGOLD_LANG=en")
     opengold_godot_test(posture posture_view_tests "Posture controls passed" "--posture-fixtures=${PROJECT_BINARY_DIR}/posture-fixtures")
     set_tests_properties(opengold_godot_posture PROPERTIES FIXTURES_REQUIRED "godot_project;posture_fixtures")
     opengold_godot_test(rogue_attack rogue_attack_view_tests "Rogue attack UI checks passed" "--rogue-fixtures=${PROJECT_BINARY_DIR}/rogue-fixtures")

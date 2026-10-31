@@ -4,6 +4,9 @@ extends Control
 # geometry, colors, and text drawing live with the Godot presentation.
 
 
+var _spell_effects: RefCounted = preload("res://scenes/spell_effects.gd").new()
+
+
 func _palette(name: String) -> Color:
     return get_theme_color(name, "OpenGoldPalette")
 
@@ -124,3 +127,5 @@ func _draw() -> void:
         var center: Vector2 = missile["center"]
         draw_texture_rect(missile["texture"],
             Rect2((center - Vector2.ONE * 0.5) * tile, Vector2.ONE * tile), false)
+    for effect in data["spell_effects"]:
+        _spell_effects.draw_effect(self, effect, tile, zoom)

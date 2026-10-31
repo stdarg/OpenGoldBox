@@ -306,5 +306,12 @@ in the game: answering YES at a hall lists its services in the dialogue
   original's `COMSPR.DAX` art: an arrow for bows and crossbows, the axe for every
   thrown weapon, a stone for slings, a flask for thrown oil, acid and alchemist's
   fire, a boulder for giants' rocks. A hit ends on the target. A miss sails four
-  squares past it, which is new; a spell-like ranged attack shows nothing flying.
-  The next creature acts once the shot has landed.
+  squares past it, which is new. The next creature acts once the shot has landed.
+- **Every spell has its own look** (2026-10-31). Each spell cast in a fight plays
+  its own animated effect, drawn by the game rather than taken from the original's
+  art: Magic Missile sends glowing darts, Fireball a comet that bursts across its
+  whole area, Sleep drifting Z's, Hideous Laughter a stream of grinning faces. An
+  effect fills the squares the spell really affects, spreading out from its center
+  or its caster, and a ranged spell attack that misses flies past its target. Like a
+  shot, the next creature waits for it to finish. The table is
+  `src/OpenGoldBox/spell_effects.h`, the drawings `scenes/spell_effects.gd`.
