@@ -153,21 +153,56 @@ void difficulty_target_checks()
 void sight_checks()
 {
     const std::vector<Command> offered{command("move", 0, {1, 2}), command("end")};
-    // An ally and an enemy beyond the wall see each other; this creature sees
-    // no one, so it waits.
-    const auto watched = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {8, 1}),
-                                unit(3, Side::party, {8, 4}), unit(4, Side::opposition, {9, 4})},
-                               divided());
+    // A field too wide to hear across, with a wall at x = 5 and a way round at y = 7.
+    const auto wide = [](std::vector<CombatantView> units)
+    {
+        auto state = field(std::move(units));
+        state.battlefield = {40, 8, std::vector<Terrain>(320)};
+        for (int y = 0; y < 7; ++y)
+        {
+            state.battlefield.terrain[static_cast<std::size_t>(y * 40 + 5)] = Terrain::obstacle;
+        }
+        return state;
+    };
+    // An ally and an enemy beyond the wall see each other; this creature neither
+    // sees nor hears anyone, so it waits.
+    const auto watched = wide({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {30, 1}),
+                               unit(3, Side::party, {30, 4}), unit(4, Side::opposition, {31, 4})});
     check(choose_demo_command(watched, offered).verb == "end",
-          "A creature that sees no enemy holds its ground");
-    // Even when no one on the field sees anyone; a stand-in for the player in
-    // an automated run goes looking.
-    const auto blind =
-        field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {8, 1})}, divided());
-    check(choose_demo_command(blind, offered).verb == "end",
-          "When no one sees anyone, it still holds its ground");
-    check(choose_demo_command(blind, offered, Searching::party).verb == "move",
-          "A stand-in for the player walks around the wall to find the enemy");
+          "A creature that neither sees nor hears an enemy holds its ground");
+    // Even when no one on the field perceives anyone; a stand-in for the player
+    // in an automated run goes looking.
+    const auto far_off = wide({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {30, 1})});
+    check(choose_demo_command(far_off, offered).verb == "end",
+          "When no one perceives anyone, it still holds its ground");
+    check(choose_demo_command(far_off, offered, Searching::party).verb == "move",
+          "A stand-in for the player goes to find the enemy");
+    // Sound carries 100 feet, 20 squares, through the wall.
+    const auto heard = wide({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {21, 1})});
+    check(choose_demo_command(heard, offered).verb == "move",
+          "A creature goes for an enemy it hears at 100 feet");
+    const auto out_of_earshot =
+        wide({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {22, 1})});
+    check(choose_demo_command(out_of_earshot, offered).verb == "end",
+          "An enemy just past 100 feet goes unheard");
+    // Either side of a wall's corner, the stalemate the play-through found.
+    const auto corner =
+        field({unit(1, Side::party, {4, 3}), unit(2, Side::opposition, {3, 4})}, {{3, 3}, {4, 4}});
+    check(choose_demo_command(corner, offered).verb == "move",
+          "Creatures either side of a wall's corner do not wait on each other");
+}
+
+// The seed decides whether a reload rolls new dice (the user, 2026-10-31).
+void fight_seed_checks()
+{
+    check(fight_seed(Difficulty::easy, 7) == 7 && fight_seed(Difficulty::easy, 8) == 8,
+          "On Easy a reload rolls new dice");
+    for (const auto level :
+         {Difficulty::normal, Difficulty::hard, Difficulty::nightmare, Difficulty::infernal})
+    {
+        check(fight_seed(level, 7) == fight_seed(level, 8),
+              "Above Easy a reload repeats the fight's saved dice");
+    }
 }
 
 void stay_back_checks()
@@ -482,6 +517,7 @@ int main()
         target_checks();
         difficulty_target_checks();
         sight_checks();
+        fight_seed_checks();
         stay_back_checks();
         ranged_checks();
         spell_checks();

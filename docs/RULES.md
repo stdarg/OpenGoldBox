@@ -132,7 +132,8 @@ interface does not expose SRD spell slots or class internals as mutable state.
 Sessions exclusively own mutable state and share immutable definitions through
 `shared_ptr<const Content>`. They can outlive the module that created them.
 A campaign fight mixes the party's saved count of fights into its seed, so each
-fight rolls its own dice while a reload repeats them.
+fight rolls its own dice. Above Easy a reload repeats them; on Easy each fight
+starts from a fresh seed, so a reload rolls new ones (the user, 2026-10-31).
 
 Deterministic SplitMix64 dice and stable initiative tie ordering make a seed plus
 the same accepted command sequence reproducible. Checkpoints include the RNG,

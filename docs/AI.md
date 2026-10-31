@@ -83,14 +83,17 @@ Turn Undead, a spell, choosing a weapon, then moving and attacking.
 
 ## 1. Movement and sight
 
-A creature goes for the enemies **it can see**. It walks, around walls, toward
-its target while that target stands in view, otherwise toward the nearest enemy
-in view. One that sees no enemy **holds its ground** until one comes into view,
-even when no one on the field sees anyone (the user, 2026-10-21): then a fight
-the computer plays alone waits for the player to take control. Automated runs,
-with no player to break a standoff, go looking: the tests and the campaign
-simulator play the party as a stand-in for the player that searches for the
-enemy, and the game's own checks have every creature search.
+A creature goes for the enemies **it can see or hear**. Sound carries 100 feet, 20
+squares, whatever walls stand between (the user, 2026-10-31), so two creatures
+either side of a wall's corner do not wait on each other. It walks, around walls,
+toward its target while that target stands in view or earshot, otherwise toward
+the nearest such enemy. One that perceives no enemy **holds its ground** until
+one comes within reach of its senses, even when no one on the field perceives
+anyone (the user, 2026-10-21): then a fight the computer plays alone waits for the
+player to take control. Automated runs, with no player to break a standoff, go
+looking: the tests and the campaign simulator play the party as a stand-in for the
+player that searches for the enemy, and the game's own checks have every creature
+search.
 
 The walk counts every step as one, so it neither avoids Difficult Terrain nor
 Opportunity Attacks. Exceptions:
@@ -288,7 +291,9 @@ hidden enemy's position, or anything the game does not show.
 
 - **Hidden enemies** (HIDE-1) are removed from what the policy sees; with none
   in sight it Searches.
-- **Sight:** it goes only for enemies it can see.
+- **Sight and sound:** it fights only enemies it can see. One it hears within 100
+  feet it only walks toward, spending nothing on it; it knows where that enemy
+  is, as a player sees it on the field.
 - **Hit Points and AC** are shown to the player, so the policy may read them;
   above Normal it uses them to choose a target (section 2).
 - **Dice:** the policy reads none, and rolls no hidden save to judge an area; a

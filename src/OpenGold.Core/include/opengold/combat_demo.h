@@ -161,6 +161,10 @@ enum class Searching
     everyone
 };
 
+// The seed a campaign fight starts from. On Easy it is `fresh`, so a reload rolls
+// new dice; above that it is fixed, so a reload repeats the fight's saved dice.
+[[nodiscard]] std::uint64_t fight_seed(Difficulty difficulty, std::uint64_t fresh);
+
 // Demonstration AI consumes only public state/commands. No rolls or damage here.
 // Above Normal difficulty it targets the weakest enemies, and on Nightmare and
 // Infernal finishes downed ones (CLOSE-1).

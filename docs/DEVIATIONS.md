@@ -119,6 +119,13 @@ Add an entry whenever a new departure is decided.
   [AI-1](SRD-DECISIONS.md#ai-1-2026-10-21-computer-play-as-the-original-game-had-it),
   [AI.md](AI.md).
 
+- **Hearing in combat** (2026-10-31). The original's monsters went only for what
+  they could see. A creature here also hears enemies within 100 feet, through
+  walls ([AI.md](AI.md#1-movement-and-sight)).
+- **A reload's dice** (2026-10-31). On Easy, reloading before a fight rolls new
+  dice; above Easy the same moves after a reload give the same fight
+  ([RULES.md](RULES.md)).
+
 ## Party and parley
 
 - **Party leader** (2026-10-08). The original asked who speaks at every parley.

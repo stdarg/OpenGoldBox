@@ -1484,7 +1484,8 @@ following the original Gold Box engine (read from coab; no code copied):
   otherwise an enemy at random, not the weakest.
 - **Sight**: a creature that sees no enemy holds its ground until one comes
   into view, even when no one on the field sees anyone (the user,
-  2026-10-21); a fight the computer plays alone then waits for the player.
+  2026-10-21); a fight the computer plays alone then waits for the player. Since
+  2026-10-31 a creature also hears enemies within 100 feet, walls or not.
 - **Magic-users stay back**: an unarmored Wizard or Sorcerer, or a monster
   magic-user, never closes in.
 - **Spells by priority**: the original's 1d7 roll over each spell's priority
