@@ -4756,7 +4756,9 @@ Footprint summoned_footprint(std::string_view definition)
 Definition wielding(Definition d, std::string_view melee_key, std::string_view ranged_key)
 {
     const auto *ranged = detail::weapon(ranged_key);
-    if (!ranged_key.empty() && !(ranged && ranged->ranged && ranged->dice) && !d.innate_ranged)
+    // The SRD lists a javelin as a melee weapon with the Thrown property.
+    const bool shoots = ranged && (ranged->ranged || ranged->thrown) && ranged->dice;
+    if (!ranged_key.empty() && !shoots && !d.innate_ranged)
     {
         d.range = d.long_range = 0;
     }
@@ -4769,7 +4771,7 @@ Definition wielding(Definition d, std::string_view melee_key, std::string_view r
         d.melee_magic = enchantment.bonus;
         d.bane_undead = enchantment.power == rules::ItemPower::bane_undead;
     }
-    if (ranged && ranged->ranged && ranged->dice)
+    if (shoots)
     {
         // A stat block without a ranged weapon shoots with its melee bonuses.
         if (!d.range)
@@ -33539,7 +33541,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.265", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.266", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),
