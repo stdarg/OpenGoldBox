@@ -38,7 +38,7 @@ sites), `opengold_creatures GAME`, `opengold_maps GAME`, and SRD 5.2.1.
 
 | Record | Original | Conversion |
 | --- | --- | --- |
-| 10 | Quicklings (HP 7) | **new:** SRD 5.2.1 Sprite with 7 Hit Points; its Enchanting Bow charms (the computer casts no Invisibility) |
+| 10 | Quicklings (HP 7) | **new:** SRD 5.2.1 Sprite with 7 Hit Points; bare-handed and melee only, since the original's carry nothing, so no Enchanting Bow (2026-10-30; the computer casts no Invisibility) |
 | 45, 99 | 1st Level Thief, Buccaneer (HP 4) | the Bandit with 4 Hit Points, as Kovel Mansion's thief |
 | 51 | 6th Level Thief (HP 28) | the Spy with 28 Hit Points |
 | 54 | Corporal (HP 13) | **new:** SRD 5.2.1 Guard with 13 Hit Points |

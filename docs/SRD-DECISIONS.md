@@ -1800,7 +1800,7 @@ they await the user's review ([audit](audits/western-wilderness.md)):
   original's name and art: quicklings as the Sprite, giant mantises on the
   Giant Scorpion's two Claws, thri-kreen as the Warrior Veteran.
 - **Not modeled yet:** the Centaur Trooper's Trampling Charge. The Sprite's
-  bow charms and the Ankheg sprays acid since 2026-10-25 ([MONSTER-2](#monster-2-2026-10-25-legendary-actions-and-monster-riders)); the computer
+  bow charmed until 2026-10-30, when the quicklings lost it, and the Ankheg sprays acid since 2026-10-25 ([MONSTER-2](#monster-2-2026-10-25-legendary-actions-and-monster-riders)); the computer
   casts no Invisibility, and the Ankheg's grapple is dropped with grappling
   (SCOPE-2).
 
@@ -1970,8 +1970,9 @@ them; they await the user's review:
   and Counterspell only on a spell of level 1 or higher, never a cantrip.
 - **Magic Resistance** counts a spell while it is being cast; a lingering
   spell's area (Spirit Guardians, Moonbeam) gives no Advantage on later saves.
-- **The Sprite's Enchanting Bow** charms on every hit, no save, as the SRD
-  says.
+- **The Sprite's Enchanting Bow** charmed on every hit, no save, as the SRD
+  says, until the quicklings lost it on 2026-10-30: the original's carry
+  nothing, so they strike bare-handed with the Needle Sword's numbers.
 - **Spells the computer never casts** (Invisibility, Wall of Fire, the
   efreeti's others) are left out of the stat blocks, as they would do nothing.
 
