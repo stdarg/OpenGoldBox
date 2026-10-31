@@ -24,6 +24,7 @@ execute_process(
     COMMAND "${CMAKE_COMMAND}" "-DGODOT=${GODOT}" "-DPROJECT=${PROJECT}"
     "-DSCRIPT=${CMAKE_CURRENT_LIST_DIR}/weapon_set_tests.gd"
     "-DEXPECTED=Weapon set checks passed" -DTEST_TIMEOUT=180
+    -DGRAPHICAL=ON
     "-DARGS=--slums-fixture=${fixtures}/orcs.ogs"
     -P "${CMAKE_CURRENT_LIST_DIR}/run_godot_test.cmake"
     RESULT_VARIABLE result)

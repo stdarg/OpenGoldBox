@@ -72,8 +72,35 @@ func start_the_fight() -> void:
 # A shot flies from the shooter: to its target on a hit, past it on a miss.
 var hit_seen := false
 var miss_seen := false
+var missile_drawn := false
+
+# True when a missile's art is on the rendered screen where it should be.
+func shown_on_screen(combat: Control, missile: Dictionary, screen: Image) -> bool:
+    var visuals: Dictionary = combat.battlefield_visuals()
+    var size: float = combat.get_node("CombatLayout").base_tile * visuals["zoom"]
+    var to_screen: Transform2D = combat.get_node("BattlefieldScroll/Canvas").get_global_transform_with_canvas()
+    var visible_area: Rect2 = combat.get_node("BattlefieldScroll").get_global_rect()
+    var art: Image = missile["texture"].get_image()
+    var opaque := 0
+    var matching := 0
+    for y in range(art.get_height()):
+        for x in range(art.get_width()):
+            var texel := art.get_pixel(x, y)
+            if texel.a < 1.0: continue
+            var within := Vector2(x + 0.5, y + 0.5) / Vector2(art.get_size())
+            var at: Vector2 = to_screen * ((missile["center"] - Vector2.ONE * 0.5 + within) * size)
+            if not visible_area.has_point(at): return false
+            opaque += 1
+            var drawn := screen.get_pixelv(Vector2i(at))
+            if absf(drawn.r - texel.r) + absf(drawn.g - texel.g) + absf(drawn.b - texel.b) < 0.1: matching += 1
+    return opaque > 0 and matching >= opaque * 0.8
 
 func check_missiles(combat: Control) -> void:
+    if not missile_drawn and not combat.missiles_in_flight().is_empty():
+        RenderingServer.force_draw(false)
+        var screen := root.get_texture().get_image()
+        for missile in combat.battlefield_visuals()["missiles"]:
+            missile_drawn = missile_drawn or shown_on_screen(combat, missile, screen)
     for flight in combat.missiles_in_flight():
         require(flight["missile"] == "arrow", "An orc shoots an arrow from its bow: " + str(flight))
         require(flight["texture"] is Texture2D, "The arrow has its art")
@@ -95,13 +122,13 @@ func check_weapon_sets() -> void:
         await settle(2)
         sets = combat.enemy_weapon_sets()
         check_missiles(combat)
-        if sets.values().has("ranged") and hit_seen and miss_seen: return
+        if sets.values().has("ranged") and hit_seen and miss_seen and missile_drawn: return
         require(not combat.get_node("StatusStack/Turn").text.contains(tr("Party incapacitated / defeat")), "An orc shoots before the party falls: " + str(sets))
         for name in ["Decline", "End"]:
             var b: Button = combat.get_node(name)
             if b.is_visible_in_tree() and not b.disabled:
                 b.pressed.emit(); break
-    require(false, "An orc holds its bow, hits and misses: " + str(sets) + " " + str(hit_seen) + " " + str(miss_seen))
+    require(false, "An orc holds its bow, hits and misses, and its arrow reaches the screen: " + str(sets) + " " + str(hit_seen) + " " + str(miss_seen) + " " + str(missile_drawn))
 
 func run_checks() -> void:
     require(not fixture.is_empty(), "--slums-fixture required")
