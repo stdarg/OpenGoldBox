@@ -3,7 +3,8 @@
 # the install folder and a copy of the original game files both read-only, a
 # fresh Windows profile, no development tools on PATH and no OPENGOLD_*
 # overrides. It creates characters, plays, saves, then restarts the game and
-# restores the saves. Skipped when OPENGOLD_GAME_DIR (the original files to
+# restores the saves, then crashes on purpose and checks the next launch leaves
+# a report. Skipped when OPENGOLD_GAME_DIR (the original files to
 # copy) is not set.
 #
 #   PACKAGE  the staged package folder (build/.../package/OpenGoldBox)
@@ -100,6 +101,56 @@ if(failure STREQUAL "")
     if(NOT saves)
         set(failure "No campaign save was written to the player's folder: ${user_data}")
     endif()
+    file(GLOB reports "${user_data}/crash-reports/*")
+    if(reports)
+        set(failure "Clean exits left a crash report: ${reports}")
+    endif()
+endif()
+
+# Two copies at once, which execute_process starts together: neither reports the other.
+if(failure STREQUAL "")
+    set(game "${install}/opengoldbox.console.exe")
+    execute_process(COMMAND "${game}" --headless --quit-after 300 COMMAND "${game}" --headless --quit-after 300
+        WORKING_DIRECTORY "${profile}" RESULT_VARIABLE result OUTPUT_QUIET ERROR_QUIET TIMEOUT 120)
+    file(GLOB reports "${user_data}/crash-reports/*")
+    if(reports)
+        set(failure "A running copy of the game was reported as crashed: ${reports}")
+    endif()
+endif()
+
+# A crash: the log has the failure and a backtrace, and the next launch reports it once.
+if(failure STREQUAL "")
+    execute_process(COMMAND "${install}/opengoldbox.console.exe" --headless -- --crash-check
+        WORKING_DIRECTORY "${profile}" RESULT_VARIABLE result OUTPUT_QUIET ERROR_QUIET TIMEOUT 120)
+    if(result EQUAL 0)
+        set(failure "The crash check exited normally")
+    endif()
+endif()
+run_game("did not shut down normally" --quit-after 30)
+run_game("" --quit-after 30)
+if(failure STREQUAL "")
+    file(GLOB reports "${user_data}/crash-reports/*.txt")
+    list(LENGTH reports report_count)
+    if(NOT report_count EQUAL 1)
+        set(failure "Expected one crash report, found ${report_count}")
+    else()
+        file(READ "${reports}" report)
+        foreach(expected "Game version: " "Deliberate failure for the crash report check"
+                "opengoldbox_game.dll+" "END OF C++ BACKTRACE")
+            string(FIND "${report}" "${expected}" expected_at)
+            if(expected_at EQUAL -1)
+                set(failure "The crash report lacks '${expected}':
+${report}")
+            endif()
+        endforeach()
+    endif()
+    file(GLOB marks "${user_data}/sessions/*")
+    if(marks)
+        set(failure "A clean exit left its session mark: ${marks}")
+    endif()
+endif()
+
+if(failure STREQUAL "")
     file(GLOB_RECURSE installed RELATIVE "${install}" "${install}/*")
     if(NOT installed STREQUAL package_files)
         set(failure "The game wrote into its install folder: ${install}")
@@ -111,4 +162,4 @@ set_read_only("${game_files}" OFF)
 if(NOT failure STREQUAL "")
     message(FATAL_ERROR "${failure}")
 endif()
-message("Windows package smoke check passed: read-only install and game files, non-ASCII paths, fresh profile, saves restored after restart")
+message("Windows package smoke check passed: read-only install and game files, non-ASCII paths, fresh profile, saves restored after restart, crash reported once")

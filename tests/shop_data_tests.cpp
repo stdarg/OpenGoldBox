@@ -85,7 +85,7 @@ void shipped_records()
     const auto &rogue = shop_at(data, 4, 13);
     check(rogue.id == "phlan-rogue-04-13" &&
               rogue.entrance ==
-                  HiddenEntrance{por::MapDirection::south, 7, {{por::MapDirection::north, 6}}} &&
+                  HiddenEntrance{por::MapDirection::south, 7, {{por::MapDirection::north, std::uint8_t{6}}}} &&
               rogue.portrait == "NPCs/kovel-old-thief.png" && rogue.offerings.size() == 13 &&
               offering(rogue, "Poisoner's Kit").price_gp == 50 &&
               offering(rogue, "Thieves' Tools").price_gp == 25 &&

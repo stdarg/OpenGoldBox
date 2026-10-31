@@ -173,6 +173,13 @@ report (`arm64`, or `x86_64` on an Intel Mac):
 atos -arch arm64 -l 0 -o opengoldbox_game.dylib.dSYM/Contents/Resources/DWARF/opengoldbox_game.dylib 0x10aa1c
 ```
 
+To read a Windows backtrace, unzip the release's `-windows-symbols.zip` and pass
+the `opengoldbox_game.dll+<offset>` offsets from the report:
+
+```powershell
+python tools\decode_windows_crash.py opengoldbox_game.pdb 22996e 95826
+```
+
 A running session marks itself in `sessions/` and clears the mark on a clean exit.
 A second copy of the game leaves the first one's mark alone while it is running.
 

@@ -1710,8 +1710,10 @@ Missile missile_of(const std::string &verb, const CombatantView &shooter)
 
 Vector2 combatant_center(const CombatantView &combatant)
 {
-    return Vector2(combatant.cell.x, combatant.cell.y) +
-           Vector2(combatant.footprint.width, combatant.footprint.height) * 0.5F;
+    return Vector2(static_cast<real_t>(combatant.cell.x), static_cast<real_t>(combatant.cell.y)) +
+           Vector2(static_cast<real_t>(combatant.footprint.width),
+                   static_cast<real_t>(combatant.footprint.height)) *
+               0.5F;
 }
 
 const CombatantView *combatant_of(const Snapshot &snapshot, EntityId id)

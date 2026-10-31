@@ -35,7 +35,7 @@ Settings and saves go to your user-data folder; see
 
 - Windows (PowerShell): `.\build-opengoldbox.cmd`, then `.\win-package\opengoldbox.exe`.
   The build also makes the package for players,
-  `build\game\OpenGoldBox-windows-x86_64.zip`, which runs from any folder,
+  `build\game\OpenGoldBox-<version>-windows-x86_64.zip`, which runs from any folder,
   including a read-only one ([the package](docs/BUILD.md#the-package-for-players)).
 - macOS (bash): `./build.sh`, then `open mac-package/OpenGoldBox.app`. `./build.sh`
   builds the game and re-exports the app without running tests.

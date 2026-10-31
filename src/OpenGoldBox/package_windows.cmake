@@ -6,6 +6,8 @@
 #   EXPORT            win-package, the exported game
 #   STAGE             folder to create; the package is STAGE/OpenGoldBox
 #   ZIP               zip file to write
+#   SYMBOLS           zip of the game DLL's debug symbols to write; not for players
+#   GAME_PDB          the game DLL's PDB
 #   GODOT             Godot executable that matches the export templates
 #   NOTICES_SCRIPT    write_engine_notices.gd
 #   PROJECT_LICENSE   OpenGoldBox's LICENSE
@@ -57,4 +59,15 @@ execute_process(
 if(NOT result EQUAL 0)
     message(FATAL_ERROR "Cannot write the Windows package zip: ${ZIP}")
 endif()
-message(STATUS "Windows package: ${package}; ${ZIP}")
+
+# Kept with a release: it reads crash reports down to source lines.
+get_filename_component(pdb_folder "${GAME_PDB}" DIRECTORY)
+get_filename_component(pdb_name "${GAME_PDB}" NAME)
+file(REMOVE "${SYMBOLS}")
+execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E tar cf "${SYMBOLS}" --format=zip "${pdb_name}"
+    WORKING_DIRECTORY "${pdb_folder}" RESULT_VARIABLE result)
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Cannot write the debug symbols: ${SYMBOLS}")
+endif()
+message(STATUS "Windows package: ${package}; ${ZIP}; symbols: ${SYMBOLS}")
