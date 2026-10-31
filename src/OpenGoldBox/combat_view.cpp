@@ -1683,8 +1683,9 @@ void CombatView::immediate(String verb)
 
 namespace
 {
-constexpr double missile_squares_per_second = 14.0;
-constexpr double missile_shortest_seconds = 0.12;
+// Slow enough to follow at 100% zoom, where a shot is a small mark on the field.
+constexpr double missile_squares_per_second = 8.0;
+constexpr double missile_shortest_seconds = 0.3;
 constexpr double missile_tumble_seconds = 0.08;
 // How far a miss flies on beyond its target.
 constexpr float missile_miss_squares = 4.0F;
