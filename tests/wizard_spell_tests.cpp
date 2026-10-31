@@ -250,6 +250,13 @@ void shatter_checks()
           "Only the creature in the sphere takes Thunder damage");
     check(slots(*c).second == before.second - 1 && slots(*c).first == before.first,
           "Shatter spends a level-two slot");
+
+    // A higher slot grows the damage; Shatter has no second damage to grow.
+    auto upcast =
+        battle(*module, wizard(5, {"magic_missile"}, {"shatter", "blindness"}), {6, 2}, {11, 5});
+    check(submit(*upcast, "shatter_3") && aim(*upcast, Cell{6, 2}) &&
+              submit(*upcast, "area_cast") && logged(*upcast, "First takes"),
+          "Shatter from a level-three slot deals its damage");
 }
 
 void potent_cantrip_checks()
