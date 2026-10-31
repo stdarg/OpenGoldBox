@@ -95,3 +95,11 @@ Each stage starts with a save, so `--whole-map SAVE STAGE` plays on from one.
 - **Companions:** the mad man who joins in New Phlan is left with Tyr's priest
   as he asks; the mystic stays behind before the castle so Genheeris has an
   NPC place. The chain's Knock wizard is its own recruit.
+
+## Fights on the route
+
+Since 2026-10-31 the expedition test loads the catalog's monster data as the
+game does (`data/monsters`), and each fight rolls its own dice. A fight lost is
+played again from just before it, as a player reloads. On that date's run every
+fight on the route was won on its first try. That is one run of dice with the
+computer playing both sides, not a win rate.

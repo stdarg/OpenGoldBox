@@ -28,6 +28,8 @@ func apply_layout(shopping: bool) -> void:
     var view := get_parent() as Control
     play("normal")
     advance(0)
+    # Left playing, it would set its values again next frame, over the widths below.
+    stop()
     for child in view.get_children():
         if child is Control and child.has_meta("layout_reference"):
             _restore_control(child, view.size.x)

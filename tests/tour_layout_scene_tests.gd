@@ -1,6 +1,6 @@
 extends SceneTree
 
-const SIZES := [Vector2i(1120, 800), Vector2i(1600, 900), Vector2i(1600, 1000), Vector2i(1920, 1080)]
+const SIZES := [Vector2i(1120, 800), Vector2i(1440, 900), Vector2i(1600, 900), Vector2i(1600, 1000), Vector2i(1920, 1080)]
 
 func _initialize() -> void:
     call_deferred("run_checks")
@@ -11,7 +11,21 @@ func run_checks() -> void:
         var scene: Control = load("res://scenes/rolf_tour.tscn").instantiate()
         root.add_child(scene)
         await process_frame
+        # Below zero it would draw under the character creator beneath the town.
+        if (scene.get_node("Backdrop") as Control).z_index < 0:
+            push_error("The town's backdrop draws under the screen it covers")
+            quit(1)
+            return
         var shopping: AnimationPlayer = scene.get_node("ShoppingLayout")
+        shopping.call("apply_layout", false)
+        await process_frame
+        await process_frame
+        var list: Rect2 = (scene.get_node("PartyList") as Control).get_global_rect()
+        if list.position.x < (scene.get_node("SceneBounds") as Control).get_global_rect().end.x \
+                or list.end.x > (scene.get_node("MapBounds") as Control).get_global_rect().position.x:
+            push_error("The party list covers the view or the map at %s" % dimensions)
+            quit(1)
+            return
         shopping.call("apply_layout", true)
         var scene_rect: Rect2 = (scene.get_node("SceneBounds") as Control).get_global_rect()
         var party_rect: Rect2 = (scene.get_node("PartyList") as Control).get_global_rect()

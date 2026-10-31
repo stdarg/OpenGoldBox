@@ -22,6 +22,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -62,6 +63,207 @@ bool requested_fixtures_written()
 
 using opengold::test::check;
 using opengold::test::throws;
+
+// Writes the route a party plays as a file the window play-through
+// (tests/playtest_campaign.gd) replays with the game's controls. A change the
+// route makes outside the game's commands, such as a test's level or healing,
+// starts a new segment from a save holding that change.
+class RouteRecorder
+{
+  public:
+    void start(const std::filesystem::path &folder, const por::RolfTourSession &town,
+               std::shared_ptr<CampaignParty> party, std::string assets)
+    {
+        std::filesystem::create_directories(folder);
+        folder_ = folder;
+        if (!file_.is_open())
+        {
+            file_.open(folder / "route.jsonl");
+        }
+        party_ = std::move(party);
+        assets_ = std::move(assets);
+        follow(town);
+    }
+
+    // The save reloaded into another session object carries the route on.
+    void follow(const por::RolfTourSession &town)
+    {
+        town_ = &town;
+        settled_.clear();
+    }
+
+    [[nodiscard]] bool records(const por::RolfTourSession &town) const
+    {
+        return town_ == &town;
+    }
+
+    void stage(std::string_view name)
+    {
+        if (town_)
+        {
+            write("{\"t\":\"stage\",\"name\":" + quoted(name) + "}");
+        }
+    }
+
+    // Before a command from exploration: a difference from the last settled
+    // state was made outside the game's commands.
+    void before_command(const por::RolfTourSession &town)
+    {
+        if (!records(town) || !town.can_leave() || party_->in_combat())
+        {
+            return;
+        }
+        const auto now = encode_campaign(*party_, &town, assets_);
+        if (now != settled_)
+        {
+            const auto name = "segment-" + std::to_string(segments_++) + ".ogs";
+            write_campaign_file(folder_ / name, now);
+            write("{\"t\":\"segment\",\"save\":" + quoted(name) + "}");
+            settled_ = now;
+        }
+    }
+
+    void settled(const por::RolfTourSession &town)
+    {
+        if (records(town) && town.can_leave() && !party_->in_combat())
+        {
+            settled_ = encode_campaign(*party_, &town, assets_);
+        }
+    }
+
+    void buy(std::size_t item)
+    {
+        const auto &slots = party_->state().slots;
+        const auto buyer = std::find(slots.begin(), slots.end(), party_->selected());
+        write("{\"t\":\"buy\",\"item\":" + std::to_string(item) +
+              ",\"slot\":" + std::to_string(buyer - slots.begin()) + "}");
+    }
+
+    void write(const std::string &line)
+    {
+        file_ << line << '\n' << std::flush;
+    }
+
+    [[nodiscard]] static std::string quoted(std::string_view text)
+    {
+        std::string out = "\"";
+        for (const char c : text)
+        {
+            const auto byte = static_cast<unsigned char>(c);
+            if (c == '"' || c == '\\')
+            {
+                out += '\\';
+                out += c;
+            }
+            else if (byte < 0x20)
+            {
+                std::array<char, 8> code{};
+                std::snprintf(code.data(), code.size(), "\\u%04x", byte);
+                out += code.data();
+            }
+            else
+            {
+                out += c;
+            }
+        }
+        return out + '"';
+    }
+
+  private:
+    const por::RolfTourSession *town_{};
+    std::shared_ptr<CampaignParty> party_;
+    std::string assets_, settled_;
+    std::filesystem::path folder_;
+    std::ofstream file_;
+    unsigned segments_{};
+};
+
+RouteRecorder route;
+
+std::string route_place(const por::RolfTourSession &town)
+{
+    const auto &s = town.snapshot();
+    return "\"area\":" + std::to_string(s.area_id) + ",\"x\":" + std::to_string(s.pose.x) +
+           ",\"y\":" + std::to_string(s.pose.y) +
+           ",\"facing\":" + std::to_string(index(s.pose.facing)) +
+           ",\"overland\":" + (s.overland ? "true" : "false");
+}
+
+bool route_explore(por::RolfTourSession &town, por::ExplorationCommand command)
+{
+    route.before_command(town);
+    if (route.records(town))
+    {
+        route.write("{\"t\":\"explore\",\"command\":" + std::to_string(int(command)) + "," +
+                    route_place(town) + "}");
+    }
+    return town.explore(command);
+}
+
+bool route_choose(por::RolfTourSession &town, std::uint64_t ticket, std::size_t choice)
+{
+    if (route.records(town))
+    {
+        const auto &s = town.snapshot();
+        route.write("{\"t\":\"choose\",\"dialogue\":" + RouteRecorder::quoted(s.dialogue) +
+                    ",\"choice\":" +
+                    RouteRecorder::quoted(choice < s.choices.size() ? s.choices[choice] : "") +
+                    ",\"index\":" + std::to_string(choice) + "}");
+    }
+    return town.choose(ticket, choice);
+}
+
+bool route_input(por::RolfTourSession &town, std::uint64_t ticket, std::string_view value)
+{
+    if (route.records(town))
+    {
+        route.write(
+            "{\"t\":\"input\",\"dialogue\":" + RouteRecorder::quoted(town.snapshot().dialogue) +
+            ",\"value\":" + RouteRecorder::quoted(value) + "}");
+    }
+    return town.input(ticket, value);
+}
+
+bool route_camp(por::RolfTourSession &town, RestKind kind)
+{
+    route.before_command(town);
+    if (route.records(town))
+    {
+        route.write(std::string("{\"t\":\"camp\",\"kind\":\"") +
+                    (kind == RestKind::long_rest ? "long" : "short") + "\"," + route_place(town) +
+                    "}");
+    }
+    return town.camp(kind);
+}
+
+void route_set_searching(por::RolfTourSession &town, bool searching)
+{
+    route.before_command(town);
+    if (route.records(town))
+    {
+        route.write(std::string("{\"t\":\"search\",\"on\":") + (searching ? "true" : "false") +
+                    "}");
+    }
+    town.set_searching(searching);
+}
+
+bool route_buy(por::RolfTourSession &town, std::uint64_t ticket, std::size_t item)
+{
+    if (route.records(town))
+    {
+        route.buy(item);
+    }
+    return town.buy(ticket, item);
+}
+
+bool route_leave_shop(por::RolfTourSession &town, std::uint64_t ticket)
+{
+    if (route.records(town))
+    {
+        route.write("{\"t\":\"leave_shop\"}");
+    }
+    return town.leave_shop(ticket);
+}
 
 std::unique_ptr<rules::RulesModule> module()
 {
@@ -234,7 +436,7 @@ void script_payment_tests()
     settle_synthetic(town);
     check(town.script_variable(por::EclAddress{0x6BC3}) == 15,
           "The script sees fifteen affordable platinum");
-    check(town.explore(por::ExplorationCommand::look), "Payment event starts");
+    check(route_explore(town, por::ExplorationCommand::look), "Payment event starts");
     settle_synthetic(town);
     check(party->state().wealth == Purse{0, 96, 0, 135, 0, 0, 0},
           "The payment is charged exactly once across both script reads");
@@ -269,7 +471,7 @@ bool settle_or_rollback(por::RolfTourSession &town, bool until_idle = true)
                              s.dialogue.starts_with("This event is not supported yet");
     if (rolled_back)
     {
-        check(town.choose(s.continue_ticket, 0), "The rollback notice is acknowledged");
+        check(route_choose(town, s.continue_ticket, 0), "The rollback notice is acknowledged");
     }
     if (until_idle)
     {
@@ -281,7 +483,7 @@ bool settle_or_rollback(por::RolfTourSession &town, bool until_idle = true)
 // Runs one synthetic Look. False means the event failed and was rolled back.
 bool look(por::RolfTourSession &town)
 {
-    check(town.explore(por::ExplorationCommand::look), "The event starts");
+    check(route_explore(town, por::ExplorationCommand::look), "The event starts");
     return !settle_or_rollback(town);
 }
 
@@ -310,7 +512,7 @@ void hall_event_tests()
             town.campaign_party(party);
             settle_synthetic(town);
             test::TourAccess::set_string(town, por::ecl_training_hall_name, "FIGHTERS ");
-            check(town.explore(por::ExplorationCommand::look), "The hall's event starts");
+            check(route_explore(town, por::ExplorationCommand::look), "The hall's event starts");
             for (unsigned n = 0; n < 100 && town.snapshot().phase == por::TourPhase::running; ++n)
             {
                 town.advance(.5);
@@ -321,11 +523,12 @@ void hall_event_tests()
                   "The hall lists Arden's session first and Leave last");
             if (buying)
             {
-                check(town.choose(town.snapshot().continue_ticket, 0) &&
+                check(route_choose(town, town.snapshot().continue_ticket, 0) &&
                           party->member(party->state().slots[0]).experience > 0,
                       "Arden buys a session of experience");
             }
-            check(town.choose(town.snapshot().continue_ticket, town.snapshot().choices.size() - 1),
+            check(route_choose(town, town.snapshot().continue_ticket,
+                               town.snapshot().choices.size() - 1),
                   "The party leaves the hall");
             const bool rolled_back = settle_or_rollback(town);
             check(rolled_back == failing, "Only the failing script rolls back");
@@ -359,7 +562,7 @@ void victory_program_tests()
     por::RolfTourSession town({}, victory, {}, 0x9914, {}, resources);
     town.campaign_party(party);
     settle_synthetic(town);
-    check(town.explore(por::ExplorationCommand::look), "The victory event starts");
+    check(route_explore(town, por::ExplorationCommand::look), "The victory event starts");
     for (unsigned n = 0; n < 100 && town.snapshot().phase == por::TourPhase::running; ++n)
     {
         town.advance(.5);
@@ -371,7 +574,8 @@ void victory_program_tests()
               !party->member(bryn).vitals.dead &&
               party->member(bryn).vitals.hit_points == party->hit_point_maximum(bryn),
           "The victory restores the party, the dead too, and pauses on its closing words");
-    check(town.choose(town.snapshot().continue_ticket, 0), "The closing words are acknowledged");
+    check(route_choose(town, town.snapshot().continue_ticket, 0),
+          "The closing words are acknowledged");
     settle_synthetic(town);
     check(town.snapshot().phase == por::TourPhase::completed &&
               town.script_variable(por::EclAddress{0x4AFD}) == 255,
@@ -576,13 +780,13 @@ por::GeoMap locked_door_map()
 bool try_door(por::RolfTourSession &town, const std::string &choice,
               const std::vector<std::string> &offered = {"Bash", "Exit"})
 {
-    check(town.explore(por::ExplorationCommand::forward), "The step starts");
+    check(route_explore(town, por::ExplorationCommand::forward), "The step starts");
     settle_or_rollback(town, false);
     const auto &s = town.snapshot();
     check(s.dialogue == "Locked." && s.choices == offered,
           "A locked door offers the original choices the party can use");
     const auto chosen = std::find(s.choices.begin(), s.choices.end(), choice);
-    check(town.choose(s.continue_ticket, std::size_t(chosen - s.choices.begin())),
+    check(route_choose(town, s.continue_ticket, std::size_t(chosen - s.choices.begin())),
           "The door choice is accepted");
     const bool rolled_back = settle_or_rollback(town);
     return rolled_back || town.snapshot().pose.x == 1;
@@ -617,7 +821,7 @@ void thieves_tools_tests(const std::shared_ptr<CampaignParty> &party, MemberId r
         por::RolfTourSession town(locked_door_map(), passable, {}, 0x9914, {}, resources);
         town.campaign_party(party);
         settle_synthetic(town);
-        town.explore(por::ExplorationCommand::turn_right);
+        route_explore(town, por::ExplorationCommand::turn_right);
         const bool picked = try_door(town, "Pick", {"Bash", "Pick", "Exit"});
         const auto &check_made = town.snapshot().door_checks.at(0);
         const int modifier = check_made.total - check_made.die;
@@ -650,7 +854,7 @@ void pick_lock_tests()
         por::RolfTourSession town(locked_door_map(), passable, {}, 0x9914, {}, resources);
         town.campaign_party(party);
         settle_synthetic(town);
-        town.explore(por::ExplorationCommand::turn_right);
+        route_explore(town, por::ExplorationCommand::turn_right);
         const bool picked = try_door(town, "Pick", {"Bash", "Pick", "Exit"});
         const auto &checks = town.snapshot().door_checks;
         check(checks.size() == 1 && checks[0].member == "Sly" &&
@@ -678,7 +882,7 @@ void pick_lock_tests()
     por::RolfTourSession town(locked_door_map(), passable, {}, 0x9914, {}, resources);
     town.campaign_party(party);
     settle_synthetic(town);
-    town.explore(por::ExplorationCommand::turn_right);
+    route_explore(town, por::ExplorationCommand::turn_right);
     check(!try_door(town, "Exit"), "An unconscious Rogue cannot pick a lock");
 }
 
@@ -693,7 +897,7 @@ void locked_door_tests()
     por::RolfTourSession town(locked_door_map(), failing, {}, 0x9914, {}, resources);
     town.campaign_party(party);
     settle_synthetic(town);
-    town.explore(por::ExplorationCommand::turn_right);
+    route_explore(town, por::ExplorationCommand::turn_right);
 
     const auto random = party->state().random_state;
     check(!try_door(town, "Exit") && town.snapshot().pose.x == 0 &&
@@ -797,6 +1001,15 @@ unsigned open_squares_ahead(const por::GeoMap &map, por::PartyPose pose)
     return squares;
 }
 
+// The monsters every fight in the game has: the catalog's export in data/monsters.
+const std::shared_ptr<const por::MonsterBundle> &game_monsters()
+{
+    static const auto monsters =
+        std::make_shared<const por::MonsterBundle>(por::load_monster_bundle(
+            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters", test::png_size_only));
+    return monsters;
+}
+
 void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party)
 {
     if (town.monster_picture())
@@ -813,9 +1026,7 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
         allies_fought.push_back(ally.definition);
     }
     last_encounter = *town.pending_encounter();
-    CombatDemo combat(module());
-    combat.campaign_party(party);
-    combat.encounter(*town.pending_encounter(), 42);
+    const auto before_fight = party->checkpoint();
     FightStart start{town.snapshot().pose, town.pending_encounter()->distance, {}};
     check(town.snapshot().overland || start.distance <= open_squares_ahead(town.map(), start.pose),
           "The monsters are never further away than the party can see");
@@ -830,53 +1041,78 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     {
         ++wilderness_fights;
     }
-    for (const auto &unit : combat.combat().snapshot().combatants)
+    // A fight lost is played again from the moment before it, as a player
+    // reloads. The route tells nothing of how often it is won.
+    constexpr unsigned tries = 100;
+    for (unsigned attempt = 0; attempt < tries; ++attempt)
     {
-        start.cells[unit.id] = unit.cell;
-    }
-    fights_started.push_back(std::move(start));
-    if (town.pending_encounter()->party_resting)
-    {
-        const auto log = combat.combat().snapshot().log();
-        for (const auto id : party->state().slots)
+        party->restore(before_fight);
+        CombatDemo combat(module());
+        combat.campaign_party(party);
+        combat.encounter(*town.pending_encounter(), 42 + attempt);
+        if (attempt == 0)
         {
-            if (id && party->member(id).vitals.hit_points > 0)
+            for (const auto &unit : combat.combat().snapshot().combatants)
             {
-                const auto line = party->member(id).character.sheet().name + " wakes up prone.";
-                check(std::count(log.begin(), log.end(), line) == 1,
-                      "Each resting member wakes up Prone");
+                start.cells[unit.id] = unit.cell;
+            }
+            fights_started.push_back(start);
+            if (town.pending_encounter()->party_resting)
+            {
+                const auto log = combat.combat().snapshot().log();
+                for (const auto id : party->state().slots)
+                {
+                    if (id && party->member(id).vitals.hit_points > 0)
+                    {
+                        const auto line =
+                            party->member(id).character.sheet().name + " wakes up prone.";
+                        check(std::count(log.begin(), log.end(), line) == 1,
+                              "Each resting member wakes up Prone");
+                    }
+                }
             }
         }
-    }
-    unsigned commands = 0;
-    for (; commands < 4000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing;
-         ++commands)
-    {
-        const auto chosen = choose_demo_command(combat.combat(), Searching::party);
-        check(combat.submit(chosen), "Combat accepts the command");
-        if (std::getenv("OPENGOLD_TRACE") && commands % 250 == 249)
+        unsigned commands = 0;
+        for (; commands < 4000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing;
+             ++commands)
         {
-            const auto now = combat.combat().snapshot();
-            std::cerr << "TRACE fight at " << commands << " (" << chosen.verb << " by "
-                      << chosen.actor << " to " << chosen.target << " at " << chosen.destination.x
-                      << ',' << chosen.destination.y << "):";
-            for (const auto &unit : now.combatants)
+            const auto chosen = choose_demo_command(combat.combat(), Searching::party);
+            check(combat.submit(chosen), "Combat accepts the command");
+            if (std::getenv("OPENGOLD_TRACE") && commands % 250 == 249)
             {
-                std::cerr << ' ' << unit.name << '=' << unit.hit_points << '@' << unit.cell.x << ','
-                          << unit.cell.y;
+                const auto now = combat.combat().snapshot();
+                std::cerr << "TRACE fight at " << commands << " (" << chosen.verb << " by "
+                          << chosen.actor << " to " << chosen.target << " at "
+                          << chosen.destination.x << ',' << chosen.destination.y << "):";
+                for (const auto &unit : now.combatants)
+                {
+                    std::cerr << ' ' << unit.name << '=' << unit.hit_points << '@' << unit.cell.x
+                              << ',' << unit.cell.y;
+                }
+                const auto log = now.log();
+                std::cerr << " | " << (log.empty() ? "" : log.back()) << '\n';
             }
-            const auto log = now.log();
-            std::cerr << " | " << (log.empty() ? "" : log.back()) << '\n';
+        }
+        const auto result = combat.combat().snapshot();
+        if (std::getenv("OPENGOLD_TRACE"))
+        {
+            std::cerr << "TRACE fight " << commands << " commands, try " << attempt << ", "
+                      << (result.outcome == rules::Outcome::victory ? "won" : "not won") << '\n';
+        }
+        if (result.outcome == rules::Outcome::victory)
+        {
+            if (route.records(town))
+            {
+                route.write(
+                    "{\"t\":\"fight\",\"area\":" + std::to_string(town.snapshot().area_id) +
+                    ",\"enemies\":" + std::to_string(town.pending_encounter()->enemies.size()) +
+                    ",\"tries\":" + std::to_string(attempt + 1) + "}");
+            }
+            check(town.resolve_combat(result), "Exploration accepts the victory");
+            return;
         }
     }
-    const auto result = combat.combat().snapshot();
-    if (std::getenv("OPENGOLD_TRACE"))
-    {
-        std::cerr << "TRACE fight " << commands << " commands, "
-                  << (result.outcome == rules::Outcome::victory ? "won" : "not won") << '\n';
-    }
-    check(result.outcome == rules::Outcome::victory, "The party wins its fight");
-    check(town.resolve_combat(result), "Exploration accepts the victory");
+    throw std::runtime_error("The party wins its fight");
 }
 
 // Plays the current event until exploration resumes or a shop opens.
@@ -902,6 +1138,7 @@ void settle(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &pa
                                                    "," + std::to_string(s.overland_y)
                                              : std::string{}) +
                                  ")"));
+            route.settled(town);
             return;
         case por::TourPhase::running:
             town.advance(.5);
@@ -917,10 +1154,11 @@ void settle(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &pa
                 }
                 std::cerr << "]\n";
             }
-            check(town.choose(s.continue_ticket, answer(s)), "The script accepts the answer");
+            check(route_choose(town, s.continue_ticket, answer(s)),
+                  "The script accepts the answer");
             break;
         case por::TourPhase::awaiting_input:
-            check(town.input(s.continue_ticket, typed), "The script accepts the input");
+            check(route_input(town, s.continue_ticket, typed), "The script accepts the input");
             break;
         case por::TourPhase::combat:
             fight(town, party);
@@ -948,7 +1186,7 @@ void face(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &part
                       << index(s.pose.facing) << " dialogue " << s.dialogue << '\n';
         }
         check(turns < 8, "The party faces the way it turns");
-        check(town.explore(por::ExplorationCommand::turn_right), "The party turns");
+        check(route_explore(town, por::ExplorationCommand::turn_right), "The party turns");
         settle(town, party);
     }
 }
@@ -957,7 +1195,7 @@ void step(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &part
           const Answer &answer = peaceful, std::string_view typed = "0")
 {
     face(town, party, facing);
-    town.explore(por::ExplorationCommand::forward);
+    route_explore(town, por::ExplorationCommand::forward);
     settle(town, party, answer, typed);
     if (std::getenv("OPENGOLD_TRACE"))
     {
@@ -1025,9 +1263,11 @@ void rest_until(por::RolfTourSession &town, const std::shared_ptr<CampaignParty>
                                            {
                                                return member.denial == RestDenial::none;
                                            });
-        check(town.camp(long_rest ? RestKind::long_rest : RestKind::short_rest), "Camp starts");
+        check(route_camp(town, long_rest ? RestKind::long_rest : RestKind::short_rest),
+              "Camp starts");
         settle(town, party);
         keep_rest_choices(*party);
+        route.settled(town);
         if (!party->state().short_rest)
         {
             continue;
@@ -1045,6 +1285,7 @@ void rest_until(por::RolfTourSession &town, const std::shared_ptr<CampaignParty>
             }
         }
         party->finish_short_rest(party->state().short_rest->ticket);
+        route.settled(town);
     }
 }
 
@@ -1157,9 +1398,10 @@ struct Expedition
 };
 
 // Six created fighters with the new-character purse, after Rolf's tour, in a
-// town that uses data/shops as the game does, and `monsters` if given.
+// town that uses data/shops and, unless told otherwise, data/monsters as the
+// game does.
 Expedition create_party(const std::filesystem::path &directory,
-                        std::shared_ptr<const por::MonsterBundle> monsters = {})
+                        std::shared_ptr<const por::MonsterBundle> monsters = game_monsters())
 {
     auto party = std::make_shared<CampaignParty>(module());
     std::uint64_t seed = 1;
@@ -1187,7 +1429,7 @@ void general_store_gear(const std::filesystem::path &directory)
     party->make_leader(party->state().slots[2]);
     walk_to(town, party, 15, 8);
     face(town, party, 0);
-    town.explore(por::ExplorationCommand::look);
+    route_explore(town, por::ExplorationCommand::look);
     settle(town, party,
            [](const por::TourSnapshot &s)
            {
@@ -1228,7 +1470,7 @@ void general_store_gear(const std::filesystem::path &directory)
                                        return equipment_conversion(item) == "acid";
                                    });
     check(acid->stored.value == 25 &&
-              town.buy(town.snapshot().continue_ticket, std::size_t(acid - stock.begin())),
+              route_buy(town, town.snapshot().continue_ticket, std::size_t(acid - stock.begin())),
           "A vial of Acid costs 25 gp");
     const auto &items = party->member(party->selected()).character.inventory().items();
     check(std::any_of(items.begin(), items.end(),
@@ -1243,7 +1485,7 @@ void buy_and_equip(Expedition &trip)
 {
     auto &[party, town] = trip;
     walk_to(town, party, 13, 8);
-    town.explore(por::ExplorationCommand::look);
+    route_explore(town, por::ExplorationCommand::look);
     settle(town, party,
            [](const por::TourSnapshot &s)
            {
@@ -1269,12 +1511,13 @@ void buy_and_equip(Expedition &trip)
                                                   return item.stored.type == type;
                                               });
             check(offered != stock.end(), "The arms shop stocks fighter gear");
-            check(town.buy(town.snapshot().continue_ticket, std::size_t(offered - stock.begin())),
+            check(route_buy(town, town.snapshot().continue_ticket,
+                            std::size_t(offered - stock.begin())),
                   "The party buys its gear");
         }
     }
     party->select(PartySlot{0});
-    check(town.leave_shop(town.snapshot().continue_ticket), "The party leaves the shop");
+    check(route_leave_shop(town, town.snapshot().continue_ticket), "The party leaves the shop");
     settle(town, party);
     for (const auto id : party->state().slots)
     {
@@ -1462,7 +1705,7 @@ void revisit_orcs(Expedition &trip)
     walk_to(town, party, 12, 1);
     // Roaming groups met on the way may be fought; the revisit itself pays nothing.
     const auto before = party->checkpoint();
-    town.explore(por::ExplorationCommand::look);
+    route_explore(town, por::ExplorationCommand::look);
     settle(town, party);
     check(town.script_variable(por::ecl_slums_orc_victory) == 255 && orc_rewards(*party) == 2 &&
               party->state().claimed_rewards == before.claimed_rewards,
@@ -1552,7 +1795,7 @@ void fetch_potion(Expedition &trip, const std::string &assets)
     // The fights on the way to the booth wear down a party that never rests.
     walk_to(town, party, 14, 12, quest_answer, true, true);
     face(town, party, 1);
-    town.explore(por::ExplorationCommand::forward);
+    route_explore(town, por::ExplorationCommand::forward);
     while (town.snapshot().phase == por::TourPhase::running)
     {
         town.advance(.5);
@@ -1675,7 +1918,7 @@ void slums_camp_ambush(Expedition &trip)
     for (unsigned tries = 0; tries < 60; ++tries)
     {
         const auto before = party->state().time_minutes;
-        check(town.camp(RestKind::short_rest), "Camp starts");
+        check(route_camp(town, RestKind::short_rest), "Camp starts");
         while (town.snapshot().phase == por::TourPhase::running ||
                town.snapshot().phase == por::TourPhase::awaiting_continue)
         {
@@ -1686,7 +1929,7 @@ void slums_camp_ambush(Expedition &trip)
             }
             else
             {
-                check(town.choose(s.continue_ticket, stand_and_fight(s)), "Answer accepted");
+                check(route_choose(town, s.continue_ticket, stand_and_fight(s)), "Answer accepted");
             }
         }
         check(town.script_variable(por::ecl_rest_check_interval) == 24 &&
@@ -1741,7 +1984,7 @@ Expedition load_expedition(const std::filesystem::path &save,
     const auto assets = campaign_asset_identity(directory);
     const auto bytes = read_campaign_file(save);
     const auto rules = module();
-    const auto base = por::RolfTourSession::load(directory);
+    const auto base = por::RolfTourSession::load(directory, {}, game_monsters());
     auto loaded = decode_campaign(bytes, *srd5::character_rules(), *rules, assets, &base);
     auto party = std::make_shared<CampaignParty>(module());
     party->restore(std::move(loaded.party));
@@ -1982,14 +2225,15 @@ void kutos_well_catacombs(Expedition &trip, const std::filesystem::path &folder,
     walk_to(town, party, 7, 7, catacomb_answer("FIGHT"), false, true);
     check(town.snapshot().area_id == 32, "The well's rungs lead down to the catacombs");
     face(town, party, 2);
-    town.explore(por::ExplorationCommand::forward);
+    route_explore(town, por::ExplorationCommand::forward);
     // Past the catacombs' description, the volley waits on its report.
     for (unsigned n = 0;
          n < 200 && town.snapshot().dialogue.find("\nAn arrow ") == std::string::npos; ++n)
     {
         if (town.snapshot().phase == por::TourPhase::awaiting_continue)
         {
-            check(town.choose(town.snapshot().continue_ticket, 0), "The description continues");
+            check(route_choose(town, town.snapshot().continue_ticket, 0),
+                  "The description continues");
         }
         else
         {
@@ -2027,7 +2271,7 @@ void kutos_well_catacombs(Expedition &trip, const std::filesystem::path &folder,
     const auto coins = party_coins(*party);
     walk_to(town, party, 13, 1, catacomb_answer("FIGHT"), false, true);
     check(party_coins(*party) > coins, "The bandits' treasure is taken");
-    check(town.camp(RestKind::short_rest), "Camp starts in the hideout");
+    check(route_camp(town, RestKind::short_rest), "Camp starts in the hideout");
     settle(town, party);
     check(town.snapshot().dialogue.find("Short rest complete") != std::string::npos,
           "With Norris gone, the party rests undisturbed in his hideout");
@@ -2133,7 +2377,7 @@ void podol_temple(Expedition &trip)
     face(town, party, 3);
     const auto knock_door = [&](std::string_view method)
     {
-        town.explore(por::ExplorationCommand::forward);
+        route_explore(town, por::ExplorationCommand::forward);
         for (unsigned n = 0; n < 50 && town.snapshot().phase == por::TourPhase::running; ++n)
         {
             town.advance(.5);
@@ -2143,7 +2387,8 @@ void podol_temple(Expedition &trip)
               "The temple's door is wizard locked");
         const auto chosen = std::find(s.choices.begin(), s.choices.end(), method);
         check(chosen != s.choices.end(), std::string(method) + " is offered");
-        check(town.choose(s.continue_ticket, static_cast<std::size_t>(chosen - s.choices.begin())),
+        check(route_choose(town, s.continue_ticket,
+                           static_cast<std::size_t>(chosen - s.choices.begin())),
               "Try the door");
     };
     knock_door("Bash");
@@ -2213,7 +2458,7 @@ void podol_temple(Expedition &trip)
     // The healer says the party may rest here as long as it likes.
     for (unsigned rest = 0; rest < 3; ++rest)
     {
-        check(town.camp(RestKind::short_rest), "Camp in the temple");
+        check(route_camp(town, RestKind::short_rest), "Camp in the temple");
         settle(town, party);
         check(town.snapshot().dialogue.find("Short rest complete") != std::string::npos &&
                   party->state().short_rest,
@@ -2250,9 +2495,9 @@ void out_to_city_edge(por::RolfTourSession &town, const std::shared_ptr<Campaign
     const auto &s = town.snapshot();
     check(s.overland && s.script_id == 26 && s.overland_x == 11 && s.overland_y == 28,
           "The city's west edge leads onto the wilderness map at (11,28)");
-    check(town.explore(por::ExplorationCommand::north), "Step away from the city");
+    check(route_explore(town, por::ExplorationCommand::north), "Step away from the city");
     settle(town, party);
-    check(town.explore(por::ExplorationCommand::south), "Step back to the city");
+    check(route_explore(town, por::ExplorationCommand::south), "Step back to the city");
     settle(town, party, prefer({entrance}));
 }
 
@@ -2329,13 +2574,13 @@ void podol_pitt(const std::filesystem::path &save, const std::filesystem::path &
         auto &[party, town] = trip;
         walk_to(town, party, 5, 8);
         face(town, party, 3);
-        town.explore(por::ExplorationCommand::forward);
+        route_explore(town, por::ExplorationCommand::forward);
         for (unsigned n = 0; n < 2000 && town.snapshot().phase != por::TourPhase::combat; ++n)
         {
             const auto &s = town.snapshot();
             if (s.phase == por::TourPhase::awaiting_continue)
             {
-                check(town.choose(s.continue_ticket, prefer({"CHALLENGE"})(s)), "Answer");
+                check(route_choose(town, s.continue_ticket, prefer({"CHALLENGE"})(s)), "Answer");
             }
             else
             {
@@ -2681,7 +2926,7 @@ bool look_until(por::RolfTourSession &town, const std::shared_ptr<CampaignParty>
 {
     for (unsigned n = 0; n < tries && !found(); ++n)
     {
-        town.explore(por::ExplorationCommand::look);
+        route_explore(town, por::ExplorationCommand::look);
         settle(town, party, answer);
     }
     return found();
@@ -2719,10 +2964,16 @@ void play_sokal_keep(Expedition &trip, const std::filesystem::path &directory)
     const auto fight_them = prefer({"COMBAT", "Fight", "YES", "TELL THE TRUTH?"});
     const auto talk = prefer({"Advance", "Parley", "NICE", "YES", "TELL THE TRUTH?", "SEARCH"});
 
-    // The dead elf's scroll, read by looking, holds three words.
-    visit(town, party, 6, 13, talk);
+    // The dead elf's scroll, read by looking, holds three words. On the way
+    // the party flees patrols: a wrong word means a fight, and after four
+    // beaten no patrol comes to hear the right one.
+    visit(town, party, 6, 13,
+          [&](const por::TourSnapshot &s) -> std::size_t
+          {
+              return s.dialogue.find("UNDEAD") != std::string::npos ? peaceful(s) : talk(s);
+          });
     std::string scroll;
-    town.explore(por::ExplorationCommand::look);
+    route_explore(town, por::ExplorationCommand::look);
     settle(town, party,
            [&](const por::TourSnapshot &s) -> std::size_t
            {
@@ -2828,9 +3079,10 @@ void sokal_keep(const std::filesystem::path &directory)
 void travel(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party,
             unsigned direction, const Answer &answer = peaceful)
 {
-    check(town.explore(static_cast<por::ExplorationCommand>(
-              static_cast<unsigned>(por::ExplorationCommand::north) + direction)),
-          "The party sets off across the wilderness");
+    check(
+        route_explore(town, static_cast<por::ExplorationCommand>(
+                                static_cast<unsigned>(por::ExplorationCommand::north) + direction)),
+        "The party sets off across the wilderness");
     settle(town, party, answer);
 }
 
@@ -3065,7 +3317,7 @@ void play_kovel_mansion(Expedition &trip, const std::filesystem::path &directory
     std::filesystem::remove_all(folder);
     // While the guild stands its thieves break up every camp with slings, so
     // the party is healed between walks instead.
-    check(town.camp(RestKind::long_rest), "Camp in the mansion");
+    check(route_camp(town, RestKind::long_rest), "Camp in the mansion");
     settle(town, party);
     check(town.snapshot().dialogue.find("THIEVES WITH SLINGS") != std::string::npos,
           "The guild's slingers break up a camp in the mansion");
@@ -3114,6 +3366,13 @@ void play_kovel_mansion(Expedition &trip, const std::filesystem::path &directory
     // smashed open, C may be trapped. On the way the thief at (7,3) is the
     // twenty-first beaten; the guild beaten, the party camps beside the
     // cabinets until the wizard can cast Knock, whatever fights came before.
+    prowl(13, 10, fight_them);
+    // A thief who slipped away is not beaten. More step out of nowhere, but
+    // not twice on the same event: the party goes between two of its rooms.
+    for (unsigned n = 0; n < 40 && guild(0x4A45) < 21; ++n)
+    {
+        prowl(8, n % 2 ? 3 : 12, fight_them);
+    }
     prowl(13, 10, fight_them);
     check(guild(0x4A45) >= 21 && guild(0x4AB2) == 254,
           "With twenty-one thieves beaten the guild no longer troubles the party's camps");
@@ -3341,17 +3600,22 @@ void play_nomad_camp(Expedition &trip)
               town.script_variable(por::EclAddress{0x49C9}) == 18,
           "After the headman's feast, which lasts until evening, the nomads lodge the party "
           "and offer a night's rest");
-    check(town.camp(RestKind::long_rest), "Camp in the nomads' lodging");
+    check(route_camp(town, RestKind::long_rest), "Camp in the nomads' lodging");
     settle(town, party, guest);
     check(nomads(0x4A7D) == 3 && town.script_variable(por::EclAddress{0x49C9}) == 0,
           "At midnight the headman asks the party to stay against the kobolds, and it stays");
     rest_until(town, party, [&] { return nomads(0x4A7E) > 0; },
                "The kobolds attack the next evening");
     const auto gold = coins(party->state().wealth, Coin::gold);
-    for (unsigned n = 0; n < 10 && !(nomads(0x4A7C) & 8); ++n)
+    for (unsigned n = 0; n < 10 && !(nomads(0x4A7C) & 8) && !town.snapshot().overland; ++n)
     {
         heal(*party);
-        walk_to(town, party, 9, n % 2 ? 12 : 10, guest);
+        // The last phase's fight may end the walk: the nomads send the party out.
+        walk_to(town, party, 9, n % 2 ? 12 : 10, guest, false, false, "0",
+                [&]
+                {
+                    return town.snapshot().overland;
+                });
     }
     check((nomads(0x4A7C) & 8) != 0 && coins(party->state().wealth, Coin::gold) >= gold + 8000,
           "With the kobolds broken the shaman pays the promised reward");
@@ -3434,7 +3698,7 @@ void play_pyramid(Expedition &trip)
         }
         return noting(s);
     };
-    town.set_searching(true);
+    route_set_searching(town, true);
     walk(15, 12, rock, [&] { return town.snapshot().area_id == 23 && town.snapshot().pose.y < 8; });
     check(heard.find("STRANGE TINGLE") != std::string::npos && at(23, 11, 3),
           "In Search mode the rocks at (15,12) are noticed; moving on sends the party to (11,3)");
@@ -3444,7 +3708,7 @@ void play_pyramid(Expedition &trip)
     thrown = false;
     walk(0, 2, rock, [&] { return at(23, 0, 0); });
     check(at(23, 0, 0), "A rock thrown at (0,2) sends the party to (0,0)");
-    town.set_searching(false);
+    route_set_searching(town, false);
     // The password door, read from dwarvish runes, the fountain, and Yarash.
     walk(1, 1, noting, [] { return false; }, "NOKNOK");
     check(heard.find("SIX DWARVISH RUNES") != std::string::npos &&
@@ -3490,7 +3754,7 @@ void play_pyramid(Expedition &trip)
                      [&] { return (town.script_variable(por::EclAddress{0x4A4B}) & 1) != 0; },
                      noting),
           "Searching finds the prison's north door");
-    town.explore(por::ExplorationCommand::forward);
+    route_explore(town, por::ExplorationCommand::forward);
     settle(town, party, noting);
     check(town.snapshot().overland && town.script_variable(por::EclAddress{0x4AA2}) == 255 &&
               heard.find("BEGINNING TO RECOVER") != std::string::npos,
@@ -3895,7 +4159,7 @@ void play_lizard_keep(Expedition &trip)
     heal(*party);
     walk_to(town, party, 10, 8, noting, true);
     face(town, party, 0);
-    town.explore(por::ExplorationCommand::forward);
+    route_explore(town, por::ExplorationCommand::forward);
     // Up the stairs, then not straight back down them.
     settle(town, party,
            [&](const por::TourSnapshot &s)
@@ -3907,7 +4171,7 @@ void play_lizard_keep(Expedition &trip)
     heal(*party);
     walk_to(town, party, 8, 15, noting, true);
     face(town, party, 2);
-    town.explore(por::ExplorationCommand::forward);
+    route_explore(town, por::ExplorationCommand::forward);
     settle(town, party, prefer({"LEAVE"}));
     check(town.snapshot().overland && town.snapshot().script_id == 27,
           "The drawbridge leads back out to the eastern wilderness");
@@ -4213,7 +4477,7 @@ void visit_zhentil_outpost(Expedition &trip, std::string &heard)
           "Zhentil riders escort the envoys into their outpost and its commandant");
     const auto guest = western_answer(
         heard, {"RELAX", "CITY", "NEW", "TALK", "STRONG", "YES", "SLEEP WITH A WATCH", "Fight"});
-    town.explore(por::ExplorationCommand::look);
+    route_explore(town, por::ExplorationCommand::look);
     settle(town, party, guest);
     check(heard.find("OFFICERS MESS") != std::string::npos &&
               heard.find("FOUR ARMED GUARDS BURST IN") != std::string::npos,
@@ -4239,7 +4503,7 @@ void raid_buccaneers_base(Expedition &trip, std::string &heard)
     heal(*party);
     walk_to(town, party, 6, 9, raiding, true);
     face(town, party, 0);
-    town.explore(por::ExplorationCommand::look);
+    route_explore(town, por::ExplorationCommand::look);
     settle(town, party, raiding);
     check(heard.find("HEART-SHAPED BIRTHMARK") != std::string::npos,
           "The Bivant heir waits among the slaves");
@@ -4581,7 +4845,7 @@ void mendors_library(Expedition &trip, const std::filesystem::path &folder,
     rest_until(town, party, [&] { return party->can_try_door(DoorMethod::knock); },
                "The wizard regains a slot for Knock by camping");
     face(town, party, 2);
-    town.explore(por::ExplorationCommand::forward);
+    route_explore(town, por::ExplorationCommand::forward);
     settle(town, party, prefer({"Knock"}));
     check(town.snapshot().pose.x == 8 && town.snapshot().pose.y == 2,
           "Knock opens the library's wizard-locked north door");
@@ -4905,8 +5169,10 @@ void podol_group_rolls(const std::filesystem::path &save, const std::filesystem:
                   std::all_of(enemies.begin(), enemies.end(),
                               [&](const rules::Participant &enemy)
                               {
+                                  // An orc leader whose art holds a bow is its archer form.
                                   return enemy.definition == group.soldier ||
-                                         enemy.definition == group.leader;
+                                         enemy.definition == group.leader ||
+                                         enemy.definition == std::string(group.leader) + "-archer";
                               }),
               "Group roll " + std::to_string(roll) + " brings only its own creatures");
         check(last_encounter->morale == group.morale + (leaders ? 10 : 0),
@@ -4977,7 +5243,7 @@ void podol_plaza(Expedition &trip, const std::filesystem::path &folder,
     // Camping on a cleared plaza: no roaming group comes to interrupt it.
     heal(*party);
     const auto cleared = fights_started.size();
-    check(town.camp(RestKind::short_rest), "Camp starts on the plaza");
+    check(route_camp(town, RestKind::short_rest), "Camp starts on the plaza");
     settle(town, party, fight_them);
     check(fights_started.size() == cleared,
           "No roaming group interrupts a camp on a cleared plaza");
@@ -5198,7 +5464,13 @@ void face_longest_view(por::RolfTourSession &town, const std::shared_ptr<Campaig
 
 // Camps on a Slums street until monsters interrupt with the encounter menu,
 // then answers it with `answer` until the event ends. Returns the menus shown.
-std::vector<por::TourSnapshot> meet_camp_monsters(Expedition &trip, const Answer &answer)
+std::vector<por::TourSnapshot> meet_camp_monsters(
+    Expedition &trip, const Answer &answer,
+    const std::function<bool(const std::vector<por::TourSnapshot> &)> &enough =
+        [](const auto &shown)
+    {
+        return !shown.empty();
+    })
 {
     auto &[party, town] = trip;
     if (town.snapshot().area_id == 0)
@@ -5209,9 +5481,9 @@ std::vector<por::TourSnapshot> meet_camp_monsters(Expedition &trip, const Answer
     walk_to(town, party, 14, 4);
     face_longest_view(town, party);
     std::vector<por::TourSnapshot> shown;
-    for (unsigned tries = 0; tries < 80 && shown.empty(); ++tries)
+    for (unsigned tries = 0; tries < 200 && !enough(shown); ++tries)
     {
-        check(town.camp(RestKind::short_rest), "Camp starts");
+        check(route_camp(town, RestKind::short_rest), "Camp starts");
         while (town.snapshot().phase == por::TourPhase::running ||
                town.snapshot().phase == por::TourPhase::awaiting_continue)
         {
@@ -5227,10 +5499,16 @@ std::vector<por::TourSnapshot> meet_camp_monsters(Expedition &trip, const Answer
             {
                 shown.push_back(s);
             }
-            check(town.choose(s.continue_ticket, menu ? answer(s) : peaceful(s)),
+            check(route_choose(town, s.continue_ticket, menu ? answer(s) : peaceful(s)),
                   "Answer accepted");
         }
-        if (shown.empty())
+        // Monsters who surprise the camp fight without a menu, and a menu may
+        // end in a fight.
+        if (town.snapshot().phase == por::TourPhase::combat && !enough(shown))
+        {
+            settle(town, party, peaceful);
+        }
+        if (!enough(shown))
         {
             if (const auto &spending = party->state().short_rest)
             {
@@ -5264,17 +5542,26 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
     // A copy: the camp and fight below may rebuild the roster.
     const auto name = talkers.party->member(charming).character.sheet().name;
     unsigned reaction_score = 0;
-    const auto menus = meet_camp_monsters(talkers,
-                                          [&](const por::TourSnapshot &s) -> std::size_t
-                                          {
-                                              if (s.choices[0] != "HAUGHTY")
-                                              {
-                                                  return 3; // Advance until Parley, then Abusive.
-                                              }
-                                              reaction_score = talkers.town.script_variable(
-                                                  por::EclAddress{0x6DCF});
-                                              return 4;
-                                          });
+    const auto menus = meet_camp_monsters(
+        talkers,
+        [&](const por::TourSnapshot &s) -> std::size_t
+        {
+            if (s.choices[0] != "HAUGHTY")
+            {
+                return 3; // Advance until Parley, then Abusive.
+            }
+            reaction_score = talkers.town.script_variable(por::EclAddress{0x6DCF});
+            return 4;
+        },
+        [](const std::vector<por::TourSnapshot> &shown)
+        {
+            // Not every group lets the party come close.
+            return std::any_of(shown.begin(), shown.end(),
+                               [](const auto &menu)
+                               {
+                                   return menu.choices[0] == "HAUGHTY";
+                               });
+        });
     check(menus.front().choices == std::vector<std::string>{"Fight", "Wait", "Flee", "Advance"},
           "Distant monsters can be advanced on, not parleyed with");
     const auto parley = std::find_if(menus.begin(), menus.end(),
@@ -5291,20 +5578,33 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
           "The leader speaks for the party with twice its Charisma");
 
     auto waiting = load_expedition(save, directory);
-    (void)meet_camp_monsters(waiting,
-                             [](const por::TourSnapshot &) -> std::size_t
-                             {
-                                 return 1;
-                             });
+    (void)meet_camp_monsters(
+        waiting,
+        [](const por::TourSnapshot &) -> std::size_t
+        {
+            return 1;
+        },
+        // Some groups do not wait: the party camps until one leaves.
+        [&](const std::vector<por::TourSnapshot> &shown)
+        {
+            return !shown.empty() && waiting.town.snapshot().dialogue.find(
+                                         "The monsters go on their way.") != std::string::npos;
+        });
     check(waiting.town.snapshot().dialogue.find("The monsters go on their way.") !=
               std::string::npos,
           "Waiting monsters that leave say so");
     auto fleeing = load_expedition(save, directory);
-    (void)meet_camp_monsters(fleeing,
-                             [](const por::TourSnapshot &) -> std::size_t
-                             {
-                                 return 2;
-                             });
+    (void)meet_camp_monsters(
+        fleeing,
+        [](const por::TourSnapshot &) -> std::size_t
+        {
+            return 2;
+        },
+        // The walk to the street may already have fled a group.
+        [&](const std::vector<por::TourSnapshot> &shown)
+        {
+            return !shown.empty() && fleeing.town.snapshot().dialogue.starts_with("You get away.");
+        });
     check(fleeing.town.snapshot().dialogue.starts_with("You get away."),
           "A party that escapes says so");
 }
@@ -5312,8 +5612,7 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
 // A parley with street monsters that reaches `outcome` (its first option, such
 // as "PAY" or "STAY") and answers it with `option` (and `amount` when gold is
 // asked for). The leader is the most charming member and parleys Abusive. Each
-// try first paces the street a different number of times, since steps roll
-// for wandering monsters and so change the dice the parley meets.
+// try gives the script's dice a different seed, to reach the outcome wanted.
 struct ParleyResult
 {
     Expedition trip;
@@ -5358,16 +5657,12 @@ std::optional<ParleyResult> parley_once(const std::filesystem::path &save,
         step(town, party, 3);
     }
     walk_to(town, party, 14, 4);
-    for (unsigned pace = 0; pace < paces; ++pace)
-    {
-        walk_to(town, party, 14, 3);
-        walk_to(town, party, 14, 4);
-    }
+    opengold::test::TourAccess::seed_dice(town, paces + 1);
     result.gold_before = party_gold(*party);
     bool parleyed = false, answered = false;
     for (unsigned camps = 0; camps < 80; ++camps)
     {
-        check(town.camp(RestKind::short_rest), "Camp starts");
+        check(route_camp(town, RestKind::short_rest), "Camp starts");
         for (unsigned n = 0;
              n < 2000 && (town.snapshot().phase == por::TourPhase::running ||
                           town.snapshot().phase == por::TourPhase::awaiting_continue ||
@@ -5382,7 +5677,7 @@ std::optional<ParleyResult> parley_once(const std::filesystem::path &save,
             }
             if (s.phase == por::TourPhase::awaiting_input)
             {
-                check(town.input(s.continue_ticket, amount), "The offer is typed");
+                check(route_input(town, s.continue_ticket, amount), "The offer is typed");
                 continue;
             }
             if (parleyed)
@@ -5409,7 +5704,7 @@ std::optional<ParleyResult> parley_once(const std::filesystem::path &save,
                                    s.choices.begin());
                 answered = true;
             }
-            check(town.choose(s.continue_ticket, pick), "Answer accepted");
+            check(route_choose(town, s.continue_ticket, pick), "Answer accepted");
         }
         if (parleyed)
         {
@@ -5434,11 +5729,13 @@ std::optional<ParleyResult> parley_once(const std::filesystem::path &save,
 
 ParleyResult parley(const std::filesystem::path &save, const std::filesystem::path &directory,
                     std::string_view outcome, std::string_view option,
-                    std::string_view amount = "0")
+                    std::string_view amount = "0",
+                    const std::function<bool(const ParleyResult &)> &wanted = {})
 {
-    for (unsigned paces = 0; paces < 40; ++paces)
+    for (unsigned paces = 0; paces < 100; ++paces)
     {
-        if (auto result = parley_once(save, directory, paces, outcome, option, amount))
+        auto result = parley_once(save, directory, paces, outcome, option, amount);
+        if (result && (!wanted || wanted(*result)))
         {
             return std::move(*result);
         }
@@ -5481,7 +5778,12 @@ void slums_parley_outcomes(const std::filesystem::path &save,
     check(said(surrendered, "ROB AND BLINDFOLD") && moved(surrendered) &&
               party_gold(*surrendered.trip.party) == 0 && !said(surrendered, "You get away."),
           "Surrender costs every coin and sends the party elsewhere");
-    auto ran = parley(save, directory, "PAY", "RUN");
+    // Whether running works depends on the monsters met: faster ones catch the party.
+    auto ran = parley(save, directory, "PAY", "RUN", "0",
+                      [&](const ParleyResult &r)
+                      {
+                          return !fought(r);
+                      });
     check(!fought(ran) && moved(ran) && said(ran, "You get away."),
           "Running from a toll as fast as the monsters gets away");
     auto left = parley(save, directory, "STAY", "LEAVE");
@@ -5506,7 +5808,7 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
     face_longest_view(town, party);
     for (unsigned camps = 0; camps < 80 && town.snapshot().phase != por::TourPhase::combat; ++camps)
     {
-        check(town.camp(RestKind::short_rest), "Camp starts");
+        check(route_camp(town, RestKind::short_rest), "Camp starts");
         while (town.snapshot().phase == por::TourPhase::running ||
                town.snapshot().phase == por::TourPhase::awaiting_continue)
         {
@@ -5517,7 +5819,7 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
             }
             else
             {
-                check(town.choose(s.continue_ticket, stand_and_fight(s)), "Answer accepted");
+                check(route_choose(town, s.continue_ticket, stand_and_fight(s)), "Answer accepted");
             }
         }
         if (town.snapshot().phase != por::TourPhase::combat)
@@ -5538,8 +5840,11 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
     // what they see (AI-1). A seed whose fight ends with the party away, and
     // no monster killed, is used.
     std::unique_ptr<CombatDemo> fight;
-    for (std::uint64_t seed = 42; seed < 52; ++seed)
+    const auto before_flight = party->checkpoint();
+    for (std::uint64_t seed = 42; seed < 242; ++seed)
     {
+        fight.reset();
+        party->restore(before_flight);
         fight = std::make_unique<CombatDemo>(module());
         auto &combat = *fight;
         combat.campaign_party(party);
@@ -5884,13 +6189,13 @@ void find_cadorna_evidence(Expedition &trip, std::string &heard)
           "The castle's northwest grounds lead east into its northeast quarter");
     heal(*party);
     walk_to(town, party, 14, 12, fighting, true);
-    town.set_searching(true);
+    route_set_searching(town, true);
     for (unsigned n = 0; n < 200 && flag(0x4ABE) < 254; ++n)
     {
         heal(*party);
         walk_to(town, party, n % 2 ? 15 : 13, n % 2 ? 15 : 14, fighting, true);
     }
-    town.set_searching(false);
+    route_set_searching(town, false);
     check(flag(0x4ABE) == 254 && heard.find("HARD EVIDENCE") != std::string::npos,
           "Searching the scribes' building finds the evidence of Cadorna's treachery");
     heal(*party);
@@ -6101,6 +6406,7 @@ void whole_map(Expedition &trip, const std::filesystem::path &directory,
         write_campaign_file(folder / ("whole-map-" + std::string(name) + ".ogs"),
                             encode_campaign(*party, &town, campaign_asset_identity(directory)));
         std::cout << "Whole map: " << name << '\n';
+        route.stage(name);
         play();
     }
     check(playing, "The whole map plays from the named stage");
@@ -6177,6 +6483,9 @@ void teleport_everywhere(Expedition &trip, const std::filesystem::path &director
     // The expedition went down into the catacombs before this party took
     // over; it stood on that map's spot.
     test::TourAccess::mark_visited(town, 32, por::teleport_spot(32)->x, por::teleport_spot(32)->y);
+    // The castle's upper floor (map 5) is walked past the spot only when the
+    // maze sends the party that way.
+    test::TourAccess::mark_visited(town, 5, por::teleport_spot(5)->x, por::teleport_spot(5)->y);
     const auto destinations = town.teleport_destinations();
     std::string missing;
     for (const auto &spot : por::teleport_spots)
@@ -6205,7 +6514,12 @@ void teleport_everywhere(Expedition &trip, const std::filesystem::path &director
         }
         party->restore(std::move(state));
         town.teleport(wizard, "teleport", map);
-        settle(town, party);
+        // A group met on landing is fought: fleeing would leave the spot.
+        settle(town, party,
+               [](const por::TourSnapshot &s) -> std::size_t
+               {
+                   return !s.choices.empty() && s.choices[0] == "Fight" ? 0 : peaceful(s);
+               });
         const auto &s = town.snapshot();
         const auto &spot = *por::teleport_spot(map);
         check(s.area_id == map && s.pose.x == spot.x && s.pose.y == spot.y,
@@ -6323,6 +6637,40 @@ void exported_monsters(const std::filesystem::path &directory)
         }
     }
     check(armed_both_ways, "The orcs fight with their sword and shield or their bow");
+}
+
+// Plays the chain from the new party to the whole map's end, writing the route
+// for the window play-through (tests/playtest_campaign.gd).
+void record_route(const std::filesystem::path &directory, const std::filesystem::path &out)
+{
+    const auto folder = std::filesystem::temp_directory_path() / "opengold-route";
+    std::filesystem::create_directories(folder);
+    const auto assets = campaign_asset_identity(directory);
+    const auto save = folder / "expedition.ogs";
+    auto trip = create_party(directory);
+    route.start(out, trip.town, trip.party, assets);
+    route.stage("first-expedition");
+    buy_and_equip(trip);
+    defeat_four_orcs(trip);
+    rest_at_inn(trip);
+    accept_commission(trip);
+    fetch_potion(trip, assets);
+    return_to_ohlo(trip);
+    hand_in_potion(trip);
+    write_campaign_file(save, encode_campaign(*trip.party, &trip.town, assets));
+
+    auto explorer = load_expedition(save, directory);
+    route.start(out, explorer.town, explorer.party, assets);
+    route.stage("kutos-well");
+    enter_kutos_well(explorer, folder, directory);
+    kutos_well_catacombs(explorer, folder, directory);
+
+    auto podol = load_expedition(folder / "kutos-well.ogs", directory);
+    route.start(out, podol.town, podol.party, assets);
+    route.stage("podol-plaza");
+    podol_plaza(podol, folder, directory);
+    whole_map(podol, directory, folder);
+    std::filesystem::remove_all(folder);
 }
 
 void installed_first_expedition(const std::filesystem::path &executable,
@@ -6612,6 +6960,11 @@ int main(int argc, char **argv)
             auto trip = load_expedition(argv[2], directory);
             whole_map(trip, directory, folder, argc == 4 ? argv[3] : "");
             teleport_everywhere(trip, directory);
+            return 0;
+        }
+        if (argc == 3 && std::string_view(argv[1]) == "--record-route")
+        {
+            record_route(directory, argv[2]);
             return 0;
         }
         // Plays the Central Wilderness alone with a new party.

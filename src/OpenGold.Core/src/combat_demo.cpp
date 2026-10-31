@@ -506,6 +506,10 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
         enemy.surprised = encounter.surprise == Surprise::monsters;
         participants.push_back(std::move(enemy));
     }
+    // Every fight of a campaign rolls its own dice: the same seed alone would
+    // give each one the same rolls. The count is saved, so a reload repeats them.
+    constexpr std::uint64_t golden_ratio = 0x9E3779B97F4A7C15ULL;
+    seed += (campaign_->state().next_combat_scope - 1) * golden_ratio;
     auto next = module_->create({encounter.field.geometry, std::move(participants),
                                  campaign_->state().next_combat_scope, encounter.morale,
                                  coins(campaign_->state().wealth, Coin::gold), encounter.daylight},

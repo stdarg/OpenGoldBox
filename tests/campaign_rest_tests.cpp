@@ -787,6 +787,9 @@ void safe_camp_profile()
         const auto short_rest = camp_from_wounded(f, RestKind::short_rest);
         check(!short_rest.interrupted && short_rest.minutes == 60,
               "A 0/0 profile completes every Short Rest in one hour");
+        check(f.town->snapshot().dialogue ==
+                  "Short rest complete: one hour passed; eligible members can spend Hit Dice.",
+              "A camp's outcome replaces what was said before");
         const auto long_rest = camp_from_wounded(f, RestKind::long_rest);
         check(!long_rest.interrupted && long_rest.minutes == 480,
               "A 0/0 profile completes every Long Rest in eight hours");
@@ -858,6 +861,23 @@ void camp_interruptions_survive_reload()
         check(actual.minutes == expected.minutes && actual.interrupted == expected.interrupted,
               "A reloaded campaign repeats the same camp outcomes");
     }
+}
+
+// The step count runs up to the area's own interval, which can be far above the
+// Slums' 24: a save made partway through such a count still loads.
+void long_check_interval_survives_reload()
+{
+    CampFixture original(camp_script(72, 0));
+    for (unsigned n = 0; n < 3; ++n)
+    {
+        (void)camp_from_wounded(original, RestKind::short_rest);
+        original.party->finish_short_rest(original.party->state().short_rest->ticket);
+    }
+    const auto bytes = encode_campaign(*original.party, original.town.get(), "campaign-rest");
+    CampFixture reloaded(camp_script(72, 0));
+    auto disk = decode_campaign(bytes, *srd5::character_rules(), *module(), "campaign-rest",
+                                reloaded.town.get());
+    check(disk.town.has_value(), "A count above 24 steps loads");
 }
 
 // Short Rests alternate between reaching no check and reaching one at their last
@@ -954,6 +974,7 @@ int main()
         safe_camp_profile();
         slums_street_profile();
         camp_interruptions_survive_reload();
+        long_check_interval_survives_reload();
         failed_interruption_rolls_back();
         malformed_continuation();
         std::cout << "Campaign rest tests passed\n";

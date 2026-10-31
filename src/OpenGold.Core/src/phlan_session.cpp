@@ -1343,9 +1343,17 @@ void RolfTourSession::finish_event()
         }
         const auto interval = machine_.variable(ecl_rest_check_interval),
                    chance = machine_.variable(ecl_rest_interruption_chance);
+        const auto add_camp_line = [this](std::string_view line)
+        {
+            if (!snapshot_.dialogue.empty())
+            {
+                snapshot_.dialogue += '\n';
+            }
+            snapshot_.dialogue += line;
+        };
         if (chance == 255)
         {
-            snapshot_.dialogue += "\nRest is not allowed here.";
+            add_camp_line("Rest is not allowed here.");
         }
         else
         {
@@ -1364,14 +1372,14 @@ void RolfTourSession::finish_event()
             }
             if (campaign_->rest(camp_kind_))
             {
-                snapshot_.dialogue +=
+                add_camp_line(
                     camp_kind_ == RestKind::short_rest
-                        ? "\nShort rest complete: one hour passed; eligible members can spend Hit Dice."
-                        : "\nLong rest complete: eight hours passed; eligible members recovered HP and supported resources.";
+                        ? "Short rest complete: one hour passed; eligible members can spend Hit Dice."
+                        : "Long rest complete: eight hours passed; eligible members recovered HP and supported resources.");
             }
             else
             {
-                snapshot_.dialogue += "\nRest denied: no active member is eligible.";
+                add_camp_line("Rest denied: no active member is eligible.");
             }
             for (const auto &w : character_reply(selected_character_).writes)
             {
@@ -2438,10 +2446,18 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // A fight holds 56 monsters; the original stops loading at its limit,
         // as the kobold king's 58 do (ECL8:13 0xA1BE).
         constexpr std::size_t monster_limit = 56;
+        // A roaming group's size follows the party's strength, so a party with
+        // most of its members down can be met by no one at all: the script
+        // loads nothing, and its COMBAT then has nothing to fight.
+        if (!arg(1))
+        {
+            nobody_met_ = staged_enemies_.empty();
+            break;
+        }
         const unsigned record = arg(0);
         const auto count = static_cast<unsigned>(
             std::min<std::size_t>(arg(1), monster_limit - std::min(monster_limit, staged_enemies_.size())));
-        if (!current_area_ || !area_resources().conversions.contains(record) || !arg(1))
+        if (!current_area_ || !area_resources().conversions.contains(record))
         {
             throw EclError("Encounter needs an explicit supported creature conversion: record " +
                            std::to_string(record) + ", count " + std::to_string(count) + ", icon " +
@@ -2520,6 +2536,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     }
     case 28:
+        nobody_met_ = false;
         treasure_.clear();
         staged_treasure_.reset();
         staged_enemies_.clear();
@@ -2835,6 +2852,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             read_character();
             award_staged_treasure();
             reply = character_reply(selected_character_);
+            break;
+        }
+        if (std::exchange(nobody_met_, false))
+        {
+            reply = character_reply(selected_character_);
+            reply.writes.push_back({ecl_combat_result, 0});
+            reply.writes.push_back({ecl_monsters_defeated, 0});
             break;
         }
         throw EclError(machine_.variable(ecl_temple_service) == 1 ? "Temple healing service"

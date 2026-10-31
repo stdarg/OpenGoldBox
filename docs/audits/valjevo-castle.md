@@ -99,7 +99,11 @@ Missing before this audit, now done:
 ## Party level and balance
 
 With rests between fights, a level-9 party reaches and beats Tyranthraxus and
-his guards at the default encounter challenge.
+his guards at the default encounter challenge. Since 2026-10-31 this is measured
+as the game plays: with the catalog's monster data, whose eight 8th Level
+Fighters wear Plate +2 and a Ring of Protection +3 and swing Two-handed Swords
++2, and with each fight rolling its own dice. See
+[the whole map](whole-map.md#fights-on-the-route).
 
 ## Status
 
