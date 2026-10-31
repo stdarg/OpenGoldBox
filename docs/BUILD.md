@@ -153,7 +153,7 @@ cmake --build build/game --target OpenGoldBox
 
 `win-package/` also collects development leftovers, so every build stages the
 package players get in `build/game/package/OpenGoldBox/` and zips it as
-`build/game/OpenGoldBox-windows-x86_64.zip`. It holds only the executables, the
+`build/game/OpenGoldBox-<version>-windows-x86_64.zip`. It holds only the executables, the
 PCK, the DLLs, `data/`, `LICENSE.txt` and `THIRD-PARTY-NOTICES.txt`; the
 notices for the Godot Engine and its third-party components are written by the
 Godot that built the export, so they match it. The build fails if the package
@@ -163,7 +163,16 @@ read-only folder: settings and saves go to
 `%APPDATA%\Godot\app_userdata\OpenGold` (see
 [configuration](CONFIGURATION.md)). The package uses the debug export
 template, so `opengoldbox.console.exe` shows the engine's messages when a
-player reports a problem.
+player reports a problem. The executable carries the app icon and the version,
+which comes from `project()` in the top-level `CMakeLists.txt`.
+
+The build also writes `build/game/OpenGoldBox-<version>-windows-symbols.zip`, for
+you: keep it with the release. It reads
+[crash reports](CONFIGURATION.md#crash-reports) down to functions.
+
+The executables and DLLs import only each other, the bundled Visual C++ runtime
+and libraries that ship with Windows 10 and later, so the package needs no
+Redistributable installed. Windows 10 is the oldest version it expects.
 
 `opengold_windows_package_smoke`, a ctest check that needs `OPENGOLD_GAME_DIR`,
 installs the package under `Program Files Prüfung 冒険` and a copy of the
@@ -171,7 +180,8 @@ original files under `Pool of Radiance Daten ü 冒険`, makes both read-only, a
 runs the packaged game with a fresh profile, a `PATH` of only the Windows
 folders and no `OPENGOLD_*` overrides. It checks that the first launch waits in
 setup without writing settings, then plays character creation, shops, combat
-and recovery, saves, restarts and restores the saves, and that nothing was
+and recovery, saves, restarts and restores the saves. It also runs two copies at
+once and crashes the game on purpose to check the report, and that nothing was
 written into the install. Run it alone with:
 
 ```powershell
@@ -188,7 +198,7 @@ the package and check by hand:
 3. After **Continue**, quit and start again: setup is not asked again, and a
    saved campaign loads.
 
-Last run on 2026-10-25: Windows 10 Home 10.0.19043, Godot 4.7.2-stable
+Last run on 2026-10-30: Windows 10 Home 10.0.19043, Godot 4.7.2-stable
 (official) with its debug export template, MSVC 19.51.36256, godot-cpp
 e83fd0904c13356ed1d4c3d09f8bb9132bdc6b77. The smoke check passed; the clean
 machine steps have not been run yet.

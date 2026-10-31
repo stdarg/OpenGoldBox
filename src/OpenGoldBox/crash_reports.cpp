@@ -11,7 +11,9 @@
 #include <stdexcept>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX // godot-cpp defines it for the game's sources.
 #define NOMINMAX
+#endif
 #include <windows.h>
 #else
 #include <cerrno>
@@ -74,12 +76,44 @@ void log_uncaught_exception()
     }
 }
 
+#ifdef _WIN32
+// The stack as the engine's crash handler prints it, module plus offset. Windows'
+// terminate() swallows any fault raised inside its handler, so that handler
+// can never run for an uncaught exception.
+void log_backtrace()
+{
+    void *frames[62];
+    const auto frame_count = CaptureStackBackTrace(0, 62, frames, nullptr);
+    for (USHORT frame = 0; frame < frame_count; ++frame)
+    {
+        HMODULE module = nullptr;
+        wchar_t path[MAX_PATH] = L"unknown";
+        if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                                   GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                               static_cast<LPCWSTR>(frames[frame]), &module))
+        {
+            GetModuleFileNameW(module, path, MAX_PATH);
+        }
+        const auto offset = static_cast<const char *>(frames[frame]) -
+                            reinterpret_cast<const char *>(module);
+        UtilityFunctions::printerr(String("[") + String::num_int64(frame) + "] " +
+                                   String(path).get_file() + "+" +
+                                   String::num_int64(offset, 16));
+    }
+    UtilityFunctions::printerr("-- END OF C++ BACKTRACE --");
+}
+#endif
+
 [[noreturn]] void terminate_through_crash_handler()
 {
     log_uncaught_exception();
+#ifdef _WIN32
+    log_backtrace();
+#else
     // The engine's crash handler dumps the stack on SIGSEGV, not on the abort
     // that would otherwise end a terminate.
     std::raise(SIGSEGV);
+#endif
     std::abort();
 }
 
