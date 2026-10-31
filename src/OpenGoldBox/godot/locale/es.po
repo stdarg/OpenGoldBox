@@ -953,11 +953,11 @@ msgstr "Armadura de sombras (Armadura de mago)"
 msgid "Arms"
 msgstr "Brazos"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:236
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:235
 msgid "Arrow keys: move / turn   •   L: look   •   S: search   •   M: cast   •   Original New Phlan scripts and shop stock"
 msgstr "Flechas: avanzar / girar   •   L: mirar   •   S: buscar   •   M: lanzar   •   Guiones y existencias originales de Nueva Phlan"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:108
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:107
 msgid "Arrow: party & facing\nGold: doors   Teal: visited"
 msgstr "Flecha: grupo y orientación\nDorado: puertas   Turquesa: visitado"
 
@@ -1602,7 +1602,7 @@ msgstr "Invocar relámpago"
 msgid "Call Lightning: another bolt"
 msgstr "Invocar relámpago: otro rayo"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:308
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:307
 msgid "Camp [C]"
 msgstr "Acampar [C]"
 
@@ -1765,7 +1765,7 @@ msgstr "En el inventario"
 msgid "Carried: +1 to ability checks, Initiative included, and saving throws. A second stone adds nothing."
 msgstr "Llevada: +1 a las pruebas de característica, incluida la iniciativa, y a las salvaciones. Una segunda piedra no añade nada."
 
-#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:168 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:468
+#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:168 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:467
 msgid "Cast"
 msgstr "Lanzar"
 
@@ -1785,7 +1785,7 @@ msgstr "Lanza Falsa vida sobre ti sin espacio, con su resultado máximo."
 msgid "Cast Hellish Rebuke"
 msgstr "Lanzar Reprensión infernal"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:554
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:553
 msgid "Cast Identify"
 msgstr "Lanzar Identificar"
 
@@ -1801,11 +1801,11 @@ msgstr "Lanzar Escudo contra Proyectil mágico"
 msgid "Cast Shield against the hit"
 msgstr "Lanzar Escudo contra el impacto"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:322
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:321
 msgid "Cast [M]"
 msgstr "Lanzar [M]"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:323
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:322
 msgid "Cast a spell or use a feature outside combat."
 msgstr "Lanza un conjuro o usa un rasgo fuera de combate."
 
@@ -1902,7 +1902,7 @@ msgstr "Reserva de personajes"
 msgid "Character Pool / 48 level-one characters"
 msgstr "Reserva / 48 personajes de nivel 1"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:573
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:572
 msgid "Character Sheet"
 msgstr "Hoja de personaje"
 
@@ -2320,11 +2320,11 @@ msgstr "Capa de desplazamiento"
 msgid "Cloak of Elvenkind"
 msgstr "Capa élfica"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1246 src/OpenGoldBox/godot/scenes/character_creation.tscn:1331 src/OpenGoldBox/godot/scenes/character_creation.tscn:1376 src/OpenGoldBox/godot/scenes/character_creation.tscn:1421 src/OpenGoldBox/godot/scenes/game_menu.tscn:380 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:301 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:458 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:599
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1246 src/OpenGoldBox/godot/scenes/character_creation.tscn:1331 src/OpenGoldBox/godot/scenes/character_creation.tscn:1376 src/OpenGoldBox/godot/scenes/character_creation.tscn:1421 src/OpenGoldBox/godot/scenes/game_menu.tscn:380 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:301 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:457 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:598
 msgid "Close"
 msgstr "Cerrar"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:397
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:396
 msgid "Close inventory"
 msgstr "Cerrar inventario"
 
@@ -2599,7 +2599,7 @@ msgstr "Contingencia: {spell} surte efecto en {name}."
 msgid "Continue"
 msgstr "Continuar"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:147
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:146
 msgid "Continue  [Enter]"
 msgstr "Continuar  [Enter]"
 
@@ -3449,7 +3449,7 @@ msgstr "Introduce una CD entera entre 1 y 999."
 msgid "Enthralling Panache"
 msgstr "Encanto cautivador"
 
-#: src/OpenGoldBox/equipment_choice_dialog.cpp:79 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:524
+#: src/OpenGoldBox/equipment_choice_dialog.cpp:79 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:523
 msgid "Equip"
 msgstr "Equipar"
 
@@ -4838,7 +4838,7 @@ msgstr "Arrojado a los Planos Inferiores"
 msgid "Hypnotic Pattern"
 msgstr "Patrón hipnótico"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:544
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:543
 msgid "ID (200 gp)"
 msgstr "Identificar (200 po)"
 
@@ -5043,7 +5043,7 @@ msgstr "Opciones u origen de Maestría con armas no válidos"
 msgid "Invalid advancement training choice"
 msgstr "Selección de formación de nivel no válida"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:192 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:351
+#: src/OpenGoldBox/character_sheet_text.cpp:192 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:350
 msgid "Inventory"
 msgstr "Inventario"
 
@@ -5303,7 +5303,7 @@ msgstr "Salir"
 msgid "Leave Wild Shape"
 msgstr "Abandonar la Forma salvaje"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:282
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:281
 msgid "Leave shop"
 msgstr "Salir de la tienda"
 
@@ -5667,7 +5667,7 @@ msgstr "Zancada prodigiosa (espacio de nivel 2)"
 msgid "Longsword"
 msgstr "Espada larga"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:295
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:294
 msgid "Look [L]"
 msgstr "Mirar [L]"
 
@@ -6084,7 +6084,7 @@ msgstr "Ataque con arma cuerpo a cuerpo usando tu característica de lanzamiento
 msgid "Mendor's Library"
 msgstr "Biblioteca de Mendor"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:35 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:751
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:35 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:750
 msgid "Menu"
 msgstr "Menú"
 
@@ -6574,7 +6574,7 @@ msgstr "Nada puede interrumpir el descanso del grupo."
 msgid "Nothing to cast or use outside combat."
 msgstr "Nada que lanzar o usar fuera de combate."
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:60 src/OpenGoldBox/rolf_tour_view.cpp:1939
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:59 src/OpenGoldBox/rolf_tour_view.cpp:1939
 msgid "OPENGOLDBOX  /  Rolf's welcome"
 msgstr "OPENGOLDBOX  /  La bienvenida de Rolf"
 
@@ -7932,7 +7932,7 @@ msgstr "Reemplazar truco"
 msgid "Replacement limit"
 msgstr "Límite de sustituciones"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:224
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:223
 msgid "Replay tour"
 msgstr "Repetir recorrido"
 
@@ -8361,7 +8361,7 @@ msgstr "Asalto {round}: actúa {name}."
 msgid "Roving: Speed +10 feet without Heavy armor."
 msgstr "Errante: velocidad +10 pies sin armadura pesada."
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:309
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:308
 msgid "Run the area's pre-camp check and attempt an eight-hour long rest."
 msgstr "Comprueba si se puede acampar e intenta un descanso largo de ocho horas."
 
@@ -8442,7 +8442,7 @@ msgstr "Guardar combate"
 msgid "Save game"
 msgstr "Guardar partida"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:752
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:751
 msgid "Save game, Load game, Options and Exit (Escape)."
 msgstr "Guardar partida, Cargar partida, Opciones y Salir (Escape)."
 
@@ -8516,11 +8516,11 @@ msgstr "Abrasar muertos vivientes: Expulsar muertos vivientes también inflige d
 msgid "Search"
 msgstr "Buscar"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:337
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:336
 msgid "Search [S]"
 msgstr "Buscar [S]"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:338
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:337
 msgid "Search mode: each step searches the square, as Look does, and takes ten minutes more."
 msgstr "Modo de búsqueda: cada paso registra la casilla, como Mirar, y tarda diez minutos más."
 
@@ -10216,7 +10216,7 @@ msgstr "Tsunami (vertical)"
 msgid "Turn Undead"
 msgstr "Expulsar muertos vivientes"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:211 src/OpenGoldBox/rolf_tour_view.cpp:2003
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:210 src/OpenGoldBox/rolf_tour_view.cpp:2003
 msgid "Turn →"
 msgstr "Girar →"
 
@@ -10353,7 +10353,7 @@ msgstr "Muertos vivientes"
 msgid "Undead Fortitude"
 msgstr "Fortaleza de no muerto"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:534
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:533
 msgid "Unequip"
 msgstr "Desequipar"
 
@@ -10413,7 +10413,7 @@ msgstr "Arma sin entrenamiento: sin bonificador por competencia en las tiradas d
 msgid "Untrained weapon: no proficiency bonus on attack rolls. Only an Evil wielder can hold it; it burns anyone else who takes it up."
 msgstr "Arma sin entrenamiento: sin bonificador por competencia en las tiradas de ataque. Solo un portador malvado puede empuñarla; quema a cualquier otro que la tome."
 
-#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:859 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:564 src/OpenGoldBox/optional_effect_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:79
+#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:859 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:563 src/OpenGoldBox/optional_effect_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:79
 msgid "Use"
 msgstr "Usar"
 
@@ -14087,7 +14087,7 @@ msgstr "Le quedan {value} duplicados que pueden recibir un impacto en su lugar."
 msgid "{value} uses spent since the last Long Rest."
 msgstr "{value} usos gastados desde el último Descanso largo."
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:185 src/OpenGoldBox/rolf_tour_view.cpp:1999
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:184 src/OpenGoldBox/rolf_tour_view.cpp:1999
 msgid "← Turn"
 msgstr "← Girar"
 
@@ -14099,6 +14099,6 @@ msgstr "← Oeste"
 msgid "↑ North"
 msgstr "↑ Norte"
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:198 src/OpenGoldBox/rolf_tour_view.cpp:2001
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:197 src/OpenGoldBox/rolf_tour_view.cpp:2001
 msgid "↑ Step"
 msgstr "↑ Avanzar"

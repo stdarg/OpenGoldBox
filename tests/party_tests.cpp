@@ -1314,8 +1314,11 @@ void campaign_encounters()
             auto encounter = encounter_fixture();
             encounter.facing = por::MapDirection{facing};
             encounter.surprise = static_cast<Surprise>(facing);
+            const auto fights_so_far = party->state().next_combat_scope;
             fight.encounter(encounter, 1234);
-            check(observed->seed == 1234, "Encounter forwards deterministic seed");
+            // The seed with the party's count of fights mixed in, so each rolls its own.
+            check(observed->seed == 1234 + (fights_so_far - 1) * 0x9E3779B97F4A7C15ULL,
+                  "Encounter forwards deterministic seed");
             const auto &handed = observed->encounter;
             check(handed.battlefield.terrain == encounter.field.geometry.terrain &&
                       fight.battlefield_tiles() == encounter.field.tiles,
@@ -2112,6 +2115,94 @@ void monster_picture_before_combat()
     check(town.start_encounter() && town.pending_encounter() && !town.monster_picture(),
           "A key press dismisses the close-up and releases combat");
     check(!town.start_encounter(), "The close-up is dismissed only once");
+}
+
+// A weak party's roaming group can have no members: the script loads no one and
+// its COMBAT passes without a fault.
+void encounter_with_nobody()
+{
+    auto gate = program({32, 0, 20, 0});
+    auto encounter =
+        program({58, 33, 0, 20, 0, 2, 0, 255, 9, 0, 3, 1, 0x19, 0x6c, 11, 0, 0, 0, 0, 0, 0, 36, 0});
+    auto resources = std::make_shared<por::PhlanResources>();
+    resources->map = por::GeoMap{};
+    resources->programs[0] = gate;
+    resources->programs[20] = encounter;
+    auto district = std::make_shared<por::PhlanResources>();
+    district->map = por::GeoMap{};
+    district->script = 20;
+    district->bank = 2;
+    resources->districts[20] = district;
+    auto party = std::make_shared<CampaignParty>(module());
+    (void)party->add_pc(character("fighter"));
+    por::RolfTourSession town({}, gate, {}, 0x9914, {}, resources);
+    town.campaign_party(party);
+    settle(town);
+    (void)town.observe_view();
+    check(town.explore(por::ExplorationCommand::look), "The event starts");
+    settle(town);
+    check(!town.pending_encounter().has_value() && town.script_diagnostics().empty(),
+          "An encounter with no monsters is no fight and no fault");
+}
+
+// Fights of a campaign do not share their dice, though the game gives each the
+// same seed; a reload, with the same count of fights, repeats them.
+void each_fight_rolls_its_own_dice()
+{
+    auto gate = program({32, 0, 20, 0});
+    auto encounter =
+        program({58, 33, 0, 20, 0, 2, 0, 255, 9, 0, 3, 1, 0x19, 0x6c, 11, 0, 4, 0, 1, 0, 4, 36, 0});
+    auto resources = std::make_shared<por::PhlanResources>();
+    resources->map = por::GeoMap{};
+    resources->programs[0] = gate;
+    resources->programs[20] = encounter;
+    auto district = std::make_shared<por::PhlanResources>();
+    district->map = por::GeoMap{};
+    district->encounter_creatures[4].stored.name = "Test orc";
+    district->encounter_creatures[4].stored.raw[0x10E] = 1;
+    district->conversions[4] = {"slums-orc", 100, 75};
+    district->combat_archive = {9, 0, 4, 0, 0, 0, 0, 25, 0, 26, 0, 24};
+    district->combat_archive.resize(37, 0);
+    district->combat_archive[12] = 1;
+    district->combat_archive[14] = 2;
+    district->combat_archive[20] = 1;
+    district->script = 20;
+    district->bank = 2;
+    resources->districts[20] = district;
+    auto party = std::make_shared<CampaignParty>(module());
+    (void)party->add_pc(character("fighter"));
+    por::RolfTourSession town({}, gate, {}, 0x9914, {}, resources);
+    town.campaign_party(party);
+    settle(town);
+    (void)town.observe_view();
+    check(town.explore(por::ExplorationCommand::look), "The event starts");
+    settle(town);
+    check(town.pending_encounter().has_value(), "The fight is ready");
+    const auto fight_log = [&](std::uint64_t fights_so_far)
+    {
+        auto state = party->checkpoint();
+        state.next_combat_scope = fights_so_far;
+        party->restore(std::move(state));
+        CombatDemo combat(module());
+        combat.campaign_party(party);
+        combat.encounter(*town.pending_encounter(), 42);
+        for (unsigned n = 0;
+             n < 40 && combat.combat().snapshot().outcome == rules::Outcome::ongoing; ++n)
+        {
+            check(combat.submit(choose_demo_command(combat.combat(), Searching::everyone)),
+                  "Combat accepts the command");
+        }
+        return combat.combat().snapshot().log();
+    };
+    const auto before = party->checkpoint();
+    const auto first = fight_log(1);
+    party->restore(before);
+    const auto again = fight_log(1);
+    party->restore(before);
+    const auto second = fight_log(2);
+    party->restore(before);
+    check(first == again, "A reload's fight repeats its dice");
+    check(first != second, "The next fight rolls different dice");
 }
 
 void rejected_combat_handoff()
@@ -3003,6 +3094,8 @@ int main()
         script_handoff();
         shop_buyer_switch();
         rejected_combat_handoff();
+        encounter_with_nobody();
+        each_fight_rolls_its_own_dice();
         victory_beside_dead_member();
         failed_combat_result_rolls_back();
         victory_when_every_monster_fled();

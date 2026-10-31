@@ -11,9 +11,10 @@ prints its report.
     python3 tools/playtest.py gear -- --campaign --combat-demo ...
 
 Play-tests: actions, gear, morale (the play-test fights), quick (Quick combat on
-the campaign screen) and slums (the Slums' set encounters); quick and slums need
-the original files. Arguments after -- go to the
-play-test script. Build the game first (cmake --build --preset macos-universal).
+the campaign screen), slums (the Slums' set encounters) and campaign (the whole
+campaign, on a route recorded from the expedition test; --from=STAGE and
+--to=STAGE after -- choose a part); quick, slums and campaign need the original
+files. Arguments after -- go to the play-test script. Build the game first (cmake --build --preset macos-universal).
 """
 import argparse
 import os
@@ -26,6 +27,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parent.parent
 PLAYTESTS = {
     "actions": "playtest_actions.gd",
+    "campaign": "playtest_campaign.gd",
     "gear": "playtest_gear.gd",
     "morale": "playtest_morale.gd",
     "quick": "playtest_quick.gd",
@@ -53,6 +55,8 @@ def main():
                         help="the original Pool of Radiance folder")
     parser.add_argument("--out", help="where the report and screenshots go (default: a new temporary folder)")
     parser.add_argument("--godot", default=default_godot())
+    parser.add_argument("--reuse-route", action="store_true",
+                        help="campaign: play the route already recorded in the --out folder")
     parser.add_argument("script_args", nargs="*", help="arguments for the play-test script, after --")
     args = parser.parse_args()
 
@@ -63,7 +67,16 @@ def main():
     home.mkdir(parents=True)
     script_args = list(args.script_args)
 
-    if args.playtest == "quick":
+    if args.playtest == "campaign":
+        if not args.game_dir:
+            sys.exit("The campaign play-test needs the original files: --game-dir or OPENGOLD_GAME_DIR")
+        route = out / "route"
+        if not args.reuse_route:
+            shutil.rmtree(route, ignore_errors=True)
+            run([build / "opengold_expedition_tests", "--record-route", route],
+                dict(os.environ, OPENGOLD_GAME_DIR=args.game_dir))
+        script_args.append(f"--route={route}")
+    elif args.playtest == "quick":
         if not args.game_dir:
             sys.exit("The Quick play-test needs the original files: --game-dir or OPENGOLD_GAME_DIR")
         # A fighter, cleric, wizard and rogue at level four, unless the script
@@ -87,10 +100,12 @@ def main():
     env = dict(os.environ, HOME=str(home), APPDATA=str(home), XDG_DATA_HOME=str(home),
                OPENGOLD_GAME_DIR=args.game_dir)
     script = ROOT / "tests" / PLAYTESTS[args.playtest]
-    result = subprocess.run([args.godot, "--path", str(ROOT / "src/OpenGoldBox/godot"),
-                             "--script", str(script), "--", *script_args],
-                            env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     report = out / "report.txt"
+    report.unlink(missing_ok=True)
+    with open(out / "godot.log", "w", encoding="utf-8") as log:
+        result = subprocess.run([args.godot, "--path", str(ROOT / "src/OpenGoldBox/godot"),
+                                 "--script", str(script), "--", *script_args],
+                                env=env, stdout=log, stderr=subprocess.STDOUT)
     print(report.read_text(encoding="utf-8") if report.exists() else "No report was written.")
     print(f"Report and screenshots: {out}")
     sys.exit(result.returncode or (0 if report.exists() else 1))

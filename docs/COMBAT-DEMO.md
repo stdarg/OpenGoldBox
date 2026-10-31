@@ -40,6 +40,29 @@ fight, as in the original; whether it gets away depends on the enemies' speed
 **Flee**, at the right of End turn's row, hands the whole party to the game AI:
 those who can run for the nearest edge and off it; the rest fight on.
 
+## Playing the whole campaign in the window
+
+`python3 tools/playtest.py campaign` plays the campaign from New Phlan to
+Tyranthraxus's fall in the game window, with the game's controls. It takes
+several hours; `-- --from=STAGE --to=STAGE` or `-- --only=6,17` plays a part,
+and `--reuse-route --out FOLDER` plays a route already recorded there.
+
+`opengold_expedition_tests --record-route FOLDER` records the route from the
+expedition test: moves, the story's answers, camps and purchases. Wherever that
+run changes the party by hand (its levels and healing) it cuts a segment and
+writes a save, and `tests/playtest_campaign.gd` loads each save through the Load
+screen. So the window play shares the test's party between segments, not its
+own. Between them it walks with the arrow keys, answers from the recording, puts
+the party on Quick with spells on, and plays as a person would when that is not
+enough: it takes control and goes after an enemy Quick cannot see, camps when
+hurt, and uses Knock on a door that relocked when its area loaded.
+
+Each fight rolls its own dice from the party's count of fights, which the save
+holds, so the same moves after a reload lose the same way: a retry holds some
+members back at first or turns Quick magic off. The report
+(`report.txt`) names every fault, lost fight, stuck screen and skipped move, and
+`godot.log` holds the game's own errors.
+
 ## Play-testing a chosen party
 
 Two optional flags replace the six showcase heroes with up to six pool

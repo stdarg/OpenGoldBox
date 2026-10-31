@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <iostream>
+#include <memory>
 #include <limits>
 #include <sstream>
 #include <stdexcept>
@@ -558,13 +559,22 @@ void original_encounter_scope()
     }
     auto state = party->checkpoint();
     state.next_combat_scope = 11;
-    party->restore(std::move(state));
-    CombatDemo demo(module());
-    demo.campaign_party(party);
-    CampaignEncounter encounter;
-    encounter.field.geometry = {40, 25, std::vector<Terrain>(1000)};
-    encounter.enemies = {{999, "bandit", "Original encounter target", Side::opposition, {}}};
-    demo.encounter(std::move(encounter), 3);
+    // The first seed on which the wizard wins initiative, as its fight's dice
+    // follow the count of fights.
+    std::unique_ptr<CombatDemo> fight;
+    for (std::uint64_t seed = 3; !fight || fight->combat().snapshot().actor != id; ++seed)
+    {
+        check(seed < 100, "The wizard wins initiative on some seed");
+        fight.reset();
+        party->restore(state);
+        fight = std::make_unique<CombatDemo>(module());
+        fight->campaign_party(party);
+        CampaignEncounter encounter;
+        encounter.field.geometry = {40, 25, std::vector<Terrain>(1000)};
+        encounter.enemies = {{999, "bandit", "Original encounter target", Side::opposition, {}}};
+        fight->encounter(std::move(encounter), seed);
+    }
+    auto &demo = *fight;
     check(party->state().next_combat_scope == 12,
           "Original encounter reserves its unique campaign identity");
     check(demo.submit(command(demo.combat(), "blindness")),

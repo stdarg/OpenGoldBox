@@ -1468,6 +1468,8 @@ bool RolfTourSession::camp(RestKind kind)
         return false;
     }
     camp_kind_ = kind;
+    // The camp's outcome is the news, not what the last event said.
+    snapshot_.dialogue.clear();
     begin_event(EventTrigger::camp);
     advance(0);
     return true;
