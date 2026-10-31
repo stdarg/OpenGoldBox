@@ -14418,7 +14418,8 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
     // Flame Strike's Radiant beside its Fire, resisted on its own.
     auto second = spell.second_dice;
     // Ice Storm's Cold does not grow with the slot; Flame Strike's Radiant does.
-    if (spell.id != "ice_storm")
+    // A spell with no second damage has no second dice to grow.
+    if (second.count && spell.id != "ice_storm")
     {
         second.count += static_cast<int>(upcast_steps(verb, spell) * spell.upcast.extra_dice);
     }
@@ -33538,7 +33539,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.264", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.265", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),
