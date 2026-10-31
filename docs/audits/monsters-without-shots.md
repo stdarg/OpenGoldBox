@@ -110,9 +110,24 @@ Followers in the Slums' mixes barely matter: their leaders keep their bows.
   second damage roll the spell does not have. It was there under both rules. Rules
   0.6.265 fixes it, and `wizard_spell_tests` covers it. Before the fix, 53 fights
   in these runs stopped on it and are left out of the numbers above.
-- **Not changed: two carried javelins cannot be thrown.** The Commandant
+- **Fixed: two carried javelins could not be thrown.** The Commandant
   (`MON6CHA:50`, Javelin of Lightning) and a 6th-level fighter (`MON5CHA:84`,
-  Javelin +1) convert to the key `javelin:lightning`, which is no ranged weapon.
+  Javelin +1) carry the only javelins in monster gear. The shooting rule accepted
+  only weapons the SRD lists as ranged, and it lists a javelin as a melee weapon
+  with the Thrown property. Rules 0.6.266 accepts Thrown weapons too, and
+  rerunning the list changes these two creatures and no others, so "no creature
+  gained a shot" holds for the rule as audited. Each throws an ordinary javelin:
+  the once-a-day bolt is a command only the party has. The catalog calls the
+  fighter's "Javelin +1", but its item converts to `javelin:lightning`, so it
+  throws with no bonus and its loot is a Javelin of Lightning.
+
+  Being able to throw makes these fights easier, on the same 100 seeds and
+  level 7 party. At the default 33% (2 Commandants or 3 fighters) nothing
+  moves by more than a point. At 100%, 6 Commandants go from a win rate of
+  29-35 to 71-75, with party HP left 16-18 to 39-41, and 6 fighters from 96
+  to 100. The likely cause, inferred and not traced, is the one in reverse
+  from the table above: they stand back with a 1d6 javelin instead of closing
+  with their swords.
 - **Not changed: a heavy crossbow shoots as a long bow.** The bandit captain
   (`MON6CHA:100`) and the buccaneer mate (`MON6CHA:101`) carry a heavy crossbow,
   whose item type converts to `longbow`.

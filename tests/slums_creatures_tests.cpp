@@ -410,6 +410,15 @@ void held_weapons()
           "Javelins fly as the thrown axe, a Longbow's shot as an arrow");
     check(unit(*orc("", "sling"), 1).ranged_missile == Missile::stone,
           "A sling's shot flies as a stone");
+    for (const auto *javelin : {"javelin", "javelin+1", "javelin:lightning"})
+    {
+        const auto thrower = unit(*orc("", javelin), 1);
+        check(thrower.ranged_attack_available && thrower.ranged_missile == Missile::axe,
+              std::string("A carried ") + javelin +
+                  " can be thrown, though the SRD lists it as a melee weapon");
+    }
+    check(unit(*orc("", "javelin+1"), 1).ranged_rating == 6 + 8,
+          "A thrown Javelin +1 has its enchantment");
     const auto innate = [&](const std::string &definition)
     {
         return unit(*module->create({{10, 4, std::vector<Terrain>(40)},
