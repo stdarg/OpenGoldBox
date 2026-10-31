@@ -893,6 +893,10 @@ struct Command
     bool aims_area{}; // Starts aiming an area spell (CLASS-5).
     SpellFacts spell; // Zero unless it casts a spell.
     Intent intent{};
+    // A weapon attack's expected damage over its Action, in hundredths: its chance
+    // to hit this target, Advantage and Disadvantage included, times its average
+    // damage and its attacks a turn. Zero for anything else.
+    int expected_damage{};
 };
 
 class CombatSession

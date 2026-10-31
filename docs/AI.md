@@ -155,7 +155,12 @@ no enemy beside it, a creature whose ranged weapon rates **more than half** its
 melee weapon shoots instead of closing in: the held one, or a carried bow it
 draws (taking off its shield if the bow needs both hands). A **thrown weapon**
 is rated and thrown the same way, after the bow; with an enemy beside it, the
-creature fights in melee. The rating is the
+creature fights in melee unless another weapon promises more damage. The rules
+give each weapon attack its **expected damage** against that target: its chance
+to hit, with Disadvantage for shooting or throwing beside an enemy and anything
+else that changes the roll, times its average damage and its attacks a turn. A
+tie stays in melee. So a sword beats a bow at close range, while a creature with
+only a poor melee weapon may still shoot and take the penalty. The rating is the
 original's: dice count times sides, plus 8 for each magic plus, times the
 weapon's attacks a turn (a Monk's Martial Arts strike counts for its melee).
 Weapon masteries' optional effects are always used. Sneak Attack, Savage
@@ -183,7 +188,9 @@ whenever no enemy stood next to it and it scored more than half the best melee
 weapon, switching back when an enemy closed; a thrown weapon next to an enemy
 was used in melee. Breath and gaze attacks fired by chance each round.
 
-**Departures.** The rating counts melee attacks a turn, which the original did
+**Departures.** Beside an enemy the original always fought in melee; here the
+expected damage decides, and it reads the target's AC, which the original's
+choice never did. The rating counts melee attacks a turn, which the original did
 only for missile launchers, so a Monk fights with its fists. A Breath Weapon
 goes off where it is safe, not by chance.
 
