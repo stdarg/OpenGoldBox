@@ -2,6 +2,7 @@
 #define OPENGOLD_COMBAT_VIEW_H
 #include "cached_combat.h"
 #include "opengold/combat_demo.h"
+#include "spell_effects.h"
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
@@ -38,6 +39,8 @@ class CombatView : public godot::Control
     [[nodiscard]] godot::Array enemy_sprite_widths() const;
     [[nodiscard]] godot::Dictionary enemy_weapon_sets() const;
     [[nodiscard]] godot::Array missiles_in_flight() const;
+    [[nodiscard]] godot::PackedStringArray spell_effects_in_play() const;
+    [[nodiscard]] godot::Array spell_effect_rows() const;
     [[nodiscard]] bool sprite_facing_left(std::int64_t id) const;
     [[nodiscard]] godot::Ref<godot::Texture2D> sprite_texture(opengold::rules::EntityId id,
                                                               opengold::por::IconPose pose) const;
@@ -176,8 +179,25 @@ class CombatView : public godot::Control
     [[nodiscard]] godot::Ref<godot::ImageTexture>
     missile_texture(const MissileFlight &flight) const;
 
+    // A spell being shown. Like a shot its rules are settled; `from` and `to` are
+    // in combat squares, and each arrival holds a square and its delay in seconds.
+    struct SpellCast
+    {
+        const presentation::SpellEffect *effect{};
+        godot::Vector2 from, to;
+        godot::PackedVector3Array arrivals;
+        bool missed{};
+        double elapsed{}, travel_seconds{}, seconds{};
+        float size_scale{1.0F};
+    };
+
+    void launch_spell_effects(const opengold::rules::Command &command,
+                              const opengold::rules::Snapshot &before,
+                              const opengold::rules::Snapshot &after);
+
     MissileArt missile_art_;
     std::vector<MissileFlight> missile_flights_;
+    std::vector<SpellCast> spell_casts_;
     std::unique_ptr<opengold::por::SoundPlayer> attack_sound_;
     std::unique_ptr<opengold::por::SoundPlayer> effect_sound_;
     std::unique_ptr<opengold::por::SoundPlayer> death_sound_;

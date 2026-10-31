@@ -34,7 +34,10 @@ func check() -> void:
     # each of their turns until a blow fells it; the others end their turns.
     # The dice decide which blow does it.
     var felled := false
-    for frame in range(8000):
+    # In seconds, not frames: creatures wait for shots to land in real time, so a
+    # fast machine spends far more frames on the same fight.
+    var give_up_at := Time.get_ticks_msec() + 200000
+    while Time.get_ticks_msec() < give_up_at:
         var turn: String = combat.get_node("StatusStack/Turn").text
         # A Goliath's Reaction boon asks when a Kobold hits it; it is declined.
         var decline: Button = combat.get_node("Decline")
