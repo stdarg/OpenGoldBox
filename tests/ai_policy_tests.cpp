@@ -371,6 +371,29 @@ void light_and_nick_checks()
           "A Light weapon's extra attack follows at the same target");
 }
 
+// Beside an enemy the computer weighs each weapon's expected damage, which the
+// rules work out with its chance to hit and Disadvantage at close range.
+void close_quarters_checks()
+{
+    const auto state = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {2, 1})});
+    const auto offered = [](int melee, int ranged, const std::string &verb = "ranged")
+    {
+        std::vector<Command> commands{command("melee", 2), command(verb, 2), command("end")};
+        commands[0].expected_damage = melee;
+        commands[1].expected_damage = ranged;
+        return commands;
+    };
+    check(choose_demo_command(state, offered(500, 300)).verb == "melee",
+          "Beside an enemy, the stronger melee weapon is used");
+    check(choose_demo_command(state, offered(300, 300)).verb == "melee", "A tie stays in melee");
+    check(choose_demo_command(state, offered(100, 300)).verb == "ranged",
+          "A ranged weapon that still promises more, penalty counted, is used");
+    check(choose_demo_command(state, offered(100, 300, "shoot")).verb == "shoot",
+          "A carried bow that promises more is drawn");
+    check(choose_demo_command(state, offered(100, 300, "throw")).verb == "throw",
+          "A thrown weapon that promises more is thrown");
+}
+
 void thrown_checks()
 {
     auto state = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {6, 1})});
@@ -527,6 +550,7 @@ int main()
         free_move_checks();
         light_and_nick_checks();
         thrown_checks();
+        close_quarters_checks();
         action_surge_checks();
         smite_checks();
         steady_aim_checks();

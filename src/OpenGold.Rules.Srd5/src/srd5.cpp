@@ -6345,6 +6345,10 @@ class Session final : public CombatSession
     // enchantment, or Magic Weapon's bonus on a weapon with none, since that
     // spell enchants a nonmagical weapon.
     [[nodiscard]] int weapon_magic(const Actor &a, const Actor &target, AttackRange range);
+    [[nodiscard]] int weapon_magic_against(const Actor &a, const Actor &target,
+                                           AttackRange range) const;
+    [[nodiscard]] int expected_damage(const Actor &a, const Actor &target, AttackRange range) const;
+    [[nodiscard]] int expected_damage(const Actor &a, const Command &command) const;
     // Shillelagh is on the Club or Quarterstaff the creature holds.
     [[nodiscard]] bool shillelagh(const Actor &a) const;
 
@@ -11235,6 +11239,16 @@ std::vector<Command> Session::legal_commands() const
                                          ? ally
                                          : !ally && (target->life.hp > 0 || may_rise(*target));
                           });
+    for (auto &command : commands)
+    {
+        if (command.target && find_actor(command.target))
+        {
+            if (const auto *attacker = find_actor(command.actor))
+            {
+                command.expected_damage = expected_damage(*attacker, command);
+            }
+        }
+    }
     return commands;
 }
 
@@ -22827,19 +22841,80 @@ bool Session::shillelagh(const Actor &a) const
 int Session::weapon_magic(const Actor &a, const Actor &target, AttackRange range)
 {
     const auto &d = def(a);
+    if (range == AttackRange::melee && d.bane_undead && def(target).creature_type == "undead")
+    {
+        log("The weapon adds 2 more against the Undead.",
+            {"The weapon adds 2 more against the Undead.", {}});
+    }
+    return weapon_magic_against(a, target, range);
+}
+
+int Session::weapon_magic_against(const Actor &a, const Actor &target, AttackRange range) const
+{
+    const auto &d = def(a);
     const bool ranged = range == AttackRange::ranged;
     int bonus = ranged ? d.ranged_magic : d.melee_magic;
     if (!ranged && d.bane_undead && def(target).creature_type == "undead")
     {
         bonus += 2;
-        log("The weapon adds 2 more against the Undead.",
-            {"The weapon adds 2 more against the Undead.", {}});
     }
     if (!bonus)
     {
         bonus = magic_weapon_bonus(a);
     }
     return bonus;
+}
+
+// In hundredths. Dice that may or may not come (a Bless die, a Critical Hit's)
+// are left out: they favor neither weapon.
+int Session::expected_damage(const Actor &a, const Actor &target, AttackRange range) const
+{
+    const bool ranged = range == AttackRange::ranged;
+    const auto &d = def(a);
+    const int magic = weapon_magic_against(a, target, range);
+    const int bonus = (ranged          ? d.ranged_bonus
+                       : shillelagh(a) ? casting_bonus(d, "shillelagh")
+                                       : d.melee_bonus + sacred_weapon_bonus(a)) +
+                      magic - return_penalty(a);
+    const int armor = armor_class(target);
+    int hits_of_twenty = 0;
+    for (int natural = 1; natural <= 20; ++natural)
+    {
+        hits_of_twenty += attack_hits(natural, bonus, armor) ? 1 : 0;
+    }
+    const int mode = attack_modifiers(a, target, range, AttackSource::weapon).mode();
+    const int hits_of_400 = mode < 0   ? hits_of_twenty * hits_of_twenty
+                            : mode > 0 ? 400 - (20 - hits_of_twenty) * (20 - hits_of_twenty)
+                                       : hits_of_twenty * 20;
+    const auto dice = weapon_dice(a, range);
+    const int twice_average = std::max(0, dice.count * (dice.sides + 1) + 2 * (dice.bonus + magic));
+    const int attacks = 1 + d.extra_attacks + (!ranged && d.martial_arts ? 1 : 0);
+    return hits_of_400 * twice_average * attacks / 8;
+}
+
+int Session::expected_damage(const Actor &a, const Command &command) const
+{
+    const auto &target = actor(command.target);
+    if (command.verb == "melee")
+    {
+        return expected_damage(a, target, AttackRange::melee);
+    }
+    if (command.verb == "ranged")
+    {
+        return expected_damage(a, target, AttackRange::ranged);
+    }
+    if (command.verb != "shoot" && command.verb != "throw")
+    {
+        return 0;
+    }
+    // The weapon it would draw, in its hand as attack_as puts it there.
+    auto armed = a;
+    armed.definition =
+        thrown_loadout(a, command.verb == "shoot"
+                              ? carried_ranged_weapon(a)
+                              : std::string_view(items_.at(command.item - 1).definition))
+            .definition;
+    return expected_damage(armed, target, AttackRange::ranged);
 }
 
 int Session::magic_weapon_bonus(const Actor &a) const
@@ -33541,7 +33616,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.266", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.267", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),

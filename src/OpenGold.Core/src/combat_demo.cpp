@@ -2319,6 +2319,25 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     {
         attacks.push_back("throw");
     }
+    // Beside an enemy, another weapon must promise more than melee, with its
+    // Disadvantage at close range counted; a tie stays in melee.
+    if (const auto *melee = aim("melee"); enemy_beside && melee)
+    {
+        int best_damage = melee->expected_damage;
+        std::string_view best_weapon;
+        for (const auto verb : {"ranged", "shoot", "throw"})
+        {
+            if (const auto *weapon = aim(verb); weapon && weapon->expected_damage > best_damage)
+            {
+                best_damage = weapon->expected_damage;
+                best_weapon = verb;
+            }
+        }
+        if (!best_weapon.empty())
+        {
+            attacks.push_back(best_weapon);
+        }
+    }
     attacks.insert(attacks.end(),
                    {"melee", "fire_bolt", "sacred_flame", "vicious_mockery", "starry_wisp",
                     "ray_of_frost", "chill_touch", "shocking_grasp", "poison_spray", "ranged"});

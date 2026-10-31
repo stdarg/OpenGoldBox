@@ -419,6 +419,44 @@ void held_weapons()
     }
     check(unit(*orc("", "javelin+1"), 1).ranged_rating == 6 + 8,
           "A thrown Javelin +1 has its enchantment");
+    // The rules' expected damage counts the Disadvantage of shooting beside an enemy.
+    const auto expected =
+        [&](std::string melee, std::string ranged, Cell hero, std::string_view verb)
+    {
+        Encounter encounter{{10, 4, std::vector<Terrain>(40)},
+                            {{1, "slums-orc", "Orc", Side::opposition, {1, 1}},
+                             {2, "target", "Hero", Side::party, hero}}};
+        encounter.participants[0].melee_weapon = std::move(melee);
+        encounter.participants[0].ranged_weapon = std::move(ranged);
+        const auto combat = module->create(std::move(encounter), 7);
+        for (const auto &command : combat->legal_commands())
+        {
+            if (command.verb == verb && command.actor == 1 && command.target == 2)
+            {
+                return command.expected_damage;
+            }
+        }
+        throw std::runtime_error("The attack is not offered");
+    };
+    check(expected("longsword", "longbow", {2, 1}, "ranged") <
+              expected("longsword", "longbow", {5, 1}, "ranged"),
+          "A bow promises less beside its target than a few squares off");
+    check(expected("longsword", "longbow", {2, 1}, "melee") >
+              expected("longsword", "longbow", {2, 1}, "ranged"),
+          "Beside its target the longsword promises more than the penalized bow");
+    check(expected("longsword+1", "longbow", {2, 1}, "melee") >
+              expected("longsword", "longbow", {2, 1}, "melee"),
+          "An enchantment raises the expected damage");
+    const auto chosen_beside = [&](std::string melee, std::string ranged)
+    {
+        return choose_demo_command(*orc(std::move(melee), std::move(ranged))).verb;
+    };
+    check(chosen_beside("longsword", "longbow") == "melee",
+          "The computer keeps to its longsword beside an enemy");
+    check(expected("dagger", "longbow", {2, 1}, "ranged") >
+                  expected("dagger", "longbow", {2, 1}, "melee") &&
+              chosen_beside("dagger", "longbow") == "ranged",
+          "With only a dagger, it shoots a longbow beside an enemy and takes the penalty");
     const auto innate = [&](const std::string &definition)
     {
         return unit(*module->create({{10, 4, std::vector<Terrain>(40)},

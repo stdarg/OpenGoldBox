@@ -117,7 +117,9 @@ Add an entry whenever a new departure is decided.
   replays the same. The original breathed by chance each round; a Breath Weapon
   here goes off only where it catches an enemy and no ally.
   [AI-1](SRD-DECISIONS.md#ai-1-2026-10-21-computer-play-as-the-original-game-had-it),
-  [AI.md](AI.md).
+  [AI.md](AI.md). Beside an enemy the original always fought in melee; ours
+  uses the weapon with the highest expected damage, its chance to hit and the
+  close-range Disadvantage counted (2026-10-31).
 
 - **Hearing in combat** (2026-10-31). The original's monsters went only for what
   they could see. A creature here also hears enemies within 100 feet, through
