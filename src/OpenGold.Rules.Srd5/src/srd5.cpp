@@ -1695,9 +1695,6 @@ struct Definition
         ranged
     };
     Strike hampering{}, poisoning{}, pushing{};
-    // A monster's `charming` row: its hits with that attack leave the target
-    // Charmed until the start of its next turn (a Sprite's Enchanting Bow).
-    Strike charming{};
     // A monster's `flyby` row: flying out of an enemy's reach draws no
     // Opportunity Attack (a Hippogriff's Flyby).
     bool flyby{};
@@ -16477,17 +16474,6 @@ void Session::strike_riders(Actor &a, Actor &target, bool ranged)
     if (!ranged && d.paralysis_dc)
     {
         paralyze(a, target);
-    }
-    if (d.charming == strike && conscious(target) && !mindless(target) &&
-        !aura_of_devotion(target) &&
-        !detail::has_effect(target.effects, detail::EffectKind::mind_blank) &&
-        detail::can_apply(target.effects))
-    {
-        detail::apply_poisoned(target.effects, effect_source(a), a.source.name, next_turn_ms(a),
-                               detail::EffectKind::turn_charmed);
-        log(target.source.name + " is Charmed by " + a.source.name + ".",
-            {"{name} is Charmed by {caster}.",
-             {{"name", target.source.name}, {"caster", a.source.name}}});
     }
     // Until this turn ends: its next attack roll this turn has Advantage.
     if (!ranged && d.hit_advantage && detail::can_apply(a.effects))
@@ -33448,7 +33434,6 @@ constexpr std::array switchable_abilities{std::string_view{"advantage_damage"},
                                           std::string_view{"captains_charm"},
                                           std::string_view{"riposte"},
                                           std::string_view{"create_specter"},
-                                          std::string_view{"charming"},
                                           std::string_view{"flyby"},
                                           std::string_view{"magic_resistance"},
                                           std::string_view{"protective_magic"},
@@ -33553,7 +33538,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.263", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.264", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),
@@ -34102,7 +34087,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         // hampering creature melee|ranged|last, poisoning creature
         // melee|ranged|last [own_turn], pushing creature melee|ranged feet: the
         // riders of the attack's hits.
-        if (tag == "hampering" || tag == "poisoning" || tag == "pushing" || tag == "charming")
+        if (tag == "hampering" || tag == "poisoning" || tag == "pushing")
         {
             const auto found = content.definitions.find(key);
             std::string strike, extra;
@@ -34123,8 +34108,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
                               : strike == "ranged" ? Definition::Strike::ranged
                                                    : Definition::Strike::none;
             if (found == content.definitions.end() || !row.eof() ||
-                (kind == Definition::Strike::none &&
-                 (!last || tag == "pushing" || tag == "charming")) ||
+                (kind == Definition::Strike::none && (!last || tag == "pushing")) ||
                 (last && !found->second.last_attack) ||
                 (tag == "pushing" && (feet < 5 || feet > 60 || feet % 5)) ||
                 (!extra.empty() && extra != "own_turn") ||
@@ -34153,10 +34137,6 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
                     definition.poisoning = kind;
                     definition.poisoning_own_turn = !extra.empty();
                 }
-            }
-            else if (tag == "charming")
-            {
-                definition.charming = kind;
             }
             else
             {

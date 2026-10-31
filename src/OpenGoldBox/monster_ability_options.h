@@ -53,7 +53,6 @@ inline constexpr std::array monster_ability_options{
                          N_("tigers, hill giants, ettins")},
     MonsterAbilityOption{"last_attack", N_("A different last attack"),
                          N_("scorpions, wyverns, ettins, the medusa")},
-    MonsterAbilityOption{"charming", N_("Charming arrows"), N_("quicklings")},
     MonsterAbilityOption{"flyby", N_("Flyby"), N_("hippogriffs")},
     MonsterAbilityOption{"charge", N_("Charge"), N_("wild boars")},
     MonsterAbilityOption{"bonus_charge", N_("Charge (Bonus Action)"), N_("trolls")},

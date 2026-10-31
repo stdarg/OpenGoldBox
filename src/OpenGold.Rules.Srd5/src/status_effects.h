@@ -524,7 +524,7 @@ enum class EffectKind : unsigned
     // Advantage on its next attack roll this turn (a Pirate Captain's Rapier).
     poised = 210,
     // Charmed by its source until the start of the source's next turn (a
-    // Pirate Captain's Captain's Charm, a Sprite's Enchanting Bow).
+    // Pirate Captain's Captain's Charm).
     turn_charmed = 211,
     // Charmed by Compulsion while its caster concentrates; `dc` is the
     // direction the caster last named for its next turn (1 north and on

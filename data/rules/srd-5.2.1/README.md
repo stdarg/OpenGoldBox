@@ -284,8 +284,7 @@ of the Multiattack's last attack; `hampering creature melee|ranged|last` and
 `last_attack` row's attack, whose extra damage dice may now be `0 0 type`);
 `pushing creature melee|ranged feet`; `hit_advantage creature`;
 `captains_charm creature dc range`; `riposte creature bonus`, a Parry that
-strikes back; `create_specter creature limit undead`; `charming creature
-melee|ranged`; `flyby creature`; `magic_resistance creature`; and
+strikes back; `create_specter creature limit undead`; `flyby creature`; `magic_resistance creature`; and
 `protective_magic creature uses`.
 
 Monster ability rows (2026-10-28,
@@ -317,7 +316,7 @@ creature's, to switch it off. The game's options (`settings.cfg`'s
 `[monsters]`) switch the same abilities by difficulty without editing this
 file. It takes these abilities: `advantage_damage`,
 `attach`, `bite`, `bloodied_fury`, `bonus_charge`, `breath`, `captains_charm`,
-`charge`, `charming`, `create_specter`, `cunning_action`, `dreadful_glare`,
+`charge`, `create_specter`, `cunning_action`, `dreadful_glare`,
 `enthralling_panache`, `ethereal_jaunt`, `flyby`, `gore`, `hampering`,
 `hit_advantage`, `incorporeal`, `innate`, `last_attack`, `legendary`,
 `legendary_resistance`, `life_drain`, `life_drain_attack`, `magic_resistance`,

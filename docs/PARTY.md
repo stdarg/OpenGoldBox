@@ -221,7 +221,7 @@ enough XP advances when the player chooses Advance
 recreation; original rewards require explicit mappings. Roster, shop,
 equipment and script writes are locked during combat. When combat finishes,
 editing resumes; no fresh HP or spell resources are granted on the next fight.
-The module identity is in `srd5.cpp` (0.6.263 as of 2026-10-30), and the
+The module identity is in `srd5.cpp` (0.6.264 as of 2026-10-30), and the
 combat checkpoint format (71) includes character recipes. Old module saves fail the identity check explicitly.
 [Campaign file saves](SAVES.md) now retain the complete supported party and idle New Phlan state. Native `PartyState` checkpoints remain the in-session rollback mechanism. Pending dialogue/services and combat are not campaign save boundaries.
 

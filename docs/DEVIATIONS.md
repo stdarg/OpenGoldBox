@@ -297,6 +297,8 @@ in the game: answering YES at a hall lists its services in the dialogue
   bonuses ([MON-1](SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks)).
   It shoots or throws only with a ranged weapon in its gear (2026-10-30),
   though its SRD stat block has a shot; spells and a giant's rocks need none.
+  Quicklings carry nothing, so they fight in melee only and never charm, though
+  the SRD Sprite standing in for them has a charming bow.
   A creature without new art shows its original icon with its action
   pose. [#274](https://github.com/stdarg/OpenGoldBox/issues/274),
   [data/monsters](../data/monsters/README.md).

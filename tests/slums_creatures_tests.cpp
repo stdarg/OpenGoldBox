@@ -1358,24 +1358,27 @@ void efreeti_resists_magic()
     check(higher, "Advantage sometimes raises it");
 }
 
-// The western wilderness's quicklings shoot the SRD Sprite's Enchanting Bow:
-// a hit charms until the start of the sprite's next turn.
-void quickling_charms()
+// The western wilderness's quicklings carry nothing, as in the original: the
+// SRD Sprite's Needle Sword numbers in melee, and no Enchanting Bow.
+void quickling_fights_only_in_melee()
 {
     const auto module = rules();
-    bool charmed = false;
-    for (std::uint64_t seed = 1; seed < 30 && !charmed; ++seed)
+    bool hit = false;
+    for (std::uint64_t seed = 1; seed < 30 && !hit; ++seed)
     {
         auto c = module->create({{12, 4, std::vector<Terrain>(48)},
                                  {{1, "quickling", "Monster", Side::opposition, {1, 1}},
-                                  {2, "target", "Hero", Side::party, {5, 1}}}},
+                                  {2, "target", "Hero", Side::party, {2, 1}}}},
                                 seed);
         turn_of(*c, 1);
-        check(submit(*c, "ranged", 1, 2), "The quickling shoots");
-        charmed = count_logged(*c, "Hero is Charmed by Monster.") == 1 &&
-                  unit(*c, 2).status.find("Charmed") != std::string::npos;
+        const auto before = unit(*c, 2).hit_points;
+        check(!submit(*c, "ranged", 1, 2), "A quickling has no shot");
+        check(submit(*c, "melee", 1, 2), "The quickling strikes");
+        hit = unit(*c, 2).hit_points < before;
+        check(unit(*c, 2).status.find("Charmed") == std::string::npos,
+              "A quickling's hit charms no one");
     }
-    check(charmed, "An Enchanting Bow hit charms");
+    check(hit, "A quickling's strike can hit");
 }
 
 // Yarash's Protective Magic, as the SRD Mage's: three times a day his Reaction
@@ -1696,7 +1699,7 @@ int main()
         hippogriff_flies_by();
         ankheg_sprays();
         efreeti_resists_magic();
-        quickling_charms();
+        quickling_fights_only_in_melee();
         yarash_protects_himself();
         options_switch_abilities();
         ghoul_claws();

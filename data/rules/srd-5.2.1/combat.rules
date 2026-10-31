@@ -433,9 +433,9 @@ innate yarash Cone_of_Cold 1 action cone_of_cold
 innate yarash Misty_Step 3 bonus misty_step
 protective_magic yarash 3
 # The western wilderness (docs/audits/western-wilderness.md, WEST-1), with the
-# original's Hit Points: quicklings as the Sprite (its Enchanting Bow's 1
-# damage as 1d2 - 1, its hits charming until the start of the sprite's next
-# turn: charming creature melee|ranged; the computer casts no Invisibility),
+# original's Hit Points: quicklings as the Sprite (its Needle Sword's
+# numbers, bare-handed: the original's quicklings carry nothing, so no
+# Enchanting Bow; the computer casts no Invisibility),
 # Zhentil corporals as the Guard, giant snakes as the Giant Venomous Snake,
 # ankhegs (Acid Spray, Recharge 6, as a breath row; no grapple, SCOPE-2),
 # centaurs as the Centaur Trooper (its Trampling Charge, a Bonus Action after
@@ -443,14 +443,13 @@ protective_magic yarash 3
 # trampling_charge creature dc count sides modifier recharge), giant
 # mantises on the Giant Scorpion's claws, thri-kreen as the Warrior Veteran,
 # tigers and wild boars.
-creature quickling 15 7 4 40 6 1 4 4 6 1 2 -1 40 160 0 0 0 1 0
+creature quickling 15 7 4 40 6 1 4 4 0 0 0 0 0 0 0 0 0 1 0
 saves quickling -4 4 0 2 1 0
 damage_types quickling piercing piercing
 size quickling small
 type quickling fey
 flies quickling
 perception quickling 3
-charming quickling ranged
 creature zhent-corporal 16 13 1 30 3 1 6 1 3 1 6 1 20 60 0 0 0 1 0
 saves zhent-corporal 1 1 1 0 0 0
 damage_types zhent-corporal piercing piercing
