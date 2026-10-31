@@ -1450,16 +1450,23 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             in_view.push_back(&enemy);
         }
     }
+    // Spending a resource on a fight takes seeing an enemy; hearing one only
+    // brings the creature toward it.
+    const bool enemy_seen = !in_view.empty();
+    // Sound carries 100 feet, walls or not, so two creatures either side of a
+    // wall's corner do not wait on each other.
+    constexpr int hearing_squares = 20;
     // A stand-in for the player, or in a check every creature, goes looking
     // for the enemies it cannot see, magic-users too.
     const bool seeking =
-        in_view.empty() && (searching == Searching::everyone ||
-                            (searching == Searching::party && active.side == Side::party));
-    if (seeking)
+        !enemy_seen && (searching == Searching::everyone ||
+                        (searching == Searching::party && active.side == Side::party));
+    if (!enemy_seen)
     {
         for (const auto &enemy : state.combatants)
         {
-            if (enemy.side != active.side && !enemy.dead && (enemy.hit_points > 0 || finishing))
+            if (enemy.side != active.side && !enemy.dead && (enemy.hit_points > 0 || finishing) &&
+                (seeking || squares_apart(active, enemy) <= hearing_squares))
             {
                 in_view.push_back(&enemy);
             }
@@ -2334,7 +2341,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     }
     // Its Action spent, a Fighter surges for another while an enemy is in view
     // (#269).
-    if (const auto *surge = offers("action_surge"); surge && !active.action && !in_view.empty())
+    if (const auto *surge = offers("action_surge"); surge && !active.action && enemy_seen)
     {
         return *surge;
     }
@@ -2815,6 +2822,12 @@ std::vector<Command> without_spells(const rules::Snapshot &state, std::vector<Co
     return commands;
 }
 } // namespace
+
+std::uint64_t fight_seed(Difficulty difficulty, std::uint64_t fresh)
+{
+    constexpr std::uint64_t saved_dice = 42;
+    return difficulty == Difficulty::easy ? fresh : saved_dice;
+}
 
 Command choose_quick_command(const CombatSession &session, bool magic, Searching searching,
                              Difficulty difficulty)

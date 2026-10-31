@@ -40,6 +40,9 @@ var fought := false
 var losses := 0
 var retry := 0
 var need_knock := false
+var difficulty := ""
+var changed_difficulty := false
+var difficulty_before := ""
 var skipped := 0
 var only := PackedStringArray()
 var rests := 0
@@ -52,6 +55,7 @@ func _initialize() -> void:
         if arg.begins_with("--to="): last_stage = arg.trim_prefix("--to=")
         if arg.begins_with("--segment="): first_segment = arg.trim_prefix("--segment=")
         if arg.begins_with("--only="): only = arg.trim_prefix("--only=").split(",")
+        if arg.begins_with("--difficulty="): difficulty = arg.trim_prefix("--difficulty=")
         if arg.begins_with("--time-scale="): time_scale = float(arg.trim_prefix("--time-scale="))
     call_deferred("run")
 
@@ -338,6 +342,12 @@ func play_fight() -> bool:
         say("  lost " + name + ": " + fight_turn_text().get_slice("\n", 0))
         return false
     fought = true
+    # The opening rolls, to compare fights across reloads.
+    var rolls := PackedStringArray()
+    for line in last_log.split("\n", false):
+        if line.contains(": d20 ") and rolls.size() < 6:
+            rolls.append(line.get_slice(": d20 ", 1).get_slice(" ", 0))
+    say("  opening rolls: " + " ".join(rolls))
     say("  won " + name + " in %.0f s" % ((Time.get_ticks_msec() - started) / 1000.0))
     return true
 
@@ -733,6 +743,29 @@ func play_items(items: Array, stage: String) -> bool:
         if not has_town(): return false
     return true
 
+# A run from the editor's executable keeps its settings in the project folder,
+# which other runs share: the first change remembers the setting to put back.
+func set_difficulty(value: String) -> void:
+    var path := "res://settings.cfg" if OS.has_feature("editor") else "user://settings.cfg"
+    var settings := ConfigFile.new()
+    settings.load(path)
+    if not changed_difficulty:
+        changed_difficulty = true
+        difficulty_before = settings.get_value("game", "difficulty", "")
+    settings.set_value("game", "difficulty", value)
+    settings.save(path)
+
+func restore_difficulty() -> void:
+    if not changed_difficulty: return
+    var path := "res://settings.cfg" if OS.has_feature("editor") else "user://settings.cfg"
+    var settings := ConfigFile.new()
+    settings.load(path)
+    if difficulty_before.is_empty():
+        settings.erase_section_key("game", "difficulty")
+    else:
+        settings.set_value("game", "difficulty", difficulty_before)
+    settings.save(path)
+
 func read_route() -> Array:
     var segments := []
     var stage := ""
@@ -754,6 +787,7 @@ func run() -> void:
     root.size = Vector2i(1600, 1000)
     TranslationServer.set_locale("en")
     Engine.time_scale = time_scale
+    if not difficulty.is_empty(): set_difficulty(difficulty)
     var playing := first_stage.is_empty() and first_segment.is_empty()
     var shown_stage := ""
     var done := 0
@@ -775,10 +809,7 @@ func run() -> void:
             # player would turn down in Options, as the report says.
             if attempt == EASY_AFTER and segment.stage == "castle":
                 say("  turning the difficulty down to Easy in the settings")
-                var settings := ConfigFile.new()
-                settings.load("user://settings.cfg")
-                settings.set_value("game", "difficulty", "easy")
-                settings.save("user://settings.cfg")
+                set_difficulty("easy")
             if not await load_segment(segment.save): break
             if attempt == 0: await capture(segment.stage + "-start")
             var lost_before := losses
@@ -798,4 +829,5 @@ func run() -> void:
     say("fights: %d, lost: %d, standoffs broken by hand: %d, extra camps: %d, recorded items skipped: %d, problems: %d" % [fights, losses, hunts, rests, skipped, problems])
     say("spell lines:")
     for line in spell_lines: say("  " + line)
+    restore_difficulty()
     quit(0 if failed.is_empty() and problems == 0 else 1)
