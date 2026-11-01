@@ -33,6 +33,8 @@ size and humanoid height, its equipment and its weapon sets:
   weapon it cannot shoot or throw, unless its stat block's ranged attack is no
   carried weapon (`innate_ranged` in
   [combat.rules](../rules/srd-5.2.1/combat.rules): a spell or a thrown rock).
+  One holding its readied shield spends its Action taking it off before it shoots
+  a weapon that needs both hands.
 - **Forms.** Wild Shape's and Polymorph's Beast forms and summoned creatures
   wear the art of the creature drawn with their original icon (a Wolf form,
   `mon4cha_dax_106`'s).

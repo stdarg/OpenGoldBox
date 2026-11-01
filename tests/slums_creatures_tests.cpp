@@ -214,7 +214,7 @@ void troll_delay_saved()
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1) && unit(*c, 1).hit_points == 0, "A hero fells the Troll");
     const auto checkpoint = c->save();
-    check(checkpoint.starts_with("OGCOMBAT 72 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 73 "), "Checkpoints use the current format");
     auto restored = module->restore(checkpoint);
     check(restored->save() == checkpoint, "A downed Troll's delay survives a checkpoint");
     check(round_troll_gets_up(*restored) == round_troll_gets_up(*c),
@@ -229,7 +229,7 @@ void troll_burns()
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1) && unit(*c, 1).hit_points == 0, "Fire fells the Troll");
     const auto checkpoint = c->save();
-    check(checkpoint.starts_with("OGCOMBAT 72 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 73 "), "Checkpoints use the current format");
     auto restored = module->restore(checkpoint);
     check(restored->save() == checkpoint, "A blocked Regeneration survives a checkpoint");
     check(submit(*restored, "end", first) && submit(*restored, "end", second),
@@ -380,6 +380,54 @@ void buccaneer_enthralls()
     }
     check(false, "Find a charm that holds through a Dagger hit");
 }
+
+// A shield in the way of a two-handed bow costs a monster its Action, as it
+// costs a character, and the shield stays off through a checkpoint. Its stat
+// block's Armor Class stays. A javelin needs one hand, and no shield comes off.
+void shield_in_the_way()
+{
+    const auto module = rules();
+    const auto orc = [&](std::string ranged)
+    {
+        Encounter encounter{{10, 4, std::vector<Terrain>(40)},
+                            {{1, "slums-orc", "Orc", Side::opposition, {1, 1}},
+                             {2, "target", "Hero", Side::party, {6, 1}}}};
+        encounter.participants[0].ranged_weapon = std::move(ranged);
+        encounter.participants[0].holds_shield = true;
+        return module->create(std::move(encounter), 7);
+    };
+    auto shield_bearer = orc("longbow");
+    while (shield_bearer->snapshot().actor != 1)
+    {
+        check(submit(*shield_bearer, "end", shield_bearer->snapshot().actor), "End the turn");
+    }
+    const auto armor_class = unit(*shield_bearer, 1).armor_class;
+    check(unit(*shield_bearer, 1).ranged_rating == 8, "The computer can still weigh the bow");
+    check(!offered(*shield_bearer, "ranged", 1, 2), "The shield stops the bow's shot");
+    check(choose_demo_command(*shield_bearer, Searching::by_sight, Difficulty::normal).verb ==
+              "doff_shield",
+          "The computer takes the shield off to shoot");
+    check(submit(*shield_bearer, "doff_shield", 1), "The shield comes off");
+    check(!shield_bearer->snapshot().combatants.empty() && !offered(*shield_bearer, "ranged", 1, 2),
+          "Taking it off spent the Action");
+    check(unit(*shield_bearer, 1).armor_class == armor_class,
+          "Its Armor Class stays its stat block's");
+    const auto saved = shield_bearer->save();
+    auto restored = module->restore(saved);
+    check(submit(*restored, "end", 1), "The orc ends its turn");
+    while (restored->snapshot().actor != 1)
+    {
+        check(submit(*restored, "end", restored->snapshot().actor), "End the turn");
+    }
+    check(offered(*restored, "ranged", 1, 2), "After a checkpoint the shield is still off");
+    auto javelin = orc("javelin");
+    while (javelin->snapshot().actor != 1)
+    {
+        check(submit(*javelin, "end", javelin->snapshot().actor), "End the turn");
+    }
+    check(offered(*javelin, "ranged", 1, 2), "A javelin is thrown past the shield");
+}
+
 // A human-shaped creature fights with the weapons it holds (#274): their dice
 // and range in place of its stat block's, which keeps its own bonuses.
 void held_weapons()
@@ -1724,6 +1772,7 @@ int main()
         sunlight_sensitivity();
         grishnak_casts();
         held_weapons();
+        shield_in_the_way();
         specter_drains_life();
         specter_passes_through();
         basilisk_gazes();

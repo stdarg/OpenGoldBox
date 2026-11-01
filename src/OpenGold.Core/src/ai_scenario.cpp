@@ -65,8 +65,8 @@ void write_participant(std::ostream &out, std::string_view tag, const rules::Par
         << static_cast<int>(who.side) << '\t' << who.cell.x << '\t' << who.cell.y << '\t'
         << who.surprised << '\t' << who.facing_left << '\t' << who.resting << '\t' << who.morale
         << '\t' << who.intelligence << '\t' << who.melee_weapon << '\t' << who.ranged_weapon << '\t'
-        << who.footprint.width << '\t' << who.footprint.height << '\t' << who.inventory.size()
-        << '\n';
+        << who.footprint.width << '\t' << who.footprint.height << '\t' << who.holds_shield << '\t'
+        << who.inventory.size() << '\n';
     for (const auto &item : who.inventory)
     {
         out << "item\t" << item.inventory_id << '\t' << item.definition << '\t' << item.quantity
@@ -76,7 +76,7 @@ void write_participant(std::ostream &out, std::string_view tag, const rules::Par
 
 rules::Participant read_participant(const std::vector<std::string_view> &fields)
 {
-    if (fields.size() != 17)
+    if (fields.size() != 18)
     {
         throw std::runtime_error("Bad creature in an AI scenario");
     }
@@ -94,6 +94,7 @@ rules::Participant read_participant(const std::vector<std::string_view> &fields)
     who.melee_weapon = fields[12];
     who.ranged_weapon = fields[13];
     who.footprint = {as_int(fields[14]), as_int(fields[15])};
+    who.holds_shield = as_int(fields[16]) != 0;
     return who;
 }
 

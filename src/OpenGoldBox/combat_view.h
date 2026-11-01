@@ -168,6 +168,7 @@ class CombatView : public godot::Control
     // hit ends on the target, a miss sails past it.
     struct MissileFlight
     {
+        opengold::rules::EntityId actor{};
         opengold::rules::Missile missile{};
         godot::Vector2 from, to, target;
         double elapsed{}, seconds{};

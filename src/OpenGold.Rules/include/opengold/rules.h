@@ -566,6 +566,9 @@ struct Participant
     // no ranged weapon, such as no_ranged_weapon, takes away the stat block's
     // shot unless that attack is not a carried weapon (innate_ranged).
     std::string melee_weapon, ranged_weapon;
+    // A human-shaped creature holding a shield takes it off, with its Action,
+    // before it shoots a weapon that needs both hands.
+    bool holds_shield{};
     // The squares it fills, its cell the top-left one (FOOT-1).
     Footprint footprint;
 };

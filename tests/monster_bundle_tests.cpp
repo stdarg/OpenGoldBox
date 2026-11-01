@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <set>
 #include <string>
 
 using namespace opengold;
@@ -82,6 +83,17 @@ void shipped()
         {
             check(text(entry.path() / "monster.json").find("dev_tools") == std::string::npos,
                   "The export names nothing in dev_tools");
+        }
+    }
+    // A weapon a creature fires shows in its art. These await new art: remove
+    // each as the catalog exports it, and the check then holds it there.
+    const std::set<std::string> art_pending{"MON5CHA.DAX:55", "MON6CHA.DAX:101"};
+    for (const auto &[key, monster] : bundle.monsters)
+    {
+        if (human_shaped(monster) && wielded_items(monster).ranged)
+        {
+            check((attack_variants(monster).ranged != nullptr) != art_pending.contains(key),
+                  key + " shows its ranged weapon when it fires, unless its art is pending");
         }
     }
     check(load_monster_bundle(root / "no-such-folder", png_size_only).monsters.empty(),

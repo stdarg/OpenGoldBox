@@ -1229,26 +1229,6 @@ std::vector<Equipment> added_gear(const ExportedMonster *exported, const PhlanRe
 
 // The item key of the item a creature fights with: its original item, or a
 // plain item of the type the catalog added. Empty for none.
-std::string wielded_key(const Creature &creature, const MonsterItem *item)
-{
-    if (!item || (item->source_index < 0 && item->source_type < 0))
-    {
-        return {};
-    }
-    if (item->source_index < 0)
-    {
-        Equipment added;
-        added.stored.type = static_cast<std::uint8_t>(item->source_type);
-        return equipment_conversion(added);
-    }
-    if (static_cast<std::size_t>(item->source_index) >= creature.equipment.size())
-    {
-        return {};
-    }
-    const auto &original = creature.equipment[static_cast<std::size_t>(item->source_index)];
-    return original.stored.type == item->source_type ? equipment_conversion(original)
-                                                     : std::string{};
-}
 } // namespace
 
 PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned> records,
@@ -2532,19 +2512,6 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             throw EclError("Invalid original combat icon");
         }
-        // A human-shaped creature fights with the weapons it holds (#274), and
-        // shoots only with a ranged weapon it carries.
-        std::string melee_weapon, ranged_weapon;
-        if (exported && human_shaped(*exported))
-        {
-            const auto wielded = wielded_items(*exported);
-            melee_weapon = wielded_key(creature, wielded.melee);
-            ranged_weapon = wielded_key(creature, wielded.ranged);
-            if (ranged_weapon.empty())
-            {
-                ranged_weapon = rules::no_ranged_weapon;
-            }
-        }
         for (unsigned i = 0; ally && i < count; ++i)
         {
             const auto id =
@@ -2577,8 +2544,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             staged_enemies_.back().morale = own > 102 ? 0 : std::min(own, 100u);
             staged_enemies_.back().intelligence =
                 std::min<unsigned>(creature.stored.abilities.intelligence, 30);
-            staged_enemies_.back().melee_weapon = melee_weapon;
-            staged_enemies_.back().ranged_weapon = ranged_weapon;
+            arm_as_exported(staged_enemies_.back(), creature, exported);
             staged_art_.push_back(*art);
             staged_art_.back().entity = id;
             staged_records_.push_back(record);

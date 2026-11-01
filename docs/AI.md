@@ -195,7 +195,10 @@ its chance to hit, with Disadvantage for shooting or throwing beside an enemy an
 anything else that changes the roll, times its average damage and its attacks a
 turn. Bless dice and Critical Hits are left out. A tie stays in melee. The held
 weapon or a carried bow it draws (taking off its shield if the bow needs both
-hands) and **thrown weapons** are all weighed. The rating is the original's: dice count times sides, plus 8 for each magic plus, times the
+hands) and **thrown weapons** are all weighed. A monster whose shield stops its
+two-handed bow takes it off, at every difficulty, when no enemy is beside it and
+the bow rates more than half its melee weapon: the rules offer no shot to weigh
+until the shield is off. The rating is the original's: dice count times sides, plus 8 for each magic plus, times the
 weapon's attacks a turn (a Monk's Martial Arts strike counts for its melee).
 Weapon masteries' optional effects are always used. Sneak Attack, Savage
 Attacker and a Versatile grip apply automatically (AUTO-1).

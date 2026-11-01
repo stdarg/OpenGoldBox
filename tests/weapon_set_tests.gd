@@ -102,6 +102,7 @@ func check_missiles(combat: Control) -> void:
         for missile in combat.battlefield_visuals()["missiles"]:
             missile_drawn = missile_drawn or shown_on_screen(combat, missile, screen)
     for flight in combat.missiles_in_flight():
+        require(combat.enemy_weapon_sets().get(flight["actor"]) == "ranged", "The shooter shows its bow at every shot: " + str(flight))
         require(flight["missile"] == "arrow", "An orc shoots an arrow from its bow: " + str(flight))
         require(flight["texture"] is Texture2D, "The arrow has its art")
         var to_target: Vector2 = flight["target"] - flight["from"]

@@ -733,7 +733,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 72;
+constexpr unsigned checkpoint_format = 73;
 // A broken monster's turns of getting no nearer the edge before it charges
 // (MORALE-2).
 constexpr int panic_charge_after_turns = 2;
@@ -1908,6 +1908,7 @@ struct Definition
     // Its ranged attack is no carried weapon, such as a spell or a thrown rock,
     // so it keeps it without one.
     bool innate_ranged{};
+    bool ranged_two_handed{}; // The ranged weapon it holds needs both hands.
     // What its ranged attack sends flying; unset, a stat block's weapon by range.
     std::optional<rules::Missile> ranged_missile;
     int medicine{};
@@ -4797,6 +4798,7 @@ Definition wielding(Definition d, std::string_view melee_key, std::string_view r
         d.range = ranged->range;
         d.long_range = ranged->long_range;
         d.ranged_missile = weapon_missile(*ranged);
+        d.ranged_two_handed = ranged->hands == 2;
     }
     return d;
 }
@@ -7320,6 +7322,10 @@ std::string_view Session::carried_ranged_weapon(const Actor &a) const
 
 bool Session::shield_blocks_bow(const Actor &a) const
 {
+    if (a.source.character_profile.empty())
+    {
+        return a.source.holds_shield && !a.shield_off && def(a).ranged_two_handed;
+    }
     if (a.shield_off || !wears_shield(def(a)) || !carried_ranged_weapon(a).empty())
     {
         return false;
@@ -13119,7 +13125,8 @@ std::vector<Command> Session::offered_commands() const
             add(id, "true_strike", "True Strike", other.source.id);
             add(id, "true_strike_radiant", "True Strike (Radiant)", other.source.id);
         }
-        if (d.range > 0 && feet <= d.long_range && (!d.ranged_loading || reloaded(a)))
+        if (d.range > 0 && feet <= d.long_range && (!d.ranged_loading || reloaded(a)) &&
+            !shield_blocks_bow(a))
         {
             add(id, "ranged", "Ranged attack", other.source.id);
             offer_tactical(AttackRange::ranged, true, other);
@@ -27222,7 +27229,11 @@ void Session::dispatch(const Command &command)
             // Taking off a shield takes the Utilize action (SRD 5.2.1); it stays
             // off for the rest of the fight.
             a.shield_off = true;
-            a.definition = without_shield(a.source.character_profile, a.definition);
+            // A monster's Armor Class is its stat block's, shield or not.
+            if (!a.source.character_profile.empty())
+            {
+                a.definition = without_shield(a.source.character_profile, a.definition);
+            }
             log(a.source.name + " takes off a shield to use a bow.",
                 {"{name} takes off a shield to use a bow.", {{"name", a.source.name}}});
         }
@@ -27499,10 +27510,10 @@ std::string Session::save() const
             << a.must_stay << ' ' << a.panicked << ' ' << a.closest_to_edge << ' ' << a.turns_stuck
             << ' ' << a.source.morale << ' ' << a.source.intelligence << ' '
             << std::quoted(a.source.melee_weapon) << ' ' << std::quoted(a.source.ranged_weapon)
-            << ' ' << a.run_start.x << ' ' << a.run_start.y << ' ' << a.run_end.x << ' '
-            << a.run_end.y << ' ' << a.run_step.x << ' ' << a.run_step.y << ' ' << a.run_feet << ' '
-            << a.flame_lit << ' ' << a.curse_lifted << ' ' << a.displacement_spent << ' '
-            << a.last_target << ' ' << a.item_uses.size() << ' ';
+            << ' ' << a.source.holds_shield << ' ' << a.run_start.x << ' ' << a.run_start.y << ' '
+            << a.run_end.x << ' ' << a.run_end.y << ' ' << a.run_step.x << ' ' << a.run_step.y
+            << ' ' << a.run_feet << ' ' << a.flame_lit << ' ' << a.curse_lifted << ' '
+            << a.displacement_spent << ' ' << a.last_target << ' ' << a.item_uses.size() << ' ';
         for (const auto &[id, left] : a.item_uses)
         {
             out << id << ' ' << left << ' ';
@@ -27756,9 +27767,9 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.must_stay >> actor.panicked >> actor.closest_to_edge >> actor.turns_stuck >>
         actor.source.morale >> actor.source.intelligence >>
         std::quoted(actor.source.melee_weapon) >> std::quoted(actor.source.ranged_weapon) >>
-        actor.run_start.x >> actor.run_start.y >> actor.run_end.x >> actor.run_end.y >>
-        actor.run_step.x >> actor.run_step.y >> actor.run_feet >> actor.flame_lit >>
-        actor.curse_lifted >> actor.displacement_spent >> actor.last_target;
+        actor.source.holds_shield >> actor.run_start.x >> actor.run_start.y >> actor.run_end.x >>
+        actor.run_end.y >> actor.run_step.x >> actor.run_step.y >> actor.run_feet >>
+        actor.flame_lit >> actor.curse_lifted >> actor.displacement_spent >> actor.last_target;
     std::size_t item_count{};
     input >> item_count;
     // The inventory comes later in the checkpoint; 64 items is more than any
@@ -27802,9 +27813,16 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
                            ? wielding(content.definitions.at(source.definition),
                                       source.melee_weapon, source.ranged_weapon)
                            : character_definition(source.character_profile);
-    if (actor.shield_off)
+    if (actor.shield_off && source.character_profile.empty())
     {
-        if (source.character_profile.empty() || !wears_shield(actor.definition))
+        if (!source.holds_shield)
+        {
+            throw std::runtime_error("Invalid shield removal");
+        }
+    }
+    else if (actor.shield_off)
+    {
+        if (!wears_shield(actor.definition))
         {
             throw std::runtime_error("Invalid shield removal");
         }
@@ -33740,7 +33758,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.269", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.270", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),
