@@ -10,6 +10,8 @@ var base_tile := 0.0
 
 func _ready() -> void:
     _view().get_node("Cantrip").resized.connect(_follow_cantrip)
+    _view().get_node("React").minimum_size_changed.connect(_keep_decline_clear)
+    _view().get_node("Decline").visibility_changed.connect(_keep_decline_clear)
 
 
 func _view() -> Control:
@@ -132,6 +134,7 @@ func layout_reaction_controls(show_controls: bool) -> void:
     for child in view.get_children():
         if child is Control and child.has_meta("action_items"):
             child.position.y = item_y
+    _keep_decline_clear()
     _follow_cantrip()
     var cunning_layout: AnimationPlayer = view.get_node("CunningLayout")
     cunning_layout.play("aid" if view.get_node("Stabilize").visible else "normal")
@@ -167,3 +170,16 @@ func place_hover(local: Vector2) -> void:
     panel.position = Vector2(
         clampf(local.x + _metric("combat_hover_offset_x"), 0.0, maxf(0.0, view.size.x - size.x)),
         clampf(local.y + _metric("combat_hover_offset_y"), 0.0, maxf(0.0, view.size.y - size.y)))
+
+
+# A reaction's name may be longer than its button, in Spanish among others.
+func _keep_decline_clear() -> void:
+    var view := _view()
+    var react: Control = view.get_node("React")
+    var decline: Control = view.get_node("Decline")
+    # Hidden, it keeps the slot the other controls of that row are measured by.
+    if not decline.visible:
+        return
+    var gap := 10.0
+    decline.position.x = maxf(decline.position.x, react.position.x
+        + maxf(react.size.x, react.get_combined_minimum_size().x) + gap)
