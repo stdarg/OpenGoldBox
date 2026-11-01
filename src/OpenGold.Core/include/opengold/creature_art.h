@@ -2,6 +2,7 @@
 #define OPENGOLD_CREATURE_ART_H
 
 #include "opengold/campaign_encounter.h"
+#include "opengold/creature_catalog.h"
 #include "opengold/monster_bundle.h"
 #include <cstdint>
 #include <optional>
@@ -17,6 +18,13 @@ namespace opengold::por
 [[nodiscard]] std::optional<CombatArt> creature_art(const std::vector<std::uint8_t> &archive,
                                                     unsigned icon, const ExportedMonster *exported,
                                                     bool archer);
+
+// A fighter of any fight takes the gear its export gives it, the one way any
+// fight arms it: a human-shaped creature fights with the weapons it holds
+// (#274), shoots only with a ranged weapon it carries and holds its readied
+// shield. Without an export, or human shape, it keeps its stat block's attacks.
+void arm_as_exported(rules::Participant &fighter, const Creature &creature,
+                     const ExportedMonster *exported);
 } // namespace opengold::por
 
 #endif

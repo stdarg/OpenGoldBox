@@ -7,8 +7,10 @@
 #include "opengold/combat_demo.h"
 #include "opengold/combat_body_catalog.h"
 #include "opengold/campaign_save.h"
+#include "opengold/monster_bundle.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/srd5.h"
+#include "png_size_only.h"
 #include "test_support.h"
 #include <algorithm>
 #include <array>
@@ -1913,6 +1915,24 @@ void combat_demo_fixture()
                   roster[0].character.creation_data().name !=
                       roster[2].character.creation_data().name,
               "A play-test party has the chosen classes, kits and level, two Druids distinct");
+    }
+    // The demo's kobolds fight as a campaign's do: a short sword and no thrown
+    // daggers from the stat block, which their art would not show.
+    {
+        const auto monsters = std::make_shared<const por::MonsterBundle>(por::load_monster_bundle(
+            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters", test::png_size_only));
+        const auto armed =
+            make_combat_demo(module(), *characters, directory, {.monsters = monsters});
+        check(!armed.encounter.enemies.empty(), "The demo has its kobolds");
+        for (const auto &enemy : armed.encounter.enemies)
+        {
+            const bool leader = enemy.definition == "slums-kobold-leader";
+            check(enemy.melee_weapon == "shortsword", "A kobold swings the short sword it holds");
+            check(enemy.ranged_weapon ==
+                      (leader ? std::string("shortbow") : std::string(rules::no_ranged_weapon)),
+                  "Only the kobold leader carries a bow");
+            check(enemy.holds_shield == leader, "Only the kobold leader holds a shield");
+        }
     }
     auto mapped =
         make_combat_demo(module(), *characters, directory,

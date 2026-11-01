@@ -1,4 +1,5 @@
 #include "godot_text.h"
+#include "opengold/diagnostic_log.h"
 #include "opengold/path_text.h"
 #include "initiative_controls.h"
 #include "optional_effect_controls.h"
@@ -1779,9 +1780,19 @@ void CombatView::launch_missile(const Command &command, const Snapshot &before,
                          target_before->hit_points + target_before->temporary_hp.amount;
     const auto to = hit ? aim : aim + line.normalized() * missile_miss_squares;
     missile_flights_.push_back(
-        {missile, from, to, aim, 0.0,
+        {command.actor, missile, from, to, aim, 0.0,
          std::max(missile_shortest_seconds,
                   static_cast<double>(from.distance_to(to)) / missile_squares_per_second)});
+    if (shooter->side != rules::Side::party)
+    {
+        // So a shot from art that shows no such weapon can be traced afterwards.
+        const auto shown = shot_last_.find(command.actor);
+        log_diagnostic(
+            LogPriority::info, "combat",
+            shooter->name + " fires (" + command.verb + ") showing its " +
+                (shown != shot_last_.end() && shown->second ? "ranged" : "staged or melee") +
+                " weapon set");
+    }
 }
 
 Ref<ImageTexture> CombatView::missile_texture(const MissileFlight &flight) const
@@ -1805,6 +1816,7 @@ Array CombatView::missiles_in_flight() const
     for (const auto &flight : missile_flights_)
     {
         Dictionary entry;
+        entry["actor"] = static_cast<std::int64_t>(flight.actor);
         entry["missile"] = missile_name(flight.missile);
         entry["from"] = flight.from;
         entry["to"] = flight.to;
@@ -2025,7 +2037,9 @@ void CombatView::act(Command command)
             {
                 shot_last_[command.actor] = false;
             }
-            else if ((command.verb == "ranged" || command.verb.starts_with("throw")) &&
+            else if ((command.verb == "ranged" || command.verb.starts_with("throw") ||
+                      (command.verb.ends_with("_item") && !command.verb.starts_with("potion")) ||
+                      command.verb == "javelin_lightning" || command.verb == "doff_shield") &&
                      ranged_art_.contains(command.actor))
             {
                 shot_last_[command.actor] = true;

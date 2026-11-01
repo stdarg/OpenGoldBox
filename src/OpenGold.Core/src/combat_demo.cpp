@@ -699,6 +699,8 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
             result.encounter.enemies.push_back(
                 {id, definition, definition + " " + std::to_string(n + 1), Side::opposition, cell});
             result.encounter.enemies.back().footprint = combat_footprint(creature->get().stored);
+            arm_as_exported(result.encounter.enemies.back(), creature->get(),
+                            options.monsters ? options.monsters->creature(2, icon) : nullptr);
             row += result.encounter.enemies.back().footprint.height;
             result.encounter.positions.push_back(cell);
             picture->entity = id;
@@ -712,6 +714,7 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
     {
         throw std::runtime_error("Missing original Kobold combat icon");
     }
+    const auto creatures = CreatureCatalog::load(game_directory);
     constexpr std::array<Cell, 6> removed{{{6, 4}, {9, 4}, {9, 7}, {7, 8}, {4, 8}, {4, 5}}};
     unsigned number = 0;
     for (int y = 4; y <= 8; ++y)
@@ -733,6 +736,12 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
                 {id, is_leader ? "slums-kobold-leader" : "slums-kobold",
                  is_leader ? "Kobold Leader" : "Kobold " + std::to_string(++number),
                  Side::opposition, cell});
+            const std::uint8_t record = is_leader ? 1 : 0;
+            if (const auto creature = creatures.find({2, record}))
+            {
+                arm_as_exported(result.encounter.enemies.back(), creature->get(),
+                                options.monsters ? options.monsters->creature(2, record) : nullptr);
+            }
             result.encounter.positions.push_back({x, y});
             result.encounter.art.push_back(is_leader ? *leader : *kobold);
             result.encounter.art.back().entity = id;
@@ -914,6 +923,8 @@ void CombatDemo::pump()
                          creature.stored.name + " " + std::to_string(enemies_.size() + 1),
                          Side::opposition,
                          {9, 2 + static_cast<int>(enemies_.size())}});
+                    arm_as_exported(enemies_.back(), creature,
+                                    monsters_ ? monsters_->creature(2, record) : nullptr);
                     if (art)
                     {
                         art_.push_back(*art);
@@ -2519,6 +2530,17 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                         }))
         {
             return command;
+        }
+    }
+    // A monster that would rather shoot, its shield in the way of its bow, spends
+    // its Action taking the shield off while no enemy is beside it. The weapon is
+    // weighed by its rating at every difficulty: the rules offer no shot to weigh yet.
+    if (!enemy_beside && !stays_back && !in_view.empty() &&
+        active.ranged_rating > ai_tuning::shot_worth_share * active.melee_rating)
+    {
+        if (const auto *command = offers("doff_shield"))
+        {
+            return *command;
         }
     }
     std::vector<std::string_view> attacks{"rampage", "eldritch_blast", "sorcerous_burst_fire",
