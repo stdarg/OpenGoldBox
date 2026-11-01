@@ -7,7 +7,7 @@ cpic3_dax_16,"Shared combat icon: AIDES, CORPORAL, 6TH LVL FIGHTER, 8TH LVL FIGH
 cpic4_dax_11,SKULLCRUSHER combat icon,normal,5,about 5,1,1,1,within saved height tier
 cpic4_dax_14,Shared spellcaster combat icon,normal,5,about 5,1,1,1,within saved height tier
 cpic4_dax_2,GRISHNAK combat icon,normal,5,about 5,1,1,1,within saved height tier
-cpic5_dax_11,"Shared combat icon: 4TH LVL FIGHTER, 6TH LVL FIGHTER, 6TH LVL FIGHTER, 8TH LVL FIGHTER, TYRANITHRAXUS",normal,5,about 5,1,1,1,within saved height tier
+cpic5_dax_11,"Shared combat icon: 4TH LVL FIGHTER, 6TH LVL FIGHTER, 6TH LVL FIGHTER, 8TH LVL FIGHTER, Tyranthraxus",normal,5,about 5,1,1,1,within saved height tier
 cpic5_dax_12,"Shared combat icon: 1ST LVL THIEF, 6TH LVL THIEF",normal,5,about 5,1,1,1,within saved height tier
 cpic5_dax_13,"Shared combat icon: 1ST LVL CLERIC, LEVEL 5 CLERIC",normal,5,about 5,1,1,1,within saved height tier
 cpic5_dax_14,"Shared combat icon: AL-HYAM DAZID, ENVOY, GENHEERIS",normal,5,about 5,1,1,1,within saved height tier
@@ -122,7 +122,7 @@ mon5cha_dax_87,ENVOY,normal,5,about 5,1,1,1,within saved height tier
 mon5cha_dax_88,GENHEERIS,normal,5,about 5,1,1,1,within saved height tier
 mon5cha_dax_90,1ST LVL CLERIC,normal,5,about 5,1,1,1,within saved height tier
 mon5cha_dax_91,LEVEL 5 CLERIC,normal,5,about 5,1,1,1,within saved height tier
-mon5cha_dax_92,TYRANITHRAXUS,normal,5,about 5,1,1,1,within saved height tier
+mon5cha_dax_92,Tyranthraxus,normal,5,about 5,1,1,1,within saved height tier
 mon5cha_dax_93,6TH LVL THIEF,normal,5,about 5,1,1,1,within saved height tier
 mon6cha_dax_10,QUICKLINGS,small,2,about 2,1,1,1,within saved height tier
 mon6cha_dax_100,3RD LVL FIGHTER,normal,5,about 5,1,1,2,within saved height tier

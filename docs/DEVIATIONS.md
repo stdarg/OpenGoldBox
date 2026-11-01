@@ -284,6 +284,8 @@ in the game: answering YES at a hall lists its services in the dialogue
 
 ## Interface and saves
 
+- **Tyranthraxus's name** (2026-11-01). The original's record for his human
+  form misspells him TYRANITHRAXUS. OpenGoldBox spells it Tyranthraxus.
 - **New art** (2026-10-29). The original drew its own walls and combat icons.
   OpenGoldBox shows new walls in the 3D view and new figures for monsters in a
   fight; the Options screen's 3D view art and Combat art bring back the

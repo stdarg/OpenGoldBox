@@ -5673,8 +5673,13 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
         fleeing,
         [&](const por::TourSnapshot &) -> std::size_t
         {
-            // A member who is down cannot escape on foot, so nobody would.
+            // A member who is down cannot escape on foot, so nobody would. The
+            // dead are carried, so one does not hold the party back.
             heal(*fleeing.party);
+            auto state = fleeing.party->checkpoint();
+            state.roster[1].vitals.hit_points = 0;
+            state.roster[1].vitals.dead = true;
+            fleeing.party->restore(std::move(state));
             return 2;
         },
         // The walk to the street may already have fled a group.
@@ -5683,7 +5688,7 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
             return !shown.empty() && fleeing.town.snapshot().dialogue.starts_with("You get away.");
         });
     check(fleeing.town.snapshot().dialogue.starts_with("You get away."),
-          "A party that escapes says so");
+          "A party that escapes, carrying its dead, says so");
 }
 
 // A parley with street monsters that reaches `outcome` (its first option, such
