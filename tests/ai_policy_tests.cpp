@@ -129,8 +129,9 @@ void difficulty_target_checks()
     check(choose_demo_command(state, offered, Searching::by_sight, Difficulty::hard).target == 3,
           "With Hit Points tied it takes the lower AC");
 
-    // A downed enemy, still alive: finished on Nightmare and Infernal, left
-    // alone below them.
+    // A downed enemy, still alive: on Nightmare and Infernal it waits while a
+    // standing enemy can be struck, since downing the whole party ends the fight;
+    // with none in reach it is finished. Below them it is left alone.
     auto downed = field({unit(1, Side::opposition, {5, 4}), unit(2, Side::party, {6, 4}, 0),
                          unit(3, Side::party, {4, 4})});
     std::vector<Command> strikes{command("melee", 2), command("melee", 3), command("end")};
@@ -140,8 +141,16 @@ void difficulty_target_checks()
     }
     for (const auto level : {Difficulty::nightmare, Difficulty::infernal})
     {
-        check(choose_demo_command(downed, strikes, Searching::by_sight, level).target == 2,
-              "On the hardest levels it finishes a downed character");
+        check(choose_demo_command(downed, strikes, Searching::by_sight, level).target == 3,
+              "On the hardest levels it strikes a standing enemy before a downed one");
+    }
+    auto only_downed = downed;
+    only_downed.combatants[2].cell = {11, 7};
+    const std::vector<Command> only_strike{strikes[0], command("end")};
+    for (const auto level : {Difficulty::nightmare, Difficulty::infernal})
+    {
+        check(choose_demo_command(only_downed, only_strike, Searching::by_sight, level).target == 2,
+              "With no standing enemy in reach it finishes a downed character");
     }
     for (const auto level : {Difficulty::easy, Difficulty::normal, Difficulty::hard})
     {

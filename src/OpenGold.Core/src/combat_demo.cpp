@@ -3,6 +3,7 @@
 #include "opengold/diagnostic_log.h"
 #include "opengold/authored_items.h"
 #include "opengold/combat_demo.h"
+#include "opengold/ai_tuning.h"
 #include "opengold/creature_art.h"
 #include "opengold/combat_body_catalog.h"
 #include "opengold/character_pool.h"
@@ -1064,6 +1065,12 @@ std::optional<Command> choose_item(const rules::Snapshot &state, const Combatant
 
 bool item_verb(std::string_view verb);
 
+// At or below the Hit Points where the computer treats a creature as hurt.
+bool is_hurt(const CombatantView &unit)
+{
+    return unit.hit_points <= ai_tuning::hurt_share * unit.max_hit_points;
+}
+
 // A choice the original made at random, here repeatable from the fight's state
 // so a replay or a test sees the same one: an index below `count`.
 std::size_t pick(const rules::Snapshot &state, EntityId actor, std::uint64_t salt,
@@ -1319,7 +1326,7 @@ namespace
 std::vector<Command> aimed_as_before(const rules::Snapshot &state,
                                      const std::vector<Command> &offered, Difficulty difficulty)
 {
-    const bool finishing = difficulty >= Difficulty::nightmare;
+    const bool finishing = ai_tuning::level(difficulty).finishes_downed;
     const auto side_of = [&](EntityId id) -> const CombatantView *
     {
         const auto found = std::find_if(state.combatants.begin(), state.combatants.end(),
@@ -1459,7 +1466,8 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     // The enemies the creature can see: it goes for those, and with none in
     // view it holds its ground (#266).
     // On Nightmare and Infernal a downed enemy is one to finish (CLOSE-1).
-    const bool finishing = difficulty >= Difficulty::nightmare;
+    const auto &tuning = ai_tuning::level(difficulty);
+    const bool finishing = tuning.finishes_downed;
     std::vector<const CombatantView *> in_view;
     for (const auto &enemy : state.combatants)
     {
@@ -1474,7 +1482,6 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     const bool enemy_seen = !in_view.empty();
     // Sound carries 100 feet, walls or not, so two creatures either side of a
     // wall's corner do not wait on each other.
-    constexpr int hearing_squares = 20;
     // A stand-in for the player, or in a check every creature, goes looking
     // for the enemies it cannot see, magic-users too.
     const bool seeking =
@@ -1485,7 +1492,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         for (const auto &enemy : state.combatants)
         {
             if (enemy.side != active.side && !enemy.dead && (enemy.hit_points > 0 || finishing) &&
-                (seeking || squares_apart(active, enemy) <= hearing_squares))
+                (seeking || squares_apart(active, enemy) <= ai_tuning::hearing_squares))
             {
                 in_view.push_back(&enemy);
             }
@@ -1496,108 +1503,29 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     // enemy, the one with the fewest Hit Points and then the lowest AC: on
     // Hard once its target is gone, on Nightmare and Infernal at once, so the
     // side's attacks converge on one enemy until it drops (CLOSE-1).
-    const auto weaker = [](const CombatantView *a, const CombatantView *b)
+    const auto downed = [](const CombatantView &enemy)
     {
-        return std::tie(a->hit_points, a->armor_class, a->id) <
-               std::tie(b->hit_points, b->armor_class, b->id);
+        return enemy.hit_points <= 0 && !enemy.conscious;
+    };
+    const auto weaker = [&](const CombatantView *a, const CombatantView *b)
+    {
+        const bool a_down = downed(*a), b_down = downed(*b);
+        return std::tie(a_down, a->hit_points, a->armor_class, a->id) <
+               std::tie(b_down, b->hit_points, b->armor_class, b->id);
     };
     const auto weakest = std::min_element(in_view.begin(), in_view.end(), weaker);
-    auto kept = difficulty >= Difficulty::nightmare
-                    ? weakest
-                    : std::find_if(in_view.begin(), in_view.end(),
-                                   [&](const auto *enemy)
-                                   {
-                                       return enemy->id == active.last_target;
-                                   });
-    if (kept == in_view.end() && difficulty == Difficulty::hard)
+    const auto targets_weakest_now = tuning.targeting == ai_tuning::Targeting::weakest_now ||
+                                     tuning.targeting == ai_tuning::Targeting::most_harm_stopped;
+    auto kept = targets_weakest_now ? weakest
+                                    : std::find_if(in_view.begin(), in_view.end(),
+                                                   [&](const auto *enemy)
+                                                   {
+                                                       return enemy->id == active.last_target;
+                                                   });
+    if (kept == in_view.end() && tuning.targeting == ai_tuning::Targeting::weakest_once_lost)
     {
         kept = weakest;
     }
-    // On Infernal, how much harm a target does for each Hit Point it has left:
-    // what it wields, and double while it holds a spell a hit could break. All of
-    // it shows on the field.
-    const auto harm_per_hit_point = [](const CombatantView &target)
-    {
-        const double wielded = std::max({target.melee_rating, target.ranged_rating, 1});
-        const bool concentrating = std::any_of(target.conditions.begin(), target.conditions.end(),
-                                               [](const auto &condition)
-                                               {
-                                                   return condition.source == "Concentrating";
-                                               });
-        const double holding = concentrating ? 2.0 : 1.0;
-        return wielded * holding / std::max(1, target.hit_points);
-    };
-    // One of the creatures commands with `verb` are aimed at: its target if one
-    // is, else one at random from the other side (#266).
-    const auto aim = [&](std::string_view verb) -> const Command *
-    {
-        std::vector<const Command *> aims;
-        for (const auto &command : offered)
-        {
-            if (command.verb != verb)
-            {
-                continue;
-            }
-            const auto target = std::find_if(state.combatants.begin(), state.combatants.end(),
-                                             [&](const auto &a)
-                                             {
-                                                 return a.id == command.target;
-                                             });
-            if (target == state.combatants.end() || target->side == active.side ||
-                (target->hit_points <= 0 && !finishing))
-            {
-                continue;
-            }
-            // Infernal weighs every target for a weapon attack below.
-            if (kept != in_view.end() && command.target == (*kept)->id &&
-                !(difficulty == Difficulty::infernal && command.expected_damage))
-            {
-                return &command;
-            }
-            aims.push_back(&command);
-        }
-        if (aims.empty())
-        {
-            return nullptr;
-        }
-        // The harm this attack is expected to take away: its share of the
-        // target's Hit Points, times what that target can still do.
-        if (difficulty == Difficulty::infernal && aims.front()->expected_damage)
-        {
-            const auto harm_stopped = [&](const Command *command)
-            {
-                const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
-                                                   [&](const auto &a)
-                                                   {
-                                                       return a.id == command->target;
-                                                   });
-                return command->expected_damage * harm_per_hit_point(target);
-            };
-            return *std::max_element(aims.begin(), aims.end(),
-                                     [&](const Command *a, const Command *b)
-                                     {
-                                         return harm_stopped(a) < harm_stopped(b);
-                                     });
-        }
-        if (difficulty <= Difficulty::normal)
-        {
-            return aims[pick(state, active.id, verb.size(), aims.size())];
-        }
-        // Above Normal the weakest of those it can reach.
-        const auto view_of = [&](const Command *command)
-        {
-            return &*std::find_if(state.combatants.begin(), state.combatants.end(),
-                                  [&](const auto &a)
-                                  {
-                                      return a.id == command->target;
-                                  });
-        };
-        return *std::min_element(aims.begin(), aims.end(),
-                                 [&](const Command *a, const Command *b)
-                                 {
-                                     return weaker(view_of(a), view_of(b));
-                                 });
-    };
     // Whether a move it is offered brings it beside `enemy`, so it can strike this
     // turn.
     const auto within_a_move = [&](const CombatantView &enemy)
@@ -1618,21 +1546,122 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                                   });
                            });
     };
+    // Downing the whole party ends the fight, so a downed character waits while a
+    // standing enemy can be struck this turn.
+    const bool standing_in_reach =
+        finishing &&
+        std::any_of(in_view.begin(), in_view.end(),
+                    [&](const auto *enemy)
+                    {
+                        return !downed(*enemy) &&
+                               (squares_apart(active, *enemy) <= 1 || within_a_move(*enemy));
+                    });
+    // On Infernal, how much harm a target does for each Hit Point it has left:
+    // what it wields, more while it holds a spell a hit could break. All of it
+    // shows on the field, and a downed character does none.
+    const auto harm_per_hit_point = [&](const CombatantView &target)
+    {
+        if (downed(target))
+        {
+            return 0.0;
+        }
+        const bool concentrating = std::any_of(target.conditions.begin(), target.conditions.end(),
+                                               [](const auto &condition)
+                                               {
+                                                   return condition.source == "Concentrating";
+                                               });
+        const double wielded =
+            std::max({static_cast<double>(target.melee_rating),
+                      static_cast<double>(target.ranged_rating), ai_tuning::minimum_harm});
+        const double holding = concentrating ? ai_tuning::concentration_weight : 1.0;
+        return wielded * holding / std::max(1, target.hit_points);
+    };
+    // One of the creatures commands with `verb` are aimed at: its target if one
+    // is, else one at random from the other side (#266).
+    const bool by_harm = tuning.targeting == ai_tuning::Targeting::most_harm_stopped;
+    const auto aim = [&](std::string_view verb) -> const Command *
+    {
+        std::vector<const Command *> aims;
+        for (const auto &command : offered)
+        {
+            if (command.verb != verb)
+            {
+                continue;
+            }
+            const auto target = std::find_if(state.combatants.begin(), state.combatants.end(),
+                                             [&](const auto &a)
+                                             {
+                                                 return a.id == command.target;
+                                             });
+            if (target == state.combatants.end() || target->side == active.side ||
+                (target->hit_points <= 0 && !finishing) || (standing_in_reach && downed(*target)))
+            {
+                continue;
+            }
+            // The harm stopped is weighed for every target of a weapon attack below.
+            if (kept != in_view.end() && command.target == (*kept)->id &&
+                !(by_harm && command.expected_damage))
+            {
+                return &command;
+            }
+            aims.push_back(&command);
+        }
+        if (aims.empty())
+        {
+            return nullptr;
+        }
+        // The harm this attack is expected to take away: its share of the
+        // target's Hit Points, times what that target can still do.
+        if (by_harm && aims.front()->expected_damage)
+        {
+            const auto harm_stopped = [&](const Command *command)
+            {
+                const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
+                                                   [&](const auto &a)
+                                                   {
+                                                       return a.id == command->target;
+                                                   });
+                return command->expected_damage * harm_per_hit_point(target);
+            };
+            return *std::max_element(aims.begin(), aims.end(),
+                                     [&](const Command *a, const Command *b)
+                                     {
+                                         return harm_stopped(a) < harm_stopped(b);
+                                     });
+        }
+        if (tuning.targeting == ai_tuning::Targeting::keep_target)
+        {
+            return aims[pick(state, active.id, verb.size(), aims.size())];
+        }
+        // Above Normal the weakest of those it can reach.
+        const auto view_of = [&](const Command *command)
+        {
+            return &*std::find_if(state.combatants.begin(), state.combatants.end(),
+                                  [&](const auto &a)
+                                  {
+                                      return a.id == command->target;
+                                  });
+        };
+        return *std::min_element(aims.begin(), aims.end(),
+                                 [&](const Command *a, const Command *b)
+                                 {
+                                     return weaker(view_of(a), view_of(b));
+                                 });
+    };
     // Who the walk heads for. Up to Normal, its target. Above Normal, its target
     // or else the weakest enemy it can strike this turn, and with none in reach
     // the nearest: chasing a weak enemy across the field gives up the attack and
     // leaves its own side (docs/AI.md section 2).
     const CombatantView *walk_target = kept != in_view.end() ? *kept : nullptr;
-    if (difficulty >= Difficulty::hard && !(walk_target && within_a_move(*walk_target)))
+    if (tuning.walks_within_reach && !(walk_target && within_a_move(*walk_target)))
     {
         walk_target = nullptr;
         for (const auto *enemy : in_view)
         {
             if (within_a_move(*enemy) &&
                 (!walk_target ||
-                 (difficulty == Difficulty::infernal
-                      ? harm_per_hit_point(*enemy) > harm_per_hit_point(*walk_target)
-                      : weaker(enemy, walk_target))))
+                 (by_harm ? harm_per_hit_point(*enemy) > harm_per_hit_point(*walk_target)
+                          : weaker(enemy, walk_target))))
             {
                 walk_target = enemy;
             }
@@ -1846,7 +1875,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     // to put the fire out (#269); otherwise it fights on.
     for (const auto &command : offered)
     {
-        if (command.verb == "extinguish" && active.hit_points * 2 <= active.max_hit_points)
+        if (command.verb == "extinguish" && is_hurt(active))
         {
             return command;
         }
@@ -1863,15 +1892,15 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     {
         // Shield only when its +5 turns the hit into a miss (#266), or
         // against Magic Missile, which it stops whole.
-        const bool shield_helps =
-            !state.reaction_attack ||
-            state.reaction_attack->total < state.reaction_attack->armor_class + 5;
+        const bool shield_helps = !state.reaction_attack ||
+                                  state.reaction_attack->total <
+                                      state.reaction_attack->armor_class + ai_tuning::shield_margin;
         if (command.verb == "opportunity" || (command.verb == "shield" && shield_helps) ||
             command.verb == "deflect" || command.verb == "redirect" || command.verb == "rebuke" ||
             command.verb == "giant_boon" || command.verb == "stones_endurance" ||
             command.verb == "storms_thunder" ||
             ((command.verb == "second_wind" || command.verb == "wholeness_of_body") &&
-             active.hit_points * 2 <= active.max_hit_points))
+             is_hurt(active)))
         {
             return command;
         }
@@ -1911,7 +1940,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                                    return a.id == command.target;
                                                });
             // The lower share of its maximum, compared without division.
-            if (target.side == active.side && target.hit_points * 2 <= target.max_hit_points &&
+            if (target.side == active.side && is_hurt(target) &&
                 (!worst || static_cast<long long>(target.hit_points) * worst->max_hit_points <
                                static_cast<long long>(worst->hit_points) * target.max_hit_points))
             {
@@ -2233,11 +2262,12 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     };
     if (!in_view.empty())
     {
-        // Infernal leaves nothing to the roll: the strongest come first, always.
-        const int roll = difficulty == Difficulty::infernal
-                             ? 7
-                             : static_cast<int>(pick(state, active.id, 7, 7)) + 1;
-        for (int priority = 7; priority >= 8 - roll; --priority)
+        // Without the roll, the strongest come first, always.
+        constexpr int sides = ai_tuning::spell_roll_sides;
+        const int roll = tuning.rolls_for_spells
+                             ? static_cast<int>(pick(state, active.id, 7, sides)) + 1
+                             : sides;
+        for (int priority = sides; priority >= sides + 1 - roll; --priority)
         {
             std::vector<std::string_view> spells;
             for (const auto &command : offered)
@@ -2385,11 +2415,12 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                     {
                         return enemy->conscious && squares_apart(*enemy, active) <= 1;
                     });
-    const bool shoots = difficulty == Difficulty::normal && !enemy_beside &&
-                        active.ranged_rating * 2 > active.melee_rating;
+    const bool by_rating = tuning.weapon_choice == ai_tuning::WeaponChoice::original_rating;
+    const bool shoots = by_rating && !enemy_beside &&
+                        active.ranged_rating > ai_tuning::shot_worth_share * active.melee_rating;
     // A thrown weapon is rated as a ranged one, as the original did (#269).
-    const bool throws = difficulty == Difficulty::normal && !enemy_beside &&
-                        active.thrown_rating * 2 > active.melee_rating;
+    const bool throws = by_rating && !enemy_beside &&
+                        active.thrown_rating > ai_tuning::shot_worth_share * active.melee_rating;
     // An unarmored Wizard or Sorcerer, or a monster magic-user, never closes
     // in, as the original's magic-users did not: it casts from where it stands.
     const bool stays_back = active.unarmored_arcane_caster && !active.panicked && !seeking;
@@ -2397,7 +2428,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     // `closes` walks up to the enemy instead of using a weapon from afar.
     std::string_view chosen_weapon;
     bool closes = false;
-    if (difficulty == Difficulty::easy)
+    if (tuning.weapon_choice == ai_tuning::WeaponChoice::arbitrary)
     {
         std::vector<std::string_view> choices;
         for (const auto verb : {"melee", "ranged", "shoot", "throw"})
@@ -2418,7 +2449,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             chosen_weapon = closes ? std::string_view{} : choice;
         }
     }
-    else if (difficulty >= Difficulty::hard)
+    else if (tuning.weapon_choice == ai_tuning::WeaponChoice::expected_damage)
     {
         const Command *best = nullptr;
         std::string_view best_verb;
@@ -2441,7 +2472,8 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         {
             // As the original: closing in costs time, so a shot worth more than
             // half the melee weapon is taken.
-            closes = !stays_back && best->expected_damage * 2 <= best->close_damage;
+            closes = !stays_back &&
+                     best->expected_damage <= ai_tuning::shot_worth_share * best->close_damage;
             chosen_weapon = closes ? std::string_view{} : best_verb;
         }
     }
@@ -2502,16 +2534,16 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     // slips free of an enemy beside it when that costs no Action. Every ranged
     // weapon reaches 4 squares without penalty, so it goes no further than that,
     // and only where it still sees its target.
-    constexpr int keep_away_squares = 4;
+    constexpr int keep_away_squares = ai_tuning::keep_away_squares;
     const bool shooting = !chosen_weapon.empty() && chosen_weapon != "melee";
-    if (difficulty == Difficulty::infernal && shooting && enemy_beside && !active.disengaged)
+    if (tuning.disengages_to_shoot && shooting && enemy_beside && !active.disengaged)
     {
         if (const auto *slip = offers("cunning_disengage"))
         {
             return *slip;
         }
     }
-    if (difficulty >= Difficulty::nightmare && shooting && active.action &&
+    if (tuning.keeps_distance && shooting && active.action &&
         (!enemy_beside || active.disengaged) && gap_to_enemies(active.cell) < keep_away_squares)
     {
         const auto target_id = aim(chosen_weapon)->target;
@@ -2663,7 +2695,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         }
         const int steps = nearest(command.destination);
         if (steps < closest ||
-            (difficulty >= Difficulty::nightmare && move && steps == closest &&
+            (tuning.avoids_crowds && move && steps == closest &&
              enemies_beside(command.destination) < enemies_beside(move->destination)))
         {
             move = &command;
@@ -2987,8 +3019,7 @@ std::optional<Command> choose_item(const rules::Snapshot &state, const Combatant
         if (verb.find("_scroll") != std::string_view::npos && !command.aims_area)
         {
             const bool heals = verb.starts_with("cure_wounds") || verb.starts_with("healing_word");
-            if (heals ? target && target->side == active.side &&
-                            target->hit_points * 2 <= target->max_hit_points
+            if (heals ? target && target->side == active.side && is_hurt(*target)
                       : target && target->side != active.side && target->conscious)
             {
                 return command;
@@ -2997,7 +3028,7 @@ std::optional<Command> choose_item(const rules::Snapshot &state, const Combatant
         }
         if (verb.starts_with("potion_of_healing") || verb.starts_with("potion_of_greater_healing"))
         {
-            if (target && target->hit_points * 2 <= target->max_hit_points)
+            if (target && is_hurt(*target))
             {
                 return command;
             }
@@ -3078,7 +3109,7 @@ std::vector<Command> without_spells(const rules::Snapshot &state, std::vector<Co
 
 Command choose_quick_command(const CombatSession &session, bool magic, Searching searching)
 {
-    constexpr auto quick_difficulty = Difficulty::infernal;
+    constexpr auto quick_difficulty = ai_tuning::quick_difficulty;
     if (magic)
     {
         return choose_demo_command(session, searching, quick_difficulty);

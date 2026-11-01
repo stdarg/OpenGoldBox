@@ -125,6 +125,8 @@ Add an entry whenever a new departure is decided.
   spells. A party member on Quick always plays at Infernal, where the original's
   Quick characters played as its monsters did; above Normal a creature walks only
   for an enemy it can strike this turn, or else the nearest.
+  On Nightmare and Infernal a downed character is struck only when no standing
+  enemy can be (2026-11-01).
 
 - **Hearing in combat** (2026-10-31). The original's monsters went only for what
   they could see. A creature here also hears enemies within 100 feet, through
