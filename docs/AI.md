@@ -322,8 +322,14 @@ if no opponent is faster, surrenders if one is and it has an Intelligence above
 5, and otherwise fights on. It may rally. The party flees only when the player
 presses Flee (FLEE-1).
 
+A monster fleeing in panic that gets no nearer the edge for two of its turns,
+walled in or failing to get off the field, charges in panic (MORALE-2): it runs at
+the nearest enemy, wherever that is, and lashes out at whoever is in reach. No one
+goes after a creature that has already run off the field.
+
 **Original.** The same tests (this is where MORALE-1 came from), plus Bless
 and Curse changing morale by 5. Party members never checked morale.
+A monster that failed to get away simply stayed and fought; the charge is ours.
 
 ## 9. What the computer may know
 

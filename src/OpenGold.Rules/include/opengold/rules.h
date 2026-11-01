@@ -685,6 +685,8 @@ struct CombatantView
     // Its morale broke and it runs for the edge (it may rally); or it gave up
     // and left the fight, counted as defeated.
     bool panicked{}, surrendered{};
+    // It could not get away: it runs at its enemies and lashes out (MORALE-2).
+    bool charging_in_panic{};
     // Every spell it knows, cantrips included: a command whose verb is one of
     // these, or one of these and a suffix (an upcast form), casts a spell.
     std::vector<std::string> spells;

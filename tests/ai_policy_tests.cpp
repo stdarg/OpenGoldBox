@@ -627,6 +627,35 @@ void dash_checks()
     }
 }
 
+// A creature that ran off the field stays in the snapshot; no one goes after it.
+void fled_enemy_checks()
+{
+    auto state = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {6, 1})});
+    state.combatants[1].fled = true;
+    const std::vector<Command> offered{command("move", 0, {2, 1}), command("end")};
+    check(choose_demo_command(state, offered).verb == "end",
+          "The computer does not walk to where an enemy ran off the field");
+}
+
+// Charging in panic (MORALE-2): it strikes an enemy beside it, otherwise it runs
+// at the nearest enemy, however far, and Dashes when its movement runs out.
+void panic_charge_checks()
+{
+    auto state = field({unit(1, Side::opposition, {1, 1}), unit(2, Side::party, {2, 1})});
+    state.combatants[0].panicked = state.combatants[0].charging_in_panic = true;
+    check(choose_demo_command(state,
+                              {command("move", 0, {0, 1}), command("lash_out"), command("end")})
+                  .verb == "lash_out",
+          "Beside an enemy, it lashes out");
+    state.combatants[1].cell = {7, 1};
+    const auto charge = choose_demo_command(
+        state, {command("move", 0, {0, 1}), command("move", 0, {2, 1}), command("end")});
+    check(charge.verb == "move" && charge.destination == Cell{2, 1},
+          "It runs at the enemy, not for the edge");
+    check(choose_demo_command(state, {command("dash"), command("end")}).verb == "dash",
+          "Out of movement, it Dashes");
+}
+
 void disengage_checks()
 {
     auto state = field({unit(1, Side::opposition, {1, 1}), unit(2, Side::party, {2, 1})});
@@ -719,6 +748,8 @@ int main()
         steady_aim_checks();
         dash_checks();
         disengage_checks();
+        fled_enemy_checks();
+        panic_charge_checks();
         dodge_checks();
         breath_checks();
         dragons_breath_checks();

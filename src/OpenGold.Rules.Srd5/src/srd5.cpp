@@ -733,7 +733,10 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 71;
+constexpr unsigned checkpoint_format = 72;
+// A broken monster's turns of getting no nearer the edge before it charges
+// (MORALE-2).
+constexpr int panic_charge_after_turns = 2;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -2114,13 +2117,17 @@ struct Actor
     int oiled_until_round{}; // Covered in Oil through this round: Fire damage deals 5 more
     int coated_until_round{}; // Its weapon carries Basic Poison through this round; 0 for none
     bool shield_off{};       // Took its shield off this fight (for a two-handed bow)
-    // Tried to run off the field as fast as the fastest enemy and failed: it
-    // stays until the fight ends (the original's rule).
+    // Tried to run off the field as fast as the fastest enemy and failed: a
+    // party member stays until the fight ends (the original's rule). A broken
+    // monster that still cannot get away charges in panic instead (MORALE-2).
     bool must_stay{};
     // Ran off the field this turn; it leaves the fight when the turn ends.
     bool fled{};
     // Its morale broke: it runs for the edge until it rallies.
     bool panicked{};
+    // How near its flight has come to the field's edge, and for how many of its
+    // turns since then it has come no nearer.
+    int closest_to_edge{}, turns_stuck{};
     // Gave up: it leaves the fight, counted as defeated.
     bool surrendered{};
     EntityId horde_origin{};
@@ -2218,8 +2225,12 @@ std::vector<rules::StatusEffectView> status_effect_views(const Actor &a, bool oi
     state(a.burning, {"Burning", {}},
           {"Takes 1d4 Fire damage at the start of each of its turns.", {}});
     state(oiled, {"Covered in oil", {}}, {"Fire damage deals it 5 more.", {}});
-    state(a.panicked, {"Fleeing in panic", {}},
+    state(a.panicked && !a.must_stay, {"Fleeing in panic", {}},
           {"Its morale broke; it runs for the edge of the field.", {}});
+    state(
+        a.panicked && a.must_stay, {"Charging in panic", {}},
+        {"It could not get away. It runs at its enemies and strikes wildly at whoever is in reach, friend or foe, with Disadvantage; attack rolls against it have Advantage, and it has no Bonus Actions or Reactions.",
+         {}});
     if (const auto &held = a.concentration.active())
     {
         views.push_back({{"Concentrating", {}},
@@ -5628,6 +5639,8 @@ class Session final : public CombatSession
     void fall(Actor &a);
     void revivify(Actor &cleric, const Command &command);
     void check_morale(Actor &);
+    void note_flight(Actor &);
+    [[nodiscard]] int squares_to_edge(const Actor &) const;
     void throw_gear(Actor &, Actor &, const detail::ThrownGear &);
     std::vector<HeldItemView> items_;
     void initialize_items();
@@ -6123,6 +6136,10 @@ class Session final : public CombatSession
     // Confusion: the turn's behavior by a d10; false when the creature takes
     // no turn of its own.
     [[nodiscard]] bool confused_turn(Actor &a);
+    // The living creatures in reach of a melee attack, friend or foe.
+    [[nodiscard]] std::vector<EntityId> creatures_in_reach(const Actor &a) const;
+    // Charging in panic, all a creature does is run and lash out (MORALE-2).
+    void charge_in_panic(std::vector<Command> &offered, const Actor &a) const;
     // Resilient Sphere and Antimagic Field: nothing from outside reaches the
     // creature, and it reaches nothing outside.
     [[nodiscard]] bool sealed_off(const Actor &a) const;
@@ -7318,6 +7335,7 @@ bool Session::shield_blocks_bow(const Actor &a) const
 // the encounter's morale percent of its Hit Points (in steps of 5). Broken, it
 // flees in panic when no opponent is faster; otherwise one with Intelligence
 // above 5 surrenders, and the rest fight on. It is tested again every turn.
+// Charging in panic (MORALE-2), it only stops if it rallies.
 void Session::check_morale(Actor &a)
 {
     const int lost = 100 - 100 * a.life.hp / std::max(1, max_hp(a));
@@ -7349,6 +7367,11 @@ void Session::check_morale(Actor &a)
     if (holds)
     {
         a.panicked = false;
+        a.must_stay = false;
+        return;
+    }
+    if (a.must_stay)
+    {
         return;
     }
     const bool outpaced = std::any_of(actors_.begin(), actors_.end(),
@@ -7359,20 +7382,9 @@ void Session::check_morale(Actor &a)
                                                  !other.fled &&
                                                  current_speed(other) > current_speed(a);
                                       });
-    // One that already failed to get away is cornered and fights on.
-    if (!outpaced && a.must_stay)
-    {
-        a.panicked = false;
-        return;
-    }
     if (!outpaced)
     {
-        if (!a.panicked)
-        {
-            log(a.source.name + " flees in panic.",
-                {"{name} flees in panic.", {{"name", a.source.name}}});
-        }
-        a.panicked = true;
+        note_flight(a);
         return;
     }
     a.panicked = false;
@@ -7383,6 +7395,46 @@ void Session::check_morale(Actor &a)
         a.fled = true;
         log(a.source.name + " surrenders.", {"{name} surrenders.", {{"name", a.source.name}}});
     }
+}
+
+// A broken monster's flight, turn by turn. Two of its turns gone by with the edge
+// no nearer, whether walled in or failing to get off the field, and it stops
+// trying and charges (MORALE-2), so that no fight is left standing still.
+void Session::note_flight(Actor &a)
+{
+    const int to_edge = squares_to_edge(a);
+    if (!a.panicked)
+    {
+        log(a.source.name + " flees in panic.",
+            {"{name} flees in panic.", {{"name", a.source.name}}});
+        a.panicked = true;
+        a.closest_to_edge = to_edge;
+        a.turns_stuck = 0;
+        return;
+    }
+    if (to_edge < a.closest_to_edge)
+    {
+        a.closest_to_edge = to_edge;
+        a.turns_stuck = 0;
+        return;
+    }
+    if (++a.turns_stuck >= panic_charge_after_turns)
+    {
+        a.must_stay = true;
+        log(a.source.name + " cannot get away and charges in panic!",
+            {"{name} cannot get away and charges in panic!", {{"name", a.source.name}}});
+    }
+}
+
+int Session::squares_to_edge(const Actor &a) const
+{
+    int nearest = std::max(board_.width, board_.height);
+    for (const auto square : squares_of(a))
+    {
+        nearest = std::min({nearest, square.x, square.y, board_.width - 1 - square.x,
+                            board_.height - 1 - square.y});
+    }
+    return nearest;
 }
 
 int Session::current_speed(const Actor &a) const
@@ -7445,11 +7497,19 @@ void Session::run_off_field(Actor &a)
     }
     if (current_speed(a) < fastest || (current_speed(a) == fastest && roll(2) == 1))
     {
-        // Cornered, a broken monster fights on from now, not from its next turn.
-        a.must_stay = true;
-        a.panicked = false;
-        log(a.source.name + " cannot get away and must stay.",
-            {"{name} cannot get away and must stay.", {{"name", a.source.name}}});
+        if (a.source.side == Side::party)
+        {
+            a.must_stay = true;
+            log(a.source.name + " cannot get away and must stay.",
+                {"{name} cannot get away and must stay.", {{"name", a.source.name}}});
+            return;
+        }
+        // A broken monster may try again next turn; this turn's run is spent, and
+        // this counts as the first turn it could not get away.
+        a.movement = 0;
+        a.closest_to_edge = squares_to_edge(a);
+        log(a.source.name + " cannot get away.",
+            {"{name} cannot get away.", {{"name", a.source.name}}});
         return;
     }
     end_concentration(a);
@@ -8129,6 +8189,7 @@ Snapshot Session::snapshot() const
         view.hidden = hidden(a);
         view.banished = absent(a);
         view.panicked = a.panicked;
+        view.charging_in_panic = a.panicked && a.must_stay;
         view.spells = def(a).spells;
         view.can_flee = a.source.side == Side::party && conscious(a) && !a.must_stay &&
                         std::none_of(actors_.begin(), actors_.end(),
@@ -8292,7 +8353,7 @@ Snapshot Session::snapshot() const
         // Its morale broke: it runs for the edge (MORALE-1).
         if (a.panicked)
         {
-            view.conditions.push_back({"Fleeing in panic", {}});
+            view.conditions.push_back({a.must_stay ? "Charging in panic" : "Fleeing in panic", {}});
         }
         if (def(a).cunning)
         {
@@ -13242,6 +13303,10 @@ std::vector<Command> Session::offered_commands() const
     obey_compulsion(offered, a);
     flee_turning(offered, a);
     hold_still(offered, a);
+    if (a.panicked && a.must_stay)
+    {
+        charge_in_panic(offered, a);
+    }
     // Nothing passes through a Wall of Force or of Stone: no attack across it.
     if (walled(true))
     {
@@ -15877,15 +15942,7 @@ bool Session::confused_turn(Actor &a)
         return false;
     }
     // A melee attack against a random creature within reach, if there is one.
-    std::vector<EntityId> near;
-    for (const auto &other : actors_)
-    {
-        if (other.source.id != a.source.id && !other.life.dead && other.life.hp > 0 &&
-            !absent(other) && distance(a, other) <= def(a).reach && def(a).melee.count)
-        {
-            near.push_back(other.source.id);
-        }
-    }
+    const auto near = creatures_in_reach(a);
     if (near.empty())
     {
         log(a.source.name + " stands confused and does nothing.",
@@ -15897,6 +15954,40 @@ bool Session::confused_turn(Actor &a)
         {"{name} lashes out in confusion.", {{"name", a.source.name}}});
     attack(a, target, AttackRange::melee);
     return false;
+}
+
+std::vector<EntityId> Session::creatures_in_reach(const Actor &a) const
+{
+    std::vector<EntityId> near;
+    for (const auto &other : actors_)
+    {
+        if (other.source.id != a.source.id && !other.life.dead && other.life.hp > 0 &&
+            !absent(other) && distance(a, other) <= def(a).reach && def(a).melee.count)
+        {
+            near.push_back(other.source.id);
+        }
+    }
+    return near;
+}
+
+void Session::charge_in_panic(std::vector<Command> &offered, const Actor &a) const
+{
+    const bool can_strike = std::any_of(offered.begin(), offered.end(),
+                                        [](const Command &command)
+                                        {
+                                            return command.verb == "melee";
+                                        }) &&
+                            !creatures_in_reach(a).empty();
+    std::erase_if(offered,
+                  [](const Command &command)
+                  {
+                      return command.verb != "move" && command.verb != "dash" &&
+                             command.verb != "stand_up" && command.verb != "end";
+                  });
+    if (can_strike)
+    {
+        offered.push_back({revision_, a.source.id, 0, "lash_out", "Lash out", Cell{}});
+    }
 }
 
 bool Session::sealed_off(const Actor &a) const
@@ -21180,6 +21271,15 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     {
         result.disadvantage = true;
     }
+    // Charging in panic: it strikes wildly and leaves itself open (MORALE-2).
+    if (a.panicked && a.must_stay)
+    {
+        result.disadvantage = true;
+    }
+    if (target.panicked && target.must_stay)
+    {
+        result.advantage = true;
+    }
     if (detail::sapped(a.effects) || suffers_poisoned(a) ||
         detail::has_effect(a.effects, detail::EffectKind::scorched) ||
         !fears_in_sight(a).empty() || in_sunlight(a))
@@ -23672,6 +23772,12 @@ bool Session::begin_turn()
             damage(*prey, amount);
         }
     }
+    // Charging in panic, as confused, it has no Bonus Actions or Reactions.
+    if (a.panicked && a.must_stay)
+    {
+        a.bonus = false;
+        a.reaction = false;
+    }
     // Confusion: a d10 decides the turn.
     if (detail::has_effect(a.effects, detail::EffectKind::confused) && conscious(a) &&
         !confused_turn(a))
@@ -25666,6 +25772,18 @@ void Session::dispatch_tracking_turn(const Command &command)
 
 void Session::dispatch(const Command &command)
 {
+    if (command.verb == "lash_out")
+    {
+        const auto &a = actor(command.actor);
+        const auto near = creatures_in_reach(a);
+        log(a.source.name + " lashes out in panic.",
+            {"{name} lashes out in panic.", {{"name", a.source.name}}});
+        auto melee = command;
+        melee.verb = "melee";
+        melee.target = near[static_cast<std::size_t>(roll(static_cast<int>(near.size())) - 1)];
+        dispatch(melee);
+        return;
+    }
     if (command.verb == "reckless")
     {
         attack_recklessly(actor(command.actor));
@@ -27377,14 +27495,14 @@ std::string Session::save() const
             << ' ' << a.smite_melee << ' ' << a.resistance_used << ' ' << a.regeneration_blocked
             << ' ' << a.rises_on_round << ' ' << a.thrown_gear_left[0] << ' '
             << a.thrown_gear_left[1] << ' ' << a.thrown_gear_left[2] << ' ' << a.burning << ' '
-            << a.oiled_until_round << ' ' << a.coated_until_round << ' ' << a.shield_off << ' ' << a.must_stay << ' ' << a.panicked
+            << a.oiled_until_round << ' ' << a.coated_until_round << ' ' << a.shield_off << ' '
+            << a.must_stay << ' ' << a.panicked << ' ' << a.closest_to_edge << ' ' << a.turns_stuck
             << ' ' << a.source.morale << ' ' << a.source.intelligence << ' '
             << std::quoted(a.source.melee_weapon) << ' ' << std::quoted(a.source.ranged_weapon)
-            << ' ' << a.run_start.x << ' '
-            << a.run_start.y << ' ' << a.run_end.x << ' ' << a.run_end.y << ' ' << a.run_step.x
-            << ' ' << a.run_step.y << ' ' << a.run_feet << ' ' << a.flame_lit << ' '
-            << a.curse_lifted << ' ' << a.displacement_spent << ' ' << a.last_target << ' '
-            << a.item_uses.size() << ' ';
+            << ' ' << a.run_start.x << ' ' << a.run_start.y << ' ' << a.run_end.x << ' '
+            << a.run_end.y << ' ' << a.run_step.x << ' ' << a.run_step.y << ' ' << a.run_feet << ' '
+            << a.flame_lit << ' ' << a.curse_lifted << ' ' << a.displacement_spent << ' '
+            << a.last_target << ' ' << a.item_uses.size() << ' ';
         for (const auto &[id, left] : a.item_uses)
         {
             out << id << ' ' << left << ' ';
@@ -27634,13 +27752,13 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.drink_used >> actor.hurl_used >> actor.smite_melee >> actor.resistance_used >>
         actor.regeneration_blocked >> actor.rises_on_round >> actor.thrown_gear_left[0] >>
         actor.thrown_gear_left[1] >> actor.thrown_gear_left[2] >> actor.burning >>
-        actor.oiled_until_round >> actor.coated_until_round >> actor.shield_off >> actor.must_stay >> actor.panicked >>
+        actor.oiled_until_round >> actor.coated_until_round >> actor.shield_off >>
+        actor.must_stay >> actor.panicked >> actor.closest_to_edge >> actor.turns_stuck >>
         actor.source.morale >> actor.source.intelligence >>
         std::quoted(actor.source.melee_weapon) >> std::quoted(actor.source.ranged_weapon) >>
-        actor.run_start.x >>
-        actor.run_start.y >> actor.run_end.x >> actor.run_end.y >> actor.run_step.x >>
-        actor.run_step.y >> actor.run_feet >> actor.flame_lit >> actor.curse_lifted >>
-        actor.displacement_spent >> actor.last_target;
+        actor.run_start.x >> actor.run_start.y >> actor.run_end.x >> actor.run_end.y >>
+        actor.run_step.x >> actor.run_step.y >> actor.run_feet >> actor.flame_lit >>
+        actor.curse_lifted >> actor.displacement_spent >> actor.last_target;
     std::size_t item_count{};
     input >> item_count;
     // The inventory comes later in the checkpoint; 64 items is more than any
@@ -33622,7 +33740,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.268", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.269", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),
