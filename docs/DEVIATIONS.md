@@ -134,6 +134,14 @@ Add an entry whenever a new departure is decided.
 - **A reload's dice** (2026-11-01). On Easy every roll replays after a reload.
   Above Easy a load draws new dice from the clock, so what comes next cannot be
   known ([RULES.md](RULES.md)).
+- **A monster that cannot get away charges in panic** (2026-11-01, MORALE-2). In the
+  original a broken monster that failed to get away stayed and fought on, and could
+  stand at the far edge of the field while nothing happened. Here it tries once a
+  turn, and after two turns of getting nowhere it runs at the party, wherever the
+  party is, and strikes at random at whoever is in reach, friend or foe, with
+  Disadvantage, while attacks on it have Advantage. It has no Bonus Actions or
+  Reactions and casts no spells. Confused creatures gave the model, without their
+  turn-wasting d10.
 
 ## Party and parley
 

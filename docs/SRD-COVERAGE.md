@@ -249,6 +249,8 @@ lasts its minute after its caster flees the fight; combat checkpoints become
 Rules 0.6.153 has a broken creature fight on from the moment it fails to get
 away; until its next turn it still showed "Fleeing in panic" and could spend
 its Action on a Dash back toward the edge.
+Rules 0.6.269 (`OGCOMBAT 72`) replaces that with MORALE-2: a broken monster keeps
+trying to flee, and after two turns of getting nowhere charges in panic.
 Rules 0.6.154 has a script's arrows (`DAMAGE`) meet the member's worn armor
 and shield, as the original engine did, instead of an unarmored AC. A creature
 that surrenders as its turn begins, right after a party member drops, now
@@ -1154,7 +1156,7 @@ background grant, every class and subclass feature from level 1 to 15, every
 feat and every spell the three inventories keep was checked against the code
 and its tests. The [audit finding status](#audit-finding-status) table above
 gives the result. What the check found missing was built (rules 0.6.260,
-`OGCOMBAT 71`):
+`OGCOMBAT 72`):
 
 - **Loading:** a Loading weapon fires once per action, so Extra Attack's later
   attacks cannot fire a crossbow again; Action Surge's action, Haste's action

@@ -253,12 +253,13 @@ MoraleFight morale_fight(const RulesModule &rules, std::string_view enemy, unsig
     throw std::runtime_error("The runner never hits");
 }
 
-// A broken creature as fast as its foe that fails to get away is cornered:
-// it fights on instead of running for the edge every turn.
-void cornered_monster_fights()
+// A broken creature as fast as its foe that cannot get away for two turns charges
+// in panic: it strikes at whoever is in reach, with Disadvantage and open to
+// Advantage, and does nothing else (MORALE-2).
+void stuck_monster_charges()
 {
     const auto rules = module();
-    for (std::uint64_t seed = 1; seed < 80; ++seed)
+    for (std::uint64_t seed = 1; seed < 400; ++seed)
     {
         Encounter e{{8, 4, std::vector<Terrain>(32)},
                     {{1, "runner", "Runner", Side::party, {0, 1}},
@@ -272,33 +273,103 @@ void cornered_monster_fights()
         {
             continue;
         }
-        for (unsigned n = 0; n < 80 && c->snapshot().outcome == Outcome::ongoing; ++n)
+        const auto charged = "Enemy cannot get away and charges in panic!";
+        for (unsigned n = 0;
+             n < 80 && c->snapshot().outcome == Outcome::ongoing && !logged(*c, charged); ++n)
         {
-            check(c->submit(choose_demo_command(*c)), "The AI's command is legal");
+            const auto now = c->snapshot();
+            check(!logged(*c, "Enemy cannot get away.") || unit(now, 9).panicked,
+                  "Failing a turn's run, it still means to flee");
+            const auto next = now.actor == 1 ? *offered(*c, "end", 1) : choose_demo_command(*c);
+            check(c->submit(next), "The command is legal");
         }
-        const auto log = c->snapshot().log();
-        const auto stayed =
-            std::find(log.begin(), log.end(), "Enemy cannot get away and must stay.");
-        if (stayed == log.end())
+        if (!logged(*c, charged))
         {
             continue;
         }
-        check(std::any_of(stayed, log.end(),
+        const auto log = c->snapshot().log();
+        check(std::count(log.begin(), log.end(), "Enemy cannot get away.") == 2,
+              "It charges after two turns of failing to get away");
+        const auto state = c->snapshot();
+        const auto &enemy = unit(state, 9);
+        check(enemy.panicked && enemy.charging_in_panic, "Unable to get away, it charges in panic");
+        check(std::any_of(enemy.conditions.begin(), enemy.conditions.end(),
+                          [](const auto &condition)
+                          {
+                              return condition.source == "Charging in panic";
+                          }) &&
+                  std::none_of(enemy.conditions.begin(), enemy.conditions.end(),
+                               [](const auto &condition)
+                               {
+                                   return condition.source == "Fleeing in panic";
+                               }),
+              "Its conditions say it charges, not flees");
+        for (const auto &command : c->legal_commands())
+        {
+            check(command.verb == "move" || command.verb == "dash" || command.verb == "stand_up" ||
+                      command.verb == "lash_out" || command.verb == "end",
+                  "Charging, it can only run and lash out");
+        }
+        const auto lashes = "Enemy lashes out in panic.";
+        for (unsigned n = 0; n < 40 && !logged(*c, lashes); ++n)
+        {
+            const auto next =
+                c->snapshot().actor == 1 ? *offered(*c, "end", 1) : choose_demo_command(*c);
+            check(c->submit(next), "The charge's commands are legal");
+        }
+        const auto after = c->snapshot().log();
+        const auto lashed = std::find(after.begin(), after.end(), lashes);
+        check(lashed != after.end() && lashed + 1 != after.end(), "It lashes out in panic");
+        check((lashed + 1)->find("isadvantage") != std::string::npos,
+              "It attacks with Disadvantage");
+        for (auto now = c->snapshot(); now.actor == 9 && now.outcome == Outcome::ongoing;
+             now = c->snapshot())
+        {
+            check(c->submit(choose_demo_command(*c)), "The charge's commands are legal");
+        }
+        turn_of(*c, 1);
+        const auto swing = offered(*c, "melee", 1);
+        check(swing && c->submit(*swing), "The runner strikes back");
+        const auto last = c->snapshot().log();
+        check(std::any_of(last.begin(), last.end(),
                           [](const auto &line)
                           {
-                              return line.starts_with("Enemy -> Runner");
+                              return line.starts_with("Runner -> Enemy") &&
+                                     line.find("dvantage") != std::string::npos;
                           }),
-              "Cornered, the broken creature attacks again");
-        check(!unit(c->snapshot(), 9).panicked, "Cornered, it is no longer fleeing in panic");
+              "An attack on it has Advantage");
+        check(rules->restore(c->save())->save() == c->save(), "A charge survives a checkpoint");
         return;
     }
-    throw std::runtime_error("No broken creature failed to get away");
+    throw std::runtime_error("No broken creature charged");
 }
 
-// Cornered from the moment it fails to get away: for the rest of that turn it
-// no longer shows Fleeing in panic, and once it has walked toward a foe out of
-// sight it does not spend its Action on a Dash for an edge it cannot leave by.
-void cornered_at_once()
+// Every fight ends with the computer playing both sides, by sight as in the game:
+// a broken monster far out of everyone's senses leaves or comes back to fight.
+void broken_monster_leaves_no_standoff()
+{
+    const auto rules = module();
+    unsigned charges = 0;
+    for (std::uint64_t seed = 1; seed < 80; ++seed)
+    {
+        Encounter e{{50, 9, std::vector<Terrain>(450)},
+                    {{1, "runner", "Runner", Side::party, {1, 4}},
+                     {9, "even", "Enemy", Side::opposition, {48, 4}, {}, VitalState{10}}}};
+        e.morale = 1;
+        auto c = rules->create(std::move(e), seed);
+        for (unsigned n = 0; n < 2000 && c->snapshot().outcome == Outcome::ongoing; ++n)
+        {
+            check(c->submit(choose_demo_command(*c)), "The computer's command is legal");
+        }
+        check(c->snapshot().outcome != Outcome::ongoing, "A broken monster leaves no standoff");
+        charges += logged(*c, "Enemy cannot get away and charges in panic!");
+    }
+    check(charges > 0, "Some monsters could not get away and came back to fight");
+}
+
+// Failing to get away spends its run for the turn: it does not spend its Action on
+// a Dash for an edge it has just failed to leave by.
+void failed_run_spends_the_turn()
 {
     const auto rules = module();
     for (std::uint64_t seed = 1; seed < 80; ++seed)
@@ -319,18 +390,11 @@ void cornered_at_once()
             const auto actor = c->snapshot().actor;
             const auto end = offered(*c, "end", 1);
             check(c->submit(actor == 1 ? *end : choose_demo_command(*c)), "The command is legal");
-            if (!logged(*c, "Enemy cannot get away and must stay."))
+            if (!logged(*c, "Enemy cannot get away."))
             {
                 continue;
             }
             const auto s = c->snapshot();
-            const auto &enemy = unit(s, 9);
-            check(!enemy.panicked && std::none_of(enemy.conditions.begin(), enemy.conditions.end(),
-                                                  [](const auto &condition)
-                                                  {
-                                                      return condition.source == "Fleeing in panic";
-                                                  }),
-                  "Failing to get away, it is no longer fleeing in panic");
             const auto failed_at = s.log().size();
             for (auto now = c->snapshot(); now.actor == 9 && now.outcome == Outcome::ongoing;
                  now = c->snapshot())
@@ -340,7 +404,7 @@ void cornered_at_once()
             const auto log = c->snapshot().log();
             check(std::find(log.begin() + static_cast<std::ptrdiff_t>(failed_at), log.end(),
                             "Enemy dashes.") == log.end(),
-                  "Cornered, it does not Dash for the edge");
+                  "Having failed, it does not Dash for the edge");
             return;
         }
     }
@@ -408,8 +472,9 @@ int main()
         leaving_reach_provokes();
         flee_policy();
         monsters_break();
-        cornered_monster_fights();
-        cornered_at_once();
+        stuck_monster_charges();
+        broken_monster_leaves_no_standoff();
+        failed_run_spends_the_turn();
         std::cout << "Flee tests passed\n";
         return 0;
     }

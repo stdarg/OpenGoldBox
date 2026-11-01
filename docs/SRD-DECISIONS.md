@@ -702,8 +702,8 @@ Hit Points, in percent, than that morale; otherwise it holds while its side
 keeps at least 100 less the encounter's morale percent of its Hit Points
 (rounded down to 5). Broken, it flees in panic when no living opponent is
 faster: it runs for an edge away from the party and off the field by the same
-rule as the party (FLEE-1), and may rally on a later turn; cornered (it failed
-to get away), it fights on.
+rule as the party (FLEE-1), and may rally on a later turn; one that cannot get
+away charges (MORALE-2).
 When an opponent is faster, a creature with Intelligence above 5 surrenders,
 leaving the fight counted as defeated; a witless one fights on. A monster that
 gets away is worth neither experience nor treasure; the fight is won when none
@@ -712,6 +712,24 @@ among its conditions (the user, 2026-10-09). Not adopted: Curse's
 Bless/Curse/charm morale modifiers
 (unconfirmed for Pool) and morale for allied NPCs (ours are player-controlled).
 
+
+
+## MORALE-2 (2026-11-01): a broken monster that cannot get away charges in panic
+
+No fight stands still (the user, 2026-11-01). A monster fleeing in panic tries to
+get off the field, by the even chance of MORALE-1, once each turn; a failed try ends
+its movement for that turn. When it has failed for two turns, or when two of its
+turns pass with the edge no nearer because it is walled in, it charges in panic until
+it rallies or falls. It runs at the nearest enemy, however far and whether or not it
+perceives one, and:
+
+- attacks a random creature in reach, friend or foe, as a Confused creature does;
+- has Disadvantage on its attack rolls, and attack rolls against it have Advantage;
+- has no Bonus Actions or Reactions, and casts no spells and uses no items.
+
+It does not roll Confusion's d10: a turn spent standing about would leave the fight
+as it was. The Disadvantage and Advantage are our choice of the debuffs the user
+asked for.
 
 ## QUICK-1 (2026-10-09): Quick combat, as the original game had it
 

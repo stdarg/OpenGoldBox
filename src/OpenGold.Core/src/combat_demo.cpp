@@ -1078,6 +1078,8 @@ Command choose_from(const rules::Snapshot &state, const std::vector<Command> &of
                     Searching searching, Difficulty difficulty);
 Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command> &offered,
                         Searching searching, Difficulty difficulty);
+Command charge_in_panic(const rules::Snapshot &state, const std::vector<Command> &offered,
+                        const rules::CombatantView &active);
 std::optional<Command> choose_item(const rules::Snapshot &state, const CombatantView &active,
                                    const std::vector<Command> &offered);
 
@@ -1472,6 +1474,11 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             return command;
         }
     }
+    // One that could not get away charges (MORALE-2): all it has left.
+    if (active.charging_in_panic && !state.reaction_pending)
+    {
+        return charge_in_panic(state, offered, active);
+    }
     // A creature whose morale broke runs for the edge; cornered, it fights on.
     if (active.panicked && !state.reaction_pending)
     {
@@ -1489,8 +1496,8 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     std::vector<const CombatantView *> in_view;
     for (const auto &enemy : state.combatants)
     {
-        if (enemy.side != active.side && !enemy.dead && (enemy.hit_points > 0 || finishing) &&
-            sees(board, active, enemy))
+        if (enemy.side != active.side && !enemy.dead && !enemy.fled &&
+            (enemy.hit_points > 0 || finishing) && sees(board, active, enemy))
         {
             in_view.push_back(&enemy);
         }
@@ -1509,7 +1516,8 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     {
         for (const auto &enemy : state.combatants)
         {
-            if (enemy.side != active.side && !enemy.dead && (enemy.hit_points > 0 || finishing) &&
+            if (enemy.side != active.side && !enemy.dead && !enemy.fled &&
+                (enemy.hit_points > 0 || finishing) &&
                 (seeking || squares_apart(active, enemy) <= ai_tuning::hearing_squares))
             {
                 in_view.push_back(&enemy);
@@ -2760,6 +2768,45 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
 
 namespace
 {
+// Steps from the given squares to every open square, around walls; -1 where no
+// way leads.
+std::vector<int> steps_from(const rules::Battlefield &board, const std::vector<Cell> &sources)
+{
+    const auto index = [&](Cell p)
+    {
+        return static_cast<std::size_t>(p.y * board.width + p.x);
+    };
+    std::vector<int> steps(static_cast<std::size_t>(board.width * board.height), -1);
+    std::queue<Cell> frontier;
+    for (const auto source : sources)
+    {
+        if (board.contains(source) && steps[index(source)] < 0)
+        {
+            steps[index(source)] = 0;
+            frontier.push(source);
+        }
+    }
+    while (!frontier.empty())
+    {
+        const auto p = frontier.front();
+        frontier.pop();
+        for (int dy = -1; dy <= 1; ++dy)
+        {
+            for (int dx = -1; dx <= 1; ++dx)
+            {
+                if (const Cell next{p.x + dx, p.y + dy}; board.contains(next) &&
+                                                         board.at(next) != Terrain::obstacle &&
+                                                         steps[index(next)] < 0)
+                {
+                    steps[index(next)] = steps[index(p)] + 1;
+                    frontier.push(next);
+                }
+            }
+        }
+    }
+    return steps;
+}
+
 // Running off the field: the step toward an open edge of the field, around
 // walls, Dashing for more movement, then the flee itself. A party member runs
 // for the nearest edge; a panicked creature for the nearest edge square farther
@@ -2792,7 +2839,14 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
                                               return other.side != active.side && other.conscious &&
                                                      squares_apart(other, active) <= 1;
                                           });
-    if (enemy_beside && !active.disengaged)
+    // With nowhere left to move this turn (its run just failed), it has no use for it.
+    const bool can_move =
+        std::any_of(offered.begin(), offered.end(),
+                    [&](const Command &command)
+                    {
+                        return command.verb == "move" && command.actor == active.id;
+                    });
+    if (enemy_beside && !active.disengaged && can_move)
     {
         for (const auto verb : {"cunning_disengage", "disengage"})
         {
@@ -2803,43 +2857,13 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
         }
     }
     const auto &board = state.battlefield;
-    const auto cells = static_cast<std::size_t>(board.width * board.height);
     const auto index = [&](Cell p)
     {
         return static_cast<std::size_t>(p.y * board.width + p.x);
     };
-    // Steps from the given squares to every open square, around walls.
     const auto distances = [&](const std::vector<Cell> &sources)
     {
-        std::vector<int> steps(cells, -1);
-        std::queue<Cell> frontier;
-        for (const auto source : sources)
-        {
-            if (board.contains(source) && steps[index(source)] < 0)
-            {
-                steps[index(source)] = 0;
-                frontier.push(source);
-            }
-        }
-        while (!frontier.empty())
-        {
-            const auto p = frontier.front();
-            frontier.pop();
-            for (int dy = -1; dy <= 1; ++dy)
-            {
-                for (int dx = -1; dx <= 1; ++dx)
-                {
-                    if (const Cell next{p.x + dx, p.y + dy}; board.contains(next) &&
-                                                             board.at(next) != Terrain::obstacle &&
-                                                             steps[index(next)] < 0)
-                    {
-                        steps[index(next)] = steps[index(p)] + 1;
-                        frontier.push(next);
-                    }
-                }
-            }
-        }
-        return steps;
+        return steps_from(board, sources);
     };
     std::vector<Cell> edges;
     for (int y = 0; y < board.height; ++y)
@@ -2909,6 +2933,70 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
         }
     }
     return std::nullopt;
+}
+
+// Charging in panic (MORALE-2): the rules offer it nothing but running and lashing
+// out. It runs at the nearest enemy, wherever that is, so that the fight ends.
+Command charge_in_panic(const rules::Snapshot &state, const std::vector<Command> &offered,
+                        const rules::CombatantView &active)
+{
+    const auto offer = [&](std::string_view verb) -> const Command *
+    {
+        const auto found =
+            std::find_if(offered.begin(), offered.end(),
+                         [&](const Command &command)
+                         {
+                             return command.verb == verb && command.actor == active.id;
+                         });
+        return found == offered.end() ? nullptr : &*found;
+    };
+    std::vector<Cell> enemy_squares;
+    bool enemy_beside = false;
+    for (const auto &other : state.combatants)
+    {
+        if (other.side != active.side && other.hit_points > 0 && !other.dead && !other.fled)
+        {
+            const auto squares = squares_of(other);
+            enemy_squares.insert(enemy_squares.end(), squares.begin(), squares.end());
+            enemy_beside = enemy_beside || squares_apart(other, active) <= 1;
+        }
+    }
+    const auto *lash_out = offer("lash_out");
+    if (enemy_beside && lash_out)
+    {
+        return *lash_out;
+    }
+    const auto &board = state.battlefield;
+    const auto steps = steps_from(board, enemy_squares);
+    const auto steps_at = [&](Cell p)
+    {
+        const auto found = steps[static_cast<std::size_t>(p.y * board.width + p.x)];
+        return found < 0 ? 1 << 20 : found;
+    };
+    const Command *move = nullptr;
+    int closest = steps_at(active.cell);
+    for (const auto &command : offered)
+    {
+        if (command.verb == "move" && command.actor == active.id &&
+            steps_at(command.destination) < closest)
+        {
+            move = &command;
+            closest = steps_at(command.destination);
+        }
+    }
+    if (move)
+    {
+        return *move;
+    }
+    if (lash_out)
+    {
+        return *lash_out;
+    }
+    if (const auto *dash = offer("dash"); dash && !enemy_beside)
+    {
+        return *dash;
+    }
+    return *offer("end");
 }
 } // namespace
 
