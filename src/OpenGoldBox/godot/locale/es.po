@@ -1610,7 +1610,7 @@ msgstr "Acampar [C]"
 msgid "Camp actions are for active members"
 msgstr "Las acciones de campamento son para miembros activos"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:198
+#: src/OpenGoldBox/campaign_save_view.cpp:202
 msgid "Campaign loaded."
 msgstr "Campaña cargada."
 
@@ -8135,7 +8135,7 @@ msgstr "Tipo de descanso"
 msgid "Restart"
 msgstr "Reiniciar"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:247
+#: src/OpenGoldBox/campaign_save_view.cpp:251
 msgid "Restart test"
 msgstr "Prueba de reinicio"
 
