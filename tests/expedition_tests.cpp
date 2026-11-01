@@ -1010,6 +1010,29 @@ const std::shared_ptr<const por::MonsterBundle> &game_monsters()
     return monsters;
 }
 
+// Tyranthraxus's guards bar the way to him and no rest separates the two fights.
+bool facing_the_dragon_next(const por::RolfTourSession &town)
+{
+    return town.snapshot().dialogue.find("GUARDS, KILL THESE PESTS") != std::string::npos;
+}
+
+// A player who only just beats the guards reloads rather than face the dragon
+// with nobody standing; a test that kept that win would lose every fight after.
+bool fit_for_the_dragon(const CampaignParty &party)
+{
+    unsigned hit_points = 0;
+    unsigned most_hit_points = 0;
+    for (const auto id : party.state().slots)
+    {
+        if (id)
+        {
+            hit_points += party.member(id).vitals.hit_points;
+            most_hit_points += party.hit_point_maximum(id);
+        }
+    }
+    return hit_points * 2 >= most_hit_points;
+}
+
 void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party)
 {
     if (town.monster_picture())
@@ -1099,7 +1122,8 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
             std::cerr << "TRACE fight " << commands << " commands, try " << attempt << ", "
                       << (result.outcome == rules::Outcome::victory ? "won" : "not won") << '\n';
         }
-        if (result.outcome == rules::Outcome::victory)
+        if (result.outcome == rules::Outcome::victory &&
+            !(facing_the_dragon_next(town) && !fit_for_the_dragon(*party)))
         {
             if (route.records(town))
             {
