@@ -1,16 +1,17 @@
 {
-  "description": "A dangerous humanoid undead figure; use a composed, predatory stance rather than a mindless shuffle. Source inventory: Short bow. Source wealth: no coins, gems, or jewelry recorded.",
+  "description": "An aristocratic female vampire holds a composed, predatory stance before attacking barehanded with both arms outstretched and fangs bared. Source wealth: no coins, gems, or jewelry recorded.",
   "description_sources": [
     "Original game MON4CHA.DAX:23 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed",
+    "User direction 2026-10-24: female vampire using a natural two-arm attack with no equipped weapon"
   ],
   "equipment": [],
-  "flag_for_regeneration": true,
+  "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "height_feet": null,
   "humanoid_size": "normal",
   "name": "VAMPIRE",
-  "preview_fallback_variant": "item_000__ranged",
+  "preview_fallback_variant": "",
   "source": {
     "art_archive": "CPIC4.DAX",
     "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
