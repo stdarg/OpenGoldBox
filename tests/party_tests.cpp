@@ -2855,6 +2855,27 @@ void shop_buyer_switch()
           "Leaving the shop hands the party's gold to the original script");
 }
 
+// A slot scan can leave the script on the empty slot a companion then takes.
+void companion_joins_scanned_slot()
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    (void)party->add_pc(character("fighter", "First"));
+    party->set_wealth({0, 0, 0, 300, 0, 0, 0});
+    // LOAD CHARACTER of the empty slot 6; ADD NPC 7 with morale 70; exit.
+    auto p = program({10, 0, 6, 54, 0, 7, 0, 70, 0});
+    auto resources = std::make_shared<por::PhlanResources>();
+    resources->programs.emplace(0, p);
+    resources->npc_profiles.emplace(7, character("fighter", "Script guard"));
+    por::RolfTourSession town({}, p, {}, 0x9914, {}, resources);
+    town.campaign_party(party);
+    settle(town);
+    town.explore(por::ExplorationCommand::look);
+    settle(town);
+    check(party->state().slots[6], "The companion joins in the slot the script scanned");
+    check(party->state().wealth == Purse{0, 0, 0, 300, 0, 0, 0},
+          "A companion joining in the scanned slot leaves the purse alone");
+}
+
 void script_handoff()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -3098,6 +3119,7 @@ int main()
         dynamic_checkpoint();
         combat_demo_fixture();
         script_handoff();
+        companion_joins_scanned_slot();
         shop_buyer_switch();
         rejected_combat_handoff();
         encounter_with_nobody();
