@@ -4154,13 +4154,14 @@ void CombatView::_process(double delta)
             const auto searching = checking_ || party_check_ || defeat_check_ || expedition_check_
                                        ? Searching::everyone
                                        : Searching::by_sight;
-            // Every creature the computer plays targets by the difficulty
-            // (CLOSE-1).
+            // The creatures the computer plays target by the difficulty
+            // (CLOSE-1); a party member on Quick always plays at the highest, a
+            // monster on the party's side by the difficulty.
             const auto difficulty = settings::difficulty();
             act(flee_mode_
                     ? choose_flee_command(demo_->combat(), quick_magic(), searching, difficulty)
-                : quick_turn(s)
-                    ? choose_quick_command(demo_->combat(), quick_magic(), searching, difficulty)
+                : quick_turn(s) && !opengold::is_ally(s.actor)
+                    ? choose_quick_command(demo_->combat(), quick_magic(), searching)
                     : choose_demo_command(demo_->combat(), searching, difficulty));
         }
     }

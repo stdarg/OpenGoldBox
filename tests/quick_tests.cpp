@@ -126,6 +126,37 @@ void magic_off_casts_nothing()
         check(fight->submit(command), "The computer's command is legal");
     }
 }
+
+// The difficulty setting makes the party's enemies harder, not its own Quick
+// members worse: over a whole fight they play as the highest level does.
+void quick_plays_at_the_highest_level()
+{
+    const auto rules = module();
+    const auto profile = rules->character_profile(druid().sheet(), {}).data;
+    auto fight = rules->create({{12, 6, std::vector<Terrain>(72)},
+                                {{1, "campaign-character", "Druid", Side::party, {1, 1}, profile},
+                                 {98, "bandit", "Enemy", Side::opposition, {6, 1}},
+                                 {99, "bandit", "Other", Side::opposition, {6, 3}}}},
+                               5);
+    bool differs_from_easy = false;
+    for (unsigned n = 0; n < 200 && fight->snapshot().outcome == Outcome::ongoing; ++n)
+    {
+        const auto highest = choose_demo_command(*fight, Searching::by_sight, Difficulty::infernal);
+        if (fight->snapshot().actor == 1)
+        {
+            const auto quick = choose_quick_command(*fight, true);
+            check(quick.verb == highest.verb && quick.target == highest.target &&
+                      quick.destination == highest.destination,
+                  "A Quick member plays as the highest difficulty does");
+            const auto easy = choose_demo_command(*fight, Searching::by_sight, Difficulty::easy);
+            differs_from_easy = differs_from_easy || easy.verb != highest.verb ||
+                                easy.target != highest.target ||
+                                easy.destination != highest.destination;
+        }
+        check(fight->submit(highest), "The computer's command is legal");
+    }
+    check(differs_from_easy, "The highest level plays differently from Easy");
+}
 } // namespace
 
 int main()
@@ -134,6 +165,7 @@ int main()
     {
         party_keeps_quick();
         magic_off_casts_nothing();
+        quick_plays_at_the_highest_level();
         std::cout << "Quick combat tests passed\n";
     }
     catch (const std::exception &e)

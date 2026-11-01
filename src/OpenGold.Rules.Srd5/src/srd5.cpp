@@ -11246,6 +11246,11 @@ std::vector<Command> Session::legal_commands() const
             if (const auto *attacker = find_actor(command.actor))
             {
                 command.expected_damage = expected_damage(*attacker, command);
+                if (command.verb == "ranged" || command.verb == "shoot" || command.verb == "throw")
+                {
+                    command.close_damage =
+                        expected_damage(*attacker, actor(command.target), AttackRange::melee);
+                }
             }
         }
     }
@@ -22887,7 +22892,8 @@ int Session::expected_damage(const Actor &a, const Actor &target, AttackRange ra
                             : mode > 0 ? 400 - (20 - hits_of_twenty) * (20 - hits_of_twenty)
                                        : hits_of_twenty * 20;
     const auto dice = weapon_dice(a, range);
-    const int twice_average = std::max(0, dice.count * (dice.sides + 1) + 2 * (dice.bonus + magic));
+    const int twice_average =
+        dice.count ? std::max(0, dice.count * (dice.sides + 1) + 2 * (dice.bonus + magic)) : 0;
     const int attacks = 1 + d.extra_attacks + (!ranged && d.martial_arts ? 1 : 0);
     return hits_of_400 * twice_average * attacks / 8;
 }
@@ -33616,7 +33622,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.267", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.268", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),

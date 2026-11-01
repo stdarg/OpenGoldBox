@@ -201,10 +201,21 @@ void flee_policy()
     }
     auto c = fight(*rules, "fast", 1);
     turn_of(*c, 1);
-    const auto policy = choose_flee_command(*c), demo = choose_demo_command(*c);
-    check(policy.verb == demo.verb && policy.target == demo.target &&
-              policy.destination == demo.destination,
-          "A member too slow to flee fights on as the demo AI would");
+    const auto same = [](const Command &a, const Command &b)
+    {
+        return a.verb == b.verb && a.target == b.target && a.destination == b.destination;
+    };
+    check(same(choose_flee_command(*c),
+               choose_demo_command(*c, Searching::by_sight, Difficulty::infernal)),
+          "A member too slow to flee fights on as a Quick member does, at the highest level");
+    auto enemy_turn = fight(*rules, "fast", 1);
+    turn_of(*enemy_turn, 9);
+    for (const auto level : {Difficulty::easy, Difficulty::normal})
+    {
+        check(same(choose_flee_command(*enemy_turn, false, Searching::by_sight, level),
+                   choose_demo_command(*enemy_turn, Searching::by_sight, level)),
+              "A monster fights a fleeing party by the difficulty");
+    }
 }
 
 // Monster morale, the original's rule: once its side has lost more of its Hit

@@ -117,9 +117,14 @@ Add an entry whenever a new departure is decided.
   replays the same. The original breathed by chance each round; a Breath Weapon
   here goes off only where it catches an enemy and no ally.
   [AI-1](SRD-DECISIONS.md#ai-1-2026-10-21-computer-play-as-the-original-game-had-it),
-  [AI.md](AI.md). Beside an enemy the original always fought in melee; ours
-  uses the weapon with the highest expected damage, its chance to hit and the
-  close-range Disadvantage counted (2026-10-31).
+  [AI.md](AI.md). Weapon choice rises with the difficulty (2026-10-31): the
+  original's rule is Normal; Easy chooses at random; Hard and up use the weapon
+  with the highest expected damage, its chance to hit and the close-range
+  Disadvantage counted; Nightmare also keeps its distance; Infernal also picks
+  the target where the attack stops the most harm and always casts its strongest
+  spells. A party member on Quick always plays at Infernal, where the original's
+  Quick characters played as its monsters did; above Normal a creature walks only
+  for an enemy it can strike this turn, or else the nearest.
 
 - **Hearing in combat** (2026-10-31). The original's monsters went only for what
   they could see. A creature here also hears enemies within 100 feet, through

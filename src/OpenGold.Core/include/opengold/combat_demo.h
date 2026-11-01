@@ -175,16 +175,18 @@ enum class Searching
                                                  Difficulty difficulty = default_difficulty);
 // The party's flee policy: a member fast enough to flee runs for the nearest
 // open edge of the field (Dashing when it must, whatever reactions it
-// provokes) and steps off it; everyone else acts as choose_quick_command does,
-// casting no spells unless `magic` (Quick magic).
+// provokes) and steps off it; a member who cannot acts as choose_quick_command
+// does, casting no spells unless `magic` (Quick magic), and a monster plays by
+// `difficulty` as choose_demo_command does.
 [[nodiscard]] rules::Command choose_flee_command(const rules::CombatSession &session,
                                                  bool magic = true,
                                                  Searching searching = Searching::by_sight,
                                                  Difficulty difficulty = default_difficulty);
 // Quick combat, as in the original: the computer plays the active party
-// member as choose_demo_command does, casting no spells unless `magic`.
+// member as choose_demo_command does, casting no spells unless `magic`. A Quick
+// member plays at the highest difficulty whatever the setting: the setting
+// makes the party's enemies harder, not its own members worse.
 [[nodiscard]] rules::Command choose_quick_command(const rules::CombatSession &session, bool magic,
-                                                  Searching searching = Searching::by_sight,
-                                                  Difficulty difficulty = default_difficulty);
+                                                  Searching searching = Searching::by_sight);
 } // namespace opengold
 #endif
