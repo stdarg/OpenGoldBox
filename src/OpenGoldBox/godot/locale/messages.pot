@@ -1610,7 +1610,7 @@ msgstr ""
 msgid "Camp actions are for active members"
 msgstr ""
 
-#: src/OpenGoldBox/campaign_save_view.cpp:198
+#: src/OpenGoldBox/campaign_save_view.cpp:202
 msgid "Campaign loaded."
 msgstr ""
 
@@ -8135,7 +8135,7 @@ msgstr ""
 msgid "Restart"
 msgstr ""
 
-#: src/OpenGoldBox/campaign_save_view.cpp:247
+#: src/OpenGoldBox/campaign_save_view.cpp:251
 msgid "Restart test"
 msgstr ""
 

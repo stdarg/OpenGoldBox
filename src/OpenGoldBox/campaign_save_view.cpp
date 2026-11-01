@@ -131,10 +131,14 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
     // The restart check compares what it loads with the file, dice and all.
     if (!save_read_check_)
     {
+        // Automated checks load saves too, and must roll the same on every run.
+        constexpr std::uint64_t fixed_dice = 42;
         const auto microseconds = std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::system_clock::now().time_since_epoch());
-        reseed_after_load(saved, settings::difficulty(),
-                          static_cast<std::uint64_t>(microseconds.count()));
+        const auto fresh = OS::get_singleton()->get_cmdline_user_args().has("--fixed-dice")
+                               ? fixed_dice
+                               : static_cast<std::uint64_t>(microseconds.count());
+        reseed_after_load(saved, settings::difficulty(), fresh);
     }
     auto replacement = std::make_shared<CampaignParty>(std::move(module));
     replacement->restore(std::move(saved.party));
