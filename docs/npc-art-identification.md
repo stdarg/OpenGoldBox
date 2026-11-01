@@ -53,7 +53,7 @@ script index, but their artwork is identical to referenced pairs in other banks.
 
 | Archive copy | Identical copies | Shared art identity and known users |
 | --- | --- | --- |
-| CPIC1 / 11 | CPIC2 through CPIC8 / 11 | Shared fighter art; Mad Man, Skullcrusher, Hassad, Princess Fatima, TYRANITHRAXUS and generic fighters |
+| CPIC1 / 11 | CPIC2 through CPIC8 / 11 | Shared fighter art; Mad Man, Skullcrusher, Hassad, Princess Fatima, Tyranthraxus and generic fighters |
 | CPIC4 / 14 | CPIC2, CPIC3, CPIC5, CPIC6, CPIC7 / 14 | Shared spellcaster art; Al-Hyam Dazid, Genheeris, Yarash, Shaman, Envoy and generic magic users |
 | CPIC6 / 4 | CPIC1, CPIC2, CPIC4 / 4 | Orc art |
 | CPIC6 / 12 | CPIC3, CPIC5, CPIC7 / 12 | Shared humanoid art used for thieves, a cleric and Nomad |

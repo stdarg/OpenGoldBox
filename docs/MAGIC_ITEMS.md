@@ -93,7 +93,7 @@ treasure generator can produce it.
 | Long Sword +2 Flame Tongue | Fixed: at the bottom of a deep well in Valjevo Castle NW, found by diving. |
 | Long Sword +3 (two) | Fixed: two crossed swords behind an altar, Valjevo Castle SW (byte 62 = 0x84, byte 61 = 82). |
 | Long Sword +4 | Carried: the buccaneer captain (Buccaneer Base). |
-| Long Sword +5 | Carried: Tyranthraxus (record name TYRANITHRAXUS, Valjevo Castle). |
+| Long Sword +5 | Carried: Tyranthraxus (the original's record misspells him TYRANITHRAXUS, Valjevo Castle). |
 | Two-Handed Sword +1 +3 vs Undead | Fixed: City Hall, on accepting the Valhingen Graveyard commission (with eight Restoration scrolls' worth, see [Scrolls](#scrolls)). |
 | Two-Handed Sword +2 | Fixed: the nomad shaman's reward (Nomad Camp). Carried: 6th-level fighter (New Phlan, Valjevo Castle NE); 8th-level fighter (New Phlan, Valjevo Castle tower); envoys (Valjevo Castle NE, Kobold Caves). |
 | Two-Handed Sword +1 | Carried: "Hero" (no area traced). Random. |

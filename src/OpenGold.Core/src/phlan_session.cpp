@@ -1991,12 +1991,12 @@ bool RolfTourSession::choose_encounter(std::size_t choice)
     int slowest = 1000, fastest = 0;
     for (auto id : campaign_->state().slots)
     {
-        if (id)
+        // The party carries its dead with it, as in the original, so they never slow it.
+        if (id && !campaign_->member(id).vitals.dead)
         {
-            const auto &member = campaign_->member(id);
             // Conversion boundary: original movement 12 corresponds to a modern
             // ordinary 30-foot creature. Unconscious members cannot escape on foot.
-            const int movement = member.vitals.dead || member.vitals.hit_points == 0
+            const int movement = campaign_->member(id).vitals.hit_points == 0
                                      ? 0
                                      : campaign_->profile(id).movement_feet * 2 / 5;
             slowest = std::min(slowest, movement);
