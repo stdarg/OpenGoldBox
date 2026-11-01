@@ -1,14 +1,14 @@
 {
-  "description": "High Priestess Grishnak leads worship at the Cadorna Textile House’s makeshift temple. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
-  "humanoid_size": "normal",
-  "sprite_size": {"height_squares": 1, "width_squares": 1},
+  "description": "High Priestess Grishnak the hobgoblin cleric, leads worship at the Cadorna Textile House’s makeshift temple. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
   "description_sources": [
     "Original game MON4CHA.DAX:28 and matching MONnITM inventory",
     "GameDocs/Cluebook.pdf, PDF page 10"
   ],
   "equipment": [],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
+  "height_feet": null,
+  "humanoid_size": "normal",
   "name": "GRISHNAK",
   "preview_fallback_variant": "",
   "source": {
@@ -19,6 +19,10 @@
     "creature_record": 28,
     "key": "MON4CHA.DAX:28",
     "linked_creature_keys": []
+  },
+  "sprite_size": {
+    "height_squares": 1,
+    "width_squares": 1
   },
   "variants": [
     {

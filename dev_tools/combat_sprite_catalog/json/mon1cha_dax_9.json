@@ -1,7 +1,9 @@
 {
   "description": "An imposing ogre leader wearing a blue helmet and carrying a crude halberd or long bow. The halberd is held high and aimed forward in ready, then follows through near the end of a forceful strike.",
-  "humanoid_size": "tall",
-  "sprite_size": {"height_squares": 2, "width_squares": 1},
+  "description_sources": [
+    "Original game MON1CHA.DAX:9 and matching MONnITM inventory",
+    "GameDocs/Cluebook.pdf, PDF page 10"
+  ],
   "equipment": [
     {
       "id": "item_000",
@@ -12,16 +14,6 @@
       "source_range": 0,
       "source_type": 73,
       "weapon_role": ""
-    },
-    {
-      "id": "item_001",
-      "kind": "weapon",
-      "name": "Long bow",
-      "readied": false,
-      "source_hands": 2,
-      "source_range": 22,
-      "source_type": 43,
-      "weapon_role": "ranged"
     },
     {
       "id": "added_4389207748",
@@ -36,25 +28,24 @@
   ],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
+  "height_feet": null,
+  "humanoid_size": "tall",
   "name": "OGRE LEADER",
+  "preview_fallback_variant": "item_001__ranged",
   "source": {
     "art_archive": "CPIC1.DAX",
     "art_basis": "Same ID, same bank (candidate)",
     "art_record": 9,
     "creature_archive": "MON1CHA.DAX",
     "creature_record": 9,
-    "key": "MON1CHA.DAX:9"
+    "key": "MON1CHA.DAX:9",
+    "linked_creature_keys": []
+  },
+  "sprite_size": {
+    "height_squares": 2,
+    "width_squares": 1
   },
   "variants": [
-    {
-      "action": "art/mon1cha_dax_9/item_001__ranged/action.png",
-      "id": "item_001__ranged",
-      "label": "Long bow",
-      "ready": "art/mon1cha_dax_9/item_001__ranged/ready.png",
-      "shield_id": "",
-      "weapon_id": "item_001",
-      "weapon_role": "ranged"
-    },
     {
       "action": "art/mon1cha_dax_9/added_4389207748__two_hand/action.png",
       "id": "added_4389207748__two_hand",
@@ -73,9 +64,5 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 0
-  },
-  "description_sources": [
-    "Original game MON1CHA.DAX:9 and matching MONnITM inventory",
-    "GameDocs/Cluebook.pdf, PDF page 10"
-  ]
+  }
 }
