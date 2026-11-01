@@ -1,5 +1,6 @@
 #include "archive_io.h"
 #include "opengold/path_text.h"
+#include "opengold/diagnostic_log.h"
 #include "opengold/authored_items.h"
 #include "opengold/magic_item_catalog.h"
 #include "opengold/por_sound.h"
@@ -1041,6 +1042,7 @@ void RolfTourSession::fail(std::string diagnostic)
     if (snapshot_.tour_finished && event_checkpoint_)
     {
         diagnostics_.push_back(diagnostic);
+        log_diagnostic(LogPriority::error, "event", "rolled back: " + diagnostic);
         try
         {
             roll_back_event();

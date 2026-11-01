@@ -948,3 +948,22 @@ and damage eligibility. Core stores the optional class choice separately in
 the campaign save and replays ordinary advancement; it contains no style
 rules. Main/demo controls present rules-provided options. PC36 validates its
 provenance.
+
+## Diagnostic log
+
+`OPENGOLD_LOG=<file>` turns on a record of the game's key decisions, for working
+out afterwards why something happened. It is off otherwise, and costs nothing then.
+Add to it through `log_diagnostic` (`opengold/diagnostic_log.h`) rather than adding
+prints to debug and taking them out again.
+
+    2026-11-01T18:10:03.123Z opengold[4242] info event: script 26 begins in area 26 at 15,1
+
+Each line has a UTC timestamp, the process and a syslog priority (`err`, `warning`,
+`notice`, `info`, `debug`). Where the system has `syslog(3)` the lines also go there,
+as facility `LOG_USER`, ident `opengold`. It records events beginning and rolling
+back with their reason, what each script asks of the host and the hit points in the
+record it holds, script changes to a member's hit points, fights' seeds and
+outcomes, and new dice after a load.
+
+`OPENGOLD_FIGHT_SEED_OFFSET=N` moves every fight's seed in
+`opengold_expedition_tests`, to measure how often the route holds on other dice.
