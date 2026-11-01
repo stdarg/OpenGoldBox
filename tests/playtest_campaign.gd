@@ -283,8 +283,8 @@ func play_fight() -> bool:
     walked.clear()
     while has_combat() and not defeated():
         if not quick_pressed and (combat().get_node("End") as Button).is_visible_in_tree():
-            # The save's count of fights sets the dice, so the same moves after a
-            # reload lose the same way: a retry holds members back at first.
+            # On Easy the same moves after a reload lose the same way: a retry
+            # holds members back at first.
             if held_back < retry % 6:
                 held_back += 1
                 await key(KEY_ENTER)

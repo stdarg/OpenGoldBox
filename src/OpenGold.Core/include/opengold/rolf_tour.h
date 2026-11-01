@@ -313,6 +313,8 @@ class RolfTourSession
     }
     // Both kinds run the original pre-camp and interruption services.
     bool camp(RestKind kind);
+    // New dice for the script, as a reload above Easy gives (reseed_after_load).
+    void reseed_dice(std::uint32_t seed);
     // A percentage of the SRD's Moderate XP budget, 0-200. Original encounters
     // above the party's budget, or with more creatures than characters, shrink.
     void encounter_challenge(unsigned challenge);

@@ -29,6 +29,7 @@
 #include <godot_cpp/classes/viewport_texture.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
+#include <chrono>
 using namespace godot;
 using namespace opengold;
 using presentation::required_node;
@@ -127,6 +128,14 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
                                          return por::RolfTourSession::load(directory, new_wall_art,
                                                                            monsters);
                                      }));
+    // The restart check compares what it loads with the file, dice and all.
+    if (!save_read_check_)
+    {
+        const auto microseconds = std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::system_clock::now().time_since_epoch());
+        reseed_after_load(saved, settings::difficulty(),
+                          static_cast<std::uint64_t>(microseconds.count()));
+    }
     auto replacement = std::make_shared<CampaignParty>(std::move(module));
     replacement->restore(std::move(saved.party));
     for (const auto &m : replacement->state().roster)

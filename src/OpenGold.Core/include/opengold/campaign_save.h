@@ -1,5 +1,6 @@
 #ifndef OPENGOLD_CAMPAIGN_SAVE_H
 #define OPENGOLD_CAMPAIGN_SAVE_H
+#include "opengold/difficulty.h"
 #include "opengold/rolf_tour.h"
 #include <functional>
 
@@ -25,6 +26,9 @@ template <bool Reading> struct SaveCodec;
 decode_campaign(std::string_view, const rules::CharacterRules &, const rules::RulesModule &,
                 std::string_view assets,
                 const std::function<por::RolfTourSession()> &make_town_template);
+// Above Easy, a loaded game gets new dice from `fresh`, so what comes next cannot
+// be known from an earlier play; on Easy every roll replays as it fell.
+void reseed_after_load(SavedCampaign &, Difficulty, std::uint64_t fresh);
 [[nodiscard]] std::string read_campaign_file(const std::filesystem::path &);
 // Writes, flushes and verifies a temporary file before replacing the destination.
 // An overwrite retains the previous file at <path>.bak.

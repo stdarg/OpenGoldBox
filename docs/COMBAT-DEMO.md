@@ -57,9 +57,9 @@ the party on Quick with spells on, and plays as a person would when that is not
 enough: it takes control and goes after an enemy Quick cannot see, camps when
 hurt, and uses Knock on a door that relocked when its area loaded.
 
-Each fight rolls its own dice from the party's count of fights, which the save
-holds, so the same moves after a reload lose the same way: a retry holds some
-members back at first or turns Quick magic off. The report
+Above Easy each load brings new dice, so a retry can go differently; it also holds
+some members back at first or turns Quick magic off, which is what varies a retry
+on Easy, where the same moves lose the same way. The report
 (`report.txt`) names every fault, lost fight, stuck screen and skipped move, and
 `godot.log` holds the game's own errors.
 

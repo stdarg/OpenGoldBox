@@ -1455,6 +1455,11 @@ void RolfTourSession::encounter_challenge(unsigned challenge)
     encounter_challenge_ = std::min(challenge, max_encounter_challenge);
 }
 
+void RolfTourSession::reseed_dice(std::uint32_t seed)
+{
+    machine_.seed_random(seed);
+}
+
 bool RolfTourSession::camp(RestKind kind)
 {
     if (kind != RestKind::short_rest && kind != RestKind::long_rest)
