@@ -2238,6 +2238,10 @@ earlier decision covered. The user decided on 2026-10-29:
   feet is a Critical Hit, as the SRD's Unconscious condition has it. Divine
   Spark splits into "Divine Spark", which heals, and "Divine Spark (Radiant)",
   which harms. The newly opened targets are offered after the others.
+  (Changed 2026-11-01, by the user: the computer on Nightmare and Infernal no
+  longer finishes a downed character first. It strikes one only when no standing
+  enemy can be struck that turn, since downing the party ends the fight. See
+  [AI.md](AI.md) section 2.)
 - **Monsters, NPCs and Quick party members target by difficulty.** Above
   Normal they go after the weakest enemy, the one with the fewest Hit Points
   and then the lowest AC: on Hard once their own target drops, on Nightmare

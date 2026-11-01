@@ -1,3 +1,4 @@
+#include "opengold/ai_scenario.h"
 #include "opengold/authored_items.h"
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
@@ -24,10 +25,12 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <queue>
 #include <set>
+#include <sstream>
 #include <span>
 #include <stdexcept>
 #include <string_view>
@@ -1071,6 +1074,14 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     if (town.snapshot().overland)
     {
         ++wilderness_fights;
+    }
+    // The fights for opengold_ai_lab (docs/AI-LAB.md).
+    if (const char *pack = std::getenv("OPENGOLD_AI_SCENARIOS"))
+    {
+        static unsigned scenarios_written = 0;
+        std::ostringstream name;
+        name << std::setw(4) << std::setfill('0') << ++scenarios_written;
+        write_ai_scenario(pack, name.str(), *party, *town.pending_encounter());
     }
     // A fight lost is played again from the moment before it, as a player
     // reloads. The route tells nothing of how often it is won.

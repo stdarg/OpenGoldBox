@@ -136,8 +136,13 @@ and then the lowest AC
 creature still keeps its target while it stands and turns to the weakest
 once it drops. On Nightmare and Infernal every creature turns at once to the
 weakest enemy in view and moves toward it, so the side's attacks converge on
-one enemy until it falls, and a downed character counts as an enemy: having
-the fewest Hit Points, it is finished first.
+one enemy until it falls.
+
+A downed character still counts as an enemy on Nightmare and Infernal, but it
+waits: a creature strikes one only when no standing enemy can be struck this turn.
+Downing the whole party ends the fight, so downing is worth more than killing (the
+user, 2026-11-01). Finishing first had the party win more often at those levels
+than at Normal, because its standing fighters were left alone.
 
 Above Normal the **walk** is bounded by what it can strike this turn: it heads for
 its target if a move brings it beside it, else the weakest enemy a move brings it
@@ -160,8 +165,8 @@ setting.
 The rules offer attacks and healing on any creature, a party member or one at
 0 Hit Points included (CLOSE-1). The computer still attacks only the other
 side, heals only its own, and strikes a character already down only on
-Nightmare and Infernal; the rules mark each such command hostile or friendly
-for it.
+Nightmare and Infernal, as above; the rules mark each such command hostile or
+friendly for it.
 
 **Original.** The same: it kept its target while that target was visible and in
 the fight, otherwise picked a random visible enemy, and enemies within reach
@@ -336,3 +341,11 @@ hidden enemy's position, or anything the game does not show.
   reaction is asked only after the hit is known, with the total shown.
 - **Enemy states** it reads (burning, oiled, regenerating, conditions, status
   effects) are shown to the player too.
+
+## Tuning and measuring it
+
+Every parameter and weight above is in
+[`opengold/ai_tuning.h`](../src/OpenGold.Core/include/opengold/ai_tuning.h): a
+table of what each difficulty level does, and the numbers (hearing range, keep-away
+distance, what a shot must be worth, the weight of a held spell, what counts as
+hurt). [AI-LAB.md](AI-LAB.md) explains how to measure a change.
