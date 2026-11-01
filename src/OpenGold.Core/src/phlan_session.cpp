@@ -1386,6 +1386,7 @@ void RolfTourSession::finish_event()
                 snapshot_.dialogue += '\n';
             }
             snapshot_.dialogue += line;
+            log_diagnostic(LogPriority::info, "camp", line);
         };
         if (chance == 255)
         {
@@ -1397,6 +1398,8 @@ void RolfTourSession::finish_event()
             // the party rests again.
             if (const auto rested = rest_interruption(interval, chance))
             {
+                log_diagnostic(LogPriority::info, "camp",
+                               "interrupted after " + std::to_string(*rested) + " minutes");
                 campaign_->advance_time(std::chrono::minutes{*rested});
                 synchronize_clock();
                 event_stage_ = EventStage::camp_interrupted;

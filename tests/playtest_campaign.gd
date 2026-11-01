@@ -582,6 +582,9 @@ func walk_back(items: Array, at: int, target: Vector2i) -> int:
     var knock_camps := 0
     for move in range(200):
         if pose() == target: return at
+        # A fight on the way back leaves the party as hurt as any other.
+        at = await camp_if_hurt(items, at)
+        if at < 0: return -1
         var cells: Array = town().call("tour_visuals").get("cells", [])
         if cells.size() != 256:
             say("  no map to walk by")
@@ -657,7 +660,7 @@ func explore(items: Array, at: int) -> int:
         var later := catch_up(items, at)
         if later < 0:
             # Nothing later happens here: this segment's route is done with this place.
-            say("  left the route in %s with %d items unplayed" % [location, items.size() - at])
+            problem("left the route in %s with %d items unplayed" % [location, items.size() - at])
             skipped += items.size() - at
             return items.size()
         return later
@@ -713,7 +716,8 @@ func badly_hurt() -> bool:
 func camp_if_hurt(items: Array, at: int) -> int:
     if not fought: return at
     fought = false
-    for tries in range(3):
+    # A Long Rest comes once a day, so recovering can take a day of hour-long camps.
+    for tries in range(26):
         if at < 0 or not idle() or not badly_hurt(): return at
         rests += 1
         at = await rest_once(items, at)

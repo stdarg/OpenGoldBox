@@ -343,14 +343,25 @@ void CombatDemo::start_encounter(std::vector<Participant> enemies, std::string r
     install_combat(std::move(next), std::move(reward_id));
 }
 
+// Each member's hit points, for the log: " Arden 8/20 Bryn 0/18".
+static std::string party_hit_points(const CampaignParty &party)
+{
+    std::string text;
+    for (const auto id : party.state().slots)
+    {
+        if (id)
+        {
+            const auto &member = party.member(id);
+            text += " " + member.character.sheet().name + " " +
+                    std::to_string(member.vitals.hit_points) + "/" +
+                    std::to_string(party.hit_point_maximum(id));
+        }
+    }
+    return text;
+}
+
 void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
 {
-    if (diagnostic_log_enabled())
-    {
-        log_diagnostic(LogPriority::info, "fight",
-                       "begins with seed " + std::to_string(seed) + " against " +
-                           std::to_string(encounter.enemies.size()) + " enemies");
-    }
     if (!campaign_ || combat_)
     {
         throw std::runtime_error("A new campaign combat owner is required");
@@ -520,6 +531,13 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     constexpr std::uint64_t golden_ratio = 0x9E3779B97F4A7C15ULL;
     seed += (campaign_->state().next_combat_scope - 1) * golden_ratio +
             (campaign_->state().random_state.value - PartyState{}.random_state.value);
+    if (diagnostic_log_enabled())
+    {
+        log_diagnostic(LogPriority::info, "fight",
+                       "begins with seed " + std::to_string(seed) + ", " +
+                           std::to_string(participants.size()) + " combatants;" +
+                           party_hit_points(*campaign_));
+    }
     auto next = module_->create({encounter.field.geometry, std::move(participants),
                                  campaign_->state().next_combat_scope, encounter.morale,
                                  coins(campaign_->state().wealth, Coin::gold), encounter.daylight},
