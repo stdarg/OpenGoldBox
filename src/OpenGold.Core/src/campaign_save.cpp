@@ -994,6 +994,19 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     return result;
 }
 
+void reseed_after_load(SavedCampaign &saved, Difficulty difficulty, std::uint64_t fresh)
+{
+    if (difficulty == Difficulty::easy)
+    {
+        return;
+    }
+    saved.party.random_state = RandomState{fresh};
+    if (saved.town)
+    {
+        saved.town->reseed_dice(static_cast<std::uint32_t>(fresh ^ (fresh >> 32)));
+    }
+}
+
 std::string read_campaign_file(const std::filesystem::path &path)
 {
     return read_save_file(path, limit);

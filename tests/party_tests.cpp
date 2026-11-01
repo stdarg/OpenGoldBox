@@ -2146,7 +2146,8 @@ void encounter_with_nobody()
 }
 
 // Fights of a campaign do not share their dice, though the game gives each the
-// same seed; a reload, with the same count of fights, repeats them.
+// same seed: they differ by the count of fights and by the party's dice. The
+// same save repeats them; a reload above Easy changes the party's dice.
 void each_fight_rolls_its_own_dice()
 {
     auto gate = program({32, 0, 20, 0});
@@ -2203,6 +2204,11 @@ void each_fight_rolls_its_own_dice()
     party->restore(before);
     check(first == again, "A reload's fight repeats its dice");
     check(first != second, "The next fight rolls different dice");
+    auto reseeded = before;
+    reseeded.random_state.value += 12345;
+    party->restore(reseeded);
+    check(fight_log(1) != first, "New party dice give the fight new rolls");
+    party->restore(before);
 }
 
 void rejected_combat_handoff()

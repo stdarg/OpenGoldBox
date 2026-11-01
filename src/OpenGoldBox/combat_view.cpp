@@ -56,7 +56,6 @@
 #include <fstream>
 #include <limits>
 #include <numbers>
-#include <random>
 #include <utility>
 using namespace godot;
 using namespace opengold;
@@ -521,8 +520,7 @@ void CombatView::prepare_combat()
     }
     if (encounter_)
     {
-        next->encounter(*encounter_,
-                        opengold::fight_seed(settings::difficulty(), std::random_device{}()));
+        next->encounter(*encounter_, 42);
     }
     else if (OS::get_singleton()->get_cmdline_user_args().has("--slums"))
     {

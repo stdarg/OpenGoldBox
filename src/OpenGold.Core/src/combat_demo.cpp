@@ -507,9 +507,11 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
         participants.push_back(std::move(enemy));
     }
     // Every fight of a campaign rolls its own dice: the same seed alone would
-    // give each one the same rolls. The count is saved, so a reload repeats them.
+    // give each one the same rolls. Both numbers are saved, so a reload repeats
+    // them unless the difficulty gave it new dice (reseed_after_load).
     constexpr std::uint64_t golden_ratio = 0x9E3779B97F4A7C15ULL;
-    seed += (campaign_->state().next_combat_scope - 1) * golden_ratio;
+    seed += (campaign_->state().next_combat_scope - 1) * golden_ratio +
+            (campaign_->state().random_state.value - PartyState{}.random_state.value);
     auto next = module_->create({encounter.field.geometry, std::move(participants),
                                  campaign_->state().next_combat_scope, encounter.morale,
                                  coins(campaign_->state().wealth, Coin::gold), encounter.daylight},
@@ -2841,12 +2843,6 @@ std::vector<Command> without_spells(const rules::Snapshot &state, std::vector<Co
     return commands;
 }
 } // namespace
-
-std::uint64_t fight_seed(Difficulty difficulty, std::uint64_t fresh)
-{
-    constexpr std::uint64_t saved_dice = 42;
-    return difficulty == Difficulty::easy ? fresh : saved_dice;
-}
 
 Command choose_quick_command(const CombatSession &session, bool magic, Searching searching,
                              Difficulty difficulty)

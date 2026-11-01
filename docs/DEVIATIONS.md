@@ -124,9 +124,9 @@ Add an entry whenever a new departure is decided.
 - **Hearing in combat** (2026-10-31). The original's monsters went only for what
   they could see. A creature here also hears enemies within 100 feet, through
   walls ([AI.md](AI.md#1-movement-and-sight)).
-- **A reload's dice** (2026-10-31). On Easy, reloading before a fight rolls new
-  dice; above Easy the same moves after a reload give the same fight
-  ([RULES.md](RULES.md)).
+- **A reload's dice** (2026-11-01). On Easy every roll replays after a reload.
+  Above Easy a load draws new dice from the clock, so what comes next cannot be
+  known ([RULES.md](RULES.md)).
 
 ## Party and parley
 

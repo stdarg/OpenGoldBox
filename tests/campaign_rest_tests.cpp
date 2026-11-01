@@ -880,6 +880,46 @@ void long_check_interval_survives_reload()
     check(disk.town.has_value(), "A count above 24 steps loads");
 }
 
+// The user, 2026-11-01: on Easy every roll replays after a reload; above it what
+// comes next cannot be known.
+void reload_dice()
+{
+    CampFixture original(camp_script(24, 24));
+    const auto bytes = encode_campaign(*original.party, original.town.get(), "campaign-rest");
+    const auto camps_after_load = [&](Difficulty difficulty, std::uint64_t fresh)
+    {
+        CampFixture reloaded(camp_script(24, 24));
+        auto disk = decode_campaign(bytes, *srd5::character_rules(), *module(), "campaign-rest",
+                                    reloaded.town.get());
+        reseed_after_load(disk, difficulty, fresh);
+        reloaded.party->restore(disk.party);
+        reloaded.town = std::make_unique<por::RolfTourSession>(std::move(*disk.town));
+        reloaded.town->attach_restored_party(reloaded.party);
+        std::string outcomes;
+        for (unsigned n = 0; n < 24; ++n)
+        {
+            const auto outcome = camp_from_wounded(reloaded, RestKind::short_rest);
+            outcomes += outcome.interrupted ? 'x' : '.';
+        }
+        return outcomes;
+    };
+    check(camps_after_load(Difficulty::easy, 1) == camps_after_load(Difficulty::easy, 2),
+          "On Easy a reload replays every roll");
+    for (const auto level :
+         {Difficulty::normal, Difficulty::hard, Difficulty::nightmare, Difficulty::infernal})
+    {
+        check(camps_after_load(level, 1) != camps_after_load(level, 2),
+              "Above Easy each reload brings new dice");
+    }
+    auto disk = decode_campaign(bytes, *srd5::character_rules(), *module(), "campaign-rest",
+                                original.town.get());
+    const auto saved_dice = disk.party.random_state;
+    reseed_after_load(disk, Difficulty::easy, saved_dice.value + 1);
+    check(disk.party.random_state == saved_dice, "Easy keeps the party's dice as saved");
+    reseed_after_load(disk, Difficulty::normal, saved_dice.value + 1);
+    check(disk.party.random_state.value == saved_dice.value + 1, "Normal gives the party new dice");
+}
+
 // Short Rests alternate between reaching no check and reaching one at their last
 // step. A failed interruption must restore both the step count and the script RNG,
 // or retrying would reach no check, or roll again, and complete instead.
@@ -975,6 +1015,7 @@ int main()
         slums_street_profile();
         camp_interruptions_survive_reload();
         long_check_interval_survives_reload();
+        reload_dice();
         failed_interruption_rolls_back();
         malformed_continuation();
         std::cout << "Campaign rest tests passed\n";

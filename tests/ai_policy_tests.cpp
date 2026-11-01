@@ -192,19 +192,6 @@ void sight_checks()
           "Creatures either side of a wall's corner do not wait on each other");
 }
 
-// The seed decides whether a reload rolls new dice (the user, 2026-10-31).
-void fight_seed_checks()
-{
-    check(fight_seed(Difficulty::easy, 7) == 7 && fight_seed(Difficulty::easy, 8) == 8,
-          "On Easy a reload rolls new dice");
-    for (const auto level :
-         {Difficulty::normal, Difficulty::hard, Difficulty::nightmare, Difficulty::infernal})
-    {
-        check(fight_seed(level, 7) == fight_seed(level, 8),
-              "Above Easy a reload repeats the fight's saved dice");
-    }
-}
-
 void stay_back_checks()
 {
     auto state = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {8, 1})});
@@ -540,7 +527,6 @@ int main()
         target_checks();
         difficulty_target_checks();
         sight_checks();
-        fight_seed_checks();
         stay_back_checks();
         ranged_checks();
         spell_checks();
