@@ -122,6 +122,19 @@ func check_demo() -> void:
         "Turn control sits above the combat log without covering portraits")
     require(not combat.get_node("React").visible and not combat.get_node("Decline").visible,
         "Reaction choices stay hidden until a reaction is pending")
+    # A long reaction name, as Spanish's "Ataque de oportunidad", pushes Decline along.
+    var react_button: Button = combat.get_node("React")
+    var decline_button: Button = combat.get_node("Decline")
+    var react_text := react_button.text
+    react_button.text = "A very long reaction name in some language or other"
+    react_button.show(); decline_button.show()
+    await process_frame
+    await process_frame
+    require(not react_button.get_global_rect().intersects(decline_button.get_global_rect()),
+        "A long reaction name does not cover Decline")
+    react_button.text = react_text
+    react_button.hide(); decline_button.hide()
+    await process_frame
     require(combat.get_node("ZoomLevel").text == "100%", "Showcase uses 100 percent zoom")
     # A hidden or minimized window skips drawing, so frame_post_draw may never
     # come; draw explicitly after one processed frame.
