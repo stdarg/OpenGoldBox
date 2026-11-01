@@ -2651,7 +2651,6 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // ADD NPC names a record of the area's MONnCHA archive: New Phlan's is
         // MON3CHA, whose record 24 has no conversion.
         read_character();
-        reply = character_reply(selected_character_);
         const unsigned bank = current_area_ ? area_resources().bank : 3;
         const auto &profiles = current_area_ ? area_resources().npc_profiles : town_->npc_profiles;
         std::optional<Character> companion;
@@ -2687,6 +2686,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             (void)campaign_->equip(joined, item);
         }
+        // The script may be looking at the slot the companion just took. The
+        // record it holds must show the new member, or reading it back would
+        // find a member with no money and charge the party for the difference.
+        reply = character_reply(selected_character_);
         break;
     }
     case 39:
