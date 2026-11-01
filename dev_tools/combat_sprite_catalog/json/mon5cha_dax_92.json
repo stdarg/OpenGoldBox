@@ -1,5 +1,7 @@
 {
   "description": "The power behind occupied Phlan and the final adversary at the Pool of Radiance beneath Valjevo Castle. Source inventory: Gauntlets of Ogre Power, Ring Of Protection +3, Long sword +5. Source wealth: 4 gp.",
+  "humanoid_size": "normal",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON5CHA.DAX:92 and matching MONnITM inventory",
     "GameDocs/Cluebook.pdf, PDF page 28"
@@ -38,22 +40,14 @@
   ],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
-  "height_feet": null,
-  "humanoid_size": "normal",
-  "name": "Tyranthraxus",
-  "preview_fallback_variant": "",
+  "name": "TYRANITHRAXUS",
   "source": {
     "art_archive": "CPIC5.DAX",
-    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
-    "art_record": 11,
+    "art_basis": "Same name alias (weak candidate)",
+    "art_record": 66,
     "creature_archive": "MON5CHA.DAX",
     "creature_record": 92,
-    "key": "MON5CHA.DAX:92",
-    "linked_creature_keys": []
-  },
-  "sprite_size": {
-    "height_squares": 1,
-    "width_squares": 1
+    "key": "MON5CHA.DAX:92"
   },
   "variants": [
     {

@@ -1,5 +1,7 @@
 {
-  "description": "An experienced DWARVEN martial fighter; the listed level and source equipment guide the combat silhouette. This is the script-linked icon for MON6CHA.DAX:48. Source inventory: Gauntlets of Ogre Power, Chain armor +1, Long sword +1. Source wealth: 15 gp.",
+  "description": "An experienced martial fighter; the listed level and source equipment guide the combat silhouette. This is the script-linked icon for MON6CHA.DAX:48. Source inventory: Gauntlets of Ogre Power, Chain armor +1, Long sword +1. Source wealth: 15 gp.",
+  "humanoid_size": "normal",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Decoded ECL link to MON6CHA.DAX:48",
     "Original game inventory and wealth of linked creature"
@@ -26,25 +28,23 @@
       "weapon_role": ""
     },
     {
-      "id": "added_63443137900",
+      "id": "item_002",
       "kind": "weapon",
-      "name": "Battle axe",
+      "name": "Long sword +1",
       "readied": true,
-      "source_hands": -1,
-      "source_range": -1,
-      "source_type": 1,
-      "weapon_role": "two_hand"
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 36,
+      "weapon_role": "one_hand"
     }
   ],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
-  "height_feet": null,
-  "humanoid_size": "normal",
   "name": "DWARVEN FIGHTER combat icon",
-  "preview_fallback_variant": "item_002__one_hand",
+  "preview_fallback_variant": "default",
   "source": {
     "art_archive": "CPIC6.DAX",
-    "art_basis": "ECL LOAD MONSTER icon shared by 1 creature",
+    "art_basis": "ECL LOAD MONSTER icon linked to 1 creature",
     "art_record": 15,
     "creature_archive": "",
     "creature_record": -1,
@@ -53,19 +53,15 @@
       "MON6CHA.DAX:48"
     ]
   },
-  "sprite_size": {
-    "height_squares": 1,
-    "width_squares": 1
-  },
   "variants": [
     {
-      "action": "art/cpic6_dax_15/added_63443137900__two_hand/action.png",
-      "id": "added_63443137900__two_hand",
-      "label": "Battle axe",
-      "ready": "art/cpic6_dax_15/added_63443137900__two_hand/ready.png",
+      "action": "art/cpic6_dax_15/item_002__one_hand/action.png",
+      "id": "item_002__one_hand",
+      "label": "Long sword +1",
+      "ready": "art/cpic6_dax_15/item_002__one_hand/ready.png",
       "shield_id": "",
-      "weapon_id": "added_63443137900",
-      "weapon_role": "two_hand"
+      "weapon_id": "item_002",
+      "weapon_role": "one_hand"
     }
   ],
   "wealth": {
