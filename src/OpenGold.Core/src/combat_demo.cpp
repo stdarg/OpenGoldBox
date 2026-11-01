@@ -1,5 +1,6 @@
 #include "archive_io.h"
 #include "opengold/path_text.h"
+#include "opengold/diagnostic_log.h"
 #include "opengold/authored_items.h"
 #include "opengold/combat_demo.h"
 #include "opengold/creature_art.h"
@@ -343,6 +344,12 @@ void CombatDemo::start_encounter(std::vector<Participant> enemies, std::string r
 
 void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
 {
+    if (diagnostic_log_enabled())
+    {
+        log_diagnostic(LogPriority::info, "fight",
+                       "begins with seed " + std::to_string(seed) + " against " +
+                           std::to_string(encounter.enemies.size()) + " enemies");
+    }
     if (!campaign_ || combat_)
     {
         throw std::runtime_error("A new campaign combat owner is required");

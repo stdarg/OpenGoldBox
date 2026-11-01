@@ -719,7 +719,8 @@ class RolfTourSession
     void synchronize_clock();
     // Moves the campaign clock on to a time a script instruction wrote into
     // the clock cells.
-    void adopt_script_clock();
+    void pass_time(std::chrono::milliseconds elapsed);
+    bool adopt_script_clock();
     [[nodiscard]] EclHostReply clock_reply() const;
 
     // What the player did to start an event. Each value is the original script

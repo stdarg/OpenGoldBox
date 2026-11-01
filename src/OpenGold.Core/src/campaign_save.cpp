@@ -1,4 +1,5 @@
 #include "opengold/campaign_save.h"
+#include "opengold/diagnostic_log.h"
 #include "opengold/path_text.h"
 #include "opengold/save_file.h"
 #include <algorithm>
@@ -999,6 +1000,10 @@ void reseed_after_load(SavedCampaign &saved, Difficulty difficulty, std::uint64_
     if (difficulty == Difficulty::easy)
     {
         return;
+    }
+    if (diagnostic_log_enabled())
+    {
+        log_diagnostic(LogPriority::info, "save", "new dice after load: " + std::to_string(fresh));
     }
     saved.party.random_state = RandomState{fresh};
     if (saved.town)

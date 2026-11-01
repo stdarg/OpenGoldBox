@@ -135,6 +135,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/json_document.cpp
     src/OpenGold.Core/src/creature_art.cpp src/OpenGold.Core/src/monster_bundle.cpp
     src/OpenGold.Core/src/coin_purse.cpp
+    src/OpenGold.Core/src/diagnostic_log.cpp
     src/OpenGold.Core/src/training_hall.cpp
     src/OpenGold.Core/src/campaign_rest.cpp
     src/OpenGold.Core/src/campaign_save.cpp
@@ -663,6 +664,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_art_tests tests/art_tests.cpp)
     target_link_libraries(opengold_art_tests PRIVATE opengold_core)
     add_test(NAME opengold_art_tests COMMAND opengold_art_tests)
+    add_executable(opengold_diagnostic_log_tests tests/diagnostic_log_tests.cpp)
+    target_link_libraries(opengold_diagnostic_log_tests PRIVATE opengold_core)
+    add_test(NAME opengold_diagnostic_log_tests COMMAND opengold_diagnostic_log_tests)
     add_executable(opengold_party_tests tests/party_tests.cpp tests/failing_allocation.cpp)
     target_link_libraries(opengold_party_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_party_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

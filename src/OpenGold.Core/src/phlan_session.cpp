@@ -1,4 +1,5 @@
 #include "opengold/rolf_tour.h"
+#include "opengold/diagnostic_log.h"
 #include "opengold/creature_art.h"
 #include "opengold/script_secrets.h"
 #include "opengold/random_treasure.h"
@@ -446,7 +447,13 @@ void RolfTourSession::configure_town()
 
 void RolfTourSession::synchronize_clock()
 {
-    adopt_script_clock();
+    if (adopt_script_clock())
+    {
+        for (const auto &w : character_reply(selected_character_).writes)
+        {
+            machine_.bind_variable(w.address, w.value);
+        }
+    }
     for (const auto &w : clock_reply().writes)
     {
         machine_.bind_variable(w.address, w.value);
@@ -456,7 +463,20 @@ void RolfTourSession::synchronize_clock()
 // A script may set the clock: the nomads' feast lasts until hour 18 (ECL7:17
 // 0xA980). Time moves on to the next such hour and minute, as in the original,
 // whose clock those cells are.
-void RolfTourSession::adopt_script_clock()
+// Time can change a member by itself: a Mummy's curse takes its hit points as a
+// day ends. The record a script reads must follow, or reading it back would look
+// like the script healing that member past the lowered maximum.
+void RolfTourSession::pass_time(std::chrono::milliseconds elapsed)
+{
+    campaign_->advance_time(elapsed);
+    for (const auto &w : character_reply(selected_character_).writes)
+    {
+        machine_.bind_variable(w.address, w.value);
+    }
+}
+
+// True when the clock moved, so the caller must refresh the record a script reads.
+bool RolfTourSession::adopt_script_clock()
 {
     bool scripted_clock = false;
     for (const auto cell : {ecl_clock_hour, ecl_clock_minute_tens, ecl_clock_minute_ones})
@@ -465,7 +485,7 @@ void RolfTourSession::adopt_script_clock()
     }
     if (!scripted_clock || !campaign_)
     {
-        return;
+        return false;
     }
     const std::uint64_t scripted = machine_.variable(ecl_clock_hour) * 60U +
                                    machine_.variable(ecl_clock_minute_tens) * 10U +
@@ -475,7 +495,9 @@ void RolfTourSession::adopt_script_clock()
         throw EclError("Invalid script clock");
     }
     const auto now = clock_minute_of_day(campaign_->state().time_minutes);
+    read_character();
     campaign_->advance_time(std::chrono::minutes{(scripted + 1440 - now) % 1440});
+    return true;
 }
 
 EclHostReply RolfTourSession::clock_reply() const
@@ -625,10 +647,10 @@ bool RolfTourSession::move_party(ExplorationCommand command)
     if (campaign_ && command == ExplorationCommand::forward)
     {
         // A step in Search mode takes ten minutes more (coab MovePartyForward).
-        campaign_->advance_time(step_time);
+        pass_time(step_time);
         if (snapshot_.searching)
         {
-            campaign_->advance_time(std::chrono::minutes{10});
+            pass_time(std::chrono::minutes{10});
         }
     }
     bind_pose(pose);
@@ -646,6 +668,14 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
     snapshot_.secret_door_searches.clear();
     snapshot_.secret_door_found = false;
     snapshot_.camp_offered = false;
+    if (diagnostic_log_enabled())
+    {
+        log_diagnostic(LogPriority::info, "event",
+                       "script " + std::to_string(current_script_) + " begins in area " +
+                           std::to_string(snapshot_.area_id) + " at " +
+                           std::to_string(snapshot_.pose.x) + "," +
+                           std::to_string(snapshot_.pose.y));
+    }
     std::optional<opengold::PartyState> campaign;
     if (campaign_)
     {
@@ -907,6 +937,12 @@ bool RolfTourSession::reject_combat(std::string diagnostic)
 
 bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
 {
+    if (diagnostic_log_enabled())
+    {
+        log_diagnostic(LogPriority::info, "fight",
+                       "ends in area " + std::to_string(snapshot_.area_id) + ", outcome " +
+                           std::to_string(static_cast<int>(result.outcome)));
+    }
     if (snapshot_.phase != TourPhase::combat || !encounter_ || !combat_request_ || !campaign_ ||
         campaign_->in_combat() || result.outcome == rules::Outcome::ongoing ||
         result.identity != campaign_->identity())
@@ -1491,7 +1527,7 @@ bool RolfTourSession::overland_step()
     machine_.bind_variable(ecl_overland_y, static_cast<std::uint16_t>(y));
     if (campaign_)
     {
-        campaign_->advance_time(std::chrono::hours{12});
+        pass_time(std::chrono::hours{12});
     }
     synchronize_clock();
     publish_pose();
@@ -2279,12 +2315,23 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     };
     // The party's own requests need a campaign party: a session copied without
     // one (detached_copy) refuses them rather than reading none.
-    adopt_script_clock();
+    const bool clock_moved = adopt_script_clock();
     constexpr std::array party_requests{11, 29, 30, 34, 35, 41, 46, 52, 54, 59};
     if (!campaign_ && std::find(party_requests.begin(), party_requests.end(), op) !=
                           party_requests.end())
     {
         throw EclError("This event needs the campaign party");
+    }
+    if (diagnostic_log_enabled())
+    {
+        log_diagnostic(LogPriority::debug, "script",
+                       "script " + std::to_string(current_script_) + " asks the host for op " +
+                           std::to_string(op) +
+                           (request.instruction
+                                ? " at " + std::to_string(request.instruction->address)
+                                : std::string{}) +
+                           ", record slot " + std::to_string(selected_character_.index) + " with " +
+                           std::to_string(machine_.variable(ecl_character_hit_points)) + " HP");
     }
     switch (op)
     {
@@ -2616,8 +2663,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     case 52:
         // ECL CLOCK: time passes as for arg(0) steps, while a script walks the
         // party (the nomad camp's escort, ECL7:17 0x9D37).
+        read_character();
         campaign_->advance_time(step_time * arg(0));
-        reply = clock_reply();
+        reply = character_reply(selected_character_);
+        for (const auto &w : clock_reply().writes)
+        {
+            reply.writes.push_back(w);
+        }
         break;
     case 59:
     {
@@ -3194,6 +3246,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     default:
         return false;
+    }
+    if (clock_moved)
+    {
+        // First, so that what this request itself wrote stands.
+        auto record = character_reply(selected_character_).writes;
+        reply.writes.insert(reply.writes.begin(), record.begin(), record.end());
     }
     if (!machine_.resume_host(request.id, reply))
     {

@@ -1010,6 +1010,14 @@ const std::shared_ptr<const por::MonsterBundle> &game_monsters()
     return monsters;
 }
 
+// Plays the route on other dice: OPENGOLD_FIGHT_SEED_OFFSET=N moves every fight's
+// seed, to measure how often the route holds rather than whether one play does.
+unsigned fight_seed_offset()
+{
+    const char *offset = std::getenv("OPENGOLD_FIGHT_SEED_OFFSET");
+    return offset ? 1000u * static_cast<unsigned>(std::stoul(offset)) : 0u;
+}
+
 // Tyranthraxus's guards bar the way to him and no rest separates the two fights.
 bool facing_the_dragon_next(const por::RolfTourSession &town)
 {
@@ -1072,7 +1080,7 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
         party->restore(before_fight);
         CombatDemo combat(module());
         combat.campaign_party(party);
-        combat.encounter(*town.pending_encounter(), 42 + attempt);
+        combat.encounter(*town.pending_encounter(), 42 + fight_seed_offset() + attempt);
         if (attempt == 0)
         {
             for (const auto &unit : combat.combat().snapshot().combatants)
@@ -3065,14 +3073,18 @@ void play_sokal_keep(Expedition &trip, const std::filesystem::path &directory)
     check(variable(0x4A26) == 255 && variable(0x4AA7) == 254,
           "Ferran Martinez, told the truth, frees the keep's spirits");
     // Ferran's word, SAMOSUD, now passes the patrols.
-    check(variable(0x4A19) == 0 && pace_until(
-                                       town, party, 4, 6, 6,
-                                       [&]
-                                       {
-                                           return variable(0x4A19) == 1;
-                                       },
-                                       talk, "SAMOSUD"),
-          "After Ferran, the undead patrol leaves when told SAMOSUD");
+    // No patrol comes once four are beaten (0x4A03), as a long way here can do.
+    if (variable(0x4A03) < 4)
+    {
+        check(variable(0x4A19) == 0 && pace_until(
+                                           town, party, 4, 6, 6,
+                                           [&]
+                                           {
+                                               return variable(0x4A19) == 1;
+                                           },
+                                           talk, "SAMOSUD"),
+              "After Ferran, the undead patrol leaves when told SAMOSUD");
+    }
 
     // The boat home.
     const auto south = edge_opening(town.map(), town.snapshot().pose, 2);
@@ -3620,6 +3632,19 @@ void play_nomad_camp(Expedition &trip)
     {
         return town.script_variable(por::EclAddress{address});
     };
+    // From hour 14 the headman's feast is tomorrow: he lodges the party first
+    // (ECL7:17 0xA422), and the feast follows in the morning.
+    if (town.script_variable(por::EclAddress{0x49C9}) != 18)
+    {
+        rest_until(
+            town, party,
+            [&]
+            {
+                return town.snapshot().camp_offered &&
+                       town.script_variable(por::EclAddress{0x49C9}) == 18;
+            },
+            "The feast comes the next day");
+    }
     check(town.snapshot().camp_offered && (nomads(0x4A7C) & 1) != 0 &&
               town.script_variable(por::EclAddress{0x49C9}) == 18,
           "After the headman's feast, which lasts until evening, the nomads lodge the party "
@@ -4130,12 +4155,25 @@ void play_lizard_keep(Expedition &trip)
     std::string heard;
     // The party parleys with the old lizard man, fights what attacks it, and
     // dives into the pools and climbs the stairs it finds.
-    const Answer noting = [&](const por::TourSnapshot &s)
+    const Answer noting = [&](const por::TourSnapshot &s) -> std::size_t
     {
         heard += s.dialogue + "\n";
         if (s.dialogue.find("PATIENTLY") != std::string::npos)
         {
             return prefer({"Parley"})(s);
+        }
+        // The old lizard man asks again until his champion is one of the living.
+        if (s.dialogue == "Choose a party member.")
+        {
+            std::size_t choice = 0;
+            for (const auto id : party->state().slots)
+            {
+                if (id && !party->member(id).vitals.dead)
+                {
+                    return choice;
+                }
+                choice += id ? 1 : 0;
+            }
         }
         return prefer({"ENTER", "Bash", "Fight", "YES"})(s);
     };
@@ -5563,9 +5601,9 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
         }
     }
     talkers.party->make_leader(charming);
-    // A copy: the camp and fight below may rebuild the roster.
-    const auto name = talkers.party->member(charming).character.sheet().name;
     unsigned reaction_score = 0;
+    MemberId speaker{};
+    bool leader_could_speak = false;
     const auto menus = meet_camp_monsters(
         talkers,
         [&](const por::TourSnapshot &s) -> std::size_t
@@ -5575,6 +5613,8 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
                 return 3; // Advance until Parley, then Abusive.
             }
             reaction_score = talkers.town.script_variable(por::EclAddress{0x6DCF});
+            speaker = talkers.party->spokesman();
+            leader_could_speak = talkers.party->member(charming).vitals.hit_points > 0;
             return 4;
         },
         [](const std::vector<por::TourSnapshot> &shown)
@@ -5595,11 +5635,11 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
                                      });
     check(parley != menus.end() && parley[-1].choices.back() == "Parley",
           "Adjacent monsters can be parleyed with");
-    check(parley->dialogue.ends_with("\n" + name + " speaks for the party.") &&
-              reaction_score == 2u * talkers.party->member(charming)
-                                         .character.sheet()
-                                         .scores[rules::Ability::charisma],
-          "The leader speaks for the party with twice its Charisma");
+    check(!leader_could_speak || speaker == charming, "The leader speaks for the party if able");
+    const auto &speaker_sheet = talkers.party->member(speaker).character.sheet();
+    check(parley->dialogue.ends_with("\n" + speaker_sheet.name + " speaks for the party.") &&
+              reaction_score == 2u * speaker_sheet.scores[rules::Ability::charisma],
+          "Whoever speaks for the party does so with twice its Charisma");
 
     auto waiting = load_expedition(save, directory);
     (void)meet_camp_monsters(
@@ -5620,8 +5660,10 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
     auto fleeing = load_expedition(save, directory);
     (void)meet_camp_monsters(
         fleeing,
-        [](const por::TourSnapshot &) -> std::size_t
+        [&](const por::TourSnapshot &) -> std::size_t
         {
+            // A member who is down cannot escape on foot, so nobody would.
+            heal(*fleeing.party);
             return 2;
         },
         // The walk to the street may already have fled a group.

@@ -1,4 +1,5 @@
 #include "opengold/campaign_party.h"
+#include "opengold/diagnostic_log.h"
 #include "opengold/campaign_encounter.h"
 #include "opengold/authored_items.h"
 #include "opengold/dice.h"
@@ -2713,6 +2714,14 @@ std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot, const 
     }
     const auto &current = member(id);
     const auto hp = vm.variable(por::ecl_character_hit_points);
+    if (hp != current.vitals.hit_points && diagnostic_log_enabled())
+    {
+        log_diagnostic(LogPriority::info, "party",
+                       "script changes " + current.character.sheet().name + "'s hit points from " +
+                           std::to_string(current.vitals.hit_points) + " to " + std::to_string(hp) +
+                           " (maximum " + std::to_string(hit_point_maximum(id)) + ", sheet " +
+                           std::to_string(current.character.sheet().hit_points) + ")");
+    }
     if (hp > hit_point_maximum(id) || (current.vitals.dead && hp))
     {
         throw std::runtime_error("Unsupported script HP change");

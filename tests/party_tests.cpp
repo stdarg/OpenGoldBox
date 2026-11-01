@@ -2876,6 +2876,70 @@ void companion_joins_scanned_slot()
           "A companion joining in the scanned slot leaves the purse alone");
 }
 
+// A Mummy's curse takes hit points as a day ends. When that day ends while a script
+// runs, the script's record must follow, not read back as a heal past the maximum.
+void curse_lowers_hit_points_during_a_script()
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    const auto first = party->add_pc(character("fighter", "First"));
+    const auto profile = party->profile(first);
+    std::optional<rules::VitalState> cursed;
+    for (std::uint64_t seed = 1; seed < 40 && !cursed; ++seed)
+    {
+        auto fight = module()->create(
+            {{10, 4, std::vector<Terrain>(40)},
+             {{1, "mummy", "Monster", Side::opposition, {1, 1}},
+              {2, "campaign-character", "Hero", Side::party, {2, 1}, profile.data}}},
+            seed);
+        for (unsigned step = 0; step < 20 && !cursed; ++step)
+        {
+            const auto now = fight->snapshot();
+            if (now.outcome != Outcome::ongoing)
+            {
+                break;
+            }
+            const auto legal = fight->legal_commands();
+            const auto melee = std::find_if(legal.begin(), legal.end(),
+                                            [](const auto &command)
+                                            {
+                                                return command.verb == "melee" &&
+                                                       command.actor == 1 && command.target == 2;
+                                            });
+            if (!fight->submit(melee != legal.end() ? *melee : legal.front()))
+            {
+                break;
+            }
+            for (const auto &unit : fight->snapshot().combatants)
+            {
+                if (unit.id == 2 && unit.status.find("Cursed") != std::string::npos)
+                {
+                    cursed = unit.persistent;
+                }
+            }
+        }
+    }
+    check(cursed.has_value(), "A Rotting Fist hit curses");
+    auto state = party->checkpoint();
+    state.roster.front().vitals = *cursed;
+    state.roster.front().vitals.hit_points = party->hit_point_maximum(state.slots[0]);
+    party->restore(std::move(state));
+    // To just before the day's end; the script's clock carries it over.
+    party->advance_time(std::chrono::hours{23} + std::chrono::minutes{50});
+    const auto before = party->member(party->state().slots[0]).vitals.hit_points;
+    // ECL CLOCK of 255 steps, about 25 minutes; exit.
+    auto p = program({52, 0, 255, 0});
+    auto resources = std::make_shared<por::PhlanResources>();
+    resources->programs.emplace(0, p);
+    por::RolfTourSession town({}, p, {}, 0x9914, {}, resources);
+    town.campaign_party(party);
+    settle(town);
+    town.explore(por::ExplorationCommand::look);
+    settle(town);
+    check(town.script_diagnostics().empty(), "The curse's day passing mid-script is no fault");
+    check(party->member(party->state().slots[0]).vitals.hit_points < before,
+          "The curse takes its hit points while the script runs");
+}
+
 void script_handoff()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -3120,6 +3184,7 @@ int main()
         combat_demo_fixture();
         script_handoff();
         companion_joins_scanned_slot();
+        curse_lowers_hit_points_during_a_script();
         shop_buyer_switch();
         rejected_combat_handoff();
         encounter_with_nobody();
