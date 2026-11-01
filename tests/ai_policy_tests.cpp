@@ -305,6 +305,36 @@ void area_checks()
     const auto moved = choose_demo_command(state, aiming);
     check(moved.verb == "area_move" && moved.destination == Cell{9, 4},
           "An ally in the area moves the aim to a safe enemy");
+
+    // The rules aim an area at a creature's own square, so a large enemy whose
+    // other squares alone are in range or in sight offers no aim: chosen anyway,
+    // the cast would be given up and chosen again without end.
+    auto large = unit(2, Side::opposition, {6, 1});
+    large.footprint = {2, 2};
+    auto short_reach = fireball;
+    short_reach.spell = {false, 10, 0, false};
+    const auto casts_at_infernal = [](const Snapshot &at, const Command &spell)
+    {
+        return choose_demo_command(at, {spell, command("end")}, Searching::by_sight,
+                                   Difficulty::infernal)
+                   .verb == spell.verb;
+    };
+    auto far_side = unit(1, Side::party, {9, 1});
+    far_side.spells = {"fireball"};
+    check(casts_at_infernal(field({far_side, unit(2, Side::opposition, {7, 1})}), short_reach),
+          "A short area spell goes off at a target in range");
+    check(!casts_at_infernal(field({far_side, large}), short_reach),
+          "No cast where only a large enemy's other squares are in range");
+    auto beyond_wall = unit(1, Side::party, {1, 0});
+    beyond_wall.spells = {"fireball"};
+    auto half_hidden = unit(2, Side::opposition, {5, 0});
+    half_hidden.footprint = {2, 2};
+    const auto corner = field({beyond_wall, half_hidden}, {{4, 0}});
+    check(!rules::has_line_of_sight(corner.battlefield, {1, 0}, {5, 0}) &&
+              rules::has_line_of_sight(corner.battlefield, {1, 0}, {5, 1}),
+          "The wall hides the large enemy's own square and not all of it");
+    check(!casts_at_infernal(corner, fireball),
+          "No cast where only a large enemy's other squares are in sight");
 }
 
 void healing_checks()
@@ -346,6 +376,38 @@ void free_move_checks()
 }
 
 // The features #269 taught the computer, one rule each.
+// Above Normal the walk goes for the weakest enemy it can strike this turn, not
+// a weak one across the field; with none in reach, for the nearest.
+void walk_checks()
+{
+    auto strong_near = unit(2, Side::opposition, {4, 1}, 30, 30);
+    const auto weak_far = unit(3, Side::opposition, {11, 7}, 2, 30);
+    const auto apart = field({unit(1, Side::party, {1, 1}), strong_near, weak_far});
+    const std::vector<Command> steps{command("move", 0, {3, 1}), command("move", 0, {3, 3}),
+                                     command("end")};
+    for (const auto level : {Difficulty::hard, Difficulty::nightmare, Difficulty::infernal})
+    {
+        check(choose_demo_command(apart, steps, Searching::by_sight, level).destination ==
+                  Cell{3, 1},
+              "Above Normal it walks up to the enemy it can reach, not the weak one far off");
+    }
+    const auto weak_near = field(
+        {unit(1, Side::party, {1, 1}), strong_near, unit(3, Side::opposition, {4, 3}, 2, 30)});
+    const std::vector<Command> both{command("move", 0, {3, 0}), command("move", 0, {3, 3}),
+                                    command("end")};
+    check(choose_demo_command(weak_near, both, Searching::by_sight, Difficulty::nightmare)
+                  .destination == Cell{3, 3},
+          "Of the enemies in reach it walks up to the weakest");
+    const auto none_in_reach =
+        field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {6, 1}, 30, 30),
+               unit(3, Side::opposition, {11, 7}, 2, 30)});
+    const std::vector<Command> short_step{command("move", 0, {2, 1}), command("move", 0, {1, 2}),
+                                          command("end")};
+    check(choose_demo_command(none_in_reach, short_step, Searching::by_sight, Difficulty::nightmare)
+                  .destination == Cell{2, 1},
+          "With no enemy in reach it heads for the nearest");
+}
+
 void light_and_nick_checks()
 {
     auto state = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {2, 1}),
@@ -358,27 +420,132 @@ void light_and_nick_checks()
           "A Light weapon's extra attack follows at the same target");
 }
 
-// Beside an enemy the computer weighs each weapon's expected damage, which the
-// rules work out with its chance to hit and Disadvantage at close range.
-void close_quarters_checks()
+// Each level chooses weapons better than the last (docs/AI.md section 3).
+void weapon_choice_checks()
 {
-    const auto state = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {2, 1})});
-    const auto offered = [](int melee, int ranged, const std::string &verb = "ranged")
+    const auto play =
+        [](const Snapshot &state, const std::vector<Command> &offered, Difficulty difficulty)
+    {
+        return choose_demo_command(state, offered, Searching::by_sight, difficulty);
+    };
+    auto beside = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {2, 1})});
+    const auto weapons = [](int melee, int ranged, const std::string &verb = "ranged")
     {
         std::vector<Command> commands{command("melee", 2), command(verb, 2), command("end")};
         commands[0].expected_damage = melee;
         commands[1].expected_damage = ranged;
         return commands;
     };
-    check(choose_demo_command(state, offered(500, 300)).verb == "melee",
-          "Beside an enemy, the stronger melee weapon is used");
-    check(choose_demo_command(state, offered(300, 300)).verb == "melee", "A tie stays in melee");
-    check(choose_demo_command(state, offered(100, 300)).verb == "ranged",
+    check(play(beside, weapons(100, 300), Difficulty::normal).verb == "melee",
+          "Normal stays in melee beside an enemy, whatever the weapons promise");
+    // Easy is arbitrary: over the fight's states it uses both weapons.
+    std::vector<std::string> easy_verbs;
+    for (std::uint64_t revision = 1; revision < 40; ++revision)
+    {
+        beside.revision = revision;
+        easy_verbs.push_back(play(beside, weapons(500, 100), Difficulty::easy).verb);
+    }
+    check(std::count(easy_verbs.begin(), easy_verbs.end(), "melee") &&
+              std::count(easy_verbs.begin(), easy_verbs.end(), "ranged"),
+          "Easy picks its weapon at random, even a poor shot beside an enemy");
+    beside.revision = 0;
+    check(play(beside, weapons(500, 300), Difficulty::hard).verb == "melee",
+          "Hard uses the stronger melee weapon");
+    check(play(beside, weapons(300, 300), Difficulty::hard).verb == "melee",
+          "A tie stays in melee");
+    check(play(beside, weapons(100, 300), Difficulty::hard).verb == "ranged",
           "A ranged weapon that still promises more, penalty counted, is used");
-    check(choose_demo_command(state, offered(100, 300, "shoot")).verb == "shoot",
+    check(play(beside, weapons(100, 300, "shoot"), Difficulty::hard).verb == "shoot",
           "A carried bow that promises more is drawn");
-    check(choose_demo_command(state, offered(100, 300, "throw")).verb == "throw",
+    check(play(beside, weapons(100, 300, "throw"), Difficulty::hard).verb == "throw",
           "A thrown weapon that promises more is thrown");
+
+    const auto apart = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {8, 1})});
+    auto weak_throw = command("ranged", 2);
+    weak_throw.expected_damage = 100;
+    weak_throw.close_damage = 500;
+    const std::vector<Command> closing{weak_throw, command("move", 0, {2, 1}), command("end")};
+    check(play(apart, closing, Difficulty::normal).verb == "ranged",
+          "Normal throws what it holds, however weak");
+    check(play(apart, closing, Difficulty::hard).verb == "move",
+          "Hard closes in when its shot is worth half its melee weapon or less");
+    auto good_shot = weak_throw;
+    good_shot.expected_damage = 300;
+    check(play(apart, {good_shot, command("move", 0, {2, 1}), command("end")}, Difficulty::hard)
+                  .verb == "ranged",
+          "Hard shoots when the shot is worth more than half");
+    check(play(apart, {weak_throw, command("end")}, Difficulty::hard).verb == "ranged",
+          "Unable to get closer, it throws anyway");
+
+    auto near = field({unit(1, Side::party, {4, 1}), unit(2, Side::opposition, {6, 1})});
+    const std::vector<Command> retreat{good_shot, command("move", 0, {2, 1}), command("end")};
+    check(play(near, retreat, Difficulty::hard).verb == "ranged", "Hard shoots from where it is");
+    check(play(near, retreat, Difficulty::nightmare).verb == "move",
+          "Nightmare backs away from a near enemy before shooting");
+    const std::vector<Command> two_ways{good_shot, command("move", 0, {0, 1}),
+                                        command("move", 0, {2, 1}), command("end")};
+    check(play(near, two_ways, Difficulty::nightmare).destination == Cell{2, 1},
+          "Nightmare backs off 4 squares, no further: a thrown weapon falls short beyond that");
+    const auto walled =
+        field({unit(1, Side::party, {4, 3}), unit(2, Side::opposition, {6, 3})}, {{3, 3}});
+    check(!rules::has_line_of_sight(walled.battlefield, {2, 3}, {6, 3}) &&
+              rules::has_line_of_sight(walled.battlefield, {3, 2}, {6, 3}),
+          "The wall hides the target from one square and not the other");
+    check(play(walled,
+               {good_shot, command("move", 0, {2, 3}), command("move", 0, {3, 2}), command("end")},
+               Difficulty::nightmare)
+                  .destination == Cell{3, 2},
+          "Nightmare does not back off out of sight of what it shoots");
+    near.combatants[1].cell = {9, 1};
+    check(play(near, retreat, Difficulty::nightmare).verb == "ranged",
+          "Nightmare shoots once it is far enough away");
+    const auto pair = field({unit(1, Side::party, {1, 3}), unit(2, Side::opposition, {6, 3}),
+                             unit(3, Side::opposition, {6, 5})});
+    const std::vector<Command> steps{command("move", 0, {5, 4}), command("move", 0, {5, 2}),
+                                     command("end")};
+    check(play(pair, steps, Difficulty::nightmare).destination == Cell{5, 2},
+          "Nightmare comes up beside as few enemies as it can");
+
+    const auto two = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {2, 1}, 40, 40),
+                            unit(3, Side::opposition, {2, 2}, 6, 40)});
+    auto strong = command("melee", 2);
+    strong.expected_damage = 900;
+    auto fatal = command("melee", 3);
+    fatal.expected_damage = 500;
+    check(play(two, {strong, fatal, command("end")}, Difficulty::infernal).target == 3,
+          "Infernal picks the target it can most nearly fell");
+    auto brute = unit(2, Side::opposition, {2, 1}, 20, 40);
+    brute.melee_rating = 30;
+    auto lesser = unit(3, Side::opposition, {2, 2}, 20, 40);
+    lesser.melee_rating = 6;
+    auto at_brute = command("melee", 2);
+    at_brute.expected_damage = 500;
+    auto at_lesser = command("melee", 3);
+    at_lesser.expected_damage = 500;
+    const auto threats = field({unit(1, Side::party, {1, 1}), brute, lesser});
+    check(play(threats, {at_lesser, at_brute, command("end")}, Difficulty::infernal).target == 2,
+          "Infernal strikes the enemy that does the most harm");
+    auto holding = threats;
+    holding.combatants[2].conditions.push_back({"Concentrating"});
+    holding.combatants[2].melee_rating = 20;
+    check(play(holding, {at_lesser, at_brute, command("end")}, Difficulty::infernal).target == 3,
+          "Infernal counts a spell a hit could break");
+    const auto threat_apart = field({unit(1, Side::party, {1, 1}), lesser, brute});
+    auto walked = threat_apart;
+    walked.combatants[1].cell = {4, 3};
+    walked.combatants[2].cell = {4, 0};
+    check(play(walked, {command("move", 0, {3, 3}), command("move", 0, {3, 0}), command("end")},
+               Difficulty::infernal)
+                  .destination == Cell{3, 0},
+          "Infernal walks up to the enemy in reach that does the most harm");
+    auto rogue_shot = command("ranged", 2);
+    rogue_shot.expected_damage = 300;
+    auto rogue_melee = command("melee", 2);
+    rogue_melee.expected_damage = 100;
+    check(play(beside, {rogue_shot, rogue_melee, command("cunning_disengage", 1), command("end")},
+               Difficulty::infernal)
+                  .verb == "cunning_disengage",
+          "Infernal slips free with a Bonus Action before it shoots");
 }
 
 void thrown_checks()
@@ -534,9 +701,10 @@ int main()
         healing_checks();
         reaction_checks();
         free_move_checks();
+        walk_checks();
         light_and_nick_checks();
         thrown_checks();
-        close_quarters_checks();
+        weapon_choice_checks();
         action_surge_checks();
         smite_checks();
         steady_aim_checks();

@@ -1253,7 +1253,18 @@ bool area_risks_side(const rules::Snapshot &state, const CombatantView &caster,
 bool safe_area_target(const rules::Snapshot &state, const CombatantView &caster,
                       const SpellFacts &spell, const CombatantView &target)
 {
-    const int distance = 5 * squares_apart(caster, target);
+    // The aim goes on the target's own square, and the rules measure range and
+    // sight to that square alone: a large enemy's other squares may show when
+    // that one does not, and a cast that cannot be aimed would be given up and
+    // chosen again without end.
+    const int distance = 5 * squares_from(target.cell, caster);
+    const auto squares = squares_of(caster);
+    const bool aim_in_sight =
+        std::any_of(squares.begin(), squares.end(),
+                    [&](Cell square)
+                    {
+                        return rules::has_line_of_sight(state.battlefield, square, target.cell);
+                    });
     // A cone or line runs from the caster's square nearest the aim, and its
     // length is measured straight, as the rules draw it.
     const auto squares_to_aim = [&](Cell square)
@@ -1270,8 +1281,7 @@ bool safe_area_target(const rules::Snapshot &state, const CombatantView &caster,
     }
     const double reach = 5.0 * std::hypot(target.cell.x - origin.x, target.cell.y - origin.y);
     return target.side != caster.side && target.conscious && distance <= spell.range_feet &&
-           (!spell.from_caster || reach <= spell.area_feet) &&
-           sees(state.battlefield, caster, target) &&
+           (!spell.from_caster || reach <= spell.area_feet) && aim_in_sight &&
            !area_risks_side(state, caster, spell, target.cell);
 }
 
@@ -1503,6 +1513,20 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     {
         kept = weakest;
     }
+    // On Infernal, how much harm a target does for each Hit Point it has left:
+    // what it wields, and double while it holds a spell a hit could break. All of
+    // it shows on the field.
+    const auto harm_per_hit_point = [](const CombatantView &target)
+    {
+        const double wielded = std::max({target.melee_rating, target.ranged_rating, 1});
+        const bool concentrating = std::any_of(target.conditions.begin(), target.conditions.end(),
+                                               [](const auto &condition)
+                                               {
+                                                   return condition.source == "Concentrating";
+                                               });
+        const double holding = concentrating ? 2.0 : 1.0;
+        return wielded * holding / std::max(1, target.hit_points);
+    };
     // One of the creatures commands with `verb` are aimed at: its target if one
     // is, else one at random from the other side (#266).
     const auto aim = [&](std::string_view verb) -> const Command *
@@ -1524,7 +1548,9 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             {
                 continue;
             }
-            if (kept != in_view.end() && command.target == (*kept)->id)
+            // Infernal weighs every target for a weapon attack below.
+            if (kept != in_view.end() && command.target == (*kept)->id &&
+                !(difficulty == Difficulty::infernal && command.expected_damage))
             {
                 return &command;
             }
@@ -1533,6 +1559,25 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         if (aims.empty())
         {
             return nullptr;
+        }
+        // The harm this attack is expected to take away: its share of the
+        // target's Hit Points, times what that target can still do.
+        if (difficulty == Difficulty::infernal && aims.front()->expected_damage)
+        {
+            const auto harm_stopped = [&](const Command *command)
+            {
+                const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
+                                                   [&](const auto &a)
+                                                   {
+                                                       return a.id == command->target;
+                                                   });
+                return command->expected_damage * harm_per_hit_point(target);
+            };
+            return *std::max_element(aims.begin(), aims.end(),
+                                     [&](const Command *a, const Command *b)
+                                     {
+                                         return harm_stopped(a) < harm_stopped(b);
+                                     });
         }
         if (difficulty <= Difficulty::normal)
         {
@@ -1553,6 +1598,46 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                      return weaker(view_of(a), view_of(b));
                                  });
     };
+    // Whether a move it is offered brings it beside `enemy`, so it can strike this
+    // turn.
+    const auto within_a_move = [&](const CombatantView &enemy)
+    {
+        return std::any_of(offered.begin(), offered.end(),
+                           [&](const Command &command)
+                           {
+                               if (command.verb != "move")
+                               {
+                                   return false;
+                               }
+                               const auto squares =
+                                   squares_of(command.destination, active.footprint);
+                               return std::any_of(squares.begin(), squares.end(),
+                                                  [&](Cell square)
+                                                  {
+                                                      return squares_from(square, enemy) <= 1;
+                                                  });
+                           });
+    };
+    // Who the walk heads for. Up to Normal, its target. Above Normal, its target
+    // or else the weakest enemy it can strike this turn, and with none in reach
+    // the nearest: chasing a weak enemy across the field gives up the attack and
+    // leaves its own side (docs/AI.md section 2).
+    const CombatantView *walk_target = kept != in_view.end() ? *kept : nullptr;
+    if (difficulty >= Difficulty::hard && !(walk_target && within_a_move(*walk_target)))
+    {
+        walk_target = nullptr;
+        for (const auto *enemy : in_view)
+        {
+            if (within_a_move(*enemy) &&
+                (!walk_target ||
+                 (difficulty == Difficulty::infernal
+                      ? harm_per_hit_point(*enemy) > harm_per_hit_point(*walk_target)
+                      : weaker(enemy, walk_target))))
+            {
+                walk_target = enemy;
+            }
+        }
+    }
     // Rank offered destinations by a geometric route around obstacles to its
     // target, or to the nearest enemy in view. Straight distance alone can
     // strand both sides on opposite corners of a wall. This is an AI
@@ -1565,7 +1650,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     std::queue<Cell> frontier;
     for (const auto *enemy : in_view)
     {
-        if (kept == in_view.end() || enemy == *kept)
+        if (!walk_target || enemy == walk_target)
         {
             for (const auto square : squares_of(*enemy))
             {
@@ -2148,7 +2233,10 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     };
     if (!in_view.empty())
     {
-        const int roll = static_cast<int>(pick(state, active.id, 7, 7)) + 1;
+        // Infernal leaves nothing to the roll: the strongest come first, always.
+        const int roll = difficulty == Difficulty::infernal
+                             ? 7
+                             : static_cast<int>(pick(state, active.id, 7, 7)) + 1;
         for (int priority = 7; priority >= 8 - roll; --priority)
         {
             std::vector<std::string_view> spells;
@@ -2297,9 +2385,66 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                     {
                         return enemy->conscious && squares_apart(*enemy, active) <= 1;
                     });
-    const bool shoots = !enemy_beside && active.ranged_rating * 2 > active.melee_rating;
+    const bool shoots = difficulty == Difficulty::normal && !enemy_beside &&
+                        active.ranged_rating * 2 > active.melee_rating;
     // A thrown weapon is rated as a ranged one, as the original did (#269).
-    const bool throws = !enemy_beside && active.thrown_rating * 2 > active.melee_rating;
+    const bool throws = difficulty == Difficulty::normal && !enemy_beside &&
+                        active.thrown_rating * 2 > active.melee_rating;
+    // An unarmored Wizard or Sorcerer, or a monster magic-user, never closes
+    // in, as the original's magic-users did not: it casts from where it stands.
+    const bool stays_back = active.unarmored_arcane_caster && !active.panicked && !seeking;
+    // The weapon the difficulty picks (section 3 of docs/AI.md), if it picks one;
+    // `closes` walks up to the enemy instead of using a weapon from afar.
+    std::string_view chosen_weapon;
+    bool closes = false;
+    if (difficulty == Difficulty::easy)
+    {
+        std::vector<std::string_view> choices;
+        for (const auto verb : {"melee", "ranged", "shoot", "throw"})
+        {
+            if (aim(verb))
+            {
+                choices.push_back(verb);
+            }
+        }
+        if (!aim("melee") && !stays_back && !choices.empty())
+        {
+            choices.push_back("close");
+        }
+        if (!choices.empty())
+        {
+            const auto choice = choices[pick(state, active.id, 7777, choices.size())];
+            closes = choice == "close";
+            chosen_weapon = closes ? std::string_view{} : choice;
+        }
+    }
+    else if (difficulty >= Difficulty::hard)
+    {
+        const Command *best = nullptr;
+        std::string_view best_verb;
+        for (const auto verb : {"ranged", "shoot", "throw"})
+        {
+            if (const auto *weapon = aim(verb);
+                weapon && (!best || weapon->expected_damage > best->expected_damage))
+            {
+                best = weapon;
+                best_verb = verb;
+            }
+        }
+        if (const auto *melee = aim("melee"))
+        {
+            // A tie stays in melee.
+            chosen_weapon =
+                best && best->expected_damage > melee->expected_damage ? best_verb : "melee";
+        }
+        else if (best)
+        {
+            // As the original: closing in costs time, so a shot worth more than
+            // half the melee weapon is taken.
+            closes = !stays_back && best->expected_damage * 2 <= best->close_damage;
+            chosen_weapon = closes ? std::string_view{} : best_verb;
+        }
+    }
     // A Breath Weapon, Dragon's Breath, a dragon's Lightning Breath, an
     // Ankheg's Acid Spray or a Basilisk's Petrifying Gaze goes off before the
     // attacks, where it catches an enemy and no ally (#269).
@@ -2328,28 +2473,84 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     {
         attacks.push_back("throw");
     }
-    // Beside an enemy, another weapon must promise more than melee, with its
-    // Disadvantage at close range counted; a tie stays in melee.
-    if (const auto *melee = aim("melee"); enemy_beside && melee)
+    if (!chosen_weapon.empty())
     {
-        int best_damage = melee->expected_damage;
-        std::string_view best_weapon;
-        for (const auto verb : {"ranged", "shoot", "throw"})
-        {
-            if (const auto *weapon = aim(verb); weapon && weapon->expected_damage > best_damage)
-            {
-                best_damage = weapon->expected_damage;
-                best_weapon = verb;
-            }
-        }
-        if (!best_weapon.empty())
-        {
-            attacks.push_back(best_weapon);
-        }
+        attacks.push_back(chosen_weapon);
     }
     attacks.insert(attacks.end(),
                    {"melee", "fire_bolt", "sacred_flame", "vicious_mockery", "starry_wisp",
-                    "ray_of_frost", "chill_touch", "shocking_grasp", "poison_spray", "ranged"});
+                    "ray_of_frost", "chill_touch", "shocking_grasp", "poison_spray"});
+    if (!closes)
+    {
+        attacks.push_back("ranged");
+    }
+    // Squares from a place to the nearest enemy in view, walls aside.
+    const auto gap_to_enemies = [&](Cell place)
+    {
+        int gap = 10000;
+        for (const auto *enemy : in_view)
+        {
+            for (const auto square : squares_of(*enemy))
+            {
+                gap = std::min(
+                    gap, std::max(std::abs(square.x - place.x), std::abs(square.y - place.y)));
+            }
+        }
+        return gap;
+    };
+    // Nightmare and up keep their distance from what they shoot; Infernal first
+    // slips free of an enemy beside it when that costs no Action. Every ranged
+    // weapon reaches 4 squares without penalty, so it goes no further than that,
+    // and only where it still sees its target.
+    constexpr int keep_away_squares = 4;
+    const bool shooting = !chosen_weapon.empty() && chosen_weapon != "melee";
+    if (difficulty == Difficulty::infernal && shooting && enemy_beside && !active.disengaged)
+    {
+        if (const auto *slip = offers("cunning_disengage"))
+        {
+            return *slip;
+        }
+    }
+    if (difficulty >= Difficulty::nightmare && shooting && active.action &&
+        (!enemy_beside || active.disengaged) && gap_to_enemies(active.cell) < keep_away_squares)
+    {
+        const auto target_id = aim(chosen_weapon)->target;
+        const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
+                                           [&](const auto &a)
+                                           {
+                                               return a.id == target_id;
+                                           });
+        const auto steps_to = [&](Cell place)
+        {
+            return std::max(std::abs(place.x - active.cell.x), std::abs(place.y - active.cell.y));
+        };
+        const auto keeps_target_in_sight = [&](Cell place)
+        {
+            auto there = active;
+            there.cell = place;
+            return sees(board, there, target);
+        };
+        const Command *away = nullptr;
+        int widest = gap_to_enemies(active.cell);
+        for (const auto &command : offered)
+        {
+            if (command.verb != "move" || !keeps_target_in_sight(command.destination))
+            {
+                continue;
+            }
+            const int gap = std::min(gap_to_enemies(command.destination), keep_away_squares);
+            if (gap > widest || (away && gap == widest &&
+                                 steps_to(command.destination) < steps_to(away->destination)))
+            {
+                away = &command;
+                widest = gap;
+            }
+        }
+        if (away)
+        {
+            return *away;
+        }
+    }
     // Able to attack without moving, a Rogue takes Steady Aim first (#269).
     if (const auto *steady = offers("steady_aim"); steady && active.action &&
                                                    std::any_of(attacks.begin(), attacks.end(),
@@ -2405,9 +2606,6 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             }
         }
     }
-    // An unarmored Wizard or Sorcerer, or a monster magic-user, never closes
-    // in, as the original's magic-users did not: it casts from where it stands.
-    const bool stays_back = active.unarmored_arcane_caster && !active.panicked && !seeking;
     // Out of reach of its target even with all its movement, a Rogue or an Orc
     // dashes with its Bonus Action and keeps its Action to attack (#269).
     int reachable = nearest(active.cell);
@@ -2438,25 +2636,52 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             return command;
         }
     }
+    // Nightmare and up, between equally close squares, the one beside the fewest
+    // enemies.
+    const auto enemies_beside = [&](Cell place)
+    {
+        return std::count_if(in_view.begin(), in_view.end(),
+                             [&](const auto *enemy)
+                             {
+                                 const auto squares = squares_of(*enemy);
+                                 return std::any_of(
+                                     squares.begin(), squares.end(),
+                                     [&](Cell square)
+                                     {
+                                         return std::max(std::abs(square.x - place.x),
+                                                         std::abs(square.y - place.y)) <= 1;
+                                     });
+                             });
+    };
     const Command *move = nullptr;
     int closest = nearest(active.cell);
     for (const auto &command : offered)
     {
-        if (!stays_back && command.verb == "move" && nearest(command.destination) < closest)
+        if (stays_back || command.verb != "move")
+        {
+            continue;
+        }
+        const int steps = nearest(command.destination);
+        if (steps < closest ||
+            (difficulty >= Difficulty::nightmare && move && steps == closest &&
+             enemies_beside(command.destination) < enemies_beside(move->destination)))
         {
             move = &command;
-            closest = nearest(command.destination);
+            closest = steps;
         }
     }
     if (move)
     {
         return *move;
     }
-    // Unable to get any closer, a character draws a carried bow or crossbow and
-    // shoots.
-    if (const auto *shot = aim("shoot"))
+    // Unable to get any closer, a character shoots or throws what it has: a
+    // carried bow or crossbow drawn, and whatever it meant to walk past.
+    for (const auto verb : {"shoot", "ranged", "throw"})
     {
-        return *shot;
+        if (const auto *shot = aim(verb))
+        {
+            return *shot;
+        }
     }
     // Stuck with no enemy it can strike in melee (and so none that can strike
     // it), a shield-bearer carrying a bow takes its shield off to shoot.
@@ -2851,16 +3076,16 @@ std::vector<Command> without_spells(const rules::Snapshot &state, std::vector<Co
 }
 } // namespace
 
-Command choose_quick_command(const CombatSession &session, bool magic, Searching searching,
-                             Difficulty difficulty)
+Command choose_quick_command(const CombatSession &session, bool magic, Searching searching)
 {
+    constexpr auto quick_difficulty = Difficulty::infernal;
     if (magic)
     {
-        return choose_demo_command(session, searching, difficulty);
+        return choose_demo_command(session, searching, quick_difficulty);
     }
     const auto state = session.snapshot();
     return choose_from(state, without_spells(state, session.legal_commands()), searching,
-                       difficulty);
+                       quick_difficulty);
 }
 
 Command choose_flee_command(const CombatSession &session, bool magic, Searching searching,
@@ -2878,11 +3103,17 @@ Command choose_flee_command(const CombatSession &session, bool magic, Searching 
                                   {
                                       return c.verb == "end" && c.actor == state.actor;
                                   });
-    // Reactions, choices and those who cannot flee are left to the demo AI.
-    if (active == state.combatants.end() || active->side != Side::party || !active->can_flee ||
-        state.reaction_pending || end == offered.end())
+    // Monsters, on either side, fight on by the difficulty and with their spells
+    // unless they can run; a member who cannot flee, a reaction or a choice is
+    // played as on Quick.
+    if (active == state.combatants.end() || active->side != Side::party ||
+        (is_ally(active->id) && !active->can_flee))
     {
-        return choose_quick_command(session, magic, searching, difficulty);
+        return choose_demo_command(session, searching, difficulty);
+    }
+    if (!active->can_flee || state.reaction_pending || end == offered.end())
+    {
+        return choose_quick_command(session, magic, searching);
     }
     if (const auto run = run_for_edge(state, offered, *active))
     {

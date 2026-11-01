@@ -18,7 +18,8 @@ differ in tuning and spells. `tests/ai_policy_tests.cpp` checks each rule.
 
 ## Who the computer plays
 
-One policy plays every monster and every Quick member, in the original as here.
+One policy plays every monster and every Quick member, in the original as here;
+Quick members always play it at the highest level (section 2).
 The computer takes the turn when the actor is a monster, when the party is
 fleeing (FLEE-1), or when a party member is on Quick (QUICK-1).
 
@@ -96,7 +97,8 @@ player that searches for the enemy, and the game's own checks have every creatur
 search.
 
 The walk counts every step as one, so it neither avoids Difficult Terrain nor
-Opportunity Attacks. Exceptions:
+Opportunity Attacks. On Nightmare and Infernal a creature also keeps away from
+enemies (section 3). Exceptions:
 
 - **An unarmored Wizard or Sorcerer, or a monster magic-user, never closes in**,
   as the original's magic-users did not: it casts or shoots from where it
@@ -137,6 +139,24 @@ weakest enemy in view and moves toward it, so the side's attacks converge on
 one enemy until it falls, and a downed character counts as an enemy: having
 the fewest Hit Points, it is finished first.
 
+Above Normal the **walk** is bounded by what it can strike this turn: it heads for
+its target if a move brings it beside it, else the weakest enemy a move brings it
+beside, else the nearest enemy. Walking across the field after a weak archer
+gave up the turn's attack and left the creature's own side, which lost fights
+the original's rule won (measured 2026-11-01).
+
+On **Infernal** a weapon attack, and the walk, go by the **harm stopped**: the
+attack's expected damage for each of the target's Hit Points, times what that
+target can still do (the better of its weapon ratings, doubled while it is
+Concentrating). A creature with a strong weapon or a spell running comes before a
+weak one with fewer Hit Points. Spells still aim at the weakest.
+
+**A party member on Quick always plays at Infernal**, whatever the difficulty
+(the user, 2026-10-31), and so does a member who cannot run in Flee mode: the
+setting makes the party's enemies harder, not its own members worse. Monsters,
+those on the party's side included, and NPCs who are not party members follow the
+setting.
+
 The rules offer attacks and healing on any creature, a party member or one at
 0 Hit Points included (CLOSE-1). The computer still attacks only the other
 side, heals only its own, and strikes a character already down only on
@@ -149,19 +169,28 @@ came first. It never read Hit Points or AC.
 
 ## 3. Attacks
 
-The order is: Eldritch Blast, Sorcerous Burst and the flame weapons, then
-**melee**, the other attack cantrips, then the **held ranged weapon**. With
-no enemy beside it, a creature whose ranged weapon rates **more than half** its
-melee weapon shoots instead of closing in: the held one, or a carried bow it
-draws (taking off its shield if the bow needs both hands). A **thrown weapon**
-is rated and thrown the same way, after the bow; with an enemy beside it, the
-creature fights in melee unless another weapon promises more damage. The rules
-give each weapon attack its **expected damage** against that target: its chance
-to hit, with Disadvantage for shooting or throwing beside an enemy and anything
-else that changes the roll, times its average damage and its attacks a turn. A
-tie stays in melee. So a sword beats a bow at close range, while a creature with
-only a poor melee weapon may still shoot and take the penalty. The rating is the
-original's: dice count times sides, plus 8 for each magic plus, times the
+The order is: Eldritch Blast, Sorcerous Burst and the flame weapons, then the
+weapon its difficulty picks, **melee**, the other attack cantrips, then the
+**held ranged weapon**. How the weapon is picked rises with the difficulty, each
+level keeping what the one below it does (the user, 2026-10-31):
+
+| Level | Weapon choice | Also |
+|---|---|---|
+| Easy | **Arbitrary**: at random among the weapons it could use now, even a poor shot beside an enemy, or it walks up instead | |
+| Normal | **The original's rating**, below: melee beside an enemy, and with none beside it, a bow or thrown weapon rated more than half its melee weapon. It still uses a held ranged weapon whenever nothing better is in reach, however weak | |
+| Hard | **Most damage**, by expected damage below. Beside an enemy, melee unless another weapon promises more. Otherwise it shoots if that is worth more than half its melee weapon, else closes in | |
+| Nightmare | As Hard | **Least contact**: a shooter backs off to 4 squares before it shoots, no further and never out of sight of its target, and one closing in takes the square beside the fewest enemies |
+| Infernal | As Hard | **Prevents enemy damage**: the target where the attack stops the most harm (section 2), slipping free with a Bonus Action Disengage before shooting, and the spell roll is gone, so the strongest spells come first |
+
+"Ideal" on Infernal means the best by these sums for this one turn: the computer
+reads no dice and does not plan turns ahead.
+
+The rules give each weapon attack its **expected damage** against that target:
+its chance to hit, with Disadvantage for shooting or throwing beside an enemy and
+anything else that changes the roll, times its average damage and its attacks a
+turn. Bless dice and Critical Hits are left out. A tie stays in melee. The held
+weapon or a carried bow it draws (taking off its shield if the bow needs both
+hands) and **thrown weapons** are all weighed. The rating is the original's: dice count times sides, plus 8 for each magic plus, times the
 weapon's attacks a turn (a Monk's Martial Arts strike counts for its melee).
 Weapon masteries' optional effects are always used. Sneak Attack, Savage
 Attacker and a Versatile grip apply automatically (AUTO-1).
@@ -188,9 +217,9 @@ whenever no enemy stood next to it and it scored more than half the best melee
 weapon, switching back when an enemy closed; a thrown weapon next to an enemy
 was used in melee. Breath and gaze attacks fired by chance each round.
 
-**Departures.** Beside an enemy the original always fought in melee; here the
-expected damage decides, and it reads the target's AC, which the original's
-choice never did. The rating counts melee attacks a turn, which the original did
+**Departures.** Only Normal chooses weapons as the original did. Easy's choice is
+random; from Hard up expected damage replaces the rating and reads the target's
+AC, which the original's choice never did. The rating counts melee attacks a turn, which the original did
 only for missile launchers, so a Monk fights with its fists. A Breath Weapon
 goes off where it is safe, not by chance.
 
@@ -302,7 +331,7 @@ hidden enemy's position, or anything the game does not show.
   feet it only walks toward, spending nothing on it; it knows where that enemy
   is, as a player sees it on the field.
 - **Hit Points and AC** are shown to the player, so the policy may read them;
-  above Normal it uses them to choose a target (section 2).
+  above Normal it uses them to choose a target (section 2) and a weapon (section 3).
 - **Dice:** the policy reads none, and rolls no hidden save to judge an area; a
   reaction is asked only after the hit is known, with the total shown.
 - **Enemy states** it reads (burning, oiled, regenerating, conditions, status

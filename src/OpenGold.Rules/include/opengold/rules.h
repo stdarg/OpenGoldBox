@@ -897,6 +897,9 @@ struct Command
     // to hit this target, Advantage and Disadvantage included, times its average
     // damage and its attacks a turn. Zero for anything else.
     int expected_damage{};
+    // The same for its melee weapon against this target, on a ranged or thrown
+    // attack: what it gives up by not closing in.
+    int close_damage{};
 };
 
 class CombatSession

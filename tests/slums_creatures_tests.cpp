@@ -449,14 +449,16 @@ void held_weapons()
           "An enchantment raises the expected damage");
     const auto chosen_beside = [&](std::string melee, std::string ranged)
     {
-        return choose_demo_command(*orc(std::move(melee), std::move(ranged))).verb;
+        return choose_demo_command(*orc(std::move(melee), std::move(ranged)), Searching::by_sight,
+                                   Difficulty::hard)
+            .verb;
     };
     check(chosen_beside("longsword", "longbow") == "melee",
-          "The computer keeps to its longsword beside an enemy");
+          "On Hard the computer keeps to its longsword beside an enemy");
     check(expected("dagger", "longbow", {2, 1}, "ranged") >
                   expected("dagger", "longbow", {2, 1}, "melee") &&
               chosen_beside("dagger", "longbow") == "ranged",
-          "With only a dagger, it shoots a longbow beside an enemy and takes the penalty");
+          "On Hard, with only a dagger, it shoots a longbow beside an enemy and takes the penalty");
     const auto innate = [&](const std::string &definition)
     {
         return unit(*module->create({{10, 4, std::vector<Terrain>(40)},
