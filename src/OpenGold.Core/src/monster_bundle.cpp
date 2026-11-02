@@ -267,7 +267,19 @@ AttackVariants attack_variants(const ExportedMonster &monster)
                                      return (item.weapon_role == "ranged") == ranged;
                                  });
     };
-    return {set_of(wielded.melee, false), set_of(wielded.ranged, true)};
+    const auto *melee = set_of(wielded.melee, false);
+    const MonsterVariant *melee_without_shield = nullptr;
+    if (melee && !melee->shield_id.empty())
+    {
+        const auto bare = std::ranges::find_if(monster.variants,
+                                               [&](const MonsterVariant &variant)
+                                               {
+                                                   return variant.weapon_id == melee->weapon_id &&
+                                                          variant.shield_id.empty();
+                                               });
+        melee_without_shield = bare == monster.variants.end() ? nullptr : &*bare;
+    }
+    return {melee, set_of(wielded.ranged, true), melee_without_shield};
 }
 
 bool human_shaped(const ExportedMonster &monster)

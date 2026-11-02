@@ -6,7 +6,9 @@
 // Both sides use the automated demo policy.
 #include "opengold/campaign_party.h"
 #include "opengold/character_creator.h"
+#include "../tests/png_size_only.h"
 #include "opengold/combat_demo.h"
+#include "opengold/creature_art.h"
 #include "opengold/dungeon_battlefield.h"
 #include "opengold/encounter_budget.h"
 #include "opengold/map_catalog.h"
@@ -161,10 +163,40 @@ std::shared_ptr<CampaignParty> party_of(bool mixed, unsigned level)
     return party;
 }
 
+// The game's creature records and export, so the fights stage what the game's do.
+std::filesystem::path game_directory;
+
+const por::CreatureCatalog &game_creatures()
+{
+    static const auto catalog = por::CreatureCatalog::load(game_directory);
+    return catalog;
+}
+
+const por::MonsterBundle &game_monsters()
+{
+    static const auto monsters = por::load_monster_bundle(
+        std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters", test::png_size_only);
+    return monsters;
+}
+
+// A Slums (bank 2) creature, staged as the game stages it.
+rules::Participant game_fighter(rules::EntityId id, std::string definition, unsigned record)
+{
+    const auto original = game_creatures().find({2, static_cast<std::uint8_t>(record)});
+    if (!original)
+    {
+        throw std::runtime_error("Missing original creature " + std::to_string(record));
+    }
+    auto name = definition + " " + std::to_string(id);
+    return por::staged_fighter(id, std::move(definition), std::move(name), rules::Side::opposition,
+                               original->get(), game_monsters().creature(2, record),
+                               default_difficulty);
+}
+
 struct Group
 {
     std::string definition;
-    unsigned count{}, xp{};
+    unsigned count{}, xp{}, record{};
 };
 
 const char *definition(unsigned record)
@@ -197,13 +229,13 @@ std::vector<Group> encounter(unsigned record, unsigned strength, bool rope_guild
     const unsigned xp = record == 0 ? 25 : record == 2 ? 50 : 100;
     if (scaled >= leader_threshold)
     {
-        groups.push_back({definition(record + 1), record < 1 ? 3u : 4u, xp});
+        groups.push_back({definition(record + 1), record < 1 ? 3u : 4u, xp, record + 1});
     }
     if (scaled > 18)
     {
-        groups.push_back({definition(63), 1, 200});
+        groups.push_back({definition(63), 1, 200, 63});
     }
-    groups.push_back({definition(record), scaled, xp});
+    groups.push_back({definition(record), scaled, xp, record});
     return groups;
 }
 
@@ -254,11 +286,7 @@ Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoM
         {
             for (unsigned n = 0; n < group.count; ++n, ++next)
             {
-                fight.enemies.push_back({next,
-                                         group.definition,
-                                         group.definition + " " + std::to_string(next),
-                                         rules::Side::opposition,
-                                         {}});
+                fight.enemies.push_back(game_fighter(next, group.definition, group.record));
             }
         }
         CombatDemo combat(module());
@@ -312,6 +340,7 @@ int main(int argc, char **argv)
         {
             content_pack = argv[3];
         }
+        game_directory = argv[1];
         const auto maps = MapCatalog::load(argv[1]);
         const auto slums = maps.find({"GEO2.DAX", 20});
         if (!slums)

@@ -48,6 +48,8 @@ struct CombatArt
     std::optional<OriginalArt> original;
     // The weapon sets the creature shows once it attacks in melee or shoots.
     std::optional<WeaponSetArt> melee, ranged;
+    // Its melee weapon after it took its shield off to shoot.
+    std::optional<WeaponSetArt> melee_without_shield;
 };
 
 // Who an encounter caught unaware. The values are the original script's

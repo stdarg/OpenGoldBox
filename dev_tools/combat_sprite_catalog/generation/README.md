@@ -138,17 +138,20 @@ user before generating art.
 A weapon set is the complete setup wielded together for one combat art pair:
 
 - **One-handed weapon + shield:** one unit when a shield is available. Do not
-  generate extra shield-only or weapon-without-shield alternatives for that unit.
+  generate extra shield-only or weapon-without-shield alternatives for that unit,
+  with one exception: a monster with a shield and a bow or crossbow takes the
+  shield off to shoot, so each of its one-handed weapons also has a set without
+  the shield, `<weapon id>__one_hand`.
 - **One-handed weapon without a shield:** its own set when no shield is available.
 - **Ranged weapon:** its own set, separate from melee equipment.
 - **Two-handed weapon:** its own set, separate from the ranged or one-handed set.
 
 | Monster's gear | Required sets | Required images |
 | --- | --- | --- |
-| Bow, mace, shield | Bow; mace + shield | 2 ready/action pairs (4 PNGs) |
+| Bow, mace, shield | Bow; mace + shield; mace alone | 3 ready/action pairs (6 PNGs) |
 | Bow, sword, no shield | Bow; sword | 2 ready/action pairs (4 PNGs) |
 | Crossbow, greatsword | Crossbow; greatsword | 2 ready/action pairs (4 PNGs) |
-| Bow, mace, shield, greatsword | Bow; mace + shield; greatsword | 3 ready/action pairs (6 PNGs) |
+| Bow, mace, shield, greatsword | Bow; mace + shield; mace alone; greatsword | 4 ready/action pairs (8 PNGs) |
 
 Enumerate all sets as a completion checklist before generation. For multiple
 one-handed weapons or shields, follow the catalog's existing set list (each

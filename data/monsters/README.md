@@ -34,7 +34,9 @@ size and humanoid height, its equipment and its weapon sets:
   carried weapon (`innate_ranged` in
   [combat.rules](../rules/srd-5.2.1/combat.rules): a spell or a thrown rock).
   One holding its readied shield spends its Action taking it off before it shoots
-  a weapon that needs both hands.
+  a weapon that needs both hands, and has 2 lower Armor Class with it off. Its melee
+  weapon then shows from the set without the shield, `<weapon>__one_hand`, where
+  the art has one.
 - **Forms.** Wild Shape's and Polymorph's Beast forms and summoned creatures
   wear the art of the creature drawn with their original icon (a Wolf form,
   `mon4cha_dax_106`'s).

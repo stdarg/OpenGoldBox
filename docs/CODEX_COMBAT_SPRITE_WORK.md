@@ -1,6 +1,6 @@
 # Codex: combat sprite work
 
-Written 2026-11-02, against commit `7d49827b`. Check the facts below against the
+Written 2026-11-02. Task 5 was unblocked the same day. Check the facts below against the
 current files before acting. If one no longer holds, **stop and ask the user**.
 
 ## Why this work exists
@@ -19,7 +19,7 @@ your job.
 | 2 | 5th Lvl Fighter, `MON6CHA.DAX:101` | Re-review the spear art, clear flag, export | Ready |
 | 3 | Dwarven Fighter, `MON6CHA.DAX:48` | Finish the review, clear flag, export | Ready |
 | 4 | Fire Giant, `MON5CHA.DAX:56` | Add a boulder and generate new art | Ready |
-| 5 | 18 shield-bearers | Melee art without a shield | **BLOCKED: do not start** |
+| 5 | 18 shield-bearers | Melee art without a shield | Ready, after tasks 1 to 4 |
 
 Do one task per commit. Finish and push a task before starting the next.
 
@@ -79,8 +79,10 @@ export OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD
 Do these after the user has approved the art.
 
 1. Clear **Flag for Regen** through the catalog's Save
-   (`./dev_tools/combat_sprite_catalog/run.sh`). Tasks 1 to 3 change that one
-   field: confirm with `git diff` that nothing else in the JSON moved.
+   (`./dev_tools/combat_sprite_catalog/run.sh`). Confirm with `git diff` that nothing
+   else in the JSON moved, except that Save may add the `<weapon id>__one_hand` set
+   described in task 5. The 5th Lvl Fighter gains one. Leave its art for task 5, and
+   do not hold the fighter's flag for it: the export leaves out a set with no art.
 2. Export, using the script in **The export script** below. It must print `Exported`.
 3. Check that the export changed only your monster:
    ```bash
@@ -315,30 +317,49 @@ the **same commit**.
 **Step 7: tell the user** the Fire Giant is ready to see in play. Valjevo Castle is
 one place it appears.
 
-## Task 5: melee art without a shield (BLOCKED)
+## Task 5: melee art without a shield
 
-**Do not start this. Do not generate anything for it.** It needs code work first, and
-that work is not yours. Tell the user when you reach this point.
+Do this after tasks 1 to 4. The catalog, workflow and game are ready for it.
 
-**Why it is blocked:**
-- A monster holding a shield now takes it off, for the rest of the fight, before it
-  shoots a two-handed weapon. If it then fights in melee, its sprite still shows the
-  shield. The fix is melee art without one.
-- The catalog cannot save such a set. `rebuild_variants` in
-  `godot/scripts/monster_metadata.gd` offers a one-handed weapon alone only when the
-  creature has no shield at all, and the next catalog Save would discard a set added
-  by hand. **Do not hand-edit it in, and do not change `rebuild_variants`.**
-- The workflow README forbids these sets: "Do not generate extra shield-only or
-  weapon-without-shield alternatives."
-- The game would not show them yet: `attack_variants` always picks the set with the
-  shield.
-- The user has not yet decided whether a monster's Armor Class changes with the shield.
+**Why:** a monster holding a shield takes it off, for the rest of the fight, before it
+shoots a bow or crossbow. If it then fights in melee, it shows this new set. Without
+the set it wrongly shows the shield it took off.
 
-Wait until the user tells you the catalog, workflow and game have been updated.
+**How the set gets into the record:** `rebuild_variants` now adds
+`<weapon id>__one_hand`, labelled `<weapon> (shield off)`, with `shield_id` empty, to a
+monster with a shield and a weapon of original types 41 to 47. Open the record in the
+catalog and **Save** to add it. **Do not hand-edit it in**, and do not change
+`rebuild_variants`. Do not generate one for a monster not in the table below. If the
+set does not appear after Save, stop and ask.
 
-**The monsters it will cover, for reference.** Each needs one new pair of the weapon
-named, identical to its existing set except that the shield is gone and the free arm
-looks natural.
+**Do this for one monster at a time, each in its own commit:**
+
+1. Save the record in the catalog, and confirm with `git diff` that the only change is
+   the new variant.
+2. Save the image prompt in the description, keeping the existing text. Run `prepare`
+   for `<weapon id>__one_hand` with a new `review_dir`.
+3. Generate `ready.png` from the existing set with the shield as the **identity
+   reference**, and name its role in the prompt.
+   - The same character, armor, weapon, grip, scale and planted-foot pixels.
+   - **No shield anywhere**: not on the arm, on the back or on the ground.
+   - The arm that held the shield hangs or balances naturally, with a complete hand.
+     No empty shield strap, floating hand or cut-off arm.
+   - The weapon is held up ready to strike, as in the existing set.
+4. Make `action.png` by editing this set's `ready.png`, near the end of the same swing
+   or thrust as the existing set's action.
+5. Check the height and the feet against the existing set, then review and accept as
+   in sections 3 and 4 of the workflow README.
+6. Show the user the pair next to the existing set, and ask for approval.
+7. If they approve, follow **How to finish any task**, skipping the flag step: these
+   records are not flagged, except the 5th Lvl Fighter if task 2 is not finished.
+
+Do not touch `art_pending` for this task.
+
+**The first time a monster gets this art, look at it in the game.** The game code that
+shows these sets has never run with real art. Fight that monster, let it take its shield
+off and then strike in melee, and tell the user what it showed.
+
+**The monsters.** Each needs one new pair of the weapon named.
 
 | Catalog file | Monster | Melee weapon | Existing set with shield |
 |---|---|---|---|

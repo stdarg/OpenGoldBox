@@ -716,6 +716,7 @@ struct CombatantView
     bool critical_hit{};
     // It took the Disengage action this turn (#269).
     bool disengaged{};
+    bool shield_off{}; // Took its shield off this fight, to shoot.
 };
 
 struct TemporaryHpOffer

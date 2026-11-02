@@ -697,16 +697,17 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
             }
             const auto id = static_cast<EntityId>(1000 + n);
             const Cell cell{10, row};
-            result.encounter.enemies.push_back(
-                {id, definition, definition + " " + std::to_string(n + 1), Side::opposition, cell});
-            result.encounter.enemies.back().footprint = combat_footprint(creature->get().stored);
-            arm_as_exported(result.encounter.enemies.back(), creature->get(),
-                            options.monsters ? options.monsters->creature(2, icon) : nullptr);
+            result.encounter.enemies.push_back(por::staged_fighter(
+                id, definition, definition + " " + std::to_string(n + 1), Side::opposition,
+                creature->get(), options.monsters ? options.monsters->creature(2, icon) : nullptr,
+                options.difficulty));
+            result.encounter.enemies.back().cell = cell;
             row += result.encounter.enemies.back().footprint.height;
             result.encounter.positions.push_back(cell);
             picture->entity = id;
             result.encounter.art.push_back(std::move(*picture));
         }
+        apply_difficulty(result.encounter, options.difficulty, level);
         return result;
     }
     const auto kobold = slums_bank_art(game_directory, options.monsters.get(), 0, 0);
@@ -733,21 +734,25 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
                 continue;
             }
             const auto id = static_cast<EntityId>(1000 + result.encounter.enemies.size());
-            result.encounter.enemies.push_back(
-                {id, is_leader ? "slums-kobold-leader" : "slums-kobold",
-                 is_leader ? "Kobold Leader" : "Kobold " + std::to_string(++number),
-                 Side::opposition, cell});
             const std::uint8_t record = is_leader ? 1 : 0;
-            if (const auto creature = creatures.find({2, record}))
+            const auto creature = creatures.find({2, record});
+            if (!creature)
             {
-                arm_as_exported(result.encounter.enemies.back(), creature->get(),
-                                options.monsters ? options.monsters->creature(2, record) : nullptr);
+                throw std::runtime_error("Missing original Kobold record");
             }
+            result.encounter.enemies.push_back(por::staged_fighter(
+                id, is_leader ? "slums-kobold-leader" : "slums-kobold",
+                is_leader ? "Kobold Leader" : "Kobold " + std::to_string(++number),
+                Side::opposition, creature->get(),
+                options.monsters ? options.monsters->creature(2, record) : nullptr,
+                options.difficulty));
+            result.encounter.enemies.back().cell = cell;
             result.encounter.positions.push_back({x, y});
             result.encounter.art.push_back(is_leader ? *leader : *kobold);
             result.encounter.art.back().entity = id;
         }
     }
+    apply_difficulty(result.encounter, options.difficulty, level);
     return result;
 }
 
@@ -795,12 +800,13 @@ void CombatDemo::training(std::uint64_t seed, bool conditions)
 }
 
 void CombatDemo::slums(const std::filesystem::path &directory, std::uint64_t seed,
-                       std::shared_ptr<const por::MonsterBundle> monsters)
+                       std::shared_ptr<const por::MonsterBundle> monsters, Difficulty difficulty)
 {
     if (campaign_combat_)
     {
         throw std::runtime_error("Finish combat before changing the party");
     }
+    difficulty_ = difficulty;
     const auto catalog = EclCatalog::load(directory);
     const auto program = catalog.find({"ECL2.DAX", 20});
     if (!program)
@@ -918,14 +924,12 @@ void CombatDemo::pump()
                 for (unsigned i = 0; i < count; ++i)
                 {
                     const auto id = static_cast<EntityId>(1000 + enemies_.size());
-                    enemies_.push_back(
-                        {id,
-                         "slums-orc",
-                         creature.stored.name + " " + std::to_string(enemies_.size() + 1),
-                         Side::opposition,
-                         {9, 2 + static_cast<int>(enemies_.size())}});
-                    arm_as_exported(enemies_.back(), creature,
-                                    monsters_ ? monsters_->creature(2, record) : nullptr);
+                    enemies_.push_back(por::staged_fighter(
+                        id, "slums-orc",
+                        creature.stored.name + " " + std::to_string(enemies_.size() + 1),
+                        Side::opposition, creature,
+                        monsters_ ? monsters_->creature(2, record) : nullptr, difficulty_));
+                    enemies_.back().cell = {9, 2 + static_cast<int>(enemies_.size()) - 1};
                     if (art)
                     {
                         art_.push_back(*art);
@@ -941,7 +945,10 @@ void CombatDemo::pump()
                 {
                     throw std::runtime_error("Unsupported Slums combat context");
                 }
-                start_encounter(enemies_, "por:ECL2:20:search1:orcs:v1");
+                CampaignEncounter scaled;
+                scaled.enemies = enemies_;
+                apply_difficulty(scaled, difficulty_, 1);
+                start_encounter(std::move(scaled.enemies), "por:ECL2:20:search1:orcs:v1");
                 combat_ticket_ = request.id;
                 ++encounters_;
                 status_ = "Slums combat: original four-orc group, authored 5e conversion and arena";

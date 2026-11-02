@@ -223,7 +223,9 @@ Dictionary CombatView::enemy_weapon_sets() const
         };
         sets[static_cast<std::int64_t>(a.id)] = shows(ranged_art_)  ? "ranged"
                                                 : shows(melee_art_) ? "melee"
-                                                                    : "staged";
+                                                : shows(melee_without_shield_art_)
+                                                    ? "melee_without_shield"
+                                                    : "staged";
     }
     return sets;
 }
@@ -273,9 +275,21 @@ const CombatView::SpriteArt *CombatView::combatant_art(const CombatantView &a) c
     {
         return &form->second;
     }
-    if (const auto attacked = shot_last_.find(a.id); attacked != shot_last_.end())
+    // A creature whose shield is off shows its bow until it strikes, and then
+    // its weapon without the shield, where the art has that set.
+    const auto attacked = shot_last_.find(a.id);
+    const bool shot = attacked != shot_last_.end() ? attacked->second : a.shield_off;
+    if (attacked != shot_last_.end() || a.shield_off)
     {
-        const auto &sets = attacked->second ? ranged_art_ : melee_art_;
+        if (!shot && a.shield_off)
+        {
+            if (const auto set = melee_without_shield_art_.find(a.id);
+                set != melee_without_shield_art_.end())
+            {
+                return &set->second;
+            }
+        }
+        const auto &sets = shot ? ranged_art_ : melee_art_;
         if (const auto set = sets.find(a.id); set != sets.end())
         {
             return &set->second;
@@ -511,7 +525,8 @@ void CombatView::prepare_combat()
              .level = level,
              .enemies = std::move(enemies),
              .gear = std::move(gear),
-             .monsters = game_monsters()});
+             .monsters = game_monsters(),
+             .difficulty = settings::difficulty()});
         campaign_ = std::move(showcase.party);
         encounter_ = std::move(showcase.encounter);
     }
@@ -525,7 +540,8 @@ void CombatView::prepare_combat()
     }
     else if (OS::get_singleton()->get_cmdline_user_args().has("--slums"))
     {
-        next->slums(presentation::path_from_godot(settings::game_path()), 42, game_monsters());
+        next->slums(presentation::path_from_godot(settings::game_path()), 42, game_monsters(),
+                    settings::difficulty());
     }
     else
     {
@@ -832,7 +848,8 @@ void CombatView::slums()
     {
         error_.clear();
         const auto directory = settings::game_path();
-        demo_.change().slums(presentation::path_from_godot(directory), 42, game_monsters());
+        demo_.change().slums(presentation::path_from_godot(directory), 42, game_monsters(),
+                             settings::difficulty());
         mode_ = "move";
         sync_art();
         refresh();
@@ -905,6 +922,7 @@ void CombatView::sync_art(bool preserve_effects)
     form_art_ = std::move(built.forms);
     melee_art_ = std::move(built.melee);
     ranged_art_ = std::move(built.ranged);
+    melee_without_shield_art_ = std::move(built.melee_without_shield);
     portraits_ = std::move(built.portraits);
     terrain_art_ = std::move(built.terrain);
     skull_art_ = std::move(built.skull);
@@ -1088,6 +1106,10 @@ CombatView::ArtSet CombatView::build_art() const
         if (source.ranged)
         {
             result.ranged[source.entity] = weapon_set(*source.ranged);
+        }
+        if (source.melee_without_shield)
+        {
+            result.melee_without_shield[source.entity] = weapon_set(*source.melee_without_shield);
         }
     }
     if (campaign_)

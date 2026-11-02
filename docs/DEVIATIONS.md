@@ -327,10 +327,11 @@ in the game: answering YES at a hall lists its services in the dialogue
   It shoots or throws only with a ranged weapon in its gear (2026-10-30),
   though its SRD stat block has a shot; spells and a giant's rocks need none.
   One holding a shield spends its Action taking it off before it shoots a
-  weapon that needs both hands, as a character does (2026-11-01). Its Armor Class
-  stays its stat block's, which does not count the catalog's shield. The shield
-  stays off for the fight; until the catalog has art without it, the creature
-  shows it again when it next strikes in melee.
+  weapon that needs both hands, as a character does (2026-11-01), and has 2 lower
+  Armor Class with it off (2026-11-02), though not every stat block's Armor Class
+  counted the catalog's shield. The shield stays off for the fight; until the
+  catalog has art without it, the creature shows it again when it next strikes
+  in melee.
   Quicklings carry nothing, so they fight in melee only and never charm, though
   the SRD Sprite standing in for them has a charming bow.
   A creature without new art shows its original icon with its action

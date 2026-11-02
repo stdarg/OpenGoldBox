@@ -614,13 +614,11 @@ String CombatTestBridge::start(const Dictionary &config)
                 throw std::runtime_error("Monster record missing from game files");
             }
             const auto id = EntityId(1000 + n);
-            Participant who{id,
-                            leader ? choice.leader : choice.definition,
-                            std::string(leader ? "Leader " : "") + choice.label + " " +
-                                std::to_string(n + 1),
-                            opengold::rules::Side::opposition,
-                            {}};
-            who.footprint = combat_footprint(source->get().stored);
+            auto who = staged_fighter(id, leader ? choice.leader : choice.definition,
+                                      std::string(leader ? "Leader " : "") + choice.label + " " +
+                                          std::to_string(n + 1),
+                                      opengold::rules::Side::opposition, source->get(),
+                                      monsters->creature(2, record), opengold::default_difficulty);
             footprints.push_back(who.footprint);
             encounter.enemies.push_back(std::move(who));
             auto art = creature_art(cpic, record, monsters->creature(2, record), false);
