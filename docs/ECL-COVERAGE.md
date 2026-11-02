@@ -63,7 +63,7 @@ unless named otherwise. Test files: `ecl` [ecl_tests.cpp](../tests/ecl_tests.cpp
 | 38 | PROGRAM 0 | Training hall | `party` `training_hall_service`; `exp` `hall_event_tests` | — | Halls without a known class word |
 | 38 | PROGRAM 9 | Inn and camp | `party` `recovery_hosts`; `campaign_rest_tests.cpp` | Inn (`exp` `rest_at_inn`); nomad camp | A party not eligible for a Long Rest |
 | 38 | PROGRAM 8 | Restores every member and wins the game ([audit](audits/valjevo-castle.md)) | `exp` `victory_program_tests` | Tyranthraxus's fall (`exp` `valjevo_castle`) | — |
-| 39 | WHO | Chooses the acting member | `party` `script_handoff`, `shop_buyer_switch` | Inn payer; the Pitt's champion | No member |
+| 39 | WHO | Asks its question and chooses the acting member | `party` `script_handoff`, `shop_buyer_switch` | Inn payer; the Pitt's champion | No member |
 | 3A | DELAY | rolf_tour.cpp | `tour` `synthetic` | Runs, unasserted | — |
 | 3B | SPELL | Knock (31) | VM only | Kovel's cabinet (`exp` `kovel_mansion`) | Every other spell |
 | 3C | PROTECTION | Rune lines shown translated (SOKAL-1) | — | Sokal Keep's scroll; the Pyramid's runes | — |

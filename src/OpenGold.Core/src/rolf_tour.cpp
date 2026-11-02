@@ -983,6 +983,7 @@ void RolfTourSession::reset_run()
     door_menu_ = pick_tried_ = false;
     door_choices_.clear();
     who_request_ = damage_request_ = 0;
+    snapshot_.choosing_member = false;
     victory_ = false;
     duel_ = false;
     who_slots_.clear();
@@ -1093,6 +1094,7 @@ void RolfTourSession::roll_back_event()
     snapshot_ = std::move(saved.snapshot);
     snapshot_.revision = revision;
     who_request_ = damage_request_ = 0;
+    snapshot_.choosing_member = false;
     victory_ = false;
     duel_ = false;
     who_slots_.clear();

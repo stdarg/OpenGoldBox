@@ -174,6 +174,9 @@ struct TourSnapshot
     PartyPose pose;
     TourPhase phase{TourPhase::running};
     std::string dialogue, diagnostic;
+    // The script's WHO waits for a party member, offered as the choices. The
+    // dialogue keeps what the script said, such as the question being asked.
+    bool choosing_member{};
     std::uint64_t revision{}, continue_ticket{};
     unsigned prompts{}, redraws{}, footsteps{};
     // The storm's thunder in Valhingen Graveyard (the original's fireball
