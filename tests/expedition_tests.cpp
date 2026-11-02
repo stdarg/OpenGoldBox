@@ -949,7 +949,7 @@ using Answer = std::function<std::size_t(const por::TourSnapshot &)>;
 // trip, so the four-orc paper event is the expedition's only fight.
 std::size_t peaceful(const por::TourSnapshot &s)
 {
-    if (s.dialogue == "Choose a party member.")
+    if (s.choosing_member)
     {
         return 0;
     }
@@ -4195,8 +4195,10 @@ void play_lizard_keep(Expedition &trip)
             return prefer({"Parley"})(s);
         }
         // The old lizard man asks again until his champion is one of the living.
-        if (s.dialogue == "Choose a party member.")
+        if (s.choosing_member)
         {
+            check(s.dialogue.find("WHO WILL BE MY CHAMPION?") != std::string::npos,
+                  "The old lizard man's question is on screen while the party chooses");
             std::size_t choice = 0;
             for (const auto id : party->state().slots)
             {

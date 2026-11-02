@@ -2033,9 +2033,8 @@ void RolfTourView::refresh()
         {
             for (const auto &c : s.choices)
             {
-                choices->add_item(s.dialogue == "Choose a party member."
-                                      ? String::utf8(c.c_str())
-                                      : choice_label(resource, c));
+                choices->add_item(s.choosing_member ? String::utf8(c.c_str())
+                                                    : choice_label(resource, c));
             }
         }
         if (choices->get_item_count())
@@ -2573,7 +2572,7 @@ void RolfTourView::check_town()
         {
             selection = 0;
         }
-        if (campaign_ && s.dialogue == "Choose a party member.")
+        if (campaign_ && s.choosing_member)
         {
             selection = 0;
         }
@@ -2906,7 +2905,7 @@ void RolfTourView::check_recovery()
                     selection = n;
                 }
             }
-            if (s.dialogue == "Choose a party member.")
+            if (s.choosing_member)
             {
                 selection = 0;
             }

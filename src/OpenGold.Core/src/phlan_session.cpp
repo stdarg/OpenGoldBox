@@ -2046,6 +2046,7 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
         member_chosen_ = true;
         who_request_ = 0;
         who_slots_.clear();
+        snapshot_.choosing_member = false;
         snapshot_.phase = TourPhase::running;
     }
     else if (door_menu_)
@@ -2338,7 +2339,16 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             who_request_ = request.id;
             snapshot_.phase = TourPhase::awaiting_continue;
             snapshot_.continue_ticket = ++next_ticket_;
-            snapshot_.dialogue = "Choose a party member.";
+            snapshot_.choosing_member = true;
+            // WHO names its own question, after whatever the script has said.
+            if (snapshot_.dialogue.find_first_not_of(" \n") == std::string::npos)
+            {
+                snapshot_.dialogue = request.arguments.at(0).text();
+            }
+            else
+            {
+                snapshot_.dialogue += "\n" + request.arguments.at(0).text();
+            }
             ++snapshot_.revision;
             return true;
         }
