@@ -1,4 +1,4 @@
-#include "opengold/ai_scenario.h"
+#include "ai_scenario.h"
 #include "opengold/authored_items.h"
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
@@ -1044,6 +1044,10 @@ bool fit_for_the_dragon(const CampaignParty &party)
     return hit_points * 2 >= most_hit_points;
 }
 
+// This run replays part of the route for another run, whose scenario pack it must
+// not write into: its numbering would start over and overwrite the first fights.
+bool replays_part_of_the_route = false;
+
 void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party)
 {
     if (town.monster_picture())
@@ -1075,13 +1079,28 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     {
         ++wilderness_fights;
     }
-    // The fights for opengold_ai_lab (docs/AI-LAB.md).
-    if (const char *pack = std::getenv("OPENGOLD_AI_SCENARIOS"))
+    // The fights for opengold_ai_lab (dev_tools/docs/ai-lab.md).
+    const char *pack = std::getenv("OPENGOLD_AI_SCENARIOS");
+    if (pack && !replays_part_of_the_route)
     {
         static unsigned scenarios_written = 0;
         std::ostringstream name;
         name << std::setw(4) << std::setfill('0') << ++scenarios_written;
         write_ai_scenario(pack, name.str(), *party, *town.pending_encounter());
+    }
+    // The lab must play a fight as the game does. A sample is enough, as each
+    // replay costs a whole fight.
+    static unsigned fights_met = 0;
+    std::optional<AiFightResult> lab_result;
+    if (fights_met++ % 20 == 0)
+    {
+        const auto saved =
+            decode_campaign(encode_campaign(*party, nullptr, ai_scenario_assets),
+                            *srd5::character_rules(), *module(), ai_scenario_assets, nullptr);
+        lab_result =
+            play_ai_fight(module, saved.party,
+                          decode_ai_encounter(encode_ai_encounter(*town.pending_encounter())),
+                          default_difficulty, default_difficulty, 42 + fight_seed_offset());
     }
     // A fight lost is played again from the moment before it, as a player
     // reloads. The route tells nothing of how often it is won.
@@ -1136,6 +1155,8 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
             }
         }
         const auto result = combat.combat().snapshot();
+        check(attempt != 0 || !lab_result || *lab_result == ai_fight_result(result, commands),
+              "The AI lab replays a fight just as the game plays it, with the same dice");
         if (std::getenv("OPENGOLD_TRACE"))
         {
             std::cerr << "TRACE fight " << commands << " commands, try " << attempt << ", "
@@ -6977,6 +6998,7 @@ int main(int argc, char **argv)
     try
     {
         const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
+        replays_part_of_the_route = argc > 1;
         if (argc == 3 && std::string_view(argv[1]) == "--revisit")
         {
             reload_and_revisit(argv[2], directory);

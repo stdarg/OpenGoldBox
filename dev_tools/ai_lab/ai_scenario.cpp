@@ -1,4 +1,4 @@
-#include "opengold/ai_scenario.h"
+#include "ai_scenario.h"
 #include "opengold/encounter_budget.h"
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
@@ -346,6 +346,24 @@ CampaignEncounter encounter_at_difficulty(CampaignEncounter encounter,
     return encounter;
 }
 
+AiFightResult ai_fight_result(const rules::Snapshot &final_state, unsigned commands)
+{
+    AiFightResult result;
+    result.commands = commands;
+    result.stalled = commands >= stalled_after_commands;
+    result.won = final_state.outcome == rules::Outcome::victory;
+    for (const auto &unit : final_state.combatants)
+    {
+        if (unit.side == rules::Side::party && !is_ally(unit.id))
+        {
+            result.hit_points_left += std::max(0, unit.hit_points);
+            result.members_down += unit.hit_points <= 0 ? 1 : 0;
+            result.members_dead += unit.dead ? 1 : 0;
+        }
+    }
+    return result;
+}
+
 AiFightResult play_ai_fight(const RulesModuleFactory &make_module, const PartyState &party,
                             const CampaignEncounter &encounter, Difficulty party_level,
                             Difficulty monster_level, std::uint64_t seed)
@@ -385,18 +403,6 @@ AiFightResult play_ai_fight(const RulesModuleFactory &make_module, const PartySt
             throw std::runtime_error("Combat refused the policy's command");
         }
     }
-    const auto final_state = combat.combat().snapshot();
-    result.stalled = result.commands >= stalled_after_commands;
-    result.won = final_state.outcome == rules::Outcome::victory;
-    for (const auto &unit : final_state.combatants)
-    {
-        if (unit.side == rules::Side::party && !is_ally(unit.id))
-        {
-            result.hit_points_left += std::max(0, unit.hit_points);
-            result.members_down += unit.hit_points <= 0 ? 1 : 0;
-            result.members_dead += unit.dead ? 1 : 0;
-        }
-    }
-    return result;
+    return ai_fight_result(combat.combat().snapshot(), result.commands);
 }
 } // namespace opengold

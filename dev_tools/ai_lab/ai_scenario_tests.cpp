@@ -1,6 +1,6 @@
 // A scenario pack keeps a fight as the game built it, and replaying one is
-// repeatable from its seed, whichever levels play it (docs/AI-LAB.md).
-#include "opengold/ai_scenario.h"
+// repeatable from its seed, whichever levels play it (dev_tools/docs/ai-lab.md).
+#include "ai_scenario.h"
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
 #include "opengold/character.h"

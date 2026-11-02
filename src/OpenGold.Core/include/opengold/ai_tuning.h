@@ -6,7 +6,7 @@
 
 // Every parameter and weight of the computer's combat policy (choose_demo_command
 // in combat_demo.cpp, explained in docs/AI.md): change one here, rebuild, and
-// measure it with opengold_ai_lab (docs/AI-LAB.md). The policy's hard rules, such
+// measure it with opengold_ai_lab (dev_tools/docs/ai-lab.md). The policy's hard rules, such
 // as what is legal or what it may know, are not tunable, and neither are the
 // spell priorities, which are the original's table in combat_demo.cpp.
 namespace opengold::ai_tuning

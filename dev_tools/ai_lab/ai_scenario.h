@@ -21,7 +21,7 @@ namespace rules
 class RulesModule;
 }
 
-// One fight of the campaign kept for replaying (docs/AI-LAB.md): the party as it
+// One fight of the campaign kept for replaying (dev_tools/docs/ai-lab.md): the party as it
 // stood before the fight and the encounter as the game built it, gear included,
 // but no art. A scenario pack is generated from the player's original files, so it
 // is never committed.
@@ -53,7 +53,12 @@ struct AiFightResult
     bool won{}, stalled{};
     int hit_points_left{}, members_down{}, members_dead{};
     unsigned commands{};
+
+    [[nodiscard]] bool operator==(const AiFightResult &) const = default;
 };
+
+// What a finished fight came to, after `commands` commands.
+[[nodiscard]] AiFightResult ai_fight_result(const rules::Snapshot &final_state, unsigned commands);
 
 using RulesModuleFactory = std::function<std::unique_ptr<rules::RulesModule>()>;
 

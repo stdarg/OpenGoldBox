@@ -153,7 +153,6 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/encounter_budget.cpp
     src/OpenGold.Core/src/campaign_encounter.cpp
     src/OpenGold.Core/src/combat_demo.cpp
-    src/OpenGold.Core/src/ai_scenario.cpp
     src/OpenGold.Core/src/dungeon_battlefield.cpp
     src/OpenGold.Core/src/encounter_formation.cpp
     src/OpenGold.Core/src/exploration_view.cpp
@@ -473,15 +472,6 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_quick_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_quick_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_quick_tests COMMAND opengold_quick_tests)
-    add_executable(opengold_ai_scenario_tests tests/ai_scenario_tests.cpp)
-    target_link_libraries(opengold_ai_scenario_tests PRIVATE opengold_core opengold_rules_srd5)
-    target_compile_definitions(opengold_ai_scenario_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
-    add_test(NAME opengold_ai_scenario_tests
-             COMMAND opengold_ai_scenario_tests "${PROJECT_BINARY_DIR}/ai-lab-check")
-    set_tests_properties(opengold_ai_scenario_tests PROPERTIES FIXTURES_SETUP ai_lab_pack)
-    add_test(NAME opengold_ai_lab_check
-             COMMAND opengold_ai_lab --pack "${PROJECT_BINARY_DIR}/ai-lab-check" --seeds 2 --jobs 2)
-    set_tests_properties(opengold_ai_lab_check PROPERTIES FIXTURES_REQUIRED ai_lab_pack)
     add_executable(opengold_ai_policy_tests tests/ai_policy_tests.cpp)
     target_link_libraries(opengold_ai_policy_tests PRIVATE opengold_core)
     add_test(NAME opengold_ai_policy_tests COMMAND opengold_ai_policy_tests)
@@ -683,7 +673,7 @@ if(OPENGOLD_BUILD_TESTS)
     target_compile_definitions(opengold_party_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_party_tests COMMAND opengold_party_tests)
     add_executable(opengold_expedition_tests tests/expedition_tests.cpp)
-    target_link_libraries(opengold_expedition_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_link_libraries(opengold_expedition_tests PRIVATE opengold_ai_scenario opengold_rules_srd5)
     target_compile_definitions(opengold_expedition_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_expedition_tests COMMAND opengold_expedition_tests)
     add_executable(opengold_save_tests tests/save_tests.cpp)
@@ -716,9 +706,6 @@ target_link_libraries(opengold_magic_items PRIVATE opengold_core)
 add_executable(opengold_campaign_sim tools/campaign_sim.cpp)
 target_link_libraries(opengold_campaign_sim PRIVATE opengold_core opengold_rules_srd5)
 target_compile_definitions(opengold_campaign_sim PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
-add_executable(opengold_ai_lab tools/ai_lab.cpp)
-target_link_libraries(opengold_ai_lab PRIVATE opengold_core opengold_rules_srd5)
-target_compile_definitions(opengold_ai_lab PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 add_executable(opengold_encounter_balance tools/encounter_balance.cpp)
 target_link_libraries(opengold_encounter_balance PRIVATE opengold_core opengold_rules_srd5)
 target_compile_definitions(opengold_encounter_balance PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
@@ -737,6 +724,8 @@ endif()
 if(OPENGOLD_BUILD_DOS_PROBE)
     add_subdirectory(dev_tools/dos_probe)
 endif()
+
+add_subdirectory(dev_tools/ai_lab)
 
 if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_posture_tests tests/posture_tests.cpp)
