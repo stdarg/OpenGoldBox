@@ -1163,6 +1163,15 @@ void untrained_equipment()
     check(tested, "Exercised armored wizard combat");
 }
 
+// One Bandit on an open field, begun as exploration begins a campaign fight.
+CampaignEncounter bandit_encounter()
+{
+    CampaignEncounter encounter;
+    encounter.field.geometry = {12, 9, std::vector<Terrain>(108)};
+    encounter.enemies = {{1000, "bandit", "Bandit", Side::opposition, {9, 4}}};
+    return encounter;
+}
+
 void finish(CombatDemo &fight)
 {
     for (unsigned n = 0; n < 2000 && fight.combat().snapshot().outcome == Outcome::ongoing; ++n)
@@ -1187,7 +1196,7 @@ void combat_handoff()
     const auto hp = party->member(pc).vitals.hit_points;
     CombatDemo fight(module());
     fight.campaign_party(party);
-    fight.training();
+    fight.encounter(bandit_encounter(), 42);
     const auto before = fight.combat().snapshot();
     const auto mage = std::find_if(before.combatants.begin(), before.combatants.end(),
                                    [&](const auto &a)
@@ -1231,9 +1240,11 @@ void combat_handoff()
     if (!party->member(pc).vitals.dead && party->member(pc).vitals.hit_points > 0)
     {
         const auto retained = party->member(pc).vitals;
-        fight.training(80);
+        CombatDemo next_fight(module());
+        next_fight.campaign_party(party);
+        next_fight.encounter(bandit_encounter(), 80);
         check(party->member(pc).vitals == retained, "Next encounter does not refill resources");
-        finish(fight);
+        finish(next_fight);
     }
 }
 
@@ -1628,7 +1639,7 @@ void combat_ownership()
     rejects(
         [&]
         {
-            invalid.training();
+            invalid.encounter(bandit_encounter(), 42);
         });
     check(!invalid.has_combat() && !party->in_combat(),
           "Failed handoff releases its lock without installing combat");
@@ -1637,13 +1648,13 @@ void combat_ownership()
     {
         CombatDemo active(module());
         active.campaign_party(party);
-        active.training();
+        active.encounter(bandit_encounter(), 42);
         check(party->in_combat(), "Successful handoff holds the edit lock");
         const auto checkpoint = active.combat().save();
         rejects(
             [&]
             {
-                active.training();
+                active.encounter(bandit_encounter(), 42);
             });
         check(party->in_combat() && active.combat().save() == checkpoint,
               "Rejected restart retains active combat and lock");
@@ -1653,7 +1664,7 @@ void combat_ownership()
             rejects(
                 [&]
                 {
-                    contender.training();
+                    contender.encounter(bandit_encounter(), 42);
                 });
         }
         check(party->in_combat(), "Rejected contender cannot release another session's lock");
@@ -2923,23 +2934,17 @@ void reward_reentry()
     auto party = std::make_shared<CampaignParty>(module());
     const auto pc = party->add_pc(character("wizard"));
     party->recruit("guard", character());
-    for (unsigned visit = 0; visit < 2; ++visit)
+    for (unsigned payment = 0; payment < 2; ++payment)
     {
-        if (visit)
-        {
-            party->advance_time(std::chrono::minutes(24 * 60));
-            check(party->rest(), "Recover before second preview");
-            party->keep_rest_spells(pc);
-        }
-        CombatDemo fight(module());
-        fight.campaign_party(party);
-        fight.training();
-        finish(fight);
-        check(fight.combat().snapshot().outcome == Outcome::victory, "Representative victory");
+        party->award_experience(300, "test:reward");
         check(party->member(pc).experience == 300 && party->state().claimed_rewards.size() == 1,
-              "Recreated combat scene cannot duplicate its reward");
-        check(!fight.submit({}), "Finished combat rejects more commands");
+              "A reward is paid only once");
     }
+    CombatDemo fight(module());
+    fight.campaign_party(party);
+    fight.encounter(bandit_encounter(), 42);
+    finish(fight);
+    check(!fight.submit({}), "Finished combat rejects more commands");
 }
 
 // WHO; write selected HP; store; FIND ITEM; shop; exit.

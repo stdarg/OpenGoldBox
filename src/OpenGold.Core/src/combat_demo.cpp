@@ -770,14 +770,7 @@ void CombatDemo::training(std::uint64_t seed, bool conditions)
 {
     if (campaign_)
     {
-        seed_ = seed;
-        start_encounter({{1000, "bandit", "Bandit", Side::opposition, {9, 4}}},
-                        "preview:bandit:v1");
-        vm_.reset();
-        art_.clear();
-        dialogue_ = "Party combat preview. HP and spent resources carry back to the party.";
-        status_ = "Party training";
-        return;
+        throw std::runtime_error("A campaign fight needs an encounter");
     }
     auto next = module_->create(
         {arena(),

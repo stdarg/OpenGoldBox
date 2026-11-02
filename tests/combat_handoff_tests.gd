@@ -42,9 +42,11 @@ func run_checks() -> void:
     var creation := current_scene as Control
     require(creation.has_node("PartyPanel"), "Original character assets must load")
     creation.get_node("Party").pressed.emit()
-    # Every created class can fight, so the refusal left to try is an empty party.
-    creation.get_node("PartyPanel/ActionRow2/Combat").pressed.emit()
+    require(not creation.has_node("PartyPanel/ActionRow1/Recruit") and not creation.has_node("PartyPanel/ActionRow2/Combat"), "The roster offers no preview guard or practice fight")
+    # An empty party can go nowhere.
+    creation.get_node("PartyPanel/ActionRow2/Explore").pressed.emit()
     await settle()
+    require(not creation.has_node("CampaignTown"), "Failed initialization must not open exploration")
     require(not creation.has_node("CampaignCombat"), "Failed initialization must not install a blank battlefield")
     require(creation.get_node("PartyPanel").is_visible_in_tree(), "Failed initialization must preserve the party screen")
     require(creation.get_node("PartyPanel/Status").text.contains("Add a party member first"), "The party screen must explain the failure")
@@ -52,7 +54,7 @@ func run_checks() -> void:
 
     # The failed attempt must leave the party editable so users can retry.
     add_class(creation, "Fighter")
-    creation.get_node("PartyPanel/ActionRow2/Combat").pressed.emit()
+    creation.call("start_check_fight")
     await settle()
     var combat := creation.get_node_or_null("CampaignCombat")
     require(combat != null and combat.is_visible_in_tree(), "Supported party must start combat after a rejection")

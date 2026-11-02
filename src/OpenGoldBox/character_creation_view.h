@@ -199,11 +199,9 @@ class CharacterCreationView : public godot::Control
         create,
         remove,
         rejoin,
-        recruit,
         equip,
         unequip,
         explore,
-        combat,
         return_to_party,
         close,
     };
@@ -214,6 +212,12 @@ class CharacterCreationView : public godot::Control
     void refresh_party();
     void party_layout();
     void party_check();
+    // The checks' fight: one Bandit on an open field, begun as exploration begins a
+    // campaign fight, with no exploration to report to when it ends.
+    void start_check_fight();
+    bool check_fight_{};
+    // The roster gives way to exploration or a fight, with the way back on top.
+    void leave_roster();
     // The in-game menu (game_menu_host.cpp): opened with what it allows, the
     // exploration screen and the fight paused beneath it until it closes.
     void attach_game_menu();
