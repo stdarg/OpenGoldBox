@@ -3089,7 +3089,7 @@ void CombatView::refresh()
     {
         for (const std::string_view verb :
              {"torch", "throw_oil", "throw_alchemists_fire", "throw_acid", "shoot",
-              "javelin_lightning", "doff_shield"})
+              "javelin_lightning"})
         {
             const auto command = std::find_if(offered.begin(), offered.end(),
                                               [&](const auto &c)
@@ -3129,6 +3129,17 @@ void CombatView::refresh()
                 items->add_item(i18n::text(command.label), static_cast<int>(item_verbs_.size()));
                 item_verbs_.push_back(command.verb);
             }
+        }
+        // Last, so that it is never what the list offers ahead of an item.
+        const auto doff = std::find_if(offered.begin(), offered.end(),
+                                       [](const auto &c)
+                                       {
+                                           return c.verb == "doff_shield";
+                                       });
+        if (doff != offered.end())
+        {
+            items->add_item(i18n::text(doff->label), static_cast<int>(item_verbs_.size()));
+            item_verbs_.emplace_back(doff->verb);
         }
     }
     const auto chosen = std::find(item_verbs_.begin(), item_verbs_.end(), item_verb_);
@@ -3528,7 +3539,11 @@ void CombatView::refresh()
     String log;
     if (demo_)
     {
-        log += i18n::campaign("por/combat/dialogue", demo_->dialogue()) + "\n\n";
+        const auto &dialogue = demo_->dialogue();
+        if (!dialogue.empty())
+        {
+            log += i18n::campaign("por/combat/dialogue", dialogue) + "\n\n";
+        }
     }
     // Rebuild one startup notice per missing combination; refreshes never append duplicates.
     std::set<std::string> missing_combinations;

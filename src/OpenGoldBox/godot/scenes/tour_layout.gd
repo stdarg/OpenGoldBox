@@ -42,3 +42,8 @@ func apply_layout(shopping: bool) -> void:
             0.6 + 0.4 * clampf((view.size.x - middle) / (design - middle), 0.0, 1.0))
         play("shopping")
         seek(position, true)
+        stop()
+        # The party's cards stop short of the map, whichever width the window has.
+        var party: Control = view.get_node("PartyList")
+        var map: Control = view.get_node("MapBounds")
+        party.size.x = minf(party.size.x, map.position.x - 16 - party.position.x)

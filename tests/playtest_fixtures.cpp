@@ -281,8 +281,12 @@ int main()
               "torch");
         write(*module, directory, "gear-flasks",
               battle(*module, fighter(), {troll_near}, sword_and_shield, pack), "throw_oil");
-        write(*module, directory, "gear-bow",
-              battle(*module, fighter(), {troll_far}, sword_and_shield, pack), "doff_shield");
+        // Wounded with a potion too, as an item comes before taking off a shield.
+        auto bow_pack = pack;
+        bow_pack.push_back({99, "potion_of_healing", 1});
+        auto bow = battle(*module, fighter(), {troll_far}, sword_and_shield, bow_pack);
+        bow.participants.front().state = VitalState{4, false, {}};
+        write(*module, directory, "gear-bow", std::move(bow), "doff_shield");
         // Potions and a held wand (MAGIC-3), for a wounded fighter.
         auto magic = battle(*module, fighter(), {near}, {"wand:magic_missiles"},
                             {{1, "potion_of_healing", 2}, {2, "wand:magic_missiles", 5}});
