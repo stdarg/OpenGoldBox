@@ -5,6 +5,7 @@
 #include "opengold/formats.h"
 #include "opengold/rules.h"
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -50,6 +51,8 @@ struct CombatArt
     std::optional<WeaponSetArt> melee, ranged;
     // Its melee weapon after it took its shield off to shoot.
     std::optional<WeaponSetArt> melee_without_shield;
+    // A party member, by what it has in hand: see in_hand_key.
+    std::map<std::string, WeaponSetArt> in_hand;
 };
 
 // Who an encounter caught unaware. The values are the original script's

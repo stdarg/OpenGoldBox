@@ -233,6 +233,19 @@ void run()
         check(unit(*c).selected_weapon == 2 && unit(*c).action == before.action &&
                   unit(*c).bonus_action == before.bonus_action,
               "Weapon selection is free");
+        // Selecting changes what the character has in hand, which its sprite shows.
+        CampaignParty mixed(rules());
+        auto holder = hero_for();
+        holder.add_item({.definition_id = "dagger", .name = "Dagger"});
+        holder.add_item({.definition_id = "shortsword", .name = "Shortsword"});
+        const auto holder_id = mixed.add_pc(holder);
+        mixed.equip(holder_id, 1);
+        mixed.equip(holder_id, 2, EquipmentOperation::equip_other);
+        auto selecting = battle(mixed);
+        check(unit(*selecting).weapon_in_hand == "dagger", "The first weapon starts in hand");
+        act(*selecting, "weapon_select", 2);
+        check(unit(*selecting).weapon_in_hand == "shortsword", "The selected weapon is in hand");
+        exact_restore(*selecting);
         exact_restore(*c);
         act(*c, "melee");
         settle(*c);

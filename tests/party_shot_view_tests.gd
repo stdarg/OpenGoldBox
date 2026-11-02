@@ -37,7 +37,7 @@ func check() -> void:
     var shown: Dictionary = combat.weapon_sets_shown()
     for key in shown:
         if key < 1000: id = key
-    require(id >= 0 and shown[id] == "staged", "It stands with its melee weapon: " + str(shown))
+    require(id >= 0 and not shown[id].is_empty() and not shown[id].contains("bow") and shown[id] != "staged", "It stands with its melee weapon: " + str(shown))
     var enemy := Vector2i(-1, -1)
     for actor in combat.battlefield_visuals()["actors"]:
         if not actor.get("party", false): enemy = actor["cell"]
@@ -52,6 +52,6 @@ func check() -> void:
     await settle()
     var flights: Array = combat.missiles_in_flight()
     require(not flights.is_empty() and flights[0]["actor"] == id, "The shot flies from the Rogue: " + str(flights))
-    require(combat.weapon_sets_shown()[id] == "ranged", "The Rogue shows its bow: " + str(combat.weapon_sets_shown()))
+    require(combat.weapon_sets_shown()[id].contains("bow"), "The Rogue shows its bow: " + str(combat.weapon_sets_shown()))
     print("Party shot checks passed")
     quit()

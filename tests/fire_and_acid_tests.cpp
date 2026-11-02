@@ -411,6 +411,32 @@ void bows_drawn()
     check(use(*free_hand.demo, "shoot", archer, 1000) && logged(*free_hand.demo, "Torchbearer ->"),
           "The arrow is shot");
 
+    // What it has in hand follows each attack, and survives a checkpoint.
+    auto both = arena({longbow}, {{"target", {3, 2}}, {"target", {8, 2}}}, 3);
+    const auto swordsman = EntityId(both.fighter);
+    turn_of(*both.demo, swordsman);
+    check(unit(*both.demo, swordsman).weapon_in_hand == "longsword",
+          "A fight starts with the equipped sword in hand");
+    check(use(*both.demo, "shoot", swordsman, 1001) &&
+              unit(*both.demo, swordsman).weapon_in_hand == "longbow",
+          "Shooting puts the bow in its hand");
+    const auto drawn_checkpoint = both.demo->combat().save();
+    const auto drawn_restored = srd5::parse_content(arena_rules())->restore(drawn_checkpoint);
+    const auto restored_units = drawn_restored->snapshot().combatants;
+    const auto restored_swordsman = std::ranges::find_if(restored_units,
+                                                         [&](const auto &a)
+                                                         {
+                                                             return a.id == swordsman;
+                                                         });
+    check(drawn_restored->save() == drawn_checkpoint &&
+              restored_swordsman->weapon_in_hand == "longbow",
+          "The bow is still in its hand after a checkpoint");
+    check(use(*both.demo, "end", swordsman), "The fighter ends its turn");
+    turn_of(*both.demo, swordsman);
+    check(use(*both.demo, "melee", swordsman, 1000) &&
+              unit(*both.demo, swordsman).weapon_in_hand == "longsword",
+          "Striking puts the sword back in its hand");
+
     auto shielded = arena({longbow}, {{"target", {8, 2}}}, 3, true);
     const auto fighter = EntityId(shielded.fighter);
     turn_of(*shielded.demo, fighter);
@@ -422,6 +448,9 @@ void bows_drawn()
               unit(*shielded.demo, fighter).armor_class == armored - 2 &&
               !offered(shielded.demo->combat(), "doff_shield", fighter, 0),
           "Taking off the shield costs its AC");
+    check(unit(*shielded.demo, fighter).shield_off &&
+              unit(*shielded.demo, fighter).weapon_in_hand == "longbow",
+          "The bow it took the shield off for is in its hand");
     const auto checkpoint = shielded.demo->combat().save();
     check(srd5::parse_content(arena_rules())->restore(checkpoint)->save() == checkpoint,
           "A removed shield survives a checkpoint");

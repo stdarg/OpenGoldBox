@@ -141,6 +141,7 @@ class CombatView : public godot::Control
         std::map<opengold::rules::EntityId, SpriteArt> sprites;
         std::map<std::string, SpriteArt> forms;
         std::map<opengold::rules::EntityId, SpriteArt> melee, ranged, melee_without_shield;
+        std::map<std::pair<opengold::rules::EntityId, std::string>, SpriteArt> in_hand;
         std::map<opengold::rules::EntityId, godot::Ref<godot::Texture2D>> portraits;
         std::vector<godot::Ref<godot::ImageTexture>> terrain;
         godot::Ref<godot::ImageTexture> skull;
@@ -154,11 +155,11 @@ class CombatView : public godot::Control
     // Wild Shape's Beast forms and summoned creatures, by form key: the catalog's
     // new art, else the original combat icons.
     std::map<std::string, SpriteArt> form_art_;
-    // The weapon sets monsters show once they attack in melee or shoot (#274),
-    // and whether each last shot with a set of its own.
+    // The weapon sets monsters show once they attack in melee or shoot (#274).
     std::map<opengold::rules::EntityId, SpriteArt> melee_art_, ranged_art_,
         melee_without_shield_art_;
-    std::map<opengold::rules::EntityId, bool> shot_last_;
+    // A party member's art for each thing it can have in hand.
+    std::map<std::pair<opengold::rules::EntityId, std::string>, SpriteArt> in_hand_art_;
     [[nodiscard]] const SpriteArt *combatant_art(const opengold::rules::CombatantView &a) const;
     godot::Ref<godot::ImageTexture> skull_art_;
     std::map<opengold::rules::EntityId, bool> known_dead_;
