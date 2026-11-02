@@ -357,4 +357,4 @@ Every parameter and weight above is in
 [`opengold/ai_tuning.h`](../src/OpenGold.Core/include/opengold/ai_tuning.h): a
 table of what each difficulty level does, and the numbers (hearing range, keep-away
 distance, what a shot must be worth, the weight of a held spell, what counts as
-hurt). [AI-LAB.md](AI-LAB.md) explains how to measure a change.
+hurt). The [AI lab guide](../dev_tools/docs/ai-lab.md) explains how to measure a change.

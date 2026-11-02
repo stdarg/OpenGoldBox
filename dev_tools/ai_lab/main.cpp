@@ -1,8 +1,8 @@
 // Replays campaign fights to measure the computer's play: which difficulty levels
-// are harder, and what a change to opengold/ai_tuning.h does. See docs/AI-LAB.md.
+// are harder, and what a change to opengold/ai_tuning.h does. See dev_tools/docs/ai-lab.md.
 //
 //   opengold_ai_lab --pack DIR [options]
-#include "opengold/ai_scenario.h"
+#include "ai_scenario.h"
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
