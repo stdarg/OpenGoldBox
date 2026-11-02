@@ -95,6 +95,15 @@ Bandaging them instead, as the original game did, raised the flawless rate of
 six Fighters from 72% to 94%, six Monks from 76% to 96%, six Rogues from 64% to
 92% and six Wizards from 68% to 94%, with success unchanged.
 
+Monsters' real gear and shields (2026-11-02, 20 runs a party, 320 runs): the
+simulator now stages monsters through the game's own function, with the weapons
+and shields of `data/monsters`. Against stat-block weapons, real gear, and real
+gear with a shield taken off for a bow, 304 of 320 runs completed each time, and
+deaths a run were 0.006, 0.022 and 0.013. No effect shows, but this arc is too easy
+to show one: 13 of 16 parties complete every run, ending near level 8. Six Druids
+complete 25% to 30% of runs: they stall with no deaths, at low-level fights such as
+the arguing hobgoblins and sickly kobolds. That is not explained yet.
+
 Each member sets out with its class kit (a Torch included) and 2 Oil and 2
 Alchemist's Fire, as if bought at New Phlan's general store; the simulator does
 not track gold. The `no-fire` party is the exception: it carries no Torch, Oil,
