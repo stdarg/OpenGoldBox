@@ -109,6 +109,7 @@ std::string selection(const CharacterDraft &d, CreationField f)
 
 void CharacterCreationView::_bind_methods()
 {
+    ClassDB::bind_method(D_METHOD("start_check_fight"), &CharacterCreationView::start_check_fight);
 }
 
 void CharacterCreationView::_notification(int what)

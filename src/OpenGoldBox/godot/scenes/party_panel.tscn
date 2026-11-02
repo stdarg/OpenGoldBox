@@ -112,12 +112,6 @@ size_flags_horizontal = 3
 size_flags_stretch_ratio = 337.2
 text = "Rejoin party"
 
-[node name="Recruit" type="Button" parent="ActionRow1"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 414.2
-text = "Recruit preview guard"
-
 [node name="Equip" type="Button" parent="ActionRow1"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -146,17 +140,11 @@ size_flags_horizontal = 3
 size_flags_stretch_ratio = 343.833333
 text = "Explore New Phlan"
 
-[node name="Combat" type="Button" parent="ActionRow2"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 301.833333
-text = "Party combat"
-
 [node name="Close" type="Button" parent="ActionRow2"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 315.833333
-text = "Back to creator"
+text = "Character creation"
 
 [node name="Modifiers" type="Button" parent="ActionRow2"]
 layout_mode = 2

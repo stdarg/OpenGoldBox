@@ -53,10 +53,7 @@ travel, automatic combat, original tactical geometry and persistent rewards.
    that character for exploration/shop interactions.
 4. **Remove member** places a member in reserve. **Rejoin party** restores the
    same member without resetting their possessions or live state.
-5. **Recruit preview guard** supplies an authored level-one fighter companion.
-   Remove/recruit preserves that same guard. This is preview content, not an
-   identification or automatic conversion of an original NPC.
-6. **Explore New Phlan** runs Rolf's tour and the existing original town host.
+5. **Explore New Phlan** runs Rolf's tour and the existing original town host.
    Visit the arms shop at (13,8), accept its offer, buy equipment and leave.
    In a shop, click a member row, press Tab, or press a number key (1 for the
    first row) to choose the buyer; the buyer's row turns gold and the shop header
@@ -67,21 +64,20 @@ travel, automatic combat, original tactical geometry and persistent rewards.
    Clicking a row opens the character sheet without leaving town. During an
    active dialogue it is read-only; outside events it also selects that member.
    Down turns 180 degrees in place; Up steps forward and Left/Right turn 90 degrees.
-7. In town, **Inventory** offers **Equip** and **Unequip** for the selected item,
+6. In town, **Inventory** offers **Equip** and **Unequip** for the selected item,
    with the training penalty visible when selecting and equipping it. The party
    screen also offers **Equip selected**. Equipping a second one-handed weapon asks
    which hand holds it ([Light attacks](LIGHT-ATTACKS.md)); otherwise equipping a weapon replaces the previous weapon atomically. Unequip existing
    armor before equipping its replacement. Invalid combinations leave equipment
    unchanged. Ready/Action previews immediately reflect the equipped weapon and
    shield for PCs and recruited NPCs, using the same [artwork mappings](COMBAT-BODY-ASSIGNMENTS.md)
-   as combat. **Party combat** opens the existing tactical UI against a Bandit.
-8. Finish the fight and return. HP, death state and spent resources persist.
+   as combat.
+7. Finish a fight and return. HP, death state and spent resources persist.
    Reopening exploration resumes the town session at its previous position.
 
 Use [Save game](SAVES.md) before closing the application to retain the campaign.
 The small arrow beside an eligible name opens [manual advancement](ADVANCEMENT.md).
-The [Slums expedition](EXPEDITION.md) opens its mapped encounters automatically;
-Party combat remains the explicitly launched training fight.
+The [Slums expedition](EXPEDITION.md) opens its mapped encounters automatically.
 
 ## Supported combat profiles
 
@@ -217,8 +213,7 @@ versioned resource continuation for each actor in its snapshot.
 `CombatDemo` synchronizes accepted combat changes into the party. Campaign
 victories award 300 XP once under a stable encounter key; a character with
 enough XP advances when the player chooses Advance
-([ADVANCEMENT](ADVANCEMENT.md)), up to level 15. The authored preview award is one-time, including across scene
-recreation; original rewards require explicit mappings. Roster, shop,
+([ADVANCEMENT](ADVANCEMENT.md)), up to level 15. Original rewards require explicit mappings. Roster, shop,
 equipment and script writes are locked during combat. When combat finishes,
 editing resumes; no fresh HP or spell resources are granted on the next fight.
 The module identity is in `srd5.cpp` (0.6.268 as of 2026-10-30), and the
@@ -288,9 +283,8 @@ and original NPC conversion coverage remain campaign work. An eligible,
 uninterrupted long rest advances campaign time by eight hours. The original
 city-watch interruption grants no recovery. A temple heals, cures and raises
 active members for its prices ([TEMPLE-1](SRD-DECISIONS.md#temple-1-2026-10-22-temple-services)). See
-[service limits and checks](RECOVERY.md). The preview guard
-and synthetic ADD NPC test establish ownership/recruitment without inventing
-conversions for original content.
+[service limits and checks](RECOVERY.md). A synthetic ADD NPC test establishes
+ownership/recruitment without inventing conversions for original content.
 
 ## Verification
 

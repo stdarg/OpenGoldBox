@@ -278,7 +278,7 @@ void CharacterCreationView::load_checkpoint_check()
         }
         if (std::string_view(name) != "short-rest-spending")
         {
-            campaign_->award_experience(300, "preview:bandit:v1");
+            campaign_->award_experience(300, "check:bandit:v1");
         }
         if (encode_campaign(*campaign_, town->saved_session(), assets) != before)
         {
