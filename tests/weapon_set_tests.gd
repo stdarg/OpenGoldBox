@@ -113,8 +113,9 @@ func check_missiles(combat: Control) -> void:
             require(flown.length() > to_target.length() and flown.normalized().dot(to_target.normalized()) > 0.999, "A miss sails on past its target: " + str(flight))
 
 # Ends the party's turns until an orc has shot, checking the set each
-# enemy shows along the way, and has both hit and missed with its arrows.
-func check_weapon_sets() -> void:
+# enemy shows along the way, and has both hit and missed with its arrows. False
+# when the party falls first.
+func check_weapon_sets() -> bool:
     var combat: Control = current_scene.get_node("CampaignCombat")
     var sets: Dictionary = combat.enemy_weapon_sets()
     require(not sets.is_empty() and sets.values().all(func(s): return s == "staged"), "Every orc stands in its staged set before it attacks: " + str(sets))
@@ -123,13 +124,14 @@ func check_weapon_sets() -> void:
         await settle(2)
         sets = combat.enemy_weapon_sets()
         check_missiles(combat)
-        if sets.values().has("ranged") and hit_seen and miss_seen and missile_drawn: return
-        require(not combat.get_node("StatusStack/Turn").text.contains(tr("Party incapacitated / defeat")), "An orc shoots before the party falls: " + str(sets))
+        if sets.values().has("ranged") and hit_seen and miss_seen and missile_drawn: return true
+        if combat.get_node("StatusStack/Turn").text.contains(tr("Party incapacitated / defeat")): return false
         for name in ["Decline", "End"]:
             var b: Button = combat.get_node(name)
             if b.is_visible_in_tree() and not b.disabled:
                 b.pressed.emit(); break
     require(false, "An orc holds its bow, hits and misses, and its arrow reaches the screen: " + str(sets) + " " + str(hit_seen) + " " + str(miss_seen) + " " + str(missile_drawn))
+    return false
 
 func run_checks() -> void:
     require(not fixture.is_empty(), "--slums-fixture required")
@@ -140,12 +142,18 @@ func run_checks() -> void:
     var f := FileAccess.open(path, FileAccess.WRITE); f.store_buffer(FileAccess.get_file_as_bytes(fixture)); f.close()
     root.gui_embed_subwindows = true
     TranslationServer.set_locale("en")
-    change_scene_to_file("res://scenes/character_creation.tscn"); await settle()
-    await press("Party")
-    await press("PartyPanel/Load"); await open_slot(SLOT)
-    if not town().visible: await press("PartyPanel/ActionRow2/Explore")
-    await start_the_fight()
-    await check_weapon_sets()
+    # Each load rolls new dice, and some let the orcs down the party before they
+    # have both hit and missed: as a player would, load the save and try again.
+    var seen_all := false
+    for attempt in range(10):
+        change_scene_to_file("res://scenes/character_creation.tscn"); await settle()
+        await press("Party")
+        await press("PartyPanel/Load"); await open_slot(SLOT)
+        if not town().visible: await press("PartyPanel/ActionRow2/Explore")
+        await start_the_fight()
+        seen_all = await check_weapon_sets()
+        if seen_all: break
+    require(seen_all, "An orc hits and misses with its bow before the party falls")
     restore_files()
     print("Weapon set checks passed")
     quit(0)
