@@ -140,7 +140,7 @@ class CombatView : public godot::Control
         std::map<opengold::rules::EntityId, std::string> missing;
         std::map<opengold::rules::EntityId, SpriteArt> sprites;
         std::map<std::string, SpriteArt> forms;
-        std::map<opengold::rules::EntityId, SpriteArt> melee, ranged;
+        std::map<opengold::rules::EntityId, SpriteArt> melee, ranged, melee_without_shield;
         std::map<opengold::rules::EntityId, godot::Ref<godot::Texture2D>> portraits;
         std::vector<godot::Ref<godot::ImageTexture>> terrain;
         godot::Ref<godot::ImageTexture> skull;
@@ -156,7 +156,8 @@ class CombatView : public godot::Control
     std::map<std::string, SpriteArt> form_art_;
     // The weapon sets monsters show once they attack in melee or shoot (#274),
     // and whether each last shot with a set of its own.
-    std::map<opengold::rules::EntityId, SpriteArt> melee_art_, ranged_art_;
+    std::map<opengold::rules::EntityId, SpriteArt> melee_art_, ranged_art_,
+        melee_without_shield_art_;
     std::map<opengold::rules::EntityId, bool> shot_last_;
     [[nodiscard]] const SpriteArt *combatant_art(const opengold::rules::CombatantView &a) const;
     godot::Ref<godot::ImageTexture> skull_art_;

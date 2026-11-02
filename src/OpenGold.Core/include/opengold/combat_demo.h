@@ -26,7 +26,8 @@ class CombatDemo
     void campaign_party(std::shared_ptr<CampaignParty> party);
     void training(std::uint64_t seed = 42, bool conditions = false);
     void slums(const std::filesystem::path &game_directory, std::uint64_t seed = 42,
-               std::shared_ptr<const por::MonsterBundle> monsters = {});
+               std::shared_ptr<const por::MonsterBundle> monsters = {},
+               Difficulty difficulty = default_difficulty);
     void encounter(CampaignEncounter encounter, std::uint64_t seed);
 
     [[nodiscard]] const auto &battlefield_tiles() const
@@ -114,6 +115,7 @@ class CombatDemo
     std::vector<Image> terrain_art_;
     std::filesystem::path game_directory_;
     std::shared_ptr<const por::MonsterBundle> monsters_;
+    Difficulty difficulty_{default_difficulty};
     std::string dialogue_, status_;
     std::uint64_t menu_ticket_{}, combat_ticket_{}, seed_{};
     unsigned encounters_{};
@@ -144,6 +146,7 @@ struct CombatDemoOptions
     unsigned level{1};
     std::vector<std::string> enemies, gear;
     std::shared_ptr<const por::MonsterBundle> monsters;
+    Difficulty difficulty{default_difficulty};
 };
 
 [[nodiscard]] CombatDemoSetup make_combat_demo(std::unique_ptr<rules::RulesModule> rules,

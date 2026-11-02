@@ -3,9 +3,11 @@
 
 #include "opengold/campaign_encounter.h"
 #include "opengold/creature_catalog.h"
+#include "opengold/difficulty.h"
 #include "opengold/monster_bundle.h"
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace opengold::por
@@ -19,12 +21,24 @@ namespace opengold::por
                                                     unsigned icon, const ExportedMonster *exported,
                                                     bool archer);
 
-// A fighter of any fight takes the gear its export gives it, the one way any
-// fight arms it: a human-shaped creature fights with the weapons it holds
-// (#274), shoots only with a ranged weapon it carries and holds its readied
-// shield. Without an export, or human shape, it keeps its stat block's attacks.
-void arm_as_exported(rules::Participant &fighter, const Creature &creature,
-                     const ExportedMonster *exported);
+// A creature as any fight stages it, the one way the game, demos and tools do:
+// the squares it fills, its morale and Intelligence from its original record and
+// the gear its export gives it. A human-shaped creature fights with the weapons
+// it holds (#274), shoots only with a ranged weapon it carries and holds its
+// readied shield. On Hard and above it brings its potions, wands and scrolls.
+[[nodiscard]] rules::Participant
+staged_fighter(rules::EntityId id, std::string definition, std::string name, rules::Side side,
+               const Creature &creature, const ExportedMonster *exported, Difficulty difficulty);
+
+// The original gear an export kept, by its place in the creature's gear; a place
+// the export left out is empty.
+[[nodiscard]] std::vector<std::optional<Equipment>> carried_gear(const Creature &creature,
+                                                                 const ExportedMonster *exported);
+
+// The potions, wands and scrolls a monster can bring into a fight, each known by
+// its place in the creature's gear, plus one.
+[[nodiscard]] std::vector<rules::CarriedEquipment>
+fighting_gear(const Creature &creature, const ExportedMonster *exported);
 } // namespace opengold::por
 
 #endif

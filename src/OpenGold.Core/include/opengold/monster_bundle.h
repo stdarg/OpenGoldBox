@@ -79,10 +79,12 @@ struct WieldedItems
 
 // The weapon sets a creature shows as it attacks: a melee attack its melee
 // weapon's, with the readied shield where a set has it, and a shot its ranged
-// weapon's. Each falls back to the first set of its kind; null without one.
+// weapon's. Each falls back to the first set of its kind; null without one. A
+// creature that readies a shield has a third set where its art has one: its melee
+// weapon alone, for after it took the shield off to shoot.
 struct AttackVariants
 {
-    const MonsterVariant *melee{}, *ranged{};
+    const MonsterVariant *melee{}, *ranged{}, *melee_without_shield{};
 };
 
 [[nodiscard]] AttackVariants attack_variants(const ExportedMonster &monster);

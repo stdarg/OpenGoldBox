@@ -173,6 +173,23 @@ static func rebuild_variants(record: Dictionary) -> void:
             "ready": "art/%s/%s/ready.png" % [record_id(key), variant_id],
             "action": "art/%s/%s/action.png" % [record_id(key), variant_id],
         })
+    # A bow or crossbow needs both hands, so a monster with a shield takes it off
+    # to shoot. Its one-handed weapon then has its own set without the shield.
+    var shoots_two_handed := standalone.any(func(weapon: Dictionary) -> bool:
+        return weapon.get("weapon_role") == "ranged" and int(weapon.get("source_type", -1)) >= 41 \
+            and int(weapon.get("source_type", -1)) <= 47)
+    if not shields.is_empty() and shoots_two_handed:
+        for weapon in one_hand:
+            var variant_id := "%s__one_hand" % weapon.id
+            variants.append({
+                "id": variant_id,
+                "label": "%s (shield off)" % weapon.name,
+                "weapon_role": "one_hand",
+                "weapon_id": weapon.id,
+                "shield_id": "",
+                "ready": "art/%s/%s/ready.png" % [record_id(key), variant_id],
+                "action": "art/%s/%s/action.png" % [record_id(key), variant_id],
+            })
     if variants.is_empty():
         variants.append({
             "id": "default", "label": "Default (no selectable weapon setup)",

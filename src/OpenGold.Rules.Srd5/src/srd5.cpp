@@ -4833,6 +4833,13 @@ Definition without_shield(std::string_view profile, const Definition &d)
     return character_definition(profile, std::span<const std::string>(keys));
 }
 
+// A monster's statistics after taking off its shield, which gives +2 Armor Class.
+Definition monster_without_shield(Definition d)
+{
+    d.ac -= 2;
+    return d;
+}
+
 bool wears_shield(const Definition &d)
 {
     return std::any_of(d.equipment_keys.begin(), d.equipment_keys.end(),
@@ -8246,6 +8253,7 @@ Snapshot Session::snapshot() const
         view.unarmored_arcane_caster = def(a).unarmored_arcane_caster;
         view.critical_hit = a.smite_target && a.smite_critical;
         view.disengaged = a.disengaged;
+        view.shield_off = a.shield_off;
         // Each rated by its attacks a turn too: Martial Arts' bonus strike
         // counts for a Monk's melee.
         const int attacks = 1 + def(a).extra_attacks;
@@ -27275,11 +27283,9 @@ void Session::dispatch(const Command &command)
             // Taking off a shield takes the Utilize action (SRD 5.2.1); it stays
             // off for the rest of the fight.
             a.shield_off = true;
-            // A monster's Armor Class is its stat block's, shield or not.
-            if (!a.source.character_profile.empty())
-            {
-                a.definition = without_shield(a.source.character_profile, a.definition);
-            }
+            a.definition = a.source.character_profile.empty()
+                               ? monster_without_shield(a.definition)
+                               : without_shield(a.source.character_profile, a.definition);
             log(a.source.name + " takes off a shield to use a bow.",
                 {"{name} takes off a shield to use a bow.", {{"name", a.source.name}}});
         }
@@ -27870,6 +27876,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         {
             throw std::runtime_error("Invalid shield removal");
         }
+        actor.definition = monster_without_shield(actor.definition);
     }
     else if (actor.shield_off)
     {
@@ -33810,7 +33817,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.271", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.272", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),

@@ -8,7 +8,9 @@
 #include "opengold/campaign_party.h"
 #include "opengold/character_art.h"
 #include "opengold/character_pool.h"
+#include "../tests/png_size_only.h"
 #include "opengold/combat_demo.h"
+#include "opengold/creature_art.h"
 #include "opengold/dungeon_battlefield.h"
 #include "opengold/encounter_budget.h"
 #include "opengold/map_catalog.h"
@@ -698,6 +700,36 @@ std::shared_ptr<CampaignParty> level_four_party(const PartyPlan &plan,
     return party;
 }
 
+// The game's creature records and export, so the fights stage what the game's do.
+std::filesystem::path game_directory;
+
+const por::CreatureCatalog &game_creatures()
+{
+    static const auto catalog = por::CreatureCatalog::load(game_directory);
+    return catalog;
+}
+
+const por::MonsterBundle &game_monsters()
+{
+    static const auto monsters = por::load_monster_bundle(
+        std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters", test::png_size_only);
+    return monsters;
+}
+
+// A Slums (bank 2) creature, staged as the game stages it.
+rules::Participant game_fighter(rules::EntityId id, std::string definition, unsigned record)
+{
+    const auto original = game_creatures().find({2, static_cast<std::uint8_t>(record)});
+    if (!original)
+    {
+        throw std::runtime_error("Missing original creature " + std::to_string(record));
+    }
+    auto name = definition + " " + std::to_string(id);
+    return por::staged_fighter(id, std::move(definition), std::move(name), rules::Side::opposition,
+                               original->get(), game_monsters().creature(2, record),
+                               default_difficulty);
+}
+
 // Adds the fight's creatures, numbered from 1000 in group order, and its morale.
 void add_enemies(CampaignEncounter &encounter, const Fight &fight)
 {
@@ -707,12 +739,7 @@ void add_enemies(CampaignEncounter &encounter, const Fight &fight)
         for (unsigned c = 0; c < group.count; ++c, ++next)
         {
             encounter.enemies.push_back(
-                {next,
-                 group.kind.definition,
-                 std::string(group.kind.definition) + " " + std::to_string(next),
-                 rules::Side::opposition,
-                 {}});
-            encounter.enemies.back().intelligence = group.kind.intelligence;
+                game_fighter(next, group.kind.definition, group.kind.record));
         }
     }
     encounter.morale = fight.morale;
@@ -1086,6 +1113,7 @@ int main(int argc, char **argv)
         const std::filesystem::path out = argc > 3 ? argv[3] : "user-data/campaign-sim";
         const std::string only = argc > 4 ? argv[4] : "";
         std::filesystem::create_directories(out);
+        game_directory = game;
         const auto catalog = por::MapCatalog::load(game);
         const auto slums = catalog.find({"GEO2.DAX", 20});
         const auto plaza = catalog.find({"GEO8.DAX", 29});

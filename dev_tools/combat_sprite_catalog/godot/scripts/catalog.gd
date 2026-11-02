@@ -1012,7 +1012,8 @@ func _metadata_check() -> void:
         if rows[index].key == "MON6CHA.DAX:102":
             captain_found = true
             assert(source_record.wealth.gold == 18 and source_record.wealth.platinum == 6)
-            assert(source_record.variants.size() == 2)
+            assert(source_record.variants.size() == 3)
+            assert(source_record.variants[2].id.ends_with("__one_hand"))
             assert(source_record.variants[0].weapon_role == "one_hand")
             assert(not source_record.variants[0].shield_id.is_empty())
             assert(source_record.variants[1].weapon_role == "ranged")
@@ -1073,7 +1074,7 @@ func _metadata_check() -> void:
     assert(migrated.data.equipment[0].weapon_role == "one_hand")
     assert(migrated.data.equipment[1].weapon_role == "ranged")
     assert(migrated.data.equipment[2].weapon_role == "two_hand")
-    assert(migrated.data.variants.size() == 3)
+    assert(migrated.data.variants.size() == 4)
     var sample: Dictionary = MonsterMetadata.new_record(first, art)
     sample.sprite_size = {"width_squares": 3, "height_squares": 3}
     sample.humanoid_size = "tall"
@@ -1086,7 +1087,8 @@ func _metadata_check() -> void:
         {"id": "g1", "kind": "gear", "name": "Cloak", "source_type": -1, "readied": false},
     ]
     MonsterMetadata.rebuild_variants(sample)
-    assert(sample.variants.size() == 4)
+    assert(sample.variants.size() == 5)
+    assert(sample.variants[4].id == "w1__one_hand" and sample.variants[4].shield_id.is_empty())
     assert(sample.variants[0].id == "w1__s1" and sample.variants[1].id == "w1__s2")
     assert(sample.variants[0].shield_id == "s1" and sample.variants[1].shield_id == "s2")
     assert(sample.variants[2].id == "w2__ranged" and sample.variants[2].shield_id.is_empty())
@@ -1100,7 +1102,7 @@ func _metadata_check() -> void:
     assert(loaded.data.description == sample.description and loaded.data.flag_for_regeneration)
     assert(_sprite_size_index(loaded.data.sprite_size) == 5)
     assert(loaded.data.humanoid_size == "tall")
-    assert(loaded.data.equipment.size() == 6 and loaded.data.variants.size() == 4)
+    assert(loaded.data.equipment.size() == 6 and loaded.data.variants.size() == 5)
     assert(loaded.data.variants[2].id == ranged_id)
     sample.equipment = [sample.equipment[0], sample.equipment[5]]
     MonsterMetadata.rebuild_variants(sample)
@@ -1137,7 +1139,7 @@ func _metadata_check() -> void:
     _select_monster(1)
     draft_records[first.key] = loaded.data
     _select_monster(0)
-    assert(variant_choice.item_count == 4)
+    assert(variant_choice.item_count == 5)
     var bow_kind: Button = gear_rows.get_child(1).get_child(0)
     assert(bow_kind.get_meta("role") == "ranged")
     bow_kind.pressed.emit()
@@ -1147,7 +1149,7 @@ func _metadata_check() -> void:
     assert(variant_choice.item_count == 5)
     _set_gear_role(bow_kind, "ranged")
     _gear_changed()
-    assert(variant_choice.item_count == 4)
+    assert(variant_choice.item_count == 5)
     # Add item takes an original type, which the game fights with and drops.
     var types: Array = catalog.item_types()
     assert(types.any(func(t): return int(t.type) == 36 and str(t.name) == "Long sword"))
@@ -1161,7 +1163,7 @@ func _metadata_check() -> void:
     gear_rows.remove_child(added_line)
     added_line.free()
     _gear_changed()
-    assert(variant_choice.item_count == 4)
+    assert(variant_choice.item_count == 5)
     var equipment_before: String = JSON.stringify(draft_records[first.key].equipment)
     variant_choice.select(2)
     var image := Image.create_empty(2, 2, false, Image.FORMAT_RGBA8)

@@ -96,6 +96,20 @@ void shipped()
                   key + " shows its ranged weapon when it fires, unless its art is pending");
         }
     }
+    // Its sword alone, once its shield is off, only where the art has that set.
+    auto bearer = slums(bundle, 4);
+    check(!attack_variants(bearer).melee_without_shield,
+          "A shield-bearer without the art keeps showing its shield");
+    auto bare = *attack_variants(bearer).melee;
+    bare.id = bare.weapon_id + "__one_hand";
+    bare.shield_id.clear();
+    bearer.variants.push_back(bare);
+    const auto bare_attacks = attack_variants(bearer);
+    check(bare_attacks.melee_without_shield && bare_attacks.melee_without_shield->id == bare.id &&
+              !bare_attacks.melee->shield_id.empty(),
+          "With the art it shows the sword alone only after the shield is off");
+    check(readied_variant(bearer, false)->shield_id == bare_attacks.melee->shield_id,
+          "It still stands in its sword and shield");
     check(load_monster_bundle(root / "no-such-folder", png_size_only).monsters.empty(),
           "No export, no new creatures");
 }

@@ -1169,30 +1169,6 @@ namespace
 {
 // A creature's gear by MONnITM place. With an export, an original item the
 // Combat Sprite Catalog left out is not carried (#274).
-std::vector<std::optional<Equipment>> carried_gear(const Creature &creature,
-                                                   const ExportedMonster *exported)
-{
-    std::vector<std::optional<Equipment>> gear(creature.equipment.begin(), creature.equipment.end());
-    if (!exported)
-    {
-        return gear;
-    }
-    for (std::size_t n = 0; n < gear.size(); ++n)
-    {
-        const bool kept = std::ranges::any_of(exported->equipment,
-                                              [&](const auto &item)
-                                              {
-                                                  return item.source_index == static_cast<int>(n) &&
-                                                         item.source_type == gear[n]->stored.type;
-                                              });
-        if (!kept)
-        {
-            gear[n].reset();
-        }
-    }
-    return gear;
-}
-
 // Gear the catalog added to a creature (#274), each as a plain item of its
 // original type from New Phlan's shop lists. A type no list sells is left out.
 std::vector<Equipment> added_gear(const ExportedMonster *exported, const PhlanResources &town)
@@ -1809,32 +1785,6 @@ void RolfTourSession::show_encounter_menu()
     ++snapshot_.revision;
 }
 
-namespace
-{
-// The potions, wands and scrolls a monster brings into a fight on Hard and
-// above (DIFF-1), each known by its place in the creature's gear, plus one.
-std::vector<rules::CarriedEquipment> fighting_gear(const Creature &creature,
-                                                   const ExportedMonster *exported)
-{
-    std::vector<rules::CarriedEquipment> gear;
-    const auto carried = carried_gear(creature, exported);
-    for (std::size_t n = 0; n < carried.size(); ++n)
-    {
-        if (!carried[n])
-        {
-            continue;
-        }
-        const auto &item = *carried[n];
-        const auto key = equipment_conversion(item);
-        if (key.starts_with("potion_") || key.starts_with("wand:") || rules::parse_scroll_key(key))
-        {
-            gear.push_back({n + 1, key, carried_quantity(item), static_cast<int>(n)});
-        }
-    }
-    return gear;
-}
-} // namespace
-
 std::vector<unsigned> RolfTourSession::living_member_levels() const
 {
     std::vector<unsigned> levels;
@@ -1896,13 +1846,8 @@ void RolfTourSession::fit_staged_encounter()
         enemies.push_back(std::move(staged_enemies_[n]));
         enemies.back().id = id;
         const auto *exported = exported_creature(area_resources(), staged_records_[n]);
-        enemies.back().name =
-            (exported ? exported->name : creature.stored.name) + " " + std::to_string(enemies.size());
-        if (monsters_use_items(difficulty_))
-        {
-            enemies.back().inventory =
-                fighting_gear(creature, exported_creature(area_resources(), staged_records_[n]));
-        }
+        enemies.back().name = (exported ? exported->name : creature.stored.name) + " " +
+                              std::to_string(enemies.size());
         art.push_back(std::move(staged_art_[n]));
         art.back().entity = id;
         records.push_back(staged_records_[n]);
@@ -2534,12 +2479,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             const auto id =
                 static_cast<rules::EntityId>(opengold::first_ally_id + staged_allies_.size());
-            staged_allies_.push_back({id,
-                                      definition,
-                                      exported ? exported->name : creature.stored.name,
-                                      rules::Side::party,
-                                      {}});
-            staged_allies_.back().footprint = combat_footprint(creature.stored);
+            staged_allies_.push_back(
+                staged_fighter(id, definition, exported ? exported->name : creature.stored.name,
+                               rules::Side::party, creature, exported, difficulty_));
             staged_ally_art_.push_back(*art);
             staged_ally_art_.back().entity = id;
         }
@@ -2547,22 +2489,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             const auto id = static_cast<rules::EntityId>(1000 + staged_enemies_.size());
             staged_enemies_.push_back(
-                {id,
-                 definition,
-                 (exported ? exported->name : creature.stored.name) + " " +
-                     std::to_string(staged_enemies_.size() + 1),
-                 rules::Side::opposition,
-                 {}});
-            staged_enemies_.back().footprint = combat_footprint(creature.stored);
-            // Morale is record byte 0x84: from 0x80 up a creature's own is
-            // (byte & 0x7F) * 2, and above 102 it has none (the encounter's
-            // decides). Most monsters have none; a few never break.
-            const auto byte = creature.stored.raw[0x84];
-            const unsigned own = byte >= 0x80 ? (byte & 0x7Fu) * 2 : 0;
-            staged_enemies_.back().morale = own > 102 ? 0 : std::min(own, 100u);
-            staged_enemies_.back().intelligence =
-                std::min<unsigned>(creature.stored.abilities.intelligence, 30);
-            arm_as_exported(staged_enemies_.back(), creature, exported);
+                staged_fighter(id, definition,
+                               (exported ? exported->name : creature.stored.name) + " " +
+                                   std::to_string(staged_enemies_.size() + 1),
+                               rules::Side::opposition, creature, exported, difficulty_));
             staged_art_.push_back(*art);
             staged_art_.back().entity = id;
             staged_records_.push_back(record);

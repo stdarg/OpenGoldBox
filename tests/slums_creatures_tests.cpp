@@ -382,8 +382,8 @@ void buccaneer_enthralls()
 }
 
 // A shield in the way of a two-handed bow costs a monster its Action, as it
-// costs a character, and the shield stays off through a checkpoint. Its stat
-// block's Armor Class stays. A javelin needs one hand, and no shield comes off.
+// costs a character, and with it 2 Armor Class, through a checkpoint too. A
+// javelin needs one hand, and no shield comes off.
 void shield_in_the_way()
 {
     const auto module = rules();
@@ -410,8 +410,9 @@ void shield_in_the_way()
     check(submit(*shield_bearer, "doff_shield", 1), "The shield comes off");
     check(!shield_bearer->snapshot().combatants.empty() && !offered(*shield_bearer, "ranged", 1, 2),
           "Taking it off spent the Action");
-    check(unit(*shield_bearer, 1).armor_class == armor_class,
-          "Its Armor Class stays its stat block's");
+    check(unit(*shield_bearer, 1).armor_class == armor_class - 2 &&
+              unit(*shield_bearer, 1).shield_off,
+          "Without the shield its Armor Class is 2 lower");
     const auto saved = shield_bearer->save();
     auto restored = module->restore(saved);
     check(submit(*restored, "end", 1), "The orc ends its turn");
@@ -419,7 +420,8 @@ void shield_in_the_way()
     {
         check(submit(*restored, "end", restored->snapshot().actor), "End the turn");
     }
-    check(offered(*restored, "ranged", 1, 2), "After a checkpoint the shield is still off");
+    check(offered(*restored, "ranged", 1, 2) && unit(*restored, 1).armor_class == armor_class - 2,
+          "After a checkpoint the shield is still off");
     auto javelin = orc("javelin");
     while (javelin->snapshot().actor != 1)
     {
