@@ -4,6 +4,7 @@
 #include "opengold/campaign_party.h"
 #include "opengold/ecl_party_host.h"
 #include "opengold/character_creator.h"
+#include "opengold/character_pool.h"
 #include "opengold/combat_demo.h"
 #include "opengold/combat_body_catalog.h"
 #include "opengold/campaign_save.h"
@@ -1915,6 +1916,40 @@ void combat_demo_fixture()
                   roster[0].character.creation_data().name !=
                       roster[2].character.creation_data().name,
               "A play-test party has the chosen classes, kits and level, two Druids distinct");
+    }
+    // Everyone in the pool can level up on the default choices. A Chthonic Tiefling
+    // Wizard's False Life, in its book since level 2, is always prepared from 3, and
+    // no longer counts as a choice, whether or not it was prepared before.
+    for (const auto prepare_false_life : {false, true})
+    {
+        const auto pool = character_pool(*characters, por::CharacterArt::load(directory));
+        for (const auto &member : pool)
+        {
+            auto party = std::make_shared<CampaignParty>(module());
+            const auto id = party->add_pc(member);
+            party->award_experience(party->rule_module().experience_for_level(5), "test");
+            while (party->can_advance(id))
+            {
+                auto choice = party->default_advancement(id);
+                const bool learned =
+                    choice.spell_learning &&
+                    std::ranges::any_of(*choice.spell_learning,
+                                        [](const auto &group)
+                                        {
+                                            return std::ranges::find(group.second, "false_life") !=
+                                                   group.second.end();
+                                        });
+                const auto &sheet = party->member(id).character.sheet();
+                if (prepare_false_life && learned && sheet.level == 1 && sheet.race == "Tiefling" &&
+                    !choice.spells.empty())
+                {
+                    choice.spells.back() = "false_life";
+                }
+                party->advance(id, choice);
+            }
+            const auto &sheet = party->member(id).character.sheet();
+            check(sheet.level == 5, sheet.name + " levels up on the default choices");
+        }
     }
     // The demo's kobolds fight as a campaign's do: a short sword and no thrown
     // daggers from the stat block, which their art would not show.
