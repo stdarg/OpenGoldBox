@@ -58,9 +58,9 @@ func open_slot(slot: String) -> void:
     await press("SaveSlots/Action"); await press("SaveSlots/Action")
     require(not current_scene.get_node("SaveSlots").visible, "Save loaded: " + slot)
 
-# Saves through the in-game menu's Save game and copies the file for the native check.
+# Saves through the open menu's Save game and copies the file for the native check.
 func save_as(slot: String, copy: String) -> void:
-    await press("CampaignTown/Menu"); await press("GameMenu/Menu/Save")
+    await press("GameMenu/Menu/Save")
     var saves: Window = current_scene.get_node("SaveSlots")
     require(saves.visible, "Save game opens the save slots")
     saves.get_node("Name").text = slot
@@ -109,6 +109,27 @@ func visit_ohlo(wanted: String) -> Array:
     require(false, "Ohlo's room event finished")
     return shown
 
+# Loads a slot from the first screen and enters the district.
+func load_from_title(slot: String) -> void:
+    change_scene_to_file("res://scenes/character_creation.tscn"); await settle()
+    await press("Party")
+    await press("PartyPanel/Load"); await open_slot(slot)
+    await explore()
+
+# Visits Ohlo and saves the result. Each load rolls new dice, and some leave the
+# game unable to save after the visit: as a player would, load and try again.
+func visit_and_save(wanted: String, loaded_slot: String, slot: String, copy: String) -> Array:
+    for attempt in range(10):
+        var shown := await visit_ohlo(wanted)
+        await press("CampaignTown/Menu")
+        var save: Button = current_scene.get_node("GameMenu/Menu/Save")
+        if not save.disabled:
+            await save_as(slot, copy)
+            return shown
+        await load_from_title(loaded_slot)
+    require(false, "The game can save after Ohlo's room")
+    return []
+
 func run_checks() -> void:
     require(not fixture.is_empty() and not output.is_empty(), "--ohlo-fixture and --ohlo-output required")
     DirAccess.make_dir_recursive_absolute(output)
@@ -121,20 +142,15 @@ func run_checks() -> void:
     var f := FileAccess.open(slot_path(FIXTURE_SLOT), FileAccess.WRITE); f.store_buffer(FileAccess.get_file_as_bytes(fixture)); f.close()
     root.gui_embed_subwindows = true
     TranslationServer.set_locale("en")
-    change_scene_to_file("res://scenes/character_creation.tscn"); await settle()
-    await press("Party")
-    await press("PartyPanel/Load"); await open_slot(FIXTURE_SLOT)
-    await explore()
+    await load_from_title(FIXTURE_SLOT)
 
-    var shown := await visit_ohlo("GIVE")
+    var shown := await visit_and_save("GIVE", FIXTURE_SLOT, HANDED_IN_SLOT, "handed-in.ogs")
     require(shown.has("GIVE"), "Ohlo asks for the potion")
-    await save_as(HANDED_IN_SLOT, "handed-in.ogs")
 
     await press("CampaignTown/Menu"); await press("GameMenu/Menu/Load"); await open_slot(HANDED_IN_SLOT)
     await explore()
-    shown = await visit_ohlo("GIVE")
+    shown = await visit_and_save("GIVE", HANDED_IN_SLOT, REVISITED_SLOT, "revisited.ogs")
     require(not shown.has("GIVE"), "After the reload Ohlo does not ask for the potion again")
-    await save_as(REVISITED_SLOT, "revisited.ogs")
     restore_files()
     print("Ohlo save route passed")
     quit(0)

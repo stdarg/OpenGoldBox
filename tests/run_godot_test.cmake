@@ -17,7 +17,7 @@ if(DEFINED USER_HOME)
     endforeach()
 endif()
 execute_process(
-    COMMAND "${GODOT}" ${display_arguments} --path "${PROJECT}" --script "${SCRIPT}" -- ${ARGS} --fixed-dice
+    COMMAND "${GODOT}" ${display_arguments} --path "${PROJECT}" --script "${SCRIPT}" -- ${ARGS}
     RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE errors TIMEOUT "${TEST_TIMEOUT}")
 message("${output}${errors}")
 if(NOT result STREQUAL "0" OR NOT output MATCHES "${EXPECTED}" OR
