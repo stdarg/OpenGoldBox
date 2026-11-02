@@ -25748,9 +25748,8 @@ void Session::answer_reaction(const Command &command)
         const auto &shield = *detail::find_spell("shield");
         const bool free = (defender.initiate_casts & initiate_bit(def(defender), "shield")) != 0;
         pay_for_spell(defender,
-                      free                    ? "shield" + std::string(detail::initiate_suffix)
-                      : defender.slots[1] > 0 ? "shield"
-                                              : "shield_2",
+                      free ? "shield" + std::string(detail::initiate_suffix)
+                           : "shield_" + std::to_string(lowest_slot(defender, 1)),
                       shield);
         detail::apply_poisoned(defender.effects, effect_source(defender), defender.source.name,
                                next_turn_ms(defender), detail::EffectKind::shield);
@@ -33817,7 +33816,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.272", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.273", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),

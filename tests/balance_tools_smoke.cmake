@@ -8,6 +8,12 @@ execute_process(COMMAND "${SIM}" "$ENV{OPENGOLD_GAME_DIR}" 1 "${WORK}" RESULT_VA
 if(NOT result STREQUAL "0")
     message(FATAL_ERROR "opengold_campaign_sim failed (${result}): ${errors}")
 endif()
+# Six Sorcerers run out of low slots: a Shield once spent a level-two slot they lacked.
+execute_process(COMMAND "${SIM}" "$ENV{OPENGOLD_GAME_DIR}" 3 "${WORK}" six-sorcerer
+    RESULT_VARIABLE result ERROR_VARIABLE errors OUTPUT_QUIET)
+if(NOT result STREQUAL "0")
+    message(FATAL_ERROR "opengold_campaign_sim six-sorcerer failed (${result}): ${errors}")
+endif()
 execute_process(COMMAND "${BALANCE}" "$ENV{OPENGOLD_GAME_DIR}" 1 RESULT_VARIABLE result ERROR_VARIABLE errors OUTPUT_QUIET)
 if(NOT result STREQUAL "0")
     message(FATAL_ERROR "opengold_encounter_balance failed (${result}): ${errors}")
