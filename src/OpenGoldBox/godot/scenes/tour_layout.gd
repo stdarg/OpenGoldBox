@@ -47,3 +47,13 @@ func apply_layout(shopping: bool) -> void:
         var party: Control = view.get_node("PartyList")
         var map: Control = view.get_node("MapBounds")
         party.size.x = minf(party.size.x, map.position.x - 16 - party.position.x)
+        # The shop's panel and what it holds stop short of the buttons beside it.
+        var dialogue_bounds: Control = view.get_node("DialogueBounds")
+        var overflow: float = (dialogue_bounds.position.x + dialogue_bounds.size.x + 8
+            - (view.get_node("Cast") as Control).position.x)
+        if overflow > 0:
+            dialogue_bounds.size.x -= overflow
+            for name in ["Dialogue", "Choices", "Progress"]:
+                (view.get_node(name) as Control).size.x -= overflow
+            for name in ["Continue", "LeaveShop"]:
+                (view.get_node(name) as Control).position.x -= overflow
