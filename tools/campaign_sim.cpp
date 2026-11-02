@@ -716,17 +716,20 @@ const por::MonsterBundle &game_monsters()
     return monsters;
 }
 
-// A Slums (bank 2) creature, staged as the game stages it.
+// A creature of the arc, staged as the game stages it: Kuto's Well's and Norris's
+// come from bank 8, the Slums' from bank 2.
 rules::Participant game_fighter(rules::EntityId id, std::string definition, unsigned record)
 {
-    const auto original = game_creatures().find({2, static_cast<std::uint8_t>(record)});
+    const unsigned bank = record == 32 || record == 57 || record == 59 || record == 73 ? 8 : 2;
+    const auto original =
+        game_creatures().find({static_cast<std::uint8_t>(bank), static_cast<std::uint8_t>(record)});
     if (!original)
     {
         throw std::runtime_error("Missing original creature " + std::to_string(record));
     }
     auto name = definition + " " + std::to_string(id);
     return por::staged_fighter(id, std::move(definition), std::move(name), rules::Side::opposition,
-                               original->get(), game_monsters().creature(2, record),
+                               original->get(), game_monsters().creature(bank, record),
                                default_difficulty);
 }
 

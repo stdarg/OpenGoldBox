@@ -1450,13 +1450,29 @@ SpellChoiceOptions class_spell_choice_options(const CharacterSheet &sheet,
     }
     result.prepared_count = access.prepared_choices;
     result.may_prepare = true;
+    // A spell always prepared takes no place: a lineage's can join the spellbook
+    // before its level makes it so.
+    const auto always = always_prepared_spells(klass, sheet.level, sheet.grants);
+    const auto always_prepared = [&](std::string_view id)
+    {
+        return std::find(always.begin(), always.end(), id) != always.end();
+    };
     for (const auto &spell : access.spellbook)
     {
-        result.preparation.push_back({spell.id, spell.label, {}});
+        if (!always_prepared(spell.id))
+        {
+            result.preparation.push_back({spell.id, spell.label, {}});
+        }
     }
     if (context == SpellChoiceContext::advancement)
     {
-        result.locked_prepared = sheet.prepared_spells;
+        for (const auto &id : sheet.prepared_spells)
+        {
+            if (!always_prepared(id))
+            {
+                result.locked_prepared.push_back(id);
+            }
+        }
     }
     result.may_replace = context == SpellChoiceContext::long_rest;
     if (result.may_replace)

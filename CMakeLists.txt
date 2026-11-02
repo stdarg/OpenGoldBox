@@ -709,6 +709,14 @@ target_compile_definitions(opengold_campaign_sim PRIVATE OPENGOLD_SOURCE_DIR="${
 add_executable(opengold_encounter_balance tools/encounter_balance.cpp)
 target_link_libraries(opengold_encounter_balance PRIVATE opengold_core opengold_rules_srd5)
 target_compile_definitions(opengold_encounter_balance PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+# The balance tools stage fights as the game does; a short run keeps them working.
+if(OPENGOLD_BUILD_TESTS)
+    add_test(NAME opengold_balance_tools_smoke COMMAND "${CMAKE_COMMAND}"
+        "-DSIM=$<TARGET_FILE:opengold_campaign_sim>" "-DBALANCE=$<TARGET_FILE:opengold_encounter_balance>"
+        "-DWORK=${CMAKE_BINARY_DIR}/balance-tools-smoke"
+        -P "${PROJECT_SOURCE_DIR}/tests/balance_tools_smoke.cmake")
+    set_tests_properties(opengold_balance_tools_smoke PROPERTIES TIMEOUT 300)
+endif()
 
 if(OPENGOLD_BUILD_GODOT)
     set_target_properties(opengold_core opengold_formats opengold_rules opengold_rules_srd5 PROPERTIES POSITION_INDEPENDENT_CODE ON)
