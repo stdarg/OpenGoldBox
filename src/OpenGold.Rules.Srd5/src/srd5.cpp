@@ -733,7 +733,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 74;
+constexpr unsigned checkpoint_format = 75;
 // A broken monster's turns of getting no nearer the edge before it charges
 // (MORALE-2).
 constexpr int panic_charge_after_turns = 2;
@@ -2118,6 +2118,10 @@ struct Actor
     int oiled_until_round{}; // Covered in Oil through this round: Fire damage deals 5 more
     int coated_until_round{}; // Its weapon carries Basic Poison through this round; 0 for none
     bool shield_off{};       // Took its shield off this fight (for a two-handed bow)
+    // The weapon it drew to fire, in place of the one it holds, until it strikes in
+    // melee or selects a weapon. Its Definition is unchanged: drawing costs nothing.
+    std::string drawn_weapon;
+    rules::WeaponSetShown weapon_set_shown{rules::WeaponSetShown::staged};
     // Tried to run off the field as fast as the fastest enemy and failed: a
     // party member stays until the fight ends (the original's rule). A broken
     // monster that still cannot get away charges in panic instead (MORALE-2).
@@ -4840,6 +4844,13 @@ Definition monster_without_shield(Definition d)
     return d;
 }
 
+// What the computer weighs a melee weapon by, over its attacks a turn.
+int melee_rating(const Definition &d)
+{
+    return (d.melee.count * d.melee.sides + 8 * d.melee_magic) *
+           (1 + d.extra_attacks + (d.martial_arts ? 1 : 0));
+}
+
 bool wears_shield(const Definition &d)
 {
     return std::any_of(d.equipment_keys.begin(), d.equipment_keys.end(),
@@ -5626,6 +5637,8 @@ class Session final : public CombatSession
     // A ranged weapon a character carries while wielding no ranged weapon, and
     // has the hands for; empty when there is none.
     std::string_view carried_ranged_weapon(const Actor &) const;
+    [[nodiscard]] std::string weapon_in_hand(const Actor &) const;
+    void take_up_weapon(Actor &, const Command &) const;
     rules::Missile ranged_missile(const Actor &) const;
     // Whether taking off its shield would free a character to draw a carried
     // two-handed bow or crossbow.
@@ -7346,6 +7359,72 @@ std::string_view Session::carried_ranged_weapon(const Actor &a) const
     return {};
 }
 
+std::string Session::weapon_in_hand(const Actor &a) const
+{
+    if (a.source.character_profile.empty())
+    {
+        return {};
+    }
+    if (!a.drawn_weapon.empty())
+    {
+        return a.drawn_weapon;
+    }
+    // A Definition lists the weapon held first, as equipped_definition builds it.
+    const auto &keys = def(a).equipment_keys;
+    const auto held = std::find_if(keys.begin(), keys.end(),
+                                   [](const auto &key)
+                                   {
+                                       return detail::weapon(key) != nullptr;
+                                   });
+    return held == keys.end() ? std::string{} : *held;
+}
+
+// An attack puts its weapon in the creature's hand, whoever chose it.
+void Session::take_up_weapon(Actor &a, const Command &command) const
+{
+    const std::string_view verb = command.verb;
+    if (verb == "melee" || verb == "opportunity" || verb.starts_with("melee_") ||
+        verb == "light_melee" || verb == "nick_melee")
+    {
+        a.drawn_weapon.clear();
+        a.weapon_set_shown = rules::WeaponSetShown::melee;
+        return;
+    }
+    const bool fires = verb == "ranged" || verb.starts_with("ranged_");
+    const bool item_fired = verb == "light_ranged" || verb == "nick_ranged";
+    if (!fires && !item_fired && verb != "shoot" && !verb.starts_with("throw") &&
+        !(verb.ends_with("_item") && !verb.starts_with("potion")) && verb != "javelin_lightning")
+    {
+        return;
+    }
+    a.weapon_set_shown = rules::WeaponSetShown::ranged;
+    if (a.source.character_profile.empty())
+    {
+        return;
+    }
+    if (verb == "shoot")
+    {
+        a.drawn_weapon = carried_ranged_weapon(a);
+    }
+    else if (item_fired)
+    {
+        a.drawn_weapon = items_.at(command.item - 1).definition;
+    }
+    else if (fires)
+    {
+        // A thrown weapon leaves the hand; a bow stays in it.
+        for (const auto &key : def(a).equipment_keys)
+        {
+            const auto *weapon = detail::weapon(key);
+            if (weapon && weapon->ranged)
+            {
+                a.drawn_weapon = key;
+                break;
+            }
+        }
+    }
+}
+
 bool Session::shield_blocks_bow(const Actor &a) const
 {
     if (a.source.character_profile.empty())
@@ -8263,21 +8342,12 @@ Snapshot Session::snapshot() const
         view.critical_hit = a.smite_target && a.smite_critical;
         view.disengaged = a.disengaged;
         view.shield_off = a.shield_off;
-        if (const auto bow = carried_ranged_weapon(a); !bow.empty())
-        {
-            view.drawn_ranged_weapon = bow;
-        }
-        else if (!a.source.character_profile.empty() && shield_blocks_bow(a))
-        {
-            auto unshielded = a;
-            unshielded.definition = without_shield(a.source.character_profile, a.definition);
-            view.drawn_ranged_weapon = carried_ranged_weapon(unshielded);
-        }
+        view.weapon_in_hand = weapon_in_hand(a);
+        view.weapon_set_shown = a.weapon_set_shown;
         // Each rated by its attacks a turn too: Martial Arts' bonus strike
         // counts for a Monk's melee.
         const int attacks = 1 + def(a).extra_attacks;
-        view.melee_rating = (def(a).melee.count * def(a).melee.sides + 8 * def(a).melee_magic) *
-                            (attacks + (def(a).martial_arts ? 1 : 0));
+        view.melee_rating = melee_rating(def(a));
         if (def(a).range)
         {
             view.ranged_rating =
@@ -11360,7 +11430,16 @@ std::vector<Command> Session::legal_commands() const
                           });
     for (auto &command : commands)
     {
-        if (command.target && find_actor(command.target))
+        // In the units of melee_rating: a choice of weapon has no target yet.
+        if (command.verb == "weapon_select")
+        {
+            if (const auto *chooser = find_actor(command.actor))
+            {
+                command.expected_damage =
+                    melee_rating(equipped_definition(*chooser, items_, command.item));
+            }
+        }
+        else if (command.target && find_actor(command.target))
         {
             if (const auto *attacker = find_actor(command.actor))
             {
@@ -25715,6 +25794,7 @@ void Session::answer_damage()
 
 void Session::perform(const Command &command)
 {
+    take_up_weapon(actor(command.actor), command);
     casting_metamagic_.clear();
     heightened_target_ = 0;
     overchanneling_ = false;
@@ -26081,6 +26161,7 @@ void Session::dispatch(const Command &command)
         activate_light();
         a.selected_weapon = command.item;
         a.definition = equipped_definition(a, items_);
+        a.drawn_weapon.clear();
     }
     else if (command.verb.starts_with("light_") || command.verb.starts_with("nick_"))
     {
@@ -27317,6 +27398,8 @@ void Session::dispatch(const Command &command)
             a.definition = a.source.character_profile.empty()
                                ? monster_without_shield(a.definition)
                                : without_shield(a.source.character_profile, a.definition);
+            a.drawn_weapon = carried_ranged_weapon(a);
+            a.weapon_set_shown = rules::WeaponSetShown::ranged;
             log(a.source.name + " takes off a shield to use a bow.",
                 {"{name} takes off a shield to use a bow.", {{"name", a.source.name}}});
         }
@@ -27590,6 +27673,7 @@ std::string Session::save() const
             << ' ' << a.rises_on_round << ' ' << a.thrown_gear_left[0] << ' '
             << a.thrown_gear_left[1] << ' ' << a.thrown_gear_left[2] << ' ' << a.burning << ' '
             << a.oiled_until_round << ' ' << a.coated_until_round << ' ' << a.shield_off << ' '
+            << std::quoted(a.drawn_weapon) << ' ' << static_cast<int>(a.weapon_set_shown) << ' '
             << a.must_stay << ' ' << a.panicked << ' ' << a.closest_to_edge << ' ' << a.turns_stuck
             << ' ' << a.source.morale << ' ' << a.source.intelligence << ' '
             << a.source.hit_points_percent << ' ' << a.source.attack_bonus << ' '
@@ -27812,6 +27896,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     {
         input >> actor.slots[level];
     }
+    int weapon_set_shown{};
     input >> actor.life.successes >> actor.life.failures >> actor.actions.normal >>
         actor.actions.haste >> actor.bonus >> actor.reaction >> actor.dodge >> actor.disengaged >>
         actor.life.stable >> actor.life.dead >> std::quoted(source.character_profile) >>
@@ -27848,13 +27933,20 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.regeneration_blocked >> actor.rises_on_round >> actor.thrown_gear_left[0] >>
         actor.thrown_gear_left[1] >> actor.thrown_gear_left[2] >> actor.burning >>
         actor.oiled_until_round >> actor.coated_until_round >> actor.shield_off >>
-        actor.must_stay >> actor.panicked >> actor.closest_to_edge >> actor.turns_stuck >>
-        actor.source.morale >> actor.source.intelligence >> actor.source.hit_points_percent >>
-        actor.source.attack_bonus >> std::quoted(actor.source.melee_weapon) >>
-        std::quoted(actor.source.ranged_weapon) >> actor.source.holds_shield >>
-        actor.run_start.x >> actor.run_start.y >> actor.run_end.x >> actor.run_end.y >>
-        actor.run_step.x >> actor.run_step.y >> actor.run_feet >> actor.flame_lit >>
-        actor.curse_lifted >> actor.displacement_spent >> actor.last_target;
+        std::quoted(actor.drawn_weapon) >> weapon_set_shown >> actor.must_stay >> actor.panicked >>
+        actor.closest_to_edge >> actor.turns_stuck >> actor.source.morale >>
+        actor.source.intelligence >> actor.source.hit_points_percent >> actor.source.attack_bonus >>
+        std::quoted(actor.source.melee_weapon) >> std::quoted(actor.source.ranged_weapon) >>
+        actor.source.holds_shield >> actor.run_start.x >> actor.run_start.y >> actor.run_end.x >>
+        actor.run_end.y >> actor.run_step.x >> actor.run_step.y >> actor.run_feet >>
+        actor.flame_lit >> actor.curse_lifted >> actor.displacement_spent >> actor.last_target;
+    if (weapon_set_shown < 0 ||
+        weapon_set_shown > static_cast<int>(rules::WeaponSetShown::ranged) ||
+        (!actor.drawn_weapon.empty() && !detail::weapon(actor.drawn_weapon)))
+    {
+        throw std::runtime_error("Invalid weapon in hand");
+    }
+    actor.weapon_set_shown = static_cast<rules::WeaponSetShown>(weapon_set_shown);
     std::size_t item_count{};
     input >> item_count;
     // The inventory comes later in the checkpoint; 64 items is more than any
@@ -33848,7 +33940,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.273", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.274", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),

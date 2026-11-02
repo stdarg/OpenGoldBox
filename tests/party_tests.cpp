@@ -1981,25 +1981,36 @@ void combat_demo_fixture()
         outfit_pool_member(*party, id);
         const auto &member = party->member(id);
         const auto worn = por::resolve_combat_appearance(member, looks);
-        const auto bare = por::resolve_unshielded_appearance(member, looks);
-        check(worn.selection.label.find("Shield") != std::string::npos && bare &&
-                  bare->selection.matched &&
-                  bare->selection.label.find("Shield") == std::string::npos,
-              "A Fighter's sword shows with its shield, then alone: " + worn.selection.label);
-        std::string bow_key;
+        const auto bare = por::resolve_wielded_appearance(member, looks, {}, true);
+        std::string sword_key, bow_key;
         for (const auto &item : member.character.inventory().items())
         {
             if (item.definition_id.find("bow") != std::string::npos)
             {
                 bow_key = item.definition_id;
             }
+            else if (item.definition_id.find("sword") != std::string::npos)
+            {
+                sword_key = item.definition_id;
+            }
         }
-        const auto drawn = por::resolve_shooting_appearance(member, looks, bow_key);
-        check(!bow_key.empty() && drawn && drawn->selection.matched &&
-                  drawn->selection.body != worn.selection.body,
+        check(!sword_key.empty() && !bow_key.empty(), "The Fighter has a sword and a bow");
+        const auto sword = por::resolve_wielded_appearance(member, looks, sword_key, true);
+        const auto sword_alone = por::resolve_wielded_appearance(member, looks, sword_key, false);
+        check(sword.selection.body == worn.selection.body,
+              "In its hand at the start of a fight, the sword looks as it does on the sheet");
+        check(worn.selection.label.find("Shield") != std::string::npos &&
+                  sword_alone.selection.matched &&
+                  sword_alone.selection.label.find("Shield") == std::string::npos,
+              "A Fighter's sword shows with its shield, then alone: " + worn.selection.label);
+        check(bare.selection.body != worn.selection.body,
+              "With the sword out of its hand, the sword is not drawn");
+        const auto drawn = por::resolve_wielded_appearance(member, looks, bow_key, false);
+        check(drawn.selection.matched && drawn.selection.body != worn.selection.body,
               "A Fighter draws its carried bow with its own body");
-        check(!por::resolve_shooting_appearance(member, looks, "no_such_item"),
-              "A weapon it does not carry draws nothing");
+        check(por::resolve_wielded_appearance(member, looks, "no_such_item", true).selection.body ==
+                  bare.selection.body,
+              "A weapon it does not carry is not drawn");
     }
     // The demo's kobolds fight as a campaign's do: a short sword and no thrown
     // daggers from the stat block, which their art would not show.

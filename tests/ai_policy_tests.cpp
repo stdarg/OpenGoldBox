@@ -495,6 +495,25 @@ void weapon_choice_checks()
     check(play(beside, weapons(100, 300, "throw"), Difficulty::hard).verb == "throw",
           "A thrown weapon that promises more is thrown");
 
+    // A stronger melee weapon in its hands is selected first, and a weaker one never.
+    const auto with_second_weapon = [&](int rating)
+    {
+        auto commands = weapons(300, 100);
+        auto select = command("weapon_select");
+        select.expected_damage = rating;
+        select.item = 2;
+        commands.insert(commands.begin(), select);
+        return commands;
+    };
+    auto armed = beside;
+    armed.combatants[0].melee_rating = 8;
+    check(play(armed, with_second_weapon(12), Difficulty::hard).verb == "weapon_select",
+          "Hard takes up the stronger of the melee weapons it holds");
+    check(play(armed, with_second_weapon(8), Difficulty::hard).verb == "melee",
+          "An equal weapon is left where it is, so choosing cannot go back and forth");
+    check(play(armed, with_second_weapon(12), Difficulty::normal).verb == "melee",
+          "Normal keeps the weapon it has");
+
     const auto apart = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {8, 1})});
     auto weak_throw = command("ranged", 2);
     weak_throw.expected_damage = 100;

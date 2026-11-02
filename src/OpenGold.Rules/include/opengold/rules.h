@@ -642,6 +642,14 @@ struct ItemAttackOption
     bool available{};
 };
 
+// Which of its weapon sets a monster shows: as it was staged until it attacks.
+enum class WeaponSetShown : std::uint8_t
+{
+    staged,
+    melee,
+    ranged
+};
+
 struct CombatantView
 {
     EntityId id{};
@@ -717,9 +725,11 @@ struct CombatantView
     // It took the Disengage action this turn (#269).
     bool disengaged{};
     bool shield_off{}; // Took its shield off this fight, to shoot.
-    // The item key of the carried weapon it draws to shoot, its shield off first if
-    // that is in the way; empty if it has none to draw.
-    std::string drawn_ranged_weapon;
+    // A character's weapon in hand, by item key; empty with none. Its sprite shows
+    // this and its shield, so what it holds and what it shows cannot differ.
+    std::string weapon_in_hand;
+    // The art a monster shows, which has weapon sets rather than items (#274).
+    WeaponSetShown weapon_set_shown{WeaponSetShown::staged};
 };
 
 struct TemporaryHpOffer

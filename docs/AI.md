@@ -183,7 +183,7 @@ level keeping what the one below it does (the user, 2026-10-31):
 |---|---|---|
 | Easy | **Arbitrary**: at random among the weapons it could use now, even a poor shot beside an enemy, or it walks up instead | |
 | Normal | **The original's rating**, below: melee beside an enemy, and with none beside it, a bow or thrown weapon rated more than half its melee weapon. It still uses a held ranged weapon whenever nothing better is in reach, however weak | |
-| Hard | **Most damage**, by expected damage below. Beside an enemy, melee unless another weapon promises more. Otherwise it shoots if that is worth more than half its melee weapon, else closes in | |
+| Hard | **Most damage**, by expected damage below. Beside an enemy, melee unless another weapon promises more. Otherwise it shoots if that is worth more than half its melee weapon, else closes in | Before a melee attack it selects the strongest melee weapon in its hands, by its dice, magic and attacks a turn |
 | Nightmare | As Hard | **Least contact**: a shooter backs off to 4 squares before it shoots, no further and never out of sight of its target, and one closing in takes the square beside the fewest enemies |
 | Infernal | As Hard | **Prevents enemy damage**: the target where the attack stops the most harm (section 2), slipping free with a Bonus Action Disengage before shooting, and the spell roll is gone, so the strongest spells come first |
 

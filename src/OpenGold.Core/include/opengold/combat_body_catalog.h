@@ -90,13 +90,10 @@ struct ResolvedCombatAppearance
 [[nodiscard]] ResolvedCombatAppearance resolve_combat_appearance(const PartyMember &member,
                                                                  const CombatBodyCatalog &catalog);
 
-// The same character holding only the carried weapon `definition_id`, as it draws
-// it to shoot, or its equipment without a shield, once it took that off. Empty when
-// it has no such item, or no shield to take off.
-[[nodiscard]] std::optional<ResolvedCombatAppearance>
-resolve_shooting_appearance(const PartyMember &member, const CombatBodyCatalog &catalog,
-                            std::string_view definition_id);
-[[nodiscard]] std::optional<ResolvedCombatAppearance>
-resolve_unshielded_appearance(const PartyMember &member, const CombatBodyCatalog &catalog);
+// The same character with `weapon_definition` in hand (empty: bare-handed), and its
+// shield unless it took that off: what a fight says it holds, not what it set out with.
+[[nodiscard]] ResolvedCombatAppearance
+resolve_wielded_appearance(const PartyMember &member, const CombatBodyCatalog &catalog,
+                           std::string_view weapon_definition, bool shield_on);
 } // namespace opengold::por
 #endif

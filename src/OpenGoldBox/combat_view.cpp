@@ -202,6 +202,14 @@ Array CombatView::enemy_sprite_widths() const
 
 // Which art each living creature is drawn with, by id: "melee" or "ranged" once
 // it attacked with a weapon set of its art, else "staged" (#274).
+namespace
+{
+std::string in_hand_key(std::string_view weapon, bool shield_off)
+{
+    return std::string(weapon) + (shield_off ? " without shield" : "");
+}
+} // namespace
+
 Dictionary CombatView::weapon_sets_shown() const
 {
     Dictionary sets;
@@ -216,6 +224,14 @@ Dictionary CombatView::weapon_sets_shown() const
             continue;
         }
         const auto *art = combatant_art(a);
+        if (const auto held =
+                in_hand_art_.find({a.id, in_hand_key(a.weapon_in_hand, a.shield_off)});
+            held != in_hand_art_.end() && art == &held->second)
+        {
+            sets[static_cast<std::int64_t>(a.id)] =
+                String::utf8(in_hand_key(a.weapon_in_hand, a.shield_off).c_str());
+            continue;
+        }
         const auto shows = [&](const std::map<EntityId, SpriteArt> &weapon_sets)
         {
             const auto set = weapon_sets.find(a.id);
@@ -275,21 +291,32 @@ const CombatView::SpriteArt *CombatView::combatant_art(const CombatantView &a) c
     {
         return &form->second;
     }
-    // A creature whose shield is off shows its bow until it strikes, and then
-    // its weapon without the shield, where the art has that set.
-    const auto attacked = shot_last_.find(a.id);
-    const bool shot = attacked != shot_last_.end() ? attacked->second : a.shield_off;
-    if (attacked != shot_last_.end() || a.shield_off)
+    // A party member shows what the rules say it has in hand. A weapon the catalog
+    // does not draw looks like empty hands.
+    if (const auto held = in_hand_art_.find({a.id, in_hand_key(a.weapon_in_hand, a.shield_off)});
+        held != in_hand_art_.end())
     {
-        if (!shot && a.shield_off)
+        return &held->second;
+    }
+    if (const auto bare = in_hand_art_.find({a.id, in_hand_key({}, a.shield_off)});
+        bare != in_hand_art_.end())
+    {
+        return &bare->second;
+    }
+    // A monster shows the weapon set it last attacked with, without its shield once
+    // that is off, where the art has that set.
+    if (a.weapon_set_shown == rules::WeaponSetShown::melee && a.shield_off)
+    {
+        if (const auto set = melee_without_shield_art_.find(a.id);
+            set != melee_without_shield_art_.end())
         {
-            if (const auto set = melee_without_shield_art_.find(a.id);
-                set != melee_without_shield_art_.end())
-            {
-                return &set->second;
-            }
+            return &set->second;
         }
-        const auto &sets = shot ? ranged_art_ : melee_art_;
+    }
+    if (a.weapon_set_shown != rules::WeaponSetShown::staged)
+    {
+        const auto &sets =
+            a.weapon_set_shown == rules::WeaponSetShown::ranged ? ranged_art_ : melee_art_;
         if (const auto set = sets.find(a.id); set != sets.end())
         {
             return &set->second;
@@ -923,6 +950,7 @@ void CombatView::sync_art(bool preserve_effects)
     melee_art_ = std::move(built.melee);
     ranged_art_ = std::move(built.ranged);
     melee_without_shield_art_ = std::move(built.melee_without_shield);
+    in_hand_art_ = std::move(built.in_hand);
     portraits_ = std::move(built.portraits);
     terrain_art_ = std::move(built.terrain);
     skull_art_ = std::move(built.skull);
@@ -939,7 +967,6 @@ void CombatView::sync_art(bool preserve_effects)
         action_seconds_.clear();
         missile_flights_.clear();
         spell_casts_.clear();
-        shot_last_.clear();
     }
 }
 
@@ -1105,6 +1132,10 @@ CombatView::ArtSet CombatView::build_art() const
         {
             result.melee_without_shield[source.entity] = weapon_set(*source.melee_without_shield);
         }
+        for (const auto &[key, set] : source.in_hand)
+        {
+            result.in_hand[{source.entity, key}] = weapon_set(set);
+        }
     };
     for (const auto &source : demo_->art())
     {
@@ -1133,33 +1164,35 @@ CombatView::ArtSet CombatView::build_art() const
                     {id, resolved.icon(originals, por::IconPose::ready),
                      resolved.icon(originals, por::IconPose::action),
                      resolved.selection.matched ? std::string{} : resolved.selection.label});
-                // What it shows as it attacks: the game draws its weapons as it
-                // draws its equipment.
-                const auto set_of = [&](const por::ResolvedCombatAppearance &look)
+                // Every look the fight can give it: each weapon it carries that
+                // the catalog draws, or empty hands, with its shield and without.
+                auto &in_hand = campaign_art.back().in_hand;
+                const auto &member = campaign_->member(id);
+                for (const bool shield_on : {true, false})
                 {
-                    return WeaponSetArt{look.icon(originals, por::IconPose::ready),
-                                        look.icon(originals, por::IconPose::action),
-                                        {}};
-                };
-                auto &sets = campaign_art.back();
-                sets.melee = set_of(resolved);
-                if (const auto bare =
-                        por::resolve_unshielded_appearance(campaign_->member(id), catalog))
-                {
-                    sets.melee_without_shield = set_of(*bare);
-                }
-                if (demo_ && demo_->has_combat())
-                {
-                    for (const auto &combatant : demo_.snapshot().combatants)
+                    const auto add_look =
+                        [&](const std::string &weapon, const por::ResolvedCombatAppearance &look)
                     {
-                        if (combatant.id != id || combatant.drawn_ranged_weapon.empty())
+                        in_hand[in_hand_key(weapon, !shield_on)] =
+                            WeaponSetArt{look.icon(originals, por::IconPose::ready),
+                                         look.icon(originals, por::IconPose::action),
+                                         {}};
+                    };
+                    const auto bare =
+                        por::resolve_wielded_appearance(member, catalog, {}, shield_on);
+                    add_look({}, bare);
+                    for (const auto &item : member.character.inventory().items())
+                    {
+                        if (item.definition_id.empty() ||
+                            in_hand.contains(in_hand_key(item.definition_id, !shield_on)))
                         {
                             continue;
                         }
-                        if (const auto shooting = por::resolve_shooting_appearance(
-                                campaign_->member(id), catalog, combatant.drawn_ranged_weapon))
+                        const auto look = por::resolve_wielded_appearance(
+                            member, catalog, item.definition_id, shield_on);
+                        if (look.selection.combination != bare.selection.combination)
                         {
-                            sets.ranged = set_of(*shooting);
+                            add_look(item.definition_id, look);
                         }
                     }
                 }
@@ -1843,12 +1876,12 @@ void CombatView::launch_missile(const Command &command, const Snapshot &before,
     if (shooter->side != rules::Side::party)
     {
         // So a shot from art that shows no such weapon can be traced afterwards.
-        const auto shown = shot_last_.find(command.actor);
-        log_diagnostic(
-            LogPriority::info, "combat",
-            shooter->name + " fires (" + command.verb + ") showing its " +
-                (shown != shot_last_.end() && shown->second ? "ranged" : "staged or melee") +
-                " weapon set");
+        log_diagnostic(LogPriority::info, "combat",
+                       shooter->name + " fires (" + command.verb + ") showing its " +
+                           (shooter->weapon_set_shown == rules::WeaponSetShown::ranged
+                                ? "ranged"
+                                : "staged or melee") +
+                           " weapon set");
     }
 }
 
@@ -2086,24 +2119,6 @@ void CombatView::act(Command command)
                      command.verb == "inflict_wounds_2")
             {
                 sound = 2;
-            }
-            // A monster shows the weapon set it attacks with (#274), and keeps
-            // the set it shows when its art has none for the attack.
-            if ((command.verb == "melee" || command.verb == "opportunity" ||
-                 command.verb.starts_with("melee_") || command.verb == "light_melee" ||
-                 command.verb == "nick_melee") &&
-                melee_art_.contains(command.actor))
-            {
-                shot_last_[command.actor] = false;
-            }
-            else if ((command.verb == "shoot" || command.verb == "ranged" ||
-                      command.verb.starts_with("ranged_") || command.verb.starts_with("throw") ||
-                      command.verb == "light_ranged" || command.verb == "nick_ranged" ||
-                      (command.verb.ends_with("_item") && !command.verb.starts_with("potion")) ||
-                      command.verb == "javelin_lightning" || command.verb == "doff_shield") &&
-                     ranged_art_.contains(command.actor))
-            {
-                shot_last_[command.actor] = true;
             }
             launch_missile(command, before, after);
             launch_spell_effects(command, before, after);

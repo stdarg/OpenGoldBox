@@ -2537,6 +2537,25 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             chosen_weapon = closes ? std::string_view{} : best_verb;
         }
     }
+    // Choosing by damage, it first takes the strongest melee weapon in its hands.
+    // Selecting costs nothing, and what it left is then the weaker, so this settles.
+    if (chosen_weapon == "melee")
+    {
+        const Command *stronger = nullptr;
+        for (const auto &command : offered)
+        {
+            if (command.verb == "weapon_select" &&
+                command.expected_damage >
+                    (stronger ? stronger->expected_damage : active.melee_rating))
+            {
+                stronger = &command;
+            }
+        }
+        if (stronger && tuning.weapon_choice == ai_tuning::WeaponChoice::expected_damage)
+        {
+            return *stronger;
+        }
+    }
     // A Breath Weapon, Dragon's Breath, a dragon's Lightning Breath, an
     // Ankheg's Acid Spray or a Basilisk's Petrifying Gaze goes off before the
     // attacks, where it catches an enemy and no ally (#269).
