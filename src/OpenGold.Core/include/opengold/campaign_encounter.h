@@ -34,7 +34,7 @@ struct OriginalArt
 struct WeaponSetArt
 {
     Image image, action;
-    PlantedArt planted;
+    std::optional<PlantedArt> planted; // empty for art fitted to the square
 };
 
 struct CombatArt

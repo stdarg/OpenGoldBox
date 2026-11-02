@@ -3,6 +3,8 @@
 
 #include "opengold/character_art.h"
 #include <array>
+#include <optional>
+#include <string_view>
 #include <filesystem>
 #include <span>
 #include <set>
@@ -87,5 +89,14 @@ struct ResolvedCombatAppearance
 // equipment layers only; encounter creatures do not use this API.
 [[nodiscard]] ResolvedCombatAppearance resolve_combat_appearance(const PartyMember &member,
                                                                  const CombatBodyCatalog &catalog);
+
+// The same character holding only the carried weapon `definition_id`, as it draws
+// it to shoot, or its equipment without a shield, once it took that off. Empty when
+// it has no such item, or no shield to take off.
+[[nodiscard]] std::optional<ResolvedCombatAppearance>
+resolve_shooting_appearance(const PartyMember &member, const CombatBodyCatalog &catalog,
+                            std::string_view definition_id);
+[[nodiscard]] std::optional<ResolvedCombatAppearance>
+resolve_unshielded_appearance(const PartyMember &member, const CombatBodyCatalog &catalog);
 } // namespace opengold::por
 #endif

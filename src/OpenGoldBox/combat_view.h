@@ -37,7 +37,7 @@ class CombatView : public godot::Control
     [[nodiscard]] godot::Array enemy_cells() const;
     // Their ready sprites' widths, for checks of the Combat art setting.
     [[nodiscard]] godot::Array enemy_sprite_widths() const;
-    [[nodiscard]] godot::Dictionary enemy_weapon_sets() const;
+    [[nodiscard]] godot::Dictionary weapon_sets_shown() const;
     [[nodiscard]] godot::Array missiles_in_flight() const;
     [[nodiscard]] godot::PackedStringArray spell_effects_in_play() const;
     [[nodiscard]] godot::Array spell_effect_rows() const;

@@ -5270,6 +5270,11 @@ class Session final : public CombatSession
     std::uint64_t rng_{}, revision_{1};
     std::uint64_t scope_{1}, elapsed_ms_{};
     unsigned turn_{}, round_{1};
+    // The spells cancelled during the turn these name. Not saved: after a load the
+    // computer at worst tries one once more.
+    std::vector<std::string> given_up_spells_;
+    unsigned given_up_turn_{}, given_up_round_{};
+    void give_up_spell(const std::string &verb);
     Outcome outcome_{Outcome::ongoing};
     std::optional<TemporaryHitPoints> temporary_offer_;
     std::optional<PendingCheck> check_choice_;
@@ -8006,6 +8011,10 @@ Snapshot Session::snapshot() const
               : pending()    ? pending()
                              : actors_[turn_].source.id;
     s.reaction_pending = !champion_move_ && pending() != 0;
+    if (given_up_turn_ == turn_ && given_up_round_ == round_)
+    {
+        s.given_up_spells = given_up_spells_;
+    }
     if (reaction_prompt_)
     {
         s.actor = reaction_prompt_->question.target;
@@ -8254,6 +8263,16 @@ Snapshot Session::snapshot() const
         view.critical_hit = a.smite_target && a.smite_critical;
         view.disengaged = a.disengaged;
         view.shield_off = a.shield_off;
+        if (const auto bow = carried_ranged_weapon(a); !bow.empty())
+        {
+            view.drawn_ranged_weapon = bow;
+        }
+        else if (!a.source.character_profile.empty() && shield_blocks_bow(a))
+        {
+            auto unshielded = a;
+            unshielded.definition = without_shield(a.source.character_profile, a.definition);
+            view.drawn_ranged_weapon = carried_ranged_weapon(unshielded);
+        }
         // Each rated by its attacks a turn too: Martial Arts' bonus strike
         // counts for a Monk's melee.
         const int attacks = 1 + def(a).extra_attacks;
@@ -14413,6 +14432,7 @@ void Session::aim_area(const Command &command)
 {
     if (command.verb == "spell_cancel")
     {
+        give_up_spell(area_->verb);
         area_.reset();
     }
     else if (command.verb == "area_cast")
@@ -14981,6 +15001,17 @@ void Session::heat_metal(const Actor &caster, Actor &creature, unsigned slot)
                            next_turn_ms(caster), detail::EffectKind::scorched);
     log(creature.source.name + " has Disadvantage on attack rolls.",
         {"{name} has Disadvantage on attack rolls.", {{"name", creature.source.name}}});
+}
+
+void Session::give_up_spell(const std::string &verb)
+{
+    if (given_up_turn_ != turn_ || given_up_round_ != round_)
+    {
+        given_up_spells_.clear();
+        given_up_turn_ = turn_;
+        given_up_round_ = round_;
+    }
+    given_up_spells_.push_back(verb);
 }
 
 void Session::move_moonbeam(Actor &caster, const Actor &onto)
@@ -19993,6 +20024,7 @@ void Session::choose_target(const Command &command)
 {
     if (command.verb == "spell_cancel")
     {
+        give_up_spell(selection_->verb);
         selection_.reset();
         return;
     }

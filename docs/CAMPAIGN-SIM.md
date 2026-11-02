@@ -100,9 +100,13 @@ simulator now stages monsters through the game's own function, with the weapons
 and shields of `data/monsters`. Against stat-block weapons, real gear, and real
 gear with a shield taken off for a bow, 304 of 320 runs completed each time, and
 deaths a run were 0.006, 0.022 and 0.013. No effect shows, but this arc is too easy
-to show one: 13 of 16 parties complete every run, ending near level 8. Six Druids
-complete 25% to 30% of runs: they stall with no deaths, at low-level fights such as
-the arguing hobgoblins and sickly kobolds. That is not explained yet.
+to show one: 13 of 16 parties complete every run, ending near level 8.
+
+Six Druids completed 25% of those runs, stalling with no deaths. The computer chose
+Moonbeam, could not aim it at a square out of sight, gave it up and chose it again
+without end; a Breath Weapon did the same. It now aims Moonbeam only where it can,
+and does not choose again a spell it gave up that turn. Six Druids complete 100%
+(20 runs, 2026-11-02).
 
 Each member sets out with its class kit (a Torch included) and 2 Oil and 2
 Alchemist's Fire, as if bought at New Phlan's general store; the simulator does

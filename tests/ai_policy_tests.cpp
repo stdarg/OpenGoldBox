@@ -359,6 +359,32 @@ void healing_checks()
           "An ally at exactly half its Hit Points is healed");
 }
 
+// Moonbeam goes on the enemy's own square, in sight. A wide enemy can show while
+// that square does not, and a spell the computer gives up is not chosen again that
+// turn: either would have repeated without end.
+void aiming_never_repeats()
+{
+    auto druid = unit(1, Side::party, {1, 1});
+    auto enemy = unit(2, Side::opposition, {6, 1});
+    enemy.footprint = {1, 2};
+    const std::vector<Command> offered{command("moonbeam"), command("end")};
+    check(choose_demo_command(field({druid, enemy}), offered).verb == "moonbeam",
+          "Moonbeam goes on an enemy in sight");
+    std::vector<Cell> wall;
+    for (int y = 0; y < 2; ++y)
+    {
+        wall.push_back({4, y});
+    }
+    auto hidden_aim = field({druid, enemy}, wall);
+    hidden_aim.combatants[1].cell = {6, 0};
+    check(choose_demo_command(hidden_aim, offered).verb != "moonbeam",
+          "Moonbeam does not go on a square out of sight, though the enemy shows");
+    auto given_up = field({druid, enemy});
+    given_up.given_up_spells = {"moonbeam"};
+    check(choose_demo_command(given_up, offered).verb != "moonbeam",
+          "A spell given up this turn is not chosen again");
+}
+
 void reaction_checks()
 {
     auto state = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {2, 1})});
@@ -738,6 +764,7 @@ int main()
         area_checks();
         healing_checks();
         reaction_checks();
+        aiming_never_repeats();
         free_move_checks();
         walk_checks();
         light_and_nick_checks();
