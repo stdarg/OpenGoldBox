@@ -1835,10 +1835,7 @@ std::vector<rules::CarriedEquipment> fighting_gear(const Creature &creature,
 }
 } // namespace
 
-// Shrinks the staged original encounter to the party's SRD XP budget at the
-// encounter challenge and to one creature per living character, the size the
-// party can face without being swarmed. Each LOAD MONSTER group keeps its first.
-void RolfTourSession::fit_staged_encounter()
+std::vector<unsigned> RolfTourSession::living_member_levels() const
 {
     std::vector<unsigned> levels;
     for (const auto id : campaign_->state().slots)
@@ -1848,6 +1845,15 @@ void RolfTourSession::fit_staged_encounter()
             levels.push_back(campaign_->member(id).character.sheet().level);
         }
     }
+    return levels;
+}
+
+// Shrinks the staged original encounter to the party's SRD XP budget at the
+// encounter challenge and to one creature per living character, the size the
+// party can face without being swarmed. Each LOAD MONSTER group keeps its first.
+void RolfTourSession::fit_staged_encounter()
+{
+    const auto levels = living_member_levels();
     std::vector<EncounterGroup> groups;
     for (std::size_t n = 0; n < staged_records_.size(); ++n)
     {
@@ -1857,9 +1863,20 @@ void RolfTourSession::fit_staged_encounter()
         }
         ++groups.back().count;
     }
-    const auto budget = encounter_xp_budget(levels, encounter_challenge_);
     const auto counts =
-        fit_encounter_to_budget(groups, budget, static_cast<unsigned>(levels.size()));
+        fit_encounter_to_difficulty(groups, levels, encounter_challenge_, difficulty_);
+    staged_band_.clear();
+    for (std::size_t n = 0; n < staged_records_.size(); ++n)
+    {
+        const auto record = staged_records_[n];
+        const auto &creature = area_resources().encounter_creatures.at(record);
+        const auto *exported = exported_creature(area_resources(), record);
+        auto member = staged_enemies_[n];
+        member.name = exported ? exported->name : creature.stored.name;
+        member.inventory = fighting_gear(creature, exported);
+        staged_band_.push_back(
+            {std::move(member), record, area_resources().conversions.at(record).fit_xp});
+    }
     std::vector<rules::Participant> enemies;
     std::vector<opengold::CombatArt> art;
     std::vector<unsigned> records;
@@ -1984,7 +2001,8 @@ bool RolfTourSession::choose_encounter(std::size_t choice)
         }
     }
     unsigned result = 1;
-    if (choice == 2 && slowest >= args[12].number())
+    // On Easy a flight always succeeds (DIFF-2).
+    if (choice == 2 && (slowest >= args[12].number() || spares_the_party(difficulty_)))
     {
         result = 2;
     }
@@ -2794,6 +2812,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 overland() ? town_->wilderness_art : area_resources().terrain_art,
                 overland() ? wilderness_facing : p.facing,
                 script_surprise(machine_.variable(ecl_encounter_surprise))};
+            encounter_->band = std::move(staged_band_);
+            staged_band_.clear();
             encounter_->allies = std::move(staged_allies_);
             staged_allies_.clear();
             for (auto &art : staged_ally_art_)
@@ -2821,6 +2841,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             encounter_->distance = overland() ? 2u : encounter_distance_;
             // The script sets the encounter's morale before COMBAT.
             encounter_->morale = std::min<unsigned>(machine_.variable(ecl_encounter_morale), 100);
+            apply_difficulty(*encounter_, difficulty_, average_party_level(living_member_levels()));
             announce_camp_attack();
             combat_request_ = request.id;
             // The original shows the approached monster's close-up until a key press.

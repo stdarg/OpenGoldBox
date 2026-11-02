@@ -46,6 +46,82 @@ inline constexpr std::array<std::string_view, 5> difficulty_names{"easy", "norma
     return difficulty >= Difficulty::hard;
 }
 
+// What each difficulty does to the monsters a fight meets (DIFF-2). Normal
+// plays the encounter as it always has.
+struct MonsterStrength
+{
+    // The encounter challenge setting is worth this percent of itself.
+    unsigned challenge_percent{100};
+    // Creatures per ten living party members.
+    unsigned creatures_per_ten_members{10};
+    // Fewer creatures than that, keeping at least one.
+    unsigned creatures_fewer{};
+    unsigned hit_points_percent{100};
+    int attack_bonus{};
+    // Added to the morale of those that can break: lower breaks sooner.
+    int morale_shift{};
+};
+
+// Indexed by Difficulty: easy, normal, hard, nightmare, infernal.
+inline constexpr std::array<MonsterStrength, 5> monster_strengths{{
+    {.challenge_percent = 60,
+     .creatures_fewer = 1,
+     .hit_points_percent = 60,
+     .attack_bonus = -2,
+     .morale_shift = -30},
+    {},
+    {.challenge_percent = 175,
+     .creatures_per_ten_members = 15,
+     .hit_points_percent = 220,
+     .attack_bonus = 2},
+    {.challenge_percent = 200,
+     .creatures_per_ten_members = 20,
+     .hit_points_percent = 230,
+     .attack_bonus = 3,
+     .morale_shift = 15},
+    {.challenge_percent = 225,
+     .creatures_per_ten_members = 20,
+     .hit_points_percent = 265,
+     .attack_bonus = 4,
+     .morale_shift = 30},
+}};
+
+// Above Normal a level's strength comes on as the party grows, in full from this
+// average level: level 1 characters are too frail for anything more, and a party
+// that cannot win its first fights has no way to grow.
+inline constexpr unsigned full_strength_party_level = 2;
+
+// The strength a party of this average level meets.
+[[nodiscard]] constexpr MonsterStrength monster_strength(Difficulty difficulty,
+                                                         unsigned party_level) noexcept
+{
+    auto strength = monster_strengths[static_cast<std::size_t>(difficulty)];
+    if (difficulty <= Difficulty::normal || party_level >= full_strength_party_level)
+    {
+        return strength;
+    }
+    const MonsterStrength normal{};
+    const auto level = static_cast<int>(party_level == 0 ? 1 : party_level);
+    const auto eased = [level](unsigned from, unsigned to)
+    {
+        return from + (to - from) * static_cast<unsigned>(level) / full_strength_party_level;
+    };
+    strength.challenge_percent = eased(normal.challenge_percent, strength.challenge_percent);
+    strength.creatures_per_ten_members =
+        eased(normal.creatures_per_ten_members, strength.creatures_per_ten_members);
+    strength.hit_points_percent = eased(normal.hit_points_percent, strength.hit_points_percent);
+    strength.attack_bonus = strength.attack_bonus * level / int{full_strength_party_level};
+    strength.morale_shift = strength.morale_shift * level / int{full_strength_party_level};
+    return strength;
+}
+
+// Easy's safety net (DIFF-2): flight always succeeds, and a won fight leaves no
+// member dead or down.
+[[nodiscard]] constexpr bool spares_the_party(Difficulty difficulty) noexcept
+{
+    return difficulty == Difficulty::easy;
+}
+
 // A monster ability's option names the lowest difficulty it is on at, or
 // "never" (MONSTER-2). Legendary Actions are on from Hard (the user,
 // 2026-10-25), Legendary Resistance with them; abilities that take a

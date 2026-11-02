@@ -65,7 +65,7 @@ void grants_and_budgets()
                     auto p = party(weapon, style, negative, seed % 2);
                     auto c = battle(p, seed);
                     check(
-                        c->save().starts_with("OGCOMBAT 73 ") && unit(*c, 1).nick_mastery &&
+                        c->save().starts_with("OGCOMBAT 74 ") && unit(*c, 1).nick_mastery &&
                             !offers(*c, "nick_melee"),
                         "Chosen Nick creates explicit shared budget, not an attack before qualification");
                     act(*c, "melee", 99);
@@ -344,9 +344,9 @@ void forged_budgets()
         row = bytes.find('\n', row) + 1;
     }
     // The Light budget, the Nick origin and the Cleave flag precede the actor
-    // row's twenty-nine later fields (Colossus Slayer through Concentration).
+    // row's thirty-one later fields (Colossus Slayer through Concentration).
     auto end = bytes.find('\n', row);
-    for (unsigned n = 0; n < 29; ++n)
+    for (unsigned n = 0; n < 31; ++n)
     {
         end = bytes.rfind(' ', end - 1);
     }

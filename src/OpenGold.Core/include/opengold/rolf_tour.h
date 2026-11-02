@@ -594,6 +594,7 @@ class RolfTourSession
     std::map<unsigned, std::bitset<256>> visited_areas_;
     std::map<unsigned, std::bitset<256>> seen_areas_;
     std::vector<rules::Participant> staged_enemies_;
+    std::vector<opengold::BandMember> staged_band_;
     std::vector<opengold::CombatArt> staged_art_;
     // Monsters a script fields on the party's side, and their art.
     std::vector<rules::Participant> staged_allies_;
@@ -644,6 +645,7 @@ class RolfTourSession
                                              std::string reward, bool items,
                                              std::vector<SpentGear> spent = {}) const;
     void show_encounter_menu();
+    [[nodiscard]] std::vector<unsigned> living_member_levels() const;
     void fit_staged_encounter();
     void announce_spokesman();
     bool choose_encounter(std::size_t choice);

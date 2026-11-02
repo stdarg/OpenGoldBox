@@ -1,4 +1,5 @@
 #include "opengold/ai_scenario.h"
+#include "opengold/encounter_budget.h"
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
 #include "opengold/combat_demo.h"
@@ -13,7 +14,7 @@ namespace opengold
 {
 namespace
 {
-constexpr std::string_view format_line = "opengold-ai-encounter 1";
+constexpr std::string_view format_line = "opengold-ai-encounter 2";
 
 // A fight the policy cannot finish: both sides stand off with no player to break
 // it. A real fight takes far fewer commands than this.
@@ -136,6 +137,12 @@ std::string encode_ai_encounter(const CampaignEncounter &encounter)
             }
         }
     }
+    out << '\n';
+    for (const auto &member : encounter.band)
+    {
+        write_participant(out, "band", member.creature);
+        out << "bandfit\t" << member.record << '\t' << member.xp << '\n';
+    }
     out << "\noptions\t" << static_cast<int>(encounter.facing) << '\t'
         << static_cast<int>(encounter.surprise) << '\t' << encounter.distance << '\t'
         << encounter.party_resting << '\t' << encounter.morale << '\t' << encounter.champion << '\t'
@@ -161,7 +168,7 @@ CampaignEncounter decode_ai_encounter(std::string_view text)
 {
     CampaignEncounter encounter;
     auto &board = encounter.field.geometry;
-    std::vector<rules::Participant> *last_side = nullptr;
+    std::vector<rules::CarriedEquipment> *last_gear = nullptr;
     bool first_line = true;
     for (const auto line : split(text, '\n'))
     {
@@ -233,14 +240,25 @@ CampaignEncounter decode_ai_encounter(std::string_view text)
         }
         else if (tag == "enemy" || tag == "ally")
         {
-            last_side = tag == "enemy" ? &encounter.enemies : &encounter.allies;
-            last_side->push_back(read_participant(fields));
+            auto &side = tag == "enemy" ? encounter.enemies : encounter.allies;
+            side.push_back(read_participant(fields));
+            last_gear = &side.back().inventory;
         }
-        else if (tag == "item" && last_side)
+        else if (tag == "band")
         {
-            last_side->back().inventory.push_back(
-                {static_cast<std::uint64_t>(number(fields.at(1))), std::string(fields.at(2)),
-                 as_unsigned(fields.at(3)), as_int(fields.at(4))});
+            encounter.band.push_back({read_participant(fields)});
+            last_gear = &encounter.band.back().creature.inventory;
+        }
+        else if (tag == "bandfit")
+        {
+            encounter.band.back().record = as_unsigned(fields.at(1));
+            encounter.band.back().xp = as_unsigned(fields.at(2));
+        }
+        else if (tag == "item" && last_gear)
+        {
+            last_gear->push_back({static_cast<std::uint64_t>(number(fields.at(1))),
+                                  std::string(fields.at(2)), as_unsigned(fields.at(3)),
+                                  as_int(fields.at(4))});
         }
         else
         {
@@ -284,15 +302,67 @@ std::vector<AiScenario> load_ai_scenarios(const std::filesystem::path &folder)
     return scenarios;
 }
 
+CampaignEncounter encounter_at_difficulty(CampaignEncounter encounter,
+                                          std::span<const unsigned> member_levels,
+                                          Difficulty difficulty)
+{
+    if (!encounter.band.empty())
+    {
+        std::vector<EncounterGroup> groups;
+        for (std::size_t n = 0; n < encounter.band.size(); ++n)
+        {
+            if (n == 0 || encounter.band[n].record != encounter.band[n - 1].record)
+            {
+                groups.push_back({encounter.band[n].xp, 0});
+            }
+            ++groups.back().count;
+        }
+        const auto counts = fit_encounter_to_difficulty(groups, member_levels,
+                                                        default_encounter_challenge, difficulty);
+        encounter.enemies.clear();
+        encounter.positions.clear();
+        for (std::size_t n = 0, group = 0, kept = 0; n < encounter.band.size(); ++n)
+        {
+            if (n && encounter.band[n].record != encounter.band[n - 1].record)
+            {
+                ++group;
+                kept = 0;
+            }
+            if (kept++ >= counts[group])
+            {
+                continue;
+            }
+            auto enemy = encounter.band[n].creature;
+            enemy.id = static_cast<rules::EntityId>(1000 + encounter.enemies.size());
+            enemy.name += " " + std::to_string(encounter.enemies.size() + 1);
+            if (!monsters_use_items(difficulty))
+            {
+                enemy.inventory.clear();
+            }
+            encounter.enemies.push_back(std::move(enemy));
+        }
+    }
+    apply_difficulty(encounter, difficulty, average_party_level(member_levels));
+    return encounter;
+}
+
 AiFightResult play_ai_fight(const RulesModuleFactory &make_module, const PartyState &party,
                             const CampaignEncounter &encounter, Difficulty party_level,
                             Difficulty monster_level, std::uint64_t seed)
 {
     auto fighters = std::make_shared<CampaignParty>(make_module());
     fighters->restore(party);
+    std::vector<unsigned> member_levels;
+    for (const auto id : fighters->state().slots)
+    {
+        if (id && !fighters->member(id).vitals.dead)
+        {
+            member_levels.push_back(fighters->member(id).character.sheet().level);
+        }
+    }
     CombatDemo combat(make_module());
     combat.campaign_party(fighters);
-    combat.encounter(encounter, seed);
+    combat.encounter(encounter_at_difficulty(encounter, member_levels, monster_level), seed);
     AiFightResult result;
     for (; result.commands < stalled_after_commands; ++result.commands)
     {

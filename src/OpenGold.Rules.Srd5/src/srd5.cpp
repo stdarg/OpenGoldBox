@@ -733,7 +733,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 73;
+constexpr unsigned checkpoint_format = 74;
 // A broken monster's turns of getting no nearer the edge before it charges
 // (MORALE-2).
 constexpr int panic_charge_after_turns = 2;
@@ -4765,6 +4765,15 @@ Footprint summoned_footprint(std::string_view definition)
 // A creature holding the weapons its art shows (#274): their dice, damage
 // types, enchantment and range in place of its stat block's, with the stat
 // block's own attack and damage bonuses. Reach stays 5 feet (MELEE-1).
+// A monster as the difficulty made it (DIFF-2).
+Definition strengthened(Definition d, const rules::Participant &who)
+{
+    d.hp = std::max(1, d.hp * static_cast<int>(who.hit_points_percent) / 100);
+    d.melee_bonus += who.attack_bonus;
+    d.ranged_bonus += who.attack_bonus;
+    return d;
+}
+
 Definition wielding(Definition d, std::string_view melee_key, std::string_view ranged_key)
 {
     const auto *ranged = detail::weapon(ranged_key);
@@ -5022,6 +5031,7 @@ class Session final : public CombatSession
           scope_(encounter.scope), morale_(encounter.morale), daylight_(encounter.daylight),
           gold_(encounter.party_gold)
     {
+        spares_the_party_ = encounter.spares_the_party;
         if (!scope_)
         {
             throw std::runtime_error("Invalid encounter scope");
@@ -5073,8 +5083,9 @@ class Session final : public CombatSession
             sides.insert(p.side);
             Actor a;
             a.definition = p.character_profile.empty()
-                               ? wielding(content_->definitions.at(p.definition), p.melee_weapon,
-                                          p.ranged_weapon)
+                               ? strengthened(wielding(content_->definitions.at(p.definition),
+                                                       p.melee_weapon, p.ranged_weapon),
+                                              p)
                                : character_definition(p.character_profile);
             const auto &d = a.definition;
             a.source = std::move(p);
@@ -5617,6 +5628,8 @@ class Session final : public CombatSession
     // field: a step there runs off it (FOOT-1).
     [[nodiscard]] bool off_field(const Actor &a, Cell anchor) const;
     void run_off_field(Actor &);
+    [[nodiscard]] bool flight_always_succeeds(const Actor &) const;
+    void spare_the_party();
     void remove_fled();
 
     // A member who got away: out of the fight, back with the party after it.
@@ -5634,6 +5647,7 @@ class Session final : public CombatSession
     // Morale (the original's rule): checked at the start of each turn of a
     // creature the rules control. The encounter's morale is set by its script.
     unsigned morale_{100};
+    bool spares_the_party_{};
     bool daylight_{}; // Encounter::daylight
     // Gold coins in the party purse, and what offerings have taken of them.
     unsigned gold_{}, offerings_gold_{};
@@ -7457,6 +7471,10 @@ bool Session::can_run_off(const Actor &a) const
     {
         return false;
     }
+    if (flight_always_succeeds(a))
+    {
+        return true;
+    }
     for (const auto &other : actors_)
     {
         if (other.source.side != a.source.side && conscious(other) &&
@@ -7491,6 +7509,11 @@ bool Session::off_field(const Actor &a, Cell anchor) const
                        });
 }
 
+bool Session::flight_always_succeeds(const Actor &a) const
+{
+    return spares_the_party_ && a.source.side == Side::party;
+}
+
 void Session::run_off_field(Actor &a)
 {
     int fastest = 0;
@@ -7501,7 +7524,8 @@ void Session::run_off_field(Actor &a)
             fastest = std::max(fastest, current_speed(other));
         }
     }
-    if (current_speed(a) < fastest || (current_speed(a) == fastest && roll(2) == 1))
+    if (!flight_always_succeeds(a) &&
+        (current_speed(a) < fastest || (current_speed(a) == fastest && roll(2) == 1)))
     {
         if (a.source.side == Side::party)
         {
@@ -8198,13 +8222,14 @@ Snapshot Session::snapshot() const
         view.charging_in_panic = a.panicked && a.must_stay;
         view.spells = def(a).spells;
         view.can_flee = a.source.side == Side::party && conscious(a) && !a.must_stay &&
-                        std::none_of(actors_.begin(), actors_.end(),
-                                     [&](const auto &other)
-                                     {
-                                         return other.source.side != a.source.side &&
-                                                conscious(other) &&
-                                                current_speed(other) > current_speed(a);
-                                     });
+                        (flight_always_succeeds(a) ||
+                         std::none_of(actors_.begin(), actors_.end(),
+                                      [&](const auto &other)
+                                      {
+                                          return other.source.side != a.source.side &&
+                                                 conscious(other) &&
+                                                 current_speed(other) > current_speed(a);
+                                      }));
         for (const auto &gear : detail::thrown_gear_items)
         {
             if (a.source.side == Side::party && !a.source.character_profile.empty())
@@ -23121,6 +23146,23 @@ void Session::finish_reaction()
     }
 }
 
+// Easy (DIFF-2): no member stays dead or down after a fight the party won. A
+// member who came in dead is no participant, so this is only this fight's harm.
+void Session::spare_the_party()
+{
+    for (auto &a : actors_)
+    {
+        if (a.source.side == Side::party && !a.source.character_profile.empty() && a.life.hp <= 0)
+        {
+            a.life.hp = 1;
+            a.life.dead = false;
+            a.life.recovery = {};
+            log(a.source.name + " gets back up.",
+                {"{name} gets back up.", {{"name", a.source.name}}});
+        }
+    }
+}
+
 void Session::update_outcome()
 {
     // Decided once: a later call must not announce the outcome again.
@@ -23185,6 +23227,10 @@ void Session::update_outcome()
                 log(a.source.name + " falls again.",
                     {"{name} falls again.", {{"name", a.source.name}}});
             }
+        }
+        if (spares_the_party_ && outcome_ == Outcome::victory)
+        {
+            spare_the_party();
         }
         champion_move_.reset();
         mastery_.reset();
@@ -27509,6 +27555,7 @@ std::string Session::save() const
             << a.oiled_until_round << ' ' << a.coated_until_round << ' ' << a.shield_off << ' '
             << a.must_stay << ' ' << a.panicked << ' ' << a.closest_to_edge << ' ' << a.turns_stuck
             << ' ' << a.source.morale << ' ' << a.source.intelligence << ' '
+            << a.source.hit_points_percent << ' ' << a.source.attack_bonus << ' '
             << std::quoted(a.source.melee_weapon) << ' ' << std::quoted(a.source.ranged_weapon)
             << ' ' << a.source.holds_shield << ' ' << a.run_start.x << ' ' << a.run_start.y << ' '
             << a.run_end.x << ' ' << a.run_end.y << ' ' << a.run_step.x << ' ' << a.run_step.y
@@ -27539,8 +27586,8 @@ std::string Session::save() const
     {
         out << std::quoted(entry.english) << '\n';
     }
-    out << scope_ << ' ' << elapsed_ms_ << ' ' << morale_ << ' ' << gold_ << ' ' << offerings_gold_
-        << ' ' << daylight_ << ' ' << actors_.size() << '\n';
+    out << scope_ << ' ' << elapsed_ms_ << ' ' << morale_ << ' ' << spares_the_party_ << ' '
+        << gold_ << ' ' << offerings_gold_ << ' ' << daylight_ << ' ' << actors_.size() << '\n';
     for (const auto &a : actors_)
     {
         detail::write_effects(out, all_effects(a));
@@ -27765,11 +27812,12 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.thrown_gear_left[1] >> actor.thrown_gear_left[2] >> actor.burning >>
         actor.oiled_until_round >> actor.coated_until_round >> actor.shield_off >>
         actor.must_stay >> actor.panicked >> actor.closest_to_edge >> actor.turns_stuck >>
-        actor.source.morale >> actor.source.intelligence >>
-        std::quoted(actor.source.melee_weapon) >> std::quoted(actor.source.ranged_weapon) >>
-        actor.source.holds_shield >> actor.run_start.x >> actor.run_start.y >> actor.run_end.x >>
-        actor.run_end.y >> actor.run_step.x >> actor.run_step.y >> actor.run_feet >>
-        actor.flame_lit >> actor.curse_lifted >> actor.displacement_spent >> actor.last_target;
+        actor.source.morale >> actor.source.intelligence >> actor.source.hit_points_percent >>
+        actor.source.attack_bonus >> std::quoted(actor.source.melee_weapon) >>
+        std::quoted(actor.source.ranged_weapon) >> actor.source.holds_shield >>
+        actor.run_start.x >> actor.run_start.y >> actor.run_end.x >> actor.run_end.y >>
+        actor.run_step.x >> actor.run_step.y >> actor.run_feet >> actor.flame_lit >>
+        actor.curse_lifted >> actor.displacement_spent >> actor.last_target;
     std::size_t item_count{};
     input >> item_count;
     // The inventory comes later in the checkpoint; 64 items is more than any
@@ -27783,7 +27831,9 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     {
         input >> id >> left;
     }
-    if (actor.source.morale > 100 || actor.source.intelligence > 30)
+    if (actor.source.morale > 100 || actor.source.intelligence > 30 ||
+        actor.source.hit_points_percent < 1 || actor.source.hit_points_percent > 1000 ||
+        actor.source.attack_bonus < -20 || actor.source.attack_bonus > 20)
     {
         throw std::runtime_error("Invalid checkpoint morale");
     }
@@ -27810,8 +27860,9 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         throw std::runtime_error("Invalid checkpoint actor");
     }
     actor.definition = source.character_profile.empty()
-                           ? wielding(content.definitions.at(source.definition),
-                                      source.melee_weapon, source.ranged_weapon)
+                           ? strengthened(wielding(content.definitions.at(source.definition),
+                                                   source.melee_weapon, source.ranged_weapon),
+                                          source)
                            : character_definition(source.character_profile);
     if (actor.shield_off && source.character_profile.empty())
     {
@@ -28650,8 +28701,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     session->restore_movement(input);
     session->restore_log(input);
     unsigned effects_count{};
-    input >> session->scope_ >> session->elapsed_ms_ >> session->morale_ >> session->gold_ >>
-        session->offerings_gold_ >> session->daylight_ >> effects_count;
+    input >> session->scope_ >> session->elapsed_ms_ >> session->morale_ >>
+        session->spares_the_party_ >> session->gold_ >> session->offerings_gold_ >>
+        session->daylight_ >> effects_count;
     if (session->morale_ > 100 || session->offerings_gold_ > session->gold_)
     {
         throw std::runtime_error("Invalid checkpoint morale");
@@ -33758,7 +33810,7 @@ Content read_content(std::string_view content_bytes, const std::set<std::string>
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.270", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.271", revision + "/" + std::to_string(hash)};
     auto off = switched_off(bytes);
     // A game option naming no ability (a misspelt one) switches nothing off.
     std::copy_if(switched.begin(), switched.end(), std::inserter(off, off.end()),

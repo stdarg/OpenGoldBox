@@ -2153,6 +2153,40 @@ monster ability is on from. Each stays a game option
 Normal plays as before except that Legendary Resistance now waits for Hard
 with the Legendary Actions.
 
+## DIFF-2 (2026-11-02): each level changes the fights, not only the tactics
+
+Smarter monsters alone hardly moved the party's wins, so the user decided on
+2026-11-02 that a level also sets the monsters' number and strength. Normal plays as
+before. The table is `monster_strengths` in `difficulty.h`, tuned with the AI lab to
+the win rates the user approved (97, as Normal is, 75, 60, 45) for the route's party
+of fight 26, played on Quick:
+
+| | Easy | Normal | Hard | Nightmare | Infernal |
+|---|---|---|---|---|---|
+| Share of the encounter challenge | 60% | 100% | 175% | 200% | 225% |
+| Creatures per living member | 1, one fewer overall | 1 | 1.5 | 2 | 2 |
+| Monster Hit Points | 60% | 100% | 220% | 230% | 265% |
+| Monster weapon attack rolls | −2 | 0 | +2 | +3 | +4 |
+| Monster morale | −30 | 0 | 0 | +15 | +30 |
+
+- Monsters on the party's side are left alone. An encounter never grows beyond the
+  original band, and morale that never breaks stays so.
+- **Rewards are the same at every level** (the user): experience and treasure remain
+  the original encounter's.
+- **Easy's safety net** (the user): a flight always succeeds, from a fight or from
+  an encounter's menu, even from a faster enemy; a member dead or down after a fight
+  the party won gets back up with 1 Hit Point. Easy monsters already attack only
+  standing characters.
+- **Above Normal, a level comes on as the party grows** (Claude's decision): a party
+  of average level 1 meets half the extra strength, and level 2 and up meets all of
+  it, since a party that cannot win its first fights has no way to grow.
+- **Small numbers, large Hit Points** (Claude's decision): larger fights left too
+  many that the computer playing the party could not win, so the levels reach their
+  win rates mostly through Hit Points. Even so, playing each fight with the party the
+  route had by then, it won at most 1 of 8 tries in 34 of 219 fights on Infernal and
+  2 of 219 on Hard (2026-11-02). Not measured for a player, who can rest, choose
+  spells and avoid fights.
+
 ## TELEPORT-1 (2026-10-29): Teleport to a map's central spot
 
 LEVELS-3 kept Teleport as fast travel without mishaps to places the party has

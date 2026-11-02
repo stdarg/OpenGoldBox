@@ -60,16 +60,15 @@ The second table plays the same fights with the same dice against one pairing, s
 luck largely cancels. The `±` is one standard error: a difference under about
 twice that may be noise.
 
-A **stall** is a fight no one finished within 4,000 commands, usually a party and
-a lone monster parked far apart with no player to break it. A few in thousands
-have been seen at every level; more than that means a change broke something.
+A **stall** is a fight no one finished within 4,000 commands. There should be none
+(MORALE-2); one means a change broke something.
 
 ## Limits
 
-- Fights replay as the route built them, at Normal. The difficulty's other effects
-  on an encounter, such as monsters using their items or Easy switching abilities
-  off, are not replayed. The lab measures the computer's choices, not everything a
-  level does.
+- Each level replays the fight as the game would stage it for that party and level
+  (DIFF-2): the band sized at the default encounter challenge, and the monsters'
+  Hit Points, attack bonus, morale and items set by the level, with Easy's safety
+  net. Only monster abilities a level switches off are not replayed.
 - Party members play with Quick magic on, and go looking for enemies out of sight
   (`Searching::party`), as the game's own checks do.
 - Each fight starts from the party's save, so it does not measure a whole campaign:

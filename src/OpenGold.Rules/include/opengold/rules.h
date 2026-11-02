@@ -560,6 +560,10 @@ struct Participant
     // decides whether a broken creature that cannot run surrenders.
     unsigned morale{};
     unsigned intelligence{10};
+    // What the difficulty does to a monster (DIFF-2): its Hit Points in percent,
+    // and what it adds to its weapon attack rolls.
+    unsigned hit_points_percent{100};
+    int attack_bonus{};
     // Item keys of the weapons a human-shaped creature holds (#274): their
     // dice, damage type and range replace its stat block's, which keeps its
     // own bonuses. An empty key keeps the stat block's. A ranged key that is
@@ -586,6 +590,9 @@ struct Encounter
     // is in sunlight, where Sunlight Sensitivity gives Disadvantage on attack
     // rolls and ability checks.
     bool daylight{};
+    // Easy (DIFF-2): a party member's flight always succeeds, and winning the
+    // fight brings those it killed or downed back to 1 Hit Point.
+    bool spares_the_party{};
 };
 
 struct Identity

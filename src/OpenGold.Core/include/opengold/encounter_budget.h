@@ -1,5 +1,6 @@
 #ifndef OPENGOLD_ENCOUNTER_BUDGET_H
 #define OPENGOLD_ENCOUNTER_BUDGET_H
+#include "opengold/difficulty.h"
 #include <span>
 #include <vector>
 
@@ -25,5 +26,14 @@ struct EncounterGroup
 [[nodiscard]] std::vector<unsigned> fit_encounter_to_budget(std::span<const EncounterGroup> groups,
                                                             unsigned budget,
                                                             unsigned max_creatures);
+
+[[nodiscard]] unsigned average_party_level(std::span<const unsigned> member_levels);
+
+// The counts for the living members' levels at the challenge setting, as the
+// difficulty sizes a fight (DIFF-2).
+[[nodiscard]] std::vector<unsigned>
+fit_encounter_to_difficulty(std::span<const EncounterGroup> groups,
+                            std::span<const unsigned> member_levels, unsigned challenge,
+                            Difficulty difficulty);
 } // namespace opengold
 #endif

@@ -97,6 +97,50 @@ void party_keeps_quick()
           "Taking control returns every member; Quick magic stays as set");
 }
 
+int unit_hit_points(const rules::Snapshot &state, EntityId id)
+{
+    const auto found = std::find_if(state.combatants.begin(), state.combatants.end(),
+                                    [&](const auto &unit)
+                                    {
+                                        return unit.id == id;
+                                    });
+    return found->hit_points;
+}
+
+// DIFF-2: on Easy a won fight leaves no member down; otherwise the member stays so.
+void easy_spares_the_winners()
+{
+    const auto play = [](bool spared)
+    {
+        const auto rules = module();
+        const auto profile = rules->character_profile(druid().sheet(), {}).data;
+        rules::VitalState down;
+        down.hit_points = 0;
+        rules::VitalState frail;
+        frail.hit_points = 1;
+        Encounter encounter{
+            {12, 6, std::vector<Terrain>(72)},
+            {{1, "campaign-character", "Standing", Side::party, {1, 1}, profile},
+             {2, "campaign-character", "Fallen", Side::party, {1, 3}, profile, down},
+             {98, "bandit", "Enemy", Side::opposition, {2, 1}, {}, frail}}};
+        encounter.spares_the_party = spared;
+        auto fight = rules->create(std::move(encounter), 5);
+        for (unsigned n = 0; n < 400 && fight->snapshot().outcome == rules::Outcome::ongoing; ++n)
+        {
+            check(fight->submit(choose_demo_command(*fight)), "The command is legal");
+        }
+        const auto state = fight->snapshot();
+        check(state.outcome == rules::Outcome::victory, "The party wins");
+        const auto log = state.log();
+        return std::pair{unit_hit_points(state, 2),
+                         std::find(log.begin(), log.end(), "Fallen gets back up.") != log.end()};
+    };
+    const auto [spared_hp, spared_said] = play(true);
+    check(spared_hp == 1 && spared_said, "On Easy a downed member gets back up after a win");
+    const auto [normal_hp, normal_said] = play(false);
+    check(normal_hp == 0 && !normal_said, "Otherwise a downed member stays down");
+}
+
 void magic_off_casts_nothing()
 {
     const auto rules = module();
@@ -164,6 +208,7 @@ int main()
     try
     {
         party_keeps_quick();
+        easy_spares_the_winners();
         magic_off_casts_nothing();
         quick_plays_at_the_highest_level();
         std::cout << "Quick combat tests passed\n";
