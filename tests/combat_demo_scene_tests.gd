@@ -114,7 +114,7 @@ func check_demo() -> void:
         "The upper-right text window is removed")
     require(combat.get_node("LogStack/LogHeader").text.contains("Dorian Nightwind turn"),
         "Turn text moved below the battlefield")
-    require(combat.get_node("LogStack/Log").text.contains("The original script has requested combat."),
+    require(combat.get_node("LogStack/Log").text.contains("Combat begins."),
         "Demo uses the campaign encounter log presentation")
     require(combat.get_node("End").visible and not combat.get_node("End").disabled,
         "Active party turn has a visible End turn button")

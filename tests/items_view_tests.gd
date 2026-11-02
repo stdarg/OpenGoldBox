@@ -106,6 +106,8 @@ func run_checks() -> void:
             require(current_scene.get_node("LogStack/Log").get_parsed_text().contains(tr("{name} uses the {item}.").format({"name": "Hero", "item": tr("Potion of Healing")})), "Use drinks the potion")
             await load_fixture("gear-bow")
             require(item_index("Shoot") < 0, "A shield keeps the bow from being shot")
+            var gear: OptionButton = current_scene.get_node("ItemAction")
+            require(gear.item_count > 1 and item_index("Take off shield") == gear.item_count - 1, "Take off shield comes after every item")
             await use("Take off shield")
             # Taking off a shield spends the Action, so Shoot waits for the next turn.
             require(item_index("Take off shield") < 0 and current_scene.get_node("LogStack/Log").get_parsed_text().contains(tr("{name} takes off a shield to use a bow.").format({"name": "Hero"})), "Use takes the shield off at once")

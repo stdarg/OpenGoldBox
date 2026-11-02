@@ -733,7 +733,7 @@ msgstr ""
 msgid "Aid"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3472
+#: src/OpenGoldBox/combat_view.cpp:3483
 msgid "Aim the spell."
 msgstr ""
 
@@ -965,11 +965,11 @@ msgstr ""
 msgid "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3453
+#: src/OpenGoldBox/combat_view.cpp:3464
 msgid "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end | Q: party Quick | M: Quick magic"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3466
+#: src/OpenGoldBox/combat_view.cpp:3477
 msgid "Arrows: choose | Space: use | Escape: skip"
 msgstr ""
 
@@ -2121,7 +2121,7 @@ msgstr ""
 msgid "Choose the spells Magic Initiate teaches. Unfilled choices remain pending; Back preserves your choices."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3513
+#: src/OpenGoldBox/combat_view.cpp:3524
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Choose up to {maximum} creatures. Chosen: {chosen}"
 msgstr ""
@@ -2300,11 +2300,11 @@ msgstr ""
 msgid "Cleric skills"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3507
+#: src/OpenGoldBox/combat_view.cpp:3518
 msgid "Click a foe: aim the next at it | Escape: cancel"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3517
+#: src/OpenGoldBox/combat_view.cpp:3528
 msgid "Click: choose or remove | Space or Cast spell: cast | Escape: cancel"
 msgstr ""
 
@@ -3388,7 +3388,7 @@ msgstr ""
 msgid "End turn"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3378
+#: src/OpenGoldBox/combat_view.cpp:3389
 msgid "Enemy turn"
 msgstr ""
 
@@ -4106,7 +4106,7 @@ msgstr ""
 msgid "Free move"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3458
+#: src/OpenGoldBox/combat_view.cpp:3469
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Free move: {feet} ft | Arrows/click: move | Escape or Finish free move: finish"
 msgstr ""
@@ -5095,7 +5095,7 @@ msgstr ""
 msgid "It could not get away. It runs at its enemies and strikes wildly at whoever is in reach, friend or foe, with Disadvantage; attack rolls against it have Advantage, and it has no Bonus Actions or Reactions."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3392
+#: src/OpenGoldBox/combat_view.cpp:3403
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "It is not {name}'s turn."
 msgstr ""
@@ -5323,7 +5323,7 @@ msgstr ""
 msgid "Leave the animal shape"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3473
+#: src/OpenGoldBox/combat_view.cpp:3484
 msgid "Left click or arrows: move | Right click, Space or Enter: cast | Escape: cancel"
 msgstr ""
 
@@ -5813,7 +5813,7 @@ msgstr ""
 msgid "Magic Missile (level 2 slot)"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3345
+#: src/OpenGoldBox/combat_view.cpp:3356
 msgid "Magic Missile is aimed at you. Cast Shield or decline."
 msgstr ""
 
@@ -6242,7 +6242,7 @@ msgstr ""
 msgid "Morningstar"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3303 src/OpenGoldBox/godot/scenes/combat_demo.tscn:117
+#: src/OpenGoldBox/combat_view.cpp:3314 src/OpenGoldBox/godot/scenes/combat_demo.tscn:117
 msgid "Move"
 msgstr ""
 
@@ -6484,7 +6484,7 @@ msgstr ""
 msgid "No character created yet."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3541
+#: src/OpenGoldBox/combat_view.cpp:3556
 msgid "No combat artwork assigned"
 msgstr ""
 
@@ -6513,7 +6513,7 @@ msgstr ""
 msgid "No numeric racial modifiers."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:4141
+#: src/OpenGoldBox/combat_view.cpp:4156
 msgid "No one else can get away. Your party fights on."
 msgstr ""
 
@@ -6759,7 +6759,7 @@ msgstr ""
 msgid "Opportunity Attacks against you have Disadvantage."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3278 src/OpenGoldBox/godot/scenes/combat_demo.tscn:344
+#: src/OpenGoldBox/combat_view.cpp:3289 src/OpenGoldBox/godot/scenes/combat_demo.tscn:344
 msgid "Opportunity attack"
 msgstr ""
 
@@ -7415,7 +7415,7 @@ msgstr ""
 msgid "Pyramid, the prison of souls"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3632
+#: src/OpenGoldBox/combat_view.cpp:3647
 msgid "QUICK"
 msgstr ""
 
@@ -7427,11 +7427,11 @@ msgstr ""
 msgid "Quick"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3266 src/OpenGoldBox/godot/scenes/combat_demo.tscn:325
+#: src/OpenGoldBox/combat_view.cpp:3277 src/OpenGoldBox/godot/scenes/combat_demo.tscn:325
 msgid "Quick magic: Off"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3265
+#: src/OpenGoldBox/combat_view.cpp:3276
 msgid "Quick magic: On"
 msgstr ""
 
@@ -7741,7 +7741,7 @@ msgstr ""
 msgid "Read it in camp: Constitution and its maximum rise by 2. Its magic is then spent."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3336
+#: src/OpenGoldBox/combat_view.cpp:3347
 msgid "Read the encounter text, then Continue."
 msgstr ""
 
@@ -8621,32 +8621,32 @@ msgstr ""
 msgid "Selected"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3444
+#: src/OpenGoldBox/combat_view.cpp:3455
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: Nick attack on {name}. Left/Right: target | Space: use | Escape: cancel"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3447
+#: src/OpenGoldBox/combat_view.cpp:3458
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: Stabilize on {name}. Left/Right: target | Space: use | Escape: cancel"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3446
+#: src/OpenGoldBox/combat_view.cpp:3457
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: Throw at {name}. Left/Right: target | Space: use | Escape: cancel"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3329
+#: src/OpenGoldBox/combat_view.cpp:3340
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: {action}. Click a highlighted creature."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3319
+#: src/OpenGoldBox/combat_view.cpp:3330
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: {action}. Click a highlighted square."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3331
+#: src/OpenGoldBox/combat_view.cpp:3342
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: {action}. Press Space to use it."
 msgstr ""
@@ -8745,7 +8745,7 @@ msgstr ""
 msgid "Show character sheet"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3542
+#: src/OpenGoldBox/combat_view.cpp:3557
 msgid "Showing unarmed with the saved body."
 msgstr ""
 
@@ -8846,7 +8846,7 @@ msgstr ""
 msgid "Slot level 1"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3223
+#: src/OpenGoldBox/combat_view.cpp:3234
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Slot level {level}"
 msgstr ""
@@ -9684,7 +9684,7 @@ msgstr ""
 msgid "The Wand of Secrets has no charges left."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3356
+#: src/OpenGoldBox/combat_view.cpp:3367
 msgid "The attack is fully deflected. Redirect it at the attacker for 1 Focus Point, or decline."
 msgstr ""
 
@@ -9815,10 +9815,6 @@ msgstr ""
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:13662
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The oil on {name} burns for 5 more damage."
-msgstr ""
-
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
-msgid "The original script has requested combat."
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -10449,7 +10445,7 @@ msgstr ""
 msgid "Use new"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3375
+#: src/OpenGoldBox/combat_view.cpp:3386
 msgid "Use or decline the opportunity attack."
 msgstr ""
 
@@ -11007,40 +11003,40 @@ msgstr ""
 msgid "Yellow"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3351
+#: src/OpenGoldBox/combat_view.cpp:3362
 msgid "You are hit. Cast Shield (+5 AC) or decline."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3353
+#: src/OpenGoldBox/combat_view.cpp:3364
 msgid "You are hit. Deflect the attack (1d10 + Dexterity + Monk level less damage) or decline."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3368
+#: src/OpenGoldBox/combat_view.cpp:3379
 msgid "You are hit. Halve the damage with Uncanny Dodge, or decline."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3370
+#: src/OpenGoldBox/combat_view.cpp:3381
 msgid "You are hit. Resist this damage type for the rest of the turn with Superior Hunter's Defense, or decline."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3362
+#: src/OpenGoldBox/combat_view.cpp:3373
 msgid "You are hit. Use Stone's Endurance (1d12 + Constitution modifier less damage), or decline."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3347
+#: src/OpenGoldBox/combat_view.cpp:3358
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "You are hit: {total} against AC {ac}. Cast Shield (+5 AC) or decline."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3359
+#: src/OpenGoldBox/combat_view.cpp:3370
 msgid "You are hurt. Cast Hellish Rebuke at the attacker, or decline."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3373
+#: src/OpenGoldBox/combat_view.cpp:3384
 msgid "You are hurt. Strike back at the attacker with a melee attack (Retaliation), or decline."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3365
+#: src/OpenGoldBox/combat_view.cpp:3376
 msgid "You are hurt. Strike the attacker with Storm's Thunder (1d8 Thunder damage), or decline."
 msgstr ""
 
@@ -11105,7 +11101,7 @@ msgstr ""
 msgid "Your party has been defeated."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3376
+#: src/OpenGoldBox/combat_view.cpp:3387
 msgid "Your party is fleeing."
 msgstr ""
 
@@ -12186,7 +12182,7 @@ msgstr ""
 msgid "{name} fights on with {hp} Hit Points (Relentless Rage)."
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3341
+#: src/OpenGoldBox/combat_view.cpp:3352
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fights under computer control (Quick). Space or Take control: play the party yourself."
 msgstr ""
@@ -14081,7 +14077,7 @@ msgstr ""
 msgid "{spell} with {name}"
 msgstr ""
 
-#: src/OpenGoldBox/combat_view.cpp:3501
+#: src/OpenGoldBox/combat_view.cpp:3512
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{spell}: aim {left} more of {maximum}. Aimed at: {chosen}"
 msgstr ""

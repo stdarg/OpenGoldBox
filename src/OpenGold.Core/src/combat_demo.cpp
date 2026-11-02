@@ -551,7 +551,7 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     // A campaign fight has no demo status: when it ends, the turn line already
     // says Victory or defeat.
     status_.clear();
-    dialogue_ = "The original script has requested combat.";
+    dialogue_.clear();
 }
 
 CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
