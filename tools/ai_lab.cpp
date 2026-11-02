@@ -339,6 +339,7 @@ std::vector<Staged> staged_fights(const Options &options, const std::vector<AiSc
         {
             encounter.enemies = staged_enemies(options.enemies, pack);
             encounter.positions.clear();
+            encounter.band.clear();
         }
         auto description = enemies_of(encounter);
         staged.push_back({scenario->name, std::move(description),

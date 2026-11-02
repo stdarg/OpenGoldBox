@@ -411,6 +411,54 @@ void failed_run_spends_the_turn()
     throw std::runtime_error("No broken creature failed to get away");
 }
 
+// DIFF-2: what the difficulty asks of the rules. The numbers themselves are the
+// table's in difficulty.h.
+void difficulty_strengthens_monsters()
+{
+    const auto rules = module();
+    Encounter e{{8, 4, std::vector<Terrain>(32)},
+                {{1, "runner", "Runner", Side::party, {0, 1}},
+                 {9, "even", "Enemy", Side::opposition, {1, 1}}}};
+    e.participants[1].hit_points_percent = 200;
+    e.participants[1].attack_bonus = 3;
+    auto c = rules->create(std::move(e), 1);
+    check(unit(c->snapshot(), 9).hit_points == 60 && unit(c->snapshot(), 9).max_hit_points == 60,
+          "A monster has the Hit Points the difficulty gives it");
+    turn_of(*c, 9);
+    const auto melee = offered(*c, "melee", 9);
+    check(melee && c->submit(*melee), "The monster strikes");
+    const auto log = c->snapshot().log();
+    check(std::any_of(log.begin(), log.end(),
+                      [](const auto &line)
+                      {
+                          return line.starts_with("Enemy -> Runner") &&
+                                 line.find(" + 3 ") != std::string::npos;
+                      }),
+          "A monster's attack roll has the difficulty's bonus");
+    const auto saved = c->save();
+    const auto restored = rules->restore(saved);
+    check(restored->save() == saved && unit(restored->snapshot(), 9).max_hit_points == 60,
+          "A strengthened monster survives a checkpoint");
+}
+
+void easy_flight_always_succeeds()
+{
+    const auto rules = module();
+    for (std::uint64_t seed = 1; seed < 20; ++seed)
+    {
+        Encounter e{{8, 4, std::vector<Terrain>(32)},
+                    {{1, "slow", "Runner", Side::party, {0, 1}},
+                     {9, "fast", "Enemy", Side::opposition, {7, 1}}}};
+        e.spares_the_party = true;
+        auto c = rules->create(std::move(e), seed);
+        turn_of(*c, 1);
+        check(unit(c->snapshot(), 1).can_flee, "On Easy a slower member may still flee");
+        const auto flee = offered(*c, "flee", 1);
+        check(flee && c->submit(*flee) && logged(*c, "Runner flees the battle."),
+              "On Easy a flight always succeeds");
+    }
+}
+
 void monsters_break()
 {
     const auto rules = module();
@@ -472,6 +520,8 @@ int main()
         leaving_reach_provokes();
         flee_policy();
         monsters_break();
+        difficulty_strengthens_monsters();
+        easy_flight_always_succeeds();
         stuck_monster_charges();
         broken_monster_leaves_no_standoff();
         failed_run_spends_the_turn();

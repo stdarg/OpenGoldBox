@@ -116,6 +116,48 @@ void encounter_round_trip()
     check(refused, "A fight it cannot keep faithfully is refused");
 }
 
+// DIFF-2: replaying a level sizes the band and strengthens the monsters as the game
+// does; those on the party's side stay as they are.
+void level_sets_the_fight()
+{
+    auto encounter = open_field_fight();
+    encounter.allies = {encounter.enemies.front()};
+    encounter.allies.front().id = 500;
+    encounter.band.clear();
+    for (unsigned n = 0; n < 30; ++n)
+    {
+        auto creature = encounter.enemies.front();
+        creature.name = "Goblin";
+        encounter.band.push_back({creature, 7, 10});
+    }
+    encounter.morale = 60;
+    const auto text = encode_ai_encounter(encounter);
+    const auto decoded = decode_ai_encounter(text);
+    check(decoded.band.size() == 30 && decoded.band.front().xp == 10 &&
+              decoded.band.front().record == 7 && encode_ai_encounter(decoded) == text,
+          "A pack keeps the whole band");
+    const std::vector<unsigned> party(6, 3);
+    const auto normal = encounter_at_difficulty(decoded, party, Difficulty::normal);
+    const auto hard = encounter_at_difficulty(decoded, party, Difficulty::hard);
+    const auto infernal = encounter_at_difficulty(decoded, party, Difficulty::infernal);
+    check(normal.enemies.size() == 6 && hard.enemies.size() == 9 && infernal.enemies.size() > 9,
+          "The level sizes the band");
+    check(normal.enemies.front().hit_points_percent == 100 &&
+              normal.enemies.front().attack_bonus == 0 && normal.morale == 60,
+          "Normal leaves the monsters as they are");
+    check(infernal.enemies.front().hit_points_percent == monster_strengths[4].hit_points_percent &&
+              infernal.enemies.front().attack_bonus == monster_strengths[4].attack_bonus &&
+              infernal.morale == 90 && infernal.allies.front().hit_points_percent == 100,
+          "Infernal strengthens the enemies alone");
+    const auto easy = encounter_at_difficulty(decoded, party, Difficulty::easy);
+    check(easy.spares_the_party && easy.morale == 30 && !normal.spares_the_party,
+          "Easy spares the party and breaks monsters sooner");
+    auto never_breaks = encounter;
+    never_breaks.morale = 100;
+    check(encounter_at_difficulty(never_breaks, party, Difficulty::easy).morale == 100,
+          "Morale that never breaks stays so");
+}
+
 void replay_is_repeatable(const std::filesystem::path &pack)
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -156,6 +198,7 @@ int main(int argc, char **argv)
             argc > 1 ? argv[1] : std::filesystem::temp_directory_path() / "opengold-ai-lab-check";
         std::filesystem::remove_all(pack);
         encounter_round_trip();
+        level_sets_the_fight();
         replay_is_repeatable(pack);
         std::cout << "AI scenario tests passed\n";
     }

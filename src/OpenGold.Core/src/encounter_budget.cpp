@@ -1,6 +1,7 @@
 #include "opengold/encounter_budget.h"
 #include <algorithm>
 #include <array>
+#include <numeric>
 #include <stdexcept>
 
 namespace opengold
@@ -62,5 +63,25 @@ std::vector<unsigned> fit_encounter_to_budget(std::span<const EncounterGroup> gr
                 : std::max(1U, static_cast<unsigned>(group.count * numerator / denominator)));
     }
     return counts;
+}
+
+unsigned average_party_level(std::span<const unsigned> member_levels)
+{
+    return member_levels.empty() ? 1
+                                 : std::accumulate(member_levels.begin(), member_levels.end(), 0U) /
+                                       static_cast<unsigned>(member_levels.size());
+}
+
+std::vector<unsigned> fit_encounter_to_difficulty(std::span<const EncounterGroup> groups,
+                                                  std::span<const unsigned> member_levels,
+                                                  unsigned challenge, Difficulty difficulty)
+{
+    const auto strength = monster_strength(difficulty, average_party_level(member_levels));
+    const auto scaled_challenge =
+        std::min(challenge * strength.challenge_percent / 100, max_encounter_challenge);
+    const auto members = static_cast<unsigned>(member_levels.size());
+    const auto allowed = members * strength.creatures_per_ten_members / 10;
+    return fit_encounter_to_budget(groups, encounter_xp_budget(member_levels, scaled_challenge),
+                                   allowed - std::min(allowed, strength.creatures_fewer));
 }
 } // namespace opengold

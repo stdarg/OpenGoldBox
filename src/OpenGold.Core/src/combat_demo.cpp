@@ -540,7 +540,8 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     }
     auto next = module_->create({encounter.field.geometry, std::move(participants),
                                  campaign_->state().next_combat_scope, encounter.morale,
-                                 coins(campaign_->state().wealth, Coin::gold), encounter.daylight},
+                                 coins(campaign_->state().wealth, Coin::gold), encounter.daylight,
+                                 encounter.spares_the_party},
                                 seed);
     install_combat(std::move(next), {});
     seed_ = seed;

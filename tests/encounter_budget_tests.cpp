@@ -60,12 +60,43 @@ void fitting()
 }
 } // namespace
 
+// DIFF-2: Normal sizes as ever; the levels around it change the budget and the
+// creatures allowed, and above Normal a level comes on as the party grows.
+void difficulty_sizes_fights()
+{
+    const std::vector<EncounterGroup> band{{50, 30}};
+    const std::vector<unsigned> party(6, 3);
+    const auto at = [&](Difficulty difficulty)
+    {
+        return fit_encounter_to_difficulty(band, party, 100, difficulty).front();
+    };
+    check(at(Difficulty::normal) ==
+              fit_encounter_to_budget(band, encounter_xp_budget(party, 100), 6).front(),
+          "Normal sizes a fight exactly as before");
+    check(at(Difficulty::easy) == 5, "Easy meets one creature fewer than the party");
+    check(at(Difficulty::hard) == 9, "Hard meets one and a half per member");
+    check(at(Difficulty::nightmare) == 12, "Nightmare meets two per member");
+    const auto strong = monster_strength(Difficulty::infernal, 2);
+    check(strong.hit_points_percent == monster_strengths[4].hit_points_percent &&
+              strong.attack_bonus == monster_strengths[4].attack_bonus,
+          "From party level 2 a level has its full strength");
+    const auto frail = monster_strength(Difficulty::infernal, 1);
+    check(frail.hit_points_percent == 100 + (strong.hit_points_percent - 100) / 2 &&
+              frail.attack_bonus == strong.attack_bonus / 2,
+          "At party level 1 a level above Normal has half its extra strength");
+    check(monster_strength(Difficulty::easy, 1).hit_points_percent ==
+              monster_strengths[0].hit_points_percent,
+          "Easy needs no easing in");
+    check(average_party_level(party) == 3, "The party's level is its members' average");
+}
+
 int main()
 {
     try
     {
         budgets();
         fitting();
+        difficulty_sizes_fights();
         std::cout << "Encounter budget tests passed.\n";
         return 0;
     }

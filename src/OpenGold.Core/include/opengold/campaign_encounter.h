@@ -1,5 +1,6 @@
 #ifndef OPENGOLD_CAMPAIGN_ENCOUNTER_H
 #define OPENGOLD_CAMPAIGN_ENCOUNTER_H
+#include "opengold/difficulty.h"
 #include "opengold/dungeon_battlefield.h"
 #include "opengold/formats.h"
 #include "opengold/rules.h"
@@ -71,6 +72,13 @@ inline constexpr rules::EntityId first_ally_id = 2000;
     return id >= first_ally_id;
 }
 
+// One creature of the band a script loaded, before the fight was sized to the party.
+struct BandMember
+{
+    rules::Participant creature;
+    unsigned record{}, xp{};
+};
+
 struct CampaignEncounter
 {
     por::DungeonBattlefield field;
@@ -96,6 +104,15 @@ struct CampaignEncounter
     bool daylight{};
     // Monsters on the party's side, standing beside it.
     std::vector<rules::Participant> allies;
+    // The whole band, with its gear, so the AI lab can size the fight for another
+    // party and difficulty just as the game does.
+    std::vector<BandMember> band;
+    // Easy's safety net (DIFF-2).
+    bool spares_the_party{};
 };
+
+// What the difficulty does to a fight's monsters and morale, those on the party's
+// side left alone (DIFF-2).
+void apply_difficulty(CampaignEncounter &encounter, Difficulty difficulty, unsigned party_level);
 } // namespace opengold
 #endif

@@ -47,6 +47,9 @@ Add an entry whenever a new departure is decided.
   readied wands at all times and never a potion or scroll; here monsters use
   their potions, wands and scrolls on Hard and above and no items on Normal and
   below. [DIFF-1](SRD-DECISIONS.md#diff-1-2026-10-21-difficulty-and-monsters-that-use-their-items).
+  Each level also sets how many monsters a fight has, their Hit Points, attack rolls
+  and morale, and Easy spares the party after a win and always lets it flee (2026-11-02,
+  [DIFF-2](SRD-DECISIONS.md#diff-2-2026-11-02-each-level-changes-the-fights-not-only-the-tactics)).
 - **Empty fights** (2026-10-10). With no room for a whole band, the original
   started an empty fight the party won at once. OpenGoldBox places the band's
   first monster on the nearest free square the party can reach.

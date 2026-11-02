@@ -1156,7 +1156,7 @@ background grant, every class and subclass feature from level 1 to 15, every
 feat and every spell the three inventories keep was checked against the code
 and its tests. The [audit finding status](#audit-finding-status) table above
 gives the result. What the check found missing was built (rules 0.6.260,
-`OGCOMBAT 72`):
+`OGCOMBAT 74`):
 
 - **Loading:** a Loading weapon fires once per action, so Extra Attack's later
   attacks cannot fire a crossbow again; Action Surge's action, Haste's action

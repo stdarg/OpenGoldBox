@@ -33,7 +33,8 @@ The supported language codes are `en` and `es`.
 
 `difficulty` is one of `easy`, `normal`, `hard`, `nightmare` and `infernal`,
 easiest first; the default, also used for an unknown value, is `normal`. On
-`hard` and above monsters use the potions, wands and scrolls they carry. The
+`hard` and above monsters use the potions, wands and scrolls they carry. Each level
+also sets how many monsters a fight has and how strong they are ([DIFF-2](SRD-DECISIONS.md#diff-2-2026-11-02-each-level-changes-the-fights-not-only-the-tactics)). The
 game reads it when exploration starts or a save is loaded, and new settings
 files receive the default. See
 [DIFF-1](SRD-DECISIONS.md#diff-1-2026-10-21-difficulty-and-monsters-that-use-their-items).
@@ -71,7 +72,8 @@ Godot project config. New settings files receive this value automatically.
 It controls the battlefield canvas, input coordinates, and centering; menus and
 text retain their normal size.
 
-`encounter_challenge` sizes original monster encounters. It is a percentage of
+`encounter_challenge` sizes original monster encounters, before the difficulty
+scales it. It is a percentage of
 the SRD 5.2.1 Moderate XP budget for the party, clamped to 0–200; the default is
 33. An encounter whose monsters are worth more XP than that budget, or that has
 more monsters than living characters, is scaled back proportionally, keeping at

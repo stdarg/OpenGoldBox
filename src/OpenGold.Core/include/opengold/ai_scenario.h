@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -56,9 +57,16 @@ struct AiFightResult
 
 using RulesModuleFactory = std::function<std::unique_ptr<rules::RulesModule>()>;
 
+// The fight as `difficulty` meets it (DIFF-2): sized from its band for these
+// members, when it has one, and with the monsters strengthened.
+[[nodiscard]] CampaignEncounter encounter_at_difficulty(CampaignEncounter encounter,
+                                                        std::span<const unsigned> member_levels,
+                                                        Difficulty difficulty);
+
 // Plays one fight to its end through the game's own combat and policy, with no
 // player: party members at `party_level`, and monsters, those on the party's side
-// included, at `monster_level`. `party` is not changed.
+// included, at `monster_level`, sized and strengthened by that level. `party` is
+// not changed.
 [[nodiscard]] AiFightResult play_ai_fight(const RulesModuleFactory &make_module,
                                           const PartyState &party,
                                           const CampaignEncounter &encounter,
