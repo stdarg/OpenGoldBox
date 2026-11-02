@@ -545,6 +545,7 @@ void CharacterCreationView::refresh()
         const auto choices = creator_->rules().choices(field);
         auto *list = &required_node<ItemList>(*this, "Choices");
         list->clear();
+        required_node<RichTextLabel>(*this, "Description").set_text("");
         for (unsigned i = 0; i < choices.size(); ++i)
         {
             list->add_item(i18n::text(choices[i].label));
@@ -558,7 +559,8 @@ void CharacterCreationView::refresh()
                                       i18n::requirements(
                                           creator_->rules().class_requirements(choices[i].id))}}));
             }
-            if (choices[i].id == selection(d, field))
+            // A class left over from earlier scores that no longer qualify is not chosen.
+            if (choices[i].id == selection(d, field) && !list->is_item_disabled(i))
             {
                 list->select(i);
                 required_node<RichTextLabel>(*this, "Description")
@@ -567,17 +569,17 @@ void CharacterCreationView::refresh()
         }
         if (step == CreationStep::character_class)
         {
-            required_node<RichTextLabel>(*this, "Description")
-                .append_text(
-                    "\n\n" +
-                    i18n::text(
-                        "Starting-class minimums use the multiclass prerequisites as an OpenGoldBox house rule. Disabled classes do not qualify; go Back to reassign scores or bonuses."));
+            auto &description = required_node<RichTextLabel>(*this, "Description");
+            description.append_text(
+                (description.get_text().is_empty() ? String() : String("\n\n")) +
+                i18n::text(
+                    "To start in a class, your scores must reach its minimums. Classes in gray do not qualify; go Back to change your scores or bonuses."));
         }
         instructions =
             step == CreationStep::character_class
-                ? N_("Choose one starting class. Checked targets are future plans, not additional class levels.")
+                ? N_("Choose one starting class. The classes you checked on the last page are future goals, not extra levels.")
             : step == CreationStep::race
-                ? N_("Name your character (up to 40 characters), then choose a race (species in SRD 5.2.1) and gender.")
+                ? N_("Name your character (up to 40 characters), then choose a race and gender.")
                 : N_("Select an option, then continue.");
     }
     if (step == CreationStep::race)
