@@ -913,6 +913,31 @@ const std::vector<AnimationFrame> *RolfTourSession::monster_picture() const
     return &area_resources().animations.at(*monster_picture_id_);
 }
 
+const std::vector<AnimationFrame> *RolfTourSession::scene_animation() const
+{
+    if (showing_monster_picture_)
+    {
+        return monster_picture();
+    }
+    // The close-up has played: the fight takes over.
+    if (snapshot_.phase == TourPhase::combat)
+    {
+        return nullptr;
+    }
+    const auto beside_the_party =
+        snapshot_.sprite_frame == 0 && machine_.variable(EclAddress{0x6DE1}) == 255;
+    const auto id = picture_           ? picture_animation_id_
+                    : beside_the_party ? monster_picture_id_
+                                       : std::nullopt;
+    if (!id)
+    {
+        return nullptr;
+    }
+    const auto &animations = area_resources().animations;
+    const auto found = animations.find(*id);
+    return found != animations.end() && found->second.size() > 1 ? &found->second : nullptr;
+}
+
 bool RolfTourSession::start_encounter()
 {
     if (snapshot_.phase != TourPhase::combat || !showing_monster_picture_)
@@ -1768,6 +1793,7 @@ void RolfTourSession::show_encounter_menu()
     }
     snapshot_.sprite_id = args[0].number();
     snapshot_.sprite_frame = encounter_distance_;
+    monster_picture_id_ = args[2].number();
     snapshot_.dialogue = args[9 + encounter_distance_].text();
     if (snapshot_.dialogue.empty())
     {
@@ -2374,6 +2400,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             snapshot_.sprite_frame = -1;
             snapshot_.sprite_id = arg(0);
             monster_picture_id_.reset();
+            picture_animation_id_.reset();
             picture_ = close_up_portrait(area_resources(), head_id, arg(2));
             ++snapshot_.picture_revision;
             break;
@@ -2407,6 +2434,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         snapshot_.sprite_frame = -1;
         picture_.reset();
+        picture_animation_id_.reset();
         ++snapshot_.picture_revision;
         if (arg(0) == 255)
         {
@@ -2423,14 +2451,16 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             const auto found = area_resources().pictures.find(arg(0));
             const auto animation = area_resources().animations.find(arg(0));
+            if (animation != area_resources().animations.end())
+            {
+                picture_animation_id_ = arg(0);
+            }
             if (found != area_resources().pictures.end())
             {
                 picture_ = found->second;
             }
             else if (animation != area_resources().animations.end() && !animation->second.empty())
             {
-                // Podol's auctioneer (PIC1 16) is an animation; its first frame
-                // stands for it.
                 picture_ = animation->second.front().image;
             }
             else

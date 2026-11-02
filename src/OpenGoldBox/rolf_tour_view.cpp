@@ -459,10 +459,8 @@ void RolfTourView::next()
     {
         return;
     }
-    // Continue, like any key, leaves the monster close-up for combat.
-    if (shown_monster_picture_)
+    if (fight_waits_on_picture_)
     {
-        dismiss_monster_picture();
         return;
     }
     const auto &s = session_->snapshot();
@@ -1459,7 +1457,7 @@ void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
     }
     // Escape closes the inventory or the spell list first; with neither open
     // it goes on to the host, which opens the in-game menu.
-    if (key->get_keycode() == Key::KEY_ESCAPE && !shown_monster_picture_)
+    if (key->get_keycode() == Key::KEY_ESCAPE && !fight_waits_on_picture_)
     {
         if (required_node<Control>(*this, "InventoryPanel").is_visible())
         {
@@ -1473,9 +1471,9 @@ void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
         }
         return;
     }
-    if (shown_monster_picture_)
+    if (fight_waits_on_picture_)
     {
-        // As in the original, any key leaves the monster close-up for combat.
+        // The close-up opens the fight by itself; a key only hurries it.
         dismiss_monster_picture();
         get_viewport()->set_input_as_handled();
         return;
@@ -1613,6 +1611,11 @@ void RolfTourView::advance_frame(double delta)
         {
             monster_picture_seconds_ += delta;
             required_node<Control>(*this, "TourVisuals").queue_redraw();
+            if (fight_waits_on_picture_ &&
+                monster_picture_seconds_ >= presentation::monster_picture_lasts(monster_delays_))
+            {
+                dismiss_monster_picture();
+            }
         }
     }
     if (mastery_rest_check_)
@@ -1817,12 +1820,15 @@ String event_dialogue(const std::string &resource, const TourSnapshot &s)
 
 void RolfTourView::sync_monster_picture()
 {
-    const auto *picture = session_ ? session_->monster_picture() : nullptr;
+    const auto *picture = session_ ? session_->scene_animation() : nullptr;
+    const bool fight_waits = session_ && session_->monster_picture();
     if (picture == shown_monster_picture_)
     {
+        fight_waits_on_picture_ = fight_waits;
         return;
     }
     forget_monster_picture();
+    fight_waits_on_picture_ = fight_waits;
     shown_monster_picture_ = picture;
     if (!picture)
     {
@@ -1838,6 +1844,7 @@ void RolfTourView::sync_monster_picture()
 void RolfTourView::forget_monster_picture()
 {
     shown_monster_picture_ = nullptr;
+    fight_waits_on_picture_ = false;
     monster_frames_.clear();
     monster_delays_.clear();
     monster_picture_seconds_ = 0;
@@ -1969,12 +1976,11 @@ void RolfTourView::refresh()
                 ? (loaded ? i18n::text(s.diagnostic) : error_) + "\n" +
                       i18n::text(
                           "Restart with --reset-game-path to choose your Pool of Radiance data folder.")
-            : shown_monster_picture_ ? i18n::text("Press any key to fight.")
             : s.dialogue.empty() && s.secret_door_searches.empty()
                 ? (s.tour_finished ? String() : i18n::text("Following Rolf..."))
-                                 : event_dialogue(resource + "/dialogue", s));
+                : event_dialogue(resource + "/dialogue", s));
     required_node<Button>(*this, "Continue")
-        .set_disabled(!waiting && !shopping && !answer && !shown_monster_picture_);
+        .set_disabled(fight_waits_on_picture_ || (!waiting && !shopping && !answer));
     required_node<Button>(*this, "Continue")
         .set_text(i18n::text(shopping   ? N_("Buy [Enter]")
                              : multiple ? N_("Choose [Enter]")
@@ -2160,7 +2166,7 @@ Dictionary RolfTourView::tour_visuals()
     data["wall"] = wall_view_;
     // The image itself: a headless check cannot read a texture's pixels back.
     data["wall_image"] = wall_image_;
-    if (shown_monster_picture_ && !monster_frames_.empty())
+    if (fight_waits_on_picture_ && !monster_frames_.empty())
     {
         data["picture"] = monster_frames_[current_monster_frame()];
     }
@@ -2173,6 +2179,10 @@ Dictionary RolfTourView::tour_visuals()
         if (portrait.is_valid())
         {
             data["picture"] = portrait;
+        }
+        else if (!monster_frames_.empty())
+        {
+            data["picture"] = monster_frames_[current_monster_frame()];
         }
         else if (state.sprite_frame >= 0 && sprites_[state.sprite_frame].is_valid())
         {
@@ -2717,9 +2727,9 @@ bool RolfTourView::check_expedition_step()
         throw std::runtime_error(s.diagnostic);
     }
     check_district_labels(s);
-    if (shown_monster_picture_)
+    if (fight_waits_on_picture_)
     {
-        // Let the close-up animate for about two seconds before pressing a key.
+        // This check steps the view itself, so it hurries the close-up as a key does.
         if (++monster_picture_check_frames_ < 120)
         {
             return false;

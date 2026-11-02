@@ -2118,6 +2118,41 @@ void settle(por::RolfTourSession &town)
     check(town.snapshot().phase != por::TourPhase::faulted, "Town script fault");
 }
 
+// A script's PICTURE of an animated record animates, not only its first frame; a
+// still record does not.
+void scripted_picture_animates()
+{
+    const auto animates = [](std::uint8_t record)
+    {
+        auto gate = program({32, 0, 20, 0});
+        auto scene = program({58,   33,   0,  20, 0,      2,  0, 255, 9, 0,    255,  1,
+                              0xE1, 0x6D, 14, 0,  record, 15, 0, 1,   1, 0x19, 0x6c, 0});
+        auto resources = std::make_shared<por::PhlanResources>();
+        resources->map = por::GeoMap{};
+        resources->programs[0] = gate;
+        resources->programs[20] = scene;
+        auto district = std::make_shared<por::PhlanResources>();
+        district->map = por::GeoMap{};
+        district->animations[4] = {{17, {}}, {15, {}}};
+        district->animations[5] = {{0, {}}};
+        district->script = 20;
+        district->bank = 2;
+        resources->districts[20] = district;
+        auto party = std::make_shared<CampaignParty>(module());
+        (void)party->add_pc(character("fighter"));
+        por::RolfTourSession town({}, gate, {}, 0x9914, {}, resources);
+        town.campaign_party(party);
+        settle(town);
+        (void)town.observe_view();
+        check(town.explore(por::ExplorationCommand::look), "The gate starts the script");
+        settle(town);
+        check(town.picture().has_value(), "The script shows its picture");
+        return town.scene_animation() != nullptr;
+    };
+    check(animates(4), "A scripted picture with several frames animates");
+    check(!animates(5), "A scripted picture with one frame stays still");
+}
+
 void monster_picture_before_combat()
 {
     // SETUP MONSTER selects sprite 4 and picture 4; after COMBAT is requested the
@@ -2167,6 +2202,8 @@ void monster_picture_before_combat()
     check(town.monster_picture() && town.monster_picture()->size() == 2 &&
               (*town.monster_picture())[0].delay == 17,
           "The close-up is SETUP MONSTER's PIC record");
+    check(town.scene_animation() == town.monster_picture(),
+          "The close-up already playing beside the party is the one before the fight");
     check(town.start_encounter() && town.pending_encounter() && !town.monster_picture(),
           "A key press dismisses the close-up and releases combat");
     check(!town.start_encounter(), "The close-up is dismissed only once");
@@ -3250,6 +3287,7 @@ int main()
         victory_with_a_monster_left_out();
         monsters_bring_their_gear();
         monster_picture_before_combat();
+        scripted_picture_animates();
         recovery_hosts();
         training_hall_service();
         reward_reentry();

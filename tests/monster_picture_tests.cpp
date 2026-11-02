@@ -32,6 +32,12 @@ void frames_follow_the_original_timer()
     check(presentation::monster_frame_at(delays, 10.5 * tick) == 0, "The close-up loops");
     const std::array<std::uint32_t, 2> still{0, 0};
     check(presentation::monster_frame_at(still, 5) == 0, "A picture with no timing stays put");
+    const std::array<std::uint32_t, 4> orc{15, 0, 7, 0};
+    check(presentation::monster_picture_lasts(orc) > 1.2 &&
+              presentation::monster_picture_lasts(orc) < 1.21,
+          "The fight opens after one full loop");
+    check(presentation::monster_picture_lasts(still) == 1.0,
+          "A picture with no timing is still seen before the fight");
 }
 
 // shown_monster_picture_ points into the session, so the view may only compare

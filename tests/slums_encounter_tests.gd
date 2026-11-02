@@ -72,15 +72,15 @@ func check_leader() -> void:
     require(roster.get_item_text(1).begins_with("★ ") and not roster.get_item_text(0).begins_with("★"), "The party roster marks the new leader")
     sheet.get_node("Close").pressed.emit(); await settle()
 
-# Steps into the trolls' room and reads its story until the close-up shows.
+# Steps into the trolls' room and reads its story until the close-up plays.
 func reach_close_up() -> void:
     await press("CampaignTown/Forward")
     for step in range(60):
         await settle(10)
-        if dialogue() == tr("Press any key to fight."): return
+        if in_combat() or (town().get_node("Continue").disabled and town().tour_visuals().has("picture")): return
         var continue_button: Button = town().get_node("Continue")
         if not continue_button.disabled: continue_button.pressed.emit()
-    require(false, "The trolls' close-up asks for a key: " + dialogue())
+    require(false, "The trolls' close-up plays: " + dialogue())
 
 # Ends every party turn until the trolls win.
 func lose_the_fight() -> void:
@@ -135,10 +135,10 @@ func run_checks() -> void:
     await check_leader()
     await check_wall_art()
     await reach_close_up()
-    var continue_button: Button = town().get_node("Continue")
-    require(not continue_button.disabled, "Continue can start the fight from the close-up")
-    continue_button.pressed.emit(); await settle(30)
-    require(in_combat(), "Continue leaves the close-up for combat")
+    for wait in range(600):
+        if in_combat(): break
+        await settle(1)
+    require(in_combat(), "The fight opens by itself after the close-up")
     await check_combat_art()
     await lose_the_fight()
     var log: String = current_scene.get_node("CampaignCombat/LogStack/Log").get_parsed_text()

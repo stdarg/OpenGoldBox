@@ -133,6 +133,8 @@ class RolfTourView : public godot::Control
     // Only compared with the session's current close-up, never read: the
     // frames it points to go when the session is reset or replaced.
     const std::vector<opengold::AnimationFrame> *shown_monster_picture_{};
+    // The close-up is playing, and the fight opens when it has played.
+    bool fight_waits_on_picture_{};
     std::vector<godot::Ref<godot::ImageTexture>> monster_frames_;
     std::vector<std::uint32_t> monster_delays_;
     double monster_picture_seconds_{};

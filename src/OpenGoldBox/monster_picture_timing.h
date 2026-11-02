@@ -1,6 +1,7 @@
 #ifndef OPENGOLDBOX_MONSTER_PICTURE_TIMING_H
 #define OPENGOLDBOX_MONSTER_PICTURE_TIMING_H
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -34,6 +35,18 @@ namespace presentation
         tick -= delays[n];
     }
     return 0;
+}
+
+// How long a close-up plays before the fight opens by itself: one full loop, and
+// long enough to see one that barely has any.
+[[nodiscard]] inline double monster_picture_lasts(std::span<const std::uint32_t> delays)
+{
+    std::uint64_t total_ticks = 0;
+    for (const auto delay : delays)
+    {
+        total_ticks += delay;
+    }
+    return std::max(1.0, static_cast<double>(total_ticks) / 18.2);
 }
 } // namespace presentation
 

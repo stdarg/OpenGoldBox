@@ -47,9 +47,9 @@ eight goblins and four leaders where the SRD-bonus conversion produced sixteen
 and four. Group counts start from the original script and are then scaled back to the XP
 budget.
 
-When the script starts combat, the approached monster's animated close-up
-fills the 3D view, with "Press any key to fight.", until any key or Continue is
-pressed, then combat opens. See
+Once the approached monster is beside the party, its animated close-up fills the 3D
+view while the menu waits. When the script starts combat, a close-up not yet played
+through finishes one loop, then combat opens by itself; a key hurries it. See
 [close-up animations](graphics-format.md#close-up-animations).
 
 The pre-combat menu offers Fight, Wait, Flee and Advance with the script's
