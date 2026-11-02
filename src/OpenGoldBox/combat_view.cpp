@@ -151,7 +151,7 @@ void CombatView::_bind_methods()
     ClassDB::bind_method(D_METHOD("cell_pixels"), &CombatView::cell_pixels);
     ClassDB::bind_method(D_METHOD("enemy_cells"), &CombatView::enemy_cells);
     ClassDB::bind_method(D_METHOD("enemy_sprite_widths"), &CombatView::enemy_sprite_widths);
-    ClassDB::bind_method(D_METHOD("enemy_weapon_sets"), &CombatView::enemy_weapon_sets);
+    ClassDB::bind_method(D_METHOD("weapon_sets_shown"), &CombatView::weapon_sets_shown);
     ClassDB::bind_method(D_METHOD("missiles_in_flight"), &CombatView::missiles_in_flight);
     ClassDB::bind_method(D_METHOD("spell_effects_in_play"), &CombatView::spell_effects_in_play);
     ClassDB::bind_method(D_METHOD("spell_effect_rows"), &CombatView::spell_effect_rows);
@@ -200,9 +200,9 @@ Array CombatView::enemy_sprite_widths() const
     return widths;
 }
 
-// Which art each living enemy is drawn with, by id: "melee" or "ranged" once
-// it attacked with a weapon set of its new art, else "staged" (#274).
-Dictionary CombatView::enemy_weapon_sets() const
+// Which art each living creature is drawn with, by id: "melee" or "ranged" once
+// it attacked with a weapon set of its art, else "staged" (#274).
+Dictionary CombatView::weapon_sets_shown() const
 {
     Dictionary sets;
     if (!demo_ || !demo_->has_combat())
@@ -211,7 +211,7 @@ Dictionary CombatView::enemy_weapon_sets() const
     }
     for (const auto &a : demo_.snapshot().combatants)
     {
-        if (a.side == rules::Side::party || a.hit_points <= 0)
+        if (a.hit_points <= 0)
         {
             continue;
         }
@@ -1087,17 +1087,11 @@ CombatView::ArtSet CombatView::build_art() const
                 {},
                 {}};
     };
-    for (const auto &source : demo_->art())
+    const auto install_weapon_sets = [&](const CombatArt &source, bool large)
     {
-        if (original_art && source.original)
-        {
-            install(original_of(source), false);
-            continue;
-        }
-        install(source, false);
         const auto weapon_set = [&](const WeaponSetArt &set)
         {
-            return build({source.entity, set.image, set.action, {}, set.planted, {}}, false);
+            return build({source.entity, set.image, set.action, {}, set.planted, {}}, large);
         };
         if (source.melee)
         {
@@ -1111,6 +1105,16 @@ CombatView::ArtSet CombatView::build_art() const
         {
             result.melee_without_shield[source.entity] = weapon_set(*source.melee_without_shield);
         }
+    };
+    for (const auto &source : demo_->art())
+    {
+        if (original_art && source.original)
+        {
+            install(original_of(source), false);
+            continue;
+        }
+        install(source, false);
+        install_weapon_sets(source, false);
     }
     if (campaign_)
     {
@@ -1129,6 +1133,36 @@ CombatView::ArtSet CombatView::build_art() const
                     {id, resolved.icon(originals, por::IconPose::ready),
                      resolved.icon(originals, por::IconPose::action),
                      resolved.selection.matched ? std::string{} : resolved.selection.label});
+                // What it shows as it attacks: the game draws its weapons as it
+                // draws its equipment.
+                const auto set_of = [&](const por::ResolvedCombatAppearance &look)
+                {
+                    return WeaponSetArt{look.icon(originals, por::IconPose::ready),
+                                        look.icon(originals, por::IconPose::action),
+                                        {}};
+                };
+                auto &sets = campaign_art.back();
+                sets.melee = set_of(resolved);
+                if (const auto bare =
+                        por::resolve_unshielded_appearance(campaign_->member(id), catalog))
+                {
+                    sets.melee_without_shield = set_of(*bare);
+                }
+                if (demo_ && demo_->has_combat())
+                {
+                    for (const auto &combatant : demo_.snapshot().combatants)
+                    {
+                        if (combatant.id != id || combatant.drawn_ranged_weapon.empty())
+                        {
+                            continue;
+                        }
+                        if (const auto shooting = por::resolve_shooting_appearance(
+                                campaign_->member(id), catalog, combatant.drawn_ranged_weapon))
+                        {
+                            sets.ranged = set_of(*shooting);
+                        }
+                    }
+                }
             }
         }
     }
@@ -1148,6 +1182,7 @@ CombatView::ArtSet CombatView::build_art() const
             }
         }
         install(source, large);
+        install_weapon_sets(source, large);
     }
 
     // Wild Shape's Beast forms and summoned creatures wear the art of the
@@ -2038,7 +2073,7 @@ void CombatView::act(Command command)
                             ? 7
                             : 9;
             }
-            else if ((command.verb == "ranged" || command.verb == "throw"))
+            else if (command.verb == "shoot" || command.verb == "ranged" || command.verb == "throw")
             {
                 sound = 6;
             }
@@ -2054,12 +2089,16 @@ void CombatView::act(Command command)
             }
             // A monster shows the weapon set it attacks with (#274), and keeps
             // the set it shows when its art has none for the attack.
-            if ((command.verb == "melee" || command.verb == "opportunity") &&
+            if ((command.verb == "melee" || command.verb == "opportunity" ||
+                 command.verb.starts_with("melee_") || command.verb == "light_melee" ||
+                 command.verb == "nick_melee") &&
                 melee_art_.contains(command.actor))
             {
                 shot_last_[command.actor] = false;
             }
-            else if ((command.verb == "ranged" || command.verb.starts_with("throw") ||
+            else if ((command.verb == "shoot" || command.verb == "ranged" ||
+                      command.verb.starts_with("ranged_") || command.verb.starts_with("throw") ||
+                      command.verb == "light_ranged" || command.verb == "nick_ranged" ||
                       (command.verb.ends_with("_item") && !command.verb.starts_with("potion")) ||
                       command.verb == "javelin_lightning" || command.verb == "doff_shield") &&
                      ranged_art_.contains(command.actor))

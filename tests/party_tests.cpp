@@ -1951,6 +1951,45 @@ void combat_demo_fixture()
             check(sheet.level == 5, sheet.name + " levels up on the default choices");
         }
     }
+    // A character draws the carried bow it shoots, and strikes without the shield
+    // it took off for it, each by the game's own equipment drawing.
+    {
+        const auto looks = por::CombatBodyCatalog::load(
+            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/art/combat-body-looks.tsv",
+            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/art/combat-weapon-options.tsv");
+        const auto pool = character_pool(*characters, por::CharacterArt::load(directory));
+        const auto fighter =
+            std::ranges::find_if(pool,
+                                 [](const auto &candidate)
+                                 {
+                                     return candidate.creation_data().character_class == "fighter";
+                                 });
+        check(fighter != pool.end(), "The pool has a Fighter");
+        auto party = std::make_shared<CampaignParty>(module());
+        const auto id = party->add_pc(*fighter);
+        outfit_pool_member(*party, id);
+        const auto &member = party->member(id);
+        const auto worn = por::resolve_combat_appearance(member, looks);
+        const auto bare = por::resolve_unshielded_appearance(member, looks);
+        check(worn.selection.label.find("Shield") != std::string::npos && bare &&
+                  bare->selection.matched &&
+                  bare->selection.label.find("Shield") == std::string::npos,
+              "A Fighter's sword shows with its shield, then alone: " + worn.selection.label);
+        std::string bow_key;
+        for (const auto &item : member.character.inventory().items())
+        {
+            if (item.definition_id.find("bow") != std::string::npos)
+            {
+                bow_key = item.definition_id;
+            }
+        }
+        const auto drawn = por::resolve_shooting_appearance(member, looks, bow_key);
+        check(!bow_key.empty() && drawn && drawn->selection.matched &&
+                  drawn->selection.body != worn.selection.body,
+              "A Fighter draws its carried bow with its own body");
+        check(!por::resolve_shooting_appearance(member, looks, "no_such_item"),
+              "A weapon it does not carry draws nothing");
+    }
     // The demo's kobolds fight as a campaign's do: a short sword and no thrown
     // daggers from the stat block, which their art would not show.
     {

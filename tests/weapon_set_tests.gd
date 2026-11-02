@@ -102,7 +102,7 @@ func check_missiles(combat: Control) -> void:
         for missile in combat.battlefield_visuals()["missiles"]:
             missile_drawn = missile_drawn or shown_on_screen(combat, missile, screen)
     for flight in combat.missiles_in_flight():
-        require(combat.enemy_weapon_sets().get(flight["actor"]) == "ranged", "The shooter shows its bow at every shot: " + str(flight))
+        require(combat.weapon_sets_shown().get(flight["actor"]) == "ranged", "The shooter shows its bow at every shot: " + str(flight))
         require(flight["missile"] == "arrow", "An orc shoots an arrow from its bow: " + str(flight))
         require(flight["texture"] is Texture2D, "The arrow has its art")
         var to_target: Vector2 = flight["target"] - flight["from"]
@@ -112,17 +112,24 @@ func check_missiles(combat: Control) -> void:
             miss_seen = true
             require(flown.length() > to_target.length() and flown.normalized().dot(to_target.normalized()) > 0.999, "A miss sails on past its target: " + str(flight))
 
+func enemy_sets(combat: Control) -> Dictionary:
+    var sets := {}
+    var shown: Dictionary = combat.weapon_sets_shown()
+    for id in shown:
+        if id >= 1000: sets[id] = shown[id]
+    return sets
+
 # Ends the party's turns until an orc has shot, checking the set each
 # enemy shows along the way, and has both hit and missed with its arrows. False
 # when the party falls first.
 func check_weapon_sets() -> bool:
     var combat: Control = current_scene.get_node("CampaignCombat")
-    var sets: Dictionary = combat.enemy_weapon_sets()
+    var sets := enemy_sets(combat)
     require(not sets.is_empty() and sets.values().all(func(s): return s == "staged"), "Every orc stands in its staged set before it attacks: " + str(sets))
     combat.set_process(true)
     for step in range(3000):
         await settle(2)
-        sets = combat.enemy_weapon_sets()
+        sets = enemy_sets(combat)
         check_missiles(combat)
         if sets.values().has("ranged") and hit_seen and miss_seen and missile_drawn: return true
         if combat.get_node("StatusStack/Turn").text.contains(tr("Party incapacitated / defeat")): return false

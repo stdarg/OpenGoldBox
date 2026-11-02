@@ -219,6 +219,9 @@ The features added by #269:
   priority 3.
 - **Hide**, with the action or Cunning Action, is left to the player.
 
+The computer does not choose again, that turn, a spell whose aiming it gave up
+(`given_up_spells`), so a spell it cannot aim never holds up a fight.
+
 **Original.** It scored each usable weapon (damage dice, magic bonus, extra
 attacks, one hand) and readied the best ranged one, a thrown weapon too,
 whenever no enemy stood next to it and it scored more than half the best melee

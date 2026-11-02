@@ -96,7 +96,8 @@ reviewer's assignments and deletion rows remain authoritative and unchanged.
 
 The party screen's Ready and Action previews refresh immediately after Equip
 or Unequip. Combat uses the same compositor on entry, and equipment remains
-locked during combat. All 47 reviewer weapon types now have equipment/rules
+locked during combat; a character there also shows its carried bow as it shoots and
+its weapon without a shield it took off. All 47 reviewer weapon types now have equipment/rules
 conversions; the demo uses a temporary real campaign and the same equip/unequip
 operations. See [party equipment](PARTY.md) for the SRD equivalents and current
 combat limitations.

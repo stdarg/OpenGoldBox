@@ -12,6 +12,7 @@
 #include <array>
 #include <cmath>
 #include <fstream>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <queue>
@@ -1401,6 +1402,18 @@ std::vector<Command> aimed_as_before(const rules::Snapshot &state,
 Command choose_from(const rules::Snapshot &state, const std::vector<Command> &every,
                     Searching searching, Difficulty difficulty)
 {
+    // A spell given up this turn stays given up.
+    const auto given_up = [&](const Command &command)
+    {
+        return std::ranges::find(state.given_up_spells, command.verb) !=
+               state.given_up_spells.end();
+    };
+    if (std::ranges::any_of(every, given_up))
+    {
+        std::vector<Command> kept;
+        std::ranges::copy_if(every, std::back_inserter(kept), std::not_fn(given_up));
+        return choose_from(state, kept, searching, difficulty);
+    }
     const auto active = std::find_if(state.combatants.begin(), state.combatants.end(),
                                      [&](const auto &a)
                                      {
@@ -2095,15 +2108,29 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                        squares_from(center, a) <= 1;
                             });
     };
+    // Moonbeam reaches 120 feet, 24 squares, and is aimed on the enemy's own square,
+    // which the rules want in sight. An enemy can show while that square does not;
+    // aiming there would be given up and chosen again without end.
+    const auto moonbeam_aimable = [&](const CombatantView &enemy)
+    {
+        const auto squares = squares_of(active);
+        return enemy.conscious && clear_of_allies(enemy.cell) &&
+               squares_from(enemy.cell, active) <= 24 &&
+               std::any_of(squares.begin(), squares.end(),
+                           [&](Cell square)
+                           {
+                               return rules::has_line_of_sight(state.battlefield, square,
+                                                               enemy.cell);
+                           });
+    };
     if (state.area_targeting)
     {
         if (state.area_targeting->verb == "moonbeam" || state.area_targeting->verb == "lands_aid")
         {
-            for (const auto &a : state.combatants)
+            for (const auto *enemy : in_view)
             {
-                if (a.side != active.side && a.conscious && clear_of_allies(a.cell) &&
-                    std::max(std::abs(a.cell.x - active.cell.x),
-                             std::abs(a.cell.y - active.cell.y)) <= 24)
+                const auto &a = *enemy;
+                if (moonbeam_aimable(a))
                 {
                     if (a.cell == state.area_targeting->center)
                     {
@@ -2170,16 +2197,11 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             return *cancel;
         }
     }
-    // Moonbeam reaches 120 feet: 24 squares, each 5 feet in any direction. A
-    // target within it is always aimable, so aiming never starts over.
-    const bool moonbeam_target =
-        std::any_of(state.combatants.begin(), state.combatants.end(),
-                    [&](const auto &a)
-                    {
-                        return a.side != active.side && a.conscious && clear_of_allies(a.cell) &&
-                               std::max(std::abs(a.cell.x - active.cell.x),
-                                        std::abs(a.cell.y - active.cell.y)) <= 24;
-                    });
+    const bool moonbeam_target = std::any_of(in_view.begin(), in_view.end(),
+                                             [&](const auto *enemy)
+                                             {
+                                                 return moonbeam_aimable(*enemy);
+                                             });
 
     // The extra attacks of Light and Nick weapons follow the Attack action at
     // the same target (#269).

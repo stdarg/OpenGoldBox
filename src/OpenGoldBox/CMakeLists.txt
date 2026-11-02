@@ -480,6 +480,8 @@ if(OPENGOLD_BUILD_TESTS)
         -DSCRIPT=combat_demo_scene_tests -DGRAPHICAL=ON -DARGS=--combat-demo)
     opengold_original_check(combat_death_scene "Combat death presentation checks passed"
         -DSCRIPT=combat_death_scene_tests -DGRAPHICAL=ON -DARGS=--combat-demo)
+    opengold_original_check(party_shot "Party shot checks passed" -DSCRIPT=party_shot_view_tests
+        "-DARGS=--combat-demo\\;--combat-demo-party=rogue\\;--combat-demo-enemies=ogre")
     opengold_original_check(combat_hover_scene "Combat hover checks passed"
         -DSCRIPT=combat_hover_scene_tests -DGRAPHICAL=ON -DARGS=--combat-demo)
     opengold_original_check(combat_unconscious_scene "Unconscious combatant captured"

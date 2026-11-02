@@ -717,6 +717,9 @@ struct CombatantView
     // It took the Disengage action this turn (#269).
     bool disengaged{};
     bool shield_off{}; // Took its shield off this fight, to shoot.
+    // The item key of the carried weapon it draws to shoot, its shield off first if
+    // that is in the way; empty if it has none to draw.
+    std::string drawn_ranged_weapon;
 };
 
 struct TemporaryHpOffer
@@ -817,6 +820,9 @@ struct Snapshot
     std::vector<CombatantView> combatants; // Initiative order.
     std::vector<LogEntry> log_entries;     // Oldest first.
     bool reaction_pending{};
+    // Spells whose aiming was cancelled this turn. The computer does not choose them
+    // again this turn, which it would without end when it can never aim them.
+    std::vector<std::string> given_up_spells;
 
     // The attack roll a reaction such as Shield answers: its total and the AC
     // it hit, which the player is shown too.

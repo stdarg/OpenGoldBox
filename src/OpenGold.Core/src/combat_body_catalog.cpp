@@ -232,6 +232,54 @@ ResolvedCombatAppearance resolve_combat_appearance(const PartyMember &member,
     return {std::move(appearance), std::move(selection)};
 }
 
+std::optional<ResolvedCombatAppearance>
+resolve_shooting_appearance(const PartyMember &member, const CombatBodyCatalog &catalog,
+                            std::string_view definition_id)
+{
+    for (const auto &item : member.character.inventory().items())
+    {
+        if (item.definition_id == definition_id)
+        {
+            const std::array equipped{
+                CombatEquipment{item.original_type, item.name, item.definition_id}};
+            auto appearance = member.character.appearance();
+            auto selection = catalog.choose(equipped, appearance.combat_body);
+            return ResolvedCombatAppearance{std::move(appearance), std::move(selection)};
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<ResolvedCombatAppearance>
+resolve_unshielded_appearance(const PartyMember &member, const CombatBodyCatalog &catalog)
+{
+    std::vector<CombatEquipment> equipped;
+    bool shield = false;
+    for (const auto id : member.equipped)
+    {
+        const auto item = member.character.inventory().find(id);
+        if (!item)
+        {
+            throw std::runtime_error("Equipped item is missing");
+        }
+        if (item->get().original_type == 59 ||
+            rules::base_item_key(item->get().definition_id) == "shield")
+        {
+            shield = true;
+            continue;
+        }
+        equipped.push_back(
+            {item->get().original_type, item->get().name, item->get().definition_id});
+    }
+    if (!shield)
+    {
+        return std::nullopt;
+    }
+    auto appearance = member.character.appearance();
+    auto selection = catalog.choose(equipped, appearance.combat_body);
+    return ResolvedCombatAppearance{std::move(appearance), std::move(selection)};
+}
+
 Image ResolvedCombatAppearance::icon(const CharacterArt &art, IconPose pose) const
 {
     // Missing artwork must not falsely show the weapon baked into the saved body.
