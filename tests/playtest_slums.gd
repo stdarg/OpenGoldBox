@@ -112,9 +112,9 @@ func play_story(wanted: Array) -> void:
                 await create_timer(0.25).timeout
             if in_combat(): return
             if continue_button.disabled:
-                # A monster close-up waits for a key before the fight.
+                # A monster close-up plays, then the fight opens by itself.
                 await capture("close-up")
-                await key(KEY_SPACE)
+                await create_timer(2.0).timeout
                 await settle(30)
                 if not in_combat(): return
             continue

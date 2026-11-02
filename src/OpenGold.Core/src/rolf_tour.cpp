@@ -309,7 +309,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
     pictures("HEAD3.DAX", town->heads);
     pictures("BODY3.DAX", town->bodies);
     pictures("PIC3.DAX", town->pictures);
-    // The harbor's boat (PIC3 41) is an animation; its first frame stands for it.
+    // Scripts show these too, such as the harbor's boat (PIC3 41).
     for (const auto &record : archive("PIC3.DAX").records)
     {
         if (auto animation = decode_ega_animation(record.bytes))

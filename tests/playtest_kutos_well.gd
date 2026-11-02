@@ -137,8 +137,7 @@ func run() -> void:
     await press("CampaignTown/Continue")
     await settle(30)
     await capture("08-close-up")
-    var key := InputEventKey.new(); key.keycode = KEY_SPACE; key.pressed = true
-    root.push_input(key); key = key.duplicate(); key.pressed = false; root.push_input(key)
+    await create_timer(2.0).timeout
     await settle(30)
     if not current_scene.has_node("CampaignCombat"): fail("Norris's fight opens the combat screen"); return
     await capture("09-norris-fight")

@@ -504,10 +504,7 @@ func play_on(items: Array, at: int) -> int:
             await capture("stuck")
             return -1
         if go.is_visible_in_tree() and not go.disabled:
-            if dialogue() == "Press any key to fight.":
-                await capture("close-up")
-                await key(KEY_SPACE)
-            elif speaker.begins_with("Shop"):
+            if speaker.begins_with("Shop"):
                 at = await shop(items, at)
             elif (town().get_node("Answer") as Control).is_visible_in_tree():
                 at = await answer_input(items, at)

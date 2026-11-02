@@ -425,6 +425,9 @@ class RolfTourSession
 
     // The monster close-up that loops before combat, or null when none is showing.
     [[nodiscard]] const std::vector<AnimationFrame> *monster_picture() const;
+    // The animation on screen now, if any: the monster's close-up once it is beside
+    // the party, or a picture the script shows. Null shows the still view.
+    [[nodiscard]] const std::vector<AnimationFrame> *scene_animation() const;
     // The player pressed a key on the close-up; returns false when none is showing.
     bool start_encounter();
 
@@ -554,6 +557,7 @@ class RolfTourSession
     bool robbed_{};
     std::vector<Equipment> treasure_;
     std::optional<Image> picture_;
+    std::optional<unsigned> picture_animation_id_; // The PIC record picture_ begins.
 
     // Everything an event can change, saved when it begins so a failed event
     // rolls back as a whole rather than member by hand-paired member
