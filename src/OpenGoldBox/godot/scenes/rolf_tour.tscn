@@ -232,7 +232,7 @@ offset_top = -36
 offset_bottom = -10
 metadata/layout_reference = Rect2(24, 1044, 1872, 26)
 theme_type_variation = &"LabelMutedText14"
-text = "Arrow keys: move / turn   •   L: look   •   S: search   •   M: cast   •   Original New Phlan scripts and shop stock"
+text = "Arrow keys: move / turn   •   L: look   •   S: search   •   M: cast"
 
 [node name="Choices" type="ItemList" parent="."]
 anchor_right = 0.8825

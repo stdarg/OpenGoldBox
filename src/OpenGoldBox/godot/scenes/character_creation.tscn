@@ -422,7 +422,7 @@ offset_top = -25
 offset_bottom = -3
 metadata/layout_reference = Rect2(24, 1055, 1872, 22)
 theme_type_variation = &"LabelText14"
-text = "Original game art + OpenGoldBox portraits / SRD 5.2.1"
+text = "Game art from the original, portraits from OpenGoldBox, rules from SRD 5.2.1"
 
 [node name="Ability0" type="Button" parent="."]
 offset_left = 288
@@ -979,7 +979,7 @@ offset_top = 232
 offset_bottom = 389
 metadata/layout_reference = Rect2(514, 232, 1362, 157)
 theme_type_variation = &"CreationHint"
-text = "Drag to the ability score of your choice."
+text = "Drag to the attribute of your choice."
 autowrap_mode = 2
 
 [node name="BaseHeader" type="Label" parent="."]
