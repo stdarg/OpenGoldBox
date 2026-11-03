@@ -74,15 +74,35 @@ func face(direction: String) -> void:
         await press("CampaignTown/Right")
     require(false, "The party faces " + direction)
 
-# Steps forward and continues through any message the step shows, until the
-# party may move again.
-func step_forward() -> void:
+# Steps forward and continues through any message the step shows. True once
+# the party may move again; false when a wandering fight starts instead. While
+# the step's script still runs, Continue and the movement buttons are both
+# disabled, so a disabled Continue alone does not mean the messages have ended.
+# The script runs on the clock, and a headless game draws frames far faster
+# than one a sixtieth, so the wait is timed.
+func step_forward() -> bool:
     await press("CampaignTown/Forward")
-    for prompt in range(20):
-        var continue_button: Button = town().get_node("Continue")
-        if continue_button.disabled: return
-        await press("CampaignTown/Continue")
+    var give_up := Time.get_ticks_msec() + 20000
+    while Time.get_ticks_msec() < give_up:
+        if in_combat(): return false
+        if not town().get_node("Forward").disabled: return true
+        if town().get_node("Continue").disabled:
+            await process_frame
+        else:
+            await press("CampaignTown/Continue")
     require(false, "The step's messages end")
+    return false
+
+func in_combat() -> bool:
+    return current_scene.has_node("CampaignCombat") and current_scene.get_node("CampaignCombat").is_visible_in_tree()
+
+func explore_fixture() -> void:
+    change_scene_to_file("res://scenes/character_creation.tscn"); await settle()
+    await press("Party")
+    await press("PartyPanel/Load"); await open_slot(FIXTURE_SLOT)
+    await press("PartyPanel/ActionRow2/Explore")
+    require(town().visible, "Explore shows the saved town")
+    require_at("New Phlan", "0, 4", "East")
 
 func require_at(district: String, coordinates: String, direction: String) -> void:
     require(label("Location") == district + " / " + direction + " view",
@@ -102,20 +122,21 @@ func run_checks() -> void:
     var f := FileAccess.open(slot_path(FIXTURE_SLOT), FileAccess.WRITE); f.store_buffer(FileAccess.get_file_as_bytes(fixture)); f.close()
     root.gui_embed_subwindows = true
     TranslationServer.set_locale("en")
-    change_scene_to_file("res://scenes/character_creation.tscn"); await settle()
-    await press("Party")
-    await press("PartyPanel/Load"); await open_slot(FIXTURE_SLOT)
-    await press("PartyPanel/ActionRow2/Explore")
-    require(town().visible, "Explore shows the saved town")
-    require_at("New Phlan", "0, 4", "East")
-
-    await face("West")
-    await step_forward()
+    # Entering the Slums may meet wandering monsters. That fight is not what
+    # this check is about, so it loads the fixture again, with new dice.
+    var crossed := false
+    for attempt in range(8):
+        await explore_fixture()
+        await face("West")
+        crossed = await step_forward()
+        if crossed: break
+        print("Wandering monsters met the party in the Slums; loading the fixture again")
+    require(crossed, "The party enters the Slums without a wandering fight")
     require_at("Slums", "15, 4", "West")
     require(label("MapTitle").begins_with("Slums"), "The map is the Slums': " + label("MapTitle"))
 
     await face("East")
-    await step_forward()
+    require(await step_forward(), "The party walks back to New Phlan")
     require_at("New Phlan", "0, 4", "East")
     require(label("MapTitle").begins_with("New Phlan"), "The map is the town's: " + label("MapTitle"))
     await save_as(CROSSED_SLOT, "crossed.ogs")
