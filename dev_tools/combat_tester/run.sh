@@ -32,6 +32,7 @@ mv "$project_dir/project.godot.icon-tmp" "$project_dir/project.godot"
 cp "$repo_dir/data/art/combat-body-looks.tsv" "$repo_dir/data/art/combat-weapon-options.tsv" "$project_dir/data/art/"
 rsync -a --delete "$repo_dir/data/rules/srd-5.2.1/" "$project_dir/data/rules/srd-5.2.1/"
 rsync -a --delete "$repo_dir/data/monsters/" "$project_dir/data/monsters/"
+rsync -a --delete "$repo_dir/data/art/missiles/" "$project_dir/data/art/missiles/"
 rsync -a "$repo_dir/data/art/portraits/" "$project_dir/bin/portraits/"
 if [[ ! -s "$project_dir/.godot/extension_list.cfg" ]]; then
     "$godot_bin" --headless --editor --path "$project_dir" --import --quit

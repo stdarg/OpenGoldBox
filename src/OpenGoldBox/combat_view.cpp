@@ -57,6 +57,7 @@
 #include <fstream>
 #include <limits>
 #include <numbers>
+#include <optional>
 #include <utility>
 using namespace godot;
 using namespace opengold;
@@ -970,6 +971,30 @@ void CombatView::sync_art(bool preserve_effects)
     }
 }
 
+namespace
+{
+// The hill giant's own rock, cut from its ready pose, at the scale it stands
+// at; it tumbles a quarter turn between frames. The demo ships no such file
+// and keeps the original's boulder.
+std::optional<std::array<Ref<ImageTexture>, 2>> new_boulder_art()
+{
+    const auto path = game_data_path("data/art/missiles/boulder.png");
+    if (!FileAccess::file_exists(path))
+    {
+        return std::nullopt;
+    }
+    const auto upright = godot::Image::load_from_file(path);
+    if (upright.is_null())
+    {
+        throw std::runtime_error("Cannot read the boulder missile art");
+    }
+    const Ref<godot::Image> turned = upright->duplicate();
+    turned->rotate_90(CLOCKWISE);
+    return std::array{ImageTexture::create_from_image(upright),
+                      ImageTexture::create_from_image(turned)};
+}
+} // namespace
+
 CombatView::ArtSet CombatView::build_art() const
 {
     ArtSet result;
@@ -1043,7 +1068,8 @@ CombatView::ArtSet CombatView::build_art() const
                                      missile_art(130), mirrored_missile(1)};
             result.missiles.tumbling[rules::Missile::axe] = {missile_art(3), missile_art(131)};
             result.missiles.tumbling[rules::Missile::flask] = {missile_art(4), missile_art(132)};
-            result.missiles.tumbling[rules::Missile::boulder] = {missile_art(7), missile_art(135)};
+            result.missiles.tumbling[rules::Missile::boulder] =
+                new_boulder_art().value_or(std::array{missile_art(7), missile_art(135)});
             result.missiles.tumbling[rules::Missile::stone] = {missile_art(8), missile_art(136)};
             break;
         }

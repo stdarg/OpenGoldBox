@@ -52,6 +52,8 @@ dev_tools/replacement_art_creator/godot/art/*.png.import
 !/dev_tools/combat_sprite_catalog/art/**/*.png
 # The catalog's export, which the game ships (#274).
 !/data/monsters/**/*.png
+# Missile art cut from that monster art (the hill giant's boulder).
+!/data/art/missiles/*.png
 
 # Splash artwork used by the packaged game
 !/art/OpenGoldBoxSplashBackground.png

@@ -344,8 +344,13 @@ in the game: answering YES at a hall lists its services in the dialogue
 - **Missiles that miss fly on** (2026-10-30). Shots and throws fly with the
   original's `COMSPR.DAX` art: an arrow for bows and crossbows, the axe for every
   thrown weapon, a stone for slings, a flask for thrown oil, acid and alchemist's
-  fire, a boulder for giants' rocks. A hit ends on the target. A miss sails four
+  fire. A hit ends on the target. A miss sails four
   squares past it, which is new. The next creature acts once the shot has landed.
+- **Giants throw the rock they hold** (2026-11-03). A thrown boulder is the rock
+  from the hill giant's new ready pose, cut from that picture and drawn at the
+  giant's scale, tumbling a quarter turn as it flies, not the original's
+  `COMSPR.DAX` boulder. The demo, which ships no new monster art, keeps the
+  original's.
 - **Every spell has its own look** (2026-10-31). Each spell cast in a fight plays
   its own animated effect, drawn by the game rather than taken from the original's
   art: Magic Missile sends glowing darts, Fireball a comet that bursts across its
