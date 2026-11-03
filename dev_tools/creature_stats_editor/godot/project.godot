@@ -1,0 +1,19 @@
+config_version=5
+
+[application]
+config/name="OpenGold Creature Stats Editor"
+config/icon="res://icon.png"
+run/main_scene="res://scenes/editor.tscn"
+config/features=PackedStringArray("4.5")
+
+[display]
+window/size/viewport_width=1400
+window/size/viewport_height=900
+window/size/window_width_override=1400
+window/size/window_height_override=900
+window/stretch/mode="canvas_items"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
