@@ -132,6 +132,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/ecl_party_host.cpp
     src/OpenGold.Core/src/npc_portraits.cpp
     src/OpenGold.Core/src/shop_data.cpp
+    src/OpenGold.Core/src/encounter_data.cpp
     src/OpenGold.Core/src/json_document.cpp
     src/OpenGold.Core/src/creature_art.cpp src/OpenGold.Core/src/monster_bundle.cpp
     src/OpenGold.Core/src/coin_purse.cpp
@@ -420,6 +421,14 @@ if(OPENGOLD_BUILD_TESTS)
         add_test(NAME opengold_session_board_tests
                  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/session_board_tests.py)
     endif()
+    add_executable(opengold_companion_data_tests tests/companion_data_tests.cpp)
+    target_link_libraries(opengold_companion_data_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_companion_data_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_companion_data_tests COMMAND opengold_companion_data_tests)
+    add_executable(opengold_encounter_data_tests tests/encounter_data_tests.cpp)
+    target_link_libraries(opengold_encounter_data_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_encounter_data_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_encounter_data_tests COMMAND opengold_encounter_data_tests)
     add_executable(opengold_shop_data_tests tests/shop_data_tests.cpp)
     target_link_libraries(opengold_shop_data_tests PRIVATE opengold_core)
     target_compile_definitions(opengold_shop_data_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
@@ -676,6 +685,9 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_expedition_tests PRIVATE opengold_ai_scenario opengold_rules_srd5)
     target_compile_definitions(opengold_expedition_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_expedition_tests COMMAND opengold_expedition_tests)
+    add_test(NAME opengold_encounter_override_tests
+        COMMAND opengold_expedition_tests --encounter-overrides)
+    set_tests_properties(opengold_encounter_override_tests PROPERTIES SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_executable(opengold_save_tests tests/save_tests.cpp)
     target_link_libraries(opengold_save_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_save_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

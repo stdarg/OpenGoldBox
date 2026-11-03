@@ -4,6 +4,7 @@
 #include "opengold/npc_portraits.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/srd5.h"
+#include "repository_data.h"
 #include <algorithm>
 #include <array>
 #include <cstdlib>
@@ -223,7 +224,7 @@ void recall_checks(const char *directory)
     // recalls the party to it from its level-7 slot, offered once the
     // level-6 slot is spent.
     const auto id = party->add_pc(cleric("Cleric", 13));
-    auto town = RolfTourSession::load(directory);
+    auto town = RolfTourSession::load(directory, repository_encounters());
     town.campaign_party(party);
     settle(town);
     bool refused = false;
@@ -309,7 +310,7 @@ void temple_list_checks(const char *directory)
     }
     coins(state.wealth, Coin::gold) = 150;
     party->restore(std::move(state));
-    auto town = RolfTourSession::load(directory);
+    auto town = RolfTourSession::load(directory, repository_encounters());
     town.campaign_party(party);
     // Tyr's squares, with its Cure Light Wounds at 120 gp and no Cure Disease.
     std::vector<TempleOffering> offerings = original_temple_offerings();
@@ -380,7 +381,7 @@ void temple_list_checks(const char *directory)
     }
     check(visited, "The party reaches the Temple of Tyr's Heal list");
     // On Hard the temple casts no Resurrection.
-    auto hard = RolfTourSession::load(directory);
+    auto hard = RolfTourSession::load(directory, repository_encounters());
     hard.campaign_party(party);
     hard.difficulty(Difficulty::hard);
     settle(hard);
@@ -429,7 +430,7 @@ void every_temple_checks(const char *directory)
     }
     auto party = std::make_shared<CampaignParty>(module());
     party->add_pc(cleric());
-    auto town = RolfTourSession::load(directory);
+    auto town = RolfTourSession::load(directory, repository_encounters());
     town.campaign_party(party);
     town.temples(temples);
     settle(town);

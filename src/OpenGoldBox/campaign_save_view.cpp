@@ -3,6 +3,8 @@
 #include "localization.h"
 #include "game_resources.h"
 #include "shop_data_files.h"
+#include "game_companions.h"
+#include "game_encounters.h"
 #include "game_monsters.h"
 #include "game_wall_art.h"
 #include "character_creation_view.h"
@@ -125,8 +127,8 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
                                  std::function<por::RolfTourSession()>(
                                      [&]
                                      {
-                                         return por::RolfTourSession::load(directory, new_wall_art,
-                                                                           monsters);
+                                         return por::RolfTourSession::load(
+                                             directory, game_encounters(), new_wall_art, monsters);
                                      }));
     // The restart check compares what it loads with the file, dice and all.
     if (!save_read_check_)
@@ -216,7 +218,7 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
     session_->encounter_challenge(settings::encounter_challenge());
     session_->difficulty(settings::difficulty());
     use_shop_data(*session_);
-    session_->companion_rules(srd5::character_rules());
+    session_->companion_rules(srd5::character_rules(), game_companions());
     shown_revision_ = 0;
     rendered_pose_.reset();
     rendered_sprite_id_ = 999;

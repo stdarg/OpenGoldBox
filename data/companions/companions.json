@@ -1,0 +1,104 @@
+{
+  "format": "opengold-companions-v1",
+  "companions": [
+    {
+      "bank": 4,
+      "record": 27,
+      "name": "Skullcrusher",
+      "note": "Cadorna Textile House (CADORNA-1): Strength 18, Dexterity 16, Constitution 18, Intelligence 10, Wisdom 8 and Charisma 12 at level 4, as his record has them; a Soldier's +2 Strength and +1 Constitution and the level-4 Ability Score Improvement's +2 Strength reach them from the rolls. Unarmored and unarmed as found.",
+      "race": "human",
+      "gender": "male",
+      "class": "fighter",
+      "alignment": "neutral",
+      "background": "soldier",
+      "rolled": [14, 16, 17, 10, 8, 12],
+      "background_increase": {"plus_two": "strength", "plus_one": "constitution"},
+      "level": 4,
+      "items": []
+    },
+    {
+      "bank": 2,
+      "record": 25,
+      "name": "Mad Man",
+      "note": "Mendor's Library's mad fighter (MENDOR-1): Strength 17 and 10 in the rest at level 1, as his record has them; a Soldier's +2 Strength and +1 Constitution reach them from the rolls. Unarmored and unarmed as found.",
+      "race": "human",
+      "gender": "male",
+      "class": "fighter",
+      "alignment": "neutral",
+      "background": "soldier",
+      "rolled": [15, 10, 9, 10, 10, 10],
+      "background_increase": {"plus_two": "strength", "plus_one": "constitution"},
+      "level": 1,
+      "items": []
+    },
+    {
+      "bank": 3,
+      "record": 107,
+      "name": "Dirten",
+      "note": "The priest the bishop sends to the Temple of Bane (BANE-1): a level-5 Cleric with Strength 10, Dexterity 10, Constitution 9, Intelligence 15, Wisdom 16 and Charisma 15, as his record has them; an Acolyte's +2 Wisdom and +1 Intelligence and the level-4 Ability Score Improvement's +2 Wisdom reach them from the rolls. He brings his mace, and for his chain armor the Chain Shirt, the chain a Cleric is trained to wear.",
+      "race": "human",
+      "gender": "male",
+      "class": "cleric",
+      "alignment": "lawful_good",
+      "background": "acolyte",
+      "rolled": [10, 10, 9, 14, 12, 15],
+      "background_increase": {"plus_two": "wisdom", "plus_one": "intelligence"},
+      "level": 5,
+      "items": [
+        {"key": "mace", "name": "Mace", "quantity": 1, "original_type": 23},
+        {"key": "chain_shirt", "name": "Chain Shirt", "quantity": 1}
+      ]
+    },
+    {
+      "bank": 8,
+      "record": 104,
+      "name": "Princess Fatima",
+      "note": "The kobold caves (KOBOLD-1): a level-4 Fighter with Strength 18, Dexterity 18, Constitution 16, Intelligence 14, Wisdom 10 and Charisma 15, as her record has them; a Soldier's +2 Strength and +1 Constitution and the level-4 Ability Score Improvement's +2 Strength reach them from the rolls. She brings her short sword, leather armor and shield.",
+      "race": "human",
+      "gender": "female",
+      "class": "fighter",
+      "alignment": "lawful_good",
+      "background": "soldier",
+      "rolled": [14, 18, 15, 14, 10, 15],
+      "background_increase": {"plus_two": "strength", "plus_one": "constitution"},
+      "level": 4,
+      "items": [
+        {"key": "shortsword", "name": "Shortsword", "quantity": 1, "original_type": 37},
+        {"key": "leather", "name": "Leather Armor", "quantity": 1, "original_type": 50},
+        {"key": "shield", "name": "Shield", "quantity": 1, "original_type": 59}
+      ]
+    },
+    {
+      "bank": 4,
+      "record": 24,
+      "name": "Mystic",
+      "note": "Valhingen Graveyard (GRAVE-1): a level-6 Wizard with Strength 10, Dexterity 10, Constitution 10, Intelligence 15, Wisdom 10 and Charisma 10, as his record has them; a Sage's +2 Intelligence and +1 Constitution and the level-4 Ability Score Improvement's +2 Intelligence reach them from the rolls. He brings the Ring of Protection +2 he wears.",
+      "race": "human",
+      "gender": "male",
+      "class": "wizard",
+      "alignment": "neutral_good",
+      "background": "sage",
+      "rolled": [10, 10, 9, 11, 10, 10],
+      "background_increase": {"plus_two": "intelligence", "plus_one": "constitution"},
+      "level": 6,
+      "items": [
+        {"key": "ring_of_protection+2", "name": "Ring of Protection +2", "quantity": 1, "original_type": 93}
+      ]
+    },
+    {
+      "bank": 5,
+      "record": 88,
+      "name": "Genheeris",
+      "note": "Tyranthraxus's turncoat mage in Valjevo Castle (CASTLE-1): a level-6 Wizard with Intelligence 18 and 10 in the rest, as his record has them; a Sage's +2 Intelligence and +1 Constitution and the level-4 Ability Score Improvement's +2 Intelligence reach them from the rolls.",
+      "race": "human",
+      "gender": "male",
+      "class": "wizard",
+      "alignment": "neutral_evil",
+      "background": "sage",
+      "rolled": [10, 10, 9, 14, 10, 10],
+      "background_increase": {"plus_two": "intelligence", "plus_one": "constitution"},
+      "level": 6,
+      "items": []
+    }
+  ]
+}

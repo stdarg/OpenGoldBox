@@ -4,6 +4,7 @@
 #include "../src/OpenGold.Rules.Srd5/src/feature_grants.h"
 #include "../src/OpenGold.Rules.Srd5/src/weapon_mastery.h"
 #include "test_support.h"
+#include "repository_data.h"
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>

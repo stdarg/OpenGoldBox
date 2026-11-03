@@ -1,7 +1,12 @@
 #include "opengold/companions.h"
+#include "json_document.h"
 #include <algorithm>
 #include <array>
+#include <cmath>
+#include <set>
 #include <stdexcept>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 namespace opengold
@@ -56,12 +61,6 @@ unsigned adjustment(const rules::CharacterRules &creation, const std::string &ba
     return static_cast<unsigned>(found - adjustments.begin());
 }
 
-// The Soldier background's +2 Strength and +1 Constitution, by its index.
-unsigned soldier_adjustment(const rules::CharacterRules &creation, const std::string &background)
-{
-    return adjustment(creation, background, rules::Ability::strength, rules::Ability::constitution);
-}
-
 // `draft` at `level`, each level after the first with the rules' default
 // choices for the level it reaches.
 Character advanced(const rules::CharacterRules &creation, const rules::RulesModule &rules,
@@ -71,205 +70,209 @@ Character advanced(const rules::CharacterRules &creation, const rules::RulesModu
     Character companion(creation, draft, {});
     while (companion.sheet().level < level)
     {
+        const auto reached = companion.sheet().level;
         history.push_back(rules.default_advancement(companion.sheet()));
         companion = Character(creation, draft, {});
         companion.replay(rules, history, {}, {}, {});
+        if (companion.sheet().level <= reached)
+        {
+            throw std::runtime_error(draft.name + " cannot reach level " + std::to_string(level));
+        }
     }
     return companion;
 }
 
-// Skullcrusher (MON4CHA 27): Strength 18, Dexterity 16, Constitution 18,
-// Intelligence 10, Wisdom 8 and Charisma 12 at level 4, as his record has
-// them. A Soldier's +2 Strength and +1 Constitution and the level-4 Ability
-// Score Improvement's +2 Strength reach them from the rolls.
-Character skullcrusher(const rules::CharacterRules &creation, const rules::RulesModule &rules)
+using detail::Json;
+
+[[noreturn]] void reject(const std::string &where, std::string_view problem)
 {
-    rules::CharacterDraft draft;
-    draft.name = "Skullcrusher";
-    draft.race = "human";
-    draft.gender = "male";
-    draft.character_class = "fighter";
-    draft.alignment = "neutral";
-    draft.background = "soldier";
-    draft.rolled = true;
-    constexpr std::array<int, 6> rolled{14, 16, 17, 10, 8, 12};
-    for (unsigned ability = 0; ability < rolled.size(); ++ability)
-    {
-        draft.rolls[ability] = roll_of(rolled[ability]);
-    }
-    draft.adjustment = soldier_adjustment(creation, draft.background);
-    choose_training(creation, draft);
-    return advanced(creation, rules, draft, 4);
+    throw std::runtime_error("data/companions/companions.json: " + where + ": " +
+                             std::string(problem));
 }
 
-// The mad fighter of Mendor's Library (MON2CHA 25): Strength 17 and 10 in the
-// rest at level 1, as his record has them; a Soldier's +2 Strength and +1
-// Constitution reach them from the rolls.
-Character mad_fighter(const rules::CharacterRules &creation)
+template <typename T>
+const T &member(const Json &object, std::string_view key, const std::string &where)
 {
-    rules::CharacterDraft draft;
-    draft.name = "Mad Man";
-    draft.race = "human";
-    draft.gender = "male";
-    draft.character_class = "fighter";
-    draft.alignment = "neutral";
-    draft.background = "soldier";
-    draft.rolled = true;
-    constexpr std::array<int, 6> rolled{15, 10, 9, 10, 10, 10};
-    for (unsigned ability = 0; ability < rolled.size(); ++ability)
+    const auto *found = object.find(key);
+    const auto *value = found ? std::get_if<T>(&found->value) : nullptr;
+    if (!value)
     {
-        draft.rolls[ability] = roll_of(rolled[ability]);
+        reject(where, "missing or invalid " + std::string(key));
     }
-    draft.adjustment = soldier_adjustment(creation, draft.background);
-    choose_training(creation, draft);
-    return Character(creation, draft, {});
+    return *value;
 }
 
-// Dirten, the priest the bishop sends to the Temple of Bane (MON3CHA 107): a
-// level-5 Cleric with Strength 10, Dexterity 10, Constitution 9, Intelligence
-// 15, Wisdom 16 and Charisma 15, as his record has them. An Acolyte's +2
-// Wisdom and +1 Intelligence and the level-4 Ability Score Improvement's +2
-// Wisdom reach them from the rolls. He brings his mace, and for his chain
-// armor the Chain Shirt, the chain a Cleric is trained to wear (BANE-1).
-Character dirten(const rules::CharacterRules &creation, const rules::RulesModule &rules)
+const std::string &text(const Json &object, std::string_view key, const std::string &where)
 {
-    rules::CharacterDraft draft;
-    draft.name = "Dirten";
-    draft.race = "human";
-    draft.gender = "male";
-    draft.character_class = "cleric";
-    draft.alignment = "lawful_good";
-    draft.background = "acolyte";
-    draft.rolled = true;
-    constexpr std::array<int, 6> rolled{10, 10, 9, 14, 12, 15};
-    for (unsigned ability = 0; ability < rolled.size(); ++ability)
+    const auto &value = member<std::string>(object, key, where);
+    if (value.empty())
     {
-        draft.rolls[ability] = roll_of(rolled[ability]);
+        reject(where, "empty " + std::string(key));
     }
-    draft.adjustment = adjustment(creation, draft.background, rules::Ability::wisdom,
-                                  rules::Ability::intelligence);
-    choose_training(creation, draft);
-    auto companion = advanced(creation, rules, draft, 5);
-    constexpr int original_mace = 23;
-    companion.add_item({"mace", "Mace", 1, original_mace});
-    companion.add_item({"chain_shirt", "Chain Shirt"});
+    return value;
+}
+
+// A whole number in [low, high].
+int whole(const Json &value, const std::string &where, std::string_view key, int low, int high)
+{
+    const auto *number = std::get_if<double>(&value.value);
+    if (!number || *number != std::floor(*number) || *number < low || *number > high)
+    {
+        reject(where, std::string(key) + " must be a whole number from " + std::to_string(low) +
+                          " to " + std::to_string(high));
+    }
+    return static_cast<int>(*number);
+}
+
+int whole_member(const Json &object, std::string_view key, const std::string &where, int low,
+                 int high)
+{
+    const auto *found = object.find(key);
+    if (!found)
+    {
+        reject(where, "missing " + std::string(key));
+    }
+    return whole(*found, where, key, low, high);
+}
+
+rules::Ability ability(const Json &object, std::string_view key, const std::string &where)
+{
+    constexpr std::array<std::string_view, 6> names{"strength",     "dexterity", "constitution",
+                                                    "intelligence", "wisdom",    "charisma"};
+    const auto &name = member<std::string>(object, key, where);
+    const auto found = std::find(names.begin(), names.end(), name);
+    if (found == names.end())
+    {
+        reject(where, std::string(key) + " names no ability: " + name);
+    }
+    return rules::all_abilities[static_cast<std::size_t>(found - names.begin())];
+}
+
+NewItem read_item(const Json &item, const std::string &where)
+{
+    NewItem result{text(item, "key", where), text(item, "name", where)};
+    const auto item_where = where + ", item " + result.definition_id;
+    if (item.find("quantity"))
+    {
+        result.quantity =
+            static_cast<std::uint32_t>(whole_member(item, "quantity", item_where, 1, 255));
+    }
+    if (item.find("original_type"))
+    {
+        result.original_type = whole_member(item, "original_type", item_where, 0, 255);
+    }
+    return result;
+}
+
+CompanionDefinition read_companion(const Json &entry, std::size_t index)
+{
+    auto where = "companion " + std::to_string(index + 1);
+    CompanionDefinition companion;
+    companion.name = text(entry, "name", where);
+    where += " (" + companion.name + ")";
+    companion.bank = static_cast<unsigned>(whole_member(entry, "bank", where, 1, 255));
+    companion.record = static_cast<unsigned>(whole_member(entry, "record", where, 0, 255));
+    companion.race = text(entry, "race", where);
+    companion.gender = text(entry, "gender", where);
+    companion.character_class = text(entry, "class", where);
+    companion.alignment = text(entry, "alignment", where);
+    companion.background = text(entry, "background", where);
+    const auto &rolled = member<Json::Array>(entry, "rolled", where);
+    if (rolled.size() != companion.rolled.size())
+    {
+        reject(where, "rolled needs six scores");
+    }
+    for (std::size_t n = 0; n < rolled.size(); ++n)
+    {
+        companion.rolled[n] = whole(rolled[n], where, "rolled", 3, 18);
+    }
+    const auto *increase = entry.find("background_increase");
+    if (!increase || !std::holds_alternative<Json::Object>(increase->value))
+    {
+        reject(where, "missing or invalid background_increase");
+    }
+    companion.plus_two = ability(*increase, "plus_two", where);
+    companion.plus_one = ability(*increase, "plus_one", where);
+    if (companion.plus_two == companion.plus_one)
+    {
+        reject(where, "the background raises two different abilities");
+    }
+    // The SRD classes' highest level (character_class.cpp).
+    constexpr int highest_level = 15;
+    companion.level = whole_member(entry, "level", where, 1, highest_level);
+    for (const auto &item : member<Json::Array>(entry, "items", where))
+    {
+        companion.items.push_back(read_item(item, where));
+    }
     return companion;
-}
-
-// Princess Fatima of the kobold caves (MON8CHA 104): a level-4 Fighter with
-// Strength 18, Dexterity 18, Constitution 16, Intelligence 14, Wisdom 10 and
-// Charisma 15, as her record has them; a Soldier's +2 Strength and +1
-// Constitution and the level-4 Ability Score Improvement's +2 Strength reach
-// them from the rolls. She brings her short sword, leather armor and shield.
-Character fatima(const rules::CharacterRules &creation, const rules::RulesModule &rules)
-{
-    rules::CharacterDraft draft;
-    draft.name = "Princess Fatima";
-    draft.race = "human";
-    draft.gender = "female";
-    draft.character_class = "fighter";
-    draft.alignment = "lawful_good";
-    draft.background = "soldier";
-    draft.rolled = true;
-    constexpr std::array<int, 6> rolled{14, 18, 15, 14, 10, 15};
-    for (unsigned ability = 0; ability < rolled.size(); ++ability)
-    {
-        draft.rolls[ability] = roll_of(rolled[ability]);
-    }
-    draft.adjustment = soldier_adjustment(creation, draft.background);
-    choose_training(creation, draft);
-    auto companion = advanced(creation, rules, draft, 4);
-    constexpr int original_short_sword = 37, original_leather = 50, original_shield = 59;
-    companion.add_item({"shortsword", "Shortsword", 1, original_short_sword});
-    companion.add_item({"leather", "Leather Armor", 1, original_leather});
-    companion.add_item({"shield", "Shield", 1, original_shield});
-    return companion;
-}
-
-// The mystic of Valhingen Graveyard (MON4CHA 24): a level-6 Wizard with
-// Strength 10, Dexterity 10, Constitution 10, Intelligence 15, Wisdom 10 and
-// Charisma 10, as his record has them; a Sage's +2 Intelligence and +1
-// Constitution and the level-4 Ability Score Improvement's +2 Intelligence
-// reach them from the rolls. He brings the Ring of Protection +2 he wears.
-Character mystic(const rules::CharacterRules &creation, const rules::RulesModule &rules)
-{
-    rules::CharacterDraft draft;
-    draft.name = "Mystic";
-    draft.race = "human";
-    draft.gender = "male";
-    draft.character_class = "wizard";
-    draft.alignment = "neutral_good";
-    draft.background = "sage";
-    draft.rolled = true;
-    constexpr std::array<int, 6> rolled{10, 10, 9, 11, 10, 10};
-    for (unsigned ability = 0; ability < rolled.size(); ++ability)
-    {
-        draft.rolls[ability] = roll_of(rolled[ability]);
-    }
-    draft.adjustment = adjustment(creation, draft.background, rules::Ability::intelligence,
-                                  rules::Ability::constitution);
-    choose_training(creation, draft);
-    auto companion = advanced(creation, rules, draft, 6);
-    constexpr int original_ring_of_protection = 93;
-    companion.add_item({"ring_of_protection+2", "Ring of Protection +2", 1,
-                        original_ring_of_protection});
-    return companion;
-}
-
-// Genheeris, Tyranthraxus's turncoat mage in Valjevo Castle (MON5CHA 88): a
-// level-6 Wizard with Intelligence 18 and 10 in the rest, as his record has
-// them; a Sage's +2 Intelligence and +1 Constitution and the level-4 Ability
-// Score Improvement's +2 Intelligence reach them from the rolls.
-Character genheeris(const rules::CharacterRules &creation, const rules::RulesModule &rules)
-{
-    rules::CharacterDraft draft;
-    draft.name = "Genheeris";
-    draft.race = "human";
-    draft.gender = "male";
-    draft.character_class = "wizard";
-    draft.alignment = "neutral_evil";
-    draft.background = "sage";
-    draft.rolled = true;
-    constexpr std::array<int, 6> rolled{10, 10, 9, 14, 10, 10};
-    for (unsigned ability = 0; ability < rolled.size(); ++ability)
-    {
-        draft.rolls[ability] = roll_of(rolled[ability]);
-    }
-    draft.adjustment = adjustment(creation, draft.background, rules::Ability::intelligence,
-                                  rules::Ability::constitution);
-    choose_training(creation, draft);
-    return advanced(creation, rules, draft, 6);
 }
 } // namespace
 
+std::vector<CompanionDefinition> load_companions(const std::filesystem::path &folder)
+{
+    const auto document = detail::read_json_file(folder / "companions.json", "companion data");
+    const auto *format = document.find("format");
+    if (!format || !std::holds_alternative<std::string>(format->value) ||
+        std::get<std::string>(format->value) != "opengold-companions-v1")
+    {
+        reject("format", "must be opengold-companions-v1");
+    }
+    std::vector<CompanionDefinition> companions;
+    std::set<std::pair<unsigned, unsigned>> records;
+    const auto &entries = member<Json::Array>(document, "companions", "file");
+    for (std::size_t index = 0; index < entries.size(); ++index)
+    {
+        auto companion = read_companion(entries[index], index);
+        if (!records.insert({companion.bank, companion.record}).second)
+        {
+            reject(companion.name, "MON" + std::to_string(companion.bank) + "CHA " +
+                                       std::to_string(companion.record) + " has two companions");
+        }
+        companions.push_back(std::move(companion));
+    }
+    return companions;
+}
+
+Character build_companion(const CompanionDefinition &definition,
+                          const rules::CharacterRules &creation, const rules::RulesModule &rules)
+{
+    rules::CharacterDraft draft;
+    draft.name = definition.name;
+    draft.race = definition.race;
+    draft.gender = definition.gender;
+    draft.character_class = definition.character_class;
+    draft.alignment = definition.alignment;
+    draft.background = definition.background;
+    draft.rolled = true;
+    for (unsigned ability = 0; ability < definition.rolled.size(); ++ability)
+    {
+        draft.rolls[ability] = roll_of(definition.rolled[ability]);
+    }
+    draft.adjustment =
+        adjustment(creation, draft.background, definition.plus_two, definition.plus_one);
+    choose_training(creation, draft);
+    auto companion = advanced(creation, rules, draft, definition.level);
+    for (const auto &item : definition.items)
+    {
+        companion.add_item(item);
+    }
+    return companion;
+}
+
 std::optional<Character> original_companion(unsigned bank, unsigned record,
+                                            std::span<const CompanionDefinition> companions,
                                             const rules::CharacterRules &creation,
                                             const rules::RulesModule &rules)
 {
-    if (bank == 4 && record == 27)
+    const auto found = std::find_if(companions.begin(), companions.end(),
+                                    [&](const CompanionDefinition &companion)
+                                    {
+                                        return companion.bank == bank && companion.record == record;
+                                    });
+    if (found == companions.end())
     {
-        return skullcrusher(creation, rules);
+        return std::nullopt;
     }
-    if (bank == 2 && record == 25)
-    {
-        return mad_fighter(creation);
-    }
-    if (bank == 3 && record == 107)
-    {
-        return dirten(creation, rules);
-    }
-    if (bank == 8 && record == 104)
-    {
-        return fatima(creation, rules);
-    }
-    if (bank == 4 && record == 24)
-    {
-        return mystic(creation, rules);
-    }
-    if (bank == 5 && record == 88)
-    {
-        return genheeris(creation, rules);
-    }
-    return std::nullopt;
+    return build_companion(*found, creation, rules);
 }
 } // namespace opengold
