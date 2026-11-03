@@ -973,9 +973,9 @@ void CombatView::sync_art(bool preserve_effects)
 
 namespace
 {
-// The hill giant's own rock, cut from its ready pose, at the scale it stands
-// at; it tumbles a quarter turn between frames. The demo ships no such file
-// and keeps the original's boulder.
+// The hill giant's own rock, cut from its ready pose and drawn twice the size
+// it is in the giant's hand, so it reads in flight; it tumbles a quarter turn
+// between frames. The demo ships no such file and keeps the original's boulder.
 std::optional<std::array<Ref<ImageTexture>, 2>> new_boulder_art()
 {
     const auto path = game_data_path("data/art/missiles/boulder.png");

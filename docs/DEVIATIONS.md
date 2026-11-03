@@ -356,8 +356,8 @@ in the game: answering YES at a hall lists its services in the dialogue
   fire. A hit ends on the target. A miss sails four
   squares past it, which is new. The next creature acts once the shot has landed.
 - **Giants throw the rock they hold** (2026-11-03). A thrown boulder is the rock
-  from the hill giant's new ready pose, cut from that picture and drawn at the
-  giant's scale, tumbling a quarter turn as it flies, not the original's
+  from the hill giant's new ready pose, cut from that picture and drawn twice the
+  size it is in the giant's hand, tumbling a quarter turn as it flies, not the original's
   `COMSPR.DAX` boulder. The demo, which ships no new monster art, keeps the
   original's.
 - **Every spell has its own look** (2026-10-31). Each spell cast in a fight plays
