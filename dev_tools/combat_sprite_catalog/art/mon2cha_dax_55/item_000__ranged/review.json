@@ -1,15 +1,15 @@
 {
-  "action_sha256": "6dd89193188ff80ce3419d75bc0d3cb4cd2c47f86c0f635f912d49425153afb4",
+  "action_sha256": "18d57fb90c604f6f9f2d4a4024a65d8d6240d9c46b420caaa2d7accc41554542",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_55/item_000__ranged/action.png",
     "ready": "art/mon2cha_dax_55/item_000__ranged/ready.png"
   },
-  "metadata_sha256": "81c3f9f9c69063a6a73ca96d92a87564622c9ffb20357e2f006263bf68044028",
-  "notes": "Game source 24x48 (1x2). Full saved equipment reviewed; Boulder is separate ranged set from Club. Approved new Club giant art and pose guide used; no original game art. Shared 744x966 crop and 60x104 placement aligns this giant body/feet to Club set. Ready rock at shoulder, action rock released with fixed feet. Native pair and live catalog grid ready/action reviewed; both fit.",
+  "metadata_sha256": "9becab6478848b683c97aeaa96e985659f91bf60a5b68222a56deba210de76eb",
+  "notes": "User rejected prior action hash 6dd89193188ff80ce3419d75bc0d3cb4cd2c47f86c0f635f912d49425153afb4 because the throwing hand dropped instead of following through. The MON2 and MON5 Hill Giant Boulder ready PNGs are byte-identical at hash 33b152b4792f512f4199a64dec0a9501427914c7e4f703baf1baeb49275994f5. User specified the MON5 action as the correction example; reused that exact independently created action at hash 18d57fb90c604f6f9f2d4a4024a65d8d6240d9c46b420caaa2d7accc41554542, with no original-game art reference. In ready, the viewer-left arm holds the raised boulder and traces to the viewer-left shoulder. In action that same shoulder leads to an empty outstretched hand toward screen right at shoulder height; the offhand stays bent. Inspected both frames at 128x128 on gray, magenta and dark backgrounds, enlarged torso continuity, and six auto-alternating frames in the catalog specifically on MON2CHA.DAX:55/item_000__ranged. Lower rows 65-127 match pixel for pixel, preserving planted feet. Both frames fit the 1x2 Tall footprint, match the separate Club set scale, and retain transparency without clipping. Club set was not changed.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
   "ready_sha256": "33b152b4792f512f4199a64dec0a9501427914c7e4f703baf1baeb49275994f5",
-  "reviewed_at": "2026-10-21T01:16:55+00:00",
+  "reviewed_at": "2026-11-03T14:35:35+00:00",
   "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:55",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
+  "workflow_sha256": "098d45b2e72fe193a921e0e9a7a286058ad8c6eff42e60f8b7e513cca833a2bd"
 }
