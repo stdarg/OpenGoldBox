@@ -1048,6 +1048,15 @@ bool fit_for_the_dragon(const CampaignParty &party)
 // not write into: its numbering would start over and overwrite the first fights.
 bool replays_part_of_the_route = false;
 
+unsigned dead_members(const PartyState &state)
+{
+    return static_cast<unsigned>(std::count_if(state.roster.begin(), state.roster.end(),
+                                               [](const auto &member)
+                                               {
+                                                   return member.vitals.dead;
+                                               }));
+}
+
 void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party)
 {
     if (town.monster_picture())
@@ -1105,6 +1114,9 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     // A fight lost is played again from the moment before it, as a player
     // reloads. The route tells nothing of how often it is won.
     constexpr unsigned tries = 100;
+    // So is a win that killed someone, while another looks likely: a test that
+    // kept it would walk on to the dragon with the dead, as no route raises them.
+    constexpr unsigned reloads_for_a_death = 20;
     for (unsigned attempt = 0; attempt < tries; ++attempt)
     {
         party->restore(before_fight);
@@ -1163,7 +1175,9 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
                       << (result.outcome == rules::Outcome::victory ? "won" : "not won") << '\n';
         }
         if (result.outcome == rules::Outcome::victory &&
-            !(facing_the_dragon_next(town) && !fit_for_the_dragon(*party)))
+            !(facing_the_dragon_next(town) && !fit_for_the_dragon(*party)) &&
+            (attempt >= reloads_for_a_death ||
+             dead_members(party->state()) <= dead_members(before_fight)))
         {
             if (route.records(town))
             {
@@ -3681,8 +3695,12 @@ void play_nomad_camp(Expedition &trip)
               town.script_variable(por::EclAddress{0x49C9}) == 18,
           "After the headman's feast, which lasts until evening, the nomads lodge the party "
           "and offer a night's rest");
-    check(route_camp(town, RestKind::long_rest), "Camp in the nomads' lodging");
-    settle(town, party, guest);
+    // An interrupted rest brings no midnight; the party lies down again.
+    for (unsigned tries = 0; tries < 10 && nomads(0x4A7D) != 3; ++tries)
+    {
+        check(route_camp(town, RestKind::long_rest), "Camp in the nomads' lodging");
+        settle(town, party, guest);
+    }
     check(nomads(0x4A7D) == 3 && town.script_variable(por::EclAddress{0x49C9}) == 0,
           "At midnight the headman asks the party to stay against the kobolds, and it stays");
     rest_until(town, party, [&] { return nomads(0x4A7E) > 0; },
@@ -5745,6 +5763,9 @@ std::optional<ParleyResult> parley_once(const std::filesystem::path &save,
 {
     ParleyResult result{load_expedition(save, directory)};
     auto &[party, town] = result.trip;
+    // Each try rolls its own dice: on the same ones, walking further can meet
+    // the same monsters every time.
+    opengold::test::TourAccess::seed_dice(town, paces + 1);
     MemberId charming{};
     for (const auto id : party->state().slots)
     {
