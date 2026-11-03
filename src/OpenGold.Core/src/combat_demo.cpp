@@ -247,24 +247,55 @@ void place_as_original(CampaignEncounter &encounter, std::vector<Participant> &p
     encounter.enemies = std::move(fighting);
 }
 
-// "TROLL 2: melee at Bryn", what a command's dice are for in the log file.
+std::string square(Cell cell)
+{
+    return std::to_string(cell.x) + "," + std::to_string(cell.y);
+}
+
+// "TROLL 2: melee at Bryn" or "Arden: move from 3,4 to 5,4": a command, and what
+// its dice are for, in the log file.
 std::string command_purpose(const Snapshot &state, const Command &command)
 {
-    const auto name_of = [&](EntityId id)
+    const auto unit_of = [&](EntityId id)
     {
         const auto found = std::find_if(state.combatants.begin(), state.combatants.end(),
                                         [&](const auto &unit)
                                         {
                                             return unit.id == id;
                                         });
-        return found == state.combatants.end() ? std::string{} : found->name;
+        return found == state.combatants.end() ? nullptr : &*found;
     };
-    auto purpose = name_of(state.actor) + ": " + command.verb;
-    if (const auto target = name_of(command.target); !target.empty())
+    const auto *actor = unit_of(state.actor);
+    auto purpose = (actor ? actor->name : std::string{}) + ": " + command.verb;
+    if (const auto *target = unit_of(command.target))
     {
-        purpose += " at " + target;
+        purpose += " at " + target->name;
+    }
+    if (command.verb == "move" && actor)
+    {
+        purpose += " from " + square(actor->cell) + " to " + square(command.destination);
+    }
+    else if (!command.target && (command.destination.x || command.destination.y))
+    {
+        purpose += " at square " + square(command.destination);
     }
     return purpose;
+}
+
+// Who stands where as a fight begins, for the log file.
+void log_fight_start(const Snapshot &state, const Identity &rules)
+{
+    log_diagnostic(LogPriority::info, "fight",
+                   "rules " + rules.module + " " + rules.version + " (" + rules.content + ")");
+    for (const auto &unit : state.combatants)
+    {
+        log_diagnostic(LogPriority::info, "fight",
+                       unit.name + " (" + (unit.side == Side::party ? "party" : "opposition") +
+                           ", " + unit.definition + ") at " + square(unit.cell) + ", HP " +
+                           std::to_string(unit.hit_points) + "/" +
+                           std::to_string(unit.max_hit_points) + ", AC " +
+                           std::to_string(unit.armor_class));
+    }
 }
 
 // A line of the fight's log as the file keeps it, the dice behind a damage total
@@ -366,6 +397,7 @@ void CombatDemo::install_combat(std::unique_ptr<CombatSession> next, std::string
     }
     if (diagnostic_log_enabled())
     {
+        log_fight_start(next->snapshot(), module_->identity());
         log_new_fight_lines({}, next->snapshot().log_entries);
     }
     if (!campaign_)
@@ -1098,6 +1130,7 @@ bool CombatDemo::submit(const Command &command)
     if (logging)
     {
         purpose.emplace(command_purpose(combat_->snapshot(), command));
+        log_diagnostic(LogPriority::info, "command", command_purpose(combat_->snapshot(), command));
     }
     if (!combat_->submit(command))
     {

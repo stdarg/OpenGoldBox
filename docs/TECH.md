@@ -969,8 +969,27 @@ its dice as an `info fight` line, with the dice behind each damage total:
     2026-11-03T20:09:12.401Z opengold[41301] debug dice: d6 2 for TROLL 2: melee at Cora
     2026-11-03T20:09:12.402Z opengold[41301] info fight: TROLL 2 -> Cora: d20 19 + 7 vs AC 18 hits for 9 damage (2d6: 2 + 3, + 4 = 9).
 
-Errors go in at `err`: a handler a screen could not finish, an uncaught exception, a
-save that could not be written or loaded, and an event stopped or rolled back.
+Errors go in at `err`: the engine's and GDScript's errors and warnings (an engine
+`Logger`, `game_log.h`), which include a handler a screen could not finish and an
+uncaught exception; a save that could not be written or loaded; and an event stopped
+or rolled back. A message of several lines is folded onto one, with " / ".
+
+So that a report can be reproduced, the log also holds:
+
+- **The session**, at its head (`notice session`): the game's version and the commit
+  it was built from, with "with local changes" when the tree had any, the engine,
+  the system, the game files' folder, the language and every gameplay setting. A
+  setting changed later is a `notice settings` line, and each save written or
+  loaded a `notice save` line with its file.
+- **The player's actions**: each button pressed, list item chosen and answer typed
+  (`info ui`, with the control's place in the scene and its text), and each step,
+  turn, choice, answer, purchase, camp and spell outside fights (`info player`,
+  with the party's area, square and facing before it).
+- **Each fight**: the rules' version and everyone's square, Hit Points and AC as
+  it begins, then every command the player or the computer gives (`info command`,
+  such as "TROLL 2: move from 25,11 to 27,11"), each before its dice and lines.
+
+A crash report holds the last 400 lines of both the engine's log and this one.
 
     2026-11-01T18:10:03.123Z opengold[4242] info event: script 26 begins in area 26 at 15,1
 

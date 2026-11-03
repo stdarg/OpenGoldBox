@@ -1323,6 +1323,21 @@ void RolfTourSession::advance(double seconds)
     }
 }
 
+void RolfTourSession::log_player(const std::string &action) const
+{
+    if (!diagnostic_log_enabled())
+    {
+        return;
+    }
+    constexpr std::array<std::string_view, 4> facings{"north", "east", "south", "west"};
+    const auto facing = static_cast<std::size_t>(snapshot_.pose.facing);
+    log_diagnostic(LogPriority::info, "player",
+                   action + " (area " + std::to_string(snapshot_.area_id) + " at " +
+                       std::to_string(snapshot_.pose.x) + "," + std::to_string(snapshot_.pose.y) +
+                       " facing " +
+                       std::string(facing < facings.size() ? facings[facing] : "?") + ")");
+}
+
 bool RolfTourSession::continue_dialogue(std::uint64_t ticket)
 {
     return choose(ticket, 0);
@@ -1351,6 +1366,7 @@ bool RolfTourSession::camp(RestKind kind)
         return false;
     }
     camp_kind_ = kind;
+    log_player(kind == RestKind::long_rest ? "camps for a Long Rest" : "camps for a Short Rest");
     // The camp's outcome is the news, not what the last event said.
     snapshot_.dialogue.clear();
     begin_event(EventTrigger::camp);
@@ -1370,6 +1386,11 @@ bool RolfTourSession::explore(ExplorationCommand command)
     {
         return false;
     }
+    constexpr std::array<std::string_view, 14> commands{
+        "turns left", "turns right", "turns around", "steps forward", "looks",
+        "camps",      "goes north",  "goes northeast", "goes east", "goes southeast",
+        "goes south", "goes southwest", "goes west",  "goes northwest"};
+    log_player(std::string(commands.at(static_cast<std::size_t>(command))));
     if (town_)
     {
         // On the wilderness map the party steps in eight directions; in a 3D

@@ -76,6 +76,11 @@ int main()
     check(rolls[4].ends_with(" debug dice: d20 " + std::to_string(unnamed)),
           "A die rolled for nothing named is still logged: " + rolls[4]);
 
+    log_diagnostic(LogPriority::warning, "engine", "first line\nsecond line");
+    const auto folded = lines_of(file);
+    check(folded.size() == 6 && folded[5].ends_with(" warning engine: first line / second line"),
+          "A message of several lines stays one line of the log");
+
     std::cout << "Diagnostic log tests passed\n";
     return 0;
 }

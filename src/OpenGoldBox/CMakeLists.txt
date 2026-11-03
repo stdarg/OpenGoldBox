@@ -54,6 +54,14 @@ add_library(opengoldbox_game SHARED rolf_tour_view.cpp combat_view.cpp character
     portrait_picker.cpp portrait_catalog.cpp party_preview.cpp equipment_choice_dialog.cpp level_up_view.cpp level_up_dialog.cpp level_up_lab_view.cpp campaign_save_view.cpp save_slots.cpp
     character_pool_dialog.cpp town_sheet_dialog.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp startup_view.cpp game_lifecycle.cpp crash_reports.cpp game_log.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp)
 target_link_libraries(opengoldbox_game PRIVATE opengold_core opengold_rules_srd5 godot-cpp)
+# The commit being built, for the head of the game's log; checked on every build.
+add_custom_target(opengoldbox_commit
+    COMMAND "${CMAKE_COMMAND}" "-DSOURCE=${PROJECT_SOURCE_DIR}"
+        "-DOUTPUT=${CMAKE_CURRENT_BINARY_DIR}/generated/opengoldbox_commit.h"
+        -P "${PROJECT_SOURCE_DIR}/cmake/write_commit.cmake"
+    BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/generated/opengoldbox_commit.h")
+add_dependencies(opengoldbox_game opengoldbox_commit)
+target_include_directories(opengoldbox_game PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 target_compile_features(opengoldbox_game PRIVATE cxx_std_20)
 target_compile_definitions(opengoldbox_game PRIVATE $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
     OPENGOLDBOX_VERSION="${PROJECT_VERSION}")
@@ -375,9 +383,10 @@ if(OPENGOLD_BUILD_TESTS)
         "-DPLAYTEST_FIXTURES=${PROJECT_BINARY_DIR}/playtest-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/slums-ui-audit"
         -P "${PROJECT_SOURCE_DIR}/tests/ui_audit.cmake")
+    # About four and a half minutes alone on a debug build, more beside other checks.
     set_tests_properties(opengold_godot_slums_ui_audit PROPERTIES
         FIXTURES_REQUIRED "godot_project;playtest_fixtures"
-        TIMEOUT 300 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
+        TIMEOUT 450 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     # Godot checks with original files; skipped without OPENGOLD_GAME_DIR. Each
     # keeps its Godot user data under WORK (see original_view_check.cmake).
     function(opengold_original_check name expected)

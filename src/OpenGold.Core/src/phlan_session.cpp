@@ -791,6 +791,7 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
 
 void RolfTourSession::recall(opengold::MemberId caster, const std::string &action)
 {
+    log_player("member " + std::to_string(caster) + " casts " + action);
     if (!campaign_ || campaign_->in_combat() || !can_leave())
     {
         throw std::runtime_error("Word of Recall needs a quiet moment outside events");
@@ -862,6 +863,8 @@ std::vector<unsigned> RolfTourSession::teleport_destinations() const
 
 void RolfTourSession::teleport(opengold::MemberId caster, const std::string &action, unsigned map)
 {
+    log_player("member " + std::to_string(caster) + " casts " + action + " to map " +
+               std::to_string(map));
     if (action != "teleport" && !action.starts_with("teleport_"))
     {
         throw std::runtime_error("Not a Teleport");
@@ -2072,6 +2075,7 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
     {
         return false;
     }
+    log_player("chooses \"" + snapshot_.choices[choice] + "\"");
     if (hall_visit_)
     {
         return choose_at_hall(choice);
@@ -2158,6 +2162,7 @@ bool RolfTourSession::input(std::uint64_t ticket, std::string_view value)
     {
         return false;
     }
+    log_player("answers \"" + std::string(value) + "\"");
     if (!machine_.resume_input(menu_request_, value))
     {
         snapshot_.diagnostic = snapshot_.number_input ? "Enter a whole number from 0 to 65535."
@@ -2180,6 +2185,8 @@ bool RolfTourSession::buy(std::uint64_t ticket, std::size_t item)
         return false;
     }
     const auto &offered = treasure_[item];
+    log_player("buys " + offered.label() + " (item " + std::to_string(item + 1) + " of " +
+               std::to_string(treasure_.size()) + ")");
     if (campaign_)
     {
         try
@@ -2220,6 +2227,7 @@ bool RolfTourSession::leave_shop(std::uint64_t ticket)
     {
         return false;
     }
+    log_player("leaves the shop");
     if (!shop_request_)
     {
         // OpenGoldBox's own shop: no script waits on it.

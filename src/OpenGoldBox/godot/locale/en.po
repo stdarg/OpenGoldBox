@@ -5615,7 +5615,7 @@ msgstr "Lizard Men's Keep, the flooded level"
 msgid "Lizardfolk"
 msgstr "Lizardfolk"
 
-#: src/OpenGoldBox/save_slots.cpp:191 src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:278
+#: src/OpenGoldBox/save_slots.cpp:191 src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:281
 msgid "Load"
 msgstr "Load"
 
@@ -8410,7 +8410,7 @@ msgstr "Savage Attacker"
 msgid "Savage Attacker: once per turn on a weapon hit, weapon damage is rolled twice and the higher result is kept automatically."
 msgstr "Savage Attacker: once per turn on a weapon hit, weapon damage is rolled twice and the higher result is kept automatically."
 
-#: src/OpenGoldBox/save_slots.cpp:191 src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:278
+#: src/OpenGoldBox/save_slots.cpp:191 src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:281
 msgid "Save"
 msgstr "Save"
 

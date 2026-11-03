@@ -267,6 +267,9 @@ void SaveSlots::act()
         {
             load_(path);
         }
+        opengold::log_diagnostic(opengold::LogPriority::notice, "save",
+                                 std::string(saving_ ? "saved " : "loaded ") +
+                                     opengold::path_text(path));
         hide();
     }
     catch (const std::exception &e)

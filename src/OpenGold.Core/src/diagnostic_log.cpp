@@ -170,12 +170,18 @@ void log_diagnostic(LogPriority priority, std::string_view topic, std::string_vi
     {
         return;
     }
+    // One line each, however many the message has.
+    std::string text(message);
+    for (auto at = text.find('\n'); at != std::string::npos; at = text.find('\n', at))
+    {
+        text.replace(at, 1, " / ");
+    }
     const std::lock_guard lock(log.mutex);
     // Flushed line by line: the lines that matter most come just before a crash.
     log.file << timestamp() << " opengold[" << process_id() << "] " << priority_name(priority)
-             << ' ' << topic << ": " << message << std::endl;
+             << ' ' << topic << ": " << text << std::endl;
 #ifdef OPENGOLD_HAS_SYSLOG
-    const std::string line = std::string(topic) + ": " + std::string(message);
+    const std::string line = std::string(topic) + ": " + text;
     syslog(syslog_priority(priority), "%s", line.c_str());
 #endif
 }

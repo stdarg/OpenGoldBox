@@ -560,6 +560,8 @@ class RolfTourSession
     std::optional<PartyPose> meeting_pose_;
     bool robbed_{};
     std::vector<Equipment> treasure_;
+    // Records a player's action in the game's log, with where the party stands.
+    void log_player(const std::string &action) const;
     std::optional<Image> picture_;
     std::optional<unsigned> picture_animation_id_; // The PIC record picture_ begins.
 

@@ -160,11 +160,14 @@ When a session does not shut down normally, whether from a crash, a force quit o
 a power loss, the next launch writes a report to `crash-reports/` in the user data
 folder, beside `settings.cfg`. Each is a text file named
 `crash-<date>-<process id>.txt`, holding the game version, engine, system, and the
-last 400 lines of that session's log, with the backtrace when the game crashed.
+last 400 lines of that session's engine log and game log, with the backtrace when the
+game crashed.
 The ten newest are kept. The log is also in `logs/` in the same folder, where the
 engine keeps the last five. Beside them the game keeps its own log of each session,
-`opengold-<date>.log`, the newest five: every die rolled and what it was for, every
-line of each fight's log, and the errors met ([TECH.md](TECH.md#diagnostic-log)).
+`opengold-<date>.log`, the newest five: the game's version and settings, every
+action the player takes, every die rolled and what it was for, every command and
+line of each fight, and the errors met, the engine's included
+([TECH.md](TECH.md#diagnostic-log)). A crash report holds the end of both logs.
 
 Nothing is sent anywhere; a player attaches the file to a bug report. Logs can
 hold folder names, such as the player's account name in the path to the game files.

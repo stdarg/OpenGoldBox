@@ -1,4 +1,5 @@
 #include "application_settings.h"
+#include "opengold/diagnostic_log.h"
 #include "opengold/difficulty.h"
 #include "opengold/encounter_budget.h"
 #include <godot_cpp/classes/config_file.hpp>
@@ -90,6 +91,9 @@ bool save_config(const std::function<void(ConfigFile &)> &change)
 
 bool save(const char *section, const char *key, const Variant &value)
 {
+    opengold::log_diagnostic(opengold::LogPriority::notice, "settings",
+                             std::string(section) + "/" + key + " = " +
+                                 String(value).utf8().get_data());
     return save_config(
         [&](ConfigFile &config)
         {
@@ -248,6 +252,8 @@ bool save_monster_ability(const std::string &ability, const String &from)
 
 bool restore_monster_abilities()
 {
+    opengold::log_diagnostic(opengold::LogPriority::notice, "settings",
+                             "monster abilities back to their defaults");
     return save_config(
         [](ConfigFile &config)
         {

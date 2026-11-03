@@ -1,3 +1,4 @@
+#include "game_log.h"
 #include "rolf_tour_view.h"
 #include "combat_view.h"
 #include "character_creation_view.h"
@@ -28,6 +29,7 @@ void initialize(godot::ModuleInitializationLevel level)
         godot::ClassDB::register_class<CharacterPoolDialog>();
         godot::ClassDB::register_class<TownSheetDialog>();
         godot::ClassDB::register_class<SaveSlots>();
+        godot::ClassDB::register_class<EngineErrors>();
         godot::ClassDB::register_class<GameMenuView>();
         godot::ClassDB::register_class<StartupView>();
         godot::ClassDB::register_class<GameLifecycle>();

@@ -5615,7 +5615,7 @@ msgstr ""
 msgid "Lizardfolk"
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:191 src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:278
+#: src/OpenGoldBox/save_slots.cpp:191 src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:281
 msgid "Load"
 msgstr ""
 
@@ -8410,7 +8410,7 @@ msgstr ""
 msgid "Savage Attacker: once per turn on a weapon hit, weapon damage is rolled twice and the higher result is kept automatically."
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:191 src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:278
+#: src/OpenGoldBox/save_slots.cpp:191 src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:281
 msgid "Save"
 msgstr ""
 

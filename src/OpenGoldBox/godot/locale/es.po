@@ -5615,7 +5615,7 @@ msgstr "Fortaleza de los hombres lagarto, el nivel inundado"
 msgid "Lizardfolk"
 msgstr "Hombre lagarto"
 
-#: src/OpenGoldBox/save_slots.cpp:191 src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:278
+#: src/OpenGoldBox/save_slots.cpp:191 src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:281
 msgid "Load"
 msgstr "Cargar"
 
@@ -8410,7 +8410,7 @@ msgstr "Atacante salvaje"
 msgid "Savage Attacker: once per turn on a weapon hit, weapon damage is rolled twice and the higher result is kept automatically."
 msgstr "Atacante salvaje: una vez por turno, al impactar con un arma, el daño se tira dos veces y se usa automáticamente el resultado mayor."
 
-#: src/OpenGoldBox/save_slots.cpp:191 src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:278
+#: src/OpenGoldBox/save_slots.cpp:191 src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:281
 msgid "Save"
 msgstr "Guardar"
 

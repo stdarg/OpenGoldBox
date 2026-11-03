@@ -6,7 +6,13 @@
 #include "screenshot_service.h"
 #include "guarded_handlers.h"
 #include "godot_nodes.h"
+#include "opengold/diagnostic_log.h"
+#include <godot_cpp/classes/base_button.hpp>
+#include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
+#include <godot_cpp/classes/item_list.hpp>
+#include <godot_cpp/classes/line_edit.hpp>
+#include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
@@ -54,6 +60,74 @@ void GameLifecycle::start_lifecycle()
                               presentation::guarded(this, &GameLifecycle::request_quit));
     watch_window(tree->get_root());
     tree->connect("node_added", presentation::guarded(this, &GameLifecycle::watch_window));
+    tree->connect("node_added", presentation::guarded(this, &GameLifecycle::watch_control));
+}
+
+namespace
+{
+// "CampaignTown/Continue", where a control sits in the scene.
+std::string control_name(Node &control)
+{
+    auto path = String(control.get_path());
+    if (auto *scene = control.get_tree()->get_current_scene())
+    {
+        path = String(scene->get_path_to(&control));
+    }
+    return path.utf8().get_data();
+}
+
+void log_ui(const std::string &what)
+{
+    opengold::log_diagnostic(opengold::LogPriority::info, "ui", what);
+}
+} // namespace
+
+void GameLifecycle::watch_control(Node *node)
+{
+    if (Object::cast_to<BaseButton>(node))
+    {
+        node->connect("pressed", presentation::guarded(this, &GameLifecycle::log_pressed).bind(node));
+    }
+    if (Object::cast_to<ItemList>(node) || Object::cast_to<OptionButton>(node))
+    {
+        node->connect("item_selected",
+                      presentation::guarded(this, &GameLifecycle::log_selected).bind(node));
+    }
+    if (Object::cast_to<LineEdit>(node))
+    {
+        node->connect("text_submitted",
+                      presentation::guarded(this, &GameLifecycle::log_submitted).bind(node));
+    }
+}
+
+void GameLifecycle::log_pressed(Node *control)
+{
+    auto *button = Object::cast_to<BaseButton>(control);
+    const auto *labelled = Object::cast_to<Button>(control);
+    log_ui("pressed " + control_name(*control) +
+           (labelled && !labelled->get_text().is_empty()
+                ? " \"" + std::string(labelled->get_text().utf8().get_data()) + "\""
+                : "") +
+           (button->is_toggle_mode() ? (button->is_pressed() ? " (on)" : " (off)") : ""));
+}
+
+void GameLifecycle::log_selected(int64_t index, Node *control)
+{
+    String item;
+    if (auto *list = Object::cast_to<ItemList>(control))
+    {
+        item = list->get_item_text(static_cast<int32_t>(index));
+    }
+    else if (auto *options = Object::cast_to<OptionButton>(control))
+    {
+        item = options->get_item_text(static_cast<int32_t>(index));
+    }
+    log_ui("selected " + control_name(*control) + " \"" + item.utf8().get_data() + "\"");
+}
+
+void GameLifecycle::log_submitted(const String &text, Node *control)
+{
+    log_ui("entered " + control_name(*control) + " \"" + text.utf8().get_data() + "\"");
 }
 
 void GameLifecycle::watch_window(Node *node)

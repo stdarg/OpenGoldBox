@@ -1,7 +1,6 @@
 #ifndef OPENGOLDBOX_GUARDED_HANDLERS_H
 #define OPENGOLDBOX_GUARDED_HANDLERS_H
 
-#include "opengold/diagnostic_log.h"
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <cstdint>
@@ -27,7 +26,6 @@ template <ReportsFailures View>
 void report_guarded_failure(View &view, const std::exception &failure) noexcept
 {
     godot::UtilityFunctions::push_error(godot::String::utf8(failure.what()));
-    opengold::log_diagnostic(opengold::LogPriority::error, "game", failure.what());
     try
     {
         view.report_failure(failure);

@@ -1,5 +1,4 @@
 #include "crash_reports.h"
-#include "opengold/diagnostic_log.h"
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/file_access.hpp>
@@ -70,8 +69,6 @@ void log_uncaught_exception()
     {
         UtilityFunctions::printerr(String("OpenGoldBox: uncaught exception: ") +
                                    String::utf8(failure.what()));
-        opengold::log_diagnostic(opengold::LogPriority::error, "crash",
-                                 std::string("uncaught exception: ") + failure.what());
     }
     catch (...)
     {
@@ -142,6 +139,22 @@ void log_backtrace()
     return {};
 }
 
+// The game's own log of the session before this one (game_log.h). Reports are
+// written before this session opens its own, so that is the newest.
+[[nodiscard]] String previous_game_log()
+{
+    auto names = DirAccess::get_files_at(logs_folder);
+    names.sort();
+    for (int64_t index = names.size() - 1; index >= 0; --index)
+    {
+        if (names[index].begins_with("opengold-"))
+        {
+            return FileAccess::get_file_as_string(String(logs_folder).path_join(names[index]));
+        }
+    }
+    return {};
+}
+
 [[nodiscard]] String log_tail(const String &log)
 {
     const auto lines = log.split("\n");
@@ -161,7 +174,9 @@ void log_backtrace()
            " " + os->get_version() + ", " + os->get_model_name() + ", " + os->get_processor_name() +
            "\n" + "Session started: " + session_start + "\n" +
            "Report written: " + Time::get_singleton()->get_datetime_string_from_system() +
-           "\n\nLast lines of the session's log:\n\n" + log_tail(previous_session_log());
+           "\n\nLast lines of the session's log:\n\n" + log_tail(previous_session_log()) +
+           "\n\nLast lines of the session's game log, its dice, actions and fights:\n\n" +
+           log_tail(previous_game_log());
 }
 
 void remove_oldest_reports()
