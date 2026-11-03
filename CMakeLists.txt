@@ -715,7 +715,8 @@ if(OPENGOLD_BUILD_TESTS)
         "-DSIM=$<TARGET_FILE:opengold_campaign_sim>" "-DBALANCE=$<TARGET_FILE:opengold_encounter_balance>"
         "-DWORK=${CMAKE_BINARY_DIR}/balance-tools-smoke"
         -P "${PROJECT_SOURCE_DIR}/tests/balance_tools_smoke.cmake")
-    set_tests_properties(opengold_balance_tools_smoke PROPERTIES TIMEOUT 300)
+    # A debug build takes about six minutes; an optimised one under one.
+    set_tests_properties(opengold_balance_tools_smoke PROPERTIES TIMEOUT 900)
 endif()
 
 if(OPENGOLD_BUILD_GODOT)
