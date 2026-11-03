@@ -1970,15 +1970,19 @@ void RolfTourView::refresh()
     }
     const auto resource =
         "por/area/" + std::to_string(s.area_id) + "/script/" + std::to_string(s.script_id);
-    required_node<RichTextLabel>(*this, "Dialogue")
-        .set_text(
-            faulted
-                ? (loaded ? i18n::text(s.diagnostic) : error_) + "\n" +
-                      i18n::text(
-                          "Restart with --reset-game-path to choose your Pool of Radiance data folder.")
-            : s.dialogue.empty() && s.secret_door_searches.empty()
-                ? (s.tour_finished ? String() : i18n::text("Following Rolf..."))
-                : event_dialogue(resource + "/dialogue", s));
+    // The text that led to a fight stays up while the fight's close-up plays.
+    if (!fight_waits_on_picture_ || !s.dialogue.empty())
+    {
+        required_node<RichTextLabel>(*this, "Dialogue")
+            .set_text(
+                faulted
+                    ? (loaded ? i18n::text(s.diagnostic) : error_) + "\n" +
+                          i18n::text(
+                              "Restart with --reset-game-path to choose your Pool of Radiance data folder.")
+                : s.dialogue.empty() && s.secret_door_searches.empty()
+                    ? (s.tour_finished ? String() : i18n::text("Following Rolf..."))
+                    : event_dialogue(resource + "/dialogue", s));
+    }
     required_node<Button>(*this, "Continue")
         .set_disabled(fight_waits_on_picture_ || (!waiting && !shopping && !answer));
     required_node<Button>(*this, "Continue")
@@ -2064,6 +2068,12 @@ void RolfTourView::refresh()
                                  : answer   ? "answer"
                                             : "normal");
     dialogue_layout.call("advance", 0);
+    // A menu's list runs down beside Continue, so it stops short of the button.
+    const auto &dialogue = required_node<RichTextLabel>(*this, "Dialogue");
+    const auto &go = required_node<Button>(*this, "Continue");
+    choices->set_size(
+        {multiple ? go.get_position().x - 16 - choices->get_position().x : dialogue.get_size().x,
+         choices->get_size().y});
     if (shopping)
     {
         required_node<RichTextLabel>(*this, "Dialogue")

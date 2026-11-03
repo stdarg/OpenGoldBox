@@ -75,7 +75,7 @@ tracks/1/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [-204.0]
+"values": [-186.0]
 }
 tracks/2/type = "value"
 tracks/2/imported = false
@@ -87,7 +87,7 @@ tracks/2/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [-194.0]
+"values": [-182.0]
 }
 tracks/3/type = "value"
 tracks/3/imported = false
@@ -99,7 +99,7 @@ tracks/3/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [-122.0]
+"values": [-62.0]
 }
 
 [sub_resource type="Animation" id="Animation_1fusv"]
