@@ -141,6 +141,67 @@ void easy_spares_the_winners()
     check(normal_hp == 0 && !normal_said, "Otherwise a downed member stays down");
 }
 
+// The Slums trolls' room: the ogre stands on the one square beside the last
+// member standing that the troll could reach, with members down around them.
+// A way around the creatures longer than a turn's move takes the troll to her
+// other side; with none, it does not charge on the spot.
+void blocked_monster_goes_around()
+{
+    const auto play = [](bool way_around)
+    {
+        const auto rules = module();
+        const auto profile = rules->character_profile(druid().sheet(), {}).data;
+        std::vector<Terrain> terrain(56, Terrain::obstacle);
+        std::vector<std::pair<int, int>> open{{1, 1}, {2, 1}, {3, 1}, {2, 2},
+                                              {3, 2}, {4, 2}, {5, 2}, {4, 3}};
+        if (way_around)
+        {
+            // Eleven squares, more than a charging troll covers in a turn.
+            open.insert(
+                open.end(),
+                {{1, 2}, {1, 3}, {1, 4}, {1, 5}, {1, 6}, {2, 6}, {3, 6}, {4, 6}, {4, 5}, {4, 4}});
+        }
+        for (const auto [x, y] : open)
+        {
+            terrain[y * 7 + x] = Terrain::open;
+        }
+        rules::VitalState down;
+        down.hit_points = 0;
+        Encounter encounter{
+            {7, 8, terrain},
+            {{1, "campaign-character", "Last", Side::party, {4, 2}, profile},
+             {2, "campaign-character", "Down 1", Side::party, {1, 1}, profile, down},
+             {3, "campaign-character", "Down 2", Side::party, {2, 2}, profile, down},
+             {4, "campaign-character", "Down 3", Side::party, {3, 2}, profile, down},
+             {98, "troll", "Troll", Side::opposition, {2, 1}},
+             {99, "ogre", "Ogre", Side::opposition, {3, 1}}}};
+        auto fight = rules->create(std::move(encounter), 5);
+        bool struck = false;
+        for (unsigned n = 0; n < 120 && !struck && fight->snapshot().outcome == Outcome::ongoing;
+             ++n)
+        {
+            const auto state = fight->snapshot();
+            auto command = choose_demo_command(*fight);
+            if (state.actor != 98 && state.actor != 99)
+            {
+                const auto legal = fight->legal_commands();
+                command = *std::find_if(legal.begin(), legal.end(),
+                                        [](const Command &c)
+                                        {
+                                            return c.verb == "end";
+                                        });
+            }
+            struck = state.actor == 98 && command.target == 1 && command.verb != "move";
+            check(fight->submit(command), "The command is legal");
+        }
+        const auto log = fight->snapshot().log();
+        return std::pair{struck, std::find(log.begin(), log.end(), "Troll charges.") != log.end()};
+    };
+    check(play(true).first, "A troll goes around the creatures to strike the last one standing");
+    const auto [struck, charged] = play(false);
+    check(!struck && !charged, "With no way around, the troll does not charge on the spot");
+}
+
 void magic_off_casts_nothing()
 {
     const auto rules = module();
@@ -209,6 +270,7 @@ int main()
     {
         party_keeps_quick();
         easy_spares_the_winners();
+        blocked_monster_goes_around();
         magic_off_casts_nothing();
         quick_plays_at_the_highest_level();
         std::cout << "Quick combat tests passed\n";

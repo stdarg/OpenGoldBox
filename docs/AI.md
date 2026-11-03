@@ -112,6 +112,13 @@ enemies (section 3). Exceptions:
 - A creature whose target is out of reach even with all its movement Dashes
   with Cunning Action or Adrenaline Rush, keeping its Action for an attack.
 - A Champion's free move is taken toward the enemy.
+- **A creature whose way in is held** (the user, 2026-11-03). The walk looks past
+  creatures, so one whose only square beside its enemy holds its own side,
+  with characters down around it, finds no step closer. It then takes the way
+  around the creatures to a free square beside that enemy, over several turns
+  if need be, and with no way around it stays put without spending a Charge or
+  Aggressive on the spot. Seen in the Slums trolls' room, where the troll stood
+  behind the ogre for six rounds.
 
 **Original.** It walked straight at its target with no pathfinding, trying
 other headings in a fixed order when blocked, and gave up after being blocked
@@ -119,8 +126,9 @@ three times. With no enemy in sight it chose one anywhere on the field, behind
 walls too, and walked toward it. A pure magic-user without armor stood guard
 instead of advancing. Attacks of opportunity were ignored.
 
-**Departures.** Our walk finds a way around walls; a creature that sees no
-enemy waits instead of walking toward one it cannot see.
+**Departures.** Our walk finds a way around walls, and around creatures when
+they block its way in; a creature that sees no enemy waits instead of walking
+toward one it cannot see.
 
 ## 2. Target choice
 
