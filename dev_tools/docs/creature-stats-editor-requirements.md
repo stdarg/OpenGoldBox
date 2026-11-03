@@ -1,6 +1,7 @@
 # Creature Stats Editor: requirements
 
-How the edits reach the game: [the interface](creature-stats-editor-interface.md).
+How the edits reach the game: [the interface](creature-stats-editor-interface.md)
+and [the importer's guide](creature-edits-import.md).
 
 Requirements for a developer tool that changes a monster's or NPC's Hit Points,
 level and gear, and the encounters they fight in. Written

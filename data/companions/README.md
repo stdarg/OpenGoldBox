@@ -4,7 +4,8 @@ The original's NPCs who join the party through `ADD NPC`, as SRD characters.
 The game reads `companions.json`. Edits made in the
 [Creature Stats Editor](../../dev_tools/docs/creature-stats-editor-requirements.md)
 reach it through `opengold_import_edits`
-([interface](../../dev_tools/docs/creature-stats-editor-interface.md)).
+([guide](../../dev_tools/docs/creature-edits-import.md),
+[interface](../../dev_tools/docs/creature-stats-editor-interface.md)).
 
 Format `opengold-companions-v1`; one entry per companion:
 

@@ -3,7 +3,8 @@
 The game reads these files. Edits made in the
 [Creature Stats Editor](../../dev_tools/docs/creature-stats-editor-requirements.md)
 reach them through `opengold_import_edits`
-([interface](../../dev_tools/docs/creature-stats-editor-interface.md)). They hold
+([guide](../../dev_tools/docs/creature-edits-import.md),
+[interface](../../dev_tools/docs/creature-stats-editor-interface.md)). They hold
 OpenGoldBox's own values and references to the original's records, never
 copies of those records, which stay in the player's install.
 

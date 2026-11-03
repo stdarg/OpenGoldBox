@@ -1,7 +1,8 @@
 # Creature Stats Editor: interface with the game
 
 How the [Creature Stats Editor](creature-stats-editor-requirements.md) gets its
-edits into the game. Written 2026-11-03 for Codex, who builds the tool; Claude
+edits into the game. For using the importer and its build targets, see
+[Creature edits: from the editor to the game](creature-edits-import.md). Written 2026-11-03 for Codex, who builds the tool; Claude
 builds the game's side. Everything here is built except the parts marked
 **game work**.
 

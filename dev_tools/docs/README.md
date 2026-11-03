@@ -13,6 +13,7 @@ are read from a local installation; they are not included here.
 | Combat Sprite Catalog | Inspect monster/NPC and character combat images, edit monster metadata and visual height tiers, and review ready/action replacement sprites. | [Combat Sprite Catalog](combat-sprite-catalog.md) |
 | Shop & Temple Manager | Select fixed shop and temple locations on compact maps, then edit offerings, prices, quantities, types, and portraits. | [Shop & Temple Manager](shop-manager.md) |
 | AI lab | Replay the campaign's fights through the game's own combat and computer play, to measure the difficulty levels and changes to the computer's play. A command-line research tool, not a Godot project. | [AI lab](ai-lab.md) |
+| Creature edits importer | Apply the Creature Stats Editor's edits to the game's data, checked with the game's own code, and copy them into the game. A command-line tool and two build targets. | [Creature edits](creature-edits-import.md) |
 | DOS probe | Run the user's original game headless and deterministically, with scripted keys, screenshots and ECL script traces, to compare OpenGoldBox with it. A command-line research tool, not a Godot project. | [DOS probe](dos-probe.md) |
 
 ## Documents in this folder
@@ -25,7 +26,8 @@ are read from a local installation; they are not included here.
 - [AI lab](ai-lab.md): scenario packs, replays, reading the results, accuracy, and limits.
 - [DOS probe](dos-probe.md): building, scenarios, script traces, and limits.
 - [Creature Stats Editor requirements](creature-stats-editor-requirements.md): a planned Godot tool, built by Codex, to change a monster's or NPC's Hit Points, level and gear, and the encounters they fight in.
-- [Creature Stats Editor interface](creature-stats-editor-interface.md): the files the editor writes, the game's loaders for them, and `opengold_creature_data`, which reports what the game makes of an edit.
+- [Creature edits: from the editor to the game](creature-edits-import.md): the edits file, the importer `opengold_import_edits`, the build targets that put edits in the game, finding fight and chance sites, and the importer's refusals.
+- [Creature Stats Editor interface](creature-stats-editor-interface.md): the design and each data file's rules: stat lines, conversions, fight overrides, wandering and rest chances, companions, and the planned `opengold_creature_data`.
 
 ## Detailed tool documents
 
