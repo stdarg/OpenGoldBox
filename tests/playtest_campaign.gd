@@ -447,7 +447,12 @@ func answer_rest_windows() -> bool:
     var heal: Button = rest.find_child("Heal", true, false)
     var finish: Button = rest.find_child("Finish", true, false)
     var start: Button = rest.find_child("Start", true, false)
-    if finish.is_visible_in_tree() and not finish.disabled:
+    # Before a rest the Finish button reads Cancel; Start shows only then.
+    if start.is_visible_in_tree() and not start.disabled:
+        start.pressed.emit()
+        await settle(4)
+        return true
+    if not start.is_visible_in_tree() and finish.is_visible_in_tree() and not finish.disabled:
         var members: ItemList = rest.find_child("Members", true, false)
         for i in range(members.item_count):
             members.select(i); members.item_selected.emit(i)
@@ -457,10 +462,6 @@ func answer_rest_windows() -> bool:
                 heal.pressed.emit()
                 await settle(2)
         finish.pressed.emit()
-        await settle(4)
-        return true
-    if start.is_visible_in_tree() and not start.disabled:
-        start.pressed.emit()
         await settle(4)
         return true
     say("  camp dialog offers nothing: " + (rest.find_child("Result", true, false) as Label).text)
