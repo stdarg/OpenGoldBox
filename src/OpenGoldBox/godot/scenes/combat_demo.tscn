@@ -407,8 +407,7 @@ theme_type_variation = &"CombatLogStack"
 [node name="LogHeader" type="Label" parent="LogStack"]
 layout_mode = 2
 theme_type_variation = &"LabelText16"
-clip_text = true
-text_overrun_behavior = 3
+autowrap_mode = 3
 
 [node name="Log" type="RichTextLabel" parent="LogStack"]
 layout_mode = 2

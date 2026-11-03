@@ -3692,9 +3692,8 @@ void CombatView::draw_view()
                 const auto &sheet = member.character.sheet();
                 entry["selected"] = id == selected_;
                 entry["name"] = gs(sheet.name);
-                entry["detail"] = gs(sheet.character_class).capitalize() + " / " +
-                                  gs(sheet.race).capitalize() + " / " +
-                                  gs(sheet.gender).capitalize();
+                entry["detail"] = i18n::text(sheet.character_class) + " / " +
+                                  i18n::text(sheet.race) + " / " + i18n::text(sheet.gender);
                 entry["hp"] = hp;
                 entry["maximum"] = maximum;
                 entry["quick"] = is_quick(id);

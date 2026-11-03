@@ -147,6 +147,14 @@ void dwarf_class_sources()
             check(sheet.racial_messages.front().source == "Dwarven Toughness: +{hp} maximum HP." &&
                       sheet.racial_messages.front().arguments[0].value == std::to_string(level),
                   "All class paths expose the attained Toughness contribution");
+            if (level > 1)
+            {
+                check(sheet.hp_explanation ==
+                          "Level " + std::to_string(level) + ": " + std::to_string(expected) +
+                              " maximum HP; gain " +
+                              std::to_string(die / 2 + 4 + (level == 4 ? 4 : 0)) + ".",
+                      "A level-up's Hit Point line tells the player the new maximum and the gain");
+            }
             auto bytes = saved(party);
             CampaignParty restored(module());
             restored.restore(decode_campaign(bytes, *srd5::character_rules(), *module(),
