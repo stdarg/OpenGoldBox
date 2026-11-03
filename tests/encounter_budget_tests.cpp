@@ -61,7 +61,8 @@ void fitting()
 } // namespace
 
 // DIFF-2: Normal sizes as ever; the levels around it change the budget and the
-// creatures allowed, and above Normal a level comes on as the party grows.
+// creatures allowed, never many more than Normal's, and above Normal a level
+// comes on as the party grows.
 void difficulty_sizes_fights()
 {
     const std::vector<EncounterGroup> band{{50, 30}};
@@ -75,7 +76,13 @@ void difficulty_sizes_fights()
           "Normal sizes a fight exactly as before");
     check(at(Difficulty::easy) == 5, "Easy meets one creature fewer than the party");
     check(at(Difficulty::hard) == 9, "Hard meets one and a half per member");
-    check(at(Difficulty::nightmare) == 12, "Nightmare meets two per member");
+    check(at(Difficulty::nightmare) == 9 && at(Difficulty::infernal) == 10,
+          "Above Hard the creatures Normal fields cap the two per member");
+    // A large band of which Normal fields two: Infernal's budget would field four.
+    const std::vector<EncounterGroup> orcs{{100, 12}};
+    check(fit_encounter_to_difficulty(orcs, party, 15, Difficulty::normal).front() == 2 &&
+              fit_encounter_to_difficulty(orcs, party, 15, Difficulty::infernal).front() == 3,
+          "A small fight grows to at most 170% of its creatures");
     const auto strong = monster_strength(Difficulty::infernal, 2);
     check(strong.hit_points_percent == monster_strengths[4].hit_points_percent &&
               strong.attack_bonus == monster_strengths[4].attack_bonus,

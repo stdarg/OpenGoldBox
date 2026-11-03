@@ -1570,7 +1570,7 @@ msgstr ""
 msgid "Burst the bead (Delayed Blast Fireball)"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1985
+#: src/OpenGoldBox/rolf_tour_view.cpp:1989
 msgid "Buy [Enter]"
 msgstr ""
 
@@ -2012,7 +2012,7 @@ msgstr ""
 msgid "Choose Temporary HP\n\nCurrent: {current} — {current_source}\nNew: {offered} — {offered_source}\n\nThe amounts do not add. The Bonus Action and use are already spent."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1986
+#: src/OpenGoldBox/rolf_tour_view.cpp:1990
 msgid "Choose [Enter]"
 msgstr ""
 
@@ -2607,7 +2607,7 @@ msgstr ""
 msgid "Continue  [Enter]"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1988
+#: src/OpenGoldBox/rolf_tour_view.cpp:1992
 msgid "Continue [Enter]"
 msgstr ""
 
@@ -3251,7 +3251,7 @@ msgstr ""
 msgid "East"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2009
+#: src/OpenGoldBox/rolf_tour_view.cpp:2013
 msgid "East →"
 msgstr ""
 
@@ -3602,7 +3602,7 @@ msgstr ""
 msgid "Expertise in two more skills.\nLevel 3 spell slots and Ranger spells: Conjure Animals, Dispel Magic, Plant Growth, Protection from Energy, Revivify and Wind Wall.\nA fourth free Hunter's Mark (Favored Enemy); Proficiency Bonus +4."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1996
+#: src/OpenGoldBox/rolf_tour_view.cpp:2000
 msgid "Explore  /  arrow keys"
 msgstr ""
 
@@ -3772,7 +3772,7 @@ msgstr ""
 msgid "Fighter"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2088
+#: src/OpenGoldBox/rolf_tour_view.cpp:2098
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Fighter / Level 1 / HP {current}/{maximum}\n{gold} gp / {items}"
 msgstr ""
@@ -3986,11 +3986,11 @@ msgstr ""
 msgid "Fog Cloud (Magic Initiate)"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1980
+#: src/OpenGoldBox/rolf_tour_view.cpp:1983
 msgid "Following Rolf..."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1994
+#: src/OpenGoldBox/rolf_tour_view.cpp:1998
 msgid "Following the guide"
 msgstr ""
 
@@ -6287,7 +6287,7 @@ msgstr ""
 msgid "Move up to {feet} feet without Opportunity Attacks or spending normal movement. Other pending effects wait."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1996
+#: src/OpenGoldBox/rolf_tour_view.cpp:2000
 msgid "Movement paused"
 msgstr ""
 
@@ -6590,7 +6590,7 @@ msgstr ""
 msgid "OPENGOLDBOX  /  Rolf's welcome"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1945 src/OpenGoldBox/rolf_tour_view.cpp:2700
+#: src/OpenGoldBox/rolf_tour_view.cpp:1945 src/OpenGoldBox/rolf_tour_view.cpp:2710
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "OPENGOLDBOX  /  {district}"
 msgstr ""
@@ -7255,7 +7255,7 @@ msgstr ""
 msgid "Previously selected training cannot be replaced"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2070
+#: src/OpenGoldBox/rolf_tour_view.cpp:2080
 msgid "Prices are per listed item or bundle."
 msgstr ""
 
@@ -8127,7 +8127,7 @@ msgstr ""
 msgid "Restart test"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1977
+#: src/OpenGoldBox/rolf_tour_view.cpp:1980
 msgid "Restart with --reset-game-path to choose your Pool of Radiance data folder."
 msgstr ""
 
@@ -9309,7 +9309,7 @@ msgstr ""
 msgid "Stoneskin"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1991
+#: src/OpenGoldBox/rolf_tour_view.cpp:1995
 msgid "Stopped"
 msgstr ""
 
@@ -9354,7 +9354,7 @@ msgstr ""
 msgid "Stunned until it makes a Constitution save at the end of one of its turns."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1987
+#: src/OpenGoldBox/rolf_tour_view.cpp:1991
 msgid "Submit [Enter]"
 msgstr ""
 
@@ -9454,7 +9454,7 @@ msgstr ""
 msgid "Switch the slot level used by Magic Missile, Cure Wounds and Healing Word."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1992
+#: src/OpenGoldBox/rolf_tour_view.cpp:1996
 msgid "Tab or number keys: choose the buyer"
 msgstr ""
 
@@ -10200,7 +10200,7 @@ msgstr ""
 msgid "Turn Undead"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:210 src/OpenGoldBox/rolf_tour_view.cpp:2009
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:210 src/OpenGoldBox/rolf_tour_view.cpp:2013
 msgid "Turn →"
 msgstr ""
 
@@ -11501,7 +11501,7 @@ msgid_plural "{count} hours left"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2092 src/OpenGoldBox/rolf_tour_view.cpp:2106
+#: src/OpenGoldBox/rolf_tour_view.cpp:2102 src/OpenGoldBox/rolf_tour_view.cpp:2116
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} item"
 msgid_plural "{count} items"
@@ -11542,7 +11542,7 @@ msgstr ""
 msgid "{die} (maximum d{die}) {modifier} (Constitution) + {racial} (racial bonus) = {hp} HP"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1941 src/OpenGoldBox/rolf_tour_view.cpp:2697
+#: src/OpenGoldBox/rolf_tour_view.cpp:1941 src/OpenGoldBox/rolf_tour_view.cpp:2707
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{district}    N ↑"
 msgstr ""
@@ -11601,12 +11601,12 @@ msgid_plural "{item} ({count} missiles)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2026
+#: src/OpenGoldBox/rolf_tour_view.cpp:2030
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} / {price} gp"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2027
+#: src/OpenGoldBox/rolf_tour_view.cpp:2031
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} / {price} gp / cannot be equipped"
 msgstr ""
@@ -11626,7 +11626,7 @@ msgstr ""
 msgid "{name}"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2126
+#: src/OpenGoldBox/rolf_tour_view.cpp:2136
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}\n{class} / AC {ac} / HP {current}/{maximum}"
 msgstr ""
@@ -11636,7 +11636,7 @@ msgstr ""
 msgid "{name} (beyond Raise Dead)"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2099
+#: src/OpenGoldBox/rolf_tour_view.cpp:2109
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} / HP {current}/{maximum}\nparty {gold} gp / {items}"
 msgstr ""
@@ -14086,18 +14086,18 @@ msgstr ""
 msgid "{value} uses spent since the last Long Rest."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:184 src/OpenGoldBox/rolf_tour_view.cpp:2005
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:184 src/OpenGoldBox/rolf_tour_view.cpp:2009
 msgid "← Turn"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2005
+#: src/OpenGoldBox/rolf_tour_view.cpp:2009
 msgid "← West"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2007
+#: src/OpenGoldBox/rolf_tour_view.cpp:2011
 msgid "↑ North"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:197 src/OpenGoldBox/rolf_tour_view.cpp:2007
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:197 src/OpenGoldBox/rolf_tour_view.cpp:2011
 msgid "↑ Step"
 msgstr ""

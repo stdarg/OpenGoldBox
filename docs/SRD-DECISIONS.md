@@ -2157,15 +2157,18 @@ with the Legendary Actions.
 
 Smarter monsters alone hardly moved the party's wins, so the user decided on
 2026-11-02 that a level also sets the monsters' number and strength. Normal plays as
-before. The table is `monster_strengths` in `difficulty.h`, tuned with the AI lab to
-the win rates the user approved (97, as Normal is, 75, 60, 45) for the route's party
-of fight 26, played on Quick:
+before. The table is `monster_strengths` in `difficulty.h`, tuned with the AI lab for
+the route's party of fight 26, played on Quick. The user first approved win rates of
+97, as Normal is, 75, 60 and 45; on 2026-11-03 they chose a middle setting with fewer
+fights the party cannot win (see the cap below), which wins about 97, 94, 81, 73 and
+60%:
 
 | | Easy | Normal | Hard | Nightmare | Infernal |
 |---|---|---|---|---|---|
 | Share of the encounter challenge | 60% | 100% | 175% | 200% | 225% |
 | Creatures per living member | 1, one fewer overall | 1 | 1.5 | 2 | 2 |
-| Monster Hit Points | 60% | 100% | 220% | 230% | 265% |
+| At most Normal's creatures times | 1 | 1 | 1.6 | 1.65 | 1.7 |
+| Monster Hit Points | 60% | 100% | 240% | 280% | 320% |
 | Monster weapon attack rolls | −2 | 0 | +2 | +3 | +4 |
 | Monster morale | −30 | 0 | 0 | +15 | +30 |
 
@@ -2182,10 +2185,16 @@ of fight 26, played on Quick:
   it, since a party that cannot win its first fights has no way to grow.
 - **Small numbers, large Hit Points** (Claude's decision): larger fights left too
   many that the computer playing the party could not win, so the levels reach their
-  win rates mostly through Hit Points. Even so, playing each fight with the party the
-  route had by then, it won at most 1 of 8 tries in 34 of 219 fights on Infernal and
-  2 of 219 on Hard (2026-11-02). Not measured for a player, who can rest, choose
-  spells and avoid fights.
+  win rates mostly through Hit Points.
+- **Few fights the party cannot win** (the user, 2026-11-03): with the computer
+  playing both sides, a fight is nearly always won or nearly always lost, and the
+  ones lost were mostly small fights whose band let them double or triple. A fight
+  now has at most the multiple of Normal's creatures in the table. Lower win rates
+  only come with more such fights, so the user chose a middle setting over the
+  first targets. Playing each fight with the party the route had by then, it won at
+  most 1 of 8 tries in 16 of 219 fights on Infernal (34 before the cap), 4 on
+  Nightmare and 2 on Hard. Not measured for a player, who can rest, choose spells
+  and avoid fights.
 
 ## TELEPORT-1 (2026-10-29): Teleport to a map's central spot
 

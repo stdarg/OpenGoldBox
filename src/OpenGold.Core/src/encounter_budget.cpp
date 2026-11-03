@@ -1,6 +1,7 @@
 #include "opengold/encounter_budget.h"
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <numeric>
 #include <stdexcept>
 
@@ -76,12 +77,19 @@ std::vector<unsigned> fit_encounter_to_difficulty(std::span<const EncounterGroup
                                                   std::span<const unsigned> member_levels,
                                                   unsigned challenge, Difficulty difficulty)
 {
-    const auto strength = monster_strength(difficulty, average_party_level(member_levels));
-    const auto scaled_challenge =
-        std::min(challenge * strength.challenge_percent / 100, max_encounter_challenge);
     const auto members = static_cast<unsigned>(member_levels.size());
-    const auto allowed = members * strength.creatures_per_ten_members / 10;
-    return fit_encounter_to_budget(groups, encounter_xp_budget(member_levels, scaled_challenge),
-                                   allowed - std::min(allowed, strength.creatures_fewer));
+    const auto fit = [&](const MonsterStrength &strength, unsigned most_creatures)
+    {
+        const auto scaled_challenge =
+            std::min(challenge * strength.challenge_percent / 100, max_encounter_challenge);
+        const auto allowed =
+            std::min(members * strength.creatures_per_ten_members / 10, most_creatures);
+        return fit_encounter_to_budget(groups, encounter_xp_budget(member_levels, scaled_challenge),
+                                       allowed - std::min(allowed, strength.creatures_fewer));
+    };
+    const auto normal_counts = fit(MonsterStrength{}, std::numeric_limits<unsigned>::max());
+    const auto normal_size = std::accumulate(normal_counts.begin(), normal_counts.end(), 0U);
+    const auto strength = monster_strength(difficulty, average_party_level(member_levels));
+    return fit(strength, normal_size * strength.most_creatures_percent / 100);
 }
 } // namespace opengold

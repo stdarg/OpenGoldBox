@@ -56,6 +56,9 @@ struct MonsterStrength
     unsigned creatures_per_ten_members{10};
     // Fewer creatures than that, keeping at least one.
     unsigned creatures_fewer{};
+    // At most this percent of the creatures Normal fields. A small band that grows
+    // threefold, each creature also stronger, leaves the party no chance.
+    unsigned most_creatures_percent{100};
     unsigned hit_points_percent{100};
     int attack_bonus{};
     // Added to the morale of those that can break: lower breaks sooner.
@@ -72,16 +75,19 @@ inline constexpr std::array<MonsterStrength, 5> monster_strengths{{
     {},
     {.challenge_percent = 175,
      .creatures_per_ten_members = 15,
-     .hit_points_percent = 220,
+     .most_creatures_percent = 160,
+     .hit_points_percent = 240,
      .attack_bonus = 2},
     {.challenge_percent = 200,
      .creatures_per_ten_members = 20,
-     .hit_points_percent = 230,
+     .most_creatures_percent = 165,
+     .hit_points_percent = 280,
      .attack_bonus = 3,
      .morale_shift = 15},
     {.challenge_percent = 225,
      .creatures_per_ten_members = 20,
-     .hit_points_percent = 265,
+     .most_creatures_percent = 170,
+     .hit_points_percent = 320,
      .attack_bonus = 4,
      .morale_shift = 30},
 }};
@@ -109,6 +115,8 @@ inline constexpr unsigned full_strength_party_level = 2;
     strength.challenge_percent = eased(normal.challenge_percent, strength.challenge_percent);
     strength.creatures_per_ten_members =
         eased(normal.creatures_per_ten_members, strength.creatures_per_ten_members);
+    strength.most_creatures_percent =
+        eased(normal.most_creatures_percent, strength.most_creatures_percent);
     strength.hit_points_percent = eased(normal.hit_points_percent, strength.hit_points_percent);
     strength.attack_bonus = strength.attack_bonus * level / int{full_strength_party_level};
     strength.morale_shift = strength.morale_shift * level / int{full_strength_party_level};
