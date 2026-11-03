@@ -3,7 +3,7 @@
 How the edits reach the game: [the interface](creature-stats-editor-interface.md).
 
 Requirements for a developer tool that changes a monster's or NPC's Hit Points,
-level and gear, and the encounters they fight in. Written
+level and gear, and the encounters they fight in. Nothing is built yet. Written
 2026-11-03, after Tyranthraxus's guards had to be lowered from the original's 87
 Hit Points to the SRD Knight's 52 by hand
 ([DEVIATIONS](../../docs/DEVIATIONS.md)).
@@ -35,10 +35,10 @@ should make all of this visible and do the bookkeeping.
 | What | Where | Read by |
 | --- | --- | --- |
 | A monster's AC, Hit Points, attacks, saves and abilities | `creature` and following rows in `data/rules/srd-5.2.1/combat.rules` | the rules module |
-| Which stat line an original record uses, and the XP that sizes the fight and the XP it awards | `data/encounters/conversions.json` (e.g. record 85, `castle-knight`, 700, 700), which was code in `rolf_tour.cpp` until 2026-11-03 | the game |
+| Which stat line an original record uses, and the XP that sizes the fight and the XP it awards | the conversion tables in `src/OpenGold.Core/src/rolf_tour.cpp` (e.g. `{85, "castle-knight", 700, 700}`) | the game |
 | A monster's gear: held weapons, potions, wands, scrolls | the Combat Sprite Catalog's `json/` records, exported to `data/monsters/` | the game |
 | Metal armor, for Heat Metal | `equipment` rows in `combat.rules` ([CREATURE-EQUIPMENT](../../docs/CREATURE-EQUIPMENT.md)) | the rules module |
-| A companion's class, level, scores and gear (Genheeris, Dirten, Fatima and the others) | `data/companions/companions.json`, which was code in `companions.cpp` until 2026-11-03 | the game |
+| A companion's class, level, scores and gear (Genheeris, Dirten, Fatima and the others) | code in `src/OpenGold.Core/src/companions.cpp` | the game |
 | What each difficulty does to Hit Points and counts | `src/OpenGold.Core/include/opengold/difficulty.h` (DIFF-2) | the game |
 | Which creatures a fight has, and how many | the original's scripts (`LOAD MONSTER` record and count, e.g. ECL5.DAX:7 at 0xA60D loads twelve of record 85), and a few script tables such as Podol Plaza's roaming groups | the game, from the player's install |
 | How many of them the party meets | the encounter sizing: the party's SRD XP budget at the encounter challenge, at most one creature per living member, then the difficulty (`src/OpenGold.Core/src/encounter_budget.cpp`) | the game |
@@ -146,8 +146,6 @@ A monster has no level of its own. "Level" applies to:
     after.
 
 ### Changes the game needs first
-
-Built 2026-11-03 ([interface](creature-stats-editor-interface.md)).
 
 28. Companions are code today. Move their definitions (class, level, scores,
     gear, original record) to a data file the game reads, for example

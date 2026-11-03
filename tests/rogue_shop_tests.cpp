@@ -9,7 +9,6 @@
 #include "opengold/srd5.h"
 #include "test_support.h"
 #include "tour_access.h"
-#include "repository_data.h"
 #include <algorithm>
 #include <array>
 #include <cstdlib>
@@ -274,7 +273,7 @@ std::shared_ptr<CampaignParty> party_with(std::vector<Character> members)
 
 RolfTourSession town_with_shops(const char *directory)
 {
-    auto town = RolfTourSession::load(directory, repository_encounters());
+    auto town = RolfTourSession::load(directory);
     town.shops(load_shop_data(root / "data/shops").shops);
     return town;
 }

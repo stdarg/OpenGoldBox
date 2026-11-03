@@ -87,7 +87,7 @@ void shipped()
     }
     // A weapon a creature fires shows in its art. These await new art: remove
     // each as the catalog exports it, and the check then holds it there.
-    const std::set<std::string> art_pending{"MON5CHA.DAX:55", "MON6CHA.DAX:101"};
+    const std::set<std::string> art_pending{"MON6CHA.DAX:101"};
     for (const auto &[key, monster] : bundle.monsters)
     {
         if (human_shaped(monster) && wielded_items(monster).ranged)

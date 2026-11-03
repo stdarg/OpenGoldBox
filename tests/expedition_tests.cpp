@@ -16,7 +16,6 @@
 #include "png_size_only.h"
 #include "test_support.h"
 #include "tour_access.h"
-#include "repository_data.h"
 #include <algorithm>
 #include <array>
 #include <bitset>
@@ -1480,8 +1479,7 @@ struct Expedition
 // town that uses data/shops and, unless told otherwise, data/monsters as the
 // game does.
 Expedition create_party(const std::filesystem::path &directory,
-                        std::shared_ptr<const por::MonsterBundle> monsters = game_monsters(),
-                        const por::EncounterData &encounters = repository_encounters())
+                        std::shared_ptr<const por::MonsterBundle> monsters = game_monsters())
 {
     auto party = std::make_shared<CampaignParty>(module());
     std::uint64_t seed = 1;
@@ -1490,11 +1488,11 @@ Expedition create_party(const std::filesystem::path &directory,
         (void)party->add_pc(character(name, seed++));
         party->add_coins(Coin::gold, 250);
     }
-    auto town = por::RolfTourSession::load(directory, encounters, {}, std::move(monsters));
+    auto town = por::RolfTourSession::load(directory, {}, std::move(monsters));
     auto shop_data = load_shop_data(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/shops");
     town.temples(std::move(shop_data.temples));
     town.shops(std::move(shop_data.shops));
-    town.companion_rules(srd5::character_rules(), repository_companions());
+    town.companion_rules(srd5::character_rules());
     town.campaign_party(party);
     settle(town, party);
     return {party, std::move(town)};
@@ -2064,14 +2062,13 @@ Expedition load_expedition(const std::filesystem::path &save,
     const auto assets = campaign_asset_identity(directory);
     const auto bytes = read_campaign_file(save);
     const auto rules = module();
-    const auto base =
-        por::RolfTourSession::load(directory, repository_encounters(), {}, game_monsters());
+    const auto base = por::RolfTourSession::load(directory, {}, game_monsters());
     auto loaded = decode_campaign(bytes, *srd5::character_rules(), *rules, assets, &base);
     auto party = std::make_shared<CampaignParty>(module());
     party->restore(std::move(loaded.party));
     Expedition trip{party, std::move(*loaded.town)};
     trip.town.attach_restored_party(party);
-    trip.town.companion_rules(srd5::character_rules(), repository_companions());
+    trip.town.companion_rules(srd5::character_rules());
     check(encode_campaign(*party, &trip.town, assets) == bytes,
           "The reloaded campaign is the saved campaign");
     return trip;
@@ -6802,58 +6799,6 @@ void record_route(const std::filesystem::path &directory, const std::filesystem:
     std::filesystem::remove_all(folder);
 }
 
-// An override in data/encounters/overrides.json changes what a script loads
-// (dev_tools/docs/creature-stats-editor-interface.md), and the game refuses one
-// that does not match the player's script. The Slums orcs at (13,1) are one of
-// record 13 (ECL2:20 0x9E5E) and three of record 4 (0x9E65).
-void encounter_overrides(const std::filesystem::path &directory)
-{
-    const auto with = [](por::EncounterOverride change)
-    {
-        auto encounters = repository_encounters();
-        encounters.overrides.push_back(std::move(change));
-        return encounters;
-    };
-    const por::EncounterSite orcs{2, 20, 0x9E65};
-    const por::EncounterOverride goblins{orcs, 4, 3, 2, 2, 2, "Goblins in place of three orcs"};
-    auto trip = create_party(directory, game_monsters(), with(goblins));
-    walk_to(trip.town, trip.party, 0, 4);
-    step(trip.town, trip.party, 3);
-    walk_to(trip.town, trip.party, 12, 1);
-    const auto met = [](std::string_view definition)
-    {
-        return std::count_if(last_encounter->enemies.begin(), last_encounter->enemies.end(),
-                             [&](const auto &enemy)
-                             {
-                                 return enemy.definition == definition;
-                             });
-    };
-    check(last_encounter.has_value(), "The party meets the overridden fight");
-    check(met("slums-orc") == 1 && met("slums-goblin") >= 1 && met("slums-goblin") <= 2,
-          "The overridden instruction loads at most two goblins beside the other orc");
-    auto mismatched = goblins;
-    mismatched.original_count = 2;
-    auto elsewhere = goblins;
-    elsewhere.site.address = 0x9C74; // a COMPARE
-    auto unconverted = goblins;
-    unconverted.record = 200;
-    auto wrong_bank = goblins;
-    wrong_bank.site.bank = 3;
-    for (const auto &[change, message] :
-         {std::pair{mismatched, "An override whose original the script does not load is refused"},
-          std::pair{elsewhere, "An override at no LOAD MONSTER is refused"},
-          std::pair{unconverted, "An override to a record the area does not convert is refused"},
-          std::pair{wrong_bank, "An override names its script's own bank"}})
-    {
-        check(throws(
-                  [&]
-                  {
-                      (void)por::RolfTourSession::load(directory, with(change));
-                  }),
-              message);
-    }
-}
-
 void installed_first_expedition(const std::filesystem::path &executable,
                                 const std::filesystem::path &directory)
 {
@@ -6916,7 +6861,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
             party->advance(bryn, ranger_advancement);
             party->advance(elin, druid);
         }
-        auto town = por::RolfTourSession::load(directory, repository_encounters());
+        auto town = por::RolfTourSession::load(directory);
         town.campaign_party(party);
         settle(town, party);
         const auto base = std::filesystem::path(fixture);
@@ -7147,17 +7092,6 @@ int main(int argc, char **argv)
         if (argc == 3 && std::string_view(argv[1]) == "--record-route")
         {
             record_route(directory, argv[2]);
-            return 0;
-        }
-        if (argc == 2 && std::string_view(argv[1]) == "--encounter-overrides")
-        {
-            if (!directory || !*directory)
-            {
-                std::cout << "Skipped: no original game files\n";
-                return 0;
-            }
-            encounter_overrides(directory);
-            std::cout << "Encounter override tests passed.\n";
             return 0;
         }
         // Plays the Central Wilderness alone with a new party.

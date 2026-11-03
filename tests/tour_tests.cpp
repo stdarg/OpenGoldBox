@@ -2,7 +2,6 @@
 #include "opengold/exploration_view.h"
 #include "opengold/npc_portraits.h"
 #include "opengold/shop_data.h"
-#include "repository_data.h"
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
@@ -786,7 +785,7 @@ void missing_area_map(const std::filesystem::path &installed)
     std::string error;
     try
     {
-        (void)RolfTourSession::load(copy, repository_encounters());
+        (void)RolfTourSession::load(copy);
     }
     catch (const std::exception &failure)
     {
@@ -801,7 +800,7 @@ void installed(const char *directory)
 {
     missing_area_map(directory);
     installed_monster_picture(directory);
-    auto tour = RolfTourSession::load(directory, repository_encounters());
+    auto tour = RolfTourSession::load(directory);
     check(tour.wall_art().appearances.size() == 15, "Load all fifteen Phlan appearances");
     check(tour.wall_art().appearances[5][6].rgba != tour.wall_art().appearances[7][6].rgba,
           "Distinct stone masonry patterns retained");

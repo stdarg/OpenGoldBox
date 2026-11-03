@@ -2,9 +2,9 @@
 
 How the [Creature Stats Editor](creature-stats-editor-requirements.md) gets its
 edits into the game, and how it learns what the game makes of them. Written
-2026-11-03 for Codex, who builds the tool; Claude builds the game's side. The
-data files and their loaders are built (2026-11-03). Parts marked **game work**
-do not exist yet.
+2026-11-03 for Codex, who builds the tool. Parts marked **game work** do not
+exist yet; they are changes to `src/OpenGold.Core` and `tools/`, each with its
+own tests.
 
 ## Principles
 
@@ -24,18 +24,10 @@ do not exist yet.
 | --- | --- | --- | --- |
 | Hit Points, spellcasting profile, a new stat line | `data/rules/srd-5.2.1/combat.rules` | the rules text format | yes |
 | Monster gear | the Combat Sprite Catalog's `json/` record, then its export to `data/monsters/` | `opengold-monster-v1` | yes |
-| Which stat line a record uses, the XP that sizes a fight and the XP it awards | `data/encounters/conversions.json` | `opengold-conversions-v1` | yes |
-| A fight's creatures and counts | `data/encounters/overrides.json` | `opengold-encounter-overrides-v1` | yes |
-| Companions | `data/companions/companions.json` | `opengold-companions-v1` | yes |
-| Putting the edits in the game | `opengoldbox_game_data`, a build target ([Publishing](#publishing-to-the-game)) | | yes |
+| Which stat line a record uses, the XP that sizes a fight and the XP it awards | `data/encounters/conversions.json` | `opengold-conversions-v1` | **game work** |
+| A fight's creatures and counts | `data/encounters/overrides.json` | `opengold-encounter-overrides-v1` | **game work** |
+| Companions | `data/companions/companions.json` | `opengold-companions-v1` | **game work** |
 | Reading what the game makes of all of these | `opengold_creature_data`, a command-line program | JSON on standard output | **game work** |
-| Map encounter triggers and the chance of a wandering encounter (asked for 2026-11-03) | not designed yet | | **game work** |
-
-The formats are described beside the files, in
-[data/encounters/README.md](../../data/encounters/README.md) and
-[data/companions/README.md](../../data/companions/README.md). The tool can read
-the three JSON files directly; it needs `opengold_creature_data` only for what
-the game computes from them.
 
 ## 1. Stat lines: `combat.rules`
 
@@ -88,21 +80,20 @@ records, so both are committed together. In a fight a monster uses only its
 held weapons, potions, wands and scrolls; armor, rings and other worn gear are
 loot. `opengold_creature_data creature` reports which item counts.
 
-## 3. Fight ratings and stat lines per record: `conversions.json`
+## 3. Fight ratings and stat lines per record: `conversions.json` (game work)
 
-The conversion tables that were in `src/OpenGold.Core/src/rolf_tour.cpp` are
-in this file, every value kept (188 records in 22 entries). The maps, banks and
-`shared_with` lists stay in code. One entry per area:
+The conversion tables in `src/OpenGold.Core/src/rolf_tour.cpp` (the `creatures`
+of each `AreaSource`, and `valjevo_castle`) move to this file, every value kept.
+The maps, banks and `shared_with` lists stay in code. One entry per script:
 
 ```json
 {
   "format": "opengold-conversions-v1",
   "areas": [
     {
-      "scripts": [3, 4, 5, 7],
+      "script": 7,
       "bank": 5,
       "name": "Valjevo Castle",
-      "audit": "docs/audits/valjevo-castle.md",
       "creatures": [
         {"record": 85, "definition": "castle-knight", "fit_xp": 700, "award_xp": 700}
       ]
@@ -111,33 +102,32 @@ in this file, every value kept (188 records in 22 entries). The maps, banks and
 }
 ```
 
-- `scripts` are the area scripts the entry is for; the castle's four scripts
-  share one entry, so a castle record has one rating. `bank` is the `MONnCHA`
-  archive number.
+- `script` is the area's script number in the game's area table, and `bank`
+  the `MONnCHA` archive number. A record's entry applies to that area and to the
+  areas that share its creatures, as today.
 - `definition` is a `combat.rules` key. `fit_xp` sizes the fight; `award_xp`
   is the experience the fight gives.
-- `audit` names the area's audit, whose conversion table requirement 17 updates.
+- An area's `creatures` replace that area's code table. The castle's shared
+  list appears under each castle script that uses it, so the file has no
+  references between entries.
 
-**The game** (`load_encounter_data`, `src/OpenGold.Core/src/encounter_data.cpp`)
-refuses, naming the file, the entry and the field: a missing file, an unknown
-format, a script in two entries, a record twice in one entry, a value that is
-not a whole number in range (records 0-255, XP 0-1,000,000), and an empty
-definition. When it loads the original's files it also refuses a script that
-is no area of the entry's bank, and a record missing from the player's
-`MONnCHA` archive. A record the scripts load that has no entry still stops the
-game when it is loaded.
+**The game:** loads the file when it loads the area resources. It rejects, with
+the file, the area and the field named: a missing or unknown format, an unknown
+script, a record twice in one area, a record missing from the player's
+`MONnCHA` archive, an unknown `definition`, and an XP above 1,000,000. A record
+the scripts load that has no entry still fails as now ("Missing original
+creature").
 
-**Tests:** `opengold_encounter_data_tests` reads the shipped file (record 85 in
-the castle is `castle-knight`, 700 and 700), checks that `combat.rules` defines
-every `definition`, and refuses broken files. The route tests pass unchanged.
+**Tests:** every area loads, and staged fights are as before. The route test
+(`opengold_expedition_tests`) and the encounter tests pass unchanged, and a check
+reads record 85 in Valjevo Castle as `castle-knight`, 700 and 700.
 
-## 4. Fight changes: `overrides.json`
+## 4. Fight changes: `overrides.json` (game work)
 
 A fight is one `LOAD MONSTER` instruction in an original script, named by its
 archive, record and address: `ECL5.DAX:7:0xA60D` is the instruction that loads
-twelve of record 85, with icon 11, against Tyranthraxus.
-`opengold_scripts --inspect GAME_DIR ECL5.DAX 7` lists a script's
-instructions. An override replaces what that instruction loads:
+twelve of record 85 against Tyranthraxus. An override replaces what that
+instruction loads:
 
 ```json
 {
@@ -146,6 +136,7 @@ instructions. An override replaces what that instruction loads:
     {
       "site": "ECL5.DAX:7:0xA60D",
       "original": {"record": 85, "count": 12},
+      "record": 85,
       "count": 6,
       "reason": "Short reason, also written to docs/DEVIATIONS.md"
     }
@@ -153,40 +144,34 @@ instructions. An override replaces what that instruction loads:
 }
 ```
 
-- `record`, `count` and `icon` are what the instruction now loads; one left
-  out keeps the original's, and at least one is given. A changed record keeps
-  the instruction's icon unless `icon` names another; a creature with art in
-  `data/monsters` shows its art either way.
+- `record` and `count` are what the instruction now loads. Either may be left
+  out to keep the original's.
 - `count` is still sized: the game shrinks it to the party's XP budget and to
   one creature per living member, and then applies the difficulty. So `count`
   is the most the party can meet.
-- `original` records what the script loads, as a check.
-- Fights whose script reads the record or count from its variables, such as
-  Podol Plaza's roaming groups, cannot be overridden in this version. The
-  tool lists them as read-only.
+- `original` records what the script loads, as a check. If the player's script
+  at that address loads something else, the game rejects the override and names
+  the site.
+- Fights a script rolls from tables, such as Podol Plaza's roaming groups, have
+  no override in this version. The tool lists them as read-only.
 
-**The game** applies the override where `LOAD MONSTER` stages creatures
-(`RolfTourSession::handle_town_host`, `phlan_session.cpp`), before the
-encounter is sized. The record's conversion, gear and art are the new
-record's. A missing file means no overrides. The loader refuses, naming the
-site: an unknown format, a malformed site, a site twice, a count outside 1-250,
-an override that changes nothing, and one without a reason. When the game
-loads the original's files it refuses a site whose script is not an area of
-that bank, a site that is not a `LOAD MONSTER` of the `original` record and
-count written in the script, and a record that a map of that script does not
-convert. So a bad override stops the game as it starts, never in a fight.
+**The game:** applies the override where `LOAD MONSTER` stages creatures, in
+`RolfTourSession` (`phlan_session.cpp`), before the encounter is sized. The
+record's conversion, art and gear are the new record's. It rejects, with the
+site named: an unknown format, a malformed site, a site that is not a
+`LOAD MONSTER` instruction, a mismatched `original`, a count of 0 or above 250,
+and a record with no conversion in that area. An empty or missing file means no
+overrides.
 
-**Tests:** `opengold_encounter_data_tests` refuses broken files.
-`opengold_encounter_override_tests` (the original files, `OPENGOLD_GAME_DIR`)
-overrides the Slums orcs at (13,1), `ECL2.DAX:20:0x9E65`, to goblins and checks
-the fight the party meets, and that the game refuses a mismatched original, a
-site at another instruction, an unconverted record and the wrong bank.
+**Tests:** with no file, every fight stages as before. With an override for the
+castle's site, the guards' fight stages the override's count, sized as usual.
+An override whose `original` does not match is rejected.
 
-## 5. Companions: `companions.json`
+## 5. Companions: `companions.json` (game work)
 
-The companions that were written in `src/OpenGold.Core/src/companions.cpp`
-(Skullcrusher, the mad fighter, Dirten, Fatima, the mystic, Genheeris) are in
-this file, each built exactly as before:
+The companions written in `src/OpenGold.Core/src/companions.cpp` (Skullcrusher,
+the mad fighter, Dirten, Fatima, the mystic, Genheeris) move to this file, each
+built exactly as now:
 
 ```json
 {
@@ -196,7 +181,6 @@ this file, each built exactly as before:
       "bank": 5,
       "record": 88,
       "name": "Genheeris",
-      "note": "Where the values come from",
       "race": "human",
       "gender": "male",
       "class": "wizard",
@@ -215,56 +199,20 @@ this file, each built exactly as before:
 - `rolled` are the six ability rolls before the background's increase, in the
   order Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma.
 - The game builds the companion at level 1 and advances it to `level` with
-  the rules' default choices. Training choices stay the rules' defaults.
+  the rules' default choices, as `advanced()` does now. Training choices stay
+  the rules' defaults.
 - `items` are added after advancing, in order, each as
   `{"key": "mace", "name": "Mace", "quantity": 1, "original_type": 23}` (Dirten's
-  mace). `quantity` is 1 when left out; `original_type` is the original's item
-  type, or absent.
+  mace). `original_type` is the original's item type, as today, or absent.
 
-**The game** (`load_companions`, `build_companion`,
-`src/OpenGold.Core/src/companions.cpp`) reads the file as it starts. The
-loader refuses, naming the companion: an unknown format, an empty name, race,
-class, background, alignment or gender, a level outside 1-15, a roll outside
-3-18 or not six of them, an unknown ability or the same one twice in
-`background_increase`, an item without a key or name, and a `bank` and
-`record` given twice. The rules check the keys when the companion is built: an
-unknown race, class, background or alignment, or a level the class cannot
-reach, stops the game when a script adds that NPC. A companion who has already
-joined keeps the character in the save; a change applies to the next time
-someone joins.
+**The game:** reads the file when a script adds an NPC. It rejects, with the
+companion named: an unknown race, class, background, alignment or item, a
+level outside 1-15, a score roll outside 3-18, and a `bank` and `record` given
+twice. A companion who has already joined keeps the character in the save; a
+change applies to the next time someone joins.
 
-**Tests:** `opengold_companion_data_tests` builds each shipped companion and
-compares its level, Hit Points, scores, features, spells and items with what
-the code built before the move, builds an edited one at a new level with new
-gear, and refuses broken files.
-
-## Publishing to the game
-
-The tool writes only the repository's `data/` (and `combat.rules`'s version
-lines). The game, started from its Godot project, reads a copy of `data/` in
-`src/OpenGoldBox/godot/data/`, made by the build. After writing, the tool runs
-
-```sh
-cmake --build build/macos-universal --target opengoldbox_game_data
-```
-
-which copies `data/rules`, `data/encounters`, `data/companions`,
-`data/monsters` and the new wall art into the game project in a second or so,
-without building the game. A game started afterwards plays with the edits; one
-already running keeps the files it read when it started. The packaged app
-(`OpenGoldBox.app`) gets them with the next full build.
-
-An edit is published when, in this order:
-
-1. the tool has written the files and shown their diff (requirement 19);
-2. `opengoldbox_game_data` has copied them;
-3. these tests pass: `ctest -R "encounter_data|companion_data|encounter_override|slums_creatures"`
-   in `build/macos-universal` with `OPENGOLD_GAME_DIR` set to the player's
-   install, and, after a `combat.rules` change, the full suite (CLAUDE.md).
-
-A file the game refuses stops it as it starts, with the file, the entry and the
-field in the message, so the tool runs the tests in step 3 before the user
-starts the game.
+**Tests:** each companion built from the file has the same sheet, Hit Points
+and items as the code builds now, checked before the code is removed.
 
 ## 6. Reading results: `opengold_creature_data` (game work)
 
@@ -304,20 +252,12 @@ are.
 
 ## Order of work
 
-Built 2026-11-03: `conversions.json`, `overrides.json`, `companions.json`, their
-loaders and checks, and `opengoldbox_game_data`. With them the tool can edit
-Hit Points, gear, fight ratings, fight creatures and counts, and companions,
-and put the edits in the game.
-
-Still to build, in this order:
-
 1. `opengold_creature_data` with `check`, `creatures`, `creature` and
-   `encounters`, so the tool shows what the game makes of a creature
-   (requirements 4 to 7 and 21).
-2. `size` (requirement 22).
-3. `companions` (requirement 10's preview).
-4. Map encounter triggers and wandering chances, which need the original's
-   triggers traced per area first.
+   `encounters`, reading today's files. With it the tool can already show
+   values and edit Hit Points and gear.
+2. `conversions.json`, then `size`. Fight ratings become editable.
+3. `overrides.json`. Fight creatures and counts become editable.
+4. `companions.json`, then `companions`. Companions become editable.
 
 Each step is pushed with the full test suite passing, and with no change to
 the game's behavior until the tool writes an edit.

@@ -12,7 +12,7 @@ void ui_fixture()
     }
     auto party = std::make_shared<CampaignParty>(module());
     party->add_pc(mastery_grant_checks::chosen("fighter"));
-    auto town = por::RolfTourSession::load(assets, repository_encounters());
+    auto town = por::RolfTourSession::load(assets);
     town.campaign_party(party);
     for (unsigned n = 0; n < 1000 && !town.can_leave(); ++n)
     {
@@ -34,7 +34,7 @@ void ui_fixture()
     check(bool(party->rest(RestKind::long_rest)) && party->state().training_rest,
           "Completed rest has pending mastery");
     const auto bytes = encode_campaign(*party, &town, campaign_asset_identity(assets));
-    auto prototype = por::RolfTourSession::load(assets, repository_encounters());
+    auto prototype = por::RolfTourSession::load(assets);
     const auto loaded = decode_campaign(bytes, *srd5::character_rules(), party->rule_module(),
                                         campaign_asset_identity(assets), &prototype);
     check(loaded.party.training_rest.has_value() && loaded.town->can_leave(),

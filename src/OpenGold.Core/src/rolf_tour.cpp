@@ -68,64 +68,9 @@ std::vector<std::string> read_closing_story(std::span<const std::uint8_t> overla
     return pages;
 }
 
-// The overrides, each checked against the player's script: its site is a LOAD
-// MONSTER of the original's record and count, both written in the script, and
-// every map of that script converts the record it now loads.
-std::map<EncounterSite, EncounterOverride> checked_overrides(const EncounterData &encounters,
-                                                             const PhlanResources &town)
-{
-    constexpr std::uint8_t load_monster = 11;
-    std::map<EncounterSite, EncounterOverride> checked;
-    for (const auto &change : encounters.overrides)
-    {
-        const auto reject = [&](const std::string &problem)
-        {
-            throw EclError("data/encounters/overrides.json: " + site_name(change.site) + ": " +
-                           problem);
-        };
-        const auto &site = change.site;
-        const auto bank = town.script_banks.find(site.script);
-        if (bank == town.script_banks.end() || bank->second != site.bank)
-        {
-            reject("no area script of bank " + std::to_string(site.bank));
-        }
-        std::optional<EclInstruction> instruction;
-        try
-        {
-            instruction = town.programs.at(site.script)->instruction(site.address);
-        }
-        catch (const std::exception &)
-        {
-            reject("no instruction at this address");
-        }
-        const auto written = [&](std::size_t operand, unsigned value)
-        {
-            const auto &found = instruction->operands.at(operand);
-            return (found.tag == 0 || found.tag == 2) && found.value == value;
-        };
-        if (instruction->opcode != load_monster || instruction->operands.size() < 3 ||
-            !written(0, change.original_record) || !written(1, change.original_count))
-        {
-            reject("the player's script loads no " + std::to_string(change.original_count) +
-                   " of record " + std::to_string(change.original_record) + " here");
-        }
-        const auto record = change.record.value_or(change.original_record);
-        for (const auto &[map, district] : town.districts)
-        {
-            if (district->loaded_by(site.script) && !district->conversions.contains(record))
-            {
-                reject("map " + std::to_string(map) + " converts no record " +
-                       std::to_string(record));
-            }
-        }
-        checked.emplace(site, change);
-    }
-    return checked;
-}
 } // namespace
 
 RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
-                                      const EncounterData &encounters,
                                       const WallArtReplacements &new_wall_art,
                                       std::shared_ptr<const MonsterBundle> monsters)
 {
@@ -377,11 +322,10 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
     town->closing_story = std::move(closing_story);
 
     constexpr unsigned no_wall_bank = 255;
-
     // The districts beyond New Phlan, one row per area: its script, its archive
-    // bank (ECLn, GEOn, WALLDEFn, MONnCHA and so on) and the maps its script
-    // loads with each map's three wall banks (`LOAD PIECES`). What its original
-    // creature records fight as is in data/encounters/conversions.json.
+    // bank (ECLn, GEOn, WALLDEFn, MONnCHA and so on), the maps its script loads
+    // with each map's three wall banks (`LOAD PIECES`), and the original
+    // creature records its encounters convert.
     struct DistrictMap
     {
         unsigned id;
@@ -390,101 +334,346 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
         std::vector<unsigned> shared_with{};
     };
 
+    struct Conversion
+    {
+        std::uint8_t record;
+        const char *definition;
+        unsigned fit_xp, award_xp;
+    };
+
     struct AreaSource
     {
         unsigned script, bank;
         std::vector<DistrictMap> maps;
+        std::vector<Conversion> creatures;
     };
 
+    // Valjevo Castle's creatures, whichever of its scripts loads them.
+    const std::vector<Conversion> valjevo_castle{{31, "troll", 1800, 1800},
+                                                 {45, "kovel-thief", 25, 25},
+                                                 {49, "medusa", 2300, 2300},
+                                                 {55, "hill-giant", 1800, 1800},
+                                                 {56, "fire-giant", 5000, 5000},
+                                                 {60, "venomous-snake", 50, 50},
+                                                 {66, "tyranthraxus", 13000, 13000},
+                                                 {75, "trapped-fighter", 700, 700},
+                                                 {84, "trapped-fighter", 700, 700},
+                                                 {85, "castle-knight", 700, 700},
+                                                 {86, "castle-mage", 200, 200},
+                                                 {87, "trapped-fighter", 700, 700},
+                                                 {88, "castle-mage", 200, 200},
+                                                 {92, "impostor", 700, 700},
+                                                 {93, "kovel-master-thief", 200, 200}};
+
+    // The original Slums creatures' experience follows docs/EXPEDITION.md; the
+    // set-encounter creatures added later and Kuto's Well award each stat
+    // block's XP, a leader double (docs/audits/kutos-well.md).
     const std::array areas{
-        AreaSource{20, 2, {{20, {2, 4, 1}}}},
-        AreaSource{29, 8, {{29, {3, 20, 1}}, {32, {18, 17, 1}}}},
+        AreaSource{20,
+                   2,
+                   {{20, {2, 4, 1}}},
+                   {{0, "slums-kobold", 25, 25},
+                    {1, "slums-kobold-leader", 25, 50},
+                    {11, "slums-kobold-leader-sword", 25, 50},
+                    {2, "slums-goblin", 50, 50},
+                    {3, "slums-goblin-leader", 50, 100},
+                    {12, "slums-goblin-leader", 50, 100},
+                    {4, "slums-orc", 100, 75},
+                    {13, "slums-orc", 100, 75},
+                    {5, "slums-orc-leader", 100, 150},
+                    {14, "slums-orc-leader", 100, 150},
+                    {15, "slums-orc-leader", 100, 150},
+                    {63, "slums-bugbear", 200, 200},
+                    {6, "slums-hobgoblin", 100, 100},
+                    {7, "slums-hobgoblin", 100, 200},
+                    {8, "ogre", 450, 450},
+                    {31, "troll", 1800, 1800},
+                    {73, "gnoll-warrior", 100, 100},
+                    {94, "slums-magic-user", 200, 200}}},
+        AreaSource{29,
+                   8,
+                   {{29, {3, 20, 1}}, {32, {18, 17, 1}}},
+                   {{0, "slums-kobold", 25, 25},
+                    {1, "slums-kobold-leader", 25, 50},
+                    {57, "lizardfolk", 100, 100},
+                    {59, "giant-lizard", 50, 50},
+                    {73, "gnoll-warrior", 100, 100},
+                    {32, "norris-the-gray", 450, 450}}},
         // Podol Plaza (docs/audits/podol-plaza.md): its
         // MON1CHA records 2-8 are the Slums' MON2CHA ones.
-        AreaSource{18, 1, {{18, {1, 3, 5}}}},
+        AreaSource{18,
+                   1,
+                   {{18, {1, 3, 5}}},
+                   {{2, "slums-goblin", 50, 50},
+                    {3, "slums-goblin-leader", 50, 100},
+                    {4, "slums-orc", 100, 75},
+                    {5, "slums-orc-leader", 100, 150},
+                    {6, "slums-hobgoblin", 100, 100},
+                    {7, "slums-hobgoblin", 100, 200},
+                    {8, "ogre", 450, 450},
+                    {41, "buccaneer", 200, 200}}},
         // Cadorna Textile House
         // (docs/audits/cadorna-textile-house.md, CADORNA-1):
         // its MON4CHA records 6-8 are the Slums' MON2CHA
         // ones; the Large Scorpion and the Wight keep their
         // stat blocks' XP with the original's Hit Points.
-        AreaSource{2, 4, {{2, {1, 3, 20}}}},
+        AreaSource{2,
+                   4,
+                   {{2, {1, 3, 20}}},
+                   {{6, "slums-hobgoblin", 100, 100},
+                    {7, "slums-hobgoblin", 100, 200},
+                    {8, "ogre", 450, 450},
+                    {18, "large-scorpion", 700, 700},
+                    {20, "wight", 700, 700},
+                    {27, "skullcrusher", 100, 100},
+                    {28, "grishnak", 450, 450},
+                    {34, "skeleton", 50, 50},
+                    {35, "zombie", 50, 50},
+                    {38, "giant-frog", 50, 50},
+                    {39, "giant-scorpion", 700, 700},
+                    {72, "ghoul", 200, 200}}},
         // Mendor's Library (docs/audits/mendors-library.md,
         // MENDOR-1): its MON2CHA kobold is the Slums' one.
-        AreaSource{15, 2, {{15, {1, 19, 23}}}},
+        AreaSource{15,
+                   2,
+                   {{15, {1, 19, 23}}},
+                   {{0, "slums-kobold", 25, 25},
+                    {17, "specter", 200, 200},
+                    {25, "mad-man", 25, 25},
+                    {26, "basilisk", 700, 700}}},
         // Sokal Keep (docs/audits/sokal-keep.md, SOKAL-1),
         // by boat from New Phlan's docks: its MON4CHA orcs
         // and hobgoblins are the Slums' MON2CHA ones, and
         // Ferran Martinez has the Spectre's record.
-        AreaSource{21, 4, {{21, {1, 5, 9}}}},
+        AreaSource{21,
+                   4,
+                   {{21, {1, 5, 9}}},
+                   {{4, "slums-orc", 100, 75},
+                    {5, "slums-orc-leader", 100, 150},
+                    {6, "slums-hobgoblin", 100, 100},
+                    {19, "specter", 200, 200},
+                    {34, "skeleton", 50, 50},
+                    {35, "zombie", 50, 50},
+                    {38, "giant-frog", 50, 50},
+                    {39, "giant-scorpion", 700, 700}}},
         // The Central Wilderness (docs/audits/central-wilderness.md,
         // OVERLAND-1): the wilderness map, and the grove and
         // ruined huts on GEO7:26.
-        AreaSource{26, 7, {{26, {7, 8, 23}}}},
+        AreaSource{26,
+                   7,
+                   {{26, {7, 8, 23}}},
+                   {{0, "slums-kobold", 25, 25},
+                    {1, "slums-kobold-leader", 25, 50},
+                    {123, "slums-kobold", 25, 25},
+                    {40, "wilderness-bandit", 25, 25},
+                    {53, "bandit-captain", 450, 450},
+                    {57, "lizardfolk", 100, 100},
+                    {58, "mutant-lizardfolk", 100, 100},
+                    {61, "stirge", 25, 25},
+                    {68, "displacer-beast", 700, 700},
+                    {69, "drider", 2300, 2300},
+                    {97, "wilderness-bandit", 25, 25},
+                    {98, "wilderness-bandit", 25, 25}}},
         // Kovel Mansion (docs/audits/kovel-mansion.md,
         // KOVEL-1), the thieves' guild north of the city.
-        AreaSource{14, 3, {{14, {1, 3, 5}}}},
+        AreaSource{14,
+                   3,
+                   {{14, {1, 3, 5}}},
+                   {{45, "kovel-thief", 25, 25}, {51, "kovel-master-thief", 200, 200}}},
         // The Temple of Bane (docs/audits/temple-of-bane.md,
         // BANE-1): the street east of the temple (map 31)
         // and the temple's block (map 24). Its MON1CHA
         // records 2-8 are Podol Plaza's.
-        AreaSource{24, 1, {{24, {1, 3, 5}}, {31, {1, 3, 5}}}},
+        AreaSource{24,
+                   1,
+                   {{24, {1, 3, 5}}, {31, {1, 3, 5}}},
+                   {{2, "slums-goblin", 50, 50},
+                    {3, "slums-goblin-leader", 50, 100},
+                    {4, "slums-orc", 100, 75},
+                    {5, "slums-orc-leader", 100, 150},
+                    {6, "slums-hobgoblin", 100, 100},
+                    {7, "slums-hobgoblin", 100, 200},
+                    {8, "ogre", 450, 450},
+                    {9, "ogre", 450, 900},
+                    {33, "bane-cleric", 450, 450},
+                    {44, "bane-orc-archer", 100, 100}}},
         // The nomad camp (docs/audits/nomad-camp.md, NOMAD-1), north of the
         // city on the wilderness map.
-        AreaSource{17, 7, {{17, {7, 8, 23}}}},
+        AreaSource{17,
+                   7,
+                   {{17, {7, 8, 23}}},
+                   {{0, "slums-kobold", 25, 25},
+                    {123, "slums-kobold", 25, 25},
+                    {40, "wilderness-bandit", 25, 25},
+                    {41, "nomad-guard", 450, 450},
+                    {42, "hassad", 700, 700},
+                    {43, "nomad-shaman", 200, 200}}},
         // The Pyramid (docs/audits/pyramid.md, PYRAMID-1): Yarash's prison of
         // souls (map 22) and his laboratories (map 23).
-        AreaSource{22, 7, {{22, {1, 3, no_wall_bank}}}},
-        AreaSource{23, 7, {{23, {1, 3, no_wall_bank}}}},
+        AreaSource{
+            22,
+            7,
+            {{22, {1, 3, no_wall_bank}}},
+            {{57, "lizardfolk", 100, 100},
+             {61, "stirge", 25, 25},
+             {62, "minotaur", 700, 700},
+             {68, "displacer-beast", 700, 700},
+             {69, "drider", 2300, 2300},
+             {75, "trapped-fighter", 700, 700},
+             {76, "trapped-veteran", 700, 700},
+             {77, "kovel-master-thief", 200, 200},
+             {78, "trapped-acolyte", 50, 50},
+             {79, "nomad-shaman", 200, 200},
+             {80, "trapped-veteran", 700, 700},
+             {123, "slums-kobold", 25, 25}}},
+        AreaSource{
+            23,
+            7,
+            {{23, {1, 3, no_wall_bank}}},
+            {{57, "lizardfolk", 100, 100},
+             {58, "mutant-lizardfolk", 100, 100},
+             {81, "yarash", 2300, 2300}}},
         // The western wilderness (docs/audits/western-wilderness.md, WEST-1):
         // its window of the wilderness map, and the dark cave on GEO6:25.
-        AreaSource{25, 6, {{25, {17, 17, 17}}}},
+        AreaSource{
+            25,
+            6,
+            {{25, {17, 17, 17}}},
+            {{10, "quickling", 100, 100},
+             {45, "kovel-thief", 25, 25},
+             {51, "kovel-master-thief", 200, 200},
+             {54, "zhent-corporal", 25, 25},
+             {60, "venomous-snake", 50, 50},
+             {65, "ankheg", 450, 450},
+             {67, "centaur", 450, 450},
+             {74, "giant-mantis", 700, 700},
+             {99, "kovel-thief", 25, 25},
+             {100, "bandit-captain", 450, 450},
+             {118, "thri-kreen", 700, 700},
+             {119, "tiger", 200, 200},
+             {120, "wild-boar", 50, 50}}},
         // The eastern wilderness (docs/audits/eastern-wilderness.md, EAST-1):
         // its window of the wilderness map, and the wyverns' cave on GEO8:27.
-        AreaSource{27, 8, {{27, {17, 17, 17}}}},
+        AreaSource{
+            27,
+            8,
+            {{27, {17, 17, 17}}},
+            {{0, "slums-kobold", 25, 25},
+             {1, "slums-kobold-leader", 25, 50},
+             {31, "troll", 1800, 1800},
+             {57, "lizardfolk", 100, 100},
+             {59, "giant-lizard", 50, 50},
+             {62, "minotaur", 700, 700},
+             {73, "gnoll-warrior", 100, 100},
+             {113, "hippogriff", 200, 200},
+             {116, "phase-spider", 700, 700},
+             {121, "wyvern", 2300, 2300}}},
         // The kobold caves (docs/audits/kobold-caves.md, KOBOLD-1), by the
         // eastern wilderness.
-        AreaSource{13, 8, {{13, {17, 18, no_wall_bank}}}},
+        AreaSource{
+            13,
+            8,
+            {{13, {17, 18, no_wall_bank}}},
+            {{0, "slums-kobold", 25, 25},
+             {1, "slums-kobold-leader", 25, 50},
+             {31, "troll", 1800, 1800},
+             {87, "trapped-fighter", 700, 700},
+             {104, "trapped-fighter", 700, 700},
+             {120, "wild-boar", 50, 50},
+             {121, "wyvern", 2300, 2300},
+             {124, "efreeti", 2300, 2300}}},
         // The lizard men's keep (docs/audits/lizard-keep.md, LIZARD-1): the
         // ruined castle in the eastern wilderness's quicksand (map 16) and
         // its lower level (map 30).
-        AreaSource{16, 8, {{16, {9, 20, 23}}, {30, {9, 17, 23}}}},
+        AreaSource{
+            16,
+            8,
+            {{16, {9, 20, 23}}, {30, {9, 17, 23}}},
+            {{57, "lizardfolk", 100, 100},
+             {59, "giant-lizard", 50, 50},
+             {95, "mutant-lizardfolk", 100, 100}}},
         // Valhingen Graveyard (docs/audits/valhingen-graveyard.md, GRAVE-1).
-        AreaSource{10, 4, {{10, {21, 22, 20}}}},
+        AreaSource{
+            10,
+            4,
+            {{10, {21, 22, 20}}},
+            {{17, "specter", 200, 200},
+             {20, "wight", 700, 700},
+             {21, "wraith", 1800, 1800},
+             {22, "giant-skeleton", 450, 450},
+             {23, "vampire", 2300, 2300},
+             {24, "graveyard-mystic", 200, 200},
+             {29, "juju-zombie", 450, 450},
+             {34, "skeleton", 50, 50},
+             {35, "zombie", 50, 50},
+             {70, "efreeti", 2300, 2300},
+             {72, "ghoul", 200, 200},
+             {105, "weakened-vampire", 2300, 2300},
+             {106, "wolf", 50, 50},
+             {114, "mummy", 700, 700}}},
         // Stojanow Gate (docs/audits/stojanow-gate.md, GATE-1): its level-6
         // magic-user is the graveyard mystic's record.
-        AreaSource{9, 2, {{9, {1, 9, 23}}}},
+        AreaSource{9,
+                   2,
+                   {{9, {1, 9, 23}}},
+                   {{24, "graveyard-mystic", 200, 200},
+                    {53, "bandit-captain", 450, 450},
+                    {55, "hill-giant", 1800, 1800},
+                    {63, "slums-bugbear", 200, 200},
+                    {71, "ettin", 1100, 1100},
+                    {75, "trapped-fighter", 700, 700},
+                    {89, "nomad-shaman", 200, 200}}},
         // Valjevo's old town (docs/audits/valjevo-old-town.md, TOWN-1): its
         // bank 24 is two blocks and fills two wall slots.
-        AreaSource{6, 5, {{6, {24, 25, 1}, {5}}}},
+        AreaSource{6,
+                   5,
+                   {{6, {24, 25, 1}, {5}}},
+                   {{41, "nomad-guard", 450, 450},
+                    {55, "hill-giant", 1800, 1800},
+                    {56, "fire-giant", 5000, 5000},
+                    {75, "trapped-fighter", 700, 700},
+                    {90, "trapped-acolyte", 50, 50},
+                    {91, "bane-priest", 450, 450}}},
         // Valjevo Castle (docs/audits/valjevo-castle.md, CASTLE-1): four
         // scripts share its quarters, maps 3 (northwest), 4 (northeast), 5
         // (southeast) and the old town's 6 (southwest); its tower is map 7.
-        AreaSource{3, 5, {{3, {24, 25, 1}, {5, 7}}}}, AreaSource{4, 5, {{4, {24, 25, 1}, {5}}}},
-        AreaSource{5, 5, {{5, {24, 25, 1}, {3}}}}, AreaSource{7, 5, {{7, {24, 25, 1}}}},
+        AreaSource{3,
+                   5,
+                   {{3, {24, 25, 1}, {5, 7}}},
+                   valjevo_castle},
+        AreaSource{4,
+                   5,
+                   {{4, {24, 25, 1}, {5}}},
+                   valjevo_castle},
+        AreaSource{5,
+                   5,
+                   {{5, {24, 25, 1}, {3}}},
+                   valjevo_castle},
+        AreaSource{7,
+                   5,
+                   {{7, {24, 25, 1}}},
+                   valjevo_castle},
         // The western wilderness's sites (docs/audits/western-sites.md,
         // SITES-1): the Buccaneers' base, the dragon's cave, which has no map
         // of its own, and the Zhentil outpost.
-        AreaSource{1, 6, {{1, {2, 6, 6}}}}, AreaSource{19, 6, {}},
-        AreaSource{28, 6, {{28, {1, 2, 9}}}}};
-    // Every script the encounter data names is one of these areas, in its bank.
-    for (const auto &entry : encounters.areas)
-    {
-        for (const auto script : entry.scripts)
-        {
-            const auto source = std::find_if(areas.begin(), areas.end(),
-                                             [script](const AreaSource &area)
-                                             {
-                                                 return area.script == script;
-                                             });
-            if (source == areas.end() || source->bank != entry.bank)
-            {
-                throw EclError("data/encounters/conversions.json: " + entry.name + ": script " +
-                               std::to_string(script) + " is no area of bank " +
-                               std::to_string(entry.bank));
-            }
-        }
-    }
-    const decltype(AreaConversions::creatures) no_creatures;
+        AreaSource{1,
+                   6,
+                   {{1, {2, 6, 6}}},
+                   {{41, "nomad-guard", 450, 450},
+                    {99, "buccaneer-raider", 200, 200},
+                    {100, "bandit-captain", 450, 450},
+                    {101, "buccaneer-mate", 700, 700},
+                    {102, "pirate-captain", 2300, 2300}}},
+        AreaSource{19, 6, {}, {}},
+        AreaSource{28,
+                   6,
+                   {{28, {1, 2, 9}}},
+                   {{48, "trapped-veteran", 700, 700},
+                    {50, "commandant", 1100, 1100},
+                    {53, "bandit-captain", 450, 450},
+                    {54, "zhent-corporal", 25, 25},
+                    {86, "castle-mage", 200, 200},
+                    {96, "outpost-guard", 25, 25}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;
@@ -591,27 +780,30 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
             }
             district->sprite_archive =
                 read_archive(resolve_archive(directory, "SPRIT" + bank + ".DAX"));
-            // The map's own script's creatures, then those of the scripts
-            // that share it; a record keeps its first conversion.
-            std::vector<const AreaConversions *> listed{encounters.area(area.script)};
-            for (const auto shared : geo.shared_with)
+            std::vector<Conversion> conversions = area.creatures;
+            for (const auto &other : areas)
             {
-                listed.push_back(encounters.area(shared));
-            }
-            for (const auto *entry : listed)
-            {
-                for (const auto &[id, conversion] : entry ? entry->creatures : no_creatures)
+                if (other.bank == area.bank &&
+                    std::find(geo.shared_with.begin(), geo.shared_with.end(), other.script) !=
+                        geo.shared_with.end())
                 {
-                    const auto creature = creatures.find(
-                        {static_cast<std::uint8_t>(area.bank), static_cast<std::uint8_t>(id)});
-                    if (!creature)
-                    {
-                        throw EclError("Missing original creature MON" + bank +
-                                       "CHA:" + std::to_string(id));
-                    }
-                    district->encounter_creatures.emplace(id, creature->get());
-                    district->conversions.emplace(id, conversion);
+                    conversions.insert(conversions.end(), other.creatures.begin(),
+                                       other.creatures.end());
                 }
+            }
+            for (const auto &conversion : conversions)
+            {
+                const auto id = conversion.record;
+                const auto creature = creatures.find({static_cast<std::uint8_t>(area.bank), id});
+                if (!creature)
+                {
+                    throw EclError("Missing original creature MON" + bank +
+                                   "CHA:" + std::to_string(id));
+                }
+                district->encounter_creatures.emplace(id, creature->get());
+                district->conversions.emplace(id, EncounterConversion{conversion.definition,
+                                                                      conversion.fit_xp,
+                                                                      conversion.award_xp});
             }
             district->combat_archive =
                 read_archive(resolve_archive(directory, "CPIC" + bank + ".DAX"));
@@ -629,7 +821,6 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
             town->districts.emplace(geo.id, std::move(district));
         }
     }
-    town->encounter_overrides = checked_overrides(encounters, *town);
     return RolfTourSession(map->get(), program, std::move(sprites), 0xB071, std::move(*wall_art),
                            std::move(town));
 }
