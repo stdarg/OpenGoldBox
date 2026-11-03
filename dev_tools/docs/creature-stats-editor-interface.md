@@ -1,75 +1,83 @@
 # Creature Stats Editor: interface with the game
 
 How the [Creature Stats Editor](creature-stats-editor-requirements.md) gets its
-edits into the game, and how it learns what the game makes of them. Written
-2026-11-03 for Codex, who builds the tool; Claude builds the game's side. The
-data files and their loaders are built (2026-11-03). Parts marked **game work**
-do not exist yet.
+edits into the game. Written 2026-11-03 for Codex, who builds the tool; Claude
+builds the game's side. Everything here is built except the parts marked
+**game work**.
 
 ## Principles
 
-- **The tool writes data files; the game reads them.** The game never reads
-  `dev_tools/`. Every value has one home, which both the game and the tool use.
-  There are no override copies of stat lines, gear or companions.
+- **The tool writes its edits in `dev_tools/`; the importer puts them in the
+  game.** The tool writes one file of changes,
+  `dev_tools/creature_stats_editor/edits/edits.json`
+  ([the edits file](#the-edits-file)). `opengold_import_edits`, built from the
+  game's own code, applies them to `data/`, checks the result with the game's
+  loaders, and writes nothing if any edit is refused. The game never reads
+  `dev_tools/`.
+- **Every value has one home** in `data/`, which the game and the importer
+  use. There are no override copies of stat lines, gear or companions.
 - **The tool never computes game results itself.** What a creature's AC is,
   how many guards a party meets, what a companion's Hit Points come to: the
-  tool asks `opengold_creature_data`, which runs the game's own code.
+  game's code answers ([Reading results](#7-reading-results-opengold_creature_data-game-work)).
 - **Original data stays in the player's install.** Files in the repository hold
   OpenGoldBox's own values and references to original records, never copies of
   original records.
 
 ## The pieces
 
-| Edit | Written to | Format | Exists |
+| What the user edits | The edit (`change`) | Where the importer writes it | Format |
 | --- | --- | --- | --- |
-| Hit Points, spellcasting profile, a new stat line | `data/rules/srd-5.2.1/combat.rules` | the rules text format | yes |
-| Monster gear | the Combat Sprite Catalog's `json/` record, then its export to `data/monsters/` | `opengold-monster-v1` | yes |
-| Which stat line a record uses, the XP that sizes a fight and the XP it awards | `data/encounters/conversions.json` | `opengold-conversions-v1` | yes |
-| A fight's creatures and counts | `data/encounters/overrides.json` | `opengold-encounter-overrides-v1` | yes |
-| Companions | `data/companions/companions.json` | `opengold-companions-v1` | yes |
-| Putting the edits in the game | `opengoldbox_game_data`, a build target ([Publishing](#publishing-to-the-game)) | | yes |
-| Reading what the game makes of all of these | `opengold_creature_data`, a command-line program | JSON on standard output | **game work** |
-| Map encounter triggers and the chance of a wandering encounter (asked for 2026-11-03) | not designed yet | | **game work** |
+| Hit Points | `hit_points` | `data/rules/srd-5.2.1/combat.rules` | the rules text format |
+| Spellcasting profile | `spell_profile` | `combat.rules` | |
+| A new stat line, copied from one | `new_stat_line` | `combat.rules` | |
+| Which stat line a record uses, the XP that sizes a fight and the XP it awards | `conversion` | `data/encounters/conversions.json` | `opengold-conversions-v1` |
+| A fight's creatures, count and icon | `override` | `data/encounters/overrides.json` | `opengold-encounter-overrides-v1` |
+| The chance of a wandering encounter, and a rest's interruption | `chance` | `data/encounters/chances.json` | `opengold-encounter-chances-v1` |
+| Companions | `companion` | `data/companions/companions.json` | `opengold-companions-v1` |
+| Monster gear | (the catalog's own export) | `data/monsters/` | `opengold-monster-v1` |
 
-The formats are described beside the files, in
+The data formats are described beside the files, in
 [data/encounters/README.md](../../data/encounters/README.md) and
-[data/companions/README.md](../../data/companions/README.md). The tool can read
-the three JSON files directly; it needs `opengold_creature_data` only for what
-the game computes from them.
+[data/companions/README.md](../../data/companions/README.md). The tool reads
+them, and `combat.rules`, directly to show the current values.
 
 ## 1. Stat lines: `combat.rules`
 
-The tool edits the file in place. A creature is its `creature` row and the rows
-after it that name the same key (`saves`, `parry`, `multiattack` and the others).
-Row 2 of the file names the `creature` row's fields:
+The importer edits the file in place. A creature is its `creature` row and
+every row whose second field names it (`saves`, `parry`, `multiattack` and the
+others). Row 2 of the file names the `creature` row's fields:
 
 ```
 creature key AC HP initiative speed melee_bonus melee_count melee_sides melee_modifier ranged_bonus ranged_count ranged_sides ranged_modifier range long_range second_winds spell_slots casting_bonus level spell_mask
 creature castle-knight 18 52 0 30 5 2 6 3 2 2 10 0 100 400 0 0 0 1 0
 ```
 
-The tool may make three kinds of change:
+Three kinds of change:
 
-1. **Hit Points:** field 4 (`HP`) of a `creature` row.
-2. **Spellcasting profile:** fields `spell_slots`, `casting_bonus` and `level`,
-   set to the values of a profile another `creature` row already has, such as
-   the nomad shaman's level-4 Wizard profile. It does not write new profiles.
-3. **A new stat line:** a copy of a creature's rows under a new key, inserted
-   right after the original's rows, followed by a change of kind 1 or 2. Records
-   then point at the new key through `conversions.json`.
+1. **Hit Points** (`hit_points`): field 4 (`HP`) of a `creature` row, 1 to
+   10,000.
+2. **Spellcasting profile** (`spell_profile`): fields `spell_slots`,
+   `casting_bonus` and `level`, set to a profile another `creature` row already
+   has, such as the nomad shaman's level-4 Wizard profile. The importer refuses
+   a profile no creature has.
+3. **A new stat line** (`new_stat_line`): a copy of every row of a creature
+   under a new key, inserted after the original's `creature` row and the rows
+   that follow it, usually followed by a change of kind 1 or 2. Records then
+   point at the new key through a `conversion` edit.
 
-It must keep every other byte of the file as it was, comments included, and add
-or update the comment above a changed creature with its reason in one line.
+The importer keeps every other line of the file as it was, comments included,
+and writes the edit's reason in a comment right above the changed `creature`
+row (`# Creature Stats Editor (date): reason`), replacing the one an earlier
+import wrote there.
 
 **The rules version.** The rules identity includes the file's content hash, so a
 changed file already makes older saves fail to load. By convention the version
-number goes up too. After writing `combat.rules`, the tool raises the last
-number of `"0.6.N"` in the line `content.identity = {"opengold.srd5", "0.6.N", ...`
-of `src/OpenGold.Rules.Srd5/src/srd5.cpp`, and the same number in
-`docs/SAVES.md` (`` `opengold.srd5` 0.6.N, ``). It raises the number once per
-session of edits, not once per edit, and stops with an error if either pattern
-is missing. The files under `data/encounters/` and `data/companions/` are not
-part of the rules identity and need no version change.
+number goes up too: when an import changes `combat.rules`, the importer raises
+`"0.6.N"` in `src/OpenGold.Rules.Srd5/src/srd5.cpp` and
+`` `opengold.srd5` 0.6.N `` in `docs/SAVES.md`, once per import, and refuses
+the import if the two are missing or disagree. The new number shows in a game
+built afterwards; the hash change applies at once. The files under
+`data/encounters/` and `data/companions/` are not part of the rules identity.
 
 ## 2. Monster gear: the catalog's records
 
@@ -238,38 +246,172 @@ compares its level, Hit Points, scores, features, spells and items with what
 the code built before the move, builds an edited one at a new level with new
 gear, and refuses broken files.
 
-## Publishing to the game
+## 6. Wandering encounter chances: `chances.json`
 
-The tool writes only the repository's `data/` (and `combat.rules`'s version
-lines). The game, started from its Godot project, reads a copy of `data/` in
-`src/OpenGoldBox/godot/data/`, made by the build. After writing, the tool runs
+The original has no single wandering-encounter percentage. Each area's script
+sets its own chances with numbers written in its instructions, and that is what
+an edit changes:
 
-```sh
-cmake --build build/macos-universal --target opengoldbox_game_data
+- **On a step.** The script rolls a `RANDOM n` (0 to n) into a variable and
+  meets a group when a `COMPARE` of that variable with a number succeeds, often
+  with additions in Search mode. The Slums roll `RANDOM 13` (ECL2:20 0x9B3A)
+  and meet a group above 12 (0x9B60): 1 in 14 a step.
+- **On a rest.** The script `SAVE`s the rest check's interval into cell 0x6DD2
+  (28114) and its chance in percent into 0x6DD3 (28115); the engine rolls d100
+  every interval of 5-minute steps. The Slums save 24 and 24 (0x9A3C, 0x9A42):
+  a 24% check every 2 hours.
+
+An entry replaces one such number:
+
+```json
+{
+  "format": "opengold-encounter-chances-v1",
+  "chances": [
+    {"site": "ECL2.DAX:20:0x9B60", "operand": 1, "original": 12, "value": 13,
+     "reason": "Fewer street groups"}
+  ]
+}
 ```
 
-which copies `data/rules`, `data/encounters`, `data/companions`,
-`data/monsters` and the new wall art into the game project in a second or so,
-without building the game. A game started afterwards plays with the edits; one
-already running keeps the files it read when it started. The packaged app
-(`OpenGoldBox.app`) gets them with the next full build.
+- `site` is the instruction and `operand` the number's place in it (0 or 1);
+  `original` is the number the player's script holds there, and `value` the new
+  one, 0 to 255.
+- Only a `RANDOM`'s range (operand 0), either side of a `COMPARE`, or the value
+  of a `SAVE` into 0x6DD2 or 0x6DD3 can be changed; the game refuses anything
+  else, and an `original` the script does not hold, when it loads.
+- The game reads the new number where the script is decoded. The script's
+  bytes, which saves keep, stay the original's, so removing the entry restores
+  the original's chance in every save.
 
-An edit is published when, in this order:
+`opengold_scripts --inspect GAME_DIR ECLn.DAX SCRIPT` lists a script's
+instructions with their addresses and operands (`tag=0` or `2` is a written
+number). Each area's rest profile is its `SAVE n {tag=1,value=28114}` and
+`{tag=1,value=28115}` lines; some areas have several, for different places
+(an inn, a cleared camp). The step rolls traced so far:
 
-1. the tool has written the files and shown their diff (requirement 19);
-2. `opengoldbox_game_data` has copied them;
-3. these tests pass: `ctest -R "encounter_data|companion_data|encounter_override|slums_creatures"`
-   in `build/macos-universal` with `OPENGOLD_GAME_DIR` set to the player's
-   install, and, after a `combat.rules` change, the full suite (CLAUDE.md).
+| Area | Roll | Meets a group | Chance a step |
+| --- | --- | --- | --- |
+| The Slums (ECL2:20) | `RANDOM 13` at 0x9B3A | above 12 (0x9B60, operand 1); +4 in Search mode (0x9B47), +5 after the fortune teller's murder (0x9B57) | 1 in 14 |
+| Podol Plaza (ECL1:18) | `RANDOM 25` at 0x9AEA | off a mission on 0 (0x9B32), above 18 searching (0x9B44); on one, 0-2 is a rumour (0x9AFB) and a group above 21 (0x9B06), above 16 searching (0x9B18); none after 9 wins (0x9B27) | 1 in 26; 4 in 26 on a mission |
+| The central wilderness (ECL7:26) | `RANDOM 19` at 0xA0E7 | on 0 (0xA0F3) | 1 in 20 |
+| The western wilderness (ECL6:25) | `RANDOM 19` at 0xA0B3 | on 0 (0xA0BF) | 1 in 20 |
+| The eastern wilderness (ECL8:27) | `RANDOM 19` at 0x9EA7 | on 0 | 1 in 20 |
 
-A file the game refuses stops it as it starts, with the file, the entry and the
-field in the message, so the tool runs the tests in step 3 before the user
-starts the game.
+The other areas' step rolls are still to be traced (**game work**): a
+`RANDOM`'s variable often feeds more than the encounter, such as Podol Plaza's
+rumours, so each needs reading before its numbers are offered as a chance.
 
-## 6. Reading results: `opengold_creature_data` (game work)
+**Tests:** `opengold_encounter_data_tests` refuses broken files.
+`opengold_encounter_override_tests` (the original files) changes the Slums
+roll, its threshold and its rest chance, checks that the script machine rolls
+and saves the new numbers while the script's bytes stay the original's, and
+that the game refuses a wrong `original`, an `ADD` and a `RANDOM`'s destination.
 
-A command-line program in `tools/`, built with the game's core and rules
-libraries and run by the tool with `OS.execute`. It writes JSON to standard
+## The edits file
+
+The tool writes its pending changes to
+`dev_tools/creature_stats_editor/edits/edits.json`:
+
+```json
+{
+  "format": "opengold-creature-edits-v1",
+  "edits": [
+    {"change": "hit_points", "definition": "castle-knight", "from": 52, "to": 60,
+     "reason": "Sturdier guards"},
+    {"change": "new_stat_line", "definition": "tower-knight", "copy_of": "castle-knight",
+     "reason": "The tower's guards alone"},
+    {"change": "spell_profile", "definition": "castle-mage",
+     "from": {"spell_slots": 4, "casting_bonus": 5, "level": 4},
+     "to": {"spell_slots": 4, "casting_bonus": 5, "level": 4}, "reason": "..."},
+    {"change": "conversion", "script": 7, "record": 85,
+     "from": {"record": 85, "definition": "castle-knight", "fit_xp": 700, "award_xp": 700},
+     "to": {"record": 85, "definition": "tower-knight", "fit_xp": 900, "award_xp": 700},
+     "reason": "The guards fight as the tower's knights"},
+    {"change": "override", "site": "ECL5.DAX:7:0xA60D", "from": null,
+     "to": {"site": "ECL5.DAX:7:0xA60D", "original": {"record": 85, "count": 12},
+            "count": 6, "reason": "Half the guards"},
+     "reason": "Half the guards"},
+    {"change": "chance", "site": "ECL2.DAX:20:0x9B60", "operand": 1, "from": null,
+     "to": {"site": "ECL2.DAX:20:0x9B60", "operand": 1, "original": 12, "value": 13,
+            "reason": "Fewer street groups"},
+     "reason": "Fewer street groups"},
+    {"change": "companion", "bank": 5, "record": 88, "from": {"...": "the entry now"},
+     "to": {"...": "the entry with level 8"}, "reason": "A stronger turncoat"}
+  ]
+}
+```
+
+- Every edit has a `change` and a one-line `reason` (requirement 17).
+- **`from` and `to`.** `from` is the value as the tool read it and `to` the new
+  one. For `conversion`, `override`, `chance` and `companion` each is the whole
+  entry exactly as its data file holds it, or `null` for none: `from: null` adds
+  an entry, `to: null` removes it, so removing an override or a chance restores
+  the original's. A `conversion` names the area by any of its `scripts`; the
+  castle's four scripts share one entry.
+- The edits apply in order, so a `new_stat_line` can be followed by edits of
+  the new line.
+- **Conflicts.** The importer refuses an edit whose `from` is not what the data
+  holds, as when someone changed the value since the tool read it, and an edit
+  whose `to` is already there counts as applied. So importing the same file
+  twice changes nothing, and a stale edit is never applied on top of a newer
+  value.
+
+## Importing
+
+```sh
+cmake --build build/macos-universal --target opengoldbox_import_edits
+```
+
+runs `opengold_import_edits` and then copies `data/rules`, `data/encounters`,
+`data/companions`, `data/monsters` and the new wall art into the game project
+(`src/OpenGoldBox/godot/data/`), in a second or so and without building the
+game. A game started afterwards plays with the edits; one already running keeps
+the files it read when it started. The packaged app (`OpenGoldBox.app`) gets
+them with the next full build. `opengoldbox_game_data` does the copy alone, as
+after a catalog export of gear.
+
+The importer can also be run alone:
+
+```sh
+build/macos-universal/opengold_import_edits [--check] [--repo DIR] [--edits FILE] [--game GAME_DIR]
+```
+
+- `--check` reports what an import would do and writes nothing: the tool runs
+  it to show the user the result before saving (requirement 19).
+- `GAME_DIR` (default `$OPENGOLD_GAME_DIR`) is the player's install. With it the
+  importer also loads the game's areas from the original's files, so a fight
+  override, a chance or a record the player's scripts do not match is refused
+  at import. Without it those checks wait until the game starts.
+- It prints a JSON report and exits 0, or prints `{"ok": false, "error": ...}`
+  naming the edit and exits 1, having written nothing:
+
+```json
+{
+  "ok": true,
+  "edits": [
+    {"change": "hit_points", "subject": "castle-knight", "status": "applied", "summary": "Hit Points 52 to 60"}
+  ],
+  "files_changed": ["data/rules/srd-5.2.1/combat.rules", "src/OpenGold.Rules.Srd5/src/srd5.cpp", "docs/SAVES.md", "docs/DEVIATIONS.md"],
+  "rules_version": "0.6.276"
+}
+```
+
+`status` is `applied` or `already applied`. Before writing, the importer loads
+the edited `combat.rules` with the rules module, the encounter and companion
+files with the game's loaders, checks that every conversion's stat line exists,
+builds every companion, and with `GAME_DIR` loads the game's areas. It writes
+each file beside itself and renames it over the old one.
+
+After a successful import the tool clears its `edits` list. The changed files
+are ordinary repository changes: they are committed with the full test suite
+passing (CLAUDE.md), and after a `combat.rules` change the AI lab's scenario
+packs are rebuilt.
+
+## 7. Reading results: `opengold_creature_data` (game work)
+
+Not built yet; the import does not need it. A command-line program in
+`tools/`, built with the game's core and rules libraries and run by the tool
+with `OS.execute`. It writes JSON to standard
 output, and on error a message to standard error and exit code 1. `GAME_DIR` is
 the player's Pool of Radiance install. It reads the repository's `data/` as the
 game does.
@@ -290,34 +432,33 @@ For the castle's guards, `size GAME_DIR ECL5.DAX:7:0xA60D --levels
 in the game suite with the original files, as the other original-data tests
 are.
 
-## 7. Documentation the tool writes
+## 8. Documentation the importer writes
 
-- **DEVIATIONS.** Each change that departs from the original gets an entry in
-  `docs/DEVIATIONS.md` under "Rules and combat", in the file's style:
-  `- **Name** (date). The original ... OpenGoldBox ...`. The tool writes the
-  user's reason and the values before and after, and updates an existing entry
-  for the same creature or site rather than adding a second one.
-- **Audits.** Where an area's audit in `docs/audits/` has a conversion table
-  row for the record, the tool updates that row's description.
-- The tool shows every file change as a diff and writes nothing until the user
-  confirms.
+- **DEVIATIONS.** Each applied edit gets an entry at the end of "Rules and
+  combat" in `docs/DEVIATIONS.md`: `- **Subject** (date). Reason. Creature
+  Stats Editor: what changed.`, ending with a hidden marker such as
+  `<!-- creature-edit hit_points castle-knight -->`. A later edit of the same
+  value replaces that entry instead of adding a second one. An edit already
+  applied writes nothing.
+- **Comments** above changed stat lines in `combat.rules` (section 1).
+- **Audits.** The importer does not change the area audits in `docs/audits/`;
+  a conversion's `audit` names the one whose conversion table to update.
 
 ## Order of work
 
-Built 2026-11-03: `conversions.json`, `overrides.json`, `companions.json`, their
-loaders and checks, and `opengoldbox_game_data`. With them the tool can edit
-Hit Points, gear, fight ratings, fight creatures and counts, and companions,
-and put the edits in the game.
+Built 2026-11-03: `conversions.json`, `overrides.json`, `companions.json`,
+their loaders and checks, and `opengoldbox_game_data`. Also built
+2026-11-03: `chances.json`, the edits file and `opengold_import_edits`, and
+`opengoldbox_import_edits`. With them the tool can edit Hit Points,
+spellcasting, stat lines, fight ratings, fight creatures and counts, wandering
+and rest chances, and companions, and put the edits in the game. Gear goes
+through the catalog's export.
 
-Still to build, in this order:
+Still to build (**game work**):
 
-1. `opengold_creature_data` with `check`, `creatures`, `creature` and
-   `encounters`, so the tool shows what the game makes of a creature
-   (requirements 4 to 7 and 21).
-2. `size` (requirement 22).
-3. `companions` (requirement 10's preview).
-4. Map encounter triggers and wandering chances, which need the original's
-   triggers traced per area first.
+1. Tracing the step rolls of the areas not in section 6's table.
+2. `opengold_creature_data` (section 7), if the tool is to show what the game
+   makes of a creature or how many monsters a party meets.
 
 Each step is pushed with the full test suite passing, and with no change to
 the game's behavior until the tool writes an edit.

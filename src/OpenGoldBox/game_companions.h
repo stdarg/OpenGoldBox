@@ -6,8 +6,8 @@
 #include "opengold/companions.h"
 #include <vector>
 
-// The original's NPCs who join the party (data/companions, which the Creature
-// Stats Editor writes), read on first use. The shipped file does not change
+// The original's NPCs who join the party (data/companions), read on first
+// use. The shipped file does not change
 // while the game runs.
 inline const std::vector<opengold::CompanionDefinition> &game_companions()
 {

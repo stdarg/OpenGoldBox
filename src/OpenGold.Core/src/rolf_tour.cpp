@@ -68,6 +68,69 @@ std::vector<std::string> read_closing_story(std::span<const std::uint8_t> overla
     return pages;
 }
 
+// The cells a SAVE may set a chance in: the rest check's interval and chance.
+bool rest_chance_cell(std::uint16_t cell)
+{
+    return cell == ecl_rest_check_interval.location ||
+           cell == ecl_rest_interruption_chance.location;
+}
+
+// The area scripts with data/encounters/chances.json's numbers read in place
+// of the original's, each checked against the player's script: a RANDOM's
+// range, a number a COMPARE tests, or a SAVE to the rest check's cells, written
+// in the script as the chance's `original`.
+void apply_chances(const EncounterData &encounters, PhlanResources &town)
+{
+    constexpr std::uint8_t compare = 3, random = 8, save = 9;
+    std::map<unsigned, std::vector<EclOperandOverride>> changes;
+    for (const auto &chance : encounters.chances)
+    {
+        const auto reject = [&](const std::string &problem)
+        {
+            throw EclError("data/encounters/chances.json: " + site_name(chance.site) + ": " +
+                           problem);
+        };
+        const auto &site = chance.site;
+        const auto bank = town.script_banks.find(site.script);
+        if (bank == town.script_banks.end() || bank->second != site.bank)
+        {
+            reject("no area script of bank " + std::to_string(site.bank));
+        }
+        std::optional<EclInstruction> instruction;
+        try
+        {
+            instruction = town.programs.at(site.script)->instruction(site.address);
+        }
+        catch (const std::exception &)
+        {
+            reject("no instruction at this address");
+        }
+        const auto &operands = instruction->operands;
+        const bool chance_operand = (instruction->opcode == random && chance.operand == 0) ||
+                                    (instruction->opcode == compare && chance.operand < 2) ||
+                                    (instruction->opcode == save && chance.operand == 0 &&
+                                     operands.size() == 2 && rest_chance_cell(operands[1].value));
+        if (!chance_operand)
+        {
+            reject("operand " + std::to_string(chance.operand) +
+                   " is no RANDOM range, COMPARE number or SAVE of the rest check");
+        }
+        const auto &original = operands.at(chance.operand);
+        if ((original.tag != 0 && original.tag != 2) || original.value != chance.original)
+        {
+            reject("the player's script has no " + std::to_string(chance.original) + " here");
+        }
+        changes[site.script].push_back({site.address, static_cast<std::uint8_t>(chance.operand),
+                                        static_cast<std::uint16_t>(chance.value)});
+    }
+    for (auto &[script, overrides] : changes)
+    {
+        auto &program = town.programs.at(script);
+        program = std::make_shared<const EclProgram>(
+            program->with_operand_overrides(std::move(overrides)));
+    }
+}
+
 // The overrides, each checked against the player's script: its site is a LOAD
 // MONSTER of the original's record and count, both written in the script, and
 // every map of that script converts the record it now loads.
@@ -629,6 +692,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
             town->districts.emplace(geo.id, std::move(district));
         }
     }
+    apply_chances(encounters, *town);
     town->encounter_overrides = checked_overrides(encounters, *town);
     return RolfTourSession(map->get(), program, std::move(sprites), 0xB071, std::move(*wall_art),
                            std::move(town));

@@ -16,6 +16,7 @@ using detail::Json;
 
 constexpr std::string_view conversions_format = "opengold-conversions-v1";
 constexpr std::string_view overrides_format = "opengold-encounter-overrides-v1";
+constexpr std::string_view chances_format = "opengold-encounter-chances-v1";
 constexpr double most_xp = 1'000'000;
 // More than a fight holds (56); the game stops loading at its limit.
 constexpr double most_loaded = 250;
@@ -257,6 +258,52 @@ std::vector<EncounterOverride> read_overrides(const std::filesystem::path &folde
     }
     return overrides;
 }
+
+ChanceOverride read_chance(const Problems &problems, const Json &entry, std::size_t index)
+{
+    auto where = "chance " + std::to_string(index + 1);
+    const auto &name = problems.member<std::string>(entry, "site", where);
+    const auto site = parse_site(name);
+    if (!site)
+    {
+        problems.reject(where, "site must be like ECL2.DAX:20:0x9B60, not " + name);
+    }
+    where = site_name(*site);
+    ChanceOverride change{*site, problems.whole_member(entry, "operand", where, 0, 1),
+                          problems.whole_member(entry, "original", where, 0, 255),
+                          problems.whole_member(entry, "value", where, 0, 255),
+                          problems.member<std::string>(entry, "reason", where)};
+    if (change.reason.empty())
+    {
+        problems.reject(where, "needs a reason");
+    }
+    return change;
+}
+
+std::vector<ChanceOverride> read_chances(const std::filesystem::path &folder)
+{
+    const auto path = folder / "chances.json";
+    if (!std::filesystem::exists(path))
+    {
+        return {};
+    }
+    const Problems problems("chances.json");
+    const auto document = detail::read_json_file(path, "encounter chances");
+    problems.expect_format(document, chances_format);
+    std::vector<ChanceOverride> chances;
+    std::set<std::pair<EncounterSite, unsigned>> operands;
+    const auto &entries = problems.member<Json::Array>(document, "chances", "file");
+    for (std::size_t index = 0; index < entries.size(); ++index)
+    {
+        auto change = read_chance(problems, entries[index], index);
+        if (!operands.insert({change.site, change.operand}).second)
+        {
+            problems.reject(site_name(change.site), "operand listed twice");
+        }
+        chances.push_back(std::move(change));
+    }
+    return chances;
+}
 } // namespace
 
 std::string site_name(const EncounterSite &site)
@@ -280,6 +327,6 @@ const AreaConversions *EncounterData::area(unsigned script) const
 
 EncounterData load_encounter_data(const std::filesystem::path &folder)
 {
-    return {read_conversions(folder), read_overrides(folder)};
+    return {read_conversions(folder), read_overrides(folder), read_chances(folder)};
 }
 } // namespace opengold::por

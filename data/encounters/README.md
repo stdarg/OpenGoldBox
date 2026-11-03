@@ -1,7 +1,8 @@
 # Encounter data
 
-The [Creature Stats Editor](../../dev_tools/docs/creature-stats-editor-requirements.md)
-writes these files and the game reads them
+The game reads these files. Edits made in the
+[Creature Stats Editor](../../dev_tools/docs/creature-stats-editor-requirements.md)
+reach them through `opengold_import_edits`
 ([interface](../../dev_tools/docs/creature-stats-editor-interface.md)). They hold
 OpenGoldBox's own values and references to the original's records, never
 copies of those records, which stay in the player's install.
@@ -55,3 +56,26 @@ without the file every fight is the original's. Format
 - The count is still sized to the party, as the original's is: it is the most
   the party can meet.
 - `reason`: why, in one line.
+
+## chances.json
+
+The numbers an original script sets a wandering encounter's chance with, read
+in place of the original's. Optional: without the file every chance is the
+original's. Format `opengold-encounter-chances-v1`; one entry per number:
+
+```json
+{"site": "ECL2.DAX:20:0x9B60", "operand": 1, "original": 12, "value": 13,
+ "reason": "Fewer street groups"}
+```
+
+- `site` and `operand` (0 or 1): the instruction and the number's place in it.
+  It must be a `RANDOM`'s range (operand 0), either side of a `COMPARE`, or the
+  value of a `SAVE` into the rest check's interval (0x6DD2) or chance in
+  percent (0x6DD3).
+- `original`: the number the player's script holds there, checked when the
+  game loads; `value`: the new one, 0 to 255.
+- The script's bytes, which saves keep, stay the original's: the game reads the
+  new number as it decodes the instruction.
+
+Which numbers make up each area's chance is in the
+[interface](../../dev_tools/docs/creature-stats-editor-interface.md#6-wandering-encounter-chances-chancesjson).

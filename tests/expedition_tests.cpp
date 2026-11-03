@@ -6860,6 +6860,75 @@ void encounter_overrides(const std::filesystem::path &directory)
     }
 }
 
+// data/encounters/chances.json changes the numbers an original script sets a
+// wandering encounter's chance with, checked against the player's script. The
+// Slums roll RANDOM 13 at ECL2:20 0x9B3A and meet a group above 12 (0x9B60);
+// a camp there is checked against SAVE 24 into the rest chance (0x9A42).
+void encounter_chances(const std::filesystem::path &directory)
+{
+    const auto with = [](std::vector<por::ChanceOverride> chances)
+    {
+        auto encounters = repository_encounters();
+        encounters.chances = std::move(chances);
+        return encounters;
+    };
+    const por::ChanceOverride never{{2, 20, 0x9B3A}, 0, 13, 0, "No roll above 0"};
+    const por::ChanceOverride threshold{{2, 20, 0x9B60}, 1, 12, 13, "A group only above 13"};
+    const por::ChanceOverride rest{{2, 20, 0x9A42}, 0, 24, 50, "Half of camps interrupted"};
+    const auto town = por::RolfTourSession::load(directory, with({never, threshold, rest}));
+    const auto slums = test::TourAccess::program(town, 20);
+    check(slums->instruction(0x9B3A).operands[0].value == 0 &&
+              slums->instruction(0x9B60).operands[1].value == 13 &&
+              slums->instruction(0x9A42).operands[0].value == 50,
+          "The script reads the changed numbers");
+    check(slums->raw() == test::TourAccess::program(
+                              por::RolfTourSession::load(directory, repository_encounters()), 20)
+                              ->raw(),
+          "The script's bytes, which saves keep, stay the original's");
+    por::EclMachine camp(slums);
+    camp.bind_variable(por::ecl_rest_interruption_chance, 0);
+    check(camp.start_at_for_inspection(0x9A42), "The camp profile is an instruction");
+    (void)camp.run(1);
+    check(camp.variable(por::ecl_rest_interruption_chance) == 50,
+          "A camp in the Slums is interrupted at the changed chance");
+    bool rolled_above_zero = false;
+    for (std::uint32_t seed = 0; seed < 20; ++seed)
+    {
+        por::EclMachine original(test::TourAccess::program(
+            por::RolfTourSession::load(directory, repository_encounters()), 20));
+        por::EclMachine changed(slums);
+        for (auto *machine : {&original, &changed})
+        {
+            machine->seed_random(seed);
+            machine->bind_variable(por::EclAddress{0x980F}, 0);
+            check(machine->start_at_for_inspection(0x9B3A), "The step roll is an instruction");
+            (void)machine->run(1);
+        }
+        rolled_above_zero |= original.variable(por::EclAddress{0x980F}) > 0;
+        check(changed.variable(por::EclAddress{0x980F}) == 0, "The changed roll is always 0");
+    }
+    check(rolled_above_zero, "The original roll goes above 0");
+    auto mismatched = never;
+    mismatched.original = 12;
+    auto not_a_chance = never;
+    not_a_chance.site.address = 0x9B47; // ADD 4 in Search mode
+    not_a_chance.original = 4;
+    auto destination = never;
+    destination.operand = 1;
+    for (const auto &[chance, message] :
+         {std::pair{mismatched, "A chance whose original the script does not hold is refused"},
+          std::pair{not_a_chance, "Only a RANDOM, COMPARE or rest SAVE sets a chance"},
+          std::pair{destination, "A RANDOM's range is its only chance operand"}})
+    {
+        check(throws(
+                  [&]
+                  {
+                      (void)por::RolfTourSession::load(directory, with({chance}));
+                  }),
+              message);
+    }
+}
+
 void installed_first_expedition(const std::filesystem::path &executable,
                                 const std::filesystem::path &directory)
 {
@@ -7163,6 +7232,7 @@ int main(int argc, char **argv)
                 return 0;
             }
             encounter_overrides(directory);
+            encounter_chances(directory);
             std::cout << "Encounter override tests passed.\n";
             return 0;
         }

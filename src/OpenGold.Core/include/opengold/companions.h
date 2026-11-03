@@ -11,7 +11,8 @@
 namespace opengold
 {
 // An original NPC who joins the party through ADD NPC, as an SRD character:
-// data/companions/companions.json, which the Creature Stats Editor writes
+// data/companions/companions.json, which the Creature Stats Editor's edits
+// reach through opengold_import_edits
 // (dev_tools/docs/creature-stats-editor-interface.md). Skullcrusher (MON4CHA
 // 27) is a level-4 Fighter with his record's scores (CADORNA-1).
 struct CompanionDefinition

@@ -42,6 +42,15 @@ struct EclOpcode
 [[nodiscard]] const EclOpcode &ecl_opcode(std::uint8_t opcode);
 [[nodiscard]] std::string unpack_ecl_text(std::span<const std::uint8_t> bytes);
 
+// A literal operand an instruction reads in place of the one its record
+// holds, as data/encounters/chances.json changes a script's encounter chance.
+struct EclOperandOverride
+{
+    std::uint16_t address{};
+    std::uint8_t operand{};
+    std::uint16_t value{};
+};
+
 class EclProgram
 {
   public:
@@ -76,8 +85,15 @@ class EclProgram
         return body_start_;
     }
 
+    // This program with those operands read in place of its record's. The
+    // record and a running script's image keep the original bytes, so a save
+    // holds none of them.
+    [[nodiscard]] EclProgram
+    with_operand_overrides(std::vector<EclOperandOverride> overrides) const;
+
   private:
     EclProgram() = default;
+    std::vector<EclOperandOverride> overrides_;
     std::vector<std::uint8_t> raw_;
     std::string source_;
     std::array<std::uint16_t, 5> entries_{};

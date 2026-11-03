@@ -5,8 +5,8 @@
 #include "godot_path.h"
 #include "opengold/encounter_data.h"
 
-// What original creature records fight as (data/encounters, which the
-// Creature Stats Editor writes), read on first use. The shipped files do not
+// What original creature records fight as, and the encounters' changes
+// (data/encounters), read on first use. The shipped files do not
 // change while the game runs.
 inline const opengold::por::EncounterData &game_encounters()
 {

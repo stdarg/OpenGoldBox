@@ -130,15 +130,22 @@ set(wall_art_project_commands
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${game_project}/data/monsters"
     COMMAND "${CMAKE_COMMAND}" -E touch "${game_project}/data/monsters/.gdignore")
 
-# What the Creature Stats Editor publishes (dev_tools/docs/creature-stats-
-# editor-interface.md), copied into the game project without a whole build:
-# a game started from it afterwards plays with the edits.
-add_custom_target(opengoldbox_game_data
+# The data the Creature Stats Editor's edits change (dev_tools/docs/creature-
+# stats-editor-interface.md), copied into the game project without a whole
+# build: a game started from it afterwards plays with the edits.
+set(game_data_commands
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${game_project}/data/rules/srd-5.2.1"
     COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_project}/data/encounters" "${game_project}/data/companions"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${game_project}/data/encounters"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${game_project}/data/companions"
-    ${wall_art_project_commands}
+    ${wall_art_project_commands})
+add_custom_target(opengoldbox_game_data ${game_data_commands} VERBATIM)
+# Imports the editor's edits into data/ (opengold_import_edits), then copies
+# them into the game project. A refused edit fails the build and writes nothing.
+add_custom_target(opengoldbox_import_edits
+    COMMAND "$<TARGET_FILE:opengold_import_edits>"
+    ${game_data_commands}
+    DEPENDS opengold_import_edits
     VERBATIM)
 
 if(OPENGOLD_BUILD_TESTS)

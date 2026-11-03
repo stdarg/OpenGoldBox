@@ -171,7 +171,21 @@ EclInstruction EclProgram::instruction(std::uint32_t address,
         }
     }
     result.next = origin + static_cast<std::uint32_t>(cursor) - 2;
+    for (const auto &change : overrides_)
+    {
+        if (change.address == result.address && change.operand < result.operands.size())
+        {
+            result.operands[change.operand].value = change.value;
+        }
+    }
     return result;
+}
+
+EclProgram EclProgram::with_operand_overrides(std::vector<EclOperandOverride> overrides) const
+{
+    auto changed = *this;
+    changed.overrides_ = std::move(overrides);
+    return changed;
 }
 
 EclProgram EclProgram::decode(std::span<const std::uint8_t> bytes, std::string_view source)

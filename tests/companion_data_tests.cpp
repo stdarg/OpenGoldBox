@@ -1,5 +1,5 @@
-// data/companions, which the Creature Stats Editor writes and the game builds
-// the original's NPCs who join the party from
+// data/companions, which the game builds the original's NPCs who join the
+// party from
 // (dev_tools/docs/creature-stats-editor-interface.md).
 #include "opengold/companions.h"
 #include "opengold/srd5.h"

@@ -54,20 +54,34 @@ struct EncounterOverride
     std::string reason;
 };
 
+// A number an original script sets a wandering encounter's chance with, as
+// data/encounters/chances.json changes it: the literal operand `operand` of the
+// instruction at `site`, a RANDOM's range, the number a COMPARE tests a roll
+// against, or a SAVE of the rest check's interval or chance. `original` is
+// checked against the player's script.
+struct ChanceOverride
+{
+    EncounterSite site;
+    unsigned operand{}, original{}, value{};
+    std::string reason;
+};
+
 // The encounter data the game reads from data/encounters, which the Creature
-// Stats Editor writes (dev_tools/docs/creature-stats-editor-interface.md).
+// Stats Editor's edits reach through opengold_import_edits
+// (dev_tools/docs/creature-stats-editor-interface.md).
 struct EncounterData
 {
     std::vector<AreaConversions> areas;
     std::vector<EncounterOverride> overrides; // none without overrides.json
+    std::vector<ChanceOverride> chances;      // none without chances.json
 
     // The entry that lists `script`, or null.
     [[nodiscard]] const AreaConversions *area(unsigned script) const;
 };
 
-// Reads data/encounters: conversions.json, and overrides.json where there is
-// one. Throws std::runtime_error, naming the file, the entry and the field, on
-// a file the game cannot use.
+// Reads data/encounters: conversions.json, and overrides.json and
+// chances.json where there are. Throws std::runtime_error, naming the file, the entry and the
+// field, on a file the game cannot use.
 [[nodiscard]] EncounterData load_encounter_data(const std::filesystem::path &folder);
 } // namespace opengold::por
 #endif

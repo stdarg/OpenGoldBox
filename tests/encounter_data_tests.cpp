@@ -1,4 +1,4 @@
-// data/encounters, which the Creature Stats Editor writes and the game reads
+// data/encounters, which the game reads
 // (dev_tools/docs/creature-stats-editor-interface.md).
 #include "opengold/encounter_data.h"
 #include "opengold/srd5.h"
@@ -249,6 +249,54 @@ void broken_overrides()
                       "\"reason\": \"Again\"}",
                       "A site listed twice is refused");
 }
+
+const std::string one_chance = R"({
+  "format": "opengold-encounter-chances-v1",
+  "chances": [
+    {"site": "ECL2.DAX:20:0x9B60", "operand": 1, "original": 12, "value": 13,
+     "reason": "Fewer street groups"}
+  ]
+})";
+
+EncounterData load_chances(const std::string &text)
+{
+    Folder folder;
+    folder.write("conversions.json", two_areas);
+    folder.write("chances.json", text);
+    return load_encounter_data(folder.directory);
+}
+
+void rejected_chance(const std::string &from, const std::string &to, const std::string &message)
+{
+    auto text = one_chance;
+    text.replace(text.find(from), from.size(), to);
+    rejects(
+        [&]
+        {
+            (void)load_chances(text);
+        },
+        message);
+}
+
+void chances()
+{
+    check(load_conversions(two_areas).chances.empty(), "Without chances.json no chance changes");
+    const auto data = load_chances(one_chance);
+    check(data.chances.size() == 1 && data.chances[0].site == EncounterSite{2, 20, 0x9B60} &&
+              data.chances[0].operand == 1 && data.chances[0].original == 12 &&
+              data.chances[0].value == 13 && data.chances[0].reason == "Fewer street groups",
+          "A chance names its instruction, operand, the original's number and the new one");
+    rejected_chance("chances-v1", "chances-v2", "An unknown format is refused");
+    rejected_chance("\"operand\": 1", "\"operand\": 2", "A chance is operand 0 or 1");
+    rejected_chance("\"value\": 13", "\"value\": 256", "A chance number is a byte");
+    rejected_chance("\"reason\": \"Fewer street groups\"", "\"reason\": \"\"",
+                    "A chance gives its reason");
+    rejected_chance("ECL2.DAX:20:0x9B60", "ECL2.DAX:20", "A malformed site is refused");
+    rejected_chance("\"reason\": \"Fewer street groups\"}",
+                    "\"reason\": \"Fewer street groups\"}, {\"site\": \"ECL2.DAX:20:0x9B60\", "
+                    "\"operand\": 1, \"original\": 12, \"value\": 9, \"reason\": \"Again\"}",
+                    "An operand listed twice is refused");
+}
 } // namespace
 
 int main()
@@ -261,6 +309,7 @@ int main()
         broken_conversions();
         edited_overrides();
         broken_overrides();
+        chances();
     }
     catch (const std::exception &error)
     {

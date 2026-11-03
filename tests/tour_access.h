@@ -58,6 +58,13 @@ struct TourAccess
                                    : town.visited_areas_[map])[y * 16 + x] = true;
     }
 
+    // An area script as the session runs it, with data/encounters' changes.
+    static std::shared_ptr<const por::EclProgram> program(const por::RolfTourSession &town,
+                                                          unsigned script)
+    {
+        return town.town_->programs.at(script);
+    }
+
     // Reseeds the script's dice, so a test can try an event on several rolls.
     static void seed_dice(por::RolfTourSession &town, std::uint32_t seed)
     {
