@@ -43,6 +43,24 @@ in melee. Report which sprite appeared. This check belongs with Claude because
 it exercises the game outside `dev_tools/`. Any game-code fix discovered by the
 check is a separate task requiring user authorization.
 
+## MON2 Hill Giant Boulder action correction
+
+The user identified `MON2CHA.DAX:55/item_000__ranged/action.png` as an incorrect
+drop pose and requested the throwing action used by `MON5CHA.DAX:55`. Codex's
+catalog art correction changes only the MON2 ranged action and its review
+metadata; the MON2 ready image and Club set remain unchanged. Codex will push
+this `dev_tools/` change on `codex/mon2-hill-boulder-throw`. Claude should bring
+that branch into an integration worktree, export `MON2CHA.DAX:55` using the source
+handoff's export script, verify that only
+`data/monsters/mon2cha_dax_55/item_000__ranged/action.png` changed, run the
+relevant export and game checks, and commit/push the integrated change to
+`main`. The corrected
+action SHA-256 is
+`18d57fb90c604f6f9f2d4a4024a65d8d6240d9c46b420caaa2d7accc41554542`.
+Do not change `art_pending` for this correction. Keep
+`MON5CHA.DAX:55`'s separate regeneration flag until its own review and user
+approval are complete.
+
 ## Coordination boundary
 
 Codex can prepare and review art entirely in `dev_tools/`. Claude handles
