@@ -23,6 +23,23 @@ const PhlanResources &RolfTourSession::area_resources() const
     return current_area_ ? *town_->districts.at(current_area_) : *town_;
 }
 
+const EncounterOverride *
+RolfTourSession::encounter_override(const EclInstruction &instruction) const
+{
+    if (!town_)
+    {
+        return nullptr;
+    }
+    const auto bank = town_->script_banks.find(current_script_);
+    if (bank == town_->script_banks.end())
+    {
+        return nullptr;
+    }
+    const auto found =
+        town_->encounter_overrides.find({bank->second, current_script_, instruction.address});
+    return found == town_->encounter_overrides.end() ? nullptr : &found->second;
+}
+
 const ExportedMonster *RolfTourSession::exported_creature(const PhlanResources &area,
                                                           unsigned record) const
 {
@@ -2487,14 +2504,19 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             nobody_met_ = staged_enemies_.empty();
             break;
         }
-        const unsigned record = arg(0);
-        const auto count = static_cast<unsigned>(
-            std::min<std::size_t>(arg(1), monster_limit - std::min(monster_limit, staged_enemies_.size())));
+        // An override (data/encounters/overrides.json) changes what this
+        // instruction loads; the count is still sized to the party.
+        const auto *change = encounter_override(*request.instruction);
+        const unsigned record = change && change->record ? *change->record : arg(0);
+        const unsigned loaded = change && change->count ? *change->count : arg(1);
+        const unsigned icon = change && change->icon ? *change->icon : arg(2);
+        const auto count = static_cast<unsigned>(std::min<std::size_t>(
+            loaded, monster_limit - std::min(monster_limit, staged_enemies_.size())));
         if (!current_area_ || !area_resources().conversions.contains(record))
         {
             throw EclError("Encounter needs an explicit supported creature conversion: record " +
                            std::to_string(record) + ", count " + std::to_string(count) + ", icon " +
-                           std::to_string(arg(2)));
+                           std::to_string(icon));
         }
         const auto &creature = area_resources().encounter_creatures.at(record);
         // Record byte 0x10E is the side a creature fights on (coab
@@ -2504,12 +2526,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // A leader readies a bow only when its art shows one: of the Slums
         // combat icons, only the orc leader's icon 5 does.
         auto definition = area_resources().conversions.at(record).definition;
-        if (definition == "slums-orc-leader" && arg(2) == 5)
+        if (definition == "slums-orc-leader" && icon == 5)
         {
             definition = "slums-orc-leader-archer";
         }
         const auto *exported = exported_creature(area_resources(), record);
-        const auto art = creature_art(area_resources().combat_archive, arg(2), exported,
+        const auto art = creature_art(area_resources().combat_archive, icon, exported,
                                       definition.ends_with("-archer"));
         if (!art)
         {
@@ -2670,7 +2692,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         else if (companion_rules_)
         {
-            companion = original_companion(bank, arg(0), *companion_rules_,
+            companion = original_companion(bank, arg(0), *companions_, *companion_rules_,
                                            campaign_->rule_module());
         }
         if (!companion)

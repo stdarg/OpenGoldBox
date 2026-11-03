@@ -130,6 +130,17 @@ set(wall_art_project_commands
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${game_project}/data/monsters"
     COMMAND "${CMAKE_COMMAND}" -E touch "${game_project}/data/monsters/.gdignore")
 
+# What the Creature Stats Editor publishes (dev_tools/docs/creature-stats-
+# editor-interface.md), copied into the game project without a whole build:
+# a game started from it afterwards plays with the edits.
+add_custom_target(opengoldbox_game_data
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${game_project}/data/rules/srd-5.2.1"
+    COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_project}/data/encounters" "${game_project}/data/companions"
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${game_project}/data/encounters"
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${game_project}/data/companions"
+    ${wall_art_project_commands}
+    VERBATIM)
+
 if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_combat_sprite_layout_tests "${PROJECT_SOURCE_DIR}/tests/combat_sprite_layout_tests.cpp")
     target_link_libraries(opengold_combat_sprite_layout_tests PRIVATE opengold_rules godot-cpp)
@@ -159,6 +170,8 @@ if(OPENGOLD_BUILD_TESTS)
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/opengold.gdextension" "${game_project}/bin/opengold.gdextension"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${game_project}/data/rules/srd-5.2.1"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${game_project}/data/shops"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${game_project}/data/encounters"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${game_project}/data/companions"
         ${wall_art_project_commands}
         COMMAND "${OPENGOLDBOX_GODOT}" --headless --editor --path "${game_project}" --import --quit
         DEPENDS opengoldbox_game opengoldbox_assets VERBATIM)
@@ -546,6 +559,8 @@ if(WIN32)
     set(package_commands
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${game_output}/data/rules/srd-5.2.1"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${game_output}/data/shops"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${game_output}/data/encounters"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${game_output}/data/companions"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/walls" "${game_output}/data/art/walls"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/missiles" "${game_output}/data/art/missiles"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${game_output}/data/monsters"
@@ -566,6 +581,8 @@ else()
     set(package_commands
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${export_path}/Contents/Resources/data/rules/srd-5.2.1"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${export_path}/Contents/Resources/data/shops"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${export_path}/Contents/Resources/data/encounters"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${export_path}/Contents/Resources/data/companions"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/walls" "${export_path}/Contents/Resources/data/art/walls"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/missiles" "${export_path}/Contents/Resources/data/art/missiles"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${export_path}/Contents/Resources/data/monsters"
@@ -609,6 +626,8 @@ add_custom_target(OpenGoldBox ALL
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/opengold.gdextension" "${game_project}/bin/opengold.gdextension"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${game_project}/data/rules/srd-5.2.1"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${game_project}/data/shops"
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${game_project}/data/encounters"
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${game_project}/data/companions"
     ${wall_art_project_commands}
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_output}"
     COMMAND "${OPENGOLDBOX_GODOT}" --headless --editor --path "${game_project}" --import --quit

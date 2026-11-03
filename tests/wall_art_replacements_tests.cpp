@@ -5,6 +5,7 @@
 #include "opengold/rolf_tour.h"
 #include "opengold/wall_art_replacements.h"
 #include "test_support.h"
+#include "repository_data.h"
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -201,15 +202,15 @@ void game_uses_new_art(const std::filesystem::path &directory)
 {
     const auto shipped = load_wall_art_replacements(root / "data/art/walls", png_size_only);
     // Loading checks every district's sets against its original pieces too.
-    const auto tour = RolfTourSession::load(directory, shipped);
+    const auto tour = RolfTourSession::load(directory, repository_encounters(), shipped);
     check(tour.wall_art().scale == 4 && tour.wall_art().appearances.size() == 15,
           "New Phlan loads with new wall art");
     check(tour.wall_art().appearances[0][6].rgba[0] == 1 &&
               tour.wall_art().appearances[0][6].rgba[2] == 3,
           "New Phlan's first appearance is the shipped set, not its original");
-    check(RolfTourSession::load(directory).wall_art().scale == 1,
+    check(RolfTourSession::load(directory, repository_encounters()).wall_art().scale == 1,
           "Without new art the game loads the original pieces");
-    auto shown = RolfTourSession::load(directory, shipped);
+    auto shown = RolfTourSession::load(directory, repository_encounters(), shipped);
     const auto with_new = shown.observe_view();
     shown.show_original_walls(true);
     const auto with_original = shown.observe_view();

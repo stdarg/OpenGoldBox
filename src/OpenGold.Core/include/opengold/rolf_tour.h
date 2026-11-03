@@ -13,6 +13,8 @@
 #include "opengold/difficulty.h"
 #include "opengold/teleport.h"
 #include "opengold/monster_bundle.h"
+#include "opengold/encounter_data.h"
+#include "opengold/companions.h"
 #include "opengold/encounter_budget.h"
 #include "opengold/shop_data.h"
 #include "opengold/temple_catalog.h"
@@ -80,14 +82,6 @@ struct SpentGear
     std::vector<std::pair<std::size_t, unsigned>> uses_left;
 };
 
-// What an original creature record fights as: its combat creature, the XP of
-// that stat block (which sizes encounters) and the experience it awards.
-struct EncounterConversion
-{
-    std::string definition;
-    unsigned fit_xp{}, award_xp{};
-};
-
 struct PhlanResources
 {
     std::map<unsigned, std::shared_ptr<const EclProgram>> programs;
@@ -134,6 +128,9 @@ struct PhlanResources
     // The Combat Sprite Catalog's export (#274), on the town only: creatures'
     // names, gear and new art. Null without one.
     std::shared_ptr<const MonsterBundle> monsters;
+    // On the town only: what scripts' LOAD MONSTER instructions load instead
+    // of the original's (data/encounters/overrides.json), checked against them.
+    std::map<EncounterSite, EncounterOverride> encounter_overrides;
 };
 
 // A script took coins the payer lacked and the purse made change.
@@ -244,11 +241,14 @@ class RolfTourSession
     ~RolfTourSession() = default;
     [[nodiscard]] RolfTourSession detached_copy() const;
 
-    // New wall art replaces the original appearances it covers; exported
-    // monsters bring their names, gear and art to the fights they are in.
-    [[nodiscard]] static RolfTourSession
-    load(const std::filesystem::path &directory, const WallArtReplacements &new_wall_art = {},
-         std::shared_ptr<const MonsterBundle> monsters = {});
+    // `encounters` says what each area's original creature records fight as
+    // (data/encounters). New wall art replaces the original appearances it
+    // covers; exported monsters bring their names, gear and art to the fights
+    // they are in.
+    [[nodiscard]] static RolfTourSession load(const std::filesystem::path &directory,
+                                              const EncounterData &encounters,
+                                              const WallArtReplacements &new_wall_art = {},
+                                              std::shared_ptr<const MonsterBundle> monsters = {});
     // Also accepts wholly synthetic resources for asset-free host tests.
     RolfTourSession(GeoMap map, std::shared_ptr<const EclProgram> program,
                     std::array<opengold::Image, 3> sprites, std::uint32_t entry,
@@ -330,12 +330,15 @@ class RolfTourSession
         difficulty_ = difficulty;
     }
 
-    // The character creation rules the original's NPCs who join the party are
-    // built with (Skullcrusher, CADORNA-1). Without them, ADD NPC accepts only
-    // the profiles in the area's resources.
-    void companion_rules(std::shared_ptr<const rules::CharacterRules> creation)
+    // The original's NPCs who join the party (data/companions) and the
+    // character creation rules they are built with (Skullcrusher, CADORNA-1).
+    // Without them, ADD NPC accepts only the profiles in the area's resources.
+    void companion_rules(std::shared_ptr<const rules::CharacterRules> creation,
+                         std::vector<CompanionDefinition> companions)
     {
         companion_rules_ = std::move(creation);
+        companions_ =
+            std::make_shared<const std::vector<CompanionDefinition>>(std::move(companions));
     }
 
     // The temples data/shops describes (TEMPLE-1); a temple it does not name
@@ -525,6 +528,7 @@ class RolfTourSession
 
     std::vector<opengold::TempleSite> temples_;
     std::shared_ptr<const rules::CharacterRules> companion_rules_;
+    std::shared_ptr<const std::vector<CompanionDefinition>> companions_;
     std::vector<opengold::ShopSite> shops_;
     std::vector<std::vector<Equipment>> shop_stocks_; // each shop's items, as shops_
     // OpenGoldBox's shops with a hidden entrance (SECRET-1): each entrance's
@@ -657,6 +661,9 @@ class RolfTourSession
     void announce_spokesman();
     bool choose_encounter(std::size_t choice);
     [[nodiscard]] const PhlanResources &area_resources() const;
+    // The override for this LOAD MONSTER of the current script, or null.
+    [[nodiscard]] const EncounterOverride *
+    encounter_override(const EclInstruction &instruction) const;
     // The export of the original creature `record` of `area`'s bank, if any.
     [[nodiscard]] const ExportedMonster *exported_creature(const PhlanResources &area,
                                                            unsigned record) const;

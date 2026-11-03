@@ -5,6 +5,8 @@
 #include "localization.h"
 #include "game_resources.h"
 #include "shop_data_files.h"
+#include "game_companions.h"
+#include "game_encounters.h"
 #include "game_monsters.h"
 #include "game_wall_art.h"
 #include "rolf_tour_view.h"
@@ -419,13 +421,13 @@ void RolfTourView::restart()
         else
         {
             const auto directory = settings::game_path();
-            session_.emplace(
-                RolfTourSession::load(presentation::path_from_godot(directory), game_wall_art(),
-                                      game_monsters()));
+            session_.emplace(RolfTourSession::load(presentation::path_from_godot(directory),
+                                                   game_encounters(), game_wall_art(),
+                                                   game_monsters()));
             session_->encounter_challenge(settings::encounter_challenge());
             session_->difficulty(settings::difficulty());
             use_shop_data(*session_);
-            session_->companion_rules(opengold::srd5::character_rules());
+            session_->companion_rules(opengold::srd5::character_rules(), game_companions());
             if (campaign_)
             {
                 session_->campaign_party(campaign_);
