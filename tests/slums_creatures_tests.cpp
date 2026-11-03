@@ -888,6 +888,9 @@ void knight_parries()
                                  {{1, "castle-knight", "Monster", Side::opposition, {1, 1}},
                                   {2, "fencer", "Hero", Side::party, {2, 1}}}},
                                 seed);
+        // Tyranthraxus's guards have the SRD Knight's own Hit Points, not the
+        // original's 87 (docs/DEVIATIONS.md).
+        check(unit(*c, 1).max_hit_points == 52, "A castle knight has 52 Hit Points");
         turn_of(*c, 2);
         check(submit(*c, "melee", 2, 1), "The fencer attacks the knight");
         parried = count_logged(*c, "Monster parries Hero's attack.") == 1;

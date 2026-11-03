@@ -734,7 +734,8 @@ evil bane-priest
 # Light, Pounce without moving, Thunderclap) and Legendary Resistance. Its
 # spell save DC 17 comes from casting bonus 9, which makes Guiding Light's
 # attack +9 where the stat block says +10; its other spells have no use in a
-# fight. His guards are the Knight; his impostor the
+# fight. His guards are the Knight, with its own 52 Hit Points rather than the
+# original's 87 (docs/DEVIATIONS.md); his impostor the
 # Warrior Veteran; his mages the nomad shaman's level-4 Wizard profile.
 creature medusa 15 30 6 30 6 2 6 3 5 2 8 2 150 150 0 0 0 1 0
 saves medusa 0 3 3 1 4 2
@@ -759,7 +760,7 @@ repulsion_breath tyranthraxus 19
 legendary tyranthraxus 3 guiding_light pounce thunderclap
 legendary_resistance tyranthraxus 3
 evil tyranthraxus
-creature castle-knight 18 87 0 30 5 2 6 3 2 2 10 0 100 400 0 0 0 1 0
+creature castle-knight 18 52 0 30 5 2 6 3 2 2 10 0 100 400 0 0 0 1 0
 saves castle-knight 3 0 4 0 2 2
 parry castle-knight 2
 damage_types castle-knight slashing piercing

@@ -38,6 +38,13 @@ Add an entry whenever a new departure is decided.
   square while its art stands two tall. OpenGoldBox gives it two squares, one
   above the other, like every other ogre.
   [FOOT-1](SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills).
+- **Tyranthraxus's guards** (2026-11-03). The original's 8th level fighters
+  have 87 Hit Points. OpenGoldBox gives them the SRD Knight's 52: the encounter
+  sizing rates each at the Knight's 700 XP, so a level-10 party of eight met
+  eight 87-Hit-Point guards and won one fight in two to one in eight. With 52 the
+  party wins nine in ten or more and keeps about half its Hit Points for
+  Tyranthraxus. The old town's 8th level fighters are the same creature.
+  [CASTLE-1](SRD-DECISIONS.md#castle-1-2026-10-25-valjevo-castle).
 - **Encounter size** (2026-10-02). The original ran its groups as written.
   OpenGoldBox shrinks an encounter over the SRD budget or with more creatures
   than living characters, and never grows one. Experience and treasure stay the
