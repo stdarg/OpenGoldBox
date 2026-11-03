@@ -262,7 +262,10 @@ String render(const opengold::rules::Message &message)
         values[gs(argument.name)] =
             argument.translate ? text(argument.value) : grouped_number(argument.value);
     }
-    return interpolate(text(message.source), values);
+    // The dice behind a damage total go before the full stop.
+    auto rendered = interpolate(text(message.source), values);
+    const bool stop = rendered.ends_with(".");
+    return (stop ? rendered.left(-1) : rendered) + gs(message.detail) + (stop ? "." : "");
 }
 
 String render(const std::vector<opengold::rules::Message> &messages)

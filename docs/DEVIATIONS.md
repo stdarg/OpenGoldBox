@@ -143,6 +143,13 @@ Add an entry whenever a new departure is decided.
 - **Hearing in combat** (2026-10-31). The original's monsters went only for what
   they could see. A creature here also hears enemies within 100 feet, through
   walls ([AI.md](AI.md#1-movement-and-sight)).
+- **Dice shown** (2026-11-03, the user). The original showed no dice, only who
+  hit and how hard. The fight's log shows each attack's d20 and, after a damage
+  total, the dice behind it ("hits for 14 damage (2d8: 4 + 6, + 4 = 14)"); out of
+  fights the panel shows the party's rolls: searches, door checks, arrows and
+  traps, with their saving throws. Rolls the original kept hidden, such as
+  wandering-monster checks, stay hidden and go only to the log file
+  ([TECH.md](TECH.md#diagnostic-log)).
 - **A reload's dice** (2026-11-01). On Easy every roll replays after a reload.
   Above Easy a load draws new dice from the clock, so what comes next cannot be
   known ([RULES.md](RULES.md)).

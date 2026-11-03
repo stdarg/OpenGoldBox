@@ -867,6 +867,7 @@ void RolfTourSession::fail(std::string diagnostic)
             diagnostic += "\nRolling the event back failed: " + std::string(error.what());
         }
     }
+    log_diagnostic(LogPriority::error, "event", "stopped: " + diagnostic);
     snapshot_.phase = TourPhase::faulted;
     snapshot_.diagnostic = std::move(diagnostic);
     snapshot_.continue_ticket = 0;

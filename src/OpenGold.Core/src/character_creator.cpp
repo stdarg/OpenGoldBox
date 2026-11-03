@@ -1,4 +1,5 @@
 #include "opengold/character_creator.h"
+#include "opengold/diagnostic_log.h"
 #include "opengold/dice.h"
 #include <algorithm>
 #include <stdexcept>
@@ -742,6 +743,7 @@ void CharacterCreator::roll()
     {
         throw std::runtime_error("A new body keeps the character's scores");
     }
+    const RollPurpose purpose("ability scores and starting gold");
     draft_.rolls = rules_->roll(random_);
     draft_.rolled = true;
     draft_.assignment = {6, 6, 6, 6, 6, 6}; // Every rolled result starts unassigned.

@@ -951,16 +951,32 @@ provenance.
 
 ## Diagnostic log
 
-`OPENGOLD_LOG=<file>` turns on a record of the game's key decisions, for working
-out afterwards why something happened. It is off otherwise, and costs nothing then.
-Add to it through `log_diagnostic` (`opengold/diagnostic_log.h`) rather than adding
-prints to debug and taking them out again.
+The game keeps a record of its key decisions, every die rolled and the errors it
+meets, for working out afterwards why something happened. Each session writes
+`logs/opengold-<date>.log` in the user data folder, beside the engine's logs, and the
+newest five are kept (`game_log.cpp`). `OPENGOLD_LOG=<file>` names another file
+instead, and turns the log on for the tests and tools, where it is off otherwise and
+costs nothing. Add to it through `log_diagnostic` (`opengold/diagnostic_log.h`)
+rather than adding prints to debug and taking them out again.
+
+Every die goes through `roll_die` (`opengold/dice.h`), which tells the log of each one
+as a `debug dice` line. A `RollPurpose` names what the dice rolled while it lives are
+for: a fight's command names its actor, verb and target, and the town's rolls say
+what they are, such as a member's search for a secret door. The original scripts'
+random numbers are logged as `script random`. Every line of a fight's log follows
+its dice as an `info fight` line, with the dice behind each damage total:
+
+    2026-11-03T20:09:12.401Z opengold[41301] debug dice: d6 2 for TROLL 2: melee at Cora
+    2026-11-03T20:09:12.402Z opengold[41301] info fight: TROLL 2 -> Cora: d20 19 + 7 vs AC 18 hits for 9 damage (2d6: 2 + 3, + 4 = 9).
+
+Errors go in at `err`: a handler a screen could not finish, an uncaught exception, a
+save that could not be written or loaded, and an event stopped or rolled back.
 
     2026-11-01T18:10:03.123Z opengold[4242] info event: script 26 begins in area 26 at 15,1
 
 Each line has a UTC timestamp, the process and a syslog priority (`err`, `warning`,
 `notice`, `info`, `debug`). Where the system has `syslog(3)` the lines also go there,
-as facility `LOG_USER`, ident `opengold`. It records events beginning and rolling
+as facility `LOG_USER`, ident `opengold`. It also records events beginning and rolling
 back with their reason, what each script asks of the host and the hit points in the
 record it holds, script changes to a member's hit points, fights' seeds and
 outcomes, and new dice after a load.

@@ -331,6 +331,28 @@ std::optional<ScriptDamage> listed_damage(unsigned script, std::uint16_t address
     return std::nullopt;
 }
 
+// " (2d6: 3 + 4, + 1 = 8)": the dice behind a hazard's damage, before resistance.
+std::string damage_dice_shown(const rules::HazardAttackResult &result, unsigned sides)
+{
+    if (result.damage_dice.empty())
+    {
+        return {};
+    }
+    std::string text =
+        " (" + std::to_string(result.damage_dice.size()) + "d" + std::to_string(sides) + ":";
+    int sum = 0;
+    for (std::size_t n = 0; n < result.damage_dice.size(); ++n)
+    {
+        text += (n ? " + " : " ") + std::to_string(result.damage_dice[n]);
+        sum += result.damage_dice[n];
+    }
+    if (const int added = result.damage_rolled - sum)
+    {
+        text += std::string(added > 0 ? ", + " : ", - ") + std::to_string(std::abs(added));
+    }
+    return text + " = " + std::to_string(result.damage_rolled) + ")";
+}
+
 std::string script_damage_type(unsigned script, std::uint16_t address)
 {
     if (const auto damage = listed_damage(script, address))
@@ -2237,7 +2259,8 @@ std::string RolfTourSession::shoot_arrows(unsigned arrows, std::string_view miss
         const auto &result = hit->result;
         const auto &member = campaign_->member(hit->target);
         const auto &name = member.character.sheet().name;
-        const auto roll = " (" + std::to_string(result.total) + " vs AC " +
+        const auto roll = " (d20 " + std::to_string(result.natural) + " + " +
+                          std::to_string(arrow.attack_bonus) + " vs AC " +
                           std::to_string(result.armor_class) + ")";
         if (!result.hit)
         {
@@ -2245,7 +2268,8 @@ std::string RolfTourSession::shoot_arrows(unsigned arrows, std::string_view miss
             continue;
         }
         report += article + (result.critical ? " critically hits " : " hits ") + name + roll +
-                  " for " + std::to_string(result.damage) + " damage.";
+                  " for " + std::to_string(result.damage) + " damage" +
+                  damage_dice_shown(result, arrow.sides) + ".";
         if (member.vitals.dead)
         {
             report += " " + name + " dies.";
@@ -2262,7 +2286,8 @@ std::string RolfTourSession::shoot_arrows(unsigned arrows, std::string_view miss
 
 // A DAMAGE call's harm to one member: the saving throw that avoided it, or
 // the damage taken.
-std::string RolfTourSession::hurt(const std::optional<HazardHit> &hit, int save_dc) const
+std::string RolfTourSession::hurt(const std::optional<HazardHit> &hit, int save_dc,
+                                  unsigned sides) const
 {
     if (!hit)
     {
@@ -2271,12 +2296,15 @@ std::string RolfTourSession::hurt(const std::optional<HazardHit> &hit, int save_
     const auto &result = hit->result;
     const auto &member = campaign_->member(hit->target);
     const auto &name = member.character.sheet().name;
+    const auto save = " (saving throw " + std::to_string(result.save_total) + " vs DC " +
+                      std::to_string(save_dc) + ")";
     if (result.saved)
     {
-        return "\n" + name + " avoids it (saving throw " + std::to_string(result.save_total) +
-               " vs DC " + std::to_string(save_dc) + ").";
+        return "\n" + name + " avoids it" + save + ".";
     }
-    auto report = "\n" + name + " takes " + std::to_string(result.damage) + " damage.";
+    auto report = "\n" + name + (save_dc ? " fails to avoid it" + save + " and" : "") + " takes " +
+                  std::to_string(result.damage) + " damage" + damage_dice_shown(result, sides) +
+                  ".";
     if (member.vitals.dead)
     {
         report += " " + name + " dies.";
@@ -3099,9 +3127,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                     if (id)
                     {
                         const auto result = campaign_->hazard_attack(id, harm);
-                        snapshot_.dialogue += hurt(
-                            result ? std::optional<HazardHit>{{id, *result}} : std::nullopt,
-                            harm.save_dc);
+                        snapshot_.dialogue +=
+                            hurt(result ? std::optional<HazardHit>{{id, *result}} : std::nullopt,
+                                 harm.save_dc, harm.sides);
                     }
                 }
             }
@@ -3109,7 +3137,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             {
                 harm.save_ability = original_save_abilities[arg(4) & 7];
                 harm.save_dc = original_save_dc - static_cast<int>(arg(0) & 0x1F);
-                snapshot_.dialogue += hurt(campaign_->hazard_attack(harm), harm.save_dc);
+                snapshot_.dialogue +=
+                    hurt(campaign_->hazard_attack(harm), harm.save_dc, harm.sides);
             }
             else
             {
@@ -3121,7 +3150,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 const auto result = campaign_->hazard_attack(id, harm);
                 snapshot_.dialogue +=
                     hurt(result ? std::optional<HazardHit>{{id, *result}} : std::nullopt,
-                         harm.save_dc);
+                         harm.save_dc, harm.sides);
             }
         }
         damage_request_ = request.id;

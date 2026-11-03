@@ -1,4 +1,5 @@
 #include "archive_io.h"
+#include "opengold/diagnostic_log.h"
 #include "opengold/path_text.h"
 #include "opengold/ecl_machine.h"
 #include "opengold/formats.h"
@@ -608,14 +609,7 @@ void EclMachine::execute(const EclInstruction &i)
         // DOS increments a uint8 upper bound, saturating that increment at 255.
         const auto count = std::min<unsigned>((value(a[0]) & 255) + 1, 255);
         const auto dest = destination(a[1]);
-        // Rejection sampling keeps the bounded result unbiased and portable.
-        const std::uint32_t threshold = (0U - count) % count;
-        std::uint32_t draw;
-        do
-        {
-            draw = static_cast<std::uint32_t>(random_());
-        } while (draw < threshold);
-        write(dest, static_cast<std::uint16_t>(draw % count));
+        write(dest, static_cast<std::uint16_t>(this->draw(count)));
         break;
     }
     case 9:
@@ -986,6 +980,7 @@ unsigned EclMachine::engine_random(unsigned count)
     return draw(count);
 }
 
+// Rejection sampling keeps the bounded result unbiased and portable.
 unsigned EclMachine::draw(unsigned count)
 {
     const std::uint32_t threshold = (0U - count) % count;
@@ -994,6 +989,12 @@ unsigned EclMachine::draw(unsigned count)
     {
         value = static_cast<std::uint32_t>(random_());
     } while (value < threshold);
+    if (diagnostic_log_enabled())
+    {
+        log_diagnostic(LogPriority::debug, "dice",
+                       "script random " + std::to_string(value % count) + " of 0-" +
+                           std::to_string(count - 1));
+    }
     return value % count;
 }
 

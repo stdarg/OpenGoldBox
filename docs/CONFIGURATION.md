@@ -162,7 +162,9 @@ folder, beside `settings.cfg`. Each is a text file named
 `crash-<date>-<process id>.txt`, holding the game version, engine, system, and the
 last 400 lines of that session's log, with the backtrace when the game crashed.
 The ten newest are kept. The log is also in `logs/` in the same folder, where the
-engine keeps the last five.
+engine keeps the last five. Beside them the game keeps its own log of each session,
+`opengold-<date>.log`, the newest five: every die rolled and what it was for, every
+line of each fight's log, and the errors met ([TECH.md](TECH.md#diagnostic-log)).
 
 Nothing is sent anywhere; a player attaches the file to a bug report. Logs can
 hold folder names, such as the player's account name in the path to the game files.

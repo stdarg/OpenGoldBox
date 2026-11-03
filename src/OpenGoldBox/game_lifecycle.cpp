@@ -1,6 +1,7 @@
 #include "game_lifecycle.h"
 #include "application_settings.h"
 #include "crash_reports.h"
+#include "game_log.h"
 #include "localization.h"
 #include "screenshot_service.h"
 #include "guarded_handlers.h"
@@ -40,6 +41,7 @@ void GameLifecycle::start_lifecycle()
 {
     crash_reports::install_terminate_handler();
     crash_reports::begin_session();
+    game_log::open();
     if (settings::flag("--crash-check"))
     {
         crash_reports::crash_for_check();

@@ -1,4 +1,5 @@
 #include "opengold/diagnostic_log.h"
+#include "opengold/dice.h"
 
 #include <array>
 #include <chrono>
@@ -8,6 +9,7 @@
 #include <fstream>
 #include <mutex>
 #include <string>
+#include <utility>
 
 #ifdef _WIN32
 #include <process.h>
@@ -31,12 +33,22 @@ struct DiagnosticLog
     bool enabled{};
 };
 
+thread_local std::string roll_purpose;
+
+void log_die(int sides, int result)
+{
+    log_diagnostic(LogPriority::debug, "dice",
+                   "d" + std::to_string(sides) + " " + std::to_string(result) +
+                       (roll_purpose.empty() ? "" : " for " + roll_purpose));
+}
+
 void open_file(DiagnosticLog &log, const std::filesystem::path &file)
 {
     log.file.close();
     log.file.clear();
     log.file.open(file, std::ios::app);
     log.enabled = log.file.is_open();
+    dice_observer.store(log.enabled ? &log_die : nullptr);
 #ifdef OPENGOLD_HAS_SYSLOG
     if (log.enabled)
     {
@@ -129,6 +141,15 @@ int syslog_priority(LogPriority priority)
 }
 #endif
 } // namespace
+
+RollPurpose::RollPurpose(std::string purpose) : previous_(std::exchange(roll_purpose, purpose))
+{
+}
+
+RollPurpose::~RollPurpose()
+{
+    roll_purpose = std::move(previous_);
+}
 
 void open_diagnostic_log(const std::filesystem::path &file)
 {

@@ -2147,6 +2147,7 @@ std::vector<SecretDoorRoll> CampaignParty::search_for_secret_door(bool searching
         {
             continue;
         }
+        const RollPurpose purpose(m.character.sheet().name + ": search for a secret door");
         rolls.push_back({id, roll_die(state_.random_state, 6), needed});
         if (rolls.back().die <= needed)
         {
@@ -2250,6 +2251,7 @@ std::optional<HazardHit> CampaignParty::hazard_attack(const rules::HazardAttack 
         return std::nullopt;
     }
     auto next = state_;
+    const RollPurpose purpose("the member a hazard strikes");
     const auto target =
         conscious[roll_die(next.random_state, static_cast<int>(conscious.size())) - 1];
     auto &struck = member_in(next, target);
@@ -2422,6 +2424,7 @@ void keep_camp_spell(PartyState &state, PartyMember &caster, PartyMember &patien
     if (verb == "friends")
     {
         state.friends_member = caster.id;
+        const RollPurpose purpose("Friends' Charisma");
         state.friends_bonus = roll_die(state.random_state, 4) + roll_die(state.random_state, 4);
         state.friends_until = state.time_minutes + 6;
     }

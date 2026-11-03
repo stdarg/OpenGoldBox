@@ -766,7 +766,8 @@ class RolfTourSession
                                            const rules::HazardAttack &arrow);
     // A DAMAGE call's report line for one member: the damage taken, or the
     // saving throw against `save_dc` that avoided it.
-    [[nodiscard]] std::string hurt(const std::optional<HazardHit> &hit, int save_dc) const;
+    [[nodiscard]] std::string hurt(const std::optional<HazardHit> &hit, int save_dc,
+                                   unsigned sides) const;
     void publish_pose();
     void handle_host(const EclRequest &request);
     void fail(std::string diagnostic);

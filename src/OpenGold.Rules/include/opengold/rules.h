@@ -383,6 +383,9 @@ struct HazardAttackResult
     // The saving throw's total, and whether it avoided the damage.
     int save_total{};
     bool saved{};
+    // Each damage die as rolled and their sum with the bonus, before resistance.
+    std::vector<int> damage_dice;
+    int damage_rolled{};
     // With no turns outside combat, a member dropped to 0 HP rolls these at once.
     std::vector<int> death_saves;
 };

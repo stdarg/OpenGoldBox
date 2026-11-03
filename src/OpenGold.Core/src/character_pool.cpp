@@ -1,4 +1,5 @@
 #include "opengold/authored_items.h"
+#include "opengold/diagnostic_log.h"
 #include "opengold/character_pool.h"
 #include "opengold/dice.h"
 #include <algorithm>
@@ -324,6 +325,7 @@ MemberId add_pool_member(CampaignParty &party, const Character &character, unsig
         const auto id = party.add_pc(character);
         auto state = party.checkpoint();
         std::uint32_t gold = 0;
+        const RollPurpose purpose("starting gold");
         for (int die = 0; die < 3; ++die)
         {
             gold += static_cast<std::uint32_t>(roll_die(state.random_state, 6) * 10);

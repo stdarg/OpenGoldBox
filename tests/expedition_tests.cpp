@@ -2324,8 +2324,14 @@ void kutos_well_catacombs(Expedition &trip, const std::filesystem::path &folder,
     const auto &volley = town.snapshot();
     check(volley.phase == por::TourPhase::awaiting_continue &&
               volley.dialogue.find("VOLLEY OF ARROWS") != std::string::npos &&
-              volley.dialogue.find("\nAn arrow ") != std::string::npos,
+              volley.dialogue.find("\nAn arrow ") != std::string::npos &&
+              volley.dialogue.find(" (d20 ") != std::string::npos,
           "An arrow volley reports each arrow's attack roll before the story continues");
+    if (volley.dialogue.find(" hits ") != std::string::npos)
+    {
+        check(volley.dialogue.find(" damage (1d6: ") != std::string::npos,
+              "An arrow that hits shows its damage die: " + volley.dialogue);
+    }
     settle(town, party, catacomb_answer("FIGHT"));
     // No camping here: until Norris falls, his band interrupts every rest.
     const auto save = folder / "before-norris.ogs";

@@ -31,7 +31,14 @@ inline int roll_damage_component(std::uint64_t &state, DamageDice dice, bool cri
     int total = dice.bonus;
     for (int i = 0; i < dice.count * (critical ? 2 : 1); ++i)
     {
-        total += damage_die_value(roll_die(state, dice.sides), rule);
+        const int rolled = roll_die(state, dice.sides);
+        const int counted = damage_die_value(rolled, rule);
+        // Great Weapon Fighting's 3 is the value the fight's log shows.
+        if (counted != rolled && dice_tally && !dice_tally->empty())
+        {
+            dice_tally->back().result = counted;
+        }
+        total += counted;
     }
     return total;
 }

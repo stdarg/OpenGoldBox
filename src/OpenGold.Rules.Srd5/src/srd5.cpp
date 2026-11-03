@@ -25,6 +25,8 @@
 #include "opengold/scroll_key.h"
 #include "opengold/srd5.h"
 #include <algorithm>
+#include <iterator>
+#include <optional>
 #include <initializer_list>
 #include <utility>
 #include <array>
@@ -4983,6 +4985,45 @@ struct SpellAttack
 
 // What attack() settled before apply_hit reports and applies it. Four ints and
 // three flags in a row were easy to pass out of order, so callers name each one.
+// " (2d6: 3 + 5, 1d8: 4, + 3 = 15)" for the dice behind a damage total: each run
+// of one die size, then what was added and the total; with no total, the dice
+// alone. Empty with no dice.
+std::string dice_detail(const std::vector<RolledDie> &dice, std::optional<int> total = {})
+{
+    if (dice.empty())
+    {
+        return {};
+    }
+    std::string text = " (";
+    int sum = 0;
+    for (std::size_t n = 0; n < dice.size();)
+    {
+        std::size_t end = n;
+        while (end < dice.size() && dice[end].sides == dice[n].sides)
+        {
+            ++end;
+        }
+        text +=
+            (n ? ", " : "") + std::to_string(end - n) + "d" + std::to_string(dice[n].sides) + ":";
+        for (std::size_t k = n; k < end; ++k)
+        {
+            text += (k > n ? " + " : " ") + std::to_string(dice[k].result);
+            sum += dice[k].result;
+        }
+        n = end;
+    }
+    if (total)
+    {
+        const int added = *total - sum;
+        if (added)
+        {
+            text += std::string(added > 0 ? ", + " : ", - ") + std::to_string(std::abs(added));
+        }
+        text += " = " + std::to_string(*total);
+    }
+    return text + ")";
+}
+
 struct ResolvedAttack
 {
     int natural{}; // the d20 as rolled
@@ -4994,6 +5035,7 @@ struct ResolvedAttack
     bool spell{};
     bool savage{}; // Savage Attacker rerolled the damage
     int parry{};   // the AC a Parry added against this attack
+    std::string dice; // the damage dice for the log, as dice_detail writes them
 };
 
 // Character definitions by profile and equipment, each parsed once. A pure
@@ -5279,6 +5321,10 @@ class Session final : public CombatSession
     Battlefield board_;
     std::vector<Actor> actors_;
     std::uint64_t rng_{}, revision_{1};
+    // The dice rolled since the last line of the fight's log, while a command
+    // is applied.
+    std::vector<RolledDie> rolled_dice_;
+    bool attack_dice_held_{};
     std::uint64_t scope_{1}, elapsed_ms_{};
     unsigned turn_{}, round_{1};
     // The spells cancelled during the turn these name. Not saved: after a load the
@@ -5764,6 +5810,30 @@ class Session final : public CombatSession
         if (message.source.empty())
         {
             message.source = english;
+        }
+        // A line that reports damage shows the dice rolled since the line
+        // before it, after the text (Message::detail; the English line stays as
+        // it was); a d20 already shows in its own line. An attack gathers its
+        // damage dice itself (attack_dice_held_).
+        if (!attack_dice_held_)
+        {
+            if (message.detail.empty() &&
+                std::any_of(message.arguments.begin(), message.arguments.end(),
+                            [](const MessageArgument &argument)
+                            {
+                                return argument.name == "damage";
+                            }))
+            {
+                std::vector<RolledDie> damage_dice;
+                std::copy_if(rolled_dice_.begin(), rolled_dice_.end(),
+                             std::back_inserter(damage_dice),
+                             [](const RolledDie &die)
+                             {
+                                 return die.sides != 20;
+                             });
+                message.detail = dice_detail(damage_dice);
+            }
+            rolled_dice_.clear();
         }
         if (log_.size() == 80)
         {
@@ -21703,7 +21773,7 @@ void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
     log(message + (critical ? " CRITICAL" : " hits") + " for " + std::to_string(amount) +
             " damage" + grip + ".",
         {"{actor} -> {target}: d20 {roll} + {bonus} vs AC {ac}{disadvantage}{savage} {hit} for {damage} damage{grip}.",
-         arguments});
+         arguments, resolved.dice});
     damage(target, amount, critical);
     // Multiattack Defense: the attacker's other attacks against the Ranger
     // this turn have Disadvantage.
@@ -22074,6 +22144,10 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         return false;
     }
     const bool sneak = hit && !spell && sneak_eligible(a, target, range, modifiers.mode());
+    // The damage dice go on the hit's line; the lines on the way, such as
+    // Rage's, show none.
+    rolled_dice_.clear();
+    attack_dice_held_ = true;
     const auto roll_damage = [&]
     {
         return !spell && (d.sneak_level || d.great_weapon_fighting || a.light_damage ||
@@ -22089,6 +22163,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         hit ? (bursting ? burst_damage(*spell_attack, critical_hit(a, target, natural, spell))
                         : roll_damage())
             : 0;
+    const auto weapon_dice_end = rolled_dice_.size();
     // Sneak Attack and Savage Attacker have one right answer, so they apply
     // automatically and the log records what they added.
     const bool cunning = sneak && cunning_ && cunning_->actor == a.source.id;
@@ -22100,7 +22175,21 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     const bool savage = hit && !spell && damage_dice.count && d.savage && !a.savage_used;
     if (savage)
     {
-        weapon_damage = keep_higher_savage_roll(a, weapon_damage, roll_damage());
+        const int first = weapon_damage;
+        const auto second_from = rolled_dice_.size();
+        const int second = roll_damage();
+        weapon_damage = keep_higher_savage_roll(a, first, second);
+        // The roll set aside leaves the hit's line.
+        if (weapon_damage == first)
+        {
+            rolled_dice_.erase(rolled_dice_.begin() + static_cast<std::ptrdiff_t>(second_from),
+                               rolled_dice_.end());
+        }
+        else
+        {
+            rolled_dice_.erase(rolled_dice_.begin(),
+                               rolled_dice_.begin() + static_cast<std::ptrdiff_t>(weapon_dice_end));
+        }
     }
     if (hit)
     {
@@ -22141,9 +22230,12 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         log("The charge adds " + std::to_string(extra) + " damage.",
             {"The charge adds {damage} damage.", {{"damage", std::to_string(extra)}}});
     }
-    // Ray of Enfeeblement: 1d8 less on each of the creature's damage rolls.
+    // Ray of Enfeeblement: 1d8 less on each of the creature's damage rolls. Its
+    // own line shows it.
+    const auto before_enfeebled = rolled_dice_.size();
     const int enfeebled =
         hit && detail::has_effect(a.effects, detail::EffectKind::enfeebled) ? roll(8) : 0;
+    rolled_dice_.resize(before_enfeebled);
     if (enfeebled)
     {
         log("Ray of Enfeeblement subtracts " + std::to_string(enfeebled) + " damage.",
@@ -22151,6 +22243,10 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
              {{"damage", std::to_string(enfeebled)}}});
     }
     int rolled = std::max(0, weapon_damage + sneak_damage + advantage_damage - enfeebled);
+    const std::string damage_dice_shown =
+        hit ? dice_detail(rolled_dice_, weapon_damage + sneak_damage + advantage_damage) : "";
+    rolled_dice_.clear();
+    attack_dice_held_ = false;
     if (hit)
     {
         rolled = std::max(0, rolled - cut_damage(a, target, rolled, damage_type));
@@ -22170,7 +22266,8 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                              .range = range,
                              .spell = spell,
                              .savage = savage,
-                             .parry = parry});
+                             .parry = parry,
+                             .dice = damage_dice_shown});
     // A Specter's Life Drain: the damage taken lowers the Hit Point maximum.
     if (hit && !ranged && !spell && d.life_drain_attack)
     {
@@ -25256,6 +25353,8 @@ bool Session::submit(const Command &command)
     // restore moves, so it cannot itself fail part way.
     static_assert(std::is_nothrow_move_assignable_v<Session>);
     Session before = *this;
+    rolled_dice_.clear();
+    const DiceTally tally(rolled_dice_);
     // A copy keeps no spare room; a summoning must not move the actors.
     actors_.reserve(actors_.size() + 64);
     try
@@ -31592,8 +31691,10 @@ class Module final : public RulesModule
             int rolled = attack.damage_bonus;
             for (unsigned n = 0; n < attack.dice * (result.critical ? 2 : 1); ++n)
             {
-                rolled += roll_die(rng, static_cast<int>(attack.sides));
+                result.damage_dice.push_back(roll_die(rng, static_cast<int>(attack.sides)));
+                rolled += result.damage_dice.back();
             }
+            result.damage_rolled = std::max(0, rolled);
             const detail::DamagePart part{detail::damage_type(attack.damage_type),
                                           std::max(0, rolled)};
             const auto &d = actor.form ? *actor.form : actor.definition;

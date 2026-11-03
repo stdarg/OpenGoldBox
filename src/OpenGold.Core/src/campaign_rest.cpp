@@ -1,4 +1,5 @@
 #include "opengold/campaign_party.h"
+#include "opengold/diagnostic_log.h"
 #include "opengold/dice.h"
 #include <algorithm>
 #include <limits>
@@ -90,6 +91,7 @@ void recharge_wands(PartyMember &member, RandomState &random)
         const auto charges = wand_charges(member, wand);
         if (charges < 3)
         {
+            const RollPurpose purpose("a wand's charges after a long rest");
             set_wand_charges(member, wand,
                              std::min(3U, charges + static_cast<unsigned>(roll_die(random, 3))));
         }

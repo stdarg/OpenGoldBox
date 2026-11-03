@@ -2,11 +2,46 @@
 #define OPENGOLD_DICE_H
 
 #include "opengold/random_state.h"
+#include <atomic>
 #include <cstdint>
 #include <stdexcept>
+#include <vector>
 
 namespace opengold
 {
+struct RolledDie
+{
+    int sides{}, result{};
+};
+
+// While set, every die rolled on this thread is added here: a fight's log shows
+// the dice behind a damage total. DiceTally sets it.
+inline thread_local std::vector<RolledDie> *dice_tally = nullptr;
+
+// Told of every die rolled, for the log file (diagnostic_log.h); none by default.
+inline std::atomic<void (*)(int sides, int result)> dice_observer{nullptr};
+
+// Adds the dice this thread rolls to `rolled` while it lives.
+class DiceTally
+{
+  public:
+    explicit DiceTally(std::vector<RolledDie> &rolled) : previous_(dice_tally)
+    {
+        dice_tally = &rolled;
+    }
+
+    ~DiceTally()
+    {
+        dice_tally = previous_;
+    }
+
+    DiceTally(const DiceTally &) = delete;
+    DiceTally &operator=(const DiceTally &) = delete;
+
+  private:
+    std::vector<RolledDie> *previous_;
+};
+
 // SplitMix64 with rejection sampling. Preserve the sequence for existing saves
 // and seeded encounters across all SRD dice consumers.
 inline int roll_die(std::uint64_t &state, int sides)
@@ -27,7 +62,16 @@ inline int roll_die(std::uint64_t &state, int sides)
         value = (value ^ (value >> 27)) * 0x94d049bb133111ebULL;
         value ^= value >> 31;
     } while (value < threshold);
-    return static_cast<int>(value % count) + 1;
+    const int result = static_cast<int>(value % count) + 1;
+    if (dice_tally)
+    {
+        dice_tally->push_back({sides, result});
+    }
+    if (const auto observe = dice_observer.load(std::memory_order_relaxed))
+    {
+        observe(sides, result);
+    }
+    return result;
 }
 
 inline int roll_die(RandomState &state, int sides)

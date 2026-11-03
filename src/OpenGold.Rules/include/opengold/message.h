@@ -18,6 +18,9 @@ struct Message
 {
     std::string source;
     std::vector<MessageArgument> arguments;
+    // Shown after the rendered text, untranslated: the dice behind a damage
+    // total, such as " (2d6: 3 + 5, + 4 = 12)".
+    std::string detail;
 };
 } // namespace opengold::rules
 #endif

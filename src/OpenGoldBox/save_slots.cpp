@@ -1,4 +1,5 @@
 #include "godot_nodes.h"
+#include "opengold/diagnostic_log.h"
 #include "opengold/path_text.h"
 #include "localization.h"
 #include "save_slots.h"
@@ -182,6 +183,7 @@ void SaveSlots::open(bool saving)
     }
     catch (const std::exception &e)
     {
+        opengold::log_diagnostic(opengold::LogPriority::error, "save", e.what());
         required_node<Label>(*this, "Status").set_text(i18n::text(e.what()));
     }
     required_node<LineEdit>(*this, "Name").set_text("");
@@ -269,6 +271,7 @@ void SaveSlots::act()
     }
     catch (const std::exception &e)
     {
+        opengold::log_diagnostic(opengold::LogPriority::error, "save", e.what());
         confirmed_ = false;
         required_node<Label>(*this, "Status").set_text(i18n::text(e.what()));
         required_node<Button>(*this, "Action")

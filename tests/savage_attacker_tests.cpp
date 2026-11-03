@@ -168,6 +168,13 @@ void automatic_higher_roll()
                            "{name} rerolls weapon damage (Savage Attacker): {first} and {second}, keeps {kept}.";
                 }),
             "The reroll is a localizable log message");
+        const auto hit = std::find_if(message.begin(), message.end(),
+                                      [](const auto &m)
+                                      {
+                                          return m.source.starts_with("{actor} -> {target}:");
+                                      });
+        check(hit != message.end() && hit->detail == " (2d6: 3 + 4, + 3 = 10)",
+              "The hit's line shows the dice kept, not those set aside, then the bonus and total");
         roundtrip(*rules, *c);
         auto ranged = battle(*rules, h, "longbow", 0, true);
         act(*ranged, "ranged");

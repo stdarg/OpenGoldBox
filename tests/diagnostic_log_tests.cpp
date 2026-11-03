@@ -1,4 +1,5 @@
 #include "opengold/diagnostic_log.h"
+#include "opengold/dice.h"
 
 #include <cstdlib>
 #include <filesystem>
@@ -60,6 +61,20 @@ int main()
     open_diagnostic_log(file);
     log_diagnostic(LogPriority::debug, "event", "third");
     check(lines_of(file).size() == 3, "A log is appended to, so a run keeps its history");
+
+    std::uint64_t dice = 1;
+    int searched{};
+    {
+        const RollPurpose purpose("Arden: search for a secret door");
+        searched = roll_die(dice, 6);
+    }
+    const int unnamed = roll_die(dice, 20);
+    const auto rolls = lines_of(file);
+    check(rolls.size() == 5 && rolls[3].ends_with(" debug dice: d6 " + std::to_string(searched) +
+                                                  " for Arden: search for a secret door"),
+          "Each die is a line naming what it was for: " + rolls[3]);
+    check(rolls[4].ends_with(" debug dice: d20 " + std::to_string(unnamed)),
+          "A die rolled for nothing named is still logged: " + rolls[4]);
 
     std::cout << "Diagnostic log tests passed\n";
     return 0;

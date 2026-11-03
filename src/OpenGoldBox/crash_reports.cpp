@@ -1,4 +1,5 @@
 #include "crash_reports.h"
+#include "opengold/diagnostic_log.h"
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/file_access.hpp>
@@ -69,6 +70,8 @@ void log_uncaught_exception()
     {
         UtilityFunctions::printerr(String("OpenGoldBox: uncaught exception: ") +
                                    String::utf8(failure.what()));
+        opengold::log_diagnostic(opengold::LogPriority::error, "crash",
+                                 std::string("uncaught exception: ") + failure.what());
     }
     catch (...)
     {
@@ -130,7 +133,8 @@ void log_backtrace()
     names.sort();
     for (int64_t index = names.size() - 1; index >= 0; --index)
     {
-        if (names[index] != "godot.log")
+        // The game's own logs (game_log.h) share the folder.
+        if (names[index] != "godot.log" && names[index].begins_with("godot"))
         {
             return FileAccess::get_file_as_string(String(logs_folder).path_join(names[index]));
         }

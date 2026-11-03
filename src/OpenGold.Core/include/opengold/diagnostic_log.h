@@ -1,11 +1,13 @@
 #pragma once
 
 #include <filesystem>
+#include <string>
 #include <string_view>
 
-// A record of the game's key decisions, for working out afterwards why something
-// happened. It is off unless the environment variable OPENGOLD_LOG names a file.
-// Each line reads:
+// A record of the game's key decisions, every die rolled and the errors met, for
+// working out afterwards why something happened. The game writes it to logs/ in its
+// user data folder; elsewhere it is off unless the environment variable
+// OPENGOLD_LOG names a file, which the game uses instead. Each line reads:
 //
 //     2026-11-01T18:10:03.123Z opengold[4242] info event: script 26 begins
 //
@@ -32,4 +34,18 @@ void open_diagnostic_log(const std::filesystem::path &file);
 
 // Writes one line. Does nothing when the log is off.
 void log_diagnostic(LogPriority priority, std::string_view topic, std::string_view message);
+
+// While it lives, the dice this thread rolls are logged as being for `purpose`,
+// such as "TROLL 2: melee at Bryn". Each die is a debug line under "dice".
+class RollPurpose
+{
+  public:
+    explicit RollPurpose(std::string purpose);
+    ~RollPurpose();
+    RollPurpose(const RollPurpose &) = delete;
+    RollPurpose &operator=(const RollPurpose &) = delete;
+
+  private:
+    std::string previous_;
+};
 } // namespace opengold

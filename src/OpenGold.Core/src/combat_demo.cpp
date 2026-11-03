@@ -246,6 +246,58 @@ void place_as_original(CampaignEncounter &encounter, std::vector<Participant> &p
     }
     encounter.enemies = std::move(fighting);
 }
+
+// "TROLL 2: melee at Bryn", what a command's dice are for in the log file.
+std::string command_purpose(const Snapshot &state, const Command &command)
+{
+    const auto name_of = [&](EntityId id)
+    {
+        const auto found = std::find_if(state.combatants.begin(), state.combatants.end(),
+                                        [&](const auto &unit)
+                                        {
+                                            return unit.id == id;
+                                        });
+        return found == state.combatants.end() ? std::string{} : found->name;
+    };
+    auto purpose = name_of(state.actor) + ": " + command.verb;
+    if (const auto target = name_of(command.target); !target.empty())
+    {
+        purpose += " at " + target;
+    }
+    return purpose;
+}
+
+// A line of the fight's log as the file keeps it, the dice behind a damage total
+// before the full stop.
+std::string logged_line(const LogEntry &entry)
+{
+    auto line = entry.english;
+    line.insert(line.ends_with('.') ? line.size() - 1 : line.size(), entry.message.detail);
+    return line;
+}
+
+// Writes the lines `after` has beyond those `before` ended with. The fight keeps
+// only its last 80 lines, so the oldest may have gone from its start.
+void log_new_fight_lines(const std::vector<LogEntry> &before, const std::vector<LogEntry> &after)
+{
+    std::size_t kept = std::min(before.size(), after.size());
+    for (; kept > 0; --kept)
+    {
+        if (std::equal(before.end() - static_cast<std::ptrdiff_t>(kept), before.end(),
+                       after.begin(),
+                       [](const LogEntry &old_line, const LogEntry &new_line)
+                       {
+                           return old_line.english == new_line.english;
+                       }))
+        {
+            break;
+        }
+    }
+    for (auto line = after.begin() + static_cast<std::ptrdiff_t>(kept); line != after.end(); ++line)
+    {
+        log_diagnostic(LogPriority::info, "fight", logged_line(*line));
+    }
+}
 } // namespace
 
 CombatDemo::CombatDemo(std::unique_ptr<RulesModule> module) : module_(std::move(module))
@@ -312,6 +364,10 @@ void CombatDemo::install_combat(std::unique_ptr<CombatSession> next, std::string
     {
         throw std::runtime_error("Rules module returned no combat session");
     }
+    if (diagnostic_log_enabled())
+    {
+        log_new_fight_lines({}, next->snapshot().log_entries);
+    }
     if (!campaign_)
     {
         combat_ = std::move(next);
@@ -337,6 +393,7 @@ void CombatDemo::start_encounter(std::vector<Participant> enemies, std::string r
     auto participants = campaign_ ? campaign_->participants() : party();
     participants.insert(participants.end(), std::make_move_iterator(enemies.begin()),
                         std::make_move_iterator(enemies.end()));
+    const RollPurpose initiative("initiative");
     auto next = module_->create({arena(), std::move(participants),
                                  campaign_ ? campaign_->state().next_combat_scope : 1, 100,
                                  campaign_ ? coins(campaign_->state().wealth, Coin::gold) : 0},
@@ -539,6 +596,7 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
                            std::to_string(participants.size()) + " combatants;" +
                            party_hit_points(*campaign_));
     }
+    const RollPurpose initiative("initiative");
     auto next = module_->create({encounter.field.geometry, std::move(participants),
                                  campaign_->state().next_combat_scope, encounter.morale,
                                  coins(campaign_->state().wealth, Coin::gold), encounter.daylight,
@@ -772,6 +830,7 @@ void CombatDemo::training(std::uint64_t seed, bool conditions)
     {
         throw std::runtime_error("A campaign fight needs an encounter");
     }
+    const RollPurpose initiative("initiative");
     auto next = module_->create(
         {arena(),
          {{1,
@@ -1027,9 +1086,27 @@ void CombatDemo::finish_combat()
 
 bool CombatDemo::submit(const Command &command)
 {
-    if (!combat_ || !combat_->submit(command))
+    if (!combat_)
     {
         return false;
+    }
+    // The log file names what each die is for and keeps every line of the
+    // fight's log, with the dice behind each damage total.
+    const bool logging = diagnostic_log_enabled();
+    const auto before = logging ? combat_->snapshot().log_entries : std::vector<LogEntry>{};
+    std::optional<RollPurpose> purpose;
+    if (logging)
+    {
+        purpose.emplace(command_purpose(combat_->snapshot(), command));
+    }
+    if (!combat_->submit(command))
+    {
+        return false;
+    }
+    purpose.reset();
+    if (logging)
+    {
+        log_new_fight_lines(before, combat_->snapshot().log_entries);
     }
     synchronize_party();
     finish_combat();
