@@ -1,9 +1,14 @@
 # Creature Stats Editor: requirements
 
 Requirements for a developer tool that changes a monster's or NPC's Hit Points,
-level and gear. Nothing is built yet. Written 2026-11-03, after Tyranthraxus's
-guards had to be lowered from the original's 87 Hit Points to the SRD Knight's 52
-by hand ([DEVIATIONS](../../docs/DEVIATIONS.md)).
+level and gear, and the encounters they fight in. Nothing is built yet. Written
+2026-11-03, after Tyranthraxus's guards had to be lowered from the original's 87
+Hit Points to the SRD Knight's 52 by hand
+([DEVIATIONS](../../docs/DEVIATIONS.md)).
+
+Decided (the user, 2026-11-03): it is a Godot tool, like the
+[Combat Sprite Catalog](combat-sprite-catalog.md), and Codex builds it.
+Encounters are editable too, including their fight rating.
 
 ## Why
 
@@ -33,6 +38,8 @@ should make all of this visible and do the bookkeeping.
 | Metal armor, for Heat Metal | `equipment` rows in `combat.rules` ([CREATURE-EQUIPMENT](../../docs/CREATURE-EQUIPMENT.md)) | the rules module |
 | A companion's class, level, scores and gear (Genheeris, Dirten, Fatima and the others) | code in `src/OpenGold.Core/src/companions.cpp` | the game |
 | What each difficulty does to Hit Points and counts | `src/OpenGold.Core/include/opengold/difficulty.h` (DIFF-2) | the game |
+| Which creatures a fight has, and how many | the original's scripts (`LOAD MONSTER` record and count, e.g. ECL5.DAX:7 at 0xA60D loads twelve of record 85), and a few script tables such as Podol Plaza's roaming groups | the game, from the player's install |
+| How many of them the party meets | the encounter sizing: the party's SRD XP budget at the encounter challenge, at most one creature per living member, then the difficulty (`src/OpenGold.Core/src/encounter_budget.cpp`) | the game |
 
 A monster has no level of its own. "Level" applies to:
 - companions, who are real characters with a class level;
@@ -90,8 +97,8 @@ A monster has no level of its own. "Level" applies to:
 
 ### Keeping the repository consistent
 
-15. Write only to the files the game reads (`data/`, and the companions' data;
-    see requirement 21). The game never reads `dev_tools/`.
+15. Write only to the files the game reads (`data/`, including the data files of
+    requirements 28 to 30). The game never reads `dev_tools/`.
 16. When a change alters the rules content, raise the rules version in
     `srd5.cpp` and in `docs/SAVES.md`, and say that saves made before the
     change can no longer be loaded (pre-1.0 policy).
@@ -109,12 +116,49 @@ A monster has no level of its own. "Level" applies to:
     each difficulty. The AI lab's scenario packs carry the rules version, so
     the tool rebuilds the pack, or plays the "before" from the old stat line.
 
-### Before the tool can edit companions
+### Encounters
 
-21. Companions are code today. Move their definitions (class, level, scores,
+21. List every fight the game stages: area, script and place (record and
+    address, and the map square where the party meets it), with the original's
+    groups, records and counts and the text that announces it. Fights the
+    script rolls from tables, such as Podol Plaza's roaming groups, list their
+    tables.
+22. For a chosen fight and a reference party (a party from an AI lab scenario,
+    or levels and size the user enters), show what the game makes of it at each
+    difficulty: the XP budget, each group's rating, and how many creatures of
+    each group are met. Computed by the game's own sizing code. The
+    Tyranthraxus guards were this case: twelve loaded, eight met.
+23. Fight rating: edit each creature's two values separately: the XP that sizes
+    the fight and the XP the fight awards. Show which encounters each value
+    changes.
+24. Composition: change a fight's groups (another record, or another stat
+    line for a record) and counts. The original's script stays as it is; the
+    change is an override the game applies when that script loads the fight.
+25. Show every override beside the original's value, and allow removing it to
+    go back to the original.
+26. An encounter change is a departure from the original, and follows
+    requirements 17 and 19. A changed award also changes the party's
+    experience, which DEVIATIONS says stays the original encounter's; the tool
+    says so before saving.
+27. Requirement 20 applies: replay the changed fight in the AI lab before and
+    after.
+
+### Changes the game needs first
+
+28. Companions are code today. Move their definitions (class, level, scores,
     gear, original record) to a data file the game reads, for example
-    `data/companions/`, keeping the game's behavior unchanged. This is a
-    prerequisite of requirements 10 and 13, and a change to the game itself.
+    `data/companions/`, keeping the game's behavior unchanged. Needed for
+    requirements 10 and 13.
+29. The fight ratings are code today (the conversion tables in `rolf_tour.cpp`).
+    Move them to a data file the game reads, keeping every value. Needed for
+    requirement 23.
+30. The game has no encounter overrides. Add a data file of overrides, keyed by
+    script and address, that the game applies when a script loads monsters, and
+    rejects an override whose script, address or record does not exist. Needed
+    for requirement 24.
+
+Each of these is a change to the game, with its own tests, and comes before the
+tool's part that needs it.
 
 ## Checks
 
@@ -125,9 +169,7 @@ A monster has no level of its own. "Level" applies to:
   monster per area, staged through the game's encounter code.
 - Writing a change to the rules raises the rules version, and the tool will not
   save a departure from the original without its DEVIATIONS entry.
-
-## Open questions
-
-1. Should this be a Godot tool like the Combat Sprite Catalog, a tab inside the
-   catalog, or a command-line program like the AI lab?
-2. Should the fight rating (XP) be editable too, or shown only?
+- For every fight, the tool's count of creatures met matches what the game
+  stages for the same party, script and difficulty.
+- With no overrides, every fight stages exactly as before requirements 29 and
+  30 were built.
