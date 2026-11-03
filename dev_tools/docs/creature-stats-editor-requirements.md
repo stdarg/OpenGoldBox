@@ -9,6 +9,8 @@ Hit Points to the SRD Knight's 52 by hand
 Decided (the user, 2026-11-03): it is a Godot tool, like the
 [Combat Sprite Catalog](combat-sprite-catalog.md), and Codex builds it.
 Encounters are editable too, including their fight rating.
+Map-based encounters and the percentage chance of wandering encounters are
+editable as well (user request, 2026-11-03).
 
 ## Why
 
@@ -39,6 +41,7 @@ should make all of this visible and do the bookkeeping.
 | A companion's class, level, scores and gear (Genheeris, Dirten, Fatima and the others) | code in `src/OpenGold.Core/src/companions.cpp` | the game |
 | What each difficulty does to Hit Points and counts | `src/OpenGold.Core/include/opengold/difficulty.h` (DIFF-2) | the game |
 | Which creatures a fight has, and how many | the original's scripts (`LOAD MONSTER` record and count, e.g. ECL5.DAX:7 at 0xA60D loads twelve of record 85), and a few script tables such as Podol Plaza's roaming groups | the game, from the player's install |
+| When a map square can trigger a fight and the chance of a wandering encounter | original map and ECL encounter logic; the trigger and roll must be traced per area | the game, from the player's install |
 | How many of them the party meets | the encounter sizing: the party's SRD XP budget at the encounter challenge, at most one creature per living member, then the difficulty (`src/OpenGold.Core/src/encounter_budget.cpp`) | the game |
 
 A monster has no level of its own. "Level" applies to:
@@ -142,6 +145,20 @@ A monster has no level of its own. "Level" applies to:
     says so before saving.
 27. Requirement 20 applies: replay the changed fight in the AI lab before and
     after.
+27a. Show map-based encounter triggers on their squares, including fixed fights
+    and wandering encounter regions. For each wandering trigger, show the
+    original chance as a percentage, its roll interval and any table used to
+    choose a group. Distinguish a trigger roll from a group's selection weight.
+27b. Let the user set a wandering trigger chance from 0% to 100%, or remove
+    the override to restore the original. Show the original and effective
+    values, affected squares, and the expected frequency per applicable move.
+    A 0% chance disables that trigger; 100% makes it fire whenever its normal
+    eligibility conditions hold. Preserve those conditions and the original
+    table unless separately overridden under requirement 24.
+27c. Preview the change against representative movement through the affected
+    map. Saving requires the same diff, reason and deviation bookkeeping as
+    other encounter changes. The game and tool must agree on the effective
+    chance; neither may infer it from a separately maintained copy of ECL logic.
 
 ### Changes the game needs first
 
@@ -156,6 +173,12 @@ A monster has no level of its own. "Level" applies to:
     script and address, that the game applies when a script loads monsters, and
     rejects an override whose script, address or record does not exist. Needed
     for requirement 24.
+31. Expose map encounter trigger metadata and the effective wandering roll
+    through a game-owned query. Add a game-read chance override keyed by a
+    stable area/script/trigger identity; validate that the trigger exists and
+    the percentage is in range. Preserve each trigger's eligibility, table
+    selection, and random sequence when no override is present. Needed for
+    requirements 27a to 27c.
 
 Each of these is a change to the game, with its own tests, and comes before the
 tool's part that needs it.
@@ -173,3 +196,7 @@ tool's part that needs it.
   stages for the same party, script and difficulty.
 - With no overrides, every fight stages exactly as before requirements 29 and
   30 were built.
+- For each map encounter trigger, the tool's square, original chance and
+  effective chance match the game's query. With no chance overrides, encounter
+  frequency and seeded outcomes remain unchanged. At 0% and 100%, tests prove
+  the trigger's boundary behavior while eligibility conditions still apply.

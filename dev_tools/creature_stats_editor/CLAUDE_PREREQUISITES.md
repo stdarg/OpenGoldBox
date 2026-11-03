@@ -22,9 +22,23 @@ needed before the editor can make authoritative monster edits.
 3. Keep companion migration separate. Companion level and gear edits remain
    out of the first monster-only delivery until definitions are in game-read
    data and can be built through the game's character rules.
+4. For map-based fights, expose a Core query of encounter triggers with area,
+   script/address or other stable identity, map square or region, fixed versus
+   wandering type, original groups/table, eligibility conditions, and the
+   original and effective wandering chance. Add a game-read override for each
+   wandering trigger's percentage (0-100), validated against real trigger
+   identities. Keep the original ECL/map behavior and seeded outcomes when no
+   override exists. The editor will display these triggers on the map and
+   edit the chance through this interface, without duplicating ECL rules.
+   This extends the encounter override prerequisite in requirements 24 and 30;
+   the existing game has no encounter override mechanism yet.
 
 Acceptance for (1): loading the new data yields the exact current conversion
 rows and fight XP values, and existing encounter tests remain unchanged.
 Acceptance for (2): one representative monster per area reports the same
 profile in the editor query and an encounter staged by the game. No save format
 or rules result should change from these read-only APIs.
+Acceptance for (4): every exposed trigger resolves to an existing map location
+and script; original and effective chances match the encounter engine; no
+override preserves current seeded encounters; 0% and 100% exercise the
+trigger's boundaries without bypassing its normal eligibility conditions.
