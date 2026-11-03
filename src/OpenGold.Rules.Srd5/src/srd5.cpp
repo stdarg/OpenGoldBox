@@ -31079,15 +31079,13 @@ class Module final : public RulesModule
             }
         }
         const int growth = next.hit_points - sheet.hit_points;
-        next.hp_explanation =
-            "Level " + std::to_string(next.level) + ": " + std::to_string(next.hit_points) +
-            " maximum HP; gain " + std::to_string(growth) +
-            ". Fixed-average Hit Die growth includes Constitution and any retroactive Constitution increase.";
-        next.hp_messages = {
-            {"Level {level}: {hp} maximum HP; gain {growth}. Fixed-average Hit Die growth includes Constitution and any retroactive Constitution increase.",
-             {{"level", std::to_string(next.level)},
-              {"hp", std::to_string(next.hit_points)},
-              {"growth", std::to_string(growth)}}}};
+        next.hp_explanation = "Level " + std::to_string(next.level) + ": " +
+                              std::to_string(next.hit_points) + " maximum HP; gain " +
+                              std::to_string(growth) + ".";
+        next.hp_messages = {{"Level {level}: {hp} maximum HP; gain {growth}.",
+                             {{"level", std::to_string(next.level)},
+                              {"hp", std::to_string(next.hit_points)},
+                              {"growth", std::to_string(growth)}}}};
         if (klass == CharacterClass::rogue && next.level == 2)
         {
             next.class_modifiers +=

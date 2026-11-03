@@ -108,6 +108,35 @@ func check_demo() -> void:
         "Party rows remain visible and the first row is selectable")
     require(party_rows.call("slot_at_root", party_rows.position + Vector2(4, party_rows.size.y - 4)) == 7,
         "The last party row remains selectable")
+    var english_detail: String = party_rows.get("_rows")[0]["detail"]
+    root.size = Vector2i(1120, 800)
+    TranslationServer.set_locale("es")
+    # A zoom step and back refreshes every text on the screen.
+    combat.get_node("ZoomIn10").pressed.emit()
+    combat.get_node("ZoomOut10").pressed.emit()
+    for frame in range(4):
+        await process_frame
+    var spanish_detail: String = party_rows.get("_rows")[0]["detail"]
+    # The turn line names everything the active character has left, even in
+    # Spanish on the smallest window: a line too wide for it wraps.
+    var header: Label = combat.get_node("LogStack/LogHeader")
+    var font := header.get_theme_font("font")
+    var font_size := header.get_theme_font_size("font_size")
+    var lines := header.text.split("\n")
+    var widest := 0.0
+    for line in lines:
+        widest = maxf(widest, font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
+    require(header.get_visible_line_count() >= header.get_line_count()
+        and (widest <= header.size.x or header.get_line_count() > lines.size()),
+        "The turn line shows whole: " + header.text)
+    root.size = Vector2i(1920, 1080)
+    TranslationServer.set_locale("en")
+    combat.get_node("ZoomIn10").pressed.emit()
+    combat.get_node("ZoomOut10").pressed.emit()
+    for frame in range(4):
+        await process_frame
+    require(spanish_detail != english_detail,
+        "A party card names class, race and gender in the player's language: " + spanish_detail)
     require(combat.get_node("Footer").text.contains("Shift+arrow: diagonal"),
         "Demo explains the combat keyboard controls")
     require(not combat.get_node("StatusStack/Roster").visible and not combat.get_node("StatusStack/Turn").visible,
