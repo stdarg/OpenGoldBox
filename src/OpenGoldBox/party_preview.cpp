@@ -469,12 +469,17 @@ void CharacterCreationView::refresh_party()
             required_node<TextureRect>(*this, name).set_texture({});
         }
     }
+    // The poses' captions name nothing until there is someone to show.
+    for (const char *name : {"PartyPanel/ReadyLabel", "PartyPanel/ActionLabel"})
+    {
+        required_node<Label>(*this, name).set_visible(!state.roster.empty());
+    }
     required_node<RichTextLabel>(*this, "PartyPanel/Sheet").call("render", gs(sheet));
     required_node<Label>(*this, "PartyPanel/Status")
         .set_text(
             error_.is_empty()
                 ? i18n::text(
-                      "New PCs start with 3d6 × 10 gp / Save game stores this campaign on disk.")
+                      "Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later.")
                 : error_);
     for (const char *name : {"Remove", "Rejoin", "Equip"})
     {
