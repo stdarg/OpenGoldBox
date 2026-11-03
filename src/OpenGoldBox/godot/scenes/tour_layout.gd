@@ -57,3 +57,16 @@ func apply_layout(shopping: bool) -> void:
                 (view.get_node(name) as Control).size.x -= overflow
             for name in ["Continue", "LeaveShop"]:
                 (view.get_node(name) as Control).position.x -= overflow
+    # On a short, wide window the map grows with the width and would push the
+    # party's lines under it onto the buttons below; the map gives up the height.
+    var map_bounds: Control = view.get_node("MapBounds")
+    var party_lines: Control = view.get_node("Party")
+    var overlap: float = (party_lines.position.y + party_lines.size.y + 8
+        - (view.get_node("Cast") as Control).position.y)
+    if overlap > 0:
+        map_bounds.size.y -= overlap
+        for name in ["Coordinates", "Party"]:
+            (view.get_node(name) as Control).position.y -= overlap
+    # The map's cells are square, sized by its width: its frame takes the shorter side.
+    var side := minf(map_bounds.size.x, map_bounds.size.y)
+    map_bounds.size = Vector2(side, side)

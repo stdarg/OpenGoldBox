@@ -2748,12 +2748,109 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             }
         }
     }
+    // The walk looks past creatures, so a creature whose way in is held by its
+    // own side, with members down around it, can find no step closer and stand
+    // there for good (the Slums trolls' room). It then goes around creatures to
+    // a free square beside an enemy it walks for, when one can be reached.
+    const bool can_get_closer = std::any_of(
+        offered.begin(), offered.end(),
+        [&](const Command &command)
+        {
+            return command.verb == "move" && nearest(command.destination) < nearest(active.cell);
+        });
+    const auto detour = [&]() -> const Command *
+    {
+        if (can_get_closer || stays_back || in_view.empty())
+        {
+            return nullptr;
+        }
+        std::vector<bool> held(board.terrain.size()), blocked(board.terrain.size());
+        for (const auto &unit : state.combatants)
+        {
+            if (unit.id == active.id || unit.dead || unit.fled || !unit.conscious)
+            {
+                continue;
+            }
+            for (const auto square : squares_of(unit))
+            {
+                if (board.contains(square))
+                {
+                    held[index(square)] = true;
+                    blocked[index(square)] = blocked[index(square)] || unit.side != active.side;
+                }
+            }
+        }
+        const auto steps_between = [&](Cell from, Cell to)
+        {
+            return std::max(std::abs(from.x - to.x), std::abs(from.y - to.y)) == 1 &&
+                   (from.x == to.x || from.y == to.y ||
+                    (board.at({from.x, to.y}) != Terrain::obstacle &&
+                     board.at({to.x, from.y}) != Terrain::obstacle));
+        };
+        std::vector<int> around(board.terrain.size(), 10000);
+        std::queue<Cell> open;
+        for (int y = 0; y < board.height; ++y)
+        {
+            for (int x = 0; x < board.width; ++x)
+            {
+                const Cell place{x, y};
+                if (board.at(place) == Terrain::obstacle || held[index(place)])
+                {
+                    continue;
+                }
+                for (const auto *enemy : in_view)
+                {
+                    for (const auto square : squares_of(*enemy))
+                    {
+                        if ((!walk_target || enemy == walk_target) &&
+                            steps_between(place, square) && around[index(place)] != 0)
+                        {
+                            around[index(place)] = 0;
+                            open.push(place);
+                        }
+                    }
+                }
+            }
+        }
+        while (!open.empty())
+        {
+            const auto p = open.front();
+            open.pop();
+            for (int y = -1; y <= 1; ++y)
+            {
+                for (int x = -1; x <= 1; ++x)
+                {
+                    const Cell next{p.x + x, p.y + y};
+                    if (!board.contains(next) || board.at(next) == Terrain::obstacle ||
+                        blocked[index(next)] || !steps_between(p, next) ||
+                        around[index(next)] <= around[index(p)] + 1)
+                    {
+                        continue;
+                    }
+                    around[index(next)] = around[index(p)] + 1;
+                    open.push(next);
+                }
+            }
+        }
+        const Command *best = nullptr;
+        int fewest = around[index(active.cell)];
+        for (const auto &command : offered)
+        {
+            if (command.verb == "move" && around[index(command.destination)] < fewest)
+            {
+                best = &command;
+                fewest = around[index(command.destination)];
+            }
+        }
+        return best;
+    };
+    const auto *way_around = detour();
     // With nothing to attack yet, Aggressive or a Troll's Charge covers more
-    // ground toward an enemy in view.
+    // ground toward an enemy in view, when there is ground to cover.
     for (const auto &command : offered)
     {
         if ((command.verb == "aggressive" || command.verb == "bonus_charge") && !in_view.empty() &&
-            !stays_back)
+            !stays_back && (can_get_closer || way_around))
         {
             return command;
         }
@@ -2795,6 +2892,10 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     if (move)
     {
         return *move;
+    }
+    if (way_around)
+    {
+        return *way_around;
     }
     // Unable to get any closer, a character shoots or throws what it has: a
     // carried bow or crossbow drawn, and whatever it meant to walk past.
