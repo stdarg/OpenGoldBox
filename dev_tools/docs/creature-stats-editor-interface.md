@@ -297,6 +297,11 @@ number). Each area's rest profile is its `SAVE n {tag=1,value=28114}` and
 | The western wilderness (ECL6:25) | `RANDOM 19` at 0xA0B3 | on 0 (0xA0BF) | 1 in 20 |
 | The eastern wilderness (ECL8:27) | `RANDOM 19` at 0x9EA7 | on 0 | 1 in 20 |
 
+A higher Slums step chance also meets the party more often in
+`opengold_godot_area_crossing`, which steps from New Phlan into the Slums and
+loads its fixture again, up to 8 times, when monsters meet it; raise its
+attempts or change its route with such an edit.
+
 The other areas' step rolls are still to be traced (**game work**): a
 `RANDOM`'s variable often feeds more than the encounter, such as Podol Plaza's
 rumours, so each needs reading before its numbers are offered as a chance.
