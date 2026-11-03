@@ -24,6 +24,7 @@ are read from a local installation; they are not included here.
 - [Shop & Temple Manager](shop-manager.md): fixed locations, retail stock, temple services, prices, portraits, and checks.
 - [AI lab](ai-lab.md): scenario packs, replays, reading the results, accuracy, and limits.
 - [DOS probe](dos-probe.md): building, scenarios, script traces, and limits.
+- [Creature Stats Editor requirements](creature-stats-editor-requirements.md): a planned tool to change a monster's or NPC's Hit Points, level and gear.
 
 ## Detailed tool documents
 
