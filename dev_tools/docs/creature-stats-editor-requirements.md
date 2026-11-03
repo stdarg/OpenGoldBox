@@ -1,5 +1,7 @@
 # Creature Stats Editor: requirements
 
+How the edits reach the game: [the interface](creature-stats-editor-interface.md).
+
 Requirements for a developer tool that changes a monster's or NPC's Hit Points,
 level and gear, and the encounters they fight in. Nothing is built yet. Written
 2026-11-03, after Tyranthraxus's guards had to be lowered from the original's 87

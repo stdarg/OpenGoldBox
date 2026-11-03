@@ -25,6 +25,7 @@ are read from a local installation; they are not included here.
 - [AI lab](ai-lab.md): scenario packs, replays, reading the results, accuracy, and limits.
 - [DOS probe](dos-probe.md): building, scenarios, script traces, and limits.
 - [Creature Stats Editor requirements](creature-stats-editor-requirements.md): a planned Godot tool, built by Codex, to change a monster's or NPC's Hit Points, level and gear, and the encounters they fight in.
+- [Creature Stats Editor interface](creature-stats-editor-interface.md): the files the editor writes, the game's loaders for them, and `opengold_creature_data`, which reports what the game makes of an edit.
 
 ## Detailed tool documents
 
