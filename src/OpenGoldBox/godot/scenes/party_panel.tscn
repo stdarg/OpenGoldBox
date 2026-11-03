@@ -42,35 +42,36 @@ metadata/layout_reference = Rect2(24, 90, 300, 730)
 [node name="Sheet" type="RichTextLabel" parent="."]
 bbcode_enabled = true
 script = ExtResource("98_rich_text")
-anchor_right = 1.0
+anchor_right = 0.6
 anchor_bottom = 1.0
 offset_left = 350
 offset_top = 90
-offset_right = -636
+offset_right = 132
 offset_bottom = -290
 metadata/layout_reference = Rect2(350, 90, 934, 700)
 theme_type_variation = &"RichTextLabelTableGap16Text18"
 
 [node name="Inventory" type="ItemList" parent="."]
-anchor_right = 1.0
+anchor_right = 0.6
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 350
 offset_top = -280
-offset_right = -636
+offset_right = 132
 offset_bottom = -184
 metadata/layout_reference = Rect2(350, 800, 934, 96)
 
 [node name="Portrait" type="TextureRect" parent="."]
-anchor_left = 1.0
+anchor_left = 0.6
 anchor_right = 1.0
-offset_left = -620
+anchor_bottom = 1.0
+offset_left = 148
 offset_top = 90
 offset_right = -20
-offset_bottom = 690
+offset_bottom = -290
 metadata/layout_reference = Rect2(1300, 90, 600, 600)
 expand_mode = 1
-stretch_mode = 5
+stretch_mode = 4
 texture_filter = 1
 
 [node name="Status" type="Label" parent="."]
@@ -161,39 +162,39 @@ theme_type_variation = &"ButtonText14"
 text = "Saving Throws"
 
 [node name="ReadyLabel" type="Label" parent="."]
-anchor_left = 1.0
-anchor_right = 1.0
+anchor_left = 0.7
+anchor_right = 0.7
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = -530
+offset_left = 46
 offset_top = -156
-offset_right = -410
+offset_right = 166
 offset_bottom = -132
 metadata/layout_reference = Rect2(1390, 924, 120, 24)
 text = "Ready"
 horizontal_alignment = 1
 
 [node name="ActionLabel" type="Label" parent="."]
-anchor_left = 1.0
-anchor_right = 1.0
+anchor_left = 0.9
+anchor_right = 0.9
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = -230
+offset_left = -38
 offset_top = -156
-offset_right = -110
+offset_right = 82
 offset_bottom = -132
 metadata/layout_reference = Rect2(1690, 924, 120, 24)
 text = "Action"
 horizontal_alignment = 1
 
 [node name="ReadySprite" type="TextureRect" parent="."]
-anchor_left = 1.0
-anchor_right = 1.0
+anchor_left = 0.7
+anchor_right = 0.7
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = -530
+offset_left = 46
 offset_top = -280
-offset_right = -410
+offset_right = 166
 offset_bottom = -160
 metadata/layout_reference = Rect2(1390, 800, 120, 120)
 expand_mode = 1
@@ -201,13 +202,13 @@ stretch_mode = 5
 texture_filter = 1
 
 [node name="ActionSprite" type="TextureRect" parent="."]
-anchor_left = 1.0
-anchor_right = 1.0
+anchor_left = 0.9
+anchor_right = 0.9
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = -230
+offset_left = -38
 offset_top = -280
-offset_right = -110
+offset_right = 82
 offset_bottom = -160
 metadata/layout_reference = Rect2(1690, 800, 120, 120)
 expand_mode = 1

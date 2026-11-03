@@ -511,7 +511,7 @@ msgstr "Trasfondo de acólito"
 msgid "Acrobatics"
 msgstr "Acrobacias"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:404 src/OpenGoldBox/godot/scenes/party_panel.tscn:186
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:404 src/OpenGoldBox/godot/scenes/party_panel.tscn:187
 msgid "Action"
 msgstr "Acción"
 
@@ -596,7 +596,7 @@ msgstr "Añade primero un miembro al grupo"
 msgid "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 msgstr "Suma tu bonificador por competencia a Iniciativa; puedes intercambiarla con un aliado apto antes del primer turno."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1168 src/OpenGoldBox/godot/scenes/character_creation.tscn:1464 src/OpenGoldBox/party_preview.cpp:931
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1168 src/OpenGoldBox/godot/scenes/character_creation.tscn:1464 src/OpenGoldBox/party_preview.cpp:936
 msgid "Add to party"
 msgstr "Añadir al grupo"
 
@@ -1890,7 +1890,7 @@ msgstr "Caótico neutral"
 msgid "Character"
 msgstr "Personaje"
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:225
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:226
 msgid "Character Pool"
 msgstr "Reserva de personajes"
 
@@ -1906,7 +1906,7 @@ msgstr "Hoja de personaje"
 msgid "Character art could not be loaded. Restart with --reset-game-path to choose your Pool of Radiance folder."
 msgstr "No se pudieron cargar los gráficos del personaje. Reinicia con --reset-game-path para elegir la carpeta de Pool of Radiance."
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:147
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:148
 msgid "Character creation"
 msgstr "Creación de personajes"
 
@@ -2652,7 +2652,7 @@ msgstr "Crea un personaje antes de guardarlo"
 msgid "Create a character, finish its sheet, then Add to party.\n\nA party holds six characters, and up to two others may join it on the way. Removed members remain in the roster."
 msgstr "Crea un personaje, termina su hoja y pulsa Añadir al grupo.\n\nUn grupo admite seis personajes, y hasta otros dos pueden unirse por el camino. Los miembros retirados permanecen en la lista."
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:101
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:102
 msgid "Create character"
 msgstr "Crear personaje"
 
@@ -2829,11 +2829,11 @@ msgstr "Reducir el zoom del campo de batalla en 10 puntos porcentuales"
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr "Reducir el zoom del campo de batalla en 100 puntos porcentuales"
 
-#: src/OpenGoldBox/party_preview.cpp:1669
+#: src/OpenGoldBox/party_preview.cpp:1674
 msgid "Defeat"
 msgstr "Derrota"
 
-#: src/OpenGoldBox/party_preview.cpp:1753
+#: src/OpenGoldBox/party_preview.cpp:1758
 msgid "Defeat test"
 msgstr "Prueba de derrota"
 
@@ -3235,6 +3235,10 @@ msgstr "Dureza enana: +{hp} PG máximos."
 msgid "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage, and Advantage on saves against being Poisoned."
 msgstr "Los enanos son gente robusta y resistente, tan duradera como la piedra que trabajan.\n\nRasgos raciales:\n- Dureza enana: 1 punto de golpe más en cada nivel.\n- Resiliencia enana: resistencia al daño de veneno y ventaja en las salvaciones contra quedar envenenado."
 
+#: src/OpenGoldBox/party_preview.cpp:481
+msgid "Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later."
+msgstr "Cada personaje nuevo trae 3d6 × 10 piezas de oro. Guardar partida conserva este grupo para seguir jugando más tarde."
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Each roll must be assigned exactly once"
 msgstr "Cada tirada debe asignarse una sola vez"
@@ -3469,7 +3473,7 @@ msgstr "Equípala para lanzar Proyectil mágico con la acción mágica, gastando
 msgid "Equip it to paralyze a creature within 60 feet with the Magic action, a charge each time: a Constitution save DC 15 or Paralyzed for up to a minute."
 msgstr "Equípala para paralizar a una criatura a 60 pies o menos con la acción mágica, gastando una carga cada vez: una salvación de Constitución CD 15 o queda paralizada hasta un minuto."
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:119
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:120
 msgid "Equip selected"
 msgstr "Equipar selección"
 
@@ -3490,7 +3494,7 @@ msgstr "Equipado"
 msgid "Equipped / "
 msgstr "Equipado / "
 
-#: src/OpenGoldBox/party_preview.cpp:1022 src/OpenGoldBox/rolf_tour_view.cpp:693
+#: src/OpenGoldBox/party_preview.cpp:1027 src/OpenGoldBox/rolf_tour_view.cpp:693
 msgid "Equipped."
 msgstr "Equipado."
 
@@ -3554,7 +3558,7 @@ msgstr "Exhalar (Aliento de dragón)"
 msgid "Exit"
 msgstr "Salir"
 
-#: src/OpenGoldBox/party_preview.cpp:1677
+#: src/OpenGoldBox/party_preview.cpp:1682
 msgid "Exit to OS"
 msgstr "Salir del juego"
 
@@ -3602,7 +3606,7 @@ msgstr "Pericia en dos habilidades más.\nEspacios de conjuro de nivel 3 y conju
 msgid "Explore  /  arrow keys"
 msgstr "Explorar  /  flechas"
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:141
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:142
 msgid "Explore New Phlan"
 msgstr "Explorar Nueva Phlan"
 
@@ -3826,7 +3830,7 @@ msgstr "Termina las elecciones de conjuros del descanso largo antes de modificar
 msgid "Finish Long Rest spell choices before combat"
 msgstr "Termina las elecciones de conjuros del descanso largo antes del combate"
 
-#: src/OpenGoldBox/party_preview.cpp:1571
+#: src/OpenGoldBox/party_preview.cpp:1576
 msgid "Finish combat, dialogue or shopping before returning to the party."
 msgstr "Termina el combate, el diálogo o las compras antes de volver al grupo."
 
@@ -5015,7 +5019,7 @@ msgstr "Plaga de insectos"
 msgid "Insight"
 msgstr "Perspicacia"
 
-#: src/OpenGoldBox/party_preview.cpp:1570
+#: src/OpenGoldBox/party_preview.cpp:1575
 msgid "Inspect your party and equipment."
 msgstr "Examina tu grupo y su equipo."
 
@@ -5619,7 +5623,7 @@ msgstr "Cargar"
 msgid "Load Character"
 msgstr "Cargar personaje"
 
-#: src/OpenGoldBox/party_preview.cpp:1673
+#: src/OpenGoldBox/party_preview.cpp:1678
 msgid "Load a saved game to continue."
 msgstr "Carga una partida guardada para continuar."
 
@@ -5631,7 +5635,7 @@ msgstr "Cargar personaje"
 msgid "Load combat"
 msgstr "Cargar combate"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:69 src/OpenGoldBox/godot/scenes/game_menu.tscn:68 src/OpenGoldBox/godot/scenes/party_panel.tscn:245 src/OpenGoldBox/save_slots.cpp:130
+#: src/OpenGoldBox/campaign_save_view.cpp:69 src/OpenGoldBox/godot/scenes/game_menu.tscn:68 src/OpenGoldBox/godot/scenes/party_panel.tscn:246 src/OpenGoldBox/save_slots.cpp:130
 msgid "Load game"
 msgstr "Cargar partida"
 
@@ -5862,7 +5866,7 @@ msgstr "Mano principal"
 msgid "Main hand — {item}"
 msgstr "Mano principal — {item}"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1433 src/OpenGoldBox/godot/scenes/party_panel.tscn:255
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1433 src/OpenGoldBox/godot/scenes/party_panel.tscn:256
 msgid "Make leader"
 msgstr "Nombrar líder"
 
@@ -6210,7 +6214,7 @@ msgstr "Faltan archivos del juego o no se pueden leer:"
 msgid "Misty Step"
 msgstr "Paso brumoso"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1190 src/OpenGoldBox/godot/scenes/party_panel.tscn:154
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1190 src/OpenGoldBox/godot/scenes/party_panel.tscn:155
 msgid "Modifiers"
 msgstr "Modificadores"
 
@@ -6424,10 +6428,6 @@ msgstr "Nunca"
 #: src/OpenGoldBox/game_menu_view.cpp:249
 msgid "New"
 msgstr "Nuevo"
-
-#: src/OpenGoldBox/party_preview.cpp:476
-msgid "New PCs start with 3d6 × 10 gp / Save game stores this campaign on disk."
-msgstr "Los nuevos personajes empiezan con 3d6 × 10 po / Guardar partida guarda esta campaña en disco."
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:148
 msgid "New Phlan"
@@ -7733,7 +7733,7 @@ msgstr "Léelo en el campamento: la Constitución y su máximo suben 2. Después
 msgid "Read the encounter text, then Continue."
 msgstr "Lee el texto del encuentro y pulsa Continuar."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:391 src/OpenGoldBox/godot/scenes/party_panel.tscn:173
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:391 src/OpenGoldBox/godot/scenes/party_panel.tscn:174
 msgid "Ready"
 msgstr "En guardia"
 
@@ -7807,7 +7807,7 @@ msgstr "Reencarnación"
 msgid "Reincarnate needs a Humanoid dead up to ten days"
 msgstr "Reencarnación necesita un humanoide muerto hace diez días como mucho"
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:113
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:114
 msgid "Rejoin party"
 msgstr "Volver al grupo"
 
@@ -7836,7 +7836,7 @@ msgstr "Talento fiable: el d20 de {roll} de {name} cuenta como 10."
 msgid "Religion"
 msgstr "Religión"
 
-#: src/OpenGoldBox/party_preview.cpp:1677
+#: src/OpenGoldBox/party_preview.cpp:1682
 msgid "Reload a Saved Game"
 msgstr "Cargar una partida"
 
@@ -7844,7 +7844,7 @@ msgstr "Cargar una partida"
 msgid "Remove Curse"
 msgstr "Quitar maldición"
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:107
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:108
 msgid "Remove member"
 msgstr "Retirar miembro"
 
@@ -8426,7 +8426,7 @@ msgstr "Guardar personaje"
 msgid "Save combat"
 msgstr "Guardar combate"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:69 src/OpenGoldBox/godot/scenes/game_menu.tscn:57 src/OpenGoldBox/godot/scenes/party_panel.tscn:235 src/OpenGoldBox/rest_dialog_impl.h:31 src/OpenGoldBox/rest_dialog_impl.h:65 src/OpenGoldBox/save_slots.cpp:130
+#: src/OpenGoldBox/campaign_save_view.cpp:69 src/OpenGoldBox/godot/scenes/game_menu.tscn:57 src/OpenGoldBox/godot/scenes/party_panel.tscn:236 src/OpenGoldBox/rest_dialog_impl.h:31 src/OpenGoldBox/rest_dialog_impl.h:65 src/OpenGoldBox/save_slots.cpp:130
 msgid "Save game"
 msgstr "Guardar partida"
 
@@ -8442,7 +8442,7 @@ msgstr "Nombre de la partida"
 msgid "Saved at once; they take effect from the next fight."
 msgstr "Se guardan al instante; se aplican desde el siguiente combate."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1257 src/OpenGoldBox/godot/scenes/character_creation.tscn:1260 src/OpenGoldBox/godot/scenes/party_panel.tscn:161
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1257 src/OpenGoldBox/godot/scenes/character_creation.tscn:1260 src/OpenGoldBox/godot/scenes/party_panel.tscn:162
 msgid "Saving Throws"
 msgstr "Salvaciones"
 
@@ -9249,7 +9249,7 @@ msgstr "Destello estelar"
 msgid "Start"
 msgstr "Empezar"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:376 src/OpenGoldBox/party_preview.cpp:930
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:376 src/OpenGoldBox/party_preview.cpp:935
 msgid "Start over"
 msgstr "Empezar de nuevo"
 
@@ -10341,7 +10341,7 @@ msgstr "Fortaleza de no muerto"
 msgid "Unequip"
 msgstr "Desequipar"
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:135
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:136
 msgid "Unequip selected"
 msgstr "Desequipar selección"
 
@@ -11081,7 +11081,7 @@ msgstr "Tu arma cuerpo a cuerpo es tu arma de pacto: competencia, Carisma para s
 msgid "Your party flees the battle."
 msgstr "Tu grupo huye de la batalla."
 
-#: src/OpenGoldBox/party_preview.cpp:1671
+#: src/OpenGoldBox/party_preview.cpp:1676
 msgid "Your party has been defeated."
 msgstr "Tu grupo ha sido derrotado."
 
