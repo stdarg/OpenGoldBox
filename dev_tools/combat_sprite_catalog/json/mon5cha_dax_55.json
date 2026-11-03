@@ -1,5 +1,5 @@
 {
-  "description": "A towering hill giant with a rough, heavy build; the source inventory includes throwing stones. Source inventory: Boulder, Boulder. Source wealth: 2 cp, 4 sp, 3 ep, 2000 gp.",
+  "description": "A towering hill giant with a rough, heavy build; the source inventory includes throwing stones. Source inventory: Boulder, Boulder. Source wealth: 2 cp, 4 sp, 3 ep, 2000 gp.\n\nIMAGEGEN PROMPT \u2014 MON5CHA.DAX:55/item_000__ranged, existing pair review\nReady: One complete Hill Giant in front three-quarter view facing screen right, chest partly visible. Tall body about 1.7 combat squares high within a one-square-wide, two-square-tall footprint. Hold one boulder raised in the viewer-left throwing hand, ready to throw. The other arm remains distinct. Use the user-approved independent bipedal pose guide only for facing and pose; use no original game artwork. Keep the established rough giant identity, body scale, torso, planted feet and true transparent 128 x 128 pixel-art canvas.\nAction: Edit that ready frame into the moment just after release. Remove the boulder entirely; the game draws its flight. Trace the boulder hand through its elbow to the viewer-left shoulder in ready. Extend that same shoulder and now-empty arm toward screen right at shoulder height or above, with a modest rightward lean. Do not extend the offhand instead. Preserve the same body, continuous torso, camera, scale, and exact planted-foot x/y pixels. Keep both frames within the canvas with transparent margins; no second figure, ground, effects, text or opaque background.\nThis block records the prompt for a fresh review of the existing installed pair; no new image is requested.",
   "humanoid_size": "tall",
   "sprite_size": {"height_squares": 2, "width_squares": 1},
   "description_sources": [
@@ -28,7 +28,7 @@
       "weapon_role": ""
     }
   ],
-  "flag_for_regeneration": true,
+  "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "HILL GIANT",
   "source": {

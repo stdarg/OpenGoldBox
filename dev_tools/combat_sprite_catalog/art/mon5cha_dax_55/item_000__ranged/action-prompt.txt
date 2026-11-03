@@ -2,6 +2,10 @@ OpenGold combat sprite specification: bipedal-v1 (2026-10-17)
 
 Create one independently designed full-body monster combat sprite in crisp pixel
 art. Use the monster's current text description and the selected equipment set.
+Before every generation or regeneration, the exact full prompt sent to the
+image generator must be saved in that monster's description under an IMAGEGEN
+PROMPT heading. If this text changes for a retry, update and save the monster
+description before making the next request; prompt files alone are insufficient.
 No original game image, extracted sprite, or original-art contact sheet may be an
 input reference. Do not copy the pose-guide mannequin's identity or clothes.
 The saved sprite_size comes from the game's decoded combat-art dimensions,
@@ -29,7 +33,12 @@ projectile has been released toward screen right, with appropriate follow-throug
 The projectile is no longer nocked, loaded or in the sling pouch; it may already
 be outside the image. Keep the bow, crossbow or sling in the character's hands.
 For a thrown weapon, ready holds it poised to throw; action is just after release
-and that thrown weapon is no longer in the hand. Do not turn a wand into a bow.
+and that thrown weapon is no longer in the hand. The SAME arm that holds the
+weapon in ready must follow through in action. Trace its hand back to its
+shoulder in both frames; do not extend the offhand while leaving the throwing
+arm bent behind the head or resting at the waist. An empty extended hand is
+not enough unless it belongs to the former weapon arm. Do not turn a wand into
+a bow.
 THROWN-WEAPON ARM CONTINUITY: Before drawing action, identify the arm that
 actually grips the thrown object in ready by tracing its shoulder, elbow,
 wrist, and hand. If the object has a two-handed grip, identify the primary
@@ -40,14 +49,24 @@ substitute for it. A lowered throwing hand is a failed throw even if the
 object has disappeared or the other hand points right. Keep the shoulder,
 elbow, wrist, and open hand visibly connected; do not detach the arm or move
 the whole figure to fit its reach.
-BARE-HANDED ATTACKS BY MONSTERS WITH ARMS: In ACTION, lean the upper body
-slightly toward screen right and show either a punch or an outstretched reach.
-A humanoid's bare-handed attack is ALWAYS a punch, never a reach. Keep the
-planted feet at their exact ready-frame coordinates and preserve the body's
-scale and facing. In READY, hold the arms poised for the chosen attack. If the
-description gives no direction for a non-humanoid's bare-handed attack, ask
-whether it should punch or reach before generating. If a magical or other
-unusual attack is unspecified, ask for its ready/action behavior.
+BARE-HANDED ATTACKS BY MONSTERS WITH ARMS: Before generating or regenerating
+the attack, ask the user to choose PUNCH or TWO-ARM FORWARD REACH for the exact monster
+and variant, unless that choice was already explicitly supplied by the user.
+Do not infer the choice from humanoid shape, a saved description, or earlier
+art. In EITHER ACTION, lean the UPPER BODY toward screen right into the attack.
+For PUNCH, extend the striking fist forward toward the target; the action must
+read as a forceful punch, not an idle reach. For TWO-ARM FORWARD REACH, extend
+BOTH ARMS FORWARD toward screen right with both hands outstretched.
+In READY, hold the arms poised for the chosen attack. Keep the planted feet at
+their exact ready-frame coordinates and preserve the body's scale and facing.
+If a magical or other unusual attack is unspecified, ask for its ready/action
+behavior before generating.
+
+FOUR-LEGGED ANIMAL BITES: In ACTION, lunge the head and neck toward screen right
+with the mouth OPEN WIDE. Keep the planted paws, rear body, camera, and scale
+registered to READY. Animate the upper body into the bite; do not slide or
+recenter the entire animal. Apply the same bite motion to the six-legged
+Displacer Beast while preserving all six legs and both shoulder tentacles.
 
 EQUIPMENT: Draw only the selected weapon/shield setup, plus appropriate other
 gear from the record. Retain the shield in both frames when the set includes it.
@@ -174,7 +193,7 @@ action must read clearly at normal combat size, not only in a magnified preview.
 
 MONSTER AND SELECTED SET (current catalog JSON):
 {
-  "description": "A towering hill giant with a rough, heavy build; the source inventory includes throwing stones. Source inventory: Boulder, Boulder. Source wealth: 2 cp, 4 sp, 3 ep, 2000 gp.",
+  "description": "A towering hill giant with a rough, heavy build; the source inventory includes throwing stones. Source inventory: Boulder, Boulder. Source wealth: 2 cp, 4 sp, 3 ep, 2000 gp.\n\nIMAGEGEN PROMPT — MON5CHA.DAX:55/item_000__ranged, existing pair review\nReady: One complete Hill Giant in front three-quarter view facing screen right, chest partly visible. Tall body about 1.7 combat squares high within a one-square-wide, two-square-tall footprint. Hold one boulder raised in the viewer-left throwing hand, ready to throw. The other arm remains distinct. Use the user-approved independent bipedal pose guide only for facing and pose; use no original game artwork. Keep the established rough giant identity, body scale, torso, planted feet and true transparent 128 x 128 pixel-art canvas.\nAction: Edit that ready frame into the moment just after release. Remove the boulder entirely; the game draws its flight. Trace the boulder hand through its elbow to the viewer-left shoulder in ready. Extend that same shoulder and now-empty arm toward screen right at shoulder height or above, with a modest rightward lean. Do not extend the offhand instead. Preserve the same body, continuous torso, camera, scale, and exact planted-foot x/y pixels. Keep both frames within the canvas with transparent margins; no second figure, ground, effects, text or opaque background.\nThis block records the prompt for a fresh review of the existing installed pair; no new image is requested.",
   "height_feet": null,
   "height_reference": null,
   "humanoid_size": "tall",
@@ -236,5 +255,3 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-
-Exact correction: MON5CHA.DAX:55/item_000__ranged/action. In accepted ready.png, the boulder is gripped in the giant's raised arm on the viewer's left. The first generated attempt extended the opposite arm and was rejected. A separate planning copy marked the boulder, throwing arm, and rightward destination. The selected imagegen edit traces that raised arm across the chest to an empty hand extended screen right at shoulder height; the other arm remains bent. Two follow-up edits shortened only the reaching arm to satisfy the saved 1x2 footprint without moving the body. The existing accepted ready image is unchanged. Final 128x128 action uses shared canvas geometry and nearest-neighbor downsampling from the selected transparent imagegen result, with the accepted ready image's rows 65 through 127 retained pixel-for-pixel to keep the loincloth, legs, feet, and ground registration fixed. Alpha below 5% was cleared to transparent. Only the action frame is installed.
