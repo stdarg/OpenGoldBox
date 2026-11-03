@@ -574,6 +574,34 @@ func rest_once(items: Array, at: int) -> int:
             await settle(4)
     return await play_on(items, at)
 
+# A disorientation square sends the party to another at random, so the dice may
+# not land where the recording's did. As in the expedition test, it steps off and
+# back on until they do.
+func disorient_until(items: Array, at: int, target: Vector2i) -> int:
+    for tries in range(60):
+        if pose() == target or not dialogue().contains("SUDDEN DISORIENTATION"): return at
+        var square := pose()
+        var way_off := -1
+        for d in range(4):
+            await face(d)
+            if idle():
+                await key(KEY_UP)
+                await settle(6)
+            at = await play_on(items, at)
+            if at < 0: return -1
+            if pose() != square:
+                way_off = d
+                break
+        if way_off < 0: return at
+        await face((way_off + 2) % 4)
+        if idle():
+            await key(KEY_UP)
+            await settle(6)
+        at = await play_on(items, at)
+        if at < 0: return -1
+    say("  60 tries did not land on %s" % target)
+    return at
+
 # Walks back to a recorded square when a fight or an interruption moved the
 # party, with the map the player has: walls and doors seen so far.
 func walk_back(items: Array, at: int, target: Vector2i) -> int:
@@ -640,8 +668,13 @@ func catch_up(items: Array, at: int) -> int:
     var here := pose()
     for i in range(at, items.size()):
         var item: Dictionary = items[i]
-        if item.t != "explore" or item.overland: continue
-        if area_names.get(int(item.area), "") != location: continue
+        if item.t != "explore": continue
+        # Out on the wilderness map already, ahead of the recording's steps to it.
+        if item.overland and location == "Wilderness":
+            skipped += i - at
+            say("  ahead of the recording: on the wilderness map %d items early" % (i - at))
+            return i
+        if item.overland or area_names.get(int(item.area), "") != location: continue
         if Vector2i(int(item.x), int(item.y)) == here:
             skipped += i - at
             say("  ahead of the recording: went on %d items later, %s" % [i - at, location])
@@ -652,9 +685,12 @@ func explore(items: Array, at: int) -> int:
     var item: Dictionary = items[at]
     var area_id := int(item.area)
     var location: String = (town().get_node("Location") as Label).text.get_slice(" / ", 0)
-    if not area_names.has(area_id):
+    # The wilderness map is not learned like an area: a first overland step met
+    # before the party left the last area would name the map after that area.
+    if not item.overland and not area_names.has(area_id):
         area_names[area_id] = location
-    elif area_names[area_id] != location:
+    var expected: String = "Wilderness" if item.overland else area_names[area_id]
+    if expected != location:
         var later := catch_up(items, at)
         if later < 0:
             # Nothing later happens here: this segment's route is done with this place.
@@ -667,6 +703,8 @@ func explore(items: Array, at: int) -> int:
         var target := Vector2i(int(item.x), int(item.y))
         if pose() != target:
             say("  off the route at %s, walking back to %s" % [pose(), target])
+            at = await disorient_until(items, at, target)
+            if at < 0: return -1
             var back := await walk_back(items, at, target)
             if back < 0:
                 if not has_town() or has_combat(): return -1
