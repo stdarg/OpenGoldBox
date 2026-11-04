@@ -363,6 +363,20 @@
         {"record": 92, "definition": "impostor", "fit_xp": 700, "award_xp": 700},
         {"record": 93, "definition": "kovel-master-thief", "fit_xp": 200, "award_xp": 200}
       ]
+    },
+    {
+      "scripts": [0],
+      "bank": 3,
+      "name": "New Phlan",
+      "creatures": [
+        {"record": 94, "definition": "slums-magic-user", "fit_xp": 200, "award_xp": 200},
+        {"record": 84, "definition": "trapped-fighter", "fit_xp": 700, "award_xp": 700},
+        {"record": 53, "definition": "outpost-guard", "fit_xp": 25, "award_xp": 25},
+        {"record": 40, "definition": "wilderness-bandit", "fit_xp": 25, "award_xp": 25},
+        {"record": 41, "definition": "nomad-guard", "fit_xp": 450, "award_xp": 450},
+        {"record": 83, "definition": "bane-priest", "fit_xp": 450, "award_xp": 450},
+        {"record": 85, "definition": "castle-knight", "fit_xp": 700, "award_xp": 700}
+      ]
     }
   ]
 }

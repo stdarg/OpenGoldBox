@@ -270,8 +270,9 @@ func check_temple(x: int, y: int, party: String) -> void:
 			bug("a temple serves a party that cannot pay", "'" + dialogue() + "' gold " + str(before) + " -> " + str(party_gold()))
 		await choose("Back")
 	else:
+		# A party paying in platinum has the sick party's patients.
 		for service in listed:
-			await use_service(service, party)
+			await use_service(service, party if NEEDS.has(party) else "sick")
 	await choose("Leave")
 	for prompt in range(10):
 		if exploring(): break
@@ -447,15 +448,34 @@ func check_refusal() -> void:
 		if list.has("YES"): await choose("YES")
 		elif not list.is_empty(): await choose(list[0])
 		elif not await press("CampaignTown/Continue"): await settle()
-	# Tempus's priests fight such a party instead ("YOU ATTACKED THE CITY
-	# WATCH..."): like the watch's own fight (docs/RECOVERY.md), its creatures
-	# are not converted yet, so the event says so and rolls back.
+	# Tempus's priests fight such a party instead.
 	var tempus := context.begins_with("temple-0-12") or context.begins_with("temple-2-12")
-	var rolled_back := seen_text.contains("This event is not supported yet") and seen_text.contains("rolled back")
-	if served or not (seen_text.contains("WE REFUSE YOU ALL SERVICE") or (tempus and rolled_back)):
+	var attacked := seen_text.contains("YOU ATTACKED THE CITY WATCH, YOU WON'T BEAT US SO EASILY!")
+	if seen_text.contains("not supported yet"):
+		bug("a refusal or punishment is not supported", "'" + seen_text.strip_edges().replace("\n", " / ") + "'")
+	if served or not (seen_text.contains("WE REFUSE YOU ALL SERVICE") or (tempus and attacked)):
 		bug("a place serves a party that attacked the city watch", "'" + seen_text.strip_edges().replace("\n", " / ") + "'")
-	if party_gold() != gold or member_hp() != hp:
+	if not attacked and (party_gold() != gold or member_hp() != hp):
 		bug("a refused party loses gold or hit points", str(gold) + " -> " + str(party_gold()))
+
+# A party that stays when the city watch rousts it from its camp in the
+# street fights the watch on the combat screen.
+func check_watch() -> void:
+	await press("CampaignTown/Camp")
+	if not await press("CampaignTown/RestDialog/Start"):
+		bug("the camp cannot start", "")
+		return
+	seen_text = ""
+	for prompt in range(40):
+		seen_text += dialogue() + "\n"
+		if node("CampaignCombat") != null and node("CampaignCombat").is_visible_in_tree(): break
+		if exploring(): break
+		var list := choices()
+		if list.has("STAY"): await choose("STAY")
+		elif not list.is_empty(): await choose(list[0])
+		elif not await press("CampaignTown/Continue"): await settle()
+	if node("CampaignCombat") == null or not node("CampaignCombat").is_visible_in_tree():
+		bug("staying when the city watch comes starts no fight", "'" + seen_text.strip_edges().replace("\n", " / ") + "'")
 
 # --- The plan -----------------------------------------------------------------
 
@@ -482,6 +502,12 @@ func run() -> void:
 		if kind == "shop": await check_shop(x, y, party)
 		elif kind == "temple": await check_temple(x, y, party)
 		elif kind == "inn": await check_inn(x, y, party)
+	if only == "" or "watch".begins_with(only):
+		context = "watch"
+		trail = []
+		if await load_fixture("shop-15-8.ogs"):
+			places += 1
+			await check_watch()
 	print("Checked ", places, " places; ", bugs.size(), " distinct problems")
 	for key in bugs:
 		print("  ", bugs[key].size(), "x ", key, "\n      e.g. ", bugs[key][0])

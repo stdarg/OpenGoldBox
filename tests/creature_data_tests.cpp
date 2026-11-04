@@ -72,7 +72,8 @@ void castle_guards(const CreatureData &data)
               number(guard, "award_xp") == 700 && number(guard, "original_hit_points") == 87 &&
               text(guard, "key") == "MON5CHA.DAX:85",
           "The castle's guards fight as castle-knight, 700 and 700, from the original's 87");
-    check(list(guard, "sharing").size() == 1, "Only the guards fight as castle-knight");
+    check(list(guard, "sharing").size() == 2,
+          "The guards and Tempus's 8th level fighters in New Phlan fight as castle-knight");
     const auto &goblin = entry(list(creatures, "creatures"),
                                {{"area", Json{std::string("The Slums")}}, {"record", Json{2.0}}});
     check(text(goblin, "definition") == "slums-goblin" && list(goblin, "sharing").size() == 3,

@@ -45,7 +45,7 @@ unless named otherwise. Test files: `ecl` [ecl_tests.cpp](../tests/ecl_tests.cpp
 | 21 | LOAD FILES | Map, wall art and map memory per area | `save`; `party` `rejected_combat_handoff` | West gate round trip; Kuto's Well (`exp` `enter_kutos_well`) | Resources outside the supported areas; invalid facing |
 | 22 | PARTY SURPRISE | Writes 0, 0 (converted parties have no surprise modifiers) | — | — | — |
 | 23 | SURPRISE | Stores the bits COMBAT reads | VM only | — | Unsupported surprise values, at COMBAT |
-| 24 | COMBAT | Monsters, temples, shops, treasure | `tour` `shopping_tests`; `party` `recovery_hosts`; `exp` `script_treasure_tests` | Orcs; shops; Ilmater's temple (`exp` `podol_temple`) | Other town combat routes |
+| 24 | COMBAT | Monsters, temples, shops, treasure | `tour` `shopping_tests`; `party` `recovery_hosts`; `exp` `script_treasure_tests` | Orcs; shops; Ilmater's temple (`exp` `podol_temple`); New Phlan's city watch and Tempus's priests (`exp` `city_watch_fight`) | Other town combat routes |
 | 27 | TREASURE | Coins and item lists | `tour`; `exp` `script_treasure_tests`, `deferred_treasure_tests` | Ohlo's reward; the original shop list; holy symbols | Unsupported town lists |
 | 28 | ROB | Form 1: a share of the coins (items kept by the user's choice) | `exp` (the refused form) | Norris's surrender; the Pitt's bribe and drinking (`exp` `podol_pitt`) | Every other form |
 | 29 | ENCOUNTER MENU | Slums encounter menu | — | `exp` `slums_encounter_menu` | Other contexts |

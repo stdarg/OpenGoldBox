@@ -1098,13 +1098,13 @@ void CampaignParty::reincarnate(const rules::CharacterRules &creation, MemberId 
     auto &druid = member_in(next, caster);
     auto &body = member_in(next, target);
     const auto gold = rules_->camp_action_gold(body.character.sheet(), body.vitals, action);
-    if (gold > coins(next.wealth, Coin::gold))
+    if (gold > gold_value(next.wealth))
     {
         throw std::runtime_error("The party purse cannot pay the offering");
     }
     rules_->use_camp_action(druid.character.sheet(), druid.vitals, body.character.sheet(),
                             body.vitals, action, next.random_state);
-    coins(next.wealth, Coin::gold) -= gold;
+    next.wealth = pay_gold(next.wealth, gold).purse;
     // The old species' traits and choices go; the rest of the character stays.
     auto draft = reincarnation_draft(body.character, species);
     draft.training.merge(choices.training);
@@ -1395,7 +1395,7 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
     {
         throw std::runtime_error("Inventory is full (16 items)");
     }
-    if (coins(state_.wealth, Coin::gold) < item.stored.value)
+    if (gold_value(state_.wealth) < item.stored.value)
     {
         throw std::runtime_error("Not enough gold");
     }
@@ -1409,7 +1409,7 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
     sources.emplace(key, item);
     m.character.replace_inventory(std::move(inventory));
     m.item_sources = std::move(sources);
-    coins(state_.wealth, Coin::gold) -= item.stored.value;
+    state_.wealth = pay_gold(state_.wealth, item.stored.value).purse;
 }
 
 void CampaignParty::read_manual(MemberId id, std::uint64_t item)
@@ -1476,14 +1476,14 @@ bool CampaignParty::identify_at_shop(MemberId id, std::uint64_t item)
 {
     constexpr unsigned identify_fee = 200;
     editable();
-    if (coins(state_.wealth, Coin::gold) < identify_fee)
+    if (gold_value(state_.wealth) < identify_fee)
     {
         throw std::runtime_error("Not enough gold");
     }
     auto holder = member(id);
     const bool revealed = identify_item(holder, item);
     edit(id) = std::move(holder);
-    coins(state_.wealth, Coin::gold) -= identify_fee;
+    state_.wealth = pay_gold(state_.wealth, identify_fee).purse;
     return revealed;
 }
 
@@ -1655,7 +1655,7 @@ ExperienceOffer CampaignParty::experience_offer(MemberId id, TrainingHall hall) 
     {
         offer.denial = TrainingDenial::already_trained;
     }
-    else if (coins(state_.wealth, Coin::gold) < offer.fee)
+    else if (gold_value(state_.wealth) < offer.fee)
     {
         offer.denial = TrainingDenial::gold;
     }
@@ -1674,7 +1674,7 @@ void CampaignParty::buy_experience(MemberId id, TrainingHall hall)
     auto &m = edit(id);
     m.experience += offer.experience;
     m.hall_experience_level = rules_->advancement_options(m.character.sheet()).level - 1;
-    coins(state_.wealth, Coin::gold) -= offer.fee;
+    state_.wealth = pay_gold(state_.wealth, offer.fee).purse;
 }
 
 TrainingDenial CampaignParty::skill_training_denial(MemberId id, TrainingHall hall) const
@@ -1702,7 +1702,7 @@ TrainingDenial CampaignParty::skill_training_denial(MemberId id, TrainingHall ha
     {
         return TrainingDenial::already_trained;
     }
-    if (coins(state_.wealth, Coin::gold) < proficiency_training_fee)
+    if (gold_value(state_.wealth) < proficiency_training_fee)
     {
         return TrainingDenial::gold;
     }
@@ -1730,14 +1730,14 @@ void CampaignParty::train_skill(MemberId id, TrainingHall hall, const std::strin
                      {
                          return lesson.id == grant;
                      }) ||
-        coins(state_.wealth, Coin::gold) < fee)
+        gold_value(state_.wealth) < fee)
     {
         throw std::runtime_error("The training hall cannot teach this lesson");
     }
     auto character = member(id).character;
     character.train_at_hall(*rules_, grant);
     edit(id).character = std::move(character);
-    coins(state_.wealth, Coin::gold) -= fee;
+    state_.wealth = pay_gold(state_.wealth, fee).purse;
 }
 
 bool CampaignParty::can_advance(MemberId id) const
@@ -2216,13 +2216,13 @@ void CampaignParty::temple_service(MemberId target, rules::TempleService service
     {
         throw std::runtime_error("The temple's service would not help the member");
     }
-    if (coins(state_.wealth, Coin::gold) < price_gp)
+    if (gold_value(state_.wealth) < price_gp)
     {
         throw std::runtime_error("Party cannot afford temple service");
     }
     auto next = state_;
     auto &patient = member_in(next, target);
-    coins(next.wealth, Coin::gold) -= price_gp;
+    next.wealth = pay_gold(next.wealth, price_gp).purse;
     const auto &sheet = patient.character.sheet();
     if (rules_->temple_service_helps(sheet, patient.vitals, service))
     {
@@ -2685,16 +2685,16 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
     else
     {
         auto &patient = find(target);
-        // An offering, such as Revivify's, is paid from the party purse's gold.
+        // An offering, such as Revivify's, is paid from the party purse's coins.
         const auto gold =
             rules_->camp_action_gold(patient.character.sheet(), patient.vitals, action);
-        if (gold > coins(next.wealth, Coin::gold))
+        if (gold > gold_value(next.wealth))
         {
             throw std::runtime_error("The party purse cannot pay the offering");
         }
         rules_->use_camp_action(caster.character.sheet(), caster.vitals, patient.character.sheet(),
                                 patient.vitals, action, next.random_state);
-        coins(next.wealth, Coin::gold) -= gold;
+        next.wealth = pay_gold(next.wealth, gold).purse;
         if (action.starts_with("remove_curse"))
         {
             put_down_cursed_items(patient);
@@ -3074,7 +3074,7 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
         throw std::runtime_error("Combat clock moved backward");
     }
     if (snapshot.offerings_gold < combat_offerings_ ||
-        snapshot.offerings_gold - combat_offerings_ > coins(state_.wealth, Coin::gold))
+        snapshot.offerings_gold - combat_offerings_ > gold_value(state_.wealth))
     {
         throw std::runtime_error("Combat offerings exceed the party purse");
     }
@@ -3147,7 +3147,7 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
     // Room now, so the commit allocates nothing.
     combat_checked_.reserve(combat_checked_.size() + newly_checked.size());
     // Revivify's offering is paid from the party purse as it is made.
-    coins(state_.wealth, Coin::gold) -= snapshot.offerings_gold - combat_offerings_;
+    state_.wealth = pay_gold(state_.wealth, snapshot.offerings_gold - combat_offerings_).purse;
     apply(state_, std::move(reserves));
     for (auto &member : state_.roster)
     {

@@ -50,6 +50,7 @@
 using namespace godot;
 using namespace opengold::por;
 using opengold::Coin;
+using opengold::gold_value;
 using presentation::required_node;
 
 namespace
@@ -575,7 +576,7 @@ void RolfTourView::refresh_inventory()
         .set_text(i18n::format("{name} / {class} / party {gold} gp",
                                {{"name", String::utf8(m.character.sheet().name.c_str())},
                                 {"class", i18n::text(m.character.sheet().character_class)},
-                                {"gold", coins(campaign_->state().wealth, Coin::gold)}}));
+                                {"gold", gold_value(campaign_->state().wealth)}}));
     for (const auto &item : m.character.inventory().items())
     {
         // Detect Magic marks magic items, as the original's item lists did.
@@ -1967,7 +1968,7 @@ void RolfTourView::refresh()
             .set_text(i18n::format(
                 "Shop / buying for {name}: party {gold} gp, {count}/16 items",
                 {{"name", String::utf8(buyer.character.sheet().name.c_str())},
-                 {"gold", coins(campaign_->state().wealth, Coin::gold)},
+                 {"gold", gold_value(campaign_->state().wealth)},
                  {"count", static_cast<int64_t>(buyer.character.inventory().items().size())}}));
     }
     const auto resource =
@@ -2100,7 +2101,7 @@ void RolfTourView::refresh()
                 i18n::format("Fighter / Level 1 / HP {current}/{maximum}\n{gold} gp / {items}",
                              {{"current", p.hit_points},
                               {"maximum", p.max_hit_points},
-                              {"gold", coins(p.wealth, Coin::gold)},
+                              {"gold", gold_value(p.wealth)},
                               {"items", i18n::plural("{count} item", "{count} items",
                                                      static_cast<int>(p.inventory.size()))}}));
     }
@@ -2113,7 +2114,7 @@ void RolfTourView::refresh()
                 {{"name", String::utf8(m.character.sheet().name.c_str())},
                  {"current", m.vitals.hit_points},
                  {"maximum", campaign_->hit_point_maximum(campaign_->selected())},
-                 {"gold", coins(campaign_->state().wealth, Coin::gold)},
+                 {"gold", gold_value(campaign_->state().wealth)},
                  {"items",
                   i18n::plural("{count} item", "{count} items",
                                static_cast<int>(m.character.inventory().items().size()))}}));
@@ -2412,8 +2413,8 @@ void RolfTourView::check_town()
     };
     const auto gold = [&]
     {
-        return campaign_ ? coins(campaign_->state().wealth, Coin::gold)
-                         : coins(session_->party().wealth, Coin::gold);
+        return campaign_ ? gold_value(campaign_->state().wealth)
+                         : gold_value(session_->party().wealth);
     };
     if (check_prompts_ != 8)
     {

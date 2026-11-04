@@ -55,6 +55,18 @@ struct SettledPurse
     std::optional<CoinExchange> exchange;
 };
 
+// What the purse's coins are worth in whole gold pieces at SRD rates (10 sp, 2
+// ep or 1/10 pp to the gold piece); gems and jewelry are not coins.
+[[nodiscard]] std::uint64_t gold_value(const Purse &purse);
+// gold_value, at most what a 32-bit count holds.
+[[nodiscard]] std::uint32_t spendable_gold(const Purse &purse);
+
+// Pays a price of `gold` gold pieces with any coins: with gold when it
+// covers the price, otherwise with the largest coins that do not overpay and
+// then one larger coin, with change in gold, silver and copper. Throws if the
+// coins are worth less than the price.
+[[nodiscard]] SettledPurse pay_gold(const Purse &purse, std::uint64_t gold);
+
 // Original New Phlan scripts check and take one particular denomination (the
 // inn asks for platinum). They see, in each denomination, what the whole coin
 // purse can afford at SRD rates. Gems and jewelry are not coins; they are shown

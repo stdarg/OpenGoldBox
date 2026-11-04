@@ -511,11 +511,17 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
         // of its own, and the Zhentil outpost.
         AreaSource{1, 6, {{1, {2, 6, 6}}}}, AreaSource{19, 6, {}},
         AreaSource{28, 6, {{28, {1, 2, 9}}}}};
-    // Every script the encounter data names is one of these areas, in its bank.
+    // Every script the encounter data names is one of these areas, in its
+    // bank, or New Phlan's own (ECL3:0).
+    constexpr unsigned town_script = 0, town_bank = 3;
     for (const auto &entry : encounters.areas)
     {
         for (const auto script : entry.scripts)
         {
+            if (script == town_script && entry.bank == town_bank)
+            {
+                continue;
+            }
             const auto source = std::find_if(areas.begin(), areas.end(),
                                              [script](const AreaSource &area)
                                              {
@@ -674,6 +680,26 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
             town->districts.emplace(geo.id, std::move(district));
         }
     }
+    // New Phlan's own fights (the city watch, Tempus's priests): its MON3CHA
+    // creatures, as a district's.
+    if (const auto *entry = encounters.area(town_script))
+    {
+        for (const auto &[id, conversion] : entry->creatures)
+        {
+            const auto creature =
+                creatures.find({static_cast<std::uint8_t>(town_bank), static_cast<std::uint8_t>(id)});
+            if (!creature)
+            {
+                throw EclError("Missing original creature MON3CHA:" + std::to_string(id));
+            }
+            town->encounter_creatures.emplace(id, creature->get());
+            town->conversions.emplace(id, conversion);
+        }
+    }
+    town->script = town_script;
+    town->bank = town_bank;
+    town->combat_archive = read_archive(resolve_archive(directory, "CPIC3.DAX"));
+    town->terrain_art = terrain_art;
     apply_chances(encounters, *town);
     town->encounter_overrides = checked_overrides(encounters, *town);
     return RolfTourSession(map->get(), program, std::move(sprites), 0xB071, std::move(*wall_art),

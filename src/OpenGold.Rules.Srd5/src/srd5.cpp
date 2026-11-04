@@ -5748,7 +5748,7 @@ class Session final : public CombatSession
     unsigned morale_{100};
     bool spares_the_party_{};
     bool daylight_{}; // Encounter::daylight
-    // Gold coins in the party purse, and what offerings have taken of them.
+    // What the party purse is worth in gold, and what offerings have taken of it.
     unsigned gold_{}, offerings_gold_{};
     // A party member who has just died: Revivify may bring it back for a minute.
     void fall(Actor &a);

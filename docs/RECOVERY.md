@@ -67,8 +67,9 @@ Supported profiles:
 
 - `0/0`, or a zero interval or chance: the rest is never interrupted.
 - New Phlan's city watch, `1/100` or `1/101`: the first step always interrupts,
-  five minutes in. Choose **GO** to leave peacefully; combat with the watch
-  remains unsupported and rolls the event back.
+  five minutes in. Choose **GO** to leave peacefully; **STAY** fights the
+  watch ([fights in New Phlan](PHLAN.md#fights-in-new-phlan)), after which
+  the city's temples and shops refuse the party.
 - A Slums street, `24/24`: a 24% check every two hours. A Long Rest has four
   checks and is interrupted about two times in three (1 − 0.76⁴); a Short Rest
   (12 steps) reaches a check only every second rest. Entry 3 starts an original
@@ -169,8 +170,8 @@ The original temple **COMBAT** request with `6DE2=1` opens the temple's **Heal
 list** ([TEMPLE-1](SRD-DECISIONS.md#temple-1-2026-10-22-temple-services)): its services with their prices, and **Leave**.
 Choosing a service lists the active members it would help; choosing a member
 shows the price to confirm with **Pay** or **Back**. Each service casts an SRD
-5.2.1 spell with an authored Wisdom +3 temple caster, paid from the party's gold
-coins only: the Cures heal (Cure Light Wounds is Cure Wounds, **2d8 + 3**, for
+5.2.1 spell with an authored Wisdom +3 temple caster, paid from the party's coins,
+any of them with change: the Cures heal (Cure Light Wounds is Cure Wounds, **2d8 + 3**, for
 100 gp), the others end blindness, disease, poison, curses or petrification, and
 Raise Dead and, on Easy and Normal, Resurrection bring a member back. Prices
 come from `data/shops`. Dice are deterministic and campaign-owned; the rules

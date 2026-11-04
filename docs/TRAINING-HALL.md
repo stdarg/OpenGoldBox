@@ -80,8 +80,9 @@ The halls teach skills and Expertise only unless that decision changes.
 
 ### Paying
 
-Every fee comes from the party's gold coins, like the shops' and the temple's
-prices ([party gold](DEVIATIONS.md#money)). A purchase is all or nothing: a
+Every fee is paid from the party's coins, any of them with change, like the
+shops', the temples' and the inns' prices ([party gold](DEVIATIONS.md#money),
+[coin payments](PHLAN.md#coin-payments)). A purchase is all or nothing: a
 refused session or lesson charges nothing and changes nothing.
 
 ### When a hall says no

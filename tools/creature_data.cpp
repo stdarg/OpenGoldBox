@@ -122,9 +122,14 @@ struct CreatureData::Loaded
     std::shared_ptr<const por::PhlanResources> town;
     Json conversions_file, overrides_file, chances_file, companions_file;
 
-    // The map of the area `script` belongs to, which holds its creatures.
+    // The map of the area `script` belongs to, which holds its creatures: New
+    // Phlan's own for its script 0.
     [[nodiscard]] const por::PhlanResources &district(unsigned script) const
     {
+        if (script == town->script && !town->encounter_creatures.empty())
+        {
+            return *town;
+        }
         for (const auto &[id, district] : town->districts)
         {
             if (district->loaded_by(script) && !district->encounter_creatures.empty())

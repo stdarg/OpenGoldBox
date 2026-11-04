@@ -15,7 +15,8 @@ What each area's original creature records fight as. Format
 
 - `scripts`: the area scripts the entry is for. Valjevo Castle's four scripts
   (3, 4, 5 and 7) share one entry. A script is in one entry at most, and each
-  is an area of the game's area table in the entry's bank.
+  is an area of the game's area table in the entry's bank, or New Phlan's own
+  script 0 in bank 3 ([fights in New Phlan](../../docs/PHLAN.md#fights-in-new-phlan)).
 - `bank`: the `MONnCHA.DAX` archive the records are in.
 - `name`, and `audit`, the area's audit in `docs/audits/` where it has one.
 - `creatures`: for each `record`, its `combat.rules` stat line

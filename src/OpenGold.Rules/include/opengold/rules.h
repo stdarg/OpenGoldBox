@@ -587,7 +587,8 @@ struct Encounter
     std::uint64_t scope{1};
     // The encounter's morale, 0-100, set by the original script; 100 never breaks.
     unsigned morale{100};
-    // Gold coins in the party purse, for offerings such as Revivify's.
+    // What the party purse's coins are worth in gold, for offerings such as
+    // Revivify's.
     unsigned party_gold{};
     // The fight is by day: a creature on a square open to the sky (`plants`)
     // is in sunlight, where Sunlight Sensitivity gives Disadvantage on attack

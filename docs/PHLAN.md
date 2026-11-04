@@ -182,11 +182,38 @@ never be paid. Approved policy (issue #17), **make change automatically**:
 - The exchange is logged under the script's text, for example
   "Arden pays 10 gp for 1 pp." (localized), naming the member the script read.
 
-Reads that change nothing leave the purse alone. Shops price in gold and still
-charge the party's gold coins; the item goes to the chosen buyer. Robbery other than a share of the coins remains unsupported and rolls back
+Reads that change nothing leave the purse alone.
+
+Every price is in gold and takes any coin (the user's decision, 2026-11-04):
+shops, temples, the training halls, identifying and offerings pay with gold
+when the party's gold covers the price, otherwise with the largest coins that
+do not overpay and then one larger coin, with change in gold, silver and
+copper (`pay_gold`, `coin_purse.h`). The town shows the party's money as what
+all its coins are worth in gold, so a party holding Ohlo's 150 pp shows
+1,500 gp more and can spend it. The item goes to the chosen buyer. Robbery other than a share of the coins remains unsupported and rolls back
 ([ECL-COVERAGE.md](ECL-COVERAGE.md)).
 Native coverage: `tests/expedition_tests.cpp` (exchange rules, one charge across
 repeated reads, and the installed inn route: decline, refusal, payment, rest).
+
+## Fights in New Phlan
+
+New Phlan's own fights use its `MON3CHA` records, converted in
+[`conversions.json`](../data/encounters/README.md) (user's decision, 2026-11-04,
+each record as it fights elsewhere in the game):
+
+| Fight | Record | Original | Fights as |
+| --- | ---: | --- | --- |
+| The city watch, when a camp in the street stays | 94 | Level 3 MU | `slums-magic-user` |
+| | 84 | 6th level fighter | `trapped-fighter` |
+| | 53 | Aides | `outpost-guard` |
+| | 40 | Nomad | `wilderness-bandit` |
+| Tempus's priests, against a party that fought the watch | 83 | 7th level cleric | `bane-priest` |
+| | 41 | 4th level fighter | `nomad-guard` |
+| | 85 | 8th level fighter | `castle-knight` |
+
+As every scripted fight, each is sized to the party. After the watch's fight
+the city's temples and shops refuse the party all service, and the watch hunts
+it in the streets (`opengold_expedition_tests` `city_watch_fight`).
 
 ## Validation and remaining work
 
@@ -206,9 +233,10 @@ must list its record's services and prices and offer each only to the members
 it helps (wounded, Blinded, Poisoned, diseased, cursed, Petrified, dead, dust),
 charging once paid and nothing on Back; each inn must charge one platinum a
 night, restore the party on the first and say the second gives no Long Rest.
-Parties too poor are refused with nothing spent, and a party that fought the
-city watch is refused service (Tempus's priests fight it instead, which, like
-the watch's fight, is not supported yet). Three inn squares are inner rooms
+Parties too poor are refused with nothing spent, parties paying in platinum
+alone are served with change, a party that fought the city watch is refused
+service (Tempus's priests attack it instead), and staying when the watch
+rousts a camp starts the watch's fight on the combat screen. Three inn squares are inner rooms
 with no street door and are not entered. On Hard, a temple offers no
 Resurrection and its Raise Dead list names those it cannot help
 (`opengold_expedition_tests`).

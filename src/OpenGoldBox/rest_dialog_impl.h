@@ -464,7 +464,7 @@ std::optional<String> RolfTourView::use_outside_combat(opengold::MemberId user,
         }
         if (campaign_->rule_module().camp_action_gold(body.character.sheet(), body.vitals,
                                                       id.utf8().get_data()) >
-            opengold::coins(campaign_->state().wealth, opengold::Coin::gold))
+            opengold::gold_value(campaign_->state().wealth))
         {
             throw std::runtime_error("The party purse cannot pay the offering");
         }

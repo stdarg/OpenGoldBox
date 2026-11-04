@@ -1278,13 +1278,17 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
                                             std::string reward, bool items,
                                             std::vector<SpentGear> spent) const
 {
+    // New Phlan's own fights (area 0) are the town's; the rest a district's.
     const auto district = town_->districts.find(area);
-    if (district == town_->districts.end() || records.empty() || records.size() > 56 ||
-        reward.empty() || reward.size() > 160 ||
+    const PhlanResources *resources =
+        area == 0 ? town_.get()
+                  : (district == town_->districts.end() ? nullptr : district->second.get());
+    if (!resources || records.empty() || records.size() > 56 || reward.empty() ||
+        reward.size() > 160 ||
         std::any_of(records.begin(), records.end(),
                     [&](auto id)
                     {
-                        return !district->second->encounter_creatures.contains(id);
+                        return !resources->encounter_creatures.contains(id);
                     }))
     {
         throw EclError("Invalid pending encounter loot");
@@ -1296,7 +1300,7 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
     loot.area = area;
     for (auto id : loot.records)
     {
-        const auto &creature = district->second->encounter_creatures.at(id);
+        const auto &creature = resources->encounter_creatures.at(id);
         for (unsigned coin = 0; coin < 7; ++coin)
         {
             loot.wealth[coin] += creature.stored.wealth[coin];
@@ -1305,7 +1309,7 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
         {
             continue;
         }
-        auto gear = carried_gear(creature, exported_creature(*district->second, id));
+        auto gear = carried_gear(creature, exported_creature(*resources, id));
         // One monster of this record used its gear in the fight (DIFF-1).
         if (const auto used = std::find_if(spent.begin(), spent.end(),
                                            [&](const auto &s)
@@ -1332,7 +1336,7 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
                 loot.items.push_back(std::move(*item));
             }
         }
-        for (auto &item : added_gear(exported_creature(*district->second, id), *town_))
+        for (auto &item : added_gear(exported_creature(*resources, id), *town_))
         {
             item.index = loot.items.size();
             loot.items.push_back(std::move(item));
@@ -2196,7 +2200,7 @@ bool RolfTourSession::buy(std::uint64_t ticket, std::size_t item)
         return true;
     }
     const auto price = offered.stored.value;
-    if (party_.inventory.size() >= 16 || coins(party_.wealth, Coin::gold) < price)
+    if (party_.inventory.size() >= 16 || gold_value(party_.wealth) < price)
     {
         snapshot_.diagnostic =
             party_.inventory.size() >= 16 ? "Inventory is full (16 items)." : "Not enough gold.";
@@ -2207,7 +2211,7 @@ bool RolfTourSession::buy(std::uint64_t ticket, std::size_t item)
     purchased.index = party_.inventory.size();
     purchased.stored.readied_raw = 0;
     party_.inventory.push_back(std::move(purchased)); // Allocate before charging.
-    coins(party_.wealth, Coin::gold) -= price;
+    party_.wealth = pay_gold(party_.wealth, price).purse;
     snapshot_.diagnostic = "Bought " + offered.label() + " for " + std::to_string(price) + " gp.";
     ++snapshot_.revision;
     return true;
@@ -2538,7 +2542,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         const unsigned icon = change && change->icon ? *change->icon : arg(2);
         const auto count = static_cast<unsigned>(std::min<std::size_t>(
             loaded, monster_limit - std::min(monster_limit, staged_enemies_.size())));
-        if (!current_area_ || !area_resources().conversions.contains(record))
+        if (!area_resources().conversions.contains(record))
         {
             throw EclError("Encounter needs an explicit supported creature conversion: record " +
                            std::to_string(record) + ", count " + std::to_string(count) + ", icon " +
@@ -2797,7 +2801,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             reply.writes.push_back({ecl_monsters_defeated, 0});
             break;
         }
-        if (current_area_ && !staged_enemies_.empty())
+        // New Phlan's own fights too: the city watch's, Tempus's priests'.
+        if (!staged_enemies_.empty())
         {
             read_character();
             encounter_records_ = staged_records_;
@@ -3439,7 +3444,7 @@ bool RolfTourSession::choose_at_hall(std::size_t choice)
     {
         const auto fee = opengold::skill_training_fee(picked.grant);
         auto denial = campaign_->skill_training_denial(picked.member, visit.hall);
-        if (denial == TrainingDenial::none && coins(campaign_->state().wealth, Coin::gold) < fee)
+        if (denial == TrainingDenial::none && gold_value(campaign_->state().wealth) < fee)
         {
             denial = TrainingDenial::gold;
         }
@@ -3945,7 +3950,7 @@ bool RolfTourSession::choose_at_temple(std::size_t choice)
                       {{"name", name}}}});
         return true;
     case TempleChoice::Kind::member:
-        if (coins(campaign_->state().wealth, Coin::gold) < picked.offering.price_gp)
+        if (gold_value(campaign_->state().wealth) < picked.offering.price_gp)
         {
             show_temple({{"The party's gold cannot pay {fee} gp.",
                           {{"fee", amount(picked.offering.price_gp)}}}});

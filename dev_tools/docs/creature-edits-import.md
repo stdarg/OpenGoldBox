@@ -326,7 +326,7 @@ fields; Hit Points are the fourth.
 **Which records use a stat line.** `data/encounters/conversions.json`, one
 entry per area, each record with its `definition`. A stat line used by several
 records changes all of them: `castle-knight` is both Tyranthraxus's guards and
-the old town's 8th level fighters.
+Tempus's 8th level fighters in New Phlan.
 
 **Fight sites.** The original's scripts, listed with
 

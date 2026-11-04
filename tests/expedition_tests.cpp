@@ -396,6 +396,34 @@ void coin_purse_tests()
     check(settle_script_coins(gold_and_silver, gem).purse == Purse{0, 96, 0, 145, 0, 2, 1},
           "Gems are taken as gems, never converted to coins");
 
+    // A price in gold is paid with any coins: gold first, then the largest
+    // coins that do not overpay, then one coin broken with change.
+    check(gold_value(gold_and_silver) == 154 && gold_value(Purse{0, 9, 0, 9, 0, 9, 9}) == 9,
+          "The purse is worth its coins in whole gold, gems and jewelry apart");
+    check(pay_gold(gold_and_silver, 100).purse == Purse{0, 96, 0, 45, 0, 3, 1} &&
+              !pay_gold(gold_and_silver, 100).exchange,
+          "Gold pays a price it covers");
+    const Purse rewarded{0, 0, 0, 5, 150, 0, 1};
+    const auto cure = pay_gold(rewarded, 100);
+    check(cure.purse == Purse{0, 0, 0, 5, 140, 0, 1} && cure.exchange &&
+              cure.exchange->paid == Coins{0, 0, 0, 0, 10} && cure.exchange->change == Coins{},
+          "Platinum pays what gold cannot");
+    const auto broke = pay_gold(Purse{0, 0, 0, 2, 1, 0, 0}, 7);
+    check(broke.purse == Purse{0, 0, 0, 5, 0, 0, 0} && broke.exchange &&
+              broke.exchange->paid == Coins{0, 0, 0, 2, 1} &&
+              broke.exchange->change == Coins{0, 0, 0, 5, 0},
+          "Gold and a broken platinum pay together, with change in gold");
+    check(pay_gold(Purse{0, 96, 0, 145, 0, 0, 0}, 154).purse == Purse{0, 6, 0, 0, 0, 0, 0},
+          "Silver pays the rest of a price");
+    check(pay_gold(Purse{0, 0, 0, 0, 1, 0, 0}, 3).purse == Purse{0, 0, 0, 7, 0, 0, 0},
+          "A platinum piece breaks into change for a small price");
+    check(throws(
+              [&]
+              {
+                  (void)pay_gold(Purse{0, 9, 0, 9, 0, 9, 9}, 10);
+              }),
+          "Coins worth less than the price cannot pay it");
+
     auto everything = view;
     std::fill(everything.begin(), everything.begin() + 5, 0);
     check(throws(
@@ -975,6 +1003,8 @@ std::size_t peaceful(const por::TourSnapshot &s)
 
 // Every combat definition fight() has faced, in order.
 std::vector<std::string> enemies_fought;
+// The flag the city watch's fight sets: temples and shops refuse the party.
+constexpr por::EclAddress attacked_the_watch{0x4AC0};
 // Every monster a script fielded on the party's side, by rules definition.
 std::vector<std::string> allies_fought;
 
@@ -7032,6 +7062,85 @@ void temple_on_hard(const std::filesystem::path &directory)
     settle(town, party);
 }
 
+void city_watch_punishment(Expedition &trip);
+
+// A party that stays when the city watch rousts it from a New Phlan street
+// fights the watch (the original's Nomad record), and is then refused all
+// service: Tyr's priests send it away, and Tempus's attack it with their
+// clerics and fighters.
+void city_watch_fight(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    auto &[party, town] = trip;
+    check(route_camp(town, RestKind::long_rest), "Camp in a New Phlan street");
+    settle(town, party, prefer({"STAY"}));
+    check(last_encounter &&
+              std::any_of(last_encounter->enemies.begin(), last_encounter->enemies.end(),
+                      [](const auto &enemy)
+                      {
+                          return enemy.definition == "wilderness-bandit";
+                      }),
+          "The party fights the city watch");
+    check(town.script_variable(attacked_the_watch) == 1, "The fight marks the party");
+
+    std::string heard;
+    const auto listen = [&](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        return prefer({"YES"})(s);
+    };
+    check(walk_to_door(town, party, 11, 3, "temple"), "The Temple of Tyr's door");
+    const auto purse = party->state().wealth;
+    check(route_explore(town, por::ExplorationCommand::forward), "Step into Tyr's temple");
+    settle(town, party, listen);
+    // The refusal needs no answer: it is what the screen shows afterwards.
+    heard += town.snapshot().dialogue;
+    check(heard.find("WE REFUSE YOU ALL SERVICE") != std::string::npos &&
+              party->state().wealth == purse,
+          "Tyr's temple refuses the party");
+
+    // The watch now hunts the party through the streets; a fresh party is
+    // marked at Tempus's door instead.
+    auto marked = create_party(directory);
+    check(walk_to_door(marked.town, marked.party, 0, 12, "temple"), "The Temple of Tempus's door");
+    opengold::test::TourAccess::set_variable(marked.town, attacked_the_watch, 1);
+    city_watch_punishment(marked);
+}
+
+// Tempus's priests attack a party that fought the city watch, with their
+// clerics and fighters.
+void city_watch_punishment(Expedition &trip)
+{
+    auto &[party, town] = trip;
+    check(route_explore(town, por::ExplorationCommand::forward), "Step into Tempus's temple");
+    for (unsigned n = 0; n < 400 && town.snapshot().phase != por::TourPhase::combat; ++n)
+    {
+        const auto &s = town.snapshot();
+        if (s.phase == por::TourPhase::running)
+        {
+            town.advance(.5);
+            continue;
+        }
+        check(s.phase == por::TourPhase::awaiting_continue,
+              "Tempus's priests speak: " + s.diagnostic);
+        check(route_choose(town, s.continue_ticket, 0), "Hear Tempus's priests");
+    }
+    if (town.monster_picture())
+    {
+        check(town.start_encounter(), "The close-up is dismissed");
+    }
+    check(town.script_diagnostics().empty() && town.pending_encounter().has_value(),
+          "Tempus's priests attack");
+    std::set<std::string> attackers;
+    for (const auto &enemy : town.pending_encounter()->enemies)
+    {
+        attackers.insert(enemy.definition);
+    }
+    check(attackers.contains("bane-priest") && attackers.contains("nomad-guard") &&
+              attackers.contains("castle-knight"),
+          "Tempus sends its clerics and its fighters");
+}
+
 // The town services check (tests/town_services_tests.gd) loads a party one
 // step from each New Phlan shop, temple and inn, facing its door: shoppers
 // with gold for the whole stock, a temple's patients (each needing one
@@ -7090,10 +7199,12 @@ void write_town_service_fixtures(const std::filesystem::path &directory,
     };
     std::filesystem::create_directories(folder);
     // `who` names the file's party, `patients` its members' conditions.
-    // The flag the city watch's fight sets: temples and shops refuse the party.
-    constexpr por::EclAddress attacked_the_watch{0x4AC0};
+    const auto gold = [](std::uint32_t pieces)
+    {
+        return Purse{0, 0, 0, pieces, 0, 0, 0};
+    };
     const auto write = [&](unsigned x, unsigned y, const std::string &kind, const std::string &who,
-                           std::uint32_t gold, const std::string &patients_of)
+                           Purse wealth, const std::string &patients_of)
     {
         auto trip = create_party(directory);
         auto &[party, town] = trip;
@@ -7112,7 +7223,7 @@ void write_town_service_fixtures(const std::filesystem::path &directory,
                 patient.hit_points < 0 ? member.character.sheet().hit_points : patient.hit_points,
                 patient.dead, patient.change);
         }
-        state.wealth = {0, 0, 0, gold, 0, 0, 0};
+        state.wealth = wealth;
         party->restore(std::move(state));
         if (who == "outlaw")
         {
@@ -7132,30 +7243,34 @@ void write_town_service_fixtures(const std::filesystem::path &directory,
             // armor, 23 silver; 6 Tyr, 7 Sune and 24 Tempus; 9 the inn.
             if (event == 19 || event == 21 || event == 22 || event == 23)
             {
-                write(x, y, "shop", "", 1'000'000, "");
+                write(x, y, "shop", "", gold(1'000'000), "");
             }
             if (event == 6 || event == 7 || event == 24)
             {
-                write(x, y, "temple", "sick", 100'000, "sick");
-                write(x, y, "temple", "dead", 100'000, "dead");
+                write(x, y, "temple", "sick", gold(100'000), "sick");
+                write(x, y, "temple", "dead", gold(100'000), "dead");
             }
             if (event == 9)
             {
-                write(x, y, "inn", "wounded", 100, "wounded");
+                write(x, y, "inn", "wounded", gold(100), "wounded");
             }
         }
     }
     // Too poor for the general store's oil or the temple's cheapest Cure.
-    write(15, 8, "shop", "poor", 0, "");
-    write(11, 3, "temple", "poor", 50, "sick");
-    write(4, 12, "inn", "poor", 9, "wounded");
+    write(15, 8, "shop", "poor", gold(0), "");
+    write(11, 3, "temple", "poor", gold(50), "sick");
+    write(4, 12, "inn", "poor", gold(9), "wounded");
+    // Platinum pays any price, with change (no gold at all).
+    write(15, 8, "shop", "platinum", {0, 0, 0, 0, 5'000, 0, 0}, "");
+    write(11, 3, "temple", "platinum", {0, 0, 0, 0, 20'000, 0, 0}, "sick");
+    write(4, 12, "inn", "platinum", {0, 0, 0, 0, 2, 0, 0}, "wounded");
     // After a fight with the city watch.
     for (const auto [x, y, kind] :
          {std::tuple{15u, 8u, "shop"}, std::tuple{8u, 10u, "shop"}, std::tuple{13u, 8u, "shop"},
           std::tuple{11u, 10u, "shop"}, std::tuple{11u, 3u, "temple"}, std::tuple{1u, 1u, "temple"},
           std::tuple{0u, 12u, "temple"}, std::tuple{4u, 12u, "inn"}})
     {
-        write(x, y, kind, "outlaw", 100'000, "sick");
+        write(x, y, kind, "outlaw", gold(100'000), "sick");
     }
 }
 
@@ -7254,6 +7369,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
     }
     general_store_gear(directory);
     temple_on_hard(directory);
+    city_watch_fight(directory);
     city_hall_rewards(directory);
     cadorna_payment(directory);
     exported_monsters(directory);

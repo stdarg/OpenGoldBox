@@ -92,7 +92,7 @@ void shipped_conversions()
     {
         records += area.creatures.size();
     }
-    check(data.areas.size() == 22 && records == 188,
+    check(data.areas.size() == 23 && records == 195,
           "Every area's conversions moved from the code to the file");
     for (const auto script : {3U, 4U, 5U, 7U})
     {

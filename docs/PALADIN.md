@@ -87,7 +87,7 @@ campaign the Training Hall trains it to level 15.
   ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510)). A member who
   dies is "Fallen" for that minute, which keeps running after the fight. The
   ally returns with 1 Hit Point, Prone; the combat log names the offering, and
-  the campaign takes it from the purse's gold. Click the fallen ally on the
+  the campaign takes it from the purse's coins, making change. Click the fallen ally on the
   battlefield. Right after a fight the camp's Cast / Use list offers it on a
   member still Fallen, paid the same way. A member dead before the fight began
   died too long ago.

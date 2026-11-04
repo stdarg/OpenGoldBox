@@ -211,7 +211,7 @@ co-occupancy remain in the condition/creature-state increments (#35/#44).
   supported resources after eligible eight-hour rests; repeated rests require
   a 16-hour wait. Stable reward IDs survive scene recreation and saves.
 - A temple's services are atomic: each casts its SRD spell on an active member
-  it would help and charges the party's gold, or changes nothing
+  it would help and charges the party's coins, or changes nothing
   ([TEMPLE-1](SRD-DECISIONS.md#temple-1-2026-10-22-temple-services)).
 
 The fixed profiles are intentionally limited to levels 1–4 and ordinary Medium-sized

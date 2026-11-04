@@ -74,7 +74,7 @@ String formatted_sheet(const Character &character, const PartyMember *member,
     {
         text += i18n::formatted(
             "   Party gold {gold}   XP {xp}",
-            {{"gold", coins(party->state().wealth, Coin::gold)}, {"xp", member->experience}});
+            {{"gold", gold_value(party->state().wealth)}, {"xp", member->experience}});
     }
     if (member && member->vitals.dead)
     {

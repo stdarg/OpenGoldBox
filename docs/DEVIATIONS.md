@@ -184,7 +184,9 @@ Add an entry whenever a new departure is decided.
   ([#232](https://github.com/stdarg/OpenGoldBox/issues/232)). The user confirmed on
   2026-10-22 that the party's money is always pooled and coins weigh nothing,
   where the original counted them toward a character's load; the original's
-  Take, Pool and Share commands are not needed.
+  Take, Pool and Share commands are not needed. Every shop, temple, inn and
+  training hall takes any coin and gives the correct change (user's decision,
+  2026-11-04), and the town shows the party's money as its coins' worth in gold.
   [TRAINING-HALL.md](TRAINING-HALL.md#decisions-2026-10-13),
   [PHLAN.md](PHLAN.md#coin-payments).
 

@@ -67,6 +67,37 @@ void pay(Purse &purse, CoinExchange &exchange, std::uint64_t copper)
 }
 } // namespace
 
+std::uint64_t gold_value(const Purse &purse)
+{
+    return coin_value(purse) / copper_value[static_cast<std::size_t>(Coin::gold)];
+}
+
+std::uint32_t spendable_gold(const Purse &purse)
+{
+    return static_cast<std::uint32_t>(std::min<std::uint64_t>(gold_value(purse), purse_limit));
+}
+
+SettledPurse pay_gold(const Purse &purse, std::uint64_t gold)
+{
+    constexpr auto gold_coin = static_cast<std::size_t>(Coin::gold);
+    if (gold > gold_value(purse))
+    {
+        throw std::runtime_error("The party's coins cannot pay the price");
+    }
+    SettledPurse result{purse, {}};
+    auto &settled = result.purse;
+    if (settled[gold_coin] >= gold)
+    {
+        settled[gold_coin] = static_cast<std::uint32_t>(settled[gold_coin] - gold);
+        return result;
+    }
+    CoinExchange exchange;
+    exchange.owed[gold_coin] = static_cast<std::uint32_t>(gold);
+    pay(settled, exchange, gold * copper_value[gold_coin]);
+    result.exchange = exchange;
+    return result;
+}
+
 Purse script_coins(const Purse &purse)
 {
     Purse view;
