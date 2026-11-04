@@ -14,6 +14,7 @@
 #include "opengold/npc_portraits.h"
 #include "opengold/srd5.h"
 #include "png_size_only.h"
+#include "support/member_conditions.h"
 #include "test_support.h"
 #include "tour_access.h"
 #include "repository_data.h"
@@ -42,10 +43,11 @@ namespace
 {
 // A Godot check runs this binary only for the save fixtures its environment
 // names; once each is written, the rest of the expedition need not run.
-constexpr std::array<const char *, 9> fixture_variables{
+constexpr std::array<const char *, 10> fixture_variables{
     "OPENGOLD_SHOP_FIXTURE",        "OPENGOLD_HALL_FIXTURE",   "OPENGOLD_REST_CHOICE_FIXTURE",
     "OPENGOLD_OHLO_FIXTURE",        "OPENGOLD_SLUMS_FIXTURES", "OPENGOLD_KUTO_WELL_FIXTURE",
-    "OPENGOLD_KUTO_NORRIS_FIXTURE", "OPENGOLD_GATE_FIXTURE",   "OPENGOLD_WHOLE_MAP_FIXTURE"};
+    "OPENGOLD_KUTO_NORRIS_FIXTURE", "OPENGOLD_GATE_FIXTURE",   "OPENGOLD_WHOLE_MAP_FIXTURE",
+    "OPENGOLD_TOWN_SERVICE_FIXTURES"};
 std::set<std::string, std::less<>> written_fixtures;
 
 bool requested_fixtures_written()
@@ -6929,6 +6931,234 @@ void encounter_chances(const std::filesystem::path &directory)
     }
 }
 
+// Walks one step from the door of the place at (x, y) and faces it, from a
+// street square the party can reach (some squares beside a door are inside the
+// building). False, with a note, for an inner room with no door to the street.
+bool walk_to_door(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party,
+                  unsigned x, unsigned y, const std::string &kind)
+{
+    constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
+    std::string tried;
+    for (const bool street : {true, false})
+    {
+        for (unsigned d = 0; d < 4; ++d)
+        {
+            const int nx = int(x) - dx[d], ny = int(y) - dy[d];
+            if (nx < 0 || ny < 0 || nx >= 16 || ny >= 16)
+            {
+                continue;
+            }
+            const auto &from = town.map().at(unsigned(nx), unsigned(ny));
+            const bool open = !(from.doors[d] > 1 || (from.walls[d] && !from.doors[d]));
+            if (!open || street != (from.event_number() == 0))
+            {
+                continue;
+            }
+            try
+            {
+                walk_to(town, party, unsigned(nx), unsigned(ny));
+                face(town, party, d);
+                return true;
+            }
+            catch (const std::exception &e)
+            {
+                tried += " (" + std::to_string(nx) + "," + std::to_string(ny) + "): " + e.what();
+            }
+        }
+    }
+    std::cout << "No street door: " << kind << " (" << x << "," << y << ");" << tried << '\n';
+    return false;
+}
+
+// On Hard, a temple offers no Resurrection, and its Raise Dead list names
+// those it cannot help, dead too long or dust, with the reason (TEMPLE-1).
+void temple_on_hard(const std::filesystem::path &directory)
+{
+    namespace fx = srd5::detail;
+    static constexpr fx::EffectSource foe{.scope = 9, .actor = 99};
+    auto trip = create_party(directory);
+    auto &[party, town] = trip;
+    town.difficulty(opengold::Difficulty::hard);
+    check(walk_to_door(town, party, 11, 3, "temple"), "The Temple of Tyr's door");
+    auto state = party->checkpoint();
+    opengold::test::set_condition(party->rule_module(), state.roster.at(0), 0, true,
+                                  [](fx::EffectState &effects)
+                                  {
+                                      fx::apply_spell_benefit(effects, foe, "Foe",
+                                                              fx::EffectKind::deceased, 0);
+                                  });
+    opengold::test::set_condition(party->rule_module(), state.roster.at(1), 0, true);
+    party->restore(std::move(state));
+    const auto choice = [&](std::string_view prefix)
+    {
+        const auto &choices = town.snapshot().choices;
+        const auto found = std::find_if(choices.begin(), choices.end(),
+                                        [&](const auto &c)
+                                        {
+                                            return c.starts_with(prefix);
+                                        });
+        return found == choices.end() ? std::optional<std::size_t>{}
+                                      : std::optional<std::size_t>{std::size_t(found - choices.begin())};
+    };
+    // Into the temple, accepting its offer of healing, as far as its Heal list.
+    check(route_explore(town, por::ExplorationCommand::forward), "Step into the temple");
+    for (unsigned n = 0; n < 400 && !choice("Raise Dead ("); ++n)
+    {
+        const auto &s = town.snapshot();
+        if (s.phase == por::TourPhase::running)
+        {
+            town.advance(.5);
+            continue;
+        }
+        check(s.phase == por::TourPhase::awaiting_continue, "The temple's questions");
+        check(route_choose(town, s.continue_ticket, choice("YES").value_or(0)), "Answer the temple");
+    }
+    const auto pick = [&](std::string_view prefix)
+    {
+        const auto found = choice(prefix);
+        check(found.has_value(), "The temple offers " + std::string(prefix));
+        check(route_choose(town, town.snapshot().continue_ticket, *found), "Choose it");
+    };
+    check(!choice("Resurrection (").has_value(),
+          "On Hard the temple offers Raise Dead and no Resurrection");
+    pick("Raise Dead (");
+    check(choice("Arden").has_value() && choice("Bryn (beyond Raise Dead)").has_value(),
+          "Raise Dead lists the newly dead and, apart, one dead too long");
+    pick("Bryn (beyond Raise Dead)");
+    check(town.snapshot().dialogue.find("Raise Dead cannot bring back Bryn") != std::string::npos,
+          "The temple says why it cannot raise Bryn");
+    pick("Back");
+    pick("Leave");
+    settle(town, party);
+}
+
+// The town services check (tests/town_services_tests.gd) loads a party one
+// step from each New Phlan shop, temple and inn, facing its door: shoppers
+// with gold for the whole stock, a temple's patients (each needing one
+// service, or dead), and a wounded party for the inn. Files are named
+// "<kind>-<x>-<y>[-<party>].ogs".
+void write_town_service_fixtures(const std::filesystem::path &directory,
+                                 const std::filesystem::path &folder, const std::string &assets)
+{
+    namespace fx = srd5::detail;
+    static constexpr fx::EffectSource foe{.scope = 9, .actor = 99};
+    const auto benefit = [](fx::EffectKind kind, int value = 0)
+    {
+        return [kind, value](fx::EffectState &effects)
+        {
+            fx::apply_spell_benefit(effects, foe, "Foe", kind, value);
+        };
+    };
+    // Blindness and venom last a minute, the longest of their kinds, so the
+    // party still has them one step later (a step takes six seconds).
+    static constexpr fx::RepeatingSave unshakable{.dc = 38, .first_save_ms = fx::round_ms};
+    const auto blind = [](fx::EffectState &effects)
+    {
+        fx::apply_blindness(effects, foe, "Foe", unshakable);
+    };
+    const auto venom = [](fx::EffectState &effects)
+    {
+        fx::apply_repeating_condition(effects, fx::EffectKind::envenomed, foe, "Foe", unshakable);
+    };
+    // The members of each party, in roster order: hit points (0 dead, -1 at
+    // full) and conditions.
+    struct Patient
+    {
+        int hit_points;
+        bool dead;
+        std::function<void(fx::EffectState &)> change;
+    };
+    const std::map<std::string, std::vector<Patient>> parties{
+        {"sick",
+         {{1, false, {}},
+          {-1, false, blind},
+          {-1, false, venom},
+          {-1, false, benefit(fx::EffectKind::contagion, 2)},
+          {-1, false, benefit(fx::EffectKind::cursed)},
+          {-1, false, benefit(fx::EffectKind::petrified, 1)}}},
+        {"dead",
+         {{0, true, benefit(fx::EffectKind::deceased)},
+          {0, true,
+           [](fx::EffectState &effects)
+           {
+               fx::apply_spell_benefit(effects, foe, "Foe", fx::EffectKind::deceased, 0);
+               fx::apply_spell_benefit(effects, foe, "Foe", fx::EffectKind::dust, 0);
+           }},
+          {0, true, {}},
+          {1, false, {}}}},
+        {"wounded", {{1, false, {}}, {1, false, {}}, {1, false, {}}, {1, false, {}}}},
+    };
+    std::filesystem::create_directories(folder);
+    // `who` names the file's party, `patients` its members' conditions.
+    // The flag the city watch's fight sets: temples and shops refuse the party.
+    constexpr por::EclAddress attacked_the_watch{0x4AC0};
+    const auto write = [&](unsigned x, unsigned y, const std::string &kind, const std::string &who,
+                           std::uint32_t gold, const std::string &patients_of)
+    {
+        auto trip = create_party(directory);
+        auto &[party, town] = trip;
+        if (!walk_to_door(town, party, x, y, kind))
+        {
+            return;
+        }
+        auto state = party->checkpoint();
+        const auto patients = parties.find(patients_of);
+        for (std::size_t n = 0; patients != parties.end() && n < patients->second.size(); ++n)
+        {
+            auto &member = state.roster.at(n);
+            const auto &patient = patients->second[n];
+            opengold::test::set_condition(
+                party->rule_module(), member,
+                patient.hit_points < 0 ? member.character.sheet().hit_points : patient.hit_points,
+                patient.dead, patient.change);
+        }
+        state.wealth = {0, 0, 0, gold, 0, 0, 0};
+        party->restore(std::move(state));
+        if (who == "outlaw")
+        {
+            opengold::test::TourAccess::set_variable(town, attacked_the_watch, 1);
+        }
+        const auto name = kind + "-" + std::to_string(x) + "-" + std::to_string(y) +
+                          (who.empty() ? std::string{} : "-" + who) + ".ogs";
+        write_campaign_file(folder / name, encode_campaign(*party, &town, assets));
+    };
+    auto probe = create_party(directory);
+    for (unsigned y = 0; y < 16; ++y)
+    {
+        for (unsigned x = 0; x < 16; ++x)
+        {
+            const auto event = probe.town.map().at(x, y).event_number();
+            // New Phlan's events: 19 general store, 21 jeweler, 22 arms and
+            // armor, 23 silver; 6 Tyr, 7 Sune and 24 Tempus; 9 the inn.
+            if (event == 19 || event == 21 || event == 22 || event == 23)
+            {
+                write(x, y, "shop", "", 1'000'000, "");
+            }
+            if (event == 6 || event == 7 || event == 24)
+            {
+                write(x, y, "temple", "sick", 100'000, "sick");
+                write(x, y, "temple", "dead", 100'000, "dead");
+            }
+            if (event == 9)
+            {
+                write(x, y, "inn", "wounded", 100, "wounded");
+            }
+        }
+    }
+    // Too poor for the general store's oil or the temple's cheapest Cure.
+    write(15, 8, "shop", "poor", 0, "");
+    write(11, 3, "temple", "poor", 50, "sick");
+    write(4, 12, "inn", "poor", 9, "wounded");
+    // After a fight with the city watch.
+    for (const auto [x, y, kind] :
+         {std::tuple{15u, 8u, "shop"}, std::tuple{8u, 10u, "shop"}, std::tuple{13u, 8u, "shop"},
+          std::tuple{11u, 10u, "shop"}, std::tuple{11u, 3u, "temple"}, std::tuple{1u, 1u, "temple"},
+          std::tuple{0u, 12u, "temple"}, std::tuple{4u, 12u, "inn"}})
+    {
+        write(x, y, kind, "outlaw", 100'000, "sick");
+    }
+}
+
 void installed_first_expedition(const std::filesystem::path &executable,
                                 const std::filesystem::path &directory)
 {
@@ -6939,6 +7169,11 @@ void installed_first_expedition(const std::filesystem::path &executable,
     std::filesystem::create_directories(folder);
     const auto save = folder / "expedition.ogs";
 
+    if (const auto *fixtures = std::getenv("OPENGOLD_TOWN_SERVICE_FIXTURES"))
+    {
+        write_town_service_fixtures(directory, fixtures, assets);
+        written_fixtures.insert("OPENGOLD_TOWN_SERVICE_FIXTURES");
+    }
     // The game's shop list is checked by tests/shop_disclosure_tests.gd from a
     // separate party standing outside the jeweler at (8,10).
     if (const auto *fixture = std::getenv("OPENGOLD_SHOP_FIXTURE"))
@@ -7018,6 +7253,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         return;
     }
     general_store_gear(directory);
+    temple_on_hard(directory);
     city_hall_rewards(directory);
     cadorna_payment(directory);
     exported_monsters(directory);

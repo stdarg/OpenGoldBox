@@ -8,7 +8,7 @@
     {"id": "phlan-arms-13-08", "name": "Arms & Armor (13,8)", "map": "New Phlan", "kind": "shop", "default_type": "Arms & Armor", "source_record": 53, "markers": [[13,8]], "portrait": "NPCs/phlan-arms-13-08.png"},
     {"id": "phlan-arms-08-11", "name": "Arms & Armor (8,11)", "map": "New Phlan", "kind": "shop", "default_type": "Arms & Armor", "source_record": 53, "markers": [[8,11]], "portrait": "NPCs/phlan-arms-08-11.png"},
     {"id": "phlan-arms-11-12", "name": "Arms & Armor (11,12)", "map": "New Phlan", "kind": "shop", "default_type": "Arms & Armor", "source_record": 53, "markers": [[11,12]], "portrait": "NPCs/phlan-arms-11-12.png"},
-    {"id": "phlan-arms-09-13", "name": "Arms & Armor (9,13)", "map": "New Phlan", "kind": "shop", "default_type": "Arms & Armor", "source_record": 53, "markers": [[9,13]], "portrait": "NPCs/phlan-arms-09-13.png"},
+    {"id": "phlan-arms-09-13", "name": "Arms & Armor (9,13)", "map": "New Phlan", "kind": "shop", "default_type": "Arms & Armor", "source_record": 53, "markers": [[9,13],[8,13]], "portrait": "NPCs/phlan-arms-09-13.png"},
     {"id": "phlan-general-15-08", "name": "General Items (15,8)", "map": "New Phlan", "kind": "shop", "default_type": "General Items", "source_record": 54, "markers": [[15,8]], "portrait": "NPCs/phlan-general-15-08.png"},
     {"id": "phlan-general-09-10", "name": "General Items (9,10)", "map": "New Phlan", "kind": "shop", "default_type": "General Items", "source_record": 54, "markers": [[9,10]], "portrait": "NPCs/phlan-general-09-10.png"},
     {"id": "phlan-general-12-10", "name": "General Items (12,10)", "map": "New Phlan", "kind": "shop", "default_type": "General Items", "source_record": 54, "markers": [[12,10]], "portrait": "NPCs/phlan-general-12-10.png"},

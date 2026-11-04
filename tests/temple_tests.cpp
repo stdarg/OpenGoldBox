@@ -6,11 +6,11 @@
 #include "opengold/srd5.h"
 #include "opengold/temple_catalog.h"
 #include "status_effects.h"
+#include "support/member_conditions.h"
 #include "test_support.h"
 #include <filesystem>
 #include <functional>
 #include <iostream>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -91,23 +91,8 @@ Temple temple(int hit_points, std::uint32_t gold,
     Temple t;
     t.patient = t.party.add_pc(fighter());
     auto state = t.party.checkpoint();
-    auto &m = state.roster.front();
-    // A complete vital record, with room for the effects.
-    m.vitals = {m.character.sheet().hit_points, false, {}};
-    t.party.rule_module().recover(m.vitals, m.character.sheet());
-    m.vitals.hit_points = hit_points;
-    m.vitals.dead = dead;
-    if (effects)
-    {
-        const auto at = m.vitals.resources.find("FX9");
-        check(at != std::string::npos, "The record holds its effects");
-        std::istringstream in(m.vitals.resources.substr(at));
-        auto read = fx::read_effects(in);
-        effects(read);
-        std::ostringstream out;
-        fx::write_effects(out, read);
-        m.vitals.resources.replace(at, std::string::npos, out.str());
-    }
+    opengold::test::set_condition(t.party.rule_module(), state.roster.front(), hit_points, dead,
+                                  effects);
     coins(state.wealth, Coin::gold) = gold;
     t.party.restore(std::move(state));
     return t;

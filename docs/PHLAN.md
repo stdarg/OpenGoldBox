@@ -65,7 +65,9 @@ The [original cluebook's New Phlan map](https://www.mocagh.org/ssi/pool-hintbook
 (printed page 3) marks twelve physical shops. Each has its own record in
 [`data/shops`](../data/shops/README.md), which the Shop & Temple Manager edits:
 its shopkeeper portrait, its stock and its prices. The records start from the
-original merchandise lists, so shops of the same type sell the same items. The cluebook supplies shop types and locations,
+original merchandise lists, so shops of the same type sell the same items.
+The arms shop at (9,13) has a second door at (8,13), into the same room, and
+both doors open its record. The cluebook supplies shop types and locations,
 not the shopkeepers' identities or appearances, so these portraits are original
 character designs.
 
@@ -74,7 +76,7 @@ character designs.
 | Arms and armor | (13,8) | 53 | 55 | `phlan-arms-13-08.png` |
 | Arms and armor | (8,11) | 53 | 55 | `phlan-arms-08-11.png` |
 | Arms and armor | (11,12) | 53 | 55 | `phlan-arms-11-12.png` |
-| Arms and armor | (9,13) | 53 | 55 | `phlan-arms-09-13.png` |
+| Arms and armor | (9,13), (8,13) | 53 | 55 | `phlan-arms-09-13.png` |
 | General items | (15,8) | 54 | 18 | `phlan-general-15-08.png` |
 | General items | (9,10) | 54 | 18 | `phlan-general-09-10.png` |
 | General items | (12,10) | 54 | 18 | `phlan-general-12-10.png` |
@@ -195,6 +197,21 @@ to every numbered cell. The current peaceful-choice run reaches 56 event cells
 covering 30 distinct event IDs and all three town programs, and separately buys
 an affordable item from each of the four shop types. Restricted routes and
 unsupported branches are reported, not counted as successful execution.
+
+`opengold_godot_town_services` goes through every door of New Phlan's shops,
+temples and inns on the game's town screen, from saves of a party one step
+outside each (`tests/town_services_tests.gd`). Each shop must list its
+`data/shops` record and sell every item at its price to the buyer; each temple
+must list its record's services and prices and offer each only to the members
+it helps (wounded, Blinded, Poisoned, diseased, cursed, Petrified, dead, dust),
+charging once paid and nothing on Back; each inn must charge one platinum a
+night, restore the party on the first and say the second gives no Long Rest.
+Parties too poor are refused with nothing spent, and a party that fought the
+city watch is refused service (Tempus's priests fight it instead, which, like
+the watch's fight, is not supported yet). Three inn squares are inner rooms
+with no street door and are not entered. On Hard, a temple offers no
+Resurrection and its Raise Dead list names those it cannot help
+(`opengold_expedition_tests`).
 
 The Godot check completes the tour, uses movement/button callbacks to reach
 the arms shop, purchases a shield, opens inventory, has the shop identify it,

@@ -365,6 +365,14 @@ if(OPENGOLD_BUILD_TESTS)
         -P "${PROJECT_SOURCE_DIR}/tests/shop_disclosure.cmake")
     set_tests_properties(opengold_godot_shop_disclosure PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 240 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
+    # Every New Phlan shop, temple and inn, with original files.
+    add_test(NAME opengold_godot_town_services COMMAND "${CMAKE_COMMAND}"
+        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
+        "-DWORK=${CMAKE_BINARY_DIR}/town-services"
+        -P "${PROJECT_SOURCE_DIR}/tests/town_services.cmake")
+    set_tests_properties(opengold_godot_town_services PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
+        TIMEOUT 400 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_training_hall COMMAND "${CMAKE_COMMAND}"
         "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
