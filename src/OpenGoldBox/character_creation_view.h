@@ -93,8 +93,14 @@ class CharacterCreationView : public godot::Control
         catch (const std::exception &e)
         {
             show_error(e);
+            redraw_after_refusal();
         }
     }
+
+    // A refused change leaves the clicked control showing a choice the
+    // character does not have; the page is drawn again from the character,
+    // with the refusal's message.
+    void redraw_after_refusal();
 
     void show_error(const std::exception &failure);
     void next();

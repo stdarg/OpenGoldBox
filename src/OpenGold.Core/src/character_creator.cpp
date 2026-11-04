@@ -227,6 +227,18 @@ void CharacterCreator::fill_species(CharacterDraft &candidate) const
     // took away (Versatile's feat, when the background gives that feat; a
     // Skilled skill the new background gives) is refilled the same way.
     // A filled choice can bring another (Versatile's Skilled, its skills).
+    // A refill skips what another choice took: the background taking a
+    // Skilled skill must not refill it with one the class already picked.
+    const auto taken_elsewhere = [&](std::string_view group, std::string_view option)
+    {
+        return std::any_of(candidate.training.begin(), candidate.training.end(),
+                           [&](const auto &entry)
+                           {
+                               return entry.first != group &&
+                                      std::find(entry.second.begin(), entry.second.end(), option) !=
+                                          entry.second.end();
+                           });
+    };
     const auto offered = [&]
     {
         auto groups = rules_->training_options(candidate);
@@ -264,7 +276,8 @@ void CharacterCreator::fill_species(CharacterDraft &candidate) const
             for (const auto &option : group.options)
             {
                 if (picks.size() < group.count &&
-                    std::find(picks.begin(), picks.end(), option.id) == picks.end())
+                    std::find(picks.begin(), picks.end(), option.id) == picks.end() &&
+                    !taken_elsewhere(group.id, option.id))
                 {
                     picks.push_back(option.id);
                     filled = true;
@@ -474,6 +487,13 @@ void CharacterCreator::spell_choice(ChoiceToggle toggle)
     else if (!selected && found != values->end())
     {
         values->erase(found);
+    }
+    // A group with nothing picked holds no entry: the group can go away (the
+    // class's cantrips can take every one Magic Initiate offered), and the
+    // rules refuse picks for a group they no longer offer.
+    if (group != "prepared" && values->empty())
+    {
+        next.spells->learning.erase(std::string(group));
     }
     if (group != "prepared" && next.spells->prepared)
     {

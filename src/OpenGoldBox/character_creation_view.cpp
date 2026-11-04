@@ -901,6 +901,22 @@ void CharacterCreationView::show_error(const std::exception &failure)
     required_node<Label>(*this, "Status").set_text(error_);
 }
 
+void CharacterCreationView::redraw_after_refusal()
+{
+    const auto refusal = error_;
+    try
+    {
+        refresh();
+    }
+    catch (const std::exception &)
+    {
+        // The page cannot be drawn from the character either; the refusal's
+        // message stays.
+    }
+    error_ = refusal;
+    required_node<Label>(*this, "Status").set_text(error_);
+}
+
 void CharacterCreationView::target_toggled(bool selected, int index)
 {
     if (refreshing_)

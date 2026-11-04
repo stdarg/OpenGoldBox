@@ -1031,14 +1031,11 @@ using rules::CreationField;
 // A character made through the ordinary creator, page by page, as the creation
 // screen makes one: the best roll goes to the class's spellcasting ability.
 // `learned` picks the background's Magic Initiate spells.
-Character create_ordinarily(std::string_view klass, Ability best,
-                            const std::vector<ChoiceToggle> &training,
-                            const std::vector<std::string> &cantrips,
-                            const std::vector<std::string> &prepared,
-                            std::string_view background = "soldier",
-                            const std::vector<ChoiceToggle> &learned = {})
+// Takes `creator` through the pages before Spell Choices as a player does: a
+// Human with the best roll on `best`.
+void reach_spell_choices(CharacterCreator &creator, std::string_view klass, Ability best,
+                         const std::vector<ChoiceToggle> &training, std::string_view background)
 {
-    CharacterCreator creator(srd5::character_rules(), 7);
     creator.select(CreationField::race, "human");
     creator.select(CreationField::gender, "female");
     creator.name("Ordinary");
@@ -1078,6 +1075,17 @@ Character create_ordinarily(std::string_view klass, Ability best,
     }
     creator.next();
     check(creator.step() == CreationStep::spell_choices, "Training advances to Spell Choices");
+}
+
+Character create_ordinarily(std::string_view klass, Ability best,
+                            const std::vector<ChoiceToggle> &training,
+                            const std::vector<std::string> &cantrips,
+                            const std::vector<std::string> &prepared,
+                            std::string_view background = "soldier",
+                            const std::vector<ChoiceToggle> &learned = {})
+{
+    CharacterCreator creator(srd5::character_rules(), 7);
+    reach_spell_choices(creator, klass, best, training, background);
     for (const auto &cantrip : cantrips)
     {
         creator.cantrip_choice(cantrip, true);
@@ -1182,6 +1190,59 @@ void ordinary_creation_tests()
               holds(warlock, "spell:eldritch_blast") && holds(warlock, "spell:chill_touch") &&
               warlock.sheet().prepared_spells.size() == 2 && warlock.sheet().training.complete,
           "An ordinary Warlock has an invocation, two skills, two cantrips and two spells");
+
+    // A Magic Initiate cantrip ticked and unticked, then the Thaumaturge's
+    // four class cantrips take every one Magic Initiate offered: its cantrip
+    // group goes, and the character must still evaluate and finish.
+    CharacterCreator thaumaturge(srd5::character_rules(), 7);
+    reach_spell_choices(
+        thaumaturge, "cleric", Ability::wisdom,
+        {{.group = "class:cleric", .option = "medicine", .selected = true},
+         {.group = "class:cleric", .option = "persuasion", .selected = true},
+         {.group = "class:cleric:divine_order", .option = "thaumaturge", .selected = true}},
+        "acolyte");
+    constexpr std::string_view initiate_cantrips = "feat:magic_initiate_cleric:cantrips";
+    thaumaturge.spell_choice({.group = initiate_cantrips, .option = "guidance", .selected = true});
+    thaumaturge.spell_choice({.group = initiate_cantrips, .option = "guidance", .selected = false});
+    for (const auto *cantrip : {"sacred_flame", "spare_the_dying", "resistance", "guidance"})
+    {
+        thaumaturge.cantrip_choice(cantrip, true);
+    }
+    (void)thaumaturge.sheet();
+    for (const auto *toggle :
+         {"feat:magic_initiate_cleric:ability/wisdom", "feat:magic_initiate_cleric:spell/bless",
+          "prepared/cure_wounds", "prepared/healing_word", "prepared/command", "prepared/bane"})
+    {
+        const std::string_view text(toggle);
+        const auto slash = text.find('/');
+        thaumaturge.spell_choice(
+            {.group = text.substr(0, slash), .option = text.substr(slash + 1), .selected = true});
+    }
+    check(thaumaturge.spell_choices_complete(),
+          "An untouched Magic Initiate cantrip group leaves when the class takes its cantrips");
+
+    // A Human's Skilled starts with the first three skills. Changing the
+    // background to Sage takes Arcana away from it, and the place it leaves
+    // is refilled with a skill the Warlock's class choices have not taken.
+    CharacterCreator warlock_sage(srd5::character_rules(), 7);
+    reach_spell_choices(
+        warlock_sage, "warlock", Ability::charisma,
+        {{.group = "class:warlock", .option = "deception", .selected = true},
+         {.group = "class:warlock", .option = "history", .selected = true},
+         {.group = "class:warlock:invocations", .option = "armor_of_shadows", .selected = true}},
+        "acolyte");
+    while (warlock_sage.step() != CreationStep::attributes)
+    {
+        warlock_sage.back();
+    }
+    warlock_sage.select(CreationField::background, "sage");
+    const auto &skilled = warlock_sage.draft().training.at("species:human:skilled");
+    check(skilled.size() == 3 &&
+              std::find(skilled.begin(), skilled.end(), "deception") == skilled.end(),
+          "A refilled Skilled skill is not one the class already picked");
+    warlock_sage.next();
+    check(warlock_sage.step() == CreationStep::character_class,
+          "A background change after choosing class skills still continues");
 }
 
 } // namespace

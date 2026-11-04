@@ -353,9 +353,14 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
                 continue;
             }
             row->hide();
+            // A hidden row left in the radio group, still ticked, is unticked
+            // when the player picks a shown radio, and that tells the game to
+            // drop a choice from a group this character does not have.
             if (auto *check = Object::cast_to<CheckBox>(row))
             {
                 check->set_disabled(true);
+                check->set_button_group(Ref<ButtonGroup>());
+                check->set_pressed_no_signal(false);
             }
         }
         // A single choice is a set of radio buttons sharing one group.
