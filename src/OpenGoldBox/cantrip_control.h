@@ -37,6 +37,10 @@ void refresh_cantrip_controls(godot::Node &parent, const opengold::CharacterCrea
             }
         }
     }
+    // The screen is reused from character to character, so a cantrip's row can
+    // be new after the spell lists an earlier class built; it moves up under
+    // its heading.
+    auto position = required_node<Label>(*rows, "Pending").get_index() + 1;
     for (const auto &option : group.options)
     {
         const auto name = training_string(option.id);
@@ -49,6 +53,7 @@ void refresh_cantrip_controls(godot::Node &parent, const opengold::CharacterCrea
             check = attach_child(*rows, std::move(owned));
             check->connect("toggled", toggled.bind(name));
         }
+        rows->move_child(check, position++);
         const bool selected = std::find(picked.begin(), picked.end(), option.id) != picked.end();
         check->show();
         check->set_text(tr(option.label));

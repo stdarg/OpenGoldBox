@@ -135,6 +135,7 @@ func all_class_skill_controls() -> void:
 		require(not current_scene.get_node("Next").disabled, "Every class can finish all supported Training choices: " + klass)
 		await press("Next")
 		require(current_scene.get_node("PageTitle").text == ("Spell Choices" if klass in ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard"] else "Combat appearance"), "Completed Training reaches the next creation step: " + klass)
+		if current_scene.get_node("PageTitle").text == "Spell Choices": class_cantrips_under_heading(klass)
 		await press("Back")
 		if klass in ["Bard", "Monk", "Druid", "Wizard", "Barbarian", "Fighter", "Paladin", "Ranger", "Rogue"]:
 			for locale in locales:
@@ -155,6 +156,19 @@ func all_class_skill_controls() -> void:
 			if check.button_pressed: check.set_pressed(false)
 		await settle()
 		await press("Back")
+
+# The screen is reused from class to class, so a class's cantrips can be new
+# rows after the spell lists an earlier class built; they still sit under their
+# heading, above those lists.
+func class_cantrips_under_heading(klass: String) -> void:
+	var rows: VBoxContainer = current_scene.get_node("SpellChoices/Rows")
+	var lists := rows.get_node("BookChoices").get_index()
+	var shown := 0
+	for child in rows.get_children():
+		if child is CheckBox and child.visible:
+			shown += 1
+			require(child.get_index() < lists, "Class cantrips sit under their heading: " + klass + " " + child.name)
+	require(shown > 0 or klass in ["Paladin", "Ranger"], "Class cantrips are offered: " + klass)
 
 func complete_mastery(klass: String) -> void:
 	if not klass in ["Barbarian", "Fighter", "Paladin", "Ranger", "Rogue"]: return
