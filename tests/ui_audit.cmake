@@ -8,13 +8,10 @@ if("$ENV{OPENGOLD_GAME_DIR}" STREQUAL "")
 endif()
 file(REMOVE_RECURSE "${WORK}")
 file(MAKE_DIRECTORY "${WORK}/home")
-set(fixtures "${WORK}/fixtures")
+set(fixtures "${FIXTURES}/slums")
 
-set(ENV{OPENGOLD_SLUMS_FIXTURES} "${fixtures}")
-execute_process(COMMAND "${EXPEDITION}" RESULT_VARIABLE result)
-unset(ENV{OPENGOLD_SLUMS_FIXTURES})
-if(NOT result STREQUAL "0" OR NOT EXISTS "${fixtures}/hobgoblins.ogs")
-    message(FATAL_ERROR "The expedition route did not write the Slums fixtures (${result})")
+if(NOT EXISTS "${fixtures}/hobgoblins.ogs")
+    message(FATAL_ERROR "opengold_expedition_fixtures did not write the Slums fixtures")
 endif()
 
 # The audit reads the saves from where the expedition test wrote them.

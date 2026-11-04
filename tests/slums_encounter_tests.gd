@@ -83,14 +83,18 @@ func reach_close_up() -> void:
     require(false, "The trolls' close-up plays: " + dialogue())
 
 # Ends every party turn until the trolls win. Monster turns take real time and
-# each fight has its own dice, so a long one gets minutes, not a count of frames.
+# each fight has its own dice, so a long one gets minutes, not a count of frames;
+# the fight plays at eight times speed, as the play-through check plays it.
 func lose_the_fight() -> void:
     var combat: Control = current_scene.get_node("CampaignCombat")
     combat.set_process(true)
+    Engine.time_scale = 8.0
     var deadline := Time.get_ticks_msec() + 200000
     while Time.get_ticks_msec() < deadline:
         await settle(2)
-        if combat.get_node("StatusStack/Turn").text.contains(tr("Party incapacitated / defeat")): return
+        if combat.get_node("StatusStack/Turn").text.contains(tr("Party incapacitated / defeat")):
+            Engine.time_scale = 1.0
+            return
         for name in ["Decline", "End"]:
             var b: Button = combat.get_node(name)
             if b.is_visible_in_tree() and not b.disabled:

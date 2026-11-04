@@ -127,6 +127,14 @@ python3 tools/playtest.py slums --game-dir /path/to/POOLRAD
 python3 tools/playtest.py slums --game-dir /path/to/POOLRAD -- --strong
 ```
 
+In CTest, `opengold_expedition_fixtures` plays the route once with the shop,
+hall, west gate, Ohlo and Slums fixture variables all set, into
+`expedition-fixtures` in the build tree. The Godot checks that load those saves
+(shop disclosure, training hall, area crossing, Ohlo's save route, the Slums
+encounter, weapon sets and the UI audit) require it and read them from there.
+Each once played the route itself, about 80 seconds on a debug build, while
+holding the Godot project that every Godot check waits on.
+
 The expedition test also writes each save with the party at level four
 (`NAME-strong.ogs`); `--strong` plays those, to reach morale breaking in the
 real fights (the monster leaders' gnolls broke in the first such run) and

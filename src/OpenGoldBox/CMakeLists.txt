@@ -334,58 +334,67 @@ if(OPENGOLD_BUILD_TESTS)
     opengold_godot_test(shutdown_close shutdown_tests "Shutdown check passed" --reset-game-path --shutdown-close)
     opengold_godot_test(shutdown_dialog_paused shutdown_tests "Shutdown check passed"
         --reset-game-path --shutdown-dialog --shutdown-paused)
-    # Needs original files; skipped when OPENGOLD_GAME_DIR is not set.
+    # Needs original files; skipped when OPENGOLD_GAME_DIR is not set. The
+    # saves the checks below load, written once rather than once per check.
+    add_test(NAME opengold_expedition_fixtures COMMAND "${CMAKE_COMMAND}"
+        "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
+        "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
+        -P "${PROJECT_SOURCE_DIR}/tests/expedition_fixtures.cmake")
+    set_tests_properties(opengold_expedition_fixtures PROPERTIES FIXTURES_SETUP expedition_fixtures
+        TIMEOUT 600 SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_ohlo_save_route COMMAND "${CMAKE_COMMAND}"
         "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
         "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
+        "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/ohlo-save-route"
         -P "${PROJECT_SOURCE_DIR}/tests/ohlo_save_route.cmake")
-    set_tests_properties(opengold_godot_ohlo_save_route PROPERTIES FIXTURES_REQUIRED godot_project
+    set_tests_properties(opengold_godot_ohlo_save_route PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 240 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_area_crossing COMMAND "${CMAKE_COMMAND}"
         "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
         "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
+        "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/area-crossing"
         -P "${PROJECT_SOURCE_DIR}/tests/area_crossing.cmake")
-    set_tests_properties(opengold_godot_area_crossing PROPERTIES FIXTURES_REQUIRED godot_project
+    set_tests_properties(opengold_godot_area_crossing PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 240 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_shop_disclosure COMMAND "${CMAKE_COMMAND}"
         "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
-        "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
+        "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/shop-disclosure"
         -P "${PROJECT_SOURCE_DIR}/tests/shop_disclosure.cmake")
-    set_tests_properties(opengold_godot_shop_disclosure PROPERTIES FIXTURES_REQUIRED godot_project
+    set_tests_properties(opengold_godot_shop_disclosure PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 240 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_training_hall COMMAND "${CMAKE_COMMAND}"
         "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
-        "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
+        "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/training-hall"
         -P "${PROJECT_SOURCE_DIR}/tests/training_hall_view.cmake")
-    set_tests_properties(opengold_godot_training_hall PROPERTIES FIXTURES_REQUIRED godot_project
+    set_tests_properties(opengold_godot_training_hall PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 240 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_slums_encounter COMMAND "${CMAKE_COMMAND}"
         "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
-        "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
+        "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/slums-encounter"
         -P "${PROJECT_SOURCE_DIR}/tests/slums_encounter.cmake")
-    set_tests_properties(opengold_godot_slums_encounter PROPERTIES FIXTURES_REQUIRED godot_project
+    set_tests_properties(opengold_godot_slums_encounter PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 450 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_weapon_sets COMMAND "${CMAKE_COMMAND}"
         "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
-        "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
+        "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/weapon-sets"
         -P "${PROJECT_SOURCE_DIR}/tests/weapon_sets.cmake")
-    set_tests_properties(opengold_godot_weapon_sets PROPERTIES FIXTURES_REQUIRED godot_project
+    set_tests_properties(opengold_godot_weapon_sets PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 300 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_slums_ui_audit COMMAND "${CMAKE_COMMAND}"
         "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
-        "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
+        "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DPLAYTEST_FIXTURES=${PROJECT_BINARY_DIR}/playtest-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/slums-ui-audit"
         -P "${PROJECT_SOURCE_DIR}/tests/ui_audit.cmake")
-    # About four and a half minutes alone on a debug build, more beside other checks.
+    # About three and a half minutes alone on a debug build, more beside other checks.
     set_tests_properties(opengold_godot_slums_ui_audit PROPERTIES
-        FIXTURES_REQUIRED "godot_project;playtest_fixtures"
+        FIXTURES_REQUIRED "godot_project;playtest_fixtures;expedition_fixtures"
         TIMEOUT 450 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     # Godot checks with original files; skipped without OPENGOLD_GAME_DIR. Each
     # keeps its Godot user data under WORK (see original_view_check.cmake).
