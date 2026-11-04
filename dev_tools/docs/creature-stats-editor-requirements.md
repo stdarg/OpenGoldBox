@@ -75,8 +75,8 @@ A monster has no level of its own. "Level" applies to:
 6. Show Hit Points at each difficulty (Easy 60% to Infernal 320% as of
    2026-11-03) and the fight
    rating (XP) that sizes encounters.
-7. List every record that shares the stat line. Changing `castle-knight` also
-   changes the 8th level fighters in Valjevo's old town.
+7. List every record that shares the stat line. Changing `slums-goblin` also
+   changes Podol Plaza's and the Temple of Bane's goblins.
 
 ### Changing a creature
 
