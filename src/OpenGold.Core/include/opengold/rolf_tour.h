@@ -140,6 +140,14 @@ struct CoinPayment
     opengold::CoinExchange coins;
 };
 
+// The money and items a fight or a treasure gave the party, for the view to
+// name.
+struct LootTaken
+{
+    std::array<unsigned, 7> wealth{};
+    std::vector<std::string> items; // Each item's name as the party knows it.
+};
+
 // One check made against a locked door, for the player's log.
 struct DoorCheck
 {
@@ -165,6 +173,14 @@ struct WandSign
     MapDirection side{};
     bool trap{};
 };
+
+// The original builds sentences from pieces: "A BUGBEAR LEADING" then "A
+// PARTY OF " printed one after the other, a monster name stored with a leading
+// space. Its text window's wrapping hid the seams; on one line they read as
+// "LEADINGA PARTY" and "OF  KOBOLDS". Joins `added` to `shown` with a space
+// where two words would touch, and closes a doubled space after a word (two
+// after a sentence's end are the original's style and stay).
+[[nodiscard]] std::string join_script_text(std::string shown, std::string_view added);
 
 struct TourSnapshot
 {
@@ -198,6 +214,7 @@ struct TourSnapshot
     std::bitset<256> visited;
     std::bitset<256> seen; // Persistent map knowledge: visited or visible in a shown 3D view.
     std::vector<CoinPayment> payments; // This event's payments; cleared when the next begins.
+    std::vector<LootTaken> loot_taken; // This event's loot; cleared when the next begins.
     // This step's checks against a locked door and whether it opened.
     std::vector<DoorCheck> door_checks;
     bool door_opened{};

@@ -14,9 +14,12 @@ set(ENV{OPENGOLD_GATE_FIXTURE} "${FIXTURES}/west-gate.ogs")
 set(ENV{OPENGOLD_OHLO_FIXTURE} "${FIXTURES}/ohlo-door.ogs")
 set(ENV{OPENGOLD_SLUMS_FIXTURES} "${FIXTURES}/slums")
 set(ENV{OPENGOLD_TOWN_SERVICE_FIXTURES} "${FIXTURES}/town")
+set(ENV{OPENGOLD_SLUMS_EVENT_FIXTURES} "${FIXTURES}/slums-events")
+set(ENV{OPENGOLD_SLUMS_EVENT_SAMPLE} 8)
 execute_process(COMMAND "${EXPEDITION}" RESULT_VARIABLE result)
 foreach(fixture shop.ogs hall.ogs west-gate.ogs ohlo-door.ogs slums/hobgoblins.ogs slums/orcs.ogs slums/trolls.ogs
-        town/shop-9-13.ogs town/temple-11-3-sick.ogs town/inn-4-12-wounded.ogs)
+        town/shop-9-13.ogs town/temple-11-3-sick.ogs town/inn-4-12-wounded.ogs
+        slums-events/slums-3-13-10-3-potion.ogs)
     if(NOT result STREQUAL "0" OR NOT EXISTS "${FIXTURES}/${fixture}")
         message(FATAL_ERROR "The expedition route did not write ${fixture} (${result})")
     endif()

@@ -5,6 +5,7 @@
 #include "opengold/magic_item_catalog.h"
 #include "opengold/por_sound.h"
 #include "opengold/rolf_tour.h"
+#include <cctype>
 #include <utility>
 #include "opengold/exploration_view.h"
 #include <algorithm>
@@ -16,6 +17,31 @@
 
 namespace opengold::por
 {
+std::string join_script_text(std::string shown, std::string_view added)
+{
+    const auto word = [](char c)
+    {
+        return std::isalnum(static_cast<unsigned char>(c)) != 0;
+    };
+    if (!shown.empty() && !added.empty() && word(shown.back()) && word(added.front()))
+    {
+        shown += ' ';
+    }
+    shown += added;
+    std::string result;
+    result.reserve(shown.size());
+    for (std::size_t n = 0; n < shown.size(); ++n)
+    {
+        if (shown[n] == ' ' && n + 1 < shown.size() && shown[n + 1] == ' ' && !result.empty() &&
+            word(result.back()))
+        {
+            continue;
+        }
+        result += shown[n];
+    }
+    return result;
+}
+
 namespace
 {
 std::filesystem::path resolve_archive(const std::filesystem::path &directory, std::string_view name)
@@ -1271,7 +1297,7 @@ void RolfTourSession::advance(double seconds)
                 {
                     snapshot_.dialogue = rune_scroll_;
                 }
-                snapshot_.dialogue += request.text;
+                snapshot_.dialogue = join_script_text(std::move(snapshot_.dialogue), request.text);
                 if (snapshot_.dialogue.size() > 8192)
                 {
                     throw EclError("Tour dialogue exceeds limit");

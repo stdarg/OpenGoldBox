@@ -55,6 +55,26 @@ void step_to_prompt(RolfTourSession &tour)
     check(tour.snapshot().phase != TourPhase::running, "Host must yield a prompt or finish");
 }
 
+// Script text printed in pieces reads as words: a space where two touch,
+// one where a name's own leading space would double it, and the original's
+// two spaces after a sentence kept.
+void joined_text_tests()
+{
+    check(join_script_text("YOU ARE CONVERSING WITH A BUGBEAR LEADING", "A PARTY OF ") ==
+              "YOU ARE CONVERSING WITH A BUGBEAR LEADING A PARTY OF ",
+          "Two printed pieces do not run words together");
+    check(join_script_text("A PARTY OF ", " KOBOLDS") == "A PARTY OF KOBOLDS",
+          "A name's leading space does not double the gap");
+    check(join_script_text({}, "YOU SPY A GROUP OF SEEDY-LOOKING  KOBOLDS.") ==
+              "YOU SPY A GROUP OF SEEDY-LOOKING KOBOLDS.",
+          "A doubled space inside a word gap closes");
+    check(join_script_text({}, "HE OBSERVES.  'I HAVE NO TIME.'") ==
+              "HE OBSERVES.  'I HAVE NO TIME.'",
+          "Two spaces after a sentence stay");
+    check(join_script_text("GOLD:", " 5") == "GOLD: 5" && join_script_text("A\n", "B") == "A\nB",
+          "Punctuation and line breaks join as printed");
+}
+
 void animation_tests()
 {
     // Two 8x1 frames: a full first frame, then a delta XORed with that first frame.
@@ -846,6 +866,7 @@ int main()
     try
     {
         wall_art_tests();
+        joined_text_tests();
         animation_tests();
         cluebook_portrait_tests();
         fog_visibility_tests();

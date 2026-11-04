@@ -1657,6 +1657,11 @@ String rest_notice(const std::string &resource, const std::string &text)
          N_("You get away."),
          N_("Your party flees the battle."),
          N_("You have lost the fight."),
+         N_("Loot is retained until your party has room in its purses."),
+         N_("This temple is now the party's sanctuary for Word of Recall."),
+         N_("Word of Recall takes the party back to its sanctuary."),
+         N_("Teleport takes the party away."),
+         N_("The way is blocked."),
          N_("Locked."),
          N_("Wizard locked."),
          N_("You find a secret door in the north wall."),
@@ -1749,6 +1754,58 @@ String payment_notice(const CoinPayment &payment)
                          {"change", coin_list(coins.change)}});
 }
 
+String loot_notice(const LootTaken &loot)
+{
+    PackedStringArray parts;
+    const auto coins =
+        coin_list({loot.wealth[0], loot.wealth[1], loot.wealth[2], loot.wealth[3], loot.wealth[4]});
+    if (!coins.is_empty())
+    {
+        parts.push_back(coins);
+    }
+    const auto gems = loot.wealth[static_cast<std::size_t>(opengold::Coin::gems)];
+    if (gems)
+    {
+        parts.push_back(i18n::plural("{count} gem", "{count} gems", static_cast<int>(gems)));
+    }
+    const auto jewelry = loot.wealth[static_cast<std::size_t>(opengold::Coin::jewelry)];
+    if (jewelry)
+    {
+        parts.push_back(i18n::plural("{count} piece of jewelry", "{count} pieces of jewelry",
+                                     static_cast<int>(jewelry)));
+    }
+    // Each kind of item once, in the order found, with how many there are.
+    std::vector<std::pair<std::string, int>> kinds;
+    for (const auto &item : loot.items)
+    {
+        const auto kind = std::find_if(kinds.begin(), kinds.end(),
+                                       [&](const auto &seen)
+                                       {
+                                           return seen.first == item;
+                                       });
+        if (kind == kinds.end())
+        {
+            kinds.emplace_back(item, 1);
+        }
+        else
+        {
+            ++kind->second;
+        }
+    }
+    for (const auto &[name, count] : kinds)
+    {
+        const auto label = String::utf8(name.c_str());
+        parts.push_back(
+            count == 1 ? label
+                       : i18n::format(N_("{item} ×{count}"), {{"item", label}, {"count", count}}));
+    }
+    if (parts.is_empty())
+    {
+        return {};
+    }
+    return i18n::format(N_("The party takes {loot}."), {{"loot", String(", ").join(parts)}});
+}
+
 String door_check_notice(const DoorCheck &check)
 {
     const auto name = String::utf8(check.member.c_str());
@@ -1803,6 +1860,14 @@ String event_dialogue(const std::string &resource, const TourSnapshot &s)
     for (const auto &payment : s.payments)
     {
         result += "\n" + payment_notice(payment);
+    }
+    for (const auto &loot : s.loot_taken)
+    {
+        const auto notice = loot_notice(loot);
+        if (!notice.is_empty())
+        {
+            result += (result.is_empty() ? "" : "\n") + notice;
+        }
     }
     for (const auto &check : s.door_checks)
     {
@@ -1982,7 +2047,7 @@ void RolfTourView::refresh()
                     ? (loaded ? i18n::text(s.diagnostic) : error_) + "\n" +
                           i18n::text(
                               "Restart with --reset-game-path to choose your Pool of Radiance data folder.")
-                : s.dialogue.empty() && s.secret_door_searches.empty()
+                : s.dialogue.empty() && s.secret_door_searches.empty() && s.loot_taken.empty()
                     ? (s.tour_finished ? String() : i18n::text("Following Rolf..."))
                     : event_dialogue(resource + "/dialogue", s));
     }

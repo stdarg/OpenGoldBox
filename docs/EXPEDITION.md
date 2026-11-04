@@ -75,6 +75,9 @@ records. The four-orc group carries 96 silver and one magic item from record 13.
 The item's original bytes and provenance are retained; no unsupported magic
 effect is invented. Script suppression of monster item drops is honored. A
 full party purse defers collection without losing loot; deferred rewards survive saving.
+The town screen names what the party takes, coins first and each kind of item
+once with its count ("The party takes 96 sp, Clerical Scroll With 2 Spells,
+Long Sword ×3, ..."), after a won fight and after a script's treasure.
 
 The whole campaign is now playable; see the [whole-map audit](audits/whole-map.md).
 Unsupported paths retain explicit diagnostics and event rollback.

@@ -43,11 +43,13 @@ namespace
 {
 // A Godot check runs this binary only for the save fixtures its environment
 // names; once each is written, the rest of the expedition need not run.
-constexpr std::array<const char *, 10> fixture_variables{
-    "OPENGOLD_SHOP_FIXTURE",        "OPENGOLD_HALL_FIXTURE",   "OPENGOLD_REST_CHOICE_FIXTURE",
-    "OPENGOLD_OHLO_FIXTURE",        "OPENGOLD_SLUMS_FIXTURES", "OPENGOLD_KUTO_WELL_FIXTURE",
-    "OPENGOLD_KUTO_NORRIS_FIXTURE", "OPENGOLD_GATE_FIXTURE",   "OPENGOLD_WHOLE_MAP_FIXTURE",
-    "OPENGOLD_TOWN_SERVICE_FIXTURES"};
+constexpr std::array<const char *, 11> fixture_variables{
+    "OPENGOLD_SHOP_FIXTURE",        "OPENGOLD_HALL_FIXTURE",
+    "OPENGOLD_REST_CHOICE_FIXTURE", "OPENGOLD_OHLO_FIXTURE",
+    "OPENGOLD_SLUMS_FIXTURES",      "OPENGOLD_KUTO_WELL_FIXTURE",
+    "OPENGOLD_KUTO_NORRIS_FIXTURE", "OPENGOLD_GATE_FIXTURE",
+    "OPENGOLD_WHOLE_MAP_FIXTURE",   "OPENGOLD_TOWN_SERVICE_FIXTURES",
+    "OPENGOLD_SLUMS_EVENT_FIXTURES"};
 std::set<std::string, std::less<>> written_fixtures;
 
 bool requested_fixtures_written()
@@ -6965,7 +6967,9 @@ void encounter_chances(const std::filesystem::path &directory)
 // street square the party can reach (some squares beside a door are inside the
 // building). False, with a note, for an inner room with no door to the street.
 bool walk_to_door(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party,
-                  unsigned x, unsigned y, const std::string &kind)
+                  unsigned x, unsigned y, const std::string &kind, const Answer &answer = peaceful,
+                  bool bash_doors = false, bool camp_when_hurt = false,
+                  std::optional<unsigned> only_facing = std::nullopt)
 {
     constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
     std::string tried;
@@ -6973,20 +6977,27 @@ bool walk_to_door(por::RolfTourSession &town, const std::shared_ptr<CampaignPart
     {
         for (unsigned d = 0; d < 4; ++d)
         {
+            if (only_facing && d != *only_facing)
+            {
+                continue;
+            }
             const int nx = int(x) - dx[d], ny = int(y) - dy[d];
             if (nx < 0 || ny < 0 || nx >= 16 || ny >= 16)
             {
                 continue;
             }
             const auto &from = town.map().at(unsigned(nx), unsigned(ny));
-            const bool open = !(from.doors[d] > 1 || (from.walls[d] && !from.doors[d]));
+            // A locked door is a way in for a party that bashes doors.
+            const bool locked = bash_doors && from.walls[d] && from.doors[d] == 2;
+            const bool open = locked || !(from.doors[d] > 1 || (from.walls[d] && !from.doors[d]));
             if (!open || street != (from.event_number() == 0))
             {
                 continue;
             }
             try
             {
-                walk_to(town, party, unsigned(nx), unsigned(ny));
+                walk_to(town, party, unsigned(nx), unsigned(ny), answer, bash_doors,
+                        camp_when_hurt);
                 face(town, party, d);
                 return true;
             }
@@ -6996,7 +7007,10 @@ bool walk_to_door(por::RolfTourSession &town, const std::shared_ptr<CampaignPart
             }
         }
     }
-    std::cout << "No street door: " << kind << " (" << x << "," << y << ");" << tried << '\n';
+    if (!only_facing)
+    {
+        std::cout << "No street door: " << kind << " (" << x << "," << y << ");" << tried << '\n';
+    }
     return false;
 }
 
@@ -7139,6 +7153,105 @@ void city_watch_punishment(Expedition &trip)
     check(attackers.contains("bane-priest") && attackers.contains("nomad-guard") &&
               attackers.contains("castle-knight"),
           "Tempus sends its clerics and its fighters");
+}
+
+// The Slums events check (tests/slums_events_tests.gd) loads a level-4 party
+// one step from a door of each of the Slums' events, facing it, as
+// "slums-<event>-<x>-<y>.ogs". It enters by the west gate and walks there
+// as the route does, bashing locked doors and camping when hurt.
+void write_slums_event_fixtures(const std::filesystem::path &directory,
+                                const std::filesystem::path &folder, const std::string &assets)
+{
+    std::filesystem::create_directories(folder);
+    const Answer bash = [](const por::TourSnapshot &s) -> std::size_t
+    {
+        for (std::size_t n = 0; n < s.choices.size(); ++n)
+        {
+            if (s.choices[n] == "Bash")
+            {
+                return n;
+            }
+        }
+        return peaceful(s);
+    };
+    const auto strong_party = [&]
+    {
+        auto trip = create_party(directory);
+        auto &party = *trip.party;
+        party.award_experience(party.rule_module().experience_for_level(4), "slums-events:strong");
+        for (const auto id : party.state().slots)
+        {
+            while (id && party.can_advance(id))
+            {
+                party.advance(id, party.default_advancement(id));
+            }
+        }
+        walk_to(trip.town, trip.party, 0, 4);
+        step(trip.town, trip.party, 3);
+        return trip;
+    };
+    std::map<unsigned, std::vector<std::pair<unsigned, unsigned>>> events;
+    {
+        const auto probe = strong_party();
+        for (unsigned y = 0; y < 16; ++y)
+        {
+            for (unsigned x = 0; x < 16; ++x)
+            {
+                if (const auto event = probe.town.map().at(x, y).event_number())
+                {
+                    events[event].push_back({x, y});
+                }
+            }
+        }
+    }
+    // Ohlo's commission accepted, and with the potion fetched, outside his
+    // door (13, 10), facing west.
+    {
+        auto trip = strong_party();
+        check(walk_to_door(trip.town, trip.party, 13, 10, "Ohlo's door", bash, true, true, 3),
+              "Ohlo's door");
+        step(trip.town, trip.party, 3, prefer({"Bash", "TALK", "MEEK", "ACCEPT THE COMMISSION"}));
+        check(walk_to_door(trip.town, trip.party, 13, 10, "Ohlo's door", bash, true, true, 3),
+              "Back at Ohlo's door");
+        write_campaign_file(folder / "slums-3-13-10-3-commission.ogs",
+                            encode_campaign(*trip.party, &trip.town, assets));
+        walk_to(trip.town, trip.party, 14, 12, quest_answer, true, true);
+        step(trip.town, trip.party, 1, quest_answer, "ohlo");
+        check(trip.town.script_variable(por::EclAddress{0x4A81}) == 250, "The potion is fetched");
+        check(walk_to_door(trip.town, trip.party, 13, 10, "Ohlo's door", bash, true, true, 3),
+              "Back at Ohlo's door with the potion");
+        write_campaign_file(folder / "slums-3-13-10-3-potion.ogs",
+                            encode_campaign(*trip.party, &trip.town, assets));
+    }
+    // Every square of every event, from each side a party can step in from:
+    // an event may say something only on some of its squares, or only to a
+    // party arriving one way ("...-<x>-<y>-<facing>.ogs", 0 north to 3 west).
+    // OPENGOLD_SLUMS_EVENT_SAMPLE=8 writes every eighth, as the suite does.
+    const auto *sampled = std::getenv("OPENGOLD_SLUMS_EVENT_SAMPLE");
+    const unsigned sample = sampled ? std::max(1, std::atoi(sampled)) : 1;
+    unsigned candidate = 0;
+    for (const auto &[event, cells] : events)
+    {
+        for (const auto &[x, y] : cells)
+        {
+            for (unsigned facing = 0; facing < 4; ++facing)
+            {
+                if (candidate++ % sample != 0)
+                {
+                    continue;
+                }
+                auto trip = strong_party();
+                if (walk_to_door(trip.town, trip.party, x, y,
+                                 "Slums event " + std::to_string(event), bash, true, true, facing))
+                {
+                    write_campaign_file(folder / ("slums-" + std::to_string(event) + "-" +
+                                                  std::to_string(x) + "-" + std::to_string(y) +
+                                                  "-" + std::to_string(facing) + ".ogs"),
+                                        encode_campaign(*trip.party, &trip.town, assets));
+                }
+            }
+        }
+    }
 }
 
 // The town services check (tests/town_services_tests.gd) loads a party one
@@ -7284,6 +7397,11 @@ void installed_first_expedition(const std::filesystem::path &executable,
     std::filesystem::create_directories(folder);
     const auto save = folder / "expedition.ogs";
 
+    if (const auto *fixtures = std::getenv("OPENGOLD_SLUMS_EVENT_FIXTURES"))
+    {
+        write_slums_event_fixtures(directory, fixtures, assets);
+        written_fixtures.insert("OPENGOLD_SLUMS_EVENT_FIXTURES");
+    }
     if (const auto *fixtures = std::getenv("OPENGOLD_TOWN_SERVICE_FIXTURES"))
     {
         write_town_service_fixtures(directory, fixtures, assets);

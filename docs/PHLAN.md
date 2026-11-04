@@ -241,6 +241,28 @@ with no street door and are not entered. On Hard, a temple offers no
 Resurrection and its Raise Dead list names those it cannot help
 (`opengold_expedition_tests`).
 
+`opengold_godot_slums_events` does the same for the Slums (ECL2, area 20)
+with a level-4 party (`tests/slums_events_tests.gd`). It loads a save from one
+step before each event square, one for each facing, then steps in and takes
+every branch, loading the save again for each: every entry of a choice list,
+the right word and a wrong one for a typed answer, 0 and 100 for a number. A
+branch ends back in the street, in a fight on the combat screen or in a shop.
+After a street ending it looks around and then steps out and back in, so an
+event that pays twice is caught. The first fight of each event is played on
+Quick until it ends. The check fails on a "not supported" notice, on a dead end
+(nothing to press, or a pause longer than ten seconds) or on a fight that does
+not end. The suite explores every eighth save (`OPENGOLD_SLUMS_EVENT_SAMPLE`
+in `tests/expedition_fixtures.cmake`); for all of them, write the saves with
+`OPENGOLD_SLUMS_EVENT_FIXTURES` set and run the script on that folder. Two
+saves start Ohlo's quest midway: one with the commission accepted and one with
+his potion found.
+
+The town screen joins printed pieces of text so the words read as written: a
+space is added where two pieces would run words together
+("LEADING" then "A PARTY OF"), and a doubled space after a word is closed up
+("SEEDY-LOOKING  MAN"). Two spaces after a full stop are kept
+(`join_script_text`).
+
 The Godot check completes the tour, uses movement/button callbacks to reach
 the arms shop, purchases a shield, opens inventory, has the shop identify it,
 makes the member a Bard who casts Detect Magic from the Cast menu and Identify

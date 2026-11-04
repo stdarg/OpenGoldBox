@@ -699,6 +699,8 @@ bool RolfTourSession::move_party(ExplorationCommand command)
 
 void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_t> entry)
 {
+    // Loot left unclaimed until the party had room is named with this event.
+    snapshot_.loot_taken.clear();
     claim_loot();
     synchronize_clock();
     snapshot_.payments.clear();
@@ -935,8 +937,13 @@ void RolfTourSession::claim_loot()
     {
         if (campaign_->award_loot(it->wealth, it->items, it->reward_id))
         {
+            LootTaken taken{.wealth = it->wealth};
+            for (const auto &item : it->items)
+            {
+                taken.items.push_back(item.label());
+            }
+            snapshot_.loot_taken.push_back(std::move(taken));
             it = pending_loot_.erase(it);
-            snapshot_.dialogue += "\nRecovered the encounter's original money and items.";
             ++snapshot_.revision;
         }
         else
@@ -1840,10 +1847,10 @@ void RolfTourSession::show_encounter_menu()
     snapshot_.sprite_id = args[0].number();
     snapshot_.sprite_frame = encounter_distance_;
     monster_picture_id_ = args[2].number();
-    snapshot_.dialogue = args[9 + encounter_distance_].text();
+    snapshot_.dialogue = join_script_text({}, args[9 + encounter_distance_].text());
     if (snapshot_.dialogue.empty())
     {
-        snapshot_.dialogue = args[9].text();
+        snapshot_.dialogue = join_script_text({}, args[9].text());
     }
     announce_camp_attack();
     if (!meeting_pose_)

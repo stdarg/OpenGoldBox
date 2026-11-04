@@ -373,6 +373,15 @@ if(OPENGOLD_BUILD_TESTS)
         -P "${PROJECT_SOURCE_DIR}/tests/town_services.cmake")
     set_tests_properties(opengold_godot_town_services PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 400 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
+    # A sample of the Slums' event squares, every branch of each event, the
+    # first fight of each played out, with original files.
+    add_test(NAME opengold_godot_slums_events COMMAND "${CMAKE_COMMAND}"
+        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
+        "-DWORK=${CMAKE_BINARY_DIR}/slums-events"
+        -P "${PROJECT_SOURCE_DIR}/tests/slums_events.cmake")
+    set_tests_properties(opengold_godot_slums_events PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
+        TIMEOUT 600 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_training_hall COMMAND "${CMAKE_COMMAND}"
         "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
