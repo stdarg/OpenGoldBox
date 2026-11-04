@@ -68,20 +68,12 @@ std::vector<std::string> read_closing_story(std::span<const std::uint8_t> overla
     return pages;
 }
 
-// The cells a SAVE may set a chance in: the rest check's interval and chance.
-bool rest_chance_cell(std::uint16_t cell)
-{
-    return cell == ecl_rest_check_interval.location ||
-           cell == ecl_rest_interruption_chance.location;
-}
-
 // The area scripts with data/encounters/chances.json's numbers read in place
 // of the original's, each checked against the player's script: a RANDOM's
 // range, a number a COMPARE tests, or a SAVE to the rest check's cells, written
 // in the script as the chance's `original`.
 void apply_chances(const EncounterData &encounters, PhlanResources &town)
 {
-    constexpr std::uint8_t compare = 3, random = 8, save = 9;
     std::map<unsigned, std::vector<EclOperandOverride>> changes;
     for (const auto &chance : encounters.chances)
     {
@@ -105,18 +97,13 @@ void apply_chances(const EncounterData &encounters, PhlanResources &town)
         {
             reject("no instruction at this address");
         }
-        const auto &operands = instruction->operands;
-        const bool chance_operand = (instruction->opcode == random && chance.operand == 0) ||
-                                    (instruction->opcode == compare && chance.operand < 2) ||
-                                    (instruction->opcode == save && chance.operand == 0 &&
-                                     operands.size() == 2 && rest_chance_cell(operands[1].value));
-        if (!chance_operand)
+        if (!is_chance_operand(*instruction, chance.operand))
         {
             reject("operand " + std::to_string(chance.operand) +
                    " is no RANDOM range, COMPARE number or SAVE of the rest check");
         }
-        const auto &original = operands.at(chance.operand);
-        if ((original.tag != 0 && original.tag != 2) || original.value != chance.original)
+        const auto &original = instruction->operands.at(chance.operand);
+        if (!is_written(original) || original.value != chance.original)
         {
             reject("the player's script has no " + std::to_string(chance.original) + " here");
         }
@@ -137,7 +124,6 @@ void apply_chances(const EncounterData &encounters, PhlanResources &town)
 std::map<EncounterSite, EncounterOverride> checked_overrides(const EncounterData &encounters,
                                                              const PhlanResources &town)
 {
-    constexpr std::uint8_t load_monster = 11;
     std::map<EncounterSite, EncounterOverride> checked;
     for (const auto &change : encounters.overrides)
     {
@@ -161,13 +147,9 @@ std::map<EncounterSite, EncounterOverride> checked_overrides(const EncounterData
         {
             reject("no instruction at this address");
         }
-        const auto written = [&](std::size_t operand, unsigned value)
-        {
-            const auto &found = instruction->operands.at(operand);
-            return (found.tag == 0 || found.tag == 2) && found.value == value;
-        };
-        if (instruction->opcode != load_monster || instruction->operands.size() < 3 ||
-            !written(0, change.original_record) || !written(1, change.original_count))
+        const auto loads = written_load_monster(*instruction);
+        if (!loads || loads->record != change.original_record ||
+            loads->count != change.original_count)
         {
             reject("the player's script loads no " + std::to_string(change.original_count) +
                    " of record " + std::to_string(change.original_record) + " here");

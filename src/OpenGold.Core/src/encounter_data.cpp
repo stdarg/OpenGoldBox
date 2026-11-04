@@ -1,5 +1,6 @@
 #include "opengold/encounter_data.h"
 #include "json_document.h"
+#include "opengold/ecl_address.h"
 #include <algorithm>
 #include <charconv>
 #include <cmath>
@@ -312,6 +313,58 @@ std::string site_name(const EncounterSite &site)
     std::snprintf(address, sizeof address, "%04X", static_cast<unsigned>(site.address));
     return "ECL" + std::to_string(site.bank) + ".DAX:" + std::to_string(site.script) + ":0x" +
            address;
+}
+
+std::vector<EncounterGroup>
+staged_groups(std::span<const unsigned> records,
+              const std::map<unsigned, EncounterConversion> &conversions)
+{
+    std::vector<EncounterGroup> groups;
+    for (std::size_t n = 0; n < records.size(); ++n)
+    {
+        if (n == 0 || records[n] != records[n - 1])
+        {
+            groups.push_back({conversions.at(records[n]).fit_xp, 0});
+        }
+        ++groups.back().count;
+    }
+    return groups;
+}
+
+bool is_written(const EclOperand &operand) noexcept
+{
+    return operand.tag == 0 || operand.tag == 2;
+}
+
+std::optional<WrittenLoad> written_load_monster(const EclInstruction &instruction)
+{
+    constexpr std::uint8_t load_monster = 11;
+    const auto &operands = instruction.operands;
+    if (instruction.opcode != load_monster || operands.size() < 3 || !is_written(operands[0]) ||
+        !is_written(operands[1]))
+    {
+        return std::nullopt;
+    }
+    WrittenLoad load{operands[0].value, operands[1].value};
+    if (is_written(operands[2]))
+    {
+        load.icon = operands[2].value;
+    }
+    return load;
+}
+
+bool is_chance_operand(const EclInstruction &instruction, unsigned operand)
+{
+    constexpr std::uint8_t compare = 3, random = 8, save = 9;
+    const auto &operands = instruction.operands;
+    const auto rest_cell = [&]
+    {
+        return operands.size() == 2 && (operands[1].value == ecl_rest_check_interval.location ||
+                                        operands[1].value == ecl_rest_interruption_chance.location);
+    };
+    return (instruction.opcode == random && operand == 0) ||
+           (instruction.opcode == compare && operand < 2) ||
+           (instruction.opcode == save && operand == 0 && rest_cell());
 }
 
 const AreaConversions *EncounterData::area(unsigned script) const

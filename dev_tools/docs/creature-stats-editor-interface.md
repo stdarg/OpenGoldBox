@@ -2,16 +2,17 @@
 
 How the [Creature Stats Editor](creature-stats-editor-requirements.md) gets its
 edits into the game. For using the importer and its build targets, see
-[Creature edits: from the editor to the game](creature-edits-import.md). Written 2026-11-03 for Codex, who builds the tool; Claude
-builds the game's side. Everything here is built except the parts marked
+[Creature edits: from the editor to the game](creature-edits-import.md). Written 2026-11-03 for Codex; since 2026-11-04 Claude builds the
+[editor](creature-stats-editor.md) too, and it runs the importer and the game's
+code in process. Everything here is built except the parts marked
 **game work**.
 
 ## Principles
 
-- **The tool writes its edits in `dev_tools/`; the importer puts them in the
-  game.** The tool writes one file of changes,
+- **The tool keeps its edits in `dev_tools/`; the importer puts them in the
+  game.** The tool keeps its pending changes in one file,
   `dev_tools/creature_stats_editor/edits/edits.json`
-  ([the edits file](#the-edits-file)). `opengold_import_edits`, built from the
+  ([the edits file](#the-edits-file)), and its Publish runs the importer. `opengold_import_edits`, built from the
   game's own code, applies them to `data/`, checks the result with the game's
   loaders, and writes nothing if any edit is refused. The game never reads
   `dev_tools/`.
@@ -19,7 +20,7 @@ builds the game's side. Everything here is built except the parts marked
   use. There are no override copies of stat lines, gear or companions.
 - **The tool never computes game results itself.** What a creature's AC is,
   how many guards a party meets, what a companion's Hit Points come to: the
-  game's code answers ([Reading results](#7-reading-results-opengold_creature_data-game-work)).
+  game's code answers ([Reading results](#7-reading-results-toolscreature_datah)).
 - **Original data stays in the player's install.** Files in the repository hold
   OpenGoldBox's own values and references to original records, never copies of
   original records.
@@ -95,7 +96,7 @@ The editor either opens the catalog's own equipment editor or writes the same
 `opengold_monster_export_check` fails until `data/monsters` matches the
 records, so both are committed together. In a fight a monster uses only its
 held weapons, potions, wands and scrolls; armor, rings and other worn gear are
-loot. `opengold_creature_data creature` reports which item counts.
+loot. The editor shows which item counts (`CreatureData::creature`).
 
 ## 3. Fight ratings and stat lines per record: `conversions.json`
 
@@ -413,30 +414,33 @@ are ordinary repository changes: they are committed with the full test suite
 passing (CLAUDE.md), and after a `combat.rules` change the AI lab's scenario
 packs are rebuilt.
 
-## 7. Reading results: `opengold_creature_data` (game work)
+## 7. Reading results: `tools/creature_data.h`
 
-Not built yet; the import does not need it. A command-line program in
-`tools/`, built with the game's core and rules libraries and run by the tool
-with `OS.execute`. It writes JSON to standard
-output, and on error a message to standard error and exit code 1. `GAME_DIR` is
-the player's Pool of Radiance install. It reads the repository's `data/` as the
-game does.
+Built 2026-11-04, as a library the editor links in place of the planned
+command-line program `opengold_creature_data`. `CreatureData` reads the
+repository's `data/` and the player's install with the game's loaders, and
+answers each query in JSON:
 
-| Command | Prints |
+| Query | Answers |
 | --- | --- |
-| `check GAME_DIR` | Loads `combat.rules`, `data/monsters`, and the three new files the way the game does. Prints `{"ok": true}` or exits 1 with every problem, one per line. |
-| `creatures GAME_DIR` | Every converted record: area, script, bank, record, catalog name, `definition`, `fit_xp`, `award_xp`, the original's Hit Points, and the other records that share the `definition`. |
-| `creature GAME_DIR SCRIPT RECORD` | The creature as a fight stages it: AC, Hit Points at each difficulty, initiative, speed, each attack with its to-hit, damage and weapon, saves, abilities, and each gear item with `"counts": true` or `false`. |
-| `encounters GAME_DIR` | Every `LOAD MONSTER` site: site name, area, the map square where the party meets it when the script says, the record and count loaded, the override if any, and the text the script shows just before it. Table-rolled fights are listed with `"editable": false`. |
-| `size GAME_DIR SITE --levels L1,L2,... [--challenge N]` | For a party with those levels (default encounter challenge 33): at each difficulty, the XP budget, each group's `fit_xp`, and the count met. Uses `fit_encounter_to_difficulty`. |
-| `companions GAME_DIR` | Each companion built from the file: the fields above plus the built sheet's level, Hit Points, ability scores, AC, spells and items. |
+| `creatures()` | Every converted record: area, scripts, bank, record, name, `definition`, `fit_xp`, `award_xp`, the original's Hit Points and AC, the records that share the `definition`, and the entry as `conversions.json` holds it. |
+| `creature(script, record)` | The creature as a fight fields it, at each difficulty: AC, Hit Points, initiative, speed, attacks with to-hit and damage, saves and spellcasting (`RulesModule::creature_stats` of `staged_fighter`, after `apply_difficulty`); each gear item and what a fight uses it for. |
+| `creature_art(script, record)` | The combat art the area's first fight draws it with. |
+| `stat_lines()` | Every `creature` row: key, Hit Points and spellcasting profile. |
+| `encounters()` | Every `LOAD MONSTER`: site, area, the fight it belongs to, the record, count and icon written in the script (or the variable each is read from, which makes it read only), and the override. |
+| `fight(site, levels, challenge)` | For a party of those levels: at each difficulty, the XP budget and the count met of each group (`staged_groups`, `fit_encounter_to_difficulty`). |
+| `companions()` | Each companion built with `build_companion`: level, Hit Points, scores, saves, features, spells and items, with its entry. |
+| `chances()` | Every number `chances.json` may change: each `RANDOM`'s range, each `COMPARE` of a rolled variable, each `SAVE` of the rest check, with the entry that changes it. |
 
-For the castle's guards, `size GAME_DIR ECL5.DAX:7:0xA60D --levels
-10,10,10,10,10,10,10,6` prints 8 met at Normal.
+For the castle's guards, `fight("ECL5.DAX:7:0xA60D", {10,10,10,10,10,10,10,6}, 33)`
+meets 8 at Normal.
 
-**Tests:** each command's output for a few known records and sites, checked
-in the game suite with the original files, as the other original-data tests
-are.
+The rules for which `LOAD MONSTER` an override can change and which operand a
+chance can change are the game's own (`written_load_monster`,
+`is_chance_operand` in `encounter_data.h`), used by the game's loader and the
+editor alike.
+
+**Tests:** `opengold_creature_data_tests`, with the original files.
 
 ## 8. Documentation the importer writes
 
@@ -460,11 +464,11 @@ spellcasting, stat lines, fight ratings, fight creatures and counts, wandering
 and rest chances, and companions, and put the edits in the game. Gear goes
 through the catalog's export.
 
-Still to build (**game work**):
+Built 2026-11-04: the editor, and the library of section 7 it reads the game
+through.
 
-1. Tracing the step rolls of the areas not in section 6's table.
-2. `opengold_creature_data` (section 7), if the tool is to show what the game
-   makes of a creature or how many monsters a party meets.
+Still to build (**game work**): tracing the step rolls of the areas not in
+section 6's table.
 
 Each step is pushed with the full test suite passing, and with no change to
 the game's behavior until the tool writes an edit.

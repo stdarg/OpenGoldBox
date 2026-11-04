@@ -1872,15 +1872,7 @@ std::vector<unsigned> RolfTourSession::living_member_levels() const
 void RolfTourSession::fit_staged_encounter()
 {
     const auto levels = living_member_levels();
-    std::vector<EncounterGroup> groups;
-    for (std::size_t n = 0; n < staged_records_.size(); ++n)
-    {
-        if (n == 0 || staged_records_[n] != staged_records_[n - 1])
-        {
-            groups.push_back({area_resources().conversions.at(staged_records_[n]).fit_xp, 0});
-        }
-        ++groups.back().count;
-    }
+    const auto groups = staged_groups(staged_records_, area_resources().conversions);
     const auto counts =
         fit_encounter_to_difficulty(groups, levels, encounter_challenge_, difficulty_);
     staged_band_.clear();
@@ -2529,9 +2521,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 11:
     {
-        // A fight holds 56 monsters; the original stops loading at its limit,
-        // as the kobold king's 58 do (ECL8:13 0xA1BE).
-        constexpr std::size_t monster_limit = 56;
+        constexpr auto monster_limit = fight_monster_limit;
         // A roaming group's size follows the party's strength, so a party with
         // most of its members down can be met by no one at all: the script
         // loads nothing, and its COMBAT then has nothing to fight.

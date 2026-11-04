@@ -1,5 +1,8 @@
 #include "json_document.h"
 #include "opengold/path_text.h"
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
 #include <fstream>
 #include <locale>
 #include <sstream>
@@ -256,7 +259,174 @@ class JsonReader
     std::size_t at_{};
 };
 
+bool is_scalar(const Json &value)
+{
+    return !std::holds_alternative<Json::Array>(value.value) &&
+           !std::holds_alternative<Json::Object>(value.value);
+}
+
+void write_string(std::string &out, const std::string &text)
+{
+    out += '"';
+    for (const unsigned char c : text)
+    {
+        if (c == '"' || c == '\\')
+        {
+            out += '\\';
+            out += static_cast<char>(c);
+        }
+        else if (c == '\n')
+        {
+            out += "\\n";
+        }
+        else if (c < 0x20)
+        {
+            char escaped[8];
+            std::snprintf(escaped, sizeof escaped, "\\u%04x", c);
+            out += escaped;
+        }
+        else
+        {
+            out += static_cast<char>(c);
+        }
+    }
+    out += '"';
+}
+
+void write_scalar(std::string &out, const Json &value)
+{
+    if (const auto *number = std::get_if<double>(&value.value))
+    {
+        if (*number == std::floor(*number) && std::abs(*number) < 1e15)
+        {
+            out += std::to_string(static_cast<long long>(*number));
+            return;
+        }
+        char text[32];
+        std::snprintf(text, sizeof text, "%.17g", *number);
+        out += text;
+        return;
+    }
+    if (const auto *text = std::get_if<std::string>(&value.value))
+    {
+        write_string(out, *text);
+        return;
+    }
+    if (const auto *flag = std::get_if<bool>(&value.value))
+    {
+        out += *flag ? "true" : "false";
+        return;
+    }
+    out += "null";
+}
+
+// One line for a value whose members are all plain values, such as a
+// conversion's record or a companion's rolls; otherwise one member per line.
+bool fits_one_line(const Json &value)
+{
+    if (const auto *array = std::get_if<Json::Array>(&value.value))
+    {
+        return std::all_of(array->begin(), array->end(), is_scalar);
+    }
+    if (const auto *object = std::get_if<Json::Object>(&value.value))
+    {
+        return std::all_of(object->begin(), object->end(),
+                           [](const auto &member)
+                           {
+                               return is_scalar(member.second);
+                           });
+    }
+    return true;
+}
+
+void write_json(std::string &out, const Json &value, std::size_t indent)
+{
+    if (is_scalar(value))
+    {
+        write_scalar(out, value);
+        return;
+    }
+    const bool one_line = fits_one_line(value);
+    const auto separator = one_line ? std::string(", ") : ",\n" + std::string(indent + 2, ' ');
+    const auto open = one_line ? std::string() : "\n" + std::string(indent + 2, ' ');
+    const auto close = one_line ? std::string() : "\n" + std::string(indent, ' ');
+    if (const auto *array = std::get_if<Json::Array>(&value.value))
+    {
+        out += '[';
+        out += array->empty() ? "" : open;
+        for (std::size_t n = 0; n < array->size(); ++n)
+        {
+            out += n ? separator : "";
+            write_json(out, (*array)[n], indent + 2);
+        }
+        out += array->empty() ? "" : close;
+        out += ']';
+        return;
+    }
+    const auto &object = std::get<Json::Object>(value.value);
+    out += '{';
+    out += object.empty() ? "" : open;
+    for (std::size_t n = 0; n < object.size(); ++n)
+    {
+        out += n ? separator : "";
+        write_string(out, object[n].first);
+        out += ": ";
+        write_json(out, object[n].second, indent + 2);
+    }
+    out += object.empty() ? "" : close;
+    out += '}';
+}
 } // namespace
+
+bool json_equal(const Json &a, const Json &b)
+{
+    if (a.value.index() != b.value.index())
+    {
+        return false;
+    }
+    if (const auto *object = std::get_if<Json::Object>(&a.value))
+    {
+        const auto &other = std::get<Json::Object>(b.value);
+        return object->size() == other.size() &&
+               std::all_of(object->begin(), object->end(),
+                           [&](const auto &member)
+                           {
+                               const auto *found = b.find(member.first);
+                               return found && json_equal(member.second, *found);
+                           });
+    }
+    if (const auto *array = std::get_if<Json::Array>(&a.value))
+    {
+        const auto &other = std::get<Json::Array>(b.value);
+        return array->size() == other.size() &&
+               std::equal(array->begin(), array->end(), other.begin(), json_equal);
+    }
+    if (const auto *number = std::get_if<double>(&a.value))
+    {
+        return *number == std::get<double>(b.value);
+    }
+    if (const auto *text = std::get_if<std::string>(&a.value))
+    {
+        return *text == std::get<std::string>(b.value);
+    }
+    if (const auto *flag = std::get_if<bool>(&a.value))
+    {
+        return *flag == std::get<bool>(b.value);
+    }
+    return true; // both null
+}
+
+std::string json_text(const Json &value)
+{
+    std::string out;
+    write_json(out, value, 0);
+    return out;
+}
+
+std::string json_file_text(const Json &document)
+{
+    return json_text(document) + "\n";
+}
 
 Json parse_json(std::string_view text)
 {

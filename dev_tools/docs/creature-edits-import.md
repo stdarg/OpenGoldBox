@@ -6,9 +6,10 @@ and how to use the tools that carry them. The
 [interface specification](creature-stats-editor-interface.md) records the
 design and each file's rules in full; this guide is the working reference.
 
-Who builds what: Codex builds the editor (`dev_tools/creature_stats_editor/`).
-The game's side, described here, is built: the data files the game reads, the
-importer that writes them, and the build targets that put them in the game.
+The [editor](creature-stats-editor.md) (`dev_tools/creature_stats_editor/`)
+runs this importer in process: its Publish button does steps 2 and 3 below.
+This guide describes the importer itself, which also runs from the command
+line and in scripts.
 
 ## How it fits together
 
@@ -43,8 +44,8 @@ src/OpenGoldBox/godot/data/            what the game reads when it starts
 
 From the repository root, with the original game at `$OPENGOLD_GAME_DIR`:
 
-1. Make the changes in the editor. It writes
-   `dev_tools/creature_stats_editor/edits/edits.json`.
+1. Make the changes in the editor, which keeps them in
+   `dev_tools/creature_stats_editor/edits/edits.json`, or write that file.
 2. Preview them. Nothing is written:
 
    ```sh
@@ -397,9 +398,5 @@ before committing.
 
 ## Not built yet
 
-- A program the editor can ask for what the game computes from the data: a
-  monster's effective combat values, or how many monsters a party meets
-  ([interface, section 7](creature-stats-editor-interface.md#7-reading-results-opengold_creature_data-game-work)).
-  Imports do not need it.
 - The step rolls of the areas other than the Slums, Podol Plaza and the three
   wilderness maps.

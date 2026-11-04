@@ -368,6 +368,13 @@ class RolfTourSession
         return snapshot_;
     }
 
+    // The areas as load() read them, for a tool that shows what the game reads
+    // (the Creature Stats Editor). Null for synthetic resources.
+    [[nodiscard]] std::shared_ptr<const PhlanResources> resources() const noexcept
+    {
+        return town_;
+    }
+
     [[nodiscard]] const GeoMap &map() const noexcept
     {
         return map_;

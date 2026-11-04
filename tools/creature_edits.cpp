@@ -7,12 +7,12 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <cstdio>
 #include <fstream>
 #include <iterator>
 #include <map>
 #include <regex>
 #include <set>
+#include <span>
 #include <sstream>
 
 namespace opengold::edits
@@ -62,171 +62,6 @@ void write_text(const fs::path &path, const std::string &text)
     fs::rename(temporary, path);
 }
 
-// --- JSON: comparison and the files' layout ---------------------------------
-
-bool is_scalar(const Json &value)
-{
-    return !std::holds_alternative<Json::Array>(value.value) &&
-           !std::holds_alternative<Json::Object>(value.value);
-}
-
-bool equal(const Json &a, const Json &b)
-{
-    if (a.value.index() != b.value.index())
-    {
-        return false;
-    }
-    if (const auto *object = std::get_if<Json::Object>(&a.value))
-    {
-        const auto &other = std::get<Json::Object>(b.value);
-        return object->size() == other.size() &&
-               std::all_of(object->begin(), object->end(),
-                           [&](const auto &member)
-                           {
-                               const auto *found = b.find(member.first);
-                               return found && equal(member.second, *found);
-                           });
-    }
-    if (const auto *array = std::get_if<Json::Array>(&a.value))
-    {
-        const auto &other = std::get<Json::Array>(b.value);
-        return array->size() == other.size() &&
-               std::equal(array->begin(), array->end(), other.begin(), equal);
-    }
-    if (const auto *number = std::get_if<double>(&a.value))
-    {
-        return *number == std::get<double>(b.value);
-    }
-    if (const auto *text = std::get_if<std::string>(&a.value))
-    {
-        return *text == std::get<std::string>(b.value);
-    }
-    if (const auto *flag = std::get_if<bool>(&a.value))
-    {
-        return *flag == std::get<bool>(b.value);
-    }
-    return true; // both null
-}
-
-void write_string(std::string &out, const std::string &text)
-{
-    out += '"';
-    for (const unsigned char c : text)
-    {
-        if (c == '"' || c == '\\')
-        {
-            out += '\\';
-            out += static_cast<char>(c);
-        }
-        else if (c == '\n')
-        {
-            out += "\\n";
-        }
-        else if (c < 0x20)
-        {
-            char escaped[8];
-            std::snprintf(escaped, sizeof escaped, "\\u%04x", c);
-            out += escaped;
-        }
-        else
-        {
-            out += static_cast<char>(c);
-        }
-    }
-    out += '"';
-}
-
-void write_scalar(std::string &out, const Json &value)
-{
-    if (const auto *number = std::get_if<double>(&value.value))
-    {
-        if (*number == std::floor(*number) && std::abs(*number) < 1e15)
-        {
-            out += std::to_string(static_cast<long long>(*number));
-            return;
-        }
-        char text[32];
-        std::snprintf(text, sizeof text, "%.17g", *number);
-        out += text;
-        return;
-    }
-    if (const auto *text = std::get_if<std::string>(&value.value))
-    {
-        write_string(out, *text);
-        return;
-    }
-    if (const auto *flag = std::get_if<bool>(&value.value))
-    {
-        out += *flag ? "true" : "false";
-        return;
-    }
-    out += "null";
-}
-
-// One line for a value whose members are all plain values, such as a
-// conversion's record or a companion's rolls; otherwise one member per line.
-bool fits_one_line(const Json &value)
-{
-    if (const auto *array = std::get_if<Json::Array>(&value.value))
-    {
-        return std::all_of(array->begin(), array->end(), is_scalar);
-    }
-    if (const auto *object = std::get_if<Json::Object>(&value.value))
-    {
-        return std::all_of(object->begin(), object->end(),
-                           [](const auto &member)
-                           {
-                               return is_scalar(member.second);
-                           });
-    }
-    return true;
-}
-
-void write_json(std::string &out, const Json &value, std::size_t indent)
-{
-    if (is_scalar(value))
-    {
-        write_scalar(out, value);
-        return;
-    }
-    const bool one_line = fits_one_line(value);
-    const auto separator = one_line ? std::string(", ") : ",\n" + std::string(indent + 2, ' ');
-    const auto open = one_line ? std::string() : "\n" + std::string(indent + 2, ' ');
-    const auto close = one_line ? std::string() : "\n" + std::string(indent, ' ');
-    if (const auto *array = std::get_if<Json::Array>(&value.value))
-    {
-        out += '[';
-        out += array->empty() ? "" : open;
-        for (std::size_t n = 0; n < array->size(); ++n)
-        {
-            out += n ? separator : "";
-            write_json(out, (*array)[n], indent + 2);
-        }
-        out += array->empty() ? "" : close;
-        out += ']';
-        return;
-    }
-    const auto &object = std::get<Json::Object>(value.value);
-    out += '{';
-    out += object.empty() ? "" : open;
-    for (std::size_t n = 0; n < object.size(); ++n)
-    {
-        out += n ? separator : "";
-        write_string(out, object[n].first);
-        out += ": ";
-        write_json(out, object[n].second, indent + 2);
-    }
-    out += object.empty() ? "" : close;
-    out += '}';
-}
-
-std::string json_file_text(const Json &document)
-{
-    std::string out;
-    write_json(out, document, 0);
-    return out + "\n";
-}
-
 Json *member(Json &object, std::string_view key)
 {
     auto *members = std::get_if<Json::Object>(&object.value);
@@ -270,13 +105,6 @@ std::string text_member(const Json &object, std::string_view key)
 bool is_null(const Json &value)
 {
     return std::holds_alternative<std::nullptr_t>(value.value);
-}
-
-std::string scalar_text(const Json &value)
-{
-    std::string out;
-    write_json(out, value, 0);
-    return out;
 }
 
 // --- combat.rules -------------------------------------------------------------
@@ -485,7 +313,7 @@ struct Applied
 
 std::string number_text(double value)
 {
-    return scalar_text(Json{value});
+    return detail::json_text(Json{value});
 }
 
 const Json &required(const Edit &edit, std::string_view key)
@@ -522,14 +350,14 @@ double required_number(const Edit &edit, std::string_view key)
 // nor `to`, as when someone changed it since the editor read it.
 bool already_applied(const Edit &edit, const Json &current, const Json &from, const Json &to)
 {
-    if (equal(current, to))
+    if (detail::json_equal(current, to))
     {
         return true;
     }
-    if (!equal(current, from))
+    if (!detail::json_equal(current, from))
     {
-        refuse(edit.where, "the data holds " + scalar_text(current) + ", not the edit's from " +
-                               scalar_text(from));
+        refuse(edit.where, "the data holds " + detail::json_text(current) +
+                               ", not the edit's from " + detail::json_text(from));
     }
     return false;
 }
@@ -592,7 +420,7 @@ Applied spell_profile(Files &files, const Edit &edit, const std::string &date)
                      [&](const auto &row)
                      {
                          return row.size() > spell_profile_fields.back() &&
-                                equal(profile_json(row), to);
+                                detail::json_equal(profile_json(row), to);
                      }))
     {
         refuse(edit.where, "no creature in combat.rules casts at " + profile_text(to));
@@ -692,7 +520,7 @@ Applied conversion(Files &files, const Edit &edit, const std::string &)
                          return list && std::any_of(list->begin(), list->end(),
                                                     [&](const Json &s)
                                                     {
-                                                        return equal(s, Json{script});
+                                                        return detail::json_equal(s, Json{script});
                                                     });
                      });
     if (area == areas.end())
@@ -798,7 +626,7 @@ std::string changed_members(const Json &from, const Json &to)
     for (const auto &[key, value] : std::get<Json::Object>(to.value))
     {
         const auto *before = from.find(key);
-        if (!before || !equal(*before, value))
+        if (!before || !detail::json_equal(*before, value))
         {
             names += (names.empty() ? "" : ", ") + key;
         }
@@ -969,10 +797,13 @@ struct Staging
     {
         fs::create_directories(directory / "encounters");
         fs::create_directories(directory / "companions");
-        write_text(directory / "encounters/conversions.json", json_file_text(files.conversions));
-        write_text(directory / "encounters/overrides.json", json_file_text(files.overrides));
-        write_text(directory / "encounters/chances.json", json_file_text(files.chances));
-        write_text(directory / "companions/companions.json", json_file_text(files.companions));
+        write_text(directory / "encounters/conversions.json",
+                   detail::json_file_text(files.conversions));
+        write_text(directory / "encounters/overrides.json",
+                   detail::json_file_text(files.overrides));
+        write_text(directory / "encounters/chances.json", detail::json_file_text(files.chances));
+        write_text(directory / "companions/companions.json",
+                   detail::json_file_text(files.companions));
     }
 
     Staging(const Staging &) = delete;
@@ -1060,19 +891,19 @@ std::vector<std::pair<fs::path, std::string>> changed_files(const Files &files, 
     }
     if (files.conversions_changed)
     {
-        changed.emplace_back(conversions_path, json_file_text(files.conversions));
+        changed.emplace_back(conversions_path, detail::json_file_text(files.conversions));
     }
     if (files.overrides_changed)
     {
-        changed.emplace_back(overrides_path, json_file_text(files.overrides));
+        changed.emplace_back(overrides_path, detail::json_file_text(files.overrides));
     }
     if (files.chances_changed)
     {
-        changed.emplace_back(chances_path, json_file_text(files.chances));
+        changed.emplace_back(chances_path, detail::json_file_text(files.chances));
     }
     if (files.companions_changed)
     {
-        changed.emplace_back(companions_path, json_file_text(files.companions));
+        changed.emplace_back(companions_path, detail::json_file_text(files.companions));
     }
     if (files.deviations != before.deviations)
     {
@@ -1082,24 +913,20 @@ std::vector<std::pair<fs::path, std::string>> changed_files(const Files &files, 
 }
 } // namespace
 
-ImportReport import_edits(const ImportOptions &options)
+ImportReport import_edits(const ImportOptions &options, std::string_view text,
+                          const std::string &source)
 {
     ImportReport report;
-    if (!fs::exists(options.edits_file))
-    {
-        return report;
-    }
-    const auto document = parse(read_text(options.edits_file), options.edits_file.string());
+    const auto document = parse(std::string(text), source);
     if (text_member(document, "format") != "opengold-creature-edits-v1")
     {
-        throw ImportError(options.edits_file.string() +
-                          ": format must be opengold-creature-edits-v1");
+        throw ImportError(source + ": format must be opengold-creature-edits-v1");
     }
     const auto *list = document.find("edits");
     const auto *edits = list ? std::get_if<Json::Array>(&list->value) : nullptr;
     if (!edits)
     {
-        throw ImportError(options.edits_file.string() + ": no edits list");
+        throw ImportError(source + ": no edits list");
     }
     const auto before = read_files(options.repository);
     auto files = before;
@@ -1130,21 +957,157 @@ ImportReport import_edits(const ImportOptions &options)
     }
     check_result(files, options);
     const auto changed = changed_files(files, before);
-    for (const auto &[path, text] : changed)
+    for (const auto &[path, after] : changed)
     {
-        report.files_changed.push_back(path.string());
+        const auto file = options.repository / path;
+        report.files.push_back(
+            {path.generic_string(), fs::exists(file) ? read_text(file) : std::string(), after});
     }
     if (options.write)
     {
-        for (const auto &[path, text] : changed)
+        for (const auto &[path, after] : changed)
         {
-            write_text(options.repository / path, text);
+            write_text(options.repository / path, after);
         }
     }
     return report;
 }
 
-std::string report_json(const ImportReport &report)
+ImportReport import_edits(const ImportOptions &options)
+{
+    if (!fs::exists(options.edits_file))
+    {
+        return {};
+    }
+    return import_edits(options, read_text(options.edits_file), options.edits_file.string());
+}
+
+std::vector<std::string> stat_line_keys(const std::string &rules_text)
+{
+    const auto keys = RulesText(rules_text).creatures();
+    return {keys.begin(), keys.end()};
+}
+
+namespace
+{
+std::vector<std::string> lines_of(const std::string &text)
+{
+    std::vector<std::string> lines;
+    std::istringstream in(text);
+    for (std::string line; std::getline(in, line);)
+    {
+        lines.push_back(line);
+    }
+    return lines;
+}
+
+// The middle that differs, as removed and added lines in order: a longest
+// common subsequence, small because the files' shared start and end are
+// left out first.
+std::vector<std::pair<char, std::string>> changed_middle(std::span<const std::string> old_lines,
+                                                         std::span<const std::string> new_lines)
+{
+    const auto rows = old_lines.size(), columns = new_lines.size();
+    std::vector<std::vector<unsigned>> common(rows + 1, std::vector<unsigned>(columns + 1));
+    for (std::size_t r = rows; r-- > 0;)
+    {
+        for (std::size_t c = columns; c-- > 0;)
+        {
+            common[r][c] = old_lines[r] == new_lines[c]
+                               ? common[r + 1][c + 1] + 1
+                               : std::max(common[r + 1][c], common[r][c + 1]);
+        }
+    }
+    std::vector<std::pair<char, std::string>> lines;
+    std::size_t r = 0, c = 0;
+    while (r < rows || c < columns)
+    {
+        if (r < rows && c < columns && old_lines[r] == new_lines[c])
+        {
+            lines.emplace_back(' ', old_lines[r++]);
+            ++c;
+        }
+        else if (r < rows && (c == columns || common[r + 1][c] >= common[r][c + 1]))
+        {
+            lines.emplace_back('-', old_lines[r++]);
+        }
+        else
+        {
+            lines.emplace_back('+', new_lines[c++]);
+        }
+    }
+    return lines;
+}
+} // namespace
+
+std::string file_diff(const std::string &before, const std::string &after)
+{
+    constexpr std::size_t context = 2;
+    const auto old_lines = lines_of(before), new_lines = lines_of(after);
+    std::size_t start = 0;
+    while (start < old_lines.size() && start < new_lines.size() &&
+           old_lines[start] == new_lines[start])
+    {
+        ++start;
+    }
+    std::size_t end = 0;
+    while (end < old_lines.size() - start && end < new_lines.size() - start &&
+           old_lines[old_lines.size() - 1 - end] == new_lines[new_lines.size() - 1 - end])
+    {
+        ++end;
+    }
+    const auto lines =
+        changed_middle(std::span(old_lines).subspan(start, old_lines.size() - start - end),
+                       std::span(new_lines).subspan(start, new_lines.size() - start - end));
+    // Each change with its context; unchanged runs longer than that are cut.
+    std::string out;
+    std::size_t last_shown = 0;
+    bool shown_any = false;
+    // A line is numbered as in the file it is from: an added line as in the
+    // new file, every other as in the old one.
+    const auto show =
+        [&](std::size_t old_index, std::size_t number, char mark, const std::string &line)
+    {
+        if (shown_any && old_index > last_shown + 1)
+        {
+            out += "...\n";
+        }
+        out += "@" + std::to_string(number + 1) + " " + mark + " " + line + "\n";
+        last_shown = old_index;
+        shown_any = true;
+    };
+    for (std::size_t n = start >= context ? start - context : 0; n < start; ++n)
+    {
+        show(n, n, ' ', old_lines[n]);
+    }
+    std::size_t old_number = start, new_number = start;
+    for (std::size_t n = 0; n < lines.size(); ++n)
+    {
+        const auto &[mark, line] = lines[n];
+        const bool near_change = std::any_of(
+            lines.begin() + static_cast<std::ptrdiff_t>(n >= context ? n - context : 0),
+            lines.begin() + static_cast<std::ptrdiff_t>(std::min(lines.size(), n + context + 1)),
+            [](const auto &other)
+            {
+                return other.first != ' ';
+            });
+        if (mark != ' ' || near_change)
+        {
+            show(mark == '+' && old_number ? old_number - 1 : old_number,
+                 mark == '+' ? new_number : old_number, mark, line);
+        }
+        old_number += mark == '+' ? 0 : 1;
+        new_number += mark == '-' ? 0 : 1;
+    }
+    for (std::size_t n = old_lines.size() - end;
+         n < std::min(old_lines.size(), old_lines.size() - end + context); ++n)
+    {
+        show(n, n, ' ', old_lines[n]);
+    }
+    return out;
+}
+
+std::string report_json(const ImportReport &report, ReportFiles detail)
 {
     Json::Array edits;
     for (const auto &edit : report.edits)
@@ -1157,11 +1120,15 @@ std::string report_json(const ImportReport &report)
             {"summary", Json{edit.summary}}}});
     }
     Json::Array files;
-    for (const auto &file : report.files_changed)
+    for (const auto &file : report.files)
     {
-        files.push_back(Json{file});
+        files.push_back(
+            detail == ReportFiles::paths
+                ? Json{file.path}
+                : Json{Json::Object{{"path", Json{file.path}},
+                                    {"diff", Json{file_diff(file.before, file.after)}}}});
     }
-    return json_file_text(Json{Json::Object{
+    return detail::json_file_text(Json{Json::Object{
         {"ok", Json{true}},
         {"edits", Json{std::move(edits)}},
         {"files_changed", Json{std::move(files)}},

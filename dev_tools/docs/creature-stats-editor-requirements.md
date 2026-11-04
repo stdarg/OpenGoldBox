@@ -10,8 +10,11 @@ Hit Points to the SRD Knight's 52 by hand
 ([DEVIATIONS](../../docs/DEVIATIONS.md)).
 
 Decided (the user, 2026-11-03): it is a Godot tool, like the
-[Combat Sprite Catalog](combat-sprite-catalog.md), and Codex builds it.
-Encounters are editable too, including their fight rating.
+[Combat Sprite Catalog](combat-sprite-catalog.md). Encounters are editable
+too, including their fight rating. Changed 2026-11-04 (the user): Claude
+builds it instead of Codex, linking the game's own code without duplicating
+it. Built 2026-11-04: [the editor's guide](creature-stats-editor.md) says what
+it does and what is not built yet.
 
 ## Why
 

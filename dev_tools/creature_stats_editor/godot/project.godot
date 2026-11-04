@@ -1,0 +1,15 @@
+; The Creature Stats Editor (dev_tools/docs/creature-stats-editor.md).
+; run.sh stages this project in build/creature-stats-editor/project.
+
+config_version=5
+
+[application]
+
+config/name="OpenGold Creature Stats Editor"
+run/main_scene="res://editor.tscn"
+config/features=PackedStringArray("4.5")
+
+[display]
+
+window/size/viewport_width=1500
+window/size/viewport_height=950

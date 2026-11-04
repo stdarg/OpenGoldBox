@@ -4818,6 +4818,14 @@ Definition wielding(Definition d, std::string_view melee_key, std::string_view r
     return d;
 }
 
+// A monster as a fight fields it: its stat line, the weapons it holds and
+// what the difficulty does to it.
+Definition fielded(const Content &content, const rules::Participant &who)
+{
+    return strengthened(
+        wielding(content.definitions.at(who.definition), who.melee_weapon, who.ranged_weapon), who);
+}
+
 bool same_command(const Command &a, const Command &b)
 {
     return a.revision == b.revision && a.actor == b.actor && a.target == b.target &&
@@ -5142,11 +5150,8 @@ class Session final : public CombatSession
             }
             sides.insert(p.side);
             Actor a;
-            a.definition = p.character_profile.empty()
-                               ? strengthened(wielding(content_->definitions.at(p.definition),
-                                                       p.melee_weapon, p.ranged_weapon),
-                                              p)
-                               : character_definition(p.character_profile);
+            a.definition = p.character_profile.empty() ? fielded(*content_, p)
+                                                       : character_definition(p.character_profile);
             const auto &d = a.definition;
             a.source = std::move(p);
             a.life.hp = d.hp;
@@ -28088,9 +28093,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         throw std::runtime_error("Invalid checkpoint actor");
     }
     actor.definition = source.character_profile.empty()
-                           ? strengthened(wielding(content.definitions.at(source.definition),
-                                                   source.melee_weapon, source.ranged_weapon),
-                                          source)
+                           ? fielded(content, source)
                            : character_definition(source.character_profile);
     if (actor.shield_off && source.character_profile.empty())
     {
@@ -29473,6 +29476,36 @@ class Module final : public RulesModule
             throw std::runtime_error("Unsupported character level");
         }
         return thresholds[level];
+    }
+
+    CreatureStats creature_stats(const Participant &creature) const override
+    {
+        if (!creature.character_profile.empty() ||
+            !content_->definitions.contains(creature.definition))
+        {
+            throw std::runtime_error("No creature definition: " + creature.definition);
+        }
+        const auto d = fielded(*content_, creature);
+        CreatureStats stats{d.ac, d.hp, d.initiative, d.speed, d.multiattack};
+        stats.melee = {d.melee_bonus + d.melee_magic, d.melee.count, d.melee.sides,
+                       d.melee.bonus + d.melee_magic,
+                       std::string(detail::damage_name(d.melee_type))};
+        if (d.range)
+        {
+            stats.ranged = AttackStats{d.ranged_bonus + d.ranged_magic,
+                                       d.ranged.count,
+                                       d.ranged.sides,
+                                       d.ranged.bonus + d.ranged_magic,
+                                       std::string(detail::damage_name(d.ranged_type)),
+                                       d.range,
+                                       d.long_range};
+        }
+        stats.saves = d.saves;
+        stats.spell_slots = d.slots[1];
+        stats.casting_bonus = d.casting;
+        stats.spell_level = d.level;
+        stats.spells = d.spells;
+        return stats;
     }
 
     std::vector<TrainingChoiceGroup> training_options(const CharacterSheet &sheet) const override

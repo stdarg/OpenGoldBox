@@ -42,6 +42,18 @@ struct Json
 // Reads and parses a file; the error names `what` and the path.
 [[nodiscard]] Json read_json_file(const std::filesystem::path &path, std::string_view what);
 
+// Whether the values are the same, objects compared member by member in any
+// order.
+[[nodiscard]] bool json_equal(const Json &a, const Json &b);
+
+// The value as the data files lay it out: an array or object whose members are
+// all plain values on one line, any other one member per line, indented by two.
+// Reading a shipped file and writing it gives it back byte for byte.
+[[nodiscard]] std::string json_text(const Json &value);
+
+// json_text with the newline a file ends with.
+[[nodiscard]] std::string json_file_text(const Json &document);
+
 // A field the object must have, of the type it must be; the error names `what`.
 template <typename T>
 const T &json_field(const Json &object, std::string_view key, std::string_view what)

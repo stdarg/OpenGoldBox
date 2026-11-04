@@ -598,6 +598,30 @@ struct Encounter
     bool spares_the_party{};
 };
 
+// A weapon attack as the rules resolve it: the attack roll's bonus and the
+// damage, a magic weapon's plus included in both.
+struct AttackStats
+{
+    int to_hit{};
+    int dice{}, sides{}, damage_bonus{};
+    std::string damage_type;
+    int range_feet{}, long_range_feet{}; // 0 for a melee attack
+};
+
+// A monster as a fight fields it: its stat line with the weapons it holds and
+// what the difficulty does to it (hit_points_percent, attack_bonus), before any
+// effect of the fight. The Creature Stats Editor shows these.
+struct CreatureStats
+{
+    int armor_class{}, hit_points{}, initiative{}, speed_feet{};
+    int attacks{1}; // the melee attacks its Attack action makes (Multiattack)
+    AttackStats melee;
+    std::optional<AttackStats> ranged;
+    std::array<int, 6> saves{}; // Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma
+    int spell_slots{}, casting_bonus{}, spell_level{};
+    std::vector<std::string> spells;
+};
+
 struct Identity
 {
     std::string module, version, content;
@@ -1019,6 +1043,9 @@ class RulesModule
                        std::span<const std::string> gear, Ability ability, std::string_view skill,
                        RandomState &random_state) const = 0;
     [[nodiscard]] virtual unsigned experience_for_level(unsigned level) const = 0;
+    // A monster participant's statistics, computed as a fight that fields it
+    // computes them. Throws for a character or an unknown definition.
+    [[nodiscard]] virtual CreatureStats creature_stats(const Participant &creature) const = 0;
     // The choices a finished rest lets the character change, each with its
     // current picks; empty when there are none.
     [[nodiscard]] virtual std::vector<TrainingReplacementOptions>

@@ -111,9 +111,9 @@ void nothing_to_import()
     const Repository repository;
     const auto report = import_edits(
         {repository.directory, repository.directory / "none.json", {}, true, "2026-11-04"});
-    check(report.edits.empty() && report.files_changed.empty() && repository.unchanged(),
+    check(report.edits.empty() && report.files.empty() && repository.unchanged(),
           "Without an edits file nothing changes");
-    check(repository.import("").files_changed.empty() && repository.unchanged(),
+    check(repository.import("").files.empty() && repository.unchanged(),
           "An empty edits list changes nothing");
 }
 
@@ -121,8 +121,35 @@ void hit_points_edit()
 {
     const Repository repository;
     const auto checked = repository.import(sturdier_knights, false);
-    check(checked.files_changed.size() == 4 && repository.unchanged(),
+    check(checked.files.size() == 4 && repository.unchanged(),
           "A check reports the files it would change and writes none");
+    const auto rules_change =
+        std::find_if(checked.files.begin(), checked.files.end(),
+                     [](const FileChange &file)
+                     {
+                         return file.path == "data/rules/srd-5.2.1/combat.rules";
+                     });
+    check(rules_change != checked.files.end() &&
+              rules_change->before == repository.text("data/rules/srd-5.2.1/combat.rules") &&
+              rules_change->after.find("creature castle-knight 18 60 ") != std::string::npos,
+          "The report holds each file's text before and after, for the editor's diff");
+    const auto held = import_edits({repository.directory, {}, std::nullopt, false, "2026-11-04"},
+                                   R"({"format": "opengold-creature-edits-v1", "edits": [)" +
+                                       sturdier_knights + "]}",
+                                   "the editor's edits");
+    check(held.files.size() == 4 && repository.unchanged(),
+          "Edits the editor holds import without an edits file");
+    try
+    {
+        (void)import_edits({repository.directory, {}, std::nullopt, false, "2026-11-04"}, "{}",
+                           "the editor's edits");
+        check(false, "Edits without a format are refused");
+    }
+    catch (const ImportError &error)
+    {
+        check(std::string(error.what()).starts_with("the editor's edits: format"),
+              "A refusal names the editor's edits");
+    }
     const auto report = repository.import(sturdier_knights);
     check(report.edits.size() == 1 && report.edits[0].status == EditStatus::applied &&
               report.rules_version == shipped_version() + 1,
@@ -146,7 +173,7 @@ void hit_points_edit()
                   std::string::npos,
           "DEVIATIONS gets an entry under Rules and combat");
     const auto again = repository.import(sturdier_knights);
-    check(again.edits[0].status == EditStatus::already_applied && again.files_changed.empty() &&
+    check(again.edits[0].status == EditStatus::already_applied && again.files.empty() &&
               !again.rules_version,
           "Importing the same edits again changes nothing");
     const auto higher = repository.import(
@@ -330,10 +357,22 @@ void overrides_and_companions()
 }
 } // namespace
 
+void diffs()
+{
+    const auto diff = file_diff("a\nb\nc\nd\ne\nf\ng\n", "a\nb\nc\nD\ne\nf\ng\n");
+    check(diff == "@2   b\n@3   c\n@4 - d\n@4 + D\n@5   e\n@6   f\n",
+          "A diff shows the changed line with two lines of context");
+    const auto apart = file_diff("1\n2\n3\n4\n5\n6\n7\n8\n9\n", "x\n2\n3\n4\n5\n6\n7\n8\ny\n");
+    check(apart == "@1 - 1\n@1 + x\n@2   2\n@3   3\n...\n@7   7\n@8   8\n@9 - 9\n@9 + y\n",
+          "Changes far apart are shown apart");
+    check(file_diff("", "new\n") == "@1 + new\n", "A new file is all added lines");
+}
+
 int main()
 {
     try
     {
+        diffs();
         nothing_to_import();
         hit_points_edit();
         conflicts();

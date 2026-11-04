@@ -1,0 +1,8 @@
+[configuration]
+entry_symbol = "creature_stats_editor_library_init"
+compatibility_minimum = "4.5"
+reloadable = false
+
+[libraries]
+macos = "res://bin/opengold_creature_stats_editor.dylib"
+windows.x86_64 = "res://bin/opengold_creature_stats_editor.dll"

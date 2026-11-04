@@ -119,6 +119,11 @@ class ForwardingModule : public rules::RulesModule
         return rules_->experience_for_level(level);
     }
 
+    rules::CreatureStats creature_stats(const rules::Participant &creature) const override
+    {
+        return rules_->creature_stats(creature);
+    }
+
     std::vector<rules::TrainingReplacementOptions>
     rest_training_options(const rules::CharacterSheet &sheet, rules::RestKind kind) const override
     {

@@ -1,10 +1,14 @@
 #ifndef OPENGOLD_ENCOUNTER_DATA_H
 #define OPENGOLD_ENCOUNTER_DATA_H
 
+#include "opengold/ecl.h"
+#include "opengold/encounter_budget.h"
 #include <compare>
 #include <cstdint>
 #include <filesystem>
+#include <map>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -78,6 +82,36 @@ struct EncounterData
     // The entry that lists `script`, or null.
     [[nodiscard]] const AreaConversions *area(unsigned script) const;
 };
+
+// A fight holds 56 monsters; the original stops loading at its limit, as the
+// kobold king's 58 do (ECL8:13 0xA1BE).
+inline constexpr std::size_t fight_monster_limit = 56;
+
+// The groups a fight's staged records make for sizing it: each run of one
+// record is a group, rated at the record's fit_xp. Each group keeps its first
+// creature when the fight is sized.
+[[nodiscard]] std::vector<EncounterGroup>
+staged_groups(std::span<const unsigned> records,
+              const std::map<unsigned, EncounterConversion> &conversions);
+
+// An operand the script writes as a number, not a variable's address.
+[[nodiscard]] bool is_written(const EclOperand &operand) noexcept;
+
+// What a LOAD MONSTER writes in the script: the only kind an override can
+// change. A record or count read from a variable, as Podol Plaza's roaming
+// groups are, gives none.
+struct WrittenLoad
+{
+    unsigned record{}, count{};
+    std::optional<unsigned> icon; // none when read from a variable
+};
+
+[[nodiscard]] std::optional<WrittenLoad> written_load_monster(const EclInstruction &instruction);
+
+// Whether a chance override may change `operand` of the instruction: a
+// RANDOM's range, either number of a COMPARE, or a SAVE into the rest check's
+// interval or chance. The operand must also be written in the script.
+[[nodiscard]] bool is_chance_operand(const EclInstruction &instruction, unsigned operand);
 
 // Reads data/encounters: conversions.json, and overrides.json and
 // chances.json where there are. Throws std::runtime_error, naming the file, the entry and the
