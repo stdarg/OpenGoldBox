@@ -437,6 +437,10 @@ if(OPENGOLD_BUILD_TESTS)
     # with both fill orders and changes of background, class and species, some
     # made again on a fresh screen; the script explores every species when
     # run by hand.
+    # A player's creation clicks, from their game log, repeated on the screen.
+    opengold_original_check(creation_replay "Creation replay passed"
+        -DSCRIPT=creation_explorer_tests
+        "-DARGS=--replay=${PROJECT_SOURCE_DIR}/tests/fixtures/creation_clicks.log")
     opengold_original_check(creation_explorer "Creation explorer passed"
         -DSCRIPT=creation_explorer_tests
         "-DARGS=--race=Human\\;--policy=1\\;--detours\\;--shuffle=17\\;--sample=7\\;--fresh=3")

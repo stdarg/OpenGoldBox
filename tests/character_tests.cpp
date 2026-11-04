@@ -1178,6 +1178,30 @@ void ordinary_creation_tests()
     check(holds(acolyte, "spell:guidance") && holds(acolyte, "spell:bless") &&
               acolyte.sheet().training.complete,
           "An Acolyte Cleric finishes creation with one Magic Initiate cantrip");
+    // The sheet names each of its choices under the heading it was made in.
+    const auto details = srd5::sheet_details(acolyte.sheet(), acolyte.creation_data());
+    const auto lists = [&](std::string_view heading, std::string_view name)
+    {
+        return std::any_of(details.begin(), details.end(),
+                           [&](const auto &detail)
+                           {
+                               return detail.heading == heading &&
+                                      std::find(detail.names.begin(), detail.names.end(), name) !=
+                                          detail.names.end();
+                           });
+    };
+    check(lists("Divine Order", "Protector") && lists("Cantrips", "Sacred Flame") &&
+              lists("Magic Initiate (Cleric)", "Guidance") &&
+              lists("Magic Initiate (Cleric)", "Bless") &&
+              lists("Magic Initiate spellcasting ability", "Wisdom") &&
+              lists("Feats", "Magic Initiate (Cleric)") && lists("Versatile", "Skilled") &&
+              lists("Size", "Medium") &&
+              std::none_of(details.begin(), details.end(),
+                           [](const auto &detail)
+                           {
+                               return detail.heading == "Other";
+                           }),
+          "The Acolyte Cleric's sheet names its order, cantrips, Magic Initiate and species choices");
 
     const auto warlock = create_ordinarily(
         "warlock", Ability::charisma,

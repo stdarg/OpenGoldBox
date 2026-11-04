@@ -6,6 +6,7 @@
 #include "status_effects.h"
 #include <algorithm>
 #include <chrono>
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <set>
@@ -907,6 +908,54 @@ void heroic_inspiration_checks()
     check(inspired(after) == 0, "Heroic Inspiration is spent");
 }
 
+// A Goliath Fighter of the boon; a frail one has Constitution 3 (-4).
+Character goliath(std::string boon, bool frail = false)
+{
+    auto draft = fighter("goliath", {{"species:goliath:ancestry", std::move(boon)}}).creation_data();
+    if (frail)
+    {
+        draft.rolls[2] = {{1, 1, 1, 1}, 3};
+    }
+    return Character(*srd5::character_rules(), draft, {});
+}
+
+// The number a log line gives after `before` ("Near takes " gives the damage),
+// or -1 when no line has it.
+int logged_number(const CombatSession &c, std::string_view before, std::string_view after)
+{
+    int found = -1;
+    for (const auto &line : c.snapshot().log())
+    {
+        const auto at = line.find(before);
+        if (at != std::string::npos && line.find(after, at) != std::string::npos)
+        {
+            found = std::stoi(line.substr(at + before.size()));
+        }
+    }
+    return found;
+}
+
+// How far, in squares, the combatant whose turn it is can move.
+int reach_in_squares(const CombatSession &c)
+{
+    const auto view = c.snapshot();
+    const auto self = std::find_if(view.combatants.begin(), view.combatants.end(),
+                                   [&](const auto &unit)
+                                   {
+                                       return unit.id == view.actor;
+                                   });
+    int farthest = 0;
+    for (const auto &command : c.legal_commands())
+    {
+        if (command.verb == "move")
+        {
+            farthest = std::max(farthest, std::max(std::abs(command.destination.x - self->cell.x),
+                                                   std::abs(command.destination.y - self->cell.y)));
+        }
+    }
+    return farthest;
+}
+
 // A Goliath of the ancestry beside an AC 1 creature with 1000 Hit Points
 // that hits back with +20 ("Near") or casts Magic Missile, and a Huge one
 // ("Giant") on its other side.
@@ -919,8 +968,9 @@ struct GoliathFight
     Character hero;
     std::unique_ptr<CombatSession> c;
 
-    explicit GoliathFight(std::string boon, std::string near = "target", std::uint64_t seed = 3)
-        : hero(fighter("goliath", {{"species:goliath:ancestry", std::move(boon)}}))
+    explicit GoliathFight(std::string boon, std::string near = "target", std::uint64_t seed = 3,
+                          bool frail = false)
+        : hero(goliath(std::move(boon), frail))
     {
         c = rules->create(
             {{12, 6, std::vector<Terrain>(72)},
@@ -1050,11 +1100,25 @@ void giant_ancestry_checks()
     check(submit(*fire.c, "melee", 98) && !fire.c->snapshot().reaction_pending,
           "With no uses left a hit asks nothing");
 
+    // Each boon's die: 1d10 Fire, 1d6 Cold, 1d8 Thunder (2d10 and 2d6 on a
+    // Critical Hit).
+    const int burned = logged_number(*fire.c, "Near takes ", " Fire damage.");
+    check(burned >= 1 && burned <= 20, "Fire's Burn deals 1d10 Fire damage");
+    check(fire.rules->character_profile(fire.hero.sheet(), {}).movement_feet == 35,
+          "A Goliath moves 35 feet");
+    GoliathFight runner("cloud");
+    runner.reach(1);
+    check(reach_in_squares(*runner.c) == 7, "A Goliath walks seven squares in a turn");
+
     GoliathFight frost("frost");
+    frost.reach(98);
+    const int unchilled = reach_in_squares(*frost.c);
     frost.hit(98);
     check(submit(*frost.c, "giant_boon") && logged(*frost.c, " Cold damage.") &&
               logged(*frost.c, "Near's Speed drops by 10 feet."),
           "Frost's Chill adds Cold damage and slows");
+    const int chill = logged_number(*frost.c, "Near takes ", " Cold damage.");
+    check(chill >= 1 && chill <= 12, "Frost's Chill deals 1d6 Cold damage");
     const auto chilled = [&]
     {
         for (const auto &unit : frost.c->snapshot().combatants)
@@ -1089,6 +1153,9 @@ void giant_ancestry_checks()
                       }),
           "Near's status effects name Frost's Chill, the hero, and under a round left");
     check(submit(*frost.c, "end") && chilled(), "The chill lasts through Near's turn");
+    frost.reach(98);
+    check(chilled() && reach_in_squares(*frost.c) == unchilled - 2,
+          "Near moves 10 feet less while chilled");
     frost.reach(1);
     check(!chilled(), "It ends when the hero's turn starts");
 
@@ -1133,6 +1200,37 @@ void giant_ancestry_checks()
     check(storm.offered("storms_thunder") && submit(*storm.c, "storms_thunder") &&
               logged(*storm.c, "Hero uses Storm's Thunder: Near takes ") && storm.uses_left() == 1,
           "Storm's Thunder strikes back at Near");
+    const int thunder = logged_number(*storm.c, "Storm's Thunder: Near takes ", " Thunder damage.");
+    check(thunder >= 1 && thunder <= 8, "Storm's Thunder deals 1d8 Thunder damage");
+
+    // The uses follow the Proficiency Bonus: three from level 5.
+    CampaignParty party(module());
+    const auto fifth = party.add_pc(goliath("hill"));
+    party.award_experience(6500, "goliath-fifth");
+    while (party.can_advance(fifth))
+    {
+        party.advance(fifth, party.default_advancement(fifth));
+    }
+    const auto &veteran = party.member(fifth).character.sheet();
+    const auto veteran_pools = party.rule_module().recovery_info(veteran, {}).resources;
+    check(veteran.level == 5 &&
+              std::any_of(veteran_pools.begin(), veteran_pools.end(),
+                          [](const auto &pool)
+                          {
+                              return pool.id == "giant_ancestry" && pool.capacity == 3;
+                          }),
+          "A level 5 Goliath has three Giant Ancestry uses");
+
+    // 1d12 + a Constitution modifier of -4 can come to nothing, but never
+    // to more damage.
+    for (std::uint64_t seed = 1; seed <= 24; ++seed)
+    {
+        GoliathFight frail("stone", "target", seed, true);
+        frail.struck();
+        check(submit(*frail.c, "stones_endurance"), "A frail Goliath endures");
+        check(logged_number(*frail.c, "uses Stone's Endurance: ", " less damage.") >= 0,
+              "Stone's Endurance never adds damage");
+    }
 
     // Damage without an attack roll is endured too (#164).
     GoliathFight darts("stone", "caster");

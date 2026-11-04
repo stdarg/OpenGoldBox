@@ -17,6 +17,9 @@ extends SceneTree
 #       -- --race=Elf [--policy=1 --detours --shuffle=17 --fresh=5] [--trail]
 # --class=Cleric limits it to one class; --sample=3 makes every third
 # character; --fresh=5 makes every fifth character again on a fresh screen;
+# --replay=LOG [--from=N --to=M] repeats a game log's clicks on the creation
+# screen instead (lines N to M), failing when a click does not stick or shows
+# an error; the dice are rolled for the class the log picks next.
 # --size=1920x1080 sets the window; --limit=4 stops after four characters;
 # --shots=DIR saves each page once, in a windowed run; --trail prints the clicks that led to each
 # problem.
@@ -28,9 +31,6 @@ const ABILITY_NEEDS := {
 const ABILITIES := ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"]
 const HEADING := "\\((\\d+) / (\\d+)\\)$"
 const RACE_PAGE := "Name, Race & Gender"
-const SKILLS := ["acrobatics", "animal_handling", "arcana", "athletics", "deception", "history",
-	"insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance",
-	"persuasion", "religion", "sleight_of_hand", "stealth", "survival"]
 
 var heading_pattern := RegEx.new()
 var bonus_pattern := RegEx.new()
@@ -59,6 +59,9 @@ var races := []
 # Where to save a picture of each page, once (a windowed run).
 var shots := ""
 var limit := 0
+var replay_log := ""
+var replay_from := 1
+var replay_to := 1 << 30
 var shot := {}
 
 func _initialize() -> void:
@@ -75,6 +78,9 @@ func _initialize() -> void:
 		if arg.begins_with("--fresh="): fresh_every = int(arg.trim_prefix("--fresh="))
 		if arg.begins_with("--shots="): shots = arg.trim_prefix("--shots=")
 		if arg.begins_with("--limit="): limit = int(arg.trim_prefix("--limit="))
+		if arg.begins_with("--replay="): replay_log = arg.trim_prefix("--replay=")
+		if arg.begins_with("--from="): replay_from = int(arg.trim_prefix("--from="))
+		if arg.begins_with("--to="): replay_to = int(arg.trim_prefix("--to="))
 		if arg.begins_with("--size="):
 			var parts := arg.trim_prefix("--size=").split("x")
 			window = Vector2i(int(parts[0]), int(parts[1]))
@@ -689,8 +695,7 @@ func make_character(race: String, species_picks: Dictionary, background: String,
 	if not await next_page("portrait"): return
 	check_sheet(klass)
 
-# The sheet names the character and shows the skills and prepared spells
-# the pages hold.
+# The sheet names the character and shows every choice the pages hold.
 func check_sheet(klass: String) -> void:
 	var sheet: String = node("Description").get_parsed_text()
 	if not sheet.contains("Supported training choices complete"):
@@ -708,8 +713,7 @@ func check_sheet(klass: String) -> void:
 		if not steps.contains(title): continue
 		for choice in chosen[title]:
 			var text: String = choice["text"]
-			var shown_on_sheet: bool = SKILLS.has(choice["name"]) or choice["heading"].begins_with("Prepared") or choice["heading"] == "Versatile"
-			if shown_on_sheet and not sheet.contains(text):
+			if not sheet.contains(text):
 				bug("sheet leaves out a choice", title + " " + choice["heading"] + "/" + text)
 				if show_trail: print("    sheet: ", sheet.replace("\n", " / ").substr(0, 3000))
 			var key: String = choice["name"]
@@ -815,7 +819,8 @@ func finish_character() -> void:
 	var started := false
 	if characters % 3 == 0 and await press("AddParty"):
 		var back: Button = node("Back")
-		if back.is_visible_in_tree() and not back.disabled:
+		var joined: bool = not node("AddParty").is_visible_in_tree()
+		if joined and back.is_visible_in_tree() and not back.disabled:
 			bug("Back stays on after Add to party", "edits after it would not reach the party")
 		started = await press("PartyPanel/ActionRow1/Create")
 	if not started and not await press("Restart"):
@@ -876,10 +881,72 @@ func make_again_fresh(race: String, variant: Dictionary, background: String, kla
 	context = reused_context
 	await finish_character()
 
+# --- Replaying a game log -------------------------------------------------
+
+# The class a log picks after line `from`, for rolling scores it qualifies with.
+func class_picked_after(lines: PackedStringArray, from: int) -> String:
+	for i in range(from, lines.size()):
+		for klass in ABILITY_NEEDS:
+			if lines[i].contains('ui: selected Choices "' + klass + '"'): return klass
+	return "Fighter"
+
+func replay() -> void:
+	var lines := FileAccess.get_file_as_string(replay_log).split("\n")
+	var action := RegEx.new()
+	action.compile('ui: (pressed|selected) (\\S+)(?: "((?:[^"\\\\]|\\\\.)*)")?(?: \\((on|off)\\))?')
+	var replayed := 0
+	for i in range(replay_from - 1, mini(replay_to, lines.size())):
+		var found := action.search(lines[i])
+		if found == null: continue
+		var verb := found.get_string(1)
+		var path := found.get_string(2)
+		var text := found.get_string(3)
+		var state := found.get_string(4)
+		context = "log line " + str(i + 1) + ": " + verb + " " + path + " '" + text + "'"
+		var target := node(path)
+		if target == null or not (target is CanvasItem and target.is_visible_in_tree()):
+			continue
+		replayed += 1
+		var before := status_text()
+		# The roster lists the names the player typed, which the log lacks.
+		if path.begins_with("PartyPanel/Roster"):
+			continue
+		if verb == "selected":
+			if not await choose(path, text): bug("a choice the log made is not offered", path + " '" + text + "'")
+		elif target is CheckBox:
+			if target.disabled: continue
+			trail.append(("+" if state == "on" else "-") + path)
+			target.set_pressed(state == "on")
+			await settle()
+			var again: CheckBox = node(path)
+			if again and again.is_visible_in_tree() and again.button_pressed != (state == "on"):
+				bug("a click does not stick", path + " '" + text + "' should be " + state)
+		elif target is OptionButton:
+			continue
+		elif target is Button:
+			# The log has neither the typed name nor where the dice went.
+			if path == "Next" and page() == RACE_PAGE and node("Name").text == "":
+				node("Name").text = "Replay"
+				node("Name").text_changed.emit("Replay")
+				await settle()
+			if path == "Next" and page() == "Attributes" and node("Next").disabled:
+				await roll_for(class_picked_after(lines, i))
+			if not await press(path): continue
+		var after := status_text()
+		if after != "" and after != before: bug("a replayed click shows an error", after)
+	print("Replayed ", replayed, " clicks of ", replay_log)
+
 func run() -> void:
 	await fresh_screen()
 	root.size = window
 	await settle(4)
+	if replay_log != "":
+		await replay()
+		for key in bugs:
+			print("  ", bugs[key].size(), "x ", key, "\n      e.g. ", bugs[key][0])
+		if bugs.is_empty(): print("Creation replay passed")
+		quit(0 if bugs.is_empty() else 1)
+		return
 	first_page = page_snapshot()
 	races = list_items("Choices")
 	# The Background list fills on the attributes page.

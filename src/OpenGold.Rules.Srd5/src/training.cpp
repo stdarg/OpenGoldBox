@@ -368,7 +368,7 @@ std::vector<TrainingChoiceGroup> species_options(std::string_view race, std::str
               "An attack hit deals 1d6 more Cold damage and slows the target by 10 feet."},
              {"hill", "Hill's Tumble", "An attack hit knocks a Large or smaller target Prone."},
              {"stone", "Stone's Endurance",
-              "Reaction when hit: reduce the damage by 1d12 + your Constitution modifier."},
+              "Reaction when you take damage: reduce it by 1d12 + your Constitution modifier."},
              {"storm", "Storm's Thunder",
               "Reaction when damaged: deal 1d8 Thunder damage to the attacker within 60 feet."}}));
     }
@@ -883,6 +883,20 @@ TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGr
                          return name(a.id) < name(b.id);
                      });
     return group;
+}
+
+TrainingChoiceGroup every_invocation(std::span<const FeatureGrant> grants)
+{
+    // Whatever its prerequisites: the held cantrips name the blast invocations.
+    std::vector<FeatureGrant> cantrips;
+    for (const auto &g : grants)
+    {
+        if (g.id.starts_with("spell:"))
+        {
+            cantrips.push_back({g.id, "class:warlock:pact_magic", 1, {}});
+        }
+    }
+    return invocation_options(15, cantrips, "");
 }
 
 // College of Lore's Bonus Proficiencies: three skills not yet held.
@@ -1674,17 +1688,7 @@ SwapOffer option_swap_offer(const CharacterSheet &sheet)
     if (klass == CharacterClass::warlock)
     {
         SwapOffer offer{"Eldritch Invocation", {}, {}};
-        // Every invocation's label, whatever its prerequisites: the held
-        // cantrips name the blast invocations.
-        std::vector<FeatureGrant> cantrips;
-        for (const auto &g : sheet.grants)
-        {
-            if (g.id.starts_with("spell:"))
-            {
-                cantrips.push_back({g.id, "class:warlock:pact_magic", 1, {}});
-            }
-        }
-        const auto all = invocation_options(15, cantrips, "");
+        const auto all = every_invocation(sheet.grants);
         for (const auto &id : held("invocation:", "class:warlock:invocations"))
         {
             for (const auto &option : all.options)

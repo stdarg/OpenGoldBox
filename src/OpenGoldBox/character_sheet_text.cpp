@@ -95,19 +95,6 @@ String formatted_sheet(const Character &character, const PartyMember *member,
     {
         return label.empty() ? gs(display(id)) : i18n::text(label);
     };
-    String feats;
-    for (const auto &grant : s.grants)
-    {
-        if (grant.id.starts_with("feat:"))
-        {
-            const auto id = grant.id.substr(5);
-            feats += named(opengold::srd5::feat_label(id), id) + "  ";
-        }
-    }
-    if (!feats.is_empty())
-    {
-        text += "\n" + i18n::formatted("Feat: {feats}", {{"feats", feats}});
-    }
     if (!s.prepared_spells.empty())
     {
         String spells;
@@ -190,6 +177,22 @@ String formatted_sheet(const Character &character, const PartyMember *member,
                     "\n[theme_font=sheet_note]" + plain(i18n::render(effect.description)) +
                     "[/theme_font]";
         }
+    }
+    // The species' and class's features and choices, feats, cantrips and spells.
+    const auto details = opengold::srd5::sheet_details(s, character.creation_data());
+    if (!details.empty())
+    {
+        text += "\n\n[theme_title]" + i18n::utf8("Features and choices") + "[/theme_title]";
+    }
+    for (const auto &detail : details)
+    {
+        String names;
+        for (const auto &name : detail.names)
+        {
+            names += (names.is_empty() ? String() : String(", ")) + i18n::text(name);
+        }
+        text += "\n" + i18n::formatted("{heading}: {names}",
+                                       {{"heading", i18n::text(detail.heading)}, {"names", names}});
     }
     text += "\n\n[theme_title]" + i18n::utf8("Inventory") + "[/theme_title]";
     if (character.inventory().empty())

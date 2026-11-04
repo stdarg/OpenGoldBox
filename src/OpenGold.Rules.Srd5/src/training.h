@@ -69,6 +69,8 @@ rules::TrainingChoiceGroup elemental_fury_options();
 rules::TrainingChoiceGroup invocation_options(unsigned level,
                                               std::span<const rules::FeatureGrant> grants,
                                               std::string_view source);
+// Every invocation with its label, for naming those a Warlock holds.
+rules::TrainingChoiceGroup every_invocation(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup skilled_options(std::span<const rules::FeatureGrant> grants);
 // Lessons of the First Ones' Skilled, taken at `level`: three skills.
 rules::TrainingChoiceGroup lessons_skilled_options(std::span<const rules::FeatureGrant> grants,

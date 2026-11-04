@@ -1,0 +1,286 @@
+ui: pressed Party "View party"
+ui: pressed PartyPanel/ActionRow1/Create "Create character"
+ui: pressed Party "View party"
+ui: pressed PartyPanel/ActionRow1/Create "Create character"
+ui: pressed Party "View party"
+ui: pressed PartyPanel/ActionRow1/Create "Create character"
+ui: selected Choices "Orc"
+ui: pressed Gender "Female" (on)
+ui: selected Gender "Male"
+ui: pressed Next "Next"
+ui: selected Choices "Neutral Good"
+ui: pressed Next "Next"
+ui: pressed Background "Acolyte" (on)
+ui: pressed Background "Acolyte" (on)
+ui: selected Background "Soldier"
+ui: pressed Roll "Roll all six"
+ui: pressed Bonus "STR +2, DEX +1" (on)
+ui: selected Bonus "STR +1, DEX +1, CON +1"
+ui: pressed Next "Next"
+ui: selected Choices "Fighter"
+ui: pressed Next "Next"
+ui: pressed Training/Rows/Group0/great_weapon_fighting "Great Weapon Fighting" (on)
+ui: pressed Training/Rows/Group1/acrobatics "Acrobatics" (on)
+ui: pressed Training/Rows/Group1/perception "Perception" (on)
+ui: pressed Training/Rows/Group2/greatsword "Greatsword" (on)
+ui: pressed Training/Rows/Group2/battleaxe "Battleaxe" (on)
+ui: pressed Training/Rows/Group2/greataxe "Greataxe" (on)
+ui: pressed Training/Rows/Group2/battleaxe "Battleaxe" (off)
+ui: pressed Training/Rows/Group2/halberd "Halberd" (on)
+ui: pressed Next "Next"
+ui: pressed Color1_2 "Light red"
+ui: pressed Color1_2 "> Light red"
+ui: pressed Palette2
+ui: pressed Color0_2 "Brown"
+ui: pressed Palette0
+ui: pressed Color0_4 "Blue"
+ui: pressed Palette4
+ui: pressed Palette0
+ui: pressed Color1_4 "Light blue"
+ui: pressed Palette4
+ui: pressed Color0_1 "Blue"
+ui: pressed Palette4
+ui: pressed Palette4
+ui: pressed Color1_1 "Light blue"
+ui: pressed Palette5
+ui: pressed Palette6
+ui: pressed Next "Next"
+ui: pressed Next "Show character sheet"
+ui: pressed AddParty "Add to party"
+ui: pressed PartyPanel/Pool "Character Pool"
+ui: pressed PoolModal/Close "Close"
+ui: pressed PartyPanel/ActionRow1/Create "Create character"
+ui: selected Choices "Goliath"
+ui: pressed Gender "Female" (on)
+ui: pressed Gender "Female" (off)
+ui: pressed SpeciesChoices/Rows/Group0/fire "Fire's Burn" (on)
+ui: pressed SpeciesChoices/Rows/Group0/cloud "Cloud's Jaunt" (on)
+ui: pressed SpeciesChoices/Rows/Group0/frost "Frost's Chill" (on)
+ui: pressed SpeciesChoices/Rows/Group0/frost "Frost's Chill" (on)
+ui: pressed SpeciesChoices/Rows/Group0/frost "Frost's Chill" (on)
+ui: pressed SpeciesChoices/Rows/Group0/fire "Fire's Burn" (on)
+ui: pressed SpeciesChoices/Rows/Group0/cloud "Cloud's Jaunt" (on)
+ui: pressed SpeciesChoices/Rows/Group0/frost "Frost's Chill" (on)
+ui: pressed SpeciesChoices/Rows/Group0/fire "Fire's Burn" (on)
+ui: pressed GameMenu/Menu/Resume "Return to game"
+ui: pressed Next "Next"
+ui: selected Choices "Chaotic Good"
+ui: pressed Next "Next"
+ui: pressed Roll "Roll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Background "Acolyte" (on)
+ui: selected Background "Soldier"
+ui: pressed Next "Next"
+ui: selected Choices "Fighter"
+ui: pressed Next "Next"
+ui: pressed Training/Rows/Group0/defense "Defense" (on)
+ui: pressed Training/Rows/Group0/two_weapon_fighting "Two-Weapon Fighting" (on)
+ui: pressed Training/Rows/Group0/defense "Defense" (on)
+ui: pressed Training/Rows/Group1/acrobatics "Acrobatics" (on)
+ui: pressed Training/Rows/Group1/perception "Perception" (on)
+ui: pressed Training/Rows/Group2/longsword "Longsword" (on)
+ui: pressed Training/Rows/Group2/blowgun "Blowgun" (on)
+ui: pressed Training/Rows/Group2/flail "Flail" (on)
+ui: pressed Training/Rows/Group2/flail "Flail" (off)
+ui: pressed Training/Rows/Group2/blowgun "Blowgun" (off)
+ui: pressed Training/Rows/Group2/longbow "Longbow" (on)
+ui: pressed Training/Rows/Group2/battleaxe "Battleaxe" (on)
+ui: pressed Next "Next"
+ui: pressed Color1_2 "Light red"
+ui: pressed Palette8
+ui: pressed Color0_2 "Brown"
+ui: pressed Palette0
+ui: pressed Color0_5 "Brown"
+ui: pressed Palette1
+ui: pressed Color1_5 "Yellow"
+ui: pressed Palette9
+ui: pressed Next "Next"
+ui: pressed Next "Show character sheet"
+ui: pressed AddParty "Add to party"
+ui: pressed PartyPanel/ActionRow1/Create "Create character"
+ui: pressed Gender "Female" (on)
+ui: selected Gender "Male"
+ui: selected Choices "Human"
+ui: pressed Next "Next"
+ui: selected Choices "Chaotic Good"
+ui: pressed Next "Next"
+ui: pressed Roll "Roll all six"
+ui: pressed Targets/Rows/Class6 "Paladin" (on)
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Background "Acolyte" (on)
+ui: selected Background "Soldier"
+ui: pressed Next "Next"
+ui: selected Choices "Paladin"
+ui: pressed Next "Next"
+ui: pressed Training/Rows/Group0/persuasion "Persuasion" (on)
+ui: pressed Training/Rows/Group0/religion "Religion" (on)
+ui: pressed Training/Rows/Group1/longsword "Longsword" (on)
+ui: pressed Training/Rows/Group1/scimitar "Scimitar" (on)
+ui: pressed Next "Next"
+ui: pressed SpellChoices/Rows/BookChoices/prepared/cure_wounds "Cure Wounds" (on)
+ui: pressed SpellChoices/Rows/BookChoices/prepared/bless "Bless" (on)
+ui: pressed Next "Next"
+ui: pressed Color0_1 "Blue"
+ui: pressed Palette2
+ui: pressed Color1_1 "Light blue"
+ui: pressed Palette10
+ui: pressed Color0_4 "Blue"
+ui: pressed Palette6
+ui: pressed Color1_4 "Light blue"
+ui: pressed Palette6
+ui: pressed Color1_4 "> Brown"
+ui: pressed Palette8
+ui: pressed Color0_4 "Brown"
+ui: pressed Palette4
+ui: pressed Color0_5 "Brown"
+ui: pressed Palette8
+ui: pressed Color1_5 "Yellow"
+ui: pressed Palette7
+ui: pressed Color0_4 "Red"
+ui: pressed Palette2
+ui: pressed Palette14
+ui: pressed Color1_4 "Dark gray"
+ui: pressed Palette7
+ui: pressed Color0_2 "Brown"
+ui: pressed Palette0
+ui: pressed Next "Next"
+ui: pressed PortraitClass "All classes" (on)
+ui: selected PortraitClass "Paladin"
+ui: pressed Next "Show character sheet"
+ui: pressed AddParty "Add to party"
+ui: pressed PartyPanel/MakeLeader "Make leader"
+ui: pressed PartyPanel/ActionRow1/Create "Create character"
+ui: selected Choices "Halfling"
+ui: pressed Next "Next"
+ui: selected Choices "Lawful Neutral"
+ui: pressed Next "Next"
+ui: pressed Roll "Roll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Targets/Rows/Class8 "Rogue" (on)
+ui: pressed Roll "Reroll all six"
+ui: pressed Background "Acolyte" (on)
+ui: selected Background "Criminal"
+ui: pressed Next "Next"
+ui: selected Choices "Rogue"
+ui: pressed Next "Next"
+ui: pressed Training/Rows/Group0/acrobatics "Acrobatics" (on)
+ui: pressed Training/Rows/Group0/insight "Insight" (on)
+ui: pressed Training/Rows/Group0/investigation "Investigation" (on)
+ui: pressed Training/Rows/Group0/perception "Perception" (on)
+ui: pressed Training/Rows/Group1/investigation "Investigation" (on)
+ui: pressed Training/Rows/Group1/perception "Perception" (on)
+ui: pressed Training/Rows/Group2/shortsword "Shortsword" (on)
+ui: pressed Training/Rows/Group2/shortbow "Shortbow" (on)
+ui: pressed Next "Next"
+ui: pressed Size "Size: Regular" (on)
+ui: selected Size "Size: Short"
+ui: pressed CombatHeadNext "Head >"
+ui: pressed CombatHeadNext "Head >"
+ui: pressed CombatHeadNext "Head >"
+ui: pressed Color0_2 "> Brown"
+ui: pressed Palette14
+ui: pressed Color0_1 "Blue"
+ui: pressed Palette5
+ui: pressed Color1_1 "Light blue"
+ui: pressed Palette13
+ui: pressed Color0_4 "Blue"
+ui: pressed Palette3
+ui: pressed Color1_4 "Light blue"
+ui: pressed Palette11
+ui: pressed Color0_5 "Brown"
+ui: pressed Palette7
+ui: pressed Color1_5 "Yellow"
+ui: pressed Palette15
+ui: pressed Next "Next"
+ui: pressed PortraitClass "All classes" (on)
+ui: selected PortraitClass "Rogue"
+ui: pressed Back "Back"
+ui: pressed Color0_2 "Yellow"
+ui: pressed Palette0
+ui: pressed Next "Next"
+ui: pressed PortraitClass "All classes" (on)
+ui: pressed Next "Show character sheet"
+ui: pressed AddParty "Add to party"
+ui: pressed PartyPanel/ActionRow1/Create "Create character"
+ui: selected Choices "Elf"
+ui: pressed SpeciesChoices/Rows/Group0/wood_elf "Wood Elf" (on)
+ui: pressed SpeciesChoices/Rows/Group2/wisdom "Wisdom" (on)
+ui: pressed Next "Next"
+ui: pressed Next "Next"
+ui: pressed Targets/Rows/Class2 "Cleric" (on)
+ui: pressed Roll "Roll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Roll "Reroll all six"
+ui: pressed Bonus "INT +2, WIS +1" (on)
+ui: selected Bonus "WIS +2, CHA +1"
+ui: pressed Next "Next"
+ui: selected Choices "Cleric"
+ui: pressed Next "Next"
+ui: pressed Training/Rows/Group0/protector "Protector" (on)
+ui: pressed Training/Rows/Group1/medicine "Medicine" (on)
+ui: pressed Training/Rows/Group1/persuasion "Persuasion" (on)
+ui: pressed Next "Next"
+ui: pressed SpellChoices/Rows/BookChoices/feat_magic_initiate_cleric_ability/wisdom "Wisdom" (on)
+ui: pressed SpellChoices/Rows/BookChoices/feat_magic_initiate_cleric_cantrips/sacred_flame "Sacred Flame" (on)
+ui: pressed SpellChoices/Rows/BookChoices/feat_magic_initiate_cleric_cantrips/resistance "Resistance" (on)
+ui: pressed SpellChoices/Rows/BookChoices/feat_magic_initiate_cleric_spell/cure_wounds "Cure Wounds" (on)
+ui: pressed SpellChoices/Rows/BookChoices/prepared/cure_wounds "Cure Wounds" (on)
+ui: pressed SpellChoices/Rows/BookChoices/prepared/bless "Bless" (on)
+ui: pressed SpellChoices/Rows/BookChoices/prepared/command "Command" (on)
+ui: pressed SpellChoices/Rows/BookChoices/prepared/healing_word "Healing Word" (on)
+ui: pressed Party "View party"
+ui: pressed PartyPanel/Pool "Character Pool"
+ui: selected PoolModal/List "Cleric / Elara Emberheart"
+ui: pressed PoolModal/Add "Add to party"
+ui: selected PoolModal/List "Wizard / Yoren Larkspur"
+ui: selected PoolModal/List "Wizard / Ysolde Moonwhisper"
+ui: selected PoolModal/List "Wizard / Zev Reedwalker"
+ui: pressed PoolModal/Add "Add to party"
+ui: pressed PoolModal/Close "Close"
+ui: pressed GameMenu/Menu/Save "Save game"
+ui: pressed SaveSlots/Action "Save"

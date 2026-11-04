@@ -25837,7 +25837,9 @@ int Session::endured(Actor &goliath, int amount)
     }
     goliath.reaction = false;
     spend_trait_use(goliath);
-    const int left = std::max(0, amount - roll(12) - def(goliath).constitution);
+    // A negative modifier can bring the total to nothing, never to more damage.
+    const int lessened = std::max(0, roll(12) + def(goliath).constitution);
+    const int left = std::max(0, amount - lessened);
     log(goliath.source.name + " uses Stone's Endurance: " + std::to_string(amount - left) +
             " less damage.",
         {"{name} uses Stone's Endurance: {damage} less damage.",

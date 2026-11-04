@@ -18,6 +18,16 @@ namespace opengold::srd5
 [[nodiscard]] std::string_view charge_noun(std::string_view item) noexcept;
 // A spell's English label, such as "Fireball"; empty for an unknown id.
 [[nodiscard]] std::string_view spell_label(std::string_view spell) noexcept;
+// A character's details by kind, named for the player: species choices and
+// traits, subclass, class features and choices, feats, cantrips and spells.
+// Skills, Expertise and Weapon Mastery are left to the sheet's training.
+struct SheetDetail
+{
+    std::string heading;
+    std::vector<std::string> names;
+};
+[[nodiscard]] std::vector<SheetDetail> sheet_details(const rules::CharacterSheet &sheet,
+                                                     const rules::CharacterDraft &creation);
 // A feat's English label, such as "Magic Initiate (Cleric)"; empty for an unknown id.
 [[nodiscard]] std::string_view feat_label(std::string_view feat) noexcept;
 // Whether the inventory's Use works for the item outside combat: the Manual of

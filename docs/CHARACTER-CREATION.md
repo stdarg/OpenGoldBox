@@ -87,7 +87,11 @@ Art loads from the `OPENGOLD_GAME_DIR` environment variable.
    through later edits.
 9. Show the character sheet: race, gender, class, level, background, six scores,
     saving throws, Hit Dice, HP and inventory (initially empty), plus skill bonuses,
-    Expertise and their grant sources. Saving throws
+    Expertise and their grant sources. **Features and choices** lists every
+    other detail by heading: the species' choices and traits, subclass, class
+    features, each class choice (Divine Order, Eldritch Invocations, Metamagic
+    and the like), feats, cantrips, the spellbook or known spells, Magic
+    Initiate's spells and the species' own spells. Saving throws
     include the class's level-one proficiency bonus where applicable.
     A note explains that SRD 5.2.1 uses the maximum class Hit Die plus applicable
     modifiers at level one. Only the HP numbers are colored: yellow for a

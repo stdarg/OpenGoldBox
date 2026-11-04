@@ -14,6 +14,12 @@ Shield's zero times denote a Utilize action, not a free equipment change.
 `spell-offer-baseline.txt` records the spell offers each class sees. The spell
 table test writes it when it is missing and otherwise compares against it.
 
+`creation_clicks.log` is a player's character-creation session, the `ui:`
+lines of the game log: characters made one after another on one screen, a Goliath among
+them. `opengold_godot_creation_replay` repeats the clicks on the real screen
+and fails when one does not stick or shows an error (stuck Giant Ancestry,
+Elven Lineage and Divine Order radios, before fd405ea9).
+
 ## No save fixtures
 
 Before 1.0 there is no save compatibility: every save kind has exactly one

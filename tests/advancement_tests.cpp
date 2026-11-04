@@ -6,6 +6,9 @@
 #include <iostream>
 #include <stdexcept>
 #include <utility>
+#include <tuple>
+#include <cctype>
+#include "opengold/character_creator.h"
 #include "split_aim.h"
 #include "test_support.h"
 using namespace opengold;
@@ -1009,6 +1012,65 @@ void improvements_to_fifteen()
     }
 }
 
+// Every class at its level cap, and characters of the species with their own
+// choices, have each detail named for the player under a heading: no grant is
+// left as an id.
+void sheet_details_named()
+{
+    const auto named = [](const Character &character, const std::string &who)
+    {
+        for (const auto &detail : srd5::sheet_details(character.sheet(), character.creation_data()))
+        {
+            check(detail.heading != "Other" && !detail.names.empty(),
+                  who + " has an unnamed detail: " +
+                      (detail.names.empty() ? std::string() : detail.names.front()));
+            for (const auto &name : detail.names)
+            {
+                check(name.find('_') == std::string::npos &&
+                          !name.empty() && std::isupper(static_cast<unsigned char>(name.front())),
+                      who + " shows an id under " + detail.heading + ": " + name);
+            }
+        }
+    };
+    for (const auto *klass : {"barbarian", "bard", "cleric", "druid", "fighter", "monk", "paladin",
+                              "ranger", "rogue", "sorcerer", "warlock", "wizard"})
+    {
+        CampaignParty party(module());
+        const auto id = party.add_pc(character(klass));
+        party.award_experience(1000000, "sheet-details");
+        while (party.can_advance(id))
+        {
+            party.advance(id, party.default_advancement(id));
+        }
+        named(party.member(id).character, klass);
+    }
+    for (const auto &[race, group, option] :
+         {std::tuple{"elf", "species:elf:lineage", "high_elf"},
+          std::tuple{"tiefling", "species:tiefling:legacy", "infernal"},
+          std::tuple{"dragonborn", "species:dragonborn:ancestry", "gold"},
+          std::tuple{"goliath", "species:goliath:ancestry", "stone"},
+          std::tuple{"dwarf", "", ""}, std::tuple{"orc", "", ""}})
+    {
+        CharacterCreator creator(srd5::character_rules(), 7);
+        creator.select(CreationField::race, race);
+        if (*group)
+        {
+            creator.training_choice({.group = group, .option = option, .selected = true});
+        }
+        auto draft = creator.draft();
+        draft.name = race;
+        draft.rolled = true;
+        for (auto &r : draft.rolls)
+        {
+            r = {{6, 5, 4, 1}, 3};
+        }
+        const Character made(*srd5::character_rules(), draft, {});
+        named(made, race);
+        const auto details = srd5::sheet_details(made.sheet(), made.creation_data());
+        check(!details.empty(), std::string(race) + " has species details");
+    }
+}
+
 int main(int argc, char **argv)
 {
     try
@@ -1028,6 +1090,7 @@ int main(int argc, char **argv)
         feats();
         spells();
         improvements_to_fifteen();
+        sheet_details_named();
         std::cout << "Manual advancement tests passed\n";
         return 0;
     }

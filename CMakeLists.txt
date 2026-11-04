@@ -96,6 +96,7 @@ add_library(opengold_rules_srd5 STATIC
     src/OpenGold.Rules.Srd5/src/feature_grants.cpp
     src/OpenGold.Rules.Srd5/src/training.cpp
     src/OpenGold.Rules.Srd5/src/spell_access.cpp
+    src/OpenGold.Rules.Srd5/src/sheet_details.cpp
     src/OpenGold.Rules.Srd5/src/combat_grid.cpp
     src/OpenGold.Rules.Srd5/src/status_effects.cpp
     src/OpenGold.Rules.Srd5/src/life_cycle.cpp
