@@ -434,11 +434,12 @@ if(OPENGOLD_BUILD_TESTS)
     opengold_creation_check(reincarnate "Godot reincarnation passed" -DCHECK_FLAG=--reincarnate-check)
     opengold_creation_check(training "Training UI checks passed" -DSCRIPT=training_view_tests)
     # A sample of every Human the screen can make, one screen after another,
-    # with both fill orders and changes of background and class; the script
-    # explores every species when run by hand.
+    # with both fill orders and changes of background, class and species, some
+    # made again on a fresh screen; the script explores every species when
+    # run by hand.
     opengold_original_check(creation_explorer "Creation explorer passed"
         -DSCRIPT=creation_explorer_tests
-        "-DARGS=--race=Human\\;--policy=1\\;--detours\\;--shuffle=17\\;--sample=7")
+        "-DARGS=--race=Human\\;--policy=1\\;--detours\\;--shuffle=17\\;--sample=7\\;--fresh=3")
     opengold_creation_check(portrait_fallback "Portrait fallback checks passed"
         -DSCRIPT=portrait_fallback_tests)
     opengold_creation_check(handoff "Combat handoff checks passed" -DSCRIPT=combat_handoff_tests)

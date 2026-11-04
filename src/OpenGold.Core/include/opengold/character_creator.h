@@ -133,12 +133,19 @@ class CharacterCreator
     const rules::RulesModule *module_{};
     std::set<std::string, std::less<>> held_;
     [[nodiscard]] std::string initiate_group_prefix() const;
-    void fill_species(rules::CharacterDraft &candidate) const;
+    void fill_species(rules::CharacterDraft &candidate, const rules::CharacterDraft &before,
+                      std::string_view touched) const;
+    void prune_spells(rules::CharacterDraft &candidate) const;
+    void set_aside_vanished(const rules::CharacterDraft &candidate);
     void check_reincarnation() const;
     RandomState random_;
     // Gold has its own stream so the seeded ability rolls are the same with it.
     RandomState gold_random_;
     rules::CharacterDraft draft_;
+    // The picks of species choices that went away (a High Elf's cantrip when
+    // the lineage changes, Skilled's skills when Versatile does), for when
+    // they come back.
+    rules::TrainingChoices set_aside_;
     por::CharacterAppearance appearance_;
     CreationStep step_{CreationStep::race};
     std::uint16_t starting_gold_{};

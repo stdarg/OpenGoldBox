@@ -193,6 +193,12 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
     required_node<CharacterPoolDialog>(*this, "PoolModal").mark_added(*campaign_);
     completed_.reset();
     added_to_party_ = false;
+    // The finished character went with the old campaign's sheet: the
+    // character is edited again, to finish for the loaded party.
+    if (creator_->step() == opengold::CreationStep::sheet)
+    {
+        creator_->back();
+    }
     roster_index_ = 0;
     party_open_ = true;
     required_node<Button>(*this, "ReturnParty").hide();

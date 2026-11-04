@@ -10,6 +10,15 @@ using namespace rules;
 
 namespace
 {
+bool all_scores_assigned(const CharacterDraft &draft)
+{
+    return draft.rolled && std::all_of(draft.assignment.begin(), draft.assignment.end(),
+                                       [](auto n)
+                                       {
+                                           return n < 6;
+                                       });
+}
+
 // A species choice's picks; none when the draft has not made it.
 std::vector<std::string> selected_species(const CharacterDraft &draft, const std::string &group)
 {
@@ -85,7 +94,7 @@ CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> creation,
     }
     draft_ = reincarnation_draft(former, species);
     appearance_ = former.appearance();
-    fill_species(draft_);
+    fill_species(draft_, CharacterDraft{}, {});
 }
 
 std::vector<TrainingChoiceGroup> CharacterCreator::training_options() const
@@ -197,6 +206,7 @@ void CharacterCreator::restart()
         throw std::runtime_error("A new body keeps the character");
     }
     draft_ = {};
+    set_aside_.clear();
     appearance_ = {};
     step_ = CreationStep::race;
     starting_gold_ = 0;
@@ -220,15 +230,31 @@ void CharacterCreator::require_editable() const
     }
 }
 
-void CharacterCreator::fill_species(CharacterDraft &candidate) const
+void CharacterCreator::fill_species(CharacterDraft &candidate, const CharacterDraft &before,
+                                    std::string_view touched) const
 {
-    // A new species starts with the first option of each of its choices,
-    // shown on the race page for the player to change. A choice another field
+    // A species choice that appears starts with its first options, shown on
+    // the race page for the player to change: a new species's choices, or
+    // Skilled when Versatile comes back to it. One the player made before it
+    // went away comes back with their picks. A choice another field
     // took away (Versatile's feat, when the background gives that feat; a
     // Skilled skill the new background gives) is refilled the same way.
     // A filled choice can bring another (Versatile's Skilled, its skills).
+    // What the player left, the choice they just changed among it, stays as
+    // they left it, even emptied.
     // A refill skips what another choice took: the background taking a
     // Skilled skill must not refill it with one the class already picked.
+    std::set<std::string, std::less<>> offered_before;
+    for (const auto &group : rules_->training_options(before))
+    {
+        offered_before.insert(group.id);
+    }
+    const auto left_by_player = [&](const std::string &group)
+    {
+        return group == touched ||
+               (offered_before.contains(group) &&
+                selected_species(candidate, group) == selected_species(before, group));
+    };
     const auto taken_elsewhere = [&](std::string_view group, std::string_view option)
     {
         return std::any_of(candidate.training.begin(), candidate.training.end(),
@@ -265,21 +291,35 @@ void CharacterCreator::fill_species(CharacterDraft &candidate) const
         filled = false;
         for (const auto &group : offered())
         {
-            // A partial choice the player left, untouched by this change, stays.
-            const auto picked = selected_species(candidate, group.id);
-            if (!group.id.starts_with("species:") || picked.size() >= group.count ||
-                (!picked.empty() && picked == selected_species(draft_, group.id)))
+            if (!group.id.starts_with("species:") ||
+                selected_species(candidate, group.id).size() >= group.count ||
+                left_by_player(group.id))
             {
                 continue;
             }
-            auto &picks = candidate.training[group.id];
+            std::vector<std::string> order;
+            if (const auto earlier = set_aside_.find(group.id);
+                earlier != set_aside_.end() && !offered_before.contains(group.id))
+            {
+                order = earlier->second;
+            }
             for (const auto &option : group.options)
             {
-                if (picks.size() < group.count &&
-                    std::find(picks.begin(), picks.end(), option.id) == picks.end() &&
-                    !taken_elsewhere(group.id, option.id))
+                order.push_back(option.id);
+            }
+            auto &picks = candidate.training[group.id];
+            for (const auto &id : order)
+            {
+                const bool listed = std::any_of(group.options.begin(), group.options.end(),
+                                                [&](const auto &o)
+                                                {
+                                                    return o.id == id;
+                                                });
+                if (listed && picks.size() < group.count &&
+                    std::find(picks.begin(), picks.end(), id) == picks.end() &&
+                    !taken_elsewhere(group.id, id))
                 {
-                    picks.push_back(option.id);
+                    picks.push_back(id);
                     filled = true;
                 }
             }
@@ -287,6 +327,22 @@ void CharacterCreator::fill_species(CharacterDraft &candidate) const
             {
                 candidate.training.erase(group.id);
             }
+        }
+    }
+}
+
+void CharacterCreator::set_aside_vanished(const CharacterDraft &candidate)
+{
+    std::set<std::string, std::less<>> offered;
+    for (const auto &group : rules_->training_options(candidate))
+    {
+        offered.insert(group.id);
+    }
+    for (const auto &[group, picks] : draft_.training)
+    {
+        if (group.starts_with("species:") && !offered.contains(group))
+        {
+            set_aside_[group] = picks;
         }
     }
 }
@@ -331,12 +387,6 @@ void CharacterCreator::select(CreationField field, std::string_view id)
     case CreationField::background:
         candidate.background = id;
         candidate.adjustment = 0;
-        // A background can bring spells to learn (Magic Initiate), so its
-        // spell choices go with it, as a class's do.
-        if (candidate.background != draft_.background)
-        {
-            candidate.spells.reset();
-        }
         break;
     }
     if (field == CreationField::character_class &&
@@ -364,26 +414,14 @@ void CharacterCreator::select(CreationField field, std::string_view id)
             }
         }
     }
-    const auto cantrips = rules_->cantrip_options(candidate);
     if (!candidate.cantrips)
     {
         candidate.cantrips.emplace();
     }
-    std::erase_if(*candidate.cantrips,
-                  [&](const auto &id)
-                  {
-                      return std::none_of(cantrips.options.begin(), cantrips.options.end(),
-                                          [&](const auto &o)
-                                          {
-                                              return o.id == id;
-                                          });
-                  });
-    if (candidate.cantrips->size() > cantrips.count)
-    {
-        candidate.cantrips->resize(cantrips.count);
-    }
     prune_training(candidate);
-    fill_species(candidate);
+    fill_species(candidate, draft_, {});
+    prune_spells(candidate);
+    set_aside_vanished(candidate);
     draft_ = std::move(candidate);
 }
 
@@ -612,6 +650,72 @@ void CharacterCreator::prune_training(CharacterDraft &candidate) const
     }
 }
 
+namespace
+{
+// Keeps the picks `offered` still lists, at most `count` of them.
+void keep_offered(std::vector<std::string> &picks, const std::vector<CreationChoice> &offered,
+                  std::size_t count)
+{
+    std::erase_if(picks,
+                  [&](const auto &id)
+                  {
+                      return std::none_of(offered.begin(), offered.end(),
+                                          [&](const auto &o)
+                                          {
+                                              return o.id == id;
+                                          });
+                  });
+    if (picks.size() > count)
+    {
+        picks.resize(count);
+    }
+}
+} // namespace
+
+void CharacterCreator::prune_spells(CharacterDraft &candidate) const
+{
+    // A change elsewhere can take away what a spell pick came from: the
+    // Versatile feat leaving Magic Initiate, another background or species,
+    // or the Divine Order no longer giving the extra cantrip. Those picks go;
+    // the rest stay. Each step leaves the draft valid for the next one's
+    // rules query.
+    if (!former_ && candidate.cantrips)
+    {
+        const auto cantrips = rules_->cantrip_options(candidate);
+        keep_offered(*candidate.cantrips, cantrips.options, cantrips.count);
+    }
+    // The spell options come from the scores; while they are unassigned
+    // (rolled again) the options are unknown, so the picks wait.
+    if (!candidate.spells || !all_scores_assigned(candidate))
+    {
+        return;
+    }
+    auto unpicked = candidate;
+    unpicked.spells = SpellChoices{};
+    const auto offered = rules_->spell_choice_options(unpicked);
+    for (auto entry = candidate.spells->learning.begin();
+         entry != candidate.spells->learning.end();)
+    {
+        const auto group = std::find_if(offered.learning.begin(), offered.learning.end(),
+                                        [&](const auto &g)
+                                        {
+                                            return g.id == entry->first;
+                                        });
+        if (group != offered.learning.end())
+        {
+            keep_offered(entry->second, group->options, group->count);
+        }
+        entry = group == offered.learning.end() || entry->second.empty()
+                    ? candidate.spells->learning.erase(entry)
+                    : std::next(entry);
+    }
+    if (candidate.spells->prepared)
+    {
+        const auto current = rules_->spell_choice_options(candidate);
+        keep_offered(*candidate.spells->prepared, current.preparation, current.prepared_count);
+    }
+}
+
 void CharacterCreator::training_choice(ChoiceToggle toggle)
 {
     const auto [id, option, selected] = toggle;
@@ -658,23 +762,9 @@ void CharacterCreator::training_choice(ChoiceToggle toggle)
         values.erase(found);
     }
     prune_training(candidate);
-    // A Versatile feat no longer Magic Initiate takes its spells with it.
-    if (former_ && candidate.spells)
-    {
-        const auto keep = [&]
-        {
-            const auto versatile = selected_species(candidate, "species:human:versatile");
-            return versatile.empty() ? std::string{} : "feat:" + versatile.front() + ":";
-        }();
-        const auto before = reincarnation_draft(*former_, candidate.race);
-        std::erase_if(candidate.spells->learning,
-                      [&](const auto &entry)
-                      {
-                          return entry.first.starts_with("feat:magic_initiate_") &&
-                                 (keep.empty() || !entry.first.starts_with(keep)) &&
-                                 (!before.spells || !before.spells->learning.contains(entry.first));
-                      });
-    }
+    fill_species(candidate, draft_, id);
+    prune_spells(candidate);
+    set_aside_vanished(candidate);
     draft_ = std::move(candidate);
 }
 
@@ -776,11 +866,7 @@ void CharacterCreator::roll()
 
 bool CharacterCreator::scores_assigned() const
 {
-    return draft_.rolled && std::all_of(draft_.assignment.begin(), draft_.assignment.end(),
-                                        [](auto n)
-                                        {
-                                            return n < 6;
-                                        });
+    return all_scores_assigned(draft_);
 }
 
 void CharacterCreator::assign_roll(unsigned roll, rules::Ability ability)

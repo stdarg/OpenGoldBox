@@ -78,6 +78,9 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
                 box->hide();
             }
         }
+        // The screen is reused, and a section's list changes (another class,
+        // another spellbook), so each box moves to its place in the list.
+        auto box_position = pending->get_index() + 1;
         for (const auto &option : group.options)
         {
             auto *box =
@@ -91,6 +94,7 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
                 box->connect("toggled",
                              toggled.bind(training_string(group.id), training_string(option.id)));
             }
+            section->move_child(box, box_position++);
             const bool selected =
                 std::find(picked.begin(), picked.end(), option.id) != picked.end();
             const bool locked =

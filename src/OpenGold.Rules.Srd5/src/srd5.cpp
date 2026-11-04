@@ -619,6 +619,29 @@ std::string_view spell_label(std::string_view spell) noexcept
     return found && found->id == spell ? found->label : std::string_view{};
 }
 
+std::string_view feat_label(std::string_view feat) noexcept
+{
+    constexpr std::array<std::pair<std::string_view, std::string_view>, 11> labels{{
+        {"ability_score_improvement", "Ability Score Improvement"},
+        {"alert", "Alert"},
+        {"archery", "Archery"},
+        {"defense", "Defense"},
+        {"great_weapon_fighting", "Great Weapon Fighting"},
+        {"magic_initiate_cleric", "Magic Initiate (Cleric)"},
+        {"magic_initiate_druid", "Magic Initiate (Druid)"},
+        {"magic_initiate_wizard", "Magic Initiate (Wizard)"},
+        {"savage_attacker", "Savage Attacker"},
+        {"skilled", "Skilled"},
+        {"two_weapon_fighting", "Two-Weapon Fighting"},
+    }};
+    const auto found = std::find_if(labels.begin(), labels.end(),
+                                    [&](const auto &entry)
+                                    {
+                                        return entry.first == feat;
+                                    });
+    return found == labels.end() ? std::string_view{} : found->second;
+}
+
 std::string_view charge_noun(std::string_view item) noexcept
 {
     const auto *magic = detail::magic_item(item);

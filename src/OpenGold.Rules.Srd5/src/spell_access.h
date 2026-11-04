@@ -56,6 +56,9 @@ std::vector<InitiateSpells> magic_initiate_spells(std::span<const rules::Feature
 // pp. 84, 86): its cantrip, and from levels 3 and 5 a spell each, cast once
 // per Long Rest without a slot. `feat` names the species; the ability is the one chosen.
 std::vector<InitiateSpells> lineage_spells(std::span<const rules::FeatureGrant>, unsigned level);
+// Whether the species already teaches the cantrip (a High Elf's, a Tiefling's
+// legacy), so no other choice offers it.
+bool species_cantrip(std::span<const rules::FeatureGrant> grants, std::string_view cantrip);
 // Gaining a level lets a Bard, Cleric, Druid, Sorcerer or Warlock replace one
 // cantrip of its class, and a Paladin or Ranger one of its Fighting Style's
 // (SRD 5.2.1). Offered for the sheet before the level is gained.

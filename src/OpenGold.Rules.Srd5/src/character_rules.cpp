@@ -221,12 +221,16 @@ class CreatorRules final : public CharacterRules
         {
             ++group.count;
         }
-        // A cantrip Magic Initiate already teaches is not learned twice, and
-        // the class learns only the cantrips left (INITIATE-1).
+        // A cantrip Magic Initiate or the species already teaches is not
+        // learned twice, and the class learns only the cantrips left
+        // (INITIATE-1).
+        const auto grants =
+            detail::training_grants(*klass, draft.race, draft.background, draft.training);
         std::erase_if(group.options,
                       [&](const auto &option)
                       {
-                          return picked_elsewhere(draft, {}, option.id);
+                          return picked_elsewhere(draft, {}, option.id) ||
+                                 detail::species_cantrip(grants, option.id);
                       });
         group.count = std::min(group.count, static_cast<unsigned>(group.options.size()));
         return group;

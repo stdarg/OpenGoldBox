@@ -1,7 +1,6 @@
 #include "godot_text.h"
 #include "inventory_label.h"
 #include <godot_cpp/classes/option_button.hpp>
-#include <chrono>
 #include <godot_cpp/classes/check_box.hpp>
 #include "application_settings.h"
 #include "godot_images.h"
@@ -262,6 +261,8 @@ void CharacterCreationView::reincarnate_check()
         break;
     }
     case 1:
+        // A character being made waits through the spell.
+        creator_->name("Waiting character");
         open_reincarnation(slots[0], slots[1], "reincarnate");
         check(creator_->reincarnating() && creator_->step() == CreationStep::race &&
                   !required_node<RolfTourView>(*this, "CampaignTown").is_visible(),
@@ -311,6 +312,9 @@ void CharacterCreationView::reincarnate_check()
                   !reincarnation_ &&
                   required_node<RolfTourView>(*this, "CampaignTown").is_visible(),
               "The companion returns in its new body, back in town");
+        check(creator_->draft().name == "Waiting character" &&
+                  required_node<LineEdit>(*this, "Name").get_text() == "Waiting character",
+              "The character being made before the spell is back");
         break;
     }
     case 7:
@@ -867,6 +871,8 @@ void CharacterCreationView::begin_reincarnation(Reincarnation spell, const std::
     {
         return;
     }
+    waiting_creation_.emplace(CreationInProgress{std::move(creator_), std::move(completed_),
+                                                 added_to_party_, portrait_chosen_});
     creator_ =
         std::make_unique<CharacterCreator>(srd5::character_rules(), campaign_->rule_module(),
                                            campaign_->member(spell.target).character, species);
@@ -921,16 +927,15 @@ void CharacterCreationView::end_reincarnation()
         return;
     }
     reincarnation_.reset();
-    creator_ = std::make_unique<CharacterCreator>(
-        srd5::character_rules(),
-        static_cast<std::uint64_t>(
-            std::chrono::high_resolution_clock::now().time_since_epoch().count()));
-    completed_.reset();
-    added_to_party_ = false;
-    portrait_chosen_ = false;
+    auto waiting = std::move(*waiting_creation_);
+    waiting_creation_.reset();
+    creator_ = std::move(waiting.creator);
+    completed_ = std::move(waiting.completed);
+    added_to_party_ = waiting.added_to_party;
+    portrait_chosen_ = waiting.portrait_chosen;
     auto *name = &required_node<LineEdit>(*this, "Name");
     name->set_editable(true);
-    name->set_text("");
+    name->set_text(String::utf8(creator_->draft().name.c_str()));
     required_node<OptionButton>(*this, "Gender").set_disabled(false);
     required_node<Button>(*this, "Restart").set_text(i18n::text(N_("Start over")));
     required_node<Button>(*this, "AddParty").set_text(i18n::text(N_("Add to party")));

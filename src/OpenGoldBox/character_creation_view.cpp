@@ -349,11 +349,17 @@ void CharacterCreationView::recommend_portrait()
 
 void CharacterCreationView::recommend_icon_size()
 {
+    // A Small character (a Gnome, a Halfling, or one that chose Size: Small)
+    // starts Short, a Goliath Large.
     auto a = creator_->appearance();
-    const auto &race = creator_->draft().race;
-    a.icon_size = race == "gnome"     ? por::IconSize::small
-                  : race == "goliath" ? por::IconSize::large
-                                      : por::IconSize::regular;
+    const auto &d = creator_->draft();
+    const auto size = d.training.find("species:" + d.race + ":size");
+    const bool small =
+        d.race == "gnome" || d.race == "halfling" ||
+        (size != d.training.end() && size->second == std::vector<std::string>{"small"});
+    a.icon_size = small                 ? por::IconSize::small
+                  : d.race == "goliath" ? por::IconSize::large
+                                        : por::IconSize::regular;
     creator_->appearance(a);
 }
 
@@ -520,7 +526,9 @@ void CharacterCreationView::refresh()
             "\n\n";
     }
     required_node<Label>(*this, "Steps").set_text(gs(progress));
-    required_node<Button>(*this, "Back").set_disabled(step == CreationStep::race);
+    // A character in the party is no longer the one these pages edit.
+    required_node<Button>(*this, "Back")
+        .set_disabled(step == CreationStep::race || added_to_party_);
     required_node<Button>(*this, "Back").set_text(i18n::text(N_("Back")));
     show("Next", step != CreationStep::sheet);
     if (campaign_)
@@ -989,6 +997,10 @@ void CharacterCreationView::training_toggled(bool selected, String group, String
             creator_->training_choice({.group = group.utf8().get_data(),
                                        .option = option.utf8().get_data(),
                                        .selected = selected});
+            if (group.ends_with(":size"))
+            {
+                recommend_icon_size();
+            }
         });
 }
 

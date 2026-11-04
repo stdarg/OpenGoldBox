@@ -114,6 +114,22 @@ template <class Translate> godot::String training_source(std::string_view id, co
     {
         return tr(N_("Criminal background"));
     }
+    if (id == "species:human:skillful")
+    {
+        return tr(N_("Human Skillful"));
+    }
+    if (id == "species:human:skilled")
+    {
+        return tr(N_("Skilled feat"));
+    }
+    if (id == "species:elf:keen_senses")
+    {
+        return tr(N_("Elf Keen Senses"));
+    }
+    if (id.starts_with("species:") && id.ends_with(":kept"))
+    {
+        return tr(N_("Kept from the former body"));
+    }
     return training_string(id);
 }
 
@@ -283,8 +299,12 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
     auto *rows = &required_node<VBoxContainer>(parent, container + String("/Rows"));
     if (!species)
     {
+        // What the character has without choosing: its spell picks go with
+        // the training choices, as Magic Initiate's come from one.
         auto fixed = creator.draft();
         fixed.training.clear();
+        fixed.spells.reset();
+        fixed.cantrips.reset();
         required_node<Label>(parent, "TrainingFixedTitle").set_text(tr(N_("Fixed training")));
         required_node<RichTextLabel>(parent, "TrainingFixed")
             .call("render",

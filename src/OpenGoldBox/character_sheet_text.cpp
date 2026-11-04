@@ -86,20 +86,22 @@ String formatted_sheet(const Character &character, const PartyMember *member,
     }
     const auto display = [](const std::string &id)
     {
-        if (id == "archery")
-        {
-            return i18n::utf8(N_("archery"));
-        }
         std::string label = id;
         std::replace(label.begin(), label.end(), '_', ' ');
         return i18n::utf8(label);
+    };
+    // Names as the creation pages show them, falling back to the id.
+    const auto named = [&](std::string_view label, const std::string &id)
+    {
+        return label.empty() ? gs(display(id)) : i18n::text(label);
     };
     String feats;
     for (const auto &grant : s.grants)
     {
         if (grant.id.starts_with("feat:"))
         {
-            feats += gs(display(grant.id.substr(5))) + "  ";
+            const auto id = grant.id.substr(5);
+            feats += named(opengold::srd5::feat_label(id), id) + "  ";
         }
     }
     if (!feats.is_empty())
@@ -111,7 +113,7 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         String spells;
         for (const auto &spell : s.prepared_spells)
         {
-            spells += gs(display(spell)) + "  ";
+            spells += named(opengold::srd5::spell_label(spell), spell) + "  ";
         }
         text += "\n" + i18n::formatted("Prepared spells: {spells}", {{"spells", spells}});
     }

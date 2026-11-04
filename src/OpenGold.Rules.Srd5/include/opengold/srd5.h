@@ -18,6 +18,8 @@ namespace opengold::srd5
 [[nodiscard]] std::string_view charge_noun(std::string_view item) noexcept;
 // A spell's English label, such as "Fireball"; empty for an unknown id.
 [[nodiscard]] std::string_view spell_label(std::string_view spell) noexcept;
+// A feat's English label, such as "Magic Initiate (Cleric)"; empty for an unknown id.
+[[nodiscard]] std::string_view feat_label(std::string_view feat) noexcept;
 // Whether the inventory's Use works for the item outside combat: the Manual of
 // Bodily Health, a healing or Giant Strength potion (MAGIC-3), or a Wand of
 // Secrets (SECRET-1).

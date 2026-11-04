@@ -159,6 +159,17 @@ class CharacterCreationView : public godot::Control
     };
 
     std::optional<Reincarnation> reincarnation_;
+
+    // The character being made when the spell took over the pages, back
+    // when it ends.
+    struct CreationInProgress
+    {
+        std::unique_ptr<opengold::CharacterCreator> creator;
+        std::optional<opengold::Character> completed;
+        bool added_to_party{}, portrait_chosen{};
+    };
+
+    std::optional<CreationInProgress> waiting_creation_;
     void open_reincarnation(std::int64_t caster, std::int64_t target, godot::String action);
     void begin_reincarnation(Reincarnation spell, const std::string &species);
     void reincarnate_check();

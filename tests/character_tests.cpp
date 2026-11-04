@@ -1243,6 +1243,157 @@ void ordinary_creation_tests()
     warlock_sage.next();
     check(warlock_sage.step() == CreationStep::character_class,
           "A background change after choosing class skills still continues");
+
+    // Skilled fills itself whenever it appears, as on a new species, and
+    // refills a place another species choice took; what the player emptied
+    // stays empty.
+    CharacterCreator human(srd5::character_rules(), 7);
+    human.select(CreationField::race, "human");
+    constexpr std::string_view versatile = "species:human:versatile";
+    const auto skilled_count = [&]
+    {
+        const auto found = human.draft().training.find("species:human:skilled");
+        return found == human.draft().training.end() ? 0 : found->second.size();
+    };
+    human.training_choice({.group = versatile, .option = "alert", .selected = true});
+    human.training_choice({.group = versatile, .option = "skilled", .selected = true});
+    check(skilled_count() == 3, "Versatile back on Skilled fills its three skills again");
+    const auto first_skilled = human.draft().training.at("species:human:skilled").front();
+    const auto skillful = human.draft().training.at("species:human:skillful").front();
+    human.training_choice(
+        {.group = "species:human:skillful", .option = skillful, .selected = false});
+    human.training_choice(
+        {.group = "species:human:skillful", .option = first_skilled, .selected = true});
+    check(skilled_count() == 3, "Skillful taking a Skilled skill leaves Skilled three skills");
+    const auto picked = human.draft().training.at("species:human:skilled");
+    for (const auto &skill : picked)
+    {
+        human.training_choice(
+            {.group = "species:human:skilled", .option = skill, .selected = false});
+    }
+    human.select(CreationField::gender, "female");
+    check(skilled_count() == 0, "Skills the player unticked stay unticked");
+    human.training_choice(
+        {.group = "species:human:skilled", .option = "stealth", .selected = true});
+    human.training_choice({.group = versatile, .option = "alert", .selected = true});
+    human.training_choice({.group = versatile, .option = "skilled", .selected = true});
+    check(human.draft().training.at("species:human:skilled").front() == "stealth",
+          "Versatile back on Skilled brings back the skill the player picked");
+
+    // A High Elf's own cantrip comes back after another lineage, and no class
+    // offers it a second time.
+    CharacterCreator elf(srd5::character_rules(), 7);
+    elf.select(CreationField::race, "elf");
+    constexpr std::string_view lineage = "species:elf:lineage", elf_cantrip = "species:elf:cantrip";
+    elf.training_choice({.group = lineage, .option = "high_elf", .selected = true});
+    elf.training_choice({.group = elf_cantrip, .option = "ray_of_frost", .selected = true});
+    elf.training_choice({.group = lineage, .option = "wood_elf", .selected = true});
+    elf.training_choice({.group = lineage, .option = "high_elf", .selected = true});
+    check(elf.draft().training.at(std::string(elf_cantrip)) ==
+              std::vector<std::string>{"ray_of_frost"},
+          "High Elf again brings back the cantrip the player picked");
+    elf.select(CreationField::character_class, "wizard");
+    const auto wizard_cantrips = elf.cantrip_options().options;
+    check(std::none_of(wizard_cantrips.begin(), wizard_cantrips.end(),
+                       [](const auto &option)
+                       {
+                           return option.id == "ray_of_frost";
+                       }),
+          "A Wizard does not learn the cantrip its High Elf lineage teaches");
+}
+
+// Picks every spell choice the Spell Choices page asks for, first options first.
+void fill_spell_choices(CharacterCreator &creator)
+{
+    for (const auto &cantrip : creator.cantrip_options().options)
+    {
+        if (creator.draft().cantrips &&
+            creator.draft().cantrips->size() >= creator.cantrip_options().count)
+        {
+            break;
+        }
+        creator.cantrip_choice(cantrip.id, true);
+    }
+    for (const auto &group : creator.spell_choice_options().learning)
+    {
+        for (unsigned i = 0; i < group.count && i < group.options.size(); ++i)
+        {
+            creator.spell_choice(
+                {.group = group.id, .option = group.options[i].id, .selected = true});
+        }
+    }
+    const auto options = creator.spell_choice_options();
+    for (unsigned i = 0; options.may_prepare && i < options.prepared_count; ++i)
+    {
+        creator.spell_choice(
+            {.group = "prepared", .option = options.preparation[i].id, .selected = true});
+    }
+}
+
+void spell_pick_tests()
+{
+    // A Human's Versatile Magic Initiate, its spells picked, then Alert: the
+    // spells go with the feat, and the character still evaluates.
+    CharacterCreator initiate(srd5::character_rules(), 7);
+    initiate.select(CreationField::race, "human");
+    initiate.training_choice(
+        {.group = "species:human:versatile", .option = "magic_initiate_wizard", .selected = true});
+    reach_spell_choices(
+        initiate, "cleric", Ability::wisdom,
+        {{.group = "class:cleric", .option = "medicine", .selected = true},
+         {.group = "class:cleric", .option = "persuasion", .selected = true},
+         {.group = "class:cleric:divine_order", .option = "protector", .selected = true}},
+        "soldier");
+    fill_spell_choices(initiate);
+    check(initiate.spell_choices_complete(), "A Versatile Magic Initiate Cleric picks its spells");
+    while (initiate.step() != CreationStep::race)
+    {
+        initiate.back();
+    }
+    initiate.training_choice(
+        {.group = "species:human:versatile", .option = "alert", .selected = true});
+    check(std::none_of(initiate.draft().spells->learning.begin(),
+                       initiate.draft().spells->learning.end(),
+                       [](const auto &group)
+                       {
+                           return group.first.starts_with("feat:magic_initiate_wizard");
+                       }) &&
+              !initiate.draft().spells->prepared->empty(),
+          "Versatile off Magic Initiate takes its spell picks with it, not the class's");
+    (void)initiate.sheet();
+
+    // Thaumaturge to Protector drops the cantrip the order gave.
+    CharacterCreator cleric(srd5::character_rules(), 7);
+    reach_spell_choices(
+        cleric, "cleric", Ability::wisdom,
+        {{.group = "class:cleric", .option = "medicine", .selected = true},
+         {.group = "class:cleric", .option = "persuasion", .selected = true},
+         {.group = "class:cleric:divine_order", .option = "thaumaturge", .selected = true}},
+        "soldier");
+    fill_spell_choices(cleric);
+    check(cleric.draft().cantrips->size() == 4, "A Thaumaturge learns four cantrips");
+    cleric.back();
+    cleric.training_choice(
+        {.group = "class:cleric:divine_order", .option = "protector", .selected = true});
+    check(cleric.draft().cantrips->size() == 3,
+          "A Protector keeps three of the Thaumaturge's four cantrips");
+    cleric.next();
+    check(cleric.spell_choices_complete(), "The Protector's spell choices are still complete");
+
+    // Another background keeps the Wizard's spellbook and prepared spells.
+    CharacterCreator wizard(srd5::character_rules(), 7);
+    reach_spell_choices(wizard, "wizard", Ability::intelligence,
+                        {{.group = "class:wizard", .option = "history", .selected = true},
+                         {.group = "class:wizard", .option = "investigation", .selected = true}},
+                        "soldier");
+    fill_spell_choices(wizard);
+    const auto spells = wizard.draft().spells;
+    while (wizard.step() != CreationStep::attributes)
+    {
+        wizard.back();
+    }
+    wizard.select(CreationField::background, "criminal");
+    check(wizard.draft().spells == spells, "Another background keeps the Wizard's spells");
 }
 
 } // namespace
@@ -1257,6 +1408,7 @@ int main()
         additional_portrait_tests();
         art_tests();
         ordinary_creation_tests();
+        spell_pick_tests();
         std::cout << "Character tests passed\n";
         return 0;
     }

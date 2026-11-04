@@ -759,7 +759,8 @@ void add_initiate_learning(SpellChoiceOptions &result, const CharacterSheet &she
         };
         const auto known = [&](std::string_view id)
         {
-            return std::any_of(sheet.grants.begin(), sheet.grants.end(),
+            return species_cantrip(sheet.grants, id) ||
+                   std::any_of(sheet.grants.begin(), sheet.grants.end(),
                                [&](const auto &g)
                                {
                                    return g.id == "spell:" + std::string(id);
@@ -2086,6 +2087,17 @@ std::vector<InitiateSpells> lineage_spells(std::span<const FeatureGrant> grants,
                           "longstrider"});
     }
     return result;
+}
+
+bool species_cantrip(std::span<const FeatureGrant> grants, std::string_view cantrip)
+{
+    const auto taught = lineage_spells(grants, 1);
+    return std::any_of(taught.begin(), taught.end(),
+                       [&](const auto &entry)
+                       {
+                           return std::find(entry.spells.begin(), entry.spells.end(), cantrip) !=
+                                  entry.spells.end();
+                       });
 }
 
 } // namespace opengold::srd5::detail

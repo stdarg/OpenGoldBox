@@ -1,4 +1,5 @@
 #include "training.h"
+#include "opengold/srd5.h"
 #include "weapon_mastery.h"
 #include "feature_grants.h"
 #include "spell_access.h"
@@ -378,19 +379,28 @@ std::vector<TrainingChoiceGroup> species_options(std::string_view race, std::str
                                      held_skills(race, background, choices, {"kept"})));
         // Versatile: an Origin feat, other than the one the background gives.
         // Skilled comes first, the creator's default: it changes no fight.
+        const auto origin_feat = [](std::string_view id, std::string_view description)
+        {
+            return CreationChoice{std::string(id), std::string(feat_label(id)),
+                                  std::string(description)};
+        };
         auto versatile = one_of(
             "species:human:versatile", "Versatile",
-            {{"skilled", "Skilled", "Training in three skills of your choice."},
-             {"alert", "Alert",
-              "Add your Proficiency Bonus to Initiative, and swap Initiative with an ally."},
-             {"magic_initiate_cleric", "Magic Initiate (Cleric)",
-              "Two Cleric cantrips and a level 1 Cleric spell, cast once per Long Rest without a slot."},
-             {"magic_initiate_druid", "Magic Initiate (Druid)",
-              "Two Druid cantrips and a level 1 Druid spell, cast once per Long Rest without a slot."},
-             {"magic_initiate_wizard", "Magic Initiate (Wizard)",
-              "Two Wizard cantrips and a level 1 Wizard spell, cast once per Long Rest without a slot."},
-             {"savage_attacker", "Savage Attacker",
-              "Once per turn, roll a weapon's damage dice twice and use either roll."}});
+            {origin_feat("skilled", "Training in three skills of your choice."),
+             origin_feat(
+                 "alert",
+                 "Add your Proficiency Bonus to Initiative, and swap Initiative with an ally."),
+             origin_feat(
+                 "magic_initiate_cleric",
+                 "Two Cleric cantrips and a level 1 Cleric spell, cast once per Long Rest without a slot."),
+             origin_feat(
+                 "magic_initiate_druid",
+                 "Two Druid cantrips and a level 1 Druid spell, cast once per Long Rest without a slot."),
+             origin_feat(
+                 "magic_initiate_wizard",
+                 "Two Wizard cantrips and a level 1 Wizard spell, cast once per Long Rest without a slot."),
+             origin_feat("savage_attacker",
+                         "Once per turn, roll a weapon's damage dice twice and use either roll.")});
         std::erase_if(versatile.options,
                       [&](const auto &option)
                       {

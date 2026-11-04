@@ -386,7 +386,7 @@ void CharacterCreationView::advancement_check()
                 "Fighter must retain separate creation and advancement grants");
         }
         const auto text = presentation::sheet_text(fighter);
-        if (!text.contains(i18n::text("savage attacker")) || !text.contains(i18n::text("defense")))
+        if (!text.contains(i18n::text("Savage Attacker")) || !text.contains(i18n::text("Defense")))
         {
             throw std::runtime_error("Sheet must display both acquired feats");
         }
@@ -468,7 +468,7 @@ void CharacterCreationView::advancement_check()
             throw std::runtime_error("Confirmed Archery lacks its entitlement grant");
         }
         if (!presentation::sheet_text(campaign_->member(archer).character)
-                 .contains(i18n::text("archery")))
+                 .contains(i18n::text("Archery")))
         {
             throw std::runtime_error("Sheet must display translated Archery");
         }
