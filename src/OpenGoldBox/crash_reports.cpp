@@ -259,6 +259,16 @@ void end_session()
 
 void crash_for_check() noexcept
 {
+#ifndef _WIN32
+    // The engine's crash handler ends in abort(), which leaves macOS a crash
+    // report and its "quit unexpectedly" box. Every test run crashes on purpose
+    // here, so this deliberate crash exits quietly once the handler has logged it.
+    std::signal(SIGABRT,
+                [](int)
+                {
+                    std::_Exit(EXIT_FAILURE);
+                });
+#endif
     throw_for_check();
 }
 } // namespace crash_reports

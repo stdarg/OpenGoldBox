@@ -259,7 +259,9 @@ a fresh home folder, a `PATH` of only the system's tools and no `OPENGOLD_*`
 overrides. It checks that the first launch waits in setup without writing
 settings, then plays character creation, shops, combat and recovery, saves,
 restarts and restores the saves. It also runs two copies at once and crashes the
-game on purpose to check the report. Nothing may be written into the app. Run it
+game on purpose to check the report; that crash exits quietly once the engine has
+logged it, so it leaves macOS no crash report and no "quit unexpectedly" box.
+Nothing may be written into the app. Run it
 alone with:
 
 ```bash

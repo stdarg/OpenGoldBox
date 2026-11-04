@@ -4,6 +4,7 @@
 #include "opengold/combat_demo.h"
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -37,9 +38,15 @@ class CachedCombat
     }
 
     // Call the change at once, as change().submit(command): a reference kept
-    // and used after a later snapshot() would leave that snapshot stale.
-    [[nodiscard]] opengold::CombatDemo &change() noexcept
+    // and used after a later snapshot() would leave that snapshot stale. A view
+    // whose fight failed to set up keeps its buttons, so this throws rather
+    // than hand out a missing demo.
+    [[nodiscard]] opengold::CombatDemo &change()
     {
+        if (!demo_)
+        {
+            throw std::logic_error("No fight has been set up");
+        }
         snapshot_.reset();
         legal_.reset();
         return *demo_;

@@ -62,6 +62,22 @@ void a_new_demo_drops_the_snapshot()
     check(fresh != played, "A fresh training combat has not moved yet");
     check(combat.snapshot().revision == fresh, "A new demo is not served the old snapshot");
 }
+
+// A view whose fight could not be set up still has its buttons; pressing one
+// must report the failure, not dereference a missing demo.
+void a_change_without_a_demo_throws()
+{
+    presentation::CachedCombat combat;
+    try
+    {
+        combat.change().training(42, false);
+    }
+    catch (const std::logic_error &)
+    {
+        return;
+    }
+    check(false, "A change without a demo throws");
+}
 } // namespace
 
 int main()
@@ -71,6 +87,7 @@ int main()
         snapshot_is_built_once_until_a_change();
         a_change_drops_the_snapshot();
         a_new_demo_drops_the_snapshot();
+        a_change_without_a_demo_throws();
         std::cout << "Cached combat checks passed\n";
         return 0;
     }
