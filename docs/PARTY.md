@@ -180,6 +180,16 @@ Untrained use is allowed under [SRD 5.2.1](https://media.dndbeyond.com/compendiu
   saves. General ability checks and additional saving-throw combat effects are
   not yet implemented.
 
+A shop's stock and a treasure pile draw in dark red what the chosen member
+cannot use fully, and a note under the heading says so: weapons, armor and
+shields it is not trained with, a scroll of the kind its class cannot read
+(arcane for a Bard, Sorcerer, Warlock or Wizard; divine for a Cleric, Druid,
+Paladin or Ranger; either for a level-13 Thief), an item with no SRD
+conversion, and an identified sword bound to another alignment. The colours
+change with the chosen member. Such items can still be bought or taken, and
+untrained gear equipped with the penalties above (the user's decision,
+2026-11-05). Nothing unidentified gives its magic away.
+
 Training uses the base level-one class traits; optional Cleric/Druid orders that
 add training are not selected by this creator. Equipping or removing gear rebuilds
 these effects from the current loadout. Duplicate weapon/armor/shield slots remain

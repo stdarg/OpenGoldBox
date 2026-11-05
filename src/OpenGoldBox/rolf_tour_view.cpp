@@ -1804,6 +1804,10 @@ String payment_notice(const CoinPayment &payment)
                          {"change", coin_list(coins.change)}});
 }
 
+// Dark red, for items the chosen member cannot use fully; light enough to read
+// on the panel's dark ground.
+const Color unusable_item_color{0.78f, 0.22f, 0.22f};
+
 // What the member carries, in whole pounds, rounded up so that a load at the
 // limit never reads as under it.
 std::int64_t carried_pounds(const opengold::CampaignParty &party, opengold::MemberId id)
@@ -2218,6 +2222,30 @@ void RolfTourView::refresh()
         }
         displayed_ticket_ = s.continue_ticket;
     }
+    // What the chosen member could not use fully is drawn in dark red, and
+    // drawn again whenever another member is chosen.
+    String unusable_note;
+    if (shopping && campaign_ && campaign_->selected())
+    {
+        const auto chosen = campaign_->selected();
+        const auto &listed = treasure ? session_->treasure_pile() : session_->shop_stock();
+        bool any_unusable = false;
+        for (int row = 0; row < choices->get_item_count() && row < static_cast<int>(listed.size());
+             ++row)
+        {
+            const bool usable = campaign_->can_use(chosen, listed[static_cast<std::size_t>(row)]);
+            any_unusable = any_unusable || !usable;
+            choices->set_item_custom_fg_color(row, usable ? Color() : unusable_item_color);
+        }
+        if (any_unusable)
+        {
+            unusable_note = i18n::format(
+                treasure
+                    ? N_("Dark red: {name} is not trained to use it, or cannot use it.")
+                    : N_("Dark red: {name} is not trained to use it, or cannot use it, but can still buy it."),
+                {{"name", String::utf8(campaign_->member(chosen).character.sheet().name.c_str())}});
+        }
+    }
     auto &dialogue_layout = required_node<Node>(*this, "DialogueLayout");
     dialogue_layout.call("play", shopping   ? "shopping"
                                  : multiple ? "multiple"
@@ -2245,14 +2273,23 @@ void RolfTourView::refresh()
                 line = loot_notice(loot);
             }
         }
-        required_node<RichTextLabel>(*this, "Dialogue")
-            .set_text(line.is_empty() ? i18n::text(N_("Choose what to take.")) : line);
+        // The dark red note follows the coins or the prompt, not a take or
+        // a warning.
+        if (line.is_empty() || (!treasure_leave_warned_ && treasure_notice_.is_empty()))
+        {
+            const auto lead = line.is_empty() ? i18n::text(N_("Choose what to take.")) : line;
+            line = unusable_note.is_empty() ? lead : lead + String("  ") + unusable_note;
+        }
+        required_node<RichTextLabel>(*this, "Dialogue").set_text(line);
     }
     else if (shopping)
     {
+        // A purchase's news first; otherwise the dark red note, else prices.
         required_node<RichTextLabel>(*this, "Dialogue")
-            .set_text(s.diagnostic.empty() ? i18n::text("Prices are per listed item or bundle.")
-                                           : i18n::text(s.diagnostic));
+            .set_text(!s.diagnostic.empty() ? i18n::text(s.diagnostic)
+                      : !unusable_note.is_empty()
+                          ? unusable_note
+                          : i18n::text("Prices are per listed item or bundle."));
     }
     if (answer && !s.diagnostic.empty())
     {

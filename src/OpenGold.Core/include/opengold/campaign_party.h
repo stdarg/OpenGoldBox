@@ -244,6 +244,9 @@ class CampaignParty
     [[nodiscard]] unsigned carried_weight(MemberId id) const;
     // The most the member can carry, in pounds.
     [[nodiscard]] unsigned carrying_capacity(MemberId id) const;
+    // Whether the member could use `item` fully (the rules' can_use_item):
+    // a shop or a treasure shows the rest in dark red.
+    [[nodiscard]] bool can_use(MemberId id, const por::Equipment &item) const;
     // Reads a Manual of Bodily Health the member carries (MAGIC-3):
     // Constitution and its maximum rise by 2, Hit Points with the new maximum,
     // and the book's magic is spent.

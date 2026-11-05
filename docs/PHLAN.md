@@ -106,7 +106,9 @@ purchase charges the item's price and adds its stored item/bundle to inventory.
 Stock may be purchased repeatedly: the game keeps no stock limits yet.
 The demo has a 16-entry inventory limit and rejects invalid/stale requests,
 unaffordable purchases and purchases when full without charging gold.
-Items cannot be sold; see [party](PARTY.md) for equipping and using them. Scripts that ask
+Items cannot be sold; see [party](PARTY.md) for equipping and using them.
+What the chosen buyer cannot use fully is listed in dark red, with a note
+that it can still be bought ([party](PARTY.md)). Scripts that ask
 for particular coins make change; see [coin payments](#coin-payments).
 
 ### Equipment conversion in the game

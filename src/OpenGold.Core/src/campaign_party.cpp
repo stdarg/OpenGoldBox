@@ -546,25 +546,34 @@ bool has_effects(const por::ItemRecord &raw)
 }
 } // namespace
 
-// The key the rules see for an item: it says so when the item's magic is not
-// yet identified. A charged item's uses are known either way.
-std::string rules_definition(const PartyMember &member, const InventoryItem &item)
+namespace
 {
-    auto definition = item.definition_id;
-    const auto enchantment = rules::parse_item_key(item.definition_id);
-    const auto source = member.item_sources.find(item.id);
-    if (source == member.item_sources.end() || source->second.identified())
+// The key the rules see for an original item converted to `definition`: it
+// says so when the item's magic is not yet identified. A charged item's uses
+// are known either way.
+std::string rules_key(std::string definition, const por::Equipment &source)
+{
+    if (source.identified())
     {
         return definition;
     }
-    const auto &raw = source->second.stored;
+    const auto enchantment = rules::parse_item_key(definition);
+    const auto &raw = source.stored;
     const bool worn_magic = por::is_magic(raw) && !raw.effect_codes[0];
-    const bool scroll = rules::parse_scroll_key(item.definition_id).has_value();
+    const bool scroll = rules::parse_scroll_key(definition).has_value();
     if (enchantment.bonus || enchantment.power != rules::ItemPower::none || worn_magic || scroll)
     {
         definition += ":unidentified";
     }
     return definition;
+}
+} // namespace
+
+std::string rules_definition(const PartyMember &member, const InventoryItem &item)
+{
+    const auto source = member.item_sources.find(item.id);
+    return source == member.item_sources.end() ? item.definition_id
+                                               : rules_key(item.definition_id, source->second);
 }
 
 namespace
@@ -1456,6 +1465,12 @@ unsigned CampaignParty::carried_weight(MemberId id) const
 unsigned CampaignParty::carrying_capacity(MemberId id) const
 {
     return rules_->carrying_capacity_pounds(member(id).character.sheet());
+}
+
+bool CampaignParty::can_use(MemberId id, const por::Equipment &item) const
+{
+    return rules_->can_use_item(member(id).character.sheet(),
+                                rules_key(equipment_conversion(item), item));
 }
 
 void CampaignParty::read_manual(MemberId id, std::uint64_t item)

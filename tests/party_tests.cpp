@@ -3348,6 +3348,25 @@ void carrying_capacity()
           "A member can carry right up to its capacity");
 }
 
+// A shop or treasure draws in dark red what the chosen member cannot use
+// fully: untrained weapons and armor, a scroll of the kind its class cannot
+// read, and an item with no SRD conversion.
+void usable_items()
+{
+    CampaignParty party(module());
+    const auto fighter = party.add_pc(character("fighter", "Ada"));
+    const auto wizard = party.add_pc(character("wizard", "Bo"));
+    auto scroll = item(61);
+    scroll.stored.effect_codes = {21, 94, 0};
+    check(party.can_use(fighter, item(36)) && party.can_use(fighter, item(55)),
+          "A Fighter uses a long sword and chain mail");
+    check(!party.can_use(wizard, item(36)) && !party.can_use(wizard, item(55)),
+          "A Wizard is not trained with a long sword or chain mail");
+    check(party.can_use(wizard, scroll) && !party.can_use(fighter, scroll),
+          "A Wizard reads an arcane scroll; a Fighter cannot");
+    check(!party.can_use(fighter, item(49)), "An item with no SRD conversion is not usable");
+}
+
 // A forwarding double answers as the module it wraps, for the virtuals
 // RulesModule gives a default body too (#238).
 void forwarding_defaults()
@@ -3387,6 +3406,7 @@ int main()
         all_weapon_equipment();
         goliath_occupancy();
         carrying_capacity();
+        usable_items();
         original_loot();
         roster_and_equipment();
         party_leader();

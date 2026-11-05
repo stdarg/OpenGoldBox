@@ -182,6 +182,19 @@ constexpr std::string_view magic_lock_picks = "magic_lock_picks";
 // member who carries one; a second stone adds nothing.
 constexpr std::string_view stone_of_good_luck = "stone_of_good_luck";
 
+// The classes whose spellcasting reads arcane scrolls, and divine ones.
+bool reads_arcane_scrolls(CharacterClass klass)
+{
+    return klass == CharacterClass::wizard || klass == CharacterClass::sorcerer ||
+           klass == CharacterClass::warlock || klass == CharacterClass::bard;
+}
+
+bool reads_divine_scrolls(CharacterClass klass)
+{
+    return klass == CharacterClass::cleric || klass == CharacterClass::paladin ||
+           klass == CharacterClass::druid || klass == CharacterClass::ranger;
+}
+
 bool trained(CharacterClass klass, std::span<const FeatureGrant> grants, std::string_view key)
 {
     // Starting-class grants, SRD 5.2.1 pp. 49 and 61, plus the Protector Divine
@@ -3753,11 +3766,8 @@ character_definition(std::string_view bytes,
     d.sorcery_points =
         klass == CharacterClass::sorcerer && level >= 2 ? static_cast<int>(level) : 0;
     d.pact_magic = klass == CharacterClass::warlock;
-    d.reads_arcane_scrolls = klass == CharacterClass::wizard ||
-                             klass == CharacterClass::sorcerer ||
-                             klass == CharacterClass::warlock || klass == CharacterClass::bard;
-    d.reads_divine_scrolls = klass == CharacterClass::cleric || klass == CharacterClass::paladin ||
-                             klass == CharacterClass::druid || klass == CharacterClass::ranger;
+    d.reads_arcane_scrolls = reads_arcane_scrolls(klass);
+    d.reads_divine_scrolls = reads_divine_scrolls(klass);
     d.magical_cunning = klass == CharacterClass::warlock && level >= 2 ? 1 : 0;
     d.dark_luck = klass == CharacterClass::warlock && level >= 6
                       ? std::max(1, ability_modifier(scores[Ability::charisma]))
@@ -33038,6 +33048,43 @@ class Module final : public RulesModule
                         });
         const auto strength = std::max(0, sheet.scores[rules::Ability::strength]);
         return static_cast<unsigned>(strength) * (powerful_build ? 30u : 15u);
+    }
+
+    // Untrained weapons, armor and shields, a scroll of the kind the class
+    // cannot read, an item with no SRD conversion, and an identified sword
+    // bound to another alignment are not fully usable. What is not yet
+    // identified says nothing of its magic.
+    bool can_use_item(const CharacterSheet &sheet, std::string_view key) const override
+    {
+        if (key.starts_with("por:unsupported:"))
+        {
+            return false;
+        }
+        const auto klass = detail::class_of(sheet);
+        if (const auto scroll = rules::parse_scroll_key(key))
+        {
+            return (scroll->arcane ? reads_arcane_scrolls(klass) : reads_divine_scrolls(klass)) ||
+                   detail::has_grant(sheet.grants, "feature:use_magic_device");
+        }
+        if (const auto item = rules::parse_item_key(key); !item.unidentified)
+        {
+            auto alignment = sheet.alignment;
+            std::transform(alignment.begin(), alignment.end(), alignment.begin(),
+                           [](unsigned char c)
+                           {
+                               return static_cast<char>(std::tolower(c));
+                           });
+            if ((item.power == rules::ItemPower::good && !alignment.ends_with("good")) ||
+                (item.power == rules::ItemPower::evil && !alignment.ends_with("evil")))
+            {
+                return false;
+            }
+        }
+        if (detail::weapon(key) || detail::armor(key))
+        {
+            return trained(klass, sheet.grants, key);
+        }
+        return true;
     }
 
     // The SRD's weight for a weapon, armor, a shield or adventuring gear the

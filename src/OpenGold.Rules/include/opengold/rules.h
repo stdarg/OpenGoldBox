@@ -1012,6 +1012,10 @@ class RulesModule
     [[nodiscard]] virtual EquipmentInfo equipment_info(std::string_view) const = 0;
     // The most weight, in pounds, the character can carry.
     [[nodiscard]] virtual unsigned carrying_capacity_pounds(const CharacterSheet &) const = 0;
+    // Whether the character can use the item fully: trained with it when it
+    // is a weapon, armor or a shield, and able to use it at all otherwise.
+    // An item may still be carried, and gear equipped, when it cannot.
+    [[nodiscard]] virtual bool can_use_item(const CharacterSheet &, std::string_view) const = 0;
     [[nodiscard]] virtual std::vector<EquipmentChoice>
     equipment_choices(const CharacterSheet &, std::span<const std::string>, unsigned) const = 0;
     [[nodiscard]] virtual EquipmentChange equipment_change(const CharacterSheet &,
