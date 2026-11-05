@@ -58,7 +58,9 @@ See [building the game and each demo](docs/BUILD.md). The scenes under
 - **New Phlan:** Rolf's tour, then the civilized town with its original
   dialogue, shops, inn rest, temple healing, street camping and four training
   halls. Every armor the shops sell converts to SRD equipment; stock that cannot
-  be equipped is marked before purchase. See [New Phlan](docs/PHLAN.md),
+  be equipped is marked before purchase. Any shop buys any item but a cursed
+  one for half its price, and any item but a cursed one can be dropped, gone
+  for good. See [New Phlan](docs/PHLAN.md),
   [recovery](docs/RECOVERY.md) and [training halls](docs/TRAINING-HALL.md).
 - **The campaign:** every area the original's map leads to, from the Slums,
   Kuto's Well and Podol Plaza to Sokal Keep by boat, the Temple of Bane, the
@@ -121,7 +123,6 @@ the original is in [DEVIATIONS](docs/DEVIATIONS.md).
   which the original leaves undefined); an event that reaches one stops with
   an error and is undone. The whole-map run reaches neither. See
   [ECL coverage](docs/ECL-COVERAGE.md#gaps).
-- Items cannot be sold or dropped.
 - No multiclassing, no saving during combat, no importing original saves.
 
 ### Next work
