@@ -326,6 +326,7 @@ The user approved on 2026-09-30 the following scope limits.
   planned. Progression then stopped at level 4; levels 5–10 and 11–15 were
   delivered later (LEVELS-1, LEVELS-2). See [the plan](SRD-IMPLEMENTATION.md#higher-levels-and-multiclassing).
 - **Multiclassing deferred:** M01–M06 are not part of the current plan.
+  Superseded on 2026-11-05 by [MULTI-1](#multi-1-2026-11-05-multiclassing).
 - **Pre-1.0 save compatibility:** a hard cutoff. Each save kind has one current
   format; older saves are rejected with a clear message and are not migrated.
   See [Saves](SAVES.md#pre-10-format-policy).
@@ -2394,3 +2395,35 @@ original's Sell and Drop:
   its wielder ([MAGIC-1](#magic-1-2026-10-17-the-originals-enchanted-weapons-and-armor)).
   Coins, gems and jewelry are in the party purse, not an inventory, and are not
   sold this way.
+
+## MULTI-1 (2026-11-05): multiclassing
+
+The user approved multiclassing as SRD 5.2.1 has it (pp. 24–25 and each
+class's "As a Multiclass Character"), replacing the deferral in
+[SCOPE-1](#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations), and
+answered the proposal's five questions on 2026-11-05:
+
+1. **The SRD's way, not the original's.** A character takes level 1 in a new
+   class in place of its next level in a current one. Pool of Radiance's
+   multi-class characters chose their classes at creation and split every
+   experience award between them, which fits AD&D's table for each class but
+   not the SRD's single table.
+2. **Every species** may multiclass; the original allowed only non-humans.
+3. **The SRD's prerequisite:** 13 in the primary ability of the new class and
+   of each class the character already has.
+4. **The level-up dialog's Class row** chooses: it starts on the current class
+   at its next level, then lists every other class at level 1, those whose 13
+   is not met greyed out with the missing score named.
+5. **Any hall** of any of the character's classes sells it experience sessions
+   and skill lessons.
+
+The rest follows the SRD: one experience pool with thresholds and Proficiency
+Bonus by total level, capped at total level 15
+([LEVELS-2](#levels-2-2026-10-15-level-cap-15)); the new class's per-level
+average HP; Hit Dice kept by die type; each class's partial entry training;
+class features and the subclass at that class's own levels; Extra Attack that
+does not stack; the higher of two Armor Class formulas applied automatically
+([AUTO-1](#auto-1-2026-09-30-automatic-choices-with-logging)); spells prepared
+for each class with its own ability, slots from the Multiclass Spellcaster
+table, Pact Magic slots beside them, cantrips scaling by total level. The
+original scripts see a character as each of its classes.
