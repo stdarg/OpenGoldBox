@@ -61,6 +61,18 @@ class ForwardingModule : public rules::RulesModule
         return rules_->can_use_item(sheet, key);
     }
 
+    rules::GearRating gear_rating(const rules::CharacterSheet &sheet,
+                                  std::span<const std::string> gear,
+                                  int target_armor_class) const override
+    {
+        return rules_->gear_rating(sheet, gear, target_armor_class);
+    }
+
+    bool suits(const rules::CharacterSheet &sheet, std::string_view key) const override
+    {
+        return rules_->suits(sheet, key);
+    }
+
     std::vector<rules::EquipmentChoice> equipment_choices(const rules::CharacterSheet &sheet,
                                                           std::span<const std::string> gear,
                                                           unsigned selected) const override

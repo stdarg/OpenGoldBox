@@ -1296,7 +1296,9 @@ The user chose how found magic items are identified (issue
 - **Hidden names as the original has them.** Until it is identified, an item
   shows only the name words its record does not hide ("Long Sword", "Chain
   Mail", "Potion"). Its bonus and powers work regardless, and its numbers on
-  the character sheet already count them.
+  the character sheet already count them. Since 2026-11-05 the name also says the item is
+  magic: "Long Sword (unidentified magic)"
+  ([EQUIP-1](#equip-1-2026-11-05-auto-equip-better-gear)).
 - **The shop's ID**, 200 gp per item, as in the original. Any item can be
   submitted; one with nothing hidden still costs the fee.
 - **The SRD's Identify spell** reveals one item's name. As CLASS-8 says, it
@@ -2329,3 +2331,42 @@ weight and Strength, not by a count of items (the 16-item limit is gone):
   an item the SRD gives no weight, such as a magic item, weighs what its
   original record says, ten coins to the pound. Coins weigh nothing (the
   2026-10-22 decision in [DEVIATIONS](DEVIATIONS.md#money)).
+
+## EQUIP-1 (2026-11-05): auto-equip better gear
+
+The user asked that a character put on gear better than what it wears when the
+gear is gained, and decided on 2026-11-04 and 2026-11-05:
+
+- **A setting**, "Automatically equip items better than currently equipped
+  items", on the Options screen's Gameplay page, On by default. Any time a
+  weapon, armor or shield reaches a character's pack (bought in a shop, or
+  found as treasure), it goes on when it is better; what it replaces goes to
+  the pack.
+- **Weapons** are better when their expected damage over a round of attacks
+  is higher: the chance to hit with the character's attack bonus for that
+  weapon (proficiency counts toward it, it is not a condition), times the
+  weapon's average damage with its magic, against Armor Class 13. Critical
+  Hits, Extra Attack, Great Weapon Fighting, a Finesse weapon's Sneak Attack
+  and the off-hand attack of two Light weapons count. Holding two weapons, a
+  better one replaces the weaker.
+- **Bows and crossbows** stay in the pack: a fight draws the carried one.
+- **Armor and shields** are better when the character's Armor Class with them
+  is higher. Armor or a shield the character is not trained with, and armor
+  whose Strength the character lacks, stays in the pack; equipping by hand
+  keeps the SRD's rules for them.
+- **Maximize defense or Maximize damage**: each character's own setting, on
+  its sheet while auto-equip is on (Maximize defense at first). It settles
+  every choice between a shield and a second hand on the weapon (a
+  two-handed weapon, or a Versatile one held in both hands): the higher Armor
+  Class first, or the higher damage first.
+- **Magic items are seen to be magic.** An unidentified magic item is named
+  "Long Sword (unidentified magic)" until identified, a change from the
+  original and from the SRD ([MAGIC-2](#magic-2-2026-10-18-identifying-magic-items)).
+  Auto-equip judges it by its plain stats, its bonus still unknown. A second
+  setting, "Do not equip unidentified magic items", shown while auto-equip is
+  on and On by default, leaves them in the pack.
+- **A cursed item** the party knows to be cursed stays in the pack. An
+  unidentified alignment-bound sword that refuses its taker burns them as
+  equipping it by hand would, and stays in the pack.
+- The shop or the treasure message says what each character equipped and
+  what went to the pack.

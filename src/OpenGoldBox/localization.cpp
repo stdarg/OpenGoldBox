@@ -135,6 +135,17 @@ String text(std::string_view source)
         return format(N_("{item} (Fast Hands)"),
                       {{"item", text(source.substr(0, source.size() - fast_hands.size()))}});
     }
+    // "Long Sword (unidentified magic)", a magic item not yet identified
+    // (EQUIP-1), likewise. The template is translated here, not by text(),
+    // which would take its own ending for an item's.
+    constexpr std::string_view unknown_magic = " (unidentified magic)";
+    if (translated == gs(source) && source.size() > unknown_magic.size() &&
+        source.ends_with(unknown_magic))
+    {
+        return substitute(
+            TranslationServer::get_singleton()->translate(N_("{item} (unidentified magic)")),
+            {{"item", text(source.substr(0, source.size() - unknown_magic.size()))}});
+    }
     // "Fireball (scroll)", a spell read from a scroll (MAGIC-6), likewise.
     constexpr std::string_view scroll = " (scroll)";
     if (translated == gs(source) && source.size() > scroll.size() && source.ends_with(scroll))

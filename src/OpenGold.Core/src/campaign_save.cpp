@@ -18,7 +18,7 @@ namespace
 constexpr std::size_t limit = 16 * 1024 * 1024;
 // The only campaign format this build reads or writes. Pre-1.0 formats are
 // rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 43;
+constexpr unsigned campaign_format = 44;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -385,6 +385,18 @@ template <bool Reading> struct SaveCodec
                v.training_after_short_rest, v.spells_after_short_rest);
     }
 
+    void field(Visited<GearPreference> v)
+    {
+        auto value = static_cast<std::uint8_t>(v);
+        field(value);
+        if constexpr (reading)
+        {
+            require(value <= static_cast<std::uint8_t>(GearPreference::damage),
+                    "Invalid gear preference");
+            v = static_cast<GearPreference>(value);
+        }
+    }
+
     void field(Visited<rules::VitalState> v)
     {
         fields(v.hit_points, v.dead, v.resources, v.description);
@@ -394,7 +406,7 @@ template <bool Reading> struct SaveCodec
     {
         fields(v.id, v.npc_source, v.vitals, v.equipped, v.morale, v.experience,
                v.last_rest_minutes, v.item_sources, v.creation_source, v.quick,
-               v.hall_experience_level);
+               v.hall_experience_level, v.gear_preference);
         // Grants are derived by replaying creation and advancement. Storing them
         // lets a load detect rules that would rebuild a different character.
         auto grants = v.character.sheet().grants;

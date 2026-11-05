@@ -218,6 +218,9 @@ struct TourSnapshot
     std::bitset<256> seen; // Persistent map knowledge: visited or visible in a shown 3D view.
     std::vector<CoinPayment> payments; // This event's payments; cleared when the next begins.
     std::vector<LootTaken> loot_taken; // This event's loot; cleared when the next begins.
+    // What auto-equip (EQUIP-1) put on from this event's loot, or from the
+    // last purchase while shopping; cleared with the loot and at each purchase.
+    std::vector<opengold::GearChange> gear_changes;
     // This step's checks against a locked door and whether it opened.
     std::vector<DoorCheck> door_checks;
     bool door_opened{};
@@ -313,6 +316,14 @@ class RolfTourSession
     // Throws, spending nothing, when the party is busy or the wand is empty.
     [[nodiscard]] std::optional<WandSign> point_wand_of_secrets(opengold::MemberId member,
                                                                 std::uint64_t item);
+
+    // Auto-equip (EQUIP-1), from the game's settings: nothing for off, or
+    // whether an unidentified magic item is put on. It applies to the items
+    // bought and found from then on.
+    void set_auto_equip(std::optional<opengold::UnidentifiedMagic> auto_equip) noexcept
+    {
+        auto_equip_ = auto_equip;
+    }
 
     // Outside events, and while shopping to choose the buyer or at a treasure
     // to choose who takes. The shop script receives whoever is selected when
@@ -602,6 +613,12 @@ class RolfTourSession
     std::vector<Equipment> treasure_;
     // Records a player's action in the game's log, with where the party stands.
     void log_player(const std::string &action) const;
+    // Auto-equip for each weapon, armor or shield a member gained since
+    // `before`, each member's items then.
+    using HeldItems = std::vector<std::pair<opengold::MemberId, std::uint64_t>>;
+    [[nodiscard]] HeldItems held_items() const;
+    void equip_gained(const HeldItems &before);
+    std::optional<opengold::UnidentifiedMagic> auto_equip_;
     std::optional<Image> picture_;
     std::optional<unsigned> picture_animation_id_; // The PIC record picture_ begins.
 

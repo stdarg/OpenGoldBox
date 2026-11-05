@@ -1432,6 +1432,25 @@ offset_bottom = -20
 metadata/layout_reference = Rect2(1606, 1024, 150, 36)
 text = "Make leader"
 
+[node name="GearPreferenceLabel" type="Label" parent="TownSheet"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24
+offset_top = -56
+offset_right = 164
+offset_bottom = -20
+metadata/layout_reference = Rect2(24, 1024, 140, 36)
+text = "Auto-equip"
+
+[node name="GearPreference" type="OptionButton" parent="TownSheet"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 174
+offset_top = -56
+offset_right = 444
+offset_bottom = -20
+metadata/layout_reference = Rect2(174, 1024, 270, 36)
+
 [node name="List" type="ItemList" parent="PoolModal"]
 anchor_bottom = 1.0
 offset_left = 20

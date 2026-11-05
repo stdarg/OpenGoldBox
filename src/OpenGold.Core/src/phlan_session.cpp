@@ -701,6 +701,7 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
 {
     // Loot left unclaimed until the party had room is named with this event.
     snapshot_.loot_taken.clear();
+    snapshot_.gear_changes.clear();
     claim_loot();
     synchronize_clock();
     snapshot_.payments.clear();
@@ -935,8 +936,10 @@ void RolfTourSession::claim_loot()
     }
     for (auto it = pending_loot_.begin(); it != pending_loot_.end();)
     {
+        const auto before = held_items();
         if (campaign_->award_loot(it->wealth, it->items, it->reward_id))
         {
+            equip_gained(before);
             LootTaken taken{.wealth = it->wealth};
             for (const auto &item : it->items)
             {
@@ -1004,6 +1007,8 @@ bool RolfTourSession::take_treasure(std::uint64_t ticket, std::size_t item)
     const auto taker = campaign_->selected();
     log_player("takes " + treasure_pile_[item].label() + " (item " + std::to_string(item + 1) +
                " of " + std::to_string(treasure_pile_.size()) + ")");
+    snapshot_.gear_changes.clear();
+    const auto before = held_items();
     try
     {
         campaign_->take_item(taker, treasure_pile_[item]);
@@ -1014,6 +1019,7 @@ bool RolfTourSession::take_treasure(std::uint64_t ticket, std::size_t item)
         ++snapshot_.revision;
         return false;
     }
+    equip_gained(before);
     treasure_pile_.erase(treasure_pile_.begin() + static_cast<std::ptrdiff_t>(item));
     snapshot_.diagnostic.clear();
     // A new ticket: the list the view shows has changed.
@@ -2304,6 +2310,8 @@ bool RolfTourSession::buy(std::uint64_t ticket, std::size_t item)
                std::to_string(treasure_.size()) + ")");
     if (campaign_)
     {
+        snapshot_.gear_changes.clear();
+        const auto before = held_items();
         try
         {
             campaign_->purchase(campaign_->selected(), offered);
@@ -2315,6 +2323,7 @@ bool RolfTourSession::buy(std::uint64_t ticket, std::size_t item)
             ++snapshot_.revision;
             return false;
         }
+        equip_gained(before);
         ++snapshot_.revision;
         return true;
     }
@@ -2334,6 +2343,56 @@ bool RolfTourSession::buy(std::uint64_t ticket, std::size_t item)
     snapshot_.diagnostic = "Bought " + offered.label() + " for " + std::to_string(price) + " gp.";
     ++snapshot_.revision;
     return true;
+}
+
+RolfTourSession::HeldItems RolfTourSession::held_items() const
+{
+    HeldItems held;
+    for (const auto &member : campaign_->state().roster)
+    {
+        for (const auto &item : member.character.inventory().items())
+        {
+            held.emplace_back(member.id, item.id);
+        }
+    }
+    return held;
+}
+
+void RolfTourSession::equip_gained(const HeldItems &before)
+{
+    if (!auto_equip_)
+    {
+        return;
+    }
+    for (const auto &[member, item] : held_items())
+    {
+        if (std::find(before.begin(), before.end(), std::pair{member, item}) != before.end())
+        {
+            continue;
+        }
+        if (auto change = campaign_->auto_equip(member, item, *auto_equip_))
+        {
+            if (diagnostic_log_enabled())
+            {
+                std::string line = change->name;
+                for (const auto &name : change->equipped)
+                {
+                    line += " equips " + name + ";";
+                }
+                for (const auto &name : change->unequipped)
+                {
+                    line += " packs " + name + ";";
+                }
+                if (!change->burned_by.empty())
+                {
+                    line += " is burned by " + change->burned_by + " for " +
+                            std::to_string(change->burn_damage);
+                }
+                log_diagnostic(LogPriority::info, "auto-equip", line);
+            }
+            snapshot_.gear_changes.push_back(std::move(*change));
+        }
+    }
 }
 
 bool RolfTourSession::leave_shop(std::uint64_t ticket)

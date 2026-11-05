@@ -104,6 +104,35 @@ struct SecretDoorRoll
     int die{}, needed{};
 };
 
+// Which way auto-equip (EQUIP-1) settles a choice between a shield and a
+// second hand on the weapon: each character's own setting, on its sheet.
+enum class GearPreference : std::uint8_t
+{
+    defense, // the higher Armor Class first, then the higher damage
+    damage   // the higher damage first, then the higher Armor Class
+};
+
+// Whether auto-equip puts on a magic item the party has not identified.
+enum class UnidentifiedMagic : std::uint8_t
+{
+    equip,
+    skip
+};
+
+// What auto-equip did with an item a member gained (EQUIP-1), by the names
+// the party knows the items by.
+struct GearChange
+{
+    MemberId member{};
+    std::string name;                    // The member's.
+    std::vector<std::string> equipped;   // The gained item first.
+    std::vector<std::string> unequipped; // Items that went to the pack.
+    // An alignment-bound sword (#267) that burned its taker for this much and
+    // stayed in the pack; nothing was equipped.
+    std::string burned_by;
+    int burn_damage{};
+};
+
 struct PartyMember
 {
     MemberId id{};
@@ -120,6 +149,7 @@ struct PartyMember
     // The level at which the member last bought a hall's experience; 0 for never.
     unsigned hall_experience_level{};
     bool quick{}; // The computer plays it in fights (Quick) until the player takes control.
+    GearPreference gear_preference{GearPreference::defense};
 };
 
 struct HazardHit
@@ -190,6 +220,7 @@ class CampaignParty
     // in this fight and later ones until the player takes control of the
     // party. Settings, so they change during a fight too.
     void set_quick(MemberId id);
+    void set_gear_preference(MemberId id, GearPreference preference);
     void take_control();
     void set_quick_magic(bool on);
     // A member left on the field when the party flees is lost for good: dead
@@ -247,6 +278,14 @@ class CampaignParty
     // Whether the member could use `item` fully (the rules' can_use_item):
     // a shop or a treasure shows the rest in dark red.
     [[nodiscard]] bool can_use(MemberId id, const por::Equipment &item) const;
+    // Auto-equip (EQUIP-1): a melee weapon, armor or shield the member just
+    // gained goes on when the gear it makes rates better than what the
+    // member wears, by the member's gear preference; whatever it replaces
+    // goes to the pack. Untrained armor, armor the member lacks the Strength
+    // for, a known cursed item and, when asked, an unidentified magic item
+    // stay in the pack. Nothing is returned when nothing changed.
+    std::optional<GearChange> auto_equip(MemberId id, std::uint64_t item,
+                                         UnidentifiedMagic unidentified);
     // Reads a Manual of Bodily Health the member carries (MAGIC-3):
     // Constitution and its maximum rise by 2, Hit Points with the new maximum,
     // and the book's magic is spent.
@@ -455,6 +494,13 @@ class CampaignParty
     [[nodiscard]] unsigned next_level(const PartyMember &m) const;
     [[nodiscard]] std::vector<DoorAttempt> cast_knock(int difficulty);
     void change_equipment(MemberId id, std::uint64_t item, rules::EquipmentOperation operation);
+    // One way auto-equip could put an item on: equipment changes in order.
+    using EquipmentPlan = std::vector<std::pair<std::uint64_t, rules::EquipmentOperation>>;
+    [[nodiscard]] std::vector<EquipmentPlan>
+    equipment_plans(const PartyMember &m, std::uint64_t item, UnidentifiedMagic unidentified) const;
+    // The member's gear rated as the party knows it: an unidentified item by
+    // its plain stats.
+    [[nodiscard]] rules::GearRating known_gear_rating(const PartyMember &m) const;
     std::optional<rules::HazardAttackResult> refuse_bound_weapon(MemberId id, std::uint64_t item);
     std::unique_ptr<rules::RulesModule> rules_;
     PartyState state_;

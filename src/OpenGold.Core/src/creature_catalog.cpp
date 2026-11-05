@@ -414,9 +414,12 @@ std::string Equipment::label() const
         return stored.stored_name;
     }
     const bool known = identified();
+    // Only magic items hide name words, and the party sees that one is magic
+    // (the user, 2026-11-05; EQUIP-1).
+    constexpr std::string_view unknown_magic = " (unidentified magic)";
     if (!decoded_name.empty() && (known || !unidentified_name.empty()))
     {
-        return known ? decoded_name : unidentified_name;
+        return known ? decoded_name : unidentified_name + std::string(unknown_magic);
     }
     const auto type_name = item_type_name(stored.type).empty() ? worn_type_name(stored.type)
                                                                : item_type_name(stored.type);
@@ -428,7 +431,7 @@ std::string Equipment::label() const
     {
         name += (stored.magic_bonus > 0 ? " +" : " ") + std::to_string(stored.magic_bonus);
     }
-    return name;
+    return known ? name : name + std::string(unknown_magic);
 }
 
 CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)

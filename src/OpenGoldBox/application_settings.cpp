@@ -234,6 +234,26 @@ bool save_original_combat_art(bool original)
     return save("art", "combat", original ? "original" : "new");
 }
 
+bool auto_equip()
+{
+    return read("gear", "auto_equip").to_lower() != "off";
+}
+
+bool skip_unidentified_magic()
+{
+    return read("gear", "unidentified_magic").to_lower() != "equip";
+}
+
+bool save_auto_equip(bool on)
+{
+    return save("gear", "auto_equip", on ? "on" : "off");
+}
+
+bool save_skip_unidentified_magic(bool skip)
+{
+    return save("gear", "unidentified_magic", skip ? "skip" : "equip");
+}
+
 bool save_combat_zoom(int percent)
 {
     return save("combat", "combat_zoom", std::clamp(percent, 10, 1000));

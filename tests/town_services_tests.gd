@@ -25,6 +25,8 @@ var records := []
 var hp_pattern := RegEx.new()
 var gold_pattern := RegEx.new()
 var buyer_pattern := RegEx.new()
+# Purchases auto-equip put on (EQUIP-1, on by default): the shop says so.
+var auto_equipped := 0
 
 func _initialize() -> void:
 	hp_pattern.compile("HP (-?\\d+)/(\\d+)")
@@ -232,6 +234,8 @@ func buy(index: int, shown: String, affordable: bool) -> void:
 		bug("an item costs other than its price", shown + ": gold " + str(before[1]) + " -> " + str(after[1]))
 	if after[0] != before[0] or after[2] < before[2] or not dialogue().begins_with("Bought"):
 		bug("a bought item does not reach the buyer", shown + ": " + str(before) + " -> " + str(after) + " '" + dialogue() + "'")
+	if dialogue().contains(" equips "):
+		auto_equipped += 1
 
 # --- Temples ----------------------------------------------------------------
 
@@ -513,7 +517,10 @@ func run() -> void:
 		if await load_fixture("shop-15-8.ogs"):
 			places += 1
 			await check_watch()
-	print("Checked ", places, " places; ", bugs.size(), " distinct problems")
+	var shops := files.filter(func(f): return f.begins_with("shop-") and (only == "" or f.begins_with(only)))
+	if not shops.is_empty() and only == "" and auto_equipped == 0:
+		bug("auto-equip never put on a bought weapon, armor or shield", "")
+	print("Checked ", places, " places; ", bugs.size(), " distinct problems; ", auto_equipped, " purchases auto-equipped")
 	for key in bugs:
 		print("  ", bugs[key].size(), "x ", key, "\n      e.g. ", bugs[key][0])
 	if bugs.is_empty() and places > 0:

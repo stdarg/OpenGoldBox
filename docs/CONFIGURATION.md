@@ -25,6 +25,10 @@ legendary="hard"
 [art]
 walls="new"
 combat="new"
+
+[gear]
+auto_equip="on"
+unidentified_magic="skip"
 ```
 
 Use the actual folder containing `START.EXE`, `ITEMS`, and the original `.DAX`
@@ -40,8 +44,8 @@ files receive the default. See
 [DIFF-1](SRD-DECISIONS.md#diff-1-2026-10-21-difficulty-and-monsters-that-use-their-items).
 
 The in-game menu's **Options** screen (Escape) sets these settings and writes
-them at once: under Gameplay `difficulty`, `encounter_challenge` and the
-`[monsters]` section below; under Interface `language`, which takes effect the
+them at once: under Gameplay `difficulty`, `encounter_challenge`, the
+`[gear]` section and the `[monsters]` section below; under Interface `language`, which takes effect the
 next time the game starts, `combat_zoom`, read when a fight opens, and the
 `[art]` section below, which takes effect at once.
 
@@ -51,6 +55,13 @@ and Wild Shape's and summoned forms; party members keep theirs). Each is `new`
 or `original`; the default, also used for any other value, is `new`, and new
 settings files receive it. The Options screen's 3D view art and Combat art
 switch them, redrawing the view or the fight on screen at once.
+
+`[gear]` is auto-equip ([EQUIP-1](SRD-DECISIONS.md#equip-1-2026-11-05-auto-equip-better-gear)):
+`auto_equip` is `on` or `off`, and `unidentified_magic` is `skip`, which
+leaves an unidentified magic item in the pack, or `equip`. The defaults, also
+used for any other value, are `on` and `skip`. The Options screen shows
+"Do not equip unidentified magic items" only while auto-equip is on; both take
+effect when the menu closes, for the next item a character gains.
 
 `[monsters]` switches monster abilities by difficulty. Each key names an
 ability (`legendary`, `parry`, `breath`; the

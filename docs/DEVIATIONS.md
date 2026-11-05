@@ -81,6 +81,16 @@ Add an entry whenever a new departure is decided.
   a shop's ID revealed a magic item's name. OpenGoldBox keeps it and adds the
   SRD's Identify spell.
   [MAGIC-2](SRD-DECISIONS.md#magic-2-2026-10-18-identifying-magic-items).
+- **Magic items are seen to be magic** (2026-11-05). In the original an
+  unidentified magic sword was only a "Long Sword". OpenGoldBox names it "Long
+  Sword (unidentified magic)" until it is identified; its bonus and powers stay
+  hidden.
+  [EQUIP-1](SRD-DECISIONS.md#equip-1-2026-11-05-auto-equip-better-gear).
+- **Auto-equip** (2026-11-05). In the original a character put on gear only
+  when the player readied it. OpenGoldBox, unless the Options screen turns it
+  off, puts a better weapon, armor or shield on the character who gains it, by
+  each character's Maximize defense or Maximize damage.
+  [EQUIP-1](SRD-DECISIONS.md#equip-1-2026-11-05-auto-equip-better-gear).
 - **Worn items** (2026-10-20). A Ring of Protection adds its bonus to saving
   throws as well as Armor Class, and it keeps working beside magic armor, which
   in the original cancelled it. Gauntlets of Ogre Power give the SRD's

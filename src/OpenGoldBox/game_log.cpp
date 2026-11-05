@@ -43,14 +43,17 @@ void log_head()
     {
         abilities += (abilities.is_empty() ? "" : ", ") + String::utf8(ability.c_str());
     }
-    log_session("settings: difficulty " +
-                String(opengold::difficulty_names[static_cast<std::size_t>(settings::difficulty())]
-                           .data()) +
-                ", encounter challenge " + String::num_uint64(settings::encounter_challenge()) +
-                ", combat zoom " + String::num_int64(settings::combat_zoom_percent()) +
-                "%, original wall art " + (settings::original_wall_art() ? "on" : "off") +
-                ", original combat art " + (settings::original_combat_art() ? "on" : "off") +
-                ", monster abilities off: " + (abilities.is_empty() ? "none" : abilities));
+    log_session(
+        "settings: difficulty " +
+        String(
+            opengold::difficulty_names[static_cast<std::size_t>(settings::difficulty())].data()) +
+        ", encounter challenge " + String::num_uint64(settings::encounter_challenge()) +
+        ", combat zoom " + String::num_int64(settings::combat_zoom_percent()) +
+        "%, original wall art " + (settings::original_wall_art() ? "on" : "off") +
+        ", original combat art " + (settings::original_combat_art() ? "on" : "off") +
+        ", auto-equip " + (settings::auto_equip() ? "on" : "off") + ", unidentified magic " +
+        (settings::skip_unidentified_magic() ? "left packed" : "equipped") +
+        ", monster abilities off: " + (abilities.is_empty() ? "none" : abilities));
 }
 
 void remove_oldest_logs()

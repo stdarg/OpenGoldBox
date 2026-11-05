@@ -1,8 +1,12 @@
 #include "town_sheet_dialog.h"
+#include "application_settings.h"
 #include "character_sheet_text.h"
 #include "godot_nodes.h"
 #include "guarded_handlers.h"
+#include "localization.h"
 #include <godot_cpp/classes/button.hpp>
+#include <godot_cpp/classes/label.hpp>
+#include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/rich_text_label.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 #include <algorithm>
@@ -26,6 +30,12 @@ void TownSheetDialog::connect_controls()
         .connect("pressed", presentation::guarded(this, &TownSheetDialog::make_leader));
     required_node<Button>(*this, "Close")
         .connect("pressed", presentation::guarded(this, &TownSheetDialog::close));
+    // In the order of opengold::GearPreference.
+    auto &preference = required_node<OptionButton>(*this, "GearPreference");
+    preference.add_item(i18n::text(N_("Maximize defense")));
+    preference.add_item(i18n::text(N_("Maximize damage")));
+    preference.connect("item_selected",
+                       presentation::guarded(this, &TownSheetDialog::gear_preference_selected));
     connect("close_requested", presentation::guarded(this, &TownSheetDialog::close));
 }
 
@@ -63,6 +73,11 @@ void TownSheetDialog::show_member(std::int64_t slot)
     required_node<RichTextLabel>(*this, "Text")
         .call("render", presentation::sheet_text(campaign, m));
     required_node<Button>(*this, "MakeLeader").set_disabled(m.id == campaign.leader());
+    const bool auto_equip = settings::auto_equip();
+    required_node<Label>(*this, "GearPreferenceLabel").set_visible(auto_equip);
+    auto &preference = required_node<OptionButton>(*this, "GearPreference");
+    preference.set_visible(auto_equip);
+    preference.select(static_cast<int>(m.gear_preference));
     popup_centered();
 }
 
@@ -75,6 +90,14 @@ void TownSheetDialog::make_leader()
     campaign_().make_leader(member_);
     required_node<Button>(*this, "MakeLeader").set_disabled(true);
     leader_changed_();
+}
+
+void TownSheetDialog::gear_preference_selected(std::int64_t index)
+{
+    if (member_)
+    {
+        campaign_().set_gear_preference(member_, static_cast<opengold::GearPreference>(index));
+    }
 }
 
 void TownSheetDialog::close()

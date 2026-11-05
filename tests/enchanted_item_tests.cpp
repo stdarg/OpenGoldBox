@@ -285,12 +285,13 @@ void no_attunement()
     {
         return party.member(id).character.inventory().find(sword)->get().name;
     };
-    check(name() == "Long Sword", "Flame Tongue is found as a Long Sword");
+    check(name() == "Long Sword (unidentified magic)",
+          "Flame Tongue is found as an unidentified magic Long Sword");
     party.equip(id, sword);
     const auto rested = party.rest(RestKind::short_rest);
     check(rested && rested->spending, "Finish a Short Rest");
     party.finish_short_rest(*rested->spending);
-    check(name() == "Long Sword", "A rest does not reveal its name");
+    check(name() == "Long Sword (unidentified magic)", "A rest does not reveal its name");
 }
 
 // The original's cursed Broad Sword cannot be put down once equipped.

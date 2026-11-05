@@ -29464,6 +29464,78 @@ std::vector<TrainingChoiceGroup> only(TrainingChoiceGroup group)
     return result;
 }
 
+// A damage die's average; with Great Weapon Fighting a 1 or 2 counts as a 3.
+double average_die(int sides, bool great_weapon_fighting)
+{
+    double total = 0;
+    for (int face = 1; face <= sides; ++face)
+    {
+        total += great_weapon_fighting ? std::max(face, 3) : face;
+    }
+    return sides > 0 ? total / sides : 0;
+}
+
+// One melee weapon attack as auto-equip weighs it (EQUIP-1).
+struct ExpectedAttack
+{
+    int attack_bonus{};
+    Dice dice;
+    int damage_bonus{};
+    int critical_from{20};
+    bool disadvantage{}, great_weapon_fighting{};
+};
+
+// The chance of a hit and the damage a hit is expected to deal, over every
+// d20 face (pairs of faces with Disadvantage): a 1 misses, a 20 hits, and a
+// Critical Hit doubles the dice.
+struct AttackOdds
+{
+    double hit_chance{}, damage{};
+};
+
+AttackOdds attack_odds(const ExpectedAttack &attack, int target_armor_class)
+{
+    const double dice =
+        attack.dice.count * average_die(attack.dice.sides, attack.great_weapon_fighting);
+    AttackOdds odds;
+    for (int face = 1; face <= 20; ++face)
+    {
+        // With Disadvantage the lower of two dice shows `face`.
+        const double chance =
+            attack.disadvantage
+                ? ((21.0 - face) * (21.0 - face) - (20.0 - face) * (20.0 - face)) / 400.0
+                : 1.0 / 20.0;
+        const bool critical = face >= attack.critical_from;
+        const bool hit = face != 1 && (critical || face == 20 ||
+                                       face + attack.attack_bonus >= target_armor_class);
+        if (hit)
+        {
+            odds.hit_chance += chance;
+            odds.damage +=
+                chance * std::max(0.0, (critical ? 2 * dice : dice) + attack.damage_bonus);
+        }
+    }
+    return odds;
+}
+
+// A creature's melee weapon attack, from its definition, with the weapon's
+// enchantment added to the attack and the damage.
+ExpectedAttack melee_attack(const Definition &d)
+{
+    auto dice = d.melee;
+    if (d.versatile_sides && d.weapon_hands == 2)
+    {
+        dice.sides = d.versatile_sides;
+    }
+    return {.attack_bonus = d.melee_bonus + d.melee_magic,
+            .dice = dice,
+            .damage_bonus = dice.bonus + d.melee_magic,
+            .critical_from = d.critical_from,
+            .disadvantage = d.str_dex_disadvantage || d.melee_heavy_disadvantage,
+            .great_weapon_fighting =
+                d.great_weapon_fighting && !d.weapon_label.empty() && d.weapon_hands == 2};
+}
+
 // The rules content `bytes` hold, without the monster ability rows its own
 // `off` rows and `switched` leave out ("ability" or "ability creature").
 Content read_content(std::string_view bytes, const std::set<std::string> &switched);
@@ -33126,7 +33198,7 @@ class Module final : public RulesModule
         }
         if (const auto *item = detail::weapon(key))
         {
-            return {EquipmentSlot::weapon, item->hands};
+            return {.slot = EquipmentSlot::weapon, .hands = item->hands, .ranged = item->ranged};
         }
         if (detail::is_shield(key))
         {
@@ -33271,6 +33343,59 @@ class Module final : public RulesModule
         }
         (void)character_profile(sheet, gear);
         return result;
+    }
+
+    // A round's melee attacks against the target (EQUIP-1): the Attack
+    // action's attacks with the first weapon held, a Sneak Attack once with a
+    // Finesse weapon, and the Bonus Action attack with a second Light weapon
+    // when the first is Light too.
+    GearRating gear_rating(const CharacterSheet &sheet, std::span<const std::string> gear,
+                           int target_armor_class) const override
+    {
+        const auto profile = character_profile(sheet, gear);
+        const auto d = character_definition(profile.data);
+        GearRating rating{.armor_class = profile.armor_class};
+        const auto main = attack_odds(melee_attack(d), target_armor_class);
+        const int attacks = 1 + d.extra_attacks;
+        rating.round_damage = attacks * main.damage;
+        if (d.sneak_level && d.finesse && !d.ranged_weapon)
+        {
+            const double missed_all = std::pow(1.0 - main.hit_chance, attacks);
+            rating.round_damage += (1.0 - missed_all) *
+                                   detail::sneak_attack_dice(d.sneak_level).count *
+                                   average_die(6, false);
+        }
+        std::vector<std::size_t> weapons;
+        for (std::size_t i = 0; i < gear.size(); ++i)
+        {
+            if (detail::weapon(gear[i]))
+            {
+                weapons.push_back(i);
+            }
+        }
+        if (weapons.size() == 2 && detail::weapon(gear[weapons[0]])->light &&
+            detail::weapon(gear[weapons[1]])->light)
+        {
+            // The gear without the first weapon holds the second as its own.
+            std::vector<std::string> other_hand(gear.begin(), gear.end());
+            other_hand.erase(other_hand.begin() + static_cast<std::ptrdiff_t>(weapons[0]));
+            auto attack =
+                melee_attack(character_definition(character_profile(sheet, other_hand).data));
+            // Without Two-Weapon Fighting the ability adds no positive damage.
+            if (!d.two_weapon_fighting)
+            {
+                attack.damage_bonus -= attack.dice.bonus - std::min(0, attack.dice.bonus);
+            }
+            rating.round_damage += attack_odds(attack, target_armor_class).damage;
+        }
+        return rating;
+    }
+
+    bool suits(const CharacterSheet &sheet, std::string_view key) const override
+    {
+        const auto *armor = detail::armor(key);
+        return !armor || (trained(detail::class_of(sheet), sheet.grants, key) &&
+                          sheet.scores[Ability::strength] >= armor->strength);
     }
 
     AbilityCheckModifier ability_check(const CharacterSheet &sheet,

@@ -43,6 +43,9 @@ class TownSheetDialog : public godot::Window
     opengold::MemberId member_{};
 
     void make_leader();
+    // The member's auto-equip preference (EQUIP-1), shown only while the
+    // Options screen has auto-equip on.
+    void gear_preference_selected(std::int64_t index);
     void close();
 };
 #endif

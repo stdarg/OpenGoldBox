@@ -81,8 +81,8 @@ class RolfTourView : public godot::Control
     void restore_campaign(std::shared_ptr<opengold::CampaignParty> party,
                           opengold::por::RolfTourSession session);
     void request_save(bool saving);
-    // Reads the difficulty and encounter challenge again, as the Options
-    // screen changed them.
+    // Reads the difficulty, encounter challenge and auto-equip settings
+    // again, as the Options screen changed them.
     void apply_settings();
 
     // The party check's save-and-reload hook; only that check sets one.
@@ -124,6 +124,8 @@ class RolfTourView : public godot::Control
     void advance_frame(double delta);
     void respond_to_input(const godot::Ref<godot::InputEvent> &event);
     std::optional<opengold::por::RolfTourSession> session_;
+    // Auto-equip as the Options screen sets it (EQUIP-1): nothing for off.
+    [[nodiscard]] static std::optional<opengold::UnidentifiedMagic> auto_equip_setting();
     std::shared_ptr<opengold::CampaignParty> campaign_;
     std::array<godot::Ref<godot::ImageTexture>, 3> sprites_;
     godot::Ref<godot::ImageTexture> wall_view_;

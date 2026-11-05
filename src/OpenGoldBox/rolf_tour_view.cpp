@@ -429,6 +429,7 @@ void RolfTourView::restart()
                                                    game_monsters()));
             session_->encounter_challenge(settings::encounter_challenge());
             session_->difficulty(settings::difficulty());
+            session_->set_auto_equip(auto_equip_setting());
             use_shop_data(*session_);
             session_->companion_rules(opengold::srd5::character_rules(), game_companions());
             if (campaign_)
@@ -530,12 +531,23 @@ void RolfTourView::request_menu()
     emit_signal("menu_requested");
 }
 
+std::optional<opengold::UnidentifiedMagic> RolfTourView::auto_equip_setting()
+{
+    if (!settings::auto_equip())
+    {
+        return std::nullopt;
+    }
+    return settings::skip_unidentified_magic() ? opengold::UnidentifiedMagic::skip
+                                               : opengold::UnidentifiedMagic::equip;
+}
+
 void RolfTourView::apply_settings()
 {
     if (session_)
     {
         session_->difficulty(settings::difficulty());
         session_->encounter_challenge(settings::encounter_challenge());
+        session_->set_auto_equip(auto_equip_setting());
     }
 }
 
@@ -1872,6 +1884,49 @@ String loot_notice(const LootTaken &loot)
     return i18n::format(N_("The party takes {loot}."), {{"loot", String(", ").join(parts)}});
 }
 
+// What auto-equip (EQUIP-1) did for one member.
+String gear_change_notice(const opengold::GearChange &change)
+{
+    const auto name = String::utf8(change.name.c_str());
+    const auto items = [](const std::vector<std::string> &names)
+    {
+        PackedStringArray parts;
+        for (const auto &item : names)
+        {
+            parts.push_back(i18n::text(item));
+        }
+        return String(", ").join(parts);
+    };
+    if (!change.burned_by.empty())
+    {
+        return i18n::format(
+            N_("{name} takes up {item}, which burns them for {damage} damage and stays in the pack."),
+            {{"name", name},
+             {"item", i18n::text(change.burned_by)},
+             {"damage", change.burn_damage}});
+    }
+    auto notice = i18n::format(N_("{name} equips {items}."),
+                               {{"name", name}, {"items", items(change.equipped)}});
+    if (!change.unequipped.empty())
+    {
+        notice += " " + i18n::plural(N_("{items} goes to the pack."), N_("{items} go to the pack."),
+                                     static_cast<int>(change.unequipped.size()),
+                                     {{"items", items(change.unequipped)}});
+    }
+    return notice;
+}
+
+// What auto-equip put on, a line for each member, each line first.
+String gear_change_notices(const TourSnapshot &s)
+{
+    String notices;
+    for (const auto &change : s.gear_changes)
+    {
+        notices += "\n" + gear_change_notice(change);
+    }
+    return notices;
+}
+
 String door_check_notice(const DoorCheck &check)
 {
     const auto name = String::utf8(check.member.c_str());
@@ -1935,6 +1990,7 @@ String event_dialogue(const std::string &resource, const TourSnapshot &s)
             result += (result.is_empty() ? "" : "\n") + notice;
         }
     }
+    result += gear_change_notices(s);
     for (const auto &check : s.door_checks)
     {
         result += "\n" + door_check_notice(check);
@@ -2260,12 +2316,14 @@ void RolfTourView::refresh()
          choices->get_size().y});
     if (treasure)
     {
-        // The list leaves room for one line: the warning, else the last take,
-        // else the coins the party took.
+        // The list leaves room for one line: the warning, else the last take
+        // and what auto-equip put on with it, else the coins the party took.
+        const auto equipped = gear_change_notices(s).replace("\n", " ");
         String line =
             treasure_leave_warned_
                 ? i18n::text(N_("There is still treasure here. Leave it behind, or take more?"))
-                : treasure_notice_;
+                : treasure_notice_ +
+                      (treasure_notice_.is_empty() ? equipped.trim_prefix(" ") : equipped);
         for (const auto &loot : s.loot_taken)
         {
             if (line.is_empty())
@@ -2286,10 +2344,11 @@ void RolfTourView::refresh()
     {
         // A purchase's news first; otherwise the dark red note, else prices.
         required_node<RichTextLabel>(*this, "Dialogue")
-            .set_text(!s.diagnostic.empty() ? i18n::text(s.diagnostic)
-                      : !unusable_note.is_empty()
-                          ? unusable_note
-                          : i18n::text("Prices are per listed item or bundle."));
+            .set_text((!s.diagnostic.empty() ? i18n::text(s.diagnostic)
+                       : !unusable_note.is_empty()
+                           ? unusable_note
+                           : i18n::text("Prices are per listed item or bundle.")) +
+                      gear_change_notices(s));
     }
     if (answer && !s.diagnostic.empty())
     {
@@ -2709,6 +2768,17 @@ void RolfTourView::check_town()
         }
         required_node<ItemList>(*this, "InventoryPanel/Items").select(0);
         const auto id = campaign_->selected();
+        // Auto-equip (EQUIP-1), on unless the settings turn it off, put the
+        // shield on as it was bought.
+        if (settings::auto_equip())
+        {
+            const auto worn = campaign_->profile(id).armor_class;
+            required_node<Button>(*this, "InventoryPanel/Unequip").emit_signal("pressed");
+            if (campaign_->profile(id).armor_class != worn - 2)
+            {
+                throw std::runtime_error("Auto-equip did not put the bought shield on");
+            }
+        }
         const auto ac = campaign_->profile(id).armor_class;
         required_node<Button>(*this, "InventoryPanel/Equip").emit_signal("pressed");
         if (campaign_->profile(id).armor_class != ac + 2)

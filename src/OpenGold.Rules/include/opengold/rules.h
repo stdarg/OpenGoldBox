@@ -294,6 +294,16 @@ struct EquipmentInfo
     // What one of the item weighs, in hundredths of a pound; none when the
     // rules do not list it.
     std::optional<unsigned> weight_hundredths;
+    bool ranged{}; // A bow, crossbow, sling or dart: a fight draws it from the pack.
+};
+
+// How well a set of gear serves its wearer, as auto-equip compares it
+// (EQUIP-1): the Armor Class it gives, and the weapon damage its attacks are
+// expected to deal in a round against a target's Armor Class.
+struct GearRating
+{
+    int armor_class{};
+    double round_damage{};
 };
 
 // How long a status effect lasts, as the sheet and the combat panel show it.
@@ -1022,6 +1032,14 @@ class RulesModule
                                                            std::span<const std::string> candidates,
                                                            unsigned selected,
                                                            EquipmentOperation) const = 0;
+    // Auto-equip's comparison of gear (EQUIP-1): the gear as it would be
+    // equipped, rated against a target's Armor Class.
+    [[nodiscard]] virtual GearRating gear_rating(const CharacterSheet &,
+                                                 std::span<const std::string> gear,
+                                                 int target_armor_class) const = 0;
+    // Whether the character is trained with an armor or shield key and has
+    // the Strength it asks; any other item suits everyone.
+    [[nodiscard]] virtual bool suits(const CharacterSheet &, std::string_view key) const = 0;
     [[nodiscard]] virtual SpellAccess spell_access(const CharacterSheet &) const = 0;
     [[nodiscard]] virtual SpellChoiceOptions spell_choice_options(const CharacterSheet &,
                                                                   SpellChoiceContext) const = 0;

@@ -153,6 +153,11 @@ void GameMenuView::open_options()
         .select(settings::original_wall_art() ? 1 : 0);
     required_node<OptionButton>(*this, "Options/Interface/CombatArt")
         .select(settings::original_combat_art() ? 1 : 0);
+    required_node<OptionButton>(*this, "Options/Gameplay/AutoEquip")
+        .select(settings::auto_equip() ? 0 : 1);
+    required_node<OptionButton>(*this, "Options/Gameplay/UnidentifiedMagic")
+        .select(settings::skip_unidentified_magic() ? 0 : 1);
+    show_unidentified_magic(settings::auto_equip());
     const auto language = settings::language();
     const auto found = std::find_if(language_codes.begin(), language_codes.end(),
                                     [&](const char *code)
@@ -205,6 +210,17 @@ void GameMenuView::build_options()
                        presentation::guarded(this, &GameMenuView::difficulty_selected));
     required_node<Control>(*this, "Options/Gameplay/Challenge")
         .connect("value_changed", presentation::guarded(this, &GameMenuView::challenge_changed));
+    // Auto-equip (EQUIP-1): each On, then Off.
+    for (const auto &[path, selected] :
+         {std::pair{"Options/Gameplay/AutoEquip", &GameMenuView::auto_equip_selected},
+          std::pair{"Options/Gameplay/UnidentifiedMagic",
+                    &GameMenuView::unidentified_magic_selected}})
+    {
+        auto &choice = required_node<OptionButton>(*this, path);
+        choice.add_item(i18n::text(N_("On")));
+        choice.add_item(i18n::text(N_("Off")));
+        choice.connect("item_selected", presentation::guarded(this, selected));
+    }
     auto &rows = required_node<Control>(*this, "Options/Gameplay/Abilities/Rows");
     for (std::size_t row = 0; row < i18n::monster_ability_options.size(); ++row)
     {
@@ -298,4 +314,21 @@ void GameMenuView::combat_art_selected(std::int64_t index)
 {
     settings::save_original_combat_art(index == 1);
     emit_signal("art_changed");
+}
+
+void GameMenuView::auto_equip_selected(std::int64_t index)
+{
+    settings::save_auto_equip(index == 0);
+    show_unidentified_magic(index == 0);
+}
+
+void GameMenuView::unidentified_magic_selected(std::int64_t index)
+{
+    settings::save_skip_unidentified_magic(index == 0);
+}
+
+void GameMenuView::show_unidentified_magic(bool shown)
+{
+    required_node<Control>(*this, "Options/Gameplay/UnidentifiedMagicLabel").set_visible(shown);
+    required_node<Control>(*this, "Options/Gameplay/UnidentifiedMagic").set_visible(shown);
 }

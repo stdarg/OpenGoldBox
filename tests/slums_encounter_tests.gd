@@ -72,6 +72,31 @@ func check_leader() -> void:
     require(roster.get_item_text(1).begins_with("★ ") and not roster.get_item_text(0).begins_with("★"), "The party roster marks the new leader")
     sheet.get_node("Close").pressed.emit(); await settle()
 
+# Auto-equip (EQUIP-1): turned off in the Options, "Do not equip unidentified
+# magic items" and each sheet's Maximize defense / Maximize damage hide; on
+# again they show, and a member's choice stays theirs.
+func check_auto_equip() -> void:
+    var gameplay: Control = current_scene.get_node("GameMenu/Options/Gameplay")
+    var auto_equip: OptionButton = gameplay.get_node("AutoEquip")
+    var member: Button = town().get_node("PartyList/Rows/Member0")
+    var sheet: Window = current_scene.get_node("TownSheet")
+    var preference: OptionButton = sheet.get_node("GearPreference")
+    auto_equip.select(1); auto_equip.item_selected.emit(1); await settle()
+    require(not gameplay.get_node("UnidentifiedMagic").visible, "Off hides the unidentified magic option")
+    member.pressed.emit(); await settle()
+    require(sheet.visible and not preference.visible, "Off hides the sheet's gear preference")
+    sheet.get_node("Close").pressed.emit(); await settle()
+    auto_equip.select(0); auto_equip.item_selected.emit(0); await settle()
+    require(gameplay.get_node("UnidentifiedMagic").visible, "On shows the unidentified magic option")
+    member.pressed.emit(); await settle()
+    require(preference.visible and preference.selected == 0, "A member starts on Maximize defense")
+    preference.select(1); preference.item_selected.emit(1); await settle()
+    sheet.get_node("Close").pressed.emit(); await settle()
+    member.pressed.emit(); await settle()
+    require(preference.selected == 1, "The member keeps Maximize damage")
+    preference.select(0); preference.item_selected.emit(0); await settle()
+    sheet.get_node("Close").pressed.emit(); await settle()
+
 # Steps into the trolls' room and reads its story until the close-up plays.
 func reach_close_up() -> void:
     await press("CampaignTown/Forward")
@@ -139,6 +164,7 @@ func run_checks() -> void:
     require(town().get_node("Title").text == "OPENGOLDBOX  /  Slums", "The title names the area: " + town().get_node("Title").text)
     require(not dialogue().contains("Rolf"), "Exploring the Slums does not follow Rolf: " + dialogue())
     await check_leader()
+    await check_auto_equip()
     await check_wall_art()
     await reach_close_up()
     for wait in range(600):

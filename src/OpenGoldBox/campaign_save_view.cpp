@@ -223,6 +223,7 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
     forget_monster_picture();
     session_->encounter_challenge(settings::encounter_challenge());
     session_->difficulty(settings::difficulty());
+    session_->set_auto_equip(auto_equip_setting());
     use_shop_data(*session_);
     session_->companion_rules(srd5::character_rules(), game_companions());
     shown_revision_ = 0;

@@ -177,6 +177,21 @@ void put_down_cursed_items(PartyMember &member)
     member.character.replace_inventory(std::move(inventory));
 }
 
+// Whether an original alignment-bound sword (#267) the member carries refuses
+// the member's alignment.
+bool refuses_wielder(const PartyMember &member, std::uint64_t item)
+{
+    const auto carried = member.character.inventory().find(item);
+    if (!carried || !member.item_sources.contains(item))
+    {
+        return false;
+    }
+    const auto power = rules::parse_item_key(carried->get().definition_id).power;
+    const auto &alignment = member.character.creation_data().alignment;
+    return (power == rules::ItemPower::good && !alignment.ends_with("good")) ||
+           (power == rules::ItemPower::evil && !alignment.ends_with("evil"));
+}
+
 // Whether the member holds a cursed item it cannot put down.
 bool holds_cursed_item(const PartyMember &member)
 {
@@ -215,6 +230,32 @@ std::vector<std::string> equipped_definitions(const PartyMember &member)
         definitions.emplace_back("stone_of_good_luck");
     }
     return definitions;
+}
+
+// The member's gear keys as the party knows them: an unidentified item's key
+// is its plain item's, so auto-equip judges it by what the party can see.
+std::vector<std::string> known_definitions(const PartyMember &member)
+{
+    auto definitions = equipped_definitions(member);
+    for (auto &definition : definitions)
+    {
+        if (const auto parsed = rules::parse_item_key(definition); parsed.unidentified)
+        {
+            definition = std::string(parsed.base);
+        }
+    }
+    return definitions;
+}
+
+// Whether `a` is better gear than `b` for a member of that preference.
+bool better_gear(const rules::GearRating &a, const rules::GearRating &b, GearPreference preference)
+{
+    constexpr double same = 1e-9;
+    const bool more_damage = a.round_damage > b.round_damage + same;
+    const bool equal_damage = !more_damage && a.round_damage + same >= b.round_damage;
+    return preference == GearPreference::defense
+               ? a.armor_class > b.armor_class || (a.armor_class == b.armor_class && more_damage)
+               : more_damage || (equal_damage && a.armor_class > b.armor_class);
 }
 
 // The catalog key of an original weapon, ammunition, armor or shield type,
@@ -1284,19 +1325,11 @@ std::optional<rules::HazardAttackResult> CampaignParty::refuse_bound_weapon(Memb
 {
     editable();
     const auto &wielder = member(id);
-    const auto carried = wielder.character.inventory().find(item);
+    if (!refuses_wielder(wielder, item))
+    {
+        return std::nullopt;
+    }
     const auto source = wielder.item_sources.find(item);
-    if (!carried || source == wielder.item_sources.end())
-    {
-        return std::nullopt;
-    }
-    const auto power = rules::parse_item_key(carried->get().definition_id).power;
-    const auto &alignment = wielder.character.creation_data().alignment;
-    if ((power != rules::ItemPower::good || alignment.ends_with("good")) &&
-        (power != rules::ItemPower::evil || alignment.ends_with("evil")))
-    {
-        return std::nullopt;
-    }
     // Byte 61's high four bits are the damage, as Force (the user, 2026-10-22).
     rules::HazardAttack burn;
     burn.damage_bonus = source->second.stored.effect_codes[1] >> 4;
@@ -1414,6 +1447,255 @@ rules::EquipmentInfo CampaignParty::equipment_info(MemberId id, std::uint64_t it
         throw std::runtime_error("Unknown item");
     }
     return rules_->equipment_info(found->get().definition_id);
+}
+
+void CampaignParty::set_gear_preference(MemberId id, GearPreference preference)
+{
+    edit(id).gear_preference = preference;
+}
+
+rules::GearRating CampaignParty::known_gear_rating(const PartyMember &m) const
+{
+    // A typical early monster's Armor Class (EQUIP-1).
+    constexpr int target_armor_class = 13;
+    return rules_->gear_rating(m.character.sheet(), known_definitions(m), target_armor_class);
+}
+
+std::vector<CampaignParty::EquipmentPlan>
+CampaignParty::equipment_plans(const PartyMember &m, std::uint64_t item,
+                               UnidentifiedMagic unidentified) const
+{
+    using rules::EquipmentOperation;
+    using rules::EquipmentSlot;
+    // Whether auto-equip may put this item on at all.
+    const auto may_equip = [&](std::uint64_t id)
+    {
+        const auto &entry = m.character.inventory().find(id)->get();
+        const auto known = rules::parse_item_key(rules_definition(m, entry));
+        const auto info = rules_->equipment_info(entry.definition_id);
+        const bool gear = (info.slot == EquipmentSlot::weapon && !info.ranged) ||
+                          info.slot == EquipmentSlot::armor || info.slot == EquipmentSlot::shield;
+        const bool refused =
+            known.unidentified ? unidentified == UnidentifiedMagic::skip
+                               : known.power == rules::ItemPower::cursed || refuses_wielder(m, id);
+        return gear && !refused && rules_->suits(m.character.sheet(), entry.definition_id);
+    };
+    if (!m.character.inventory().find(item) || !may_equip(item) ||
+        std::find(m.equipped.begin(), m.equipped.end(), item) != m.equipped.end())
+    {
+        return {};
+    }
+    const auto slot_of = [&](std::uint64_t id)
+    {
+        return rules_->equipment_info(m.character.inventory().find(id)->get().definition_id);
+    };
+    std::vector<std::uint64_t> weapons, shields, armor;
+    for (const auto id : m.equipped)
+    {
+        switch (slot_of(id).slot)
+        {
+        case EquipmentSlot::weapon:
+            weapons.push_back(id);
+            break;
+        case EquipmentSlot::shield:
+            shields.push_back(id);
+            break;
+        case EquipmentSlot::armor:
+            armor.push_back(id);
+            break;
+        default:
+            break;
+        }
+    }
+    const auto taking_off = [](const std::vector<std::uint64_t> &ids)
+    {
+        EquipmentPlan plan;
+        for (const auto id : ids)
+        {
+            plan.emplace_back(id, EquipmentOperation::unequip);
+        }
+        return plan;
+    };
+    const auto then = [](EquipmentPlan plan, std::uint64_t id, EquipmentOperation operation)
+    {
+        plan.emplace_back(id, operation);
+        return plan;
+    };
+    const auto gained = slot_of(item);
+    std::vector<EquipmentPlan> plans;
+    if (gained.slot == EquipmentSlot::armor)
+    {
+        plans.push_back(then(taking_off(armor), item, EquipmentOperation::equip));
+    }
+    else if (gained.slot == EquipmentSlot::shield)
+    {
+        const auto off_shield = taking_off(shields);
+        const bool two_handed = std::any_of(weapons.begin(), weapons.end(),
+                                            [&](std::uint64_t id)
+                                            {
+                                                return slot_of(id).hands == 2;
+                                            });
+        if (two_handed)
+        {
+            // The two-handed weapon goes to the pack, and a one-handed one the
+            // member carries may take its place.
+            auto plan = off_shield;
+            for (const auto id : weapons)
+            {
+                plan.emplace_back(id, EquipmentOperation::unequip);
+            }
+            plan.emplace_back(item, EquipmentOperation::equip);
+            plans.push_back(plan);
+            for (const auto &carried : m.character.inventory().items())
+            {
+                const auto info = rules_->equipment_info(carried.definition_id);
+                if (info.slot == EquipmentSlot::weapon && info.hands == 1 && !info.ranged &&
+                    std::find(m.equipped.begin(), m.equipped.end(), carried.id) ==
+                        m.equipped.end() &&
+                    may_equip(carried.id))
+                {
+                    plans.push_back(then(plan, carried.id, EquipmentOperation::equip));
+                }
+            }
+        }
+        else if (weapons.size() == 2)
+        {
+            // Either weapon makes room for the shield.
+            for (const auto id : weapons)
+            {
+                plans.push_back(then(then(off_shield, id, EquipmentOperation::unequip), item,
+                                     EquipmentOperation::equip));
+            }
+        }
+        else
+        {
+            plans.push_back(then(off_shield, item, EquipmentOperation::equip));
+        }
+    }
+    else if (gained.hands == 2)
+    {
+        plans.push_back(then(taking_off(shields), item, EquipmentOperation::equip));
+    }
+    else
+    {
+        // In place of every weapon held; with both hands on it, a Versatile
+        // weapon, when the shield goes to the pack; or beside, or in place
+        // of, either weapon held.
+        plans.push_back({{item, EquipmentOperation::equip}});
+        if (!shields.empty())
+        {
+            plans.push_back(then(taking_off(shields), item, EquipmentOperation::equip));
+        }
+        const bool one_handed = std::all_of(weapons.begin(), weapons.end(),
+                                            [&](std::uint64_t id)
+                                            {
+                                                return slot_of(id).hands == 1;
+                                            });
+        if (shields.empty() && !weapons.empty() && one_handed)
+        {
+            plans.push_back({{item, EquipmentOperation::equip_main}});
+            plans.push_back({{item, EquipmentOperation::equip_other}});
+        }
+    }
+    return plans;
+}
+
+std::optional<GearChange> CampaignParty::auto_equip(MemberId id, std::uint64_t item,
+                                                    UnidentifiedMagic unidentified)
+{
+    editable();
+    if (member(id).vitals.dead)
+    {
+        return std::nullopt;
+    }
+    const auto plans = equipment_plans(member(id), item, unidentified);
+    const auto count_weapons = [&](const PartyMember &m)
+    {
+        return std::count_if(
+            m.equipped.begin(), m.equipped.end(),
+            [&](std::uint64_t worn)
+            {
+                return rules_
+                           ->equipment_info(m.character.inventory().find(worn)->get().definition_id)
+                           .slot == rules::EquipmentSlot::weapon;
+            });
+    };
+    const auto preference = member(id).gear_preference;
+    const auto armed = count_weapons(member(id)) > 0;
+    auto best = known_gear_rating(member(id));
+    std::optional<std::size_t> chosen;
+    // Each plan is tried on the party itself and the party put back after.
+    const auto before = state_;
+    for (std::size_t n = 0; n < plans.size(); ++n)
+    {
+        try
+        {
+            for (const auto &[step, operation] : plans[n])
+            {
+                change_equipment(id, step, operation);
+            }
+            const auto &trial = member(id);
+            // A member who held a weapon keeps one.
+            if (!armed || count_weapons(trial) > 0)
+            {
+                const auto rating = known_gear_rating(trial);
+                if (better_gear(rating, best, preference))
+                {
+                    best = rating;
+                    chosen = n;
+                }
+            }
+        }
+        catch (const std::runtime_error &)
+        {
+            // The rules refuse this plan (a cursed item cannot come off).
+        }
+        state_ = before;
+    }
+    if (!chosen)
+    {
+        return std::nullopt;
+    }
+    const auto name_of = [&](std::uint64_t worn)
+    {
+        return member(id).character.inventory().find(worn)->get().name;
+    };
+    GearChange change{.member = id, .name = member(id).character.creation_data().name};
+    // An unidentified alignment-bound sword burns its taker and stays put.
+    if (auto burn = refuse_bound_weapon(id, item))
+    {
+        change.burned_by = name_of(item);
+        change.burn_damage = burn->damage;
+        return change;
+    }
+    for (const auto &[step, operation] : plans[*chosen])
+    {
+        change_equipment(id, step, operation);
+    }
+    const auto worn_before = member_in(before, id).equipped;
+    const auto &worn_after = member(id).equipped;
+    const auto wears = [](const std::vector<std::uint64_t> &worn, std::uint64_t one)
+    {
+        return std::find(worn.begin(), worn.end(), one) != worn.end();
+    };
+    // The gained item first: a stack's unit taken up has an id of its own.
+    for (const auto worn : worn_after)
+    {
+        if (!wears(worn_before, worn))
+        {
+            const bool gained = name_of(worn) == name_of(item);
+            change.equipped.insert(gained ? change.equipped.begin() : change.equipped.end(),
+                                   name_of(worn));
+        }
+    }
+    for (const auto worn : worn_before)
+    {
+        if (!wears(worn_after, worn))
+        {
+            change.unequipped.push_back(name_of(worn));
+        }
+    }
+    return change;
 }
 
 void CampaignParty::purchase(MemberId id, const por::Equipment &item)

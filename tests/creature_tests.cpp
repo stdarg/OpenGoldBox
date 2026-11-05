@@ -745,14 +745,14 @@ void installed()
     {
         for (const auto &item : creature.equipment)
         {
-            if (item.label() == "Potion")
+            if (item.label() == "Potion (unidentified magic)")
             {
                 shared_type_names.insert("unidentified potion");
             }
         }
     }
     require(shared_type_names.contains("unidentified potion"),
-            "Until identified, a potion is only a Potion, as in the original");
+            "Until identified, a potion is only a Potion, known to be magic (EQUIP-1)");
     const auto &troll = c.find({2, 31})->get();
     require(troll.stored.name == "TROLL" && troll.stored.max_hit_points == 36 &&
                 troll.stored.base_armor_class == 4 && troll.stored.base_thac0 == 13,
