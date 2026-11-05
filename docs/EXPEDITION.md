@@ -75,9 +75,18 @@ records. The four-orc group carries 96 silver and one magic item from record 13.
 The item's original bytes and provenance are retained; no unsupported magic
 effect is invented. Script suppression of monster item drops is honored. A
 full party purse defers collection without losing loot; deferred rewards survive saving.
-The town screen names what the party takes, coins first and each kind of item
-once with its count ("The party takes 96 sp, Clerical Scroll With 2 Spells,
-Long Sword ×3, ..."), after a won fight and after a script's treasure.
+After a won fight, and after a script's treasure (the original's COMBAT with
+no monsters), the coins go straight to the party's purse and the town screen
+names them ("The party takes 96 sp."). The items lie in a treasure pile,
+listed the way a shop lists its stock, and the script waits. Highlight an item
+and click it or press Enter, and the selected member takes it for nothing;
+Tab, the number keys or a click on a member's row choose who takes. A member
+carrying 16 items is refused. Leave goes on with the script; with items still
+in the pile it first asks, and the button reads "Leave it behind", as the
+original warned that treasure was left. Items left behind are gone. The game
+cannot be saved while the pile is open, since a script is waiting, so the save
+format is unchanged. Loot held back until the purse has room is still handed
+out to the members by itself when it is collected.
 
 The whole campaign is now playable; see the [whole-map audit](audits/whole-map.md).
 Unsupported paths retain explicit diagnostics and event rollback.

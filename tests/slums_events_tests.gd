@@ -9,7 +9,8 @@ extends SceneTree
 # number's 0 and 100. A branch ends back in the street, in a fight on the
 # combat screen, or in a shop. It fails on a notice that the event is not
 # supported, on a dead end (nothing to press), on a won fight's coins not
-# named on the town screen, or when an attempt runs long;
+# named on the town screen, on a treasure whose items cannot be taken or left,
+# or when an attempt runs long;
 # each branch's ending is printed with what it cost or gave the party.
 #   godot --headless --path src/OpenGoldBox/godot --script tests/slums_events_tests.gd \
 #       -- --fixtures=DIR [--only=slums-3-] [--sample=5]
@@ -92,7 +93,53 @@ func fighting() -> bool:
 	return combat != null and combat.is_visible_in_tree()
 
 func shopping() -> bool:
-	return town().get_node("LeaveShop").is_visible_in_tree()
+	return town().get_node("LeaveShop").is_visible_in_tree() and not at_treasure()
+
+func at_treasure() -> bool:
+	return town().get_node("LeaveShop").is_visible_in_tree() and town().get_node("Speaker").text.begins_with("Treasure")
+
+# A treasure lists what the fight or the script left: the selected member takes
+# the first item and the second member the next, each with Enter, and both must
+# then carry them; the party leaves the rest behind, Leave asking first.
+func take_treasure() -> String:
+	var list: ItemList = town().get_node("Choices")
+	var count := list.item_count
+	var taken := []
+	for slot in range(mini(2, count)):
+		var row: Button = town().get_node("PartyList/Rows/Member" + str(slot))
+		row.pressed.emit()
+		await settle()
+		list = town().get_node("Choices")
+		var item := list.get_item_text(0)
+		var full: bool = town().get_node("Speaker").text.ends_with(" 16/16 items")
+		var before := list.item_count
+		list.select(0)
+		await press("CampaignTown/Continue")
+		var left := (town().get_node("Choices") as ItemList).item_count
+		# A member carrying 16 items is refused, and the item stays.
+		if full:
+			if not dialogue().contains("can carry no more") or left != before:
+				bug("a member with 16 items is not refused", item + ": " + dialogue().right(160))
+			continue
+		taken.append(item)
+		if not dialogue().contains(" takes " + item + ".") or left != before - 1:
+			bug("a treasure item is not taken", item + ": " + dialogue().right(160))
+	await press("CampaignTown/LeaveShop")
+	if (town().get_node("Choices") as ItemList).item_count > 0 or count > taken.size():
+		if not at_treasure() or not dialogue().begins_with("There is still treasure here"):
+			bug("leaving a treasure with items in it does not ask first", dialogue().substr(0, 160))
+		await press("CampaignTown/LeaveShop")
+	await settle(8)
+	if at_treasure():
+		bug("the party cannot leave a treasure", dialogue().substr(0, 160))
+	return "took " + ", ".join(taken) + " of " + str(count)
+
+# What the town screen shows besides the text, for a dead end's report.
+func screen_state() -> String:
+	return "[speaker '%s', %s, progress '%s', continue %s, combat %s]" % [
+		town().get_node("Speaker").text, town().get_node("Movement").text,
+		town().get_node("Progress").text,
+		"off" if town().get_node("Continue").disabled else "on", node("CampaignCombat") != null]
 
 func typing() -> bool:
 	return town().get_node("Answer").is_visible_in_tree()
@@ -159,10 +206,18 @@ func play(path: Array) -> Dictionary:
 	var phase := 0
 	await press("CampaignTown/Forward")
 	for move in range(200):
+		# A wait is timed from when it began: a step that does not wait (a
+		# fight played, a treasure, a look) ends the last one.
+		if not (town().get_node("Continue").disabled and choices().is_empty()) or fighting() or at_treasure() or exploring():
+			waited_since = -1
 		var text := dialogue()
 		if text != "" and (heard.is_empty() or heard.back() != text): heard.append(text)
 		if text.contains("not supported yet"):
 			bug("an event is not supported", text.substr(0, 160))
+		if at_treasure():
+			taken.append("[treasure]")
+			heard.append("[" + await take_treasure() + "]")
+			continue
 		var ending := ""
 		if fighting(): ending = "fight"
 		elif shopping(): ending = "shop"
@@ -236,7 +291,7 @@ func play(path: Array) -> Dictionary:
 		if not waiting: waited_since = -1
 		still = still + 1 if dialogue() + str(choices()) == before and not waiting else 0
 		if still >= 6 or (waiting and Time.get_ticks_msec() - waited_since > 10000):
-			bug("a dead end: nothing moves the event on", "'" + text.substr(0, 120) + "' " + str(choices()))
+			bug("a dead end: nothing moves the event on", "'" + text.substr(0, 120) + "' " + str(choices()) + " " + screen_state())
 			return {"ending": "stuck", "heard": heard, "taken": taken, "gold": party_gold() - gold, "hp": party_hp() - hp}
 	bug("an event runs on without end", str(taken))
 	return {"ending": "endless", "heard": heard, "taken": taken, "gold": 0, "hp": 0}

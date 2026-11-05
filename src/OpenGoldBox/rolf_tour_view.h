@@ -159,6 +159,11 @@ class RolfTourView : public godot::Control
     bool rest_check_{}, mastery_rest_check_{};
     bool town_check_{}, embedded_party_{};
     unsigned shop_check_stage_{};
+    // At a treasure: Leave was pressed once with items still in the pile; the
+    // next press leaves them behind.
+    bool treasure_leave_warned_{};
+    // What the last take at a treasure gave, shown under the pile.
+    godot::String treasure_notice_;
     std::optional<opengold::PartyState> identify_check_retained_;
     std::uint64_t identify_check_sword_{};
     // The scroll whose spells the Cast menu offers (MAGIC-6); none while it
@@ -265,6 +270,9 @@ class RolfTourView : public godot::Control
     void level_up_requested(int slot);
     void close_sheet();
     void leave_shop();
+    // At a treasure: the selected member takes the pile's `item` (-1: none
+    // highlighted).
+    void take_treasure(std::int64_t item);
     void movement(opengold::por::ExplorationCommand command);
     godot::Ref<godot::Texture2D> npc_portrait(std::string_view file);
     void check_run();

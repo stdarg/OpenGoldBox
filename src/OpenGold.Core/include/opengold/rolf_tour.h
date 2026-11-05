@@ -51,7 +51,10 @@ enum class TourPhase
     completed,
     faulted,
     combat,
-    defeated
+    defeated,
+    // After a won fight or a script's treasure: the items left lie in a pile
+    // for the party to take; the script waits.
+    treasure
 };
 
 struct TownParty
@@ -311,11 +314,13 @@ class RolfTourSession
     [[nodiscard]] std::optional<WandSign> point_wand_of_secrets(opengold::MemberId member,
                                                                 std::uint64_t item);
 
-    // Outside events, and while shopping to choose the buyer. The shop script
-    // receives whoever is selected when the shop closes.
+    // Outside events, and while shopping to choose the buyer or at a treasure
+    // to choose who takes. The shop script receives whoever is selected when
+    // the shop closes.
     [[nodiscard]] bool can_select_member() const
     {
-        return can_leave() || snapshot_.phase == TourPhase::shopping;
+        return can_leave() || snapshot_.phase == TourPhase::shopping ||
+               snapshot_.phase == TourPhase::treasure;
     }
 
     void advance(double seconds);
@@ -324,6 +329,11 @@ class RolfTourSession
     bool input(std::uint64_t ticket, std::string_view value);
     bool buy(std::uint64_t ticket, std::size_t item);
     bool leave_shop(std::uint64_t ticket);
+    // At a treasure: the selected member takes the pile's `item`. False, with
+    // the reason in the diagnostic, when the member can carry no more.
+    bool take_treasure(std::uint64_t ticket, std::size_t item);
+    // Leaves what is still in the pile behind for good; the script goes on.
+    bool leave_treasure(std::uint64_t ticket);
     bool explore(ExplorationCommand command);
     // The original's Search mode: each step searches as Look does, and takes
     // ten minutes more.
@@ -426,6 +436,12 @@ class RolfTourSession
     [[nodiscard]] const std::vector<Equipment> &shop_stock() const noexcept
     {
         return treasure_;
+    }
+
+    // The items of the treasure the party stands at (TourPhase::treasure).
+    [[nodiscard]] const std::vector<Equipment> &treasure_pile() const noexcept
+    {
+        return treasure_pile_;
     }
 
     [[nodiscard]] const std::vector<std::string> &script_diagnostics() const noexcept
@@ -667,6 +683,13 @@ class RolfTourSession
     bool pick_tried_{};
     std::vector<opengold::DoorMethod> door_choices_;
     void claim_loot();
+    // Like claim_loot, but the items go to the treasure pile, not the members.
+    void pile_loot();
+    // Shows the treasure pile; `request` resumes with `writes` once it closes.
+    void open_treasure(std::uint64_t request, std::vector<EclMemoryWrite> writes);
+    std::vector<Equipment> treasure_pile_;
+    std::uint64_t treasure_request_{};
+    std::vector<EclMemoryWrite> treasure_writes_;
     void stage_treasure(const EclRequest &request);
     void award_staged_treasure();
     [[nodiscard]] std::string treasure_identity(std::uint16_t address) const;

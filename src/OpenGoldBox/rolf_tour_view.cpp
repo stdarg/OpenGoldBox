@@ -374,7 +374,9 @@ void RolfTourView::prepare_view()
 void RolfTourView::layout()
 {
     auto &shopping_layout = required_node<Node>(*this, "ShoppingLayout");
-    const bool shopping = session_ && session_->snapshot().phase == TourPhase::shopping;
+    // A treasure lists its items as a shop does.
+    const bool shopping = session_ && (session_->snapshot().phase == TourPhase::shopping ||
+                                       session_->snapshot().phase == TourPhase::treasure);
     shopping_layout.call("apply_layout", shopping);
     const auto bounds = [&](const char *name)
     {
@@ -475,6 +477,10 @@ void RolfTourView::next()
             session_->buy(s.continue_ticket, selected[0]);
         }
     }
+    else if (s.phase == TourPhase::treasure)
+    {
+        take_treasure(selected.is_empty() ? -1 : selected[0]);
+    }
     else if (s.phase == TourPhase::awaiting_input)
     {
         session_->input(s.continue_ticket,
@@ -540,10 +546,52 @@ void RolfTourView::look()
 
 void RolfTourView::leave_shop()
 {
-    if (session_)
+    if (!session_)
     {
-        session_->leave_shop(session_->snapshot().continue_ticket);
+        return;
+    }
+    const auto &s = session_->snapshot();
+    if (s.phase != TourPhase::treasure)
+    {
+        session_->leave_shop(s.continue_ticket);
         refresh();
+        return;
+    }
+    // As in the original, leaving with items in the pile asks first.
+    if (!session_->treasure_pile().empty() && !treasure_leave_warned_)
+    {
+        treasure_leave_warned_ = true;
+        refresh();
+        return;
+    }
+    treasure_leave_warned_ = false;
+    treasure_notice_ = String();
+    session_->leave_treasure(s.continue_ticket);
+    refresh();
+}
+
+void RolfTourView::take_treasure(std::int64_t item)
+{
+    const auto &s = session_->snapshot();
+    if (item < 0 || item >= static_cast<std::int64_t>(session_->treasure_pile().size()) ||
+        !campaign_ || !campaign_->selected())
+    {
+        return;
+    }
+    const auto label = String::utf8(session_->treasure_pile()[item].label().c_str());
+    const auto taker =
+        String::utf8(campaign_->member(campaign_->selected()).character.sheet().name.c_str());
+    if (session_->take_treasure(s.continue_ticket, static_cast<std::size_t>(item)))
+    {
+        treasure_leave_warned_ = false;
+        treasure_notice_ =
+            i18n::format(N_("{name} takes {item}."), {{"name", taker}, {"item", label}});
+    }
+    else
+    {
+        // A member with 16 items can take no more.
+        treasure_notice_ =
+            i18n::format(N_("{name} can carry no more: 16 items."), {{"name", taker}});
     }
 }
 
@@ -1314,9 +1362,11 @@ void RolfTourView::party_selected(std::int64_t index)
         return;
     }
     const auto slot = static_cast<unsigned>(index);
-    if (session_->snapshot().phase == TourPhase::shopping)
+    if (session_->snapshot().phase == TourPhase::shopping ||
+        session_->snapshot().phase == TourPhase::treasure)
     {
-        // In a shop, clicking a member chooses the buyer instead of opening a sheet.
+        // In a shop, clicking a member chooses the buyer instead of opening a
+        // sheet; at a treasure, who takes.
         select_buyer(slot);
         return;
     }
@@ -1491,7 +1541,9 @@ void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
     {
         return;
     }
-    if (session_ && campaign_ && session_->snapshot().phase == TourPhase::shopping &&
+    const bool listing = session_ && (session_->snapshot().phase == TourPhase::shopping ||
+                                      session_->snapshot().phase == TourPhase::treasure);
+    if (listing && campaign_ &&
         (key->get_keycode() == Key::KEY_TAB ||
          (key->get_keycode() >= Key::KEY_1 && key->get_keycode() <= Key::KEY_8)))
     {
@@ -1499,9 +1551,7 @@ void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
         get_viewport()->set_input_as_handled();
         return;
     }
-    if (session_ &&
-        (session_->snapshot().choices.size() > 1 ||
-         session_->snapshot().phase == TourPhase::shopping) &&
+    if (session_ && (session_->snapshot().choices.size() > 1 || listing) &&
         key->get_keycode() != Key::KEY_ENTER)
     {
         return;
@@ -1997,7 +2047,9 @@ void RolfTourView::refresh()
         camp();
     }
     const bool faulted = !loaded || s.phase == TourPhase::faulted;
-    const bool shopping = loaded && s.phase == TourPhase::shopping;
+    const bool treasure = loaded && s.phase == TourPhase::treasure;
+    // A treasure's pile is listed and chosen from as a shop's stock is.
+    const bool shopping = loaded && (s.phase == TourPhase::shopping || treasure);
     const bool answer = loaded && s.phase == TourPhase::awaiting_input;
     const bool multiple = waiting && s.choices.size() > 1;
     const String district = i18n::text(district_name(s.area_id));
@@ -2026,7 +2078,16 @@ void RolfTourView::refresh()
                              : shopping        ? N_("Shop / select an item")
                              : s.tour_finished ? district_name(s.area_id)
                                                : N_("Rolf  /  Council guide")));
-    if (shopping && campaign_ && campaign_->selected())
+    if (treasure && campaign_ && campaign_->selected())
+    {
+        const auto &taker = campaign_->member(campaign_->selected());
+        required_node<Label>(*this, "Speaker")
+            .set_text(i18n::format(
+                N_("Treasure / {name} takes: {count}/16 items"),
+                {{"name", String::utf8(taker.character.sheet().name.c_str())},
+                 {"count", static_cast<int64_t>(taker.character.inventory().items().size())}}));
+    }
+    else if (shopping && campaign_ && campaign_->selected())
     {
         const auto &buyer = campaign_->member(campaign_->selected());
         required_node<Label>(*this, "Speaker")
@@ -2054,13 +2115,15 @@ void RolfTourView::refresh()
     required_node<Button>(*this, "Continue")
         .set_disabled(fight_waits_on_picture_ || (!waiting && !shopping && !answer));
     required_node<Button>(*this, "Continue")
-        .set_text(i18n::text(shopping   ? N_("Buy [Enter]")
+        .set_text(i18n::text(treasure   ? N_("Take [Enter]")
+                             : shopping ? N_("Buy [Enter]")
                              : multiple ? N_("Choose [Enter]")
                              : answer   ? N_("Submit [Enter]")
                                         : N_("Continue [Enter]")));
     required_node<Button>(*this, "Continue").set_visible(!completed);
     required_node<Label>(*this, "Progress")
         .set_text(faulted                 ? i18n::text("Stopped")
+                  : treasure && campaign_ ? i18n::text(N_("Tab or number keys: choose who takes"))
                   : shopping && campaign_ ? i18n::text(N_("Tab or number keys: choose the buyer"))
                   : s.tour_finished || waiting ? String()
                                                : i18n::text("Following the guide"));
@@ -2080,6 +2143,10 @@ void RolfTourView::refresh()
     required_node<Button>(*this, "Right")
         .set_text(i18n::text(overland ? N_("East →") : N_("Turn →")));
     required_node<Button>(*this, "LeaveShop").set_visible(shopping);
+    required_node<Button>(*this, "LeaveShop")
+        .set_text(i18n::text(!treasure                ? N_("Leave shop")
+                             : treasure_leave_warned_ ? N_("Leave it behind")
+                                                      : N_("Leave")));
     required_node<LineEdit>(*this, "Answer").set_visible(answer);
     required_node<LineEdit>(*this, "Answer").set_max_length(s.number_input ? 6 : 40);
     auto *choices = &required_node<ItemList>(*this, "Choices");
@@ -2087,7 +2154,14 @@ void RolfTourView::refresh()
     if (displayed_ticket_ != s.continue_ticket)
     {
         choices->clear();
-        if (shopping)
+        if (treasure)
+        {
+            for (const auto &item : session_->treasure_pile())
+            {
+                choices->add_item(i18n::text(item.label()));
+            }
+        }
+        else if (shopping)
         {
             for (const auto &item : session_->shop_stock())
             {
@@ -2142,7 +2216,25 @@ void RolfTourView::refresh()
     choices->set_size(
         {multiple ? go.get_position().x - 16 - choices->get_position().x : dialogue.get_size().x,
          choices->get_size().y});
-    if (shopping)
+    if (treasure)
+    {
+        // The list leaves room for one line: the warning, else the last take,
+        // else the coins the party took.
+        String line =
+            treasure_leave_warned_
+                ? i18n::text(N_("There is still treasure here. Leave it behind, or take more?"))
+                : treasure_notice_;
+        for (const auto &loot : s.loot_taken)
+        {
+            if (line.is_empty())
+            {
+                line = loot_notice(loot);
+            }
+        }
+        required_node<RichTextLabel>(*this, "Dialogue")
+            .set_text(line.is_empty() ? i18n::text(N_("Choose what to take.")) : line);
+    }
+    else if (shopping)
     {
         required_node<RichTextLabel>(*this, "Dialogue")
             .set_text(s.diagnostic.empty() ? i18n::text("Prices are per listed item or bundle.")
@@ -2769,7 +2861,8 @@ void RolfTourView::check_district_labels(const TourSnapshot &s)
     const String location = required_node<Label>(*this, "Location").get_text();
     const String map_title = required_node<Label>(*this, "MapTitle").get_text();
     const String speaker = required_node<Label>(*this, "Speaker").get_text();
-    const bool speaker_shows_district = s.tour_finished && s.phase != TourPhase::shopping;
+    const bool speaker_shows_district =
+        s.tour_finished && s.phase != TourPhase::shopping && s.phase != TourPhase::treasure;
     const String title = required_node<Label>(*this, "Title").get_text();
     if (!location.begins_with(district + String(" / ")) ||
         map_title != i18n::format("{district}    N ↑", {{"district", district}}) ||
@@ -2817,6 +2910,18 @@ bool RolfTourView::check_expedition_step()
                                 " frames before combat");
         capture_frame("monster-close-up");
         dismiss_monster_picture();
+        return false;
+    }
+    if (s.phase == TourPhase::treasure)
+    {
+        // The check takes the first item, then leaves the rest behind.
+        if (!session_->treasure_pile().empty() && treasure_notice_.is_empty())
+        {
+            required_node<ItemList>(*this, "Choices").select(0);
+            required_node<Button>(*this, "Continue").emit_signal("pressed");
+            return false;
+        }
+        required_node<Button>(*this, "LeaveShop").emit_signal("pressed");
         return false;
     }
     if (s.phase == TourPhase::awaiting_continue)

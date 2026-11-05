@@ -189,6 +189,11 @@ Add an entry whenever a new departure is decided.
   2026-11-04), and the town shows the party's money as its coins' worth in gold.
   [TRAINING-HALL.md](TRAINING-HALL.md#decisions-2026-10-13),
   [PHLAN.md](PHLAN.md#coin-payments).
+- **Treasure pile** (2026-11-05, user's request). The original's after-combat
+  Treasure Menu (View, Take, Pool, Share, Detect, Exit) becomes a shop-like
+  list of the items: the selected member takes the highlighted one. Coins go
+  straight to the party's purse. Leaving with items left asks first, as the
+  original did. [EXPEDITION.md](EXPEDITION.md).
 
 ## Advancement and training
 

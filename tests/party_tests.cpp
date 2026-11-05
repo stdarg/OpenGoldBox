@@ -2638,11 +2638,16 @@ void monsters_bring_their_gear()
             unit.item_uses_left = {{gear[0].inventory_id, 2}, {gear[1].inventory_id, 0}};
         }
     }
-    check(town.resolve_combat(result), "The victory resolves");
+    check(town.resolve_combat(result) && town.snapshot().phase == por::TourPhase::treasure &&
+              town.treasure_pile().size() == 1,
+          "The victory leaves one item in the treasure, not the drunk potion");
+    check(party->selected() == id && town.take_treasure(town.snapshot().continue_ticket, 0) &&
+              town.leave_treasure(town.snapshot().continue_ticket),
+          "The member takes the wand and the party leaves the treasure");
     const auto items = party->member(id).character.inventory().items();
     check(items.size() == 1 && items[0].definition_id == "wand:magic_missiles" &&
               items[0].quantity == 2,
-          "The loot holds the wand's two charges left, and not the drunk potion");
+          "The wand taken from the treasure holds the two charges left");
 }
 
 // Resolving a fight loses members and claims rewards before the original

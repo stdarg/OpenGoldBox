@@ -147,6 +147,14 @@ class RouteRecorder
               ",\"slot\":" + std::to_string(buyer - slots.begin()) + "}");
     }
 
+    void take(std::size_t item)
+    {
+        const auto &slots = party_->state().slots;
+        const auto taker = std::find(slots.begin(), slots.end(), party_->selected());
+        write("{\"t\":\"take\",\"item\":" + std::to_string(item) +
+              ",\"slot\":" + std::to_string(taker - slots.begin()) + "}");
+    }
+
     void write(const std::string &line)
     {
         file_ << line << '\n' << std::flush;
@@ -262,6 +270,78 @@ bool route_buy(por::RolfTourSession &town, std::uint64_t ticket, std::size_t ite
         route.buy(item);
     }
     return town.buy(ticket, item);
+}
+
+// At a treasure the party takes each item it does not already carry, as a
+// player leaves the monsters' spare swords behind, each by the living player
+// character carrying fewest (a companion when none has room). It leaves the
+// rest.
+void take_treasure(por::RolfTourSession &town, CampaignParty &party)
+{
+    const auto carried_by_party = [&](const std::string &label)
+    {
+        for (const auto id : party.state().slots)
+        {
+            if (!id)
+            {
+                continue;
+            }
+            const auto &items = party.member(id).character.inventory().items();
+            if (std::any_of(items.begin(), items.end(),
+                            [&](const auto &item)
+                            {
+                                return item.name == label;
+                            }))
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+    for (std::size_t item = 0; item < town.treasure_pile().size();)
+    {
+        if (carried_by_party(town.treasure_pile()[item].label()))
+        {
+            ++item;
+            continue;
+        }
+        std::optional<std::size_t> taker;
+        const auto &slots = party.state().slots;
+        for (std::size_t slot = 0; slot < slots.size(); ++slot)
+        {
+            // Companions come and go with what they carry: they come last.
+            const auto carried = [&](std::size_t at)
+            {
+                const auto &member = party.member(slots[at]);
+                return member.character.inventory().items().size() +
+                       (member.npc_source.empty() ? 0 : 100);
+            };
+            if (slots[slot] && !party.member(slots[slot]).vitals.dead &&
+                party.member(slots[slot]).character.inventory().items().size() < 16 &&
+                (!taker || carried(slot) < carried(*taker)))
+            {
+                taker = slot;
+            }
+        }
+        if (!taker)
+        {
+            break;
+        }
+        party.select(PartySlot{static_cast<unsigned>(*taker)});
+        if (route.records(town))
+        {
+            route.take(item);
+        }
+        const auto left = town.treasure_pile().size();
+        check(town.take_treasure(town.snapshot().continue_ticket, item) &&
+                  town.treasure_pile().size() == left - 1,
+              "A member with room takes an item from the treasure");
+    }
+    if (route.records(town))
+    {
+        route.write("{\"t\":\"leave_treasure\"}");
+    }
+    check(town.leave_treasure(town.snapshot().continue_ticket), "The party leaves the treasure");
 }
 
 bool route_leave_shop(por::RolfTourSession &town, std::uint64_t ticket)
@@ -498,9 +578,22 @@ void script_payment_tests()
 // notice. Returns true when the event failed and was rolled back.
 bool settle_or_rollback(por::RolfTourSession &town, bool until_idle = true)
 {
-    for (unsigned n = 0; n < 100 && town.snapshot().phase == por::TourPhase::running; ++n)
+    for (unsigned n = 0; n < 100 && (town.snapshot().phase == por::TourPhase::running ||
+                                     town.snapshot().phase == por::TourPhase::treasure);
+         ++n)
     {
-        town.advance(.5);
+        if (town.snapshot().phase == por::TourPhase::running)
+        {
+            town.advance(.5);
+            continue;
+        }
+        // At a treasure the selected member takes everything it can.
+        while (!town.treasure_pile().empty() &&
+               town.take_treasure(town.snapshot().continue_ticket, 0))
+        {
+        }
+        check(town.leave_treasure(town.snapshot().continue_ticket),
+              "The party leaves the treasure");
     }
     const auto &s = town.snapshot();
     const bool rolled_back = s.phase == por::TourPhase::awaiting_continue &&
@@ -685,7 +778,7 @@ void script_treasure_tests()
     const auto &arden = paid.roster[0];
     check(arden.character.inventory().items().size() == 1 && arden.item_sources.size() == 1 &&
               paid.roster[1].character.inventory().items().empty(),
-          "The one random item goes to the first living member");
+          "The selected member takes the one random item from the treasure");
     const auto &item = arden.character.inventory().items().front();
     const auto &source = arden.item_sources.at(item.id);
     check(item.original_type == source.stored.type && source.stored.stored_name.empty() &&
@@ -1275,6 +1368,9 @@ void settle(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &pa
             break;
         case por::TourPhase::combat:
             fight(town, party);
+            break;
+        case por::TourPhase::treasure:
+            take_treasure(town, *party);
             break;
         default:
             throw std::runtime_error("Event failed: " + s.diagnostic);

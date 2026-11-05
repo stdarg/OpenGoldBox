@@ -505,7 +505,9 @@ func play_on(items: Array, at: int) -> int:
             await capture("stuck")
             return -1
         if go.is_visible_in_tree() and not go.disabled:
-            if speaker.begins_with("Shop"):
+            if speaker.begins_with("Treasure"):
+                at = await treasure(items, at)
+            elif speaker.begins_with("Shop"):
                 at = await shop(items, at)
             elif (town().get_node("Answer") as Control).is_visible_in_tree():
                 at = await answer_input(items, at)
@@ -536,6 +538,22 @@ func shop(items: Array, at: int) -> int:
         at += 1
     if at < items.size() and items[at].t == "leave_shop": at += 1
     await press("CampaignTown/LeaveShop")
+    return at
+
+# The route's takes at a treasure, each by its member, then Leave (twice when
+# items are left behind).
+func treasure(items: Array, at: int) -> int:
+    await note_screen()
+    while at < items.size() and items[at].t == "take":
+        await key(KEY_1 + int(items[at].slot))
+        var list: ItemList = town().get_node("Choices")
+        list.select(int(items[at].item))
+        await press("CampaignTown/Continue")
+        at += 1
+    if at < items.size() and items[at].t == "leave_treasure": at += 1
+    await press("CampaignTown/LeaveShop")
+    if (town().get_node("Choices") as ItemList).item_count > 0:
+        await press("CampaignTown/LeaveShop")
     return at
 
 func pose() -> Vector2i:

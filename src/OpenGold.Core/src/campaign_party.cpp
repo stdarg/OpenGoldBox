@@ -1390,14 +1390,21 @@ rules::EquipmentInfo CampaignParty::equipment_info(MemberId id, std::uint64_t it
 void CampaignParty::purchase(MemberId id, const por::Equipment &item)
 {
     editable();
+    if (gold_value(state_.wealth) < item.stored.value)
+    {
+        throw std::runtime_error("Not enough gold");
+    }
+    take_item(id, item);
+    state_.wealth = pay_gold(state_.wealth, item.stored.value).purse;
+}
+
+void CampaignParty::take_item(MemberId id, const por::Equipment &item)
+{
+    editable();
     auto &m = edit(id);
     if (m.character.inventory().items().size() >= 16)
     {
         throw std::runtime_error("Inventory is full (16 items)");
-    }
-    if (gold_value(state_.wealth) < item.stored.value)
-    {
-        throw std::runtime_error("Not enough gold");
     }
     auto inventory = m.character.inventory();
     auto sources = m.item_sources;
@@ -1409,7 +1416,6 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
     sources.emplace(key, item);
     m.character.replace_inventory(std::move(inventory));
     m.item_sources = std::move(sources);
-    state_.wealth = pay_gold(state_.wealth, item.stored.value).purse;
 }
 
 void CampaignParty::read_manual(MemberId id, std::uint64_t item)

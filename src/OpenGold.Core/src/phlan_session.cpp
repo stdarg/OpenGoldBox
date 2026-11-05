@@ -953,6 +953,103 @@ void RolfTourSession::claim_loot()
     }
 }
 
+void RolfTourSession::pile_loot()
+{
+    if (!campaign_)
+    {
+        return;
+    }
+    for (auto it = pending_loot_.begin(); it != pending_loot_.end();)
+    {
+        const auto &claimed = campaign_->state().claimed_rewards;
+        const bool repeat =
+            std::find(claimed.begin(), claimed.end(), it->reward_id) != claimed.end();
+        if (!campaign_->award_loot(it->wealth, {}, it->reward_id))
+        {
+            ++it;
+            continue;
+        }
+        if (!repeat)
+        {
+            snapshot_.loot_taken.push_back({.wealth = it->wealth});
+            for (auto &item : it->items)
+            {
+                treasure_pile_.push_back(std::move(item));
+            }
+        }
+        it = pending_loot_.erase(it);
+        ++snapshot_.revision;
+    }
+}
+
+void RolfTourSession::open_treasure(std::uint64_t request, std::vector<EclMemoryWrite> writes)
+{
+    log_player("finds a treasure of " + std::to_string(treasure_pile_.size()) + " items");
+    treasure_request_ = request;
+    treasure_writes_ = std::move(writes);
+    snapshot_.phase = TourPhase::treasure;
+    snapshot_.continue_ticket = ++next_ticket_;
+    snapshot_.choices.clear();
+    snapshot_.diagnostic.clear();
+    ++snapshot_.revision;
+}
+
+bool RolfTourSession::take_treasure(std::uint64_t ticket, std::size_t item)
+{
+    if (snapshot_.phase != TourPhase::treasure || !ticket || ticket != snapshot_.continue_ticket ||
+        item >= treasure_pile_.size() || !campaign_ || !campaign_->selected())
+    {
+        return false;
+    }
+    const auto taker = campaign_->selected();
+    log_player("takes " + treasure_pile_[item].label() + " (item " + std::to_string(item + 1) +
+               " of " + std::to_string(treasure_pile_.size()) + ")");
+    try
+    {
+        campaign_->take_item(taker, treasure_pile_[item]);
+    }
+    catch (const std::exception &e)
+    {
+        snapshot_.diagnostic = e.what();
+        ++snapshot_.revision;
+        return false;
+    }
+    treasure_pile_.erase(treasure_pile_.begin() + static_cast<std::ptrdiff_t>(item));
+    snapshot_.diagnostic.clear();
+    // A new ticket: the list the view shows has changed.
+    snapshot_.continue_ticket = ++next_ticket_;
+    ++snapshot_.revision;
+    return true;
+}
+
+bool RolfTourSession::leave_treasure(std::uint64_t ticket)
+{
+    if (snapshot_.phase != TourPhase::treasure || !ticket || ticket != snapshot_.continue_ticket)
+    {
+        return false;
+    }
+    log_player(treasure_pile_.empty()
+                   ? "leaves the treasure"
+                   : "leaves " + std::to_string(treasure_pile_.size()) + " items behind");
+    // The script reads its character afresh: the member may have taken items.
+    auto reply = character_reply(selected_character_);
+    reply.writes.insert(reply.writes.end(), treasure_writes_.begin(), treasure_writes_.end());
+    if (!machine_.resume_host(treasure_request_, reply))
+    {
+        fail("The script did not take the treasure's end");
+        return true;
+    }
+    treasure_pile_.clear();
+    treasure_writes_.clear();
+    treasure_request_ = 0;
+    snapshot_.continue_ticket = 0;
+    snapshot_.diagnostic.clear();
+    snapshot_.phase = TourPhase::running;
+    ++snapshot_.revision;
+    advance(0);
+    return true;
+}
+
 const std::vector<AnimationFrame> *RolfTourSession::monster_picture() const
 {
     if (!showing_monster_picture_)
@@ -1184,7 +1281,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                 pending_loot_.push_back(
                     encounter_loot(current_area_, std::move(paying), reward + ":loot",
                                    machine_.variable(EclAddress{0x6DE3}) != 1, std::move(spent)));
-                claim_loot();
+                pile_loot();
             }
             // Treasure the script added to the fight is won with it.
             if (staged_treasure_)
@@ -1192,10 +1289,10 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                 award_staged_treasure();
             }
         }
-        auto reply = character_reply(selected_character_);
         // The original's combat results (coab ovr006): 0 won, 128 (0x80) a
         // duel lost, 129 (0x81) the party fled; scripts test "above 128" for a
         // flight.
+        std::vector<EclMemoryWrite> results;
         for (auto write : std::array<EclMemoryWrite, 7>{
                  {{ecl_combat_result, static_cast<std::uint16_t>(fled        ? 129
                                                                  : duel_lost ? 128
@@ -1207,11 +1304,22 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                   {EclAddress{0x6E71}, 0},
                   {EclAddress{0x6E72}, 0}}})
         {
-            reply.writes.push_back(write);
+            results.push_back(write);
         }
-        if (!machine_.resume_host(combat_request_, reply))
+        // The items the monsters leave wait for the party to take them; the
+        // script hears the result once the party leaves the treasure.
+        if (!treasure_pile_.empty())
         {
-            throw EclError("Combat result rejected by original script");
+            open_treasure(combat_request_, std::move(results));
+        }
+        else
+        {
+            auto reply = character_reply(selected_character_);
+            reply.writes.insert(reply.writes.end(), results.begin(), results.end());
+            if (!machine_.resume_host(combat_request_, reply))
+            {
+                throw EclError("Combat result rejected by original script");
+            }
         }
     }
     catch (const std::exception &error)
@@ -1229,12 +1337,16 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     staged_ally_art_.clear();
     // A later script fault must never restore pre-combat HP or erase a victory.
     event_checkpoint_.reset();
-    snapshot_.phase = TourPhase::running;
-    ++snapshot_.revision;
     if (!pending_loot_.empty())
     {
         snapshot_.dialogue += "\nLoot is retained until your party has room in its purses.";
     }
+    if (snapshot_.phase == TourPhase::treasure)
+    {
+        return true;
+    }
+    snapshot_.phase = TourPhase::running;
+    ++snapshot_.revision;
     advance(0);
     return true;
 }
@@ -1813,7 +1925,7 @@ void RolfTourSession::award_staged_treasure()
         loot.reward_id = first_award + ":award:" + std::to_string(award);
     }
     pending_loot_.push_back(std::move(loot));
-    claim_loot();
+    pile_loot();
     if (!pending_loot_.empty())
     {
         snapshot_.dialogue += "\nLoot is retained until your party has room in its purses.";
@@ -2926,6 +3038,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             // With no monsters loaded, the original COMBAT only hands out the treasure.
             read_character();
             award_staged_treasure();
+            if (!treasure_pile_.empty())
+            {
+                open_treasure(request.id, {});
+                return true;
+            }
             reply = character_reply(selected_character_);
             break;
         }

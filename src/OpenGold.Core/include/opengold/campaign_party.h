@@ -235,6 +235,9 @@ class CampaignParty
     [[nodiscard]] rules::EquipmentInfo equipment_info(MemberId id, std::uint64_t item) const;
     // The party's gold pays; the item goes to the member.
     void purchase(MemberId id, const por::Equipment &item);
+    // The member picks up `item` for nothing, from a treasure. Throws when
+    // the member carries 16 items.
+    void take_item(MemberId id, const por::Equipment &item);
     // Reads a Manual of Bodily Health the member carries (MAGIC-3):
     // Constitution and its maximum rise by 2, Hit Points with the new maximum,
     // and the book's magic is spent.

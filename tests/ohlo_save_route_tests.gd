@@ -99,6 +99,18 @@ func visit_ohlo(wanted: String) -> Array:
             await press("CampaignTown/Forward")
             continue
         var choices: ItemList = town().get_node("Choices")
+        if (town().get_node("LeaveShop") as Button).is_visible_in_tree():
+            # Ohlo's reward lies in a treasure: the selected member takes all
+            # of it, then the party leaves.
+            while choices.item_count > 0:
+                var before := choices.item_count
+                choices.select(0)
+                await press("CampaignTown/Continue")
+                if choices.item_count == before: break
+            await press("CampaignTown/LeaveShop")
+            if (town().get_node("LeaveShop") as Button).is_visible_in_tree():
+                await press("CampaignTown/LeaveShop")
+            continue
         var selection := 0
         for i in range(choices.item_count):
             var text := choices.get_item_text(i)
