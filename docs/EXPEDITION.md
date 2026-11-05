@@ -81,7 +81,7 @@ names them ("The party takes 96 sp."). The items lie in a treasure pile,
 listed the way a shop lists its stock, and the script waits. Highlight an item
 and click it or press Enter, and the selected member takes it for nothing;
 Tab, the number keys or a click on a member's row choose who takes. A member
-carrying 16 items is refused. Leave goes on with the script; with items still
+who could not carry the item is refused ([carrying capacity](PARTY.md#carrying-capacity)). Leave goes on with the script; with items still
 in the pile it first asks, and the button reads "Leave it behind", as the
 original warned that treasure was left. Items left behind are gone. The game
 cannot be saved while the pile is open, since a script is waiting, so the save

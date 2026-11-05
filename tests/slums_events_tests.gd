@@ -111,15 +111,14 @@ func take_treasure() -> String:
 		await settle()
 		list = town().get_node("Choices")
 		var item := list.get_item_text(0)
-		var full: bool = town().get_node("Speaker").text.ends_with(" 16/16 items")
 		var before := list.item_count
 		list.select(0)
 		await press("CampaignTown/Continue")
 		var left := (town().get_node("Choices") as ItemList).item_count
-		# A member carrying 16 items is refused, and the item stays.
-		if full:
-			if not dialogue().contains("can carry no more") or left != before:
-				bug("a member with 16 items is not refused", item + ": " + dialogue().right(160))
+		# An item too heavy for the member is refused and stays in the pile.
+		if dialogue().contains("cannot carry that much weight"):
+			if left != before:
+				bug("a refused item leaves the treasure", item)
 			continue
 		taken.append(item)
 		if not dialogue().contains(" takes " + item + ".") or left != before - 1:

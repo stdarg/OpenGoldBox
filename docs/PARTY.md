@@ -191,6 +191,19 @@ inventory but reject equipping. The decoded original item and
 template are retained as provenance, alongside the stable inventory item ID.
 Original records and raw AD&D statistics are never rewritten into SRD values.
 
+## Carrying capacity
+
+A character carries up to its Strength times 15 pounds, a Goliath (Powerful
+Build) up to Strength times 30 ([CARRY-1](SRD-DECISIONS.md#carry-1-2026-11-05-carrying-capacity-by-weight)).
+There is no limit on the number of items. Each item weighs the SRD's weight
+for its weapon, armor, shield or gear; an item the SRD gives no weight weighs
+its original record's, ten coins to the pound. Coins weigh nothing. Buying or
+taking an item that would go past the capacity is refused ("Too heavy to
+carry" in a shop, "Arden cannot carry that much weight." at a treasure), and
+nothing is paid. The shop and treasure headings show the chosen member's load
+("carrying 63/150 lb"). Loot held back until the purse had room is still
+handed out without the check when it is collected.
+
 ## Reusable native boundaries
 
 `CampaignParty` owns an injected rules module and a value-owned `PartyState`:

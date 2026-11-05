@@ -140,6 +140,7 @@ constexpr auto fixed_labels = std::to_array<std::pair<std::string_view, std::str
     {"trait:adrenaline_rush", "Adrenaline Rush"},
     {"trait:dwarven_resilience", "Dwarven Resilience"},
     {"trait:dwarven_toughness", "Dwarven Toughness"},
+    {"trait:powerful_build", "Powerful Build"},
     {"trait:speed", "Speed 35 feet"},
     {"subclass:berserker", "Path of the Berserker"},
     {"subclass:champion", "Champion"},

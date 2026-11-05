@@ -29,7 +29,7 @@ var buyer_pattern := RegEx.new()
 func _initialize() -> void:
 	hp_pattern.compile("HP (-?\\d+)/(\\d+)")
 	gold_pattern.compile("party (\\d+) gp")
-	buyer_pattern.compile("buying for (.+): party (\\d+) gp, (\\d+)/16 items")
+	buyer_pattern.compile("buying for (.+): party (\\d+) gp, carrying (\\d+)/(\\d+) lb")
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--fixtures="): fixtures = arg.trim_prefix("--fixtures=")
 		if arg.begins_with("--only="): only = arg.trim_prefix("--only=")
@@ -205,19 +205,24 @@ func buyer() -> Array:
 	var found := buyer_pattern.search(town().get_node("Speaker").text)
 	return [found.get_string(1), int(found.get_string(2)), int(found.get_string(3))] if found else ["", -1, -1]
 
-# Buys the item at `index` for a member with room, or with `affordable`
-# false checks the purchase is refused with nothing spent.
+# Buys the item at `index` for a member who can carry it, trying the next
+# member while the shop says it is too heavy, or with `affordable` false
+# checks the purchase is refused with nothing spent.
 func buy(index: int, shown: String, affordable: bool) -> void:
 	var price := gp(shown.split(" / ")[1].trim_suffix(" gp")) if shown.contains(" / ") else -1
-	for slot in range(8):
-		if buyer()[2] < 16: break
-		await press("CampaignTown/PartyList/Rows/Member" + str(slot))
 	var before := buyer()
-	var list: ItemList = town().get_node("Choices")
-	list.select(index)
-	list.item_selected.emit(index)
 	trail.append("buy " + shown)
-	await press("CampaignTown/Continue")
+	for slot in range(9):
+		var list: ItemList = town().get_node("Choices")
+		list.select(index)
+		list.item_selected.emit(index)
+		before = buyer()
+		await press("CampaignTown/Continue")
+		if not dialogue().contains("Too heavy to carry"): break
+		if slot == 8:
+			bug("no member can carry an item", shown)
+			return
+		await press("CampaignTown/PartyList/Rows/Member" + str(slot))
 	var after := buyer()
 	if not affordable:
 		if after[1] != before[1] or after[2] != before[2]:
@@ -225,7 +230,7 @@ func buy(index: int, shown: String, affordable: bool) -> void:
 		return
 	if after[1] != before[1] - price:
 		bug("an item costs other than its price", shown + ": gold " + str(before[1]) + " -> " + str(after[1]))
-	if after[0] != before[0] or after[2] != before[2] + 1:
+	if after[0] != before[0] or after[2] < before[2] or not dialogue().begins_with("Bought"):
 		bug("a bought item does not reach the buyer", shown + ": " + str(before) + " -> " + str(after) + " '" + dialogue() + "'")
 
 # --- Temples ----------------------------------------------------------------

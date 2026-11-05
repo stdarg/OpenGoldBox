@@ -291,6 +291,9 @@ struct EquipmentInfo
 {
     EquipmentSlot slot{EquipmentSlot::unsupported};
     unsigned hands{};
+    // What one of the item weighs, in hundredths of a pound; none when the
+    // rules do not list it.
+    std::optional<unsigned> weight_hundredths;
 };
 
 // How long a status effect lasts, as the sheet and the combat panel show it.
@@ -1007,6 +1010,8 @@ class RulesModule
     [[nodiscard]] virtual CharacterProfile
     character_profile(const CharacterSheet &, std::span<const std::string>) const = 0;
     [[nodiscard]] virtual EquipmentInfo equipment_info(std::string_view) const = 0;
+    // The most weight, in pounds, the character can carry.
+    [[nodiscard]] virtual unsigned carrying_capacity_pounds(const CharacterSheet &) const = 0;
     [[nodiscard]] virtual std::vector<EquipmentChoice>
     equipment_choices(const CharacterSheet &, std::span<const std::string>, unsigned) const = 0;
     [[nodiscard]] virtual EquipmentChange equipment_change(const CharacterSheet &,

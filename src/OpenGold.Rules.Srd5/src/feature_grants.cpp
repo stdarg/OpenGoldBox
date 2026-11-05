@@ -126,6 +126,7 @@ std::vector<rules::FeatureGrant> starting_grants(CharacterClass klass, std::stri
     if (race == "goliath")
     {
         result.push_back({"trait:speed", "species:goliath", 1, {}});
+        result.push_back({"trait:powerful_build", "species:goliath", 1, {}});
     }
     return result;
 }

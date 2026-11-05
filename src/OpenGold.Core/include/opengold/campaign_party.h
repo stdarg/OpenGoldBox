@@ -236,8 +236,14 @@ class CampaignParty
     // The party's gold pays; the item goes to the member.
     void purchase(MemberId id, const por::Equipment &item);
     // The member picks up `item` for nothing, from a treasure. Throws when
-    // the member carries 16 items.
+    // it would take the member past its carrying capacity.
     void take_item(MemberId id, const por::Equipment &item);
+    // What the member carries weighs, in hundredths of a pound: each item at
+    // the rules' weight, or at its original record's (ten coins to the pound)
+    // when the rules give none. Coins weigh nothing.
+    [[nodiscard]] unsigned carried_weight(MemberId id) const;
+    // The most the member can carry, in pounds.
+    [[nodiscard]] unsigned carrying_capacity(MemberId id) const;
     // Reads a Manual of Bodily Health the member carries (MAGIC-3):
     // Constitution and its maximum rise by 2, Hit Points with the new maximum,
     // and the book's magic is spent.

@@ -51,6 +51,11 @@ class ForwardingModule : public rules::RulesModule
         return rules_->equipment_info(key);
     }
 
+    unsigned carrying_capacity_pounds(const rules::CharacterSheet &sheet) const override
+    {
+        return rules_->carrying_capacity_pounds(sheet);
+    }
+
     std::vector<rules::EquipmentChoice> equipment_choices(const rules::CharacterSheet &sheet,
                                                           std::span<const std::string> gear,
                                                           unsigned selected) const override

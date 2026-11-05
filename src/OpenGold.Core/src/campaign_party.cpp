@@ -567,6 +567,26 @@ std::string rules_definition(const PartyMember &member, const InventoryItem &ite
     return definition;
 }
 
+namespace
+{
+// One inventory entry's weight in hundredths of a pound: the rules' weight,
+// each of a bundle of weapons counted (a charged item's quantity is its
+// charges); otherwise the original record's, which weighs in coins, ten to
+// the pound.
+unsigned entry_weight(const rules::RulesModule &rules, std::string_view definition,
+                      std::uint32_t quantity, const por::Equipment *source)
+{
+    const auto info = rules.equipment_info(definition);
+    if (info.weight_hundredths)
+    {
+        const auto count =
+            info.slot == rules::EquipmentSlot::weapon ? std::max<std::uint32_t>(quantity, 1) : 1u;
+        return *info.weight_hundredths * count;
+    }
+    return source ? source->stored.weight * 10u : 0u;
+}
+} // namespace
+
 unsigned carried_quantity(const por::Equipment &item)
 {
     // A stack counts its items; a single charged item, its charges or doses.
@@ -1401,11 +1421,13 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
 void CampaignParty::take_item(MemberId id, const por::Equipment &item)
 {
     editable();
-    auto &m = edit(id);
-    if (m.character.inventory().items().size() >= 16)
+    const auto weight =
+        entry_weight(*rules_, equipment_conversion(item), carried_quantity(item), &item);
+    if (carried_weight(id) + weight > carrying_capacity(id) * 100u)
     {
-        throw std::runtime_error("Inventory is full (16 items)");
+        throw std::runtime_error("Too heavy to carry");
     }
+    auto &m = edit(id);
     auto inventory = m.character.inventory();
     auto sources = m.item_sources;
     const auto key =
@@ -1416,6 +1438,24 @@ void CampaignParty::take_item(MemberId id, const por::Equipment &item)
     sources.emplace(key, item);
     m.character.replace_inventory(std::move(inventory));
     m.item_sources = std::move(sources);
+}
+
+unsigned CampaignParty::carried_weight(MemberId id) const
+{
+    const auto &m = member(id);
+    unsigned total = 0;
+    for (const auto &item : m.character.inventory().items())
+    {
+        const auto source = m.item_sources.find(item.id);
+        total += entry_weight(*rules_, item.definition_id, item.quantity,
+                              source == m.item_sources.end() ? nullptr : &source->second);
+    }
+    return total;
+}
+
+unsigned CampaignParty::carrying_capacity(MemberId id) const
+{
+    return rules_->carrying_capacity_pounds(member(id).character.sheet());
 }
 
 void CampaignParty::read_manual(MemberId id, std::uint64_t item)
@@ -2618,10 +2658,6 @@ void CampaignParty::write_scroll(MemberId id, std::string_view spell)
     auto next = state_;
     auto &writer = member_in(next, id);
     spend_magic_ink(writer, writing->level);
-    if (writer.character.inventory().items().size() >= 16)
-    {
-        throw std::runtime_error("Inventory is full (16 items)");
-    }
     const std::array<std::string, 1> entries{writing->spell};
     (void)writer.character.add_item(
         {.definition_id = rules::scroll_key(writing->arcane, entries), .name = "Scroll"});

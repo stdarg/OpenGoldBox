@@ -274,8 +274,8 @@ bool route_buy(por::RolfTourSession &town, std::uint64_t ticket, std::size_t ite
 
 // At a treasure the party takes each item it does not already carry, as a
 // player leaves the monsters' spare swords behind, each by the living player
-// character carrying fewest (a companion when none has room). It leaves the
-// rest.
+// character with most room to carry it (a companion when none can). It leaves
+// the rest.
 void take_treasure(por::RolfTourSession &town, CampaignParty &party)
 {
     const auto carried_by_party = [&](const std::string &label)
@@ -298,6 +298,8 @@ void take_treasure(por::RolfTourSession &town, CampaignParty &party)
         }
         return false;
     };
+    // The selection goes back to who was selected once the party is done.
+    const auto selected = party.state().selected_slot;
     for (std::size_t item = 0; item < town.treasure_pile().size();)
     {
         if (carried_by_party(town.treasure_pile()[item].label()))
@@ -305,38 +307,52 @@ void take_treasure(por::RolfTourSession &town, CampaignParty &party)
             ++item;
             continue;
         }
-        std::optional<std::size_t> taker;
+        // Living player characters first, the one with most room first; a
+        // companion only when none can carry it.
         const auto &slots = party.state().slots;
+        std::vector<std::size_t> takers;
         for (std::size_t slot = 0; slot < slots.size(); ++slot)
         {
-            // Companions come and go with what they carry: they come last.
-            const auto carried = [&](std::size_t at)
+            if (slots[slot] && !party.member(slots[slot]).vitals.dead)
             {
-                const auto &member = party.member(slots[at]);
-                return member.character.inventory().items().size() +
-                       (member.npc_source.empty() ? 0 : 100);
-            };
-            if (slots[slot] && !party.member(slots[slot]).vitals.dead &&
-                party.member(slots[slot]).character.inventory().items().size() < 16 &&
-                (!taker || carried(slot) < carried(*taker)))
-            {
-                taker = slot;
+                takers.push_back(slot);
             }
         }
-        if (!taker)
+        const auto room = [&](std::size_t slot)
         {
-            break;
-        }
-        party.select(PartySlot{static_cast<unsigned>(*taker)});
-        if (route.records(town))
-        {
-            route.take(item);
-        }
+            const auto id = slots[slot];
+            const bool companion = !party.member(id).npc_source.empty();
+            return std::pair{!companion, static_cast<long>(party.carrying_capacity(id) * 100) -
+                                             static_cast<long>(party.carried_weight(id))};
+        };
+        std::stable_sort(takers.begin(), takers.end(),
+                         [&](auto a, auto b)
+                         {
+                             return room(a) > room(b);
+                         });
         const auto left = town.treasure_pile().size();
-        check(town.take_treasure(town.snapshot().continue_ticket, item) &&
-                  town.treasure_pile().size() == left - 1,
-              "A member with room takes an item from the treasure");
+        bool taken = false;
+        for (const auto slot : takers)
+        {
+            party.select(PartySlot{static_cast<unsigned>(slot)});
+            if (town.take_treasure(town.snapshot().continue_ticket, item))
+            {
+                if (route.records(town))
+                {
+                    route.take(item);
+                }
+                taken = true;
+                break;
+            }
+        }
+        if (!taken)
+        {
+            ++item;
+            continue;
+        }
+        check(town.treasure_pile().size() == left - 1, "A taken item leaves the pile");
     }
+    party.select(selected);
     if (route.records(town))
     {
         route.write("{\"t\":\"leave_treasure\"}");

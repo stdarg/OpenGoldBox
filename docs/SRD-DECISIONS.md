@@ -377,9 +377,10 @@ issues for features with little value in this computer RPG.
     Resurgence) plus a small set of combat forms; no full beast catalog, no
     swim or fly forms.
   - Companions and summons (#173): only spells that actually create creatures.
-  - Species (#65–#73): combat traits stay; Elf Trance, Goliath Powerful Build
-    and Large Form, Dragonborn Draconic Flight, Dwarf Stonecunning and the
-    emptied Gnome lineages go.
+  - Species (#65–#73): combat traits stay; Elf Trance, Goliath Large Form,
+    Dragonborn Draconic Flight, Dwarf Stonecunning and the emptied Gnome
+    lineages go. (Goliath Powerful Build came back with carrying capacity on
+    2026-11-05; see [CARRY-1](#carry-1-2026-11-05-carrying-capacity-by-weight).)
   - Light and sight (#46): Darkvision only matters where the campaign marks
     dark areas.
 - **Kept:** Hide (#219), multi-square creature footprints (#45; the campaign
@@ -2312,3 +2313,19 @@ earlier decision covered. The user decided on 2026-10-29:
 - **`supported_features()`** is removed from the rules interface: nothing in
   the game read it, and its list had stopped matching the rules.
 
+## CARRY-1 (2026-11-05): carrying capacity by weight
+
+The user decided on 2026-11-05 that what a character can carry is limited by
+weight and Strength, not by a count of items (the 16-item limit is gone):
+
+- **Capacity** is the SRD's: Strength times 15 pounds. A Goliath's
+  **Powerful Build** comes back and counts it one size larger, Strength times
+  30 pounds.
+- **Limit only.** Up to its capacity a character carries at full Speed; there
+  is no slowdown below it, as the SRD has none. An item that would take a
+  character past it is refused, in a shop, at a treasure and when buying, as
+  the original refused an overloaded character.
+- **Weights** are the SRD's for weapons, armor, shields and adventuring gear;
+  an item the SRD gives no weight, such as a magic item, weighs what its
+  original record says, ten coins to the pound. Coins weigh nothing (the
+  2026-10-22 decision in [DEVIATIONS](DEVIATIONS.md#money)).

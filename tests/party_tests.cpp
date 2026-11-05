@@ -3277,6 +3277,77 @@ void script_race_codes()
           "A species the original lacks is a non-human person, not a monster");
 }
 
+// Carrying capacity (SRD 5.2.1): Strength times 15 pounds, doubled by a
+// Goliath's Powerful Build. Weight, not the number of items, decides what a
+// member can take or buy; coins weigh nothing.
+void carrying_capacity()
+{
+    CampaignParty party(module());
+    const auto human = character();
+    auto draft = human.creation_data();
+    draft.race = "goliath";
+    std::erase_if(draft.training,
+                  [](const auto &entry)
+                  {
+                      return entry.first.starts_with("species:");
+                  });
+    const auto pc = party.add_pc(human);
+    const auto big = party.add_pc(Character(*srd5::character_rules(), draft, human.appearance()));
+    const auto strength = [&](MemberId id)
+    {
+        return static_cast<unsigned>(party.member(id).character.sheet().scores[Ability::strength]);
+    };
+    check(party.carrying_capacity(pc) == strength(pc) * 15,
+          "A Human carries Strength times 15 pounds");
+    check(party.carrying_capacity(big) == strength(big) * 30,
+          "Powerful Build doubles a Goliath's carrying capacity");
+
+    const auto start = party.carried_weight(big);
+    party.take_item(big, item(55));
+    check(party.carried_weight(big) == start + 5500, "Chain mail weighs the SRD's 55 pounds");
+    auto potion = item(71);
+    potion.stored.effect_codes = {1, 85, 0};
+    potion.stored.weight = 3;
+    party.take_item(big, potion);
+    check(party.carried_weight(big) == start + 5530,
+          "An item the SRD gives no weight weighs its original record's, ten coins a pound");
+
+    // Light items go past the old 16-item limit.
+    auto feather = potion;
+    feather.stored.weight = 0;
+    for (unsigned n = 0; n < 20; ++n)
+    {
+        party.take_item(pc, feather);
+    }
+    check(party.member(pc).character.inventory().items().size() >= 20,
+          "A member carries any number of items its Strength can bear");
+
+    // An item that would go past the capacity is refused, taken or bought.
+    auto anvil = potion;
+    anvil.stored.weight =
+        static_cast<std::uint16_t>((party.carrying_capacity(pc) * 100 - party.carried_weight(pc)) / 10 + 1);
+    const auto carried = party.member(pc).character.inventory().items().size();
+    rejects(
+        [&]
+        {
+            party.take_item(pc, anvil);
+        });
+    party.set_wealth({0, 0, 0, 1000, 0, 0, 0});
+    rejects(
+        [&]
+        {
+            party.purchase(pc, anvil);
+        });
+    check(party.member(pc).character.inventory().items().size() == carried &&
+              party.state().wealth[3] == 1000,
+          "An item too heavy to carry is refused, and nothing is paid");
+    anvil.stored.weight -= 1;
+    party.take_item(pc, anvil);
+    check(party.carried_weight(pc) == party.carrying_capacity(pc) * 100 ||
+              party.carried_weight(pc) + 10 > party.carrying_capacity(pc) * 100,
+          "A member can carry right up to its capacity");
+}
+
 // A forwarding double answers as the module it wraps, for the virtuals
 // RulesModule gives a default body too (#238).
 void forwarding_defaults()
@@ -3315,6 +3386,7 @@ int main()
         party_combat_appearance();
         all_weapon_equipment();
         goliath_occupancy();
+        carrying_capacity();
         original_loot();
         roster_and_equipment();
         party_leader();

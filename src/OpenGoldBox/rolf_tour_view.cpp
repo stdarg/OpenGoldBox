@@ -589,9 +589,9 @@ void RolfTourView::take_treasure(std::int64_t item)
     }
     else
     {
-        // A member with 16 items can take no more.
+        // The item would take the member past what it can carry.
         treasure_notice_ =
-            i18n::format(N_("{name} can carry no more: 16 items."), {{"name", taker}});
+            i18n::format(N_("{name} cannot carry that much weight."), {{"name", taker}});
     }
 }
 
@@ -1804,6 +1804,18 @@ String payment_notice(const CoinPayment &payment)
                          {"change", coin_list(coins.change)}});
 }
 
+// What the member carries, in whole pounds, rounded up so that a load at the
+// limit never reads as under it.
+std::int64_t carried_pounds(const opengold::CampaignParty &party, opengold::MemberId id)
+{
+    return (static_cast<std::int64_t>(party.carried_weight(id)) + 99) / 100;
+}
+
+// The campaign party's refusals a shop shows as its diagnostic, for the
+// catalog.
+[[maybe_unused]] constexpr std::array shop_refusals{N_("Not enough gold"),
+                                                     N_("Too heavy to carry")};
+
 String loot_notice(const LootTaken &loot)
 {
     PackedStringArray parts;
@@ -2083,19 +2095,21 @@ void RolfTourView::refresh()
         const auto &taker = campaign_->member(campaign_->selected());
         required_node<Label>(*this, "Speaker")
             .set_text(i18n::format(
-                N_("Treasure / {name} takes: {count}/16 items"),
+                N_("Treasure / {name} takes: carrying {carried}/{capacity} lb"),
                 {{"name", String::utf8(taker.character.sheet().name.c_str())},
-                 {"count", static_cast<int64_t>(taker.character.inventory().items().size())}}));
+                 {"carried", carried_pounds(*campaign_, campaign_->selected())},
+                 {"capacity", campaign_->carrying_capacity(campaign_->selected())}}));
     }
     else if (shopping && campaign_ && campaign_->selected())
     {
         const auto &buyer = campaign_->member(campaign_->selected());
         required_node<Label>(*this, "Speaker")
             .set_text(i18n::format(
-                "Shop / buying for {name}: party {gold} gp, {count}/16 items",
+                "Shop / buying for {name}: party {gold} gp, carrying {carried}/{capacity} lb",
                 {{"name", String::utf8(buyer.character.sheet().name.c_str())},
                  {"gold", gold_value(campaign_->state().wealth)},
-                 {"count", static_cast<int64_t>(buyer.character.inventory().items().size())}}));
+                 {"carried", carried_pounds(*campaign_, campaign_->selected())},
+                 {"capacity", campaign_->carrying_capacity(campaign_->selected())}}));
     }
     const auto resource =
         "por/area/" + std::to_string(s.area_id) + "/script/" + std::to_string(s.script_id);

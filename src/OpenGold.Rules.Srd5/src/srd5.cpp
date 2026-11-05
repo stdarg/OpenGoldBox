@@ -33020,6 +33020,53 @@ class Module final : public RulesModule
 
     EquipmentInfo equipment_info(std::string_view key) const override
     {
+        auto info = equipment_slot(key);
+        info.weight_hundredths = srd_weight_hundredths(key);
+        return info;
+    }
+
+    // SRD 5.2.1 Carrying Capacity: Strength times 15 pounds for a Small or
+    // Medium creature. A Goliath's Powerful Build counts it one size larger,
+    // which doubles it.
+    unsigned carrying_capacity_pounds(const CharacterSheet &sheet) const override
+    {
+        const bool powerful_build =
+            std::any_of(sheet.grants.begin(), sheet.grants.end(),
+                        [](const auto &grant)
+                        {
+                            return grant.id == "trait:powerful_build";
+                        });
+        const auto strength = std::max(0, sheet.scores[rules::Ability::strength]);
+        return static_cast<unsigned>(strength) * (powerful_build ? 30u : 15u);
+    }
+
+    // The SRD's weight for a weapon, armor, a shield or adventuring gear the
+    // game converts to; none for a magic item, which the SRD gives no weight.
+    static std::optional<unsigned> srd_weight_hundredths(std::string_view key)
+    {
+        if (const auto *item = detail::weapon(key))
+        {
+            return item->weight_quarters * 25;
+        }
+        if (const auto *item = detail::armor(key))
+        {
+            return item->weight_pounds * 100;
+        }
+        // A flask of Acid, Alchemist's Fire or Oil, a Torch and Thieves'
+        // Tools weigh 1 pound each, a Poisoner's Kit 2.
+        if (detail::thrown_gear(key) || key == "torch" || key == thieves_tools)
+        {
+            return 100;
+        }
+        if (key == poisoners_kit)
+        {
+            return 200;
+        }
+        return std::nullopt;
+    }
+
+    static EquipmentInfo equipment_slot(std::string_view key)
+    {
         // Magic Ink is spent writing or copying a scroll (MAGIC-6); a scroll
         // is read from the pack, and a Poisoner's Kit, Basic Poison, Thieves'
         // Tools or a Wand of Secrets used from it.

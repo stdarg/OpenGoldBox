@@ -2,7 +2,7 @@
 
 The species traits a party member gets from SRD 5.2.1 pp. 83-86, as the game
 plays them. [SRD-DECISIONS](SRD-DECISIONS.md) records the traits that were cut
-(Elf Trance's shorter rest, Goliath Powerful Build and Large Form, Dragonborn Draconic Flight,
+(Elf Trance's shorter rest, Goliath Large Form, Dragonborn Draconic Flight,
 Dwarf Stonecunning, the Forest and Rock Gnome lineages, Tiefling Thaumaturgy and
 High Elf Prestidigitation). Trance's other half stays: magic cannot put an Elf
 to sleep. Darkvision has no effect, since the game has no dark places
@@ -94,6 +94,13 @@ like Hellish Rebuke, except Cloud's Jaunt.
   React deals it 1d8 Thunder damage ([Reactions to damage](REACTIONS.md)).
 
 The Quick-play AI uses each boon at its first chance.
+
+## Powerful Build
+
+A Goliath counts as one size larger for its carrying capacity: Strength times
+30 pounds instead of 15 ([CARRY-1](SRD-DECISIONS.md#carry-1-2026-11-05-carrying-capacity-by-weight);
+[carrying capacity](PARTY.md#carrying-capacity)). The character sheet lists it
+with the other species traits.
 
 ## Saves against conditions
 
