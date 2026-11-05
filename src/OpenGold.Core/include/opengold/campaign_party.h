@@ -298,6 +298,18 @@ class CampaignParty
     // The shop's ID: for 200 gp from the party purse, any item's hidden name
     // words are revealed, as in the original. False when there were none.
     bool identify_at_shop(MemberId id, std::uint64_t item);
+    // What a shop offers for an item the member carries, in gold pieces: half
+    // its price, as in the original, for the share of a stack still carried.
+    // An item with no original record, such as a scroll a member wrote, is
+    // worth nothing (SELL-1).
+    [[nodiscard]] unsigned sale_offer(MemberId id, std::uint64_t item) const;
+    // The shop's Sell: the whole entry goes, taken off first when equipped,
+    // and sale_offer() goes to the party purse in gold, which is returned.
+    // Throws, changing nothing, for a cursed item, worn or packed (SELL-1).
+    unsigned sell(MemberId id, std::uint64_t item);
+    // Drop: the whole entry is gone for good, taken off first when equipped.
+    // Throws, changing nothing, for a cursed item, worn or packed (SELL-1).
+    void drop(MemberId id, std::uint64_t item);
     void set_wealth(Purse wealth);
     // Money a joining character brings; throws if the party purse cannot hold it.
     void add_coins(Coin coin, std::uint32_t count);

@@ -288,7 +288,8 @@ records the decisions.
   bow or a Torch. Remove Curse, cast on the wielder in camp or in a fight,
   lets the wielder put the sword down, as in the original, and it is lost: at
   once in camp, or when the fight ends. In that fight the wielder may already
-  draw another weapon.
+  draw another weapon. Worn or packed, it can be neither sold nor dropped
+  ([SELL-1](SRD-DECISIONS.md#sell-1-2026-11-05-selling-and-dropping-items)).
 - The special weapons are known by their name words: 241 Flame Tongue, 253 "+3
   vs Undead" and 255 Cursed (byte 54).
 - **Alignment-bound swords** (#267,

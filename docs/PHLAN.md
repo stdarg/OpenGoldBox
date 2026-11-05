@@ -106,7 +106,10 @@ purchase charges the item's price and adds its stored item/bundle to inventory.
 Stock may be purchased repeatedly: the game keeps no stock limits yet.
 The demo has a 16-entry inventory limit and rejects invalid/stale requests,
 unaffordable purchases and purchases when full without charging gold.
-Items cannot be sold; see [party](PARTY.md) for equipping and using them.
+The inventory's Sell, shown in a shop, sells any item but a cursed one for half
+its price, and Drop, anywhere outside a fight, throws it away
+([SELL-1](SRD-DECISIONS.md#sell-1-2026-11-05-selling-and-dropping-items)); see
+[party](PARTY.md) for equipping and using items.
 What the chosen buyer cannot use fully is listed in dark red, with a note
 that it can still be bought ([party](PARTY.md)). Scripts that ask
 for particular coins make change; see [coin payments](#coin-payments).

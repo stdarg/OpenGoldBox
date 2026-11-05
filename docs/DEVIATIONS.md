@@ -91,6 +91,11 @@ Add an entry whenever a new departure is decided.
   off, puts a better weapon, armor or shield on the character who gains it, by
   each character's Maximize defense or Maximize damage.
   [EQUIP-1](SRD-DECISIONS.md#equip-1-2026-11-05-auto-equip-better-gear).
+- **Selling and dropping** (2026-11-05). The original's Sell and Drop work
+  on any item but a cursed one, which stays even when it is only in the pack
+  and not yet known to be cursed. A shop pays half the price, a partly used
+  stack its share, and takes a stack whole.
+  [SELL-1](SRD-DECISIONS.md#sell-1-2026-11-05-selling-and-dropping-items).
 - **Worn items** (2026-10-20). A Ring of Protection adds its bonus to saving
   throws as well as Armor Class, and it keeps working beside magic armor, which
   in the original cancelled it. Gauntlets of Ogre Power give the SRD's

@@ -177,6 +177,28 @@ void put_down_cursed_items(PartyMember &member)
     member.character.replace_inventory(std::move(inventory));
 }
 
+// Takes a whole inventory entry from the member, taking it off first when it
+// is equipped, for the shop's Sell and for Drop (SELL-1). A cursed item, worn
+// or packed, stays.
+void give_up_item(PartyMember &member, std::uint64_t id)
+{
+    const auto carried = member.character.inventory().find(id);
+    if (!carried)
+    {
+        throw std::runtime_error("Unknown item");
+    }
+    if (rules::parse_item_key(carried->get().definition_id).power == rules::ItemPower::cursed)
+    {
+        throw std::runtime_error("This item is cursed. It cannot be sold or dropped.");
+    }
+    const auto quantity = carried->get().quantity;
+    auto inventory = member.character.inventory();
+    inventory.remove(id, quantity);
+    std::erase(member.equipped, id);
+    member.item_sources.erase(id);
+    member.character.replace_inventory(std::move(inventory));
+}
+
 // Whether an original alignment-bound sword (#267) the member carries refuses
 // the member's alignment.
 bool refuses_wielder(const PartyMember &member, std::uint64_t item)
@@ -1828,6 +1850,44 @@ bool CampaignParty::identify_at_shop(MemberId id, std::uint64_t item)
     edit(id) = std::move(holder);
     state_.wealth = pay_gold(state_.wealth, identify_fee).purse;
     return revealed;
+}
+
+unsigned CampaignParty::sale_offer(MemberId id, std::uint64_t item) const
+{
+    const auto &m = member(id);
+    const auto carried = m.character.inventory().find(item);
+    const auto source = m.item_sources.find(item);
+    if (!carried || source == m.item_sources.end())
+    {
+        return 0;
+    }
+    // A stack partly used up is worth its share of the price.
+    const std::uint64_t full = std::max(carried_quantity(source->second), 1u);
+    const std::uint64_t left = std::min<std::uint64_t>(carried->get().quantity, full);
+    return static_cast<unsigned>(source->second.stored.value * left / full / 2);
+}
+
+unsigned CampaignParty::sell(MemberId id, std::uint64_t item)
+{
+    editable();
+    const auto offer = sale_offer(id, item);
+    if (offer > purse_limit - coins(state_.wealth, Coin::gold))
+    {
+        throw std::runtime_error("The party purse cannot hold more coins");
+    }
+    auto seller = member(id);
+    give_up_item(seller, item);
+    edit(id) = std::move(seller);
+    coins(state_.wealth, Coin::gold) += offer;
+    return offer;
+}
+
+void CampaignParty::drop(MemberId id, std::uint64_t item)
+{
+    editable();
+    auto holder = member(id);
+    give_up_item(holder, item);
+    edit(id) = std::move(holder);
 }
 
 void CampaignParty::set_wealth(Purse wealth)

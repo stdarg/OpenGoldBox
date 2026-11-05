@@ -2370,3 +2370,27 @@ gear is gained, and decided on 2026-11-04 and 2026-11-05:
   equipping it by hand would, and stays in the pack.
 - The shop or the treasure message says what each character equipped and
   what went to the pack.
+
+## SELL-1 (2026-11-05): selling and dropping items
+
+The user asked that every item a character carries can be sold in a shop or
+dropped, unless it is cursed, and that a dropped item vanishes. As in the
+original's Sell and Drop:
+
+- **Sell**, in the inventory while the party is in any shop: the first press
+  shows the shop's offer, half the item's price in gold pieces, rounded down;
+  the second press sells the item and the gold goes to the party purse. A
+  stack partly used up (potions, flasks of oil) sells for its share of the
+  price. An item with no original record, such as a scroll a member wrote,
+  sells for nothing. The shop does not add what it buys to its stock, as the
+  original's shops let it go at once.
+- **Drop**, in the inventory anywhere outside a fight: the first press warns
+  that the item will be gone for good, the second drops it. It cannot be picked
+  up again.
+- Each takes the whole entry, a stack at once, and takes it off first when it
+  is equipped.
+- **A cursed item**, worn or still in the pack, identified or not, can be
+  neither sold nor dropped. A worn one goes only when Remove Curse is cast on
+  its wielder ([MAGIC-1](#magic-1-2026-10-17-the-originals-enchanted-weapons-and-armor)).
+  Coins, gems and jewelry are in the party purse, not an inventory, and are not
+  sold this way.

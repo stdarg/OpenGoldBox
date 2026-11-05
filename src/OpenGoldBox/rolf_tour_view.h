@@ -166,6 +166,14 @@ class RolfTourView : public godot::Control
     bool treasure_leave_warned_{};
     // What the last take at a treasure gave, shown under the pile.
     godot::String treasure_notice_;
+    // In the inventory: Sell or Drop was pressed once for this item; the next
+    // press of the same button gives it up (SELL-1).
+    struct GiveUpWarning
+    {
+        std::uint64_t item{};
+        bool sell{};
+    };
+    std::optional<GiveUpWarning> give_up_warned_;
     std::optional<opengold::PartyState> identify_check_retained_;
     std::uint64_t identify_check_sword_{};
     // The scroll whose spells the Cast menu offers (MAGIC-6); none while it
@@ -265,6 +273,9 @@ class RolfTourView : public godot::Control
     void inventory_selected(std::int64_t index);
     void equip_item(bool equip);
     void identify_item();
+    // The shop's Sell (sell) or Drop: the first press says what happens, the
+    // second gives the selected item up.
+    void give_up_item(bool sell);
     void cast_identify();
     void use_inventory_item();
     void check_identification_spells();

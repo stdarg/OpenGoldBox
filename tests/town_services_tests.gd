@@ -7,6 +7,7 @@ extends SceneTree
 # game, steps in as a player does and uses every service:
 # - a shop must list its data/shops record (names and prices), sell every
 #   item at its price to the buyer chosen, and refuse a party that cannot pay;
+#   in the first shop, Sell and Drop must each give up an item after asking;
 # - a temple must list its record's services and prices, offer each to the
 #   members it helps and no one else, take the price once paid, and cure;
 # - an inn must charge its platinum once a night, and its first night must
@@ -27,10 +28,14 @@ var gold_pattern := RegEx.new()
 var buyer_pattern := RegEx.new()
 # Purchases auto-equip put on (EQUIP-1, on by default): the shop says so.
 var auto_equipped := 0
+# Sell and Drop (SELL-1) are checked once, in the first shop a rich party buys at.
+var sold_and_dropped := false
+var offer_pattern := RegEx.new()
 
 func _initialize() -> void:
 	hp_pattern.compile("HP (-?\\d+)/(\\d+)")
 	gold_pattern.compile("party (\\d+) gp")
+	offer_pattern.compile("The shop offers (\\d+) gp for ")
 	buyer_pattern.compile("buying for (.+): party (\\d+) gp, carrying (\\d+)/(\\d+) lb")
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--fixtures="): fixtures = arg.trim_prefix("--fixtures=")
@@ -194,6 +199,9 @@ func check_shop(x: int, y: int, party: String) -> void:
 		for i in range(stock.size()):
 			await buy(i, stock[i], true)
 	print(context, ": ", stock.size(), " items listed, gold ", gold, " -> ", party_gold())
+	if party != "poor" and not sold_and_dropped:
+		sold_and_dropped = true
+		await check_sell_and_drop()
 	if not await press("CampaignTown/LeaveShop"):
 		bug("Leave shop cannot be pressed", "")
 	await settle()
@@ -236,6 +244,46 @@ func buy(index: int, shown: String, affordable: bool) -> void:
 		bug("a bought item does not reach the buyer", shown + ": " + str(before) + " -> " + str(after) + " '" + dialogue() + "'")
 	if dialogue().contains(" equips "):
 		auto_equipped += 1
+
+func inventory_count() -> int:
+	return (town().get_node("InventoryPanel/Items") as ItemList).item_count
+
+func inventory_status() -> String:
+	return town().get_node("InventoryPanel/Status").text
+
+# In the inventory, Sell's first press shows the shop's offer and the second
+# sells for it; Drop's first press warns and the second drops the item, unpaid.
+func check_sell_and_drop() -> void:
+	if not await press("CampaignTown/Inventory"):
+		bug("the inventory does not open in a shop", "")
+		return
+	var items: ItemList = town().get_node("InventoryPanel/Items")
+	var count := inventory_count()
+	if count < 2:
+		bug("the buyer has too few items to sell and drop", str(count))
+		await press("CampaignTown/InventoryPanel/Close")
+		return
+	var gold := party_gold()
+	items.select(0)
+	items.item_selected.emit(0)
+	await press("CampaignTown/InventoryPanel/Sell")
+	var found := offer_pattern.search(inventory_status())
+	if found == null or inventory_count() != count:
+		bug("Sell does not make an offer first", "'" + inventory_status() + "'")
+	await press("CampaignTown/InventoryPanel/Sell")
+	var offer := int(found.get_string(1)) if found else 0
+	if inventory_count() != count - 1 or party_gold() != gold + offer or not inventory_status().contains(" sells "):
+		bug("Sell does not sell for the offer", str(count) + " -> " + str(inventory_count()) + " items, gold " + str(gold) + " -> " + str(party_gold()) + " for " + str(offer) + " '" + inventory_status() + "'")
+	gold = party_gold()
+	count = inventory_count()
+	await press("CampaignTown/InventoryPanel/Drop")
+	if inventory_count() != count or not inventory_status().contains("gone for good"):
+		bug("Drop does not warn first", "'" + inventory_status() + "'")
+	await press("CampaignTown/InventoryPanel/Drop")
+	if inventory_count() != count - 1 or party_gold() != gold or not inventory_status().contains(" drops "):
+		bug("Drop does not drop the item", str(count) + " -> " + str(inventory_count()) + " items, gold " + str(gold) + " -> " + str(party_gold()) + " '" + inventory_status() + "'")
+	print(context, ": sold for ", offer, " gp and dropped an item")
+	await press("CampaignTown/InventoryPanel/Close")
 
 # --- Temples ----------------------------------------------------------------
 
@@ -518,6 +566,8 @@ func run() -> void:
 			places += 1
 			await check_watch()
 	var shops := files.filter(func(f): return f.begins_with("shop-") and (only == "" or f.begins_with(only)))
+	if not shops.is_empty() and only == "" and not sold_and_dropped:
+		bug("Sell and Drop were never checked", "")
 	if not shops.is_empty() and only == "" and auto_equipped == 0:
 		bug("auto-equip never put on a bought weapon, armor or shield", "")
 	print("Checked ", places, " places; ", bugs.size(), " distinct problems; ", auto_equipped, " purchases auto-equipped")

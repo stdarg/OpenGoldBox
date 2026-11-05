@@ -562,6 +562,26 @@ offset_bottom = -18
 metadata/layout_reference = Rect2(1000, 866, 150, 36)
 text = "Use"
 
+[node name="Sell" type="Button" parent="InventoryPanel"]
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 1170
+offset_right = 1320
+offset_top = -54
+offset_bottom = -18
+metadata/layout_reference = Rect2(1170, 866, 150, 36)
+text = "Sell"
+
+[node name="Drop" type="Button" parent="InventoryPanel"]
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 1340
+offset_right = 1490
+offset_top = -54
+offset_bottom = -18
+metadata/layout_reference = Rect2(1340, 866, 150, 36)
+text = "Drop"
+
 [node name="MemberSheet" type="Window" parent="."]
 size = Vector2i(1800, 960)
 metadata/layout_reference_size = Vector2i(1800, 960)

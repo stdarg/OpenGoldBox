@@ -291,6 +291,10 @@ void RolfTourView::prepare_view()
         .connect("pressed", presentation::guarded(this, &RolfTourView::identify_item));
     required_node<Button>(*this, "InventoryPanel/CastIdentify")
         .connect("pressed", presentation::guarded(this, &RolfTourView::cast_identify));
+    required_node<Button>(*this, "InventoryPanel/Sell")
+        .connect("pressed", presentation::guarded(this, &RolfTourView::give_up_item).bind(true));
+    required_node<Button>(*this, "InventoryPanel/Drop")
+        .connect("pressed", presentation::guarded(this, &RolfTourView::give_up_item).bind(false));
     required_node<Button>(*this, "InventoryPanel/UseItem")
         .connect("pressed", presentation::guarded(this, &RolfTourView::use_inventory_item));
     required_node<Button>(*this, "Cast")
@@ -659,6 +663,13 @@ void RolfTourView::refresh_inventory()
     auto &identify = required_node<Button>(*this, "InventoryPanel/Identify");
     identify.set_visible(session_ && session_->snapshot().phase == TourPhase::shopping);
     identify.set_disabled(!items->get_item_count());
+    // Any shop buys any item but a cursed one, and any item but a cursed one
+    // can be dropped (SELL-1).
+    auto &sell = required_node<Button>(*this, "InventoryPanel/Sell");
+    sell.set_visible(identify.is_visible());
+    sell.set_disabled(!items->get_item_count());
+    required_node<Button>(*this, "InventoryPanel/Drop").set_disabled(!items->get_item_count());
+    give_up_warned_.reset();
     // Any member who can cast Identify may cast it on the selected item.
     auto &spell = required_node<Button>(*this, "InventoryPanel/CastIdentify");
     spell.set_visible(campaign_->identifier().has_value());
@@ -686,6 +697,7 @@ void RolfTourView::inventory_selected(std::int64_t index)
     }
     // The Manual and some potions are used outside combat (MAGIC-3), and a
     // scroll whose spell the member can read or copy now (MAGIC-6).
+    give_up_warned_.reset();
     const auto &item = items[index];
     const bool scroll = opengold::rules::parse_scroll_key(item.definition_id).has_value();
     required_node<Button>(*this, "InventoryPanel/UseItem")
@@ -793,6 +805,70 @@ void RolfTourView::identify_item()
     }
     catch (const std::exception &e)
     {
+        required_node<Label>(*this, "InventoryPanel/Status").set_text(i18n::text(e.what()));
+    }
+}
+
+void RolfTourView::give_up_item(bool sell)
+{
+    try
+    {
+        const auto selection =
+            required_node<ItemList>(*this, "InventoryPanel/Items").get_selected_items();
+        if (selection.is_empty())
+        {
+            throw std::runtime_error("Select an item first.");
+        }
+        const auto id = campaign_->selected();
+        const auto &m = campaign_->member(id);
+        const auto items = m.character.inventory().items();
+        if (selection[0] < 0 || static_cast<std::size_t>(selection[0]) >= items.size())
+        {
+            throw std::runtime_error("Select an existing item.");
+        }
+        const auto item = items[selection[0]].id;
+        const auto label = inventory_label(m, items[selection[0]]);
+        const auto name = String::utf8(m.character.sheet().name.c_str());
+        auto &status = required_node<Label>(*this, "InventoryPanel/Status");
+        // As in the original, the shop makes its offer and Drop warns before
+        // the item goes.
+        if (!give_up_warned_ || give_up_warned_->item != item || give_up_warned_->sell != sell)
+        {
+            give_up_warned_ = GiveUpWarning{item, sell};
+            status.set_text(
+                sell ? i18n::format(N_("The shop offers {gold} gp for {item}. Press Sell again to sell it."),
+                                    {{"gold", campaign_->sale_offer(id, item)}, {"item", label}})
+                     : i18n::format(N_("{item} will be gone for good. Press Drop again to drop it."),
+                                    {{"item", label}}));
+            return;
+        }
+        String done;
+        if (sell)
+        {
+            const auto gold = campaign_->sell(id, item);
+            done = i18n::format(N_("{name} sells {item} for {gold} gp."),
+                                {{"name", name}, {"item", label}, {"gold", gold}});
+        }
+        else
+        {
+            campaign_->drop(id, item);
+            done = i18n::format(N_("{name} drops {item}. It is gone."),
+                                {{"name", name}, {"item", label}});
+        }
+        refresh_inventory();
+        auto &list = required_node<ItemList>(*this, "InventoryPanel/Items");
+        if (list.get_item_count())
+        {
+            const auto next = std::min<std::int32_t>(selection[0], list.get_item_count() - 1);
+            list.select(next);
+            inventory_selected(next);
+        }
+        refresh();
+        status.set_text(done);
+    }
+    catch (const std::exception &e)
+    {
+        give_up_warned_.reset();
         required_node<Label>(*this, "InventoryPanel/Status").set_text(i18n::text(e.what()));
     }
 }

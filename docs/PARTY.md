@@ -190,6 +190,12 @@ change with the chosen member. Such items can still be bought or taken, and
 untrained gear equipped with the penalties above (the user's decision,
 2026-11-05). Nothing unidentified gives its magic away.
 
+In the inventory, Sell (in a shop) and Drop give up the selected item: the first
+press shows the shop's offer, half the price, or warns that a dropped item is
+gone for good, and the second sells or drops it, taking it off first when worn.
+A cursed item can be neither sold nor dropped
+([SELL-1](SRD-DECISIONS.md#sell-1-2026-11-05-selling-and-dropping-items)).
+
 Training uses the base level-one class traits; optional Cleric/Druid orders that
 add training are not selected by this creator. Equipping or removing gear rebuilds
 these effects from the current loadout. Duplicate weapon/armor/shield slots remain
