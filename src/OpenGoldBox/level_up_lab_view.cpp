@@ -1,4 +1,5 @@
 #include "level_up_lab_view.h"
+#include "class_text.h"
 #include "character_sheet_text.h"
 #include "game_resources.h"
 #include "godot_nodes.h"
@@ -342,7 +343,12 @@ void LevelUpLabView::refresh_result()
     summary.set_text(i18n::format(
         "{name} / {class} / {race} / {gender}\nLevel {level} · HP {current}/{maximum} · XP {xp}",
         {{"name", String::utf8(sheet.name.c_str())},
-         {"class", label_for(classes_, sheet.character_class)},
+         // A multiclass character's classes and levels (MULTI-1).
+         {"class", std::count(sheet.level_classes.begin(), sheet.level_classes.end(),
+                              sheet.level_classes.front()) ==
+                           static_cast<std::ptrdiff_t>(sheet.level_classes.size())
+                       ? label_for(classes_, sheet.character_class)
+                       : i18n::class_summary(sheet)},
          {"race", label_for(races_, sheet.race)},
          {"gender", label_for(genders_, sheet.gender)},
          {"level", sheet.level},

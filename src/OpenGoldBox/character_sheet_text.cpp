@@ -1,4 +1,5 @@
 #include "sheet_format.h"
+#include "class_text.h"
 #include "godot_text.h"
 #include "character_sheet_text.h"
 #include "inventory_label.h"
@@ -32,7 +33,7 @@ String formatted_sheet(const Character &character, const PartyMember *member,
          {"level", s.level},
          {"race", i18n::text(s.race)},
          {"gender", i18n::text(s.gender)},
-         {"class", i18n::text(s.character_class)},
+         {"class", i18n::class_summary(s)},
          {"alignment", i18n::text(s.alignment)},
          {"background", i18n::text(s.background)}});
     // The current class is not a future goal.

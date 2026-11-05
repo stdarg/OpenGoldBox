@@ -2,6 +2,17 @@ namespace mastery_grant_checks
 {
 namespace mastery = opengold::srd5::detail;
 
+// A single-class character's levels: all `level` of them in `klass`.
+mastery::ClassLevels levels_in(mastery::CharacterClass klass, int level)
+{
+    mastery::ClassLevels levels;
+    for (int n = 0; n < level; ++n)
+    {
+        levels.add(klass);
+    }
+    return levels;
+}
+
 Character chosen(std::string klass)
 {
     auto h = hero(klass);
@@ -72,7 +83,7 @@ void run()
         check(h.sheet().training.masteries.size() == options.count,
               "Real character creation produces chosen mastery grants");
         auto rules = module();
-        check(rules->character_profile(h.sheet(), {}).data.starts_with("PC43 "),
+        check(rules->character_profile(h.sheet(), {}).data.starts_with("PC44 "),
               "Chosen masteries use validated combat recipes");
         for (unsigned n = 0; n < options.count; ++n)
         {
@@ -102,7 +113,7 @@ void run()
         rejects(
             [&]
             {
-                (void)mastery::mastery_choices(duplicate, character_class, 1);
+                (void)mastery::mastery_choices(duplicate, levels_in(character_class, 1));
             });
         std::vector<std::string> selected;
         for (const auto &g : grants)
@@ -114,10 +125,10 @@ void run()
         }
         auto next = selected;
         next[0] = options.options.at(options.count).id;
-        const auto replaced = mastery::replace_masteries(grants, character_class, 1, next);
+        const auto replaced = mastery::replace_masteries(grants, levels_in(character_class, 1), next);
         check(grants == h.sheet().grants && replaced != grants,
               "Rest replacement produces a candidate without mutating original grants");
-        check(mastery::replace_masteries(grants, character_class, 1, selected) == grants,
+        check(mastery::replace_masteries(grants, levels_in(character_class, 1), selected) == grants,
               "Keeping selections is an exact no-op");
         next[1] = options.options.at(options.count + 1).id;
         if (klass.id == "fighter" || klass.id == "barbarian")
@@ -125,12 +136,12 @@ void run()
             rejects(
                 [&]
                 {
-                    (void)mastery::replace_masteries(grants, character_class, 1, next);
+                    (void)mastery::replace_masteries(grants, levels_in(character_class, 1), next);
                 });
         }
         else
         {
-            check(mastery::replace_masteries(grants, character_class, 1, next) != grants,
+            check(mastery::replace_masteries(grants, levels_in(character_class, 1), next) != grants,
                   "Paladin/Ranger/Rogue may replace both kinds");
         }
         next = selected;
@@ -138,21 +149,21 @@ void run()
         rejects(
             [&]
             {
-                (void)mastery::replace_masteries(grants, character_class, 1, next);
+                (void)mastery::replace_masteries(grants, levels_in(character_class, 1), next);
             });
         next = selected;
         next[0] = "wand";
         rejects(
             [&]
             {
-                (void)mastery::replace_masteries(grants, character_class, 1, next);
+                (void)mastery::replace_masteries(grants, levels_in(character_class, 1), next);
             });
         const auto original = grants;
         std::erase_if(grants, mastery::is_mastery_grant);
         rejects(
             [&]
             {
-                (void)mastery::replace_masteries(grants, character_class, 1, selected);
+                (void)mastery::replace_masteries(grants, levels_in(character_class, 1), selected);
             });
         if (klass.id == "barbarian")
         {
@@ -207,9 +218,9 @@ void run()
     rejects(
         [&]
         {
-            (void)mastery::mastery_choices(grants, mastery::CharacterClass::fighter, 3);
+            (void)mastery::mastery_choices(grants, levels_in(mastery::CharacterClass::fighter, 3));
         });
-    const auto fourth = mastery::mastery_choices(grants, mastery::CharacterClass::fighter, 4);
+    const auto fourth = mastery::mastery_choices(grants, levels_in(mastery::CharacterClass::fighter, 4));
     check(fourth.at(extra.id).size() == 1, "Fourth kind validates at4");
 }
 } // namespace mastery_grant_checks

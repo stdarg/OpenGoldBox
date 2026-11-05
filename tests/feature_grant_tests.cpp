@@ -84,7 +84,7 @@ void creation()
         const auto sheet = hero(klass.id).sheet();
         check(has(sheet, {"feat:savage_attacker", "background:soldier", 1, {}}),
               "Every Soldier acquires the feat at creation, independent of class and advancement");
-        check(rules->character_profile(sheet, {}).data.starts_with("PC43 1 2 "),
+        check(rules->character_profile(sheet, {}).data.starts_with("PC44 1 2 "),
               "Creation grant supplies Savage Attacker to combat without a level-four feat");
         auto invalid = sheet;
         invalid.grants.push_back(sheet.grants.front());
@@ -342,7 +342,7 @@ void profiles()
             (void)rules->create(encounter(wrong), 13);
         });
     wrong = profile;
-    replace(wrong, "PC43 4 2 ", "PC43 4 0 ");
+    replace(wrong, "PC44 4 2 ", "PC44 4 0 ");
     rejects(
         [&]
         {

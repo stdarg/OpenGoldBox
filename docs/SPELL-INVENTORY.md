@@ -72,7 +72,7 @@ recharge must remain source-specific.
 - Scrolls, magic items, monster spellcasting and arbitrary campaign rewards can
   introduce other spells independently of character level. Those content and
   item inventories are separate; this is the class/species/background/feat
-  entitlement inventory required by [#165](https://github.com/stdarg/OpenGoldBox/issues/165). Multiclassing remains [#179](https://github.com/stdarg/OpenGoldBox/issues/179)–184.
+  entitlement inventory required by [#165](https://github.com/stdarg/OpenGoldBox/issues/165). Multiclassing ([#179](https://github.com/stdarg/OpenGoldBox/issues/179)–184) came later ([MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)).
 
 ### Normal class-list cross-check
 

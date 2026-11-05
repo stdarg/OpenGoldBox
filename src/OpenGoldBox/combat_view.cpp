@@ -1,4 +1,5 @@
 #include "godot_text.h"
+#include "class_text.h"
 #include "opengold/diagnostic_log.h"
 #include "opengold/path_text.h"
 #include "initiative_controls.h"
@@ -3718,7 +3719,7 @@ void CombatView::draw_view()
                 const auto &sheet = member.character.sheet();
                 entry["selected"] = id == selected_;
                 entry["name"] = gs(sheet.name);
-                entry["detail"] = i18n::text(sheet.character_class) + " / " +
+                entry["detail"] = i18n::class_summary(sheet) + " / " +
                                   i18n::text(sheet.race) + " / " + i18n::text(sheet.gender);
                 entry["hp"] = hp;
                 entry["maximum"] = maximum;

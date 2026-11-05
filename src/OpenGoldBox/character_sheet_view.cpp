@@ -1,4 +1,5 @@
 #include "sheet_format.h"
+#include "class_text.h"
 #include "godot_text.h"
 #include "godot_nodes.h"
 #include "game_resources.h"
@@ -126,7 +127,7 @@ void CharacterCreationView::show_modifiers()
             i18n::formatted("Race / {race}", {{"race", i18n::text(s.race)}}) +
             "[/theme_emphasis]\n" + i18n::render(s.racial_messages).utf8().get_data();
     text += "\n\n[theme_emphasis]" +
-            i18n::formatted("Class / {class}", {{"class", i18n::text(s.character_class)}}) +
+            i18n::formatted("Class / {class}", {{"class", i18n::class_summary(s)}}) +
             "[/theme_emphasis]\n" + i18n::render(s.class_messages).utf8().get_data();
     text +=
         "\n\n[theme_emphasis]" +

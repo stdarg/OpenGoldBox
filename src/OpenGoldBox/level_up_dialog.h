@@ -64,6 +64,15 @@ class LevelUpDialog : public godot::Window
     opengold::MemberId advancing_{};
     opengold::rules::AdvancementOptions advancement_options_;
     opengold::rules::AdvancementChoice advancement_choice_;
+    // The Class row's classes (MULTI-1): the starting class first.
+    std::vector<opengold::rules::AdvancementOption> classes_;
+    // The first page for the level taken in the class (its stable ID).
+    void begin_class(const std::string &class_id);
+    void class_selected(std::int64_t index);
+    // A level in a class other than the starting one: its choices, and its
+    // spell choices when it has any, with its prepared spells kept.
+    [[nodiscard]] opengold::rules::AdvancementChoice
+    class_default(const std::string &class_id) const;
     bool advancement_refreshing_{};
 
     void bind_controls();

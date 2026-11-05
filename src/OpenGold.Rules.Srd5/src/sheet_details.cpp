@@ -1,11 +1,13 @@
 #include "opengold/srd5.h"
 #include "character_class.h"
+#include "feature_grants.h"
 #include "spell_access.h"
 #include "spell_table.h"
 #include "training.h"
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <optional>
 #include <utility>
 
 namespace opengold::srd5
@@ -257,9 +259,80 @@ std::vector<TrainingChoiceGroup> choice_groups(const CharacterDraft &creation)
 }
 } // namespace
 
+namespace
+{
+// The class a grant's source names ("class:rogue", "subclass:rogue:thief"),
+// if any.
+std::optional<detail::CharacterClass> source_class(std::string_view source_id)
+{
+    for (const std::string_view prefix : {"class:", "subclass:"})
+    {
+        if (source_id.starts_with(prefix))
+        {
+            const auto rest = source_id.substr(prefix.size());
+            for (const auto &choice : detail::creation_choices(CreationField::character_class))
+            {
+                if (rest.substr(0, rest.find(':')) == choice.id)
+                {
+                    return detail::class_from_id(choice.id);
+                }
+            }
+        }
+    }
+    return std::nullopt;
+}
+
+// A multiclass sheet's heading for one class's features (MULTI-1).
+std::string_view class_features_heading(detail::CharacterClass klass)
+{
+    using enum detail::CharacterClass;
+    switch (klass)
+    {
+    case barbarian:
+        return "Barbarian features";
+    case bard:
+        return "Bard features";
+    case cleric:
+        return "Cleric features";
+    case druid:
+        return "Druid features";
+    case fighter:
+        return "Fighter features";
+    case monk:
+        return "Monk features";
+    case paladin:
+        return "Paladin features";
+    case ranger:
+        return "Ranger features";
+    case rogue:
+        return "Rogue features";
+    case sorcerer:
+        return "Sorcerer features";
+    case warlock:
+        return "Warlock features";
+    default:
+        return "Wizard features";
+    }
+}
+} // namespace
+
 std::vector<SheetDetail> sheet_details(const CharacterSheet &sheet, const CharacterDraft &creation)
 {
-    const auto groups = choice_groups(creation);
+    auto groups = choice_groups(creation);
+    // A later class's level-one choices are named by their groups too.
+    const auto levels = detail::class_levels(sheet);
+    const bool multiclassed = levels.count() > 1;
+    for (const auto &choice : detail::creation_choices(CreationField::character_class))
+    {
+        const auto held = detail::class_from_id(choice.id);
+        if (levels[held] && choice.id != creation.character_class)
+        {
+            for (auto &group : detail::multiclass_options(held, {}, {}))
+            {
+                groups.push_back(std::move(group));
+            }
+        }
+    }
     const auto invocations = detail::every_invocation(sheet.grants);
     Details details;
     for (const auto &grant : sheet.grants)
@@ -272,15 +345,24 @@ std::vector<SheetDetail> sheet_details(const CharacterSheet &sheet, const Charac
         {
             continue;
         }
+        // A class taken after the first, with part of its training.
+        if (prefix == "multiclass:")
+        {
+            details.add(Kind::feature, "Multiclass training",
+                        std::string(detail::class_label(detail::class_from_id(id))));
+            continue;
+        }
         if (const auto fixed = fixed_label(grant.id); !fixed.empty())
         {
             const auto kind = prefix == "trait:"      ? Kind::species
                               : prefix == "subclass:" ? Kind::subclass
                                                       : Kind::feature;
+            const auto owner = multiclassed ? source_class(grant.source_id) : std::nullopt;
             details.add(kind,
                         prefix == "trait:"      ? "Species traits"
                         : prefix == "subclass:" ? "Subclass"
                         : prefix == "boon:"     ? "Boons"
+                        : owner                 ? class_features_heading(*owner)
                                                 : "Features",
                         std::string(fixed));
             continue;
@@ -309,7 +391,9 @@ std::vector<SheetDetail> sheet_details(const CharacterSheet &sheet, const Charac
                                       : Kind::spell,
                         !feat.empty() ? feat
                         : cantrip     ? "Cantrips"
-                        : detail::class_of(sheet) == detail::CharacterClass::wizard
+                        // A Wizard's spells, starting or later (MULTI-1).
+                        : grant.source_id == "class:wizard:spellcasting" ||
+                                grant.source_id == "item:scroll"
                             ? "Spellbook"
                             : "Spells known",
                         named_spell(spell));

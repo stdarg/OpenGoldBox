@@ -1,4 +1,5 @@
 #include "opengold/training_hall.h"
+#include <algorithm>
 #include <array>
 #include <stdexcept>
 #include <utility>
@@ -39,6 +40,15 @@ std::optional<TrainingHall> training_hall_for_class(std::string_view class_id)
         }
     }
     return {};
+}
+
+bool trains_any(TrainingHall hall, std::span<const std::string> class_ids)
+{
+    return std::any_of(class_ids.begin(), class_ids.end(),
+                       [&](const std::string &id)
+                       {
+                           return training_hall_for_class(id) == hall;
+                       });
 }
 
 std::vector<std::string_view> hall_classes(TrainingHall hall)

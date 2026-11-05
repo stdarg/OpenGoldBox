@@ -195,24 +195,69 @@ bool reads_divine_scrolls(CharacterClass klass)
            klass == CharacterClass::druid || klass == CharacterClass::ranger;
 }
 
+// The training a class gives a character who takes it after the first
+// (SRD 5.2.1, each class's "As a Multiclass Character", MULTI-1).
+struct MulticlassTraining
+{
+    bool martial_weapons{}, light_armor{}, medium_armor{}, shields{};
+};
+
+MulticlassTraining multiclass_training(CharacterClass klass)
+{
+    switch (klass)
+    {
+    case CharacterClass::barbarian:
+        return {true, false, false, true};
+    case CharacterClass::fighter:
+    case CharacterClass::paladin:
+    case CharacterClass::ranger:
+        return {true, true, true, true};
+    case CharacterClass::cleric:
+        return {false, true, true, true};
+    case CharacterClass::druid:
+        return {false, true, false, true};
+    case CharacterClass::bard:
+    case CharacterClass::rogue:
+    case CharacterClass::warlock:
+        return {false, true, false, false};
+    default:
+        return {};
+    }
+}
+
 bool trained(CharacterClass klass, std::span<const FeatureGrant> grants, std::string_view key)
 {
     // Starting-class grants, SRD 5.2.1 pp. 49 and 61, plus the Protector Divine
-    // Order's Martial weapon and Heavy armor training. Multiclass entry and other
-    // optional feature grants are separate, not yet implemented capabilities.
+    // Order's Martial weapon and Heavy armor training.
     // The Druid's Warden Primal Order: Martial weapons and Medium armor.
     const bool protector = detail::has_grant(grants, "order:protector");
     const bool warden = detail::has_grant(grants, "order:warden");
+    // A class taken later gives part of its training (MULTI-1).
+    MulticlassTraining later;
+    for (const auto &grant : grants)
+    {
+        if (grant.id.starts_with(detail::multiclass_prefix))
+        {
+            const auto entry = multiclass_training(
+                detail::class_from_id(std::string_view(grant.id).substr(detail::multiclass_prefix.size())));
+            later.martial_weapons |= entry.martial_weapons;
+            later.light_armor |= entry.light_armor;
+            later.medium_armor |= entry.medium_armor;
+            later.shields |= entry.shields;
+        }
+    }
     if (const auto *weapon = detail::weapon(key))
     {
         return detail::weapon_proficient(klass, *weapon) ||
-               ((protector || warden) && weapon->martial);
+               ((protector || warden || later.martial_weapons) && weapon->martial);
     }
     if (const auto *armor = detail::armor(key))
     {
         return detail::armor_trained(klass, armor->category) ||
                (protector && armor->category == detail::ArmorCategory::heavy) ||
-               (warden && armor->category == detail::ArmorCategory::medium);
+               ((warden || later.medium_armor) && armor->category == detail::ArmorCategory::medium) ||
+               (later.light_armor && armor->category == detail::ArmorCategory::light) ||
+               (later.shields && armor->category == detail::ArmorCategory::shield);
     }
     // Anyone can wear a ring, bracers, a cloak, gauntlets or a necklace, and
     // carry Magic Lock Picks or a Stone of Good Luck.
@@ -767,11 +812,11 @@ constexpr std::string_view rush_source = "species:orc/trait:adrenaline_rush";
 // The only character profile tag this module reads or writes. Profiles live
 // inside campaign saves and combat checkpoints, whose own format numbers reject
 // anything older; change this recipe in place until 1.0.
-constexpr std::string_view profile_magic = "PC43";
+constexpr std::string_view profile_magic = "PC44";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 75;
+constexpr unsigned checkpoint_format = 76;
 // A broken monster's turns of getting no nearer the edge before it charges
 // (MORALE-2).
 constexpr int panic_charge_after_turns = 2;
@@ -1562,6 +1607,10 @@ struct Definition
     int reach{5};
     Dice ranged;
     int range{}, long_range{}, winds{}, casting{}, level{};
+    // The levels in each class (MULTI-1); `level` is their total.
+    detail::ClassLevels class_levels;
+    // Each level's Hit Point Die, smallest first; empty for a monster.
+    std::vector<int> level_dice;
     SpellSlots slots{};
     int extra_attacks{}; // Extra Attack: attacks after the Attack action's first
     // The lowest d20 that is a Critical Hit with a weapon or Unarmed Strike:
@@ -1838,6 +1887,10 @@ struct Definition
     int sorcery_points{};               // Sorcerer level 2: Font of Magic, in Actor::lay_on_hands
     std::vector<std::string> metamagic; // the Sorcerer's Metamagic options
     bool pact_magic{};                  // Warlock: slots of one level, back on a Short Rest
+    // Pact Magic's slots, of one level. A Warlock with another Spellcasting
+    // class has them among `slots`, and a Short Rest gives back up to this
+    // many of that level (MULTI-1).
+    int pact_slot_level{}, pact_slots{};
     // The scrolls it can read (MAGIC-6), as the original's magic-user and
     // cleric scrolls: an arcane caster reads arcane scrolls, a divine or primal
     // caster divine ones.
@@ -2071,6 +2124,27 @@ struct Content
     std::map<std::string, Definition> definitions;
 };
 
+// A class resource's count, one for each class (MULTI-1): a multiclass
+// character's Bardic Inspiration and Arcane Recovery are its own, though both
+// kinds are kept in Actor::arcane. A monster's resources sit under the class
+// whose feature they copy.
+struct ClassCounts
+{
+    std::array<int, 12> by_class{};
+
+    [[nodiscard]] int &operator[](CharacterClass klass) noexcept
+    {
+        return by_class[static_cast<std::size_t>(klass)];
+    }
+
+    [[nodiscard]] int operator[](CharacterClass klass) const noexcept
+    {
+        return by_class[static_cast<std::size_t>(klass)];
+    }
+
+    bool operator==(const ClassCounts &) const = default;
+};
+
 // An actor has a life state (hit points, death saves, recovery); it is not
 // one, so it holds it rather than inheriting it, and two actors do not compare
 // equal merely because their hit points match (Effective C++ Item 38).
@@ -2081,10 +2155,12 @@ struct Actor
     Definition definition;
     int initiative{}, movement{}, winds{};
     SpellSlots slots{};
-    int hit_dice{}, rushes{}, surges{}, dashes{}, arcane{}, lay_on_hands{},
-        // Remaining free casts of Paladin's Smite or Favored Enemy: a character has at
-        // most one of them while multiclassing is deferred (SCOPE-1).
-        free_casts{}, channel_divinity{};
+    int hit_dice{}, rushes{}, dashes{};
+    // Class resources, each class's its own (MULTI-1): Action Surge and Focus;
+    // the once-a-rest features; Lay On Hands' pool and other point pools; free
+    // casts (Paladin's Smite, Favored Enemy, Innate Sorcery and the like);
+    // Channel Divinity (a Cleric's and a Paladin's together), Rage and Wild Shape.
+    ClassCounts surges, arcane, lay_on_hands, free_casts, channel_divinity;
     // Magic Initiate's unspent free casts: bit n is Definition::initiate_spells[n].
     int initiate_casts{};
     // The uses each of Definition::innate's pools has spent, four bits a pool.
@@ -2316,11 +2392,16 @@ struct ResourceDescriptor
     int short_rest;        // uses restored by a Short Rest; -1 means the full capacity
     bool combat_view;      // also listed during combat, not only on the rest screen
     unsigned slot_level{}; // a spell slot row: its level, in place of the members
+    // A class resource: its counts and the class whose count it is.
+    ClassCounts Actor::*pool{};
+    CharacterClass owner{};
 };
 
 int remaining_of(const ResourceDescriptor &descriptor, const Actor &a)
 {
-    return descriptor.slot_level ? a.slots[descriptor.slot_level] : a.*descriptor.remaining;
+    return descriptor.slot_level ? a.slots[descriptor.slot_level]
+           : descriptor.pool     ? (a.*descriptor.pool)[descriptor.owner]
+                                 : a.*descriptor.remaining;
 }
 
 int capacity_of(const ResourceDescriptor &descriptor, const Definition &d)
@@ -2329,8 +2410,8 @@ int capacity_of(const ResourceDescriptor &descriptor, const Definition &d)
 }
 
 constexpr std::array resource_descriptors{
-    ResourceDescriptor{"action_surge", "Action Surge", &Actor::surges, &Definition::surges, -1,
-                       true},
+    ResourceDescriptor{"action_surge", "Action Surge", nullptr, &Definition::surges, -1,
+                       true, 0, &Actor::surges, CharacterClass::fighter},
     ResourceDescriptor{"adrenaline_rush", "Adrenaline Rush", &Actor::rushes, &Definition::rushes,
                        -1, true},
     ResourceDescriptor{"second_wind", "Second Wind", &Actor::winds, &Definition::winds, 1, false},
@@ -2343,49 +2424,49 @@ constexpr std::array resource_descriptors{
     ResourceDescriptor{"spell_slot:7", slot_labels[7], nullptr, nullptr, 0, false, 7},
     ResourceDescriptor{"spell_slot:8", slot_labels[8], nullptr, nullptr, 0, false, 8},
     ResourceDescriptor{"spell_slot:9", slot_labels[9], nullptr, nullptr, 0, false, 9},
-    ResourceDescriptor{"arcane_recovery", "Arcane Recovery", &Actor::arcane, &Definition::arcane, 0,
-                       false},
-    ResourceDescriptor{"lay_on_hands", "Lay On Hands", &Actor::lay_on_hands,
-                       &Definition::lay_on_hands, 0, true},
-    ResourceDescriptor{"paladins_smite", "Paladin's Smite", &Actor::free_casts,
-                       &Definition::free_smite, 0, true},
-    ResourceDescriptor{"favored_enemy", "Favored Enemy", &Actor::free_casts,
-                       &Definition::favored_enemy, 0, true},
-    ResourceDescriptor{"channel_divinity", "Channel Divinity", &Actor::channel_divinity,
-                       &Definition::channel_divinity, 1, true},
-    ResourceDescriptor{"rage", "Rage", &Actor::channel_divinity, &Definition::rages, 1, true},
-    ResourceDescriptor{"wild_shape", "Wild Shape", &Actor::channel_divinity,
-                       &Definition::wild_shapes, 1, true},
-    ResourceDescriptor{"focus", "Focus Points", &Actor::surges, &Definition::focus, -1, true},
-    ResourceDescriptor{"innate_sorcery", "Innate Sorcery", &Actor::free_casts,
-                       &Definition::innate_sorcery, 0, true},
-    ResourceDescriptor{"sorcery_points", "Sorcery Points", &Actor::lay_on_hands,
-                       &Definition::sorcery_points, 0, true},
-    ResourceDescriptor{"natural_recovery", "Natural Recovery", &Actor::arcane,
-                       &Definition::natural_recovery, 0, false},
-    ResourceDescriptor{"sorcerous_restoration", "Sorcerous Restoration", &Actor::arcane,
-                       &Definition::sorcerous_restoration, 0, false},
-    ResourceDescriptor{"magical_cunning", "Magical Cunning", &Actor::arcane,
-                       &Definition::magical_cunning, 0, false},
-    ResourceDescriptor{"bardic_inspiration", "Bardic Inspiration", &Actor::arcane,
-                       &Definition::bardic_inspiration, 0, true},
-    ResourceDescriptor{"uncanny_metabolism", "Uncanny Metabolism", &Actor::arcane,
-                       &Definition::metabolism, 0, false},
-    ResourceDescriptor{"indomitable", "Indomitable", &Actor::arcane, &Definition::indomitable, 0,
-                       true},
-    ResourceDescriptor{"wholeness_of_body", "Wholeness of Body", &Actor::free_casts,
-                       &Definition::wholeness, 0, true},
-    ResourceDescriptor{"relentless_rage", "Relentless Rage", &Actor::lay_on_hands,
-                       &Definition::relentless_rage, -1, true},
-    ResourceDescriptor{"intimidating_presence", "Intimidating Presence", &Actor::free_casts,
-                       &Definition::intimidating_presence, 0, true},
-    ResourceDescriptor{"persistent_rage", "Persistent Rage", &Actor::arcane,
-                       &Definition::persistent_rage, 0, true},
-    ResourceDescriptor{"tireless", "Tireless", &Actor::arcane, &Definition::tireless, 0, true},
-    ResourceDescriptor{"divine_intervention", "Divine Intervention", &Actor::arcane,
-                       &Definition::divine_intervention, 0, true},
-    ResourceDescriptor{"natures_veil", "Nature's Veil", &Actor::lay_on_hands,
-                       &Definition::natures_veil, 0, true}};
+    ResourceDescriptor{"arcane_recovery", "Arcane Recovery", nullptr, &Definition::arcane, 0,
+                       false, 0, &Actor::arcane, CharacterClass::wizard},
+    ResourceDescriptor{"lay_on_hands", "Lay On Hands", nullptr,
+                       &Definition::lay_on_hands, 0, true, 0, &Actor::lay_on_hands, CharacterClass::paladin},
+    ResourceDescriptor{"paladins_smite", "Paladin's Smite", nullptr,
+                       &Definition::free_smite, 0, true, 0, &Actor::free_casts, CharacterClass::paladin},
+    ResourceDescriptor{"favored_enemy", "Favored Enemy", nullptr,
+                       &Definition::favored_enemy, 0, true, 0, &Actor::free_casts, CharacterClass::ranger},
+    ResourceDescriptor{"channel_divinity", "Channel Divinity", nullptr,
+                       &Definition::channel_divinity, 1, true, 0, &Actor::channel_divinity, CharacterClass::cleric},
+    ResourceDescriptor{"rage", "Rage", nullptr, &Definition::rages, 1, true, 0, &Actor::channel_divinity, CharacterClass::barbarian},
+    ResourceDescriptor{"wild_shape", "Wild Shape", nullptr,
+                       &Definition::wild_shapes, 1, true, 0, &Actor::channel_divinity, CharacterClass::druid},
+    ResourceDescriptor{"focus", "Focus Points", nullptr, &Definition::focus, -1, true, 0, &Actor::surges, CharacterClass::monk},
+    ResourceDescriptor{"innate_sorcery", "Innate Sorcery", nullptr,
+                       &Definition::innate_sorcery, 0, true, 0, &Actor::free_casts, CharacterClass::sorcerer},
+    ResourceDescriptor{"sorcery_points", "Sorcery Points", nullptr,
+                       &Definition::sorcery_points, 0, true, 0, &Actor::lay_on_hands, CharacterClass::sorcerer},
+    ResourceDescriptor{"natural_recovery", "Natural Recovery", nullptr,
+                       &Definition::natural_recovery, 0, false, 0, &Actor::arcane, CharacterClass::druid},
+    ResourceDescriptor{"sorcerous_restoration", "Sorcerous Restoration", nullptr,
+                       &Definition::sorcerous_restoration, 0, false, 0, &Actor::arcane, CharacterClass::sorcerer},
+    ResourceDescriptor{"magical_cunning", "Magical Cunning", nullptr,
+                       &Definition::magical_cunning, 0, false, 0, &Actor::arcane, CharacterClass::warlock},
+    ResourceDescriptor{"bardic_inspiration", "Bardic Inspiration", nullptr,
+                       &Definition::bardic_inspiration, 0, true, 0, &Actor::arcane, CharacterClass::bard},
+    ResourceDescriptor{"uncanny_metabolism", "Uncanny Metabolism", nullptr,
+                       &Definition::metabolism, 0, false, 0, &Actor::arcane, CharacterClass::monk},
+    ResourceDescriptor{"indomitable", "Indomitable", nullptr, &Definition::indomitable, 0,
+                       true, 0, &Actor::arcane, CharacterClass::fighter},
+    ResourceDescriptor{"wholeness_of_body", "Wholeness of Body", nullptr,
+                       &Definition::wholeness, 0, true, 0, &Actor::free_casts, CharacterClass::monk},
+    ResourceDescriptor{"relentless_rage", "Relentless Rage", nullptr,
+                       &Definition::relentless_rage, -1, true, 0, &Actor::lay_on_hands, CharacterClass::barbarian},
+    ResourceDescriptor{"intimidating_presence", "Intimidating Presence", nullptr,
+                       &Definition::intimidating_presence, 0, true, 0, &Actor::free_casts, CharacterClass::barbarian},
+    ResourceDescriptor{"persistent_rage", "Persistent Rage", nullptr,
+                       &Definition::persistent_rage, 0, true, 0, &Actor::arcane, CharacterClass::barbarian},
+    ResourceDescriptor{"tireless", "Tireless", nullptr, &Definition::tireless, 0, true, 0, &Actor::arcane, CharacterClass::ranger},
+    ResourceDescriptor{"divine_intervention", "Divine Intervention", nullptr,
+                       &Definition::divine_intervention, 0, true, 0, &Actor::arcane, CharacterClass::cleric},
+    ResourceDescriptor{"natures_veil", "Nature's Veil", nullptr,
+                       &Definition::natures_veil, 0, true, 0, &Actor::lay_on_hands, CharacterClass::ranger}};
 
 // Whether a level-up takes Lessons of the First Ones' Skilled, as a new
 // invocation or one swapped in.
@@ -2410,9 +2491,14 @@ int max_hp(const Actor &a)
 
 // Lay On Hands and Sorcery Points share one store, restored by a Long Rest; no
 // class has both.
-int lay_capacity(const Definition &d)
+ClassCounts lay_capacity(const Definition &d)
 {
-    return d.lay_on_hands + d.sorcery_points + d.relentless_rage + d.natures_veil;
+    ClassCounts c;
+    c[CharacterClass::paladin] = d.lay_on_hands;
+    c[CharacterClass::sorcerer] = d.sorcery_points;
+    c[CharacterClass::barbarian] = d.relentless_rage;
+    c[CharacterClass::ranger] = d.natures_veil;
+    return c;
 }
 
 // The level of a Warlock's Pact Magic slots, all of one level.
@@ -2465,12 +2551,17 @@ unsigned lowest_slot(const Actor &a, unsigned from)
     return 0;
 }
 
-// Paladin's Smite, Favored Enemy and Innate Sorcery share one store, restored
-// by a Long Rest; no class has two of them.
-int free_cast_capacity(const Definition &d)
+// Paladin's Smite, Favored Enemy, Innate Sorcery and the like, each its
+// class's, restored by a Long Rest.
+ClassCounts free_cast_capacity(const Definition &d)
 {
-    return d.free_smite + d.favored_enemy + d.innate_sorcery + d.wholeness +
-           d.intimidating_presence;
+    ClassCounts c;
+    c[CharacterClass::paladin] = d.free_smite;
+    c[CharacterClass::ranger] = d.favored_enemy;
+    c[CharacterClass::sorcerer] = d.innate_sorcery;
+    c[CharacterClass::monk] = d.wholeness;
+    c[CharacterClass::barbarian] = d.intimidating_presence;
+    return c;
 }
 
 // One bit per Magic Initiate feat, each its spell's free cast.
@@ -2511,31 +2602,139 @@ int cantrip_tier(const Definition &d)
 
 // Action Surge and Focus Points share one store; no class has both, and a
 // Short Rest restores each fully.
-int surge_capacity(const Definition &d)
+ClassCounts surge_capacity(const Definition &d)
 {
-    return d.surges + d.focus;
+    ClassCounts c;
+    c[CharacterClass::fighter] = d.surges;
+    c[CharacterClass::monk] = d.focus;
+    return c;
 }
 
-// Arcane Recovery, Uncanny Metabolism and Magical Cunning share one store,
-// once per Long Rest.
-int arcane_capacity(const Definition &d)
+// Arcane Recovery, Uncanny Metabolism, Magical Cunning and the like, each its
+// class's, once per Long Rest.
+ClassCounts arcane_capacity(const Definition &d)
 {
-    return d.arcane + d.metabolism + d.magical_cunning + d.bardic_inspiration + d.indomitable +
-           d.persistent_rage + d.tireless + d.divine_intervention + d.sorcerous_restoration +
-           d.natural_recovery;
+    ClassCounts c;
+    c[CharacterClass::wizard] = d.arcane;
+    c[CharacterClass::monk] = d.metabolism;
+    c[CharacterClass::warlock] = d.magical_cunning;
+    c[CharacterClass::bard] = d.bardic_inspiration;
+    c[CharacterClass::fighter] = d.indomitable;
+    c[CharacterClass::barbarian] = d.persistent_rage;
+    c[CharacterClass::ranger] = d.tireless;
+    c[CharacterClass::cleric] = d.divine_intervention;
+    c[CharacterClass::sorcerer] = d.sorcerous_restoration;
+    c[CharacterClass::druid] = d.natural_recovery;
+    return c;
 }
 
-// Channel Divinity and Rage share one store; no class has both, and each
-// regains one use on a Short Rest.
-int channel_capacity(const Definition &d)
+// Channel Divinity (a Cleric's and a Paladin's together, under the Cleric),
+// Rage and Wild Shape, each regaining one use on a Short Rest.
+ClassCounts channel_capacity(const Definition &d)
 {
-    return d.channel_divinity + d.rages + d.wild_shapes;
+    ClassCounts c;
+    c[CharacterClass::cleric] = d.channel_divinity;
+    c[CharacterClass::barbarian] = d.rages;
+    c[CharacterClass::druid] = d.wild_shapes;
+    return c;
 }
 
 // A Strength modifier of `giant` when that is better: a Potion of Giant
 // Strength's 21 (+5, MAGIC-3) or Gauntlets of Ogre Power's 19 (+4, MAGIC-4). A
 // Strength-based melee attack and its damage, Strength saves and Athletics
 // follow it.
+// Whether each class's count is between 0 and its capacity.
+bool within(const ClassCounts &counts, const ClassCounts &capacity)
+{
+    for (std::size_t n = 0; n < counts.by_class.size(); ++n)
+    {
+        if (counts.by_class[n] < 0 || counts.by_class[n] > capacity.by_class[n])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Each class's count no more than its capacity.
+void cap(ClassCounts &counts, const ClassCounts &capacity)
+{
+    for (std::size_t n = 0; n < counts.by_class.size(); ++n)
+    {
+        counts.by_class[n] = std::min(counts.by_class[n], capacity.by_class[n]);
+    }
+}
+
+// Each class's count moved by what its capacity gained (a new level).
+void grow(ClassCounts &counts, const ClassCounts &now, const ClassCounts &before)
+{
+    for (std::size_t n = 0; n < counts.by_class.size(); ++n)
+    {
+        counts.by_class[n] += now.by_class[n] - before.by_class[n];
+    }
+}
+
+std::ostream &operator<<(std::ostream &out, const ClassCounts &counts)
+{
+    for (std::size_t n = 0; n < counts.by_class.size(); ++n)
+    {
+        out << (n ? " " : "") << counts.by_class[n];
+    }
+    return out;
+}
+
+std::istream &operator>>(std::istream &in, ClassCounts &counts)
+{
+    for (auto &count : counts.by_class)
+    {
+        in >> count;
+    }
+    return in;
+}
+
+// A vital record keeps one count for each class with the resource, in class
+// order, or a single 0 when none has it: a single-class character's record
+// reads as it always has (MULTI-1).
+void write_pool(std::ostream &out, const ClassCounts &counts, const ClassCounts &capacity)
+{
+    bool written = false;
+    for (std::size_t n = 0; n < counts.by_class.size(); ++n)
+    {
+        if (capacity.by_class[n])
+        {
+            out << (written ? " " : "") << counts.by_class[n];
+            written = true;
+        }
+    }
+    if (!written)
+    {
+        out << 0;
+    }
+}
+
+void read_pool(std::istream &in, ClassCounts &counts, const ClassCounts &capacity)
+{
+    counts = {};
+    bool read = false;
+    for (std::size_t n = 0; n < counts.by_class.size(); ++n)
+    {
+        if (capacity.by_class[n])
+        {
+            in >> counts.by_class[n];
+            read = true;
+        }
+    }
+    if (!read)
+    {
+        int none{};
+        in >> none;
+        if (none)
+        {
+            in.setstate(std::ios::failbit);
+        }
+    }
+}
+
 Definition strengthened(Definition d, int giant)
 {
     const int gain = giant - d.strength;
@@ -2608,6 +2807,13 @@ unsigned short_rest_recovery(const ResourceDescriptor &descriptor, const Definit
 {
     const bool whole = descriptor.short_rest < 0 || (descriptor.slot_level && d.pact_magic) ||
                        (descriptor.id == "bardic_inspiration" && d.font_of_inspiration);
+    // A Warlock with another Spellcasting class gets its Pact Magic slots
+    // back among the others of their level (MULTI-1).
+    if (!whole && descriptor.slot_level && d.pact_slots &&
+        descriptor.slot_level == static_cast<unsigned>(d.pact_slot_level))
+    {
+        return static_cast<unsigned>(d.pact_slots);
+    }
     return whole ? capacity : static_cast<unsigned>(descriptor.short_rest);
 }
 
@@ -3068,7 +3274,7 @@ void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spel
     // Divine Intervention: its once-per-Long-Rest use instead of a slot.
     if (verb.ends_with(detail::intervention_suffix))
     {
-        --a.arcane;
+        --a.arcane[CharacterClass::cleric];
         return;
     }
     // Natural Recovery: its free Circle spell, once per Long Rest.
@@ -3493,6 +3699,28 @@ bool restorable(const Actor &a)
                        });
 }
 
+// The Hit Point Die a creature with `remaining` of them spends next: the
+// largest it has left. A multiclass character's dice differ (MULTI-1); it
+// spends its largest first, so those left are always its smallest, and a Long
+// Rest gives all of them back.
+int next_hit_die(const Definition &d, int remaining)
+{
+    if (d.level_dice.empty() || remaining < 1)
+    {
+        return d.hit_die;
+    }
+    return d.level_dice[static_cast<std::size_t>(
+        std::min<int>(remaining, static_cast<int>(d.level_dice.size())) - 1)];
+}
+
+// The level Arcane Recovery (Wizard) or Natural Recovery (Land Druid) counts:
+// that class's, the higher of the two for a character with both (MULTI-1).
+int recovery_class_level(const Definition &d)
+{
+    return std::max(d.arcane ? d.class_levels[CharacterClass::wizard] : 0,
+                    d.natural_recovery ? d.class_levels[CharacterClass::druid] : 0);
+}
+
 bool can_recover(const Actor &actor, const ArcaneAllocation &choice)
 {
     const auto &d = actor.definition;
@@ -3509,8 +3737,11 @@ bool can_recover(const Actor &actor, const ArcaneAllocation &choice)
         }
     }
     // Arcane Recovery (Wizard) or Natural Recovery (Land Druid 6).
-    return conscious(actor) && (d.arcane || d.natural_recovery) && actor.arcane > 0 &&
-           std::cmp_less_equal(total, (d.level + 1) / 2);
+    // Half the Wizard's or Land Druid's level, rounded up (MULTI-1).
+    return conscious(actor) &&
+           ((d.arcane && actor.arcane[CharacterClass::wizard] > 0) ||
+            (d.natural_recovery && actor.arcane[CharacterClass::druid] > 0)) &&
+           std::cmp_less_equal(total, (recovery_class_level(d) + 1) / 2);
 }
 
 int movement_left(const Actor &a)
@@ -3606,10 +3837,14 @@ std::vector<FeatureGrant> without_manuals(std::vector<FeatureGrant> grants)
     return grants;
 }
 
-int maximum_hit_points(CharacterClass klass, int die, bool dwarf, std::span<const int> modifiers,
-                       bool draconic)
+// The starting class's whole die at level 1, then each level's class's
+// average (SRD 5.2.1 pp. 23 and 25, MULTI-1), with Constitution's history, a
+// Dwarf's Toughness and Draconic Resilience's 1 per Sorcerer level from 3.
+int maximum_hit_points(const detail::ClassHistory &history, bool dwarf,
+                       std::span<const int> modifiers)
 {
-    if (modifiers.empty() || modifiers.size() > detail::level_cap(klass) ||
+    if (modifiers.size() != history.level() ||
+        modifiers.size() > detail::level_cap(history.starting()) ||
         std::any_of(modifiers.begin(), modifiers.end(),
                     // A Manual of Bodily Health can raise Constitution to 30.
                     [](int n)
@@ -3619,19 +3854,23 @@ int maximum_hit_points(CharacterClass klass, int die, bool dwarf, std::span<cons
     {
         throw std::runtime_error("Invalid HP advancement history");
     }
-    int hp = die + modifiers.front() + (dwarf ? static_cast<int>(modifiers.size()) : 0) +
-             (draconic && modifiers.size() >= 3 ? static_cast<int>(modifiers.size()) : 0);
+    const int sorcerer = history.levels()[CharacterClass::sorcerer];
+    int hp = detail::class_hit_die(history.starting()) + modifiers.front() +
+             (dwarf ? static_cast<int>(modifiers.size()) : 0) + (sorcerer >= 3 ? sorcerer : 0);
     for (std::size_t i = 1; i < modifiers.size(); ++i)
     {
+        const auto level = static_cast<unsigned>(i + 1);
+        const auto taken = history.taken_at(level);
         const int increase = modifiers[i] - modifiers[i - 1];
         // Constitution rises only with a feat level's ability points.
         if (increase < 0 || increase > 1 ||
-            (increase && !detail::gains_feat(klass, static_cast<unsigned>(i + 1))))
+            (increase && !detail::gains_feat(taken, history.class_level_at(level))))
         {
             throw std::runtime_error("Invalid Constitution advancement history");
         }
         // SRD p. 23: gain HP first, then apply a new modifier per attained level.
-        hp += std::max(1, die / 2 + 1 + modifiers[i - 1]) + increase * static_cast<int>(i + 1);
+        hp += std::max(1, detail::class_hit_die(taken) / 2 + 1 + modifiers[i - 1]) +
+              increase * static_cast<int>(level);
     }
     return hp;
 }
@@ -3710,6 +3949,35 @@ character_definition(std::string_view bytes,
     {
         in >> modifier;
     }
+    // The class of each level (MULTI-1): the first is the starting class, and
+    // no class goes past its cap.
+    detail::ClassLevels levels;
+    std::vector<std::string> level_ids;
+    for (unsigned n = 0; n < level; ++n)
+    {
+        auto &id = level_ids.emplace_back();
+        in >> id;
+        if (!in)
+        {
+            throw std::runtime_error("Invalid character profile");
+        }
+        const auto taken = detail::class_from_id(id);
+        if (n == 0 && taken != klass)
+        {
+            throw std::runtime_error("Invalid character profile");
+        }
+        levels.add(taken);
+        if (static_cast<unsigned>(levels[taken]) > detail::level_cap(taken))
+        {
+            throw std::runtime_error("Invalid character profile");
+        }
+    }
+    // The level in a class (MULTI-1): a single-class character has all of
+    // `level` in its own.
+    const auto at = [&levels](CharacterClass held)
+    {
+        return static_cast<unsigned>(levels[held]);
+    };
     in >> count;
     // A weapon, armor and a shield, and two rings, bracers, a cloak, gauntlets
     // and a necklace (MAGIC-4).
@@ -3742,54 +4010,54 @@ character_definition(std::string_view bytes,
     }
     // Elves do not sleep, so Sleep cannot touch them.
     d.sleepless = race == "Elf";
-    d.rages = klass == CharacterClass::barbarian ? (level >= 12  ? 5
-                                                    : level >= 6 ? 4
-                                                    : level >= 3 ? 3
+    d.rages = at(CharacterClass::barbarian) > 0 ? (at(CharacterClass::barbarian) >= 12  ? 5
+                                                    : at(CharacterClass::barbarian) >= 6 ? 4
+                                                    : at(CharacterClass::barbarian) >= 3 ? 3
                                                                  : 2)
                                                  : 0;
-    d.wild_shapes = klass == CharacterClass::druid && level >= 2 ? (level >= 6 ? 3 : 2) : 0;
-    d.wild_resurgence = klass == CharacterClass::druid && level >= 5;
-    d.natural_recovery = klass == CharacterClass::druid && level >= 6 ? 1 : 0;
-    d.natures_ward = klass == CharacterClass::druid && level >= 10;
-    d.natures_sanctuary = klass == CharacterClass::druid && level >= 14;
-    d.lands_aid = klass == CharacterClass::druid && level >= 3;
-    d.rage_damage = klass == CharacterClass::barbarian ? (level >= 9 ? 3 : 2) : 0;
+    d.wild_shapes = at(CharacterClass::druid) >= 2 ? (at(CharacterClass::druid) >= 6 ? 3 : 2) : 0;
+    d.wild_resurgence = at(CharacterClass::druid) >= 5;
+    d.natural_recovery = at(CharacterClass::druid) >= 6 ? 1 : 0;
+    d.natures_ward = at(CharacterClass::druid) >= 10;
+    d.natures_sanctuary = at(CharacterClass::druid) >= 14;
+    d.lands_aid = at(CharacterClass::druid) >= 3;
+    d.rage_damage = at(CharacterClass::barbarian) > 0 ? (at(CharacterClass::barbarian) >= 9 ? 3 : 2) : 0;
     d.strength = str;
-    d.danger_sense = d.reckless = klass == CharacterClass::barbarian && level >= 2;
-    d.frenzy = klass == CharacterClass::barbarian && level >= 3;
-    d.focus = klass == CharacterClass::monk && level >= 2 ? static_cast<int>(level) : 0;
-    d.metabolism = klass == CharacterClass::monk && level >= 2 ? 1 : 0;
-    d.innate_sorcery = klass == CharacterClass::sorcerer ? 2 : 0;
-    d.sorcerous_restoration = klass == CharacterClass::sorcerer && level >= 5 ? 1 : 0;
-    d.sorcery_incarnate = klass == CharacterClass::sorcerer && level >= 7;
-    d.dragon_wings = klass == CharacterClass::sorcerer && level >= 14;
+    d.danger_sense = d.reckless = at(CharacterClass::barbarian) >= 2;
+    d.frenzy = at(CharacterClass::barbarian) >= 3;
+    d.focus = at(CharacterClass::monk) >= 2 ? static_cast<int>(at(CharacterClass::monk)) : 0;
+    d.metabolism = at(CharacterClass::monk) >= 2 ? 1 : 0;
+    d.innate_sorcery = at(CharacterClass::sorcerer) > 0 ? 2 : 0;
+    d.sorcerous_restoration = at(CharacterClass::sorcerer) >= 5 ? 1 : 0;
+    d.sorcery_incarnate = at(CharacterClass::sorcerer) >= 7;
+    d.dragon_wings = at(CharacterClass::sorcerer) >= 14;
     d.sorcery_points =
-        klass == CharacterClass::sorcerer && level >= 2 ? static_cast<int>(level) : 0;
-    d.pact_magic = klass == CharacterClass::warlock;
+        at(CharacterClass::sorcerer) >= 2 ? static_cast<int>(at(CharacterClass::sorcerer)) : 0;
+    d.pact_magic = at(CharacterClass::warlock) > 0;
     d.reads_arcane_scrolls = reads_arcane_scrolls(klass);
     d.reads_divine_scrolls = reads_divine_scrolls(klass);
-    d.magical_cunning = klass == CharacterClass::warlock && level >= 2 ? 1 : 0;
-    d.dark_luck = klass == CharacterClass::warlock && level >= 6
+    d.magical_cunning = at(CharacterClass::warlock) >= 2 ? 1 : 0;
+    d.dark_luck = at(CharacterClass::warlock) >= 6
                       ? std::max(1, ability_modifier(scores[Ability::charisma]))
                       : 0;
-    d.hurl_through_hell = klass == CharacterClass::warlock && level >= 14;
-    d.bardic_inspiration = klass == CharacterClass::bard
+    d.hurl_through_hell = at(CharacterClass::warlock) >= 14;
+    d.bardic_inspiration = at(CharacterClass::bard) > 0
                                ? std::max(1, ability_modifier(scores[Ability::charisma]))
                                : 0;
-    d.cutting_words = klass == CharacterClass::bard && level >= 3;
-    d.bardic_die = klass != CharacterClass::bard ? 6
-                   : level >= 15                 ? 12
-                   : level >= 10                 ? 10
-                   : level >= 5                  ? 8
+    d.cutting_words = at(CharacterClass::bard) >= 3;
+    d.bardic_die = at(CharacterClass::bard) == 0 ? 6
+                   : at(CharacterClass::bard) >= 15                 ? 12
+                   : at(CharacterClass::bard) >= 10                 ? 10
+                   : at(CharacterClass::bard) >= 5                  ? 8
                                                  : 6;
-    d.font_of_inspiration = klass == CharacterClass::bard && level >= 5;
-    d.countercharm = klass == CharacterClass::bard && level >= 7;
-    d.peerless_skill = klass == CharacterClass::bard && level >= 14;
+    d.font_of_inspiration = at(CharacterClass::bard) >= 5;
+    d.countercharm = at(CharacterClass::bard) >= 7;
+    d.peerless_skill = at(CharacterClass::bard) >= 14;
     d.dark_ones_blessing =
-        klass == CharacterClass::warlock && level >= 3
-            ? std::max(1, ability_modifier(scores[Ability::charisma]) + static_cast<int>(level))
+        at(CharacterClass::warlock) >= 3
+            ? std::max(1, ability_modifier(scores[Ability::charisma]) + static_cast<int>(at(CharacterClass::warlock)))
             : 0;
-    d.deflect = d.open_hand = klass == CharacterClass::monk && level >= 3;
+    d.deflect = d.open_hand = at(CharacterClass::monk) >= 3;
     d.focus_dc = 8 + proficiency + ability_modifier(scores[Ability::wisdom]);
     d.dexterity = dex;
     d.rushes = race == "Orc" ? proficiency : 0;
@@ -3797,131 +4065,175 @@ character_definition(std::string_view bytes,
     {
         d.saves[ability_index(ability)] =
             ability_modifier(scores[ability]) +
-            (detail::save_proficient(klass, level, ability) ? proficiency : 0);
+            (detail::save_proficient(klass, levels, ability) ? proficiency : 0);
     }
     d.alert = (features & 32) != 0;
     d.ac = 10 + dex;
     // Jack of All Trades adds half the Proficiency Bonus to Initiative, as
     // SRD-DECISIONS keeps it, unless Alert already adds the whole bonus.
     d.initiative = dex + (d.alert                                       ? proficiency
-                          : klass == CharacterClass::bard && level >= 2 ? proficiency / 2
+                          : at(CharacterClass::bard) >= 2 ? proficiency / 2
                                                                         : 0);
     d.speed = race == "Goliath" ? 35 : 30;
     d.level = level;
+    d.class_levels = levels;
+    for (const auto &id : level_ids)
+    {
+        d.level_dice.push_back(detail::class_hit_die(detail::class_from_id(id)));
+    }
+    std::sort(d.level_dice.begin(), d.level_dice.end());
     d.melee_bonus = proficiency + str;
     d.melee = {0, 0, std::max(0, 1 + str)};
-    d.champion = klass == CharacterClass::fighter && level >= 3;
-    d.critical_from = !d.champion ? 20 : level >= 15 ? 18 : 19;
-    d.extra_attacks = (klass == CharacterClass::fighter || klass == CharacterClass::barbarian ||
-                       klass == CharacterClass::monk || klass == CharacterClass::paladin ||
-                       klass == CharacterClass::ranger) &&
-                              level >= 5
+    d.champion = at(CharacterClass::fighter) >= 3;
+    d.critical_from = !d.champion ? 20 : at(CharacterClass::fighter) >= 15 ? 18 : 19;
+    // Extra Attack from two classes does not stack (SRD 5.2.1 p. 25).
+    constexpr std::array extra_attack_classes{CharacterClass::fighter, CharacterClass::barbarian,
+                                              CharacterClass::monk, CharacterClass::paladin,
+                                              CharacterClass::ranger};
+    d.extra_attacks = std::any_of(extra_attack_classes.begin(), extra_attack_classes.end(),
+                                  [&](CharacterClass held)
+                                  {
+                                      return at(held) >= 5;
+                                  })
                           ? 1
                           : 0;
     // Two Extra Attacks (Fighter 11): three attacks with each Attack action.
-    if (klass == CharacterClass::fighter && level >= 11)
+    if (at(CharacterClass::fighter) >= 11)
     {
         d.extra_attacks = 2;
     }
-    d.studied_attacks = klass == CharacterClass::fighter && level >= 13;
-    const bool barbarian = klass == CharacterClass::barbarian;
-    d.mindless_rage = barbarian && level >= 6;
-    d.feral_instinct = d.instinctive_pounce = barbarian && level >= 7;
-    d.brutal_strike = barbarian && level >= 9;
+    d.studied_attacks = at(CharacterClass::fighter) >= 13;
+    const unsigned barbarian = at(CharacterClass::barbarian);
+    d.mindless_rage = barbarian >= 6;
+    d.feral_instinct = d.instinctive_pounce = barbarian >= 7;
+    d.brutal_strike = barbarian >= 9;
     // Relentless Rage's DC climbs 10, 15, 20, 25, 30; past that no save passes.
-    d.relentless_rage = barbarian && level >= 11 ? 5 : 0;
-    d.improved_brutal = barbarian && level >= 13;
-    d.intimidating_presence = barbarian && level >= 14 ? 1 : 0;
-    d.persistent_rage = barbarian && level >= 15 ? 1 : 0;
-    d.retaliation = barbarian && level >= 10;
-    const bool rogue = klass == CharacterClass::rogue;
-    d.cunning_strike = d.uncanny_dodge = rogue && level >= 5;
-    d.evasion = (rogue || klass == CharacterClass::monk) && level >= 7;
-    d.martial_die = klass != CharacterClass::monk ? 6 : level >= 11 ? 10 : level >= 5 ? 8 : 6;
+    d.relentless_rage = barbarian >= 11 ? 5 : 0;
+    d.improved_brutal = barbarian >= 13;
+    d.intimidating_presence = barbarian >= 14 ? 1 : 0;
+    d.persistent_rage = barbarian >= 15 ? 1 : 0;
+    d.retaliation = barbarian >= 10;
+    const unsigned rogue = at(CharacterClass::rogue);
+    d.cunning_strike = d.uncanny_dodge = rogue >= 5;
+    d.evasion = rogue >= 7 || at(CharacterClass::monk) >= 7;
+    d.martial_die = at(CharacterClass::monk) == 0 ? 6 : at(CharacterClass::monk) >= 11 ? 10 : at(CharacterClass::monk) >= 5 ? 8 : 6;
     d.wisdom = ability_modifier(scores[Ability::wisdom]);
-    d.stunning_strike = klass == CharacterClass::monk && level >= 5;
-    d.empowered_strikes = klass == CharacterClass::monk && level >= 6;
-    d.heightened_focus = d.self_restoration = klass == CharacterClass::monk && level >= 10;
-    d.fleet_step = klass == CharacterClass::monk && level >= 11;
-    d.deflect_energy = klass == CharacterClass::monk && level >= 13;
-    d.disciplined_survivor = klass == CharacterClass::monk && level >= 14;
-    d.perfect_focus = klass == CharacterClass::monk && level >= 15;
-    d.aura_of_protection = klass == CharacterClass::paladin && level >= 6
+    d.stunning_strike = at(CharacterClass::monk) >= 5;
+    d.empowered_strikes = at(CharacterClass::monk) >= 6;
+    d.heightened_focus = d.self_restoration = at(CharacterClass::monk) >= 10;
+    d.fleet_step = at(CharacterClass::monk) >= 11;
+    d.deflect_energy = at(CharacterClass::monk) >= 13;
+    d.disciplined_survivor = at(CharacterClass::monk) >= 14;
+    d.perfect_focus = at(CharacterClass::monk) >= 15;
+    d.aura_of_protection = at(CharacterClass::paladin) >= 6
                                ? std::max(1, ability_modifier(scores[Ability::charisma]))
                                : 0;
-    d.aura_of_devotion = klass == CharacterClass::paladin && level >= 7;
-    d.abjure_foes = klass == CharacterClass::paladin && level >= 9
+    d.aura_of_devotion = at(CharacterClass::paladin) >= 7;
+    d.abjure_foes = at(CharacterClass::paladin) >= 9
                         ? std::max(1, ability_modifier(scores[Ability::charisma]))
                         : 0;
-    d.aura_of_courage = klass == CharacterClass::paladin && level >= 10;
-    d.radiant_strikes = klass == CharacterClass::paladin && level >= 11;
-    d.restoring_touch = klass == CharacterClass::paladin && level >= 14;
-    d.smite_of_protection = klass == CharacterClass::paladin && level >= 15;
-    d.wholeness = klass == CharacterClass::monk && level >= 6
+    d.aura_of_courage = at(CharacterClass::paladin) >= 10;
+    d.radiant_strikes = at(CharacterClass::paladin) >= 11;
+    d.restoring_touch = at(CharacterClass::paladin) >= 14;
+    d.smite_of_protection = at(CharacterClass::paladin) >= 15;
+    d.wholeness = at(CharacterClass::monk) >= 6
                       ? std::max(1, ability_modifier(scores[Ability::wisdom]))
                       : 0;
-    d.supreme_sneak = rogue && level >= 9;
-    d.improved_cunning = rogue && level >= 11;
-    d.devious_strikes = rogue && level >= 14;
-    d.tactical_shift = klass == CharacterClass::fighter && level >= 5;
-    d.tactical_master = klass == CharacterClass::fighter && level >= 9;
-    d.heroic_warrior = klass == CharacterClass::fighter && level >= 10;
-    d.indomitable = klass != CharacterClass::fighter ? 0 : level >= 13 ? 2 : level >= 9 ? 1 : 0;
-    d.arcane = klass == CharacterClass::wizard ? 1 : 0;
-    d.lay_on_hands = klass == CharacterClass::paladin ? 5 * level : 0;
+    d.supreme_sneak = rogue >= 9;
+    d.improved_cunning = rogue >= 11;
+    d.devious_strikes = rogue >= 14;
+    d.tactical_shift = at(CharacterClass::fighter) >= 5;
+    d.tactical_master = at(CharacterClass::fighter) >= 9;
+    d.heroic_warrior = at(CharacterClass::fighter) >= 10;
+    d.indomitable = at(CharacterClass::fighter) == 0 ? 0 : at(CharacterClass::fighter) >= 13 ? 2 : at(CharacterClass::fighter) >= 9 ? 1 : 0;
+    d.arcane = at(CharacterClass::wizard) > 0 ? 1 : 0;
+    d.lay_on_hands = at(CharacterClass::paladin) > 0 ? 5 * at(CharacterClass::paladin) : 0;
     // Channel Divinity: two uses, three from Paladin level 11.
-    d.channel_divinity = (klass == CharacterClass::paladin && level >= 11) ||
-                                 (klass == CharacterClass::cleric && level >= 6)
-                             ? 3
-                         : (klass == CharacterClass::paladin && level >= 3) ||
-                                 (klass == CharacterClass::cleric && level >= 2)
+    // A Cleric / Paladin has the higher of the two classes' uses (MULTI-1).
+    d.channel_divinity = at(CharacterClass::paladin) >= 11 || at(CharacterClass::cleric) >= 6 ? 3
+                         : at(CharacterClass::paladin) >= 3 || at(CharacterClass::cleric) >= 2
                              ? 2
                              : 0;
-    d.sacred_weapon = klass == CharacterClass::paladin && level >= 3;
-    d.divine_spark = klass == CharacterClass::cleric && level >= 2;
-    d.sear_undead = klass == CharacterClass::cleric && level >= 5;
-    d.blessed_healer = klass == CharacterClass::cleric && level >= 6;
-    d.divine_intervention = klass == CharacterClass::cleric && level >= 10 ? 1 : 0;
-    d.life_domain = klass == CharacterClass::cleric && level >= 3;
-    d.evoker = klass == CharacterClass::wizard && level >= 3;
-    d.sculptor = klass == CharacterClass::wizard && level >= 6;
-    d.empowered = klass == CharacterClass::wizard && level >= 10;
-    d.overchannel = klass == CharacterClass::wizard && level >= 14;
-    d.free_smite = klass == CharacterClass::paladin && level >= 2 ? 1 : 0;
+    d.sacred_weapon = at(CharacterClass::paladin) >= 3;
+    d.divine_spark = at(CharacterClass::cleric) >= 2;
+    d.sear_undead = at(CharacterClass::cleric) >= 5;
+    d.blessed_healer = at(CharacterClass::cleric) >= 6;
+    d.divine_intervention = at(CharacterClass::cleric) >= 10 ? 1 : 0;
+    d.life_domain = at(CharacterClass::cleric) >= 3;
+    d.evoker = at(CharacterClass::wizard) >= 3;
+    d.sculptor = at(CharacterClass::wizard) >= 6;
+    d.empowered = at(CharacterClass::wizard) >= 10;
+    d.overchannel = at(CharacterClass::wizard) >= 14;
+    d.free_smite = at(CharacterClass::paladin) >= 2 ? 1 : 0;
     // Favored Enemy: 2 free Hunter's Marks, 3 from level 5, 4 from 9, 5 from 13.
-    d.favored_enemy = klass != CharacterClass::ranger ? 0
-                      : level >= 13                   ? 5
-                      : level >= 9                    ? 4
-                      : level >= 5                    ? 3
+    d.favored_enemy = at(CharacterClass::ranger) == 0 ? 0
+                      : at(CharacterClass::ranger) >= 13                   ? 5
+                      : at(CharacterClass::ranger) >= 9                    ? 4
+                      : at(CharacterClass::ranger) >= 5                    ? 3
                                                       : 2;
-    const bool ranger = klass == CharacterClass::ranger;
+    const unsigned ranger = at(CharacterClass::ranger);
     const int wisdom_uses = std::max(1, ability_modifier(scores[Ability::wisdom]));
-    d.tireless = ranger && level >= 10 ? wisdom_uses : 0;
-    d.superior_prey = ranger && level >= 11;
-    d.relentless_hunter = ranger && level >= 13;
-    d.natures_veil = ranger && level >= 14 ? wisdom_uses : 0;
-    d.superior_defense = ranger && level >= 15;
+    d.tireless = ranger >= 10 ? wisdom_uses : 0;
+    d.superior_prey = ranger >= 11;
+    d.relentless_hunter = ranger >= 13;
+    d.natures_veil = ranger >= 14 ? wisdom_uses : 0;
+    d.superior_defense = ranger >= 15;
     d.medicine = ability_modifier(scores[Ability::wisdom]);
-    d.tactical_mind = klass == CharacterClass::fighter && level >= 2;
-    d.cunning = klass == CharacterClass::rogue && level >= 2;
-    d.sneak_level = klass == CharacterClass::rogue ? level : 0;
+    d.tactical_mind = at(CharacterClass::fighter) >= 2;
+    d.cunning = at(CharacterClass::rogue) >= 2;
+    d.sneak_level = at(CharacterClass::rogue) > 0 ? at(CharacterClass::rogue) : 0;
     d.great_weapon_fighting = (features & 8) != 0;
     d.two_weapon_fighting = (features & 16) != 0;
-    d.surges = klass == CharacterClass::fighter && level >= 2 ? 1 : 0;
+    d.surges = at(CharacterClass::fighter) >= 2 ? 1 : 0;
     // Second Wind: 2 uses, 3 from level 4, 4 from level 10.
-    d.winds = klass == CharacterClass::fighter ? (level >= 10 ? 4 : level >= 4 ? 3 : 2) : 0;
-    d.slots = spell_slots(klass, level);
-    const Ability casting_ability =
-        (klass == CharacterClass::cleric || klass == CharacterClass::ranger ||
-         klass == CharacterClass::druid)
-            ? Ability::wisdom
-        : (klass == CharacterClass::warlock || klass == CharacterClass::sorcerer ||
-           klass == CharacterClass::paladin || klass == CharacterClass::bard)
-            ? Ability::charisma
-            : Ability::intelligence;
+    d.winds = at(CharacterClass::fighter) > 0 ? (at(CharacterClass::fighter) >= 10 ? 4 : at(CharacterClass::fighter) >= 4 ? 3 : 2) : 0;
+    // Spell slots (SRD 5.2.1 p. 25, MULTI-1): one Spellcasting class's own
+    // table; two or more add their levels, a Paladin's and a Ranger's at half
+    // rounded up, on the Multiclass Spellcaster table, the full casters'.
+    // Pact Magic's slots join them.
+    std::vector<CharacterClass> spellcasting;
+    unsigned combined = 0;
+    for (const auto held : {CharacterClass::bard, CharacterClass::cleric, CharacterClass::druid,
+                            CharacterClass::sorcerer, CharacterClass::wizard,
+                            CharacterClass::paladin, CharacterClass::ranger})
+    {
+        if (at(held))
+        {
+            spellcasting.push_back(held);
+            combined += held == CharacterClass::paladin || held == CharacterClass::ranger
+                            ? (at(held) + 1) / 2
+                            : at(held);
+        }
+    }
+    d.slots = spellcasting.size() == 1  ? spell_slots(spellcasting.front(), at(spellcasting.front()))
+              : spellcasting.size() > 1 ? spell_slots(CharacterClass::wizard, combined)
+                                        : SpellSlots{};
+    if (at(CharacterClass::warlock))
+    {
+        const auto pact = spell_slots(CharacterClass::warlock, at(CharacterClass::warlock));
+        d.pact_slot_level = static_cast<int>(pact_level(pact));
+        d.pact_slots = pact[static_cast<std::size_t>(d.pact_slot_level)];
+        d.pact_magic = spellcasting.empty();
+        d.slots[static_cast<std::size_t>(d.pact_slot_level)] += d.pact_slots;
+    }
+    // The spellcasting ability of the first spellcasting class; another
+    // class's spells use its own (MULTI-1).
+    const auto ability_of = [](CharacterClass held)
+    {
+        return held == CharacterClass::cleric || held == CharacterClass::ranger ||
+                       held == CharacterClass::druid
+                   ? Ability::wisdom
+               : held == CharacterClass::warlock || held == CharacterClass::sorcerer ||
+                       held == CharacterClass::paladin || held == CharacterClass::bard
+                   ? Ability::charisma
+                   : Ability::intelligence;
+    };
+    const auto casters = detail::casting_classes(detail::ClassHistory(level_ids));
+    const auto main_caster = casters.empty() ? klass : casters.front();
+    const Ability casting_ability = ability_of(main_caster);
     d.casting = proficiency + ability_modifier(scores[casting_ability]);
-    if ((features & 1) && klass != CharacterClass::fighter && klass != CharacterClass::paladin &&
-        klass != CharacterClass::ranger)
+    if ((features & 1) && !at(CharacterClass::fighter) && !at(CharacterClass::paladin) &&
+        !at(CharacterClass::ranger))
     {
         throw std::runtime_error("Invalid prepared spells or feat prerequisites");
     }
@@ -3960,8 +4272,7 @@ character_definition(std::string_view bytes,
     std::string background;
     in >> std::quoted(background);
     const auto grants = detail::read_grants(in);
-    d.hp = maximum_hit_points(klass, die, race == "Dwarf", hp_modifiers,
-                              klass == CharacterClass::sorcerer);
+    d.hp = maximum_hit_points(detail::ClassHistory(level_ids), race == "Dwarf", hp_modifiers);
     d.fast_hands = std::any_of(grants.begin(), grants.end(),
                                [](const auto &g)
                                {
@@ -4056,12 +4367,66 @@ character_definition(std::string_view bytes,
             d.lineage_spells.insert(feat.free_spell);
         }
     }
-    // A stored spell is the class's at this level, or one Magic Initiate teaches.
-    const auto allowed = allowed_spells(klass, level);
+    // A multiclass character casts each class's spells with that class's
+    // ability (SRD 5.2.1 p. 25): a cantrip with the class that taught it, a
+    // prepared spell with the best of the classes whose list has it, as the
+    // profile does not say which prepared it (MULTI-1).
+    if (casters.size() > 1)
+    {
+        const auto class_bonus = [&](CharacterClass held)
+        {
+            return proficiency + ability_modifier(scores[ability_of(held)]);
+        };
+        for (const auto &id : stored_spells)
+        {
+            if (d.initiate_casting.contains(id))
+            {
+                continue;
+            }
+            std::optional<int> best;
+            for (const auto &g : grants)
+            {
+                if (g.id == "spell:" + id && g.source_id.starts_with("class:"))
+                {
+                    const auto rest = std::string_view(g.source_id).substr(6);
+                    best = class_bonus(detail::class_from_id(rest.substr(0, rest.find(':'))));
+                }
+            }
+            for (const auto held : casters)
+            {
+                if (!best && detail::on_class_list(held, id))
+                {
+                    best = class_bonus(held);
+                }
+                else if (detail::on_class_list(held, id))
+                {
+                    best = std::max(*best, class_bonus(held));
+                }
+            }
+            if (best && *best != d.casting)
+            {
+                d.initiate_casting.emplace(id, *best);
+            }
+        }
+    }
+    // A stored spell is one of the classes' at its level, or one Magic
+    // Initiate teaches (MULTI-1).
+    std::vector<std::string> allowed;
+    for (const auto &choice : detail::creation_choices(CreationField::character_class))
+    {
+        const auto held = detail::class_from_id(choice.id);
+        if (at(held))
+        {
+            for (auto &id : allowed_spells(held, at(held)))
+            {
+                allowed.push_back(std::move(id));
+            }
+        }
+    }
     const auto storable = [&](const std::string &id)
     {
         return detail::knows_spell(allowed, id) || d.initiate_casting.contains(id) ||
-               bard_secret(klass, level, grants, id);
+               bard_secret(CharacterClass::bard, at(CharacterClass::bard), grants, id);
     };
     if (!std::all_of(stored_spells.begin(), stored_spells.end(), storable))
     {
@@ -4268,7 +4633,8 @@ character_definition(std::string_view bytes,
         hands = hands - d.weapon_hands + 2;
         d.weapon_hands = 2;
     }
-    const auto training = detail::training_profile(grants, klass, race, background, level, scores);
+    const auto training =
+        detail::training_profile(grants, detail::ClassHistory(level_ids), race, background, scores);
     d.medicine = std::find_if(training.skills.begin(), training.skills.end(),
                               [](const auto &skill)
                               {
@@ -4309,7 +4675,7 @@ character_definition(std::string_view bytes,
     d.perception += d.check_bonus;
     d.stealth += d.check_bonus;
     d.initiative += d.check_bonus;
-    if (klass == CharacterClass::rogue && level >= 7)
+    if (at(CharacterClass::rogue) >= 7)
     {
         for (const auto &skill : training.skills)
         {
@@ -4335,7 +4701,7 @@ character_definition(std::string_view bytes,
         d.escape_the_horde |= grant.id == "tactics:escape_the_horde";
         if (grant.id == "strikes:divine_strike")
         {
-            d.divine_strike = level >= 14 ? 2 : 1;
+            d.divine_strike = at(CharacterClass::cleric) >= 14 ? 2 : 1;
         }
         d.potent_spellcasting |= grant.id == "strikes:potent_spellcasting";
         d.multiattack_defense |= grant.id == "tactics:multiattack_defense";
@@ -4350,7 +4716,7 @@ character_definition(std::string_view bytes,
         d.druid_potent |= grant.id == "fury:potent_spellcasting";
         if (grant.id == "fury:primal_strike")
         {
-            d.primal_strike = level >= 15 ? 2 : 1;
+            d.primal_strike = at(CharacterClass::druid) >= 15 ? 2 : 1;
         }
         // Fiendish Resilience: Resistance to its type.
         if (grant.id.starts_with("resilience:"))
@@ -4367,7 +4733,7 @@ character_definition(std::string_view bytes,
                                     "feature:elemental_affinity"});
         }
     }
-    for (const auto &id : detail::circle_spells(level, d.land))
+    for (const auto &id : detail::circle_spells(at(CharacterClass::druid), d.land))
     {
         if (detail::find_spell(id)->level)
         {
@@ -4383,33 +4749,41 @@ character_definition(std::string_view bytes,
                                                   : detail::DamageType::poison;
         d.affinities.push_back({detail::AffinityKind::resistance, type, "feature:natures_ward"});
     }
-    std::vector<std::string> prepared;
-    if (detail::prepares_spells(klass))
+    // A multiclass character's stored list does not say which class each
+    // spell is prepared for; the sheet it was made from was checked, and each
+    // spell against the classes' lists above (MULTI-1).
+    if (levels.count() == 1)
     {
-        // Always-prepared spells are stored with the others but never prepared.
-        prepared = detail::spells_of_level(stored_spells, false);
-        for (const auto &id : detail::always_prepared_spells(klass, level, grants))
+        std::vector<std::string> prepared;
+        if (detail::prepares_spells(klass))
         {
-            std::erase(prepared, id);
+            // Always-prepared spells are stored with the others but never prepared.
+            prepared = detail::spells_of_level(stored_spells, false);
+            for (const auto &id : detail::always_prepared_spells(klass, level, grants))
+            {
+                std::erase(prepared, id);
+            }
         }
-    }
-    const auto access = detail::spell_access(grants, klass, level, prepared);
-    // Compare as sets: the grants and the stored list must describe the same
-    // spells, independent of the order either was written in.
-    const auto same_spells = [](std::vector<std::string> left, std::vector<std::string> right)
-    {
-        std::sort(left.begin(), left.end());
-        std::sort(right.begin(), right.end());
-        return left == right;
-    };
-    if (!same_spells(detail::casting_ids(access), stored_spells))
-    {
-        throw std::runtime_error("Character casting access disagrees with spell grants");
+        const auto access =
+            detail::spell_access(grants, detail::ClassHistory(level_ids), prepared);
+        // Compare as sets: the grants and the stored list must describe the same
+        // spells, independent of the order either was written in.
+        const auto same_spells = [](std::vector<std::string> left, std::vector<std::string> right)
+        {
+            std::sort(left.begin(), left.end());
+            std::sort(right.begin(), right.end());
+            return left == right;
+        };
+        if (!same_spells(detail::casting_ids(access), stored_spells))
+        {
+            throw std::runtime_error("Character casting access disagrees with spell grants");
+        }
     }
     const auto features_only =
         without_manuals(detail::without_spell_grants(detail::without_training(grants)));
     const auto effects =
-        detail::validate_grants(features_only, klass, detail::race_id(race), background, level);
+        detail::validate_grants(features_only, detail::ClassHistory(level_ids), detail::race_id(race),
+                                background);
     if (effects.feats != features)
     {
         throw std::runtime_error("Character effects disagree with acquired grants");
@@ -4453,32 +4827,31 @@ character_definition(std::string_view bytes,
         save += worn_saves;
     }
     d.item_saves = worn_saves;
-    if (!armor && klass == CharacterClass::barbarian)
+    if (!armor && at(CharacterClass::barbarian) > 0)
     {
         d.ac = std::max(d.ac, 10 + dex + con);
     }
     // Draconic Resilience: dragon-like scales.
-    if (!armor && klass == CharacterClass::sorcerer && level >= 3)
+    if (!armor && at(CharacterClass::sorcerer) >= 3)
     {
         d.ac = std::max(d.ac, 10 + dex + ability_modifier(scores[Ability::charisma]));
     }
-    if (!armor && !shield && klass == CharacterClass::monk)
+    if (!armor && !shield && at(CharacterClass::monk) > 0)
     {
         d.ac = std::max(d.ac, 10 + dex + ability_modifier(scores[Ability::wisdom]));
     }
     // Martial Arts: the better of Strength and Dexterity for attack and damage
     // rolls, and the Martial Arts die (a d6 through level four) when larger.
-    d.martial_arts = klass == CharacterClass::monk && !armor && !shield && monk_weapons;
+    d.martial_arts = at(CharacterClass::monk) > 0 && !armor && !shield && monk_weapons;
     // Unarmored Movement: 10 feet more without armor or a Shield, 15 from level
     // 6, 20 from 10 and 25 from 14.
-    if (klass == CharacterClass::monk && level >= 2 && !armor && !shield)
+    if (at(CharacterClass::monk) >= 2 && !armor && !shield)
     {
-        d.speed += level >= 14 ? 25 : level >= 10 ? 20 : level >= 6 ? 15 : 10;
+        const auto monk = at(CharacterClass::monk);
+        d.speed += monk >= 14 ? 25 : monk >= 10 ? 20 : monk >= 6 ? 15 : 10;
     }
     // Fast Movement and Roving: 10 feet more without Heavy armor.
-    if (((klass == CharacterClass::barbarian && level >= 5) ||
-         (klass == CharacterClass::ranger && level >= 6)) &&
-        !d.heavy_armor)
+    if ((at(CharacterClass::barbarian) >= 5 || at(CharacterClass::ranger) >= 6) && !d.heavy_armor)
     {
         d.speed += 10;
     }
@@ -4510,8 +4883,7 @@ character_definition(std::string_view bytes,
     if (!armor)
     {
         d.mage_armor_ac = std::max(13 + dex, bracers_ac) + shield_ac + worn_ac;
-        d.unarmored_arcane_caster =
-            klass == CharacterClass::wizard || klass == CharacterClass::sorcerer;
+        d.unarmored_arcane_caster = at(CharacterClass::wizard) || at(CharacterClass::sorcerer);
     }
     if (armor && (features & 1))
     {
@@ -4563,9 +4935,13 @@ void restore_vitals(Actor &a, const VitalState &state)
         }
         in >> a.life.successes >> a.life.failures >> a.life.stable >> a.hit_dice >>
             a.life.recovery.death_save_in_ms >> a.life.recovery.stable_recovery_in_ms >>
-            a.life.temporary_hp.amount >> std::quoted(a.life.temporary_hp.source_id) >> a.rushes >>
-            a.surges >> a.arcane >> a.lay_on_hands >> a.free_casts >> a.channel_divinity >>
-            a.initiate_casts;
+            a.life.temporary_hp.amount >> std::quoted(a.life.temporary_hp.source_id) >> a.rushes;
+        read_pool(in, a.surges, surge_capacity(a.definition));
+        read_pool(in, a.arcane, arcane_capacity(a.definition));
+        read_pool(in, a.lay_on_hands, lay_capacity(a.definition));
+        read_pool(in, a.free_casts, free_cast_capacity(a.definition));
+        read_pool(in, a.channel_divinity, channel_capacity(a.definition));
+        in >> a.initiate_casts;
         if (!in || magic != vitals_magic)
         {
             throw std::runtime_error("Invalid character resource state");
@@ -4589,13 +4965,12 @@ void restore_vitals(Actor &a, const VitalState &state)
         throw std::runtime_error("Invalid character vitals");
     }
     if (a.life.hp < 0 || a.life.hp > max_hp(a) || (a.life.dead && a.life.hp != 0) || a.winds < 0 ||
-        a.winds > d.winds || a.arcane < 0 || a.arcane > arcane_capacity(d) || a.surges < 0 ||
-        a.surges > surge_capacity(d) || a.rushes < 0 || a.rushes > d.rushes || a.hit_dice < 0 ||
+        a.winds > d.winds || !within(a.arcane, arcane_capacity(d)) ||
+        !within(a.surges, surge_capacity(d)) || a.rushes < 0 || a.rushes > d.rushes || a.hit_dice < 0 ||
         a.hit_dice > (d.hit_die ? d.level : 0) || a.life.successes < 0 || a.life.successes > 3 ||
-        a.life.failures < 0 || a.life.failures > 4 || a.lay_on_hands < 0 ||
-        a.lay_on_hands > lay_capacity(d) || a.free_casts < 0 ||
-        a.free_casts > free_cast_capacity(d) || a.channel_divinity < 0 ||
-        a.channel_divinity > channel_capacity(d) || a.initiate_casts < 0 ||
+        a.life.failures < 0 || a.life.failures > 4 || !within(a.lay_on_hands, lay_capacity(d)) ||
+        !within(a.free_casts, free_cast_capacity(d)) ||
+        !within(a.channel_divinity, channel_capacity(d)) || a.initiate_casts < 0 ||
         (a.initiate_casts & ~initiate_capacity(d)))
     {
         throw std::runtime_error("Invalid character vitals");
@@ -4642,9 +5017,18 @@ VitalState vitals(const Actor &a)
     out << a.life.successes << ' ' << a.life.failures << ' ' << a.life.stable << ' ' << a.hit_dice
         << ' ' << a.life.recovery.death_save_in_ms << ' '
         << detail::encode_stable_recovery(a.life.recovery) << ' ' << a.life.temporary_hp.amount
-        << ' ' << std::quoted(a.life.temporary_hp.source_id) << ' ' << a.rushes << ' ' << a.surges
-        << ' ' << a.arcane << ' ' << a.lay_on_hands << ' ' << a.free_casts << ' '
-        << a.channel_divinity << ' ' << a.initiate_casts << ' ';
+        << ' ' << std::quoted(a.life.temporary_hp.source_id) << ' ' << a.rushes << ' ';
+    const auto &d = a.definition;
+    write_pool(out, a.surges, surge_capacity(d));
+    out << ' ';
+    write_pool(out, a.arcane, arcane_capacity(d));
+    out << ' ';
+    write_pool(out, a.lay_on_hands, lay_capacity(d));
+    out << ' ';
+    write_pool(out, a.free_casts, free_cast_capacity(d));
+    out << ' ';
+    write_pool(out, a.channel_divinity, channel_capacity(d));
+    out << ' ' << a.initiate_casts << ' ';
     // A creature hides from one fight's enemies; it is not hidden after it.
     auto effects = all_effects(a);
     std::erase_if(effects.active,
@@ -4671,12 +5055,13 @@ VitalState vitals(const Actor &a)
     if (a.definition.arcane)
     {
         description += (description.empty() ? "" : "\n") + std::string("Arcane Recovery uses: ") +
-                       std::to_string(a.arcane) + " / 1";
+                       std::to_string(a.arcane[CharacterClass::wizard]) + " / 1";
     }
-    if (a.definition.surges && a.surges < a.definition.surges)
+    if (a.definition.surges && a.surges[CharacterClass::fighter] < a.definition.surges)
     {
         description += (description.empty() ? "" : "\n") + std::string("Action Surge uses: ") +
-                       std::to_string(a.surges) + " / " + std::to_string(a.definition.surges);
+                       std::to_string(a.surges[CharacterClass::fighter]) + " / " +
+                       std::to_string(a.definition.surges);
     }
     if (a.life.hp == 0)
     {
@@ -6642,7 +7027,7 @@ class Session final : public CombatSession
     // Persistent Rage (Barbarian 15) is offered at Initiative while a Rage use is spent.
     [[nodiscard]] bool persistent_ready(const Actor &a) const
     {
-        return def(a).persistent_rage && a.arcane > 0 && a.channel_divinity < def(a).rages;
+        return def(a).persistent_rage && a.arcane[CharacterClass::barbarian] > 0 && a.channel_divinity[CharacterClass::barbarian] < def(a).rages;
     }
     // True Strike deals Radiant damage or the weapon's own type, as the caster chooses.
     enum class TrueStrikeDamage
@@ -6842,9 +7227,9 @@ class Session final : public CombatSession
         // Perfect Focus (Monk 15): at least 4 Focus Points when the fight starts.
         for (auto &a : actors_)
         {
-            if (def(a).perfect_focus && a.surges < 4 && conscious(a))
+            if (def(a).perfect_focus && a.surges[CharacterClass::monk] < 4 && conscious(a))
             {
-                a.surges = 4;
+                a.surges[CharacterClass::monk] = 4;
                 log(a.source.name + " has 4 Focus Points (Perfect Focus).",
                     {"{name} has 4 Focus Points (Perfect Focus).", {{"name", a.source.name}}});
             }
@@ -6859,8 +7244,8 @@ class Session final : public CombatSession
     // something: spent Focus or missing Hit Points.
     bool metabolism_ready(const Actor &a) const
     {
-        return def(a).metabolism && a.arcane > 0 &&
-               (a.surges < surge_capacity(def(a)) || a.life.hp < max_hp(a));
+        return def(a).metabolism && a.arcane[CharacterClass::monk] > 0 &&
+               (a.surges[CharacterClass::monk] < def(a).focus || a.life.hp < max_hp(a));
     }
 
     void resolve_initiative(const Command &command)
@@ -6874,17 +7259,18 @@ class Session final : public CombatSession
             // All Focus Points back, and the Martial Arts die plus the Monk
             // level in Hit Points.
             auto &monk = actor(command.actor);
-            --monk.arcane;
+            --monk.arcane[CharacterClass::monk];
             monk.surges = surge_capacity(def(monk));
             log(monk.source.name + " uses Uncanny Metabolism.",
                 {"{name} uses Uncanny Metabolism.", {{"name", monk.source.name}}});
-            heal(monk, healing_roll(monk, {1, def(monk).martial_die, def(monk).level}));
+            heal(monk, healing_roll(monk, {1, def(monk).martial_die,
+                                           def(monk).class_levels[CharacterClass::monk]}));
         }
         if (command.verb == "persistent_rage")
         {
             auto &barbarian = actor(command.actor);
-            --barbarian.arcane;
-            barbarian.channel_divinity = def(barbarian).rages;
+            --barbarian.arcane[CharacterClass::barbarian];
+            barbarian.channel_divinity[CharacterClass::barbarian] = def(barbarian).rages;
             log(barbarian.source.name + " regains every Rage use (Persistent Rage).",
                 {"{name} regains every Rage use (Persistent Rage).",
                  {{"name", barbarian.source.name}}});
@@ -7036,13 +7422,13 @@ void Session::use_font_of_magic(Actor &a, std::string_view verb)
     if (verb.starts_with("create_slot_"))
     {
         a.bonus = false;
-        a.lay_on_hands -= font_of_magic_cost[slot];
+        a.lay_on_hands[CharacterClass::sorcerer] -= font_of_magic_cost[slot];
         ++a.slots[slot];
     }
     else
     {
         --a.slots[slot];
-        a.lay_on_hands = std::min(def(a).sorcery_points, a.lay_on_hands + static_cast<int>(slot));
+        a.lay_on_hands[CharacterClass::sorcerer] = std::min(def(a).sorcery_points, a.lay_on_hands[CharacterClass::sorcerer] + static_cast<int>(slot));
     }
     const std::string level(1, verb.back());
     log(a.source.name + (verb.starts_with("create_slot_")
@@ -7063,7 +7449,7 @@ void Session::use_focus_movement(Actor &a, std::string_view verb, EntityId carri
     a.bonus = false;
     if (focus)
     {
-        --a.surges;
+        --a.surges[CharacterClass::monk];
     }
     if (patient || focus)
     {
@@ -10924,7 +11310,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         // Divine Intervention (Cleric 10): any Cleric spell of level 5 or lower,
         // prepared or not, cast as a Magic action without a slot.
         const bool intervene = !spells_blocked && !bonus_pass && d.divine_intervention &&
-                               a.arcane > 0 && spell.level && spell.level <= 5 &&
+                               a.arcane[CharacterClass::cleric] > 0 && spell.level && spell.level <= 5 &&
                                detail::on_class_list(CharacterClass::cleric, spell.id);
         // Mystic Arcanum (Warlock 11, 13, 15): its spell once per Long Rest,
         // as a Magic action without a slot.
@@ -11957,7 +12343,7 @@ std::vector<Command> Session::offered_commands() const
     {
         add(id, "stand_up", "Stand up");
     }
-    if (d.surges && a.surges > 0 && !a.surge_used)
+    if (d.surges && a.surges[CharacterClass::fighter] > 0 && !a.surge_used)
     {
         add(id, "action_surge", "Action Surge", id);
     }
@@ -12055,7 +12441,7 @@ std::vector<Command> Session::offered_commands() const
         }
     }
     // Abjure Foes: enemies the Paladin sees within 60 feet.
-    if (a.channel_divinity > 0 && a.actions.available() && d.abjure_foes)
+    if (a.channel_divinity[CharacterClass::cleric] > 0 && a.actions.available() && d.abjure_foes)
     {
         for (const auto &other : actors_)
         {
@@ -12066,7 +12452,7 @@ std::vector<Command> Session::offered_commands() const
             }
         }
     }
-    if (a.channel_divinity > 0 && a.actions.available() && d.divine_spark)
+    if (a.channel_divinity[CharacterClass::cleric] > 0 && a.actions.available() && d.divine_spark)
     {
         bool undead = false;
         for (const auto &other : actors_)
@@ -12164,8 +12550,8 @@ std::vector<Command> Session::offered_commands() const
         // A slot of level 1 to 5, from Sorcerer level 2, 3, 5, 7 and 9.
         for (unsigned level = 1; level <= 5; ++level)
         {
-            if (a.bonus && d.level >= font_of_magic_level[level] &&
-                a.lay_on_hands >= font_of_magic_cost[level] && a.slots[level] < slot_room(d, level))
+            if (a.bonus && d.class_levels[CharacterClass::sorcerer] >= font_of_magic_level[level] &&
+                a.lay_on_hands[CharacterClass::sorcerer] >= font_of_magic_cost[level] && a.slots[level] < slot_room(d, level))
             {
                 add(id, "create_slot_" + std::to_string(level),
                     "Font of Magic: create a level-" + std::to_string(level) + " slot (" +
@@ -12174,7 +12560,7 @@ std::vector<Command> Session::offered_commands() const
         }
         for (unsigned level = 1; level <= highest_slot_level; ++level)
         {
-            if (a.slots[level] > 0 && a.lay_on_hands < d.sorcery_points)
+            if (a.slots[level] > 0 && a.lay_on_hands[CharacterClass::sorcerer] < d.sorcery_points)
             {
                 add(id, "convert_slot_" + std::to_string(level),
                     "Font of Magic: a level-" + std::to_string(level) + " slot into " +
@@ -12208,7 +12594,7 @@ std::vector<Command> Session::offered_commands() const
                 const auto option = static_cast<Metamagic>(index);
                 const int cost = metamagic_cost(option);
                 // Subtle Spell retired with spell components (CLASS-11).
-                if (a.lay_on_hands < committed + cost || option == Metamagic::subtle ||
+                if (a.lay_on_hands[CharacterClass::sorcerer] < committed + cost || option == Metamagic::subtle ||
                     std::any_of(
                         ready.begin(), ready.end(),
                         [&](const auto &r)
@@ -12240,7 +12626,7 @@ std::vector<Command> Session::offered_commands() const
     }
     // Font of Inspiration (Bard 5): a spell slot, no action, gives back a
     // Bardic Inspiration use.
-    if (d.font_of_inspiration && a.arcane < arcane_capacity(d))
+    if (d.font_of_inspiration && a.arcane[CharacterClass::bard] < d.bardic_inspiration)
     {
         for (unsigned level = 1; level <= highest_slot_level; ++level)
         {
@@ -12252,7 +12638,7 @@ std::vector<Command> Session::offered_commands() const
         }
     }
     // Bardic Inspiration: a Bonus Action gives an ally within 60 feet the die.
-    if (a.bonus && d.bardic_inspiration && a.arcane > 0)
+    if (a.bonus && d.bardic_inspiration && a.arcane[CharacterClass::bard] > 0)
     {
         for (const auto &other : actors_)
         {
@@ -12265,13 +12651,13 @@ std::vector<Command> Session::offered_commands() const
         }
     }
     // Innate Sorcery: a Bonus Action, twice per Long Rest.
-    if (a.bonus && d.innate_sorcery && a.free_casts > 0 &&
+    if (a.bonus && d.innate_sorcery && a.free_casts[CharacterClass::sorcerer] > 0 &&
         !detail::has_effect(a.effects, detail::EffectKind::innate_sorcery))
     {
         add(id, "innate_sorcery", "Innate Sorcery");
     }
     // Sorcery Incarnate (Sorcerer 7): with no use left, 2 Sorcery Points.
-    else if (a.bonus && d.sorcery_incarnate && a.lay_on_hands >= 2 &&
+    else if (a.bonus && d.sorcery_incarnate && a.lay_on_hands[CharacterClass::sorcerer] >= 2 &&
              !detail::has_effect(a.effects, detail::EffectKind::innate_sorcery))
     {
         add(id, "innate_sorcery_points", "Innate Sorcery (2 Sorcery Points)");
@@ -12310,7 +12696,7 @@ std::vector<Command> Session::offered_commands() const
         {
             add(id, "dragon_wings", "Dragon Wings");
         }
-        else if (a.lay_on_hands >= 3)
+        else if (a.lay_on_hands[CharacterClass::sorcerer] >= 3)
         {
             add(id, "dragon_wings_points", "Dragon Wings (3 Sorcery Points)");
         }
@@ -12321,7 +12707,7 @@ std::vector<Command> Session::offered_commands() const
     // the Monk, Large or smaller, standing or not.
     const auto offer_carry = [&]
     {
-        if (!d.heightened_focus || a.surges <= 0)
+        if (!d.heightened_focus || a.surges[CharacterClass::monk] <= 0)
         {
             return;
         }
@@ -12340,7 +12726,7 @@ std::vector<Command> Session::offered_commands() const
     if (!a.bonus && a.fleet_step)
     {
         add(id, "step_of_the_wind", "Step of the Wind: Dash");
-        if (a.surges > 0)
+        if (a.surges[CharacterClass::monk] > 0)
         {
             add(id, "step_of_the_wind_focus", "Step of the Wind: Disengage and Dash (1 Focus)");
         }
@@ -12351,7 +12737,7 @@ std::vector<Command> Session::offered_commands() const
         add(id, "patient_defense", "Patient Defense: Disengage");
         add(id, "step_of_the_wind", "Step of the Wind: Dash");
         offer_carry();
-        if (a.surges > 0)
+        if (a.surges[CharacterClass::monk] > 0)
         {
             add(id, "patient_defense_focus", "Patient Defense: Disengage and Dodge (1 Focus)");
             add(id, "step_of_the_wind_focus", "Step of the Wind: Disengage and Dash (1 Focus)");
@@ -12369,7 +12755,7 @@ std::vector<Command> Session::offered_commands() const
                         add(id, "flurry_topple", "Flurry of Blows: Topple", other.source.id);
                     }
                     // Stunning Strike on a Flurry hit costs one more Focus Point.
-                    if (d.stunning_strike && d.martial_arts && !a.stun_used && a.surges > 1)
+                    if (d.stunning_strike && d.martial_arts && !a.stun_used && a.surges[CharacterClass::monk] > 1)
                     {
                         add(id, "flurry_stun", "Flurry of Blows: Stunning Strike", other.source.id);
                     }
@@ -12387,7 +12773,7 @@ std::vector<Command> Session::offered_commands() const
     // level-1 slot.
     if (d.wild_resurgence)
     {
-        if (!a.channel_divinity && std::none_of(a.effects.active.begin(), a.effects.active.end(),
+        if (!a.channel_divinity[CharacterClass::druid] && std::none_of(a.effects.active.begin(), a.effects.active.end(),
                                                 [](const auto &e)
                                                 {
                                                     return e.kind == detail::EffectKind::resurged &&
@@ -12404,7 +12790,7 @@ std::vector<Command> Session::offered_commands() const
                 }
             }
         }
-        if (a.channel_divinity > 0 && a.slots[1] < d.slots[1] &&
+        if (a.channel_divinity[CharacterClass::druid] > 0 && a.slots[1] < d.slots[1] &&
             std::none_of(
                 a.effects.active.begin(), a.effects.active.end(),
                 [](const auto &e)
@@ -12418,11 +12804,11 @@ std::vector<Command> Session::offered_commands() const
     // Wild Shape: a Bonus Action takes a Beast form or leaves it.
     if (a.bonus && d.wild_shapes)
     {
-        if (a.channel_divinity > 0)
+        if (a.channel_divinity[CharacterClass::druid] > 0)
         {
             for (const auto &form : detail::beast_forms)
             {
-                if (d.level >= form.level)
+                if (d.class_levels[CharacterClass::druid] >= static_cast<int>(form.level))
                 {
                     add(id, "wild_shape_" + std::string(form.key),
                         "Wild Shape: " + std::string(form.label));
@@ -12453,7 +12839,7 @@ std::vector<Command> Session::offered_commands() const
     if (a.bonus && d.rages)
     {
         const auto *rage = rage_of(a);
-        if (!rage && a.channel_divinity > 0 && !d.heavy_armor)
+        if (!rage && a.channel_divinity[CharacterClass::barbarian] > 0 && !d.heavy_armor)
         {
             add(id, "rage", "Rage");
         }
@@ -12464,11 +12850,11 @@ std::vector<Command> Session::offered_commands() const
     }
     if (a.bonus && d.intimidating_presence)
     {
-        if (a.free_casts > 0)
+        if (a.free_casts[CharacterClass::barbarian] > 0)
         {
             add(id, "intimidating_presence", "Intimidating Presence");
         }
-        else if (a.channel_divinity > 0)
+        else if (a.channel_divinity[CharacterClass::barbarian] > 0)
         {
             add(id, "intimidating_presence_rage", "Intimidating Presence (1 Rage)");
         }
@@ -12490,7 +12876,7 @@ std::vector<Command> Session::offered_commands() const
     }
     // Nature's Veil (Ranger 14): a Bonus Action makes the Ranger Invisible
     // until the end of its next turn.
-    if (a.bonus && d.natures_veil && a.lay_on_hands > 0 &&
+    if (a.bonus && d.natures_veil && a.lay_on_hands[CharacterClass::ranger] > 0 &&
         !detail::has_effect(a.effects, detail::EffectKind::veiled) && detail::can_apply(a.effects))
     {
         add(id, "natures_veil", "Nature's Veil", id);
@@ -12815,7 +13201,7 @@ std::vector<Command> Session::offered_commands() const
     }
     // Nature's Sanctuary (Land 14): a Magic action and a Wild Shape use raise
     // it; a Bonus Action moves it 60 feet.
-    if (d.natures_sanctuary && a.channel_divinity > 0 && a.actions.available(true))
+    if (d.natures_sanctuary && a.channel_divinity[CharacterClass::druid] > 0 && a.actions.available(true))
     {
         commands.push_back(
             {revision_, id, 0, "natures_sanctuary", "Nature's Sanctuary", Cell{}, 0, true});
@@ -12897,7 +13283,7 @@ std::vector<Command> Session::offered_commands() const
                     {
                         return other.life.hp > 0 && !other.life.dead && marked_by(other, a);
                     });
-    const bool free_mark = a.bonus && a.free_casts > 0 && d.favored_enemy && !marking &&
+    const bool free_mark = a.bonus && a.free_casts[CharacterClass::ranger] > 0 && d.favored_enemy && !marking &&
                            detail::knows_spell(d.spells, "hunters_mark") && !d.str_dex_disadvantage;
     const bool moving_mark = a.bonus && mark_can_move(a);
     // Hex moves to a new creature as a Bonus Action once its first drops.
@@ -12933,7 +13319,7 @@ std::vector<Command> Session::offered_commands() const
     // Sacred Weapon comes with the Attack action, so it is offered while the
     // Action is unspent and costs only a Channel Divinity use. The player picks
     // the weapon's own damage or Radiant when imbuing it (SACRED-1).
-    if (d.sacred_weapon && a.channel_divinity > 0 && a.actions.available() && d.melee.count &&
+    if (d.sacred_weapon && a.channel_divinity[CharacterClass::cleric] > 0 && a.actions.available() && d.melee.count &&
         !detail::has_effect(a.effects, detail::EffectKind::sacred_weapon))
     {
         add(id, "sacred_weapon", "Sacred Weapon", id);
@@ -12964,18 +13350,18 @@ std::vector<Command> Session::offered_commands() const
         add(id, "second_wind", "Second Wind", id);
     }
     // Wholeness of Body: a Bonus Action heals the Martial Arts die + Wisdom.
-    if (a.bonus && d.wholeness && a.free_casts > 0 && a.life.hp < max_hp(a))
+    if (a.bonus && d.wholeness && a.free_casts[CharacterClass::monk] > 0 && a.life.hp < max_hp(a))
     {
         add(id, "wholeness_of_body", "Wholeness of Body", id);
     }
     // Tireless (Ranger 10): a Magic action gives 1d8 + Wisdom Temporary Hit Points.
-    if (d.tireless && a.arcane > 0 && a.actions.available(true))
+    if (d.tireless && a.arcane[CharacterClass::ranger] > 0 && a.actions.available(true))
     {
         add(id, "tireless", "Tireless", id);
     }
     // Lay On Hands: touch yourself or any adjacent wounded creature whose healing
     // can take effect, including one at 0 Hit Points.
-    if (a.bonus && d.lay_on_hands && a.lay_on_hands > 0)
+    if (a.bonus && d.lay_on_hands && a.lay_on_hands[CharacterClass::paladin] > 0)
     {
         for (const auto &other : actors_)
         {
@@ -12987,7 +13373,7 @@ std::vector<Command> Session::offered_commands() const
         }
     }
     // Lay On Hands can instead spend 5 points to end Poisoned (SRD 5.2.1 p. 61).
-    if (a.bonus && d.lay_on_hands && a.lay_on_hands >= 5)
+    if (a.bonus && d.lay_on_hands && a.lay_on_hands[CharacterClass::paladin] >= 5)
     {
         for (const auto &other : actors_)
         {
@@ -12998,7 +13384,7 @@ std::vector<Command> Session::offered_commands() const
         }
     }
     // Restoring Touch (Paladin 14): 5 points end each of several conditions.
-    if (a.bonus && d.restoring_touch && a.lay_on_hands >= 5)
+    if (a.bonus && d.restoring_touch && a.lay_on_hands[CharacterClass::paladin] >= 5)
     {
         for (const auto &other : actors_)
         {
@@ -13025,7 +13411,7 @@ std::vector<Command> Session::offered_commands() const
     // its turns, right after a pact weapon hit.
     if (a.smite_target && a.smite_melee && d.pact_of_the_blade && actor(a.smite_target).life.hp > 0)
     {
-        if (d.eldritch_smite && !a.smite_used && a.slots[pact_level(d.slots)] > 0)
+        if (d.eldritch_smite && !a.smite_used && a.slots[static_cast<std::size_t>(d.pact_slot_level)] > 0)
         {
             add(id, "eldritch_smite", "Eldritch Smite (a Pact Magic slot)", a.smite_target);
         }
@@ -13052,7 +13438,7 @@ std::vector<Command> Session::offered_commands() const
         {
             add(id, "hurl_through_hell", "Hurl Through Hell", a.smite_target);
         }
-        else if (a.slots[pact_level(d.slots)] > 0)
+        else if (a.slots[static_cast<std::size_t>(d.pact_slot_level)] > 0)
         {
             add(id, "hurl_through_hell_slot", "Hurl Through Hell (a Pact Magic slot)",
                 a.smite_target);
@@ -13090,7 +13476,7 @@ std::vector<Command> Session::offered_commands() const
                 commands.back().spell = spell_facts(a, spell);
             }
         };
-        if (melee && detail::knows_spell(d.spells, "divine_smite") && a.free_casts > 0)
+        if (melee && detail::knows_spell(d.spells, "divine_smite") && a.free_casts[CharacterClass::paladin] > 0)
         {
             add(id, "divine_smite_free", "Divine Smite (Paladin's Smite)", a.smite_target);
         }
@@ -13320,7 +13706,7 @@ std::vector<Command> Session::offered_commands() const
         offer_tactical(AttackRange::melee, feet <= d.reach, other);
         offer_cunning(AttackRange::melee, feet <= d.reach, other);
         // Stunning Strike: a Monk weapon or Unarmed Strike, once a turn, 1 Focus on a hit.
-        if (feet <= d.reach && d.stunning_strike && d.martial_arts && !a.stun_used && a.surges > 0)
+        if (feet <= d.reach && d.stunning_strike && d.martial_arts && !a.stun_used && a.surges[CharacterClass::monk] > 0)
         {
             add(id, "melee_stun", "Melee attack (Stunning Strike)", other.source.id);
         }
@@ -13426,7 +13812,7 @@ std::vector<Command> Session::offered_commands() const
             }
         }
         // Land's Aid: a Magic action spending a use of Wild Shape, aimed at a point.
-        if (d.lands_aid && a.channel_divinity > 0 && a.actions.available(true))
+        if (d.lands_aid && a.channel_divinity[CharacterClass::druid] > 0 && a.actions.available(true))
         {
             commands.push_back({revision_, id, 0, "lands_aid", "Land's Aid", Cell{}, 0, true});
         }
@@ -14087,15 +14473,17 @@ void Session::damage(Actor &target, int amount, bool critical)
     // earlier try since its last rest; success leaves twice its level in Hit
     // Points. It is always tried, as Relentless Endurance is.
     if (standing && target.life.hp == 0 && !target.life.dead && def(target).relentless_rage &&
-        target.lay_on_hands > 0 && rage_of(target))
+        target.lay_on_hands[CharacterClass::barbarian] > 0 && rage_of(target))
     {
-        const int dc = 10 + 5 * (def(target).relentless_rage - target.lay_on_hands);
-        --target.lay_on_hands;
+        const int dc = 10 + 5 * (def(target).relentless_rage - target.lay_on_hands[CharacterClass::barbarian]);
+        --target.lay_on_hands[CharacterClass::barbarian];
         log(target.source.name + " tries Relentless Rage.",
             {"{name} tries Relentless Rage.", {{"name", target.source.name}}});
         if (saving_throw_succeeds(target, detail::Ability::constitution, dc))
         {
-            (void)detail::heal_life(target.life, 2 * def(target).level, max_hp(target), true);
+            (void)detail::heal_life(target.life,
+                                    2 * def(target).class_levels[CharacterClass::barbarian],
+                                    max_hp(target), true);
             log(target.source.name + " fights on with " + std::to_string(target.life.hp) +
                     " Hit Points (Relentless Rage).",
                 {"{name} fights on with {hp} Hit Points (Relentless Rage).",
@@ -14293,7 +14681,7 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
     a.bonus = false;
     if (verb == "divine_smite_free")
     {
-        --a.free_casts;
+        --a.free_casts[CharacterClass::paladin];
     }
     else
     {
@@ -15107,12 +15495,13 @@ void Session::lands_aid(Actor &druid, Cell center)
 {
     druid.nick_origin = 0;
     (void)druid.actions.spend(true);
-    --druid.channel_divinity;
+    --druid.channel_divinity[CharacterClass::druid];
     log(druid.source.name + " uses Land's Aid.",
         {"{name} uses Land's Aid.", {{"name", druid.source.name}}});
     // 2d6, 3d6 from Druid 10, 4d6 from 14.
     auto aid = *detail::find_spell("lands_aid");
-    aid.dice.count = def(druid).level >= 14 ? 4 : def(druid).level >= 10 ? 3 : 2;
+    const int druid_level = def(druid).class_levels[CharacterClass::druid];
+    aid.dice.count = druid_level >= 14 ? 4 : druid_level >= 10 ? 3 : 2;
     const auto cells = area_cells(aid, aid.id, origin_toward(druid, center), center);
     const auto inside = [&](const Actor &other)
     {
@@ -17993,7 +18382,8 @@ void Session::ready_vitality(Actor &caster, const detail::SpellDef &spell,
                              std::size_t damaged_before)
 {
     // Potent Spellcasting from Cleric 14, after a Cleric cantrip damaged someone.
-    if (!def(caster).potent_spellcasting || def(caster).level < 14 || spell.level ||
+    if (!def(caster).potent_spellcasting || def(caster).class_levels[CharacterClass::cleric] < 14 ||
+        spell.level ||
         !detail::on_class_list(CharacterClass::cleric, spell.id) ||
         damaged_before >= damage_taken_.size() || !detail::can_apply(caster.effects) ||
         detail::has_effect(caster.effects, detail::EffectKind::vitality))
@@ -18829,7 +19219,7 @@ void Session::cast_area()
         }
         a.nick_origin = 0;
         (void)a.actions.spend(true);
-        --a.channel_divinity;
+        --a.channel_divinity[CharacterClass::druid];
         std::erase_if(zones_,
                       [&](const auto &zone)
                       {
@@ -19840,7 +20230,7 @@ void Session::preserve_life(Actor &cleric)
     // feet, none raised above half its Hit Point maximum. The most hurt first.
     log(cleric.source.name + " uses Preserve Life.",
         {"{name} uses Preserve Life.", {{"name", cleric.source.name}}});
-    int pool = 5 * def(cleric).level;
+    int pool = 5 * def(cleric).class_levels[CharacterClass::cleric];
     std::vector<Actor *> bloodied;
     for (auto &other : actors_)
     {
@@ -19872,7 +20262,8 @@ void Session::divine_spark(Actor &cleric, Actor &target, bool harm)
     // 1d8 + Wisdom modifier (2d8 from Cleric 7, 3d8 from 13): restored, or
     // Radiant damage (the SRD's Necrotic is not offered, SPARK-1) halved on a
     // Constitution save.
-    const int sparks = def(cleric).level >= 13 ? 3 : def(cleric).level >= 7 ? 2 : 1;
+    const int cleric_level = def(cleric).class_levels[CharacterClass::cleric];
+    const int sparks = cleric_level >= 13 ? 3 : cleric_level >= 7 ? 2 : 1;
     const int total = std::max(0, dice({sparks, 8, 0}) + casting_modifier(def(cleric)));
     log(cleric.source.name + " uses Divine Spark on " + target.source.name + ".",
         {"{name} uses Divine Spark on {target}.",
@@ -20634,7 +21025,7 @@ void Session::restore_touch(Actor &paladin, Actor &target)
          {{"name", paladin.source.name}, {"target", target.source.name}}});
     for (const auto &[condition, kinds] : restorable_conditions)
     {
-        if (paladin.lay_on_hands < 5 || !std::erase_if(
+        if (paladin.lay_on_hands[CharacterClass::paladin] < 5 || !std::erase_if(
                                             target.effects.active,
                                             [&](const auto &e)
                                             {
@@ -20644,7 +21035,7 @@ void Session::restore_touch(Actor &paladin, Actor &target)
         {
             continue;
         }
-        paladin.lay_on_hands -= 5;
+        paladin.lay_on_hands[CharacterClass::paladin] -= 5;
         log(target.source.name + " is no longer " + std::string(condition) + ".",
             {"{name} is no longer {condition}.",
              {{"name", target.source.name}, {"condition", std::string(condition), true}}});
@@ -20662,7 +21053,7 @@ void Session::abjure(Actor &paladin, std::span<const EntityId> targets)
     // save or is Frightened until it takes damage, for up to a minute.
     paladin.nick_origin = 0;
     (void)paladin.actions.spend(false);
-    --paladin.channel_divinity;
+    --paladin.channel_divinity[CharacterClass::cleric];
     log(paladin.source.name + " uses Abjure Foes.",
         {"{name} uses Abjure Foes.", {{"name", paladin.source.name}}});
     const int dc = spell_dc(paladin);
@@ -22556,7 +22947,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         end_hiding(a.source.id);
     }
     if (hit && stunning_ == a.source.id && !spell && !ranged && d.martial_arts && !a.stun_used &&
-        a.surges > 0 && !target.life.dead && target.life.hp > 0)
+        a.surges[CharacterClass::monk] > 0 && !target.life.dead && target.life.hp > 0)
     {
         stunning_strike(a, target);
     }
@@ -22754,7 +23145,7 @@ bool Session::readies(const Actor &a, Metamagic option, const detail::SpellDef &
                        {
                            return r.option == option;
                        }) &&
-           metamagic_applies(option, spell) && a.lay_on_hands >= metamagic_cost(option);
+           metamagic_applies(option, spell) && a.lay_on_hands[CharacterClass::sorcerer] >= metamagic_cost(option);
 }
 
 void Session::mark_heightened(const Actor &caster, const detail::SpellDef &spell)
@@ -22793,7 +23184,7 @@ void Session::take_metamagic(Actor &caster, const detail::SpellDef &spell)
         {
             continue;
         }
-        caster.lay_on_hands -= metamagic_cost(ready.option);
+        caster.lay_on_hands[CharacterClass::sorcerer] -= metamagic_cost(ready.option);
         // Each option spent leaves; one that cannot change this spell waits.
         const int value =
             ready.type ? 10 + static_cast<int>(
@@ -22822,10 +23213,13 @@ int Session::spell_range(const Actor &caster, const detail::SpellDef &spell) con
 {
     const auto &d = def(caster);
     // Eldritch Spear: 30 feet more per Warlock level for its cantrip.
-    int range = spell.range + (d.eldritch_spear.contains(spell.id) ? 30 * d.level : 0);
+    int range = spell.range + (d.eldritch_spear.contains(spell.id)
+                                   ? 30 * d.class_levels[CharacterClass::warlock]
+                                   : 0);
     // Improved Elemental Fury (Druid 15): Potent Spellcasting's Druid
     // cantrips with a range of 10 feet or more reach 300 feet farther.
-    if (d.druid_potent && d.level >= 15 && !spell.level && spell.range >= 10 &&
+    if (d.druid_potent && d.class_levels[CharacterClass::druid] >= 15 && !spell.level &&
+        spell.range >= 10 &&
         detail::on_class_list(CharacterClass::druid, spell.id))
     {
         range += 300;
@@ -22978,7 +23372,7 @@ void Session::attack_recklessly(Actor &a)
 void Session::stunning_strike(Actor &monk, Actor &target)
 {
     monk.stun_used = true;
-    --monk.surges;
+    --monk.surges[CharacterClass::monk];
     log(monk.source.name + " attempts a Stunning Strike.",
         {"{name} attempts a Stunning Strike.", {{"name", monk.source.name}}});
     if (!saving_throw_succeeds(target, detail::Ability::constitution, def(monk).focus_dc))
@@ -24384,12 +24778,15 @@ bool Session::rolled_save_succeeds(const Actor &target, detail::Ability ability,
     // Indomitable: the Fighter rerolls a failed save it could still pass,
     // adding its Fighter level, without asking, as Heroic Inspiration does.
     if (auto &fighter = actor(target.source.id); !result.success && def(fighter).indomitable &&
-                                                 fighter.arcane > 0 && conscious(fighter) &&
-                                                 result.bonus + def(fighter).level + 20 >= dc)
+                                                 fighter.arcane[CharacterClass::fighter] > 0 && conscious(fighter) &&
+                                                 result.bonus +
+                                                         def(fighter).class_levels[CharacterClass::fighter] +
+                                                         20 >=
+                                                     dc)
     {
-        --fighter.arcane;
+        --fighter.arcane[CharacterClass::fighter];
         result.natural = roll(20);
-        result.bonus += def(fighter).level;
+        result.bonus += def(fighter).class_levels[CharacterClass::fighter];
         result.success = result.natural + result.bonus >= dc;
         log(fighter.source.name + " uses Indomitable and rolls the save again.",
             {"{name} uses Indomitable and rolls the save again.", {{"name", fighter.source.name}}});
@@ -24398,10 +24795,10 @@ bool Session::rolled_save_succeeds(const Actor &target, detail::Ability ability,
     // Disciplined Survivor: the Monk spends a Focus Point to reroll a failed
     // save a 20 could pass, without asking (LEVELS-2).
     if (auto &monk = actor(target.source.id); !result.success && def(monk).disciplined_survivor &&
-                                              monk.surges > 0 && conscious(monk) &&
+                                              monk.surges[CharacterClass::monk] > 0 && conscious(monk) &&
                                               result.bonus + 20 >= dc)
     {
-        --monk.surges;
+        --monk.surges[CharacterClass::monk];
         result.natural = roll(20);
         result.success = result.natural + result.bonus >= dc;
         log(monk.source.name +
@@ -24463,7 +24860,7 @@ bool Session::charm_or_fear_save(const Actor &target, detail::Ability ability, i
 
 int Session::peerless_skill(Actor &bard, int shortfall)
 {
-    if (!def(bard).peerless_skill || bard.arcane < 1 || shortfall < 1 ||
+    if (!def(bard).peerless_skill || bard.arcane[CharacterClass::bard] < 1 || shortfall < 1 ||
         shortfall > def(bard).bardic_die || !conscious(bard))
     {
         return 0;
@@ -24472,7 +24869,7 @@ int Session::peerless_skill(Actor &bard, int shortfall)
     const bool fixed = die >= shortfall;
     if (fixed)
     {
-        --bard.arcane;
+        --bard.arcane[CharacterClass::bard];
     }
     const auto amount = std::to_string(die);
     log(bard.source.name + " adds " + amount + " with Peerless Skill" +
@@ -25553,13 +25950,13 @@ int Session::deflected(const Actor &attacker, Actor &target, int amount, detail:
     // Spent once: a later hit in the same command is not deflected.
     found->verb = "deflected";
     const auto &d = def(target);
-    const int reduction = roll(10) + d.dexterity + d.level;
+    const int reduction = roll(10) + d.dexterity + d.class_levels[CharacterClass::monk];
     const int left = std::max(0, amount - reduction);
     log(target.source.name + " deflects " + std::to_string(amount - left) + " damage.",
         {"{name} deflects {damage} damage.",
          {{"name", target.source.name}, {"damage", std::to_string(amount - left)}}});
     const int reach = ranged ? 60 : 5;
-    if (left || target.surges <= 0 || attacker.life.hp <= 0 || distance(target, attacker) > reach ||
+    if (left || target.surges[CharacterClass::monk] <= 0 || attacker.life.hp <= 0 || distance(target, attacker) > reach ||
         !can_see(target, attacker))
     {
         return left;
@@ -25569,7 +25966,7 @@ int Session::deflected(const Actor &attacker, Actor &target, int amount, detail:
     {
         return left;
     }
-    --target.surges;
+    --target.surges[CharacterClass::monk];
     auto &foe = actor(attacker.source.id);
     log(target.source.name + " redirects the attack at " + foe.source.name + ".",
         {"{name} redirects the attack at {target}.",
@@ -25649,7 +26046,7 @@ Actor *Session::cutting_bard(const Actor &roller)
     for (auto &bard : actors_)
     {
         if (def(bard).cutting_words && bard.source.side != roller.source.side && conscious(bard) &&
-            bard.reaction && !detail::incapacitated(bard.effects) && bard.arcane > 0 &&
+            bard.reaction && !detail::incapacitated(bard.effects) && bard.arcane[CharacterClass::bard] > 0 &&
             distance(bard, roller) <= 60 && can_see(bard, roller))
         {
             return &bard;
@@ -25668,7 +26065,7 @@ int Session::cutting_words(const Actor &roller, int margin, CutRoll cut)
         return 0;
     }
     bard->reaction = false;
-    --bard->arcane;
+    --bard->arcane[CharacterClass::bard];
     const int die = roll(def(*bard).bardic_die);
     const bool failed = die > margin;
     const auto amount = std::to_string(die);
@@ -25707,7 +26104,7 @@ int Session::cut_damage(const Actor &roller, const Actor &target, int amount,
         return 0;
     }
     bard->reaction = false;
-    --bard->arcane;
+    --bard->arcane[CharacterClass::bard];
     const int die = roll(def(*bard).bardic_die);
     const bool saved = taken(amount - die) < standing;
     const auto cut = std::to_string(die);
@@ -26334,7 +26731,7 @@ void Session::dispatch(const Command &command)
     }
     else if (command.verb == "action_surge")
     {
-        --a.surges;
+        --a.surges[CharacterClass::fighter];
         a.surge_used = true;
         a.actions.surge = true;
         log(a.source.name + " uses Action Surge.",
@@ -26399,21 +26796,21 @@ void Session::dispatch(const Command &command)
     {
         a.nick_origin = 0;
         (void)a.actions.spend(false);
-        --a.channel_divinity;
+        --a.channel_divinity[CharacterClass::cleric];
         divine_spark(a, actor(command.target), command.verb == "divine_spark_radiant");
     }
     else if (command.verb == "preserve_life")
     {
         a.nick_origin = 0;
         (void)a.actions.spend(false);
-        --a.channel_divinity;
+        --a.channel_divinity[CharacterClass::cleric];
         preserve_life(a);
     }
     else if (command.verb == "turn_undead")
     {
         a.nick_origin = 0;
         (void)a.actions.spend(false);
-        --a.channel_divinity;
+        --a.channel_divinity[CharacterClass::cleric];
         turn_undead(a);
     }
     else if (command.verb == "escape")
@@ -26434,7 +26831,7 @@ void Session::dispatch(const Command &command)
     {
         // Two Unarmed Strikes; the second only if the first leaves the target up.
         a.bonus = false;
-        --a.surges;
+        --a.surges[CharacterClass::monk];
         log(a.source.name + " uses Flurry of Blows.",
             {"{name} uses Flurry of Blows.", {{"name", a.source.name}}});
         if (command.verb == "flurry_stun")
@@ -26524,7 +26921,7 @@ void Session::dispatch(const Command &command)
     else if (command.verb.starts_with("wild_shape_"))
     {
         a.bonus = false;
-        --a.channel_divinity;
+        --a.channel_divinity[CharacterClass::druid];
         const auto *form = detail::beast_form(std::string_view(command.verb).substr(11));
         std::erase_if(a.effects.active,
                       [](const auto &e)
@@ -26543,7 +26940,7 @@ void Session::dispatch(const Command &command)
             {"{name} takes the shape of a {form}.",
              {{"name", a.source.name}, {"form", std::string(form->label), true}}});
         // Temporary Hit Points equal to the Druid level.
-        TemporaryHitPoints offered{def(a).level, "feature:wild_shape"};
+        TemporaryHitPoints offered{def(a).class_levels[CharacterClass::druid], "feature:wild_shape"};
         if (a.life.temporary_hp.amount)
         {
             temporary_offer_ = std::move(offered);
@@ -26594,14 +26991,14 @@ void Session::dispatch(const Command &command)
     else if (command.verb.starts_with("font_of_inspiration_"))
     {
         --a.slots[static_cast<unsigned>(command.verb.back() - '0')];
-        ++a.arcane;
+        ++a.arcane[CharacterClass::bard];
         log(a.source.name + " turns a spell slot into Bardic Inspiration.",
             {"{name} turns a spell slot into Bardic Inspiration.", {{"name", a.source.name}}});
     }
     else if (command.verb == "bardic_inspiration")
     {
         a.bonus = false;
-        --a.arcane;
+        --a.arcane[CharacterClass::bard];
         auto &ally = actor(command.target);
         detail::apply_spell_benefit(ally.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::inspired, d.bardic_die);
@@ -26618,7 +27015,7 @@ void Session::dispatch(const Command &command)
         }
         else
         {
-            a.lay_on_hands -= 3;
+            a.lay_on_hands[CharacterClass::sorcerer] -= 3;
         }
         detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::dragon_wings, 0);
@@ -26630,11 +27027,11 @@ void Session::dispatch(const Command &command)
         a.bonus = false;
         if (command.verb == "innate_sorcery")
         {
-            --a.free_casts;
+            --a.free_casts[CharacterClass::sorcerer];
         }
         else
         {
-            a.lay_on_hands -= 2;
+            a.lay_on_hands[CharacterClass::sorcerer] -= 2;
         }
         detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::innate_sorcery, 0);
@@ -26665,7 +27062,7 @@ void Session::dispatch(const Command &command)
     else if (command.verb == "rage")
     {
         a.bonus = false;
-        --a.channel_divinity;
+        --a.channel_divinity[CharacterClass::barbarian];
         // A raging creature cannot keep Concentration.
         end_concentration(a);
         detail::apply_poisoned(a.effects, effect_source(a), a.source.name, rage_duration(a),
@@ -26708,11 +27105,11 @@ void Session::dispatch(const Command &command)
         a.bonus = false;
         if (command.verb == "intimidating_presence")
         {
-            --a.free_casts;
+            --a.free_casts[CharacterClass::barbarian];
         }
         else
         {
-            --a.channel_divinity;
+            --a.channel_divinity[CharacterClass::barbarian];
         }
         intimidate(a);
     }
@@ -26776,7 +27173,7 @@ void Session::dispatch(const Command &command)
         }
         else
         {
-            --a.slots[pact_level(d.slots)];
+            --a.slots[static_cast<std::size_t>(d.pact_slot_level)];
         }
         auto &target = actor(command.target);
         if (saving_throw_succeeds(target, detail::Ability::charisma, spell_dc(a, "")))
@@ -26810,7 +27207,7 @@ void Session::dispatch(const Command &command)
         // 1d8 Force and 1d8 more per slot level; a Huge or smaller creature
         // falls Prone.
         a.smite_used = true;
-        const auto level = pact_level(d.slots);
+        const auto level = static_cast<unsigned>(d.pact_slot_level);
         --a.slots[level];
         auto &target = actor(command.target);
         const int count = (1 + static_cast<int>(level)) * (a.smite_critical ? 2 : 1);
@@ -26850,8 +27247,9 @@ void Session::dispatch(const Command &command)
         damage(target, amount, false);
         if (heals)
         {
+            const int die = next_hit_die(d, a.hit_dice);
             --a.hit_dice;
-            heal(a, std::max(1, roll(d.hit_die) + d.constitution));
+            heal(a, std::max(1, roll(die) + d.constitution));
         }
     }
     else if (command.verb == "arcane_sword_strike")
@@ -26968,7 +27366,7 @@ void Session::dispatch(const Command &command)
     else if (command.verb == "natures_veil")
     {
         a.bonus = false;
-        --a.lay_on_hands;
+        --a.lay_on_hands[CharacterClass::ranger];
         const auto index = index_of(a.source.id);
         const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
         detail::apply_poisoned(a.effects, effect_source(a), a.source.name, next_turn_ms(a) + slot,
@@ -27156,7 +27554,7 @@ void Session::dispatch(const Command &command)
     else if (command.verb == "tireless")
     {
         a.actions.spend(true);
-        --a.arcane;
+        --a.arcane[CharacterClass::ranger];
         TemporaryHitPoints offered{std::max(1, roll(8) + d.wisdom), "feature:tireless"};
         log(a.source.name + " uses Tireless.",
             {"{name} uses Tireless.", {{"name", a.source.name}}});
@@ -27182,7 +27580,7 @@ void Session::dispatch(const Command &command)
     {
         const auto &spell = *detail::find_spell("hunters_mark");
         a.bonus = false;
-        --a.free_casts;
+        --a.free_casts[CharacterClass::ranger];
         end_hiding(a.source.id);
         log(a.source.name + " casts Hunter's Mark (Favored Enemy).",
             {"{name} casts Hunter's Mark (Favored Enemy).", {{"name", a.source.name}}});
@@ -27232,7 +27630,7 @@ void Session::dispatch(const Command &command)
     {
         // The effect records the chosen damage: 1 for Radiant, 0 for the weapon's own.
         const bool radiant = command.verb == "sacred_weapon_radiant";
-        --a.channel_divinity;
+        --a.channel_divinity[CharacterClass::cleric];
         detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::sacred_weapon, radiant ? 1 : 0);
         if (radiant)
@@ -27322,7 +27720,7 @@ void Session::dispatch(const Command &command)
     else if (command.verb == "wholeness_of_body")
     {
         a.bonus = false;
-        --a.free_casts;
+        --a.free_casts[CharacterClass::monk];
         log(a.source.name + " uses Wholeness of Body.",
             {"{name} uses Wholeness of Body.", {{"name", a.source.name}}});
         heal(a, healing_roll(a, {1, d.martial_die, std::max(1, d.wisdom)}));
@@ -27331,7 +27729,7 @@ void Session::dispatch(const Command &command)
     {
         a.bonus = false;
         --a.winds;
-        heal(a, healing_roll(a, {1, 10, d.level}));
+        heal(a, healing_roll(a, {1, 10, d.class_levels[CharacterClass::fighter]}));
         // Tactical Shift: up to half Speed without provoking Opportunity Attacks.
         if (const int feet = std::max(0, d.speed - detail::speed_penalty(a.effects)) / 2;
             d.tactical_shift && feet > 0 && conscious(a))
@@ -27355,7 +27753,7 @@ void Session::dispatch(const Command &command)
     {
         auto &target = actor(command.target);
         a.bonus = false;
-        a.lay_on_hands -= 5;
+        a.lay_on_hands[CharacterClass::paladin] -= 5;
         std::erase_if(target.effects.active,
                       [](const auto &e)
                       {
@@ -27376,7 +27774,7 @@ void Session::dispatch(const Command &command)
         log(a.source.name + " uses Lay On Hands on " + target.source.name + ".",
             {"{name} uses Lay On Hands on {target}.",
              {{"name", a.source.name}, {"target", target.source.name}}});
-        a.lay_on_hands -= heal(target, std::min(a.lay_on_hands, max_hp(target) - target.life.hp));
+        a.lay_on_hands[CharacterClass::paladin] -= heal(target, std::min(a.lay_on_hands[CharacterClass::paladin], max_hp(target) - target.life.hp));
     }
     else if (const auto *aimed = detail::find_spell(command.verb);
              aimed && (aimed->target == detail::SpellTarget::area ||
@@ -27436,7 +27834,7 @@ void Session::dispatch(const Command &command)
     }
     else if (command.verb == "wild_resurgence_slot")
     {
-        --a.channel_divinity;
+        --a.channel_divinity[CharacterClass::druid];
         ++a.slots[1];
         detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::resurged, 1);
@@ -27446,7 +27844,7 @@ void Session::dispatch(const Command &command)
     else if (command.verb.starts_with("wild_resurgence_"))
     {
         --a.slots[static_cast<unsigned>(command.verb.back() - '0')];
-        ++a.channel_divinity;
+        ++a.channel_divinity[CharacterClass::druid];
         detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::resurged, 0);
         log(a.source.name + " turns a spell slot into Wild Shape.",
@@ -28211,9 +28609,10 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         // Dash spends the action before adding a second movement allowance.
         // Accepting both extra movement and an unused action lets a later Dash
         // create a state outside the checkpoint's own movement bounds.
-        actor.movement < 0 || actor.arcane < 0 || actor.arcane > arcane_capacity(definition) ||
-        actor.surges < 0 || actor.surges > surge_capacity(definition) ||
-        (actor.surge_used && (!definition.surges || actor.surges == definition.surges)) ||
+        actor.movement < 0 || !within(actor.arcane, arcane_capacity(definition)) ||
+        !within(actor.surges, surge_capacity(definition)) ||
+        (actor.surge_used && (!definition.surges ||
+                              actor.surges[CharacterClass::fighter] == definition.surges)) ||
         (actor.actions.surge && !actor.surge_used) || actor.rushes < 0 ||
         actor.rushes > definition.rushes ||
         (actor.rush_used &&
@@ -28222,9 +28621,9 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         !slots_in_range(actor.slots, definition) || actor.hit_dice < 0 ||
         actor.hit_dice > (definition.hit_die ? definition.level : 0) || actor.life.successes < 0 ||
         actor.life.successes > 3 || actor.life.failures < 0 || actor.life.failures > 4 ||
-        actor.lay_on_hands < 0 || actor.lay_on_hands > lay_capacity(definition) ||
-        actor.free_casts < 0 || actor.free_casts > free_cast_capacity(definition) ||
-        actor.channel_divinity < 0 || actor.channel_divinity > channel_capacity(definition) ||
+        !within(actor.lay_on_hands, lay_capacity(definition)) ||
+        !within(actor.free_casts, free_cast_capacity(definition)) ||
+        !within(actor.channel_divinity, channel_capacity(definition)) ||
         actor.initiate_casts < 0 || (actor.initiate_casts & ~initiate_capacity(definition)) ||
         !valid_innate_spent(definition, actor.innate_spent))
     {
@@ -29617,39 +30016,60 @@ class Module final : public RulesModule
 
     std::vector<TrainingChoiceGroup> training_options(const CharacterSheet &sheet) const override
     {
-        const auto klass = detail::class_of(sheet);
-        if (klass == CharacterClass::wizard && sheet.level >= 2)
+        // Each class's, at its own level (MULTI-1).
+        const auto levels = detail::class_levels(sheet);
+        std::vector<TrainingChoiceGroup> result;
+        for (const auto &choice : detail::creation_choices(CreationField::character_class))
+        {
+            const auto klass = detail::class_from_id(choice.id);
+            if (levels[klass])
+            {
+                for (auto &group :
+                     class_training_options(sheet, klass, static_cast<unsigned>(levels[klass])))
+                {
+                    result.push_back(std::move(group));
+                }
+            }
+        }
+        return result;
+    }
+
+    // A class's choices a sheet's training may hold, at the class's `level`.
+    static std::vector<TrainingChoiceGroup>
+    class_training_options(const CharacterSheet &sheet, CharacterClass klass, unsigned level)
+    {
+        if (klass == CharacterClass::wizard && level >= 2)
         {
             return {detail::scholar_options(sheet.grants)};
         }
-        if (klass == CharacterClass::fighter && sheet.level >= 4)
+        if (klass == CharacterClass::fighter && level >= 4)
         {
-            return later_masteries(klass, sheet);
+            return later_masteries(klass, sheet, level);
         }
-        if (klass == CharacterClass::sorcerer && sheet.level >= 2)
+        if (klass == CharacterClass::sorcerer && level >= 2)
         {
             return {detail::metamagic_options()};
         }
-        if (klass == CharacterClass::rogue && sheet.level >= 6)
+        if (klass == CharacterClass::rogue && level >= 6)
         {
             return {detail::expertise_options(detail::expertise_picks[0], sheet.grants)};
         }
-        if (klass == CharacterClass::ranger && sheet.level >= 9)
+        if (klass == CharacterClass::ranger && level >= 9)
         {
             return {detail::expertise_options(detail::expertise_picks[1], sheet.grants)};
         }
-        if (klass == CharacterClass::bard && sheet.level >= 3)
+        if (klass == CharacterClass::bard && level >= 3)
         {
             return {detail::lore_options(sheet.grants)};
         }
-        if (klass == CharacterClass::druid && sheet.level >= 3)
+        if (klass == CharacterClass::druid && level >= 3)
         {
             return {detail::land_options()};
         }
-        if (klass == CharacterClass::barbarian && sheet.level >= 3)
+        if (klass == CharacterClass::barbarian && level >= 3)
         {
             std::vector<TrainingChoiceGroup> groups{detail::primal_knowledge_options(sheet.grants)};
-            for (auto &group : later_masteries(klass, sheet))
+            for (auto &group : later_masteries(klass, sheet, level))
             {
                 groups.push_back(std::move(group));
             }
@@ -29729,12 +30149,12 @@ class Module final : public RulesModule
             }
             auto candidate = sheet;
             candidate.grants.push_back(
-                detail::copied_spell_grant(spell, static_cast<unsigned>(sheet.level)));
+                detail::copied_spell_grant(spell, static_cast<unsigned>(detail::class_levels(
+                                                      sheet)[CharacterClass::wizard])));
             (void)character_profile(candidate, {});
             sheet = std::move(candidate);
             return;
         }
-        const auto klass = detail::class_of(sheet);
         auto candidate = sheet;
         // After the last skill or Expertise grant, so a save's replay, which
         // applies a level's spell choices first, rebuilds the same grant order.
@@ -29748,9 +30168,9 @@ class Module final : public RulesModule
                                                                 std::string(detail::hall_training),
                                                                 static_cast<unsigned>(sheet.level),
                                                                 {}});
-        candidate.training = detail::training_profile(candidate.grants, klass, candidate.race,
-                                                      detail::background_id(candidate.background),
-                                                      candidate.level, candidate.scores);
+        candidate.training = detail::training_profile(
+            candidate.grants, detail::ClassHistory(detail::level_class_ids(candidate)),
+            candidate.race, detail::background_id(candidate.background), candidate.scores);
         (void)character_profile(candidate, {});
         sheet = std::move(candidate);
     }
@@ -29778,10 +30198,9 @@ class Module final : public RulesModule
         {
             ++modifier;
         }
-        const auto klass = detail::class_of(candidate);
         candidate.hit_points = maximum_hit_points(
-            klass, candidate.hit_die, candidate.race == "Dwarf", candidate.hit_point_modifiers,
-            klass == CharacterClass::sorcerer);
+            detail::ClassHistory(detail::level_class_ids(candidate)), candidate.race == "Dwarf",
+            candidate.hit_point_modifiers);
         (void)character_profile(candidate, {});
         sheet = std::move(candidate);
     }
@@ -29795,7 +30214,6 @@ class Module final : public RulesModule
         {
             throw std::runtime_error("No completed training choice to replace");
         }
-        const auto klass = detail::class_of(sheet);
         auto candidate = sheet;
         std::vector<std::string> unclaimed(selected.begin(), selected.end());
         TrainingChoices changed;
@@ -29823,8 +30241,8 @@ class Module final : public RulesModule
             }
             if (choice.group.id == "weapon_mastery")
             {
-                candidate.grants =
-                    detail::replace_masteries(candidate.grants, klass, candidate.level, picks);
+                candidate.grants = detail::replace_masteries(
+                    candidate.grants, detail::class_levels(candidate), picks);
             }
             else
             {
@@ -29837,16 +30255,27 @@ class Module final : public RulesModule
             throw std::runtime_error("Not a choice this rest can change");
         }
         // A new land's Circle Spells are always prepared, so they leave the list.
-        const auto always =
-            detail::always_prepared_spells(klass, candidate.level, candidate.grants);
+        // Each class's at its own level (MULTI-1).
+        std::vector<std::string> always;
+        const auto levels = detail::class_levels(candidate);
+        for (const auto held :
+             detail::casting_classes(detail::ClassHistory(detail::level_class_ids(candidate))))
+        {
+            for (auto &id : detail::always_prepared_spells(
+                     held, static_cast<unsigned>(levels[held]), candidate.grants))
+            {
+                always.push_back(std::move(id));
+            }
+        }
         std::erase_if(candidate.prepared_spells,
-                      [&](const auto &id)
+                      [&](const std::string &entry)
                       {
+                          const auto id = entry.substr(0, entry.find(detail::prepared_tag));
                           return std::find(always.begin(), always.end(), id) != always.end();
                       });
-        candidate.training = detail::training_profile(candidate.grants, klass, candidate.race,
-                                                      detail::background_id(candidate.background),
-                                                      candidate.level, candidate.scores);
+        candidate.training = detail::training_profile(
+            candidate.grants, detail::ClassHistory(detail::level_class_ids(candidate)),
+            candidate.race, detail::background_id(candidate.background), candidate.scores);
         (void)character_profile(candidate, {});
         sheet = std::move(candidate);
         return changed;
@@ -29854,15 +30283,152 @@ class Module final : public RulesModule
 
     AdvancementOptions advancement_options(const CharacterSheet &sheet) const override
     {
-        // Each class advances to its cap (LEVELS-1); class_of rejects a label
-        // no class has.
-        const auto klass = detail::class_of(sheet);
-        if (static_cast<unsigned>(sheet.level) >= detail::level_cap(klass))
+        return class_options(sheet, detail::class_of(sheet));
+    }
+
+    std::vector<AdvancementOption> advancement_classes(const CharacterSheet &sheet) const override
+    {
+        if (!advancement_options(sheet).level)
         {
             return {};
         }
+        const auto levels = detail::class_levels(sheet);
+        const auto start = detail::class_of(sheet);
+        std::vector<CharacterClass> order{start};
+        for (const auto held : {true, false})
+        {
+            for (const auto &choice : detail::creation_choices(CreationField::character_class))
+            {
+                const auto klass = detail::class_from_id(choice.id);
+                if (klass != start && (levels[klass] > 0) == held)
+                {
+                    order.push_back(klass);
+                }
+            }
+        }
+        std::vector<AdvancementOption> result;
+        for (const auto klass : order)
+        {
+            const auto options = class_options(sheet, klass);
+            AdvancementOption option{std::string(detail::class_id(klass)),
+                                     std::string(detail::class_label(klass)), {}, options.level != 0};
+            if (!option.available && !levels[klass])
+            {
+                option.description = multiclass_requirements(klass);
+            }
+            result.push_back(std::move(option));
+        }
+        return result;
+    }
+
+    // The class a level-up choice advances in: the one it names, or the
+    // starting class.
+    static CharacterClass advancing_class(const CharacterSheet &sheet,
+                                          const AdvancementChoice &choice)
+    {
+        return choice.character_class.empty() ? detail::class_of(sheet)
+                                              : detail::class_from_id(choice.character_class);
+    }
+
+    // Whether the scores meet a class's multiclass prerequisite: 13 in its
+    // primary ability (Strength or Dexterity for a Fighter).
+    static bool meets_requirements(const CharacterSheet &sheet, CharacterClass klass)
+    {
+        const auto required = detail::creation_rules().class_requirements(detail::class_id(klass));
+        const auto met = [&](Ability ability)
+        {
+            return sheet.scores[ability] >= required.minimum;
+        };
+        return required.any ? std::any_of(required.abilities.begin(), required.abilities.end(), met)
+                            : std::all_of(required.abilities.begin(), required.abilities.end(), met);
+    }
+
+    // SRD 5.2.1 p. 24: a new class needs 13 in its primary ability and in
+    // those of each class the character has (MULTI-1).
+    static bool multiclass_qualified(const CharacterSheet &sheet, CharacterClass klass)
+    {
+        const auto levels = detail::class_levels(sheet);
+        if (!meets_requirements(sheet, klass))
+        {
+            return false;
+        }
+        for (const auto &choice : detail::creation_choices(CreationField::character_class))
+        {
+            const auto held = detail::class_from_id(choice.id);
+            if (levels[held] && !meets_requirements(sheet, held))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // What a class's multiclass prerequisite asks, for a greyed-out choice.
+    static std::string multiclass_requirements(CharacterClass klass)
+    {
+        return "Requires " +
+               detail::creation_rules().class_requirements(detail::class_id(klass)).description +
+               ", and 13 in the primary ability of each class the character has.";
+    }
+
+    // What the next level offers when taken in `klass`, a class the character
+    // has or one it may multiclass into (MULTI-1); nothing at the cap. The
+    // result's level is the character's next level, its class_level the
+    // class's.
+    AdvancementOptions class_options(const CharacterSheet &sheet, CharacterClass klass) const
+    {
+        // Each class advances to its cap (LEVELS-1), and the character's
+        // levels together to the game's; class_of rejects a label no class has.
+        const auto levels = detail::class_levels(sheet);
+        if (static_cast<unsigned>(sheet.level) >= detail::level_cap(detail::class_of(sheet)) ||
+            static_cast<unsigned>(levels[klass]) >= detail::level_cap(klass) ||
+            (!levels[klass] && !multiclass_qualified(sheet, klass)))
+        {
+            return {};
+        }
+        auto result = class_level_options(sheet, klass, static_cast<unsigned>(levels[klass] + 1));
+        result.class_level = result.level;
+        result.level = static_cast<unsigned>(sheet.level + 1);
+        result.character_class = std::string(detail::class_id(klass));
+        // A class level's notes name the Proficiency Bonus its single-class
+        // character reaches; a multiclass character's follows its total level.
+        if (result.class_level != result.level)
+        {
+            for (const std::string_view note :
+                 {"\nProficiency Bonus +3.", "\nProficiency Bonus +4.", "\nProficiency Bonus +5.",
+                  "Proficiency Bonus +3.", "Proficiency Bonus +4.", "Proficiency Bonus +5."})
+            {
+                for (auto at = result.description.find(note); at != std::string::npos;
+                     at = result.description.find(note))
+                {
+                    result.description.erase(at, note.size());
+                }
+            }
+            if (result.level == 5 || result.level == 9 || result.level == 13)
+            {
+                result.description += (result.description.empty() ? "" : "\n") +
+                                      std::string("Proficiency Bonus +") +
+                                      std::to_string(2 + (result.level - 1) / 4) + ".";
+            }
+        }
+        return result;
+    }
+
+    // The options of `klass`'s level `level`, before class_options says
+    // which character level it is.
+    AdvancementOptions class_level_options(const CharacterSheet &sheet, CharacterClass klass,
+                                           unsigned level) const
+    {
         AdvancementOptions result;
-        result.level = sheet.level + 1;
+        result.level = level;
+        // A class taken after the first: its level-one choices (MULTI-1).
+        if (level == 1)
+        {
+            result.training = detail::multiclass_options(klass, sheet.grants, {});
+            result.description =
+                "A new class: its level-one features and part of its training.";
+            return result;
+        }
         if (klass == CharacterClass::fighter ||
             ((klass == CharacterClass::paladin || klass == CharacterClass::ranger) &&
              result.level == 2))
@@ -30744,18 +31310,24 @@ class Module final : public RulesModule
     AdvancementOptions advancement_options(const CharacterSheet &sheet,
                                            const AdvancementChoice &choice) const override
     {
-        auto options = advancement_options(sheet);
+        const auto klass = advancing_class(sheet, choice);
+        auto options = class_options(sheet, klass);
+        // A new class's Rogue Expertise follows the skill picked with it.
+        if (options.level && options.class_level == 1)
+        {
+            options.training = detail::multiclass_options(klass, sheet.grants, choice.training);
+        }
         if (options.level)
         {
-            options.cantrip_swap = detail::cantrip_swap_offer(sheet);
-            options.spell_swap = detail::spell_swap_offer(sheet);
-            options.option_swap = detail::option_swap_offer(sheet);
-            options.discovery_swap = detail::discovery_swap_offer(sheet);
+            options.cantrip_swap = detail::cantrip_swap_offer(sheet, klass);
+            options.spell_swap = detail::spell_swap_offer(sheet, klass);
+            options.option_swap = detail::option_swap_offer(sheet, klass);
+            options.discovery_swap = detail::discovery_swap_offer(sheet, klass);
         }
         // Skilled's proficiency page exists only while Skilled is the selection,
         // so switching away from it drops the group and its unconfirmed picks.
         if (choice.feat == "skilled" && options.level &&
-            detail::gains_feat(detail::class_of(sheet), options.level))
+            detail::gains_feat(klass, options.class_level))
         {
             options.training.push_back(detail::skilled_options(sheet.grants));
         }
@@ -30766,7 +31338,7 @@ class Module final : public RulesModule
             options.training.push_back(
                 detail::lessons_skilled_options(sheet.grants, options.level));
         }
-        if (choice.fighting_style && detail::class_of(sheet) == CharacterClass::fighter)
+        if (choice.fighting_style && klass == CharacterClass::fighter)
         {
             constexpr std::string_view source = "class:fighter:fighting_style";
             for (auto &feat : options.feats)
@@ -30796,12 +31368,12 @@ class Module final : public RulesModule
         {
             return choice;
         }
-        if (options.level == 2 &&
+        if (options.class_level == 2 &&
             (klass == CharacterClass::paladin || klass == CharacterClass::ranger))
         {
             choice.fighting_style = "defense";
         }
-        choice.spells = sheet.prepared_spells;
+        choice.spells = detail::class_prepared_spells(sheet.prepared_spells, klass, klass);
         for (const auto &group : options.training)
         {
             for (const auto &option : group.options)
@@ -30820,6 +31392,8 @@ class Module final : public RulesModule
         {
             auto next = sheet;
             next.level = options.level;
+            next.level_classes = detail::level_class_ids(sheet);
+            next.level_classes.emplace_back(detail::class_id(klass));
             choice.spell_learning.emplace();
             for (const auto &group :
                  detail::spell_choice_options(next, SpellChoiceContext::advancement).learning)
@@ -30850,7 +31424,7 @@ class Module final : public RulesModule
                 }
             }
         }
-        if (detail::gains_feat(klass, options.level))
+        if (detail::gains_feat(klass, options.class_level))
         {
             choice.feat = "ability_score_improvement";
             const Ability primary =
@@ -30882,14 +31456,35 @@ class Module final : public RulesModule
     CharacterSheet spell_choice_sheet(const CharacterSheet &sheet,
                                       const AdvancementChoice &choice) const override
     {
-        const auto klass = detail::class_of(sheet);
+        const auto klass = advancing_class(sheet, choice);
+        // The level in the class it is taken in (MULTI-1).
+        const auto class_level = static_cast<unsigned>(detail::class_levels(sheet)[klass] + 1);
         auto next = sheet;
         ++next.level;
-        if ((klass == CharacterClass::paladin || klass == CharacterClass::ranger) &&
-            next.level == 2)
+        next.level_classes = detail::level_class_ids(sheet);
+        next.level_classes.emplace_back(detail::class_id(klass));
+        // A class taken after the first: its level-one features, which its
+        // spell choices need, and part of its training (MULTI-1).
+        if (class_level == 1)
         {
-            next.grants.push_back(
-                {"feature:fighting_style", "class:" + std::string(detail::class_id(klass)), 2, {}});
+            next.grants.push_back({std::string(detail::multiclass_prefix) +
+                                       std::string(detail::class_id(klass)),
+                                   "class:" + std::string(detail::class_id(klass)),
+                                   static_cast<unsigned>(next.level),
+                                   {}});
+            for (auto &grant :
+                 detail::class_level_grants(klass, 1, static_cast<unsigned>(next.level)))
+            {
+                next.grants.push_back(std::move(grant));
+            }
+        }
+        if ((klass == CharacterClass::paladin || klass == CharacterClass::ranger) &&
+            class_level == 2)
+        {
+            next.grants.push_back({"feature:fighting_style",
+                                   "class:" + std::string(detail::class_id(klass)),
+                                   static_cast<unsigned>(next.level),
+                                   {}});
         }
         if (choice.fighting_style)
         {
@@ -30906,11 +31501,14 @@ class Module final : public RulesModule
         }
         // A cantrip, spell, invocation or Metamagic option replaced on gaining
         // the level changes what the level's spell choices offer.
-        detail::apply_cantrip_swap(next, choice.cantrip_swap, detail::cantrip_swap_offer(sheet));
-        detail::apply_spell_swap(next, choice.spell_swap, detail::spell_swap_offer(sheet));
-        detail::apply_option_swap(next, choice.option_swap, detail::option_swap_offer(sheet));
+        detail::apply_cantrip_swap(next, choice.cantrip_swap,
+                                   detail::cantrip_swap_offer(sheet, klass));
+        detail::apply_spell_swap(next, choice.spell_swap, detail::spell_swap_offer(sheet, klass),
+                                 klass);
+        detail::apply_option_swap(next, choice.option_swap,
+                                  detail::option_swap_offer(sheet, klass));
         detail::apply_discovery_swap(next, choice.discovery_swap,
-                                     detail::discovery_swap_offer(sheet));
+                                     detail::discovery_swap_offer(sheet, klass));
         const auto held = [&](std::string_view id)
         {
             return std::any_of(next.grants.begin(), next.grants.end(),
@@ -30934,12 +31532,11 @@ class Module final : public RulesModule
         }
         // Magic Initiate's spells are chosen with the level's other spells,
         // whether the feat comes at level four or from Lessons of the First Ones.
-        if (choice.feat.starts_with("magic_initiate_") &&
-            detail::gains_feat(klass, static_cast<unsigned>(next.level)))
+        if (choice.feat.starts_with("magic_initiate_") && detail::gains_feat(klass, class_level))
         {
             next.grants.push_back(detail::advancement_grant(klass, next.level, choice));
         }
-        const auto invocations = detail::invocations_source(static_cast<unsigned>(next.level));
+        const auto invocations = detail::invocations_source(class_level);
         if (const auto lessons = choice.training.find(invocations);
             lessons != choice.training.end())
         {
@@ -30958,15 +31555,17 @@ class Module final : public RulesModule
     bool advance_character(CharacterSheet &sheet, VitalState &state,
                            const AdvancementChoice &choice) const override
     {
-        const auto klass = detail::class_of(sheet);
+        const auto klass = advancing_class(sheet, choice);
         const auto options = advancement_options(sheet, choice);
         if (!options.level)
         {
             return false;
         }
+        // The level in the class the level is taken in (MULTI-1).
+        const auto class_level = options.class_level;
         const bool half_style =
             (klass == CharacterClass::paladin || klass == CharacterClass::ranger) &&
-            options.level == 2;
+            class_level == 2;
         if (half_style && !choice.fighting_style)
         {
             throw std::runtime_error("Choose a Fighting Style");
@@ -30990,7 +31589,7 @@ class Module final : public RulesModule
             }
             points += n;
         }
-        if (detail::gains_feat(klass, options.level))
+        if (detail::gains_feat(klass, class_level))
         {
             const auto feat = std::find_if(options.feats.begin(), options.feats.end(),
                                            [&](const auto &f)
@@ -31042,9 +31641,18 @@ class Module final : public RulesModule
         {
             throw std::runtime_error("Choose exactly three Skilled proficiencies");
         }
+        // A new class's level-one choices are all made with it (MULTI-1).
+        if (class_level == 1 &&
+            std::any_of(options.training.begin(), options.training.end(),
+                        [&](const auto &group)
+                        {
+                            return !choice.training.contains(group.id);
+                        }))
+        {
+            throw std::runtime_error("Choose the new class's training");
+        }
         // A swapped-in invocation cannot also be one of the level's new picks.
-        if (const auto picks = choice.training.find(
-                detail::invocations_source(static_cast<unsigned>(sheet.level + 1)));
+        if (const auto picks = choice.training.find(detail::invocations_source(class_level));
             picks != choice.training.end() && !choice.option_swap.replacement.empty() &&
             std::find(picks->second.begin(), picks->second.end(), choice.option_swap.replacement) !=
                 picks->second.end())
@@ -31062,6 +31670,8 @@ class Module final : public RulesModule
                                             {
                                                 return g.id == id;
                                             });
+            const auto entry_prefix =
+                class_level == 1 ? detail::multiclass_grant_prefix(id) : std::nullopt;
             if (group == options.training.end() || values.size() != group->count ||
                 std::set<std::string>(values.begin(), values.end()).size() != values.size() ||
                 std::any_of(values.begin(), values.end(),
@@ -31079,8 +31689,10 @@ class Module final : public RulesModule
             for (const auto &value : values)
             {
                 FeatureGrant grant{
+                    // A new class's level-one choices (MULTI-1).
+                    entry_prefix ? std::string(*entry_prefix) + value
                     // Skilled spans both catalogs, so its options carry the prefixed id.
-                    id == "feat:skilled"                           ? value
+                    : id == "feat:skilled"                         ? value
                     : id == "class:wizard:scholar"                 ? "expertise:" + value
                     : id == "subclass:ranger:hunter"               ? "prey:" + value
                     : id == "class:barbarian:primal_knowledge"     ? "skill:" + value
@@ -31109,140 +31721,19 @@ class Module final : public RulesModule
                 }
             }
         }
-        if (klass == CharacterClass::warlock && next.level == 2)
+        // spell_choice_sheet granted a new class's level-one features.
+        if (class_level > 1)
         {
-            next.grants.push_back({"feature:magical_cunning", "class:warlock", 2, {}});
-        }
-        if (klass == CharacterClass::bard && next.level == 2)
-        {
-            next.grants.push_back({"feature:jack_of_all_trades", "class:bard", 2, {}});
-        }
-        // The Circle of the Land is the SRD's only Druid subclass.
-        if (klass == CharacterClass::druid && next.level == 2)
-        {
-            next.grants.push_back({"feature:wild_shape", "class:druid", 2, {}});
-        }
-        if (klass == CharacterClass::druid && next.level == 3)
-        {
-            next.grants.push_back({"subclass:land", "class:druid", 3, {}});
-            next.grants.push_back({"feature:circle_spells", "subclass:druid:land", 3, {}});
-            next.grants.push_back({"feature:lands_aid", "subclass:druid:land", 3, {}});
-        }
-        // The College of Lore is the SRD's only Bard subclass.
-        if (klass == CharacterClass::bard && next.level == 3)
-        {
-            next.grants.push_back({"subclass:lore", "class:bard", 3, {}});
-            next.grants.push_back({"feature:bonus_proficiencies", "subclass:bard:lore", 3, {}});
-            next.grants.push_back({"feature:cutting_words", "subclass:bard:lore", 3, {}});
-        }
-        // The Fiend Patron is the SRD's only Warlock subclass.
-        if (klass == CharacterClass::warlock && next.level == 3)
-        {
-            next.grants.push_back({"subclass:fiend", "class:warlock", 3, {}});
-            next.grants.push_back({"feature:dark_ones_blessing", "subclass:warlock:fiend", 3, {}});
-            next.grants.push_back({"feature:fiend_spells", "subclass:warlock:fiend", 3, {}});
-        }
-        if (klass == CharacterClass::sorcerer && next.level == 2)
-        {
-            next.grants.push_back({"feature:font_of_magic", "class:sorcerer", 2, {}});
-            next.grants.push_back({"feature:metamagic", "class:sorcerer", 2, {}});
-        }
-        // Draconic Sorcery is the SRD's only Sorcerer subclass.
-        if (klass == CharacterClass::sorcerer && next.level == 3)
-        {
-            next.grants.push_back({"subclass:draconic", "class:sorcerer", 3, {}});
-            next.grants.push_back(
-                {"feature:draconic_resilience", "subclass:sorcerer:draconic", 3, {}});
-            next.grants.push_back({"feature:draconic_spells", "subclass:sorcerer:draconic", 3, {}});
-        }
-        if (klass == CharacterClass::monk && next.level == 2)
-        {
-            next.grants.push_back({"feature:monks_focus", "class:monk", 2, {}});
-            next.grants.push_back({"feature:unarmored_movement", "class:monk", 2, {}});
-            next.grants.push_back({"feature:uncanny_metabolism", "class:monk", 2, {}});
-        }
-        // The Warrior of the Open Hand is the SRD's only Monk subclass.
-        if (klass == CharacterClass::monk && next.level == 3)
-        {
-            next.grants.push_back({"feature:deflect_attacks", "class:monk", 3, {}});
-            next.grants.push_back({"subclass:open_hand", "class:monk", 3, {}});
-            next.grants.push_back(
-                {"feature:open_hand_technique", "subclass:monk:open_hand", 3, {}});
-        }
-        if (klass == CharacterClass::barbarian && next.level == 2)
-        {
-            next.grants.push_back({"feature:danger_sense", "class:barbarian", 2, {}});
-            next.grants.push_back({"feature:reckless_attack", "class:barbarian", 2, {}});
-        }
-        // The Berserker is the SRD's only Barbarian subclass.
-        if (klass == CharacterClass::barbarian && next.level == 3)
-        {
-            next.grants.push_back({"subclass:berserker", "class:barbarian", 3, {}});
-            next.grants.push_back({"feature:frenzy", "subclass:barbarian:berserker", 3, {}});
-            next.grants.push_back({"feature:primal_knowledge", "class:barbarian", 3, {}});
-        }
-        // The Thief is the SRD's only Rogue subclass. Fast Hands waits for magic
-        // items to have a use; Second-Story Work is cut (SRD-DECISIONS).
-        if (klass == CharacterClass::rogue && next.level == 3)
-        {
-            next.grants.push_back({"feature:steady_aim", "class:rogue", 3, {}});
-            next.grants.push_back({"subclass:thief", "class:rogue", 3, {}});
-            next.grants.push_back({"feature:fast_hands", "subclass:rogue:thief", 3, {}});
-        }
-        if (klass == CharacterClass::rogue && next.level == 2)
-        {
-            next.grants.push_back({"feature:cunning_action", "class:rogue", 2, {}});
-        }
-        for (auto &grant : detail::higher_level_features(klass, static_cast<unsigned>(next.level)))
-        {
-            next.grants.push_back(std::move(grant));
-        }
-        if (klass == CharacterClass::fighter && next.level == 2)
-        {
-            next.grants.push_back({"feature:action_surge", "class:fighter", 2, {}});
-            next.grants.push_back({"feature:tactical_mind", "class:fighter", 2, {}});
-        }
-        if (klass == CharacterClass::cleric && next.level == 2)
-        {
-            next.grants.push_back({"feature:channel_divinity", "class:cleric", 2, {}});
-        }
-        // The Life Domain is the SRD's only Cleric subclass.
-        if (klass == CharacterClass::cleric && next.level == 3)
-        {
-            next.grants.push_back({"subclass:life", "class:cleric", 3, {}});
-            next.grants.push_back({"feature:disciple_of_life", "subclass:cleric:life", 3, {}});
-            next.grants.push_back({"feature:preserve_life", "subclass:cleric:life", 3, {}});
-        }
-        // The Evoker is the SRD's only Wizard subclass.
-        if (klass == CharacterClass::wizard && next.level == 3)
-        {
-            next.grants.push_back({"subclass:evoker", "class:wizard", 3, {}});
-            next.grants.push_back({"feature:potent_cantrip", "subclass:wizard:evoker", 3, {}});
-        }
-        if (klass == CharacterClass::ranger && next.level == 3)
-        {
-            next.grants.push_back({"subclass:hunter", "class:ranger", 3, {}});
-            next.grants.push_back({"feature:hunters_lore", "subclass:ranger:hunter", 3, {}});
-        }
-        // The Oath of Devotion is the SRD's only Paladin subclass.
-        if (klass == CharacterClass::paladin && next.level == 3)
-        {
-            next.grants.push_back({"feature:channel_divinity", "class:paladin", 3, {}});
-            next.grants.push_back({"subclass:devotion", "class:paladin", 3, {}});
-            next.grants.push_back({"feature:sacred_weapon", "subclass:paladin:devotion", 3, {}});
-        }
-        if (klass == CharacterClass::fighter && next.level == 3)
-        {
-            next.grants.push_back({"subclass:champion", "class:fighter", 3, {}});
-            next.grants.push_back(
-                {"feature:improved_critical", "subclass:fighter:champion", 3, {}});
-            next.grants.push_back(
-                {"feature:remarkable_athlete", "subclass:fighter:champion", 3, {}});
+            for (auto &grant : detail::class_level_grants(klass, class_level,
+                                                          static_cast<unsigned>(next.level)))
+            {
+                next.grants.push_back(std::move(grant));
+            }
         }
         for (const auto ability : all_abilities)
         {
-            next.save_proficiencies[ability] =
-                detail::save_proficient(klass, static_cast<unsigned>(next.level), ability);
+            next.save_proficiencies[ability] = detail::save_proficient(
+                detail::class_of(next), detail::class_levels(next), ability);
         }
         for (const auto ability : all_abilities)
         {
@@ -31280,7 +31771,10 @@ class Module final : public RulesModule
         {
             next.grants.push_back(std::move(feat));
         }
-        next.prepared_spells = choice.spells;
+        // A multiclass character's other classes keep their prepared spells;
+        // the level's class prepares through its spell choices (MULTI-1).
+        next.prepared_spells =
+            detail::class_levels(next).count() > 1 ? prepared_before : choice.spells;
         if (choice.spell_learning)
         {
             next.prepared_spells = prepared_before;
@@ -31297,13 +31791,13 @@ class Module final : public RulesModule
         {
             throw std::runtime_error("Independent spell learning choices are required");
         }
-        next.training = detail::training_profile(next.grants, klass, next.race,
-                                                 detail::background_id(next.background), next.level,
+        next.training = detail::training_profile(next.grants, detail::ClassHistory(next.level_classes),
+                                                 next.race, detail::background_id(next.background),
                                                  next.scores);
         next.hit_point_modifiers.push_back(next.modifiers[Ability::constitution]);
         next.hit_points =
-            maximum_hit_points(klass, next.hit_die, next.race == "Dwarf", next.hit_point_modifiers,
-                               klass == CharacterClass::sorcerer);
+            maximum_hit_points(detail::ClassHistory(next.level_classes), next.race == "Dwarf",
+                               next.hit_point_modifiers);
         if (next.race == "Dwarf")
         {
             next.racial_modifiers.replace(0, next.racial_modifiers.find('\n'),
@@ -31325,7 +31819,7 @@ class Module final : public RulesModule
                              {{"level", std::to_string(next.level)},
                               {"hp", std::to_string(next.hit_points)},
                               {"growth", std::to_string(growth)}}}};
-        if (klass == CharacterClass::rogue && next.level == 2)
+        if (klass == CharacterClass::rogue && class_level == 2)
         {
             next.class_modifiers +=
                 "\nCunning Action: Dash, Disengage or Hide as a Bonus Action on your turn.";
@@ -31333,7 +31827,7 @@ class Module final : public RulesModule
                 {"Cunning Action: Dash, Disengage or Hide as a Bonus Action on your turn.",
                  {}});
         }
-        if (klass == CharacterClass::rogue && next.level == 3)
+        if (klass == CharacterClass::rogue && class_level == 3)
         {
             next.class_modifiers +=
                 "\nSneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.";
@@ -31374,7 +31868,7 @@ class Module final : public RulesModule
                 {"Level {level}: HP and spell-slot advancement applied. Additional class and subclass features remain unavailable.",
                  {{"level", std::to_string(next.level)}}});
         }
-        if (klass == CharacterClass::fighter && next.level == 2)
+        if (klass == CharacterClass::fighter && class_level == 2)
         {
             next.class_modifiers +=
                 "\nAction Surge: one additional action, except Magic, on your turn. One use per Short or Long Rest.";
@@ -31406,13 +31900,13 @@ class Module final : public RulesModule
         }
         actor.winds += actor.definition.winds - old.winds;
         actor.rushes += actor.definition.rushes - old.rushes;
-        actor.surges += surge_capacity(actor.definition) - surge_capacity(old);
-        actor.arcane += arcane_capacity(actor.definition) - arcane_capacity(old);
-        actor.lay_on_hands += lay_capacity(actor.definition) - lay_capacity(old);
-        actor.free_casts += free_cast_capacity(actor.definition) - free_cast_capacity(old);
+        grow(actor.surges, surge_capacity(actor.definition), surge_capacity(old));
+        grow(actor.arcane, arcane_capacity(actor.definition), arcane_capacity(old));
+        grow(actor.lay_on_hands, lay_capacity(actor.definition), lay_capacity(old));
+        grow(actor.free_casts, free_cast_capacity(actor.definition), free_cast_capacity(old));
         // A feat taken now arrives with its free cast; earlier ones keep their bits.
         actor.initiate_casts |= initiate_capacity(actor.definition) & ~initiate_capacity(old);
-        actor.channel_divinity += channel_capacity(actor.definition) - channel_capacity(old);
+        grow(actor.channel_divinity, channel_capacity(actor.definition), channel_capacity(old));
         actor.hit_dice += actor.definition.level - old.level;
         auto continuation = vitals(actor);
         sheet = std::move(next);
@@ -31619,7 +32113,7 @@ class Module final : public RulesModule
         auto actor = actor_from(d, state);
         // A simulacrum spends no Hit Dice: it takes no rests.
         const bool simulacrum = detail::has_effect(actor.effects, detail::EffectKind::simulacrum);
-        RecoveryInfo result{static_cast<unsigned>(d.hit_die),
+        RecoveryInfo result{static_cast<unsigned>(next_hit_die(d, actor.hit_dice)),
                             simulacrum ? 0u : static_cast<unsigned>(actor.hit_dice),
                             static_cast<unsigned>(d.level),
                             !actor.life.dead && actor.life.hp > 0,
@@ -31634,7 +32128,7 @@ class Module final : public RulesModule
         }
         add_initiate_pools(result.resources, actor, d);
         add_trait_pool(result.resources, actor, d);
-        for (const auto &choice : arcane_allocations(static_cast<unsigned>(d.level + 1) / 2))
+        for (const auto &choice : arcane_allocations(static_cast<unsigned>(recovery_class_level(d) + 1) / 2))
         {
             if (can_recover(actor, choice) && !simulacrum)
             {
@@ -31643,14 +32137,14 @@ class Module final : public RulesModule
         }
         // Sorcerous Restoration (Sorcerer 5): Sorcery Points up to half the
         // Sorcerer level, once per Long Rest.
-        if (d.sorcerous_restoration && actor.arcane > 0 && actor.lay_on_hands < d.sorcery_points &&
+        if (d.sorcerous_restoration && actor.arcane[CharacterClass::sorcerer] > 0 && actor.lay_on_hands[CharacterClass::sorcerer] < d.sorcery_points &&
             !simulacrum)
         {
             result.choices.push_back(
                 {"sorcerous_restoration",
                  {"Sorcerous Restoration: regain {points} Sorcery Points",
-                  {{"points", std::to_string(std::min(d.level / 2,
-                                                      d.sorcery_points - actor.lay_on_hands))}}}});
+                  {{"points", std::to_string(std::min(d.class_levels[CharacterClass::sorcerer] / 2,
+                                                      d.sorcery_points - actor.lay_on_hands[CharacterClass::sorcerer]))}}}});
         }
         return result;
     }
@@ -31681,22 +32175,33 @@ class Module final : public RulesModule
         actor.winds = std::min(d.winds, actor.winds + 1);
         actor.rushes = d.rushes;
         actor.surges = surge_capacity(d);
-        actor.channel_divinity = std::min(channel_capacity(d), actor.channel_divinity + 1);
+        // Each class's Channel Divinity, Rage or Wild Shape regains one use.
+        const auto channels = channel_capacity(d);
+        for (std::size_t n = 0; n < channels.by_class.size(); ++n)
+        {
+            actor.channel_divinity.by_class[n] =
+                std::min(channels.by_class[n], actor.channel_divinity.by_class[n] + 1);
+        }
         // Font of Inspiration (Bard 5): Bardic Inspiration returns on a Short Rest.
         if (d.font_of_inspiration)
         {
-            actor.arcane = arcane_capacity(d);
+            actor.arcane[CharacterClass::bard] = d.bardic_inspiration;
         }
-        // Pact Magic slots all return on a Short Rest.
+        // Pact Magic slots all return on a Short Rest; among another class's
+        // slots of their level, as many as Pact Magic gives (MULTI-1).
         if (d.pact_magic)
         {
             actor.slots = d.slots;
         }
-        // Relentless Rage's DC drops back to 10; a Barbarian's shared store
-        // holds nothing else.
+        else if (d.pact_slots)
+        {
+            const auto level = static_cast<std::size_t>(d.pact_slot_level);
+            actor.slots[level] = std::min(d.slots[level], actor.slots[level] + d.pact_slots);
+        }
+        // Relentless Rage's DC drops back to 10.
         if (d.relentless_rage)
         {
-            actor.lay_on_hands = lay_capacity(d);
+            actor.lay_on_hands[CharacterClass::barbarian] = d.relentless_rage;
         }
         state = vitals(actor);
     }
@@ -31708,19 +32213,20 @@ class Module final : public RulesModule
         auto actor = actor_from(d, state);
         if (choice_id == "sorcerous_restoration")
         {
-            if (!d.sorcerous_restoration || actor.arcane < 1 ||
-                actor.lay_on_hands >= d.sorcery_points)
+            if (!d.sorcerous_restoration || actor.arcane[CharacterClass::sorcerer] < 1 ||
+                actor.lay_on_hands[CharacterClass::sorcerer] >= d.sorcery_points)
             {
                 throw std::runtime_error("This rest recovery choice is unavailable");
             }
-            const int regained = std::min(d.level / 2, d.sorcery_points - actor.lay_on_hands);
-            actor.lay_on_hands += regained;
-            --actor.arcane;
+            const int regained = std::min(d.class_levels[CharacterClass::sorcerer] / 2,
+                                          d.sorcery_points - actor.lay_on_hands[CharacterClass::sorcerer]);
+            actor.lay_on_hands[CharacterClass::sorcerer] += regained;
+            --actor.arcane[CharacterClass::sorcerer];
             state = vitals(actor);
             return {"Sorcerous Restoration restored {points} Sorcery Points.",
                     {{"points", std::to_string(regained)}}};
         }
-        const auto choices = arcane_allocations(static_cast<unsigned>(d.level + 1) / 2);
+        const auto choices = arcane_allocations(static_cast<unsigned>(recovery_class_level(d) + 1) / 2);
         const auto choice = std::find_if(choices.begin(), choices.end(),
                                          [&](const auto &value)
                                          {
@@ -31734,7 +32240,9 @@ class Module final : public RulesModule
         {
             actor.slots[level] += static_cast<int>(choice->slots[level - 1]);
         }
-        --actor.arcane;
+        // A Wizard's Arcane Recovery first, then a Land Druid's Natural Recovery.
+        --actor.arcane[d.arcane && actor.arcane[CharacterClass::wizard] > 0 ? CharacterClass::wizard
+                                                                            : CharacterClass::druid];
         auto next = vitals(actor);
         const bool small = choice->slots[2] + choice->slots[3] + choice->slots[4] == 0;
         const bool natural = d.natural_recovery != 0;
@@ -31763,12 +32271,13 @@ class Module final : public RulesModule
             throw std::runtime_error("No Hit Die can be spent by this character");
         }
         auto rng = random_state.value;
-        const int rolled = roll_die(rng, d.hit_die);
+        const int die = next_hit_die(d, actor.hit_dice);
+        const int rolled = roll_die(rng, die);
         const int healing =
             detail::heal_life(actor.life, std::max(1, rolled + d.constitution), max_hp(actor),
                               !detail::healing_blocked(actor.effects));
         --actor.hit_dice;
-        HitDieResult result{static_cast<unsigned>(d.hit_die), rolled, d.constitution, healing,
+        HitDieResult result{static_cast<unsigned>(die), rolled, d.constitution, healing,
                             static_cast<unsigned>(actor.hit_dice)};
         auto next = vitals(actor);
         state = std::move(next);
@@ -31904,9 +32413,9 @@ class Module final : public RulesModule
         actor.definition = character_definition(character_profile(after, {}).data);
         const auto &d = actor.definition;
         // A species' own casts (a Tiefling's legacy spells) go with the old body.
-        actor.free_casts = std::min(actor.free_casts, free_cast_capacity(d));
+        cap(actor.free_casts, free_cast_capacity(d));
         actor.initiate_casts &= initiate_capacity(d);
-        actor.lay_on_hands = std::min(actor.lay_on_hands, lay_capacity(d));
+        cap(actor.lay_on_hands, lay_capacity(d));
         actor.life.hp = std::min(actor.life.hp, max_hp(actor));
         return vitals(actor);
     }
@@ -32100,17 +32609,19 @@ class Module final : public RulesModule
         {
             return actions;
         }
-        if (d.lay_on_hands && actor.lay_on_hands > 0)
+        if (d.lay_on_hands && actor.lay_on_hands[CharacterClass::paladin] > 0)
         {
             actions.push_back({"lay_on_hands", {"Lay On Hands", {}}});
         }
-        if (d.lay_on_hands && actor.lay_on_hands >= 5)
+        if (d.lay_on_hands && actor.lay_on_hands[CharacterClass::paladin] >= 5)
         {
             actions.push_back({"lay_on_hands_cure", {"Lay On Hands: cure Poisoned (5)", {}}});
         }
         // Magical Cunning: a one-minute rite, so a camp action; it needs no
         // target and so takes the whole-party path.
-        if (d.magical_cunning && actor.arcane > 0 && slot_total(actor.slots) < slot_total(d.slots))
+        const auto pact = static_cast<std::size_t>(d.pact_slot_level);
+        if (d.magical_cunning && actor.arcane[CharacterClass::warlock] > 0 &&
+            actor.slots[pact] < d.slots[pact])
         {
             actions.push_back({"magical_cunning", {"Magical Cunning", {}}, true});
         }
@@ -32271,7 +32782,7 @@ class Module final : public RulesModule
             {
                 throw std::runtime_error("Lay On Hands cures only a Poisoned member");
             }
-            caster.lay_on_hands -= 5;
+            caster.lay_on_hands[CharacterClass::paladin] -= 5;
             std::erase_if(patient.effects.active,
                           [](const auto &e)
                           {
@@ -32472,8 +32983,8 @@ class Module final : public RulesModule
         if (action == "lay_on_hands")
         {
             // Only the Hit Points actually restored are spent from the pool.
-            caster.lay_on_hands -= detail::heal_life(
-                patient.life, std::min(caster.lay_on_hands, maximum - patient.life.hp), maximum,
+            caster.lay_on_hands[CharacterClass::paladin] -= detail::heal_life(
+                patient.life, std::min(caster.lay_on_hands[CharacterClass::paladin], maximum - patient.life.hp), maximum,
                 can_heal);
         }
         else if (const auto &spell = *detail::find_spell(action); spell.id == "goodberry")
@@ -32661,9 +33172,10 @@ class Module final : public RulesModule
     {
         const auto *found = detail::find_spell(spell);
         if (!found || found->id != spell || !found->level ||
-            detail::class_of(sheet) != detail::CharacterClass::wizard ||
+            detail::class_levels(sheet)[CharacterClass::wizard] == 0 ||
             !detail::on_class_list(detail::CharacterClass::wizard, spell) ||
-            found->level > (static_cast<unsigned>(sheet.level) + 1) / 2)
+            found->level >
+                (static_cast<unsigned>(detail::class_levels(sheet)[CharacterClass::wizard]) + 1) / 2)
         {
             return std::nullopt;
         }
@@ -32696,7 +33208,14 @@ class Module final : public RulesModule
         for (const auto &id : d.spells)
         {
             const auto *spell = detail::find_spell(id);
-            if (spell && spell->level && detail::on_class_list(detail::class_of(sheet), id) &&
+            const auto casters =
+                detail::casting_classes(detail::ClassHistory(detail::level_class_ids(sheet)));
+            if (spell && spell->level &&
+                std::any_of(casters.begin(), casters.end(),
+                            [&](CharacterClass held)
+                            {
+                                return detail::on_class_list(held, id);
+                            }) &&
                 (spell->level <= highest_slot || d.arcanum.contains(id)))
             {
                 writable.push_back({id, spell->level, d.reads_arcane_scrolls});
@@ -32874,12 +33393,11 @@ class Module final : public RulesModule
         if (action == "magical_cunning")
         {
             // Back come expended Pact Magic slots, up to half the maximum
-            // (rounded up).
+            // (rounded up), at their own level.
             const auto &d = caster.definition;
-            auto &slots = caster.slots[d.slots[2] ? 2 : 1];
-            const int maximum = d.slots[d.slots[2] ? 2 : 1];
-            slots = std::min(maximum, slots + (maximum + 1) / 2);
-            --caster.arcane;
+            const auto level = static_cast<std::size_t>(d.pact_slot_level);
+            caster.slots[level] = std::min(d.slots[level], caster.slots[level] + (d.pact_slots + 1) / 2);
+            --caster.arcane[CharacterClass::warlock];
             user_state = vitals(caster);
             return;
         }
@@ -33096,7 +33614,7 @@ class Module final : public RulesModule
 
     SpellAccess spell_access(const CharacterSheet &sheet) const override
     {
-        return detail::spell_access(sheet.grants, detail::class_of(sheet), sheet.level,
+        return detail::spell_access(sheet.grants, detail::ClassHistory(detail::level_class_ids(sheet)),
                                     sheet.prepared_spells);
     }
 
@@ -33132,11 +33650,20 @@ class Module final : public RulesModule
         {
             return false;
         }
-        const auto klass = detail::class_of(sheet);
         if (const auto scroll = rules::parse_scroll_key(key))
         {
-            return (scroll->arcane ? reads_arcane_scrolls(klass) : reads_divine_scrolls(klass)) ||
-                   detail::has_grant(sheet.grants, "feature:use_magic_device");
+            // Any of the character's classes reads it (MULTI-1).
+            const auto levels = detail::class_levels(sheet);
+            for (const auto &choice : detail::creation_choices(CreationField::character_class))
+            {
+                const auto held = detail::class_from_id(choice.id);
+                if (levels[held] && (scroll->arcane ? reads_arcane_scrolls(held)
+                                                    : reads_divine_scrolls(held)))
+                {
+                    return true;
+                }
+            }
+            return detail::has_grant(sheet.grants, "feature:use_magic_device");
         }
         if (const auto item = rules::parse_item_key(key); !item.unidentified)
         {
@@ -33154,7 +33681,7 @@ class Module final : public RulesModule
         }
         if (detail::weapon(key) || detail::armor(key))
         {
-            return trained(klass, sheet.grants, key);
+            return trained(detail::class_of(sheet), sheet.grants, key);
         }
         return true;
     }
@@ -33427,7 +33954,7 @@ class Module final : public RulesModule
                                                          detail::ArmorCategory::medium ||
                                                      armor->category == detail::ArmorCategory::heavy);
                                          });
-        if (detail::class_of(sheet) != CharacterClass::rogue || heavier)
+        if (!detail::class_levels(sheet)[CharacterClass::rogue] || heavier)
         {
             return 0;
         }
@@ -33448,8 +33975,8 @@ class Module final : public RulesModule
         const bool advantage = modifier.advantage && !(modifier.disadvantage || poisoned);
         const bool disadvantage = !modifier.advantage && (modifier.disadvantage || poisoned);
         const bool lucky = character_definition(character_profile(sheet, gear).data).lucky;
-        const bool reliable = detail::class_of(sheet) == CharacterClass::rogue && sheet.level >= 7 &&
-                              modifier.proficiency > 0;
+        const bool reliable =
+            detail::class_levels(sheet)[CharacterClass::rogue] >= 7 && modifier.proficiency > 0;
         // Out of 400 for one die: 20 a face, or 1 for a lucky 1 and 21 for the rest.
         const auto weight = [&](int face) -> std::uint64_t
         {
@@ -33484,8 +34011,7 @@ class Module final : public RulesModule
         // Advantage and Disadvantage cancel; either alone rolls a second d20.
         int die = detail::d20({modifier.advantage, modifier.disadvantage || poisoned, lucky}, rng);
         // Reliable Talent: a proficient check's d20 counts as at least 10.
-        if (detail::class_of(sheet) == CharacterClass::rogue && sheet.level >= 7 &&
-            modifier.proficiency > 0)
+        if (detail::class_levels(sheet)[CharacterClass::rogue] >= 7 && modifier.proficiency > 0)
         {
             die = std::max(die, 10);
         }
@@ -33505,15 +34031,17 @@ class Module final : public RulesModule
         {
             throw std::runtime_error("Unsupported character rules identity or level");
         }
-        (void)detail::training_profile(sheet.grants, klass, sheet.race,
-                                       detail::background_id(sheet.background), sheet.level,
+        (void)detail::training_profile(sheet.grants,
+                                       detail::ClassHistory(detail::level_class_ids(sheet)),
+                                       sheet.race, detail::background_id(sheet.background),
                                        sheet.scores);
         const auto features_only =
             without_manuals(detail::without_spell_grants(detail::without_training(sheet.grants)));
         const auto access = spell_access(sheet);
         const auto effects =
-            detail::validate_grants(features_only, klass, detail::race_id(sheet.race),
-                                    detail::background_id(sheet.background), sheet.level);
+            detail::validate_grants(features_only, detail::ClassHistory(detail::level_class_ids(sheet)),
+                                    detail::race_id(sheet.race),
+                                    detail::background_id(sheet.background));
         const unsigned features = effects.feats;
         if (std::cmp_not_equal(sheet.hit_point_modifiers.size(), sheet.level))
         {
@@ -33592,19 +34120,33 @@ class Module final : public RulesModule
         };
         // Preparable spells come from the eligibility table. Cantrips are
         // filtered out: they are known, never prepared.
-        const auto preparable = detail::spells_of_level(allowed_spells(klass, sheet.level), false);
-        for (const auto &spell : sheet.prepared_spells)
+        // Each class's prepared spells come from its own table at its own
+        // level (MULTI-1).
+        const auto levels = detail::class_levels(sheet);
+        for (const auto prepared_by : detail::casting_classes(
+                 detail::ClassHistory(detail::level_class_ids(sheet))))
         {
-            if (!selected.insert(spell).second)
+            const auto level = static_cast<unsigned>(levels[prepared_by]);
+            const auto preparable =
+                detail::spells_of_level(allowed_spells(prepared_by, level), false);
+            for (const auto &spell :
+                 detail::class_prepared_spells(sheet.prepared_spells, prepared_by, klass))
             {
-                throw std::runtime_error("Duplicate prepared spell");
+                if (!selected.insert(spell).second)
+                {
+                    throw std::runtime_error("Duplicate prepared spell");
+                }
+                if (!detail::knows_spell(preparable, spell) &&
+                    !bard_secret(prepared_by, level, sheet.grants, spell))
+                {
+                    throw std::runtime_error("Unsupported prepared spell");
+                }
+                record(spell);
             }
-            if (!detail::knows_spell(preparable, spell) &&
-                !bard_secret(klass, static_cast<unsigned>(sheet.level), sheet.grants, spell))
-            {
-                throw std::runtime_error("Unsupported prepared spell");
-            }
-            record(spell);
+        }
+        if (selected.size() != sheet.prepared_spells.size())
+        {
+            throw std::runtime_error("Unsupported prepared spell");
         }
         std::ostringstream out;
         out << profile_magic << ' ' << sheet.level << ' ' << features << ' ' << spells.size();
@@ -33620,6 +34162,11 @@ class Module final : public RulesModule
         for (auto modifier : sheet.hit_point_modifiers)
         {
             out << ' ' << modifier;
+        }
+        // The class of each level (MULTI-1).
+        for (const auto &id : detail::level_class_ids(sheet))
+        {
+            out << ' ' << id;
         }
         out << ' ' << gear.size();
         for (const auto &item : gear)
@@ -34075,13 +34622,13 @@ class Module final : public RulesModule
     std::string bytes_;
 
     // The Weapon Mastery kinds learned after level 1, through the sheet's level.
-    static std::vector<TrainingChoiceGroup> later_masteries(CharacterClass klass,
-                                                            const CharacterSheet &sheet)
+    static std::vector<TrainingChoiceGroup>
+    later_masteries(CharacterClass klass, const CharacterSheet &sheet, unsigned level)
     {
         std::vector<TrainingChoiceGroup> groups;
         for (const auto acquired : detail::mastery_levels)
         {
-            if (acquired > 1 && acquired <= static_cast<unsigned>(sheet.level))
+            if (acquired > 1 && acquired <= level)
             {
                 if (auto group = detail::mastery_options(klass, acquired, sheet.grants);
                     group.count)
@@ -34097,20 +34644,56 @@ class Module final : public RulesModule
     static std::optional<TrainingReplacementOptions>
     mastery_rest_choice(const CharacterSheet &sheet)
     {
-        const auto klass = detail::class_of(sheet);
-        auto group = detail::mastery_options(klass, 1);
-        if (!group.count)
+        // Every class's kinds together (MULTI-1), the starting class's first.
+        const auto levels = detail::class_levels(sheet);
+        std::vector<CharacterClass> classes{detail::class_of(sheet)};
+        for (const auto &choice : detail::creation_choices(CreationField::character_class))
+        {
+            const auto klass = detail::class_from_id(choice.id);
+            if (levels[klass] && klass != classes.front())
+            {
+                classes.push_back(klass);
+            }
+        }
+        std::optional<TrainingChoiceGroup> merged;
+        for (const auto klass : classes)
+        {
+            auto own = detail::mastery_options(klass, 1);
+            if (!own.count)
+            {
+                continue;
+            }
+            for (const auto acquired : detail::mastery_levels)
+            {
+                if (acquired > 1 && static_cast<int>(acquired) <= levels[klass])
+                {
+                    own.count += detail::mastery_options(klass, acquired).count;
+                }
+            }
+            if (!merged)
+            {
+                merged = std::move(own);
+                continue;
+            }
+            merged->count += own.count;
+            for (auto &option : own.options)
+            {
+                if (std::none_of(merged->options.begin(), merged->options.end(),
+                                 [&](const auto &held)
+                                 {
+                                     return held.id == option.id;
+                                 }))
+                {
+                    merged->options.push_back(std::move(option));
+                }
+            }
+        }
+        if (!merged)
         {
             return {};
         }
-        for (const auto acquired : detail::mastery_levels)
-        {
-            if (acquired > 1 && acquired <= static_cast<unsigned>(sheet.level))
-            {
-                group.count += detail::mastery_options(klass, acquired).count;
-            }
-        }
-        const auto choices = detail::mastery_choices(sheet.grants, klass, sheet.level);
+        auto group = std::move(*merged);
+        const auto choices = detail::mastery_choices(sheet.grants, levels);
         std::vector<std::string> selected;
         for (const auto &[source, values] : choices)
         {
@@ -34122,7 +34705,7 @@ class Module final : public RulesModule
         }
         group.id = "weapon_mastery";
         return TrainingReplacementOptions{std::move(group), std::move(selected),
-                                          detail::mastery_replacements(klass)};
+                                          detail::mastery_replacements(levels)};
     }
 
     // A subclass's single choice, stored as a grant sourced from its group

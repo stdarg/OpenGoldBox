@@ -177,7 +177,7 @@ void paladin_choices_checks()
                       "divine_smite", "heroism",
                       "protection_from_evil_and_good", "searing_smite", "shield_of_faith"},
           "Creation prepares from the implemented Paladin list");
-    check(rules->character_profile(paladin.sheet(), {}).data.starts_with("PC43 1 0 1 cure_wounds "),
+    check(rules->character_profile(paladin.sheet(), {}).data.starts_with("PC44 1 0 1 cure_wounds "),
           "The profile records the prepared spell");
     for (const auto &bad :
          std::vector<std::vector<std::string>>{{"healing_word"},

@@ -106,6 +106,125 @@ CharacterClass class_of(const rules::CharacterSheet &sheet)
     return *character_class;
 }
 
+ClassLevels::ClassLevels(std::span<const std::string> level_classes)
+{
+    for (const auto &id : level_classes)
+    {
+        add(class_from_id(id));
+    }
+}
+
+int ClassLevels::total() const noexcept
+{
+    int sum = 0;
+    for (const auto levels : levels_)
+    {
+        sum += levels;
+    }
+    return sum;
+}
+
+std::size_t ClassLevels::count() const noexcept
+{
+    return static_cast<std::size_t>(
+        std::count_if(levels_.begin(), levels_.end(),
+                      [](int levels)
+                      {
+                          return levels > 0;
+                      }));
+}
+
+ClassHistory::ClassHistory(std::span<const std::string> level_classes)
+{
+    if (level_classes.empty())
+    {
+        throw std::runtime_error("A character has at least one level");
+    }
+    for (const auto &id : level_classes)
+    {
+        classes_.push_back(class_from_id(id));
+        levels_.add(classes_.back());
+    }
+}
+
+CharacterClass ClassHistory::taken_at(unsigned level) const
+{
+    if (level < 1 || level > classes_.size())
+    {
+        throw std::runtime_error("A level the character has not reached");
+    }
+    return classes_[level - 1];
+}
+
+unsigned ClassHistory::class_level_at(unsigned level) const
+{
+    const auto klass = taken_at(level);
+    return static_cast<unsigned>(std::count(classes_.begin(), classes_.begin() + level, klass));
+}
+
+unsigned ClassHistory::reached(CharacterClass klass, unsigned class_level) const noexcept
+{
+    unsigned held = 0;
+    for (std::size_t at = 0; at < classes_.size(); ++at)
+    {
+        if (classes_[at] == klass && ++held == class_level)
+        {
+            return static_cast<unsigned>(at + 1);
+        }
+    }
+    return 0;
+}
+
+unsigned ClassHistory::class_level_by(CharacterClass klass, unsigned level) const noexcept
+{
+    const auto end = classes_.begin() + std::min<std::size_t>(level, classes_.size());
+    return static_cast<unsigned>(std::count(classes_.begin(), end, klass));
+}
+
+ClassLevels class_levels(const rules::CharacterSheet &sheet)
+{
+    return ClassLevels(level_class_ids(sheet));
+}
+
+std::vector<std::string> level_class_ids(const rules::CharacterSheet &sheet)
+{
+    const auto level = static_cast<std::size_t>(std::max(sheet.level, 0));
+    if (sheet.level_classes.size() == level)
+    {
+        return sheet.level_classes;
+    }
+    // A sheet whose levels all name its starting class has them all in it,
+    // however many it records; a multiclass sheet must record each (MULTI-1).
+    const auto start = std::string(class_id(class_of(sheet)));
+    if (std::any_of(sheet.level_classes.begin(), sheet.level_classes.end(),
+                    [&](const std::string &id)
+                    {
+                        return id != start;
+                    }))
+    {
+        throw std::runtime_error("A multiclass sheet records the class of each level");
+    }
+    return std::vector<std::string>(level, start);
+}
+
+int class_hit_die(CharacterClass character_class) noexcept
+{
+    switch (character_class)
+    {
+    case CharacterClass::barbarian:
+        return 12;
+    case CharacterClass::fighter:
+    case CharacterClass::paladin:
+    case CharacterClass::ranger:
+        return 10;
+    case CharacterClass::sorcerer:
+    case CharacterClass::wizard:
+        return 6;
+    default:
+        return 8;
+    }
+}
+
 unsigned level_cap(CharacterClass character_class)
 {
     return character_class == CharacterClass::fighter ||

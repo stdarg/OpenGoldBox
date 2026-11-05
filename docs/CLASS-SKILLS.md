@@ -59,7 +59,9 @@ existing Rogue/Fighter flow. Wizard/Cleric cantrip creation and main/demo party
 fixtures now make the required skill selections through their existing controls.
 
 Class tools and Druidic were removed by [DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells). Further Expertise features, spell choices, equipment,
-subclasses and higher levels came later; multiclassing is not planned.
+subclasses and higher levels came later, then multiclassing, whose Bard, Ranger
+or Rogue level brings one more skill
+([MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)).
 This increment does not complete the full starting-class trackers or #29/#52.
 
 Verification: all 41 native/tool regression checks pass, including every class

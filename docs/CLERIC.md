@@ -109,7 +109,7 @@ The Cleric advances to the game's cap of 15
   save the first time in a turn the Emanation reaches it or it ends its turn
   there, taking 3d8 Radiant damage, half on a success (1d8 more for each slot
   level above 3). An evil Cleric's guardians deal Necrotic damage instead
-  (the character profile carries the alignment, recipe `PC43`).
+  (the character profile carries the alignment, recipe `PC44`).
 - **Bestow Curse** (Action, touch, Concentration up to 1 minute; none from a
   level-5 slot): the A cycle offers each curse against an adjacent creature,
   which makes a Wisdom save: Disadvantage on one ability's saves (pick the

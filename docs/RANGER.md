@@ -169,8 +169,8 @@ The Ranger advances to level 15, the game's cap
 
 - Hunter's Mark is always prepared and not counted. Favored Enemy casts it twice
   without a slot; a Long Rest restores both uses ("Favored Enemy" in the rest
-  and combat resources). The count is stored where Paladin's Smite keeps its own:
-  a character has only one of the two while multiclassing is deferred.
+  and combat resources). Each class keeps its own count, so a Paladin / Ranger
+  has both Paladin's Smite and Favored Enemy.
 - **Hunter's Mark** (Bonus Action, 90 feet, Concentration up to 1 hour):
   every attack-roll hit by the caster on the marked creature deals an extra 1d6
   Force damage, doubled on a critical hit. When the marked creature drops to 0

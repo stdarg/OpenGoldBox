@@ -5,8 +5,8 @@
 [node name="LevelUp" type="LevelUpDialog"]
 title = "Level up"
 initial_position = 1
-size = Vector2i(700, 670)
-min_size = Vector2i(700, 670)
+size = Vector2i(700, 746)
+min_size = Vector2i(700, 746)
 visible = false
 unresizable = true
 transient = true
@@ -16,7 +16,7 @@ exclusive = true
 offset_left = 24.0
 offset_top = 70.0
 offset_right = 676.0
-offset_bottom = 545.0
+offset_bottom = 621.0
 visible = false
 horizontal_scroll_mode = 0
 follow_focus = true
@@ -36,7 +36,7 @@ visible = false
 offset_left = 24.0
 offset_top = 70.0
 offset_right = 676.0
-offset_bottom = 545.0
+offset_bottom = 621.0
 visible = false
 horizontal_scroll_mode = 0
 follow_focus = true
@@ -49,7 +49,7 @@ size_flags_horizontal = 3
 offset_left = 24.0
 offset_top = 70.0
 offset_right = 676.0
-offset_bottom = 545.0
+offset_bottom = 621.0
 visible = false
 theme_type_variation = &"VBoxContainerGap10"
 
@@ -119,9 +119,9 @@ fit_to_longest_item = false
 
 [node name="Back" type="Button" parent="."]
 offset_left = 236.0
-offset_top = 610.0
+offset_top = 686.0
 offset_right = 372.0
-offset_bottom = 650.0
+offset_bottom = 726.0
 visible = false
 text = "Back"
 
@@ -133,37 +133,50 @@ offset_right = 676.0
 offset_bottom = 60.0
 clip_text = true
 
+[node name="ClassLabel" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 66.0
+offset_right = 676.0
+offset_bottom = 91.0
+text = "Class"
+
+[node name="Class" type="OptionButton" parent="."]
+offset_left = 24.0
+offset_top = 97.0
+offset_right = 676.0
+offset_bottom = 133.0
+
 [node name="HP" type="Label" parent="."]
 offset_left = 24.0
-offset_top = 70.0
+offset_top = 146.0
 offset_right = 676.0
-offset_bottom = 112.0
+offset_bottom = 188.0
 
 [node name="FeatLabel" type="Label" parent="."]
 offset_left = 24.0
-offset_top = 122.0
+offset_top = 198.0
 offset_right = 676.0
-offset_bottom = 150.0
+offset_bottom = 226.0
 text = "Feat or ability points"
 
 [node name="Feat" type="OptionButton" parent="."]
 offset_left = 24.0
-offset_top = 155.0
+offset_top = 231.0
 offset_right = 676.0
-offset_bottom = 193.0
+offset_bottom = 269.0
 
 [node name="AdvancementTrainingLabel" type="Label" parent="."]
 offset_left = 24.0
-offset_top = 205.0
+offset_top = 281.0
 offset_right = 676.0
-offset_bottom = 230.0
+offset_bottom = 306.0
 visible = false
 
 [node name="AdvancementTraining" type="OptionButton" parent="."]
 offset_left = 24.0
-offset_top = 236.0
+offset_top = 312.0
 offset_right = 676.0
-offset_bottom = 272.0
+offset_bottom = 348.0
 visible = false
 
 [node name="TrainingLayout" type="AnimationPlayer" parent="."]
@@ -174,139 +187,139 @@ libraries = {
 
 [node name="AbilityLabel0" type="Label" parent="."]
 offset_left = 24.0
-offset_top = 205.0
+offset_top = 281.0
 offset_right = 124.0
-offset_bottom = 230.0
+offset_bottom = 306.0
 
 [node name="Ability0" type="OptionButton" parent="."]
 offset_left = 24.0
-offset_top = 236.0
+offset_top = 312.0
 offset_right = 124.0
-offset_bottom = 272.0
+offset_bottom = 348.0
 
 [node name="AbilityLabel1" type="Label" parent="."]
 offset_left = 134.0
-offset_top = 205.0
+offset_top = 281.0
 offset_right = 234.0
-offset_bottom = 230.0
+offset_bottom = 306.0
 
 [node name="Ability1" type="OptionButton" parent="."]
 offset_left = 134.0
-offset_top = 236.0
+offset_top = 312.0
 offset_right = 234.0
-offset_bottom = 272.0
+offset_bottom = 348.0
 
 [node name="AbilityLabel2" type="Label" parent="."]
 offset_left = 244.0
-offset_top = 205.0
+offset_top = 281.0
 offset_right = 344.0
-offset_bottom = 230.0
+offset_bottom = 306.0
 
 [node name="Ability2" type="OptionButton" parent="."]
 offset_left = 244.0
-offset_top = 236.0
+offset_top = 312.0
 offset_right = 344.0
-offset_bottom = 272.0
+offset_bottom = 348.0
 
 [node name="AbilityLabel3" type="Label" parent="."]
 offset_left = 354.0
-offset_top = 205.0
+offset_top = 281.0
 offset_right = 454.0
-offset_bottom = 230.0
+offset_bottom = 306.0
 
 [node name="Ability3" type="OptionButton" parent="."]
 offset_left = 354.0
-offset_top = 236.0
+offset_top = 312.0
 offset_right = 454.0
-offset_bottom = 272.0
+offset_bottom = 348.0
 
 [node name="AbilityLabel4" type="Label" parent="."]
 offset_left = 464.0
-offset_top = 205.0
+offset_top = 281.0
 offset_right = 564.0
-offset_bottom = 230.0
+offset_bottom = 306.0
 
 [node name="Ability4" type="OptionButton" parent="."]
 offset_left = 464.0
-offset_top = 236.0
+offset_top = 312.0
 offset_right = 564.0
-offset_bottom = 272.0
+offset_bottom = 348.0
 
 [node name="AbilityLabel5" type="Label" parent="."]
 offset_left = 574.0
-offset_top = 205.0
+offset_top = 281.0
 offset_right = 674.0
-offset_bottom = 230.0
+offset_bottom = 306.0
 
 [node name="Ability5" type="OptionButton" parent="."]
 offset_left = 574.0
-offset_top = 236.0
+offset_top = 312.0
 offset_right = 674.0
-offset_bottom = 272.0
+offset_bottom = 348.0
 
 [node name="SpellLabel" type="Label" parent="."]
 offset_left = 24.0
-offset_top = 292.0
+offset_top = 368.0
 offset_right = 676.0
-offset_bottom = 320.0
+offset_bottom = 396.0
 text = "Prepared spells"
 
 [node name="FightingStyle" type="OptionButton" parent="."]
 offset_left = 24.0
-offset_top = 325.0
+offset_top = 401.0
 offset_right = 676.0
-offset_bottom = 363.0
+offset_bottom = 439.0
 visible = false
 
 [node name="Spell0" type="CheckBox" parent="."]
-offset_left = 24.0
-offset_top = 325.0
-offset_right = 676.0
-offset_bottom = 361.0
-
-[node name="Spell1" type="CheckBox" parent="."]
-offset_left = 24.0
-offset_top = 363.0
-offset_right = 676.0
-offset_bottom = 399.0
-
-[node name="Spell2" type="CheckBox" parent="."]
 offset_left = 24.0
 offset_top = 401.0
 offset_right = 676.0
 offset_bottom = 437.0
 
-[node name="Spell3" type="CheckBox" parent="."]
+[node name="Spell1" type="CheckBox" parent="."]
 offset_left = 24.0
 offset_top = 439.0
 offset_right = 676.0
 offset_bottom = 475.0
 
+[node name="Spell2" type="CheckBox" parent="."]
+offset_left = 24.0
+offset_top = 477.0
+offset_right = 676.0
+offset_bottom = 513.0
+
+[node name="Spell3" type="CheckBox" parent="."]
+offset_left = 24.0
+offset_top = 515.0
+offset_right = 676.0
+offset_bottom = 551.0
+
 [node name="Note" type="Label" parent="."]
 theme_type_variation = &"LabelText14"
 offset_left = 24.0
-offset_top = 489.0
+offset_top = 565.0
 offset_right = 676.0
-offset_bottom = 555.0
+offset_bottom = 631.0
 autowrap_mode = 3
 
 [node name="Error" type="Label" parent="."]
 theme_type_variation = &"LabelText15"
 offset_left = 24.0
-offset_top = 560.0
+offset_top = 636.0
 offset_right = 676.0
-offset_bottom = 594.0
+offset_bottom = 670.0
 
 [node name="Cancel" type="Button" parent="."]
 offset_left = 386.0
-offset_top = 610.0
+offset_top = 686.0
 offset_right = 522.0
-offset_bottom = 650.0
+offset_bottom = 726.0
 text = "Cancel"
 
 [node name="Confirm" type="Button" parent="."]
 offset_left = 536.0
-offset_top = 610.0
+offset_top = 686.0
 offset_right = 676.0
-offset_bottom = 650.0
+offset_bottom = 726.0
 text = "Confirm"

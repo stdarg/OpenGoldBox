@@ -13,8 +13,25 @@ std::vector<rules::FeatureGrant>
 starting_spell_grants(CharacterClass klass,
                       const std::optional<std::vector<std::string>> &cantrips = {});
 rules::TrainingChoiceGroup starting_cantrip_options(CharacterClass klass);
-rules::SpellAccess spell_access(std::span<const rules::FeatureGrant>, CharacterClass klass,
-                                unsigned level, std::span<const std::string> prepared);
+// What a character knows and has prepared: each spellcasting class's at its
+// own level and with its own prepared spells, then Magic Initiate's and a
+// lineage's (MULTI-1).
+rules::SpellAccess spell_access(std::span<const rules::FeatureGrant>, const ClassHistory &history,
+                                std::span<const std::string> prepared);
+// A multiclass character's prepared spells name the class they are prepared
+// for after this mark ("fireball@sorcerer"), unless it is the starting
+// class's (MULTI-1).
+inline constexpr char prepared_tag = '@';
+// The character's spellcasting classes, the starting class first, then in the
+// order taken.
+std::vector<CharacterClass> casting_classes(const ClassHistory &history);
+// The spells prepared for a class, without their mark.
+std::vector<std::string> class_prepared_spells(std::span<const std::string> prepared,
+                                               CharacterClass klass, CharacterClass starting);
+// How a spell prepared for a class is recorded.
+std::string prepared_entry(std::string_view spell, CharacterClass klass, CharacterClass starting);
+// The prepared spells' ids, without their marks, each once.
+std::vector<std::string> prepared_spell_ids(std::span<const std::string> prepared);
 // Existing advancement selections learn any newly selected book spell and
 // retain every earlier entry. Copying and preparation controls are separate.
 rules::SpellChoiceOptions spell_choice_options(const rules::CharacterSheet &,
@@ -62,17 +79,18 @@ bool species_cantrip(std::span<const rules::FeatureGrant> grants, std::string_vi
 // Gaining a level lets a Bard, Cleric, Druid, Sorcerer or Warlock replace one
 // cantrip of its class, and a Paladin or Ranger one of its Fighting Style's
 // (SRD 5.2.1). Offered for the sheet before the level is gained.
-rules::SwapOffer cantrip_swap_offer(const rules::CharacterSheet &);
+rules::SwapOffer cantrip_swap_offer(const rules::CharacterSheet &, CharacterClass klass);
 // A Bard, Sorcerer or Warlock may replace one spell on its list with another
 // of its class for which it has slots at the new level.
-rules::SwapOffer spell_swap_offer(const rules::CharacterSheet &);
+rules::SwapOffer spell_swap_offer(const rules::CharacterSheet &, CharacterClass klass);
 // Apply a swap from the offer to the sheet; throws unless the offer has it.
 void apply_cantrip_swap(rules::CharacterSheet &, const rules::LevelSwap &,
                         const rules::SwapOffer &);
-void apply_spell_swap(rules::CharacterSheet &, const rules::LevelSwap &, const rules::SwapOffer &);
+void apply_spell_swap(rules::CharacterSheet &, const rules::LevelSwap &, const rules::SwapOffer &,
+                      CharacterClass klass);
 // A Lore Bard may replace one Magical Discoveries spell with another Cleric,
 // Druid or Wizard cantrip or spell of a level it has slots for at the new level.
-rules::SwapOffer discovery_swap_offer(const rules::CharacterSheet &);
+rules::SwapOffer discovery_swap_offer(const rules::CharacterSheet &, CharacterClass klass);
 void apply_discovery_swap(rules::CharacterSheet &, const rules::LevelSwap &,
                           const rules::SwapOffer &);
 // A level-four feat entry for each list, available unless that list's feat is held.

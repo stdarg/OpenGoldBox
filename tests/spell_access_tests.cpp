@@ -316,7 +316,7 @@ void invalid()
     test(s);
     auto profile = rules->character_profile(base, {}).data;
     const std::string listed = "2 fire_bolt magic_missile";
-    check(profile.starts_with("PC43 1 0 " + listed + " "),
+    check(profile.starts_with("PC44 1 0 " + listed + " "),
           "New combat recipe carries sourced access");
     auto bad = profile;
     bad.replace(0, 4, "PC9");

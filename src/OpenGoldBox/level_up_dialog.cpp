@@ -1,6 +1,7 @@
 #include "character_text.h"
 #include "godot_text.h"
 #include "level_up_dialog.h"
+#include "class_text.h"
 #include "spell_choice_controls.h"
 #include "guarded_handlers.h"
 #include "localization.h"
@@ -104,6 +105,9 @@ void LevelUpDialog::bind_controls()
             .connect("item_selected",
                      presentation::guarded(this, &LevelUpDialog::advancement_swap_changed));
     }
+    required_node<Label>(*this, "ClassLabel").set_text(i18n::text(N_("Class")));
+    required_node<OptionButton>(*this, "Class")
+        .connect("item_selected", presentation::guarded(this, &LevelUpDialog::class_selected));
     auto *note = &required_node<Label>(*this, "Note");
     note->set_text(i18n::text(N_(
         "Fixed-average HP growth. Existing resource expenditure is preserved.\nAdditional class and subclass features are unavailable in this version.")));
@@ -409,7 +413,7 @@ void LevelUpDialog::advancement_pages()
     required_node<Button>(*this, "Confirm")
         .set_text(advancement_next_step() == current_step() ? i18n::text(N_("Confirm"))
                                                             : i18n::text(N_("Next")));
-    for (const char *name : {"HP", "FeatLabel", "Feat", "Note"})
+    for (const char *name : {"HP", "FeatLabel", "Feat", "Note", "ClassLabel", "Class"})
     {
         required_node<Control>(*this, name).set_visible(on_first);
     }
@@ -604,11 +608,74 @@ void LevelUpDialog::advancement_learning_toggled(bool selected, String group, St
 
 void LevelUpDialog::open(opengold::MemberId id)
 {
+    advancing_ = id;
+    // The Class row: the starting class at its next level, then the others,
+    // a class whose prerequisites are unmet greyed out with them named.
+    classes_ = campaign().advancement_classes(id);
+    const auto &sheet = campaign().member(id).character.sheet();
+    auto *klass = &required_node<OptionButton>(*this, "Class");
+    klass->clear();
+    for (const auto &option : classes_)
+    {
+        const auto held = static_cast<int>(std::count(sheet.level_classes.begin(),
+                                                      sheet.level_classes.end(), option.id));
+        auto label = i18n::format(N_("{class}: level {level}"),
+                                  {{"class", i18n::class_label(option.id)}, {"level", held + 1}});
+        if (!option.available)
+        {
+            label = i18n::format(N_("{class} (needs {requirements})"),
+                                 {{"class", label},
+                                  {"requirements",
+                                   i18n::requirements(opengold::srd5::character_rules()
+                                                          ->class_requirements(option.id))}});
+        }
+        const int index = klass->get_item_count();
+        klass->add_item(label);
+        klass->set_item_disabled(index, !option.available);
+    }
+    klass->select(0);
+    begin_class(classes_.empty() ? std::string() : classes_.front().id);
+    popup_centered();
+    required_node<Button>(*this, "Cancel").grab_focus();
+}
+
+void LevelUpDialog::class_selected(std::int64_t index)
+{
+    if (!advancing_ || index < 0 || static_cast<std::size_t>(index) >= classes_.size() ||
+        !classes_[index].available)
+    {
+        return;
+    }
+    begin_class(classes_[index].id);
+}
+
+opengold::rules::AdvancementChoice LevelUpDialog::class_default(const std::string &class_id) const
+{
+    auto &party = const_cast<LevelUpDialog *>(this)->campaign();
+    const auto &rules = party.rule_module();
+    const auto &sheet = party.member(advancing_).character.sheet();
+    opengold::rules::AdvancementChoice choice;
+    choice.character_class = class_id;
+    const auto spells = rules.spell_choice_options(rules.spell_choice_sheet(sheet, choice),
+                                                   opengold::rules::SpellChoiceContext::advancement);
+    if (!spells.learning.empty() || spells.may_prepare)
+    {
+        choice.spell_learning.emplace();
+        choice.spells = spells.locked_prepared;
+    }
+    return choice;
+}
+
+void LevelUpDialog::begin_class(const std::string &class_id)
+{
+    const auto id = advancing_;
     advancement_page_ = AdvancementPage::choices;
     skilled_index_ = 0;
-    advancing_ = id;
-    advancement_options_ = campaign().advancement_options(id);
-    advancement_choice_ = campaign().default_advancement(id);
+    const bool starting =
+        class_id.empty() || class_id == campaign().member(id).character.creation_data().character_class;
+    advancement_choice_ =
+        starting ? campaign().default_advancement(id) : class_default(class_id);
+    advancement_options_ = campaign().advancement_options(id, advancement_choice_);
     swap_rows_ = {};
     swap_incomplete_ = false;
     // Several picks start empty, as the dropdown starts at "Choose an option".
@@ -622,10 +689,19 @@ void LevelUpDialog::open(opengold::MemberId id)
         {
             required_node<Control>(*this, name).show();
         }
+        // A multiclass character's title names the classes the level makes.
+        auto after = campaign().member(id).character.sheet().level_classes;
+        after.push_back(advancement_options_.character_class);
+        const auto classes = i18n::class_summary(after, ", ");
         required_node<Label>(*this, "Title")
-            .set_text(i18n::format("{name} / Level {level}",
-                                   {{"name", gs(campaign().member(id).character.sheet().name)},
-                                    {"level", advancement_options_.level}}));
+            .set_text(after.size() > 1 && classes.contains(",")
+                          ? i18n::format(N_("{name} / Level {level}: {classes}"),
+                                         {{"name", gs(campaign().member(id).character.sheet().name)},
+                                          {"level", advancement_options_.level},
+                                          {"classes", classes}})
+                          : i18n::format("{name} / Level {level}",
+                                         {{"name", gs(campaign().member(id).character.sheet().name)},
+                                          {"level", advancement_options_.level}}));
         required_node<Label>(*this, "Note").set_text(i18n::text(advancement_options_.description));
         auto *feat = &required_node<OptionButton>(*this, "Feat");
         feat->clear();
@@ -728,8 +804,6 @@ void LevelUpDialog::open(opengold::MemberId id)
     }
     advancement_pages();
     advancement_changed();
-    popup_centered();
-    required_node<Button>(*this, "Cancel").grab_focus();
 }
 
 void LevelUpDialog::advancement_spell_changed(bool, int)
@@ -912,7 +986,12 @@ void LevelUpDialog::advancement_changed(std::int64_t)
     }
     if (preview_choice.spell_learning && advancement_page_ != AdvancementPage::spells)
     {
-        const auto defaults = campaign().default_advancement(advancing_);
+        // The starting class's defaults, or another class's (MULTI-1).
+        const bool starting = advancement_choice_.character_class.empty() ||
+                              advancement_choice_.character_class ==
+                                  campaign().member(advancing_).character.creation_data().character_class;
+        const auto defaults = starting ? campaign().default_advancement(advancing_)
+                                       : class_default(advancement_choice_.character_class);
         preview_choice.spell_learning =
             defaults.spell_learning.value_or(opengold::rules::TrainingChoices{});
         preview_choice.spells = defaults.spells;
@@ -943,6 +1022,34 @@ void LevelUpDialog::advancement_changed(std::int64_t)
                 if (fill.size() < group.count && !picked(option.id))
                 {
                     fill.push_back(option.id);
+                }
+            }
+        }
+        // Another class prepares from what the stand-in learned, such as a
+        // new Wizard's spellbook.
+        if (!starting)
+        {
+            auto next = rules.spell_choice_sheet(campaign().member(advancing_).character.sheet(),
+                                                 preview_choice);
+            try
+            {
+                rules.apply_spell_choices(
+                    next, opengold::rules::SpellChoices{*preview_choice.spell_learning, {}, {}, {}},
+                    opengold::rules::SpellChoiceContext::advancement,
+                    opengold::rules::ChoiceCompleteness::partial);
+            }
+            catch (const std::exception &)
+            {
+            } // The preview below reports what is wrong.
+            const auto preparation =
+                rules.spell_choice_options(next, opengold::rules::SpellChoiceContext::advancement);
+            for (const auto &spell : preparation.preparation)
+            {
+                if (preview_choice.spells.size() < preparation.prepared_count &&
+                    std::find(preview_choice.spells.begin(), preview_choice.spells.end(),
+                              spell.id) == preview_choice.spells.end())
+                {
+                    preview_choice.spells.push_back(spell.id);
                 }
             }
         }

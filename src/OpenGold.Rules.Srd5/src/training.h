@@ -3,6 +3,7 @@
 #include "character_class.h"
 #include "opengold/character_rules.h"
 #include <array>
+#include <optional>
 
 namespace opengold::srd5::detail
 {
@@ -78,7 +79,7 @@ rules::TrainingChoiceGroup lessons_skilled_options(std::span<const rules::Featur
 // Gaining a level lets a Warlock replace one invocation with another it
 // qualifies for, and a Sorcerer one Metamagic option (SRD 5.2.1). Offered for
 // the sheet before the level is gained.
-rules::SwapOffer option_swap_offer(const rules::CharacterSheet &);
+rules::SwapOffer option_swap_offer(const rules::CharacterSheet &, CharacterClass klass);
 // Apply a swap from the offer to the sheet of the new level; throws unless the
 // offer has it. A replaced invocation records the level it was taken at.
 void apply_option_swap(rules::CharacterSheet &, const rules::LevelSwap &, const rules::SwapOffer &);
@@ -95,17 +96,27 @@ std::vector<rules::FeatureGrant> training_grants(CharacterClass klass, std::stri
                                                  std::string_view background,
                                                  const rules::TrainingChoices &choices);
 bool is_training_grant(const rules::FeatureGrant &grant);
+// The level-one choices of a class taken after the first (MULTI-1): a Bard's
+// skill of any kind, a Ranger's or a Rogue's from its list, and its level-one
+// class choices (a Fighting Style, an invocation, an Order, Rogue Expertise,
+// Weapon Mastery). `choices` are the picks so far, which Expertise follows.
+std::vector<rules::TrainingChoiceGroup>
+multiclass_options(CharacterClass klass, std::span<const rules::FeatureGrant> grants,
+                   const rules::TrainingChoices &choices);
+// The grant id prefix of a choice multiclass_options offers ("skill:"), or
+// none for another group.
+std::optional<std::string_view> multiclass_grant_prefix(std::string_view group);
 std::vector<rules::FeatureGrant> without_training(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoices training_choices(std::span<const rules::FeatureGrant> grants,
-                                        CharacterClass klass, std::string_view race,
+                                        const ClassHistory &history, std::string_view race,
                                         std::string_view background);
 rules::TrainingProfile training_profile(std::span<const rules::FeatureGrant> grants,
-                                        CharacterClass klass, std::string_view race,
-                                        std::string_view background, unsigned level,
+                                        const ClassHistory &history, std::string_view race,
+                                        std::string_view background,
                                         const rules::AbilityArray<int> &scores);
 rules::AbilityCheckModifier ability_check(std::span<const rules::FeatureGrant> grants,
-                                          CharacterClass klass, std::string_view race,
-                                          std::string_view background, unsigned level,
+                                          const ClassHistory &history, std::string_view race,
+                                          std::string_view background,
                                           const rules::AbilityArray<int> &scores,
                                           rules::Ability ability, std::string_view skill);
 } // namespace opengold::srd5::detail

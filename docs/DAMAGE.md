@@ -63,7 +63,7 @@ Poison damage or an invented hazard conversion.
 
 ## Saves
 
-**PC43** recipes require the sourced Dwarf resistance. Records must contain it;
+**PC44** recipes require the sourced Dwarf resistance. Records must contain it;
 missing, forged or wrongly sourced grants reject. A save loads identically on
 the next pass.
 

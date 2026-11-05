@@ -40,7 +40,8 @@ Ranged weapon effect share the same rules implementation.
 
 See the [style-route packet](FIGHTING-STYLE-ROUTES.md) for current acceptance,
 save formats and evidence. The class trackers have since delivered the other
-styles, mastery and cantrip alternatives; multiclassing is not planned.
+styles, mastery and cantrip alternatives, and multiclassing
+([MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)).
 
 Verification: 41 native/tool regression checks pass, followed by the final
 focused Archery checks for stale-command atomicity, forged feature masks and

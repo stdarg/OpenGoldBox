@@ -1196,7 +1196,14 @@ void RolfTourView::refresh_rest_spells()
         .set_text(presentation::training_string(sheet.name) + " / " +
                   rest_text(campaign_->state().spells_after_short_rest ? N_("Short Rest")
                                                                        : N_("Long Rest")));
-    presentation::spell_known(*w, campaign_->rule_module().spell_access(sheet), options.preparation,
+    // A multiclass character's sections list its classes' spells (MULTI-1).
+    auto preparation = options.preparation;
+    for (const auto &section : options.class_preparation)
+    {
+        preparation.insert(preparation.end(), section.preparation.begin(),
+                           section.preparation.end());
+    }
+    presentation::spell_known(*w, campaign_->rule_module().spell_access(sheet), preparation,
                               rest_text);
     // Clerics replace cantrips on gaining a level, not at a Long Rest.
     for (const char *name : {"ReplaceLabel", "WithLabel", "Replace", "With"})

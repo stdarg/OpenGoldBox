@@ -86,14 +86,15 @@ std::array<Ability, 2> class_save_proficiencies(CharacterClass character_class)
     return saves.at(static_cast<std::size_t>(character_class));
 }
 
-bool save_proficient(CharacterClass character_class, unsigned level, Ability ability)
+bool save_proficient(CharacterClass starting_class, const ClassLevels &levels, Ability ability)
 {
-    const auto trained = class_save_proficiencies(character_class);
+    // Only the starting class's saves: a class taken later gives none
+    // (SRD 5.2.1 p. 25).
+    const auto trained = class_save_proficiencies(starting_class);
     // Disciplined Survivor (Monk 14): every save. Slippery Mind (Rogue 15):
     // Wisdom and Charisma too.
-    return ability == trained[0] || ability == trained[1] ||
-           (character_class == CharacterClass::monk && level >= 14) ||
-           (character_class == CharacterClass::rogue && level >= 15 &&
+    return ability == trained[0] || ability == trained[1] || levels[CharacterClass::monk] >= 14 ||
+           (levels[CharacterClass::rogue] >= 15 &&
             (ability == Ability::wisdom || ability == Ability::charisma));
 }
 

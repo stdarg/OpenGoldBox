@@ -47,7 +47,7 @@ void cleric_creation_checks()
           "Creation prepares from the Cleric list up to level-one slots");
     const auto profile = rules->character_profile(sheet, {}).data;
     check(profile.starts_with(
-              "PC43 1 0 5 sacred_flame cure_wounds healing_word inflict_wounds shield_of_faith "),
+              "PC44 1 0 5 sacred_flame cure_wounds healing_word inflict_wounds shield_of_faith "),
           "The profile records the cantrip and the prepared spells");
     for (const auto &bad : std::vector<std::vector<std::string>>{
              {"blindness"},
@@ -69,7 +69,7 @@ void cleric_creation_checks()
     const Character empty(*creation_rules, unprepared, {});
     check(rules->spell_access(empty.sheet()).prepared.empty() &&
               rules->character_profile(empty.sheet(), {})
-                  .data.starts_with("PC43 1 0 1 sacred_flame "),
+                  .data.starts_with("PC44 1 0 1 sacred_flame "),
           "An unprepared Cleric casts only its cantrip");
 
     auto thaumaturge = cleric_draft("thaumaturge", level_one_cleric_spells);

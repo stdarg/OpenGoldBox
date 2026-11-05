@@ -125,6 +125,10 @@ struct CharacterSheet
     // Keeps minimum-one HP gains separate from retroactive modifier changes.
     std::vector<int> hit_point_modifiers;
     std::vector<AbilityAdjustment> ability_adjustments;
+    // The class taken at each level, by stable ID: the first is the starting
+    // class (character_class names it), and a multiclass character's later
+    // levels may name others (MULTI-1). One entry per level.
+    std::vector<std::string> level_classes;
 };
 
 // Creation is a separate optional capability: campaign and Godot code do not

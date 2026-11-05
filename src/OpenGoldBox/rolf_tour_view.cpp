@@ -1,4 +1,5 @@
 #include "godot_images.h"
+#include "class_text.h"
 #include "godot_nodes.h"
 #include "application_settings.h"
 #include "character_text.h"
@@ -639,7 +640,7 @@ void RolfTourView::refresh_inventory()
     required_node<Label>(*this, "InventoryPanel/Header")
         .set_text(i18n::format("{name} / {class} / party {gold} gp",
                                {{"name", String::utf8(m.character.sheet().name.c_str())},
-                                {"class", i18n::text(m.character.sheet().character_class)},
+                                {"class", i18n::class_summary(m.character.sheet())},
                                 {"gold", gold_value(campaign_->state().wealth)}}));
     for (const auto &item : m.character.inventory().items())
     {
@@ -2481,7 +2482,7 @@ void RolfTourView::refresh()
         const auto name = (leader ? String::utf8("★ ") : String()) + String::utf8(cs.name.c_str());
         const auto text = i18n::format("{name}\n{class} / AC {ac} / HP {current}/{maximum}",
                                        {{"name", name},
-                                        {"class", i18n::text(cs.character_class)},
+                                        {"class", i18n::class_summary(cs)},
                                         {"ac", campaign_->profile(id).armor_class},
                                         {"current", m.vitals.hit_points},
                                         {"maximum", cs.hit_points}});

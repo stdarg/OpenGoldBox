@@ -2,6 +2,8 @@
 #define OPENGOLD_TRAINING_HALL_H
 #include <cstdint>
 #include <optional>
+#include <span>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -22,6 +24,10 @@ enum class TrainingHall
 
 // The class IDs a hall trains, in the order the table lists them.
 [[nodiscard]] std::vector<std::string_view> hall_classes(TrainingHall hall);
+
+// Whether the hall trains any of a character's classes, given by stable ID: a
+// multiclass character may use the hall of any of them (MULTI-1).
+[[nodiscard]] bool trains_any(TrainingHall hall, std::span<const std::string> class_ids);
 
 // The hall a script names in its "WE TRAIN ONLY ..." text ("FIGHTERS ").
 [[nodiscard]] std::optional<TrainingHall> training_hall_named(std::string_view script_name);

@@ -483,7 +483,7 @@ void run()
                   "Actual supported class advancement grants TWF");
             check(rules()
                       ->character_profile(h.sheet(), std::vector<std::string>{"dagger"})
-                      .data.starts_with("PC43 "),
+                      .data.starts_with("PC44 "),
                   "TWF and mastery have versioned sourced profiles");
         }
     }

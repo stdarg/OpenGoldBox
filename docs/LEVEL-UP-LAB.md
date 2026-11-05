@@ -31,6 +31,9 @@ character to test a different route, then load a saved one to continue it.
 
 ## Editing the dialog
 
+- The dialog's **Class** row, under the title, chooses the class the level is
+  taken in ([multiclassing](ADVANCEMENT.md#multiclassing)); the lab's summary
+  then names each class ("Fighter 3 / Rogue 1").
 - `src/OpenGoldBox/godot/scenes/level_up_dialog.tscn` owns the window and fixed
   control rectangles. Edit it in the Godot scene editor or as text. Four hidden
   position markers define the training selector's two state-dependent positions.

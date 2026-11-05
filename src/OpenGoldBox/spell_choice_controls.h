@@ -36,15 +36,37 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
         }
     }
     auto groups = options.learning;
-    if (options.may_prepare)
+    // Each preparation section's spells are recorded with its class's mark
+    // (MULTI-1); "prepared" is the starting class's, "prepared@cleric" a
+    // later Cleric's.
+    std::vector<std::pair<std::string, const std::vector<std::string> *>> sections;
+    if (options.may_prepare && options.class_preparation.empty())
     {
         groups.push_back(
             {"prepared", "Prepared spells", options.prepared_count, options.preparation});
+        sections.emplace_back("", &options.locked_prepared);
+    }
+    for (const auto &section : options.class_preparation)
+    {
+        groups.push_back({"prepared" + section.tag, section.label, section.count,
+                          section.preparation});
+        sections.emplace_back(section.tag, &section.locked);
     }
     int position = 0;
     for (const auto &group : groups)
     {
-        const auto section_name = training_string(group.id).replace(":", "_");
+        const bool preparing = group.id.starts_with("prepared");
+        const auto tag = preparing ? group.id.substr(8) : std::string();
+        const auto *locked_spells = preparing
+                                        ? std::find_if(sections.begin(), sections.end(),
+                                                       [&](const auto &section)
+                                                       {
+                                                           return section.first == tag;
+                                                       })
+                                              ->second
+                                        : nullptr;
+        // Node names allow neither ':' nor '@'.
+        const auto section_name = training_string(group.id).replace(":", "_").replace("@", "_");
         auto *section = Object::cast_to<VBoxContainer>(rows.get_node_or_null(section_name));
         if (!section)
         {
@@ -59,13 +81,29 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
         auto *label = &required_node<Label>(*section, "Count");
         const auto it = choices.learning.find(group.id);
         static const std::vector<std::string> none;
-        const auto &picked = group.id == "prepared" ? (choices.prepared ? *choices.prepared : none)
+        // A section's own picks, without their class's mark.
+        std::vector<std::string> marked;
+        if (preparing && choices.prepared)
+        {
+            for (const auto &entry : *choices.prepared)
+            {
+                const auto at = entry.find('@');
+                if (tag.empty() ? at == std::string::npos
+                                : at != std::string::npos && entry.substr(at) == tag)
+                {
+                    marked.push_back(entry.substr(0, at));
+                }
+            }
+        }
+        const auto &picked = preparing                     ? marked
                              : it == choices.learning.end() ? none
                                                             : it->second;
-        label->set_text(tr(group.label) +
-                        (group.id == "prepared" ? String()
-                                                : " / " + tr(N_("Level")) + " " +
-                                                      String::num_uint64(group.acquired_level)) +
+        label->set_text((preparing && group.id != "prepared"
+                             ? tr(N_("Prepared spells")) + " / " + tr(group.label)
+                             : tr(group.label)) +
+                        (preparing ? String()
+                                   : " / " + tr(N_("Level")) + " " +
+                                         String::num_uint64(group.acquired_level)) +
                         " (" + String::num_uint64(picked.size()) + " / " +
                         String::num_uint64(group.count) + ")");
         auto *pending = &required_node<Label>(*section, "Pending");
@@ -98,9 +136,8 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
             const bool selected =
                 std::find(picked.begin(), picked.end(), option.id) != picked.end();
             const bool locked =
-                group.id == "prepared" &&
-                std::find(options.locked_prepared.begin(), options.locked_prepared.end(),
-                          option.id) != options.locked_prepared.end();
+                locked_spells && std::find(locked_spells->begin(), locked_spells->end(),
+                                           option.id) != locked_spells->end();
             box->show();
             box->set_text(tr(option.label));
             box->set_tooltip_text(tr(option.description));
@@ -146,12 +183,17 @@ inline void equalize_choice_widths(godot::Node &root)
 
 inline void toggle_spell(opengold::rules::SpellChoices &choice, opengold::ChoiceToggle toggle)
 {
-    const auto [group, value, selected] = toggle;
-    if (group == "prepared" && !choice.prepared)
+    const auto [group, picked, selected] = toggle;
+    // A later class's prepared spell carries its mark ("@cleric", MULTI-1).
+    const bool preparing = std::string_view(group).starts_with("prepared");
+    const auto value =
+        preparing ? std::string(picked) + std::string(std::string_view(group).substr(8))
+                  : std::string(picked);
+    if (preparing && !choice.prepared)
     {
         choice.prepared.emplace();
     }
-    auto &values = group == "prepared" ? *choice.prepared : choice.learning[std::string(group)];
+    auto &values = preparing ? *choice.prepared : choice.learning[std::string(group)];
     if (selected)
     {
         if (std::find(values.begin(), values.end(), value) == values.end())

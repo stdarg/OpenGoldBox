@@ -230,7 +230,16 @@ in the game: answering YES at a hall lists its services in the dialogue
 - **Experience kept.** The original clamped experience to just below the next
   threshold after training. OpenGoldBox keeps it all.
 - **Hall classes.** The original's four halls train the 12 SRD classes by
-  AD&D 2nd edition's class groups.
+  AD&D 2nd edition's class groups. A multiclass character may use the hall of
+  any of its classes ([MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)).
+- **Multiclassing** (2026-11-05). In the original only non-human characters
+  could be multi-class: they chose their classes at creation, split every
+  experience award between them and averaged their hit points. OpenGoldBox
+  follows SRD 5.2.1 instead: any character, of any species, may take its next
+  level in another class whose 13s it meets, with one experience pool and
+  each class's own die
+  ([MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)). The original's
+  scripts see such a character as each of its classes.
 
 ## Rest
 

@@ -48,8 +48,41 @@ does not become conscious merely by leveling. No XP is deducted.
 Each class takes the SRD's one subclass for it at level 3. Slots by level and
 casting from higher slots are in [spell slots](SPELL-SLOTS.md); each class's
 features by level are on its page, linked from the
-[README's current status](../README.md#current-status). Multiclassing is deferred
-([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)).
+[README's current status](../README.md#current-status).
+
+## Multiclassing
+
+The dialog's **Class** row, under the title, chooses the class the level is
+taken in ([MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)). It
+starts on the character's starting class at its next level, then lists its
+other classes and every other class at level 1. A class needs 13 in its primary
+ability and in those of each class the character has (Strength or Dexterity
+for a Fighter); one whose scores fall short is greyed out with them named.
+Picking another class shows that class's own choices for its new level, and the
+title names the result ("Level 4: Fighter 3, Rogue 1").
+
+- **Experience and Proficiency Bonus** follow the total level, capped at 15.
+- **Hit Points**: the new class's fixed average plus Constitution. A Hit Point
+  Die spent on a rest is the largest the character has left, so the dice left
+  are always its smallest, and a Long Rest gives back all of them.
+- **A new class** brings its level-one features and part of its training:
+  Martial weapons, armor and Shields as the SRD lists for each, and one skill
+  for a Bard (any), Ranger or Rogue (from its list). Its level-one choices
+  come with it: a Fighter's Fighting Style and Weapon Mastery, a Rogue's
+  Expertise, a Cleric's or Druid's Order, a Warlock's invocation, and a
+  caster's cantrips and spells. A class taken later gives no saving throws.
+- **Class features** come at that class's own levels, the subclass at its
+  level 3. Extra Attack from two classes gives one extra attack (a Fighter's
+  Two Extra Attacks aside); two ways to compute Armor Class (a Monk's and a
+  Barbarian's Unarmored Defense) give the higher; a Cleric / Paladin has the
+  higher of the two classes' Channel Divinity uses.
+- **Spells**: each class prepares its own, at its own level, and casts them
+  with its own ability; a spell on two of the character's lists uses the better
+  ability. One Spellcasting class keeps its own slot table; two or more add their
+  levels, a Paladin's and a Ranger's at half rounded up, on the Multiclass
+  Spellcaster table. A Warlock's Pact Magic slots join them, and a Short Rest
+  gives back as many of their level as Pact Magic has. A rest prepares spells in
+  one section for each class. Cantrips grow with the total level.
 
 Rules use the [official SRD 5.2.1](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf),
 including its current Healing Word and Savage Attacker mechanics. Existing pack

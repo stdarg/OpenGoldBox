@@ -2427,3 +2427,22 @@ does not stack; the higher of two Armor Class formulas applied automatically
 for each class with its own ability, slots from the Multiclass Spellcaster
 table, Pact Magic slots beside them, cantrips scaling by total level. The
 original scripts see a character as each of its classes.
+
+Where the SRD leaves a choice to the player, the game makes the best one
+automatically, as [AUTO-1](#auto-1-2026-09-30-automatic-choices-with-logging)
+does:
+
+- **Hit Point Dice** are spent largest first; a Long Rest gives all of them back.
+- **Channel Divinity**: a Cleric / Paladin has one pool with the higher of the
+  two classes' uses.
+- **A spell on two of the character's class lists** is cast with the better of
+  those classes' abilities; a cantrip with the class that taught it.
+- **Pact Magic slots** join the other slots of their level; a Short Rest gives
+  back as many of that level as Pact Magic has.
+- **Arcane Recovery** comes before a Land Druid's Natural Recovery when a
+  character has both.
+
+Each class keeps its own resource counts (Lay On Hands and Sorcery Points, Rage
+and Wild Shape, Action Surge and Focus and the like). A later class's prepared
+spells are recorded with its name ("fireball@sorcerer"), and a rest prepares
+each class's spells in its own section.

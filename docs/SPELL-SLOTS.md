@@ -10,7 +10,15 @@ Part of [#176](https://github.com/stdarg/OpenGoldBox/issues/176) (levels 5–15)
   whose slots are all of one level (level 2 from Warlock 3, 3 from 5, 4 from 7,
   5 from 9; three slots from 11). Only the classes whose cap allows it reach
   the higher rows.
-- The vital state (`SRD13`) and the combat checkpoint (`OGCOMBAT 75`) store
+- **A multiclass character** ([MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing))
+  with one Spellcasting class keeps that class's table at its own level. With
+  two or more it adds their levels, a Paladin's and a Ranger's at half rounded
+  up, and reads the full casters' table at that level, the SRD's Multiclass
+  Spellcaster table: a Cleric 1 / Wizard 2 has four level-1 and two level-2
+  slots. A Warlock's Pact Magic slots join them at their level; a Short Rest
+  gives back as many of that level as Pact Magic has, and Magical Cunning half
+  of them, rounded up.
+- The vital state (`SRD13`) and the combat checkpoint (`OGCOMBAT 76`) store
   all nine counts. The rest screen lists a pool for each level the character
   has ("Level-three spell slots").
 - One slot a turn, as before, whatever its level.

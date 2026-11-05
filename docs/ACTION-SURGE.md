@@ -31,7 +31,7 @@ an unspent action. The first use does not refresh any other resource.
 allowances. Core and Godot continue to consume legal commands, display snapshots
 and named recovery pools; no new runtime or ownership mechanism is introduced.
 
-PC43 validates the class grant. OGCOMBAT 40 stores remaining uses, activation
+PC44 validates the class grant. OGCOMBAT 40 stores remaining uses, activation
 this turn and the unspent extra allowance. SRD11 vital continuation stores spent
 uses alongside existing slots, Second Wind, Hit Dice, mortality clocks,
 Temporary HP, Orc uses and effects.
@@ -63,6 +63,6 @@ Dash actions and English/Spanish layouts at 1120 × 800 and 1920 × 1080. The UI
 follow-up passed eight affected Godot checks and five native fixture checks;
 the rendered control check also passed. #86's through-level-four scope is complete.
 #192 later delivered the Short Rest and Hit Dice controls. The second use comes
-at level 17, above the game's cap of 15 (#178 not planned); multiclassing is not
-planned (#179–184). This increment does
+at level 17, above the game's cap of 15 (#178 not planned). Multiclassing came
+later ([MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)). This increment does
 not claim the rest of the Fighter feature set or the all-class milestone.

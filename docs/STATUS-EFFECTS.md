@@ -83,7 +83,7 @@ are prepared in an owned candidate before replacing live campaign state.
 
 ## Persistence and boundaries
 
-- **OGCOMBAT 75** checkpoints contain source scope,
+- **OGCOMBAT 76** checkpoints contain source scope,
   elapsed time and each actor's effect collection. The checkpoint byte limit is
   4 MiB; each creature supports at most 128 simultaneous applications. A full
   collection offers no further Blindness command.
@@ -97,7 +97,7 @@ are prepared in an owned candidate before replacing live campaign state.
 - **OPENGOLD-CAMPAIGN 40** stores sub-minute time, precise rest-completion offsets
   and the next encounter scope. Older formats and other rules identities reject;
   see the [pre-1.0 format policy](SAVES.md#pre-10-format-policy).
-- Campaign saves and PC43 profiles store acquired feature/feat provenance and
+- Campaign saves and PC44 profiles store acquired feature/feat provenance and
   choices, separately from spent resources and timed effects.
 - They also store training choices and sources alongside effects, wounds and
   resources; see [training support](TRAINING.md).

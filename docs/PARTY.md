@@ -151,7 +151,8 @@ Rogue is proficient with martial weapons that have Finesse or Light; Monk is
 proficient with martial weapons that have Light. Shortsword and Scimitar therefore
 include their proficiency bonus for both classes. The catalog records Light
 for proficiency and for its extra attack ([Light attacks](LIGHT-ATTACKS.md)).
-Multiclassing, and so its entry training, is not implemented.
+A class taken later brings Martial weapons from a Barbarian, Fighter, Paladin
+or Ranger ([MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)).
 This change added neither weapon mastery nor charged wand effects; both came
 later ([Weapon Mastery](WEAPON-MASTERY.md), MAGIC-3), and ammunition is
 unlimited ([#57](AMMUNITION.md)). Bows and a plain focus retain unarmed melee; ranged weapons

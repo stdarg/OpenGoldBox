@@ -21,13 +21,16 @@ of a campaign save; add completed characters to the party first.
 Until 1.0, every save kind has exactly one accepted format, and it always writes
 every field:
 
-- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 44` (`campaign_format` in
-  `campaign_save.cpp`).
-- The internal training-combat checkpoint: `OGCOMBAT 75` (`checkpoint_format`
-  in `srd5.cpp`).
-- Records embedded by the SRD module: character profile recipe `PC43` (an
-  explicit spell ID list), vital state `SRD13`, effect state `FX9` and
-  concentration `CN1`.
+- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 45` (`campaign_format` in
+  `campaign_save.cpp`). Format 45 records the class each level was taken in
+  (multiclassing, [MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)).
+- The internal training-combat checkpoint: `OGCOMBAT 76` (`checkpoint_format`
+  in `srd5.cpp`); 76 keeps each class's resource counts apart.
+- Records embedded by the SRD module: character profile recipe `PC44` (an
+  explicit spell ID list and each level's class), vital state `SRD13`, effect
+  state `FX9` and concentration `CN1`. A vital state keeps one count of a class
+  resource for each class that has it, so a single-class character's reads as
+  before.
 
 A save or checkpoint with an older format number, or one written under a
 different rules identity (module, version or content hash; currently

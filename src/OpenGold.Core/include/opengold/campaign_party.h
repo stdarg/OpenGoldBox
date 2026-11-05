@@ -327,6 +327,9 @@ class CampaignParty
     // One lesson per level, paid in the party's gold. Atomic.
     void train_skill(MemberId id, TrainingHall hall, const std::string &grant);
     [[nodiscard]] bool can_advance(MemberId id) const;
+    // The classes the member's next level may be taken in (MULTI-1); one it
+    // does not qualify for is unavailable.
+    [[nodiscard]] std::vector<rules::AdvancementOption> advancement_classes(MemberId id) const;
     [[nodiscard]] rules::AdvancementOptions
     advancement_options(MemberId id, const rules::AdvancementChoice &choice = {}) const;
     [[nodiscard]] rules::AdvancementChoice default_advancement(MemberId id) const;

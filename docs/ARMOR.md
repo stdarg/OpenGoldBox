@@ -27,7 +27,11 @@ Starting training follows the twelve class tables:
 | Monk, Sorcerer, Wizard | None |
 
 Druid Warden and Cleric Protector add training as class choices; this table
-describes starting core traits. Multiclassing is not planned.
+describes starting core traits. A class taken later gives part of its training
+([MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)): Light armor from
+a Bard, Cleric, Druid, Fighter, Paladin, Ranger, Rogue or Warlock; Medium armor
+from a Cleric, Fighter, Paladin or Ranger; Shields from a Barbarian, Cleric,
+Druid, Fighter, Paladin or Ranger.
 Untrained suits impose Disadvantage on Strength and
 Dexterity D20 Tests, including actual initiative and weapon attacks, and
 prevent casting. Saving throws use the existing shared modifier resolver.

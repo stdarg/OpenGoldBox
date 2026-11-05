@@ -92,8 +92,10 @@ See [building the game and each demo](docs/BUILD.md). The scenes under
 - **Quests:** Ohlo's potion delivery and City Hall's commissions, from
   acceptance to reward. See [quests](docs/QUESTS.md).
 - **Advancement:** every class levels up to 15 from the roster's Advance
-  button, with its SRD subclass. Training halls sell experience sessions and
-  skill lessons. See [advancement](docs/ADVANCEMENT.md),
+  button, with its SRD subclass. A character may take a level in another class
+  as SRD 5.2.1 multiclassing allows, from the level-up dialog's Class row.
+  Training halls sell experience sessions and skill lessons. See
+  [advancement](docs/ADVANCEMENT.md#multiclassing),
   [levels 5–10](docs/LEVELS-5-10.md) and [training halls](docs/TRAINING-HALL.md).
 - **Magic items:** enchanted weapons, armor and shields keep their bonus;
   potions, wands, rings, bracers, necklaces and scrolls work; items are
@@ -133,7 +135,7 @@ the original is in [DEVIATIONS](docs/DEVIATIONS.md).
   which the original leaves undefined); an event that reaches one stops with
   an error and is undone. The whole-map run reaches neither. See
   [ECL coverage](docs/ECL-COVERAGE.md#gaps).
-- No multiclassing, no saving during combat, no importing original saves.
+- No saving during combat, no importing original saves.
 
 ### Tracked work
 

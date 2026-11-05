@@ -581,7 +581,7 @@ void behaviour()
 
 // ---- profile tag ----------------------------------------------------------
 //
-// A stored profile carries exactly one tag, PC43, followed by an explicit
+// A stored profile carries exactly one tag, PC44, followed by an explicit
 // spell list. Profiles are untrusted input (PRD section 20): any other tag
 // must be rejected, never treated as "has everything".
 void profile_tags()
@@ -604,7 +604,7 @@ void profile_tags()
     };
 
     const auto rogue = rules->character_profile(hero("rogue", 1, {}).sheet(), {}).data;
-    check(rogue.starts_with("PC43 "), "A Rogue profile writes the only profile tag");
+    check(rogue.starts_with("PC44 "), "A Rogue profile writes the only profile tag");
 
     // A Wizard profile writes an explicit spell list. Split it so the tag and
     // the spell list can be replaced independently.
@@ -621,7 +621,7 @@ void profile_tags()
         listed += " " + spell;
     }
     std::getline(split, rest);
-    check(tag == "PC43" && count > 0, "A Wizard profile stores spells as an explicit list");
+    check(tag == "PC44" && count > 0, "A Wizard profile stores spells as an explicit list");
     const auto rebuild = [&](const std::string &new_tag, const std::string &spell_field)
     {
         return new_tag + " " + level + " " + features + " " + spell_field + rest;
@@ -630,18 +630,18 @@ void profile_tags()
 
     // Unrecognised tags: earlier profile tags, non-numeric, and not a PC tag at
     // all. An unknown tag must never read as "has everything".
-    for (const auto &bad : {"PC00", "PC35", "PC42", "PC44", "PC99", "PCxx", "XX35", "PC-1"})
+    for (const auto &bad : {"PC00", "PC35", "PC42", "PC43", "PC99", "PCxx", "XX35", "PC-1"})
     {
         check(!loads(rebuild(bad, listed)),
               ("Profile tag " + std::string(bad) + " must be rejected").c_str());
     }
 
-    check(loads(rebuild("PC43", "2 fire_bolt magic_missile")),
+    check(loads(rebuild("PC44", "2 fire_bolt magic_missile")),
           "An explicit spell list loads and satisfies the Wizard grant cross-check");
-    check(!loads(rebuild("PC43", "1 not_a_spell")), "An unknown spell id in the list is rejected");
-    check(!loads(rebuild("PC43", "99 fire_bolt")), "A spell count beyond the catalog is rejected");
-    check(!loads(rebuild("PC43", "2 fire_bolt fire_bolt")), "A duplicate spell id is rejected");
-    check(!loads(rebuild("PC43", "2 fire_bolt sacred_flame")),
+    check(!loads(rebuild("PC44", "1 not_a_spell")), "An unknown spell id in the list is rejected");
+    check(!loads(rebuild("PC44", "99 fire_bolt")), "A spell count beyond the catalog is rejected");
+    check(!loads(rebuild("PC44", "2 fire_bolt fire_bolt")), "A duplicate spell id is rejected");
+    check(!loads(rebuild("PC44", "2 fire_bolt sacred_flame")),
           "A spell the class cannot access is rejected");
 }
 

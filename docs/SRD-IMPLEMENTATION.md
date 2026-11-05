@@ -47,8 +47,9 @@ The target includes all twelve SRD classes, all nine species, backgrounds,
 feats, spells, progression and recovery. The first complete class milestone is
 levels 1–4 across all twelve classes. Later milestones cover single-class
 progression through level 15, which is both the rules-library target and the
-campaign's playable cap; multiclassing is deferred
-([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)).
+campaign's playable cap. Multiclassing, first deferred
+([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)),
+was delivered later ([MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)).
 The [2026-09-30 simplification](SRD-DECISIONS.md#2026-09-30-simplification)
 removed or automated several SRD mechanics; this plan does not schedule them.
 
@@ -267,11 +268,12 @@ and its features in separate bounded increments:
 This keeps Extra Attack, additional feats and subclass schedules tied to their
 actual grants. It does not apply one generic table to all classes.
 
-### Deferred: multiclassing
+### Multiclassing
 
-Multiclassing is deferred and is not part of the current plan
-([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)).
-If it is resumed, these six increments are the starting point:
+Multiclassing was deferred
+([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations))
+and delivered on 2026-11-05 ([MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing),
+[advancement](ADVANCEMENT.md#multiclassing)) in these six increments:
 
 | ID | Scope | Completion check |
 | --- | --- | --- |

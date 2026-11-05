@@ -16,7 +16,8 @@ lists its services in the dialogue, as the temple does
 ### Which hall trains whom
 
 Each hall trains the SRD classes of one AD&D 2nd edition class group. A member
-of another group's class is turned away.
+of another group's class is turned away. A multiclass member may use the hall
+of any of its classes ([MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)).
 
 | Hall | Trains |
 | --- | --- |

@@ -73,7 +73,7 @@ void choices_and_sources()
                               }),
                   "Scholar source remains level two");
             const auto bytes = encode_campaign(party, nullptr, "scholar");
-            check(bytes.starts_with("OPENGOLD-CAMPAIGN 44\n"),
+            check(bytes.starts_with("OPENGOLD-CAMPAIGN 45\n"),
                   "Wizard spell history is written in the current campaign format");
             CampaignParty restored(module());
             restored.restore(
@@ -138,7 +138,7 @@ void medicine_combat()
     VitalState scratch;
     check(character.advance(*rules, scratch), "Scholar medic advances normally");
     const auto profile = rules->character_profile(character.sheet(), {}).data;
-    check(profile.starts_with("PC43 "), "Scholar combat uses the current profile version");
+    check(profile.starts_with("PC44 "), "Scholar combat uses the current profile version");
     auto encounter = [&](const std::string &data)
     {
         return Encounter{

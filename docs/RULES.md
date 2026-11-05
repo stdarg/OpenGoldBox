@@ -140,7 +140,7 @@ Deterministic SplitMix64 dice and stable initiative tie ordering make a seed plu
 the same accepted command sequence reproducible. Checkpoints include the RNG,
 turn budgets, HP, slots, death saves and unfinished opportunity reactions.
 
-Rules module **0.6.274** writes **OGCOMBAT 75**, including an
+Rules module **0.6.274** writes **OGCOMBAT 76**, including an
 involuntary shared-space marker, remaining Hit Dice, recovery clocks and sourced Temporary HP.
 A saved leave-reach queue retains its order, partially resolved position and
 deterministic continuation. Older formats and other module or content identities
@@ -149,7 +149,7 @@ The Versatile grip is not stored: it follows the other hand at attack time
 ([AUTO-1](SRD-DECISIONS.md#auto-1-2026-09-30-automatic-choices-with-logging)).
 See [equipment](PARTY.md#versatile-grip) for the seven supported Versatile weapons.
 
-Profiles (PC43) store the background ID and acquired feature/feat grants after the gear list. Each
+Profiles (PC44) store the background ID and acquired feature/feat grants after the gear list. Each
 records a stable rules ID, source ID, acquisition level and named choices.
 The rules validate entitlements, prerequisites, duplicates and ability choices
 before deriving combat effects. See [advancement](ADVANCEMENT.md).

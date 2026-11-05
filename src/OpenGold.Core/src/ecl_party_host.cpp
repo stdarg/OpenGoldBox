@@ -2,6 +2,7 @@
 #include "opengold/item_key.h"
 #include "opengold/coin_purse.h"
 #include <algorithm>
+#include <limits>
 #include <array>
 #include <cctype>
 #include <optional>
@@ -38,6 +39,18 @@ AdndGroup adnd_group(std::string_view class_id)
         return AdndGroup::thief;
     }
     return AdndGroup::fighter;
+}
+
+// How many of the member's levels are in classes of the group: a multiclass
+// character is each of its classes to the scripts (MULTI-1).
+int group_levels(const PartyMember &m, AdndGroup group)
+{
+    const auto &taken = m.character.sheet().level_classes;
+    return static_cast<int>(std::count_if(taken.begin(), taken.end(),
+                                          [&](const std::string &id)
+                                          {
+                                              return adnd_group(id) == group;
+                                          }));
 }
 
 // The Gold Box race code that scripts read at character byte 0x72 (coab
@@ -114,9 +127,18 @@ struct AdndCombatValues
 
 AdndCombatValues adnd_combat_values(const PartyMember &m)
 {
-    const auto &sheet = m.character.sheet();
     AdndCombatValues values;
-    values.thac0 = adnd_thac0(adnd_group(m.character.creation_data().character_class), sheet.level);
+    // The best THAC0 of the member's classes, each at its own levels.
+    values.thac0 = std::numeric_limits<int>::max();
+    for (const auto group :
+         {AdndGroup::fighter, AdndGroup::cleric, AdndGroup::thief, AdndGroup::magic_user})
+    {
+        if (const int levels = group_levels(m, group))
+        {
+            values.thac0 =
+                std::min(values.thac0, adnd_thac0(group, static_cast<unsigned>(levels)));
+        }
+    }
     int weapon_bonus = 0;
     for (const auto equipped : m.equipped)
     {
@@ -184,11 +206,10 @@ unsigned party_strength(const CampaignParty &party)
             // 5 per point of THAC0 below 21.
             const auto adnd = adnd_combat_values(m);
             const auto &sheet = m.character.sheet();
-            const auto &class_id = m.character.creation_data().character_class;
-            const auto group = adnd_group(class_id);
-            const int cleric_levels = class_id == "cleric" ? static_cast<int>(sheet.level) : 0;
-            const int magic_user_levels =
-                group == AdndGroup::magic_user ? static_cast<int>(sheet.level) : 0;
+            const auto &taken = sheet.level_classes;
+            const int cleric_levels =
+                static_cast<int>(std::count(taken.begin(), taken.end(), std::string("cleric")));
+            const int magic_user_levels = group_levels(m, AdndGroup::magic_user);
             result +=
                 static_cast<unsigned>(cleric_levels * 4 + m.vitals.hit_points +
                                       5 * std::max(0, -adnd.armor_class) +

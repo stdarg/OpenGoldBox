@@ -84,7 +84,9 @@ pp. 47–48 (Second Wind), 185 (Long Rest) and 187 (Short Rest).
   exhausted dice reject without changing vitals or RNG. Advancement adds the new
   level's die without replenishing earlier expenditure.
 
-Other class pools, multiclass die mixtures, exhaustion, maximum-HP reductions,
+A multiclass character's Hit Point Dice of different sizes are spent largest
+first ([MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)). Other class
+pools, exhaustion, maximum-HP reductions,
 species-specific rest features remain their named issues. An interrupted rest
 grants nothing and cannot be resumed. Unverified original probabilistic
 encounter profiles remain unsupported.
@@ -164,9 +166,9 @@ Unknown probabilistic profiles never silently substitute an uninterrupted rest.
 The **SRD13** vital continuation stores slots, Second Wind and death-save state,
 the remaining die count, and an **FX9** effects record.
 
-**OGCOMBAT 75** stores each actor's remaining dice; authored combat definitions
+**OGCOMBAT 76** stores each actor's remaining dice; authored combat definitions
 without a character recipe receive zero, without inventing monster Hit Dice
-mechanics. **PC43** recipes derive capacity from class and level.
+mechanics. **PC44** recipes derive capacity from class and level.
 
 The campaign save stores the next rest-session ID and optional completed
 Short Rest continuation after the party/town payload. It stores the

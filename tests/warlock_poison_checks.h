@@ -46,7 +46,7 @@ void access()
             (void)rules->character_profile(bad, {});
         });
     auto profile = rules->character_profile(h.sheet(), {}).data;
-    check(profile.starts_with("PC43 1 ") && profile.find(" poison_spray ") != profile.npos,
+    check(profile.starts_with("PC44 1 ") && profile.find(" poison_spray ") != profile.npos,
           "Warlock profile lists the chosen cantrip");
     profile.replace(0, 4, "PC26");
     rejects(

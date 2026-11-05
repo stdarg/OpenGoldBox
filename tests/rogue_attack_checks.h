@@ -306,8 +306,9 @@ void run()
             const auto end = saved.find('\n', start + 1);
             std::istringstream actor_fields(saved.substr(start + 1, end - start - 1));
             std::string field;
-            // Skip the fields before Sneak Attack, through the smite window.
-            for (unsigned n = 0; n < 58; ++n)
+            // Skip the fields before Sneak Attack, through the smite window;
+            // five class resources keep a count for each of the 12 classes.
+            for (unsigned n = 0; n < 58 + 5 * 11; ++n)
             {
                 actor_fields >> std::quoted(field);
             }

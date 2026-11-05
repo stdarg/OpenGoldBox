@@ -2038,7 +2038,7 @@ ExperienceOffer CampaignParty::experience_offer(MemberId id, TrainingHall hall) 
     }
     const auto active =
         std::find(state_.slots.begin(), state_.slots.end(), id) != state_.slots.end();
-    if (training_hall_for_class(m.character.creation_data().character_class) != hall)
+    if (!trains_any(hall, m.character.sheet().level_classes))
     {
         offer.denial = TrainingDenial::other_hall;
     }
@@ -2086,7 +2086,7 @@ TrainingDenial CampaignParty::skill_training_denial(MemberId id, TrainingHall ha
     const auto active =
         std::find(state_.slots.begin(), state_.slots.end(), id) != state_.slots.end();
     const auto &trained = m.character.hall_training();
-    if (training_hall_for_class(m.character.creation_data().character_class) != hall)
+    if (!trains_any(hall, m.character.sheet().level_classes))
     {
         return TrainingDenial::other_hall;
     }
@@ -2163,6 +2163,11 @@ unsigned CampaignParty::next_level(const PartyMember &m) const
     return hall && level > hall_level_limit ? 0 : level;
 }
 
+std::vector<rules::AdvancementOption> CampaignParty::advancement_classes(MemberId id) const
+{
+    return rules_->advancement_classes(member(id).character.sheet());
+}
+
 rules::AdvancementOptions
 CampaignParty::advancement_options(MemberId id, const rules::AdvancementChoice &choice) const
 {
@@ -2183,12 +2188,15 @@ PartyMember CampaignParty::preview_advancement(MemberId id,
     }
     auto next = member(id);
     const auto level = next.character.sheet().level;
-    if (rules_->default_advancement(next.character.sheet()).spell_learning &&
+    // The rules check a level taken in another class (MULTI-1) themselves.
+    const auto &starting = next.character.creation_data().character_class;
+    if ((choice.character_class.empty() || choice.character_class == starting) &&
+        rules_->default_advancement(next.character.sheet()).spell_learning &&
         !choice.spell_learning)
     {
         throw std::runtime_error("Independent spell learning choices are required");
     }
-    for (const auto &group : rules_->advancement_options(next.character.sheet()).training)
+    for (const auto &group : rules_->advancement_options(next.character.sheet(), choice).training)
     {
         const auto found = choice.training.find(group.id);
         if (found == choice.training.end() || found->second.size() != group.count)
@@ -2432,7 +2440,10 @@ bool tries_door(const PartyMember &m, DoorMethod method)
 {
     const bool conscious = !m.vitals.dead && m.vitals.hit_points > 0;
     return conscious &&
-           (method == DoorMethod::bash || m.character.creation_data().character_class == "rogue");
+           (method == DoorMethod::bash ||
+            // A Rogue's levels, starting or taken later (MULTI-1).
+            std::ranges::find(m.character.sheet().level_classes, "rogue") !=
+                m.character.sheet().level_classes.end());
 }
 
 bool carries_thieves_tools(const PartyMember &m)

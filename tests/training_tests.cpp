@@ -702,6 +702,7 @@ void grants_and_checks()
     {
         auto later = sheet;
         later.level = level;
+        later.level_classes.assign(static_cast<std::size_t>(level), "rogue");
         check(creation->ability_check(later, Ability::dexterity, "stealth").total == 3 + 2 * bonus,
               "Expertise uses the character-level proficiency table");
     }

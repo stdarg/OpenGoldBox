@@ -25,6 +25,12 @@ std::vector<rules::AdvancementOption> fighting_styles();
 // The class and subclass features gained on reaching `level`, from level 5 on
 // (SRD 5.2.1 class tables); choices such as feats are granted separately.
 std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, unsigned level);
+// The features a class gives on reaching `class_level`, gained at character
+// level `level` (MULTI-1): its level-one features, its level-two and -three
+// features and subclass, and higher_level_features. Choices are granted
+// separately, and so is a Paladin's or Ranger's level-two Fighting Style.
+std::vector<rules::FeatureGrant> class_level_grants(CharacterClass klass, unsigned class_level,
+                                                    unsigned level);
 // The Champion's Additional Fighting Style (level 7): its feat's source.
 inline constexpr std::string_view champion_style = "subclass:fighter:champion:fighting_style";
 // The Hunter's Defensive Tactics (Ranger level 7): its option's source.
@@ -39,6 +45,14 @@ inline constexpr std::string_view fiendish_resilience = "subclass:warlock:fiendi
 inline constexpr std::string_view elemental_fury = "class:druid:elemental_fury";
 bool has_grant(std::span<const rules::FeatureGrant> grants, std::string_view id);
 
+// The id prefix of the grant a class taken after the first gives
+// ("multiclass:rogue"): its partial training (MULTI-1).
+inline constexpr std::string_view multiclass_prefix = "multiclass:";
+
+// The most grants a character holds: a level-15 character's features, feats
+// and choices, with a multiclass character's extra level-one features.
+inline constexpr std::size_t max_grants = 96;
+
 struct GrantEffects
 {
     unsigned
@@ -46,8 +60,11 @@ struct GrantEffects
     rules::AbilityArray<int> abilities{};
 };
 
-GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, CharacterClass klass,
-                             std::string_view race, std::string_view background, unsigned level);
+// Checks a character's feature and feat grants against its class history,
+// species and background, and what its feats add.
+GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants,
+                             const ClassHistory &history, std::string_view race,
+                             std::string_view background);
 void write_grants(std::ostream &out, std::span<const rules::FeatureGrant> grants);
 std::vector<rules::FeatureGrant> read_grants(std::istream &in);
 } // namespace opengold::srd5::detail

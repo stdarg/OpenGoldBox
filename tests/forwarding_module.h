@@ -177,6 +177,12 @@ class ForwardingModule : public rules::RulesModule
         rules_->train_at_hall(sheet, grant);
     }
 
+    std::vector<rules::AdvancementOption>
+    advancement_classes(const rules::CharacterSheet &sheet) const override
+    {
+        return rules_->advancement_classes(sheet);
+    }
+
     rules::AdvancementOptions advancement_options(const rules::CharacterSheet &sheet) const override
     {
         return rules_->advancement_options(sheet);

@@ -158,6 +158,17 @@ struct SpellChoices
     bool operator==(const SpellChoices &) const = default;
 };
 
+// A multiclass character's preparation for one of its spellcasting classes
+// (MULTI-1). Its picks go into SpellChoices::prepared with `tag` after each
+// spell id: empty for the starting class, "@cleric" for a later Cleric.
+struct ClassPreparation
+{
+    std::string character_class, label, tag;
+    std::vector<CreationChoice> preparation;
+    std::vector<std::string> locked;
+    unsigned count{};
+};
+
 struct SpellChoiceOptions
 {
     std::vector<TrainingChoiceGroup> learning;
@@ -165,6 +176,9 @@ struct SpellChoiceOptions
     std::vector<std::string> locked_prepared;
     unsigned prepared_count{};
     bool may_prepare{}, may_replace{};
+    // A multiclass character's rest prepares for each spellcasting class
+    // here, and leaves `preparation` empty; may_prepare says whether any does.
+    std::vector<ClassPreparation> class_preparation;
 };
 
 // One known choice replaced on gaining a level (SRD 5.2.1): the replaced id
@@ -177,6 +191,9 @@ struct LevelSwap
 
 struct AdvancementChoice
 {
+    // The class the level is taken in, by stable ID; empty for the starting
+    // class. Another class is multiclassing (MULTI-1).
+    std::string character_class;
     std::string feat;
     AbilityArray<unsigned> abilities{}; // Ability Score Improvement points per ability
     std::vector<std::string> spells;
@@ -208,7 +225,10 @@ struct SwapOffer
 
 struct AdvancementOptions
 {
-    unsigned level{};
+    // The character's level after advancing, and the level in the class it
+    // advances in, which differ for a multiclass character (MULTI-1).
+    unsigned level{}, class_level{};
+    std::string character_class;
     std::vector<AdvancementOption> feats, spells, fighting_styles;
     std::vector<TrainingChoiceGroup> training;
     std::string description;
@@ -1092,6 +1112,12 @@ class RulesModule
     // Adds one hall-trained skill or Expertise at the sheet's level. Atomic.
     virtual void train_at_hall(CharacterSheet &, std::string_view grant) const = 0;
     [[nodiscard]] virtual AdvancementOptions advancement_options(const CharacterSheet &) const = 0;
+    // The classes the character's next level may be taken in (MULTI-1): the
+    // starting class, its other classes, then every other class. One whose
+    // prerequisites the character does not meet is unavailable, and its
+    // description names them. Empty at the level cap.
+    [[nodiscard]] virtual std::vector<AdvancementOption>
+    advancement_classes(const CharacterSheet &) const = 0;
     [[nodiscard]] virtual AdvancementOptions
     advancement_options(const CharacterSheet &sheet, const AdvancementChoice &) const = 0;
     [[nodiscard]] virtual AdvancementChoice default_advancement(const CharacterSheet &) const = 0;

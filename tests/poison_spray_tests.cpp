@@ -256,7 +256,7 @@ void access()
               "Advancement retains chosen cantrips, source and correct entitlement");
     }
     auto profile = rules->character_profile(hero().sheet(), {}).data;
-    check(profile.starts_with("PC43 1 ") && profile.find(" poison_spray ") != profile.npos,
+    check(profile.starts_with("PC44 1 ") && profile.find(" poison_spray ") != profile.npos,
           "Explicit cantrip choice belongs to the profile recipe");
     profile.replace(0, 4, "PC10");
     rejects(
@@ -500,7 +500,7 @@ void campaign()
             check(p.member(id).vitals == old && p.profile(id).weapon_hands == 2,
                   "Cantrip handoff retains wounds, pools and the two-handed staff");
             const auto saved = encode_campaign(p, nullptr, "poison");
-            check(saved.starts_with("OPENGOLD-CAMPAIGN 44\n"),
+            check(saved.starts_with("OPENGOLD-CAMPAIGN 45\n"),
                   "Every campaign uses the current save format");
             CampaignParty restored(module());
             restored.restore(decode_campaign(saved, *creation, *rules, "poison", nullptr).party);

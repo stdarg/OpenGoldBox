@@ -239,8 +239,9 @@ class CreatorRules final : public CharacterRules
     AbilityCheckModifier ability_check(const CharacterSheet &sheet, Ability ability,
                                        std::string_view skill) const override
     {
-        return detail::ability_check(sheet.grants, detail::class_of(sheet), sheet.race,
-                                     detail::background_id(sheet.background), sheet.level,
+        return detail::ability_check(sheet.grants,
+                                     detail::ClassHistory(detail::level_class_ids(sheet)),
+                                     sheet.race, detail::background_id(sheet.background),
                                      sheet.scores, ability, skill);
     }
 };
@@ -467,6 +468,7 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
     s.gender = label(CreationField::gender, d.gender);
     s.character_class = label(CreationField::character_class, d.character_class);
     const auto klass = detail::class_from_id(d.character_class);
+    s.level_classes = {std::string(detail::class_id(klass))};
     s.alignment = label(CreationField::alignment, d.alignment);
     s.background = label(CreationField::background, d.background);
     s.grants = detail::starting_grants(klass, d.race, d.background);
@@ -618,7 +620,8 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
                        std::to_string(std::abs(s.modifiers[Ability::constitution])) +
                        " (Constitution)" + (racial_hp ? " + 1 (Dwarven Toughness)" : "") + " = " +
                        std::to_string(s.hit_points) + " HP";
-    s.training = detail::training_profile(s.grants, klass, d.race, d.background, s.level, s.scores);
+    s.training = detail::training_profile(s.grants, detail::ClassHistory(s.level_classes), d.race,
+                                          d.background, s.scores);
     auto spells = detail::starting_spell_grants(klass, d.cantrips);
     s.grants.insert(s.grants.end(), std::make_move_iterator(spells.begin()),
                     std::make_move_iterator(spells.end()));

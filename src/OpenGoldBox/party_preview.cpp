@@ -1,4 +1,5 @@
 #include "godot_text.h"
+#include "class_text.h"
 #include "inventory_label.h"
 #include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/check_box.hpp>
@@ -421,7 +422,7 @@ void CharacterCreationView::refresh_party()
                            (slot == state.slots.end() ? i18n::text(" (Reserve)") : String());
         list->add_item(title,
                        portraits_->texture(m.character.appearance(), m.character.creation_data()));
-        members.push_back(PackedStringArray({title, i18n::text(sheet.character_class),
+        members.push_back(PackedStringArray({title, i18n::class_summary(sheet),
                                              i18n::text(sheet.race), i18n::text(sheet.gender)}));
         if (leader)
         {

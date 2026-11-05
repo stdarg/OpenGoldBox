@@ -1,4 +1,5 @@
 #include "godot_text.h"
+#include "class_text.h"
 #include "character_pool_dialog.h"
 #include "character_sheet_text.h"
 #include "godot_images.h"
@@ -89,7 +90,7 @@ void CharacterPoolDialog::open()
     list->clear();
     for (const auto &character : pool_)
     {
-        list->add_item(i18n::text(character.sheet().character_class) + " / " +
+        list->add_item(i18n::class_summary(character.sheet()) + " / " +
                        gs(character.sheet().name));
     }
     list->select(pool_index_);

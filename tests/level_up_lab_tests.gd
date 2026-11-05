@@ -189,6 +189,53 @@ func run() -> void:
     check((up.get_node("SwapPage") as Control).visible and new_cantrip in known and not old_cantrip in known,
           "The swapped cantrip is known: " + old_cantrip + " -> " + new_cantrip + " in " + str(known))
     (up.get_node("Cancel") as Button).pressed.emit(); await settle()
+    # Multiclassing (MULTI-1): a Fighter 3 takes Rogue, then Wizard, on the
+    # Class row, with each class's level-one choices.
+    for entry in ["rogue", "wizard"]:
+        klass.select(fighter); race.select(0); level.select(2)
+        create.pressed.emit(); await settle()
+        open.pressed.emit(); await settle()
+        var multi: Window = lab.get_node("LevelUp")
+        var row: OptionButton = multi.get_node("Class")
+        check(row.visible and row.get_item_text(0) == "Fighter: level 4",
+              "The Class row starts on the Fighter's next level: " + row.get_item_text(0))
+        var at := -1
+        for n in range(row.item_count):
+            if row.get_item_text(n).begins_with(entry.capitalize() + ":"): at = n
+        check(at > 0 and not row.is_item_disabled(at), entry + " is offered with scores of 15")
+        row.select(at); row.item_selected.emit(at); await settle()
+        check((multi.get_node("Title") as Label).text.contains("Fighter 3, " + entry.capitalize() + " 1"),
+              "The title names the classes the level makes: " + (multi.get_node("Title") as Label).text)
+        var forward: Button = multi.get_node("Confirm")
+        var dropdown: OptionButton = multi.get_node("AdvancementTraining")
+        if dropdown.visible and dropdown.item_count > 1:
+            dropdown.select(1); dropdown.item_selected.emit(1); await settle()
+        for page in range(8):
+            if not multi.visible: break
+            # A spellbook's spells appear among the prepared ones as they are
+            # learned, so the page is looked at again until nothing changes.
+            for rows_path in ["SkilledPage/Rows", "SpellChoicesPage/Rows"]:
+                var rows_node := multi.get_node(rows_path) as Control
+                for pass_number in range(40):
+                    if not rows_node.is_visible_in_tree() or not forward.disabled: break
+                    var pressed_one := false
+                    for child in rows_node.find_children("*", "CheckBox", true, false):
+                        var box := child as CheckBox
+                        if box.is_visible_in_tree() and not box.disabled and not box.button_pressed:
+                            box.button_pressed = true
+                            pressed_one = true
+                            await settle()
+                            break
+                    if not pressed_one: break
+            if forward.disabled: break
+            forward.pressed.emit(); await settle()
+        check(not multi.visible and (lab.get_node("Summary") as Label).text.contains(
+                  "Fighter 3 / " + entry.capitalize() + " 1"),
+              "The Fighter becomes Fighter 3 / " + entry.capitalize() + " 1: " +
+              (lab.get_node("Summary") as Label).text + " " + (multi.get_node("Error") as Label).text)
+        var after := lab.get_node_or_null("CharacterSheet") as Window
+        if after and after.visible: (after.get_node("Close") as Button).pressed.emit(); await settle()
+        if multi.visible: (multi.get_node("Cancel") as Button).pressed.emit(); await settle()
     if fighter >= 0:
         klass.select(fighter); level.select(0)
         create.pressed.emit()
