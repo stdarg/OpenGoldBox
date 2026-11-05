@@ -244,7 +244,7 @@ Resurrection and its Raise Dead list names those it cannot help
 (`opengold_expedition_tests`).
 
 `opengold_godot_slums_events` does the same for the Slums (ECL2, area 20)
-with a level-4 party (`tests/slums_events_tests.gd`). It loads a save from one
+with a level-4 party (`tests/area_events_tests.gd`). It loads a save from one
 step before each event square, one for each facing, then steps in and takes
 every branch, loading the save again for each: every entry of a choice list,
 the right word and a wrong one for a typed answer, 0 and 100 for a number. A

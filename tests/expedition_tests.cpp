@@ -43,13 +43,13 @@ namespace
 {
 // A Godot check runs this binary only for the save fixtures its environment
 // names; once each is written, the rest of the expedition need not run.
-constexpr std::array<const char *, 11> fixture_variables{
-    "OPENGOLD_SHOP_FIXTURE",        "OPENGOLD_HALL_FIXTURE",
-    "OPENGOLD_REST_CHOICE_FIXTURE", "OPENGOLD_OHLO_FIXTURE",
-    "OPENGOLD_SLUMS_FIXTURES",      "OPENGOLD_KUTO_WELL_FIXTURE",
-    "OPENGOLD_KUTO_NORRIS_FIXTURE", "OPENGOLD_GATE_FIXTURE",
-    "OPENGOLD_WHOLE_MAP_FIXTURE",   "OPENGOLD_TOWN_SERVICE_FIXTURES",
-    "OPENGOLD_SLUMS_EVENT_FIXTURES"};
+constexpr std::array<const char *, 12> fixture_variables{
+    "OPENGOLD_SHOP_FIXTURE",         "OPENGOLD_HALL_FIXTURE",
+    "OPENGOLD_REST_CHOICE_FIXTURE",  "OPENGOLD_OHLO_FIXTURE",
+    "OPENGOLD_SLUMS_FIXTURES",       "OPENGOLD_KUTO_WELL_FIXTURE",
+    "OPENGOLD_KUTO_NORRIS_FIXTURE",  "OPENGOLD_GATE_FIXTURE",
+    "OPENGOLD_WHOLE_MAP_FIXTURE",    "OPENGOLD_TOWN_SERVICE_FIXTURES",
+    "OPENGOLD_SLUMS_EVENT_FIXTURES", "OPENGOLD_AREA_EVENT_FIXTURES"};
 std::set<std::string, std::less<>> written_fixtures;
 
 bool requested_fixtures_written()
@@ -195,6 +195,57 @@ class RouteRecorder
 };
 
 RouteRecorder route;
+
+// A temporary folder of this run's own: the suite runs this program for its
+// own checks and for the Godot checks' fixtures at once, and the two must not
+// write the same saves.
+std::filesystem::path scratch_folder(std::string_view name)
+{
+    static const auto run =
+        std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
+    return std::filesystem::temp_directory_path() / (std::string(name) + "-" + run);
+}
+
+// With OPENGOLD_AREA_EVENT_FIXTURES, the route saves the party the first time
+// it stands idle on each map ("area-<map>.ogs" in its "arrivals" folder);
+// write_area_event_fixtures then walks from there to every event of the map.
+class ArrivalSaves
+{
+  public:
+    void start(std::filesystem::path folder, std::string assets)
+    {
+        std::filesystem::create_directories(folder);
+        folder_ = std::move(folder);
+        assets_ = std::move(assets);
+    }
+
+    void note(const por::RolfTourSession &town, const CampaignParty &party)
+    {
+        const auto &s = town.snapshot();
+        if (folder_.empty() || !s.tour_finished || s.overland || !town.can_leave() ||
+            party.in_combat() || saves_.contains(s.area_id))
+        {
+            return;
+        }
+        const auto path = folder_ / ("area-" + std::to_string(s.area_id) + ".ogs");
+        write_campaign_file(path, encode_campaign(party, &town, assets_));
+        saves_.emplace(s.area_id, path);
+    }
+
+    // Each map's arrival save, by map; no more are saved after.
+    [[nodiscard]] std::map<unsigned, std::filesystem::path> finish()
+    {
+        folder_.clear();
+        return saves_;
+    }
+
+  private:
+    std::filesystem::path folder_;
+    std::string assets_;
+    std::map<unsigned, std::filesystem::path> saves_;
+};
+
+ArrivalSaves arrivals;
 
 std::string route_place(const por::RolfTourSession &town)
 {
@@ -862,6 +913,25 @@ void random_treasure_tables()
           "A generated scroll records its original spell codes");
 }
 
+// A script's scan of the party may stop on slot 8, which no member fills (the
+// Cadorna Textile House's events do); a save made then loads.
+void scanned_slot_save_tests()
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    (void)party->add_pc(character("Arden"));
+    auto resources = std::make_shared<por::PhlanResources>();
+    const auto script = program({10, 0, 8, 0});
+    resources->programs.emplace(0, script);
+    por::RolfTourSession town({}, script, {}, 0x9914, {}, resources);
+    town.campaign_party(party);
+    settle_synthetic(town);
+    check(look(town), "The event that scans slot 8 runs");
+    const auto rules = module();
+    const auto bytes = encode_campaign(*party, &town, "scan");
+    auto loaded = decode_campaign(bytes, *srd5::character_rules(), *rules, "scan", &town);
+    check(loaded.town.has_value(), "A save made after a script scanned slot 8 loads");
+}
+
 // A full party purse defers the treasure without loss; a reload keeps it pending.
 void deferred_treasure_tests()
 {
@@ -1348,6 +1418,7 @@ void settle(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &pa
         {
         case por::TourPhase::completed:
         case por::TourPhase::shopping:
+            arrivals.note(town, *party);
             check(town.script_diagnostics().empty(),
                   "The route uses only supported events" +
                       (town.script_diagnostics().empty()
@@ -3188,7 +3259,7 @@ void play_sokal_keep(Expedition &trip, const std::filesystem::path &directory)
     walk_to(town, party, 15, 1);
     check(town.snapshot().area_id == 21 && town.snapshot().script_id == 21,
           "The harbor master's boat takes the party to Sokal Keep");
-    const auto folder = std::filesystem::temp_directory_path() / "opengold-sokal";
+    const auto folder = scratch_folder("opengold-sokal");
     std::filesystem::create_directories(folder);
     const auto keep = folder / "sokal-keep.ogs";
     write_campaign_file(keep, encode_campaign(*party, &town, campaign_asset_identity(directory)));
@@ -3473,7 +3544,7 @@ void central_wilderness(const std::filesystem::path &directory)
     const auto view = town.observe_view();
     check(view.width == 120 && view.height == 120,
           "The wilderness view shows the 5 x 5 squares around the party");
-    const auto folder = std::filesystem::temp_directory_path() / "opengold-wilderness";
+    const auto folder = scratch_folder("opengold-wilderness");
     std::filesystem::create_directories(folder);
     const auto save = folder / "central-wilderness.ogs";
     write_campaign_file(save, encode_campaign(*party, &town, campaign_asset_identity(directory)));
@@ -3545,7 +3616,7 @@ void play_kovel_mansion(Expedition &trip, const std::filesystem::path &directory
     check(town.snapshot().area_id == 14 && !town.snapshot().overland &&
               town.snapshot().pose.x == 15 && town.snapshot().pose.y == 4,
           "The bay's boat and the city's eastern edge lead north into Kovel Mansion");
-    const auto folder = std::filesystem::temp_directory_path() / "opengold-kovel";
+    const auto folder = scratch_folder("opengold-kovel");
     std::filesystem::create_directories(folder);
     const auto save = folder / "kovel-mansion.ogs";
     write_campaign_file(save, encode_campaign(*party, &town, campaign_asset_identity(directory)));
@@ -3728,7 +3799,7 @@ void play_temple_of_bane(Expedition &trip, const std::filesystem::path &director
     check(town.snapshot().area_id == 31 && town.snapshot().pose.x == 15 &&
               town.snapshot().pose.y == 4,
           "The city's eastern edge leads south into the street before the Temple of Bane");
-    const auto folder = std::filesystem::temp_directory_path() / "opengold-temple";
+    const auto folder = scratch_folder("opengold-temple");
     std::filesystem::create_directories(folder);
     const auto save = folder / "temple-of-bane.ogs";
     write_campaign_file(save, encode_campaign(*party, &town, campaign_asset_identity(directory)));
@@ -6924,7 +6995,7 @@ void exported_monsters(const std::filesystem::path &directory)
 // for the window play-through (tests/playtest_campaign.gd).
 void record_route(const std::filesystem::path &directory, const std::filesystem::path &out)
 {
-    const auto folder = std::filesystem::temp_directory_path() / "opengold-route";
+    const auto folder = scratch_folder("opengold-route");
     std::filesystem::create_directories(folder);
     const auto assets = campaign_asset_identity(directory);
     const auto save = folder / "expedition.ogs";
@@ -7081,7 +7152,8 @@ void encounter_chances(const std::filesystem::path &directory)
 bool walk_to_door(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party,
                   unsigned x, unsigned y, const std::string &kind, const Answer &answer = peaceful,
                   bool bash_doors = false, bool camp_when_hurt = false,
-                  std::optional<unsigned> only_facing = std::nullopt)
+                  std::optional<unsigned> only_facing = std::nullopt,
+                  std::string *failures = nullptr)
 {
     constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
     std::string tried;
@@ -7122,6 +7194,10 @@ bool walk_to_door(por::RolfTourSession &town, const std::shared_ptr<CampaignPart
     if (!only_facing)
     {
         std::cout << "No street door: " << kind << " (" << x << "," << y << ");" << tried << '\n';
+    }
+    if (failures)
+    {
+        *failures += tried;
     }
     return false;
 }
@@ -7267,7 +7343,7 @@ void city_watch_punishment(Expedition &trip)
           "Tempus sends its clerics and its fighters");
 }
 
-// The Slums events check (tests/slums_events_tests.gd) loads a level-4 party
+// The Slums events check (tests/area_events_tests.gd) loads a level-4 party
 // one step from a door of each of the Slums' events, facing it, as
 // "slums-<event>-<x>-<y>.ogs". It enters by the west gate and walks there
 // as the route does, bashing locked doors and camping when hurt.
@@ -7364,6 +7440,147 @@ void write_slums_event_fixtures(const std::filesystem::path &directory,
             }
         }
     }
+}
+
+// Every event of every map but New Phlan's and the Slums' (which have their
+// own checks), for tests/area_events_tests.gd: from the map's arrival save,
+// the party walks to each square of each event, from each side it can step
+// in from ("area<map>-<event>-<x>-<y>-<facing>.ogs", 0 north to 3 west).
+// OPENGOLD_AREA_EVENT_SAMPLE=N writes every Nth square's, starting at
+// OPENGOLD_AREA_EVENT_OFFSET (0 by default), so that N processes with offsets
+// 0 to N-1 write them all between them. A square the party cannot
+// reach from the arrival, or that an event on the way carries it off the map
+// from, is reported and left out.
+void write_area_event_fixtures(const std::filesystem::path &directory,
+                               const std::filesystem::path &folder, const std::string &assets)
+{
+    std::filesystem::create_directories(folder);
+    const Answer bash = [](const por::TourSnapshot &s) -> std::size_t
+    {
+        for (std::size_t n = 0; n < s.choices.size(); ++n)
+        {
+            if (s.choices[n] == "Bash")
+            {
+                return n;
+            }
+        }
+        return peaceful(s);
+    };
+    const auto *sampled = std::getenv("OPENGOLD_AREA_EVENT_SAMPLE");
+    const unsigned sample = sampled ? std::max(1, std::atoi(sampled)) : 1;
+    const auto *offset_set = std::getenv("OPENGOLD_AREA_EVENT_OFFSET");
+    const unsigned offset =
+        offset_set ? static_cast<unsigned>(std::max(0, std::atoi(offset_set))) : 0;
+    // OPENGOLD_AREA_EVENT_MAPS ("15,5") writes only those maps'.
+    const std::string only =
+        std::getenv("OPENGOLD_AREA_EVENT_MAPS") ? std::getenv("OPENGOLD_AREA_EVENT_MAPS") : "";
+    unsigned candidate = 0, written = 0, unreachable = 0, placed = 0;
+    const auto saves = arrivals.finish();
+    for (const auto &[map, save] : saves)
+    {
+        if (map == 0 || map == 20 ||
+            (!only.empty() &&
+             ("," + only + ",").find("," + std::to_string(map) + ",") == std::string::npos))
+        {
+            continue;
+        }
+        std::map<unsigned, std::vector<std::pair<unsigned, unsigned>>> events;
+        {
+            const auto probe = load_expedition(save, directory);
+            for (unsigned y = 0; y < 16; ++y)
+            {
+                for (unsigned x = 0; x < 16; ++x)
+                {
+                    if (const auto event = probe.town.map().at(x, y).event_number())
+                    {
+                        events[event].push_back({x, y});
+                    }
+                }
+            }
+        }
+        for (const auto &[event, cells] : events)
+        {
+            for (const auto &[x, y] : cells)
+            {
+                if (candidate++ % sample != offset % sample)
+                {
+                    continue;
+                }
+                bool reached = false;
+                const auto placed_before = placed;
+                std::string failures;
+                for (unsigned facing = 0; facing < 4; ++facing)
+                {
+                    auto trip = load_expedition(save, directory);
+                    const auto name = "area" + std::to_string(map) + "-" + std::to_string(event) +
+                                      "-" + std::to_string(x) + "-" + std::to_string(y) + "-" +
+                                      std::to_string(facing);
+                    try
+                    {
+                        if (!walk_to_door(trip.town, trip.party, x, y, name, bash, true, true,
+                                          facing, &failures))
+                        {
+                            continue;
+                        }
+                        if (trip.town.snapshot().area_id != map)
+                        {
+                            failures += " (side " + std::to_string(facing) + "): carried to map " +
+                                        std::to_string(trip.town.snapshot().area_id);
+                            continue;
+                        }
+                    }
+                    catch (const std::exception &e)
+                    {
+                        std::cout << "Area event walk failed: " << name << ": " << e.what() << '\n';
+                        continue;
+                    }
+                    write_campaign_file(folder / (name + ".ogs"),
+                                        encode_campaign(*trip.party, &trip.town, assets));
+                    reached = true;
+                    ++written;
+                }
+                // No walk gets there: the party is stood on each open side
+                // instead ("...-placed.ogs"), as a save made there would be.
+                constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
+                for (unsigned facing = 0; facing < 4 && !reached; ++facing)
+                {
+                    const int nx = int(x) - dx[facing], ny = int(y) - dy[facing];
+                    if (nx < 0 || ny < 0 || nx >= 16 || ny >= 16)
+                    {
+                        continue;
+                    }
+                    auto trip = load_expedition(save, directory);
+                    const auto &from = trip.town.map().at(unsigned(nx), unsigned(ny));
+                    const bool locked = from.walls[facing] && from.doors[facing] == 2;
+                    if (!locked &&
+                        (from.doors[facing] > 1 || (from.walls[facing] && !from.doors[facing])))
+                    {
+                        continue;
+                    }
+                    opengold::test::TourAccess::place(
+                        trip.town,
+                        {unsigned(nx), unsigned(ny), static_cast<por::MapDirection>(facing)});
+                    write_campaign_file(folder / ("area" + std::to_string(map) + "-" +
+                                                  std::to_string(event) + "-" + std::to_string(x) +
+                                                  "-" + std::to_string(y) + "-" +
+                                                  std::to_string(facing) + "-placed.ogs"),
+                                        encode_campaign(*trip.party, &trip.town, assets));
+                    ++written;
+                    ++placed;
+                }
+                if (!reached && placed_before == placed)
+                {
+                    ++unreachable;
+                    std::cout << "Area event square not reached: map " << map << " event " << event
+                              << " (" << x << "," << y << ")" << failures.substr(0, 300) << "\n";
+                }
+            }
+        }
+    }
+    std::cout << "Area event fixtures: " << written << " saves from the "
+              << (candidate + sample - 1 - offset % sample) / sample << " of " << candidate
+              << " event squares this run takes, on " << saves.size() << " arrival maps; " << placed
+              << " placed by no walk; " << unreachable << " squares not reached\n";
 }
 
 // The town services check (tests/town_services_tests.gd) loads a party one
@@ -7508,6 +7725,11 @@ void installed_first_expedition(const std::filesystem::path &executable,
         std::filesystem::temp_directory_path() / ("opengold-expedition-" + std::to_string(stamp));
     std::filesystem::create_directories(folder);
     const auto save = folder / "expedition.ogs";
+    const auto *area_events = std::getenv("OPENGOLD_AREA_EVENT_FIXTURES");
+    if (area_events)
+    {
+        arrivals.start(std::filesystem::path(area_events) / "arrivals", assets);
+    }
 
     if (const auto *fixtures = std::getenv("OPENGOLD_SLUMS_EVENT_FIXTURES"))
     {
@@ -7691,6 +7913,15 @@ void installed_first_expedition(const std::filesystem::path &executable,
         teleport_everywhere(podol, directory);
         std::cout << "Wilderness fights checked for facing and distance: " << wilderness_fights
                   << '\n';
+        if (area_events)
+        {
+            write_area_event_fixtures(directory, area_events, assets);
+            written_fixtures.insert("OPENGOLD_AREA_EVENT_FIXTURES");
+            if (requested_fixtures_written())
+            {
+                return;
+            }
+        }
     }
 
     const auto program = "\"" + executable.string() + "\"";
@@ -7921,6 +8152,7 @@ int main(int argc, char **argv)
         random_treasure_tables();
         script_treasure_tests();
         deferred_treasure_tests();
+        scanned_slot_save_tests();
         locked_door_tests();
         if (directory && *directory)
         {

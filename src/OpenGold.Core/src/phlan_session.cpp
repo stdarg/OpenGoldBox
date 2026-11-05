@@ -272,55 +272,58 @@ struct ScriptDamage
 
 std::optional<ScriptDamage> listed_damage(unsigned script, std::uint16_t address)
 {
-    constexpr std::array types{ScriptDamage{2, 0xADB1, "bludgeoning"}, // the Cadorna well's fall
-                               ScriptDamage{15, 0x9D31, "acid"},       // Mendor's green slime
-                               // Stojanow Gate (GATE-1).
-                               ScriptDamage{9, 0xA155, "bludgeoning", "rock"}, // from the gate
-                               ScriptDamage{9, 0xA94E, "bludgeoning"},         // a bugbear's punch
-                               // The western wilderness's sites (SITES-1).
-                               ScriptDamage{19, 0xA0DF, "fire"}, // Diogenes's fireball
-                               ScriptDamage{28, 0xA4B1, "slashing", "sword stroke"},
-                               // Valjevo Castle (CASTLE-1).
-                               ScriptDamage{3, 0xA597, "bludgeoning", "bucket of sand"},
-                               ScriptDamage{3, 0xA9C0, "bludgeoning", "boulder"},
-                               ScriptDamage{3, 0xAB76, "bludgeoning", "falling stone"},
-                               ScriptDamage{3, 0xAF93, "bludgeoning"}, // drowning
-                               ScriptDamage{4, 0xAAD4, "fire", "scalding pot"},
-                               ScriptDamage{5, 0x9BC3, "poison"}, // a poisonous thorn
-                               ScriptDamage{5, 0xA190, "bludgeoning", "boulder"},
-                               ScriptDamage{7, 0x9D4F, "bludgeoning"}, // the trap door's fall
-                               // Valjevo's Temple of Bane (TOWN-1).
-                               ScriptDamage{6, 0xA579, "necrotic"}, // Bane's blessing
-                               ScriptDamage{6, 0xA62F, "fire"},     // the priest's fireball
-                               ScriptDamage{6, 0xA63A, "fire"},
-                               ScriptDamage{6, 0xA809, "necrotic"}, // the evil gaze
-                               // Valhingen Graveyard's towers (GRAVE-1).
-                               ScriptDamage{10, 0xA53E, "poison"},    // noxious fumes
-                               ScriptDamage{10, 0xAA5F, "lightning"}, // a sharp crack
-                               // The kobold caves' traps and rocks (KOBOLD-1).
-                               ScriptDamage{13, 0x9CF3, "bludgeoning"}, // the roof
-                               ScriptDamage{13, 0x9E73, "piercing"},    // spikes
-                               ScriptDamage{13, 0xA1A4, "piercing", "ballista bolt"},
-                               ScriptDamage{13, 0xB48A, "bludgeoning", "rock"},
-                               // Kovel Mansion's traps and thieves (KOVEL-1).
-                               ScriptDamage{14, 0x9A98, "slashing"}, // a scything blade
-                               ScriptDamage{14, 0x9ADD, "poison"},   // poison gas
-                               ScriptDamage{14, 0x9B2A, "slashing"}, // a net of blades
-                               ScriptDamage{14, 0x9C64, "piercing"}, // a backstab
-                               ScriptDamage{14, 0xA239, "piercing"}, // a needle
-                               ScriptDamage{14, 0xA450, "poison"},   // yellow gas
-                               ScriptDamage{14, 0xA5F7, "poison"},   // a poisoned needle
-                               ScriptDamage{14, 0xA708, "piercing"}, // a dart
-                               ScriptDamage{14, 0xA7EA, "poison"},   // noxious powder
-                               ScriptDamage{14, 0xA8D4, "piercing"}, // a shower of darts
-                               ScriptDamage{14, 0xB566, "bludgeoning", "sling bullet"},
-                               // The lizard men's javelins (LIZARD-1).
-                               ScriptDamage{16, 0xA837, "piercing", "javelin"},
-                               ScriptDamage{16, 0xAAB8, "piercing", "javelin"},
-                               ScriptDamage{16, 0xAD0C, "piercing", "javelin"},
-                               ScriptDamage{16, 0xAD17, "piercing", "javelin"},
-                               // The Pyramid's pumping equipment blowing up.
-                               ScriptDamage{23, 0xA8E0, "bludgeoning"}};
+    constexpr std::array types{
+        ScriptDamage{2, 0xADB1, "bludgeoning"}, // the Cadorna well's fall
+        ScriptDamage{15, 0x9D31, "acid"},       // Mendor's green slime
+        // Stojanow Gate (GATE-1).
+        ScriptDamage{9, 0xA155, "bludgeoning", "rock"}, // from the gate
+        ScriptDamage{9, 0xA94E, "bludgeoning"},         // a bugbear's punch
+        // The western wilderness's sites (SITES-1).
+        ScriptDamage{19, 0xA0DF, "fire"}, // Diogenes's fireball
+        ScriptDamage{28, 0xA4B1, "slashing", "sword stroke"},
+        // Valjevo Castle (CASTLE-1).
+        ScriptDamage{3, 0xA597, "bludgeoning", "bucket of sand"},
+        ScriptDamage{3, 0xA9C0, "bludgeoning", "boulder"},
+        ScriptDamage{3, 0xAB76, "bludgeoning", "falling stone"},
+        ScriptDamage{3, 0xAF93, "bludgeoning"}, // drowning
+        ScriptDamage{4, 0xAAD4, "fire", "scalding pot"},
+        ScriptDamage{5, 0x9BC3, "poison"}, // a poisonous thorn
+        ScriptDamage{5, 0xA190, "bludgeoning", "boulder"},
+        ScriptDamage{7, 0x9D4F, "bludgeoning"}, // the trap door's fall
+        // Valjevo's Temple of Bane (TOWN-1).
+        ScriptDamage{6, 0xA579, "necrotic"}, // Bane's blessing
+        ScriptDamage{6, 0xA62F, "fire"},     // the priest's fireball
+        ScriptDamage{6, 0xA63A, "fire"}, ScriptDamage{6, 0xA809, "necrotic"}, // the evil gaze
+        // Valhingen Graveyard's towers (GRAVE-1).
+        ScriptDamage{10, 0xA53E, "poison"},    // noxious fumes
+        ScriptDamage{10, 0xAA5F, "lightning"}, // a sharp crack
+        // The kobold caves' traps and rocks (KOBOLD-1).
+        ScriptDamage{13, 0x9CF3, "bludgeoning"}, // the roof
+        ScriptDamage{13, 0x9E73, "piercing"},    // spikes
+        ScriptDamage{13, 0xA1A4, "piercing", "ballista bolt"},
+        ScriptDamage{13, 0xB48A, "bludgeoning", "rock"},
+        // Kovel Mansion's traps and thieves (KOVEL-1).
+        ScriptDamage{14, 0x9A98, "slashing"}, // a scything blade
+        ScriptDamage{14, 0x9ADD, "poison"},   // poison gas
+        ScriptDamage{14, 0x9B2A, "slashing"}, // a net of blades
+        ScriptDamage{14, 0x9C64, "piercing"}, // a backstab
+        ScriptDamage{14, 0xA239, "piercing"}, // a needle
+        ScriptDamage{14, 0xA450, "poison"},   // yellow gas
+        ScriptDamage{14, 0xA5F7, "poison"},   // a poisoned needle
+        ScriptDamage{14, 0xA708, "piercing"}, // a dart
+        ScriptDamage{14, 0xA7EA, "poison"},   // noxious powder
+        ScriptDamage{14, 0xA8D4, "piercing"}, // a shower of darts
+        ScriptDamage{14, 0xB566, "bludgeoning", "sling bullet"},
+        // The lizard men's javelins (LIZARD-1).
+        ScriptDamage{16, 0xA837, "piercing", "javelin"},
+        ScriptDamage{16, 0xAAB8, "piercing", "javelin"},
+        ScriptDamage{16, 0xAD0C, "piercing", "javelin"},
+        ScriptDamage{16, 0xAD17, "piercing", "javelin"},
+        // The Pyramid's pumping equipment blowing up, the
+        // password door's clawed monster, and the
+        // enraged slaves' barrels of the black contaminant.
+        ScriptDamage{23, 0xA8E0, "bludgeoning"}, ScriptDamage{23, 0xA559, "slashing"},
+        ScriptDamage{23, 0xAB0A, "poison"}, ScriptDamage{23, 0xAB15, "poison"}};
     for (const auto &known : types)
     {
         if (known.script == script && known.address == address)

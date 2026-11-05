@@ -84,7 +84,11 @@ Missing before this audit, now done:
 4. **Cells the host does not model:** the tile colours the valley's healing
    patches are accepted and dropped.
 5. **The explosion's harm** (since 2026-10-25, met by the whole-map run): the
-   fountain's equipment blowing up deals bludgeoning damage.
+   fountain's equipment blowing up deals bludgeoning damage. The every-map
+   event check (2026-11-05) met the other two: the password door's monster
+   tears the party apart with its claws (slashing, `0xA559`), and the enraged
+   pumping-room slaves throw barrels of the black contaminant (poison,
+   `0xAB0A` and `0xAB15`).
 
 The step itself was checked against coab: the original stops a step only on
 the wall on the party's side of the edge, as the engine has since Stojanow

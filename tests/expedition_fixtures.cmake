@@ -16,6 +16,10 @@ set(ENV{OPENGOLD_SLUMS_FIXTURES} "${FIXTURES}/slums")
 set(ENV{OPENGOLD_TOWN_SERVICE_FIXTURES} "${FIXTURES}/town")
 set(ENV{OPENGOLD_SLUMS_EVENT_FIXTURES} "${FIXTURES}/slums-events")
 set(ENV{OPENGOLD_SLUMS_EVENT_SAMPLE} 8)
+# Every other map's events: the whole route runs to save each map's arrival,
+# then a sample of the event squares is written.
+set(ENV{OPENGOLD_AREA_EVENT_FIXTURES} "${FIXTURES}/area-events")
+set(ENV{OPENGOLD_AREA_EVENT_SAMPLE} 240)
 execute_process(COMMAND "${EXPEDITION}" RESULT_VARIABLE result)
 foreach(fixture shop.ogs hall.ogs west-gate.ogs ohlo-door.ogs slums/hobgoblins.ogs slums/orcs.ogs slums/trolls.ogs
         town/shop-9-13.ogs town/temple-11-3-sick.ogs town/inn-4-12-wounded.ogs
@@ -24,3 +28,7 @@ foreach(fixture shop.ogs hall.ogs west-gate.ogs ohlo-door.ogs slums/hobgoblins.o
         message(FATAL_ERROR "The expedition route did not write ${fixture} (${result})")
     endif()
 endforeach()
+file(GLOB area_event_saves "${FIXTURES}/area-events/area*.ogs")
+if(NOT area_event_saves)
+    message(FATAL_ERROR "The expedition route wrote no saves of other maps' events")
+endif()

@@ -382,6 +382,14 @@ if(OPENGOLD_BUILD_TESTS)
         -P "${PROJECT_SOURCE_DIR}/tests/slums_events.cmake")
     set_tests_properties(opengold_godot_slums_events PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 600 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
+    # A sample of every other map's event squares, the same way.
+    add_test(NAME opengold_godot_area_events COMMAND "${CMAKE_COMMAND}"
+        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
+        "-DWORK=${CMAKE_BINARY_DIR}/area-events"
+        -P "${PROJECT_SOURCE_DIR}/tests/area_events.cmake")
+    set_tests_properties(opengold_godot_area_events PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
+        TIMEOUT 600 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_training_hall COMMAND "${CMAKE_COMMAND}"
         "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"

@@ -754,8 +754,10 @@ template <bool Reading> struct SaveCodec
         }
         if constexpr (reading)
         {
+            // A script's scan of the party may stop on slot 8, which no member
+            // fills (ecl_scanned_slots).
             require(v.town_ && v.town_->programs.contains(v.current_script_) &&
-                        v.selected_character_.index < 8 &&
+                        v.selected_character_.index <= ecl_scanned_slots &&
                         v.rest_checks_ <= std::numeric_limits<std::uint16_t>::max(),
                     "Unsupported saved town context");
             v.machine_ = por::EclMachine(v.town_->programs.at(v.current_script_));

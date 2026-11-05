@@ -211,6 +211,37 @@ return to New Phlan. Campaign saves retain district, visited maps, script state,
 RNG and uncollected loot. Older save formats are rejected; see
 [saves](SAVES.md#pre-10-format-policy).
 
+### Every map's events on the town screen
+
+`opengold_godot_area_events` checks every map but New Phlan's and the Slums'
+(which have their own checks, [PHLAN.md](PHLAN.md)) the way the Slums check
+does, with `tests/area_events_tests.gd`. With `OPENGOLD_AREA_EVENT_FIXTURES`
+set, `opengold_expedition_tests` saves the party the first time the whole
+route stands idle on each map (29 maps; the wilderness map's travel is not
+part of it). From each map's arrival save it then walks to every event square,
+from each side a party can step in from, and saves one step away
+(`area<map>-<event>-<x>-<y>-<side>.ogs`). A square no walk reaches, behind a
+secret or magically locked door, gets the party stood on each open side
+instead (`...-placed.ogs`); a square walled on every side is reported and left
+out. The explorer takes every branch of each event: every choice, each of the
+game's passwords (OHLO, LUX, NOKNOK, RHODIA) and a wrong word, 0 and 100, a
+look and a second visit after a street ending, and the first fight of each
+event played to its end. With `--full-branches=N` only the first N saves of
+each event take every branch; the event's other squares take the first choice
+each time until it ends. A member asked for (a climber, a speaker) is the next
+one each time the question comes back.
+
+The suite writes every 240th square (`OPENGOLD_AREA_EVENT_SAMPLE`) and takes
+every branch from the first save of each event. For all of them, write the
+saves in N processes with `OPENGOLD_AREA_EVENT_SAMPLE=N` and
+`OPENGOLD_AREA_EVENT_OFFSET` 0 to N-1, and explore with `--sample=N --offset=K
+--full-branches=4`. `OPENGOLD_AREA_EVENT_MAPS` ("15,5") writes only those
+maps. The full run of 2026-11-05 (5,506 saves of 2,149 squares on 27 maps,
+10,226 endings, 493 fights won, 491 treasures, no defeats) found a save made
+after a script scanned party slot 8 that would not load, and the Pyramid's
+clawed monster and contaminant barrels without a damage type; twelve squares
+walled on every side were left out.
+
 References: original installed ECL2/GEO2/MON2CHA/CPIC2/DUNGCOM resources;
 [Pool of Radiance technical FAQ](https://gamefaqs.gamespot.com/pc/564785-pool-of-radiance/faqs/73869)
 for the encounter host protocol;

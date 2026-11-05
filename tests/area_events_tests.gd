@@ -1,29 +1,37 @@
 extends SceneTree
 
-# Every event of the Slums through the real town screen. Each save in
-# --fixtures (opengold_expedition_tests, OPENGOLD_SLUMS_EVENT_FIXTURES) is a
-# level-4 party one step from an event's door, facing it:
-# "slums-<event>-<x>-<y>.ogs". The check loads it from Load game, steps in and
-# takes every branch of the event's choices, loading the save again for each:
-# a choice list's every entry, a typed answer's right word and a wrong one, a
-# number's 0 and 100. A branch ends back in the street, in a fight on the
+# Every event of a map through the real town screen. Each save in --fixtures
+# (opengold_expedition_tests: OPENGOLD_SLUMS_EVENT_FIXTURES for the Slums,
+# OPENGOLD_AREA_EVENT_FIXTURES for every other map) is a party one step from
+# an event's square, facing it: "<map>-<event>-<x>-<y>-<facing>.ogs". The
+# check loads it from Load game, steps in and takes every branch of the
+# event's choices, loading the save again for each: a choice list's every
+# entry, each of --words (the game's passwords and a wrong word) for a typed
+# answer, 0 and 100 for a number. A branch ends back in the street, in a fight on the
 # combat screen, or in a shop. It fails on a notice that the event is not
 # supported, on a dead end (nothing to press), on a won fight's coins not
 # named on the town screen, on a treasure whose items cannot be taken or left,
 # or when an attempt runs long;
 # each branch's ending is printed with what it cost or gave the party.
-#   godot --headless --path src/OpenGoldBox/godot --script tests/slums_events_tests.gd \
-#       -- --fixtures=DIR [--only=slums-3-] [--sample=5]
+#   godot --headless --path src/OpenGoldBox/godot --script tests/area_events_tests.gd \
+#       -- --fixtures=DIR [--only=slums-3-] [--sample=5 [--offset=2]] [--words=OHLO,XYZZY]
 # A branch that ends back in the street also Looks there and steps out and in
-# again. --sample=5 explores every fifth save.
+# again. --sample=5 explores every fifth save, from the --offset'th.
 
-const WORDS := ["OHLO", "XYZZY"]
+# The passwords the original's scripts ask, as the route types them, and a
+# wrong word.
+var words := ["OHLO", "LUX", "NOKNOK", "RHODIA", "XYZZY"]
 const NUMBERS := ["0", "100"]
 const BRANCHES := 40
 
 var fixtures := ""
 var only := ""
 var sample := 1
+var offset := 0
+# --full-branches=4: every branch only from the first four saves of each event
+# (by name, across shards); the event's other squares play the path that asks
+# nothing more: in, a look, in again, and a fight when it comes.
+var full_branches := 0
 # --finish-fights plays the first fight of each event to its end, the party on
 # Quick at eight times speed, and goes on with what follows it.
 var finish_fights := false
@@ -41,6 +49,9 @@ func _initialize() -> void:
 		if arg.begins_with("--fixtures="): fixtures = arg.trim_prefix("--fixtures=")
 		if arg.begins_with("--only="): only = arg.trim_prefix("--only=")
 		if arg.begins_with("--sample="): sample = int(arg.trim_prefix("--sample="))
+		if arg.begins_with("--offset="): offset = int(arg.trim_prefix("--offset="))
+		if arg.begins_with("--full-branches="): full_branches = int(arg.trim_prefix("--full-branches="))
+		if arg.begins_with("--words="): words = Array(arg.trim_prefix("--words=").split(","))
 		if arg == "--finish-fights": finish_fights = true
 	call_deferred("run")
 
@@ -123,8 +134,11 @@ func take_treasure() -> String:
 		taken.append(item)
 		if not dialogue().contains(" takes " + item + ".") or left != before - 1:
 			bug("a treasure item is not taken", item + ": " + dialogue().right(160))
+	# What is left is counted before leaving: once the treasure is left, the
+	# list may hold the next menu (a street group met as the script goes on).
+	var left_behind := (town().get_node("Choices") as ItemList).item_count
 	await press("CampaignTown/LeaveShop")
-	if (town().get_node("Choices") as ItemList).item_count > 0 or count > taken.size():
+	if left_behind > 0:
 		if not at_treasure() or not dialogue().begins_with("There is still treasure here"):
 			bug("leaving a treasure with items in it does not ask first", dialogue().substr(0, 160))
 		await press("CampaignTown/LeaveShop")
@@ -186,7 +200,7 @@ func load_fixture(file: String) -> bool:
 	await press("SaveSlots/Action")
 	await press("SaveSlots/Action")
 	if not await press("PartyPanel/ActionRow2/Explore") or town() == null:
-		bug("a save does not load into the Slums", slot)
+		bug("a save does not load", slot)
 		return false
 	await settle(8)
 	return true
@@ -203,6 +217,7 @@ func play(path: Array) -> Dictionary:
 	var still := 0
 	var waited_since := -1
 	var phase := 0
+	var member_turn := 0
 	await press("CampaignTown/Forward")
 	for move in range(200):
 		# A wait is timed from when it began: a step that does not wait (a
@@ -235,7 +250,8 @@ func play(path: Array) -> Dictionary:
 				for turn in ["Right", "Right", "Forward", "Right", "Right", "Forward"]:
 					if exploring(): await press("CampaignTown/" + turn)
 			continue
-		var event: String = context.split("-")[1] if context.count("-") >= 1 else context
+		# The map and the event: "area14-3" (or "slums-3").
+		var event: String = "-".join(context.split("-").slice(0, 2))
 		if ending == "fight" and finish_fights and not finished.has(event):
 			finished[event] = true
 			taken.append("[fight]")
@@ -255,7 +271,7 @@ func play(path: Array) -> Dictionary:
 			return {"ending": ending, "heard": heard, "taken": taken, "gold": party_gold() - gold, "hp": party_hp() - hp}
 		var options := []
 		if typing():
-			options = NUMBERS if town().get_node("Answer").max_length <= 6 else WORDS
+			options = NUMBERS if town().get_node("Answer").max_length <= 6 else words
 		else:
 			var list := choices()
 			# A member is chosen as the first: the event is the same for each.
@@ -285,7 +301,12 @@ func play(path: Array) -> Dictionary:
 		if waiting:
 			if waited_since < 0: waited_since = Time.get_ticks_msec()
 			await settle(20)
-		elif not choices().is_empty(): await pick(0)
+		elif not choices().is_empty():
+			# A member is asked for: the next one each time the question comes
+			# back, as a player would when the first cannot (a climber too hurt).
+			var members := party_names().has(choices()[0])
+			await pick(member_turn % choices().size() if members else 0)
+			if members: member_turn += 1
 		else: await press("CampaignTown/Continue")
 		if not waiting: waited_since = -1
 		still = still + 1 if dialogue() + str(choices()) == before and not waiting else 0
@@ -324,7 +345,7 @@ func finish_fight() -> String:
 	await settle(8)
 	return outcome
 
-func explore(file: String) -> void:
+func explore(file: String, every_branch := true) -> void:
 	var queue := [[]]
 	var branches := 0
 	while not queue.is_empty() and branches < BRANCHES:
@@ -334,7 +355,8 @@ func explore(file: String) -> void:
 		var result := await play(path)
 		if result["ending"] == "decision":
 			var options: Array = result["options"]
-			for i in range(options.size()):
+			# Without every branch, the first choice is taken until the event ends.
+			for i in range(options.size() if every_branch else 1):
 				queue.append(path + [options[i] if typing() else i])
 			continue
 		endings += 1
@@ -342,22 +364,33 @@ func explore(file: String) -> void:
 		print("  ", context, " ", " > ".join(result["taken"]), " => ", result["ending"],
 			"  gold ", result["gold"], " hp ", result["hp"], "  | ",
 			" / ".join(said).substr(0, 600))
-	if not queue.is_empty():
+	if not queue.is_empty() and every_branch:
 		print("  ", context, ": ", queue.size(), " branches left after ", BRANCHES)
+
+# Each file's place among its event's saves, in name order: 0 for the first.
+func ranks_in_event(files: Array) -> Array:
+	var ranks := []
+	var seen := {}
+	for file in files:
+		var event := "-".join(file.get_basename().split("-").slice(0, 2))
+		ranks.append(seen.get(event, 0))
+		seen[event] = seen.get(event, 0) + 1
+	return ranks
 
 func run() -> void:
 	root.gui_embed_subwindows = true
 	var files := Array(DirAccess.get_files_at(fixtures)).filter(func(f): return f.ends_with(".ogs"))
 	files.sort()
+	var ranks := ranks_in_event(files)
 	for n in range(files.size()):
 		var file: String = files[n]
 		if only != "" and not file.begins_with(only): continue
-		if n % sample != 0: continue
+		if n % sample != offset % sample: continue
 		context = file.get_basename()
-		await explore(file)
+		await explore(file, full_branches <= 0 or ranks[n] < full_branches)
 	print("Explored ", endings, " endings; ", bugs.size(), " distinct problems")
 	for key in bugs:
 		print("  ", bugs[key].size(), "x ", key, "\n      e.g. ", bugs[key][0])
 	if bugs.is_empty() and endings > 0:
-		print("Slums events passed: ", endings, " endings")
+		print("Events passed: ", endings, " endings")
 	quit(0 if bugs.is_empty() and endings > 0 else 1)

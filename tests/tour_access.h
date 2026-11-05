@@ -65,6 +65,14 @@ struct TourAccess
         return town.town_->programs.at(script);
     }
 
+    // Stands the idle party on a square of its map, as a save made there would
+    // have it: the area event saves start one step from squares that no walk
+    // from the map's arrival reaches (behind secret or magically locked doors).
+    static void place(por::RolfTourSession &town, por::PartyPose pose)
+    {
+        town.bind_pose(pose);
+    }
+
     // Reseeds the script's dice, so a test can try an event on several rolls.
     static void seed_dice(por::RolfTourSession &town, std::uint32_t seed)
     {

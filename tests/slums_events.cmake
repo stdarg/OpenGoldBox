@@ -16,9 +16,9 @@ endforeach()
 set(ENV{OPENGOLD_LANG} en)
 execute_process(
     COMMAND "${CMAKE_COMMAND}" "-DGODOT=${GODOT}" "-DPROJECT=${PROJECT}"
-    "-DSCRIPT=${CMAKE_CURRENT_LIST_DIR}/slums_events_tests.gd"
-    "-DEXPECTED=Slums events passed" -DTEST_TIMEOUT=500
-    "-DARGS=--fixtures=${FIXTURES}/slums-events;--finish-fights"
+    "-DSCRIPT=${CMAKE_CURRENT_LIST_DIR}/area_events_tests.gd"
+    "-DEXPECTED=Events passed" -DTEST_TIMEOUT=500
+    "-DARGS=--fixtures=${FIXTURES}/slums-events;--finish-fights;--words=OHLO,XYZZY"
     -P "${CMAKE_CURRENT_LIST_DIR}/run_godot_test.cmake"
     RESULT_VARIABLE result)
 if(NOT result STREQUAL "0")
