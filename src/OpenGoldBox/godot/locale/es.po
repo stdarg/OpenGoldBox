@@ -2170,7 +2170,7 @@ msgstr "Elegir mano del arma"
 msgid "Choose what replaces it, or keep current."
 msgstr "Elige qué lo sustituye, o conserva lo actual."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2279
+#: src/OpenGoldBox/rolf_tour_view.cpp:2280
 msgid "Choose what to take."
 msgstr "Elige qué tomar."
 
@@ -2849,12 +2849,12 @@ msgstr "Suerte del Oscuro: una salvación o prueba de característica fallida qu
 msgid "Dark gray"
 msgstr "Gris oscuro"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2244
+#: src/OpenGoldBox/rolf_tour_view.cpp:2245
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Dark red: {name} is not trained to use it, or cannot use it, but can still buy it."
 msgstr "En rojo oscuro: {name} no tiene entrenamiento para usarlo, o no puede usarlo, pero aún puede comprarlo."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2243
+#: src/OpenGoldBox/rolf_tour_view.cpp:2244
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Dark red: {name} is not trained to use it, or cannot use it."
 msgstr "En rojo oscuro: {name} no tiene entrenamiento para usarlo, o no puede usarlo."
@@ -3937,7 +3937,7 @@ msgstr "Infernales"
 msgid "Fighter"
 msgstr "Guerrero"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2307
+#: src/OpenGoldBox/rolf_tour_view.cpp:2309
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Fighter / Level 1 / HP {current}/{maximum}\n{gold} gp / {items}"
 msgstr "Guerrero / Nivel 1 / PG {current}/{maximum}\n{gold} po / {items}"
@@ -6851,7 +6851,7 @@ msgstr "Nada que lanzar o usar fuera de combate."
 msgid "OPENGOLDBOX  /  Rolf's welcome"
 msgstr "OPENGOLDBOX  /  La bienvenida de Rolf"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2081 src/OpenGoldBox/rolf_tour_view.cpp:2920
+#: src/OpenGoldBox/rolf_tour_view.cpp:2081 src/OpenGoldBox/rolf_tour_view.cpp:2922
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "OPENGOLDBOX  /  {district}"
 msgstr "OPENGOLDBOX  /  {district}"
@@ -7548,7 +7548,7 @@ msgstr "Pulsa Esc para volver"
 msgid "Previously selected training cannot be replaced"
 msgstr "No se puede reemplazar la formación seleccionada anteriormente"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2290
+#: src/OpenGoldBox/rolf_tour_view.cpp:2292
 msgid "Prices are per listed item or bundle."
 msgstr "Los precios son por objeto o lote indicado."
 
@@ -10365,7 +10365,7 @@ msgstr "El viento desvía el disparo."
 msgid "The {spell} on the scroll is lost."
 msgstr "El conjuro {spell} del pergamino se pierde."
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2266
+#: src/OpenGoldBox/rolf_tour_view.cpp:2267
 msgid "There is still treasure here. Leave it behind, or take more?"
 msgstr "Aún queda tesoro aquí. ¿Dejarlo atrás o tomar más?"
 
@@ -11979,7 +11979,7 @@ msgid_plural "{count} hours left"
 msgstr[0] "queda {count} hora"
 msgstr[1] "quedan {count} horas"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2311 src/OpenGoldBox/rolf_tour_view.cpp:2325
+#: src/OpenGoldBox/rolf_tour_view.cpp:2313 src/OpenGoldBox/rolf_tour_view.cpp:2327
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} item"
 msgid_plural "{count} items"
@@ -12027,7 +12027,7 @@ msgstr "{count} pp"
 msgid "{die} (maximum d{die}) {modifier} (Constitution) + {racial} (racial bonus) = {hp} HP"
 msgstr "{die} (máximo de d{die}) {modifier} (Constitución) + {racial} (bonificación de raza) = {hp} PG"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2077 src/OpenGoldBox/rolf_tour_view.cpp:2917
+#: src/OpenGoldBox/rolf_tour_view.cpp:2077 src/OpenGoldBox/rolf_tour_view.cpp:2919
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{district}    N ↑"
 msgstr "{district}    N ↑"
@@ -12121,7 +12121,7 @@ msgstr "{item}: {spells}"
 msgid "{name}"
 msgstr "{name}"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2345
+#: src/OpenGoldBox/rolf_tour_view.cpp:2347
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}\n{class} / AC {ac} / HP {current}/{maximum}"
 msgstr "{name}\n{class} / CA {ac} / PG {current}/{maximum}"
@@ -12131,7 +12131,7 @@ msgstr "{name}\n{class} / CA {ac} / PG {current}/{maximum}"
 msgid "{name} (beyond Raise Dead)"
 msgstr "{name} (fuera del alcance de Revivir a los muertos)"
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2318
+#: src/OpenGoldBox/rolf_tour_view.cpp:2320
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} / HP {current}/{maximum}\nparty {gold} gp / {items}"
 msgstr "{name} / PG {current}/{maximum}\ngrupo {gold} po / {items}"
