@@ -97,7 +97,7 @@ Keep `rules.h` contracts generic and preserve Core's transaction boundary.
 
 ## Delivered
 
-Implemented on `srd-skilled` from `main` at 314244b. SKILLED-1 was approved with
+Implemented on `srd-skilled` from `main` at 066be00. SKILLED-1 was approved with
 one change: `advancement_spell_page_` became a three-state page enum rather than
 a second boolean, because a Wizard taking Skilled needs three pages
 (choices → Skilled → spells) and Back must therefore appear on any page after the

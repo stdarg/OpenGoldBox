@@ -18,7 +18,7 @@ table test writes it when it is missing and otherwise compares against it.
 lines of the game log: characters made one after another on one screen, a Goliath among
 them. `opengold_godot_creation_replay` repeats the clicks on the real screen
 and fails when one does not stick or shows an error (stuck Giant Ancestry,
-Elven Lineage and Divine Order radios, before fd405ea9).
+Elven Lineage and Divine Order radios, before f2c94a0d).
 
 ## No save fixtures
 

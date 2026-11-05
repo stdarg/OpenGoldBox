@@ -21,7 +21,7 @@ with headers the reading order mixed re-read from the layout text (see
 "Cross-checks done"). Repo context: `docs/SRD-DECISIONS.md` (SCOPE-1, SCOPE-2,
 DM-1, DM-2, DM-3, LEVELS-1, CAP-1, CLASS-2, CLASS-5, CLASS-8, CLASS-11,
 COVER-1, DEAF-1, WILD-1, BARD-1, HEROIC-1, ADAPT-1, PUSH-1, FLEE-1) and the
-levels 5–10 inventory, at `902b3cf2`.
+levels 5–10 inventory, at `0f1c5aa9`.
 
 **Feature note key.** **Existing** = works with a system the game has, or one
 the approved levels 5–10 plan builds (LEVELS-1). **New system** = needs

@@ -14,8 +14,8 @@ cannot apply safely, required braces. Both come from the same LLVM release;
 pin one release in editors and automated checks.
 
 The whole project-owned tree follows this style: every tracked C++ file was
-formatted with clang-format 23.1.0 (5a7187c1) and every `if`, `else` and loop
-body braced with clang-tidy (5b5c199b), each in a commit of its own. Keep it
+formatted with clang-format 23.1.0 (c160971a) and every `if`, `else` and loop
+body braced with clang-tidy (855fc75e), each in a commit of its own. Keep it
 that way: format every change, and keep large formatting passes in separate
 commits.
 
@@ -146,7 +146,9 @@ brace fixes on their own, separately from a formatting pass.
 ## Pre-commit hook
 
 `tools/git-hooks/pre-commit` applies both tools to the C++ files a commit
-stages. Turn it on once per clone; worktrees share the setting:
+stages, and `tools/git-hooks/commit-msg` refuses a message with a
+`Co-Authored-By` line naming Claude or Anthropic: every commit is Edmond
+Meinfelder's alone. Turn them on once per clone; worktrees share the setting:
 
 ```
 git config core.hooksPath tools/git-hooks

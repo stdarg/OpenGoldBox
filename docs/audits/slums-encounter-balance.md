@@ -1,6 +1,6 @@
 # Slums encounter balance audit
 
-Audit date: 2026-10-01. Baseline: `c7a4e8b`. No gameplay changes were made for
+Audit date: 2026-10-01. Baseline: `ac8c7e1`. No gameplay changes were made for
 this audit.
 
 The opt-in Ohlo route ([QUESTS.md](../QUESTS.md#validation-and-limits)) fails

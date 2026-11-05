@@ -1,0 +1,17 @@
+#!/bin/sh
+# Refuses a commit message that names Claude or Anthropic as a co-author:
+# every commit here is Edmond Meinfelder's alone (docs/CODING_STYLE.md).
+#
+# Install once per clone (worktrees share it):
+#     git config core.hooksPath tools/git-hooks
+
+set -u
+
+message_file=$1
+pattern='^[[:space:]]*co-authored-by:.*(claude|anthropic)'
+
+if grep -iqE "$pattern" "$message_file"; then
+    echo "commit-msg: remove this line; commits name no Claude co-author:" >&2
+    grep -iE "$pattern" "$message_file" >&2
+    exit 1
+fi

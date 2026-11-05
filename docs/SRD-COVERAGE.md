@@ -1446,7 +1446,7 @@ branch delivery is not a merge or release claim.
 
 ### Skilled complete (#77)
 
-Tested implementation on `srd-skilled`, branched from `main` at 314244b. Skilled
+Tested implementation on `srd-skilled`, branched from `main` at 066be00. Skilled
 is offered at every supported level-four feat entitlement and grants three
 proficiencies chosen from the whole catalog: 18 skills and 37 tool variants, the
 latter completed here with Disguise Kit, Forgery Kit, Navigator's Tools and

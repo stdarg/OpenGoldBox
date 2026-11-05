@@ -40,7 +40,7 @@ Settings and saves go to your user-data folder; see
 - macOS (bash): `./build.sh`, then `open mac-package/OpenGoldBox.app`. `./build.sh`
   builds the game and re-exports the app without running tests.
 
-The last full test run was on 2026-10-25 (commit 6877f6f3, Windows, with original
+The last full test run was on 2026-10-25 (commit 1e46d8be, Windows, with original
 files): all 239 native and Godot checks passed, including the packaged game's
 smoke check. macOS was not run for this summary.
 
@@ -399,7 +399,8 @@ This section covers the native core and the demos; the game's build is under
 [Play the game](#play-the-game).
 
 C++ follows [the coding style](docs/CODING_STYLE.md), kept by clang-format and
-clang-tidy. Enable the pre-commit hook once per checkout with
+clang-tidy. Enable the project's hooks (code style, and no Claude co-author
+lines in commit messages) once per checkout with
 `git config core.hooksPath tools/git-hooks`.
 
 Install the prerequisites listed in [docs/INSTALL.md](docs/INSTALL.md), then

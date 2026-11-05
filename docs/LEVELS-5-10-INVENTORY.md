@@ -19,7 +19,7 @@ every spell entry was re-read from a single-column (`pdftotext` reading-order
 or column-cropped) extraction of the same PDF. Repo context: `docs/SRD-DECISIONS.md`
 (DM-1, DM-2, DM-3, SCOPE-1, SCOPE-2, CLASS-2, CLASS-10, CLASS-11, COVER-1,
 MELEE-1, HIDE-1), `docs/SPELL-INVENTORY.md` and `docs/audits/srd-5.2.1-rules.md`
-at `c4076002`.
+at `866be313`.
 
 **Already decided upstream (no new approval needed):** DM-2 (2026-09-30)
 already cuts these level 3–5 spells by name: Clairvoyance, Major Image,
