@@ -755,7 +755,8 @@ if(OPENGOLD_BUILD_TESTS)
         "-DWORK=${CMAKE_BINARY_DIR}/balance-tools-smoke"
         -P "${PROJECT_SOURCE_DIR}/tests/balance_tools_smoke.cmake")
     # A debug build takes about six minutes; an optimised one under one.
-    set_tests_properties(opengold_balance_tools_smoke PROPERTIES TIMEOUT 900)
+    set_tests_properties(opengold_balance_tools_smoke PROPERTIES TIMEOUT 900
+        SKIP_REGULAR_EXPRESSION "Skipped: ")
 endif()
 
 if(OPENGOLD_BUILD_GODOT)

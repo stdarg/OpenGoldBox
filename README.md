@@ -1,5 +1,7 @@
 # OpenGoldBox
 
+This project was built using Anthropic's Claude and OpenAI's Codex as a means to learn how to work with LLMs.
+
 An open-source role-playing game engine for Gold Box games.
 
 The project was previously named OpenGold. The display name, documentation
@@ -22,7 +24,7 @@ runtime; they are not bundled.
 
 ## Current status
 
-As of 2026-10-25. Each linked document holds the detail and its own evidence;
+As of 2026-11-05. Each linked document holds the detail and its own evidence;
 this section only summarizes.
 
 ### Play the game
@@ -40,9 +42,10 @@ Settings and saves go to your user-data folder; see
 - macOS (bash): `./build.sh`, then `open mac-package/OpenGoldBox.app`. `./build.sh`
   builds the game and re-exports the app without running tests.
 
-The last full test run was on 2026-10-25 (commit 1e46d8be, Windows, with original
-files): all 239 native and Godot checks passed, including the packaged game's
-smoke check. macOS was not run for this summary.
+The last full test run was on 2026-11-05 (commit 3449c000, macOS, with original
+files): all 266 checks of the game build and all 127 of the demo build passed,
+including the packaged game's smoke check. The last full Windows run was on
+2026-10-25 (commit 1e46d8be), when all 239 checks passed.
 
 See [building the game and each demo](docs/BUILD.md). The scenes under
 [`demos/`](demos/README.md) are frozen references, described under
@@ -53,12 +56,16 @@ See [building the game and each demo](docs/BUILD.md). The scenes under
 - **Party:** create level-one characters (nine species with their lineage and
   ancestry choices, twelve classes, four backgrounds) with 972 portraits to
   choose from, or pick from a 48-character pool; up to six PCs and two NPCs.
-  Every new character brings 3d6 × 10 gp, and the party shares one purse. See
+  Every new character brings 3d6 × 10 gp, and the party shares one purse; any
+  coin pays a price, with change. What a character can carry is limited by
+  weight and Strength. Better weapons, armor and shields go on when bought or
+  taken, unless Options turns that off. See
   [character creation](docs/CHARACTER-CREATION.md) and [party](docs/PARTY.md).
 - **New Phlan:** Rolf's tour, then the civilized town with its original
   dialogue, shops, inn rest, temple healing, street camping and four training
-  halls. Every armor the shops sell converts to SRD equipment; stock that cannot
-  be equipped is marked before purchase. Any shop buys any item but a cursed
+  halls. Every armor the shops sell converts to SRD equipment. Shops draw in
+  dark red what the chosen character cannot fully use; it can still be bought.
+  Any shop buys any item but a cursed
   one for half its price, and any item but a cursed one can be dropped, gone
   for good. See [New Phlan](docs/PHLAN.md),
   [recovery](docs/RECOVERY.md) and [training halls](docs/TRAINING-HALL.md).
@@ -68,10 +75,13 @@ See [building the game and each demo](docs/BUILD.md). The scenes under
   keep, Valhingen Graveyard, the wilderness's sites, Stojanow Gate and Valjevo
   Castle, travelled on the overland map. One party plays it all from area to
   area in a single test run ([the whole map](docs/audits/whole-map.md)).
-  Monsters are SRD stat blocks, and encounters are sized to an XP budget set by
-  `encounter_challenge`. Fights use the original battlefield geometry and award
-  original loot and XP; locked doors can be bashed or picked, Search mode finds
-  what the original hides, and camping can be interrupted. See
+  Monsters are SRD stat blocks, and the original's groups are trimmed to an XP
+  budget set by `encounter_challenge` and the difficulty level. Fights use the
+  original battlefield geometry. Monsters give their SRD XP, and scripted
+  rewards keep the original amounts. The original's loot is left in a pile
+  after a fight, and the selected character takes items from it as from a
+  shop. Locked doors can be bashed, picked or opened with Knock, Search mode
+  finds what the original hides, and camping can be interrupted. See
   [the expedition](docs/EXPEDITION.md) and [outdoor areas](docs/OUTDOOR-AREAS.md).
 - **Combat:** the original's placement, monster morale, parley through a party
   leader, Quick combat, and fleeing off the battlefield's edge (or with the
@@ -91,7 +101,7 @@ See [building the game and each demo](docs/BUILD.md). The scenes under
   Tongue lights for 2d6 Fire; the cursed Broad Sword binds its wielder until
   Remove Curse. See [magic items](docs/MAGIC_ITEMS.md#in-opengoldbox).
 - **Saves:** named campaign slots from the party roster and idle exploration;
-  not during combat or an unfinished event. Older pre-release saves are
+  not during combat or an unfinished event. Saves in an older format are
   refused. See [saves](docs/SAVES.md).
 - Fog of war on the overhead map, timed status effects and saving throws, and
   English or Spanish text.
@@ -125,23 +135,24 @@ the original is in [DEVIATIONS](docs/DEVIATIONS.md).
   [ECL coverage](docs/ECL-COVERAGE.md#gaps).
 - No multiclassing, no saving during combat, no importing original saves.
 
-### Next work
+### Tracked work
 
-The campaign's script coverage ([#4](https://github.com/stdarg/OpenGoldBox/issues/4)),
-advanced combat interactions ([#5](https://github.com/stdarg/OpenGoldBox/issues/5)),
-reward mappings ([#9](https://github.com/stdarg/OpenGoldBox/issues/9)) and magic
-items ([#234](https://github.com/stdarg/OpenGoldBox/issues/234)) are done. Open
-work: checking the Windows package on a clean machine
-([#7](https://github.com/stdarg/OpenGoldBox/issues/7)), the Combat Sprite
+Every tracked issue is closed, among them the campaign's script coverage
+([#4](https://github.com/stdarg/OpenGoldBox/issues/4)), advanced combat
+interactions ([#5](https://github.com/stdarg/OpenGoldBox/issues/5)), the Windows
+package on a clean machine ([#7](https://github.com/stdarg/OpenGoldBox/issues/7)),
+reward mappings ([#9](https://github.com/stdarg/OpenGoldBox/issues/9)), the SRD
+plan ([#186](https://github.com/stdarg/OpenGoldBox/issues/186)), magic items
+([#234](https://github.com/stdarg/OpenGoldBox/issues/234)) and the Combat Sprite
 Catalog's export into the game
-([#274](https://github.com/stdarg/OpenGoldBox/issues/274)), and the remaining SRD
-items indexed in [#186](https://github.com/stdarg/OpenGoldBox/issues/186).
+([#274](https://github.com/stdarg/OpenGoldBox/issues/274)).
 
 ## Reference demos
 
 The scenes below and their launchers are preserved under [`demos/`](demos/README.md)
-for reference. They use the same native libraries as the game but have their
-own scenes, fixtures and limits, and their launchers are Windows CMD scripts.
+for reference. The sound board and the art, map and graphics tools run in the
+demo project. The Rolf, combat and character launchers open the game's own
+scenes, so build the game first. The launchers are Windows CMD scripts.
 
 ## Sound board
 
@@ -161,10 +172,11 @@ See [sound data, supported release and verification](docs/sound-format.md).
 
 ## Rolf's tour
 
-Run the original welcome through Rolf's farewell in a C++/Godot scene, with his
-encounter sprite, the original Phlan wall and door artwork, and a synchronized party map.
-After the farewell, explore New Phlan and its buildings with a single fighter
-carrying 9,999 gold. Enter shops, answer the original dialogue, and buy items.
+Run the original welcome through Rolf's farewell on the game's town screen,
+with his encounter sprite, the original Phlan wall and door artwork, and a
+synchronized party map. Launched on its own, without a party, the tour gives a
+single fighter carrying 9,999 gold to explore New Phlan with: enter shops,
+answer the original dialogue, and buy items.
 See [New Phlan exploration](docs/PHLAN.md) for controls and current script limits,
 and [keyboard shortcuts](docs/KEYBOARD.md) for every key.
 From PowerShell:
@@ -180,7 +192,7 @@ See [build prerequisites, controls and current limits](docs/ROLF.md).
 
 The first replaceable C++ rules module uses **SRD 5.2.1** with a native Godot
 combat scene and an offline curated rules pack. The standalone modes use fixed
-fixtures; the shared party preview uses your created characters. From PowerShell:
+fixtures; fights in the game use your party. From PowerShell:
 
 ```powershell
 .\build-opengoldbox.cmd
@@ -218,33 +230,34 @@ See [controls, rules and scope](docs/CHARACTER-CREATION.md).
 
 Finish a character and **Add to party**, or open **Character Pool** to choose
 from 48 level-one characters (four per class), each with a unique first name
-and surname, selected portraits and matching sprite palettes. The roster supports
-six PCs and two NPCs, reserve/rejoin, and an authored preview guard. New PCs
-bring 3d6 × 10 gp to the party's purse.
+and surname, selected portraits and matching sprite palettes. The roster holds
+six PCs and two NPCs; members can go to reserve and rejoin. New PCs bring
+3d6 × 10 gp to the party's purse.
 
 **Explore New Phlan** shares the party with Rolf's tour and town scripts. Inspect
 members from the town roster, buy equipment for the selected member, and equip
-or unequip supported items with visible training penalties. **Party combat**
-opens the tactical Bandit preview. HP, equipment, spent resources and town
-position persist between scenes within the running session. Class support is
+or unequip supported items with visible training penalties. HP, equipment,
+spent resources and town position persist between scenes. Class support is
 summarized under [Current status](#current-status); see
 [party scope and controls](docs/PARTY.md).
 
 ## Recovery and advancement
 
-The party Bandit preview grants a one-time **300 XP per living active member**
-on victory. A separate original Slums encounter mapping grants the same authored
-award when a campaign party is attached. Characters advance manually as listed
-under [Current status](#current-status), updating maximum HP and caster slots
-while retaining spent resources. See [advancement](docs/ADVANCEMENT.md).
+A won fight gives each living party member a share of the defeated creatures'
+experience. Characters advance manually as listed under
+[Current status](#current-status), updating maximum HP and caster slots while
+retaining spent resources. Training halls also sell experience. See
+[advancement](docs/ADVANCEMENT.md).
 
 The original inn can provide an eligible paid long rest, restoring HP and
 supported resources. Street camping runs the original city-watch interruption
-and grants no recovery. The temple offers a bounded **Cure Wounds** service for
-100 gp. Rest eligibility, payment and unsupported-event rollback are enforced.
-See [recovery, service limits and verification](docs/RECOVERY.md).
+and grants no recovery. The temples of Sune, Tempus and Tyr in New Phlan, and
+Ilmater's in Podol Plaza, heal, cure and raise the dead for a price: from
+100 gp for Cure Light Wounds to 11,000 gp for Resurrection. Rest eligibility,
+payment and unsupported-event rollback are enforced. See
+[recovery, service limits and verification](docs/RECOVERY.md).
 
-**Save game** and **Load game** support named campaign slots on the roster and idle exploration screens, with overwrite/load confirmation and previous-version recovery. See [save boundaries and restart verification](docs/SAVES.md). The game also travels to the Slums and starts combat from exploration; see [the expedition](docs/EXPEDITION.md). The standalone combat Training mode has its own combat save/load.
+**Save game** and **Load game** support named campaign slots on the roster and idle exploration screens, with overwrite/load confirmation and previous-version recovery. See [save boundaries and restart verification](docs/SAVES.md). The whole campaign plays from exploration; see [the expedition](docs/EXPEDITION.md). The standalone combat Training mode has its own combat save/load.
 
 ## Native monster/NPC statistics
 
@@ -303,8 +316,9 @@ poses), retains all archive references, and shows combat pose pairs and encounte
 distance variants together. The inspected installation has 214 unique groups
 from 302 source groups.
 
-- Filter combat icons, encounter sprites, character components, or combat
-  effects/miscellaneous; use Left / Right to browse groups.
+- Filter combat icons, encounter sprites, character components, projectiles,
+  or combat effects/miscellaneous, or show every category; use Left / Right to
+  browse groups.
 - Search all monster records, then Confirm selected or mark the association
   Incorrect. Confirm saves and advances to the next unresolved group in the
   current category, skipping confirmed and Unknown groups and wrapping at the end.
@@ -369,15 +383,27 @@ Save names before closing.
 
 ## Developer tools
 
-Standalone Godot tools under [`dev_tools/`](dev_tools) read your installed DAX
-files and are not linked into the game. Each `run.sh` (bash; Git Bash on
-Windows) builds its native extension and imports its project on first run.
-Their native libraries are not built by the game's or the demos' builds; each
-tool's README has its build and self-check commands.
+The tools under [`dev_tools/`](dev_tools) read your installed DAX files and are
+not part of the game; the game never reads them. Most are Godot tools: their
+`run.sh` (bash; Git Bash on Windows) builds the tool's native extension and
+imports its project on first run. The DOS probe and the AI lab are
+command-line programs. The demos' build also builds the tile art viewer's and
+the combat sprite catalog's extensions, and every build includes the AI lab.
+Each tool's README has its build and self-check commands.
 
 - [Combat sprite catalog](dev_tools/combat_sprite_catalog/README.md): every
   monster and NPC record with its combat art, weapon sets and record editing.
   Its export is the game's `data/monsters`.
+- [Creature Stats Editor](dev_tools/docs/creature-stats-editor.md): changes a
+  monster's Hit Points, stats, spellcasting and fight ratings, the scripts'
+  wandering and rest chances, and the companions who join the party, and
+  publishes the changes into the game's data.
+- [Combat tester](dev_tools/combat_tester/README.md): fights any monster type
+  on any of the game's 29 combat maps with a preset party, on the game's own
+  combat screen.
+- [AI lab](dev_tools/ai_lab/README.md): replays real campaign fights through
+  the game's combat and computer play, to measure a change to how the computer
+  plays.
 - [Tile art viewer and map browser](dev_tools/tile_art_viewer/README.md): the
   original first-person wall art and exploration maps.
 - [Replacement art creator](dev_tools/replacement_art_creator/README.md):
@@ -422,18 +448,19 @@ initializes Visual Studio and uses its installed CMake directly:
 
 Open `src/OpenGoldBox/godot/project.godot` in Godot 4.x for the game, or
 `demos/godot/project.godot` for the reference demos. The native
-core is deliberately testable without launching Godot. The optional C++
-GDExtension (`.\build-opengoldbox.cmd`) contains the tour/town, character/party
-and combat scenes; the demos' research tools, such as the sound board, are built
-separately with `.\demos\build-rolf.cmd`. Both build helpers run
-the native tests; close running native demo scenes before rebuilding the DLL.
+core is deliberately testable without launching Godot. `.\build-opengoldbox.cmd`
+builds the game's C++ GDExtension: the tour/town, character/party and combat
+scenes. The native core builds and tests without it. The demos' research tools,
+such as the sound board, are built separately with `.\demos\build-rolf.cmd`.
+Both build helpers run every test in their build tree, the Godot checks
+included; close running native demo scenes before rebuilding the DLL.
 The helpers currently expect Visual Studio Build Tools under the hard-coded
 `Microsoft Visual Studio\18\BuildTools` path. For other installations, use the
 CMake commands in a configured developer terminal and the
 [extension build options](docs/ROLF.md#build-boundary).
 
 Set the game directory before launching a demo or running tests against original
-data; without it, about 70 of the Godot checks report Skipped. The environment
+data; without it, about 80 of the checks report Skipped. The environment
 variable overrides the game's saved folder and `opengold/game_directory` in
 `demos/godot/project.godot`; point it at the directory containing the DAX files:
 
