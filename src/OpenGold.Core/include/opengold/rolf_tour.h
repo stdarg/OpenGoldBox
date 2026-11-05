@@ -42,6 +42,10 @@ struct PartyPose
     MapDirection facing{MapDirection::north};
     auto operator<=>(const PartyPose &) const = default;
 };
+
+// Squares the party sees ahead before a wall or door, at most two. As in the
+// original, a fight's encounter distance never exceeds it in a 3D area.
+[[nodiscard]] unsigned open_squares_ahead(const GeoMap &map, PartyPose pose);
 enum class TourPhase
 {
     running,
@@ -184,6 +188,32 @@ struct WandSign
 // where two words would touch, and closes a doubled space after a word (two
 // after a sentence's end are the original's style and stay).
 [[nodiscard]] std::string join_script_text(std::string shown, std::string_view added);
+
+// One creature an area's script loads (LOAD MONSTER), as the game stages it
+// for a fight: its converted fighter and its combat art. The game's scripts
+// and the developer tools that stage fights use this one way.
+struct StagedCreature
+{
+    rules::Participant fighter;
+    CombatArt art;
+};
+
+// Whether the area's creature `record` fights on the party's side: record byte
+// 0x10E (coab combat_team) is 0, as only Valhingen Graveyard's efreeti's is.
+[[nodiscard]] bool fights_for_party(const PhlanResources &area, unsigned record);
+
+// The name the creature shows: its export's, or its original record's.
+[[nodiscard]] std::string creature_name(const PhlanResources &area, unsigned record,
+                                        const ExportedMonster *exported);
+
+// The area's creature `record`, drawn with combat icon `icon`, as fighter `id`
+// named `name` on `side`. `exported` is the creature's Combat Sprite Catalog
+// export, or null. Throws when the area converts no such record or lacks the
+// icon.
+[[nodiscard]] StagedCreature stage_area_creature(const PhlanResources &area, unsigned record,
+                                                 unsigned icon, const ExportedMonster *exported,
+                                                 rules::EntityId id, std::string name,
+                                                 rules::Side side, Difficulty difficulty);
 
 struct TourSnapshot
 {

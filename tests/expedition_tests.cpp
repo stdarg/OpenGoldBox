@@ -1205,19 +1205,6 @@ unsigned wilderness_fights = 0;
 // The last encounter fight() played, as the town staged it.
 std::optional<CampaignEncounter> last_encounter;
 
-// Squares the party sees ahead before a wall or door, at most two.
-unsigned open_squares_ahead(const por::GeoMap &map, por::PartyPose pose)
-{
-    unsigned squares = 0;
-    while (squares < 2 && !map.at(pose.x, pose.y).walls[index(pose.facing)])
-    {
-        ++squares;
-        pose.x = (pose.x + 16 + step_x(pose.facing)) % 16;
-        pose.y = (pose.y + 16 + step_y(pose.facing)) % 16;
-    }
-    return squares;
-}
-
 // The monsters every fight in the game has: the catalog's export in data/monsters.
 const std::shared_ptr<const por::MonsterBundle> &game_monsters()
 {
@@ -1289,7 +1276,8 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     last_encounter = *town.pending_encounter();
     const auto before_fight = party->checkpoint();
     FightStart start{town.snapshot().pose, town.pending_encounter()->distance, {}};
-    check(town.snapshot().overland || start.distance <= open_squares_ahead(town.map(), start.pose),
+    check(town.snapshot().overland ||
+              start.distance <= por::open_squares_ahead(town.map(), start.pose),
           "The monsters are never further away than the party can see");
     // On the wilderness map the fight faces the step, a diagonal one the
     // direction to its left, with the monsters 2 squares away (PLACE-2).
@@ -5793,8 +5781,8 @@ void face_longest_view(por::RolfTourSession &town, const std::shared_ptr<Campaig
     unsigned longest = 0;
     for (unsigned facing = 1; facing < 4; ++facing)
     {
-        if (open_squares_ahead(town.map(), {pose.x, pose.y, por::MapDirection{facing}}) >
-            open_squares_ahead(town.map(), {pose.x, pose.y, por::MapDirection{longest}}))
+        if (por::open_squares_ahead(town.map(), {pose.x, pose.y, por::MapDirection{facing}}) >
+            por::open_squares_ahead(town.map(), {pose.x, pose.y, por::MapDirection{longest}}))
         {
             longest = facing;
         }

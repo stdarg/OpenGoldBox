@@ -193,6 +193,14 @@ struct PartyState
     bool spells_after_short_rest{};
 };
 
+// Who may stand in the party's two NPC positions: NPCs only, as in the game,
+// or player characters too, for a developer tool's party of eight.
+enum class NpcPositions
+{
+    npcs_only,
+    open_to_player_characters
+};
+
 // One shared campaign value store. Sessions share this owner, never separate PCs.
 // While combat owns mutable vitals, roster/equipment/script mutations are barred.
 class CampaignParty
@@ -233,6 +241,14 @@ class CampaignParty
     // when the leader is down. 0 when nobody can speak.
     [[nodiscard]] MemberId spokesman() const;
     MemberId add_pc(Character character);
+
+    // Developer tools only (dev_tools/party_tester): player characters may
+    // also take the two NPC positions, so up to eight of them fight. A game
+    // party never allows it, and no save holds such a party.
+    void open_npc_positions_to_player_characters() noexcept
+    {
+        npc_positions_ = NpcPositions::open_to_player_characters;
+    }
     MemberId recruit(std::string source, Character converted, unsigned morale = 100);
     // Simulacrum from camp (LEVELS-3): `action`, one of the caster's camp
     // actions for the spell, makes a copy of `original` named `name` that
@@ -478,8 +494,10 @@ class CampaignParty
     }
 
     void restore(PartyState state);
-    static void validate(const PartyState &state);
-    static void validate_rest_choices(const PartyState &state, const rules::RulesModule &rules);
+    static void validate(const PartyState &state,
+                         NpcPositions npc_positions = NpcPositions::npcs_only);
+    static void validate_rest_choices(const PartyState &state, const rules::RulesModule &rules,
+                                      NpcPositions npc_positions = NpcPositions::npcs_only);
     [[nodiscard]] std::vector<rules::Participant> participants() const;
     void begin_combat();
     // Combat changes vitals only: characters keep their gear throughout.
@@ -519,6 +537,7 @@ class CampaignParty
     std::optional<rules::HazardAttackResult> refuse_bound_weapon(MemberId id, std::uint64_t item);
     std::unique_ptr<rules::RulesModule> rules_;
     PartyState state_;
+    NpcPositions npc_positions_{NpcPositions::npcs_only};
     bool combat_{};
     bool combat_registered_{};
     std::uint64_t combat_elapsed_{};

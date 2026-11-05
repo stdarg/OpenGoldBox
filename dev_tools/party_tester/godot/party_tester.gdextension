@@ -1,0 +1,8 @@
+[configuration]
+entry_symbol = "party_tester_library_init"
+compatibility_minimum = "4.5"
+reloadable = false
+
+[libraries]
+macos = "res://bin/opengold_party_tester.dylib"
+windows.x86_64 = "res://bin/opengold_party_tester.dll"

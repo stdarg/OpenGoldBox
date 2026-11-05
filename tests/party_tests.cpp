@@ -692,6 +692,37 @@ void goliath_occupancy()
     }
 }
 
+// The Party tester's party of eight: player characters take the NPC positions
+// only when a tool opens them, and the game's own check refuses that party.
+void eight_player_characters()
+{
+    CampaignParty party(module());
+    party.open_npc_positions_to_player_characters();
+    for (unsigned i = 0; i < 8; ++i)
+    {
+        party.add_pc(character());
+    }
+    check(party.state().slots[7] && party.member(party.state().slots[7]).npc_source.empty(),
+          "A tool's party seats eight player characters");
+    rejects(
+        [&]
+        {
+            party.add_pc(character());
+        });
+    party.restore(party.checkpoint());
+    rejects(
+        [&]
+        {
+            CampaignParty::validate(party.checkpoint());
+        });
+    CampaignParty game(module());
+    rejects(
+        [&]
+        {
+            game.restore(party.checkpoint());
+        });
+}
+
 void roster_and_equipment()
 {
     CampaignParty party(module());
@@ -3409,6 +3440,7 @@ int main()
         usable_items();
         original_loot();
         roster_and_equipment();
+        eight_player_characters();
         party_leader();
         class_weapon_proficiency();
         stabilization_handoff();

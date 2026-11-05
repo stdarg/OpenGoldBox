@@ -14,6 +14,7 @@
 #include "character_sheet_text.h"
 #include "equipment_choice_dialog.h"
 #include "combat_view.h"
+#include "campaign_combat.h"
 #include "rolf_tour_view.h"
 #include "save_slots.h"
 #include "vital_fixtures.h"
@@ -69,32 +70,6 @@ Character check_fighter()
     return Character(*rules, std::move(draft), {});
 }
 
-presentation::NodeOwner<> combat_scene(const std::shared_ptr<CampaignParty> &party,
-                                       const por::CharacterArt &art,
-                                       const por::CombatBodyCatalog &catalog,
-                                       CampaignEncounter encounter)
-{
-    std::vector<CombatArt> images;
-    for (const auto &participant : party->participants())
-    {
-        const auto resolved =
-            por::resolve_combat_appearance(party->member(participant.id), catalog);
-        images.push_back({participant.id, resolved.icon(art, por::IconPose::ready),
-                          resolved.icon(art, por::IconPose::action),
-                          resolved.selection.matched ? std::string{} : resolved.selection.label});
-    }
-    auto owned = presentation::instantiate_scene("res://scenes/combat_demo.tscn");
-    auto *combat = Object::cast_to<CombatView>(owned.get());
-    if (!combat)
-    {
-        throw std::runtime_error("Invalid combat scene");
-    }
-    combat->set_name("CampaignCombat");
-    combat->campaign_party(party, std::move(images));
-    combat->campaign_encounter(std::move(encounter));
-    combat->prepare_combat();
-    return owned;
-}
 } // namespace
 
 void CharacterCreationView::setup_party()
@@ -739,7 +714,7 @@ void CharacterCreationView::equipment_art_check()
         enemy.rgba.assign(24 * 24 * 4, 255);
         encounter.art.push_back({1000, enemy, enemy});
         presentation::attach_child(
-            *this, combat_scene(campaign_, *art_, *body_catalog_, std::move(encounter)));
+            *this, campaign_combat_scene(campaign_, *art_, *body_catalog_, std::move(encounter)));
         verify_combat();
         for (bool action : {false, true})
         {
@@ -1150,7 +1125,7 @@ void CharacterCreationView::start_check_fight()
     }
     encounter.positions.push_back(bandit_cell);
     presentation::attach_child(
-        *this, combat_scene(campaign_, *art_, *body_catalog_, std::move(encounter)));
+        *this, campaign_combat_scene(campaign_, *art_, *body_catalog_, std::move(encounter)));
     check_fight_ = true;
     leave_roster();
 }
@@ -1515,7 +1490,8 @@ void CharacterCreationView::update_party_navigation()
         presentation::NodeOwner<> owned;
         try
         {
-            owned = combat_scene(campaign_, *art_, *body_catalog_, *town->pending_encounter());
+            owned =
+                campaign_combat_scene(campaign_, *art_, *body_catalog_, *town->pending_encounter());
         }
         catch (const std::exception &e)
         {

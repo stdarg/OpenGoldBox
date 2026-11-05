@@ -20,7 +20,7 @@ msgstr "   Dados de Golpe: {level}d{die}"
 msgid "   Party gold {gold}   XP {xp}"
 msgstr "   Oro del grupo {gold}   PX {xp}"
 
-#: src/OpenGoldBox/party_preview.cpp:422
+#: src/OpenGoldBox/party_preview.cpp:397
 msgid " (Reserve)"
 msgstr " (Reserva)"
 
@@ -600,7 +600,7 @@ msgstr "Añade primero un miembro al grupo"
 msgid "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 msgstr "Suma tu bonificador por competencia a Iniciativa; puedes intercambiarla con un aliado apto antes del primer turno."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1168 src/OpenGoldBox/godot/scenes/character_creation.tscn:1483 src/OpenGoldBox/party_preview.cpp:942
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1168 src/OpenGoldBox/godot/scenes/character_creation.tscn:1483 src/OpenGoldBox/party_preview.cpp:917
 msgid "Add to party"
 msgstr "Añadir al grupo"
 
@@ -2724,7 +2724,7 @@ msgstr "Crear muertos vivientes"
 msgid "Create a character before saving"
 msgstr "Crea un personaje antes de guardarlo"
 
-#: src/OpenGoldBox/party_preview.cpp:435
+#: src/OpenGoldBox/party_preview.cpp:410
 msgid "Create a character, finish its sheet, then Add to party.\n\nA party holds six characters, and up to two others may join it on the way. Removed members remain in the roster."
 msgstr "Crea un personaje, termina su hoja y pulsa Añadir al grupo.\n\nUn grupo admite seis personajes, y hasta otros dos pueden unirse por el camino. Los miembros retirados permanecen en la lista."
 
@@ -2935,11 +2935,11 @@ msgstr "Reducir el zoom del campo de batalla en 10 puntos porcentuales"
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr "Reducir el zoom del campo de batalla en 100 puntos porcentuales"
 
-#: src/OpenGoldBox/party_preview.cpp:1680
+#: src/OpenGoldBox/party_preview.cpp:1656
 msgid "Defeat"
 msgstr "Derrota"
 
-#: src/OpenGoldBox/party_preview.cpp:1764
+#: src/OpenGoldBox/party_preview.cpp:1740
 msgid "Defeat test"
 msgstr "Prueba de derrota"
 
@@ -3389,7 +3389,7 @@ msgstr "Dureza enana: +{hp} PG máximos."
 msgid "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage, and Advantage on saves against being Poisoned."
 msgstr "Los enanos son gente robusta y resistente, tan duradera como la piedra que trabajan.\n\nRasgos raciales:\n- Dureza enana: 1 punto de golpe más en cada nivel.\n- Resiliencia enana: resistencia al daño de veneno y ventaja en las salvaciones contra quedar envenenado."
 
-#: src/OpenGoldBox/party_preview.cpp:486
+#: src/OpenGoldBox/party_preview.cpp:461
 msgid "Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later."
 msgstr "Cada personaje nuevo trae 3d6 × 10 piezas de oro. Guardar partida conserva este grupo para seguir jugando más tarde."
 
@@ -3660,7 +3660,7 @@ msgstr "Equipado"
 msgid "Equipped / "
 msgstr "Equipado / "
 
-#: src/OpenGoldBox/party_preview.cpp:1033 src/OpenGoldBox/rolf_tour_view.cpp:769
+#: src/OpenGoldBox/party_preview.cpp:1008 src/OpenGoldBox/rolf_tour_view.cpp:769
 msgid "Equipped."
 msgstr "Equipado."
 
@@ -3732,7 +3732,7 @@ msgstr "Exhalar (Aliento de dragón)"
 msgid "Exit"
 msgstr "Salir"
 
-#: src/OpenGoldBox/party_preview.cpp:1688
+#: src/OpenGoldBox/party_preview.cpp:1664
 msgid "Exit to OS"
 msgstr "Salir del juego"
 
@@ -4039,7 +4039,7 @@ msgstr "Termina las elecciones de conjuros del descanso largo antes de modificar
 msgid "Finish Long Rest spell choices before combat"
 msgstr "Termina las elecciones de conjuros del descanso largo antes del combate"
 
-#: src/OpenGoldBox/party_preview.cpp:1582
+#: src/OpenGoldBox/party_preview.cpp:1558
 msgid "Finish combat, dialogue or shopping before returning to the party."
 msgstr "Termina el combate, el diálogo o las compras antes de volver al grupo."
 
@@ -5280,7 +5280,7 @@ msgstr "Plaga de insectos"
 msgid "Insight"
 msgstr "Perspicacia"
 
-#: src/OpenGoldBox/party_preview.cpp:1581
+#: src/OpenGoldBox/party_preview.cpp:1557
 msgid "Inspect your party and equipment."
 msgstr "Examina tu grupo y su equipo."
 
@@ -5900,7 +5900,7 @@ msgstr "Cargar"
 msgid "Load Character"
 msgstr "Cargar personaje"
 
-#: src/OpenGoldBox/party_preview.cpp:1684
+#: src/OpenGoldBox/party_preview.cpp:1660
 msgid "Load a saved game to continue."
 msgstr "Carga una partida guardada para continuar."
 
@@ -8221,7 +8221,7 @@ msgstr "Talento fiable: el d20 de {roll} de {name} cuenta como 10."
 msgid "Religion"
 msgstr "Religión"
 
-#: src/OpenGoldBox/party_preview.cpp:1688
+#: src/OpenGoldBox/party_preview.cpp:1664
 msgid "Reload a Saved Game"
 msgstr "Cargar una partida"
 
@@ -9710,7 +9710,7 @@ msgstr "Destello estelar"
 msgid "Start"
 msgstr "Empezar"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:376 src/OpenGoldBox/party_preview.cpp:941
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:376 src/OpenGoldBox/party_preview.cpp:916
 msgid "Start over"
 msgstr "Empezar de nuevo"
 
@@ -11661,7 +11661,7 @@ msgstr "Tu arma cuerpo a cuerpo es tu arma de pacto: competencia, Carisma para s
 msgid "Your party flees the battle."
 msgstr "Tu grupo huye de la batalla."
 
-#: src/OpenGoldBox/party_preview.cpp:1682
+#: src/OpenGoldBox/party_preview.cpp:1658
 msgid "Your party has been defeated."
 msgstr "Tu grupo ha sido derrotado."
 

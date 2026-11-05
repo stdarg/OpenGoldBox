@@ -1,5 +1,7 @@
 #include "combat_test_bridge.h"
 #include "combat_view.h"
+#include "campaign_combat.h"
+#include "seeded_battlefield.h"
 #include "game_monsters.h"
 #include "godot_nodes.h"
 #include "godot_path.h"
@@ -22,8 +24,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
-#include <numeric>
-#include <random>
 #include <set>
 #include <stdexcept>
 
@@ -640,88 +640,51 @@ String CombatTestBridge::start(const Dictionary &config)
             encounter.terrain_art.push_back(std::move(image.image));
         }
         const auto seed = std::uint64_t(std::int64_t(config.get("seed", 1)));
-        std::mt19937_64 rng(seed);
-        std::array<unsigned, 256> cells{};
-        std::iota(cells.begin(), cells.end(), 0);
-        std::shuffle(cells.begin(), cells.end(), rng);
-        bool placed = false;
-        for (unsigned cell : cells)
-        {
-            for (unsigned facing = 0; facing < 4; ++facing)
-            {
-                auto field = dungeon_battlefield(map->get(), cell % 16, cell / 16);
-                const auto direction = MapDirection((facing + seed) % 4);
-                const auto positions = encounter_formation(field, direction, 1, 6, footprints);
-                const auto complete = [](const auto &v)
-                {
-                    return std::all_of(v.begin(), v.end(),
-                                       [](const auto &p)
-                                       {
-                                           return p.has_value();
-                                       });
-                };
-                if (!complete(positions.party) || !complete(positions.enemies))
-                    continue;
-                encounter.field = std::move(field);
-                encounter.facing = direction;
-                encounter.distance = 1;
-                std::array<unsigned, 6> strong{0, 1, 2, 3, 4, 5}, near{0, 1, 2, 3, 4, 5};
-                std::stable_sort(strong.begin(), strong.end(),
-                                 [&](unsigned a, unsigned b)
-                                 {
-                                     const auto x = party->profile(party->state().slots[a]);
-                                     const auto y = party->profile(party->state().slots[b]);
-                                     return x.armor_class != y.armor_class
-                                                ? x.armor_class > y.armor_class
-                                                : x.hit_points > y.hit_points;
-                                 });
-                const auto enemy = *positions.enemies.front();
-                std::stable_sort(near.begin(), near.end(),
-                                 [&](unsigned a, unsigned b)
-                                 {
-                                     const auto distance = [&](unsigned n)
-                                     {
-                                         const auto p = *positions.party[n];
-                                         return std::abs(p.x - enemy.x) + std::abs(p.y - enemy.y);
-                                     };
-                                     return distance(a) < distance(b);
-                                 });
-                encounter.positions.resize(std::size_t(6 + count));
-                for (unsigned n = 0; n < 6; ++n)
-                    encounter.positions[strong[n]] = *positions.party[near[n]];
-                for (int n = 0; n < count; ++n)
-                    encounter.positions[6 + n] = *positions.enemies[n];
-                placed = true;
-                break;
-            }
-            if (placed)
-                break;
-        }
-        if (!placed)
+        auto battlefield = seeded_battlefield(map->get(), seed, 1, 6, footprints);
+        if (!battlefield)
         {
             throw std::runtime_error("No position in this map fits the encounter");
         }
-        auto art = CharacterArt::load(dir);
+        const auto &positions = battlefield->formation;
+        encounter.field = std::move(battlefield->field);
+        encounter.facing = battlefield->facing;
+        encounter.distance = 1;
+        // The tester stands its strongest members, by AC then HP, nearest the
+        // enemies.
+        std::array<unsigned, 6> strong{0, 1, 2, 3, 4, 5}, near{0, 1, 2, 3, 4, 5};
+        std::stable_sort(strong.begin(), strong.end(),
+                         [&](unsigned a, unsigned b)
+                         {
+                             const auto x = party->profile(party->state().slots[a]);
+                             const auto y = party->profile(party->state().slots[b]);
+                             return x.armor_class != y.armor_class ? x.armor_class > y.armor_class
+                                                                   : x.hit_points > y.hit_points;
+                         });
+        const auto enemy = *positions.enemies.front();
+        std::stable_sort(near.begin(), near.end(),
+                         [&](unsigned a, unsigned b)
+                         {
+                             const auto distance = [&](unsigned n)
+                             {
+                                 const auto p = *positions.party[n];
+                                 return std::abs(p.x - enemy.x) + std::abs(p.y - enemy.y);
+                             };
+                             return distance(a) < distance(b);
+                         });
+        encounter.positions.resize(std::size_t(6 + count));
+        for (unsigned n = 0; n < 6; ++n)
+        {
+            encounter.positions[strong[n]] = *positions.party[near[n]];
+        }
+        for (int n = 0; n < count; ++n)
+        {
+            encounter.positions[6 + n] = *positions.enemies[n];
+        }
+        const auto art = CharacterArt::load(dir);
         const auto body = CombatBodyCatalog::load(resource("data/art/combat-body-looks.tsv"),
                                                   resource("data/art/combat-weapon-options.tsv"));
-        std::vector<CombatArt> images;
-        for (const auto &who : party->participants())
-        {
-            const auto selected = resolve_combat_appearance(party->member(who.id), body);
-            images.push_back(
-                {who.id, selected.icon(art, IconPose::ready), selected.icon(art, IconPose::action),
-                 selected.selection.matched ? std::string{} : selected.selection.label});
-        }
-        auto owned = presentation::instantiate_scene("res://scenes/combat_demo.tscn");
-        auto *combat = Object::cast_to<CombatView>(owned.get());
-        if (!combat)
-        {
-            throw std::runtime_error("Game combat scene unavailable");
-        }
-        combat->set_name("CombatTestFight");
-        combat->campaign_party(party, std::move(images));
-        combat->campaign_encounter(std::move(encounter));
-        combat->prepare_combat();
+        auto owned = campaign_combat_scene(party, art, body, std::move(encounter));
+        owned->set_name("CombatTestFight");
         presentation::attach_child(*get_parent(), std::move(owned));
         return {};
     }

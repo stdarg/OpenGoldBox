@@ -972,7 +972,8 @@ void CampaignParty::join(MemberId id, bool npc)
     {
         throw std::runtime_error("Already in party");
     }
-    const auto start = npc ? 6 : 0, end = npc ? 8 : 6;
+    const bool open = npc_positions_ == NpcPositions::open_to_player_characters;
+    const auto start = npc ? 6 : 0, end = npc || open ? 8 : 6;
     for (int i = start; i < end; ++i)
     {
         if (!state_.slots[i])
@@ -985,8 +986,9 @@ void CampaignParty::join(MemberId id, bool npc)
             return;
         }
     }
-    throw std::runtime_error(npc ? "Both NPC positions are occupied"
-                                 : "All six PC positions are occupied");
+    throw std::runtime_error(npc    ? "Both NPC positions are occupied"
+                             : open ? "All eight positions are occupied"
+                                    : "All six PC positions are occupied");
 }
 
 MemberId CampaignParty::add_pc(Character character)
@@ -996,7 +998,8 @@ MemberId CampaignParty::add_pc(Character character)
     {
         throw std::runtime_error("Roster is full");
     }
-    if (std::none_of(state_.slots.begin(), state_.slots.begin() + 6,
+    const auto pc_positions = npc_positions_ == NpcPositions::open_to_player_characters ? 8 : 6;
+    if (std::none_of(state_.slots.begin(), state_.slots.begin() + pc_positions,
                      [](auto id)
                      {
                          return !id;
@@ -1220,7 +1223,7 @@ void CampaignParty::reincarnate(const rules::CharacterRules &creation, MemberId 
     const auto &after = body.character.sheet();
     body.vitals = rules_->fitted_state(before, body.vitals, after);
     rules_->set_hit_points(body.vitals, after, rules_->hit_point_maximum(after, body.vitals));
-    validate(next);
+    validate(next, npc_positions_);
     state_ = std::move(next);
 }
 
@@ -3159,7 +3162,7 @@ std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot, const 
     return settled.exchange;
 }
 
-void CampaignParty::validate(const PartyState &state)
+void CampaignParty::validate(const PartyState &state, NpcPositions npc_positions)
 {
     if (state.roster.size() > 128 || state.selected_slot.index >= 8 || !state.next_id ||
         state.claimed_rewards.size() > 1024 || state.subminute_milliseconds >= 60000 ||
@@ -3225,7 +3228,9 @@ void CampaignParty::validate(const PartyState &state)
             {
                 throw std::runtime_error("Invalid active party checkpoint");
             }
-            if ((slot < 6) != member_in(state, id).npc_source.empty())
+            const bool npc = !member_in(state, id).npc_source.empty();
+            if (npc ? slot < 6
+                    : slot >= 6 && npc_positions != NpcPositions::open_to_player_characters)
             {
                 throw std::runtime_error("Invalid PC/NPC checkpoint position");
             }
@@ -3330,9 +3335,10 @@ void CampaignParty::validate(const PartyState &state)
     }
 }
 
-void CampaignParty::validate_rest_choices(const PartyState &state, const rules::RulesModule &rules)
+void CampaignParty::validate_rest_choices(const PartyState &state, const rules::RulesModule &rules,
+                                          NpcPositions npc_positions)
 {
-    validate(state);
+    validate(state, npc_positions);
     // The maximum is the rules': Aid raises it above the sheet's.
     for (const auto &m : state.roster)
     {
@@ -3409,7 +3415,7 @@ void CampaignParty::validate_rest_choices(const PartyState &state, const rules::
 void CampaignParty::restore(PartyState state)
 {
     outside_combat();
-    validate_rest_choices(state, *rules_);
+    validate_rest_choices(state, *rules_, npc_positions_);
     for (const auto &m : state.roster)
     {
         (void)rules_->character_profile(m.character.sheet(), equipped_definitions(m));

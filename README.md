@@ -400,9 +400,13 @@ Each tool's README has its build and self-check commands.
   monster's Hit Points, stats, spellcasting and fight ratings, the scripts'
   wandering and rest chances, and the companions who join the party, and
   publishes the changes into the game's data.
-- [Combat tester](dev_tools/combat_tester/README.md): fights any monster type
-  on any of the game's 29 combat maps with a preset party, on the game's own
-  combat screen.
+- [Combat tester](dev_tools/combat_tester/README.md): fights one of six Slums
+  monster types on any of the game's 29 combat maps with a preset party, on the
+  game's own combat screen.
+- [Party tester](dev_tools/party_tester/README.md): a party of up to eight from
+  the Character Pool, levelled to a chosen level with the game's level-up
+  dialog, fights any monsters and NPCs the areas' scripts load on an area's
+  battlefield, on the game's combat screen.
 - [AI lab](dev_tools/ai_lab/README.md): replays real campaign fights through
   the game's combat and computer play, to measure a change to how the computer
   plays.

@@ -137,21 +137,6 @@ Edge edge_ahead(PartyPose pose)
             reversed(pose.facing)};
 }
 
-// Squares the party sees ahead before a wall or door, at most two. As in the
-// original, the encounter distance never exceeds it in a 3D area.
-unsigned open_squares_ahead(const GeoMap &map, PartyPose pose)
-{
-    unsigned squares = 0;
-    while (squares < 2 && !map.at(pose.x, pose.y).walls[index(pose.facing)])
-    {
-        ++squares;
-        const auto ahead = edge_ahead(pose);
-        pose.x = ahead.next_x;
-        pose.y = ahead.next_y;
-    }
-    return squares;
-}
-
 // The script's surprise bits (0x6DCB). SURPRISE writes only 0 to 3, but a
 // script may store any number there.
 opengold::Surprise script_surprise(std::uint16_t bits)
@@ -418,6 +403,19 @@ Message refusal(opengold::TrainingDenial denial, const std::string &name, std::u
 }
 
 } // namespace
+
+unsigned open_squares_ahead(const GeoMap &map, PartyPose pose)
+{
+    unsigned squares = 0;
+    while (squares < 2 && !map.at(pose.x, pose.y).walls[index(pose.facing)])
+    {
+        ++squares;
+        const auto ahead = edge_ahead(pose);
+        pose.x = ahead.next_x;
+        pose.y = ahead.next_y;
+    }
+    return squares;
+}
 
 void RolfTourSession::configure_town()
 {
@@ -2729,45 +2727,28 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                            std::to_string(record) + ", count " + std::to_string(count) + ", icon " +
                            std::to_string(icon));
         }
-        const auto &creature = area_resources().encounter_creatures.at(record);
-        // Record byte 0x10E is the side a creature fights on (coab
-        // combat_team): 0, the party's, only for Valhingen Graveyard's
-        // efreeti, who helps a party carrying his bottle.
-        const bool ally = creature.stored.raw.at(0x10E) == 0;
-        // A leader readies a bow only when its art shows one: of the Slums
-        // combat icons, only the orc leader's icon 5 does.
-        auto definition = area_resources().conversions.at(record).definition;
-        if (definition == "slums-orc-leader" && icon == 5)
-        {
-            definition = "slums-orc-leader-archer";
-        }
-        const auto *exported = exported_creature(area_resources(), record);
-        const auto art = creature_art(area_resources().combat_archive, icon, exported,
-                                      definition.ends_with("-archer"));
-        if (!art)
-        {
-            throw EclError("Invalid original combat icon");
-        }
+        const auto &area = area_resources();
+        const bool ally = fights_for_party(area, record);
+        const auto *exported = exported_creature(area, record);
+        const auto name = creature_name(area, record, exported);
         for (unsigned i = 0; ally && i < count; ++i)
         {
             const auto id =
                 static_cast<rules::EntityId>(opengold::first_ally_id + staged_allies_.size());
-            staged_allies_.push_back(
-                staged_fighter(id, definition, exported ? exported->name : creature.stored.name,
-                               rules::Side::party, creature, exported, difficulty_));
-            staged_ally_art_.push_back(*art);
-            staged_ally_art_.back().entity = id;
+            auto staged = stage_area_creature(area, record, icon, exported, id, name,
+                                              rules::Side::party, difficulty_);
+            staged_allies_.push_back(std::move(staged.fighter));
+            staged_ally_art_.push_back(std::move(staged.art));
         }
         for (unsigned i = 0; !ally && i < count; ++i)
         {
             const auto id = static_cast<rules::EntityId>(1000 + staged_enemies_.size());
-            staged_enemies_.push_back(
-                staged_fighter(id, definition,
-                               (exported ? exported->name : creature.stored.name) + " " +
-                                   std::to_string(staged_enemies_.size() + 1),
-                               rules::Side::opposition, creature, exported, difficulty_));
-            staged_art_.push_back(*art);
-            staged_art_.back().entity = id;
+            auto staged =
+                stage_area_creature(area, record, icon, exported, id,
+                                    name + " " + std::to_string(staged_enemies_.size() + 1),
+                                    rules::Side::opposition, difficulty_);
+            staged_enemies_.push_back(std::move(staged.fighter));
+            staged_art_.push_back(std::move(staged.art));
             staged_records_.push_back(record);
         }
         break;
@@ -4153,6 +4134,49 @@ bool RolfTourSession::choose_at_temple(std::size_t choice)
         return true;
     }
     return false;
+}
+
+bool fights_for_party(const PhlanResources &area, unsigned record)
+{
+    // Record byte 0x10E is the side a creature fights on (coab combat_team):
+    // 0, the party's, only for Valhingen Graveyard's efreeti, who helps a
+    // party carrying his bottle.
+    return area.encounter_creatures.at(record).stored.raw.at(0x10E) == 0;
+}
+
+std::string creature_name(const PhlanResources &area, unsigned record,
+                          const ExportedMonster *exported)
+{
+    return exported ? exported->name : area.encounter_creatures.at(record).stored.name;
+}
+
+StagedCreature stage_area_creature(const PhlanResources &area, unsigned record, unsigned icon,
+                                   const ExportedMonster *exported, rules::EntityId id,
+                                   std::string name, rules::Side side, Difficulty difficulty)
+{
+    const auto conversion = area.conversions.find(record);
+    const auto creature = area.encounter_creatures.find(record);
+    if (conversion == area.conversions.end() || creature == area.encounter_creatures.end())
+    {
+        throw EclError("Encounter needs an explicit supported creature conversion: record " +
+                       std::to_string(record));
+    }
+    // A leader readies a bow only when its art shows one: of the Slums combat
+    // icons, only the orc leader's icon 5 does.
+    auto definition = conversion->second.definition;
+    if (definition == "slums-orc-leader" && icon == 5)
+    {
+        definition = "slums-orc-leader-archer";
+    }
+    auto art = creature_art(area.combat_archive, icon, exported, definition.ends_with("-archer"));
+    if (!art)
+    {
+        throw EclError("Invalid original combat icon");
+    }
+    art->entity = id;
+    return {staged_fighter(id, std::move(definition), std::move(name), side, creature->second,
+                           exported, difficulty),
+            std::move(*art)};
 }
 
 } // namespace opengold::por
