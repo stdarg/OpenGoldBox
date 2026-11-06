@@ -2,6 +2,25 @@ extends SceneTree
 
 var failed := false
 
+# The zoom buttons save the zoom in the project's settings.cfg, which later
+# checks read, so the file is put back as it was before this check ends.
+var settings_path := ProjectSettings.globalize_path("res://settings.cfg")
+var kept_settings = null
+
+func keep_settings() -> void:
+    if FileAccess.file_exists(settings_path):
+        kept_settings = FileAccess.get_file_as_bytes(settings_path)
+
+func finish(code: int) -> void:
+    if kept_settings == null:
+        if FileAccess.file_exists(settings_path):
+            DirAccess.remove_absolute(settings_path)
+    else:
+        var file := FileAccess.open(settings_path, FileAccess.WRITE)
+        file.store_buffer(kept_settings)
+        file.close()
+    quit(code)
+
 func _initialize() -> void:
     call_deferred("check_demo")
 
@@ -79,6 +98,7 @@ func check_sprite_geometry(canvas: Control) -> void:
             "New art of a tall creature stands on its lower square's bottom edge")
 
 func check_demo() -> void:
+    keep_settings()
     root.size = Vector2i(1920, 1080)
     # This window takes the keyboard focus when it opens, so keys and clicks meant
     # for another app would reach it. Only the check's own pushed input drives it.
@@ -300,7 +320,7 @@ func check_demo() -> void:
     require(combat.get_node("End").visible and not combat.get_node("End").disabled,
         "Allied transit keeps the existing End Turn control available")
     if failed:
-        quit(1)
+        finish(1)
     else:
         print("Combat demo checks passed: ", output)
-        quit(0)
+        finish(0)

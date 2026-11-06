@@ -1561,6 +1561,8 @@ void CombatView::adjust_zoom(int percentage_points)
         return;
     }
     combat_zoom_ = next / 100.0;
+    // The next fight opens at this zoom, as the Options menu's would.
+    settings::save_combat_zoom(next);
     layout();
     refresh();
     // ScrollContainer applies its new child bounds during the layout pass.

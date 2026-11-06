@@ -29,6 +29,13 @@ func movement_key(code: Key, shift := false) -> void:
     event.shift_pressed = shift
     root.push_input(event)
 
+# The combat zoom settings.cfg holds, or -1 when it holds none.
+func saved_zoom(config_path: String) -> int:
+    var config := ConfigFile.new()
+    if config.load(config_path) != OK:
+        return -1
+    return int(config.get_value("combat", "combat_zoom", -1))
+
 func run_checks() -> void:
     var config_path := ProjectSettings.globalize_path("res://settings.cfg")
     var had_config := FileAccess.file_exists(config_path)
@@ -157,6 +164,7 @@ func run_checks() -> void:
     require(canvas.custom_minimum_size.is_equal_approx(Vector2(12, 9) * base_tile * 1.1),
         "+10% button scales the shared battlefield")
     require(combat.get_node("ZoomLevel").text == "110%", "Zoom readout follows the +10% control")
+    require(saved_zoom(config_path) == 110, "A zoom button saves the zoom in settings.cfg")
     combat.get_node("ZoomIn100").pressed.emit()
     await settle()
     require(canvas.custom_minimum_size.is_equal_approx(Vector2(12, 9) * base_tile * 2.1),
@@ -167,6 +175,7 @@ func run_checks() -> void:
     await settle()
     require(canvas.custom_minimum_size.is_equal_approx(Vector2(12, 9) * base_tile),
         "Zoom buttons reverse to the 100% default")
+    require(saved_zoom(config_path) == 100, "Every zoom change is saved")
     if OS.get_cmdline_user_args().has("--capture"):
         root.size = Vector2i(1920, 1080)
         await settle()
@@ -216,6 +225,14 @@ func run_checks() -> void:
     base_tile = maxf(alternate_scroll.size.x / 12.0, alternate_scroll.size.y / 9.0)
     require(alternate_canvas.custom_minimum_size.is_equal_approx(Vector2(12, 9) * base_tile * 3),
         "Combat reads 300% from settings.cfg")
+    # A zoom set with the buttons is the next fight's zoom.
+    current_scene.get_node("ZoomIn10").pressed.emit()
+    await settle()
+    require(saved_zoom(config_path) == 310, "The fight's +10% is saved")
+    change_scene_to_file("res://scenes/combat_demo.tscn")
+    await settle()
+    require(current_scene.get_node("ZoomLevel").text == "310%",
+        "The next fight opens at the zoom the last one was left at")
     var log_view: RichTextLabel = current_scene.get_node("LogStack/Log")
     log_view.size.y = 60
     current_scene.get_node("Move").pressed.emit()

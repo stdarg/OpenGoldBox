@@ -1,5 +1,24 @@
 extends SceneTree
 
+# The zoom buttons save the zoom in the project's settings.cfg, which later
+# checks read, so the file is put back as it was before this check ends.
+var settings_path := ProjectSettings.globalize_path("res://settings.cfg")
+var kept_settings = null
+
+func keep_settings() -> void:
+    if FileAccess.file_exists(settings_path):
+        kept_settings = FileAccess.get_file_as_bytes(settings_path)
+
+func finish(code: int) -> void:
+    if kept_settings == null:
+        if FileAccess.file_exists(settings_path):
+            DirAccess.remove_absolute(settings_path)
+    else:
+        var file := FileAccess.open(settings_path, FileAccess.WRITE)
+        file.store_buffer(kept_settings)
+        file.close()
+    quit(code)
+
 func _initialize() -> void:
     call_deferred("check")
 
@@ -20,6 +39,7 @@ func keep_initiative(combat: Node) -> void:
             await process_frame
 
 func check() -> void:
+    keep_settings()
     root.size = Vector2i(1920, 1080)
     # This window takes the keyboard focus when it opens, so keys and clicks meant
     # for another app would reach it. Only the check's own pushed input drives it.
@@ -42,7 +62,7 @@ func check() -> void:
             or not details.contains("AC 16") or not details.contains("HP 7/7") \
             or not details.contains("Weapon: Dagger"):
         push_error("Leader hover omitted its type, AC, HP, or current melee weapon: " + details)
-        quit(1)
+        finish(1)
         return
     # A hidden or minimized window skips drawing, so frame_post_draw may never
     # come; draw explicitly after one processed frame.
@@ -51,24 +71,24 @@ func check() -> void:
     var path := ProjectSettings.globalize_path("res://../../../build/checks/combat-hover.png")
     if root.get_texture().get_image().save_png(path) != OK:
         push_error("Could not capture combat hover")
-        quit(1)
+        finish(1)
         return
     hover_cell(canvas, tile, Vector2(7, 4))
     details = combat.get_node("HoverInfo/Details").text
     if not tooltip.visible or not details.contains("Kobold") or not details.contains("AC 14") \
             or not details.contains("HP 7/7") or not details.contains("Weapon: Dagger"):
         push_error("Ordinary Kobold hover did not show its dagger: " + details)
-        quit(1)
+        finish(1)
         return
     hover_cell(canvas, tile, Vector2(7, 5))
     if tooltip.visible:
         push_error("Party sprite incorrectly showed monster tooltip")
-        quit(1)
+        finish(1)
         return
     hover_cell(canvas, tile, Vector2(1, 1))
     if tooltip.visible:
         push_error("Empty square kept the monster tooltip")
-        quit(1)
+        finish(1)
         return
     combat.get_node("ZoomIn10").emit_signal("pressed")
     for frame in range(4):
@@ -77,7 +97,7 @@ func check() -> void:
     hover_cell(canvas, tile, Vector2(6, 4))
     if not tooltip.visible or not combat.get_node("HoverInfo/Details").text.contains("Kobold Leader"):
         push_error("Hover mapping did not follow battlefield zoom")
-        quit(1)
+        finish(1)
         return
     print("Combat hover checks passed: ", path)
-    quit(0)
+    finish(0)
