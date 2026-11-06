@@ -48,6 +48,14 @@ void blessed_warrior_checks()
                   std::vector<std::string>{"guidance", "resistance", "sacred_flame",
                                            "spare_the_dying"},
           "Blessed Warrior learns two Cleric cantrips at level two");
+    for (const auto &option : options.learning.front().options)
+    {
+        auto each = choice;
+        (*each.spell_learning)["cantrips:2"] = {
+            option.id, option.id == "guidance" ? "resistance" : "guidance"};
+        check(party.preview_advancement(id, each).character.sheet().level == 2,
+              "Blessed Warrior learns " + option.id);
+    }
     auto defense = choice;
     defense.fighting_style = "defense";
     check(rules

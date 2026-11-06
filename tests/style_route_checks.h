@@ -373,6 +373,27 @@ void run()
                             }) == 1,
               "No duplicate Defense effect");
     }
+    // A Fighter replaces its Fighting Style at any Fighter level, not only up
+    // to level four: the dialog offered it at level 5 and then refused it.
+    {
+        auto h = leveled(*rules, "fighter", "archery", 4);
+        auto choice = rules->default_advancement(h.sheet());
+        choice.fighting_style = "defense";
+        VitalState v{h.sheet().hit_points - 2};
+        check(h.advance(*rules, v, choice), "Fighter replaces Archery with Defense at level five");
+        check(std::any_of(h.sheet().grants.begin(), h.sheet().grants.end(),
+                          [](const auto &g)
+                          {
+                              return g.id == "feat:defense" &&
+                                     g.source_id == "class:fighter:fighting_style";
+                          }) &&
+                  std::none_of(h.sheet().grants.begin(), h.sheet().grants.end(),
+                               [](const auto &g)
+                               {
+                                   return g.id == "feat:archery";
+                               }),
+              "Defense replaces Archery");
+    }
     for (const auto *klass : {"fighter", "paladin", "ranger"})
     {
         for (bool npc : {false, true})

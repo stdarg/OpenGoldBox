@@ -181,6 +181,44 @@ void fighter_checks()
           "A level-15 Fighter saves and reloads exactly");
 }
 
+// A Champion 7 changing its Fighting Style takes a different one as its
+// Additional Fighting Style; the same one was refused with an error that did
+// not say why.
+void champion_style_checks()
+{
+    const auto rules = module();
+    const auto six = fighter(6);
+    const auto &sheet = six.sheet();
+    auto choice = rules->default_advancement(sheet);
+    const auto options = rules->advancement_options(sheet, choice);
+    const auto extra = std::find_if(options.training.begin(), options.training.end(),
+                                    [](const auto &g)
+                                    {
+                                        return g.id == "subclass:fighter:champion:fighting_style";
+                                    });
+    check(extra != options.training.end() && extra->options.size() > 1,
+          "Level 7 offers an Additional Fighting Style");
+    choice.fighting_style = extra->options[0].id;
+    choice.training[extra->id] = {extra->options[0].id};
+    std::string refused;
+    try
+    {
+        auto attempt = six;
+        VitalState life;
+        (void)attempt.advance(*rules, life, choice);
+    }
+    catch (const std::exception &error)
+    {
+        refused = error.what();
+    }
+    check(refused == "Choose an Additional Fighting Style other than the new Fighting Style",
+          "The same style twice is refused by name: " + refused);
+    choice.training[extra->id] = {extra->options[1].id};
+    auto copy = six;
+    VitalState life;
+    check(copy.advance(*rules, life, choice), "A different Additional Fighting Style is taken");
+}
+
 bool offered(const CombatSession &c, std::string_view verb)
 {
     const auto commands = c.legal_commands();
@@ -502,6 +540,7 @@ int main()
     try
     {
         fighter_checks();
+        champion_style_checks();
         extra_attack_checks();
         tactical_shift_checks();
         tactical_master_checks();

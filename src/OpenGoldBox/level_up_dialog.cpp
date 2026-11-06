@@ -24,6 +24,37 @@ namespace
 {
 using presentation::gs;
 
+// Keeps the picks the level's learning groups still offer. A cantrip or spell
+// swapped in on this level is known by then, so it is no longer offered as
+// one of the level's new ones, and a pick of it would refuse the level.
+void keep_offered(opengold::rules::TrainingChoices &learning,
+                  const std::vector<opengold::rules::TrainingChoiceGroup> &offered)
+{
+    std::erase_if(learning,
+                  [&](auto &entry)
+                  {
+                      const auto group = std::find_if(offered.begin(), offered.end(),
+                                                      [&](const auto &g)
+                                                      {
+                                                          return g.id == entry.first;
+                                                      });
+                      if (group == offered.end())
+                      {
+                          return true;
+                      }
+                      std::erase_if(entry.second,
+                                    [&](const std::string &id)
+                                    {
+                                        return std::none_of(group->options.begin(),
+                                                            group->options.end(),
+                                                            [&](const auto &option)
+                                                            {
+                                                                return option.id == id;
+                                                            });
+                                    });
+                      return false;
+                  });
+}
 } // namespace
 
 presentation::NodeOwner<> LevelUpDialog::create()
@@ -130,13 +161,16 @@ bool picks_several(const opengold::rules::TrainingChoiceGroup &group)
 }
 } // namespace
 
+// The first page has one dropdown, so a second single pick (a Warlock 15's
+// Mystic Arcanum and invocation) gets a checkbox page too.
 std::vector<const opengold::rules::TrainingChoiceGroup *>
 LevelUpDialog::advancement_skilled_groups() const
 {
+    const auto *dropdown = advancement_dropdown_group();
     std::vector<const opengold::rules::TrainingChoiceGroup *> groups;
     for (const auto &group : advancement_options_.training)
     {
-        if (picks_several(group))
+        if (&group != dropdown)
         {
             groups.push_back(&group);
         }
@@ -276,6 +310,10 @@ void LevelUpDialog::refresh_swaps()
         }
         if (!shown)
         {
+            // A hidden row offers nothing: an earlier level-up's pick left in
+            // it once read as a replacement still to choose.
+            required_node<OptionButton>(*this, String("SwapPage/") + base).clear();
+            required_node<OptionButton>(*this, String("SwapPage/") + base + String("With")).clear();
             return;
         }
         required_node<Label>(*this, String("SwapPage/") + base + String("Label"))
@@ -518,6 +556,9 @@ void LevelUpDialog::refresh_advancement_skilled()
             box->hide();
         }
     }
+    // The page is reused for every character and group, so each box moves to
+    // its place in the group's order.
+    int position = 0;
     for (const auto &option : group->options)
     {
         const auto name = presentation::training_string(option.id).replace(":", "_");
@@ -554,6 +595,7 @@ void LevelUpDialog::refresh_advancement_skilled()
         // A full selection leaves only the chosen three toggleable, so the
         // count cannot be exceeded by clicking.
         box->set_disabled(!on && picked.size() >= group->count);
+        rows.move_child(box, position++);
         box->show();
     }
 }
@@ -666,15 +708,28 @@ opengold::rules::AdvancementChoice LevelUpDialog::class_default(const std::strin
     return choice;
 }
 
+bool LevelUpDialog::taking_starting_class(const std::string &class_id) const
+{
+    auto &party = const_cast<LevelUpDialog *>(this)->campaign();
+    return class_id.empty() ||
+           class_id == party.member(advancing_).character.creation_data().character_class;
+}
+
+opengold::rules::AdvancementChoice LevelUpDialog::level_default() const
+{
+    const auto &class_id = advancement_choice_.character_class;
+    return taking_starting_class(class_id)
+               ? const_cast<LevelUpDialog *>(this)->campaign().default_advancement(advancing_)
+               : class_default(class_id);
+}
+
 void LevelUpDialog::begin_class(const std::string &class_id)
 {
-    const auto id = advancing_;
     advancement_page_ = AdvancementPage::choices;
     skilled_index_ = 0;
-    const bool starting =
-        class_id.empty() || class_id == campaign().member(id).character.creation_data().character_class;
-    advancement_choice_ =
-        starting ? campaign().default_advancement(id) : class_default(class_id);
+    advancement_choice_ = taking_starting_class(class_id) ? campaign().default_advancement(advancing_)
+                                                          : class_default(class_id);
+    const auto id = advancing_;
     advancement_options_ = campaign().advancement_options(id, advancement_choice_);
     swap_rows_ = {};
     swap_incomplete_ = false;
@@ -825,7 +880,7 @@ void LevelUpDialog::drop_unoffered_learning()
                                          advancement_choice_),
                 opengold::rules::SpellChoiceContext::advancement)
             .learning;
-    if (!campaign().default_advancement(advancing_).spell_learning)
+    if (!level_default().spell_learning)
     {
         if (offered.empty())
         {
@@ -836,18 +891,56 @@ void LevelUpDialog::drop_unoffered_learning()
             advancement_choice_.spell_learning.emplace();
         }
     }
-    if (!advancement_choice_.spell_learning)
+    if (advancement_choice_.spell_learning)
+    {
+        keep_offered(*advancement_choice_.spell_learning, offered);
+    }
+    keep_preparable(advancement_choice_);
+}
+
+void LevelUpDialog::keep_preparable(opengold::rules::AdvancementChoice &choice) const
+{
+    if (!choice.spell_learning)
     {
         return;
     }
-    std::erase_if(*advancement_choice_.spell_learning,
-                  [&](const auto &entry)
+    auto &party = const_cast<LevelUpDialog *>(this)->campaign();
+    const auto &rules = party.rule_module();
+    const auto context = opengold::rules::SpellChoiceContext::advancement;
+    // A spell stays when the page offers it after the level's learning, as a
+    // new spellbook entry is, or was locked before it. One the learning makes
+    // always prepared (a Magic Initiate spell) leaves, as does a Land
+    // Druid's circle spell.
+    auto next = rules.spell_choice_sheet(party.member(advancing_).character.sheet(), choice);
+    const auto before = rules.spell_choice_options(next, context);
+    try
+    {
+        rules.apply_spell_choices(next,
+                                  opengold::rules::SpellChoices{*choice.spell_learning, {}, {}, {}},
+                                  context, opengold::rules::ChoiceCompleteness::partial);
+    }
+    catch (const std::exception &)
+    {
+    } // The preview reports what is wrong.
+    const auto after = rules.spell_choice_options(next, context);
+    const auto offered = [](const opengold::rules::SpellChoiceOptions &options,
+                            const std::string &id)
+    {
+        return std::find(options.locked_prepared.begin(), options.locked_prepared.end(), id) !=
+                   options.locked_prepared.end() ||
+               std::any_of(options.preparation.begin(), options.preparation.end(),
+                           [&](const auto &option)
+                           {
+                               return option.id == id;
+                           });
+    };
+    std::erase_if(choice.spells,
+                  [&](const std::string &id)
                   {
-                      return std::none_of(offered.begin(), offered.end(),
-                                          [&](const auto &group)
-                                          {
-                                              return group.id == entry.first;
-                                          });
+                      return std::find(before.locked_prepared.begin(),
+                                       before.locked_prepared.end(),
+                                       id) == before.locked_prepared.end() &&
+                             !offered(after, id);
                   });
 }
 
@@ -986,15 +1079,17 @@ void LevelUpDialog::advancement_changed(std::int64_t)
     }
     if (preview_choice.spell_learning && advancement_page_ != AdvancementPage::spells)
     {
-        // The starting class's defaults, or another class's (MULTI-1).
-        const bool starting = advancement_choice_.character_class.empty() ||
-                              advancement_choice_.character_class ==
-                                  campaign().member(advancing_).character.creation_data().character_class;
-        const auto defaults = starting ? campaign().default_advancement(advancing_)
-                                       : class_default(advancement_choice_.character_class);
+        const auto defaults = level_default();
         preview_choice.spell_learning =
             defaults.spell_learning.value_or(opengold::rules::TrainingChoices{});
         preview_choice.spells = defaults.spells;
+        // The defaults know nothing of a spell swapped on this page.
+        if (const auto &swap = preview_choice.spell_swap; !swap.replacement.empty())
+        {
+            std::erase(preview_choice.spells, swap.replacement);
+            std::replace(preview_choice.spells.begin(), preview_choice.spells.end(), swap.replaced,
+                         swap.replacement);
+        }
         // The defaults follow the default Fighting Style; a chosen style's own
         // learning (Blessed Warrior's cantrips) previews with its first options.
         const auto &rules = campaign().rule_module();
@@ -1002,6 +1097,7 @@ void LevelUpDialog::advancement_changed(std::int64_t)
             rules.spell_choice_sheet(campaign().member(advancing_).character.sheet(),
                                      preview_choice),
             opengold::rules::SpellChoiceContext::advancement);
+        keep_offered(*preview_choice.spell_learning, offered.learning);
         // Two groups can offer one spell (a Wizard's spellbook and Magic
         // Initiate), which a stand-in must not learn twice.
         const auto picked = [&](const std::string &id)
@@ -1025,9 +1121,9 @@ void LevelUpDialog::advancement_changed(std::int64_t)
                 }
             }
         }
-        // Another class prepares from what the stand-in learned, such as a
-        // new Wizard's spellbook.
-        if (!starting)
+        // The stand-in prepares from what it learned, such as a new Wizard's
+        // spellbook, and fills a place a swap or a circle spell left open.
+        keep_preparable(preview_choice);
         {
             auto next = rules.spell_choice_sheet(campaign().member(advancing_).character.sheet(),
                                                  preview_choice);

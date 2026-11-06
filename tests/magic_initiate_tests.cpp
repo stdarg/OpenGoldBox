@@ -666,6 +666,41 @@ void tome_checks()
     check(free_cast(pools, "cure_wounds") == -1, "No free cast");
 }
 
+// The Pact of the Tome taken at a level-up, as one of a Warlock 2's
+// invocations: the level asks for its spells too. It once asked for none, and
+// then refused the level for its unfinished spell choices.
+void tome_at_level_up_checks()
+{
+    const auto rules = module();
+    auto d = draft("warlock", "soldier");
+    d.training = {{"class:warlock", {"arcana", "deception"}},
+                  {"class:warlock:invocations", {"eldritch_mind"}}};
+    d.cantrips = std::vector<std::string>{"eldritch_blast", "chill_touch"};
+    d.spells = SpellChoices{{}, std::vector<std::string>{"hex", "hellish_rebuke"}, {}, {}};
+    CampaignParty party(module());
+    const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
+    party.award_experience(300, "tome-xp");
+    auto choice = party.default_advancement(id);
+    choice.training["class:warlock:invocations:2"] = {"pact_of_the_tome", "devils_sight"};
+    const auto options = rules->spell_choice_options(
+        rules->spell_choice_sheet(party.member(id).character.sheet(), choice),
+        SpellChoiceContext::advancement);
+    check(group(options, "invocation:pact_of_the_tome:cantrips") &&
+              group(options, "invocation:pact_of_the_tome:spell"),
+          "A Warlock 2 taking the Tome chooses its cantrips and spells");
+    (*choice.spell_learning)["invocation:pact_of_the_tome:cantrips"] = {"fire_bolt", "sacred_flame",
+                                                                        "vicious_mockery"};
+    (*choice.spell_learning)["invocation:pact_of_the_tome:spell"] = {"cure_wounds",
+                                                                     "magic_missile"};
+    party.advance(id, choice);
+    check(has_grant(party.member(id).character.sheet(),
+                    {"spell:magic_missile",
+                     "invocation:pact_of_the_tome",
+                     2,
+                     {{"access", "always_prepared"}}}),
+          "The Tome's spells are prepared from the level-two invocation");
+}
+
 int main()
 {
     try
@@ -677,6 +712,7 @@ int main()
         level_four_checks();
         lessons_checks();
         tome_checks();
+        tome_at_level_up_checks();
         camp_checks();
         provenance_checks();
     }

@@ -35,6 +35,14 @@ struct SheetDetail
 // Secrets (SECRET-1).
 [[nodiscard]] bool usable_outside_combat(std::string_view item) noexcept;
 [[nodiscard]] int ability_modifier(int score) noexcept;
+// A character's Hit Point Dice by size, largest first, as SRD 5.2.1 (p. 25)
+// keeps a multiclass character's: each class's die once per level in it.
+struct HitDice
+{
+    int die{}, count{};
+    bool operator==(const HitDice &) const = default;
+};
+[[nodiscard]] std::vector<HitDice> hit_dice(const rules::CharacterSheet &sheet);
 // Ordinary saving throws: 1 means every roll saves; 21 means no d20 roll saves.
 [[nodiscard]] int minimum_save_roll(int difficulty_class, int bonus) noexcept;
 [[nodiscard]] bool attack_hits(int natural_roll, int bonus, int armor_class) noexcept;

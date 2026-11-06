@@ -17,8 +17,9 @@ struct SeededBattlefield
 
 // The first square and facing of `map`, in an order `seed` shuffles, where the
 // party sees `distance` open squares ahead, as the game requires of a fight,
-// and the party and every enemy have a starting square that far apart. The
-// same seed gives the same battlefield. None when no square fits.
+// the party and every enemy have a starting square that far apart, and every
+// enemy, its whole size, can walk to the party. The same seed gives the same
+// battlefield. None when no square fits.
 [[nodiscard]] std::optional<SeededBattlefield>
 seeded_battlefield(const opengold::por::GeoMap &map, std::uint64_t seed, unsigned distance,
                    std::size_t party_size, std::span<const opengold::rules::Footprint> enemies);

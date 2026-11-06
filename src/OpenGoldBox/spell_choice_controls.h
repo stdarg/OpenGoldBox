@@ -138,11 +138,23 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
             const bool locked =
                 locked_spells && std::find(locked_spells->begin(), locked_spells->end(),
                                            option.id) != locked_spells->end();
+            // A spell learned in another group (a class's cantrip and Magic
+            // Initiate's) is learned once.
+            const bool learned_elsewhere =
+                !preparing &&
+                std::any_of(choices.learning.begin(), choices.learning.end(),
+                            [&](const auto &entry)
+                            {
+                                return entry.first != group.id &&
+                                       std::find(entry.second.begin(), entry.second.end(),
+                                                 option.id) != entry.second.end();
+                            });
             box->show();
             box->set_text(tr(option.label));
             box->set_tooltip_text(tr(option.description));
             box->set_pressed_no_signal(selected);
-            box->set_disabled(locked || (!selected && picked.size() >= group.count));
+            box->set_disabled(locked || learned_elsewhere ||
+                              (!selected && picked.size() >= group.count));
         }
     }
 }

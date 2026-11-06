@@ -236,10 +236,64 @@ void warlock_checks()
                                            return o.id == "agonizing_blast:eldritch_blast";
                                        });
     check(agonizing, "A level-two invocation is offered for the level-1 one");
+    // Swapping Eldritch Blast away on the level that takes Agonizing Blast on
+    // it is refused by name, not as invalid training.
+    if (const auto blast = std::find_if(options.cantrip_swap.replaceable.begin(),
+                                        options.cantrip_swap.replaceable.end(),
+                                        [](const auto &o)
+                                        {
+                                            return o.id == "eldritch_blast";
+                                        });
+        blast != options.cantrip_swap.replaceable.end())
+    {
+        auto lost = p.choice({}, {}, {old, "agonizing_blast:eldritch_blast"});
+        lost.cantrip_swap = {"eldritch_blast", options.cantrip_swap.replacements.front().id};
+        std::string refused;
+        try
+        {
+            (void)p.party->preview_advancement(p.id, lost);
+        }
+        catch (const std::exception &error)
+        {
+            refused = error.what();
+        }
+        check(refused == "A blast invocation needs the cantrip it improves.",
+              "A blast's cantrip is not swapped away on its level: " + refused);
+        // The same with Agonizing Blast among the level's new invocations.
+        auto picked = p.choice({}, {}, {});
+        auto &invocations = picked.training["class:warlock:invocations:2"];
+        check(!invocations.empty(), "A Warlock 2 picks invocations");
+        invocations.front() = "agonizing_blast:eldritch_blast";
+        picked.cantrip_swap = lost.cantrip_swap;
+        refused.clear();
+        try
+        {
+            (void)p.party->preview_advancement(p.id, picked);
+        }
+        catch (const std::exception &error)
+        {
+            refused = error.what();
+        }
+        check(refused == "A blast invocation needs the cantrip it improves.",
+              "A picked blast's cantrip is not swapped away on its level: " + refused);
+    }
+    else
+    {
+        check(false, "Eldritch Blast may be swapped at level two");
+    }
     p.advance(p.choice({}, {}, {old, "agonizing_blast:eldritch_blast"}));
     check(has(p.sheet(), "invocation:agonizing_blast:eldritch_blast") &&
               !has(p.sheet(), "invocation:" + old),
           "The level-1 invocation becomes Agonizing Blast");
+    // Agonizing Blast needs Eldritch Blast, so it is not offered for swapping;
+    // picking it once stopped the level-up dialog part-way.
+    const auto replaceable = p.options().cantrip_swap.replaceable;
+    check(std::none_of(replaceable.begin(), replaceable.end(),
+                       [](const auto &o)
+                       {
+                           return o.id == "eldritch_blast";
+                       }),
+          "A blast's cantrip is not offered for swapping");
     p.roundtrip();
 
     options = p.options();

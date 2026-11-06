@@ -1184,7 +1184,10 @@ TrainingChoiceGroup metamagic_options(unsigned level, std::span<const FeatureGra
 
 // Magical Discoveries: two Cleric, Druid or Wizard spells at Lore Bard level
 // six, a cantrip or one of a level the Bard has slots for (SRD 5.2.1 p. 35).
-TrainingChoiceGroup discovery_options(std::span<const FeatureGrant> grants)
+// A spell the Bard knows or has prepared is left out: its preparations are
+// locked at a level-up, and a Discovery is always prepared besides.
+TrainingChoiceGroup discovery_options(std::span<const FeatureGrant> grants,
+                                      std::span<const std::string> prepared)
 {
     TrainingChoiceGroup group{"subclass:bard:discoveries",
                               "Magical Discoveries",
@@ -1195,6 +1198,7 @@ TrainingChoiceGroup discovery_options(std::span<const FeatureGrant> grants)
     for (const auto &spell : spell_table)
     {
         if (spell.level <= 3 && !has_grant(grants, "spell:" + std::string(spell.id)) &&
+            std::find(prepared.begin(), prepared.end(), spell.id) == prepared.end() &&
             (on_class_list(CharacterClass::cleric, spell.id) ||
              on_class_list(CharacterClass::druid, spell.id) ||
              on_class_list(CharacterClass::wizard, spell.id)))
@@ -1293,11 +1297,22 @@ TrainingChoiceGroup primal_knowledge_options(std::span<const FeatureGrant> grant
 // Skilled grants three skill proficiencies chosen from the whole catalog. Skills the
 // character already holds are omitted, which is what makes an already-known pick
 // fail the membership check rather than silently add a second identical grant.
-TrainingChoiceGroup skilled_options(std::span<const FeatureGrant> grants)
+unsigned skilled_feat_level(std::span<const FeatureGrant> grants)
+{
+    const auto feat = std::find_if(grants.begin(), grants.end(),
+                                   [](const auto &g)
+                                   {
+                                       return g.id == skilled &&
+                                              g.source_id.ends_with(":ability_score_improvement");
+                                   });
+    return feat == grants.end() ? 0 : feat->level;
+}
+
+TrainingChoiceGroup skilled_options(std::span<const FeatureGrant> grants, unsigned level)
 {
     TrainingChoiceGroup group{
         std::string(skilled), "Skilled Training", 3, {}, TrainingChoiceControl::checkboxes};
-    group.acquired_level = 4;
+    group.acquired_level = level;
     for (const auto &s : skills)
     {
         if (!source(grants, "skill:" + std::string(s.id)))
@@ -1310,9 +1325,8 @@ TrainingChoiceGroup skilled_options(std::span<const FeatureGrant> grants)
 
 TrainingChoiceGroup lessons_skilled_options(std::span<const FeatureGrant> grants, unsigned level)
 {
-    auto group = skilled_options(grants);
+    auto group = skilled_options(grants, level);
     group.id = std::string(lessons_skilled);
-    group.acquired_level = level;
     return group;
 }
 
@@ -1463,11 +1477,11 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants,
                 choices[grant.source_id].push_back(grant.id.substr(8));
                 continue;
             }
-            // Skilled proficiencies are chosen at level four and keep the whole
-            // prefixed skill id.
+            // Skilled proficiencies are chosen at the feat level that took the
+            // feat and keep the whole prefixed skill id.
             if (grant.source_id == skilled)
             {
-                require(grant.level == 4 && grant.choices.empty());
+                require(grant.level == skilled_feat_level(grants) && grant.choices.empty());
                 auto &selected = choices[grant.source_id];
                 require(selected.size() < 3 &&
                         std::find(selected.begin(), selected.end(), grant.id) == selected.end());
@@ -1671,9 +1685,11 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants,
                 swapped_first_invocation = true;
                 continue;
             }
+            // A Fighter may replace its Fighting Style at any Fighter level
+            // (SRD 5.2.1, Fighter), so the grant keeps the level that chose it.
             const bool replacement = klass == CharacterClass::fighter &&
                                      grant.source_id == "class:fighter:fighting_style";
-            require((grant.level == 1 || (replacement && grant.level <= 4)) &&
+            require((grant.level == 1 || (replacement && grant.level <= history.level())) &&
                     grant.choices.empty());
             actual.push_back(grant);
             if (replacement)
@@ -1880,7 +1896,7 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants,
     require(scholar.empty() || levels[CharacterClass::wizard] >= 2);
     if (levels[CharacterClass::wizard] >= 2)
     {
-        result.complete &= scholar.size() == 1;
+        result.complete &= scholar.size() == 1 || scholar_options(grants).options.empty();
     }
     for (const auto &s : skills)
     {

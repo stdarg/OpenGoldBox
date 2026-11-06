@@ -122,6 +122,17 @@ void druidic_warrior_checks()
             party.advance(id, cleric_cantrip);
         });
     check(saved(party) == before, "Druidic Warrior learns only Druid cantrips");
+    // Every cantrip offered can be learned: once only Poison Spray among the
+    // attack cantrips was accepted, so Shillelagh, Produce Flame and Starry
+    // Wisp refused the level.
+    for (const auto &option : options.learning.front().options)
+    {
+        auto each = choice;
+        (*each.spell_learning)["cantrips:2"] = {
+            option.id, option.id == "guidance" ? "resistance" : "guidance"};
+        check(party.preview_advancement(id, each).character.sheet().level == 2,
+              "Druidic Warrior learns " + option.id);
+    }
     (*choice.spell_learning)["cantrips:2"] = {"poison_spray", "spare_the_dying"};
     party.advance(id, choice);
     const auto &warrior = party.member(id).character.sheet();

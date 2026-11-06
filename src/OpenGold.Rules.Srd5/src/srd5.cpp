@@ -54,6 +54,32 @@ int ability_modifier(int score) noexcept
     return static_cast<int>(std::floor((static_cast<double>(score) - 10) / 2.0));
 }
 
+std::vector<HitDice> hit_dice(const CharacterSheet &sheet)
+{
+    std::vector<HitDice> result;
+    for (const auto &id : detail::level_class_ids(sheet))
+    {
+        const int die = detail::class_hit_die(detail::class_from_id(id));
+        auto held = std::find_if(result.begin(), result.end(),
+                                 [&](const auto &dice)
+                                 {
+                                     return dice.die == die;
+                                 });
+        if (held == result.end())
+        {
+            result.push_back({die, 0});
+            held = result.end() - 1;
+        }
+        ++held->count;
+    }
+    std::sort(result.begin(), result.end(),
+              [](const auto &a, const auto &b)
+              {
+                  return a.die > b.die;
+              });
+    return result;
+}
+
 int minimum_save_roll(int dc, int bonus) noexcept
 {
     return static_cast<int>(std::clamp(static_cast<long long>(dc) - bonus, 1LL, 21LL));
@@ -956,9 +982,6 @@ constexpr std::array class_spell_access{
     SpellAccessRow{CharacterClass::ranger, "dominate_beast", 13},
     SpellAccessRow{CharacterClass::ranger, "freedom_of_movement", 13},
     SpellAccessRow{CharacterClass::ranger, "stoneskin", 13},
-    // Blessed and Druidic Warrior's cantrips; spell access checks the feature itself.
-    SpellAccessRow{CharacterClass::ranger, "poison_spray", 2},
-    SpellAccessRow{CharacterClass::paladin, "sacred_flame", 2},
     SpellAccessRow{CharacterClass::cleric, "command", 1},
     SpellAccessRow{CharacterClass::cleric, "lesser_restoration", 3},
     SpellAccessRow{CharacterClass::cleric, "aid", 3},
@@ -1426,7 +1449,15 @@ constexpr std::array class_spell_access{
     SpellAccessRow{CharacterClass::warlock, "hold_monster", 9},
     SpellAccessRow{CharacterClass::warlock, "insect_plague", 9},
     SpellAccessRow{CharacterClass::warlock, "mislead", 9},
-    SpellAccessRow{CharacterClass::warlock, "ray_of_enfeeblement", 3}};
+    SpellAccessRow{CharacterClass::warlock, "ray_of_enfeeblement", 3},
+    // The stand-ins for the original's spells SRD 5.2.1 lacks (MAGIC-6):
+    // Wizards learn and copy theirs and Clerics prepare theirs, at the class
+    // level whose slots cast them.
+    SpellAccessRow{CharacterClass::wizard, "friends", 1},
+    SpellAccessRow{CharacterClass::wizard, "read_magic", 1},
+    SpellAccessRow{CharacterClass::wizard, "protection_from_normal_missiles", 5},
+    SpellAccessRow{CharacterClass::cleric, "find_traps", 3},
+    SpellAccessRow{CharacterClass::cleric, "snake_charm", 3}};
 
 std::vector<std::string> allowed_spells(CharacterClass klass, unsigned level)
 {
@@ -4426,7 +4457,8 @@ character_definition(std::string_view bytes,
     const auto storable = [&](const std::string &id)
     {
         return detail::knows_spell(allowed, id) || d.initiate_casting.contains(id) ||
-               bard_secret(CharacterClass::bard, at(CharacterClass::bard), grants, id);
+               bard_secret(CharacterClass::bard, at(CharacterClass::bard), grants, id) ||
+               detail::warrior_cantrip(grants, id);
     };
     if (!std::all_of(stored_spells.begin(), stored_spells.end(), storable))
     {
@@ -30469,9 +30501,12 @@ class Module final : public RulesModule
                      "Learn two Druid cantrips; Wisdom is your spellcasting ability for them."});
             }
         }
-        if (klass == CharacterClass::wizard && result.level == 2)
+        // Scholar's Expertise needs one of its skills; a character with none
+        // of them, as a Monk or Rogue taking Wizard may be, has nothing to pick.
+        if (auto scholar = detail::scholar_options(sheet.grants);
+            klass == CharacterClass::wizard && result.level == 2 && !scholar.options.empty())
         {
-            result.training = only(detail::scholar_options(sheet.grants));
+            result.training = only(std::move(scholar));
         }
         if (klass == CharacterClass::fighter && (result.level == 4 || result.level == 10))
         {
@@ -30521,7 +30556,8 @@ class Module final : public RulesModule
         }
         if (klass == CharacterClass::bard && result.level == 6)
         {
-            result.training = only(detail::discovery_options(sheet.grants));
+            result.training = only(detail::discovery_options(
+                sheet.grants, detail::prepared_spell_ids(sheet.prepared_spells)));
         }
         if (klass == CharacterClass::druid && result.level == 7)
         {
@@ -31252,13 +31288,15 @@ class Module final : public RulesModule
                  !detail::has_grant(sheet.grants, "feat:alert")},
                 // Repeatable in the SRD; the game takes it once from a feat
                 // level (a Human's Versatile Skilled aside), since its skills are
-                // recorded as one group.
+                // recorded as one group, and not after Lessons of the First
+                // Ones gave it, which then leaves it unoffered.
                 {"skilled", "Skilled", "Gain proficiency in any three skills of your choice.",
                  std::none_of(sheet.grants.begin(), sheet.grants.end(),
                               [](const auto &g)
                               {
-                                  return g.id == "feat:skilled" &&
-                                         g.source_id.ends_with(":ability_score_improvement");
+                                  return (g.id == "feat:skilled" &&
+                                          g.source_id.ends_with(":ability_score_improvement")) ||
+                                         g.id == "invocation:lessons_skilled";
                               })}};
         }
         if (detail::gains_feat(klass, result.level))
@@ -31329,7 +31367,7 @@ class Module final : public RulesModule
         if (choice.feat == "skilled" && options.level &&
             detail::gains_feat(klass, options.class_level))
         {
-            options.training.push_back(detail::skilled_options(sheet.grants));
+            options.training.push_back(detail::skilled_options(sheet.grants, options.level));
         }
         // Lessons of the First Ones' Skilled asks for its skills when it is
         // taken, as a new invocation or a replacement.
@@ -31536,13 +31574,38 @@ class Module final : public RulesModule
         {
             next.grants.push_back(detail::advancement_grant(klass, next.level, choice));
         }
-        const auto invocations = detail::invocations_source(class_level);
-        if (const auto lessons = choice.training.find(invocations);
-            lessons != choice.training.end())
+        // A Lore Bard's Magical Discoveries and a Land Druid's circle spells
+        // are always prepared, so the level's preparations leave them out.
+        for (const auto &[source, prefix] :
+             {std::pair<std::string_view, std::string_view>{"subclass:bard:discoveries",
+                                                            "discovery:"},
+              {"subclass:druid:land", "land:"}})
         {
-            for (const auto &id : lessons->second)
+            const auto picked = choice.training.find(std::string(source));
+            if (picked == choice.training.end())
             {
-                if (id.starts_with("lessons_magic_initiate_"))
+                continue;
+            }
+            for (const auto &id : picked->second)
+            {
+                next.grants.push_back({std::string(prefix) + id, std::string(source),
+                                       static_cast<unsigned>(next.level), {}});
+            }
+        }
+        // So are an invocation's that teaches spells: Lessons of the First
+        // Ones' Magic Initiate and the Pact of the Tome's Book of Shadows, from
+        // the level's invocations or a new Warlock level's (MULTI-1).
+        for (const auto &invocations :
+             {detail::invocations_source(class_level), std::string("class:warlock:invocations")})
+        {
+            const auto picked = choice.training.find(invocations);
+            if (picked == choice.training.end())
+            {
+                continue;
+            }
+            for (const auto &id : picked->second)
+            {
+                if (id.starts_with("lessons_magic_initiate_") || id == "pact_of_the_tome")
                 {
                     next.grants.push_back(
                         {"invocation:" + id, invocations, static_cast<unsigned>(next.level), {}});
@@ -31578,6 +31641,16 @@ class Module final : public RulesModule
                          }))
         {
             throw std::runtime_error("Choose an eligible Fighting Style");
+        }
+        // A Champion 7 changing its style takes a different one as its
+        // Additional Fighting Style: one feat cannot come twice.
+        if (const auto extra = choice.training.find(std::string(detail::champion_style));
+            choice.fighting_style && extra != choice.training.end() &&
+            std::find(extra->second.begin(), extra->second.end(), *choice.fighting_style) !=
+                extra->second.end())
+        {
+            throw std::runtime_error(
+                "Choose an Additional Fighting Style other than the new Fighting Style");
         }
         const auto old = character_definition(character_profile(sheet, {}).data);
         unsigned points = 0;
@@ -31661,6 +31734,23 @@ class Module final : public RulesModule
         }
         auto actor = actor_from(old, state);
         auto next = spell_choice_sheet(sheet, choice);
+        // A blast invocation picked on this level needs the cantrip it
+        // improves, which a cantrip swapped away on the same level is not.
+        for (const auto &[source, picks] : choice.training)
+        {
+            for (const auto &pick : picks)
+            {
+                for (const std::string_view blast :
+                     {"agonizing_blast:", "eldritch_spear:", "repelling_blast:"})
+                {
+                    if (source.starts_with("class:warlock:invocations") && pick.starts_with(blast) &&
+                        !detail::has_grant(next.grants, "spell:" + pick.substr(blast.size())))
+                    {
+                        throw std::runtime_error("A blast invocation needs the cantrip it improves.");
+                    }
+                }
+            }
+        }
         // The list after a spell swap; the level's choices then add to it.
         const auto prepared_before = next.prepared_spells;
         for (const auto &[id, values] : choice.training)

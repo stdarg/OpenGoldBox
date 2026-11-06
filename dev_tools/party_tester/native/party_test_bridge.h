@@ -23,8 +23,15 @@ class PartyTestBridge : public godot::Node
     [[nodiscard]] godot::Dictionary catalog();
     // A new level-one party of the pool members at `pool_indices` (1 to 8).
     [[nodiscard]] godot::String build_party(const godot::Array &pool_indices);
-    // Each member: name, classes, level, hit points, experience, can_advance.
+    // Each member: name, classes, level, hit points, experience, can_advance;
+    // and for checks the level's classes by ID ("class_ids"), species ID,
+    // ability scores and saving throws in Strength-to-Charisma order, which
+    // saves are proficient, Hit Dice and each resource's capacity by ID.
     [[nodiscard]] godot::Array members() const;
+    // Each class: its ID, its name as the level-up dialog shows it, and the
+    // abilities (0-5, Strength to Charisma) another class needs 13 in, all of
+    // them or, when "any", one.
+    [[nodiscard]] godot::Array classes() const;
     // Gives every member below `level` the experience for it.
     [[nodiscard]] godot::String set_level(int level);
     // Opens the game's level-up dialog for the first member with a level to

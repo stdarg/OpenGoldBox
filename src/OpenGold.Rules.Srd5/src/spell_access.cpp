@@ -762,9 +762,14 @@ void add_initiate_learning(SpellChoiceOptions &result, const CharacterSheet &she
                                                                   predicate(g);
                                                        }));
         };
+        // A spell the character knows, or has prepared from a class list,
+        // as a Bard or Ranger does: a Magic Initiate spell is always prepared,
+        // so it would be prepared twice.
+        const auto prepared = prepared_spell_ids(sheet.prepared_spells);
         const auto known = [&](std::string_view id)
         {
             return species_cantrip(sheet.grants, id) ||
+                   std::find(prepared.begin(), prepared.end(), id) != prepared.end() ||
                    std::any_of(sheet.grants.begin(), sheet.grants.end(),
                                [&](const auto &g)
                                {
@@ -1516,6 +1521,25 @@ SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterCl
     return result;
 }
 
+namespace
+{
+// A multiclass character prepares a spell for one class only (MULTI-1), so a
+// class's preparation leaves out what its other classes have prepared.
+void leave_out_others_prepared(std::vector<CreationChoice> &preparation,
+                               std::span<const std::string> prepared, CharacterClass klass,
+                               CharacterClass starting)
+{
+    const auto own = class_prepared_spells(prepared, klass, starting);
+    const auto all = prepared_spell_ids(prepared);
+    std::erase_if(preparation,
+                  [&](const auto &option)
+                  {
+                      return std::find(all.begin(), all.end(), option.id) != all.end() &&
+                             std::find(own.begin(), own.end(), option.id) == own.end();
+                  });
+}
+} // namespace
+
 SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoiceContext context)
 {
     const ClassHistory history(level_class_ids(sheet));
@@ -1544,6 +1568,7 @@ SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoice
         result = class_spell_choice_options(
             sheet, klass, static_cast<unsigned>(history.levels()[klass]),
             class_prepared_spells(sheet.prepared_spells, klass, starting), full, always, context);
+        leave_out_others_prepared(result.preparation, sheet.prepared_spells, klass, starting);
     }
     else
     {
@@ -1562,6 +1587,7 @@ SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoice
             auto own = class_spell_choice_options(
                 sheet, klass, level, class_prepared_spells(sheet.prepared_spells, klass, starting),
                 full, always, context);
+            leave_out_others_prepared(own.preparation, sheet.prepared_spells, klass, starting);
             if (own.may_prepare)
             {
                 result.class_preparation.push_back(
@@ -2120,6 +2146,18 @@ bool on_class_list(CharacterClass klass, std::string_view spell)
     return found != spells.end() && (found->lists & list);
 }
 
+bool warrior_cantrip(std::span<const FeatureGrant> grants, std::string_view spell)
+{
+    const auto found = std::find_if(spells.begin(), spells.end(),
+                                    [&](const auto &s)
+                                    {
+                                        return s.id == spell;
+                                    });
+    return found != spells.end() && found->level == 0 &&
+           ((blessed_warrior(grants) && on_class_list(CharacterClass::cleric, spell)) ||
+            (druidic_warrior(grants) && on_class_list(CharacterClass::druid, spell)));
+}
+
 std::vector<std::string> known_cantrip_ids(const SpellAccess &access)
 {
     std::vector<std::string> result;
@@ -2184,6 +2222,29 @@ bool swap_allowed(const LevelSwap &swap, const SwapOffer &offer)
 }
 } // namespace
 
+namespace
+{
+// A cantrip an Agonizing Blast, Eldritch Spear or Repelling Blast the
+// character holds improves: the invocation needs it, so it is not replaced.
+bool improved_by_blast(std::span<const FeatureGrant> grants, std::string_view cantrip)
+{
+    return std::any_of(grants.begin(), grants.end(),
+                       [&](const auto &g)
+                       {
+                           for (const std::string_view blast :
+                                {"invocation:agonizing_blast:", "invocation:eldritch_spear:",
+                                 "invocation:repelling_blast:"})
+                           {
+                               if (g.id.starts_with(blast) && g.id.substr(blast.size()) == cantrip)
+                               {
+                                   return true;
+                               }
+                           }
+                           return false;
+                       });
+}
+} // namespace
+
 SwapOffer cantrip_swap_offer(const CharacterSheet &sheet, CharacterClass klass)
 {
     SwapOffer offer{"Cantrip", {}, {}};
@@ -2205,7 +2266,7 @@ SwapOffer cantrip_swap_offer(const CharacterSheet &sheet, CharacterClass klass)
         if (g.source_id == caster->source && is_spell_grant(g))
         {
             const auto &spell = find(std::string_view(g.id).substr(6));
-            if (!spell.level)
+            if (!spell.level && !improved_by_blast(sheet.grants, spell.id))
             {
                 offer.replaceable.push_back({std::string(spell.id), std::string(spell.label), {}});
             }

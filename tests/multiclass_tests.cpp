@@ -190,7 +190,7 @@ void fighter_rogue()
 }
 
 // A character of the class, every score 15.
-Character starting(std::string_view klass)
+Character starting(std::string_view klass, std::vector<std::string> prepared = {})
 {
     CharacterDraft d;
     d.race = "human";
@@ -203,6 +203,10 @@ Character starting(std::string_view klass)
     for (auto &r : d.rolls)
     {
         r = {{5, 5, 5, 1}, 3};
+    }
+    if (!prepared.empty())
+    {
+        d.spells = SpellChoices{{}, std::move(prepared), {}, {}};
     }
     auto creation = srd5::character_rules();
     // A group's options can follow another's picks (Expertise), so each
@@ -230,12 +234,14 @@ Character starting(std::string_view klass)
 
 // A level taken in `klass`: its training and spell choices, the first of each
 // offered, its prepared spells as many as it may.
-AdvancementChoice take_level(const CampaignParty &party, MemberId id, std::string_view klass)
+AdvancementChoice take_level(const CampaignParty &party, MemberId id, std::string_view klass,
+                             std::string feat = {})
 {
     const auto &rules = party.rule_module();
     const auto &sheet = party.member(id).character.sheet();
     AdvancementChoice choice;
     choice.character_class = std::string(klass);
+    choice.feat = std::move(feat);
     for (int pass = 0; pass < 2; ++pass)
     {
         for (const auto &group : party.advancement_options(id, choice).training)
@@ -316,6 +322,29 @@ void fighter_wizard()
           "A single Spellcasting class keeps its own table: two level-1 slots");
 }
 
+// Fighter 3 / Wizard 2: a Soldier Fighter has none of Scholar's skills, so
+// Wizard 2 asks for no Expertise. It once asked for one with nothing to
+// choose, and the level could not be taken.
+void scholar_without_skills()
+{
+    CampaignParty party(module());
+    const auto id = fighter_three(party);
+    party.advance(id, take_level(party, id, "wizard"));
+    party.award_experience(6500, "scholar-xp");
+    const auto choice = take_level(party, id, "wizard");
+    check(std::none_of(party.advancement_options(id, choice).training.begin(),
+                       party.advancement_options(id, choice).training.end(),
+                       [](const auto &g)
+                       {
+                           return g.id == "class:wizard:scholar";
+                       }),
+          "No Scholar choice without one of its skills");
+    party.advance(id, choice);
+    check(party.member(id).character.sheet().level_classes.back() == "wizard" &&
+              party.member(id).character.sheet().level == 5,
+          "Fighter 3 / Wizard 2");
+}
+
 // Cleric 1 / Wizard 2: the Multiclass Spellcaster table at level 3 (four
 // level-1 and two level-2 slots), each class preparing its own spells, and a
 // Long Rest preparing for each.
@@ -377,6 +406,93 @@ void cleric_wizard()
     check(rejected, "A class prepares no more than its own count");
 }
 
+// Bard 1 / Cleric 1: both lists have Cure Wounds, Healing Word and more, and
+// a spell is prepared for one class only, so the Cleric's preparation leaves
+// out the Bard's prepared spells. It once offered them, and the level was
+// refused as a duplicate.
+void shared_list()
+{
+    CampaignParty party(module());
+    const auto id = party.add_pc(
+        starting("bard", {"cure_wounds", "healing_word", "charm_person", "faerie_fire"}));
+    party.award_experience(300, "shared-xp");
+    const auto bard_spells = party.member(id).character.sheet().prepared_spells;
+    auto choice = take_level(party, id, "cleric");
+    const auto &rules = party.rule_module();
+    const auto options = rules.spell_choice_options(
+        rules.spell_choice_sheet(party.member(id).character.sheet(), choice),
+        SpellChoiceContext::advancement);
+    for (const auto &spell : bard_spells)
+    {
+        check(std::none_of(options.preparation.begin(), options.preparation.end(),
+                           [&](const auto &o)
+                           {
+                               return o.id == spell;
+                           }),
+              "The Cleric does not prepare the Bard's " + spell);
+    }
+    party.advance(id, choice);
+    check(party.member(id).character.sheet().level_classes ==
+              std::vector<std::string>{"bard", "cleric"},
+          "Bard 1 / Cleric 1");
+}
+
+// Bard 1 / Druid 3: whichever land is chosen, the Druid's preparations leave
+// out its circle spells, always prepared. They were offered too, and taking
+// one refused the level.
+void land_druid()
+{
+    for (const auto *first : {"bard", "rogue", "warlock"})
+    {
+        for (std::size_t land = 0;; ++land)
+        {
+            CampaignParty party(module());
+            const auto id = party.add_pc(starting(first));
+            party.award_experience(2700, "land-xp");
+            party.advance(id, take_level(party, id, "druid"));
+            party.advance(id, take_level(party, id, "druid"));
+            AdvancementChoice probe;
+            probe.character_class = "druid";
+            const auto groups = party.advancement_options(id, probe).training;
+            const auto lands = std::find_if(groups.begin(), groups.end(),
+                                            [](const auto &g)
+                                            {
+                                                return g.id == "subclass:druid:land";
+                                            });
+            check(lands != groups.end(), "Druid 3 picks a land");
+            if (land == lands->options.size())
+            {
+                break;
+            }
+            auto choice = probe;
+            choice.training[lands->id] = {lands->options[land].id};
+            const auto &rules = party.rule_module();
+            auto next = rules.spell_choice_sheet(party.member(id).character.sheet(), choice);
+            const auto page = rules.spell_choice_options(next, SpellChoiceContext::advancement);
+            choice.spell_learning.emplace();
+            choice.spells = page.locked_prepared;
+            for (const auto &spell : page.preparation)
+            {
+                if (choice.spells.size() < page.prepared_count &&
+                    std::find(choice.spells.begin(), choice.spells.end(), spell.id) ==
+                        choice.spells.end())
+                {
+                    choice.spells.push_back(spell.id);
+                }
+            }
+            try
+            {
+                party.advance(id, choice);
+            }
+            catch (const std::exception &error)
+            {
+                check(false, std::string(first) + " 1 / Druid 3 of the " + lands->options[land].id +
+                                 " land: " + error.what());
+            }
+        }
+    }
+}
+
 // Paladin 1 / Sorcerer 2: Lay On Hands and Sorcery Points are each class's
 // own pool, full at once, not one shared count.
 void own_pools()
@@ -401,6 +517,131 @@ void own_pools()
     };
     check(pool("lay_on_hands") == std::pair{5u, 5u} && pool("sorcery_points") == std::pair{2u, 2u},
           "Lay On Hands (5) and Sorcery Points (2) are separate, both full");
+}
+
+// A level in `klass` taking the Skilled feat, its three skills and the
+// level's other choices the first offered.
+AdvancementChoice skilled_level(const CampaignParty &party, MemberId id, std::string_view klass)
+{
+    AdvancementChoice choice;
+    choice.character_class = std::string(klass);
+    choice.feat = "skilled";
+    for (int pass = 0; pass < 2; ++pass)
+    {
+        for (const auto &group : party.advancement_options(id, choice).training)
+        {
+            auto &picked = choice.training[group.id];
+            picked.clear();
+            for (const auto &option : group.options)
+            {
+                if (picked.size() < group.count)
+                {
+                    picked.push_back(option.id);
+                }
+            }
+        }
+    }
+    return choice;
+}
+
+// The Skilled skills a sheet holds, each with the level that took it.
+std::vector<unsigned> skilled_levels(const CharacterSheet &sheet)
+{
+    std::vector<unsigned> levels;
+    for (const auto &grant : sheet.grants)
+    {
+        if (grant.source_id == "feat:skilled")
+        {
+            levels.push_back(grant.level);
+        }
+    }
+    return levels;
+}
+
+// Skilled taken at a feat level after the fourth: a Fighter's eighth level,
+// and a Fighter 3 / Rogue 4's Rogue feat level, its character level 7. Both
+// were offered and then refused for not being level 4.
+void skilled_after_level_four()
+{
+    CampaignParty fighter_party(module());
+    const auto fighter_id = fighter_three(fighter_party);
+    fighter_party.award_experience(40000, "skilled-xp");
+    for (unsigned level = 4; level <= 7; ++level)
+    {
+        fighter_party.advance(fighter_id, fighter_party.default_advancement(fighter_id));
+    }
+    fighter_party.advance(fighter_id, skilled_level(fighter_party, fighter_id, "fighter"));
+    check(skilled_levels(fighter_party.member(fighter_id).character.sheet()) ==
+              std::vector<unsigned>{8, 8, 8},
+          "A Fighter 8 takes Skilled's three skills at level 8");
+    CampaignParty party(module());
+    const auto id = fighter_three(party);
+    party.advance(id, rogue_entry(party, id));
+    party.award_experience(40000, "skilled-xp");
+    party.advance(id, take_level(party, id, "rogue"));
+    party.advance(id, take_level(party, id, "rogue"));
+    party.advance(id, skilled_level(party, id, "rogue"));
+    const auto &sheet = party.member(id).character.sheet();
+    check(sheet.level_classes.back() == "rogue" && sheet.level == 7 &&
+              skilled_levels(sheet) == std::vector<unsigned>{7, 7, 7},
+          "A Fighter 3 / Rogue 4 takes Skilled's three skills at level 7");
+    const auto rules = module();
+    CampaignParty restored(module());
+    restored.restore(decode_campaign(encode_campaign(party, nullptr, "skilled"),
+                                     *srd5::character_rules(), *rules, "skilled", nullptr)
+                         .party);
+    check(skilled_levels(restored.member(id).character.sheet()) == skilled_levels(sheet),
+          "A save keeps the later Skilled");
+}
+
+// SRD 5.2.1 p. 25: a multiclass character's Hit Point Dice by class, the
+// largest first. The sheet once showed every level as the starting class's.
+void hit_dice_by_class()
+{
+    CampaignParty party(module());
+    const auto id = fighter_three(party);
+    party.advance(id, take_level(party, id, "wizard"));
+    check(srd5::hit_dice(party.member(id).character.sheet()) ==
+              std::vector<srd5::HitDice>{{10, 3}, {6, 1}},
+          "Fighter 3 / Wizard 1 has 3d10 and 1d6");
+}
+
+// Wizard 1 / Ranger 4 taking Magic Initiate (Druid): its level-one spell is
+// always prepared, so the Ranger's prepared spells are not offered. Cure
+// Wounds was, and the level was refused for preparing it twice.
+void ranger_initiate()
+{
+    CampaignParty party(module());
+    const auto id = party.add_pc(starting("wizard"));
+    party.award_experience(6500, "probe-xp");
+    for (int n = 0; n < 3; ++n)
+    {
+        auto choice = take_level(party, id, "ranger");
+        if (n == 1)
+        {
+            choice.fighting_style = "defense";
+        }
+        party.advance(id, choice);
+    }
+    const auto prepared = party.member(id).character.sheet().prepared_spells;
+    const auto choice = take_level(party, id, "ranger", "magic_initiate_druid");
+    const auto &rules = party.rule_module();
+    const auto options = rules.spell_choice_options(
+        rules.spell_choice_sheet(party.member(id).character.sheet(), choice),
+        SpellChoiceContext::advancement);
+    for (const auto &group : options.learning)
+    {
+        for (const auto &option : group.options)
+        {
+            check(std::none_of(prepared.begin(), prepared.end(),
+                               [&](const auto &spell)
+                               {
+                                   return spell == option.id || spell.starts_with(option.id + "@");
+                               }),
+                  "Magic Initiate does not offer the prepared " + option.id);
+        }
+    }
+    party.advance(id, choice);
 }
 
 // A save keeps the class of each level.
@@ -430,8 +671,14 @@ int main()
         prerequisites();
         fighter_rogue();
         fighter_wizard();
+        scholar_without_skills();
         cleric_wizard();
+        shared_list();
+        land_druid();
         own_pools();
+        skilled_after_level_four();
+        hit_dice_by_class();
+        ranger_initiate();
         saved();
         std::cout << "Multiclass tests passed\n";
         return 0;

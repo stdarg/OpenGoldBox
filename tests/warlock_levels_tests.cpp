@@ -399,11 +399,66 @@ void resilience_checks()
 }
 } // namespace
 
+// Lessons of the First Ones: Skilled at Warlock 5, then a feat at 8: the
+// Skilled feat is not offered again. It was, and taking it refused the level.
+void lessons_then_skilled_checks()
+{
+    const auto rules = module();
+    Character hero(*srd5::character_rules(), draft("pact_of_the_blade"), {});
+    VitalState life{hero.sheet().hit_points, false, {}};
+    const auto fill = [&](AdvancementChoice choice)
+    {
+        for (int pass = 0; pass < 3; ++pass)
+        {
+            for (const auto &group : rules->advancement_options(hero.sheet(), choice).training)
+            {
+                auto &picked = choice.training[group.id];
+                if (group.id == "class:warlock:invocations:5" && pass == 0)
+                {
+                    picked = {"lessons_skilled"};
+                }
+                for (const auto &o : group.options)
+                {
+                    if (picked.size() < group.count && std::find(picked.begin(), picked.end(), o.id) == picked.end())
+                    {
+                        picked.push_back(o.id);
+                    }
+                }
+            }
+        }
+        return choice;
+    };
+    while (hero.sheet().level < 8)
+    {
+        auto choice = fill(rules->default_advancement(hero.sheet()));
+        if (hero.sheet().level + 1 == 8)
+        {
+            const auto feats = rules->advancement_options(hero.sheet(), choice).feats;
+            const auto skilled = std::find_if(feats.begin(), feats.end(),
+                                              [](const auto &f)
+                                              {
+                                                  return f.id == "skilled";
+                                              });
+            check(skilled != feats.end() && !skilled->available,
+                  "Skilled is not offered after Lessons of the First Ones gave it");
+        }
+        check(hero.advance(*rules, life, choice), "Warlock level " +
+                                                      std::to_string(hero.sheet().level + 1));
+    }
+    check(std::any_of(hero.sheet().grants.begin(), hero.sheet().grants.end(),
+                      [](const auto &g)
+                      {
+                          return g.id == "invocation:lessons_skilled";
+                      }),
+          "Lessons of the First Ones: Skilled is taken at Warlock 5");
+}
+
 int main()
 {
     try
     {
         progression_checks();
+        lessons_then_skilled_checks();
         fiend_spells_checks();
         blade_checks();
         luck_checks();

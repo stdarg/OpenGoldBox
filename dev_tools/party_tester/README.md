@@ -68,6 +68,54 @@ levels one member through the dialog and the rest by defaults, and plays a
 Slums fight to the end with Quick combat. It then checks that the party is
 unchanged afterwards, and that every listed creature can be put in a fight.
 
+## Level sweep
+
+```bash
+OPENGOLD_GAME_DIR="$HOME/POOLRAD" dev_tools/party_tester/sweep.sh
+```
+
+The sweep (`godot/level_sweep.gd`) takes 444 characters from level 1 to 15
+through the game's level-up dialog, as a player does:
+
+- every pool character in its own class;
+- every pair of classes, the second class first taken at level 2, at level 9
+  and at level 15. Each pair uses the pool character of the first class
+  nearest to the 13s both classes need. Where a score is short, the
+  character's Ability Score Improvements raise it before the second class.
+
+On each level it picks from the Class row, the feats or ability points,
+training, Fighting Styles, the checkbox pages, a replaced cantrip, spell or
+invocation on every fourth level, and the spell pages. The picks vary from
+character to character and level to level. After every level it checks the
+sheet against SRD 5.2.1's tables:
+
+- Hit Points: the starting class's whole die, then each level's class
+  average, with the Constitution modifier, a Dwarf's Toughness and Draconic
+  Resilience;
+- the Proficiency Bonus by total level;
+- spell slots: one class's own table, or the Multiclass Spellcaster table with
+  Paladin and Ranger levels halved and rounded up, plus Pact Magic;
+- Hit Dice by class, as the sheet shows them ("8d12 + 1d10").
+
+Each party of eight fights the Slums' orcs and then Valjevo Castle's fire
+giant and trolls at levels 1, 5, 10 and 15, on Quick, until the fight ends.
+
+It fails on a level the dialog will not confirm, a sheet that disagrees with
+the tables, or a fight that does not end in four minutes. Two picks the dialog
+refuses together and names, such as a blast invocation whose cantrip is
+swapped away, are counted, not failed, and the level is taken again with the
+first choice of everything. So is a spell choice the game leaves pending for
+want of spells (the Cleric's spells decision in `docs/SRD-DECISIONS.md`).
+
+The full sweep takes about 5 minutes without fights. Settings:
+
+- `OPENGOLD_SWEEP_FIGHTS=N`: fight with every Nth party; 0 for none.
+- `OPENGOLD_SWEEP_PLANS=N`: stop after N characters.
+- `OPENGOLD_SWEEP_MATCH=text`: only the characters whose plan names it.
+- `OPENGOLD_SWEEP_PARTY=N`, `OPENGOLD_SWEEP_FROM=N`, `OPENGOLD_SWEEP_UNTIL=N`:
+  one party or a range of them; each failure names its party.
+- `OPENGOLD_SWEEP_VERBOSE=1`: print each page's picks.
+
 ## Code
 
 The tester runs the game's code, not a copy of it:

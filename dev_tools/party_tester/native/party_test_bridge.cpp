@@ -21,6 +21,7 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <algorithm>
 #include <map>
+#include <set>
 #include <stdexcept>
 #include <string>
 
@@ -114,6 +115,7 @@ void PartyTestBridge::_bind_methods()
     ClassDB::bind_method(D_METHOD("catalog"), &PartyTestBridge::catalog);
     ClassDB::bind_method(D_METHOD("build_party", "pool_indices"), &PartyTestBridge::build_party);
     ClassDB::bind_method(D_METHOD("members"), &PartyTestBridge::members);
+    ClassDB::bind_method(D_METHOD("classes"), &PartyTestBridge::classes);
     ClassDB::bind_method(D_METHOD("set_level", "level"), &PartyTestBridge::set_level);
     ClassDB::bind_method(D_METHOD("open_level_up"), &PartyTestBridge::open_level_up);
     ClassDB::bind_method(D_METHOD("advance_with_defaults"),
@@ -134,12 +136,19 @@ void PartyTestBridge::load_game_data()
     const auto &encounters = game_encounters();
     town_ =
         por::RolfTourSession::load(dir, encounters, game_wall_art(), game_monsters()).resources();
-    std::map<unsigned, unsigned> maps_per_script;
+    // Valjevo Castle's maps have scripts of their own under one name, so maps
+    // are counted by the name they are listed under.
+    std::map<std::string, unsigned> maps_per_name;
     for (const auto &[id, district] : town_->districts)
     {
-        ++maps_per_script[district->script];
+        if (const auto *area = encounters.area(district->script); area && district->map)
+        {
+            ++maps_per_name[area->name];
+        }
     }
     const auto icons = loaded_icons(*town_);
+    // The maps of one bank share its creatures; each is listed once.
+    std::set<std::pair<unsigned, unsigned>> listed;
     for (const auto &[id, district] : town_->districts)
     {
         const auto *area = encounters.area(district->script);
@@ -147,10 +156,11 @@ void PartyTestBridge::load_game_data()
         {
             continue;
         }
-        areas_.push_back({id, area_label(area->name, id, maps_per_script[district->script] > 1)});
+        areas_.push_back({id, area_label(area->name, id, maps_per_name[area->name] > 1)});
         for (const auto &[record, conversion] : district->conversions)
         {
-            if (!district->encounter_creatures.contains(record))
+            if (!district->encounter_creatures.contains(record) ||
+                !listed.insert({district->bank, record}).second)
             {
                 continue;
             }
@@ -309,6 +319,54 @@ Array PartyTestBridge::members() const
         row["maximum_hit_points"] = sheet.hit_points;
         row["experience"] = static_cast<std::int64_t>(member.experience);
         row["can_advance"] = party_->can_advance(id);
+        Array class_ids, scores, saves, proficient;
+        for (const auto &class_id : sheet.level_classes)
+        {
+            class_ids.push_back(gs(class_id));
+        }
+        for (const auto ability : rules::all_abilities)
+        {
+            scores.push_back(sheet.scores[ability]);
+            saves.push_back(sheet.saving_throws[ability]);
+            proficient.push_back(sheet.save_proficiencies[ability]);
+        }
+        row["class_ids"] = class_ids;
+        row["race"] = gs(sheet.race);
+        row["scores"] = scores;
+        row["saving_throws"] = saves;
+        row["save_proficiencies"] = proficient;
+        const auto recovery = party_->recovery_info(id);
+        row["hit_dice"] = recovery.hit_dice_max;
+        Dictionary resources;
+        for (const auto &pool : recovery.resources)
+        {
+            resources[gs(pool.id)] = pool.capacity;
+        }
+        row["resources"] = resources;
+        result.push_back(row);
+    }
+    return result;
+}
+
+Array PartyTestBridge::classes() const
+{
+    const auto creation = srd5::character_rules();
+    Array result;
+    for (const auto &choice : creation->choices(rules::CreationField::character_class))
+    {
+        const auto requirements = creation->class_requirements(choice.id);
+        Array abilities;
+        for (const auto ability : requirements.abilities)
+        {
+            abilities.push_back(static_cast<int>(
+                std::find(rules::all_abilities.begin(), rules::all_abilities.end(), ability) -
+                rules::all_abilities.begin()));
+        }
+        Dictionary row;
+        row["id"] = gs(choice.id);
+        row["label"] = i18n::class_label(choice.id);
+        row["abilities"] = abilities;
+        row["any"] = requirements.any;
         result.push_back(row);
     }
     return result;

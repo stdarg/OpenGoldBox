@@ -55,7 +55,8 @@ rules::TrainingChoiceGroup fiendish_resilience_options();
 rules::TrainingChoiceGroup arcanum_options(unsigned level);
 // Magical Discoveries (Lore Bard 6): two spells from the Cleric, Druid or
 // Wizard lists, cantrips or of level 1 to 3, none already known.
-rules::TrainingChoiceGroup discovery_options(std::span<const rules::FeatureGrant> grants);
+rules::TrainingChoiceGroup discovery_options(std::span<const rules::FeatureGrant> grants,
+                                             std::span<const std::string> prepared);
 rules::TrainingChoiceGroup lore_options(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup land_options();
 // A High Elf's Wizard cantrip, chosen at creation and replaceable after a Long
@@ -72,7 +73,11 @@ rules::TrainingChoiceGroup invocation_options(unsigned level,
                                               std::string_view source);
 // Every invocation with its label, for naming those a Warlock holds.
 rules::TrainingChoiceGroup every_invocation(std::span<const rules::FeatureGrant> grants);
-rules::TrainingChoiceGroup skilled_options(std::span<const rules::FeatureGrant> grants);
+// The Skilled feat taken at feat level `level`: three skills.
+rules::TrainingChoiceGroup skilled_options(std::span<const rules::FeatureGrant> grants,
+                                           unsigned level);
+// The level a feat level's Skilled was taken at, or 0 if none was.
+unsigned skilled_feat_level(std::span<const rules::FeatureGrant> grants);
 // Lessons of the First Ones' Skilled, taken at `level`: three skills.
 rules::TrainingChoiceGroup lessons_skilled_options(std::span<const rules::FeatureGrant> grants,
                                                    unsigned level);

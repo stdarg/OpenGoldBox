@@ -189,9 +189,11 @@ func run() -> void:
     check((up.get_node("SwapPage") as Control).visible and new_cantrip in known and not old_cantrip in known,
           "The swapped cantrip is known: " + old_cantrip + " -> " + new_cantrip + " in " + str(known))
     (up.get_node("Cancel") as Button).pressed.emit(); await settle()
-    # Multiclassing (MULTI-1): a Fighter 3 takes Rogue, then Wizard, on the
-    # Class row, with each class's level-one choices.
-    for entry in ["rogue", "wizard"]:
+    # Multiclassing (MULTI-1): a Fighter 3 takes Rogue, Wizard, Bard or
+    # Paladin on the Class row, with each class's level-one choices. A class
+    # with spell choices of its own once lost them when the starting class had
+    # none, and could not be confirmed.
+    for entry in ["rogue", "wizard", "bard", "paladin"]:
         klass.select(fighter); race.select(0); level.select(2)
         create.pressed.emit(); await settle()
         open.pressed.emit(); await settle()

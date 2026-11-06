@@ -250,7 +250,7 @@ std::vector<TrainingChoiceGroup> choice_groups(const CharacterDraft &creation)
           detail::elemental_fury_options(), detail::blessed_strikes_options(),
           detail::land_options(), detail::metamagic_options(2, {}),
           detail::metamagic_options(10, {}), detail::fiendish_resilience_options(),
-          detail::elemental_affinity_options(), detail::discovery_options({}),
+          detail::elemental_affinity_options(), detail::discovery_options({}, {}),
           detail::arcanum_options(11), detail::arcanum_options(13), detail::arcanum_options(15)})
     {
         groups.push_back(std::move(group));

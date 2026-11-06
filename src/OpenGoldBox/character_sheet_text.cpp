@@ -70,7 +70,14 @@ String formatted_sheet(const Character &character, const PartyMember *member,
                             .utf8()
                             .get_data()) +
             "[/theme_emphasis]";
-    text += i18n::formatted("   Hit Dice: {level}d{die}", {{"level", s.level}, {"die", s.hit_die}});
+    // A multiclass character's dice by size, such as "3d10 + 2d6".
+    std::string dice;
+    for (const auto &held : srd5::hit_dice(s))
+    {
+        dice += (dice.empty() ? "" : " + ") + std::to_string(held.count) + "d" +
+                std::to_string(held.die);
+    }
+    text += i18n::formatted("   Hit Dice: {dice}", {{"dice", gs(dice)}});
     if (member)
     {
         text += i18n::formatted(

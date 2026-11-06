@@ -178,6 +178,59 @@ bool granted(const CharacterSheet &sheet, std::string_view prefix, unsigned leve
                        });
 }
 
+// Every spell Magical Discoveries offers at Bard 6 can be taken, with the
+// level's preparations chosen from what the spell page then offers. A Bard
+// spell already prepared, and the original's spells' stand-ins (MAGIC-6),
+// were offered and then refused.
+void discovery_choice_checks()
+{
+    const auto rules = module();
+    const auto five = bard(5);
+    const auto &sheet = five.sheet();
+    const auto base = rules->default_advancement(sheet);
+    const auto options = rules->advancement_options(sheet, base).training;
+    check(options.size() == 1 && options.front().id == "subclass:bard:discoveries",
+          "Bard 6 chooses its Magical Discoveries");
+    const auto &offered = options.front().options;
+    for (const auto &prepared : sheet.prepared_spells)
+    {
+        check(std::none_of(offered.begin(), offered.end(),
+                           [&](const auto &o)
+                           {
+                               return o.id == prepared;
+                           }),
+              "A prepared spell is not a Discovery: " + prepared);
+    }
+    for (std::size_t n = 0; n < offered.size(); ++n)
+    {
+        auto choice = base;
+        choice.training["subclass:bard:discoveries"] = {offered[n].id,
+                                                        offered[(n + 1) % offered.size()].id};
+        const auto page = rules->spell_choice_options(rules->spell_choice_sheet(sheet, choice),
+                                                      SpellChoiceContext::advancement);
+        choice.spells = page.locked_prepared;
+        for (const auto &spell : page.preparation)
+        {
+            if (choice.spells.size() < page.prepared_count &&
+                std::find(choice.spells.begin(), choice.spells.end(), spell.id) ==
+                    choice.spells.end())
+            {
+                choice.spells.push_back(spell.id);
+            }
+        }
+        auto hero = five;
+        VitalState life{hero.sheet().hit_points, false, {}};
+        try
+        {
+            check(hero.advance(*rules, life, choice), "Bard 6");
+        }
+        catch (const std::exception &error)
+        {
+            check(false, "Magical Discoveries takes " + offered[n].id + ": " + error.what());
+        }
+    }
+}
+
 void progression_checks()
 {
     const auto rules = module();
@@ -534,6 +587,7 @@ int main()
     try
     {
         progression_checks();
+        discovery_choice_checks();
         discovery_swap_checks();
         compulsion_checks();
         compulsion_fixture();

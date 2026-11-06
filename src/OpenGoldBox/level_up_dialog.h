@@ -73,6 +73,13 @@ class LevelUpDialog : public godot::Window
     // spell choices when it has any, with its prepared spells kept.
     [[nodiscard]] opengold::rules::AdvancementChoice
     class_default(const std::string &class_id) const;
+    [[nodiscard]] bool taking_starting_class(const std::string &class_id) const;
+    // The defaults of the class the level is taken in: whether it has spell
+    // choices follows that class, not the starting one.
+    [[nodiscard]] opengold::rules::AdvancementChoice level_default() const;
+    // Keeps the prepared spells the level still offers: one the level makes
+    // always prepared (a Land Druid's circle spell) leaves, its place free.
+    void keep_preparable(opengold::rules::AdvancementChoice &choice) const;
     bool advancement_refreshing_{};
 
     void bind_controls();

@@ -54,6 +54,9 @@ bool prepares_spells(CharacterClass klass);
 unsigned highest_slot_level(CharacterClass klass, unsigned level);
 // Whether a spell is on a class's spell list in the game.
 bool on_class_list(CharacterClass klass, std::string_view spell);
+// A cantrip Blessed or Druidic Warrior can teach the character: a Cleric
+// cantrip with the Paladin's feature, a Druid cantrip with the Ranger's.
+bool warrior_cantrip(std::span<const rules::FeatureGrant> grants, std::string_view spell);
 // The grant a Wizard of `level` gains by copying `spell` from a scroll into its
 // spellbook (MAGIC-6).
 rules::FeatureGrant copied_spell_grant(std::string_view spell, unsigned level);
