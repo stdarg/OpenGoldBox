@@ -42,8 +42,8 @@ Settings and saves go to your user-data folder; see
 - macOS (bash): `./build.sh`, then `open mac-package/OpenGoldBox.app`. `./build.sh`
   builds the game and re-exports the app without running tests.
 
-The last full test run was on 2026-11-05 (commit 3449c000, macOS, with original
-files): all 266 checks of the game build and all 127 of the demo build passed,
+The last full test run was on 2026-11-06 (commit b4d0aed5, macOS, with original
+files): all 269 checks of the game build and all 130 of the demo build passed,
 including the packaged game's smoke check. The last full Windows run was on
 2026-10-25 (commit 1e46d8be), when all 239 checks passed.
 
