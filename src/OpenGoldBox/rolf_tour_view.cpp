@@ -21,6 +21,7 @@
 #include "guarded_handlers.h"
 #include "godot_sound_output.h"
 #include "monster_picture_timing.h"
+#include "close_up_art.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/option_button.hpp>
@@ -240,6 +241,8 @@ void RolfTourView::show_original_walls(bool original)
 {
     original_walls_ = original;
     rendered_pose_.reset();
+    // A close-up on screen switches art too.
+    shown_monster_picture_ = nullptr;
     refresh();
 }
 
@@ -2105,6 +2108,23 @@ void RolfTourView::sync_monster_picture()
     {
         monster_frames_.push_back(presentation::image_texture(frame.image));
         monster_delays_.push_back(frame.delay);
+    }
+    // New art drawn from the close-up's description replaces it, with its
+    // timing, unless the 3D view shows the original's art; a folder that cannot
+    // be used leaves the original.
+    const auto source = session_->scene_animation_source();
+    if (!source || original_walls_)
+    {
+        return;
+    }
+    auto replacement = presentation::load_close_up_art(
+        game_data_path("data/art/closeups")
+            .path_join(presentation::close_up_folder_name(source->first, source->second)),
+        monster_delays_);
+    if (replacement.art)
+    {
+        monster_frames_ = std::move(replacement.art->frames);
+        monster_delays_ = std::move(replacement.art->delays);
     }
 }
 

@@ -395,7 +395,9 @@ Each tool's README has its build and self-check commands.
 
 - [Combat sprite catalog](dev_tools/combat_sprite_catalog/README.md): every
   monster and NPC record with its combat art, weapon sets and record editing.
-  Its export is the game's `data/monsters`.
+  Its Close-ups tab plays the 3D view's 74 animated close-ups beside a written
+  description of each, and plays new art drawn only from that description.
+  Its export is the game's `data/monsters` and `data/art/closeups`.
 - [Creature Stats Editor](dev_tools/docs/creature-stats-editor.md): changes a
   monster's Hit Points, stats, spellcasting and fight ratings, the scripts'
   wandering and rest chances, and the companions who join the party, and

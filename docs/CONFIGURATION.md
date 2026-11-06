@@ -50,7 +50,7 @@ next time the game starts, `combat_zoom`, read when a fight opens, and the
 `[art]` section below, which takes effect at once.
 
 `[art]` chooses between the new art and the original game's (#274): `walls`
-for the walls of the 3D view, `combat` for the creatures in a fight (monsters
+for the walls and animated close-ups of the 3D view, `combat` for the creatures in a fight (monsters
 and Wild Shape's and summoned forms; party members keep theirs). Each is `new`
 or `original`; the default, also used for any other value, is `new`, and new
 settings files receive it. The Options screen's 3D view art and Combat art

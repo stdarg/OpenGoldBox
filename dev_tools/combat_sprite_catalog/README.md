@@ -189,7 +189,39 @@ sit beside Head, Body, and Size. Ready and Action poses stay visible together.
 The swatch control and palette values match character creation. Weapon and
 shield combinations are available even when game rules would forbid equipping
 them; missing art mappings display the existing unarmed fallback and a status
-label. The tab container leaves room for future tabs.
+label.
+
+### Close-ups
+
+The **Close-ups** tab lists every close-up the original animates in the 3D
+view: a `PIC1.DAX` to `PIC8.DAX` record that holds two or more frames on
+screen, such as a monster that has come up to the party or a picture a script
+shows. There are 74, one row per archive record, in archive and record order;
+a row names any other records holding the identical picture. Type part of a
+record or title into the filter to narrow the list.
+
+The preview plays the selected close-up in a loop with its own timing, in the
+3D view's 5:6 shape, as the game shows it. Each row has a **Title** and a
+**Description**: a written account of the subject, its framing, setting,
+colors and mood, then each held frame in order and how the loop reads.
+**Save description** writes them to `closeups/json/<folder>.json`, where the
+folder is named after the record (`pic2_dax_4` for `PIC2.DAX` record 4).
+Unsaved edits stay while you switch rows.
+
+New art for a close-up is drawn **only from its description**, never from the
+original picture; that is how it replaces the original without copying it.
+This tool does not draw it. Put the frames in `closeups/art/<folder>/`:
+`frame_0.png`, `frame_1.png` and so on, one opaque **352 × 422** PNG (the 3D
+view's 5:6 shape) for each frame the original holds on screen, in order. The
+text under the preview lists the files and how long each is held; the new art
+keeps the original's timing. **Show new animation** plays the new art as the
+game will, or says why it cannot: a missing frame, an extra frame, or a frame
+of another size. Turn it off to play the original again.
+
+**Export to game** copies every art folder to [`data/art/closeups`](../../data/art/closeups/README.md),
+which the game reads; so does the headless `--export-to-game` mode. The game
+plays a close-up's new art in its place unless the Options screen's **3D view
+art** is Original, and shows the original for a close-up with no usable art.
 
 After building, run the focused check with:
 
@@ -203,7 +235,12 @@ name filters, and character ready/action previews across every weapon with shiel
 It also checks the in-pane Head and Body buttons, color swatches, Large size,
 and that the character pane has no scrolling selection panel. For every built-in
 monster and combat-icon row, it also checks that saved descriptions have at
-least 80 characters and saved wealth matches the decoded creature record.
+least 80 characters and saved wealth matches the decoded creature record. For
+the Close-ups tab it checks that every listed close-up animates and has a saved
+title and description, that any new art in `closeups/art` can be used and is
+exported, that the Slums orc plays with the game's timing, and, on a temporary
+folder, the toggle's messages, new art playing with the original's timing,
+saving and export.
 
 ### Export to game
 
@@ -217,7 +254,8 @@ the same without the game files, and `--catalog-check` fails when the export is
 out of date. So does `opengold_monster_export_check` in the game's ctest suite,
 which needs neither the game files nor this tool's native library: after
 changing the catalog's records or art, export and commit `data/monsters` with
-them.
+them. The same export, button and checks cover the Close-ups tab's art and
+[`data/art/closeups`](../../data/art/closeups/README.md).
 
 Run `--metadata-check` in place of `--catalog-check` to verify JSON persistence,
 draft retention, paired one-handed setups, separate ranged and two-handed setups,

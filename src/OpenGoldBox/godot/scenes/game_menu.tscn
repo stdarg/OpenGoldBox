@@ -371,7 +371,7 @@ offset_top = 204
 offset_bottom = 260
 autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
-text = "The walls of the town and the dungeons: the new art, or the original game's."
+text = "The 3D view's walls and close-ups: the new art, or the original game's."
 
 [node name="CombatArtLabel" type="Label" parent="Options/Interface"]
 offset_left = 20

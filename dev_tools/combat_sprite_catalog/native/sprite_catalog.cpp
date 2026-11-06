@@ -3,6 +3,7 @@
 #include "sprite_catalog.h"
 #include "../../../src/OpenGoldBox/godot_images.h"
 #include "../../../src/OpenGoldBox/godot_path.h"
+#include "../../../src/OpenGoldBox/close_up_art.h"
 #include "opengold/authored_items.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/formats.h"
@@ -27,6 +28,36 @@ std::vector<std::uint8_t> read_bytes(const std::filesystem::path &file)
         file, "Combat archive exceeds size limit: " + file.string(), "Cannot open " + file.string(),
         "Cannot read " + file.string());
 }
+
+std::vector<std::uint32_t> delays_of(const std::vector<AnimationFrame> &frames)
+{
+    std::vector<std::uint32_t> delays;
+    for (const auto &frame : frames)
+    {
+        delays.push_back(frame.delay);
+    }
+    return delays;
+}
+
+PackedInt32Array int_array(const auto &values)
+{
+    PackedInt32Array result;
+    for (const auto value : values)
+    {
+        result.push_back(static_cast<std::int32_t>(value));
+    }
+    return result;
+}
+
+std::vector<std::uint32_t> delays_from(const PackedInt32Array &values)
+{
+    std::vector<std::uint32_t> delays;
+    for (std::int64_t n = 0; n < values.size(); ++n)
+    {
+        delays.push_back(static_cast<std::uint32_t>(std::max(0, values[n])));
+    }
+    return delays;
+}
 } // namespace
 
 void SpriteCatalog::_bind_methods()
@@ -43,6 +74,10 @@ void SpriteCatalog::_bind_methods()
     ClassDB::bind_method(D_METHOD("weapons"), &SpriteCatalog::weapons);
     ClassDB::bind_method(D_METHOD("item_types"), &SpriteCatalog::item_types);
     ClassDB::bind_method(D_METHOD("combat_body_groups"), &SpriteCatalog::combat_body_groups);
+    ClassDB::bind_method(D_METHOD("close_ups"), &SpriteCatalog::close_ups);
+    ClassDB::bind_method(D_METHOD("close_up_art", "folder", "delays"), &SpriteCatalog::close_up_art);
+    ClassDB::bind_method(D_METHOD("close_up_frame_at", "delays", "seconds"),
+                         &SpriteCatalog::close_up_frame_at);
     ClassDB::bind_method(
         D_METHOD("character_art", "head", "body", "size", "weapon_type", "shield", "colors"),
         &SpriteCatalog::character_art);
@@ -58,6 +93,7 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
     identical_art_groups_.clear();
     art_.clear();
     archive_bytes_.clear();
+    close_ups_.clear();
     try
     {
         const auto game = presentation::path_from_godot(game_directory);
@@ -203,6 +239,7 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
                 identical_art_groups_.push_back(std::move(keys));
             }
         }
+        load_close_ups(game);
         return {};
     }
     catch (const std::exception &e)
@@ -215,6 +252,7 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
         identical_art_groups_.clear();
         art_.clear();
         archive_bytes_.clear();
+        close_ups_.clear();
         return gs(e.what());
     }
 }
@@ -519,4 +557,111 @@ Dictionary SpriteCatalog::character_art(int head, int body, int size, int weapon
         result["error"] = gs(e.what());
         return result;
     }
+}
+
+// Every close-up the game animates: a PIC record holding two or more frames on
+// screen, decoded as the game decodes it.
+void SpriteCatalog::load_close_ups(const std::filesystem::path &game)
+{
+    std::map<std::vector<std::uint8_t>, std::vector<std::string>> copies;
+    for (unsigned bank = 1; bank <= 8; ++bank)
+    {
+        const auto name = "PIC" + std::to_string(bank) + ".DAX";
+        const auto file = opengold::por::detail::find_archive<std::runtime_error>(
+            game, name, "Ambiguous archive " + name, "Missing " + name);
+        const auto archive = decode_dax_archive(read_bytes(file));
+        if (!archive)
+        {
+            throw std::runtime_error("Cannot decode " + name);
+        }
+        for (const auto &record : archive.records)
+        {
+            auto animation = decode_ega_animation(record.bytes);
+            if (!animation || presentation::held_frames(delays_of(animation.frames)).size() < 2)
+            {
+                continue;
+            }
+            const auto key = name + ":" + std::to_string(record.id);
+            copies[record.bytes].push_back(key);
+            close_ups_.push_back({bank, record.id, key, std::move(animation.frames), {}});
+        }
+    }
+    std::sort(close_ups_.begin(), close_ups_.end(),
+              [](const CloseUp &a, const CloseUp &b)
+              {
+                  return std::pair{a.bank, a.record} < std::pair{b.bank, b.record};
+              });
+    for (auto &close_up : close_ups_)
+    {
+        for (const auto &[bytes, keys] : copies)
+        {
+            if (std::find(keys.begin(), keys.end(), close_up.key) == keys.end())
+            {
+                continue;
+            }
+            for (const auto &key : keys)
+            {
+                if (key != close_up.key)
+                {
+                    close_up.copies.push_back(key);
+                }
+            }
+        }
+    }
+}
+
+Array SpriteCatalog::close_ups() const
+{
+    Array result;
+    for (const auto &close_up : close_ups_)
+    {
+        Array frames;
+        for (const auto &frame : close_up.frames)
+        {
+            frames.push_back(presentation::image_texture(frame.image));
+        }
+        Array copies;
+        for (const auto &key : close_up.copies)
+        {
+            copies.push_back(gs(key));
+        }
+        const auto delays = delays_of(close_up.frames);
+        Dictionary row;
+        row["key"] = gs(close_up.key);
+        row["archive"] = gs("PIC" + std::to_string(close_up.bank) + ".DAX");
+        row["record"] = static_cast<std::int64_t>(close_up.record);
+        row["folder"] = presentation::close_up_folder_name(close_up.bank, close_up.record);
+        row["delays"] = int_array(delays);
+        row["held"] = int_array(presentation::held_frames(delays));
+        row["frames"] = frames;
+        row["copies"] = copies;
+        result.push_back(row);
+    }
+    return result;
+}
+
+// The new art in `folder` as the game would play it: its frames and timing, or
+// why it cannot be used. `found` is false when there is no folder.
+Dictionary SpriteCatalog::close_up_art(const String &folder, const PackedInt32Array &delays) const
+{
+    const auto load = presentation::load_close_up_art(folder, delays_from(delays));
+    Dictionary result;
+    result["found"] = load.art.has_value() || !load.problem.is_empty();
+    result["problem"] = load.problem;
+    Array frames;
+    if (load.art)
+    {
+        for (const auto &frame : load.art->frames)
+        {
+            frames.push_back(frame);
+        }
+        result["delays"] = int_array(load.art->delays);
+    }
+    result["frames"] = frames;
+    return result;
+}
+
+int SpriteCatalog::close_up_frame_at(const PackedInt32Array &delays, double seconds) const
+{
+    return static_cast<int>(presentation::monster_frame_at(delays_from(delays), seconds));
 }

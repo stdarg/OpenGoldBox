@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <vector>
 
 namespace presentation
 {
@@ -47,6 +48,21 @@ namespace presentation
         total_ticks += delay;
     }
     return std::max(1.0, static_cast<double>(total_ticks) / 18.2);
+}
+
+// The frames a close-up holds on screen, in order: those with a delay. New art
+// draws only these.
+[[nodiscard]] inline std::vector<std::size_t> held_frames(std::span<const std::uint32_t> delays)
+{
+    std::vector<std::size_t> held;
+    for (std::size_t n = 0; n < delays.size(); ++n)
+    {
+        if (delays[n] > 0)
+        {
+            held.push_back(n);
+        }
+    }
+    return held;
 }
 } // namespace presentation
 

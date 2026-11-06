@@ -3,6 +3,9 @@ extends Control
 const Evidence = preload("res://scripts/art_script_evidence.gd")
 const MonsterMetadata = preload("res://scripts/monster_metadata.gd")
 const MonsterExport = preload("res://scripts/monster_export.gd")
+const CloseUpStore = preload("res://scripts/close_up_store.gd")
+const CloseUpPanel = preload("res://scripts/close_up_panel.gd")
+const CloseUpCheck = preload("res://scripts/close_up_check.gd")
 const GEAR_ROLES := ["one_hand", "two_hand", "ranged", "shield", "gear"]
 const HUMANOID_SIZES := ["na", "small", "normal", "tall"]
 const GRID_CELL := 128.0
@@ -52,15 +55,18 @@ var native_index_by_key: Dictionary = {}
 var art_users: Dictionary = {}
 var status: Label
 var character_panel
+var close_up_panel
 
 func _ready() -> void:
     if "--export-to-game" in OS.get_cmdline_user_args():
         var export_error: String = MonsterExport.export_all()
+        if export_error.is_empty():
+            export_error = CloseUpStore.export_all()
         if not export_error.is_empty():
             push_error(export_error)
             get_tree().quit(1)
             return
-        print("Exported the monsters to " + MonsterExport.game_folder())
+        print("Exported the monsters to %s and the close-ups to %s" % [MonsterExport.game_folder(), CloseUpStore.game_folder()])
         get_tree().quit()
         return
     if "--metadata-check" in OS.get_cmdline_user_args():
@@ -79,6 +85,7 @@ func _ready() -> void:
         rows[index]["origin_key"] = str(rows[index].key)
         native_index_by_key[rows[index].key] = index
     character_panel.set_catalog(catalog)
+    close_up_panel.set_catalog(catalog)
     var evidence := Evidence.new()
     evidence.build(game_dir)
     _apply_script_bindings(evidence)
@@ -484,6 +491,8 @@ func _build_ui() -> void:
 
     character_panel = preload("res://scenes/character_sprite_panel.tscn").instantiate()
     tabs.add_child(character_panel)
+    close_up_panel = CloseUpPanel.new()
+    tabs.add_child(close_up_panel)
 
 func _rebuild_list() -> void:
     _store_draft()
@@ -1441,7 +1450,12 @@ func _catalog_check() -> void:
         push_error("data/monsters is out of date: run --export-to-game")
         get_tree().quit(1)
         return
-    print("Combat sprite catalog checks passed: %d rows, %d referenced, %d missing original previews, ECL NPC icons and gear, name filter, all weapon and shield previews" % [rows.size(), referenced, unresolved])
+    var close_up_error: String = CloseUpCheck.run(catalog)
+    if not close_up_error.is_empty():
+        push_error("Close-ups: " + close_up_error)
+        get_tree().quit(1)
+        return
+    print("Combat sprite catalog checks passed: %d rows, %d referenced, %d missing original previews, ECL NPC icons and gear, name filter, all weapon and shield previews, %d close-ups" % [rows.size(), referenced, unresolved, catalog.close_ups().size()])
     get_tree().quit()
 
 func _check_name_filter() -> String:

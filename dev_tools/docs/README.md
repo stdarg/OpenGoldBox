@@ -10,7 +10,7 @@ are read from a local installation; they are not included here.
 | --- | --- | --- |
 | Tile Art Viewer | Browse original wall pieces and maps, edit piece descriptions, and inspect replacement art in map context. | [Tile Art Viewer](tile-art-viewer.md) |
 | Replacement Art Creator | Prepare new wall and feature art, project it into perspective views, and export replacement sets. | [Replacement Art Creator](replacement-art-creator.md) |
-| Combat Sprite Catalog | Inspect monster/NPC and character combat images, edit monster metadata and visual height tiers, and review ready/action replacement sprites. | [Combat Sprite Catalog](combat-sprite-catalog.md) |
+| Combat Sprite Catalog | Inspect monster/NPC and character combat images, edit monster metadata and visual height tiers, and review ready/action replacement sprites; describe the 3D view's animated close-ups and play their new art. | [Combat Sprite Catalog](combat-sprite-catalog.md) |
 | Shop & Temple Manager | Select fixed shop and temple locations on compact maps, then edit offerings, prices, quantities, types, and portraits. | [Shop & Temple Manager](shop-manager.md) |
 | AI lab | Replay the campaign's fights through the game's own combat and computer play, to measure the difficulty levels and changes to the computer's play. A command-line research tool, not a Godot project. | [AI lab](ai-lab.md) |
 | Creature Stats Editor | Change monsters' Hit Points, stat lines and fight ratings, what fights load, wandering and rest chances, and companions, seeing what the game makes of each value; publish straight into the game's data. Runs the game's own code. | [Creature Stats Editor](creature-stats-editor.md) |

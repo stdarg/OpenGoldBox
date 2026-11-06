@@ -35,7 +35,9 @@ Parley menu waits (coab `sub_30580` and `displayInput`, and the user's memory of
 the original). When the script starts combat, a close-up not yet on screen for a
 full loop finishes one, then combat opens; a key hurries it. A script's `PICTURE`
 of an animated record loops the same way. Records 1 (treasure chest) and 29
-(campfire) appear in every PIC archive.
+(campfire) appear in every PIC archive. New art drawn from each animated
+record's description can take its place
+([PORTRAITS](PORTRAITS.md#monster-encounter-close-ups)).
 
 ## Combat images
 

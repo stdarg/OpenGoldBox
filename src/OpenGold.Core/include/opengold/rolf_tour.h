@@ -512,6 +512,9 @@ class RolfTourSession
     // The animation on screen now, if any: the monster's close-up once it is beside
     // the party, or a picture the script shows. Null shows the still view.
     [[nodiscard]] const std::vector<AnimationFrame> *scene_animation() const;
+    // Where scene_animation() comes from, for its new art: the PIC archive bank
+    // and record. Empty when none is on screen.
+    [[nodiscard]] std::optional<std::pair<unsigned, unsigned>> scene_animation_source() const;
     // The player pressed a key on the close-up; returns false when none is showing.
     bool start_encounter();
 
@@ -528,6 +531,8 @@ class RolfTourSession
     // Clears everything one run of the tour builds up; restart() also reloads
     // the town's map and a fresh script machine.
     void reset_run();
+    // The PIC record scene_animation() shows, if any.
+    [[nodiscard]] std::optional<unsigned> scene_animation_record() const;
     GeoMap map_;
     std::shared_ptr<const EclProgram> program_;
     std::array<opengold::Image, 3> sprites_;

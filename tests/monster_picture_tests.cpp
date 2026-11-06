@@ -6,6 +6,7 @@
 #include <iterator>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 // The monster close-up before a fight. The view keeps its own copy of the
 // frame delays; the session's frames go when the session is reset or replaced.
@@ -38,6 +39,10 @@ void frames_follow_the_original_timer()
           "The fight opens after one full loop");
     check(presentation::monster_picture_lasts(still) == 1.0,
           "A picture with no timing is still seen before the fight");
+    // New close-up art draws only the frames held on screen.
+    check(presentation::held_frames(orc) == std::vector<std::size_t>{0, 2},
+          "The orc holds two of its four frames");
+    check(presentation::held_frames(still).empty(), "A picture with no timing holds none");
 }
 
 // shown_monster_picture_ points into the session, so the view may only compare

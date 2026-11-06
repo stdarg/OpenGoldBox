@@ -240,5 +240,9 @@ Slums). No table maps monsters to
 pictures: the script's operand is the only link. Records 1 (treasure chest)
 and 29 (campfire) appear in every `PIC` archive.
 
-Replacement close-up art follows the view-window size above: 5:6 frames that
-fill the window. Every frame must be the same size.
+New close-up art is drawn in the view window's 5:6 shape, at 352 × 422, one
+frame for each frame the original holds on screen; it keeps the original's
+timing. `sync_monster_picture()` plays it from `data/art/closeups` in place of
+the original unless 3D view art is Original. It is drawn only from the written
+description in the Combat Sprite Catalog's
+[Close-ups](../dev_tools/combat_sprite_catalog/README.md#close-ups) tab.

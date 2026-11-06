@@ -6,6 +6,10 @@ extends SceneTree
 # The exploration title names the area, the monster close-up says how to start
 # the fight and Continue starts it, and the finished fight shows no key hints.
 const SLOT = "Slums encounter fixture"
+# The trolls' close-up, PIC2 record 31, holds five frames. The check gives it
+# new art for the length of the run (data/art/closeups).
+const TROLL_ART = "res://data/art/closeups/pic2_dax_31"
+const TROLL_FRAMES = 5
 var fixture := ""
 var originals := {}
 
@@ -27,7 +31,29 @@ func restore_files() -> void:
 
 func require(ok: bool, message: String) -> void:
     if not ok:
-        restore_files(); push_error(message); quit(1); assert(ok, message)
+        restore_files(); remove_troll_art(); push_error(message); quit(1); assert(ok, message)
+
+func write_troll_art() -> void:
+    DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(TROLL_ART))
+    for n in range(TROLL_FRAMES):
+        var image := Image.create(352, 422, false, Image.FORMAT_RGBA8)
+        image.fill(Color(0.1, 0.6, 0.2))
+        image.save_png(ProjectSettings.globalize_path(TROLL_ART.path_join("frame_%d.png" % n)))
+
+func remove_troll_art() -> void:
+    var folder := ProjectSettings.globalize_path(TROLL_ART)
+    for name in DirAccess.get_files_at(folder): DirAccess.remove_absolute(folder.path_join(name))
+    DirAccess.remove_absolute(folder)
+
+# New close-up art plays in place of the original's, at its size, and the
+# 3D view art setting brings back the original's at once, and the new again.
+func check_close_up_art() -> void:
+    var art: OptionButton = current_scene.get_node("GameMenu/Options/Interface/WallArt")
+    require(town().tour_visuals()["picture"].get_width() == 352, "The trolls' close-up plays its new art")
+    art.select(1); art.item_selected.emit(1); await settle(1)
+    require(town().tour_visuals()["picture"].get_width() == 88, "Original 3D view art brings back the original close-up at once")
+    art.select(0); art.item_selected.emit(0); await settle(1)
+    require(town().tour_visuals()["picture"].get_width() == 352, "New 3D view art brings the new close-up back at once")
 
 func settle(frames := 5) -> void:
     for frame in range(frames): await process_frame
@@ -166,7 +192,10 @@ func run_checks() -> void:
     await check_leader()
     await check_auto_equip()
     await check_wall_art()
+    write_troll_art()
     await reach_close_up()
+    await check_close_up_art()
+    remove_troll_art()
     for wait in range(600):
         if in_combat(): break
         await settle(1)

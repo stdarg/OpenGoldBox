@@ -1066,16 +1066,16 @@ const std::vector<AnimationFrame> *RolfTourSession::monster_picture() const
     return &area_resources().animations.at(*monster_picture_id_);
 }
 
-const std::vector<AnimationFrame> *RolfTourSession::scene_animation() const
+std::optional<unsigned> RolfTourSession::scene_animation_record() const
 {
     if (showing_monster_picture_)
     {
-        return monster_picture();
+        return monster_picture_id_;
     }
     // The close-up has played: the fight takes over.
     if (snapshot_.phase == TourPhase::combat)
     {
-        return nullptr;
+        return std::nullopt;
     }
     const auto beside_the_party =
         snapshot_.sprite_frame == 0 && machine_.variable(EclAddress{0x6DE1}) == 255;
@@ -1084,11 +1084,31 @@ const std::vector<AnimationFrame> *RolfTourSession::scene_animation() const
                                        : std::nullopt;
     if (!id)
     {
-        return nullptr;
+        return std::nullopt;
     }
     const auto &animations = area_resources().animations;
     const auto found = animations.find(*id);
-    return found != animations.end() && found->second.size() > 1 ? &found->second : nullptr;
+    return found != animations.end() && found->second.size() > 1 ? id : std::nullopt;
+}
+
+const std::vector<AnimationFrame> *RolfTourSession::scene_animation() const
+{
+    if (showing_monster_picture_)
+    {
+        return monster_picture();
+    }
+    const auto record = scene_animation_record();
+    return record ? &area_resources().animations.at(*record) : nullptr;
+}
+
+std::optional<std::pair<unsigned, unsigned>> RolfTourSession::scene_animation_source() const
+{
+    const auto record = scene_animation_record();
+    if (!record)
+    {
+        return std::nullopt;
+    }
+    return std::pair{area_resources().bank, *record};
 }
 
 bool RolfTourSession::start_encounter()
