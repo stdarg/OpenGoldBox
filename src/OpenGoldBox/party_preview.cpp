@@ -93,9 +93,15 @@ void CharacterCreationView::setup_party()
     connect_party_button("PartyPanel/ActionRow2/Unequip", PartyAction::unequip);
     connect_party_button("PartyPanel/ActionRow2/Explore", PartyAction::explore);
     connect_party_button("PartyPanel/ActionRow2/Close", PartyAction::close);
-    required_node<ItemList>(*this, "PartyPanel/Roster")
-        .connect("item_selected",
-                 presentation::guarded(this, &CharacterCreationView::party_selected));
+    auto *roster = &required_node<ItemList>(*this, "PartyPanel/Roster");
+    roster->connect("item_selected",
+                    presentation::guarded(this, &CharacterCreationView::party_selected));
+    roster->set_drag_forwarding(
+        presentation::guarded(this, &CharacterCreationView::drag_member),
+        presentation::guarded(this, &CharacterCreationView::can_drop_member),
+        presentation::guarded(this, &CharacterCreationView::drop_member));
+    roster->set_tooltip_text(i18n::text(N_(
+        "Drag a character up or down to change the party's order. A fight puts the first half of the party in the front rank.")));
     required_node<Button>(*this, "PartyPanel/MakeLeader")
         .connect("pressed",
                  presentation::guarded(this, &CharacterCreationView::make_roster_leader));
@@ -365,12 +371,13 @@ void CharacterCreationView::party_layout()
 
 void CharacterCreationView::party_selected(std::int64_t index)
 {
-    if (index < 0 || static_cast<std::size_t>(index) >= campaign_->state().roster.size())
+    const auto rows = roster_rows();
+    if (index < 0 || static_cast<std::size_t>(index) >= rows.size())
     {
         return;
     }
-    roster_index_ = index;
-    const auto id = campaign_->state().roster[index].id;
+    roster_index_ = rows[index];
+    const auto id = campaign_->state().roster[roster_index_].id;
     for (unsigned slot = 0; slot < 8; ++slot)
     {
         if (campaign_->state().slots[slot] == id)
@@ -381,14 +388,165 @@ void CharacterCreationView::party_selected(std::int64_t index)
     refresh_party();
 }
 
+std::vector<std::size_t> CharacterCreationView::roster_rows() const
+{
+    const auto &state = campaign_->state();
+    std::vector<std::size_t> rows;
+    for (const auto id : state.slots)
+    {
+        for (std::size_t i = 0; id && i < state.roster.size(); ++i)
+        {
+            if (state.roster[i].id == id)
+            {
+                rows.push_back(i);
+            }
+        }
+    }
+    for (std::size_t i = 0; i < state.roster.size(); ++i)
+    {
+        if (std::find(state.slots.begin(), state.slots.end(), state.roster[i].id) ==
+            state.slots.end())
+        {
+            rows.push_back(i);
+        }
+    }
+    return rows;
+}
+
+// Only a player character in the party moves; an NPC keeps its position.
+static bool in_party_order(const CampaignParty &campaign, const PartyMember &member)
+{
+    const auto &slots = campaign.state().slots;
+    return member.npc_source.empty() &&
+           std::find(slots.begin(), slots.end(), member.id) != slots.end();
+}
+
+std::optional<std::size_t> CharacterCreationView::drop_place(Vector2 position) const
+{
+    const auto &list = required_node<ItemList>(*this, "PartyPanel/Roster");
+    const auto row = list.get_item_at_position(position);
+    const auto rows = roster_rows();
+    if (row < 0 || static_cast<std::size_t>(row) >= rows.size() ||
+        !in_party_order(*campaign_, campaign_->state().roster[rows[row]]))
+    {
+        return std::nullopt;
+    }
+    std::size_t place = 0;
+    for (int earlier = 0; earlier < row; ++earlier)
+    {
+        place += in_party_order(*campaign_, campaign_->state().roster[rows[earlier]]) ? 1 : 0;
+    }
+    return place;
+}
+
+Variant CharacterCreationView::drag_member(Vector2 position)
+{
+    auto *list = &required_node<ItemList>(*this, "PartyPanel/Roster");
+    // The press that starts a drag selects its row, which rebuilds the list.
+    list->force_update_list_size();
+    const auto row = list->get_item_at_position(position, true);
+    const auto rows = roster_rows();
+    if (!party_open_ || campaign_->in_combat() || row < 0 ||
+        static_cast<std::size_t>(row) >= rows.size())
+    {
+        return {};
+    }
+    const auto &member = campaign_->state().roster[rows[row]];
+    const auto place = drop_place(position);
+    if (!place || !in_party_order(*campaign_, member))
+    {
+        return {};
+    }
+    auto preview = presentation::make_node<TextureRect>();
+    preview->set_texture(list->get_item_icon(row));
+    preview->set_expand_mode(TextureRect::EXPAND_IGNORE_SIZE);
+    preview->set_size(list->get_fixed_icon_size());
+    preview->set_modulate(Color(1, 1, 1, 0.8));
+    list->set_drag_preview(preview.get());
+    // Godot adopts the preview only while a drag can show it; one it refused
+    // stays with NodeOwner and is freed (Effective C++ Item 13).
+    if (preview->get_parent())
+    {
+        (void)preview.release();
+    }
+    Dictionary data;
+    data["opengold_party_member"] = static_cast<std::int64_t>(member.id);
+    data["opengold_party_place"] = static_cast<std::int64_t>(*place);
+    return data;
+}
+
+// A dragged roster member's payload: who moves and the place it leaves.
+static bool is_party_member_drag(const Variant &data)
+{
+    if (data.get_type() != Variant::DICTIONARY)
+    {
+        return false;
+    }
+    const Dictionary payload = data;
+    return payload.has("opengold_party_member") && payload.has("opengold_party_place");
+}
+
+bool CharacterCreationView::can_drop_member(Vector2 position, const Variant &data)
+{
+    auto *list = &required_node<ItemList>(*this, "PartyPanel/Roster");
+    const auto place = drop_place(position);
+    if (!party_open_ || !place || !is_party_member_drag(data))
+    {
+        list->call("show_drop", -1, false);
+        return false;
+    }
+    const Dictionary payload = data;
+    const std::int64_t from = payload["opengold_party_place"];
+    const auto row = list->get_item_at_position(position);
+    // The line shows where the character will stand: above the row it
+    // pushes down, below the row it pushes up.
+    list->call("show_drop", std::cmp_equal(*place, from) ? -1 : row,
+               std::cmp_greater(*place, from));
+    return true;
+}
+
+void CharacterCreationView::drop_member(Vector2 position, const Variant &data)
+{
+    required_node<ItemList>(*this, "PartyPanel/Roster").call("show_drop", -1, false);
+    const auto place = drop_place(position);
+    if (!party_open_ || !place || !is_party_member_drag(data))
+    {
+        return;
+    }
+    const Dictionary payload = data;
+    const auto id =
+        static_cast<MemberId>(static_cast<std::int64_t>(payload["opengold_party_member"]));
+    try
+    {
+        campaign_->move_member(id, *place);
+        error_ = "";
+    }
+    catch (const std::exception &e)
+    {
+        error_ = i18n::text(e.what());
+    }
+    for (std::size_t i = 0; i < campaign_->state().roster.size(); ++i)
+    {
+        if (campaign_->state().roster[i].id == id)
+        {
+            roster_index_ = i;
+        }
+    }
+    // The first member leads when no leader was chosen, so the lead may move.
+    show_leader_change();
+    refresh_advancement_arrows();
+}
+
 void CharacterCreationView::refresh_party()
 {
     auto *list = &required_node<ItemList>(*this, "PartyPanel/Roster");
     list->clear();
     const auto &state = campaign_->state();
+    const auto rows = roster_rows();
     Array members;
-    for (const auto &m : state.roster)
+    for (const auto index : rows)
     {
+        const auto &m = state.roster[index];
         auto slot = std::find(state.slots.begin(), state.slots.end(), m.id);
         const bool leader = slot != state.slots.end() && m.id == campaign_->leader();
         const auto &sheet = m.character.sheet();
@@ -412,7 +570,8 @@ void CharacterCreationView::refresh_party()
     if (!state.roster.empty())
     {
         roster_index_ = std::min(roster_index_, state.roster.size() - 1);
-        list->select(static_cast<std::int32_t>(roster_index_));
+        list->select(static_cast<std::int32_t>(std::find(rows.begin(), rows.end(), roster_index_) -
+                                               rows.begin()));
         const auto &m = state.roster[roster_index_];
         sheet = presentation::sheet_text(*campaign_, m).utf8().get_data();
         const auto profile = campaign_->profile(m.id);
@@ -750,7 +909,11 @@ void CharacterCreationView::equipment_art_check()
         character.add_item(
             {.definition_id = "shield", .name = "Shield", .quantity = 1, .original_type = 59});
         const auto id = campaign_->add_pc(std::move(character));
-        party_selected(campaign_->state().roster.size() - 1);
+        // The roster shows the party in its order, so the new member's row is
+        // its place there, not its place in the roster.
+        const auto rows = roster_rows();
+        party_selected(std::find(rows.begin(), rows.end(), campaign_->state().roster.size() - 1) -
+                       rows.begin());
         // Exercise the shipped party's buttons, not the separate review UI.
         const auto inventory = campaign_->member(id).character.inventory().items();
         for (unsigned index = 0; index + 1 < inventory.size(); ++index)

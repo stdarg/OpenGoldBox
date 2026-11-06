@@ -270,6 +270,11 @@ class CampaignParty
                      por::CharacterAppearance appearance);
     void rejoin(MemberId id);
     void remove(MemberId id);
+    // Moves a player character to `place` (from 0) among the party's player
+    // characters, the others keeping their order. A fight stands the party
+    // in this order, the first half in the front rank (PLACE-1). The
+    // characters swap positions; no position is emptied or filled.
+    void move_member(MemberId id, std::size_t place);
     [[nodiscard]] std::vector<rules::EquipmentChoice> equipment_choices(MemberId id,
                                                                         std::uint64_t item) const;
     // An alignment-bound sword (#267) taken up by a member of another

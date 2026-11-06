@@ -53,6 +53,13 @@ travel, automatic combat, original tactical geometry and persistent rewards.
    that character for exploration/shop interactions.
 4. **Remove member** places a member in reserve. **Rejoin party** restores the
    same member without resetting their possessions or live state.
+   The roster lists the party in its order, then the reserve. Drag a player
+   character up or down to change the order; a gold line shows where it will
+   stand. A fight stands the party in this order, the first half (rounded up)
+   in the front rank ([PLACE-1](SRD-DECISIONS.md#place-1-2026-10-10-starting-positions-as-the-original-game-had-them)):
+   with six, the first three in front and the last three behind. NPCs keep
+   their positions at the end. With no leader chosen, the first character
+   leads.
 5. **Explore New Phlan** runs Rolf's tour and the existing original town host.
    Visit the arms shop at (13,8), accept its offer, buy equipment and leave.
    In a shop, click a member row, press Tab, or press a number key (1 for the

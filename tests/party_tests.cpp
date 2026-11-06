@@ -859,6 +859,44 @@ void party_leader()
           "A refused loss leaves the member alive and the party unchanged");
 }
 
+// The roster's drag moves a character in the party's order, which a fight
+// stands in: the first half in the front rank.
+void party_order()
+{
+    CampaignParty party(module());
+    std::vector<MemberId> ids;
+    for (const auto *name : {"Ada", "Bea", "Cy", "Dot"})
+    {
+        ids.push_back(party.add_pc(character("fighter", name)));
+    }
+    party.remove(ids[1]);
+    party.select(PartySlot{3});
+    party.move_member(ids[3], 0);
+    const auto &slots = party.state().slots;
+    check(slots[0] == ids[3] && slots[1] == 0 && slots[2] == ids[0] && slots[3] == ids[2],
+          "A moved character takes the place; the others keep their order and gaps stay");
+    check(party.selected() == ids[3], "The selected character stays selected");
+    party.move_member(ids[3], 2);
+    check(slots[0] == ids[0] && slots[2] == ids[2] && slots[3] == ids[3],
+          "A character can move to the end");
+    const auto saved = encode_campaign(party, nullptr, "order");
+    CampaignParty loaded(module());
+    loaded.restore(
+        decode_campaign(saved, *srd5::character_rules(), *module(), "order", nullptr).party);
+    check(loaded.state().slots == slots, "The order is saved");
+    rejects(
+        [&]
+        {
+            party.move_member(ids[1], 0);
+        });
+    rejects(
+        [&]
+        {
+            party.move_member(ids[0], 3);
+        });
+    check(party.state().slots == loaded.state().slots, "A refused move changes nothing");
+}
+
 void class_weapon_proficiency()
 {
     auto rules = module();
@@ -3442,6 +3480,7 @@ int main()
         roster_and_equipment();
         eight_player_characters();
         party_leader();
+        party_order();
         class_weapon_proficiency();
         stabilization_handoff();
         remaining_turn_handoff();

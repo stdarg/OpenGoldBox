@@ -20,7 +20,7 @@ msgstr ""
 msgid "   Party gold {gold}   XP {xp}"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:397
+#: src/OpenGoldBox/party_preview.cpp:555
 msgid " (Reserve)"
 msgstr ""
 
@@ -600,7 +600,7 @@ msgstr ""
 msgid "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1168 src/OpenGoldBox/godot/scenes/character_creation.tscn:1483 src/OpenGoldBox/party_preview.cpp:917
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1168 src/OpenGoldBox/godot/scenes/character_creation.tscn:1483 src/OpenGoldBox/party_preview.cpp:1080
 msgid "Add to party"
 msgstr ""
 
@@ -933,7 +933,7 @@ msgstr ""
 msgid "Arcane Sword attack"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:31274 src/OpenGoldBox/level_up_view.cpp:450 src/OpenGoldBox/level_up_view.cpp:471
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:31274 src/OpenGoldBox/level_up_view.cpp:518 src/OpenGoldBox/level_up_view.cpp:539
 msgid "Archery"
 msgstr ""
 
@@ -2728,7 +2728,7 @@ msgstr ""
 msgid "Create a character before saving"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:410
+#: src/OpenGoldBox/party_preview.cpp:568
 msgid "Create a character, finish its sheet, then Add to party.\n\nA party holds six characters, and up to two others may join it on the way. Removed members remain in the roster."
 msgstr ""
 
@@ -2939,15 +2939,15 @@ msgstr ""
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1656
+#: src/OpenGoldBox/party_preview.cpp:1819
 msgid "Defeat"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1740
+#: src/OpenGoldBox/party_preview.cpp:1903
 msgid "Defeat test"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:31267 src/OpenGoldBox/level_up_view.cpp:389
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:31267 src/OpenGoldBox/level_up_view.cpp:457
 msgid "Defense"
 msgstr ""
 
@@ -3244,6 +3244,10 @@ msgstr ""
 msgid "Draconic Spirit"
 msgstr ""
 
+#: src/OpenGoldBox/party_preview.cpp:103
+msgid "Drag a character up or down to change the party's order. A fight puts the first half of the party in the front rank."
+msgstr ""
+
 #: src/OpenGoldBox/character_creation_view.cpp:184
 msgid "Drag this rolled result onto an attribute to assign it."
 msgstr ""
@@ -3384,7 +3388,7 @@ msgstr ""
 msgid "Dwarven Toughness"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:571 src/OpenGold.Rules.Srd5/src/srd5.cpp:31898 src/OpenGold.Rules.Srd5/src/srd5.cpp:9173 src/OpenGoldBox/level_up_view.cpp:323
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:571 src/OpenGold.Rules.Srd5/src/srd5.cpp:31898 src/OpenGold.Rules.Srd5/src/srd5.cpp:9173 src/OpenGoldBox/level_up_view.cpp:391
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Dwarven Toughness: +{hp} maximum HP."
 msgstr ""
@@ -3393,7 +3397,7 @@ msgstr ""
 msgid "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage, and Advantage on saves against being Poisoned."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:461
+#: src/OpenGoldBox/party_preview.cpp:620
 msgid "Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later."
 msgstr ""
 
@@ -3664,7 +3668,7 @@ msgstr ""
 msgid "Equipped / "
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1008 src/OpenGoldBox/rolf_tour_view.cpp:772
+#: src/OpenGoldBox/party_preview.cpp:1171 src/OpenGoldBox/rolf_tour_view.cpp:772
 msgid "Equipped."
 msgstr ""
 
@@ -3736,7 +3740,7 @@ msgstr ""
 msgid "Exit"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1664
+#: src/OpenGoldBox/party_preview.cpp:1827
 msgid "Exit to OS"
 msgstr ""
 
@@ -4014,7 +4018,7 @@ msgstr ""
 msgid "Filter by"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_view.cpp:124 src/OpenGoldBox/level_up_view.cpp:315
+#: src/OpenGoldBox/character_sheet_view.cpp:124 src/OpenGoldBox/level_up_view.cpp:383
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Final score: {score}"
 msgstr ""
@@ -4043,7 +4047,7 @@ msgstr ""
 msgid "Finish Long Rest spell choices before combat"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1558
+#: src/OpenGoldBox/party_preview.cpp:1721
 msgid "Finish combat, dialogue or shopping before returning to the party."
 msgstr ""
 
@@ -5284,7 +5288,7 @@ msgstr ""
 msgid "Insight"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1557
+#: src/OpenGoldBox/party_preview.cpp:1720
 msgid "Inspect your party and equipment."
 msgstr ""
 
@@ -5688,12 +5692,12 @@ msgstr ""
 msgid "Level up"
 msgstr ""
 
-#: src/OpenGoldBox/level_up_view.cpp:91 src/OpenGoldBox/level_up_view.cpp:97
+#: src/OpenGoldBox/level_up_view.cpp:101 src/OpenGoldBox/level_up_view.cpp:95
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Level up {name}"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:31851 src/OpenGoldBox/level_up_view.cpp:314
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:31851 src/OpenGoldBox/level_up_view.cpp:382
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Level {level} Ability Score Improvement"
 msgstr ""
@@ -5904,7 +5908,7 @@ msgstr ""
 msgid "Load Character"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1660
+#: src/OpenGoldBox/party_preview.cpp:1823
 msgid "Load a saved game to continue."
 msgstr ""
 
@@ -8225,7 +8229,7 @@ msgstr ""
 msgid "Religion"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1664
+#: src/OpenGoldBox/party_preview.cpp:1827
 msgid "Reload a Saved Game"
 msgstr ""
 
@@ -8782,7 +8786,7 @@ msgstr ""
 msgid "Sacred Weapon (Radiant)"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:312 src/OpenGoldBox/level_up_view.cpp:312 src/OpenGoldBox/level_up_view.cpp:317
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:312 src/OpenGoldBox/level_up_view.cpp:380 src/OpenGoldBox/level_up_view.cpp:385
 msgid "Sage"
 msgstr ""
 
@@ -8811,7 +8815,7 @@ msgstr ""
 msgid "Sap ({source}): next attack roll has Disadvantage."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:31271 src/OpenGoldBox/level_up_view.cpp:389
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:31271 src/OpenGoldBox/level_up_view.cpp:457
 msgid "Savage Attacker"
 msgstr ""
 
@@ -9714,7 +9718,7 @@ msgstr ""
 msgid "Start"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:376 src/OpenGoldBox/party_preview.cpp:916
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:376 src/OpenGoldBox/party_preview.cpp:1079
 msgid "Start over"
 msgstr ""
 
@@ -11665,7 +11669,7 @@ msgstr ""
 msgid "Your party flees the battle."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1658
+#: src/OpenGoldBox/party_preview.cpp:1821
 msgid "Your party has been defeated."
 msgstr ""
 
@@ -12032,7 +12036,7 @@ msgstr ""
 msgid "{attacker} strikes {name}'s displaced image."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:504 src/OpenGoldBox/level_up_view.cpp:312 src/OpenGoldBox/level_up_view.cpp:317
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:504 src/OpenGoldBox/level_up_view.cpp:380 src/OpenGoldBox/level_up_view.cpp:385
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{background} background"
 msgstr ""

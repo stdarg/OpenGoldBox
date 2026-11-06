@@ -1291,6 +1291,41 @@ void CampaignParty::remove(MemberId id)
     }
 }
 
+void CampaignParty::move_member(MemberId id, std::size_t place)
+{
+    editable();
+    std::vector<unsigned> positions;
+    std::vector<MemberId> order;
+    for (unsigned i = 0; i < 8; ++i)
+    {
+        if (state_.slots[i] && member(state_.slots[i]).npc_source.empty())
+        {
+            positions.push_back(i);
+            order.push_back(state_.slots[i]);
+        }
+    }
+    const auto moved = std::find(order.begin(), order.end(), id);
+    if (!id || moved == order.end())
+    {
+        throw std::runtime_error("Only a player character in the party can be moved");
+    }
+    if (place >= order.size())
+    {
+        throw std::runtime_error("No such place in the party");
+    }
+    const auto selected_member = selected();
+    order.erase(moved);
+    order.insert(order.begin() + static_cast<std::ptrdiff_t>(place), id);
+    for (std::size_t n = 0; n < positions.size(); ++n)
+    {
+        state_.slots[positions[n]] = order[n];
+        if (order[n] == selected_member)
+        {
+            state_.selected_slot = PartySlot{positions[n]};
+        }
+    }
+}
+
 rules::RecoveryInfo CampaignParty::recovery_info(MemberId id) const
 {
     const auto &who = member(id);

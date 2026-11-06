@@ -9,6 +9,8 @@
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/check_box.hpp>
 #include <godot_cpp/classes/font.hpp>
+#include <godot_cpp/classes/input_event_mouse_button.hpp>
+#include <godot_cpp/classes/input_event_mouse_motion.hpp>
 #include <godot_cpp/classes/item_list.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/rich_text_label.hpp>
@@ -17,6 +19,7 @@
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/image.hpp>
+#include <godot_cpp/classes/viewport.hpp>
 #include <godot_cpp/classes/viewport_texture.hpp>
 #include <godot_cpp/classes/v_scroll_bar.hpp>
 #include <godot_cpp/classes/window.hpp>
@@ -76,9 +79,10 @@ void CharacterCreationView::refresh_advancement_arrows()
     }
     list->force_update_list_size();
     const auto &roster = campaign_->state().roster;
-    for (std::size_t i = 0; i < roster.size(); ++i)
+    const auto rows = roster_rows();
+    for (std::size_t i = 0; i < rows.size(); ++i)
     {
-        const auto &member = roster[i];
+        const auto &member = roster[rows[i]];
         const auto name = String("Advance") + String::num_uint64(member.id);
         auto *arrow = Object::cast_to<Button>(list->get_node_or_null(name));
         if (!arrow)
@@ -254,6 +258,70 @@ void CharacterCreationView::advancement_check()
     case 1:
     {
         auto *list = &required_node<ItemList>(*this, "PartyPanel/Roster");
+        // The mouse drags the fourth character to the top of the roster, then
+        // back to the bottom: the party's order, which a fight stands it in.
+        // The press and the motion start the drag as a player's do. Headless
+        // Godot drops where its own pointer is, which pushed events do not
+        // move, so the drop goes to the roster at the target row.
+        const auto drag_row = [&](int from, int to)
+        {
+            const auto local = [&](int row)
+            {
+                return list->get_item_rect(row).get_center() -
+                       Vector2(0, static_cast<real_t>(list->get_v_scroll_bar()->get_value()));
+            };
+            const auto source = list->get_global_transform_with_canvas().xform(local(from));
+            Ref<InputEventMouseButton> press_event;
+            press_event.instantiate();
+            press_event->set_position(source);
+            press_event->set_global_position(source);
+            press_event->set_button_index(MouseButton::MOUSE_BUTTON_LEFT);
+            press_event->set_pressed(true);
+            get_viewport()->push_input(press_event, true);
+            Ref<InputEventMouseMotion> motion;
+            motion.instantiate();
+            const auto moved_to = source + Vector2(0, from < to ? 30 : -30);
+            motion->set_position(moved_to);
+            motion->set_global_position(moved_to);
+            motion->set_relative(moved_to - source);
+            motion->set_button_mask(MouseButtonMask::MOUSE_BUTTON_MASK_LEFT);
+            get_viewport()->push_input(motion, true);
+            if (!get_viewport()->gui_is_dragging())
+            {
+                throw std::runtime_error("Dragging a roster row did not pick it up");
+            }
+            const auto data = get_viewport()->gui_get_drag_data();
+            if (!can_drop_member(local(to), data))
+            {
+                throw std::runtime_error("A roster row refused a party member");
+            }
+            drop_member(local(to), data);
+            get_viewport()->gui_cancel_drag();
+            press_event->set_pressed(false);
+            get_viewport()->push_input(press_event, true);
+        };
+        const auto before = campaign_->state().slots;
+        const auto selected_before = roster_index_;
+        drag_row(3, 0);
+        const auto &moved = campaign_->state().slots;
+        if (moved[0] != before[3] || moved[1] != before[0] || moved[2] != before[1] ||
+            moved[3] != before[2])
+        {
+            throw std::runtime_error("Dragging a roster row to the top did not move it first");
+        }
+        if (!list->get_item_text(0).ends_with(
+                gs(campaign_->member(before[3]).character.sheet().name)))
+        {
+            throw std::runtime_error("The roster does not show the party in its new order");
+        }
+        drag_row(0, 3);
+        if (campaign_->state().slots != before)
+        {
+            throw std::runtime_error("Dragging a roster row to the bottom did not move it last");
+        }
+        roster_index_ = selected_before;
+        refresh_party();
+        refresh_advancement_arrows();
         for (unsigned i = 0; i < 4; ++i)
         {
             auto *button = &required_node<Button>(*this, arrow(campaign_->state().slots[i]));

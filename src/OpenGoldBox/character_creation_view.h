@@ -226,6 +226,16 @@ class CharacterCreationView : public godot::Control
     void party_button_pressed(int action);
     void party_action(PartyAction action);
     void party_selected(std::int64_t index);
+    // The roster's rows, as indices into the campaign's roster: the party in
+    // its order, which a fight stands it in, then the members out of it.
+    [[nodiscard]] std::vector<std::size_t> roster_rows() const;
+    // Dragging a player character in the roster moves it in the party's order.
+    godot::Variant drag_member(godot::Vector2 position);
+    bool can_drop_member(godot::Vector2 position, const godot::Variant &data);
+    void drop_member(godot::Vector2 position, const godot::Variant &data);
+    // The place among the party's player characters a member dropped at
+    // `position` takes, or none when the row there is not one of them.
+    [[nodiscard]] std::optional<std::size_t> drop_place(godot::Vector2 position) const;
     void refresh_party();
     void party_layout();
     void party_check();
