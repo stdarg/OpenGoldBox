@@ -75,11 +75,13 @@ the book's printed page numbers.
    possible ruling, not something the original decides.
 2. **Deathgrass (Western Wilderness key).** Its meaning is unclear: plant hazard
    or terrain. It is plant life, but perhaps not "normal".
-3. **Wilderness battlefield terrain.** I could not confirm whether the
-   original's random-encounter arena changes with the overland terrain type
-   (swamp, mountain, water). There is no decoder for `WILDCOM.DAX` and no repo
-   doc for the wilderness generator (`docs/combat-geometry.md` says it is
-   separate, unimplemented work). Treat every overland fight as outdoor.
+3. **Wilderness battlefield terrain.** The original's wilderness field does
+   change with the overland terrain: trees, ground cover, a road or ridge with
+   its boulders and rare debris, from START.EXE's terrain table, drawn with
+   WILDCOM's and RANDCOM's art (`wilderness_battlefield`). OpenGoldBox grows
+   the same field square for square, given the original's dice; the DOS
+   probe's [wilderness field experiment](../dev_tools/docs/dos-probe.md#findings)
+   compares the two. Every overland fight is outdoor.
 4. **What the flag means in combat.** The ImHex note says the bit also affects
    combat tile selection. OpenGoldBox's dungeon arena (`DUNGCOM`) does not yet use
    it, and its effect in combat is not verified against the original.

@@ -45,6 +45,7 @@ A scenario is a text file of commands, one per line (`#` starts a comment):
 | --- | --- |
 | `wait [N]` | Runs until the game waits for a key (at most N thousand instructions): it has looked for one and found none for 3 million instructions. |
 | `key NAME` | Presses a key and waits: a character, or `enter`, `esc`, `space`, `backspace`, `tab`, `up`, `down`, `left`, `right`, `home`, `end`, `pgup`, `pgdn`, `ins`, `del`, `f1`-`f5`, `f10`, or `kp1`-`kp9` (the keypad with Num Lock on). |
+| `press NAME` | Presses a key without waiting, so `cpu` or `run` can follow what it starts. |
 | `type TEXT` | Presses each character in turn. |
 | `run N` | Runs N thousand instructions. |
 | `shot NAME` | Saves the visible screen as `out/NAME.png` (320 by 200). |
@@ -164,6 +165,22 @@ python3 dev_tools/dos_probe/experiments/wilderness.py \
     "$OPENGOLD_GAME_DIR" out/
 ```
 
+[wilderness_field.py](../dos_probe/experiments/wilderness_field.py) grows
+wilderness fields in both programs with the same dice. On fourteen central
+wilderness squares (the wilderness experiment's, and a road, a ridge, rough
+ground, hills and the other terrain flags) it presses the step with `press`
+and logs it with `cpu`. The field is grown in START.EXE's code segment 2890,
+which rolls with a far call to `08C0:0048`; the number each call returns is
+read from AX as it comes back. `opengold_maps --wild-field` grows
+OpenGoldBox's field for the square's overland tile from those numbers, and
+every square's art frame and blocking must match, with every die used.
+
+```bash
+python3 dev_tools/dos_probe/experiments/wilderness_field.py \
+    build-probe/dev_tools/dos_probe/opengold_dos_probe build-probe/opengold_maps \
+    "$OPENGOLD_GAME_DIR" out/
+```
+
 ## Findings
 
 Recorded 2026-10-24 with `START.EXE` SHA-1
@@ -228,6 +245,20 @@ Recorded 2026-10-24 with `START.EXE` SHA-1
   ([FOOT-1](../../docs/SRD-DECISIONS.md#foot-1-2026-10-26-creatures-fill-the-squares-their-art-fills)).
   Changing `0x6E12` to stage another area's monsters on the wilderness map
   moves the party elsewhere instead, so no 2 by 2 monster was probed.
+- **Wilderness fields** (2026-11-06): the original grows a field from the
+  square's terrain with one dice routine, `08C0:0048`, which takes a count
+  and a size and returns the sum (a road's column is one call of 5d4). Trees,
+  ground cover and the rare debris walk the field column by column, each
+  column from its top; OpenGoldBox walked it row by row, so its trees and
+  ground cover fell on other squares. A boulder on a road counts, and while
+  the count is odd the next row gets one too, so boulders come in pairs of
+  rows; the pair beside the road (16 - d9 rows down) stands only when the road
+  has none; and the road runs while its column is at most 49, its ridge then
+  falling on the next row's first square. OpenGoldBox now does all of this,
+  and its fields match the original's square for square on all fourteen
+  squares, using every die the original rolled. One check the field builder
+  makes is not modelled: before a ruin's second roll it asks that the running
+  script is not number 10, which never grows a wilderness field.
 - **Fight setup checks the keyboard** between combatants it places, so a key
   pressed then cuts the setup short and the rest of the group is left out.
   The probe therefore counts the game as waiting only after 3 million

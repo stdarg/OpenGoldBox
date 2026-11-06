@@ -80,11 +80,12 @@ struct OverlandView
 
 // The original's battlefield for a fight on the overland square of tile
 // `tile`: open ground, with trees, ground cover, a road or ridge with its
-// boulders and rare debris as the terrain decides. `roll(sides)` rolls one die.
-// Its tiles are art frames of the wilderness set: WILDCOM's 34 frames, then
-// RANDCOM's from 34.
-[[nodiscard]] DungeonBattlefield wilderness_battlefield(const OverlandWorld &world,
-                                                        std::uint8_t tile,
-                                                        const std::function<int(int)> &roll);
+// boulders and rare debris as the terrain decides. `roll(count, sides)` rolls
+// `count` dice of `sides` and gives their sum, as the original's dice routine
+// does in one call. Its tiles are art frames of the wilderness set: WILDCOM's
+// 34 frames, then RANDCOM's from 34.
+[[nodiscard]] DungeonBattlefield
+wilderness_battlefield(const OverlandWorld &world, std::uint8_t tile,
+                       const std::function<int(int count, int sides)> &roll);
 } // namespace opengold::por
 #endif

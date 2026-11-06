@@ -160,7 +160,7 @@ constexpr std::uint8_t floor_frame = 0x16;
 class FieldBuilder
 {
   public:
-    FieldBuilder(const OverlandWorld &world, const std::function<int(int)> &roll)
+    FieldBuilder(const OverlandWorld &world, const std::function<int(int, int)> &roll)
         : world_(world), roll_(roll), grid_(field_columns * field_rows, ground)
     {
     }
@@ -178,15 +178,13 @@ class FieldBuilder
 
     int roll(int count, int sides) const
     {
-        int total = 0;
-        for (int n = 0; n < count; ++n)
-        {
-            total += roll_(sides);
-        }
-        return total;
+        return roll_(count, sides);
     }
 
-    // A road across the field, a ridge on rougher ground, with boulders.
+    // A road across the field, a ridge on rougher ground, with boulders. A
+    // boulder on the road brings one in the next row too: the original counts
+    // them, and an odd count places another. With none on the road, a pair
+    // stands beside it.
     void road_or_ridge(unsigned flags)
     {
         const int chance = flags & 0x10 ? 75 : flags & 0x20 ? 35 : 0;
@@ -200,18 +198,22 @@ class FieldBuilder
             --column;
         }
         const int start = column;
-        for (int row = 0; row < field_rows && column < field_columns - 1; ++row, ++column)
+        int placed = 0;
+        // As in the original, the road runs while its column is at most 49;
+        // there its ridge falls on the next row's first square.
+        for (int row = 0; row < field_rows && column < field_columns; ++row, ++column)
         {
-            at(row, column) = road;
-            at(row, column + 1) = ridge;
-            if (roll(1, 20) == 1)
+            square(row * field_columns + column) = road;
+            square(row * field_columns + column + 1) = ridge;
+            if (roll(1, 20) == 1 || placed % 2 == 1)
             {
                 boulders(row, column);
+                ++placed;
             }
         }
-        const int row = 16 - roll(1, 9);
-        if (start + row + 2 < field_columns)
+        if (placed == 0)
         {
+            const int row = 16 - roll(1, 9);
             boulders(row, start + row);
             boulders(row + 1, start + row + 1);
         }
@@ -219,12 +221,21 @@ class FieldBuilder
 
     void boulders(int row, int column)
     {
-        at(row, column) = boulder;
-        at(row, column + 1) = boulder + 1;
+        square(row * field_columns + column) = boulder;
+        square(row * field_columns + column + 1) = boulder + 1;
+    }
+
+    // A square by its index, row by row: a road's ridge at column 49 falls on
+    // the next row, as in the original.
+    std::uint8_t &square(int index)
+    {
+        return grid_.at(static_cast<std::size_t>(index));
     }
 
     // Trees, thicker in forest, none on bare ground; a small tree's crown fills
-    // the square above it.
+    // the square above it. The original walks the field column by column,
+    // which decides where each roll falls (the DOS probe's wilderness field
+    // check).
     void trees(unsigned flags)
     {
         int density = 1;
@@ -232,9 +243,9 @@ class FieldBuilder
         density = flags & 0x40 ? 4 : density;
         density = flags & 0x08 ? 7 : density;
         density = flags & 0x80 ? 0 : density;
-        for (int row = 1; row < field_rows; ++row)
+        for (int column = 0; column < field_columns; ++column)
         {
-            for (int column = 0; column < field_columns; ++column)
+            for (int row = 1; row < field_rows; ++row)
             {
                 if (!floor(row, column) || !floor(row - 1, column) || roll(1, 100) > density)
                 {
@@ -279,9 +290,10 @@ class FieldBuilder
             c = 0x19;
             b = 0x0A;
         }
-        for (int row = 0; row < field_rows; ++row)
+        // Column by column, as the original walks it.
+        for (int column = 0; column < field_columns; ++column)
         {
-            for (int column = 0; column < field_columns; ++column)
+            for (int row = 0; row < field_rows; ++row)
             {
                 if (!floor(row, column))
                 {
@@ -329,9 +341,10 @@ class FieldBuilder
     // Rare floor variants.
     void debris()
     {
-        for (int row = 0; row < field_rows; ++row)
+        // Column by column, as the original walks it.
+        for (int column = 0; column < field_columns; ++column)
         {
-            for (int column = 0; column < field_columns; ++column)
+            for (int row = 0; row < field_rows; ++row)
             {
                 if (!floor(row, column))
                 {
@@ -346,6 +359,8 @@ class FieldBuilder
                 {
                     at(row, column) = 0x1B;
                 }
+                // The original also asks here that the running script is not
+                // number 10, which never grows a wilderness field.
                 else if (r == 100 && roll(1, 100) == 1)
                 {
                     at(row, column) = roll(1, 10) <= 6 ? 0x1C : 0x1D;
@@ -372,7 +387,7 @@ class FieldBuilder
 
   private:
     const OverlandWorld &world_;
-    const std::function<int(int)> &roll_;
+    const std::function<int(int, int)> &roll_;
     std::vector<std::uint8_t> grid_;
 };
 } // namespace
@@ -488,7 +503,7 @@ Image render_overland_window(const OverlandWorld &world, std::span<const Image> 
 }
 
 DungeonBattlefield wilderness_battlefield(const OverlandWorld &world, std::uint8_t tile,
-                                          const std::function<int(int)> &roll)
+                                          const std::function<int(int, int)> &roll)
 {
     if (world.combat_tiles.size() <= 0x41)
     {

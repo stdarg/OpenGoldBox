@@ -132,19 +132,135 @@ int wild_formation(const std::filesystem::path &directory, char **argv)
     std::cout << "}\n";
     return std::cout ? 0 : 1;
 }
+
+// The field OpenGoldBox grows for a wilderness fight on overland tile `TILE`
+// with the original's dice: the numbers in DICE_FILE, one per line, from the
+// START-th (counting from 0). It prints each square's art frame and whether it
+// blocks, row by row, and the sides of every die it asked for, for comparing
+// with the original's field (dev_tools/dos_probe/experiments).
+int wild_field(const std::filesystem::path &directory, char **argv)
+{
+    const auto world = opengold::por::read_overland_world(
+        opengold::por::unpack_sound_executable(read_file(start_exe(directory))));
+    if (!world)
+    {
+        throw std::runtime_error("START.EXE has no wilderness");
+    }
+    const auto tile = number(argv[3]);
+    if (tile > 255)
+    {
+        throw std::runtime_error("A tile is 0 to 255");
+    }
+    std::vector<int> dice;
+    std::ifstream in(argv[4]);
+    for (int die; in >> die;)
+    {
+        dice.push_back(die);
+    }
+    std::size_t next = number(argv[5]);
+    std::vector<int> sides;
+    // Each call is one call of the original's dice routine: COUNT dice of
+    // SIDES, summed.
+    const auto roll = [&](int count, int asked)
+    {
+        sides.push_back(asked);
+        if (next >= dice.size())
+        {
+            throw std::runtime_error("The original's dice ran out");
+        }
+        // A number no such roll gives means the two have parted.
+        if (dice[next] < count || dice[next] > count * asked)
+        {
+            std::string last;
+            for (std::size_t n = sides.size() > 25 ? sides.size() - 25 : 0; n < sides.size(); ++n)
+            {
+                last += " d" + std::to_string(sides[n]);
+            }
+            throw std::runtime_error("Die " + std::to_string(next) + " is " +
+                                     std::to_string(dice[next]) + ", but " + std::to_string(count) +
+                                     "d" + std::to_string(asked) + " was rolled; the last were" +
+                                     last);
+        }
+        return dice[next++];
+    };
+    const auto field =
+        opengold::por::wilderness_battlefield(*world, static_cast<std::uint8_t>(tile), roll);
+    std::cout << "{\"frames\":[";
+    for (std::size_t n = 0; n < field.tiles.size(); ++n)
+    {
+        std::cout << (n ? "," : "") << int(field.tiles[n]);
+    }
+    std::cout << "],\"blocked\":[";
+    for (std::size_t n = 0; n < field.geometry.terrain.size(); ++n)
+    {
+        std::cout << (n ? "," : "")
+                  << (field.geometry.terrain[n] == opengold::rules::Terrain::obstacle ? 1 : 0);
+    }
+    std::cout << "],\"sides\":[";
+    for (std::size_t n = 0; n < sides.size(); ++n)
+    {
+        std::cout << (n ? "," : "") << sides[n];
+    }
+    std::cout << "]}\n";
+    return std::cout ? 0 : 1;
+}
+
+// The art frame and whether it blocks of each square of a field of the
+// original's combat tiles (50 by 25 bytes, as read from the running game).
+int wild_frames(const std::filesystem::path &directory, char **argv)
+{
+    const auto world = opengold::por::read_overland_world(
+        opengold::por::unpack_sound_executable(read_file(start_exe(directory))));
+    if (!world)
+    {
+        throw std::runtime_error("START.EXE has no wilderness");
+    }
+    const auto grid = read_file(argv[3]);
+    std::cout << "{\"frames\":[";
+    for (std::size_t n = 0; n < grid.size(); ++n)
+    {
+        std::cout << (n ? "," : "") << int(world->combat_tiles.at(grid[n]).frame);
+    }
+    std::cout << "],\"blocked\":[";
+    for (std::size_t n = 0; n < grid.size(); ++n)
+    {
+        std::cout << (n ? "," : "") << (world->combat_tiles.at(grid[n]).cost == 255 ? 1 : 0);
+    }
+    std::cout << "]}\n";
+    return std::cout ? 0 : 1;
+}
+
+// The overland tile under world square (X, Y).
+int wild_tile(const std::filesystem::path &directory, char **argv)
+{
+    const auto world = opengold::por::read_overland_world(
+        opengold::por::unpack_sound_executable(read_file(start_exe(directory))));
+    if (!world)
+    {
+        throw std::runtime_error("START.EXE has no wilderness");
+    }
+    std::cout << int(world->at(number(argv[3]), number(argv[4]))) << '\n';
+    return std::cout ? 0 : 1;
+}
 } // namespace
 
 int main(int argc, char **argv)
 {
     const bool formation = argc == 11 && std::string_view(argv[2]) == "--formation";
     const bool wild = argc == 8 && std::string_view(argv[2]) == "--wild-formation";
-    if (argc != 2 && argc != 7 && !formation && !wild)
+    const bool wild_dice = argc == 6 && std::string_view(argv[2]) == "--wild-field";
+    const bool wild_art = argc == 4 && std::string_view(argv[2]) == "--wild-frames";
+    const bool wild_square = argc == 5 && std::string_view(argv[2]) == "--wild-tile";
+    if (argc != 2 && argc != 7 && !formation && !wild && !wild_dice && !wild_art && !wild_square)
     {
         std::cerr << "Usage: opengold_maps GAME_DIRECTORY [--battlefield GEO_ARCHIVE RECORD X Y]\n"
                      "       opengold_maps GAME_DIRECTORY --formation GEO_ARCHIVE RECORD X Y "
                      "FACING DISTANCE PARTY ENEMIES\n"
                      "       opengold_maps GAME_DIRECTORY --wild-formation FIELD_FILE FACING "
                      "DISTANCE PARTY ENEMIES\n"
+                     "       opengold_maps GAME_DIRECTORY --wild-field TILE DICE_FILE START\n"
+                     "       opengold_maps GAME_DIRECTORY --wild-frames FIELD_FILE\n"
+                     "       opengold_maps GAME_DIRECTORY --wild-tile X Y\n"
                      "FACING is 0 (north) to 3 (west); --formation prints where a fight's "
                      "two sides start (PLACE-1); --wild-formation does it on a wilderness "
                      "field of 50 by 25 combat tiles. ENEMIES is a count, or COUNT:WxH for "
@@ -156,6 +272,18 @@ int main(int argc, char **argv)
         if (wild)
         {
             return wild_formation(argv[1], argv);
+        }
+        if (wild_dice)
+        {
+            return wild_field(argv[1], argv);
+        }
+        if (wild_art)
+        {
+            return wild_frames(argv[1], argv);
+        }
+        if (wild_square)
+        {
+            return wild_tile(argv[1], argv);
         }
         const auto catalog = opengold::por::MapCatalog::load(argv[1]);
         if (argc == 7 || formation)

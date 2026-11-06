@@ -141,6 +141,14 @@ int run_scenario(Machine &machine, std::istream &scenario, const std::filesystem
             machine.press(key.scan, key.ascii);
             wait_for_input(machine, 400'000'000ULL);
         }
+        else if (command == "press")
+        {
+            // A key, without waiting: `cpu` can then log what it starts.
+            const auto named = named_keys().find(argument);
+            const auto key =
+                named != named_keys().end() ? named->second : character_key(argument.at(0));
+            machine.press(key.scan, key.ascii);
+        }
         else if (command == "type")
         {
             for (const char c : argument)

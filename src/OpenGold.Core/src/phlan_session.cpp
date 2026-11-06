@@ -2992,11 +2992,16 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             const auto p = snapshot_.pose;
             // On the wilderness map the field grows from the terrain under the
             // party, drawn with the wilderness set, north up.
-            const auto roll = [&](int sides)
+            const auto roll = [&](int count, int sides)
             {
-                return static_cast<int>(
-                           machine_.host_random(request.id, static_cast<unsigned>(sides))) +
-                       1;
+                int total = 0;
+                for (int die = 0; die < count; ++die)
+                {
+                    total += static_cast<int>(
+                                 machine_.host_random(request.id, static_cast<unsigned>(sides))) +
+                             1;
+                }
+                return total;
             };
             // The original faces a wilderness fight the way the party stepped;
             // a diagonal step faces the direction to its left (PLACE-2).
