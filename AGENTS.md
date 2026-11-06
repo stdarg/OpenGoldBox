@@ -7,6 +7,14 @@
 - After updating this repository, commit your changes and push the current branch
   to `origin`, unless the user explicitly asks otherwise. Include only your own
   changes and complete relevant checks before committing.
+- **ALWAYS update the main checkout when you are done.** After every push, bring
+  the main checkout (the first entry of `git worktree list`, where the user runs
+  the game and the tools) up to date with `git pull --ff-only origin main`, then
+  rebuild what your change affects there: the game with `./build.sh`, a dev
+  tool's native extension with its build command. Do this without being asked,
+  before you report the work as done, and check the change shows when run from
+  the main checkout. If the main checkout has uncommitted changes or cannot
+  fast-forward, leave it alone and tell the user.
 
 ## Coordinating with other sessions
 
