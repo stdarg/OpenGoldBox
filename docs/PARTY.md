@@ -63,13 +63,18 @@ travel, automatic combat, original tactical geometry and persistent rewards.
 5. **Explore New Phlan** runs Rolf's tour and the existing original town host.
    Visit the arms shop at (13,8), accept its offer, buy equipment and leave.
    In a shop, click a member row, press Tab, or press a number key (1 for the
-   first row) to choose the buyer; the buyer's row turns gold and the shop header
-   shows their gold and item count. The shop script receives the final buyer.
+   first row) to choose the buyer; the shop header shows their gold and item
+   count. The shop script receives the final buyer.
    **Return to party** becomes available when the event finishes. The street or
    encounter view occupies only its required width at the left. Immediately to
-   its right, scrollable member rows show name, class, AC and current/maximum HP.
-   Clicking a row opens the character sheet without leaving town. During an
-   active dialogue it is read-only; outside events it also selects that member.
+   its right, scrollable member rows show the party roster's portrait, name,
+   class, race and gender, and beside them AC and current/maximum HP, the
+   weapons in hand and the armor and shield worn. The selected member's row has
+   the roster's gold border: that member receives services (the buyer in a shop,
+   who takes at a treasure), and the list scrolls to them. Clicking a row selects
+   that member outside events; double-clicking it also opens the character sheet
+   without leaving town, on any of these screens. During an active dialogue the
+   sheet is read-only.
    Down turns 180 degrees in place; Up steps forward and Left/Right turn 90 degrees.
 6. In town, **Inventory** offers **Equip** and **Unequip** for the selected item,
    with the training penalty visible when selecting and equipping it. The party

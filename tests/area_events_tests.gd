@@ -166,7 +166,7 @@ func party_hp() -> int:
 	for slot in range(8):
 		var row: Button = town().get_node_or_null("PartyList/Rows/Member" + str(slot))
 		if row == null or not row.visible: continue
-		var found := hp_pattern.search(row.text)
+		var found := hp_pattern.search(row.tooltip_text)
 		if found: total += int(found.get_string(1))
 	return total
 
@@ -174,7 +174,7 @@ func party_names() -> Array:
 	var names := []
 	for slot in range(8):
 		var row: Button = town().get_node_or_null("PartyList/Rows/Member" + str(slot))
-		if row and row.visible: names.append(row.text.split("\n")[0].trim_prefix("★ ").strip_edges())
+		if row and row.visible: names.append(row.tooltip_text.split("\n")[0].trim_prefix("★ ").strip_edges())
 	return names
 
 func slot_path(slot: String) -> String:

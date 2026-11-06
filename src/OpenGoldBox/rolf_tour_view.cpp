@@ -37,6 +37,7 @@
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/rich_text_label.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/classes/scroll_container.hpp>
 #include <godot_cpp/classes/viewport_texture.hpp>
 #include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -278,6 +279,8 @@ void RolfTourView::prepare_view()
                                                          String::num_uint64(slot));
         member->connect("pressed",
                         presentation::guarded(this, &RolfTourView::party_selected).bind(slot));
+        member->connect("opened",
+                        presentation::guarded(this, &RolfTourView::open_member_sheet).bind(slot));
         auto arrow = presentation::instantiate_control<Button>(
             "res://scenes/control_templates/party_advance.tscn");
         arrow->set_tooltip_text(i18n::text(N_("Level up")));
@@ -1457,8 +1460,7 @@ void RolfTourView::party_selected(std::int64_t index)
     if (session_->snapshot().phase == TourPhase::shopping ||
         session_->snapshot().phase == TourPhase::treasure)
     {
-        // In a shop, clicking a member chooses the buyer instead of opening a
-        // sheet; at a treasure, who takes.
+        // In a shop, clicking a member chooses the buyer; at a treasure, who takes.
         select_buyer(slot);
         return;
     }
@@ -1472,34 +1474,39 @@ void RolfTourView::party_selected(std::int64_t index)
         // scroll belongs to the member who opened it.
         scroll_item_.reset();
         refresh_cast();
-        refresh();
+    }
+    refresh();
+}
+
+void RolfTourView::open_member_sheet(std::int64_t index)
+{
+    party_selected(index);
+    if (index < 0 || index >= 8 || !session_ || !campaign_ || !campaign_->state().slots[index])
+    {
         return;
     }
+    const auto slot = static_cast<unsigned>(index);
     if (embedded_party_)
     {
         emit_signal("party_member_selected", slot);
+        return;
     }
-    else
+    const auto &m = campaign_->member(campaign_->state().slots[slot]);
+    const auto &s = m.character.sheet();
+    std::string text = s.name + "\nLevel " + std::to_string(s.level) + " " + s.race + " " +
+                       s.gender + " " + s.character_class + "\n" + s.alignment + " / " +
+                       s.background + "\nXP " + std::to_string(m.experience) + "\nAC " +
+                       std::to_string(campaign_->profile(m.id).armor_class) + " / HP " +
+                       std::to_string(m.vitals.hit_points) + "/" + std::to_string(s.hit_points) +
+                       "\n" + m.vitals.description + "\n\n";
+    for (unsigned i = 0; i < 6; ++i)
     {
-        const auto &m = campaign_->member(campaign_->state().slots[slot]);
-        const auto &s = m.character.sheet();
-        std::string text = s.name + "\nLevel " + std::to_string(s.level) + " " + s.race + " " +
-                           s.gender + " " + s.character_class + "\n" + s.alignment + " / " +
-                           s.background + "\nXP " + std::to_string(m.experience) + "\nAC " +
-                           std::to_string(campaign_->profile(m.id).armor_class) + " / HP " +
-                           std::to_string(m.vitals.hit_points) + "/" +
-                           std::to_string(s.hit_points) + "\n" + m.vitals.description + "\n\n";
-        for (unsigned i = 0; i < 6; ++i)
-        {
-            const auto ability = opengold::rules::all_abilities[i];
-            text += std::string(i18n::ability_names[i]) + ": " + std::to_string(s.scores[ability]) +
-                    " / Save " + std::to_string(s.saving_throws[ability]) + "\n";
-        }
-        required_node<RichTextLabel>(*this, "MemberSheet/Text")
-            .set_text(String::utf8(text.c_str()));
-        required_node<Window>(*this, "MemberSheet").popup_centered();
+        const auto ability = opengold::rules::all_abilities[i];
+        text += std::string(i18n::ability_names[i]) + ": " + std::to_string(s.scores[ability]) +
+                " / Save " + std::to_string(s.saving_throws[ability]) + "\n";
     }
-    refresh();
+    required_node<RichTextLabel>(*this, "MemberSheet/Text").set_text(String::utf8(text.c_str()));
+    required_node<Window>(*this, "MemberSheet").popup_centered();
 }
 
 void RolfTourView::select_buyer(unsigned slot)
@@ -2483,6 +2490,64 @@ void RolfTourView::refresh()
                   i18n::plural("{count} item", "{count} items",
                                static_cast<int>(m.character.inventory().items().size()))}}));
     }
+    show_party_rows();
+    required_node<Control>(*this, "TourVisuals").queue_redraw();
+    // Marked shown only once everything above succeeded, so a failed refresh
+    // is tried again on the next frame (Effective C++ Item 29).
+    shown_revision_ = s.revision;
+}
+
+namespace
+{
+// What a member holds and wears, for the party list: the weapons in hand, then
+// the armor and shield. Rings, cloaks and the like are left to the sheet.
+struct GearLines
+{
+    String weapons, armor;
+};
+
+GearLines gear_lines(const opengold::CampaignParty &party, const opengold::PartyMember &member)
+{
+    String weapons, armor, shield;
+    const auto items = member.character.inventory().items();
+    for (const auto id : member.equipped)
+    {
+        const auto item = std::ranges::find(items, id, &opengold::InventoryItem::id);
+        if (item == items.end())
+        {
+            continue;
+        }
+        const auto name = i18n::text(item->name);
+        switch (party.equipment_info(member.id, id).slot)
+        {
+        case opengold::rules::EquipmentSlot::weapon:
+            weapons += (weapons.is_empty() ? String() : String(", ")) + name;
+            break;
+        case opengold::rules::EquipmentSlot::armor:
+            armor = name;
+            break;
+        case opengold::rules::EquipmentSlot::shield:
+            shield = name;
+            break;
+        default:
+            break;
+        }
+    }
+    if (!shield.is_empty())
+    {
+        armor += (armor.is_empty() ? String() : String(", ")) + shield;
+    }
+    return {weapons.is_empty() ? i18n::text(N_("No weapon")) : weapons,
+            armor.is_empty() ? i18n::text(N_("No armor")) : armor};
+}
+} // namespace
+
+// Each member's row: the portrait and the roster's lines, then Armor Class,
+// hit points and gear. The selected member, who receives services, is
+// highlighted, and the list scrolls to them when the selection changes.
+void RolfTourView::show_party_rows()
+{
+    const auto selected = campaign_ ? campaign_->state().selected_slot.index : 0U;
     for (unsigned slot = 0; slot < 8; ++slot)
     {
         auto *button = &required_node<Button>(*this, String("PartyList/Rows/Member") +
@@ -2493,29 +2558,35 @@ void RolfTourView::refresh()
         {
             continue;
         }
-        // While shopping, the buyer's row is drawn in gold; otherwise the leader's.
+        if (!portraits_)
+        {
+            portraits_ = PortraitCatalog::load();
+        }
         const bool leader = id == campaign_->leader();
-        button->call("set_highlight",
-                     shopping ? campaign_->state().selected_slot.index == slot : leader);
+        button->call("set_highlight", slot == selected);
         const auto &m = campaign_->member(id);
         const auto &cs = m.character.sheet();
         const auto name = (leader ? String::utf8("★ ") : String()) + String::utf8(cs.name.c_str());
-        const auto text = i18n::format("{name}\n{class} / AC {ac} / HP {current}/{maximum}",
-                                       {{"name", name},
-                                        {"class", i18n::class_summary(cs)},
-                                        {"ac", campaign_->profile(id).armor_class},
-                                        {"current", m.vitals.hit_points},
-                                        {"maximum", cs.hit_points}});
-        button->set_text(text);
-        button->set_tooltip_text(text);
+        const auto gear = gear_lines(*campaign_, m);
+        button->call("show_member",
+                     portraits_->texture(m.character.appearance(), m.character.creation_data()),
+                     PackedStringArray({name, i18n::class_summary(cs), i18n::text(cs.race),
+                                        i18n::text(cs.gender)}),
+                     PackedStringArray({i18n::format("AC {ac} / HP {current}/{maximum}",
+                                                     {{"ac", campaign_->profile(id).armor_class},
+                                                      {"current", m.vitals.hit_points},
+                                                      {"maximum", cs.hit_points}}),
+                                        gear.weapons, gear.armor}),
+                     leader);
         auto *arrow = &required_node<Button>(*button, "Advance");
         arrow->call("place_in_member_row", name);
         arrow->set_visible(embedded_party_ && campaign_->can_advance(id) && session_->can_leave());
+        if (slot == selected && shown_selected_slot_ != slot)
+        {
+            shown_selected_slot_ = slot;
+            required_node<ScrollContainer>(*this, "PartyList").ensure_control_visible(button);
+        }
     }
-    required_node<Control>(*this, "TourVisuals").queue_redraw();
-    // Marked shown only once everything above succeeded, so a failed refresh
-    // is tried again on the next frame (Effective C++ Item 29).
-    shown_revision_ = s.revision;
 }
 
 Ref<Texture2D> RolfTourView::npc_portrait(std::string_view file)
@@ -2790,7 +2861,7 @@ void RolfTourView::check_town()
         {
             throw std::runtime_error("Shop results did not persist after leaving");
         }
-        party_selected(0);
+        open_member_sheet(0);
         auto *sheet =
             &required_node<Window>(*this, embedded_party_ ? "../TownSheet" : "MemberSheet");
         if (!sheet->is_visible())

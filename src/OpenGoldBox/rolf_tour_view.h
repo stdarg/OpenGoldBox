@@ -2,6 +2,7 @@
 #define OPENGOLD_ROLF_TOUR_VIEW_H
 
 #include "opengold/rolf_tour.h"
+#include "portrait_catalog.h"
 #include "opengold/sound_player.h"
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/image.hpp>
@@ -131,6 +132,12 @@ class RolfTourView : public godot::Control
     godot::Ref<godot::ImageTexture> wall_view_;
     // Complete NPC portraits by file, loaded when first shown.
     std::map<std::string, godot::Ref<godot::Texture2D>, std::less<>> npc_portraits_;
+    // The party list's portraits, as the party roster shows them; loaded when
+    // the list first shows a member.
+    std::optional<PortraitCatalog> portraits_;
+    // The member the party list last scrolled to, so it scrolls only when the
+    // selection changes.
+    std::optional<unsigned> shown_selected_slot_;
     // Monster close-up looping before combat; the pointer identifies the frames shown.
     // Only compared with the session's current close-up, never read: the
     // frames it points to go when the session is reset or replaced.
@@ -279,7 +286,11 @@ class RolfTourView : public godot::Control
     void cast_identify();
     void use_inventory_item();
     void check_identification_spells();
+    // A click on a party row chooses the member services go to.
     void party_selected(std::int64_t index);
+    // A double click also opens the member's sheet.
+    void open_member_sheet(std::int64_t index);
+    void show_party_rows();
     void level_up_requested(int slot);
     void close_sheet();
     void leave_shop();

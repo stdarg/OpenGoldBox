@@ -110,8 +110,8 @@ func member_hp() -> Dictionary:
 	for slot in range(8):
 		var row: Button = town().get_node_or_null("PartyList/Rows/Member" + str(slot))
 		if row == null or not row.visible: continue
-		var name := row.text.split("\n")[0].trim_prefix("★ ").strip_edges()
-		var found := hp_pattern.search(row.text)
+		var name := row.tooltip_text.split("\n")[0].trim_prefix("★ ").strip_edges()
+		var found := hp_pattern.search(row.tooltip_text)
 		if found: result[name] = [int(found.get_string(1)), int(found.get_string(2))]
 	return result
 
