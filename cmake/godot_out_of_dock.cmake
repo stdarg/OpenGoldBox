@@ -1,6 +1,6 @@
 # The Godot the checks run: on macOS, a copy of the installed Godot that never
-# shows in the Dock, so a test run does not fill the player's Dock with Godot
-# icons. Godot makes itself a Dock app when it starts, whatever its bundle
+# shows in the Dock, takes focus or shows its windows (they stay hidden, still
+# drawing), so a test run does not interrupt the player's work. Godot makes itself a Dock app when it starts, whatever its bundle
 # says, so the copy is started with tools/godot_out_of_dock/no_dock.c loaded,
 # which turns that request into a UI element's (windows, no Dock icon). The
 # copy is ad-hoc signed without the hardened runtime, which would refuse the
