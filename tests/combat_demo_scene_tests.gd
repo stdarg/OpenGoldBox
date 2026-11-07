@@ -216,9 +216,14 @@ func check_demo() -> void:
         "Arrow keys do not bypass the selected character's turn")
     click.position = Vector2(940, 460)
     root.push_input(click)
-    await process_frame
-    RenderingServer.force_draw(false)
-    screenshot = root.get_texture().get_image()
+    # Under a full parallel test run a read can come a frame before the new
+    # highlight is drawn, so a few frames are drawn before the check fails.
+    for frame in 10:
+        await process_frame
+        RenderingServer.force_draw(false)
+        screenshot = root.get_texture().get_image()
+        if screenshot.get_pixel(1015, 415).r > screenshot.get_pixel(1140, 415).r:
+            break
     require(combat.selected_character_id() == 3 and combat.selected_character_cell() == Vector2i(7, 5),
         "Selecting the combat sprite selects the same active party character")
     require(screenshot.get_pixel(1015, 415).r > screenshot.get_pixel(1140, 415).r,
