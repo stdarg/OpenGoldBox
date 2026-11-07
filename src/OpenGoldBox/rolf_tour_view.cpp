@@ -194,6 +194,39 @@ constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_
     }
 }
 
+// The bar that parts a shop's or a treasure pile's news from the header.
+constexpr const char *news_divider = "  |  ";
+
+// A shop's or a treasure pile's news follows the header on its line, after a
+// muted bar, and the list below takes the line the news had. News too long
+// for the rest of the line keeps its own line under the header.
+void show_news_after_header(const Label &header, RichTextLabel &news, Control &list,
+                            const String &text)
+{
+    // The news is one line high, and the list starts just below it.
+    const auto place_line = [&news, &list](float left, float top)
+    {
+        news.set_offset(SIDE_LEFT, left);
+        news.set_offset(SIDE_TOP, top);
+        news.set_offset(SIDE_BOTTOM, top + 36);
+        list.set_offset(SIDE_TOP, top + 38);
+    };
+    place_line(header.get_position().x + header.get_minimum_size().x, header.get_offset(SIDE_TOP));
+    // set_text ignores the text a label already holds: emptied, the label
+    // takes any text set next, and none of the news stays behind.
+    news.set_text("");
+    news.push_color(news.get_theme_color("font_color", "LabelMuted"));
+    news.add_text(news_divider);
+    news.pop();
+    news.add_text(text);
+    if (news.get_line_count() > 1)
+    {
+        place_line(header.get_position().x, header.get_offset(SIDE_BOTTOM) + 8);
+        news.set_text("");
+        news.add_text(text);
+    }
+}
+
 } // namespace
 
 void RolfTourView::_bind_methods()
@@ -393,6 +426,14 @@ void RolfTourView::layout()
 {
     auto &shopping_layout = required_node<Node>(*this, "ShoppingLayout");
     shopping_layout.call("apply_layout", shop_layout());
+    if (shop_layout())
+    {
+        // The window's new width can move the news on or off the header's line.
+        auto &news = required_node<RichTextLabel>(*this, "Dialogue");
+        show_news_after_header(required_node<Label>(*this, "Speaker"), news,
+                               required_node<Control>(*this, "Choices"),
+                               news.get_parsed_text().trim_prefix(news_divider));
+    }
     const auto bounds = [&](const char *name)
     {
         auto &control = required_node<Control>(*this, name);
@@ -2435,10 +2476,12 @@ void RolfTourView::refresh()
                                             : "normal");
     dialogue_layout.call("advance", 0);
     // A menu's list runs down beside Continue, so it stops short of the button.
-    const auto &dialogue = required_node<RichTextLabel>(*this, "Dialogue");
+    auto &dialogue = required_node<RichTextLabel>(*this, "Dialogue");
+    const auto &speaker = required_node<Label>(*this, "Speaker");
     const auto &go = required_node<Button>(*this, "Continue");
+    const auto dialogue_right = dialogue.get_position().x + dialogue.get_size().x;
     choices->set_size(
-        {multiple ? go.get_position().x - 16 - choices->get_position().x : dialogue.get_size().x,
+        {(multiple ? go.get_position().x - 16 : dialogue_right) - choices->get_position().x,
          choices->get_size().y});
     if (treasure)
     {
@@ -2464,17 +2507,17 @@ void RolfTourView::refresh()
             const auto lead = line.is_empty() ? i18n::text(N_("Choose what to take.")) : line;
             line = unusable_note.is_empty() ? lead : lead + String("  ") + unusable_note;
         }
-        required_node<RichTextLabel>(*this, "Dialogue").set_text(line);
+        show_news_after_header(speaker, dialogue, *choices, line);
     }
     else if (shopping)
     {
         // A purchase's news first; otherwise the dark red note, else prices.
-        required_node<RichTextLabel>(*this, "Dialogue")
-            .set_text((!s.diagnostic.empty() ? i18n::text(s.diagnostic)
-                       : !unusable_note.is_empty()
-                           ? unusable_note
-                           : i18n::text("Prices are per listed item or bundle.")) +
-                      gear_change_notices(s));
+        show_news_after_header(speaker, dialogue, *choices,
+                               (!s.diagnostic.empty() ? i18n::text(s.diagnostic)
+                                : !unusable_note.is_empty()
+                                    ? unusable_note
+                                    : i18n::text("Prices are per listed item or bundle.")) +
+                                   gear_change_notices(s));
     }
     if (answer && !s.diagnostic.empty())
     {

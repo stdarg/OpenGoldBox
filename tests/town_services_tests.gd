@@ -75,8 +75,9 @@ func press(path: String) -> bool:
 	await settle()
 	return true
 
+# In a shop or at a treasure pile the news follows the header's divider.
 func dialogue() -> String:
-	return town().get_node("Dialogue").get_parsed_text().strip_edges()
+	return town().get_node("Dialogue").get_parsed_text().strip_edges().trim_prefix("|").strip_edges()
 
 func choices() -> Array:
 	var list: ItemList = town().get_node("Choices")
