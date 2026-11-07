@@ -1,0 +1,39 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/window_layout.gd" id="1_window_layout"]
+
+[node name="MemberSheet" type="Window"]
+size = Vector2i(1800, 960)
+visible = false
+transient = true
+exclusive = true
+unresizable = true
+title = "Character Sheet"
+metadata/layout_reference_size = Vector2i(1800, 960)
+
+[node name="WindowLayout" type="Node" parent="."]
+script = ExtResource("1_window_layout")
+layout_kind = "tour_sheet"
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_type_variation = &"Margin24"
+
+[node name="Rows" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_type_variation = &"VBoxContainerGap8"
+
+[node name="Text" type="RichTextLabel" parent="Margin/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_type_variation = &"RichTextLabelText18"
+
+[node name="Close" type="Button" parent="Margin/Rows"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 36)
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Close"

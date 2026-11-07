@@ -45,7 +45,7 @@ func town() -> Control:
     return current_scene.get_node("CampaignTown")
 
 func label(name: String) -> String:
-    return town().get_node(name).text
+    return town().get_node("%" + name).text
 
 func open_slot(slot: String) -> void:
     var list: ItemList = current_scene.get_node("SaveSlots/Slots")
@@ -58,7 +58,7 @@ func open_slot(slot: String) -> void:
     require(not current_scene.get_node("SaveSlots").visible, "Save loaded: " + slot)
 
 func save_as(slot: String, copy: String) -> void:
-    await press("CampaignTown/Menu"); await press("GameMenu/Menu/Save")
+    await press("CampaignTown/%Menu"); await press("GameMenu/Menu/Save")
     var saves: Window = current_scene.get_node("SaveSlots")
     require(saves.visible, "Save game opens the save slots")
     saves.get_node("Name").text = slot
@@ -71,7 +71,7 @@ func save_as(slot: String, copy: String) -> void:
 func face(direction: String) -> void:
     for turn in range(4):
         if label("Location").ends_with(direction + " view"): return
-        await press("CampaignTown/Right")
+        await press("CampaignTown/%Right")
     require(false, "The party faces " + direction)
 
 # Steps forward and continues through any message the step shows. True once
@@ -81,15 +81,15 @@ func face(direction: String) -> void:
 # The script runs on the clock, and a headless game draws frames far faster
 # than one a sixtieth, so the wait is timed.
 func step_forward() -> bool:
-    await press("CampaignTown/Forward")
+    await press("CampaignTown/%Forward")
     var give_up := Time.get_ticks_msec() + 20000
     while Time.get_ticks_msec() < give_up:
         if in_combat(): return false
-        if not town().get_node("Forward").disabled: return true
-        if town().get_node("Continue").disabled:
+        if not town().get_node("%Forward").disabled: return true
+        if town().get_node("%Continue").disabled:
             await process_frame
         else:
-            await press("CampaignTown/Continue")
+            await press("CampaignTown/%Continue")
     require(false, "The step's messages end")
     return false
 

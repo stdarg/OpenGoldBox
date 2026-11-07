@@ -51,15 +51,12 @@ The original view is **88x88 EGA pixels**. DOS displayed those pixels 6/5 as
 tall as wide, so the window keeps that shape on screen: **88 wide by 105.6
 tall, a 5:6 (width:height) rectangle**.
 
-`RolfTourView::layout()` sizes the panel as follows:
-
-```text
-view_height = min(main_width * 0.625, window_height - 410)   (490 while shopping)
-view_width  = view_height / 1.2
-```
-
-`draw_scene()` then fits the 88x88 view into that panel with a continuous
-scale and nearest filtering. At 1920x1080 the window is about 558x670 screen
+The exploration scene (`rolf_tour.tscn`) gives the view its frame,
+`SceneBounds`: as tall as the row it shares with the party's cards, and 5 wide
+to 6 tall (its `aspect` rule, see [UI_GODOT_THEMES.md](UI_GODOT_THEMES.md)). In
+a shop the dialogue box grows and the view gets shorter.
+`tour_visuals.gd` then fits the 88x88 view into that frame with a continuous
+scale and nearest filtering. At 1920x1080 the window is about 575x690 screen
 pixels.
 
 **Make view-window portraits 5:6.** The standard size is **1045x1254**. It is

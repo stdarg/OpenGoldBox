@@ -40,7 +40,7 @@ func town() -> Control:
     return current_scene.get_node("CampaignTown")
 
 func label(name: String) -> String:
-    return town().get_node(name).text
+    return town().get_node("%" + name).text
 
 func open_slot(slot: String) -> void:
     var list: ItemList = current_scene.get_node("SaveSlots/Slots")
@@ -53,14 +53,14 @@ func open_slot(slot: String) -> void:
     require(not current_scene.get_node("SaveSlots").visible, "Save loaded: " + slot)
 
 func open_shop() -> void:
-    await press("CampaignTown/Look")
+    await press("CampaignTown/%Look")
     for prompt in range(40):
-        if town().get_node("LeaveShop").visible: return
-        var choices: ItemList = town().get_node("Choices")
+        if town().get_node("%LeaveShop").visible: return
+        var choices: ItemList = town().get_node("%Choices")
         # As the native route does: accept the shopkeeper's offer, otherwise take the last choice.
-        var selection := 0 if town().get_node("Dialogue").get_parsed_text().contains("SHOP") else choices.item_count - 1
+        var selection := 0 if town().get_node("%Dialogue").get_parsed_text().contains("SHOP") else choices.item_count - 1
         if choices.item_count: choices.select(selection)
-        await press("CampaignTown/Continue")
+        await press("CampaignTown/%Continue")
     require(false, "The jeweler's shop opens")
 
 func run_checks() -> void:
@@ -79,7 +79,7 @@ func run_checks() -> void:
         await press("PartyPanel/ActionRow2/Explore")
         require(label("Coordinates").contains("(8, 10)"), "The party stands outside the jeweler")
         await open_shop()
-        var stock: ItemList = town().get_node("Choices")
+        var stock: ItemList = town().get_node("%Choices")
         var marker := "/ cannot be equipped" if locale == "en" else "/ no se puede equipar"
         require(stock.item_count == 11, "The jeweler lists its eleven original items")
         for i in range(stock.item_count):

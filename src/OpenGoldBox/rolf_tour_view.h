@@ -154,7 +154,6 @@ class RolfTourView : public godot::Control
     // The wilderness square and direction last drawn: x, y, direction.
     std::array<unsigned, 3> rendered_overland_{};
     godot::Ref<godot::AudioStreamWAV> footstep_;
-    godot::Rect2 scene_rect_, map_rect_, dialogue_rect_;
     godot::String error_;
     std::uint64_t shown_revision_{}, checked_ticket_{};
     unsigned played_footsteps_{}, played_thunder_{}, check_frames_{}, check_prompts_{};

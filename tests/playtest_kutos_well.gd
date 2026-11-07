@@ -52,7 +52,7 @@ func town() -> Control:
     return current_scene.get_node("CampaignTown")
 
 func dialogue() -> String:
-    return (town().get_node("Dialogue") as RichTextLabel).get_parsed_text()
+    return (town().get_node("%Dialogue") as RichTextLabel).get_parsed_text()
 
 func slot_path(slot: String) -> String:
     return ProjectSettings.globalize_path("user://saves/" + slot.to_utf8_buffer().hex_encode() + ".ogs")
@@ -62,7 +62,7 @@ func load_fixture(fixture: String, slot: String) -> void:
     DirAccess.make_dir_recursive_absolute(path.get_base_dir())
     var f := FileAccess.open(path, FileAccess.WRITE); f.store_buffer(FileAccess.get_file_as_bytes(fixture)); f.close()
     if current_scene.has_node("CampaignTown") and town().visible:
-        await press("CampaignTown/Menu"); await press("GameMenu/Menu/Load")
+        await press("CampaignTown/%Menu"); await press("GameMenu/Menu/Load")
     else:
         await press("PartyPanel/Load")
     var list: ItemList = current_scene.get_node("SaveSlots/Slots")
@@ -71,7 +71,7 @@ func load_fixture(fixture: String, slot: String) -> void:
             list.select(i); list.item_selected.emit(i)
     await press("SaveSlots/Action"); await press("SaveSlots/Action")
     if not town().visible: await press("PartyPanel/ActionRow2/Explore")
-    report.append("Loaded " + slot + ": " + town().get_node("Location").text + " / " + town().get_node("Coordinates").text)
+    report.append("Loaded " + slot + ": " + town().get_node("%Location").text + " / " + town().get_node("%Coordinates").text)
 
 # Answers each prompt, choosing `wanted` when offered, until `until` appears in
 # the dialogue or no prompt is left. Captures `shot` when `until` appears.
@@ -82,7 +82,7 @@ func play_until(until: String, wanted: String, shot: String) -> bool:
             report.append("> " + text.replace("\n", "\n  "))
             await capture(shot)
             return true
-        var continue_button: Button = town().get_node("Continue")
+        var continue_button: Button = town().get_node("%Continue")
         if continue_button.disabled:
             # A script DELAY runs on the game clock; wait it out before giving up.
             for wait in range(20):
@@ -91,14 +91,14 @@ func play_until(until: String, wanted: String, shot: String) -> bool:
             if continue_button.disabled: return until.is_empty() or dialogue().contains(until)
             continue
         report.append("> " + text.replace("\n", "\n  "))
-        var choices: ItemList = town().get_node("Choices")
+        var choices: ItemList = town().get_node("%Choices")
         var selection := 0
         for i in range(choices.item_count):
             if choices.get_item_text(i) == wanted: selection = i
         if choices.item_count:
             report.append("  choose " + choices.get_item_text(selection))
             choices.select(selection)
-        await press("CampaignTown/Continue")
+        await press("CampaignTown/%Continue")
     return false
 
 func run() -> void:
@@ -112,29 +112,29 @@ func run() -> void:
 
     await load_fixture(well, "Kuto play-test well")
     await capture("01-beside-the-well")
-    await press("CampaignTown/Forward")
+    await press("CampaignTown/%Forward")
     if not await play_until("CLIMB DOWN", "", "02-climb-down"): fail("The well offers its rungs"); return
-    var choices: ItemList = town().get_node("Choices")
-    choices.select(0); await press("CampaignTown/Continue")
+    var choices: ItemList = town().get_node("%Choices")
+    choices.select(0); await press("CampaignTown/%Continue")
     if not await play_until("", "NO", "unused"): fail("The descent finishes"); return
     await capture("03-catacombs")
     # The secret door is south of the well's rungs.
     for turn in range(4):
-        if town().get_node("Location").text.ends_with("South view"): break
-        await press("CampaignTown/Right")
-    await press("CampaignTown/Forward")
+        if town().get_node("%Location").text.ends_with("South view"): break
+        await press("CampaignTown/%Right")
+    await press("CampaignTown/%Forward")
     if not await play_until("An arrow", "", "04-arrow-volley"): fail("The arrow volley reports"); return
     await play_until("", "", "unused")
 
     await load_fixture(norris, "Kuto play-test Norris")
     await capture("05-before-norris")
-    await press("CampaignTown/Forward")
+    await press("CampaignTown/%Forward")
     if not await play_until("NORRIS", "", "06-norris-speaks"): fail("Norris confronts the party"); return
     if not await play_until("WHAT DO YOU DO?", "", "07-surrender-or-fight"): fail("Norris offers a choice"); return
-    choices = town().get_node("Choices")
+    choices = town().get_node("%Choices")
     for i in range(choices.item_count):
         if choices.get_item_text(i) == "FIGHT": choices.select(i)
-    await press("CampaignTown/Continue")
+    await press("CampaignTown/%Continue")
     await settle(30)
     await capture("08-close-up")
     await create_timer(2.0).timeout

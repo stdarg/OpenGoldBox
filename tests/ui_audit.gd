@@ -113,16 +113,16 @@ func campaign() -> void:
     if not await load_slums("hobgoblins"): return
     await audit("town", town())
     for step in range(3):
-        await press("CampaignTown/Forward")
-        if not (town().get_node("Continue") as Button).disabled or in_combat(): break
+        await press("CampaignTown/%Forward")
+        if not (town().get_node("%Continue") as Button).disabled or in_combat(): break
     await audit("story", town())
     for step in range(20):
         if in_combat(): break
-        var choices: ItemList = town().get_node("Choices")
+        var choices: ItemList = town().get_node("%Choices")
         for i in range(choices.item_count):
             if choices.get_item_text(i).to_upper() in ["FIGHT", "BASH", "LUCHAR"]:
                 choices.select(i)
-        var continue_button: Button = town().get_node("Continue")
+        var continue_button: Button = town().get_node("%Continue")
         if continue_button.disabled:
             for frame in range(30): await process_frame
         else:

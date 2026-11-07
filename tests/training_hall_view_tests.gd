@@ -57,10 +57,10 @@ func town() -> Control:
     return current_scene.get_node("CampaignTown")
 
 func dialogue() -> String:
-    return town().get_node("Dialogue").get_parsed_text()
+    return town().get_node("%Dialogue").get_parsed_text()
 
 func choices() -> ItemList:
-    return town().get_node("Choices")
+    return town().get_node("%Choices")
 
 func choice_index(text: String) -> int:
     for i in range(choices().item_count):
@@ -71,7 +71,7 @@ func choose(text: String) -> void:
     var index := choice_index(text)
     require(index >= 0, "Choice listed: " + text + " in " + str(range(choices().item_count).map(func(i): return choices().get_item_text(i))))
     choices().select(index)
-    await press("CampaignTown/Continue")
+    await press("CampaignTown/%Continue")
     for frame in range(20):
         await process_frame
 
@@ -87,14 +87,14 @@ func open_slot(slot: String) -> void:
 
 # Step through the door and wait for the hall's YES/NO question.
 func ask_to_train(yes: String) -> void:
-    await press("CampaignTown/Forward")
+    await press("CampaignTown/%Forward")
     for prompt in range(40):
         if choice_index(yes) >= 0: return
-        if town().get_node("Continue").disabled:
+        if town().get_node("%Continue").disabled:
             for frame in range(10): await process_frame
             continue
-        await press("CampaignTown/Continue")
-    require(false, "The hall asks whether to train: at " + town().get_node("Coordinates").text + " / " + dialogue())
+        await press("CampaignTown/%Continue")
+    require(false, "The hall asks whether to train: at " + town().get_node("%Coordinates").text + " / " + dialogue())
 
 func run_checks() -> void:
     require(not fixture.is_empty(), "--hall-fixture required")

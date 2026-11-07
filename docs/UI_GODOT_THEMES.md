@@ -6,12 +6,53 @@ The game project uses Godot's built-in Theme resource at `src/OpenGoldBox/godot/
 
 | Change | Edit |
 | --- | --- |
-| Control location, width, height, anchors, or visibility | The corresponding `src/OpenGoldBox/godot/scenes/*.tscn` scene. Its Godot layout script or animation handles conditional placement. |
+| Control location, width, height, anchors, or visibility | The corresponding `src/OpenGoldBox/godot/scenes/*.tscn` scene. See [Layout](#layout) for how a converted screen places its controls. |
 | Shared colors, font sizes, spacing, borders, padding, and control states | `src/OpenGoldBox/godot/themes/opengold.tres`. |
 | A player preference such as combat zoom | Application settings, not the theme. |
 | Character swatch colors | `OpenGoldPalette/colors/character_palette_0` through `_15` in the theme. The sprite art itself keeps the original game palette. |
 
 The theme defines normal, hover, pressed, disabled, selected, and keyboard focus styles for standard buttons and lists. Preserve all of these states when changing a control family. Give custom variations the same clear state coverage so buttons remain visibly actionable and keyboard focus remains visible.
+
+## Layout
+
+Screens are being converted from controls placed by pixel offsets to
+controls placed by Godot containers (rows, columns, grids and margins), so the
+scene tree says where everything goes. The exploration screen
+(`rolf_tour.tscn`) is converted; the other screens still use offsets until
+their turn.
+
+In a converted screen:
+
+- **Order and nesting decide position.** A control's place in its row or
+  column, and which box it sits in, put it on screen. Moving a control is
+  moving its node.
+- **Sizes come from minimum sizes, expand flags and stretch ratios.** A
+  control's `custom_minimum_size` sets its least size, and
+  `size_flags_horizontal`/`size_flags_vertical` set to expand share the space
+  left over by their stretch ratios.
+- **Gaps and margins come from theme variations**: `VBoxContainerGap8`,
+  `HBoxContainerGap24`, `GridContainerGap6x4`, `MarginTourPage` and so on, each
+  named by its spacing.
+- **`scenes/rule_box.gd`** is a row or column with two size rules set as
+  metadata on a child, for what plain boxes cannot express. `aspect` (width /
+  height) gives a child a fixed shape, as large as fits: the exploration
+  screen's 5:6 view and square map. `share`, with `min_length` and
+  `max_length`, makes a child a percentage of the box within limits: the
+  exploration screen's side column is 28% of the page, 336 to 430 pixels.
+- **Code finds controls by scene-unique name** (`%Continue`), wherever they
+  sit in the tree, so moving a control does not break the C++ or the tests.
+  The game log names a pressed control the same way
+  (`CampaignTown/%Continue`). A control that code or tests reach needs
+  `unique_name_in_owner = true`.
+- **What changes during play stays small and in Godot scripts.** The
+  exploration screen's `tour_layout.gd` makes the dialogue box taller in a
+  shop and stands the party's cards two to a row when they fit.
+  `tour_dialogue_box.gd` holds each kind of prompt's arrangement (a menu's list
+  beside Continue, a shop's list above its buttons) as a table, and puts a
+  shop's news beside its header when it fits.
+- **Panels that open over a screen are their own scenes**, such as
+  `tour_inventory_panel.tscn` and `tour_cast_panel.tscn`, placed over the
+  window by anchors.
 
 ## Theme variations
 
@@ -30,7 +71,7 @@ Character appearance swatches use the theme's 16 `character_palette_*` entries, 
 ## Editing and checking a change
 
 1. Open `src/OpenGoldBox/godot/project.godot` in Godot and edit `themes/opengold.tres`, or edit the text resource directly. Change one theme item or variation at a time.
-2. For position and size, edit the control's `.tscn` scene. Inspect its attached Godot layout script or animation if a scene value changes during play. Combat tiles, sprites, and the exploration map calculate runtime positions in Godot scripts from scene bounds and theme metrics. Dialog root rectangles set window size through `dialog_window_size.gd`.
+2. For position and size, edit the control's `.tscn` scene ([Layout](#layout)). Inspect its attached Godot layout script or animation if a scene value changes during play. Combat tiles, sprites, and the exploration map's cells calculate runtime positions in Godot scripts from scene bounds and theme metrics. Dialog root rectangles set window size through `dialog_window_size.gd`.
 3. Save, restart the game or demo scene, and check normal, hover, pressed, disabled, selected, and keyboard focus states where relevant. Check long Spanish labels as well as English.
 4. Run the project's relevant Godot UI checks from the repository root, for example `ctest --test-dir build/game --output-on-failure -R '^opengold_godot_(ui_audit|level_up_lab|screenshots|creation_character|combat_demo_scene|startup)$'`. Set `OPENGOLD_GAME_DIR=/path/to/POOLRAD` for checks that need the original assets. Use `ctest --test-dir build/game -N` to see the exact configured names. The full UI audit is described in `docs/UI-AUDIT.md` in the repository.
 

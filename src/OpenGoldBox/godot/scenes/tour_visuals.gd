@@ -12,6 +12,17 @@ func _color(name: String) -> Color:
     return get_theme_color(name, "OpenGoldPalette")
 
 
+func _ready() -> void:
+    for node_name in ["SceneBounds", "MapBounds"]:
+        (get_parent().get_node("%" + node_name) as Control).item_rect_changed.connect(queue_redraw)
+
+
+# Where a frame the layout placed sits on this full-screen canvas.
+func _bounds(view: Control, node_name: String) -> Rect2:
+    var bounds := view.get_node("%" + node_name) as Control
+    return Rect2(bounds.global_position - global_position, bounds.size)
+
+
 func _draw() -> void:
     var view := get_parent()
     var data: Dictionary = view.tour_visuals()
@@ -22,7 +33,7 @@ func _draw() -> void:
 
 
 func _draw_scene(view: Control, data: Dictionary) -> void:
-    var bounds: Rect2 = (view.get_node("SceneBounds") as Control).get_rect()
+    var bounds := _bounds(view, "SceneBounds")
     var wall: Texture2D = data["wall"]
     var source := wall.get_size()
     var stretch := _metric("tour_wall_vertical_percent") / 100.0
@@ -41,7 +52,7 @@ func _draw_scene(view: Control, data: Dictionary) -> void:
 
 
 func _draw_map(view: Control, data: Dictionary) -> void:
-    var bounds: Rect2 = (view.get_node("MapBounds") as Control).get_rect()
+    var bounds := _bounds(view, "MapBounds")
     var cell := bounds.size.x / 16.0
     var flags: Array = data["cells"]
     var inset := _metric("tour_map_grid_inset_tenths") / 10.0

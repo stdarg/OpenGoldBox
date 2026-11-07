@@ -67,7 +67,7 @@ func town() -> Control:
     return current_scene.get_node("CampaignTown")
 
 func dialogue() -> String:
-    return (town().get_node("Dialogue") as RichTextLabel).get_parsed_text()
+    return (town().get_node("%Dialogue") as RichTextLabel).get_parsed_text()
 
 func in_combat() -> bool:
     return current_scene.has_node("CampaignCombat") and current_scene.get_node("CampaignCombat").is_visible_in_tree()
@@ -85,8 +85,8 @@ func open_slot(slot: String) -> void:
 # The first member leads until another is made leader from its sheet; the
 # exploration party list and the party roster both mark the leader with a star.
 func check_leader() -> void:
-    var first: Button = town().get_node("PartyList/Rows/Member0")
-    var second: Button = town().get_node("PartyList/Rows/Member1")
+    var first: Button = town().get_node("%PartyList/Rows/Member0")
+    var second: Button = town().get_node("%PartyList/Rows/Member1")
     var roster: ItemList = current_scene.get_node("PartyPanel/Roster")
     require(first.tooltip_text.begins_with("★ ") and not second.tooltip_text.begins_with("★"), "The first member leads: " + first.tooltip_text)
     # Each row shows the roster's lines, then Armor Class and hit points, the
@@ -122,7 +122,7 @@ func check_leader() -> void:
 func check_auto_equip() -> void:
     var gameplay: Control = current_scene.get_node("GameMenu/Options/Gameplay")
     var auto_equip: OptionButton = gameplay.get_node("AutoEquip")
-    var member: Button = town().get_node("PartyList/Rows/Member0")
+    var member: Button = town().get_node("%PartyList/Rows/Member0")
     var sheet: Window = current_scene.get_node("TownSheet")
     var preference: OptionButton = sheet.get_node("GearPreference")
     auto_equip.select(1); auto_equip.item_selected.emit(1); await settle()
@@ -143,11 +143,11 @@ func check_auto_equip() -> void:
 
 # Steps into the trolls' room and reads its story until the close-up plays.
 func reach_close_up() -> void:
-    await press("CampaignTown/Forward")
+    await press("CampaignTown/%Forward")
     for step in range(60):
         await settle(10)
-        if in_combat() or (town().get_node("Continue").disabled and town().tour_visuals().has("picture")): return
-        var continue_button: Button = town().get_node("Continue")
+        if in_combat() or (town().get_node("%Continue").disabled and town().tour_visuals().has("picture")): return
+        var continue_button: Button = town().get_node("%Continue")
         if not continue_button.disabled: continue_button.pressed.emit()
     require(false, "The trolls' close-up plays: " + dialogue())
 
@@ -205,7 +205,7 @@ func run_checks() -> void:
     await press("Party")
     await press("PartyPanel/Load"); await open_slot(SLOT)
     await press("PartyPanel/ActionRow2/Explore")
-    require(town().get_node("Title").text == "OPENGOLDBOX  /  Slums", "The title names the area: " + town().get_node("Title").text)
+    require(town().get_node("%Title").text == "OPENGOLDBOX  /  Slums", "The title names the area: " + town().get_node("%Title").text)
     require(not dialogue().contains("Rolf"), "Exploring the Slums does not follow Rolf: " + dialogue())
     await check_leader()
     await check_auto_equip()

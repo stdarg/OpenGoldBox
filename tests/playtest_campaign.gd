@@ -113,7 +113,7 @@ func press(path: String) -> bool:
     return true
 
 func dialogue() -> String:
-    return (town().get_node("Dialogue") as RichTextLabel).get_parsed_text()
+    return (town().get_node("%Dialogue") as RichTextLabel).get_parsed_text()
 
 func slot_path(slot: String) -> String:
     return ProjectSettings.globalize_path("user://saves/" + slot.to_utf8_buffer().hex_encode() + ".ogs")
@@ -375,7 +375,7 @@ func find_answer(items: Array, at: int, kind: String) -> int:
     return -1
 
 func answer_choice(items: Array, at: int) -> int:
-    var list: ItemList = town().get_node("Choices")
+    var list: ItemList = town().get_node("%Choices")
     var found := find_answer(items, at, "choose")
     var selection := 0
     if found >= 0:
@@ -410,7 +410,7 @@ func answer_choice(items: Array, at: int) -> int:
     if list.is_visible_in_tree() and selection < list.item_count:
         list.select(selection)
     await note_screen()
-    await press("CampaignTown/Continue")
+    await press("CampaignTown/%Continue")
     return at
 
 func note_screen() -> void:
@@ -470,7 +470,7 @@ func answer_rest_windows() -> bool:
     return true
 
 func idle() -> bool:
-    return has_town() and town().is_visible_in_tree() and not (town().get_node("Left") as Button).disabled \
+    return has_town() and town().is_visible_in_tree() and not (town().get_node("%Left") as Button).disabled \
         and not window_shown("RestDialog") and not window_shown("RestSpells") and not window_shown("RestTraining")
 
 # Plays whatever the last command started until exploration resumes. Returns
@@ -486,7 +486,7 @@ func play_on(items: Array, at: int) -> int:
         if not has_town():
             problem("the town screen is gone")
             return -1
-        var speaker: String = (town().get_node("Speaker") as Label).text
+        var speaker: String = (town().get_node("%Speaker") as Label).text
         if speaker == "Unable to continue":
             problem("script stopped: " + dialogue().replace("\n", " "))
             await capture("fault")
@@ -495,7 +495,7 @@ func play_on(items: Array, at: int) -> int:
             last_change = Time.get_ticks_msec()
             continue
         if idle(): return at
-        var go: Button = town().get_node("Continue")
+        var go: Button = town().get_node("%Continue")
         var state := dialogue() + str(go.disabled)
         if state != last_state:
             last_state = state
@@ -509,7 +509,7 @@ func play_on(items: Array, at: int) -> int:
                 at = await treasure(items, at)
             elif speaker.begins_with("Shop"):
                 at = await shop(items, at)
-            elif (town().get_node("Answer") as Control).is_visible_in_tree():
+            elif (town().get_node("%Answer") as Control).is_visible_in_tree():
                 at = await answer_input(items, at)
             else:
                 at = await answer_choice(items, at)
@@ -523,21 +523,21 @@ func answer_input(items: Array, at: int) -> int:
     if found >= 0:
         value = items[found].value
         at = found + 1
-    (town().get_node("Answer") as LineEdit).text = value
+    (town().get_node("%Answer") as LineEdit).text = value
     await note_screen()
-    await press("CampaignTown/Continue")
+    await press("CampaignTown/%Continue")
     return at
 
 func shop(items: Array, at: int) -> int:
     await note_screen()
     while at < items.size() and items[at].t == "buy":
         await key(KEY_1 + int(items[at].slot))
-        var list: ItemList = town().get_node("Choices")
+        var list: ItemList = town().get_node("%Choices")
         list.select(int(items[at].item))
-        await press("CampaignTown/Continue")
+        await press("CampaignTown/%Continue")
         at += 1
     if at < items.size() and items[at].t == "leave_shop": at += 1
-    await press("CampaignTown/LeaveShop")
+    await press("CampaignTown/%LeaveShop")
     return at
 
 # The route's takes at a treasure, each by its member, then Leave (twice when
@@ -546,18 +546,18 @@ func treasure(items: Array, at: int) -> int:
     await note_screen()
     while at < items.size() and items[at].t == "take":
         await key(KEY_1 + int(items[at].slot))
-        var list: ItemList = town().get_node("Choices")
+        var list: ItemList = town().get_node("%Choices")
         list.select(int(items[at].item))
-        await press("CampaignTown/Continue")
+        await press("CampaignTown/%Continue")
         at += 1
     if at < items.size() and items[at].t == "leave_treasure": at += 1
-    await press("CampaignTown/LeaveShop")
-    if (town().get_node("Choices") as ItemList).item_count > 0:
-        await press("CampaignTown/LeaveShop")
+    await press("CampaignTown/%LeaveShop")
+    if (town().get_node("%Choices") as ItemList).item_count > 0:
+        await press("CampaignTown/%LeaveShop")
     return at
 
 func pose() -> Vector2i:
-    var text: String = (town().get_node("Coordinates") as Label).text
+    var text: String = (town().get_node("%Coordinates") as Label).text
     var numbers := text.get_slice("(", 1).get_slice(")", 0).split(",")
     return Vector2i(int(numbers[0]), int(numbers[1]))
 
@@ -580,7 +580,7 @@ func rest_once(items: Array, at: int) -> int:
     await settle(4)
     var rest := window_shown("RestDialog")
     if not rest:
-        say("  Camp opened no dialog: idle %s, Camp button disabled %s, Movement '%s', Speaker '%s'" % [idle(), (town().get_node("Camp") as Button).disabled, (town().get_node("Movement") as Label).text, (town().get_node("Speaker") as Label).text])
+        say("  Camp opened no dialog: idle %s, Camp button disabled %s, Movement '%s', Speaker '%s'" % [idle(), (town().get_node("%Camp") as Button).disabled, (town().get_node("%Movement") as Label).text, (town().get_node("%Speaker") as Label).text])
         return at
     var kind: OptionButton = rest.find_child("Kind", true, false)
     var start: Button = rest.find_child("Start", true, false)
@@ -682,7 +682,7 @@ const COMMAND_KEYS := {0: KEY_LEFT, 1: KEY_RIGHT, 2: KEY_DOWN, 3: KEY_UP, 4: KEY
 # run ahead of the recording or left it: the same place, or -1. The skip is
 # reported, as those moves were not played.
 func catch_up(items: Array, at: int) -> int:
-    var location: String = (town().get_node("Location") as Label).text.get_slice(" / ", 0)
+    var location: String = (town().get_node("%Location") as Label).text.get_slice(" / ", 0)
     var here := pose()
     for i in range(at, items.size()):
         var item: Dictionary = items[i]
@@ -702,7 +702,7 @@ func catch_up(items: Array, at: int) -> int:
 func explore(items: Array, at: int) -> int:
     var item: Dictionary = items[at]
     var area_id := int(item.area)
-    var location: String = (town().get_node("Location") as Label).text.get_slice(" / ", 0)
+    var location: String = (town().get_node("%Location") as Label).text.get_slice(" / ", 0)
     # The wilderness map is not learned like an area: a first overland step met
     # before the party left the last area would name the map after that area.
     if not item.overland and not area_names.has(area_id):
@@ -757,7 +757,7 @@ func camp(items: Array, at: int) -> int:
 
 # The party's rows show each member's Hit Points.
 func badly_hurt() -> bool:
-    for row in (town().get_node("PartyList/Rows") as Node).get_children():
+    for row in (town().get_node("%PartyList/Rows") as Node).get_children():
         if not (row is Button) or not row.is_visible_in_tree(): continue
         var text: String = row.text if not row.text.is_empty() else str(row.get("tooltip_text"))
         var at_hp := text.find("HP ")
@@ -787,7 +787,7 @@ func play_items(items: Array, stage: String) -> bool:
             "explore": at = await explore(items, at)
             "camp": at = await camp(items, at)
             "search":
-                if (town().get_node("Search") as Button).button_pressed != item.on:
+                if (town().get_node("%Search") as Button).button_pressed != item.on:
                     await key(KEY_S)
                 at += 1
             _:

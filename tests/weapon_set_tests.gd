@@ -56,17 +56,17 @@ func open_slot(slot: String) -> void:
 # Steps into the orcs and fights them.
 func start_the_fight() -> void:
     for step in range(3):
-        await press("CampaignTown/Forward")
-        if not (town().get_node("Continue") as Button).disabled or in_combat(): break
+        await press("CampaignTown/%Forward")
+        if not (town().get_node("%Continue") as Button).disabled or in_combat(): break
     # The town's script runs on the clock, and a window kept in the background
     # draws frames far faster than a sixtieth, so the wait is timed.
     var give_up := Time.get_ticks_msec() + 30000
     while Time.get_ticks_msec() < give_up:
         if in_combat(): return
-        var choices: ItemList = town().get_node("Choices")
+        var choices: ItemList = town().get_node("%Choices")
         for i in range(choices.item_count):
             if choices.get_item_text(i).to_upper() in ["FIGHT", "BASH"]: choices.select(i)
-        var continue_button: Button = town().get_node("Continue")
+        var continue_button: Button = town().get_node("%Continue")
         if continue_button.disabled: await process_frame
         else:
             continue_button.pressed.emit(); await settle(20)

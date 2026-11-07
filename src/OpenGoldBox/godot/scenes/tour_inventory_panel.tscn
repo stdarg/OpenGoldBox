@@ -1,0 +1,84 @@
+[gd_scene format=3]
+
+[node name="InventoryPanel" type="PanelContainer"]
+theme_type_variation = &"PanelInventory"
+z_index = 2
+mouse_filter = 0
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_type_variation = &"Margin20"
+
+[node name="Rows" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_type_variation = &"VBoxContainerGap8"
+
+[node name="Header" type="Label" parent="Margin/Rows"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_type_variation = &"LabelText20"
+
+[node name="Items" type="ItemList" parent="Margin/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_type_variation = &"ItemListText18"
+
+[node name="Status" type="Label" parent="Margin/Rows"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 68)
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="Buttons" type="HBoxContainer" parent="Margin/Rows"]
+layout_mode = 2
+theme_type_variation = &"HBoxContainerGap16"
+
+[node name="Close" type="Button" parent="Margin/Rows/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 36)
+layout_mode = 2
+text = "Close inventory"
+
+[node name="Equip" type="Button" parent="Margin/Rows/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 36)
+layout_mode = 2
+text = "Equip"
+
+[node name="Unequip" type="Button" parent="Margin/Rows/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 36)
+layout_mode = 2
+text = "Unequip"
+
+[node name="Identify" type="Button" parent="Margin/Rows/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 36)
+layout_mode = 2
+text = "ID (200 gp)"
+
+[node name="CastIdentify" type="Button" parent="Margin/Rows/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 36)
+layout_mode = 2
+text = "Cast Identify"
+
+[node name="UseItem" type="Button" parent="Margin/Rows/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 36)
+layout_mode = 2
+text = "Use"
+
+[node name="Sell" type="Button" parent="Margin/Rows/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 36)
+layout_mode = 2
+text = "Sell"
+
+[node name="Drop" type="Button" parent="Margin/Rows/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 36)
+layout_mode = 2
+text = "Drop"

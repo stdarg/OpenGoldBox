@@ -46,7 +46,7 @@ func town() -> Control:
     return current_scene.get_node("CampaignTown")
 
 func label(name: String) -> String:
-    return town().get_node(name).text
+    return town().get_node("%" + name).text
 
 func open_slot(slot: String) -> void:
     var list: ItemList = current_scene.get_node("SaveSlots/Slots")
@@ -81,7 +81,7 @@ func explore() -> void:
 func face_west() -> void:
     for turn in range(4):
         if label("Location").ends_with("West view"): return
-        await press("CampaignTown/Right")
+        await press("CampaignTown/%Right")
     require(false, "The party faces west")
 
 # Steps west into Ohlo's room, bashing his relocked door, and answers each prompt
@@ -93,23 +93,23 @@ func visit_ohlo(wanted: String) -> Array:
     var outside := label("Coordinates")
     var shown := []
     for prompt in range(80):
-        var continue_button: Button = town().get_node("Continue")
+        var continue_button: Button = town().get_node("%Continue")
         if continue_button.disabled:
             if label("Coordinates") != outside: return shown
-            await press("CampaignTown/Forward")
+            await press("CampaignTown/%Forward")
             continue
-        var choices: ItemList = town().get_node("Choices")
-        if (town().get_node("LeaveShop") as Button).is_visible_in_tree():
+        var choices: ItemList = town().get_node("%Choices")
+        if (town().get_node("%LeaveShop") as Button).is_visible_in_tree():
             # Ohlo's reward lies in a treasure: the selected member takes all
             # of it, then the party leaves.
             while choices.item_count > 0:
                 var before := choices.item_count
                 choices.select(0)
-                await press("CampaignTown/Continue")
+                await press("CampaignTown/%Continue")
                 if choices.item_count == before: break
-            await press("CampaignTown/LeaveShop")
-            if (town().get_node("LeaveShop") as Button).is_visible_in_tree():
-                await press("CampaignTown/LeaveShop")
+            await press("CampaignTown/%LeaveShop")
+            if (town().get_node("%LeaveShop") as Button).is_visible_in_tree():
+                await press("CampaignTown/%LeaveShop")
             continue
         var selection := 0
         for i in range(choices.item_count):
@@ -117,7 +117,7 @@ func visit_ohlo(wanted: String) -> Array:
             shown.append(text)
             if text == "Bash" or text == wanted: selection = i
         if choices.item_count: choices.select(selection)
-        await press("CampaignTown/Continue")
+        await press("CampaignTown/%Continue")
     require(false, "Ohlo's room event finished")
     return shown
 
@@ -133,7 +133,7 @@ func load_from_title(slot: String) -> void:
 func visit_and_save(wanted: String, loaded_slot: String, slot: String, copy: String) -> Array:
     for attempt in range(10):
         var shown := await visit_ohlo(wanted)
-        await press("CampaignTown/Menu")
+        await press("CampaignTown/%Menu")
         var save: Button = current_scene.get_node("GameMenu/Menu/Save")
         if not save.disabled:
             await save_as(slot, copy)
@@ -159,7 +159,7 @@ func run_checks() -> void:
     var shown := await visit_and_save("GIVE", FIXTURE_SLOT, HANDED_IN_SLOT, "handed-in.ogs")
     require(shown.has("GIVE"), "Ohlo asks for the potion")
 
-    await press("CampaignTown/Menu"); await press("GameMenu/Menu/Load"); await open_slot(HANDED_IN_SLOT)
+    await press("CampaignTown/%Menu"); await press("GameMenu/Menu/Load"); await open_slot(HANDED_IN_SLOT)
     await explore()
     shown = await visit_and_save("GIVE", HANDED_IN_SLOT, REVISITED_SLOT, "revisited.ogs")
     require(not shown.has("GIVE"), "After the reload Ohlo does not ask for the potion again")

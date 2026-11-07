@@ -77,10 +77,10 @@ func press(path: String) -> bool:
 
 # In a shop or at a treasure pile the news follows the header's divider.
 func dialogue() -> String:
-	return town().get_node("Dialogue").get_parsed_text().strip_edges().trim_prefix("|").strip_edges()
+	return town().get_node("%Dialogue").get_parsed_text().strip_edges().trim_prefix("|").strip_edges()
 
 func choices() -> Array:
-	var list: ItemList = town().get_node("Choices")
+	var list: ItemList = town().get_node("%Choices")
 	var items := []
 	if not list.is_visible_in_tree(): return items
 	for i in range(list.item_count): items.append(list.get_item_text(i))
@@ -88,33 +88,33 @@ func choices() -> Array:
 
 # Picks the choice that starts with `text` and continues; false if none does.
 func choose(text: String) -> bool:
-	var list: ItemList = town().get_node("Choices")
+	var list: ItemList = town().get_node("%Choices")
 	for i in range(list.item_count):
 		if list.get_item_text(i).begins_with(text):
 			trail.append(list.get_item_text(i))
 			list.select(i)
 			list.item_selected.emit(i)
-			await press("CampaignTown/Continue")
+			await press("CampaignTown/%Continue")
 			return true
 	return false
 
 func exploring() -> bool:
-	return not town().get_node("Forward").disabled
+	return not town().get_node("%Forward").disabled
 
 func shopping() -> bool:
-	return town().get_node("LeaveShop").is_visible_in_tree()
+	return town().get_node("%LeaveShop").is_visible_in_tree()
 
 func party_gold() -> int:
-	var found := gold_pattern.search(town().get_node("Party").text)
+	var found := gold_pattern.search(town().get_node("%Party").text)
 	if found: return int(found.get_string(1))
-	found = buyer_pattern.search(town().get_node("Speaker").text)
+	found = buyer_pattern.search(town().get_node("%Speaker").text)
 	return int(found.get_string(2)) if found else -1
 
 # Each member's name and hit points from the party list.
 func member_hp() -> Dictionary:
 	var result := {}
 	for slot in range(8):
-		var row: Button = town().get_node_or_null("PartyList/Rows/Member" + str(slot))
+		var row: Button = town().get_node_or_null("%PartyList/Rows/Member" + str(slot))
 		if row == null or not row.visible: continue
 		var name := row.tooltip_text.split("\n")[0].trim_prefix("★ ").strip_edges()
 		var found := hp_pattern.search(row.tooltip_text)
@@ -152,7 +152,7 @@ func load_fixture(file: String) -> bool:
 # Steps through the door and answers until `ready` holds, choosing a greeting's
 # offer (YES), and the first member when one is asked for.
 func enter(ready: Callable) -> bool:
-	await press("CampaignTown/Forward")
+	await press("CampaignTown/%Forward")
 	for prompt in range(30):
 		if ready.call(): return true
 		if exploring():
@@ -160,7 +160,7 @@ func enter(ready: Callable) -> bool:
 		var list := choices()
 		if list.has("YES"): await choose("YES")
 		elif not list.is_empty(): await choose(list[0])
-		elif not await press("CampaignTown/Continue"): await settle()
+		elif not await press("CampaignTown/%Continue"): await settle()
 	return ready.call()
 
 func record_at(kind: String, x: int, y: int) -> Dictionary:
@@ -209,12 +209,12 @@ func check_shop(x: int, y: int, party: String) -> void:
 	if party != "poor" and not sold_and_dropped:
 		sold_and_dropped = true
 		await check_sell_and_drop()
-	if not await press("CampaignTown/LeaveShop"):
+	if not await press("CampaignTown/%LeaveShop"):
 		bug("Leave shop cannot be pressed", "")
 	await settle()
 	for prompt in range(10):
 		if exploring(): break
-		if not await press("CampaignTown/Continue"): await choose("")
+		if not await press("CampaignTown/%Continue"): await choose("")
 	if not exploring():
 		bug("leaving the shop does not return to the street", "dialogue '" + dialogue() + "'")
 
@@ -224,7 +224,7 @@ func check_shop_cards() -> void:
 	var window_size := root.size
 	root.size = Vector2i(1920, 1080)
 	await settle()
-	var rows: GridContainer = town().get_node("PartyList/Rows")
+	var rows: GridContainer = town().get_node("%PartyList/Rows")
 	if rows.columns != 2:
 		bug("a shop's party list is not two cards wide", str(rows.columns) + " columns")
 	for row in rows.get_children():
@@ -238,7 +238,7 @@ func check_shop_cards() -> void:
 # Each card colors its current hit points by how low they are.
 func check_hit_point_colors() -> void:
 	for slot in range(8):
-		var row: Button = town().get_node_or_null("PartyList/Rows/Member" + str(slot))
+		var row: Button = town().get_node_or_null("%PartyList/Rows/Member" + str(slot))
 		if row == null or not row.visible: continue
 		var found := hp_pattern.search(row.tooltip_text)
 		var current := int(found.get_string(1))
@@ -248,7 +248,7 @@ func check_hit_point_colors() -> void:
 			bug("a card colors its hit points wrongly", str(current) + "/" + str(maximum) + " shows '" + str(row.get("_health_color")) + "'")
 
 func buyer() -> Array:
-	var found := buyer_pattern.search(town().get_node("Speaker").text)
+	var found := buyer_pattern.search(town().get_node("%Speaker").text)
 	return [found.get_string(1), int(found.get_string(2)), int(found.get_string(3))] if found else ["", -1, -1]
 
 # Buys the item at `index` for a member who can carry it, trying the next
@@ -259,16 +259,16 @@ func buy(index: int, shown: String, affordable: bool) -> void:
 	var before := buyer()
 	trail.append("buy " + shown)
 	for slot in range(9):
-		var list: ItemList = town().get_node("Choices")
+		var list: ItemList = town().get_node("%Choices")
 		list.select(index)
 		list.item_selected.emit(index)
 		before = buyer()
-		await press("CampaignTown/Continue")
+		await press("CampaignTown/%Continue")
 		if not dialogue().contains("Too heavy to carry"): break
 		if slot == 8:
 			bug("no member can carry an item", shown)
 			return
-		await press("CampaignTown/PartyList/Rows/Member" + str(slot))
+		await press("CampaignTown/%PartyList/Rows/Member" + str(slot))
 	var after := buyer()
 	if not affordable:
 		if after[1] != before[1] or after[2] != before[2]:
@@ -282,22 +282,22 @@ func buy(index: int, shown: String, affordable: bool) -> void:
 		auto_equipped += 1
 
 func inventory_count() -> int:
-	return (town().get_node("InventoryPanel/Items") as ItemList).item_count
+	return (town().get_node("InventoryPanel/%Items") as ItemList).item_count
 
 func inventory_status() -> String:
-	return town().get_node("InventoryPanel/Status").text
+	return town().get_node("InventoryPanel/%Status").text
 
 # In the inventory, Sell's first press shows the shop's offer and the second
 # sells for it; Drop's first press warns and the second drops the item, unpaid.
 func check_sell_and_drop() -> void:
-	if not await press("CampaignTown/Inventory"):
+	if not await press("CampaignTown/%Inventory"):
 		bug("the inventory does not open in a shop", "")
 		return
-	var items: ItemList = town().get_node("InventoryPanel/Items")
+	var items: ItemList = town().get_node("InventoryPanel/%Items")
 	var count := inventory_count()
 	if count < 2:
 		bug("the buyer has too few items to sell and drop", str(count))
-		await press("CampaignTown/InventoryPanel/Close")
+		await press("CampaignTown/InventoryPanel/%Close")
 		return
 	# In a shop, every line already says what it sells for.
 	for index in range(count):
@@ -307,11 +307,11 @@ func check_sell_and_drop() -> void:
 	var gold := party_gold()
 	items.select(0)
 	items.item_selected.emit(0)
-	await press("CampaignTown/InventoryPanel/Sell")
+	await press("CampaignTown/InventoryPanel/%Sell")
 	var found := offer_pattern.search(inventory_status())
 	if found == null or inventory_count() != count:
 		bug("Sell does not make an offer first", "'" + inventory_status() + "'")
-	await press("CampaignTown/InventoryPanel/Sell")
+	await press("CampaignTown/InventoryPanel/%Sell")
 	var offer := int(found.get_string(1)) if found else 0
 	if listed and int(listed.get_string(1)) != offer:
 		bug("the listed sale price is not the shop's offer", listed.get_string(0) + " vs " + str(offer))
@@ -319,14 +319,14 @@ func check_sell_and_drop() -> void:
 		bug("Sell does not sell for the offer", str(count) + " -> " + str(inventory_count()) + " items, gold " + str(gold) + " -> " + str(party_gold()) + " for " + str(offer) + " '" + inventory_status() + "'")
 	gold = party_gold()
 	count = inventory_count()
-	await press("CampaignTown/InventoryPanel/Drop")
+	await press("CampaignTown/InventoryPanel/%Drop")
 	if inventory_count() != count or not inventory_status().contains("gone for good"):
 		bug("Drop does not warn first", "'" + inventory_status() + "'")
-	await press("CampaignTown/InventoryPanel/Drop")
+	await press("CampaignTown/InventoryPanel/%Drop")
 	if inventory_count() != count - 1 or party_gold() != gold or not inventory_status().contains(" drops "):
 		bug("Drop does not drop the item", str(count) + " -> " + str(inventory_count()) + " items, gold " + str(gold) + " -> " + str(party_gold()) + " '" + inventory_status() + "'")
 	print(context, ": sold for ", offer, " gp and dropped an item")
-	await press("CampaignTown/InventoryPanel/Close")
+	await press("CampaignTown/InventoryPanel/%Close")
 
 # --- Temples ----------------------------------------------------------------
 
@@ -376,7 +376,7 @@ func check_temple(x: int, y: int, party: String) -> void:
 	await choose("Leave")
 	for prompt in range(10):
 		if exploring(): break
-		if not await press("CampaignTown/Continue"): await choose("")
+		if not await press("CampaignTown/%Continue"): await choose("")
 	if not exploring():
 		bug("leaving the temple does not return to the street", "dialogue '" + dialogue() + "'")
 
@@ -469,7 +469,7 @@ func check_inn(x: int, y: int, party: String) -> void:
 	if party_gold() != gold:
 		bug("declining the inn costs gold", str(gold) + " -> " + str(party_gold()))
 	if not await enter_inn():
-		bug("the inn cannot be entered again after declining", "at " + town().get_node("Coordinates").text + " '" + dialogue() + "'")
+		bug("the inn cannot be entered again after declining", "at " + town().get_node("%Coordinates").text + " '" + dialogue() + "'")
 		return
 	await choose("YES")
 	await answer_until_street()
@@ -482,7 +482,7 @@ func check_inn(x: int, y: int, party: String) -> void:
 	# A second night within a day: paid for, with no Long Rest.
 	var paid := party_gold()
 	if not await enter_inn():
-		bug("the inn cannot be entered again after a night", "at " + town().get_node("Coordinates").text + " '" + dialogue() + "'")
+		bug("the inn cannot be entered again after a night", "at " + town().get_node("%Coordinates").text + " '" + dialogue() + "'")
 		return
 	await choose("YES")
 	await answer_until_street()
@@ -495,7 +495,7 @@ func check_inn(x: int, y: int, party: String) -> void:
 var place := Vector2i()
 
 func position() -> Vector2i:
-	var found := RegEx.create_from_string("\\((\\d+), (\\d+)\\)").search(town().get_node("Coordinates").text)
+	var found := RegEx.create_from_string("\\((\\d+), (\\d+)\\)").search(town().get_node("%Coordinates").text)
 	return Vector2i(int(found.get_string(1)), int(found.get_string(2))) if found else Vector2i(-1, -1)
 
 # Through the door; already inside after a night, out into the street and
@@ -503,7 +503,7 @@ func position() -> Vector2i:
 func enter_inn() -> bool:
 	if position() == place:
 		for turn in ["Right", "Right", "Forward", "Right", "Right"]:
-			await press("CampaignTown/" + turn)
+			await press("CampaignTown/%" + turn)
 	return await enter(asks_to_stay)
 
 # Answers what follows (the payer, the rest's notices) until the street.
@@ -520,13 +520,13 @@ func answer_until_street() -> void:
 			continue
 		var list := choices()
 		if not list.is_empty(): await choose(list[0])
-		elif not await press("CampaignTown/Continue"): await settle()
+		elif not await press("CampaignTown/%Continue"): await settle()
 	bug("the inn does not return to the street", "dialogue '" + dialogue() + "'")
 
 func leave_place() -> void:
 	for prompt in range(10):
 		if exploring(): return
-		if not await press("CampaignTown/Continue"): await settle()
+		if not await press("CampaignTown/%Continue"): await settle()
 
 # --- After a fight with the city watch ----------------------------------------
 
@@ -535,7 +535,7 @@ func leave_place() -> void:
 func check_refusal() -> void:
 	var gold := party_gold()
 	var hp := member_hp()
-	await press("CampaignTown/Forward")
+	await press("CampaignTown/%Forward")
 	var served := false
 	seen_text = ""
 	for prompt in range(30):
@@ -547,7 +547,7 @@ func check_refusal() -> void:
 		var list := choices()
 		if list.has("YES"): await choose("YES")
 		elif not list.is_empty(): await choose(list[0])
-		elif not await press("CampaignTown/Continue"): await settle()
+		elif not await press("CampaignTown/%Continue"): await settle()
 	# Tempus's priests fight such a party instead.
 	var tempus := context.begins_with("temple-0-12") or context.begins_with("temple-2-12")
 	var attacked := seen_text.contains("YOU ATTACKED THE CITY WATCH, YOU WON'T BEAT US SO EASILY!")
@@ -561,7 +561,7 @@ func check_refusal() -> void:
 # A party that stays when the city watch rousts it from its camp in the
 # street fights the watch on the combat screen.
 func check_watch() -> void:
-	await press("CampaignTown/Camp")
+	await press("CampaignTown/%Camp")
 	if not await press("CampaignTown/RestDialog/Start"):
 		bug("the camp cannot start", "")
 		return
@@ -573,7 +573,7 @@ func check_watch() -> void:
 		var list := choices()
 		if list.has("STAY"): await choose("STAY")
 		elif not list.is_empty(): await choose(list[0])
-		elif not await press("CampaignTown/Continue"): await settle()
+		elif not await press("CampaignTown/%Continue"): await settle()
 	if node("CampaignCombat") == null or not node("CampaignCombat").is_visible_in_tree():
 		bug("staying when the city watch comes starts no fight", "'" + seen_text.strip_edges().replace("\n", " / ") + "'")
 

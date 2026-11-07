@@ -67,7 +67,7 @@ func town() -> Control:
     return current_scene.get_node("CampaignTown")
 
 func dialogue() -> String:
-    return (town().get_node("Dialogue") as RichTextLabel).get_parsed_text()
+    return (town().get_node("%Dialogue") as RichTextLabel).get_parsed_text()
 
 func slot_path(slot: String) -> String:
     return ProjectSettings.globalize_path("user://saves/" + slot.to_utf8_buffer().hex_encode() + ".ogs")
@@ -79,7 +79,7 @@ func load_fixture(name: String) -> void:
     var f := FileAccess.open(path, FileAccess.WRITE)
     f.store_buffer(FileAccess.get_file_as_bytes(fixtures.path_join(name + ("-strong" if strong else "") + ".ogs"))); f.close()
     if current_scene.has_node("CampaignTown") and town().visible:
-        await press("CampaignTown/Menu"); await press("GameMenu/Menu/Load")
+        await press("CampaignTown/%Menu"); await press("GameMenu/Menu/Load")
     else:
         await press("PartyPanel/Load")
     var list: ItemList = current_scene.get_node("SaveSlots/Slots")
@@ -95,7 +95,7 @@ func load_fixture(name: String) -> void:
         report.append("FAILED: Slums save " + name + " did not load")
         finish(1)
         await create_timer(60).timeout
-    report.append("Loaded " + name + ": " + town().get_node("Location").text + " / " + town().get_node("Coordinates").text)
+    report.append("Loaded " + name + ": " + town().get_node("%Location").text + " / " + town().get_node("%Coordinates").text)
 
 func in_combat() -> bool:
     return current_scene.has_node("CampaignCombat") and current_scene.get_node("CampaignCombat").is_visible_in_tree()
@@ -105,7 +105,7 @@ func in_combat() -> bool:
 func play_story(wanted: Array) -> void:
     for step in range(60):
         if in_combat(): return
-        var continue_button: Button = town().get_node("Continue")
+        var continue_button: Button = town().get_node("%Continue")
         if continue_button.disabled:
             for wait in range(20):
                 if not continue_button.disabled or in_combat(): break
@@ -119,7 +119,7 @@ func play_story(wanted: Array) -> void:
                 if not in_combat(): return
             continue
         report.append("  > " + dialogue().replace("\n", "\n    "))
-        var choices: ItemList = town().get_node("Choices")
+        var choices: ItemList = town().get_node("%Choices")
         var selection := 0
         for i in range(choices.item_count):
             if wanted.has(choices.get_item_text(i)):
@@ -128,7 +128,7 @@ func play_story(wanted: Array) -> void:
         if choices.item_count:
             report.append("    choose " + choices.get_item_text(selection))
             choices.select(selection)
-        await press("CampaignTown/Continue")
+        await press("CampaignTown/%Continue")
         await settle(20)
 
 # A won or lost fight leaves the combat screen up (a defeat under its dialog);
@@ -287,9 +287,9 @@ func flee_run() -> void:
     await press("Party")
     await load_fixture("hobgoblins")
     for steps in range(3):
-        await press("CampaignTown/Forward")
+        await press("CampaignTown/%Forward")
         await settle(20)
-        if not (town().get_node("Continue") as Button).disabled or in_combat(): break
+        if not (town().get_node("%Continue") as Button).disabled or in_combat(): break
     await play_story(["Fight", "FIGHT", "Bash", "BASH"])
     if not in_combat():
         report.append("  NO COMBAT"); return
@@ -321,9 +321,9 @@ func run() -> void:
         await capture(name + "-before")
         # Step forward until the story starts: a room may lie past its door.
         for steps in range(3):
-            await press("CampaignTown/Forward")
+            await press("CampaignTown/%Forward")
             await settle(20)
-            if not (town().get_node("Continue") as Button).disabled or in_combat(): break
+            if not (town().get_node("%Continue") as Button).disabled or in_combat(): break
         await play_story(["Fight", "FIGHT", "Bash", "BASH"])
         if not in_combat():
             report.append("  NO COMBAT"); await capture(name + "-no-combat"); continue

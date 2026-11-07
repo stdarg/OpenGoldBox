@@ -414,7 +414,7 @@ void CharacterCreationView::advancement_check()
         auto *town = &required_node<RolfTourView>(*this, "CampaignTown");
         if (!town->can_leave())
         {
-            auto *next = &required_node<Button>(*town, "Continue");
+            auto *next = &required_node<Button>(*town, "%Continue");
             if (next->is_visible() && !next->is_disabled())
             {
                 next->emit_signal("pressed");
@@ -422,7 +422,7 @@ void CharacterCreationView::advancement_check()
             return;
         }
         town->resume_party();
-        auto *button = &required_node<Button>(*town, "PartyList/Rows/Member1/Advance");
+        auto *button = &required_node<Button>(*town, "%PartyList/Rows/Member1/Advance");
         if (!button->is_visible())
         {
             throw std::runtime_error("Town level-up arrow is missing");
@@ -460,7 +460,7 @@ void CharacterCreationView::advancement_check()
         }
     }
         required_node<Button>(required_node<RolfTourView>(*this, "CampaignTown"),
-                              "PartyList/Rows/Member2/Advance")
+                              "%PartyList/Rows/Member2/Advance")
             .emit_signal("pressed");
         select("LevelUp/Feat", 2);
         required_node<CheckBox>(*this, "LevelUp/Spell1").set_pressed(true);
@@ -501,7 +501,7 @@ void CharacterCreationView::advancement_check()
             throw std::runtime_error("UI-acquired feat must survive campaign reload");
         }
         required_node<Button>(required_node<RolfTourView>(*this, "CampaignTown"),
-                              "PartyList/Rows/Member3/Advance")
+                              "%PartyList/Rows/Member3/Advance")
             .emit_signal("pressed");
         auto *feats = &required_node<OptionButton>(*this, "LevelUp/Feat");
         const auto &offered = required_node<LevelUpDialog>(*this, "LevelUp").options().feats;

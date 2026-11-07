@@ -1,78 +1,42 @@
-extends AnimationPlayer
+extends MarginContainer
 
-var _authored_offsets: Dictionary = {}
+# The exploration screen's layout. Its containers place every control; this
+# script adds what changes in a shop or at a treasure pile: the dialogue box
+# grows for the list of goods, and the party's cards, which then hold one
+# column of lines, stand two to a row when the list is wide enough.
+
+var _shopping := false
+# The member card the party's list keeps in view: the selected member's.
+var _shown_card: Control
 
 
-func _restore_control(control: Control, parent_width: float) -> void:
-    if not _authored_offsets.has(control):
-        _authored_offsets[control] = [control.offset_left, control.offset_top,
-            control.offset_right, control.offset_bottom]
-    var offsets: Array = _authored_offsets[control]
-    var delta := Rect2()
-    var factor := 0.0
-    if control.has_meta("layout_middle_delta"):
-        delta = control.get_meta("layout_middle_delta")
-        var small := control.get_theme_constant("layout_small_width", "OpenGoldMetrics")
-        var middle := control.get_theme_constant("layout_middle_width", "OpenGoldMetrics")
-        var design := control.get_theme_constant("layout_design_width", "OpenGoldMetrics")
-        factor = (clampf((parent_width - small) / (middle - small), 0.0, 1.0)
-            if parent_width <= middle else
-            clampf((design - parent_width) / (design - middle), 0.0, 1.0))
-    control.offset_left = offsets[0] + delta.position.x * factor
-    control.offset_top = offsets[1] + delta.position.y * factor
-    control.offset_right = offsets[2] + (delta.position.x + delta.size.x) * factor
-    control.offset_bottom = offsets[3] + (delta.position.y + delta.size.y) * factor
+func _ready() -> void:
+    var party: Control = get_node("%PartyList")
+    party.resized.connect(_fit_party_columns)
+    party.resized.connect(_scroll_to_shown_card)
 
 
 func apply_layout(shopping: bool) -> void:
-    var view := get_parent() as Control
-    play("normal")
-    advance(0)
-    # Left playing, it would set its values again next frame, over the widths below.
-    stop()
-    var rows: GridContainer = view.get_node("PartyList/Rows")
-    rows.columns = 1
-    for child in view.get_children():
-        if child is Control and child.has_meta("layout_reference"):
-            _restore_control(child, view.size.x)
-    if shopping:
-        var small := view.get_theme_constant("layout_small_width", "OpenGoldMetrics")
-        var middle := view.get_theme_constant("layout_middle_width", "OpenGoldMetrics")
-        var design := view.get_theme_constant("layout_design_width", "OpenGoldMetrics")
-        var position := (0.6 * clampf((view.size.x - small) / (middle - small), 0.0, 1.0)
-            if view.size.x <= middle else
-            0.6 + 0.4 * clampf((view.size.x - middle) / (design - middle), 0.0, 1.0))
-        play("shopping")
-        seek(position, true)
-        stop()
-        # The party's cards stop short of the map, whichever width the window has.
-        var party: Control = view.get_node("PartyList")
-        var map: Control = view.get_node("MapBounds")
-        party.size.x = minf(party.size.x, map.position.x - 16 - party.position.x)
-        # A shop's cards hold one column of lines, so two fit side by side
-        # unless the window is too narrow for them.
-        rows.columns = 2 if party.size.x >= view.get_theme_constant(
-            "tour_party_two_column_width", "OpenGoldMetrics") else 1
-        # The shop's panel and what it holds stop short of the buttons beside it.
-        var dialogue_bounds: Control = view.get_node("DialogueBounds")
-        var overflow: float = (dialogue_bounds.position.x + dialogue_bounds.size.x + 8
-            - (view.get_node("Cast") as Control).position.x)
-        if overflow > 0:
-            dialogue_bounds.size.x -= overflow
-            for name in ["Dialogue", "Choices", "Progress"]:
-                (view.get_node(name) as Control).size.x -= overflow
-            for name in ["Continue", "LeaveShop"]:
-                (view.get_node(name) as Control).position.x -= overflow
-    # On a short, wide window the map grows with the width and would push the
-    # party's lines under it onto the buttons below; the map gives up the height.
-    var map_bounds: Control = view.get_node("MapBounds")
-    var party_lines: Control = view.get_node("Party")
-    var overlap: float = (party_lines.position.y + party_lines.size.y + 8
-        - (view.get_node("Cast") as Control).position.y)
-    if overlap > 0:
-        map_bounds.size.y -= overlap
-        for name in ["Coordinates", "Party"]:
-            (view.get_node(name) as Control).position.y -= overlap
-    # The map's cells are square, sized by its width: its frame takes the shorter side.
-    var side := minf(map_bounds.size.x, map_bounds.size.y)
-    map_bounds.size = Vector2(side, side)
+    _shopping = shopping
+    get_node("%DialogueBounds").call("fit_shop", shopping)
+    _fit_party_columns()
+
+
+# Scrolls the party's list to a member's card, and back to it whenever the
+# list is resized. It waits a frame each time: the containers place the cards
+# at the end of the frame the list changed in.
+func show_party_member(card: Control) -> void:
+    _shown_card = card
+    _scroll_to_shown_card()
+
+
+func _scroll_to_shown_card() -> void:
+    await get_tree().process_frame
+    if is_instance_valid(_shown_card) and _shown_card.visible:
+        (get_node("%PartyList") as ScrollContainer).ensure_control_visible(_shown_card)
+
+
+func _fit_party_columns() -> void:
+    var party: Control = get_node("%PartyList")
+    var two_fit := party.size.x >= get_theme_constant("tour_party_two_column_width", "OpenGoldMetrics")
+    (party.get_node("Rows") as GridContainer).columns = 2 if _shopping and two_fit else 1

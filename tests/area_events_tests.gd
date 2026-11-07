@@ -90,51 +90,51 @@ func press(path: String) -> bool:
 
 # In a shop or at a treasure pile the news follows the header's divider.
 func dialogue() -> String:
-	return town().get_node("Dialogue").get_parsed_text().strip_edges().trim_prefix("|").strip_edges()
+	return town().get_node("%Dialogue").get_parsed_text().strip_edges().trim_prefix("|").strip_edges()
 
 func choices() -> Array:
-	var list: ItemList = town().get_node("Choices")
+	var list: ItemList = town().get_node("%Choices")
 	var items := []
 	if not list.is_visible_in_tree(): return items
 	for i in range(list.item_count): items.append(list.get_item_text(i))
 	return items
 
 func pick(index: int) -> void:
-	var list: ItemList = town().get_node("Choices")
+	var list: ItemList = town().get_node("%Choices")
 	list.select(index)
 	list.item_selected.emit(index)
-	await press("CampaignTown/Continue")
+	await press("CampaignTown/%Continue")
 
 func exploring() -> bool:
-	return not town().get_node("Forward").disabled
+	return not town().get_node("%Forward").disabled
 
 func fighting() -> bool:
 	var combat := node("CampaignCombat")
 	return combat != null and combat.is_visible_in_tree()
 
 func shopping() -> bool:
-	return town().get_node("LeaveShop").is_visible_in_tree() and not at_treasure()
+	return town().get_node("%LeaveShop").is_visible_in_tree() and not at_treasure()
 
 func at_treasure() -> bool:
-	return town().get_node("LeaveShop").is_visible_in_tree() and town().get_node("Speaker").text.begins_with("Treasure")
+	return town().get_node("%LeaveShop").is_visible_in_tree() and town().get_node("%Speaker").text.begins_with("Treasure")
 
 # A treasure lists what the fight or the script left: the selected member takes
 # the first item and the second member the next, each with Enter, and both must
 # then carry them; the party leaves the rest behind, Leave asking first.
 func take_treasure() -> String:
-	var list: ItemList = town().get_node("Choices")
+	var list: ItemList = town().get_node("%Choices")
 	var count := list.item_count
 	var taken := []
 	for slot in range(mini(2, count)):
-		var row: Button = town().get_node("PartyList/Rows/Member" + str(slot))
+		var row: Button = town().get_node("%PartyList/Rows/Member" + str(slot))
 		row.pressed.emit()
 		await settle()
-		list = town().get_node("Choices")
+		list = town().get_node("%Choices")
 		var item := list.get_item_text(0)
 		var before := list.item_count
 		list.select(0)
-		await press("CampaignTown/Continue")
-		var left := (town().get_node("Choices") as ItemList).item_count
+		await press("CampaignTown/%Continue")
+		var left := (town().get_node("%Choices") as ItemList).item_count
 		# An item too heavy for the member is refused and stays in the pile.
 		if dialogue().contains("cannot carry that much weight"):
 			if left != before:
@@ -145,12 +145,12 @@ func take_treasure() -> String:
 			bug("a treasure item is not taken", item + ": " + dialogue().right(160))
 	# What is left is counted before leaving: once the treasure is left, the
 	# list may hold the next menu (a street group met as the script goes on).
-	var left_behind := (town().get_node("Choices") as ItemList).item_count
-	await press("CampaignTown/LeaveShop")
+	var left_behind := (town().get_node("%Choices") as ItemList).item_count
+	await press("CampaignTown/%LeaveShop")
 	if left_behind > 0:
 		if not at_treasure() or not dialogue().begins_with("There is still treasure here"):
 			bug("leaving a treasure with items in it does not ask first", dialogue().substr(0, 160))
-		await press("CampaignTown/LeaveShop")
+		await press("CampaignTown/%LeaveShop")
 	await settle(8)
 	if at_treasure():
 		bug("the party cannot leave a treasure", dialogue().substr(0, 160))
@@ -159,21 +159,21 @@ func take_treasure() -> String:
 # What the town screen shows besides the text, for a dead end's report.
 func screen_state() -> String:
 	return "[speaker '%s', %s, progress '%s', continue %s, combat %s]" % [
-		town().get_node("Speaker").text, town().get_node("Movement").text,
-		town().get_node("Progress").text,
-		"off" if town().get_node("Continue").disabled else "on", node("CampaignCombat") != null]
+		town().get_node("%Speaker").text, town().get_node("%Movement").text,
+		town().get_node("%Progress").text,
+		"off" if town().get_node("%Continue").disabled else "on", node("CampaignCombat") != null]
 
 func typing() -> bool:
-	return town().get_node("Answer").is_visible_in_tree()
+	return town().get_node("%Answer").is_visible_in_tree()
 
 func party_gold() -> int:
-	var found := gold_pattern.search(town().get_node("Party").text)
+	var found := gold_pattern.search(town().get_node("%Party").text)
 	return int(found.get_string(1)) if found else -1
 
 func party_hp() -> int:
 	var total := 0
 	for slot in range(8):
-		var row: Button = town().get_node_or_null("PartyList/Rows/Member" + str(slot))
+		var row: Button = town().get_node_or_null("%PartyList/Rows/Member" + str(slot))
 		if row == null or not row.visible: continue
 		var found := hp_pattern.search(row.tooltip_text)
 		if found: total += int(found.get_string(1))
@@ -182,7 +182,7 @@ func party_hp() -> int:
 func party_names() -> Array:
 	var names := []
 	for slot in range(8):
-		var row: Button = town().get_node_or_null("PartyList/Rows/Member" + str(slot))
+		var row: Button = town().get_node_or_null("%PartyList/Rows/Member" + str(slot))
 		if row and row.visible: names.append(row.tooltip_text.split("\n")[0].trim_prefix("★ ").strip_edges())
 	return names
 
@@ -227,11 +227,11 @@ func play(path: Array) -> Dictionary:
 	var waited_since := -1
 	var phase := 0
 	var member_turn := 0
-	await press("CampaignTown/Forward")
+	await press("CampaignTown/%Forward")
 	for move in range(200):
 		# A wait is timed from when it began: a step that does not wait (a
 		# fight played, a treasure, a look) ends the last one.
-		if not (town().get_node("Continue").disabled and choices().is_empty()) or fighting() or at_treasure() or exploring():
+		if not (town().get_node("%Continue").disabled and choices().is_empty()) or fighting() or at_treasure() or exploring():
 			waited_since = -1
 		var text := dialogue()
 		if text != "" and (heard.is_empty() or heard.back() != text): heard.append(text)
@@ -252,12 +252,12 @@ func play(path: Array) -> Dictionary:
 			if phase == 1:
 				taken.append("[look]")
 				heard.append("[look]")
-				await press("CampaignTown/Look")
+				await press("CampaignTown/%Look")
 			else:
 				taken.append("[again]")
 				heard.append("[again]")
 				for turn in ["Right", "Right", "Forward", "Right", "Right", "Forward"]:
-					if exploring(): await press("CampaignTown/" + turn)
+					if exploring(): await press("CampaignTown/%" + turn)
 			continue
 		# The map and the event: "area14-3" (or "slums-3").
 		var event: String = "-".join(context.split("-").slice(0, 2))
@@ -280,7 +280,7 @@ func play(path: Array) -> Dictionary:
 			return {"ending": ending, "heard": heard, "taken": taken, "gold": party_gold() - gold, "hp": party_hp() - hp}
 		var options := []
 		if typing():
-			options = NUMBERS if town().get_node("Answer").max_length <= 6 else words
+			options = NUMBERS if town().get_node("%Answer").max_length <= 6 else words
 		else:
 			var list := choices()
 			# A member is chosen as the first: the event is the same for each.
@@ -296,8 +296,8 @@ func play(path: Array) -> Dictionary:
 				return {"ending": "diverged", "heard": heard, "taken": taken, "gold": party_gold() - gold, "hp": party_hp() - hp}
 			if typing():
 				taken.append("'" + str(answer) + "'")
-				town().get_node("Answer").text = str(answer)
-				await press("CampaignTown/Continue")
+				town().get_node("%Answer").text = str(answer)
+				await press("CampaignTown/%Continue")
 			else:
 				taken.append(options[answer])
 				await pick(answer)
@@ -306,7 +306,7 @@ func play(path: Array) -> Dictionary:
 		# Continue is off while the monster close-up plays (the fight then
 		# opens by itself) and while the script pauses (DELAY): wait, up to
 		# ten seconds of nothing to press.
-		var waiting: bool = town().get_node("Continue").disabled and choices().is_empty()
+		var waiting: bool = town().get_node("%Continue").disabled and choices().is_empty()
 		if waiting:
 			if waited_since < 0: waited_since = Time.get_ticks_msec()
 			await settle(20)
@@ -316,7 +316,7 @@ func play(path: Array) -> Dictionary:
 			var members := party_names().has(choices()[0])
 			await pick(member_turn % choices().size() if members else 0)
 			if members: member_turn += 1
-		else: await press("CampaignTown/Continue")
+		else: await press("CampaignTown/%Continue")
 		if not waiting: waited_since = -1
 		still = still + 1 if dialogue() + str(choices()) == before and not waiting else 0
 		if still >= 6 or (waiting and Time.get_ticks_msec() - waited_since > 10000):

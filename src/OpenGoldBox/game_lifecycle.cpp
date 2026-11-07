@@ -65,15 +65,28 @@ void GameLifecycle::start_lifecycle()
 
 namespace
 {
-// "CampaignTown/Continue", where a control sits in the scene.
+// "CampaignTown/%Continue", where a control sits in the scene. A control with a
+// scene-unique name is named by it, as the code finds it, rather than by the
+// containers that place it, which a layout change moves.
 std::string control_name(Node &control)
 {
-    auto path = String(control.get_path());
+    auto *anchor = &control;
+    String unique;
+    if (control.is_unique_name_in_owner() && control.get_owner())
+    {
+        anchor = control.get_owner();
+        unique = "/%" + String(control.get_name());
+    }
+    auto path = String(anchor->get_path());
     if (auto *scene = control.get_tree()->get_current_scene())
     {
-        path = String(scene->get_path_to(&control));
+        path = String(scene->get_path_to(anchor));
     }
-    return path.utf8().get_data();
+    if (!unique.is_empty() && path == ".")
+    {
+        return unique.trim_prefix("/").utf8().get_data();
+    }
+    return (path + unique).utf8().get_data();
 }
 
 void log_ui(const std::string &what)

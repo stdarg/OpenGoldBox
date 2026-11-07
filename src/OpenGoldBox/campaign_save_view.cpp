@@ -333,7 +333,7 @@ void CharacterCreationView::load_checkpoint_check()
             }
             required_node<Button>(required_node<SaveSlots>(*this, "SaveSlots"), "Cancel")
                 .emit_signal("pressed");
-            required_node<Button>(*town, "Camp").emit_signal("pressed");
+            required_node<Button>(*town, "%Camp").emit_signal("pressed");
             required_node<Button>(*rest, "Heal").emit_signal("pressed");
             if (encode_campaign(*campaign_, town->saved_session(), assets) == before)
             {
