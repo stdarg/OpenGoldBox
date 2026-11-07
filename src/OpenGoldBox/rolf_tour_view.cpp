@@ -648,17 +648,27 @@ void RolfTourView::refresh_inventory()
                                {{"name", String::utf8(m.character.sheet().name.c_str())},
                                 {"class", i18n::class_summary(m.character.sheet())},
                                 {"gold", gold_value(campaign_->state().wealth)}}));
+    // In a shop every line says what the shop pays for it (SELL-1).
+    const bool shopping = session_ && session_->snapshot().phase == TourPhase::shopping;
     for (const auto &item : m.character.inventory().items())
     {
         // Detect Magic marks magic items, as the original's item lists did.
         const bool sensed =
             campaign_->detecting_magic() && campaign_->magical(campaign_->selected(), item.id);
-        items->add_item(
+        auto line =
             (sensed ? String("* ") : String()) +
             (std::find(m.equipped.begin(), m.equipped.end(), item.id) != m.equipped.end()
                  ? i18n::text("Equipped / ")
                  : String()) +
-            inventory_label(m, item));
+            inventory_label(m, item);
+        if (shopping)
+        {
+            line = i18n::format(
+                N_("{item} / sells for {gold} gp"),
+                {{"item", line},
+                 {"gold", campaign_->sale_offer(campaign_->selected(), item.id, sale_market())}});
+        }
+        items->add_item(line);
     }
     if (items->get_item_count())
     {
