@@ -102,13 +102,15 @@ func check_leader() -> void:
     second.emit_signal("opened"); await settle()
     var make: Button = sheet.get_node("MakeLeader")
     require(sheet.visible and not make.disabled, "A member's sheet offers Make leader")
-    # The portrait opens the sheet at the top left, beside the name, and
-    # scrolls with the text: the sheet's first line is the portrait's height.
+    # The portrait opens the sheet at the top right, beside the name, and
+    # scrolls with the text: the sheet's first line is the portrait's height,
+    # and the name's column comes before the portrait's (an image is a space
+    # in the parsed text).
     var text: RichTextLabel = sheet.get_node("Text")
     var portrait_size := text.get_theme_constant("sheet_portrait_size", "OpenGoldMetrics")
     require(portrait_size == 300 and text.get_line_offset(1) >= portrait_size
-        and text.get_parsed_text().contains(second.tooltip_text.split("\n")[0]),
-        "The sheet starts with the 300 px portrait beside the member's name")
+        and text.get_parsed_text().begins_with(second.tooltip_text.split("\n")[0].trim_prefix("★ ")),
+        "The sheet starts with the member's name beside the 300 px portrait on its right: " + text.get_parsed_text().left(40))
     make.pressed.emit(); await settle()
     require(make.disabled and second.tooltip_text.begins_with("★ ") and not first.tooltip_text.begins_with("★"), "Make leader moves the star: " + second.tooltip_text)
     require(roster.get_item_text(1).begins_with("★ ") and not roster.get_item_text(0).begins_with("★"), "The party roster marks the new leader")
