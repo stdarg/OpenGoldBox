@@ -2,6 +2,28 @@ extends RichTextLabel
 
 
 func render(source: String) -> void:
+    text = themed(source)
+
+
+# The portrait at the top left with `beside` in a column to its right and
+# `below` under both, scrolling together like the rest of the text.
+func render_with_portrait(portrait: Texture2D, beside: String, below: String) -> void:
+    var side := get_theme_constant("sheet_portrait_size", "OpenGoldMetrics")
+    text = ""
+    push_table(2)
+    push_cell()
+    set_cell_padding(Rect2(0, 0, get_theme_constant("sheet_portrait_gap", "OpenGoldMetrics"), 0))
+    add_image(portrait, side, side)
+    pop()
+    push_cell()
+    append_text(themed(beside))
+    pop()
+    pop()
+    append_text(themed(below))
+
+
+# The sheet's theme tags turned into BBCode with the theme's sizes and colors.
+func themed(source: String) -> String:
     var result := source
     for name in ["sheet_title", "sheet_note"]:
         var metric: String = name + "_font_size"
@@ -25,4 +47,4 @@ func render(source: String) -> void:
     result = result.replace("[/theme_title]", "[/font_size]")
     result = result.replace("[theme_emphasis]", "[b]")
     result = result.replace("[/theme_emphasis]", "[/b]")
-    text = result
+    return result

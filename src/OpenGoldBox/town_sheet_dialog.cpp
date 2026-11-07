@@ -70,8 +70,15 @@ void TownSheetDialog::show_member(std::int64_t slot)
     }
     const auto &m = campaign.member(campaign.state().slots[slot]);
     member_ = m.id;
+    if (!portraits_)
+    {
+        portraits_ = PortraitCatalog::load();
+    }
+    const auto sections = presentation::sheet_sections(campaign, m);
     required_node<RichTextLabel>(*this, "Text")
-        .call("render", presentation::sheet_text(campaign, m));
+        .call("render_with_portrait",
+              portraits_->texture(m.character.appearance(), m.character.creation_data()),
+              sections.beside_portrait, sections.below_portrait);
     required_node<Button>(*this, "MakeLeader").set_disabled(m.id == campaign.leader());
     const bool auto_equip = settings::auto_equip();
     required_node<Label>(*this, "GearPreferenceLabel").set_visible(auto_equip);

@@ -1,10 +1,12 @@
 #ifndef OPENGOLDBOX_TOWN_SHEET_DIALOG_H
 #define OPENGOLDBOX_TOWN_SHEET_DIALOG_H
 #include "opengold/campaign_party.h"
+#include "portrait_catalog.h"
 #include <godot_cpp/classes/window.hpp>
 #include <cstdint>
 #include <exception>
 #include <functional>
+#include <optional>
 
 // A party member's sheet opened from the exploration screen's party list,
 // where the member can also be made leader. The window's controls come from
@@ -41,6 +43,8 @@ class TownSheetDialog : public godot::Window
     std::function<void()> leader_changed_;
     FailureReport report_;
     opengold::MemberId member_{};
+    // Loaded when the first sheet opens.
+    std::optional<PortraitCatalog> portraits_;
 
     void make_leader();
     // The member's auto-equip preference (EQUIP-1), shown only while the

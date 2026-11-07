@@ -14,5 +14,16 @@ namespace presentation
 // each item is held and whether the member is ready to level up.
 [[nodiscard]] godot::String sheet_text(const opengold::CampaignParty &party,
                                        const opengold::PartyMember &member);
+
+// A party member's sheet in the town's two parts: the name, hit points and
+// attributes beside the portrait, then the rest of the sheet below it.
+struct SheetSections
+{
+    godot::String beside_portrait;
+    godot::String below_portrait;
+};
+
+[[nodiscard]] SheetSections sheet_sections(const opengold::CampaignParty &party,
+                                           const opengold::PartyMember &member);
 } // namespace presentation
 #endif

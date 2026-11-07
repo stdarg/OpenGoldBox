@@ -23,8 +23,11 @@ using presentation::signed_number;
 
 // The party, when given, adds what it knows about the member: current HP,
 // gold, AC and where each item is held.
-String formatted_sheet(const Character &character, const PartyMember *member,
-                       const CampaignParty *party)
+
+// The name and identity, hit points and attributes: what the town's sheet
+// shows beside the portrait.
+std::string identity_and_attributes(const Character &character, const PartyMember *member,
+                                    const CampaignParty *party)
 {
     const auto &s = character.sheet();
     std::string text = i18n::formatted(
@@ -150,6 +153,16 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         text += "\n" + i18n::formatted("Saving throws include {bonus} from worn items.",
                                        {{"bonus", gs(signed_number(item_saves))}});
     }
+    return text;
+}
+
+// AC, status effects, features, inventory and training: what the town's sheet
+// shows below the portrait.
+std::string details(const Character &character, const PartyMember *member,
+                    const CampaignParty *party)
+{
+    const auto &s = character.sheet();
+    std::string text;
     if (member)
     {
         try
@@ -228,7 +241,7 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         }
     }
     text += presentation::training_summary(s.training, i18n::text).utf8().get_data();
-    return gs(text);
+    return text;
 }
 } // namespace
 
@@ -236,11 +249,19 @@ namespace presentation
 {
 String sheet_text(const Character &character)
 {
-    return formatted_sheet(character, nullptr, nullptr);
+    return gs(identity_and_attributes(character, nullptr, nullptr) +
+              details(character, nullptr, nullptr));
 }
 
 String sheet_text(const CampaignParty &party, const PartyMember &member)
 {
-    return formatted_sheet(member.character, &member, &party);
+    const auto sections = sheet_sections(party, member);
+    return sections.beside_portrait + sections.below_portrait;
+}
+
+SheetSections sheet_sections(const CampaignParty &party, const PartyMember &member)
+{
+    return {gs(identity_and_attributes(member.character, &member, &party)),
+            gs(details(member.character, &member, &party))};
 }
 } // namespace presentation

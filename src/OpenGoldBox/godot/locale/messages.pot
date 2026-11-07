@@ -6,16 +6,16 @@ msgstr "Project-Id-Version: OpenGoldBox\nLanguage: \nMIME-Version: 1.0\nContent-
 msgid "\n\n[theme_emphasis]Items[/theme_emphasis]\nNo equipped item modifiers.\n\n[theme_emphasis]Spells[/theme_emphasis]\nNo active spell modifiers."
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:118
+#: src/OpenGoldBox/character_sheet_text.cpp:121
 msgid "\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:80
+#: src/OpenGoldBox/character_sheet_text.cpp:83
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "   Hit Dice: {dice}"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:83
+#: src/OpenGoldBox/character_sheet_text.cpp:86
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "   Party gold {gold}   XP {xp}"
 msgstr ""
@@ -60,7 +60,7 @@ msgstr ""
 msgid " or "
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:147
+#: src/OpenGoldBox/character_sheet_text.cpp:150
 msgid "* Proficient saving throw"
 msgstr ""
 
@@ -454,7 +454,7 @@ msgstr ""
 msgid "AC {ac}"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:158
+#: src/OpenGoldBox/character_sheet_text.cpp:171
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "AC {ac}   Speed {speed} ft"
 msgstr ""
@@ -1030,7 +1030,7 @@ msgstr ""
 msgid "Attribute bonuses: Strength, Dexterity, Constitution.\nSkills: Athletics, Intimidation.\nFeat: Savage Attacker."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:55 src/OpenGoldBox/character_sheet_text.cpp:117
+#: src/OpenGoldBox/character_creation_view.cpp:55 src/OpenGoldBox/character_sheet_text.cpp:120
 msgid "Attributes"
 msgstr ""
 
@@ -2912,7 +2912,7 @@ msgstr ""
 msgid "Dazed"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:89
+#: src/OpenGoldBox/character_sheet_text.cpp:92
 msgid "Dead"
 msgstr ""
 
@@ -3559,7 +3559,7 @@ msgstr ""
 msgid "Empowered Strikes: Unarmed Strikes deal Force damage.\nOpen Hand: Wholeness of Body, a Bonus Action that heals the Martial Arts die + Wisdom, Wisdom modifier times per Long Rest.\nUnarmored Movement +15 feet."
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:208
+#: src/OpenGoldBox/character_sheet_text.cpp:221
 msgid "Empty"
 msgstr ""
 
@@ -3930,7 +3930,7 @@ msgstr ""
 msgid "Features"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:193
+#: src/OpenGoldBox/character_sheet_text.cpp:206
 msgid "Features and choices"
 msgstr ""
 
@@ -4422,7 +4422,7 @@ msgstr ""
 msgid "Full hit points."
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:59
+#: src/OpenGoldBox/character_sheet_text.cpp:62
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Future class goals: {classes}\n\n"
 msgstr ""
@@ -5333,7 +5333,7 @@ msgstr ""
 msgid "Invalid advancement training choice"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:205 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:350
+#: src/OpenGoldBox/character_sheet_text.cpp:218 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:350
 msgid "Inventory"
 msgstr ""
 
@@ -6896,7 +6896,7 @@ msgstr ""
 msgid "Nonbinary"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:176
+#: src/OpenGoldBox/character_sheet_text.cpp:189
 msgid "None"
 msgstr ""
 
@@ -7632,7 +7632,7 @@ msgstr ""
 msgid "Prepared spells: select at least one"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:113
+#: src/OpenGoldBox/character_sheet_text.cpp:116
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Prepared spells: {spells}"
 msgstr ""
@@ -8139,7 +8139,7 @@ msgstr ""
 msgid "Ready"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:93
+#: src/OpenGoldBox/character_sheet_text.cpp:96
 msgid "Ready to level up"
 msgstr ""
 
@@ -8880,7 +8880,7 @@ msgstr ""
 msgid "Saving Throws"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:150
+#: src/OpenGoldBox/character_sheet_text.cpp:153
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Saving throws include {bonus} from worn items."
 msgstr ""
@@ -9751,7 +9751,7 @@ msgstr ""
 msgid "Starts with 3d6 x 10 gp to buy its gear. Preview portraits and both combat poses before adding."
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:172
+#: src/OpenGoldBox/character_sheet_text.cpp:185
 msgid "Status Effects"
 msgstr ""
 
@@ -11707,7 +11707,7 @@ msgstr ""
 msgid "[theme_emphasis]{ability} save: {bonus} | {target}[/theme_emphasis]\n{modifier} from {ability} score {score} (score minus 10, divided by 2, rounded down).\n"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:30
+#: src/OpenGoldBox/character_sheet_text.cpp:33
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "[theme_font=sheet_title]{name}[/theme_font]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n"
 msgstr ""
@@ -12206,7 +12206,7 @@ msgstr ""
 msgid "{hand} — {weapon}"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:202
+#: src/OpenGoldBox/character_sheet_text.cpp:215
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{heading}: {names}"
 msgstr ""

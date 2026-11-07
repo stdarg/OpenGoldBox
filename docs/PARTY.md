@@ -19,6 +19,13 @@ leader's name shows with a gold star in both lists. See
 Campaign saves become format 24. Format 25 adds who is on Quick and Quick magic
 ([QUICK-1](SRD-DECISIONS.md#quick-1-2026-10-09-quick-combat-as-the-original-game-had-it)).
 
+A member's sheet opened from the exploration party list starts with the
+member's portrait, 300 × 300 pixels, at the top left. The name, hit points and
+attributes sit to its right, and the rest of the sheet runs full width below
+it. The portrait is part of the text, so it scrolls away with it. The size and
+the gap beside it are `sheet_portrait_size` and `sheet_portrait_gap` in the
+theme's `OpenGoldMetrics`.
+
 Losing shared-party combat opens a defeat window with **Reload a Saved Game**
 and **Exit to OS**. Return to party is blocked; defeat does not revive anyone.
 Reload uses the existing named-save dialog. Cancelling or rejecting a damaged
