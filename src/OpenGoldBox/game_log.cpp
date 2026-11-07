@@ -53,6 +53,7 @@ void log_head()
         ", original combat art " + (settings::original_combat_art() ? "on" : "off") +
         ", auto-equip " + (settings::auto_equip() ? "on" : "off") + ", unidentified magic " +
         (settings::skip_unidentified_magic() ? "left packed" : "equipped") +
+        ", keep Quick after a fight " + (settings::keep_quick() ? "on" : "off") +
         ", monster abilities off: " + (abilities.is_empty() ? "none" : abilities));
 }
 

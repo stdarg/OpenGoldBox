@@ -382,6 +382,10 @@ void CombatDemo::finish_campaign_combat(Outcome outcome)
         return;
     }
     campaign_combat_.reset();
+    if (!keep_quick_)
+    {
+        campaign_->take_control();
+    }
     if (outcome == Outcome::victory && !reward_id_.empty())
     {
         campaign_->award_experience(300, reward_id_);

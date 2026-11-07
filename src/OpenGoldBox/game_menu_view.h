@@ -48,6 +48,7 @@ class GameMenuView : public godot::Control
     void combat_art_selected(std::int64_t index);
     void auto_equip_selected(std::int64_t index);
     void unidentified_magic_selected(std::int64_t index);
+    void keep_quick_selected(std::int64_t index);
     // "Do not equip unidentified magic items" is offered only while auto-equip is on.
     void show_unidentified_magic(bool shown);
 };

@@ -24,8 +24,8 @@ The computer takes the turn when the actor is a monster, when the party is
 fleeing (FLEE-1), or when a party member is on Quick (QUICK-1).
 
 - **Quick** hands the acting member to the computer; **Q** hands over the whole
-  party; **Take control** or Space hands every member back. The campaign keeps
-  who is on Quick between fights.
+  party; **Take control** or Space hands every member back, and so does the
+  end of the fight unless the Options screen's Keep Quick after a fight is on.
 - **Quick magic** (M) decides whether Quick members cast spells, cantrips
   included. Off, the policy is given the same menu without spell commands;
   class features that are not spells (Lay On Hands, Rage, Turn Undead, Second
@@ -37,7 +37,8 @@ fleeing (FLEE-1), or when a party member is on Quick (QUICK-1).
   mode the computer answers for every member.
 - The computer waits 0.65 seconds between actions so the player can follow.
 
-The original differed in three small ways: its Magic toggle was switched off
+The original differed in four small ways: it kept members on Quick in later
+fights (Keep Quick after a fight does), its Magic toggle was switched off
 at the start of every fight (QUICK-1 keeps it), the same AI also played
 charmed, confused and berserk characters, and allied NPCs had their own morale.
 Our allied NPCs are played by the player.

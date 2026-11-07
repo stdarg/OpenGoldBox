@@ -42,6 +42,10 @@ bool auto_equip();
 bool skip_unidentified_magic();
 bool save_auto_equip(bool on);
 bool save_skip_unidentified_magic(bool skip);
+// [combat] keep_quick: "on" keeps members on Quick for the next fight;
+// otherwise a fight's end returns every member to the player.
+bool keep_quick();
+bool save_keep_quick(bool keep);
 // Every monster ability back to its default.
 bool restore_monster_abilities();
 bool valid_language(const godot::String &locale);

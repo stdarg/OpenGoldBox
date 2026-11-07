@@ -218,8 +218,8 @@ class CombatView : public godot::Control
     bool flee_mode_{};
     void flee();
     // Quick combat, as in the original: the computer plays party members on
-    // Quick until the player takes control. A campaign party keeps who is on
-    // Quick and Quick magic between fights; the standalone demo keeps them here.
+    // Quick until the player takes control. A campaign party holds who is on
+    // Quick and Quick magic; the standalone demo keeps them here.
     std::set<opengold::rules::EntityId> quick_;
     bool quick_magic_{};
     [[nodiscard]] bool is_quick(opengold::rules::EntityId id) const;

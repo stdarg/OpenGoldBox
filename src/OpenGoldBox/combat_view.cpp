@@ -385,8 +385,8 @@ bool CombatView::quick_magic() const
     return campaign_ ? campaign_->state().quick_magic : quick_magic_;
 }
 
-// The active party member goes under computer control (Quick), and stays so
-// in later fights until the player takes control.
+// The active party member goes under computer control (Quick) until the
+// player takes control or the fight ends (unless Keep Quick is on).
 void CombatView::quick()
 {
     if (!demo_ || !demo_->has_combat())
@@ -562,6 +562,7 @@ void CombatView::prepare_combat()
     if (campaign_)
     {
         next->campaign_party(campaign_);
+        next->keep_quick(settings::keep_quick());
     }
     if (encounter_)
     {

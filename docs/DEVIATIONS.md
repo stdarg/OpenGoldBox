@@ -154,6 +154,12 @@ Add an entry whenever a new departure is decided.
   enemy can be (2026-11-01). The original's creature gave up after being
   blocked three times; one here whose way in is held by its own side goes
   around the creatures to another free side of the enemy (2026-11-03).
+- **Quick ends with the fight** (2026-11-07). The original kept a member on
+  Quick in later fights until the player took control. OpenGoldBox returns
+  every member to the player when a fight ends; the Options screen's Keep
+  Quick after a fight (off by default) keeps the original's way
+  ([QUICK-1](SRD-DECISIONS.md#quick-1-2026-10-09-quick-combat-as-the-original-game-had-it),
+  [CONFIGURATION](CONFIGURATION.md)).
 
 - **Hearing in combat** (2026-10-31). The original's monsters went only for what
   they could see. A creature here also hears enemies within 100 feet, through

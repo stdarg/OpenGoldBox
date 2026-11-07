@@ -254,6 +254,16 @@ bool save_skip_unidentified_magic(bool skip)
     return save("gear", "unidentified_magic", skip ? "skip" : "equip");
 }
 
+bool keep_quick()
+{
+    return read("combat", "keep_quick").to_lower() == "on";
+}
+
+bool save_keep_quick(bool keep)
+{
+    return save("combat", "keep_quick", keep ? "on" : "off");
+}
+
 bool save_combat_zoom(int percent)
 {
     return save("combat", "combat_zoom", std::clamp(percent, 10, 1000));

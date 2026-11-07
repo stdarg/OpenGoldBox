@@ -24,6 +24,14 @@ class CombatDemo
     explicit CombatDemo(std::unique_ptr<rules::RulesModule> module);
     ~CombatDemo();
     void campaign_party(std::shared_ptr<CampaignParty> party);
+
+    // When a campaign fight ends every member is back under the player's
+    // control, unless the Options screen keeps Quick for the next fight.
+    void keep_quick(bool keep) noexcept
+    {
+        keep_quick_ = keep;
+    }
+
     void training(std::uint64_t seed = 42, bool conditions = false);
     void slums(const std::filesystem::path &game_directory, std::uint64_t seed = 42,
                std::shared_ptr<const por::MonsterBundle> monsters = {},
@@ -120,6 +128,7 @@ class CombatDemo
     std::uint64_t menu_ticket_{}, combat_ticket_{}, seed_{};
     unsigned encounters_{};
     std::string reward_id_;
+    bool keep_quick_{};
     void pump();
     void finish_combat();
 };

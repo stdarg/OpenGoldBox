@@ -225,8 +225,9 @@ class CampaignParty
     [[nodiscard]] MemberId leader() const;
     void make_leader(MemberId id);
     // Quick combat, as in the original: the computer plays a member on Quick
-    // in this fight and later ones until the player takes control of the
-    // party. Settings, so they change during a fight too.
+    // until the player takes control of the party or, unless Quick is kept,
+    // the fight ends (CombatDemo::keep_quick). Settings, so they change during
+    // a fight too.
     void set_quick(MemberId id);
     void set_gear_preference(MemberId id, GearPreference preference);
     void take_control();

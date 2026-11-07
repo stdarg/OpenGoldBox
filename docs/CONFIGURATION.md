@@ -18,6 +18,7 @@ language="es"
 [combat]
 combat_zoom=100
 encounter_challenge=33
+keep_quick="off"
 
 [monsters]
 legendary="hard"
@@ -45,7 +46,7 @@ files receive the default. See
 
 The in-game menu's **Options** screen (Escape) sets these settings and writes
 them at once: under Gameplay `difficulty`, `encounter_challenge`, the
-`[gear]` section and the `[monsters]` section below; under Interface `language`, which takes effect the
+`[gear]` section, `keep_quick` and the `[monsters]` section below; under Interface `language`, which takes effect the
 next time the game starts, `combat_zoom`, read when a fight opens, and the
 `[art]` section below, which takes effect at once.
 
@@ -62,6 +63,12 @@ leaves an unidentified magic item in the pack, or `equip`. The defaults, also
 used for any other value, are `on` and `skip`. The Options screen shows
 "Do not equip unidentified magic items" only while auto-equip is on; both take
 effect when the menu closes, for the next item a character gains.
+
+`keep_quick` is the Options screen's Keep Quick after a fight. `off`, the
+default, also used for any other value, returns every character on Quick to
+the player when a fight ends, win, lose or flee; `on` keeps them on Quick for
+the next fight, as the original did. The combat screen reads it when a fight
+starts.
 
 `[monsters]` switches monster abilities by difficulty. Each key names an
 ability (`legendary`, `parry`, `breath`; the

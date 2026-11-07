@@ -41,6 +41,14 @@ var context := ""
 var hp_pattern := RegEx.new()
 var gold_pattern := RegEx.new()
 var endings := 0
+# The Options' Keep Quick (settings.cfg's [combat] keep_quick), switched after
+# each finished fight so the next one ends the other way; settings.cfg goes
+# back as it was at the end. A finished fight's party cards show QUICK only
+# when it is kept.
+var settings_path := ProjectSettings.globalize_path("res://settings.cfg")
+var kept_settings = null
+var keep_quick := false
+var quick_ends := 0
 
 func _initialize() -> void:
 	hp_pattern.compile("HP (-?\\d+)/(\\d+)")
@@ -316,6 +324,38 @@ func play(path: Array) -> Dictionary:
 	bug("an event runs on without end", str(taken))
 	return {"ending": "endless", "heard": heard, "taken": taken, "gold": 0, "hp": 0}
 
+func save_keep_quick(on: bool) -> void:
+	var config := ConfigFile.new()
+	config.load(settings_path)
+	config.set_value("combat", "keep_quick", "on" if on else "off")
+	config.save(settings_path)
+	keep_quick = on
+
+func restore_settings() -> void:
+	if kept_settings == null:
+		if FileAccess.file_exists(settings_path): DirAccess.remove_absolute(settings_path)
+	else:
+		var file := FileAccess.open(settings_path, FileAccess.WRITE); file.store_buffer(kept_settings); file.close()
+
+func check_quick_end(combat: Control) -> void:
+	var quick := 0
+	for row in combat.get_node("PartyRowsBounds")._rows:
+		if row.get("quick", false): quick += 1
+	if (quick > 0) != keep_quick:
+		bug("Quick", "a finished fight leaves %d members on Quick, Keep Quick %s" % [quick, "on" if keep_quick else "off"])
+	quick_ends += 1
+	# The next fight the other way, set as a player sets it: the Options
+	# screen's Keep Quick after a fight (On, then Off).
+	var choice: OptionButton = node("GameMenu/Options/Gameplay/KeepQuick")
+	var index := 1 if keep_quick else 0
+	choice.select(index)
+	choice.item_selected.emit(index)
+	keep_quick = not keep_quick
+	var config := ConfigFile.new()
+	config.load(settings_path)
+	if config.get_value("combat", "keep_quick", "") != ("on" if keep_quick else "off"):
+		bug("Quick", "the Options screen's Keep Quick does not save the setting")
+
 # Plays the fight on the combat screen with every member on Quick until the
 # town takes the party back: "won" or "defeat", or "endless" after two
 # minutes of play.
@@ -324,8 +364,13 @@ func finish_fight() -> String:
 	Engine.time_scale = 8.0
 	var deadline := Time.get_ticks_msec() + 120000
 	var outcome := "endless"
+	var ended := false
 	while Time.get_ticks_msec() < deadline:
 		await settle(2)
+		var turn: String = combat.get_node("StatusStack/Turn").text if fighting() else ""
+		if not ended and (turn.contains(tr("Victory")) or turn.contains("defeat")):
+			ended = true
+			check_quick_end(combat)
 		if not fighting():
 			outcome = "won"
 			break
@@ -379,6 +424,8 @@ func ranks_in_event(files: Array) -> Array:
 
 func run() -> void:
 	root.gui_embed_subwindows = true
+	if FileAccess.file_exists(settings_path): kept_settings = FileAccess.get_file_as_bytes(settings_path)
+	save_keep_quick(false)
 	var files := Array(DirAccess.get_files_at(fixtures)).filter(func(f): return f.ends_with(".ogs"))
 	files.sort()
 	var ranks := ranks_in_event(files)
@@ -388,6 +435,8 @@ func run() -> void:
 		if n % sample != offset % sample: continue
 		context = file.get_basename()
 		await explore(file, full_branches <= 0 or ranks[n] < full_branches)
+	restore_settings()
+	if finish_fights and quick_ends == 0: bug("Quick", "no finished fight showed its end")
 	print("Explored ", endings, " endings; ", bugs.size(), " distinct problems")
 	for key in bugs:
 		print("  ", bugs[key].size(), "x ", key, "\n      e.g. ", bugs[key][0])

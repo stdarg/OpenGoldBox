@@ -1,6 +1,8 @@
 // Quick combat, as in the original (QUICK-1): the campaign party keeps who the
-// computer plays and whether it casts spells between fights and in saves, and
-// with magic off the computer casts no spell for a Quick member.
+// computer plays and whether it casts spells in saves, a fight's end returns
+// every member to the player unless Quick is kept, and with magic off the
+// computer casts no spell for a Quick member.
+#include "opengold/campaign_encounter.h"
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
 #include "opengold/character.h"
@@ -95,6 +97,37 @@ void party_keeps_quick()
     loaded.take_control();
     check(!loaded.member(id).quick && loaded.state().quick_magic,
           "Taking control returns every member; Quick magic stays as set");
+}
+
+// When a fight ends every member is back under the player's control, unless
+// the Options screen keeps Quick for the next fight.
+void fight_ends_quick()
+{
+    for (const bool keep : {false, true})
+    {
+        auto party = std::make_shared<CampaignParty>(module());
+        const auto id = party->add_pc(druid());
+        party->set_quick(id);
+        party->set_quick_magic(true);
+        CombatDemo fight(module());
+        fight.campaign_party(party);
+        fight.keep_quick(keep);
+        CampaignEncounter encounter;
+        encounter.field.geometry = {12, 9, std::vector<Terrain>(108)};
+        encounter.enemies = {{1000, "bandit", "Bandit", Side::opposition, {9, 4}}};
+        fight.encounter(std::move(encounter), 42);
+        for (unsigned n = 0; n < 2000 && fight.combat().snapshot().outcome == Outcome::ongoing; ++n)
+        {
+            check(party->member(id).quick, "The member stays on Quick while the fight lasts");
+            check(fight.submit(choose_demo_command(fight.combat(), Searching::party)),
+                  "The computer's command is legal");
+        }
+        check(fight.combat().snapshot().outcome != Outcome::ongoing, "The fight ends");
+        check(party->member(id).quick == keep,
+              keep ? "Keep Quick leaves the member on Quick for the next fight"
+                   : "The fight's end returns the member to the player");
+        check(party->state().quick_magic, "Quick magic stays as set");
+    }
 }
 
 int unit_hit_points(const rules::Snapshot &state, EntityId id)
@@ -269,6 +302,7 @@ int main()
     try
     {
         party_keeps_quick();
+        fight_ends_quick();
         easy_spares_the_winners();
         blocked_monster_goes_around();
         magic_off_casts_nothing();
