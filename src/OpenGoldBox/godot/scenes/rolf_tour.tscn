@@ -483,13 +483,13 @@ metadata/layout_reference = Rect2(598.333313, 102, 843.666687, 670)
 metadata/layout_middle_delta = Rect2(26.6666996, 0, -64.266724, 0)
 horizontal_scroll_mode = 0
 
-[node name="Rows" type="VBoxContainer" parent="PartyList"]
+[node name="Rows" type="GridContainer" parent="PartyList"]
 offset_left = 0
 offset_top = 0
 offset_right = 843.6667
 offset_bottom = 56
 metadata/layout_reference = Rect2(0, 0, 843.6667, 56)
-theme_type_variation = &"VBoxContainerGap8"
+theme_type_variation = &"GridContainerGap8"
 size_flags_horizontal = 3
 
 [node name="Header" type="Label" parent="InventoryPanel"]

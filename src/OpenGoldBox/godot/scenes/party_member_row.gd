@@ -3,6 +3,9 @@ extends Button
 # A party member's row in the town's party list: the portrait as the party
 # roster shows it, the identity lines beside it (name, class, race, gender)
 # and a second column close by (Armor Class and hit points, weapon, armor).
+# A compact row, as a shop shows, has no second column: its Armor Class and
+# hit points line comes under the identity lines. The current hit points take
+# their own color when they run low.
 # Button draws only one text, so the button's own text stays empty and the
 # lines are drawn here; the tooltip holds them all.
 signal opened
@@ -14,17 +17,24 @@ const COLUMN_GAP := 24.0
 
 var _portrait: Texture2D
 var _identity := PackedStringArray()
+# The Armor Class and hit points line in three parts: before, at and after the
+# current hit points, which are drawn in `_health_color` when it names one.
+var _health := PackedStringArray()
+var _health_color := &""
 var _condition := PackedStringArray()
 var _leader := false
 
 
-func show_member(portrait: Texture2D, identity: PackedStringArray,
-        condition: PackedStringArray, leader: bool) -> void:
+# A row with no `condition` lines is compact.
+func show_member(portrait: Texture2D, identity: PackedStringArray, health: PackedStringArray,
+        health_color: StringName, condition: PackedStringArray, leader: bool) -> void:
     _portrait = portrait
     _identity = identity
+    _health = health
+    _health_color = health_color
     _condition = condition
     _leader = leader
-    tooltip_text = "\n".join(identity + condition)
+    tooltip_text = "\n".join(identity + PackedStringArray(["".join(health)]) + condition)
     queue_redraw()
 
 
@@ -78,13 +88,33 @@ func _draw() -> void:
     var font_size := get_theme_font_size("font_size")
     var line := font.get_height(font_size)
     var color := get_theme_color("font_color")
+    var baseline := top + font.get_ascent(font_size)
+    var right := size.x - style.get_margin(SIDE_RIGHT)
     var left := text_left()
     for row in _identity.size():
         var shade := get_theme_color("gold", "OpenGoldPalette") if row == 0 and _leader else color
-        draw_string(font, Vector2(left, top + font.get_ascent(font_size) + row * line),
-            _identity[row], HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, shade)
+        draw_string(font, Vector2(left, baseline + row * line),
+            _identity[row], HORIZONTAL_ALIGNMENT_LEFT, right - left, font_size, shade)
+    if _condition.is_empty():
+        _draw_health(Vector2(left, baseline + _identity.size() * line), right)
+        return
     var second := _second_column()
+    _draw_health(Vector2(second, baseline), right)
     for row in _condition.size():
-        draw_string(font, Vector2(second, top + font.get_ascent(font_size) + row * line),
-            _condition[row], HORIZONTAL_ALIGNMENT_LEFT, size.x - second - style.get_margin(SIDE_RIGHT),
-            font_size, color)
+        draw_string(font, Vector2(second, baseline + (row + 1) * line),
+            _condition[row], HORIZONTAL_ALIGNMENT_LEFT, right - second, font_size, color)
+
+
+# Draws the Armor Class and hit points line from `at`, clipped at `right`.
+func _draw_health(at: Vector2, right: float) -> void:
+    var font := get_theme_font("font")
+    var font_size := get_theme_font_size("font_size")
+    var color := get_theme_color("font_color")
+    for part in _health.size():
+        var width := right - at.x
+        if width <= 0:
+            return
+        var shade := (get_theme_color(_health_color, "OpenGoldPalette")
+            if part == 1 and not _health_color.is_empty() else color)
+        draw_string(font, at, _health[part], HORIZONTAL_ALIGNMENT_LEFT, width, font_size, shade)
+        at.x += font.get_string_size(_health[part], HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x

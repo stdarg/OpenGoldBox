@@ -12,6 +12,9 @@ extends SceneTree
 #   members it helps and no one else, take the price once paid, and cure;
 # - an inn must charge its platinum once a night, and its first night must
 #   restore the party.
+# In a shop the party's cards stand two to a row, each with its name, race and
+# class, then Armor Class and hit points; a wounded party's low hit points show
+# in yellow (under a fifth) or red (under a tenth).
 # Prints one "BUG:" line per problem and fails if there is any.
 #   godot --headless --path src/OpenGoldBox/godot --script tests/town_services_tests.gd \
 #       -- --fixtures=DIR [--only=temple-11-3] [--trail]
@@ -179,6 +182,7 @@ func check_shop(x: int, y: int, party: String) -> void:
 	if not await enter(shopping):
 		bug("the shop does not open", "(" + str(x) + "," + str(y) + ") dialogue '" + dialogue() + "'")
 		return
+	await check_shop_cards()
 	var record := record_at("shop", x, y)
 	var stock: Array = choices()
 	if record.is_empty():
@@ -212,6 +216,35 @@ func check_shop(x: int, y: int, party: String) -> void:
 		if not await press("CampaignTown/Continue"): await choose("")
 	if not exploring():
 		bug("leaving the shop does not return to the street", "dialogue '" + dialogue() + "'")
+
+# At the game's full size a shop's cards stand two to a row, each with three
+# lines; the check's own smaller window keeps one card a row.
+func check_shop_cards() -> void:
+	var window_size := root.size
+	root.size = Vector2i(1920, 1080)
+	await settle()
+	var rows: GridContainer = town().get_node("PartyList/Rows")
+	if rows.columns != 2:
+		bug("a shop's party list is not two cards wide", str(rows.columns) + " columns")
+	for row in rows.get_children():
+		if not (row as Control).visible: continue
+		var lines: PackedStringArray = (row as Button).tooltip_text.split("\n")
+		if lines.size() != 3 or not lines[1].contains(" / ") or not lines[2].begins_with("AC "):
+			bug("a shop's party card is not name, race / class, AC / HP", " | ".join(lines))
+	root.size = window_size
+	await settle()
+
+# Each card colors its current hit points by how low they are.
+func check_hit_point_colors() -> void:
+	for slot in range(8):
+		var row: Button = town().get_node_or_null("PartyList/Rows/Member" + str(slot))
+		if row == null or not row.visible: continue
+		var found := hp_pattern.search(row.tooltip_text)
+		var current := int(found.get_string(1))
+		var maximum := int(found.get_string(2))
+		var expected := &"hp_critical" if current * 10 < maximum else &"hp_low" if current * 5 < maximum else &""
+		if row.get("_health_color") != expected:
+			bug("a card colors its hit points wrongly", str(current) + "/" + str(maximum) + " shows '" + str(row.get("_health_color")) + "'")
 
 func buyer() -> Array:
 	var found := buyer_pattern.search(town().get_node("Speaker").text)
@@ -562,6 +595,7 @@ func run() -> void:
 		trail = []
 		if not await load_fixture(file): continue
 		places += 1
+		if party == "wounded": check_hit_point_colors()
 		if party == "outlaw":
 			await check_refusal()
 			continue

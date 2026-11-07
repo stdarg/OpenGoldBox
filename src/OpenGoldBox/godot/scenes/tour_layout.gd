@@ -30,6 +30,8 @@ func apply_layout(shopping: bool) -> void:
     advance(0)
     # Left playing, it would set its values again next frame, over the widths below.
     stop()
+    var rows: GridContainer = view.get_node("PartyList/Rows")
+    rows.columns = 1
     for child in view.get_children():
         if child is Control and child.has_meta("layout_reference"):
             _restore_control(child, view.size.x)
@@ -47,6 +49,10 @@ func apply_layout(shopping: bool) -> void:
         var party: Control = view.get_node("PartyList")
         var map: Control = view.get_node("MapBounds")
         party.size.x = minf(party.size.x, map.position.x - 16 - party.position.x)
+        # A shop's cards hold one column of lines, so two fit side by side
+        # unless the window is too narrow for them.
+        rows.columns = 2 if party.size.x >= view.get_theme_constant(
+            "tour_party_two_column_width", "OpenGoldMetrics") else 1
         # The shop's panel and what it holds stop short of the buttons beside it.
         var dialogue_bounds: Control = view.get_node("DialogueBounds")
         var overflow: float = (dialogue_bounds.position.x + dialogue_bounds.size.x + 8

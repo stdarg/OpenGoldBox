@@ -382,13 +382,17 @@ void RolfTourView::prepare_view()
     }
 }
 
+bool RolfTourView::shop_layout() const
+{
+    // A treasure lists its items as a shop does.
+    return session_ && (session_->snapshot().phase == TourPhase::shopping ||
+                        session_->snapshot().phase == TourPhase::treasure);
+}
+
 void RolfTourView::layout()
 {
     auto &shopping_layout = required_node<Node>(*this, "ShoppingLayout");
-    // A treasure lists its items as a shop does.
-    const bool shopping = session_ && (session_->snapshot().phase == TourPhase::shopping ||
-                                       session_->snapshot().phase == TourPhase::treasure);
-    shopping_layout.call("apply_layout", shopping);
+    shopping_layout.call("apply_layout", shop_layout());
     const auto bounds = [&](const char *name)
     {
         auto &control = required_node<Control>(*this, name);
@@ -2558,14 +2562,45 @@ GearLines gear_lines(const opengold::CampaignParty &party, const opengold::Party
     return {weapons.is_empty() ? i18n::text(N_("No weapon")) : weapons,
             armor.is_empty() ? i18n::text(N_("No armor")) : armor};
 }
+
+// The Armor Class and hit points line in three parts: before, at and after the
+// current hit points, so the row can color them alone wherever the language
+// puts them in the line.
+PackedStringArray armor_and_hit_points(int armor_class, int current, int maximum)
+{
+    // A private-use character no message holds marks the current hit points.
+    const auto marker = String::chr(0xE000);
+    const auto line =
+        i18n::format("AC {ac} / HP {current}/{maximum}",
+                     {{"ac", armor_class}, {"current", marker}, {"maximum", maximum}});
+    const auto at = line.find(marker);
+    return {line.substr(0, at), String::num_int64(current), line.substr(at + marker.length())};
+}
+
+// The palette color for the current hit points: yellow under a fifth of the
+// maximum, red under a tenth, none otherwise.
+StringName low_hit_points_color(int current, int maximum)
+{
+    if (current * 10 < maximum)
+    {
+        return "hp_critical";
+    }
+    if (current * 5 < maximum)
+    {
+        return "hp_low";
+    }
+    return {};
+}
 } // namespace
 
 // Each member's row: the portrait and the roster's lines, then Armor Class,
-// hit points and gear. The selected member, who receives services, is
+// hit points and gear. In a shop the row is compact: name, race and class, then
+// Armor Class and hit points. The selected member, who receives services, is
 // highlighted, and the list scrolls to them when the selection changes.
 void RolfTourView::show_party_rows()
 {
     const auto selected = campaign_ ? campaign_->state().selected_slot.index : 0U;
+    const bool compact = shop_layout();
     for (unsigned slot = 0; slot < 8; ++slot)
     {
         auto *button = &required_node<Button>(*this, String("PartyList/Rows/Member") +
@@ -2586,16 +2621,18 @@ void RolfTourView::show_party_rows()
         const auto &cs = m.character.sheet();
         const auto name = (leader ? String::utf8("★ ") : String()) + String::utf8(cs.name.c_str());
         const auto gear = gear_lines(*campaign_, m);
-        button->call("show_member",
-                     portraits_->texture(m.character.appearance(), m.character.creation_data()),
-                     PackedStringArray({name, i18n::class_summary(cs), i18n::text(cs.race),
-                                        i18n::text(cs.gender)}),
-                     PackedStringArray({i18n::format("AC {ac} / HP {current}/{maximum}",
-                                                     {{"ac", campaign_->profile(id).armor_class},
-                                                      {"current", m.vitals.hit_points},
-                                                      {"maximum", cs.hit_points}}),
-                                        gear.weapons, gear.armor}),
-                     leader);
+        const auto identity =
+            compact
+                ? PackedStringArray({name, i18n::text(cs.race) + " / " + i18n::class_summary(cs)})
+                : PackedStringArray(
+                      {name, i18n::class_summary(cs), i18n::text(cs.race), i18n::text(cs.gender)});
+        button->call(
+            "show_member",
+            portraits_->texture(m.character.appearance(), m.character.creation_data()), identity,
+            armor_and_hit_points(campaign_->profile(id).armor_class, m.vitals.hit_points,
+                                 cs.hit_points),
+            low_hit_points_color(m.vitals.hit_points, cs.hit_points),
+            compact ? PackedStringArray() : PackedStringArray({gear.weapons, gear.armor}), leader);
         auto *arrow = &required_node<Button>(*button, "Advance");
         arrow->call("place_in_member_row", name);
         arrow->set_visible(embedded_party_ && campaign_->can_advance(id) && session_->can_leave());

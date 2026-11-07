@@ -292,6 +292,8 @@ class RolfTourView : public godot::Control
     void party_selected(std::int64_t index);
     // A double click also opens the member's sheet.
     void open_member_sheet(std::int64_t index);
+    // A shop or a treasure is showing, which lays the screen out for its list.
+    [[nodiscard]] bool shop_layout() const;
     void show_party_rows();
     void level_up_requested(int slot);
     void close_sheet();
