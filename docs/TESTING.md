@@ -62,6 +62,14 @@ the checks are simply **not registered** — confirm they exist with
 path, so each holds a CTest `RESOURCE_LOCK`; `ctest -j` runs them one at a time
 while native tests run alongside.
 
+On macOS the checks run a copy of the installed Godot that never shows in the
+Dock, made at configure time in the build folder's `godot-out-of-dock`
+([godot_out_of_dock.cmake](../cmake/godot_out_of_dock.cmake)). Godot makes
+itself a Dock app whatever its bundle says, so the copy starts with
+`tools/godot_out_of_dock/no_dock.c` loaded, which keeps it a UI element: its
+windows open, but a test run puts no Godot icons in the Dock. Exports,
+packaging and the developer tools' own windows use the installed Godot.
+
 ### Known pre-existing Godot failures
 
 As of 2026-09-26, on Windows, two game-side Godot checks fail at the commit that

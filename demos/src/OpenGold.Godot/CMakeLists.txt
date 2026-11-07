@@ -55,25 +55,27 @@ if(OPENGOLD_BUILD_TESTS)
                        "Set OPENGOLD_DEMO_GODOT to its path to enable them.")
     endif()
     if(OPENGOLD_DEMO_GODOT)
+        include("${PROJECT_SOURCE_DIR}/cmake/godot_out_of_dock.cmake")
+        opengold_check_godot("${OPENGOLD_DEMO_GODOT}" OPENGOLD_DEMO_CHECK_GODOT)
         set(demo_project "${PROJECT_SOURCE_DIR}/demos/godot")
         add_test(NAME opengold_demo_prepare COMMAND "${OPENGOLD_DEMO_GODOT}"
             --headless --editor --path "${demo_project}" --import --quit)
         set_tests_properties(opengold_demo_prepare PROPERTIES FIXTURES_SETUP demo_project TIMEOUT 120 LABELS demo)
         add_test(NAME opengold_godot_body_review COMMAND "${CMAKE_COMMAND}"
-            "-DGODOT=${OPENGOLD_DEMO_GODOT}" "-DPROJECT=${demo_project}"
+            "-DGODOT=${OPENGOLD_DEMO_CHECK_GODOT}" "-DPROJECT=${demo_project}"
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/combat_body_review_tests.gd"
             "-DEXPECTED=Combat body reviewer checks passed" -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
         # The demo checks share one Godot project; ctest -j must run them one at a time.
         set_tests_properties(opengold_godot_body_review PROPERTIES FIXTURES_REQUIRED demo_project TIMEOUT 40 LABELS demo
             RESOURCE_LOCK demo_project)
         add_test(NAME opengold_godot_sprite_demo COMMAND "${CMAKE_COMMAND}"
-            "-DGODOT=${OPENGOLD_DEMO_GODOT}" "-DPROJECT=${demo_project}"
+            "-DGODOT=${OPENGOLD_DEMO_CHECK_GODOT}" "-DPROJECT=${demo_project}"
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/combat_sprite_demo_tests.gd"
             "-DEXPECTED=Combat sprite demo checks passed" -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
         set_tests_properties(opengold_godot_sprite_demo PROPERTIES FIXTURES_REQUIRED demo_project TIMEOUT 40 LABELS demo
             RESOURCE_LOCK demo_project ENVIRONMENT "OPENGOLD_GAME_DIR=;OPENGOLD_SCREENSHOT_DIR=${CMAKE_BINARY_DIR}/sprite-demo-screenshots")
         add_test(NAME opengold_godot_equipment_demo COMMAND "${CMAKE_COMMAND}"
-            "-DGODOT=${OPENGOLD_DEMO_GODOT}" "-DPROJECT=${demo_project}"
+            "-DGODOT=${OPENGOLD_DEMO_CHECK_GODOT}" "-DPROJECT=${demo_project}"
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/equipment_sprite_demo_tests.gd"
             "-DEXPECTED=Equipment sprite demo checks passed" -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
         set_tests_properties(opengold_godot_equipment_demo PROPERTIES FIXTURES_REQUIRED demo_project TIMEOUT 40 LABELS demo
@@ -82,7 +84,7 @@ if(OPENGOLD_BUILD_TESTS)
         # OPENGOLD_GAME_DIR names the original files. The map inspector reads
         # maps through build/opengold_maps, which ./build.sh default builds.
         add_test(NAME opengold_godot_ecl_art COMMAND "${CMAKE_COMMAND}"
-            "-DGODOT=${OPENGOLD_DEMO_GODOT}" "-DPROJECT=${demo_project}"
+            "-DGODOT=${OPENGOLD_DEMO_CHECK_GODOT}" "-DPROJECT=${demo_project}"
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/ecl_art_tests.gd"
             "-DEXPECTED=PASS: ECL decoder, script evidence, and review integration"
             "-DUSER_HOME=${CMAKE_BINARY_DIR}/godot-home/ecl_art"
@@ -90,7 +92,7 @@ if(OPENGOLD_BUILD_TESTS)
         set_tests_properties(opengold_godot_ecl_art PROPERTIES FIXTURES_REQUIRED demo_project
             TIMEOUT 120 LABELS demo RESOURCE_LOCK demo_project)
         add_test(NAME opengold_godot_map_inspector COMMAND "${CMAKE_COMMAND}"
-            "-DGODOT=${OPENGOLD_DEMO_GODOT}" "-DPROJECT=${demo_project}"
+            "-DGODOT=${OPENGOLD_DEMO_CHECK_GODOT}" "-DPROJECT=${demo_project}"
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/map_inspector_tests.gd"
             "-DEXPECTED=Map inspector tests passed"
             "-DUSER_HOME=${CMAKE_BINARY_DIR}/godot-home/map_inspector"

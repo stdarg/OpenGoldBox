@@ -19,6 +19,8 @@ get_target_property(godot_cpp_includes godot-cpp INTERFACE_INCLUDE_DIRECTORIES)
 set_target_properties(godot-cpp PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${godot_cpp_includes}")
 find_program(OPENGOLDBOX_GODOT NAMES godot_console godot Godot
     HINTS "/Applications/Godot.app/Contents/MacOS" "/Applications/Godot_mono.app/Contents/MacOS" REQUIRED)
+include("${PROJECT_SOURCE_DIR}/cmake/godot_out_of_dock.cmake")
+opengold_check_godot("${OPENGOLDBOX_GODOT}" OPENGOLDBOX_CHECK_GODOT)
 set(game_project "${CMAKE_CURRENT_SOURCE_DIR}/godot")
 if(WIN32)
     set(OPENGOLDBOX_DEBUG_TEMPLATE "${PROJECT_SOURCE_DIR}/build/export-templates/windows_debug_x86_64.exe"
@@ -205,7 +207,7 @@ if(OPENGOLD_BUILD_TESTS)
         LABELS godot RESOURCE_LOCK godot_project)
     function(opengold_godot_test name script expected)
         add_test(NAME "opengold_godot_${name}" COMMAND "${CMAKE_COMMAND}"
-            "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+            "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/${script}.gd" "-DEXPECTED=${expected}" "-DARGS=${ARGN}"
             "-DUSER_HOME=${CMAKE_BINARY_DIR}/godot-home/${name}"
             -P "${PROJECT_SOURCE_DIR}/tests/run_godot_test.cmake")
@@ -221,7 +223,7 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_components PROPERTIES FIXTURES_REQUIRED "godot_project;component_fixtures")
     # Drawn to a real window: the check reads the pixels a player would see.
     add_test(NAME opengold_godot_spell_effects COMMAND "${CMAKE_COMMAND}"
-        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/spell_effects_view_tests.gd"
         "-DEXPECTED=Spell effect view checks passed" -DGRAPHICAL=ON -DTEST_TIMEOUT=110
         "-DARGS=--component-fixtures=${PROJECT_BINARY_DIR}/component-fixtures"
@@ -346,7 +348,7 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_expedition_fixtures PROPERTIES FIXTURES_SETUP expedition_fixtures
         TIMEOUT 600 SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_ohlo_save_route COMMAND "${CMAKE_COMMAND}"
-        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/ohlo-save-route"
@@ -354,7 +356,7 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_ohlo_save_route PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 240 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_area_crossing COMMAND "${CMAKE_COMMAND}"
-        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/area-crossing"
@@ -362,7 +364,7 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_area_crossing PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 240 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_shop_disclosure COMMAND "${CMAKE_COMMAND}"
-        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/shop-disclosure"
         -P "${PROJECT_SOURCE_DIR}/tests/shop_disclosure.cmake")
@@ -370,7 +372,7 @@ if(OPENGOLD_BUILD_TESTS)
         TIMEOUT 240 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     # Every New Phlan shop, temple and inn, with original files.
     add_test(NAME opengold_godot_town_services COMMAND "${CMAKE_COMMAND}"
-        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/town-services"
         -P "${PROJECT_SOURCE_DIR}/tests/town_services.cmake")
@@ -379,7 +381,7 @@ if(OPENGOLD_BUILD_TESTS)
     # A sample of the Slums' event squares, every branch of each event, the
     # first fight of each played out, with original files.
     add_test(NAME opengold_godot_slums_events COMMAND "${CMAKE_COMMAND}"
-        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/slums-events"
         -P "${PROJECT_SOURCE_DIR}/tests/slums_events.cmake")
@@ -387,35 +389,35 @@ if(OPENGOLD_BUILD_TESTS)
         TIMEOUT 600 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     # A sample of every other map's event squares, the same way.
     add_test(NAME opengold_godot_area_events COMMAND "${CMAKE_COMMAND}"
-        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/area-events"
         -P "${PROJECT_SOURCE_DIR}/tests/area_events.cmake")
     set_tests_properties(opengold_godot_area_events PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 600 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_training_hall COMMAND "${CMAKE_COMMAND}"
-        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/training-hall"
         -P "${PROJECT_SOURCE_DIR}/tests/training_hall_view.cmake")
     set_tests_properties(opengold_godot_training_hall PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 240 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_slums_encounter COMMAND "${CMAKE_COMMAND}"
-        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/slums-encounter"
         -P "${PROJECT_SOURCE_DIR}/tests/slums_encounter.cmake")
     set_tests_properties(opengold_godot_slums_encounter PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 450 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_weapon_sets COMMAND "${CMAKE_COMMAND}"
-        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/weapon-sets"
         -P "${PROJECT_SOURCE_DIR}/tests/weapon_sets.cmake")
     set_tests_properties(opengold_godot_weapon_sets PROPERTIES FIXTURES_REQUIRED "godot_project;expedition_fixtures"
         TIMEOUT 300 LABELS godot RESOURCE_LOCK godot_project SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_slums_ui_audit COMMAND "${CMAKE_COMMAND}"
-        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DFIXTURES=${CMAKE_BINARY_DIR}/expedition-fixtures"
         "-DPLAYTEST_FIXTURES=${PROJECT_BINARY_DIR}/playtest-fixtures"
         "-DWORK=${CMAKE_BINARY_DIR}/slums-ui-audit"
@@ -428,7 +430,7 @@ if(OPENGOLD_BUILD_TESTS)
     # keeps its Godot user data under WORK (see original_view_check.cmake).
     function(opengold_original_check name expected)
         add_test(NAME "opengold_godot_${name}" COMMAND "${CMAKE_COMMAND}"
-            "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}" "-DEXPECTED=${expected}"
+            "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}" "-DEXPECTED=${expected}"
             "-DWORK=${CMAKE_BINARY_DIR}/original-checks/${name}" ${ARGN}
             -P "${PROJECT_SOURCE_DIR}/tests/original_view_check.cmake")
         set_tests_properties("opengold_godot_${name}" PROPERTIES
@@ -575,7 +577,7 @@ if(OPENGOLD_BUILD_TESTS)
     # keeps the developer's own copy aside. Skipped without OPENGOLD_GAME_DIR.
     function(opengold_settings_check name script expected)
         add_test(NAME "opengold_godot_${name}" COMMAND "${CMAKE_COMMAND}"
-            "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
+            "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/${script}.gd" "-DEXPECTED=${expected}"
             "-DWORK=${CMAKE_BINARY_DIR}/settings-checks/${name}"
             "-DKEPT=${CMAKE_BINARY_DIR}/settings-checks/developer-settings" ${ARGN}
@@ -670,7 +672,7 @@ if(OPENGOLD_BUILD_TESTS)
     # The game ships data/monsters, the Combat Sprite Catalog's export; catalog
     # changes committed without exporting would never reach the game.
     add_test(NAME opengold_monster_export_check COMMAND "${CMAKE_COMMAND}"
-        "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${PROJECT_SOURCE_DIR}/dev_tools/combat_sprite_catalog/godot"
+        "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${PROJECT_SOURCE_DIR}/dev_tools/combat_sprite_catalog/godot"
         "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/monster_export_tests.gd"
         "-DEXPECTED=Monster export checks passed" "-DUSER_HOME=${CMAKE_BINARY_DIR}/godot-home/monster_export"
         -DTEST_TIMEOUT=100
