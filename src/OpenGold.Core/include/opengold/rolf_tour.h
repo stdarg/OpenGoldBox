@@ -431,6 +431,12 @@ class RolfTourSession
         return shops_;
     }
 
+    // Every shop's items, in the order of shops(), at their prices (SELL-1).
+    [[nodiscard]] const std::vector<std::vector<Equipment>> &town_stock() const noexcept
+    {
+        return shop_stocks_;
+    }
+
     [[nodiscard]] const TourSnapshot &snapshot() const noexcept
     {
         return snapshot_;

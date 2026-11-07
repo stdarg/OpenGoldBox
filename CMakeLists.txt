@@ -133,6 +133,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/ecl_party_host.cpp
     src/OpenGold.Core/src/npc_portraits.cpp
     src/OpenGold.Core/src/shop_data.cpp
+    src/OpenGold.Core/src/shop_sale.cpp
     src/OpenGold.Core/src/encounter_data.cpp
     src/OpenGold.Core/src/json_document.cpp
     src/OpenGold.Core/src/creature_art.cpp src/OpenGold.Core/src/monster_bundle.cpp
@@ -663,6 +664,10 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_sell_drop_tests PRIVATE opengold_rules_srd5 opengold_core)
     target_compile_definitions(opengold_sell_drop_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_sell_drop_tests COMMAND opengold_sell_drop_tests)
+    add_executable(opengold_shop_sale_tests tests/shop_sale_tests.cpp)
+    target_link_libraries(opengold_shop_sale_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_compile_definitions(opengold_shop_sale_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_shop_sale_tests COMMAND opengold_shop_sale_tests)
     add_executable(opengold_multiclass_tests tests/multiclass_tests.cpp)
     target_link_libraries(opengold_multiclass_tests PRIVATE opengold_rules_srd5 opengold_core)
     target_compile_definitions(opengold_multiclass_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

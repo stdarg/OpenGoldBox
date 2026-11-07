@@ -816,6 +816,11 @@ void RolfTourView::identify_item()
     }
 }
 
+opengold::SaleMarket RolfTourView::sale_market() const
+{
+    return {.shop = session_->shop_stock(), .town = session_->town_stock()};
+}
+
 void RolfTourView::give_up_item(bool sell)
 {
     try
@@ -843,16 +848,19 @@ void RolfTourView::give_up_item(bool sell)
         {
             give_up_warned_ = GiveUpWarning{item, sell};
             status.set_text(
-                sell ? i18n::format(N_("The shop offers {gold} gp for {item}. Press Sell again to sell it."),
-                                    {{"gold", campaign_->sale_offer(id, item)}, {"item", label}})
-                     : i18n::format(N_("{item} will be gone for good. Press Drop again to drop it."),
-                                    {{"item", label}}));
+                sell
+                    ? i18n::format(
+                          N_("The shop offers {gold} gp for {item}. Press Sell again to sell it."),
+                          {{"gold", campaign_->sale_offer(id, item, sale_market())},
+                           {"item", label}})
+                    : i18n::format(N_("{item} will be gone for good. Press Drop again to drop it."),
+                                   {{"item", label}}));
             return;
         }
         String done;
         if (sell)
         {
-            const auto gold = campaign_->sell(id, item);
+            const auto gold = campaign_->sell(id, item, sale_market());
             done = i18n::format(N_("{name} sells {item} for {gold} gp."),
                                 {{"name", name}, {"item", label}, {"gold", gold}});
         }

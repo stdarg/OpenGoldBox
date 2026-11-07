@@ -1890,7 +1890,7 @@ bool CampaignParty::identify_at_shop(MemberId id, std::uint64_t item)
     return revealed;
 }
 
-unsigned CampaignParty::sale_offer(MemberId id, std::uint64_t item) const
+unsigned CampaignParty::sale_offer(MemberId id, std::uint64_t item, const SaleMarket &market) const
 {
     const auto &m = member(id);
     const auto carried = m.character.inventory().find(item);
@@ -1899,16 +1899,20 @@ unsigned CampaignParty::sale_offer(MemberId id, std::uint64_t item) const
     {
         return 0;
     }
-    // A stack partly used up is worth its share of the price.
-    const std::uint64_t full = std::max(carried_quantity(source->second), 1u);
-    const std::uint64_t left = std::min<std::uint64_t>(carried->get().quantity, full);
-    return static_cast<unsigned>(source->second.stored.value * left / full / 2);
+    const auto charisma_modifier = [&](MemberId who)
+    {
+        return member(who).character.sheet().modifiers[rules::Ability::charisma];
+    };
+    const auto speaker = leader();
+    const int bargainer = speaker ? std::max(charisma_modifier(id), charisma_modifier(speaker))
+                                  : charisma_modifier(id);
+    return shop_offer(source->second, carried->get().quantity, bargainer, market);
 }
 
-unsigned CampaignParty::sell(MemberId id, std::uint64_t item)
+unsigned CampaignParty::sell(MemberId id, std::uint64_t item, const SaleMarket &market)
 {
     editable();
-    const auto offer = sale_offer(id, item);
+    const auto offer = sale_offer(id, item, market);
     if (offer > purse_limit - coins(state_.wealth, Coin::gold))
     {
         throw std::runtime_error("The party purse cannot hold more coins");

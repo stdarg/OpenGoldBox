@@ -5,6 +5,7 @@
 #include "opengold/rolf_tour.h"
 #include <cstdint>
 #include <string_view>
+#include <vector>
 
 namespace opengold::test
 {
@@ -43,6 +44,25 @@ struct TourAccess
     static const por::OverlandWorld &overland_world(const por::RolfTourSession &town)
     {
         return *town.town_->overland;
+    }
+
+    // Everything the creatures of New Phlan and its districts carry into a fight.
+    static std::vector<por::Equipment> creature_equipment(const por::RolfTourSession &town)
+    {
+        std::vector<por::Equipment> gear;
+        const auto add = [&](const por::PhlanResources &area)
+        {
+            for (const auto &[record, creature] : area.encounter_creatures)
+            {
+                gear.insert(gear.end(), creature.equipment.begin(), creature.equipment.end());
+            }
+        };
+        add(*town.town_);
+        for (const auto &[map, district] : town.town_->districts)
+        {
+            add(*district);
+        }
+        return gear;
     }
 
     // The original's closing story, as read from the player's GAME.OVR.

@@ -107,7 +107,8 @@ Stock may be purchased repeatedly: the game keeps no stock limits yet.
 The demo has a 16-entry inventory limit and rejects invalid/stale requests,
 unaffordable purchases and purchases when full without charging gold.
 The inventory's Sell, shown in a shop, sells any item but a cursed one for half
-its price, and Drop, anywhere outside a fight, throws it away
+what the shops sell it for, bargained by Charisma
+([the sale price](SRD-DECISIONS.md#the-sale-price)), and Drop, anywhere outside a fight, throws it away
 ([SELL-1](SRD-DECISIONS.md#sell-1-2026-11-05-selling-and-dropping-items)); see
 [party](PARTY.md) for equipping and using items.
 What the chosen buyer cannot use fully is listed in dark red, with a note

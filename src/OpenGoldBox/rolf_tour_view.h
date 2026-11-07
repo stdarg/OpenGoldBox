@@ -283,6 +283,8 @@ class RolfTourView : public godot::Control
     // The shop's Sell (sell) or Drop: the first press says what happens, the
     // second gives the selected item up.
     void give_up_item(bool sell);
+    // The prices a sale is judged by: the shop the party is in and the town's (SELL-1).
+    [[nodiscard]] opengold::SaleMarket sale_market() const;
     void cast_identify();
     void use_inventory_item();
     void check_identification_spells();

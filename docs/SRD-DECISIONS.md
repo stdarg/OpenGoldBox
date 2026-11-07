@@ -2382,12 +2382,12 @@ dropped, unless it is cursed, and that a dropped item vanishes. As in the
 original's Sell and Drop:
 
 - **Sell**, in the inventory while the party is in any shop: the first press
-  shows the shop's offer, half the item's price in gold pieces, rounded down;
-  the second press sells the item and the gold goes to the party purse. A
-  stack partly used up (potions, flasks of oil) sells for its share of the
-  price. An item with no original record, such as a scroll a member wrote,
-  sells for nothing. The shop does not add what it buys to its stock, as the
-  original's shops let it go at once.
+  shows the shop's offer (see [the sale price](#the-sale-price) below); the
+  second press sells the item and the gold goes to the party purse. A stack
+  partly used up (potions, flasks of oil) sells for its share of the price.
+  An item with no original record, such as a scroll a member wrote, sells for
+  nothing. The shop does not add what it buys to its stock, as the original's
+  shops let it go at once.
 - **Drop**, in the inventory anywhere outside a fight: the first press warns
   that the item will be gone for good, the second drops it. It cannot be picked
   up again.
@@ -2398,6 +2398,38 @@ original's Sell and Drop:
   its wielder ([MAGIC-1](#magic-1-2026-10-17-the-originals-enchanted-weapons-and-armor)).
   Coins, gems and jewelry are in the party purse, not an inventory, and are not
   sold this way.
+
+### The sale price
+
+The user set the price on 2026-11-07, replacing the first version's half of
+each item's own stored value, which made a monster's Short Sword worth 0 or
+1 gp:
+
+- **Half what the shops sell the item for.** New Phlan's shops ask the same
+  for the same item, so the price is the shop's own when it sells the item,
+  and another shop's otherwise. A plain Short Sword fetches half of 8 gp,
+  whoever carried it before.
+- **Magic gear no shop sells**, such as a Long Sword +2, goes by half its own
+  stored value, which is far higher.
+- **Charisma bargains.** The higher Charisma modifier of the seller and the
+  party's leader adds or takes 10% of that half for each point:
+
+  | Charisma | 3 | 4–5 | 6–7 | 8–9 | 10–11 | 12–13 | 14–15 | 16–17 | 18–19 | 20–21 | 22–23 | 24–25 | 26–27 | 28–29 | 30 |
+  | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+  | Share of the shop's price | 30% | 35% | 40% | 45% | 50% | 55% | 60% | 65% | 70% | 75% | 80% | 85% | 90% | 95% | 100% |
+
+  At Charisma 30 an item sells for what the shop asks, so buying and selling
+  never makes money.
+- **A shop that sells nothing of the item's base type pays 25% less**: the
+  general store for a Short Sword, an armory for a flask of oil. The base type
+  is the original's item type, so the armory, selling Short Swords, pays in
+  full for a Silver Short Sword, priced at the silversmith's 80 gp.
+- **An item not yet identified could be cursed**: the shop pays half what it
+  would for the item's unenchanted version, the one its visible name words
+  name. An unidentified Long Sword fetches half of a plain Long Sword's 7 gp.
+  One with no unenchanted version in any shop, such as an unidentified ring,
+  potion, wand or scroll, fetches nothing.
+- The offer is rounded down once, after every share.
 
 ## MULTI-1 (2026-11-05): multiclassing
 

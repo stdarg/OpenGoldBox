@@ -93,9 +93,14 @@ Add an entry whenever a new departure is decided.
   [EQUIP-1](SRD-DECISIONS.md#equip-1-2026-11-05-auto-equip-better-gear).
 - **Selling and dropping** (2026-11-05). The original's Sell and Drop work
   on any item but a cursed one, which stays even when it is only in the pack
-  and not yet known to be cursed. A shop pays half the price, a partly used
-  stack its share, and takes a stack whole.
-  [SELL-1](SRD-DECISIONS.md#sell-1-2026-11-05-selling-and-dropping-items).
+  and not yet known to be cursed. A shop pays half what the shops sell the
+  item for, not half the item's own stored value: a monster's Short Sword
+  fetches the same as a bought one (2026-11-07). The higher Charisma of the
+  seller and the leader adds or takes 10% a point, a shop that sells nothing
+  of the item's type pays 25% less, and an unidentified item fetches half its
+  unenchanted version's price. A partly used stack sells for its share, and a
+  stack goes whole.
+  [SELL-1](SRD-DECISIONS.md#the-sale-price).
 - **Worn items** (2026-10-20). A Ring of Protection adds its bonus to saving
   throws as well as Armor Class, and it keeps working beside magic armor, which
   in the original cancelled it. Gauntlets of Ogre Power give the SRD's
