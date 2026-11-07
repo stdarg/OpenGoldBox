@@ -2343,9 +2343,9 @@ gear is gained, and decided on 2026-11-04 and 2026-11-05:
 
 - **A setting**, "Automatically equip items better than currently equipped
   items", on the Options screen's Gameplay page, On by default. Any time a
-  weapon, armor or shield reaches a character's pack (bought in a shop, or
-  found as treasure), it goes on when it is better; what it replaces goes to
-  the pack.
+  weapon, armor, shield or worn item reaches a character's pack (bought in a
+  shop, or found as treasure), it goes on when it is better; what it replaces
+  goes to the pack.
 - **Weapons** are better when their expected damage over a round of attacks
   is higher: the chance to hit with the character's attack bonus for that
   weapon (proficiency counts toward it, it is not a condition), times the
@@ -2358,6 +2358,14 @@ gear is gained, and decided on 2026-11-04 and 2026-11-05:
   is higher. Armor or a shield the character is not trained with, and armor
   whose Strength the character lacks, stays in the pack; equipping by hand
   keeps the SRD's rules for them.
+- **Worn items** (2026-11-07): rings, the necklace, bracers, cloaks,
+  gauntlets and boots ([MAGIC-5](#magic-5-2026-10-20-rings-bracers-and-other-worn-items))
+  are better when the character's Armor Class or damage is higher with them,
+  as a Ring of Protection, Bracers or Gauntlets of Ogre Power make it. One
+  goes on in a free place (two rings, one of each other kind) unless it makes
+  either worse, since a Ring of Fire Resistance or Boots of Elvenkind help in
+  ways the comparison does not measure; it replaces a worn one only when
+  better.
 - **Maximize defense or Maximize damage**: each character's own setting, on
   its sheet while auto-equip is on (Maximize defense at first). It settles
   every choice between a shield and a second hand on the weapon (a

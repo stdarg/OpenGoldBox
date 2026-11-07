@@ -1534,7 +1534,8 @@ CampaignParty::equipment_plans(const PartyMember &m, std::uint64_t item,
         const auto known = rules::parse_item_key(rules_definition(m, entry));
         const auto info = rules_->equipment_info(entry.definition_id);
         const bool gear = (info.slot == EquipmentSlot::weapon && !info.ranged) ||
-                          info.slot == EquipmentSlot::armor || info.slot == EquipmentSlot::shield;
+                          info.slot == EquipmentSlot::armor || info.slot == EquipmentSlot::shield ||
+                          info.slot == EquipmentSlot::worn;
         const bool refused =
             known.unidentified ? unidentified == UnidentifiedMagic::skip
                                : known.power == rules::ItemPower::cursed || refuses_wielder(m, id);
@@ -1549,7 +1550,7 @@ CampaignParty::equipment_plans(const PartyMember &m, std::uint64_t item,
     {
         return rules_->equipment_info(m.character.inventory().find(id)->get().definition_id);
     };
-    std::vector<std::uint64_t> weapons, shields, armor;
+    std::vector<std::uint64_t> weapons, shields, armor, worn;
     for (const auto id : m.equipped)
     {
         switch (slot_of(id).slot)
@@ -1562,6 +1563,9 @@ CampaignParty::equipment_plans(const PartyMember &m, std::uint64_t item,
             break;
         case EquipmentSlot::armor:
             armor.push_back(id);
+            break;
+        case EquipmentSlot::worn:
+            worn.push_back(id);
             break;
         default:
             break;
@@ -1583,7 +1587,17 @@ CampaignParty::equipment_plans(const PartyMember &m, std::uint64_t item,
     };
     const auto gained = slot_of(item);
     std::vector<EquipmentPlan> plans;
-    if (gained.slot == EquipmentSlot::armor)
+    if (gained.slot == EquipmentSlot::worn)
+    {
+        // In a free place first; or in place of a worn item. The rules refuse
+        // a plan that leaves too many rings, or two of another kind.
+        plans.push_back({{item, EquipmentOperation::equip}});
+        for (const auto id : worn)
+        {
+            plans.push_back({{id, EquipmentOperation::unequip}, {item, EquipmentOperation::equip}});
+        }
+    }
+    else if (gained.slot == EquipmentSlot::armor)
     {
         plans.push_back(then(taking_off(armor), item, EquipmentOperation::equip));
     }
@@ -1682,7 +1696,11 @@ std::optional<GearChange> CampaignParty::auto_equip(MemberId id, std::uint64_t i
     };
     const auto preference = member(id).gear_preference;
     const auto armed = count_weapons(member(id)) > 0;
-    auto best = known_gear_rating(member(id));
+    const auto worn_item =
+        rules_->equipment_info(member(id).character.inventory().find(item)->get().definition_id)
+            .slot == rules::EquipmentSlot::worn;
+    const auto current = known_gear_rating(member(id));
+    auto best = current;
     std::optional<std::size_t> chosen;
     // Each plan is tried on the party itself and the party put back after.
     const auto before = state_;
@@ -1699,7 +1717,12 @@ std::optional<GearChange> CampaignParty::auto_equip(MemberId id, std::uint64_t i
             if (!armed || count_weapons(trial) > 0)
             {
                 const auto rating = known_gear_rating(trial);
-                if (better_gear(rating, best, preference))
+                // A worn item in a free place goes on unless it makes the gear
+                // worse: a Ring of Fire Resistance helps in ways the rating
+                // does not measure.
+                const bool free_place = worn_item && n == 0;
+                if (better_gear(rating, best, preference) ||
+                    (free_place && !better_gear(current, rating, preference)))
                 {
                     best = rating;
                     chosen = n;

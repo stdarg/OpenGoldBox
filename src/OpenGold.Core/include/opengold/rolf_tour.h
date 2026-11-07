@@ -654,7 +654,7 @@ class RolfTourSession
     std::vector<Equipment> treasure_;
     // Records a player's action in the game's log, with where the party stands.
     void log_player(const std::string &action) const;
-    // Auto-equip for each weapon, armor or shield a member gained since
+    // Auto-equip for each weapon, armor, shield or worn item a member gained since
     // `before`, each member's items then.
     using HeldItems = std::vector<std::pair<opengold::MemberId, std::uint64_t>>;
     [[nodiscard]] HeldItems held_items() const;

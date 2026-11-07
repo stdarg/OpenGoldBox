@@ -88,7 +88,8 @@ Add an entry whenever a new departure is decided.
   [EQUIP-1](SRD-DECISIONS.md#equip-1-2026-11-05-auto-equip-better-gear).
 - **Auto-equip** (2026-11-05). In the original a character put on gear only
   when the player readied it. OpenGoldBox, unless the Options screen turns it
-  off, puts a better weapon, armor or shield on the character who gains it, by
+  off, puts a better weapon, armor, shield, ring, necklace, bracers, cloak,
+  gauntlets or boots on the character who gains it, by
   each character's Maximize defense or Maximize damage.
   [EQUIP-1](SRD-DECISIONS.md#equip-1-2026-11-05-auto-equip-better-gear).
 - **Selling and dropping** (2026-11-05). The original's Sell and Drop work

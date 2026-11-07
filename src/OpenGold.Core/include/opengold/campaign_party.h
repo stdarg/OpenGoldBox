@@ -301,12 +301,13 @@ class CampaignParty
     // Whether the member could use `item` fully (the rules' can_use_item):
     // a shop or a treasure shows the rest in dark red.
     [[nodiscard]] bool can_use(MemberId id, const por::Equipment &item) const;
-    // Auto-equip (EQUIP-1): a melee weapon, armor or shield the member just
+    // Auto-equip (EQUIP-1): a melee weapon, armor, shield or worn item (a
+    // ring, bracers, a cloak, gauntlets, a necklace or boots) the member just
     // gained goes on when the gear it makes rates better than what the
-    // member wears, by the member's gear preference; whatever it replaces
-    // goes to the pack. Untrained armor, armor the member lacks the Strength
-    // for, a known cursed item and, when asked, an unidentified magic item
-    // stay in the pack. Nothing is returned when nothing changed.
+    // member wears, by the member's gear preference, and a worn item in a free
+    // place unless it rates worse; whatever it replaces goes to the pack. Untrained armor, armor
+    // the member lacks the Strength for, a known cursed item and, when asked, an unidentified magic
+    // item stay in the pack. Nothing is returned when nothing changed.
     std::optional<GearChange> auto_equip(MemberId id, std::uint64_t item,
                                          UnidentifiedMagic unidentified);
     // Reads a Manual of Bodily Health the member carries (MAGIC-3):

@@ -1,7 +1,8 @@
-// Auto-equip (EQUIP-1 in docs/SRD-DECISIONS.md): a weapon, armor or shield a
-// member gains goes on when the gear it makes is better, by the member's
-// preference for defense or damage; untrained or too heavy armor, ranged
-// weapons, known cursed items and, when asked, unidentified magic stay packed.
+// Auto-equip (EQUIP-1 in docs/SRD-DECISIONS.md): a weapon, armor, shield or
+// worn item a member gains goes on when the gear it makes is better, by the
+// member's preference for defense or damage, and a worn item in a free place
+// unless it is worse; untrained or too heavy armor, ranged weapons, known
+// cursed items and, when asked, unidentified magic stay packed.
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
@@ -24,7 +25,9 @@ using opengold::test::check;
 
 // Original item types (the original's item list).
 constexpr std::uint8_t dagger = 8, long_sword = 36, short_sword = 37, two_handed_sword = 38,
-                       long_bow = 43, leather = 50, ring_mail = 53, chain_mail = 55, shield = 59;
+                       long_bow = 43, leather = 50, ring_mail = 53, chain_mail = 55, shield = 59,
+                       gauntlets = 63, fire_resistance = 69, necklace = 76, bracers = 77,
+                       feather_falling = 90, protection = 93;
 
 std::unique_ptr<RulesModule> module()
 {
@@ -217,6 +220,57 @@ void armor()
           "Ring Mail asks for no Strength");
 }
 
+// The keys of the items the member wears, sorted.
+std::vector<std::string> worn_keys(const CampaignParty &party, MemberId id)
+{
+    std::vector<std::string> keys;
+    for (const auto equipped : party.member(id).equipped)
+    {
+        keys.push_back(party.member(id).character.inventory().find(equipped)->get().definition_id);
+    }
+    std::sort(keys.begin(), keys.end());
+    return keys;
+}
+
+// A ring, bracers or gauntlets go on when they raise Armor Class or damage;
+// a ring whose help the rating cannot see goes on in a free place but takes
+// no worn ring's place, and a better ring replaces a weaker one. A known
+// cursed necklace stays packed.
+void worn_items()
+{
+    using keys = std::vector<std::string>;
+    CampaignParty party(module());
+    const auto id = party.add_pc(fighter());
+    wield(party, id, item(chain_mail));
+    check(take(party, id, item(protection, 1)) &&
+              worn_keys(party, id) == keys{"chain_mail", "ring_of_protection+1"},
+          "A Ring of Protection goes on");
+    check(take(party, id, item(fire_resistance)) &&
+              worn_keys(party, id) ==
+                  keys{"chain_mail", "ring_of_fire_resistance", "ring_of_protection+1"},
+          "A Ring of Fire Resistance goes on the other hand");
+    check(!take(party, id, item(feather_falling)),
+          "A third ring that rates no better stays in the pack");
+    const auto better = take(party, id, item(protection, 2));
+    check(better && better->unequipped.size() == 1 &&
+              worn_keys(party, id) ==
+                  keys{"chain_mail", "ring_of_fire_resistance", "ring_of_protection+2"},
+          "A better Ring of Protection replaces the weaker");
+
+    auto cursed = item(necklace, -2);
+    cursed.stored.cursed_raw = 1;
+    check(!take(party, id, cursed), "A known cursed necklace stays packed");
+    check(take(party, id, item(gauntlets)) &&
+              worn_keys(party, id) == keys{"chain_mail", "gauntlets_of_ogre_power",
+                                           "ring_of_fire_resistance", "ring_of_protection+2"},
+          "Gauntlets of Ogre Power raise the Fighter's damage");
+
+    const auto unarmored = party.add_pc(fighter());
+    check(take(party, unarmored, item(bracers, 4)) &&
+              worn_keys(party, unarmored) == keys{"bracers+4"},
+          "Bracers go on a member without armor");
+}
+
 // Holding two daggers, a Short Sword takes the main hand: the dagger it
 // replaces goes to the pack and the other stays for the off-hand attack.
 void two_weapons()
@@ -279,6 +333,7 @@ int main()
         shield_or_both_hands();
         armor();
         two_weapons();
+        worn_items();
         magic();
         saved_preference();
         std::cout << "Auto-equip tests passed\n";
