@@ -219,7 +219,10 @@ std::vector<CompanionDefinition> load_companions(const std::filesystem::path &fo
     }
     std::vector<CompanionDefinition> companions;
     std::set<std::pair<unsigned, unsigned>> records;
-    const auto &entries = member<Json::Array>(document, "companions", "file");
+    // A named place, not a temporary: GCC 16 would take the reference into
+    // document for one into the temporary string.
+    const std::string file_where = "file";
+    const auto &entries = member<Json::Array>(document, "companions", file_where);
     for (std::size_t index = 0; index < entries.size(); ++index)
     {
         auto companion = read_companion(entries[index], index);

@@ -3426,11 +3426,22 @@ std::vector<ArcaneAllocation> arcane_allocations(unsigned budget)
             id += ":" + std::to_string(slots[index]);
         }
         const auto levels = recovered_levels(slots);
-        Message label = levels == "1"      ? Message{"One level-one spell slot", {}}
-                        : levels == "1, 1" ? Message{"Two level-one spell slots", {}}
-                        : levels == "2"
-                            ? Message{"One level-two spell slot", {}}
-                            : Message{"Spell slots of levels {levels}", {{"levels", levels}}};
+        // Built in one place, not in a ?: chain: GCC 16 takes the arguments'
+        // initializer list in a ?: branch for a dangling pointer.
+        Message label{"Spell slots of levels {levels}", {{"levels", levels}}};
+        if (levels == "1")
+        {
+            label = Message{"One level-one spell slot", {}};
+        }
+        else if (levels == "1, 1")
+        {
+            label = Message{"Two level-one spell slots", {}};
+        }
+        else if (levels == "2")
+        {
+            label = Message{"One level-two spell slot", {}};
+        }
+
         result.push_back({std::move(id), std::move(label), slots});
     };
     const auto choose = [&](const auto &self, unsigned level, unsigned left) -> void
@@ -32336,18 +32347,20 @@ class Module final : public RulesModule
         auto next = vitals(actor);
         const bool small = choice->slots[2] + choice->slots[3] + choice->slots[4] == 0;
         const bool natural = d.natural_recovery != 0;
-        Message result =
-            small
-                ? Message{natural
-                              ? "Natural Recovery restored {first} level-one and {second} level-two spell slots."
-                              : "Arcane Recovery restored {first} level-one and {second} level-two spell slots.",
-                          {{"first", std::to_string(choice->slots[0])},
-                           {"second", std::to_string(choice->slots[1])}}}
-                : Message{natural ? "Natural Recovery restored spell slots of levels {levels}."
-                                  : "Arcane Recovery restored spell slots of levels {levels}.",
-                          {{"levels", recovered_levels(choice->slots)}}};
         state = std::move(next);
-        return result;
+        if (small)
+        {
+            return Message{
+                natural
+                    ? "Natural Recovery restored {first} level-one and {second} level-two spell slots."
+                    : "Arcane Recovery restored {first} level-one and {second} level-two spell slots.",
+                {{"first", std::to_string(choice->slots[0])},
+                 {"second", std::to_string(choice->slots[1])}}};
+        }
+
+        return Message{natural ? "Natural Recovery restored spell slots of levels {levels}."
+                               : "Arcane Recovery restored spell slots of levels {levels}.",
+                       {{"levels", recovered_levels(choice->slots)}}};
     }
 
     HitDieResult spend_hit_die(VitalState &state, const CharacterSheet &sheet,

@@ -321,7 +321,7 @@ void rolls()
             }
         }
     }
-    for (const auto [seed, bonus, success] :
+    for (const auto &[seed, bonus, success] :
          std::vector<std::tuple<unsigned, int, bool>>{{40, 20, true}, {0, -10, false}})
     {
         auto rules = custom({}, bonus);

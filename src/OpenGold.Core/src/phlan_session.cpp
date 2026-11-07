@@ -3559,9 +3559,11 @@ void RolfTourSession::show_hall(std::vector<Message> notice)
             {
                 continue;
             }
-            add(campaign_->skill_training_denial(id, visit.hall) == TrainingDenial::already_trained
-                    ? Message{"{name}: skill lesson (learned at this level)", {{"name", name}}}
-                    : Message{"{name}: skill lesson", {{"name", name}}},
+            const bool learned =
+                campaign_->skill_training_denial(id, visit.hall) == TrainingDenial::already_trained;
+            add(Message{learned ? "{name}: skill lesson (learned at this level)"
+                                : "{name}: skill lesson",
+                        {{"name", name}}},
                 {HallChoice::Kind::lessons, id});
         }
         add({"Leave", {}}, {HallChoice::Kind::leave});

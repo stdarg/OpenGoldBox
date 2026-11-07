@@ -109,7 +109,11 @@ void persistence()
         bool rejected = false;
         try
         {
-            state = decode(bad);
+            // Decoded into a local first: GCC 16's mod/ref analysis builds
+            // decode's result in `state` itself, so the throw after
+            // read_concentration would leave `state` emptied.
+            const auto decoded = decode(bad);
+            state = decoded;
         }
         catch (const std::exception &)
         {

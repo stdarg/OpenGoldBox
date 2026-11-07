@@ -1,5 +1,6 @@
 #include "opengold/wall_art_replacements.h"
 #include "opengold/path_text.h"
+#include <algorithm>
 #include <fstream>
 #include <stdexcept>
 

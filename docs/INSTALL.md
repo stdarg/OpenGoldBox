@@ -12,8 +12,9 @@ themselves.
 | Linux (Bazzite, Ubuntu) | Native core and tests, and the dev tools whose extensions list Linux. The game does not build on Linux yet: `src/OpenGoldBox/CMakeLists.txt` stops at configure with "supports Windows and macOS only". |
 
 The macOS tools and versions match the development Mac, which runs the .NET
-Godot build. The Windows hook check and every Linux step have not been run yet;
-the first setup on Bazzite will confirm the Linux ones.
+Godot build. The Windows hook check has not been run yet. The Linux steps were
+run on Bazzite 44 on 2026-11-07, where the native core and its tests build with
+the system's GCC 16.1.
 
 ## What to install
 
@@ -173,7 +174,9 @@ installs it.
    g++ -std=c++20 /tmp/check.cpp -o /tmp/check && /tmp/check
    ```
 
-   It prints `ok`. Report any other result before going on.
+   It prints `ok`. Report any other result before going on. On Bazzite 44
+   the system's own `g++` (GCC 16.1) passes, and CMake builds with it rather
+   than Homebrew's `g++-16`.
 
 5. Install Godot 4.7.2: download `Godot_v4.7.2-stable_linux.x86_64.zip` from
    [the 4.7.2 release](https://github.com/godotengine/godot/releases/tag/4.7.2-stable),

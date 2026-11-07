@@ -343,7 +343,7 @@ void two_weapon_equipment()
               "Querying hand choices has no effects");
         party.equip(id, daggers, EquipmentOperation::equip_other);
         const auto held = party.member(id).equipped;
-        const auto unit = held.back();
+        const auto unit = held.size() == 2 ? held[1] : daggers;
         check(held.size() == 2 && held[0] == sword && unit != daggers &&
                   party.member(id).character.inventory().find(unit)->get().quantity == 1 &&
                   party.member(id).character.inventory().find(daggers)->get().quantity == 2,
