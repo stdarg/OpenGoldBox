@@ -21,11 +21,15 @@ set(ENV{OPENGOLD_LANG} en)
 if(NOT DEFINED SCENE)
     set(SCENE res://scenes/character_creation.tscn)
 endif()
+# A check that makes many characters sets a longer limit (TEST_TIMEOUT).
+if(NOT DEFINED TEST_TIMEOUT)
+    set(TEST_TIMEOUT 300)
+endif()
 if(DEFINED CHECK_FLAG)
     execute_process(
         COMMAND "${GODOT}" --headless --path "${PROJECT}" "${SCENE}"
         -- ${CHECK_FLAG} ${ARGS}
-        RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE errors TIMEOUT 300)
+        RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE errors TIMEOUT "${TEST_TIMEOUT}")
     message("${output}${errors}")
     # EXPECTED is literal text ("C++" would not compile as a regular expression).
     string(FIND "${output}" "${EXPECTED}" expected_at)
@@ -37,7 +41,7 @@ else()
     execute_process(
         COMMAND "${CMAKE_COMMAND}" "-DGODOT=${GODOT}" "-DPROJECT=${PROJECT}"
         "-DSCRIPT=${CMAKE_CURRENT_LIST_DIR}/${SCRIPT}.gd" "-DEXPECTED=${EXPECTED}"
-        "-DARGS=${ARGS}" "-DGRAPHICAL=${GRAPHICAL}" -DTEST_TIMEOUT=300
+        "-DARGS=${ARGS}" "-DGRAPHICAL=${GRAPHICAL}" "-DTEST_TIMEOUT=${TEST_TIMEOUT}"
         -P "${CMAKE_CURRENT_LIST_DIR}/run_godot_test.cmake"
         RESULT_VARIABLE result)
     if(NOT result STREQUAL "0")

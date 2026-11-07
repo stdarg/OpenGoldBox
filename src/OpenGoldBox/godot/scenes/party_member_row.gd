@@ -57,7 +57,7 @@ func identity_width() -> float:
 func _second_column() -> float:
     var widest := identity_width()
     for row in get_parent().get_children():
-        if row != self and row.visible and row.has_method("identity_width"):
+        if row != self and row.has_method("identity_width") and row.visible:
             widest = maxf(widest, row.identity_width())
     return text_left() + widest + COLUMN_GAP
 

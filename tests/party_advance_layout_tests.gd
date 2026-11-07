@@ -23,8 +23,10 @@ func run_checks() -> void:
         push_error("Roster advance arrow must follow the rendered name without leaving the list")
         quit(1)
         return
+    # The town's row, with its portrait: the name starts past it.
     var row := Button.new()
-    row.size = Vector2(400, 60)
+    row.set_script(load("res://scenes/party_member_row.gd"))
+    row.size = Vector2(400, 112)
     root.add_child(row)
     var town_arrow: Button = load("res://scenes/control_templates/party_advance.tscn").instantiate()
     row.add_child(town_arrow)

@@ -470,8 +470,11 @@ if(OPENGOLD_BUILD_TESTS)
         -DSCRIPT=creation_explorer_tests
         "-DARGS=--replay=${PROJECT_SOURCE_DIR}/tests/fixtures/creation_clicks.log")
     opengold_original_check(creation_explorer "Creation explorer passed"
-        -DSCRIPT=creation_explorer_tests
+        -DSCRIPT=creation_explorer_tests -DTEST_TIMEOUT=600
         "-DARGS=--race=Human\\;--policy=1\\;--detours\\;--shuffle=17\\;--sample=7\\;--fresh=3")
+    # Sixteen characters take about 90 s alone and over 300 s beside the
+    # suite's heavier checks.
+    set_tests_properties(opengold_godot_creation_explorer PROPERTIES TIMEOUT 620)
     opengold_creation_check(portrait_fallback "Portrait fallback checks passed"
         -DSCRIPT=portrait_fallback_tests)
     opengold_creation_check(handoff "Combat handoff checks passed" -DSCRIPT=combat_handoff_tests)
