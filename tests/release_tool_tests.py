@@ -17,8 +17,10 @@ class FakeCommands:
     """Answers each command as a checkout and GitHub in the given state would."""
 
     def __init__(self, root, release_view=None, dirty=False, branch="main", origin=COMMIT,
-                 build_fails=False, build_writes=True):
+                 build_fails=False, build_writes=True,
+                 package="build/linux/OpenGoldBox-1.2.3-linux-x86_64.tar.gz"):
         self.root = root
+        self.package = package
         self.release_view = release_view
         self.answers = {
             ("git", "status", "--porcelain"): " M build.sh" if dirty else "",
@@ -35,9 +37,9 @@ class FakeCommands:
         key = tuple(args)
         if key in self.answers:
             return self.result(stdout=self.answers[key])
-        if args[0] == "./build.sh":
+        if args[0] in ("./build.sh", "cmd"):
             if self.build_writes:
-                package = self.root / "build/linux/OpenGoldBox-1.2.3-linux-x86_64.tar.gz"
+                package = self.root / self.package
                 package.parent.mkdir(parents=True, exist_ok=True)
                 package.write_bytes(b"package")
             return self.result(code=1 if self.build_fails else 0)
@@ -67,19 +69,27 @@ class ReleaseToolTests(unittest.TestCase):
         release.ROOT = self.real_root
         self.directory.cleanup()
 
-    def release_with(self, commands, environment=ENVIRONMENT):
-        release.release("Linux", environment, commands)
+    def release_with(self, commands, environment=ENVIRONMENT, system="Linux"):
+        release.release(system, environment, commands)
 
     def test_version_comes_from_project(self):
         self.assertEqual(release.project_version("project(OpenGoldBox VERSION 0.4.10 LANGUAGES CXX)"), "0.4.10")
         with self.assertRaisesRegex(release.ReleaseError, "no OpenGoldBox version"):
             release.project_version("project(Other)")
 
-    def test_only_macos_and_linux(self):
+    def test_only_macos_linux_and_windows(self):
         self.assertEqual(release.platform_for("Darwin").name, "macOS")
-        self.assertIn("--package", release.platform_for("Darwin").build_args)
-        with self.assertRaisesRegex(release.ReleaseError, "not Windows"):
-            release.platform_for("Windows")
+        self.assertIn("--package", release.platform_for("Darwin").build_command)
+        with self.assertRaisesRegex(release.ReleaseError, "not FreeBSD"):
+            release.platform_for("FreeBSD")
+
+    def test_windows_builds_with_its_script_and_uploads_the_zip(self):
+        commands = FakeCommands(self.root, package="build/game/OpenGoldBox-1.2.3-windows-x86_64.zip")
+        self.release_with(commands, system="Windows")
+        self.assertIn(["cmd", "/c", "build-opengoldbox.cmd"], commands.commands)
+        created = commands.gh_release("create")
+        self.assertEqual(len(created), 1)
+        self.assertTrue(created[0][-1].endswith("OpenGoldBox-1.2.3-windows-x86_64.zip"))
 
     def test_first_platform_creates_the_draft_with_its_package(self):
         commands = FakeCommands(self.root)

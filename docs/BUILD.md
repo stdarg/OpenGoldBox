@@ -337,16 +337,23 @@ not been run on another distribution yet.
 ## Releasing on GitHub
 
 `tools/release.py` builds this platform's package for players and uploads it to
-a draft GitHub release, on macOS and Linux. Run it from a clean checkout of
-`main` that matches `origin/main`, with the GitHub CLI logged in (`gh auth
-login`) and `OPENGOLD_GAME_DIR` set:
+a draft GitHub release, on macOS, Linux and Windows. Run it from a clean
+checkout of `main` that matches `origin/main`, with the GitHub CLI logged in
+(`gh auth login`) and `OPENGOLD_GAME_DIR` set:
 
 ```bash
 tools/release.py
 ```
 
-It runs `./build.sh --test-all` (with `--package` on macOS), so nothing untested
-is uploaded, then uploads the disk image or the `.tar.gz` to the draft release
+On Windows, from PowerShell:
+
+```powershell
+python tools\release.py
+```
+
+It runs `./build.sh --test-all` (with `--package` on macOS), or
+`build-opengoldbox.cmd` on Windows, so nothing untested is uploaded, then
+uploads the disk image, the `.tar.gz` or the `.zip` to the draft release
 `v<version>`, the version being `project()`'s in `CMakeLists.txt`. The first
 platform creates the draft at the current commit; the next one, built from the
 same commit, adds its package to it. It refuses a published release and a draft

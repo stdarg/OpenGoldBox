@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Builds this platform's package and uploads it to a draft GitHub release.
 
-Run on macOS or Linux from a clean checkout of main that matches origin/main:
+Run on macOS, Linux or Windows from a clean checkout of main that matches
+origin/main:
 
-    tools/release.py
+    tools/release.py            (macOS and Linux)
+    python tools/release.py     (Windows)
 
 It builds and runs every test (./build.sh --test-all, with --package on
-macOS), so OPENGOLD_GAME_DIR must point at the original game files for the
-package checks to run. It then uploads the package players download to the
+macOS; build-opengoldbox.cmd on Windows), so OPENGOLD_GAME_DIR must point at
+the original game files for the package checks to run. It then uploads the package players download to the
 draft release v<version>, the version being project()'s in CMakeLists.txt:
 it creates the draft at the current commit, or adds to the one another
 platform made, so each platform's package lands on one release.
@@ -37,7 +39,7 @@ class ReleaseError(Exception):
 @dataclass(frozen=True)
 class Platform:
     name: str
-    build_args: tuple
+    build_command: tuple
     build_folder: str
     package_name: str
     symbols_name: str
@@ -50,11 +52,15 @@ class Platform:
 
 
 PLATFORMS = {
-    "Darwin": Platform("macOS", ("--test-all", "--package"), "build/macos-universal",
+    "Darwin": Platform("macOS", ("./build.sh", "--test-all", "--package"), "build/macos-universal",
                        "OpenGoldBox-{version}-macos.dmg", "OpenGoldBox-{version}-macos-symbols.zip"),
-    "Linux": Platform("Linux", ("--test-all",), "build/linux",
+    "Linux": Platform("Linux", ("./build.sh", "--test-all"), "build/linux",
                       "OpenGoldBox-{version}-linux-x86_64.tar.gz",
                       "OpenGoldBox-{version}-linux-symbols.tar.gz"),
+    # build-opengoldbox.cmd builds the package and runs every test.
+    "Windows": Platform("Windows", ("cmd", "/c", "build-opengoldbox.cmd"), "build/game",
+                        "OpenGoldBox-{version}-windows-x86_64.zip",
+                        "OpenGoldBox-{version}-windows-symbols.zip"),
 }
 
 
@@ -65,7 +71,7 @@ def run_command(args, capture=True):
 
 def platform_for(system):
     if system not in PLATFORMS:
-        raise ReleaseError(f"tools/release.py runs on macOS and Linux, not {system}")
+        raise ReleaseError(f"tools/release.py runs on macOS, Linux and Windows, not {system}")
     return PLATFORMS[system]
 
 
@@ -107,7 +113,7 @@ def check_prerequisites(run, environment):
 def build_package(target, version, run):
     """Builds and tests; returns the package, which must come from this build."""
     started = time.time()
-    if run(["./build.sh", *target.build_args], capture=False).returncode != 0:
+    if run(list(target.build_command), capture=False).returncode != 0:
         raise ReleaseError("The build or a test failed; nothing was uploaded")
     package = target.package(version)
     if not package.is_file() or package.stat().st_mtime < started:
