@@ -41,6 +41,13 @@ Settings and saves go to your user-data folder; see
   including a read-only one ([the package](docs/BUILD.md#the-package-for-players)).
 - macOS (bash): `./build.sh`, then `open mac-package/OpenGoldBox.app`. `./build.sh`
   builds the game and re-exports the app without running tests.
+- Linux (bash): `./build.sh`, then `./linux-package/opengoldbox.x86_64`. The game
+  needs a GCC with the static libstdc++, such as Homebrew's (see
+  [INSTALL.md](docs/INSTALL.md#linux-bazzite-and-ubuntu)). The package for players,
+  `OpenGoldBox-<version>-linux-x86_64.tar.gz`, is built by
+  `tools/linux_release_build.sh` in an AlmaLinux 8 container, so it runs on any
+  x86_64 distribution with glibc 2.28 or newer (Ubuntu 20.04, Debian 10, RHEL 8,
+  SteamOS 3 and later; [which systems](docs/BUILD.md#which-linux-systems-it-runs-on)).
 
 The last full test run was on 2026-11-06 (commit b4d0aed5, macOS, with original
 files): all 269 checks of the game build and all 130 of the demo build passed,

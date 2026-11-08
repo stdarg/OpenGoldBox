@@ -20,7 +20,7 @@ class FakeCommands:
 
     def __init__(self, root, release_view=None, dirty=False, branch="main", origin=COMMIT,
                  build_fails=False, build_writes=True,
-                 package="build/linux/OpenGoldBox-1.2.3-linux-x86_64.tar.gz"):
+                 package="build/linux-release/OpenGoldBox-1.2.3-linux-x86_64.tar.gz"):
         self.root = root
         self.package = package
         self.release_view = release_view
@@ -39,7 +39,7 @@ class FakeCommands:
         key = tuple(args)
         if key in self.answers:
             return self.result(stdout=self.answers[key])
-        if args[0] in ("./build.sh", "cmd"):
+        if args[0] in ("./build.sh", "tools/linux_release_build.sh", "cmd"):
             # A build that does not write leaves an old package behind. Windows
             # stamps files from a coarser clock than time.time(), so the times
             # are set well clear of the build's start.
@@ -86,6 +86,8 @@ class ReleaseToolTests(unittest.TestCase):
     def test_only_macos_linux_and_windows(self):
         self.assertEqual(release.platform_for("Darwin").name, "macOS")
         self.assertIn("--package", release.platform_for("Darwin").build_command)
+        self.assertEqual(release.platform_for("Linux").build_command,
+                         ("tools/linux_release_build.sh", "--test-all"), "built in the glibc 2.28 container")
         with self.assertRaisesRegex(release.ReleaseError, "not FreeBSD"):
             release.platform_for("FreeBSD")
 
@@ -136,13 +138,13 @@ class ReleaseToolTests(unittest.TestCase):
                 commands = FakeCommands(self.root, **state)
                 with self.assertRaisesRegex(release.ReleaseError, message):
                     self.release_with(commands)
-                self.assertFalse(any(command[0] == "./build.sh" for command in commands.commands))
+                self.assertFalse(any(command[0] == "tools/linux_release_build.sh" for command in commands.commands))
 
     def test_game_files_are_needed_before_building(self):
         commands = FakeCommands(self.root)
         with self.assertRaisesRegex(release.ReleaseError, "OPENGOLD_GAME_DIR"):
             self.release_with(commands, environment={})
-        self.assertFalse(any(command[0] == "./build.sh" for command in commands.commands))
+        self.assertFalse(any(command[0] == "tools/linux_release_build.sh" for command in commands.commands))
 
     def test_failed_or_stale_build_uploads_nothing(self):
         for state, message in ((dict(build_fails=True), "nothing was uploaded"),

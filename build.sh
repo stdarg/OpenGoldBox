@@ -7,7 +7,9 @@
 #   --test-all  after building, run every test, including the Godot checks
 #   --package   macOS: also write the disk image players download
 #   <preset>    build another CMake preset: default (native core and tests,
-#               build/), debug (the same, unoptimized), macos-universal or linux
+#               build/), debug (the same, unoptimized), macos-universal, linux
+#               or linux-release (the package for players, which
+#               tools/linux_release_build.sh builds in its container)
 #
 # A non-zero exit means the build or a requested test failed. Tests never run
 # after a failed build, which is how a stale binary can otherwise pass.
@@ -56,8 +58,8 @@ if [ "$PRESET" = macos-universal ]; then
         "$CMAKE" --build --preset "$PRESET" --target opengoldbox_macos_dmg
     fi
 fi
-if [ "$PRESET" = linux ]; then
-    echo "Game exported: linux-package/; package: build/linux/OpenGoldBox-*-linux-x86_64.tar.gz"
+if [ "$PRESET" = linux ] || [ "$PRESET" = linux-release ]; then
+    echo "Game exported: linux-package/; package: build/$PRESET/OpenGoldBox-*-linux-x86_64.tar.gz"
 fi
 
 case "$TESTS" in

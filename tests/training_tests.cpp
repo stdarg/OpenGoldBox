@@ -696,7 +696,7 @@ void grants_and_checks()
         });
     // Independent proficiency table boundaries. This query is shared math,
     // not a claim that Rogue advancement beyond level one is integrated.
-    for (const auto [level, bonus] :
+    for (const auto &[level, bonus] :
          {std::pair{1, 2}, std::pair{4, 2}, std::pair{5, 3}, std::pair{9, 4}, std::pair{13, 5},
           std::pair{17, 6}, std::pair{20, 6}})
     {

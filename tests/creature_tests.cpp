@@ -404,8 +404,8 @@ void effect_contracts()
             }
         }
     }
-    for (const auto pair : {std::pair{0x19, 0x47}, std::pair{0x23, 0x31}, std::pair{0x3b, 0x3e},
-                            std::pair{0x67, 0x77}})
+    for (const auto &pair : {std::pair{0x19, 0x47}, std::pair{0x23, 0x31}, std::pair{0x3b, 0x3e},
+                             std::pair{0x67, 0x77}})
     {
         const auto first = describe_effect(static_cast<std::uint8_t>(pair.first)),
                    second = describe_effect(static_cast<std::uint8_t>(pair.second));

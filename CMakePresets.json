@@ -50,6 +50,15 @@
                 "OPENGOLD_BUILD_GAME": "ON",
                 "BUILD_TESTING": "ON"
             }
+        },
+        {
+            "name": "linux-release",
+            "displayName": "Linux x86_64 game for players (run by tools/linux_release_build.sh)",
+            "inherits": "linux",
+            "binaryDir": "${sourceDir}/build/linux-release",
+            "cacheVariables": {
+                "OPENGOLD_MAX_GLIBC": "2.28"
+            }
         }
     ],
     "buildPresets": [
@@ -60,7 +69,8 @@
         },
         { "name": "debug", "configurePreset": "debug", "jobs": 6 },
         { "name": "macos-universal", "configurePreset": "macos-universal" },
-        { "name": "linux", "configurePreset": "linux" }
+        { "name": "linux", "configurePreset": "linux" },
+        { "name": "linux-release", "configurePreset": "linux-release" }
     ],
     "testPresets": [
         {
@@ -86,6 +96,12 @@
         {
             "name": "linux",
             "configurePreset": "linux",
+            "output": { "outputOnFailure": true },
+            "execution": { "jobs": 8 }
+        },
+        {
+            "name": "linux-release",
+            "configurePreset": "linux-release",
             "output": { "outputOnFailure": true },
             "execution": { "jobs": 8 }
         }

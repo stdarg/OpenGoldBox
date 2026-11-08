@@ -7,9 +7,11 @@ origin/main:
     tools/release.py            (macOS and Linux)
     python tools/release.py     (Windows)
 
-It builds and runs every test (./build.sh --test-all, with --package on
-macOS; build-opengoldbox.cmd on Windows), so OPENGOLD_GAME_DIR must point at
-the original game files for the package checks to run. It then uploads the package players download to the
+It builds and runs every test (./build.sh --test-all --package on macOS;
+on Linux tools/linux_release_build.sh --test-all, which builds in an
+AlmaLinux 8 container so the package runs on glibc 2.28 and newer;
+build-opengoldbox.cmd on Windows), so OPENGOLD_GAME_DIR must point at the
+original game files for the package checks to run. It then uploads the package players download to the
 draft release v<version>, the version being project()'s in CMakeLists.txt:
 it creates the draft at the current commit, or adds to the one another
 platform made, so each platform's package lands on one release.
@@ -54,7 +56,7 @@ class Platform:
 PLATFORMS = {
     "Darwin": Platform("macOS", ("./build.sh", "--test-all", "--package"), "build/macos-universal",
                        "OpenGoldBox-{version}-macos.dmg", "OpenGoldBox-{version}-macos-symbols.zip"),
-    "Linux": Platform("Linux", ("./build.sh", "--test-all"), "build/linux",
+    "Linux": Platform("Linux", ("tools/linux_release_build.sh", "--test-all"), "build/linux-release",
                       "OpenGoldBox-{version}-linux-x86_64.tar.gz",
                       "OpenGoldBox-{version}-linux-symbols.tar.gz"),
     # build-opengoldbox.cmd builds the package and runs every test. The .\ lets

@@ -56,6 +56,10 @@ else()
     set(export_preset "Linux")
     set(export_path "${game_output}/opengoldbox.x86_64")
     set(export_config "export_presets.linux.cfg.in")
+    # A build links against the newest glibc symbols of the machine it runs
+    # on, so the package needs that glibc or newer. The linux-release preset
+    # sets the oldest glibc players may have and fails a package that needs more.
+    set(OPENGOLD_MAX_GLIBC "" CACHE STRING "Newest glibc the Linux package may need, such as 2.28; empty checks nothing")
 endif()
 configure_file("${export_config}" "${game_project}/export_presets.cfg" @ONLY)
 
@@ -696,7 +700,8 @@ else()
         COMMAND "${CMAKE_COMMAND}" "-DEXPORT=${game_output}" "-DSTAGE=${CMAKE_BINARY_DIR}/package"
             "-DARCHIVE=${CMAKE_BINARY_DIR}/OpenGoldBox-${PROJECT_VERSION}-linux-x86_64.tar.gz"
             "-DSYMBOLS=${CMAKE_BINARY_DIR}/OpenGoldBox-${PROJECT_VERSION}-linux-symbols.tar.gz"
-            "-DSTRIP=${CMAKE_STRIP}" "-DGODOT=${OPENGOLDBOX_GODOT}"
+            "-DSTRIP=${CMAKE_STRIP}" "-DOBJDUMP=${CMAKE_OBJDUMP}" "-DMAX_GLIBC=${OPENGOLD_MAX_GLIBC}"
+            "-DGODOT=${OPENGOLDBOX_GODOT}"
             "-DNOTICES_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/write_engine_notices.gd"
             "-DPROJECT_LICENSE=${PROJECT_SOURCE_DIR}/LICENSE"
             "-DGODOT_CPP_LICENSE=${godot_cpp_SOURCE_DIR}/LICENSE.md"

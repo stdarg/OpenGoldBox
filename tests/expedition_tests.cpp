@@ -7873,7 +7873,7 @@ void write_town_service_fixtures(const std::filesystem::path &directory,
     write(11, 3, "temple", "platinum", {0, 0, 0, 0, 20'000, 0, 0}, "sick");
     write(4, 12, "inn", "platinum", {0, 0, 0, 0, 2, 0, 0}, "wounded");
     // After a fight with the city watch.
-    for (const auto [x, y, kind] :
+    for (const auto &[x, y, kind] :
          {std::tuple{15u, 8u, "shop"}, std::tuple{8u, 10u, "shop"}, std::tuple{13u, 8u, "shop"},
           std::tuple{11u, 10u, "shop"}, std::tuple{11u, 3u, "temple"}, std::tuple{1u, 1u, "temple"},
           std::tuple{0u, 12u, "temple"}, std::tuple{4u, 12u, "inn"}})

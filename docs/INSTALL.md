@@ -28,6 +28,7 @@ the system's GCC 16.1, and the game with Homebrew's GCC 16.2.
 | LLVM | 23.x (`clang-format`, `git-clang-format`, `clang-tidy`) | the pre-commit hook and [the coding style](CODING_STYLE.md) |
 | Godot | 4.7.2, the standard build (not .NET), and its export templates | the game, the demos, the Godot checks, the dev tools |
 | ccache | optional | reusing compiled objects across build directories and worktrees |
+| distrobox and podman | any recent, Linux only | [the Linux package for players](BUILD.md#which-linux-systems-it-runs-on), built in an AlmaLinux 8 container |
 
 The project has no C# code, so the standard Godot build is enough. The .NET
 build also works if it is already installed.
@@ -224,6 +225,18 @@ installs it.
    ```bash
    CC=gcc-16 CXX=g++-16 ./build.sh --test-all
    ```
+
+8. To make the package for players, which runs on older distributions too,
+   build it in its AlmaLinux 8 container. It needs
+   [distrobox](https://distrobox.it) and podman, which Bazzite ships; on
+   Ubuntu 24.04, `sudo apt-get install distrobox podman`. The first run creates the
+   container and installs its tools:
+
+   ```bash
+   tools/linux_release_build.sh --test-all
+   ```
+
+   See [which Linux systems the package runs on](BUILD.md#which-linux-systems-it-runs-on).
 
 ## Git hooks
 

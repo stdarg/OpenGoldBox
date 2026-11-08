@@ -194,7 +194,7 @@ void blocked_monster_goes_around()
                 open.end(),
                 {{1, 2}, {1, 3}, {1, 4}, {1, 5}, {1, 6}, {2, 6}, {3, 6}, {4, 6}, {4, 5}, {4, 4}});
         }
-        for (const auto [x, y] : open)
+        for (const auto &[x, y] : open)
         {
             terrain[y * 7 + x] = Terrain::open;
         }

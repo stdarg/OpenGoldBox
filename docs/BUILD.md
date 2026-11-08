@@ -78,6 +78,7 @@ runs tests only when asked:
 | `--test-all` | After building, run every test, including the Godot runtime checks. |
 | `--package` | macOS: also write [the disk image players download](#the-package-for-players-1). |
 | `default`, `debug`, `macos-universal`, `linux` | Build that preset instead of the platform default. |
+| `linux-release` | The Linux package for players, built against glibc 2.28. Run it through `tools/linux_release_build.sh`, which builds it in its container (see [the package for players](#the-package-for-players-2)). |
 
 Both scripts always build the checkout they live in, whatever the current
 directory, and never run tests after a failed build. The equivalent manual
@@ -313,10 +314,43 @@ Every build also writes two files in `build/linux/`:
 
 As on the other systems, the package gets `LICENSE.txt` and
 `THIRD-PARTY-NOTICES.txt`, uses the debug export template, and the build fails
-if it holds any original game file, a `settings.cfg` or a `.TMP` file. The game
-library needs the glibc of the system it was built on or newer: one built on
-Bazzite 44 needs glibc 2.43, so it does not run on Ubuntu 24.04. A release for
-older systems needs a build on an older distribution.
+if it holds any original game file, a `settings.cfg` or a `.TMP` file.
+
+##### Which Linux systems it runs on
+
+glibc tags each function it exports with the glibc version that introduced it,
+and the linker records the newest tag the build machine's glibc offers. A
+system whose glibc lacks one of those tags refuses to load the game. So a
+package runs only on systems whose glibc is at least as new as the build
+machine's: one built on Bazzite 44 needs glibc 2.43, newer than Ubuntu 24.04's.
+
+The package for players is therefore built in an AlmaLinux 8 container, whose
+glibc is 2.28, the same Godot's own Linux export templates need:
+
+```bash
+tools/linux_release_build.sh --test-all
+```
+
+The first run creates the [distrobox](https://distrobox.it) container
+`opengold-alma8` (Bazzite ships distrobox; elsewhere install it and podman) and
+installs GCC 14 from `gcc-toolset-14`, CMake, Ninja, Python 3.11 and the
+libraries Godot needs. Every run then builds the `linux-release` preset into
+`build/linux-release/` and `linux-package/`, with the same options as
+`./build.sh`. The container shares your home folder, so Godot, its export
+templates and `OPENGOLD_GAME_DIR` are the host's, and the package smoke check
+runs on glibc 2.28. The preset sets `OPENGOLD_MAX_GLIBC` to 2.28, and the
+package step then fails if the executable or the game library needs a newer
+glibc, naming the functions that do.
+
+Such a package runs on x86_64 distributions with glibc 2.28 or newer: RHEL,
+AlmaLinux and Rocky 8, Debian 10, Ubuntu 20.04, Fedora 29, SteamOS 3 and
+anything later. It does not run on musl distributions such as Alpine, and
+there is no ARM build. godot-cpp links libstdc++ into the game library, so the
+player's libstdc++ version does not matter.
+
+GCC 14 warns about a few things GCC 16 does not; the build turns its warnings
+into errors as everywhere, except `maybe-uninitialized`, which GCC before 15
+reports falsely for `std::optional` and which GCC 16 still checks.
 
 `opengold_linux_package_smoke`, a ctest check that needs `OPENGOLD_GAME_DIR`,
 runs the same steps as the macOS check: the package and a copy of the original
@@ -351,9 +385,11 @@ On Windows, from PowerShell:
 python tools\release.py
 ```
 
-It runs `./build.sh --test-all` (with `--package` on macOS), or
-`build-opengoldbox.cmd` on Windows, so nothing untested is uploaded, then
-uploads the disk image, the `.tar.gz` or the `.zip` to the draft release
+It runs `./build.sh --test-all --package` on macOS,
+`tools/linux_release_build.sh --test-all` on Linux, or
+`build-opengoldbox.cmd` on Windows, so nothing untested is uploaded and the
+Linux package runs on glibc 2.28 and newer ([which systems](#which-linux-systems-it-runs-on)).
+It then uploads the disk image, the `.tar.gz` or the `.zip` to the draft release
 `v<version>`, the version being `project()`'s in `CMakeLists.txt`. The first
 platform creates the draft at the current commit; the next one, built from the
 same commit, adds its package to it. It refuses a published release and a draft

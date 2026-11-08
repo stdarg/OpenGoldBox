@@ -784,7 +784,7 @@ void additional_portrait_tests()
     // narrow neck and unrelated collar pixels on the same scanline.
     for (const auto &head : additions)
     {
-        for (const auto opening : {std::pair{36u, 56u}, std::pair{37u, 55u}, std::pair{36u, 52u}})
+        for (const auto &opening : {std::pair{36u, 56u}, std::pair{37u, 55u}, std::pair{36u, 52u}})
         {
             Image neck;
             neck.width = 88;

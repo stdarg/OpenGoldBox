@@ -51,6 +51,12 @@ else()
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         list(APPEND OPENGOLD_WARNING_FLAGS -Wshorten-64-to-32)
     endif()
+    # GCC 14, which builds the Linux package for players (tools/linux_release_build.sh),
+    # reports std::optional members read behind a has_value() check as maybe
+    # uninitialized. GCC 15 and later check the same code without these false alarms.
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15)
+        list(APPEND OPENGOLD_WARNING_FLAGS -Wno-maybe-uninitialized)
+    endif()
 endif()
 function(opengold_enable_warnings directory)
     get_property(targets DIRECTORY "${directory}" PROPERTY BUILDSYSTEM_TARGETS)
@@ -170,10 +176,15 @@ target_include_directories(opengold_core
         src/OpenGold.Core/include
 )
 
+# The diagnostic log's std::call_once and std::mutex need libpthread on glibc
+# before 2.34, where the Linux package for players is built; without it,
+# call_once throws "Unknown error -1" at run time instead of failing to link.
+find_package(Threads REQUIRED)
 target_link_libraries(opengold_core
     PUBLIC
         opengold_formats
         opengold_rules
+        Threads::Threads
 )
 
 if(OPENGOLD_BUILD_TESTS OR OPENGOLD_BUILD_FUZZERS)
