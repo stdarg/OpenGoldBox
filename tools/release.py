@@ -57,8 +57,9 @@ PLATFORMS = {
     "Linux": Platform("Linux", ("./build.sh", "--test-all"), "build/linux",
                       "OpenGoldBox-{version}-linux-x86_64.tar.gz",
                       "OpenGoldBox-{version}-linux-symbols.tar.gz"),
-    # build-opengoldbox.cmd builds the package and runs every test.
-    "Windows": Platform("Windows", ("cmd", "/c", "build-opengoldbox.cmd"), "build/game",
+    # build-opengoldbox.cmd builds the package and runs every test. The .\ lets
+    # cmd find it where NoDefaultCurrentDirectoryInExePath is set.
+    "Windows": Platform("Windows", ("cmd", "/c", r".\build-opengoldbox.cmd"), "build/game",
                         "OpenGoldBox-{version}-windows-x86_64.zip",
                         "OpenGoldBox-{version}-windows-symbols.zip"),
 }

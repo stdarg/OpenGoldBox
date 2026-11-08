@@ -1,8 +1,10 @@
 """Exercise tools/release.py's checks and GitHub steps without building or uploading."""
 import importlib.util
+import os
 from pathlib import Path
 import subprocess
 import tempfile
+import time
 import unittest
 
 spec = importlib.util.spec_from_file_location("release", Path(__file__).resolve().parents[1] / "tools/release.py")
@@ -38,10 +40,14 @@ class FakeCommands:
         if key in self.answers:
             return self.result(stdout=self.answers[key])
         if args[0] in ("./build.sh", "cmd"):
-            if self.build_writes:
-                package = self.root / self.package
-                package.parent.mkdir(parents=True, exist_ok=True)
-                package.write_bytes(b"package")
+            # A build that does not write leaves an old package behind. Windows
+            # stamps files from a coarser clock than time.time(), so the times
+            # are set well clear of the build's start.
+            package = self.root / self.package
+            package.parent.mkdir(parents=True, exist_ok=True)
+            package.write_bytes(b"package")
+            stamp = time.time() + (60 if self.build_writes else -60)
+            os.utime(package, (stamp, stamp))
             return self.result(code=1 if self.build_fails else 0)
         if args[:3] == ["gh", "release", "view"] and "isDraft,targetCommitish" in args:
             if self.release_view is None:
@@ -86,7 +92,7 @@ class ReleaseToolTests(unittest.TestCase):
     def test_windows_builds_with_its_script_and_uploads_the_zip(self):
         commands = FakeCommands(self.root, package="build/game/OpenGoldBox-1.2.3-windows-x86_64.zip")
         self.release_with(commands, system="Windows")
-        self.assertIn(["cmd", "/c", "build-opengoldbox.cmd"], commands.commands)
+        self.assertIn(["cmd", "/c", r".\build-opengoldbox.cmd"], commands.commands)
         created = commands.gh_release("create")
         self.assertEqual(len(created), 1)
         self.assertTrue(created[0][-1].endswith("OpenGoldBox-1.2.3-windows-x86_64.zip"))
