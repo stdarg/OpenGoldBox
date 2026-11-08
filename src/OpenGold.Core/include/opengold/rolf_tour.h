@@ -737,6 +737,11 @@ class RolfTourSession
     std::optional<unsigned> monster_picture_id_; // SETUP MONSTER's PIC record.
     // CALL 0x8001 before COMBAT: the member WHO chose fights alone.
     bool duel_{};
+    // CALL 0x8000 before COMBAT: the training hall's arena duel, the member
+    // WHO chose against a copy of itself.
+    bool mirror_duel_{};
+    // Stages that copy as the fight's one enemy.
+    void stage_mirror();
     // Members a script made hostile (the record's byte 0x10C set to 0x81, as
     // a vote to join Tyranthraxus does): in the event's next COMBAT they fight
     // for the monsters, and afterwards they leave the party.

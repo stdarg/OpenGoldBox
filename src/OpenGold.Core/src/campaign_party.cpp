@@ -2046,7 +2046,7 @@ bool CampaignParty::award_loot(const std::array<unsigned, 7> &wealth,
     return true;
 }
 
-void CampaignParty::award_experience(unsigned amount, std::string reward_id)
+void CampaignParty::award_experience(unsigned amount, std::string reward_id, MemberId only)
 {
     editable();
     if (reward_id.empty() || reward_id.size() > 160)
@@ -2066,7 +2066,7 @@ void CampaignParty::award_experience(unsigned amount, std::string reward_id)
     bool awarded = false;
     for (auto id : next.slots)
     {
-        if (id)
+        if (id && (!only || id == only))
         {
             auto &member = member_in(next, id);
             if (member.vitals.dead)

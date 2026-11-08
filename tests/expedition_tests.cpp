@@ -5123,6 +5123,67 @@ void play_valjevo_castle(Expedition &trip, std::string &heard)
           "After the victory the party walks back to the civilized city");
 }
 
+// The training hall's arena (ECL3:11): the arena master's duel, which the
+// first member takes against a copy of itself (CALL 0x8000). Won, it earns
+// that member alone 100 experience a level; lost, it leaves it on 1 Hit Point.
+void arena_duel(const std::filesystem::path &directory)
+{
+    auto trip = create_party(directory);
+    auto &[party, town] = trip;
+    // The square nearest the party whose map event is `event`.
+    const auto nearest_event = [&](unsigned event)
+    {
+        std::optional<std::pair<unsigned, unsigned>> best;
+        const auto pose = town.snapshot().pose;
+        const auto distance = [&](std::pair<unsigned, unsigned> at)
+        {
+            return std::abs(int(at.first) - int(pose.x)) + std::abs(int(at.second) - int(pose.y));
+        };
+        for (unsigned y = 0; y < 16; ++y)
+        {
+            for (unsigned x = 0; x < 16; ++x)
+            {
+                if ((town.map().at(x, y).event_raw & 127) == event &&
+                    (!best || distance({x, y}) < distance(*best)))
+                {
+                    best = std::pair{x, y};
+                }
+            }
+        }
+        return best;
+    };
+    // New Phlan's event 10 leads into the training hall; the hall's events
+    // count from 10, and its fifth, 14, is the arena.
+    const auto hall = nearest_event(10);
+    check(hall.has_value(), "New Phlan has a way into the training hall");
+    const auto lead = party->state().slots[0], other = party->state().slots[1];
+    const auto level = static_cast<unsigned>(party->member(lead).character.sheet().level);
+    const auto lead_xp = party->member(lead).experience, other_xp = party->member(other).experience;
+    const auto fought = fights_started.size();
+    std::string heard;
+    const Answer dueling = [&](const por::TourSnapshot &s)
+    {
+        heard += s.dialogue + "\n";
+        return prefer({"YES", "Exit", "Leave"})(s);
+    };
+    walk_to(town, party, hall->first, hall->second, dueling);
+    check(town.snapshot().script_id == 11, "The party is in the training hall");
+    const auto arena = nearest_event(14);
+    check(arena.has_value(), "The training hall has an arena");
+    walk_to(town, party, arena->first, arena->second, dueling);
+    check(heard.find("WISH TO DUEL") != std::string::npos && fights_started.size() == fought + 1,
+          "The arena master's duel is fought");
+    const auto &cells = fights_started.back().cells;
+    check(cells.size() == 2 && cells.contains(lead) && cells.contains(1000),
+          "The duelist alone fights one opponent, its copy");
+    const auto &duelist = party->member(lead);
+    check(
+        party->member(other).experience == other_xp &&
+            (duelist.experience == lead_xp + 100 * level ||
+             (duelist.experience == lead_xp && duelist.vitals.hit_points == 1)),
+        "A won duel earns the duelist 100 experience a level; a lost one leaves it on 1 Hit Point");
+}
+
 void valjevo_castle(const std::filesystem::path &directory)
 {
     std::string heard;
@@ -7998,6 +8059,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         stojanow_gate(directory);
         valjevo_old_town(directory);
         valjevo_castle(directory);
+        arena_duel(directory);
         western_sites(directory);
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
@@ -8164,6 +8226,11 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--sites")
         {
             western_sites(directory);
+            return 0;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--arena")
+        {
+            arena_duel(directory);
             return 0;
         }
         // Plays Valjevo Castle alone with a new party.

@@ -339,7 +339,9 @@ class CampaignParty
     void set_wealth(Purse wealth);
     // Money a joining character brings; throws if the party purse cannot hold it.
     void add_coins(Coin coin, std::uint32_t count);
-    void award_experience(unsigned amount, std::string reward_id);
+    // Each living member gains `amount`, or only `only` when it is given (a
+    // duel's champion, as the original's other members stand aside).
+    void award_experience(unsigned amount, std::string reward_id, MemberId only = {});
     // A training hall's experience session: half the experience between the
     // member's level and the next, once per level, paid in the party's gold.
     [[nodiscard]] ExperienceOffer experience_offer(MemberId id, TrainingHall hall) const;

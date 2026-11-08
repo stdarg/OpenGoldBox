@@ -14,7 +14,7 @@ namespace opengold
 {
 namespace
 {
-constexpr std::string_view format_line = "opengold-ai-encounter 2";
+constexpr std::string_view format_line = "opengold-ai-encounter 3";
 
 // A fight the policy cannot finish: both sides stand off with no player to break
 // it. A real fight takes far fewer commands than this.
@@ -146,7 +146,13 @@ std::string encode_ai_encounter(const CampaignEncounter &encounter)
     out << "\noptions\t" << static_cast<int>(encounter.facing) << '\t'
         << static_cast<int>(encounter.surprise) << '\t' << encounter.distance << '\t'
         << encounter.party_resting << '\t' << encounter.morale << '\t' << encounter.champion << '\t'
-        << encounter.daylight << '\n';
+        << encounter.daylight << '\t' << encounter.mirror << '\n';
+    out << "turncoats";
+    for (const auto id : encounter.turncoats)
+    {
+        out << '\t' << id;
+    }
+    out << '\n';
     out << "positions";
     for (const auto cell : encounter.positions)
     {
@@ -230,6 +236,14 @@ CampaignEncounter decode_ai_encounter(std::string_view text)
             encounter.morale = as_unsigned(fields.at(5));
             encounter.champion = static_cast<rules::EntityId>(number(fields.at(6)));
             encounter.daylight = as_int(fields.at(7)) != 0;
+            encounter.mirror = as_int(fields.at(8)) != 0;
+        }
+        else if (tag == "turncoats")
+        {
+            for (std::size_t n = 1; n < fields.size(); ++n)
+            {
+                encounter.turncoats.push_back(static_cast<rules::EntityId>(number(fields[n])));
+            }
         }
         else if (tag == "positions")
         {

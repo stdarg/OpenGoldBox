@@ -546,6 +546,17 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
         {
             throw std::runtime_error("The duel's champion cannot fight");
         }
+        // The arena's copy carries the duelist's gear and stands at its Hit
+        // Points, as the original copies the record and its items; the
+        // original names it ROLF.
+        if (encounter.mirror)
+        {
+            auto copy = participants.front();
+            copy.id = mirror_id;
+            copy.side = Side::opposition;
+            copy.name = "Rolf";
+            encounter.enemies = {std::move(copy)};
+        }
     }
     for (auto &participant : participants)
     {

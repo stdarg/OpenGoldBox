@@ -84,6 +84,9 @@ struct BandMember
     unsigned record{}, xp{};
 };
 
+// The arena duel's copy of the champion.
+inline constexpr rules::EntityId mirror_id = 1000;
+
 struct CampaignEncounter
 {
     por::DungeonBattlefield field;
@@ -104,6 +107,9 @@ struct CampaignEncounter
     // A duel (the original's CALL 0x8001): only this member fights; 0 means
     // the whole party.
     rules::EntityId champion{};
+    // The training hall's arena duel (CALL 0x8000): the champion fights a
+    // copy of itself, with its gear, as the fight's one enemy (id 1000).
+    bool mirror{};
     // The fight is by day, 06:00 to 17:59, so squares open to the sky are in
     // sunlight (Sunlight Sensitivity).
     bool daylight{};

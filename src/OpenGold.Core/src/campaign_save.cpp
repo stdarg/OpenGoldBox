@@ -781,7 +781,7 @@ template <bool Reading> struct SaveCodec
             v.staged_allies_.clear();
             v.staged_ally_art_.clear();
             v.encounter_.reset();
-            v.duel_ = false;
+            v.duel_ = v.mirror_duel_ = false;
             v.turncoats_.clear();
             v.monster_picture_id_.reset();
             v.showing_monster_picture_ = false;

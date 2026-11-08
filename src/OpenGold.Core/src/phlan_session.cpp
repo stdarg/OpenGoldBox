@@ -1180,6 +1180,24 @@ bool RolfTourSession::reject_combat(std::string diagnostic)
     return true;
 }
 
+// The arena's copy has no creature record of its own.
+constexpr unsigned mirror_record = std::numeric_limits<unsigned>::max();
+
+void RolfTourSession::stage_mirror()
+{
+    // The fight builds the copy from the duelist; here it gets its place
+    // among the enemies and the original's combat icon 11.
+    auto art = creature_art(area_resources().combat_archive, 11, nullptr, false);
+    if (!art)
+    {
+        throw EclError("Invalid original combat icon");
+    }
+    art->entity = opengold::mirror_id;
+    staged_enemies_.push_back({.id = opengold::mirror_id, .name = "Rolf"});
+    staged_art_.push_back(std::move(*art));
+    staged_records_.push_back(mirror_record);
+}
+
 RolfTourSession::TurncoatLoot RolfTourSession::part_with_turncoats(const rules::Snapshot &result)
 {
     TurncoatLoot loot;
@@ -1330,6 +1348,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         ++snapshot_.revision;
         return true;
     }
+    const bool mirror = std::exchange(mirror_duel_, false);
     const bool first =
         current_area_ == 20 && encounter_records_ == std::vector<unsigned>{13, 4, 4, 4};
     const auto reward = first ? std::string("por:ECL2:20:search1:orcs:v1")
@@ -1363,7 +1382,8 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             unsigned experience = 0;
             for (const auto &unit : result.combatants)
             {
-                if (unit.side == rules::Side::opposition && unit.hit_points == 0)
+                if (unit.side == rules::Side::opposition && unit.hit_points == 0 &&
+                    staged_records_.at(unit.id - 1000) != mirror_record)
                 {
                     experience += area_resources()
                                       .conversions.at(staged_records_.at(unit.id - 1000))
@@ -1380,6 +1400,14 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             // No experience, and the opponent keeps its gear.
             campaign_->recover_duelist(champion);
             snapshot_.dialogue = "You have lost the fight.";
+        }
+        else if (mirror)
+        {
+            // Beating its own copy earns the duelist 100 experience a level
+            // and nothing else (postcbt.pas DetermineLootExp).
+            campaign_->award_experience(
+                100 * static_cast<unsigned>(campaign_->member(champion).character.sheet().level),
+                reward, champion);
         }
         else
         {
@@ -1418,7 +1446,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                 {
                     experience += area_resources().conversions.at(record).award_xp;
                 }
-                campaign_->award_experience(experience, reward);
+                campaign_->award_experience(experience, reward, champion);
                 pending_loot_.push_back(
                     encounter_loot(current_area_, std::move(paying), reward + ":loot",
                                    machine_.variable(EclAddress{0x6DE3}) != 1, std::move(spent)));
@@ -3146,12 +3174,20 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             reply.writes.push_back({ecl_monsters_defeated, 0});
             break;
         }
+        if (mirror_duel_ && campaign_)
+        {
+            stage_mirror();
+        }
         // New Phlan's own fights too: the city watch's, Tempus's priests'.
         if (!staged_enemies_.empty())
         {
             read_character();
             encounter_records_ = staged_records_;
-            fit_staged_encounter();
+            // The arena's copy is the duelist's match, whatever the party.
+            if (!mirror_duel_)
+            {
+                fit_staged_encounter();
+            }
             const auto p = snapshot_.pose;
             // On the wilderness map the field grows from the terrain under the
             // party, drawn with the wilderness set, north up.
@@ -3199,6 +3235,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             encounter_->daylight = hour >= 6 && hour < 18;
             if (std::exchange(duel_, false))
             {
+                encounter_->mirror = mirror_duel_;
                 encounter_->champion = campaign_->state().slots.at(selected_character_.index);
                 if (!encounter_->champion)
                 {

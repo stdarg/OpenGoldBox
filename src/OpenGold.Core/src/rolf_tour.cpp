@@ -892,7 +892,7 @@ void RolfTourSession::reset_run()
     who_request_ = damage_request_ = 0;
     snapshot_.choosing_member = false;
     victory_ = false;
-    duel_ = false;
+    duel_ = mirror_duel_ = false;
     turncoats_.clear();
     who_slots_.clear();
     temple_visit_.reset();
@@ -1005,7 +1005,7 @@ void RolfTourSession::roll_back_event()
     who_request_ = damage_request_ = 0;
     snapshot_.choosing_member = false;
     victory_ = false;
-    duel_ = false;
+    duel_ = mirror_duel_ = false;
     turncoats_.clear();
     who_slots_.clear();
     temple_visit_.reset();
@@ -1192,6 +1192,12 @@ void RolfTourSession::handle_host(const EclRequest &request)
             // The original's one-on-one duel: the next COMBAT is the
             // selected member's alone (coab's isDuel).
             duel_ = true;
+        }
+        else if (service == EclAddress{0x8000})
+        {
+            // The training hall's arena duel (eclmenu.pas CharFightsAlone):
+            // the selected member fights alone against a copy of itself.
+            duel_ = mirror_duel_ = true;
         }
         else if (service == EclAddress{0xBA03})
         {

@@ -51,9 +51,9 @@ unless named otherwise. Test files: `ecl` [ecl_tests.cpp](../tests/ecl_tests.cpp
 | 29 | ENCOUNTER MENU | Every area's meetings, answered by the original's table | `exp` `encounter_table_tests` | `exp` `slums_encounter_menu` | Distances beyond 2 |
 | 2D | CALL 0x2C90, 0xC018 | Redraw (rolf_tour.cpp) | `tour` `synthetic` (0x2C90) | Rolf's tour redraws | Invalid poses |
 | 2D | CALL 0xC01E | Scripted walk (rolf_tour.cpp) | — | Runs, unasserted | Invalid poses |
-| 2D | CALL 0x8001 | Duel flag | — | The Pitt's duel (`exp` `podol_pitt`) | A duel without a chosen member |
+| 2D | CALL 0x8001 | Duel flag; the duelist alone earns the fight's experience | — | The Pitt's duel (`exp` `podol_pitt`) | A duel without a chosen member |
 | 2D | CALL 0xBA03 | Footstep sound (rolf_tour.cpp) | — | Rolf's tour footsteps | Other sound selectors |
-| 2D | CALL 0x8000 | **Not implemented** | `tour` `synthetic` expects the fault | — | Always |
+| 2D | CALL 0x8000 | The arena duel: the member WHO chose fights a copy of itself with its gear (the original's ROLF, icon 11); won, 100 experience a level to the duelist alone; lost, the duelist is left on 1 Hit Point | — | The training hall's arena (`exp` `arena_duel`) | — |
 | 2E | DAMAGE | Volley, chosen, random or whole party | — (rules level in `kutos_well_tests.cpp`) | Arrow volley; Cadorna's well fall (`exp` `cadorna_textile_house`) | Other forms |
 | 31 | SPRITE OFF | rolf_tour.cpp | `tour` `synthetic` | Runs, unasserted (Rolf's tour) | — |
 | 32 | FIND ITEM | `ecl_party_host.cpp` | `party` `script_handoff`; VM `ecl` | — | — |
@@ -70,8 +70,9 @@ unless named otherwise. Test files: `ecl` [ecl_tests.cpp](../tests/ecl_tests.cpp
 
 ## Gaps
 
-- **Not implemented:** CALL 0x8000 and opcode 0x1F. Each stops the
-  event with an explicit error, and the event's checkpoint undoes it.
+- **Not implemented:** opcode 0x1F, which the original's dispatcher leaves
+  undefined (it would run forever there). It stops the event with an explicit
+  error, and the event's checkpoint undoes it.
 - **No synthetic test:** PICTURE, CLEAR MONSTERS, CALL 0xC01E, 0x8001 and
   0xBA03, DAMAGE, LOAD PIECES, PROTECTION.
 - **Table-driven random encounter:** Podol Plaza's roaming group table is

@@ -94,6 +94,13 @@ void encounter_round_trip()
               decoded.distance == 1 && decoded.morale == 80 && decoded.daylight,
           "The encounter's settings survive");
     check(decoded.enemies.size() == 1 && decoded.allies.size() == 1, "Both sides survive");
+    auto arena = fight;
+    arena.mirror = true;
+    arena.turncoats = {3, 5};
+    const auto marked = decode_ai_encounter(encode_ai_encounter(arena));
+    check(marked.mirror && marked.turncoats == arena.turncoats && !decoded.mirror &&
+              decoded.turncoats.empty(),
+          "An arena duel and the members who turned on the party survive");
     const auto &bandit = decoded.enemies.front();
     check(bandit.id == 1000 && bandit.definition == "bandit" && bandit.name == "BANDIT 1" &&
               bandit.melee_weapon == "longsword" && bandit.ranged_weapon == "longbow" &&
