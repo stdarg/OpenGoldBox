@@ -65,13 +65,13 @@ work") require constant clarification.
 
 While working on a task, after each change run only the tests that are directly related to the change; we do not have the time to run every test after every single change.
 
-Always run the full test suite when you complete a task I ask of you, and before pushing the work to main. Then commit your work and push to origin. Save the date when all tests are run for future reference.
+Always run the full test suite for the software you are modifying (the game, the demos, a dev tool) when you complete a task I ask of you, and before pushing the work to main. A change to the game needs the game's suite, not the demos'. Then commit your work and push to origin. Save the date when all tests are run for future reference.
 
 Documentation-only changes need no tests.
 
 ## 6. Do your work in git worktrees
 
-Before pushing to origin/main, run the full test suite and ensure all tests pass. Always
+Before pushing to origin/main, run the full test suite for the software you are modifying and ensure all tests pass. Always
 commit your work when done and push to origin/main.
 
 **ALWAYS update the main checkout when you are done.** After every push, bring the main
