@@ -70,3 +70,6 @@ dev_tools/replacement_art_creator/godot/art/*.png.import
 
 # macOS Finder metadata
 .DS_Store
+
+# Python bytecode, written when a tool or test imports another
+__pycache__/
