@@ -15,10 +15,12 @@ foreach(variable HOME APPDATA XDG_DATA_HOME)
 endforeach()
 set(ENV{OPENGOLD_SETTINGS_FILE} "${WORK}/home/settings.cfg")
 set(ENV{OPENGOLD_LANG} en)
+# The limit catches a hang. Alone the events take about six minutes; beside
+# the rest of the suite they took more than eight on Windows (#279).
 execute_process(
     COMMAND "${CMAKE_COMMAND}" "-DGODOT=${GODOT}" "-DPROJECT=${PROJECT}"
     "-DSCRIPT=${CMAKE_CURRENT_LIST_DIR}/area_events_tests.gd"
-    "-DEXPECTED=Events passed" -DTEST_TIMEOUT=500
+    "-DEXPECTED=Events passed" -DTEST_TIMEOUT=1200
     "-DARGS=--fixtures=${FIXTURES}/slums-events;--finish-fights;--words=OHLO,XYZZY"
     -P "${CMAKE_CURRENT_LIST_DIR}/run_godot_test.cmake"
     RESULT_VARIABLE result)
