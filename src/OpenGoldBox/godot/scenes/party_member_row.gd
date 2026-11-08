@@ -62,8 +62,8 @@ func name_color() -> Color:
 # when that is less.
 func portrait_side() -> float:
     var style := get_theme_stylebox("normal")
-    return minf(PORTRAIT_SIDE,
-        size.y - style.get_margin(SIDE_TOP) - style.get_margin(SIDE_BOTTOM))
+    return clampf(size.y - style.get_margin(SIDE_TOP) - style.get_margin(SIDE_BOTTOM),
+        0.0, PORTRAIT_SIDE)
 
 
 # The least height that shows a compact card's lines: name, race and class,
