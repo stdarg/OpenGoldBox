@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.25)
 project(OpenGoldCreatureStatsEditor LANGUAGES CXX)
 
+if(MSVC)
+    # The game's libraries and godot-cpp use the DLL runtime, which the
+    # top-level CMakeLists.txt sets only for its own directory.
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+endif()
+
 # The game's own build, for its libraries, godot-cpp and the target that copies
 # data/ into the game project (opengoldbox_game_data).
 set(OPENGOLD_BUILD_GAME ON CACHE BOOL "" FORCE)

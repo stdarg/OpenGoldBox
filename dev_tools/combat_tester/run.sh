@@ -3,6 +3,7 @@ set -euo pipefail
 
 tool_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_dir="$(cd -- "$tool_dir/../.." && pwd)"
+source "$tool_dir/../rsync_fallback.sh"
 build_dir="$repo_dir/build/combat-tester"
 game_dir="${1:-${OPENGOLD_GAME_DIR:-$HOME/POOLRAD}}"
 godot_bin="${GODOT_BIN:-/Applications/Godot_mono.app/Contents/MacOS/Godot}"
@@ -35,7 +36,10 @@ rsync -a --delete "$repo_dir/data/monsters/" "$project_dir/data/monsters/"
 rsync -a --delete "$repo_dir/data/art/missiles/" "$project_dir/data/art/missiles/"
 rsync -a "$repo_dir/data/art/portraits/" "$project_dir/bin/portraits/"
 if [[ ! -s "$project_dir/.godot/extension_list.cfg" ]]; then
-    "$godot_bin" --headless --editor --path "$project_dir" --import --quit
+    # Godot can crash as the import exits; the import is done once it lists
+    # the extension.
+    "$godot_bin" --headless --editor --path "$project_dir" --import --quit ||
+        [[ -s "$project_dir/.godot/extension_list.cfg" ]]
 fi
 
 export OPENGOLD_GAME_DIR="$game_dir"

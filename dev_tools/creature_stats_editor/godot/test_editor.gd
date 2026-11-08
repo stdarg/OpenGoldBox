@@ -66,9 +66,14 @@ func _initialize() -> void:
 
 	editor.creature_search.text = "castle-knight"
 	editor._show_creature_list()
-	check(editor.creature_list.item_count == 1, "Searching by stat line finds the castle's guards")
-	editor.creature_list.select(0)
-	editor._select_creature(0)
+	# Valjevo Castle's guards and a New Phlan record share the stat line.
+	check(editor.creature_list.item_count == 2, "Searching by stat line finds every record built on it")
+	var guards_row := 0
+	for row in editor.creature_list.item_count:
+		if editor.creature_list.get_item_text(row).contains("Valjevo Castle"):
+			guards_row = row
+	editor.creature_list.select(guards_row)
+	editor._select_creature(guards_row)
 	check(editor.creature_view.get_child_count() > 5, "The guards' details are shown")
 
 	var guards := {}
@@ -85,7 +90,7 @@ func _initialize() -> void:
 	check(find_text(editor.companion_view, "Built as the game builds") != null,
 		"A companion is shown as the game builds it")
 
-	editor.creature = editor.creature_list.get_item_metadata(0)
+	editor.creature = editor.creature_list.get_item_metadata(guards_row)
 	editor._conversion_edit({"fit_xp": 900}, "Rated higher")
 	editor._conversion_edit({"award_xp": 800}, "Rated higher")
 	check(editor.edits.size() == 1 and int(editor.edits[0]["to"]["fit_xp"]) == 900 and

@@ -24,7 +24,10 @@ cp "$tool_dir/godot/project.godot" "$tool_dir/godot/editor.tscn" "$tool_dir/godo
     "$project_dir/"
 cp "$tool_dir/godot/creature_stats_editor.gdextension" "$project_dir/bin/"
 if [[ ! -s "$project_dir/.godot/extension_list.cfg" ]]; then
-    "$godot_bin" --headless --editor --path "$project_dir" --import --quit
+    # Godot can crash as the import exits; the import is done once it lists
+    # the extension.
+    "$godot_bin" --headless --editor --path "$project_dir" --import --quit ||
+        [[ -s "$project_dir/.godot/extension_list.cfg" ]]
 fi
 
 export OPENGOLD_REPOSITORY="$repo_dir"

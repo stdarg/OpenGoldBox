@@ -335,6 +335,12 @@ std::vector<Staged> staged_fights(const Options &options, const std::vector<AiSc
     for (const auto *scenario : chosen_fights(options, pack))
     {
         auto encounter = scenario->encounter;
+        // Turncoats are members of the fight's own party, which another
+        // fight's party replaces.
+        if (common_party)
+        {
+            encounter.turncoats.clear();
+        }
         if (!options.enemies.empty())
         {
             encounter.enemies = staged_enemies(options.enemies, pack);
