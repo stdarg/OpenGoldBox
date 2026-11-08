@@ -305,17 +305,26 @@ argument, then `OPENGOLD_GAME_DIR`, then `~/POOLRAD`, and Godot from
 `GODOT_BIN`. The [dev tools index](../dev_tools/docs/README.md) says what each
 one does.
 
+On Windows, start Git Bash inside the Visual Studio build environment, so that
+CMake finds the compiler and Ninja, and set `GODOT_BIN`:
+
+```bat
+call "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\Common7\Tools\VsDevCmd.bat" -arch=x64
+set GODOT_BIN=C:/bin/godot.exe
+"C:\Program Files\Git\bin\bash.exe"
+```
+
 | Tool | macOS | Windows | Linux |
 | --- | --- | --- | --- |
 | Tile Art Viewer | yes | Git Bash | yes |
 | Replacement Art Creator | yes | Git Bash | yes |
 | Combat Sprite Catalog | yes | Git Bash | extension lists Linux, launch not documented |
 | Shop & Temple Manager | yes | Git Bash | extension lists Linux, launch not documented |
-| Party tester | yes | not set up: needs `rsync` | no: extension lists no Linux library |
-| Combat tester | yes | not set up: needs `rsync` | no: extension lists no Linux library |
-| Creature Stats Editor | yes | not documented | no: extension lists no Linux library |
-| Creature edits importer | yes | not documented | no: part of the game build |
-| AI lab | yes | not documented | not documented |
+| Party tester | yes | Git Bash | no: extension lists no Linux library |
+| Combat tester | yes | Git Bash | no: extension lists no Linux library |
+| Creature Stats Editor | yes | Git Bash | no: extension lists no Linux library |
+| Creature edits importer | yes | yes | no: part of the game build |
+| AI lab | yes | Git Bash | not documented |
 | DOS probe | yes | not documented | not documented |
 
 ### Tile Art Viewer
@@ -372,8 +381,8 @@ Check, after launching it once:
 ### Party tester
 
 Compiles the game's own code into `build/party-tester`, which takes a few
-minutes the first time. Its launcher also needs `rsync`, which macOS has and
-Git Bash does not.
+minutes the first time. Git Bash has no `rsync`, so on Windows the launcher
+copies with `cp`.
 
 ```bash
 dev_tools/party_tester/run.sh
@@ -385,7 +394,7 @@ settings.
 
 ### Combat tester
 
-Like the party tester: the game's code in `build/combat-tester`, and `rsync`.
+Like the party tester: the game's code in `build/combat-tester`.
 
 ```bash
 dev_tools/combat_tester/run.sh
@@ -413,6 +422,7 @@ tree.
 
 ```bash
 build/macos-universal/opengold_import_edits --check
+build/game/opengold_import_edits.exe --check            # Windows
 cmake --build build/macos-universal --target opengoldbox_import_edits
 ```
 

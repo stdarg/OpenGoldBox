@@ -26,6 +26,9 @@ dev_tools/combat_sprite_catalog/godot/icon.png.import
 dev_tools/replacement_art_creator/godot/.godot/
 dev_tools/replacement_art_creator/godot/bin/
 dev_tools/replacement_art_creator/godot/art/*.png.import
+dev_tools/replacement_art_creator/godot/icon.png.import
+dev_tools/shop_manager/godot/icon.png.import
+dev_tools/tile_art_viewer/godot/icon.png.import
 
 # The session board: what each Claude or Codex session is working on now
 # (tools/session_board.py)
