@@ -119,7 +119,9 @@ item buys it, as choosing it and Buy do, and hovering over it tells a weapon's
 roll to hit Armor Class 13 and its damage, or armor's Armor Class on the
 buyer ([party](PARTY.md)). Over the shopkeeper's portrait stand the
 shopkeeper's name and the shop's type, "Bettrin Ashforge - Arms & Armor",
-from the shop's record in `data/shops`. Scripts that ask
+from the shop's record in `data/shops`. The **Filter** beside Leave shop lists
+the shop's armor and shields, weapons, other goods, or All, the default; the
+next shop opens on All again. Scripts that ask
 for particular coins make change; see [coin payments](#coin-payments).
 
 ### Equipment conversion in the game

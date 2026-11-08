@@ -74,9 +74,12 @@ travel, automatic combat, original tactical geometry and persistent rewards.
    count. The shop script receives the final buyer.
    **Return to party** becomes available when the event finishes. The street or
    encounter view occupies only its required width at the left. Immediately to
-   its right, scrollable member rows show the party roster's portrait, name,
-   class, race and gender, and beside them AC and current/maximum HP, the
-   weapons in hand and the armor and shield worn. The selected member's row has
+   its right, the members' cards stand two to a row when they fit, the same
+   while exploring and in a shop: the roster's portrait, the name, race and
+   class, then AC and current/maximum HP. Their tooltip adds gender, the weapons
+   in hand and the armor and shield worn. The list sizes its cards so four
+   rows fit, room for six characters and two NPCs, and scrolls only when the
+   window is too short for that (the user's request, 2026-11-08). The selected member's row has
    the roster's gold border: that member receives services (the buyer in a shop,
    who takes at a treasure), and the list scrolls to them. Clicking a row selects
    that member outside events; double-clicking it also opens the character sheet

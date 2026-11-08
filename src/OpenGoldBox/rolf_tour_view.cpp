@@ -195,6 +195,10 @@ constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_
     }
 }
 
+// What a shop's filter lists, ShopFilter's items in order; All is the default.
+constexpr std::array shop_filters{N_("Armor"), N_("Weapons"), N_("Other"), N_("All")};
+constexpr std::int64_t all_items_filter = 3;
+
 } // namespace
 
 void RolfTourView::_bind_methods()
@@ -291,6 +295,15 @@ void RolfTourView::prepare_view()
     }
     required_node<ItemList>(*this, "%Choices")
         .connect("gui_input", presentation::guarded(this, &RolfTourView::choices_input));
+    auto &filter = required_node<OptionButton>(*this, "%ShopFilter");
+    for (const char *kind : shop_filters)
+    {
+        filter.add_item(i18n::text(kind));
+    }
+    filter.select(static_cast<std::int32_t>(all_items_filter));
+    filter.connect("item_selected",
+                   presentation::guarded(this, &RolfTourView::shop_filter_selected));
+    required_node<Label>(*this, "%FilterLabel").set_text(i18n::text(N_("Filter")));
     required_node<ItemList>(*this, "%Choices")
         .connect("resized", presentation::guarded(this, &RolfTourView::fit_choice_columns));
     required_node<ItemList>(*this, "InventoryPanel/%Items")
@@ -486,7 +499,7 @@ void RolfTourView::next()
     {
         if (!selected.is_empty())
         {
-            session_->buy(s.continue_ticket, selected[0]);
+            session_->buy(s.continue_ticket, shop_rows_.at(static_cast<std::size_t>(selected[0])));
         }
     }
     else if (s.phase == TourPhase::treasure)
@@ -525,6 +538,29 @@ void RolfTourView::fit_choice_columns()
         shop ? std::max(0, static_cast<int>(choices.get_size().x) / shop_column_count -
                                shop_column_margin)
              : 0);
+}
+
+// Whether a shop's filter lists the item: armor and shields, weapons, the
+// rest, or all.
+bool RolfTourView::passes_shop_filter(const opengold::por::Equipment &item) const
+{
+    if (!campaign_ || shop_filter_ == all_items_filter)
+    {
+        return true;
+    }
+    using opengold::rules::EquipmentSlot;
+    const auto slot = campaign_->equipment_slot(item);
+    const bool armor = slot == EquipmentSlot::armor || slot == EquipmentSlot::shield;
+    const bool weapon = slot == EquipmentSlot::weapon;
+    return shop_filter_ == 0 ? armor : shop_filter_ == 1 ? weapon : !armor && !weapon;
+}
+
+void RolfTourView::shop_filter_selected(std::int64_t index)
+{
+    shop_filter_ = index;
+    // The list is drawn again under the new filter.
+    displayed_ticket_ = 0;
+    refresh();
 }
 
 // A double click on a shop's item buys it, as choosing it and Buy do. The list
@@ -2486,6 +2522,16 @@ void RolfTourView::refresh()
     auto *choices = &required_node<ItemList>(*this, "%Choices");
     choices->set_visible(shopping || multiple);
     fit_choice_columns();
+    // A shop's filter shows in a shop, and lists everything again in the next.
+    const bool in_shop = shopping && !treasure;
+    required_node<Control>(*this, "%FilterLabel").set_visible(in_shop);
+    required_node<Control>(*this, "%ShopFilter").set_visible(in_shop);
+    if (!in_shop && shop_filter_ != all_items_filter)
+    {
+        shop_filter_ = all_items_filter;
+        required_node<OptionButton>(*this, "%ShopFilter")
+            .select(static_cast<std::int32_t>(all_items_filter));
+    }
     if (displayed_ticket_ != s.continue_ticket)
     {
         choices->clear();
@@ -2498,8 +2544,16 @@ void RolfTourView::refresh()
         }
         else if (shopping)
         {
-            for (const auto &item : session_->shop_stock())
+            shop_rows_.clear();
+            const auto &stock = session_->shop_stock();
+            for (std::size_t n = 0; n < stock.size(); ++n)
             {
+                const auto &item = stock[n];
+                if (!passes_shop_filter(item))
+                {
+                    continue;
+                }
+                shop_rows_.push_back(n);
                 // Stock without an equipment conversion stays for sale, disclosed.
                 const bool usable =
                     !opengold::equipment_conversion(item).starts_with("por:unsupported:");
@@ -2554,7 +2608,8 @@ void RolfTourView::refresh()
         for (int row = 0; row < choices->get_item_count() && row < static_cast<int>(listed.size());
              ++row)
         {
-            const auto &item = listed[static_cast<std::size_t>(row)];
+            const auto &item = listed[treasure ? static_cast<std::size_t>(row)
+                                               : shop_rows_.at(static_cast<std::size_t>(row))];
             Color color;
             if (!campaign_->can_use(chosen, item))
             {
@@ -2759,14 +2814,14 @@ StringName low_hit_points_color(int current, int maximum)
 }
 } // namespace
 
-// Each member's row: the portrait and the roster's lines, then Armor Class,
-// hit points and gear. In a shop the row is compact: name, race and class, then
-// Armor Class and hit points. The selected member, who receives services, is
-// highlighted, and the list scrolls to them when the selection changes.
+// Each member's card, the same while exploring and in a shop: the portrait,
+// then name, race and class, then Armor Class and hit points; its tooltip adds
+// gender, the weapon in hand and the armor worn. The selected member, who
+// receives services, is highlighted, and the list scrolls to them when the
+// selection changes.
 void RolfTourView::show_party_rows()
 {
     const auto selected = campaign_ ? campaign_->state().selected_slot.index : 0U;
-    const bool compact = shop_layout();
     for (unsigned slot = 0; slot < 8; ++slot)
     {
         auto *button = &required_node<Button>(*this, String("%PartyList/Rows/Member") +
@@ -2787,19 +2842,17 @@ void RolfTourView::show_party_rows()
         const auto &cs = m.character.sheet();
         const auto name = (leader ? String::utf8("★ ") : String()) + String::utf8(cs.name.c_str());
         const auto gear = gear_lines(*campaign_, m);
-        const auto identity =
-            compact
-                ? PackedStringArray({name, i18n::text(cs.race) + " / " + i18n::class_summary(cs)})
-                : PackedStringArray(
-                      {name, i18n::class_summary(cs), i18n::text(cs.race), i18n::text(cs.gender)});
-        button->call("show_member",
-                     portraits_->texture(m.character.appearance(), m.character.creation_data()),
-                     identity,
-                     armor_and_hit_points(campaign_->profile(id).armor_class, m.vitals.hit_points,
-                                          cs.hit_points),
-                     low_hit_points_color(m.vitals.hit_points, cs.hit_points),
-                     compact ? PackedStringArray() : PackedStringArray({gear.weapons, gear.armor}),
-                     leader, session_ && session_->turns_on_party(id));
+        const auto health = armor_and_hit_points(campaign_->profile(id).armor_class,
+                                                 m.vitals.hit_points, cs.hit_points);
+        button->call(
+            "show_member",
+            portraits_->texture(m.character.appearance(), m.character.creation_data()),
+            PackedStringArray({name, i18n::text(cs.race) + " / " + i18n::class_summary(cs)}),
+            health, low_hit_points_color(m.vitals.hit_points, cs.hit_points), PackedStringArray(),
+            leader, session_ && session_->turns_on_party(id));
+        button->set_tooltip_text(String("\n").join(PackedStringArray(
+            {name, i18n::class_summary(cs), i18n::text(cs.race), i18n::text(cs.gender),
+             String().join(health), gear.weapons, gear.armor})));
         auto *arrow = &required_node<Button>(*button, "Advance");
         arrow->call("place_in_member_row", name);
         arrow->set_visible(embedded_party_ && campaign_->can_advance(id) && session_->can_leave());

@@ -161,6 +161,10 @@ class RolfTourView : public godot::Control
     std::unique_ptr<opengold::por::SoundPlayer> original_sound_;
     unsigned rendered_sprite_id_{999};
     std::uint64_t displayed_ticket_{};
+    // The shop's filter, ShopFilter's index (All by default), and the stock
+    // index of each item the shop lists under it.
+    std::int64_t shop_filter_{3};
+    std::vector<std::size_t> shop_rows_;
     std::uint64_t rendered_picture_revision_{};
     bool no_fog_{}, ready_{}, checking_{}, capture_{}, capture_pending_{};
     // The rest checks' command-line flags, read once.
@@ -212,6 +216,8 @@ class RolfTourView : public godot::Control
     void next();
     void choices_input(const godot::Ref<godot::InputEvent> &event);
     void fit_choice_columns();
+    void shop_filter_selected(std::int64_t index);
+    [[nodiscard]] bool passes_shop_filter(const opengold::por::Equipment &item) const;
     void left();
     void right();
     void forward();

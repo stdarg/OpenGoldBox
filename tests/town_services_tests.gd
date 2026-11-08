@@ -12,9 +12,11 @@ extends SceneTree
 #   members it helps and no one else, take the price once paid, and cure;
 # - an inn must charge its platinum once a night, and its first night must
 #   restore the party.
-# In a shop the party's cards stand two to a row, each with its name, race and
+# Exploring and in a shop the party's cards stand two to a row, in four rows
+# with room for six characters and two NPCs, each with its name, race and
 # class, then Armor Class and hit points; a wounded party's low hit points show
-# in yellow (under a fifth) or red (under a tenth).
+# in yellow (under a fifth) or red (under a tenth). A shop's filter lists its
+# armor, weapons, other goods or all of them.
 # Prints one "BUG:" line per problem and fails if there is any.
 #   godot --headless --path src/OpenGoldBox/godot --script tests/town_services_tests.gd \
 #       -- --fixtures=DIR [--only=temple-11-3] [--trail]
@@ -228,7 +230,7 @@ func check_shop(x: int, y: int, party: String) -> void:
 	if not await enter(shopping):
 		bug("the shop does not open", "(" + str(x) + "," + str(y) + ") dialogue '" + dialogue() + "'")
 		return
-	await check_shop_cards()
+	await check_party_cards("in a shop")
 	var record := record_at("shop", x, y)
 	var stock: Array = choices()
 	if record.is_empty():
@@ -247,6 +249,7 @@ func check_shop(x: int, y: int, party: String) -> void:
 	var gold := party_gold()
 	check_shop_colors(stock, gold)
 	check_shop_layout(record, stock)
+	await check_filter(stock)
 	if party == "poor":
 		await buy(0, stock[0], false)
 	else:
@@ -283,22 +286,60 @@ func check_shop_colors(stock: Array, gold: int) -> void:
 	if any_yellow != dialogue().contains("Yellow: the party cannot afford it."):
 		bug("the shop's news does not explain yellow", "'" + dialogue() + "'")
 
-# At the game's full size a shop's cards stand two to a row, each with three
-# lines; the check's own smaller window keeps one card a row.
-func check_shop_cards() -> void:
+# At the game's full size the party's cards stand two to a row, with room
+# for four rows (six characters and two NPCs) in the list, each drawing three
+# lines; their tooltip adds class, race, gender, weapon and armor. The check's
+# own smaller window keeps one card a row.
+func check_party_cards(where: String) -> void:
 	var window_size := root.size
 	root.size = Vector2i(1920, 1080)
 	await settle()
-	var rows: GridContainer = town().get_node("%PartyList/Rows")
+	var party: ScrollContainer = town().get_node("%PartyList")
+	var rows: GridContainer = party.get_node("Rows")
 	if rows.columns != 2:
-		bug("a shop's party list is not two cards wide", str(rows.columns) + " columns")
+		bug("the party list is not two cards wide " + where, str(rows.columns) + " columns")
+	var cards := 0
 	for row in rows.get_children():
 		if not (row as Control).visible: continue
+		cards += 1
+		var drawn: PackedStringArray = row.get("_identity")
 		var lines: PackedStringArray = (row as Button).tooltip_text.split("\n")
-		if lines.size() != 3 or not lines[1].contains(" / ") or not lines[2].begins_with("AC "):
-			bug("a shop's party card is not name, race / class, AC / HP", " | ".join(lines))
+		if drawn.size() != 2 or not drawn[1].contains(" / ") or not (row.get("_condition") as PackedStringArray).is_empty() \
+				or lines.size() != 7 or not lines[4].begins_with("AC "):
+			bug("a party card " + where + " is not name, race / class, AC / HP", " | ".join(drawn) + " || " + " | ".join(lines))
+		var four_rows: float = (row as Control).size.y * 4 + rows.get_theme_constant("v_separation") * 3
+		if four_rows > party.size.y + 1:
+			bug("the party list " + where + " has no room for two NPCs", str(four_rows) + " needed, " + str(party.size.y) + " tall")
+	if cards == 0:
+		bug("the party list " + where + " shows no card", "")
 	root.size = window_size
 	await settle()
+
+# Each filter lists only its kind: armor and shields tell an Armor Class on
+# hover, weapons a roll to hit, other goods neither; All lists the whole stock.
+func check_filter(stock: Array) -> void:
+	var filter: OptionButton = town().get_node("%ShopFilter")
+	if not filter.is_visible_in_tree() or filter.get_item_text(filter.selected) != "All":
+		bug("a shop's filter is missing or not on All", str(filter.is_visible_in_tree()))
+		return
+	var list: ItemList = town().get_node("%Choices")
+	var listed := 0
+	for kind in [0, 1, 2]:
+		filter.select(kind)
+		filter.item_selected.emit(kind)
+		await settle()
+		listed += list.item_count
+		for i in range(list.item_count):
+			var hover := list.get_item_tooltip(i)
+			var armor := hover.contains("\nArmor Class: ")
+			var weapon := hover.contains("\nTo hit AC ")
+			if [armor, weapon, not armor and not weapon][kind] == false:
+				bug("a shop's filter lists another kind", filter.get_item_text(kind) + ": " + list.get_item_text(i))
+	filter.select(3)
+	filter.item_selected.emit(3)
+	await settle()
+	if listed != stock.size() or choices() != stock:
+		bug("a shop's filters do not share out its stock", str(listed) + " of " + str(stock.size()))
 
 # Each card colors its current hit points by how low they are.
 func check_hit_point_colors() -> void:
@@ -671,6 +712,7 @@ func run() -> void:
 		if not await load_fixture(file): continue
 		places += 1
 		if party == "wounded": check_hit_point_colors()
+		if places == 1: await check_party_cards("while exploring")
 		if party == "outlaw":
 			await check_refusal()
 			continue

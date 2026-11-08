@@ -1880,6 +1880,11 @@ bool CampaignParty::adds_no_armor_class(MemberId id, const por::Equipment &item)
     return preview_item.armor_class && *preview_item.armor_class <= preview_item.armor_class_now;
 }
 
+rules::EquipmentSlot CampaignParty::equipment_slot(const por::Equipment &item) const
+{
+    return rules_->equipment_info(equipment_conversion(item)).slot;
+}
+
 ItemPreview CampaignParty::preview(MemberId id, const por::Equipment &item) const
 {
     const auto &m = member(id);

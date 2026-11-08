@@ -46,7 +46,8 @@ In a converted screen:
   `unique_name_in_owner = true`.
 - **What changes during play stays small and in Godot scripts.** The
   exploration screen's `tour_layout.gd` makes the dialogue box taller in a
-  shop and stands the party's cards two to a row when they fit.
+  shop and stands the party's cards two to a row when they fit, sized so four
+  rows fill the list.
   `tour_dialogue_box.gd` holds each kind of prompt's arrangement (a menu's list
   beside Continue, a shop's list above its buttons) as a table, and puts a
   shop's news beside its header when it fits.

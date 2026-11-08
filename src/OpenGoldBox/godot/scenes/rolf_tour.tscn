@@ -265,6 +265,18 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"LabelMuted"
 
+[node name="FilterLabel" type="Label" parent="Layout/Page/Body/Main/DialogueBounds/DialogueRows/DialogueBottom/Actions"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = "Filter"
+
+[node name="ShopFilter" type="OptionButton" parent="Layout/Page/Body/Main/DialogueBounds/DialogueRows/DialogueBottom/Actions"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(130, 40)
+layout_mode = 2
+
 [node name="LeaveShop" type="Button" parent="Layout/Page/Body/Main/DialogueBounds/DialogueRows/DialogueBottom/Actions"]
 unique_name_in_owner = true
 visible = false

@@ -1,11 +1,11 @@
 extends MarginContainer
 
 # The exploration screen's layout. Its containers place every control; this
-# script adds what changes in a shop or at a treasure pile: the dialogue box
-# grows for the list of goods, and the party's cards, which then hold one
-# column of lines, stand two to a row when the list is wide enough.
+# script grows the dialogue box in a shop or at a treasure pile, for the list
+# of goods, and lays out the party's cards, the same everywhere: two to a row
+# when the list is wide enough, in four rows sized to fit the list's height,
+# room for six characters and two NPCs.
 
-var _shopping := false
 # The member card the party's list keeps in view: the selected member's.
 var _shown_card: Control
 
@@ -17,7 +17,6 @@ func _ready() -> void:
 
 
 func apply_layout(shopping: bool) -> void:
-    _shopping = shopping
     get_node("%DialogueBounds").call("fit_shop", shopping)
     _fit_party_columns()
 
@@ -36,7 +35,19 @@ func _scroll_to_shown_card() -> void:
         (get_node("%PartyList") as ScrollContainer).ensure_control_visible(_shown_card)
 
 
+# Six characters and two NPCs, two to a row.
+const PARTY_ROWS := 4
+# A card's height when the list has room to spare.
+const CARD_HEIGHT := 112.0
+
+
 func _fit_party_columns() -> void:
     var party: Control = get_node("%PartyList")
+    var rows: GridContainer = party.get_node("Rows")
     var two_fit := party.size.x >= get_theme_constant("tour_party_two_column_width", "OpenGoldMetrics")
-    (party.get_node("Rows") as GridContainer).columns = 2 if _shopping and two_fit else 1
+    rows.columns = 2 if two_fit else 1
+    var gap := rows.get_theme_constant("v_separation")
+    var fitted := floorf((party.size.y - gap * (PARTY_ROWS - 1)) / PARTY_ROWS)
+    for card in rows.get_children():
+        var least: float = card.call("compact_height")
+        (card as Control).custom_minimum_size.y = clampf(fitted, least, CARD_HEIGHT)

@@ -323,6 +323,9 @@ class CampaignParty
     // Unarmored Defense is as good. A shop shows such an item in gray.
     [[nodiscard]] bool adds_no_armor_class(MemberId id, const por::Equipment &item) const;
     [[nodiscard]] ItemPreview preview(MemberId id, const por::Equipment &item) const;
+    // Where the rules put an original item: a weapon, armor, a shield, worn
+    // or carried; a shop's filter sorts its stock by it.
+    [[nodiscard]] rules::EquipmentSlot equipment_slot(const por::Equipment &item) const;
     // Auto-equip (EQUIP-1): a melee weapon, armor, shield or worn item (a
     // ring, bracers, a cloak, gauntlets, a necklace or boots) the member just
     // gained goes on when the gear it makes rates better than what the

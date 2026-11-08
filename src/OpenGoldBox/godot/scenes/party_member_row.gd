@@ -10,7 +10,8 @@ extends Button
 # lines are drawn here; the tooltip holds them all.
 signal opened
 
-const PORTRAIT_SIZE := Vector2(100, 100)
+# The portrait's side on a card tall enough; a shorter card draws it smaller.
+const PORTRAIT_SIDE := 100.0
 const PORTRAIT_GAP := 10.0
 # Little space between the two columns, as the roster's lines are read across.
 const COLUMN_GAP := 24.0
@@ -57,9 +58,25 @@ func name_color() -> Color:
     return get_theme_color("font_color")
 
 
+# The portrait's side: PORTRAIT_SIDE, or the card's height inside its margins
+# when that is less.
+func portrait_side() -> float:
+    var style := get_theme_stylebox("normal")
+    return minf(PORTRAIT_SIDE,
+        size.y - style.get_margin(SIDE_TOP) - style.get_margin(SIDE_BOTTOM))
+
+
+# The least height that shows a compact card's lines: name, race and class,
+# Armor Class and hit points.
+func compact_height() -> float:
+    var style := get_theme_stylebox("normal")
+    var line := get_theme_font("font").get_height(get_theme_font_size("font_size"))
+    return ceilf(style.get_margin(SIDE_TOP) + style.get_margin(SIDE_BOTTOM) + 3 * line)
+
+
 # Where the lines start, past the portrait.
 func text_left() -> float:
-    return get_theme_stylebox("normal").get_margin(SIDE_LEFT) + PORTRAIT_SIZE.x + PORTRAIT_GAP
+    return get_theme_stylebox("normal").get_margin(SIDE_LEFT) + portrait_side() + PORTRAIT_GAP
 
 
 # How wide the identity lines are, with the level-up arrow beside the name
@@ -97,8 +114,9 @@ func _draw() -> void:
     var style := get_theme_stylebox("normal")
     var top := style.get_margin(SIDE_TOP)
     if _portrait:
+        var side := portrait_side()
         draw_texture_rect(_portrait, Rect2(Vector2(style.get_margin(SIDE_LEFT),
-            (size.y - PORTRAIT_SIZE.y) / 2), PORTRAIT_SIZE), false)
+            (size.y - side) / 2), Vector2(side, side)), false)
     var font := get_theme_font("font")
     var font_size := get_theme_font_size("font_size")
     var line := font.get_height(font_size)
