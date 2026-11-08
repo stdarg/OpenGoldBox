@@ -52,7 +52,9 @@ Settings and saves go to your user-data folder; see
 The last full test run was on 2026-11-06 (commit b4d0aed5, macOS, with original
 files): all 269 checks of the game build and all 130 of the demo build passed,
 including the packaged game's smoke check. The last full Windows run was on
-2026-10-25 (commit 1e46d8be), when all 239 checks passed.
+2026-11-08 (commit 7c3ba651, with original files): all 270 checks of the game
+build, all 132 of the demo build and all 123 native checks passed, and every
+developer tool built and started.
 
 See [building the game and each demo](docs/BUILD.md). The scenes under
 [`demos/`](demos/README.md) are frozen references, described under
