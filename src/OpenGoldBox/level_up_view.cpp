@@ -280,7 +280,7 @@ void CharacterCreationView::advancement_check()
             get_viewport()->push_input(press_event, true);
             Ref<InputEventMouseMotion> motion;
             motion.instantiate();
-            const auto moved_to = source + Vector2(0, from < to ? 30 : -30);
+            const auto moved_to = source + Vector2(0, from < to ? 30.0f : -30.0f);
             motion->set_position(moved_to);
             motion->set_global_position(moved_to);
             motion->set_relative(moved_to - source);

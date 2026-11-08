@@ -464,7 +464,7 @@ Variant CharacterCreationView::drag_member(Vector2 position)
     preview->set_texture(list->get_item_icon(row));
     preview->set_expand_mode(TextureRect::EXPAND_IGNORE_SIZE);
     preview->set_size(list->get_fixed_icon_size());
-    preview->set_modulate(Color(1, 1, 1, 0.8));
+    preview->set_modulate(Color(1, 1, 1, 0.8f));
     list->set_drag_preview(preview.get());
     // Godot adopts the preview only while a drag can show it; one it refused
     // stays with NodeOwner and is freed (Effective C++ Item 13).
