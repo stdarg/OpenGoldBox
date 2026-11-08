@@ -1,5 +1,5 @@
-if(NOT WIN32 AND NOT APPLE)
-    message(FATAL_ERROR "The OpenGoldBox executable target supports Windows and macOS only.")
+if(NOT WIN32 AND NOT APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    message(FATAL_ERROR "The OpenGoldBox executable target supports Windows, macOS and Linux only.")
 endif()
 include(FetchContent)
 if(NOT Python3_EXECUTABLE AND EXISTS "${PROJECT_SOURCE_DIR}/build/_deps/python/python.exe")
@@ -43,12 +43,19 @@ if(WIN32)
     set(export_preset "Windows Desktop")
     set(export_path "${game_output}/opengoldbox.exe")
     set(export_config "export_presets.cfg.in")
-else()
+elseif(APPLE)
     set(game_output "${PROJECT_SOURCE_DIR}/mac-package")
     set(export_preset "macOS")
     set(export_path "${game_output}/OpenGoldBox.app")
     set(export_config "export_presets.macos.cfg.in")
     set(pre_export_commands COMMAND "${CMAKE_COMMAND}" -E rm -rf "${export_path}")
+else()
+    # Laid out as on Windows: the executable, its .pck and the GDExtension
+    # side by side, with data/ next to them.
+    set(game_output "${PROJECT_SOURCE_DIR}/linux-package")
+    set(export_preset "Linux")
+    set(export_path "${game_output}/opengoldbox.x86_64")
+    set(export_config "export_presets.linux.cfg.in")
 endif()
 configure_file("${export_config}" "${game_project}/export_presets.cfg" @ONLY)
 
@@ -68,6 +75,12 @@ target_compile_features(opengoldbox_game PRIVATE cxx_std_20)
 target_compile_definitions(opengoldbox_game PRIVATE $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
     OPENGOLDBOX_VERSION="${PROJECT_VERSION}")
 set_target_properties(opengoldbox_game PROPERTIES PREFIX "" RUNTIME_OUTPUT_DIRECTORY "${game_project}/bin" LIBRARY_OUTPUT_DIRECTORY "${game_project}/bin")
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # godot-cpp links libstdc++ in statically. Kept private, its copy cannot
+    # mix with the system's libstdc++, which a graphics driver loads into the
+    # same process: mixed, the two broke the iostreams the log writes with.
+    target_link_options(opengoldbox_game PRIVATE "LINKER:--exclude-libs,ALL")
+endif()
 
 file(GLOB portrait_sources CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/art/portraits/*.png"
     "${PROJECT_SOURCE_DIR}/data/art/portraits/*.png" "${PROJECT_SOURCE_DIR}/art/portraits/portraits.json")
@@ -647,7 +660,7 @@ if(WIN32)
             "-DGODOT_CPP_LICENSE=${godot_cpp_SOURCE_DIR}/LICENSE.md"
             "-DMD5_MANIFEST=${game_project}/config/por-pc13-md5.json"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/package_windows.cmake")
-else()
+elseif(APPLE)
     set(package_commands
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${export_path}/Contents/Resources/data/rules/srd-5.2.1"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${export_path}/Contents/Resources/data/shops"
@@ -667,6 +680,28 @@ else()
             "-DMD5_MANIFEST=${game_project}/config/por-pc13-md5.json"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/package_macos.cmake"
         COMMAND codesign --force --deep --sign - "${export_path}")
+else()
+    set(package_commands
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${game_output}/data/rules/srd-5.2.1"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${game_output}/data/shops"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${game_output}/data/encounters"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${game_output}/data/companions"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/walls" "${game_output}/data/art/walls"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/missiles" "${game_output}/data/art/missiles"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/closeups" "${game_output}/data/art/closeups"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${game_output}/data/monsters"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_output}/data/art"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_body_source}" "${game_output}/data/art/combat-body-looks.tsv"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_weapon_source}" "${game_output}/data/art/combat-weapon-options.tsv"
+        COMMAND "${CMAKE_COMMAND}" "-DEXPORT=${game_output}" "-DSTAGE=${CMAKE_BINARY_DIR}/package"
+            "-DARCHIVE=${CMAKE_BINARY_DIR}/OpenGoldBox-${PROJECT_VERSION}-linux-x86_64.tar.gz"
+            "-DSYMBOLS=${CMAKE_BINARY_DIR}/OpenGoldBox-${PROJECT_VERSION}-linux-symbols.tar.gz"
+            "-DSTRIP=${CMAKE_STRIP}" "-DGODOT=${OPENGOLDBOX_GODOT}"
+            "-DNOTICES_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/write_engine_notices.gd"
+            "-DPROJECT_LICENSE=${PROJECT_SOURCE_DIR}/LICENSE"
+            "-DGODOT_CPP_LICENSE=${godot_cpp_SOURCE_DIR}/LICENSE.md"
+            "-DMD5_MANIFEST=${game_project}/config/por-pc13-md5.json"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/package_linux.cmake")
 endif()
 if(OPENGOLD_BUILD_TESTS)
     # The game ships data/monsters, the Combat Sprite Catalog's export; catalog
@@ -691,6 +726,13 @@ if(APPLE AND OPENGOLD_BUILD_TESTS)
         "-DAPP_BUNDLE=${export_path}" "-DWORK=${CMAKE_BINARY_DIR}/package-smoke"
         -P "${PROJECT_SOURCE_DIR}/tests/macos_package_smoke.cmake")
     set_tests_properties(opengold_macos_package_smoke PROPERTIES
+        TIMEOUT 900 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
+endif()
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND OPENGOLD_BUILD_TESTS)
+    add_test(NAME opengold_linux_package_smoke COMMAND "${CMAKE_COMMAND}"
+        "-DPACKAGE=${CMAKE_BINARY_DIR}/package/OpenGoldBox" "-DWORK=${CMAKE_BINARY_DIR}/package-smoke"
+        -P "${PROJECT_SOURCE_DIR}/tests/linux_package_smoke.cmake")
+    set_tests_properties(opengold_linux_package_smoke PROPERTIES
         TIMEOUT 900 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
 endif()
 add_custom_target(OpenGoldBox ALL

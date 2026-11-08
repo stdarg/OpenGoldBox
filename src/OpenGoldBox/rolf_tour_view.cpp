@@ -2729,7 +2729,10 @@ void RolfTourView::capture_frame(const String &name)
         // Check actual framebuffer pixels, including hidden cells, rather than
         // merely checking the flag that the draw code was supposed to honor.
         const auto &state = session_->snapshot();
-        const auto &map = required_node<Control>(*this, "%MapBounds");
+        // Named paths, not temporaries: GCC 16 takes the node reference for one
+        // into the temporary NodePath.
+        const NodePath map_path{"%MapBounds"};
+        const auto &map = required_node<Control>(*this, map_path);
         const double cell = map.get_size().x / 16;
         for (unsigned y = 0; y < 16; ++y)
         {
@@ -2921,7 +2924,8 @@ void RolfTourView::check_town()
         magic->set_keycode(Key::KEY_M);
         magic->set_pressed(true);
         respond_to_input(magic);
-        const auto &offers = required_node<OptionButton>(*this, "CastPanel/%Action");
+        const NodePath offers_path{"CastPanel/%Action"};
+        const auto &offers = required_node<OptionButton>(*this, offers_path);
         const bool orc = settings::flag("--adrenaline-check");
         if (!required_node<Control>(*this, "CastPanel").is_visible() ||
             (orc ? offers.get_item_count() != 1 ||

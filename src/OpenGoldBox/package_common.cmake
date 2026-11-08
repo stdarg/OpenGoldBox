@@ -1,4 +1,4 @@
-# What the Windows and macOS packages share: the third-party notices and the
+# What the Windows, macOS and Linux packages share: the third-party notices and the
 # check that a package holds only what a player should get.
 
 # Writes THIRD-PARTY-NOTICES.txt to OUTPUT, ending with EXTRA_NOTICES. Uses

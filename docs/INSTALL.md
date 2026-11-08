@@ -9,12 +9,12 @@ themselves.
 | --- | --- |
 | macOS | Everything: native core and tests, the game, the demos, every dev tool. |
 | Windows | Native core and tests, the game, the demos, most dev tools (see [the dev tools](#developer-tools)). |
-| Linux (Bazzite, Ubuntu) | Native core and tests, and the dev tools whose extensions list Linux. The game does not build on Linux yet: `src/OpenGoldBox/CMakeLists.txt` stops at configure with "supports Windows and macOS only". |
+| Linux (Bazzite, Ubuntu) | Native core and tests, the game and its package (x86_64), and the dev tools whose extensions list Linux. |
 
 The macOS tools and versions match the development Mac, which runs the .NET
 Godot build. The Windows hook check has not been run yet. The Linux steps were
 run on Bazzite 44 on 2026-11-07, where the native core and its tests build with
-the system's GCC 16.1.
+the system's GCC 16.1, and the game with Homebrew's GCC 16.2.
 
 ## What to install
 
@@ -175,8 +175,9 @@ installs it.
    ```
 
    It prints `ok`. Report any other result before going on. On Bazzite 44
-   the system's own `g++` (GCC 16.1) passes, and CMake builds with it rather
-   than Homebrew's `g++-16`.
+   the system's own `g++` (GCC 16.1) passes, and CMake builds the native core
+   with it rather than Homebrew's `g++-16`. The game needs Homebrew's: see
+   step 7.
 
 5. Install Godot 4.7.2: download `Godot_v4.7.2-stable_linux.x86_64.zip` from
    [the 4.7.2 release](https://github.com/godotengine/godot/releases/tag/4.7.2-stable),
@@ -196,12 +197,32 @@ installs it.
    export GODOT_BIN="$HOME/.local/bin/godot"
    ```
 
+   For the game, install the Linux export templates: download
+   `Godot_v4.7.2-stable_export_templates.tpz` from the same release (a zip of
+   about 1.3 GB) and unpack its two x86_64 Linux templates where Godot looks
+   for them:
+
+   ```bash
+   templates=~/.local/share/godot/export_templates/4.7.2.stable
+   mkdir -p "$templates"
+   unzip -j Godot_v4.7.2-stable_export_templates.tpz \
+       'templates/linux_*.x86_64' templates/version.txt -d "$templates"
+   ```
+
 6. Turn on [the git hooks](#git-hooks) and [point at the game files](#original-game-files).
 
 7. Check the setup with the native core and its tests:
 
    ```bash
    ./build.sh default --test
+   ```
+
+   Then build the game and its package. The first configure picks the compiler,
+   and the game needs one with the static libstdc++, which Bazzite's own GCC
+   lacks, so name Homebrew's that once:
+
+   ```bash
+   CC=gcc-16 CXX=g++-16 ./build.sh --test-all
    ```
 
 ## Git hooks

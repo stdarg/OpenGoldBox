@@ -4,14 +4,14 @@ This guide covers the three separate builds in this repository: the native core
 and its tests, the OpenGoldBox game, and the reference demos. Install the
 prerequisites in [INSTALL.md](INSTALL.md) first.
 
-| Build | Windows | macOS | Build tree | Output |
+| Build | Windows | macOS and Linux | Build tree | Output |
 | --- | --- | --- | --- | --- |
 | Native core and tests | `.\build.cmd` | `./build.sh default` | `build/` | libraries, tests, `opengold_maps` |
-| Game | `.\build-opengoldbox.cmd` | `./build.sh` | `build/game/` (Windows), `build/macos-universal/` (macOS) | `win-package/opengoldbox.exe`, `mac-package/OpenGoldBox.app` |
+| Game | `.\build-opengoldbox.cmd` | `./build.sh` | `build/game/` (Windows), `build/macos-universal/` (macOS), `build/linux/` (Linux) | `win-package/opengoldbox.exe`, `mac-package/OpenGoldBox.app`, `linux-package/opengoldbox.x86_64` |
 | Demos | `.\demos\build-rolf.cmd` | see [the demos](#the-demos) | `build/godot/` | `demos/godot/bin/opengold_godot.dll` |
 
-On macOS, `./build.sh` with no options builds the game and re-exports the app,
-and runs no tests. Run it after every change you want to see in the app: the
+On macOS and Linux, `./build.sh` with no options builds the game and re-exports
+it, and runs no tests. Run it after every change you want to see in the app: the
 app carries its own copy of the scenes, so it does not change until it is
 exported again.
 
@@ -68,16 +68,16 @@ macOS and Linux:
 
 `build.cmd` configures the `default` preset (RelWithDebInfo, Ninja), builds,
 then runs the tests in parallel, and stops at the first failure. `build.sh`
-builds the preset it is given (on Linux, `default` is also what it builds with
-no preset) and runs tests only when asked:
+builds the preset it is given, or the platform's game preset with none, and
+runs tests only when asked:
 
 | `build.sh` option | Effect |
 | --- | --- |
-| *(none)* | macOS: build the game and re-export `mac-package/OpenGoldBox.app`. Linux: build the native core. No tests. |
+| *(none)* | Build the game and re-export it: `mac-package/OpenGoldBox.app` on macOS; `linux-package/` and [the package for players](#the-package-for-players-2) on Linux. No tests. |
 | `--test` | After building, run the native tests (everything except the Godot runtime checks). |
 | `--test-all` | After building, run every test, including the Godot runtime checks. |
 | `--package` | macOS: also write [the disk image players download](#the-package-for-players-1). |
-| `default`, `debug`, `macos-universal` | Build that preset instead of the platform default. |
+| `default`, `debug`, `macos-universal`, `linux` | Build that preset instead of the platform default. |
 
 Both scripts always build the checkout they live in, whatever the current
 directory, and never run tests after a failed build. The equivalent manual
@@ -281,6 +281,58 @@ download the image from a browser and check by hand:
 Checked automatically on 2026-10-30: macOS 26.6.2 on Apple silicon, and the Intel
 build started under Rosetta, Godot 4.7.2-stable (official) with its debug export
 template. The hand steps have not been run yet.
+
+### Linux
+
+Install the Godot Linux export templates matching your editor (see
+[INSTALL.md](INSTALL.md#linux-bazzite-and-ubuntu)). The first configure needs a
+GCC that has the static libstdc++, which godot-cpp links into the game library
+so that it does not depend on the player's libstdc++. Bazzite's own GCC lacks
+it, so use Homebrew's there; CMake remembers the compiler afterwards:
+
+```bash
+CC=gcc-16 CXX=g++-16 ./build.sh
+./linux-package/opengoldbox.x86_64
+```
+
+The script runs `cmake --preset linux` and `cmake --build --preset linux`, and
+`ctest --preset linux` with `--test` or `--test-all`. The export is laid out as
+on Windows: the executable, `opengoldbox.pck` and `opengoldbox_game.so` side by
+side, with `data/` next to them.
+
+#### The package for players
+
+Every build also writes two files in `build/linux/`:
+
+- `OpenGoldBox-<version>-linux-x86_64.tar.gz`, about 1.4 GB, for players: an
+  `OpenGoldBox` folder to unpack anywhere and start with `opengoldbox.x86_64`.
+  Its game library has its debug information stripped.
+- `OpenGoldBox-<version>-linux-symbols.tar.gz`, for you: the unstripped library,
+  to keep with the release. It reads [crash reports](CONFIGURATION.md#crash-reports)
+  down to source lines.
+
+As on the other systems, the package gets `LICENSE.txt` and
+`THIRD-PARTY-NOTICES.txt`, uses the debug export template, and the build fails
+if it holds any original game file, a `settings.cfg` or a `.TMP` file. The game
+library needs the glibc of the system it was built on or newer: one built on
+Bazzite 44 needs glibc 2.43, so it does not run on Ubuntu 24.04. A release for
+older systems needs a build on an older distribution.
+
+`opengold_linux_package_smoke`, a ctest check that needs `OPENGOLD_GAME_DIR`,
+runs the same steps as the macOS check: the package and a copy of the original
+files under non-ASCII folder names, both read-only, a fresh home folder, a `PATH`
+of only the system's tools and no `OPENGOLD_*` or `XDG_*` overrides. It also
+starts the game once in a real window, which needs a desktop session: the
+graphics driver then loads the system's libstdc++ into the game, which headless
+runs never do. Run it alone with:
+
+```bash
+ctest --preset linux -R linux_package_smoke --output-on-failure
+```
+
+Checked automatically on 2026-11-07: Bazzite 44 (x86_64), GCC 16.2 from
+Homebrew, Godot 4.7.2-stable (official) with its debug export template. It has
+not been run on another distribution yet.
 
 ## The demos
 

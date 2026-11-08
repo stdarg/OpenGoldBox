@@ -423,7 +423,10 @@ static bool in_party_order(const CampaignParty &campaign, const PartyMember &mem
 
 std::optional<std::size_t> CharacterCreationView::drop_place(Vector2 position) const
 {
-    const auto &list = required_node<ItemList>(*this, "PartyPanel/Roster");
+    // A named path, not a temporary: GCC 16 takes the node reference for one
+    // into the temporary NodePath.
+    const NodePath roster_path{"PartyPanel/Roster"};
+    const auto &list = required_node<ItemList>(*this, roster_path);
     const auto row = list.get_item_at_position(position);
     const auto rows = roster_rows();
     if (row < 0 || static_cast<std::size_t>(row) >= rows.size() ||

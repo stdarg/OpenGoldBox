@@ -5,6 +5,7 @@
 /build-*/
 /win-package/
 /mac-package/
+/linux-package/
 /src/OpenGoldBox/godot/.godot/
 /src/OpenGoldBox/godot/bin/
 /src/OpenGoldBox/godot/data/

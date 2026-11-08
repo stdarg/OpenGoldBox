@@ -5,6 +5,6 @@ reloadable = false
 
 [libraries]
 windows.x86_64 = "res://bin/opengoldbox_game.dll"
-linux.x86_64 = "res://bin/opengold_godot.so"
-linux.arm64 = "res://bin/opengold_godot.so"
+linux.x86_64 = "res://bin/opengoldbox_game.so"
+linux.arm64 = "res://bin/opengoldbox_game.so"
 macos = "res://bin/opengoldbox_game.dylib"

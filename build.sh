@@ -1,13 +1,13 @@
 #!/bin/sh
 # Builds OpenGoldBox on macOS and Linux. With no options it builds the game
-# and re-exports mac-package/OpenGoldBox.app on macOS (the native core on
-# Linux, where the game is not packaged), and runs no tests.
+# and re-exports it, mac-package/OpenGoldBox.app on macOS and linux-package/
+# plus the .tar.gz players download on Linux, and runs no tests.
 #
 #   --test      after building, run the native test suite
 #   --test-all  after building, run every test, including the Godot checks
 #   --package   macOS: also write the disk image players download
 #   <preset>    build another CMake preset: default (native core and tests,
-#               build/), debug (the same, unoptimized) or macos-universal
+#               build/), debug (the same, unoptimized), macos-universal or linux
 #
 # A non-zero exit means the build or a requested test failed. Tests never run
 # after a failed build, which is how a stale binary can otherwise pass.
@@ -44,7 +44,7 @@ if [ -z "$PRESET" ]; then
     if [ "$(uname -s)" = Darwin ]; then
         PRESET=macos-universal
     else
-        PRESET=default
+        PRESET=linux
     fi
 fi
 
@@ -55,6 +55,9 @@ if [ "$PRESET" = macos-universal ]; then
     if [ "$PACKAGE" = yes ]; then
         "$CMAKE" --build --preset "$PRESET" --target opengoldbox_macos_dmg
     fi
+fi
+if [ "$PRESET" = linux ]; then
+    echo "Game exported: linux-package/; package: build/linux/OpenGoldBox-*-linux-x86_64.tar.gz"
 fi
 
 case "$TESTS" in

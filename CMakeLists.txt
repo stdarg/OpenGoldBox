@@ -779,6 +779,8 @@ if(OPENGOLD_BUILD_GODOT)
 endif()
 
 if(OPENGOLD_BUILD_GAME)
+    # The game library is a shared object; on Linux what it links must be PIC.
+    set_target_properties(opengold_core opengold_formats opengold_rules opengold_rules_srd5 PROPERTIES POSITION_INDEPENDENT_CODE ON)
     add_subdirectory(src/OpenGoldBox)
 endif()
 
