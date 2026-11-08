@@ -130,6 +130,7 @@ func choose(path: String, text: String) -> bool:
 			list.select(i)
 			list.item_selected.emit(i)
 			await settle()
+			check_race_portrait()
 			return true
 	return false
 
@@ -139,6 +140,16 @@ func choose_index(path: String, index: int) -> void:
 	list.select(index)
 	list.item_selected.emit(index)
 	await settle()
+	check_race_portrait()
+
+# The race page draws a portrait of the race and gender just chosen.
+func check_race_portrait() -> void:
+	if page() != RACE_PAGE: return
+	var drawn: Texture2D = node("CreationCanvas").get("_race_portrait")
+	var want := selected_text("Choices").to_lower() + "-" + selected_text("Gender").to_lower() + "-"
+	var shown := drawn.resource_name if drawn else "nothing"
+	if not shown.begins_with(want):
+		bug("the race page does not draw a portrait of the chosen race and gender", "wants " + want + "*, draws " + shown)
 
 # The first line where two descriptions of a page differ.
 func difference(before: Array, after: Array) -> String:

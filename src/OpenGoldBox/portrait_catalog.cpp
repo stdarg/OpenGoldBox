@@ -148,6 +148,8 @@ Ref<ImageTexture> PortraitCatalog::texture(const opengold::por::CharacterAppeara
         throw std::runtime_error("Cannot load portrait: " + filename);
     }
     auto result = ImageTexture::create_from_image(texture->get_image());
+    // Named for its file, so a check can tell which portrait a page draws.
+    result->set_name(gs(filename));
     textures_.emplace(filename, result);
     return result;
 }
