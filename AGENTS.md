@@ -7,6 +7,9 @@
 - After updating this repository, commit your changes and push the current branch
   to `origin`, unless the user explicitly asks otherwise. Include only your own
   changes and complete relevant checks before committing.
+- **ALWAYS delete your branch once its work is merged into `main`.** Delete it on
+  `origin` (`git push origin --delete <branch>`) and locally, and remove its
+  worktree (`git worktree remove`). Old branches keep stale history on GitHub.
 - **ALWAYS update the main checkout when you are done.** After every push, bring
   the main checkout (the first entry of `git worktree list`, where the user runs
   the game and the tools) up to date with `git pull --ff-only origin main`, then
