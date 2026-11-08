@@ -15,6 +15,10 @@ namespace game_log
 // Opens the log and writes its head: the game's version and commit, the engine,
 // the system, the game files' folder and the settings.
 void open();
+
+// Stops copying the engine's errors. The engine keeps its loggers past the
+// game library's unloading, so one left behind crashes the engine's exit.
+void close();
 } // namespace game_log
 
 // Copies the engine's errors and warnings, GDScript's included, into the game's

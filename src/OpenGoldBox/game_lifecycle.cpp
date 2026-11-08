@@ -40,6 +40,7 @@ void GameLifecycle::_exit_tree()
                               [&]
                               {
                                   crash_reports::end_session();
+                                  game_log::close();
                               });
 }
 

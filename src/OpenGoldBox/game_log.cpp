@@ -19,6 +19,9 @@ namespace
 constexpr auto logs_folder = "user://logs";
 constexpr int kept_logs = 5;
 
+// Held so close() can take it back from the engine.
+Ref<EngineErrors> engine_errors;
+
 std::string utf8(const String &text)
 {
     return text.utf8().get_data();
@@ -91,7 +94,18 @@ void open()
         remove_oldest_logs();
     }
     log_head();
-    OS::get_singleton()->add_logger(memnew(EngineErrors));
+    engine_errors.instantiate();
+    OS::get_singleton()->add_logger(engine_errors);
+}
+
+void close()
+{
+    if (engine_errors.is_null())
+    {
+        return;
+    }
+    OS::get_singleton()->remove_logger(engine_errors);
+    engine_errors.unref();
 }
 } // namespace game_log
 
