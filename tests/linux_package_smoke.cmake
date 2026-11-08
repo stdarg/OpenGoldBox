@@ -92,7 +92,8 @@ endif()
 # Once in a real window: the graphics driver loads the system's libstdc++ into
 # the game, which no headless run does, and the game must not mix it with its own.
 if(failure STREQUAL "")
-    execute_process(COMMAND "${install}/opengoldbox.x86_64" --quit-after 120
+    include("${CMAKE_CURRENT_LIST_DIR}/virtual_display.cmake")
+    execute_process(COMMAND ${virtual_display} "${install}/opengoldbox.x86_64" --quit-after 120
         WORKING_DIRECTORY "${home}"
         RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE errors TIMEOUT 120)
     message("${output}${errors}")

@@ -29,6 +29,7 @@ the system's GCC 16.1, and the game with Homebrew's GCC 16.2.
 | Godot | 4.7.2, the standard build (not .NET), and its export templates | the game, the demos, the Godot checks, the dev tools |
 | ccache | optional | reusing compiled objects across build directories and worktrees |
 | distrobox and podman | any recent, Linux only | [the Linux package for players](BUILD.md#which-linux-systems-it-runs-on), built in an AlmaLinux 8 container |
+| cage | any recent, Linux only, optional | the windowed Godot checks [without a screen](TESTING.md); Bazzite ships it, `sudo apt-get install cage` on Ubuntu |
 
 The project has no C# code, so the standard Godot build is enough. The .NET
 build also works if it is already installed.

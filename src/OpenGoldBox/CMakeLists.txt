@@ -587,13 +587,17 @@ if(OPENGOLD_BUILD_TESTS)
         -DSCRIPT=combat_hover_scene_tests -DGRAPHICAL=ON -DARGS=--combat-demo)
     opengold_original_check(combat_unconscious_scene "Unconscious combatant captured"
         -DSCRIPT=combat_unconscious_scene_tests -DGRAPHICAL=ON -DARGS=--combat-demo)
-    # The checks drawn in a real window, one at a time: side by side, their
-    # windows compete for the screen and the graphics card, and checks that wait
-    # on drawn frames or read pixels time out or read too early.
-    set_tests_properties(opengold_godot_spell_effects opengold_godot_creation_goliath
-        opengold_godot_weapon_sets opengold_godot_combat_demo_scene opengold_godot_combat_death_scene
-        opengold_godot_combat_hover_scene opengold_godot_combat_unconscious_scene
-        PROPERTIES RESOURCE_LOCK godot_window)
+    # The checks drawn in a window get their own invisible display
+    # (tests/virtual_display.cmake). Under cage each display is private, so they
+    # run side by side; xvfb-run, the fallback, can give two checks started
+    # together the same display, so there they run one at a time.
+    find_program(OPENGOLD_CAGE cage)
+    if(NOT OPENGOLD_CAGE)
+        set_tests_properties(opengold_godot_spell_effects opengold_godot_creation_goliath
+            opengold_godot_weapon_sets opengold_godot_combat_demo_scene
+            opengold_godot_combat_death_scene opengold_godot_combat_hover_scene
+            opengold_godot_combat_unconscious_scene PROPERTIES RESOURCE_LOCK godot_window)
+    endif()
     # Startup and setup checks, each with its own settings.cfg. Skipped without
     # OPENGOLD_GAME_DIR.
     function(opengold_settings_check name script expected)
@@ -740,9 +744,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_linux_package_smoke COMMAND "${CMAKE_COMMAND}"
         "-DPACKAGE=${CMAKE_BINARY_DIR}/package/OpenGoldBox" "-DWORK=${CMAKE_BINARY_DIR}/package-smoke"
         -P "${PROJECT_SOURCE_DIR}/tests/linux_package_smoke.cmake")
-    # It also starts the game in a real window, so it takes the window lock.
     set_tests_properties(opengold_linux_package_smoke PROPERTIES
-        TIMEOUT 900 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: " RESOURCE_LOCK godot_window)
+        TIMEOUT 900 LABELS godot SKIP_REGULAR_EXPRESSION "Skipped: ")
+    # Its run in a window shares xvfb-run's displays where there is no cage.
+    find_program(OPENGOLD_CAGE cage)
+    if(NOT OPENGOLD_CAGE)
+        set_tests_properties(opengold_linux_package_smoke PROPERTIES RESOURCE_LOCK godot_window)
+    endif()
 endif()
 add_custom_target(OpenGoldBox ALL
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/opengold.gdextension" "${game_project}/bin/opengold.gdextension"

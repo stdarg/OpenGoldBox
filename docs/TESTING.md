@@ -67,9 +67,18 @@ only the imported project, which `opengold_godot_prepare` makes before any of
 them starts. A check that changes files in the project folder runs with
 `RUN_SERIAL`, alone, as the portrait fallback and Slums encounter checks do.
 Checks drawn in a real window (`GRAPHICAL=ON`, and the package smoke check's
-windowed run) share `RESOURCE_LOCK godot_window`, so one window is open at a
-time: side by side they compete for the screen and time out. A new windowed
-check takes that lock too.
+windowed run) draw in an invisible display of their own
+([virtual_display.cmake](../tests/virtual_display.cmake)), so they pass with
+the screen asleep or no monitor attached, and no test window appears on the
+desktop. On Linux that display comes from `cage`, a small Wayland compositor
+drawing with the graphics card, and each check gets its own, so they run side by
+side. Where there is no `cage`, as in the AlmaLinux 8 release container, they
+use `xvfb-run`, which draws in software and can give two checks started together
+the same display, so there they share `RESOURCE_LOCK godot_window` and run one
+at a time. With neither, they draw on the desktop, which must then stay awake:
+run the suite under `kde-inhibit --power --screenSaver` on KDE. A new windowed
+check is listed with the others in `src/OpenGoldBox/CMakeLists.txt` for that
+lock.
 
 On macOS the checks run a copy of the installed Godot that stays out of the
 player's way, made at configure time in the build folder's `godot-out-of-dock`
