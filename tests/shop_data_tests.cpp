@@ -123,8 +123,15 @@ void shipped_records()
     }
     const auto &general = shop_at(data, 15, 8);
     check(general.archive == "GEO3.DAX" && general.record == 0 &&
-              general.portrait == "NPCs/phlan-general-15-08.png",
-          "A shop's square and its shopkeeper's portrait");
+              general.portrait == "NPCs/phlan-general-15-08.png" &&
+              general.shopkeeper == "Dessa Marlow" && general.type == "General Items",
+          "A shop's square, its shopkeeper's name and portrait, and its type");
+    check(std::ranges::all_of(data.shops,
+                              [](const ShopSite &shop)
+                              {
+                                  return !shop.shopkeeper.empty();
+                              }),
+          "Every shopkeeper has a name");
     const auto &oil = offering(general, "1 Flask OF Oil Flask(s)");
     check(oil.archive == "ITEM3.DAX" && oil.record == 54 && oil.index == 4 && oil.item_type == 86 &&
               oil.price_gp == 1,
@@ -185,7 +192,7 @@ const std::string temple_record = R"({"kind": "temple", "portrait": "", "offerin
     {"service_id": "cure_disease", "price_gp": 1000, "offered": false}]})";
 
 const std::string shop_record = R"({"kind": "shop",
-    "portrait": "shops/keeper.png",
+    "portrait": "shops/keeper.png", "shopkeeper": "Ama Quill", "type": "General Items",
     "offerings": [
     {"name": "Long Sword", "item_type": 36, "price_gp": 17, "bundle_quantity": 1,
      "quantity": -1, "source_archive": "ITEM3.DAX", "source_record": 53, "source_index": 21},
@@ -208,6 +215,8 @@ void manager_edits()
     check(shop.markers == std::vector<std::pair<unsigned, unsigned>>{{4, 5}} &&
               shop.portrait == "shops/keeper.png" && data.temples[0].portrait.empty(),
           "A portrait is named as the game finds it; a location may have none");
+    check(shop.shopkeeper == "Ama Quill" && shop.type == "General Items",
+          "The shopkeeper's name and the shop's type are read");
     check(shop.offerings.size() == 2 && shop.offerings[0].price_gp == 17 &&
               shop.offerings[0].index == 21,
           "An edited price is read; an item out of stock is not sold");
@@ -247,6 +256,9 @@ void broken_records()
     enchanted_gear.replace(enchanted_gear.find("\"item_type\": 212"), 16,
                            "\"item_type\": 212, \"magic_bonus\": 1");
     rejected(temple_record, enchanted_gear, "Only an original item is sold enchanted");
+    auto nameless = shop_record;
+    nameless.replace(nameless.find("\"shopkeeper\": \"Ama Quill\", "), 27, "");
+    rejected(temple_record, nameless, "A shop without its shopkeeper's name is refused");
 }
 } // namespace
 

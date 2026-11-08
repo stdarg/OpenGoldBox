@@ -196,6 +196,7 @@
     }
   ],
   "portrait": "NPCs/phlan-general-15-08.png",
+  "shopkeeper": "Dessa Marlow",
   "type": "General Items",
   "version": 1
 }

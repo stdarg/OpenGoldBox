@@ -275,6 +275,57 @@ void armor_that_adds_nothing()
         "A Shield raises the AC of a Fighter holding a Two-Handed Sword, which it would put away");
 }
 
+int modifier(int score)
+{
+    return score / 2 - 5;
+}
+
+// What a shop's hover shows for its buyer: a weapon's attack bonus (training
+// and enchantment included, an unidentified one at its plain stats) and damage
+// as the member would hold it, armor or a shield's Armor Class in place of
+// the member's, and the item's weight.
+void shop_previews()
+{
+    CampaignParty party(module());
+    const auto id = party.add_pc(fighter());
+    const auto &scores = party.member(id).character.sheet().scores;
+    const int strength = modifier(scores[Ability::strength]);
+    const int unarmored = 10 + modifier(scores[Ability::dexterity]);
+
+    const auto sword = party.preview(id, item(long_sword));
+    check(sword.attack && sword.attack->trained && sword.attack->attack_bonus == strength + 2 &&
+              sword.attack->dice == 1 && sword.attack->sides == 8 &&
+              sword.attack->two_handed_sides == 10 && sword.attack->damage_bonus == strength &&
+              sword.attack->damage_type == "Slashing" && !sword.armor_class,
+          "A Long Sword: d8 + Strength, d10 with both hands, trained");
+    check(sword.weight_hundredths == 300, "A Long Sword weighs 3 pounds");
+    const auto magic = party.preview(id, item(long_sword, 2));
+    check(magic.attack->attack_bonus == strength + 4 && magic.attack->damage_bonus == strength + 2,
+          "A Long Sword +2 adds 2 to hit and to damage");
+    check(party.preview(id, unidentified_sword()).attack->attack_bonus == strength + 2,
+          "An unidentified sword shows its plain stats");
+
+    const auto armor = party.preview(id, item(chain_mail));
+    check(!armor.attack && armor.armor_class == 16 && armor.armor_class_now == unarmored &&
+              armor.weight_hundredths == 5500,
+          "Chain Mail gives AC 16 against the Fighter's unarmored AC");
+    wield(party, id, item(chain_mail));
+    wield(party, id, item(shield));
+    const auto great = party.preview(id, item(two_handed_sword)).attack;
+    check(great->dice == 2 && great->sides == 6 && great->two_handed_sides == 0,
+          "A Two-Handed Sword, which would put the shield away, deals 2d6");
+    check(party.preview(id, item(shield, 1)).armor_class == 19 &&
+              party.preview(id, item(shield)).armor_class_now == 18,
+          "A Shield +1 in place of the shield worn");
+
+    const auto singer = party.add_pc(bard());
+    const auto untrained = party.preview(singer, item(long_sword));
+    check(!untrained.attack->trained &&
+              untrained.attack->attack_bonus ==
+                  modifier(party.member(singer).character.sheet().scores[Ability::strength]),
+          "Without training a weapon adds no training bonus");
+}
+
 // The keys of the items the member wears, sorted.
 std::vector<std::string> worn_keys(const CampaignParty &party, MemberId id)
 {
@@ -388,6 +439,7 @@ int main()
         shield_or_both_hands();
         armor();
         armor_that_adds_nothing();
+        shop_previews();
         two_weapons();
         worn_items();
         magic();

@@ -107,6 +107,22 @@ struct SecretDoorRoll
 
 // Which way auto-equip (EQUIP-1) settles a choice between a shield and a
 // second hand on the weapon: each character's own setting, on its sheet.
+// A typical early monster's Armor Class, which auto-equip rates weapons
+// against (EQUIP-1) and a shop's hover tells the roll to hit.
+inline constexpr int rated_armor_class = 13;
+
+// What a shop's hover tells of an item for one member, rated as the party
+// knows the item (an unidentified one by its plain stats) and as the member
+// would hold it in place of what it holds now (EQUIP-1).
+struct ItemPreview
+{
+    std::optional<rules::WeaponAttackView> attack; // a weapon's
+    // Armor or a shield's Armor Class on the member, and the member's now.
+    std::optional<int> armor_class;
+    int armor_class_now{};
+    unsigned weight_hundredths{};
+};
+
 enum class GearPreference : std::uint8_t
 {
     defense, // the higher Armor Class first, then the higher damage
@@ -306,6 +322,7 @@ class CampaignParty
     // auto-equip judges it (EQUIP-1): Scale Mail on a Barbarian whose
     // Unarmored Defense is as good. A shop shows such an item in gray.
     [[nodiscard]] bool adds_no_armor_class(MemberId id, const por::Equipment &item) const;
+    [[nodiscard]] ItemPreview preview(MemberId id, const por::Equipment &item) const;
     // Auto-equip (EQUIP-1): a melee weapon, armor, shield or worn item (a
     // ring, bracers, a cloak, gauntlets, a necklace or boots) the member just
     // gained goes on when the gear it makes rates better than what the
@@ -548,6 +565,20 @@ class CampaignParty
     // The member's gear rated as the party knows it: an unidentified item by
     // its plain stats.
     [[nodiscard]] rules::GearRating known_gear_rating(const PartyMember &m) const;
+
+    // The rules key the party knows `item` by, and the member's known gear
+    // with it in place of the gear it would replace: a weapon replaces the
+    // weapons held, and the shield too when it takes both hands; armor the
+    // armor worn; a shield the shield and the weapons. No gear for an item
+    // of another slot.
+    struct GearInPlace
+    {
+        std::string key;
+        rules::EquipmentSlot slot{};
+        std::vector<std::string> gear;
+    };
+
+    [[nodiscard]] GearInPlace gear_in_place(const PartyMember &m, const por::Equipment &item) const;
     std::optional<rules::HazardAttackResult> refuse_bound_weapon(MemberId id, std::uint64_t item);
     std::unique_ptr<rules::RulesModule> rules_;
     PartyState state_;

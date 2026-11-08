@@ -196,6 +196,7 @@
     }
   ],
   "portrait": "NPCs/phlan-general-11-11.png",
+  "shopkeeper": "Talla Brisk",
   "type": "General Items",
   "version": 1
 }

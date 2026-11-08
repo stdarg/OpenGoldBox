@@ -210,6 +210,8 @@ class RolfTourView : public godot::Control
     void dismiss_monster_picture();
     void restart();
     void next();
+    void choices_input(const godot::Ref<godot::InputEvent> &event);
+    void fit_choice_columns();
     void left();
     void right();
     void forward();

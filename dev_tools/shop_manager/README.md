@@ -4,7 +4,7 @@ This standalone Godot 4 tool edits the merchandise shops and service temples.
 It does not move, create, or delete locations, and it does not alter the game
 application. Its compact overhead map is a selector; the larger panel
 edits one location's offerings, prices, quantities or service availability,
-type (shops only), and portrait.
+type and shopkeeper's name (shops only), and portrait.
 
 Choose **New Phlan** or **Podol Plaza** in the map dropdown. Click a colored
 marker or use the location list. The map contains twelve original New Phlan
@@ -42,6 +42,11 @@ can change among Arms & Armor, General Items, Silver Items, Jewelry, Rogue's
 Shop, and Magic User's Shop, but cannot become temples. The game sells what a
 shop's record lists, whatever its type. Changing a shop type preserves its independently edited
 offerings so the user can adjust its stock deliberately.
+
+Each shop's **Shopkeeper's name** saves as it is typed; a shop cannot be left
+without one. **Random name** picks a new given and family name. The game shows
+the name and the shop's type over the shopkeeper's portrait, "Bettrin
+Ashforge - Arms & Armor". A new shop record starts with a random name.
 
 Portraits can be selected from `art/portraits/NPCs/` or
 [`portraits/`](portraits/). Add a new PNG to the latter folder and press

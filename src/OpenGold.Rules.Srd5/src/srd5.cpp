@@ -34031,6 +34031,44 @@ class Module final : public RulesModule
         return rating;
     }
 
+    std::optional<WeaponAttackView> weapon_attack(const CharacterSheet &sheet,
+                                                  std::span<const std::string> gear) const override
+    {
+        const auto key = std::ranges::find_if(gear,
+                                              [](const std::string &item)
+                                              {
+                                                  return detail::weapon(item) != nullptr;
+                                              });
+        if (key == gear.end())
+        {
+            return std::nullopt;
+        }
+        const auto *weapon = detail::weapon(*key);
+        const auto d = character_definition(character_profile(sheet, gear).data);
+        WeaponAttackView view{.trained = trained(detail::class_of(sheet), sheet.grants, *key)};
+        if (weapon->ranged)
+        {
+            view.attack_bonus = d.ranged_bonus + d.ranged_magic;
+            view.dice = d.ranged.count;
+            view.sides = d.ranged.sides;
+            view.damage_bonus = d.ranged.bonus + d.ranged_magic;
+            view.damage_type = detail::damage_name(d.ranged_type);
+            view.disadvantage = d.str_dex_disadvantage || d.ranged_heavy_disadvantage;
+            return view;
+        }
+        // A Versatile weapon's one-handed die, and its die with both hands
+        // beside it.
+        const auto attack = melee_attack(d);
+        view.attack_bonus = attack.attack_bonus;
+        view.dice = d.melee.count;
+        view.sides = d.melee.sides;
+        view.two_handed_sides = d.versatile_sides;
+        view.damage_bonus = attack.damage_bonus;
+        view.disadvantage = attack.disadvantage;
+        view.damage_type = detail::damage_name(d.melee_type);
+        return view;
+    }
+
     bool suits(const CharacterSheet &sheet, std::string_view key) const override
     {
         const auto *armor = detail::armor(key);

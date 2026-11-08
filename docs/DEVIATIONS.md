@@ -356,6 +356,14 @@ in the game: answering YES at a hall lists its services in the dialogue
 
 ## Interface and saves
 
+- **Shops name their keepers and tell what an item does** (2026-11-08). The
+  original's shops list their stock in one column under the town's heading.
+  OpenGoldBox names each shopkeeper (a random name, editable in the Shop &
+  Temple Manager) and shows the name and the shop's type over the portrait,
+  lists the stock in three columns, buys an item on a double click, and tells
+  on hover a weapon's roll to hit Armor Class 13 and damage, or armor's Armor
+  Class, for the chosen buyer ([PARTY](PARTY.md), [PHLAN](PHLAN.md)).
+
 - **Tyranthraxus's name** (2026-11-01). The original's record for his human
   form misspells him TYRANITHRAXUS. OpenGoldBox spells it Tyranthraxus.
 - **New art** (2026-10-29). The original drew its own walls and combat icons.

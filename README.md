@@ -73,7 +73,10 @@ See [building the game and each demo](docs/BUILD.md). The scenes under
   halls. Every armor the shops sell converts to SRD equipment. Shops draw in
   dark red what the chosen character cannot fully use (it can still be
   bought), in yellow what the party cannot afford, and in gray armor that
-  would not raise the character's Armor Class.
+  would not raise the character's Armor Class. Each shopkeeper has a name,
+  shown with the shop's type over the portrait; the stock stands in three
+  columns, a double click buys, and hovering over an item tells a weapon's
+  roll to hit and damage, or armor's Armor Class, for the buyer.
   Any shop buys any item but a cursed
   one for half its price, and any item but a cursed one can be dropped, gone
   for good. See [New Phlan](docs/PHLAN.md),

@@ -18,28 +18,30 @@ bool stands_on(const por::TourSnapshot &state, const std::string &archive, unsig
 }
 } // namespace
 
-// The shopkeeper of the New Phlan shop the party stands in, from its data/shops
-// record. The original shop offer has a two-choice "THE SHOP..." dialogue
-// before the host enters shopping; show the same person for that greeting and
-// the entire shop.
-std::string_view phlan_shopkeeper_portrait(const por::TourSnapshot &state,
-                                           const std::vector<ShopSite> &shops)
+const ShopSite *phlan_shop_serving(const por::TourSnapshot &state,
+                                   const std::vector<ShopSite> &shops)
 {
     const bool greeting = state.phase == por::TourPhase::awaiting_continue &&
                           state.choices.size() == 2 && state.dialogue.starts_with("THE SHOP");
     if (state.area_id != 0 || !state.tour_finished ||
         (state.phase != por::TourPhase::shopping && !greeting))
     {
-        return {};
+        return nullptr;
     }
-    for (const auto &shop : shops)
-    {
-        if (stands_on(state, shop.archive, shop.record, shop.markers))
-        {
-            return shop.portrait;
-        }
-    }
-    return {};
+    const auto here =
+        std::ranges::find_if(shops,
+                             [&](const ShopSite &shop)
+                             {
+                                 return stands_on(state, shop.archive, shop.record, shop.markers);
+                             });
+    return here == shops.end() ? nullptr : &*here;
+}
+
+std::string_view phlan_shopkeeper_portrait(const por::TourSnapshot &state,
+                                           const std::vector<ShopSite> &shops)
+{
+    const auto *shop = phlan_shop_serving(state, shops);
+    return shop ? std::string_view(shop->portrait) : std::string_view();
 }
 
 // The priest of the temple the party stands in, from its data/shops record,

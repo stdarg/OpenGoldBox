@@ -39,7 +39,7 @@ struct HiddenEntrance
 };
 
 // A shop the game knows from data/shops: the map squares where it opens, its
-// shopkeeper's portrait (relative to the game's portraits folder; empty for
+// shopkeeper's name and portrait (relative to the game's portraits folder; empty for
 // none) and what it sells. Items out of stock (quantity 0) are left out; every
 // other item is unlimited. A shop with a hidden entrance is OpenGoldBox's own:
 // the game opens it on its square in place of the square's original event.
@@ -52,6 +52,8 @@ struct ShopSite
     std::string portrait;
     std::vector<ShopOffering> offerings;
     std::optional<HiddenEntrance> entrance;
+    std::string shopkeeper; // the name the shop shows over the portrait
+    std::string type;       // "Arms & Armor", as the manager names it
 };
 
 // Everything data/shops describes, which the Shop & Temple Manager edits.

@@ -29,6 +29,7 @@
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
+#include <godot_cpp/classes/input_event_mouse_button.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/item_list.hpp>
 #include <godot_cpp/classes/line_edit.hpp>
@@ -288,6 +289,10 @@ void RolfTourView::prepare_view()
                        presentation::guarded(this, &RolfTourView::level_up_requested).bind(slot));
         presentation::attach_child(*member, std::move(arrow));
     }
+    required_node<ItemList>(*this, "%Choices")
+        .connect("gui_input", presentation::guarded(this, &RolfTourView::choices_input));
+    required_node<ItemList>(*this, "%Choices")
+        .connect("resized", presentation::guarded(this, &RolfTourView::fit_choice_columns));
     required_node<ItemList>(*this, "InventoryPanel/%Items")
         .connect("item_selected", presentation::guarded(this, &RolfTourView::inventory_selected));
     required_node<Button>(*this, "InventoryPanel/%Equip")
@@ -498,6 +503,47 @@ void RolfTourView::next()
         session_->choose(s.continue_ticket, selected.is_empty() ? 0 : selected[0]);
     }
     refresh();
+}
+
+namespace
+{
+// A shop's stock fills three columns, each narrower than a third of the list
+// by its item's padding and the gap between columns.
+constexpr int shop_column_count = 3;
+constexpr int shop_column_margin = 16;
+
+} // namespace
+
+// A shop lists its stock in three equal columns across the list; every other
+// list, a treasure's too, in one.
+void RolfTourView::fit_choice_columns()
+{
+    auto &choices = required_node<ItemList>(*this, "%Choices");
+    const bool shop = session_ && session_->snapshot().phase == TourPhase::shopping;
+    choices.set_max_columns(shop ? shop_column_count : 1);
+    choices.set_fixed_column_width(
+        shop ? std::max(0, static_cast<int>(choices.get_size().x) / shop_column_count -
+                               shop_column_margin)
+             : 0);
+}
+
+// A double click on a shop's item buys it, as choosing it and Buy do. The list
+// selects the item on the first click.
+void RolfTourView::choices_input(const Ref<InputEvent> &event)
+{
+    const Ref<InputEventMouseButton> click = event;
+    if (click.is_null() || !click->is_double_click() ||
+        click->get_button_index() != MouseButton::MOUSE_BUTTON_LEFT || !session_ ||
+        session_->snapshot().phase != TourPhase::shopping)
+    {
+        return;
+    }
+    auto &choices = required_node<ItemList>(*this, "%Choices");
+    if (const auto row = choices.get_item_at_position(click->get_position(), true); row >= 0)
+    {
+        choices.select(row);
+        next();
+    }
 }
 
 // On the wilderness map the three buttons step west, north and east, as the
@@ -1926,6 +1972,90 @@ const Color unaffordable_item_color{1.0f, 0.86f, 0.3f};
 // Gray, for armor or a shield that would not raise the member's Armor Class.
 const Color no_gain_item_color{0.55f, 0.55f, 0.55f};
 
+// The shop types the Shop & Temple Manager offers, for the catalog: a shop
+// names its type over the shopkeeper's portrait.
+[[maybe_unused]] constexpr std::array shop_types{N_("Arms & Armor"), N_("General Items"),
+                                                 N_("Silver Items"), N_("Jewelry"),
+                                                 N_("Rogue's Shop"), N_("Magic User's Shop")};
+
+// A bonus as the roll log shows it: "+5", "-1".
+String signed_number(int number)
+{
+    return (number < 0 ? String() : String("+")) + String::num_int64(number);
+}
+
+// Damage dice as "1d8+3"; a fixed damage as its number.
+String damage_dice(int dice, int sides, int bonus)
+{
+    if (!sides)
+    {
+        return String::num_int64(bonus);
+    }
+    return String::num_int64(dice) + "d" + String::num_int64(sides) +
+           (bonus ? signed_number(bonus) : String());
+}
+
+// A weapon's hover lines for its buyer: the d20 roll that hits Armor Class 13
+// (a natural 1 always misses and a 20 always hits) and the damage a hit deals.
+String weapon_hover(const opengold::rules::WeaponAttackView &attack)
+{
+    const auto roll = std::clamp(opengold::rated_armor_class - attack.attack_bonus, 2, 20);
+    const std::initializer_list<i18n::Argument> to_hit{
+        {"ac", opengold::rated_armor_class},
+        {"roll", roll},
+        {"bonus", signed_number(attack.attack_bonus)}};
+    String text =
+        attack.disadvantage
+            ? i18n::format(N_("To hit AC {ac}: roll {roll} or more ({bonus}), with Disadvantage"),
+                           to_hit)
+            : i18n::format(N_("To hit AC {ac}: roll {roll} or more ({bonus})"), to_hit);
+    if (!attack.trained)
+    {
+        text += "\n" + i18n::text(N_("Not trained: no training bonus to hit"));
+    }
+    const auto damage = damage_dice(attack.dice, attack.sides, attack.damage_bonus);
+    const auto type = i18n::text(attack.damage_type);
+    text += "\n" +
+            (attack.two_handed_sides
+                 ? i18n::format(N_("Damage: {dice} {type}; {two_handed} with both hands"),
+                                {{"dice", damage},
+                                 {"type", type},
+                                 {"two_handed", damage_dice(attack.dice, attack.two_handed_sides,
+                                                            attack.damage_bonus)}})
+                 : i18n::format(N_("Damage: {dice} {type}"), {{"dice", damage}, {"type", type}}));
+    return text;
+}
+
+// A weight in hundredths of a pound as pounds: "3", "0.25".
+String pounds(unsigned hundredths)
+{
+    return hundredths % 100 ? String::num(hundredths / 100.0, 2)
+                            : String::num_uint64(hundredths / 100);
+}
+
+// What hovering over a shop's item tells of it for the member buying it: a
+// weapon's roll to hit and damage, armor or a shield's Armor Class on the
+// member, and every item's price and weight.
+String shop_item_hover(const opengold::ItemPreview &preview, const String &item,
+                       const String &buyer, std::uint32_t price)
+{
+    String text = item;
+    if (preview.attack)
+    {
+        text += "\n" + weapon_hover(*preview.attack);
+    }
+    if (preview.armor_class)
+    {
+        text += "\n" + i18n::format(N_("Armor Class: {ac} for {name} (now {now})"),
+                                    {{"ac", *preview.armor_class},
+                                     {"name", buyer},
+                                     {"now", preview.armor_class_now}});
+    }
+    return text + "\n" +
+           i18n::format(N_("{price} gp, {weight} lb"),
+                        {{"price", price}, {"weight", pounds(preview.weight_hundredths)}});
+}
+
 // What the member carries, in whole pounds, rounded up so that a load at the
 // limit never reads as under it.
 std::int64_t carried_pounds(const opengold::CampaignParty &party, opengold::MemberId id)
@@ -2248,10 +2378,17 @@ void RolfTourView::refresh()
     const bool answer = loaded && s.phase == TourPhase::awaiting_input;
     const bool multiple = waiting && s.choices.size() > 1;
     const String district = i18n::text(district_name(s.area_id));
+    // While a shopkeeper greets or serves the party, the shopkeeper's name
+    // and the shop's type stand over the portrait.
+    const auto *shop = loaded ? opengold::phlan_shop_serving(s, session_->shops()) : nullptr;
     required_node<Label>(*this, "%Location")
-        .set_text(i18n::format("{district} / {direction} view",
-                               {{"district", district},
-                                {"direction", i18n::text(direction_name[index(s.pose.facing)])}}));
+        .set_text(
+            shop ? i18n::format(N_("{shopkeeper} - {type}"),
+                                {{"shopkeeper", String::utf8(shop->shopkeeper.c_str())},
+                                 {"type", i18n::text(shop->type)}})
+                 : i18n::format("{district} / {direction} view",
+                                {{"district", district},
+                                 {"direction", i18n::text(direction_name[index(s.pose.facing)])}}));
     required_node<Label>(*this, "%MapTitle")
         .set_text(i18n::format("{district}    N ↑", {{"district", district}}));
     // Rolf's welcome names the opening tour; afterwards the title names the area.
@@ -2348,6 +2485,7 @@ void RolfTourView::refresh()
     required_node<LineEdit>(*this, "%Answer").set_max_length(s.number_input ? 6 : 40);
     auto *choices = &required_node<ItemList>(*this, "%Choices");
     choices->set_visible(shopping || multiple);
+    fit_choice_columns();
     if (displayed_ticket_ != s.continue_ticket)
     {
         choices->clear();
@@ -2434,6 +2572,12 @@ void RolfTourView::refresh()
                 color = no_gain_item_color;
             }
             choices->set_item_custom_fg_color(row, color);
+            if (!treasure)
+            {
+                choices->set_item_tooltip(row, shop_item_hover(campaign_->preview(chosen, item),
+                                                               i18n::text(item.label()), name,
+                                                               item.stored.value));
+            }
         }
         std::vector<String> notes;
         if (any_unusable)

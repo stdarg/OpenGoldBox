@@ -14,10 +14,14 @@ struct TourSnapshot;
 
 namespace opengold
 {
-// The shopkeeper of the New Phlan shop the party stands in, from its data/shops
-// record. The original shop offer has a two-choice "THE SHOP..." dialogue
-// before the host enters shopping; show the same person for that greeting and
-// the entire shop.
+// The New Phlan shop the party stands in, from its data/shops record, while
+// its shopkeeper speaks: the original shop offer has a two-choice "THE
+// SHOP..." dialogue before the host enters shopping, and the same person
+// greets the party and serves it. None at any other time.
+[[nodiscard]] const ShopSite *phlan_shop_serving(const por::TourSnapshot &state,
+                                                 const std::vector<ShopSite> &shops);
+
+// The portrait of the shopkeeper phlan_shop_serving finds.
 [[nodiscard]] std::string_view phlan_shopkeeper_portrait(const por::TourSnapshot &state,
                                                          const std::vector<ShopSite> &shops);
 

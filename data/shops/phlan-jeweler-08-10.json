@@ -126,6 +126,7 @@
     }
   ],
   "portrait": "NPCs/phlan-jeweler-08-10.png",
+  "shopkeeper": "Aelith Varr",
   "type": "Jewelry",
   "version": 1
 }

@@ -196,6 +196,7 @@
     }
   ],
   "portrait": "NPCs/phlan-general-12-10.png",
+  "shopkeeper": "Rosa Kettering",
   "type": "General Items",
   "version": 1
 }

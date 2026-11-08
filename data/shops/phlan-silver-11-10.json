@@ -126,6 +126,7 @@
     }
   ],
   "portrait": "NPCs/phlan-silver-11-10.png",
+  "shopkeeper": "Hendrick Sall",
   "type": "Silver Items",
   "version": 1
 }

@@ -35,6 +35,11 @@ var auto_equipped := 0
 # Sell and Drop (SELL-1) are checked once, in the first shop a rich party buys at.
 var sold_and_dropped := false
 var offer_pattern := RegEx.new()
+# Hovering over a weapon tells its roll to hit, and over armor its Armor Class.
+var weapon_hovers := 0
+var armor_hovers := 0
+# Rich parties buy their first item with a double click.
+var double_click_buys := 0
 var sale_line_pattern := RegEx.new()
 
 func _initialize() -> void:
@@ -180,6 +185,45 @@ func load_records() -> void:
 
 # --- Shops ------------------------------------------------------------------
 
+# Over the portrait, the shopkeeper's name and the shop's type; the stock in
+# three columns; and each item's hover: its name, a weapon's roll to hit AC 13
+# and damage or armor's Armor Class for the buyer, then price and weight.
+func check_shop_layout(record: Dictionary, stock: Array) -> void:
+	var heading: String = town().get_node("%Location").text
+	if not record.is_empty() and heading != record["shopkeeper"] + " - " + record["type"]:
+		bug("a shop's heading is not its shopkeeper and type", "'" + heading + "'")
+	var list: ItemList = town().get_node("%Choices")
+	if list.max_columns != 3 or (stock.size() > 2 and
+			list.get_item_rect(2).position.y != list.get_item_rect(0).position.y):
+		bug("a shop does not list its stock in three columns", str(list.max_columns) + " columns")
+	for i in range(stock.size()):
+		var lines: PackedStringArray = list.get_item_tooltip(i).split("\n")
+		if lines.size() < 2 or not stock[i].begins_with(lines[0]) or not lines[-1].ends_with(" lb"):
+			bug("a shop item's hover is not its name, then price and weight", stock[i] + ": '" + list.get_item_tooltip(i) + "'")
+			continue
+		if lines[1].begins_with("To hit AC 13: roll "):
+			weapon_hovers += 1
+			if not Array(lines.slice(2)).any(func(line: String) -> bool: return line.begins_with("Damage: ")):
+				bug("a weapon's hover has no damage", list.get_item_tooltip(i))
+		elif lines[1].begins_with("Armor Class: "):
+			armor_hovers += 1
+
+# A left double click on the item at `index`, as the mouse does it.
+func double_click(index: int) -> void:
+	var list: ItemList = town().get_node("%Choices")
+	var at := list.get_global_transform_with_canvas() * list.get_item_rect(index).get_center()
+	for second in [false, true]:
+		for pressed in [true, false]:
+			var click := InputEventMouseButton.new()
+			click.button_index = MOUSE_BUTTON_LEFT
+			click.pressed = pressed
+			click.double_click = second and pressed
+			click.position = at
+			click.global_position = at
+			root.push_input(click)
+			await process_frame
+	await settle()
+
 func check_shop(x: int, y: int, party: String) -> void:
 	if not await enter(shopping):
 		bug("the shop does not open", "(" + str(x) + "," + str(y) + ") dialogue '" + dialogue() + "'")
@@ -202,11 +246,12 @@ func check_shop(x: int, y: int, party: String) -> void:
 				bug("a shop item differs from its record", record["id"] + ": '" + shown + "' for '" + want + "'")
 	var gold := party_gold()
 	check_shop_colors(stock, gold)
+	check_shop_layout(record, stock)
 	if party == "poor":
 		await buy(0, stock[0], false)
 	else:
 		for i in range(stock.size()):
-			await buy(i, stock[i], true)
+			await buy(i, stock[i], true, i == 0)
 	print(context, ": ", stock.size(), " items listed, gold ", gold, " -> ", party_gold())
 	if party != "poor" and not sold_and_dropped:
 		sold_and_dropped = true
@@ -274,16 +319,25 @@ func buyer() -> Array:
 # Buys the item at `index` for a member who can carry it, trying the next
 # member while the shop says it is too heavy, or with `affordable` false
 # checks the purchase is refused with nothing spent.
-func buy(index: int, shown: String, affordable: bool) -> void:
+func buy(index: int, shown: String, affordable: bool, by_double_click := false) -> void:
 	var price := gp(shown.split(" / ")[1].trim_suffix(" gp")) if shown.contains(" / ") else -1
 	var before := buyer()
 	trail.append("buy " + shown)
 	for slot in range(9):
 		var list: ItemList = town().get_node("%Choices")
-		list.select(index)
-		list.item_selected.emit(index)
 		before = buyer()
-		await press("CampaignTown/%Continue")
+		if by_double_click and slot == 0:
+			trail.append("double click")
+			list.select(list.item_count - 1)
+			await double_click(index)
+			if list.get_selected_items() != PackedInt32Array([index]):
+				bug("a double click does not select only the item it buys", str(list.get_selected_items()))
+			if buyer()[1] != before[1]:
+				double_click_buys += 1
+		else:
+			list.select(index)
+			list.item_selected.emit(index)
+			await press("CampaignTown/%Continue")
 		if not dialogue().contains("Too heavy to carry"): break
 		if slot == 8:
 			bug("no member can carry an item", shown)
@@ -634,6 +688,10 @@ func run() -> void:
 		bug("Sell and Drop were never checked", "")
 	if not shops.is_empty() and only == "" and auto_equipped == 0:
 		bug("auto-equip never put on a bought weapon, armor or shield", "")
+	if not shops.is_empty() and only == "" and (weapon_hovers == 0 or armor_hovers == 0):
+		bug("no shop's hover told a weapon's roll to hit or armor's Armor Class", str(weapon_hovers) + " weapons, " + str(armor_hovers) + " armor")
+	if not shops.is_empty() and only == "" and double_click_buys == 0:
+		bug("a double click never bought an item", "")
 	print("Checked ", places, " places; ", bugs.size(), " distinct problems; ", auto_equipped, " purchases auto-equipped")
 	for key in bugs:
 		print("  ", bugs[key].size(), "x ", key, "\n      e.g. ", bugs[key][0])

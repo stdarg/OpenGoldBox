@@ -566,6 +566,7 @@
     }
   ],
   "portrait": "NPCs/phlan-arms-11-12.png",
+  "shopkeeper": "Mira Holloway",
   "type": "Arms & Armor",
   "version": 1
 }

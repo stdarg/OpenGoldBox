@@ -566,6 +566,7 @@
     }
   ],
   "portrait": "NPCs/phlan-arms-13-08.png",
+  "shopkeeper": "Bettrin Ashforge",
   "type": "Arms & Armor",
   "version": 1
 }

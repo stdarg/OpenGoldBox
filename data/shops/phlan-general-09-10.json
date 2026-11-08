@@ -196,6 +196,7 @@
     }
   ],
   "portrait": "NPCs/phlan-general-09-10.png",
+  "shopkeeper": "Corwin Pell",
   "type": "General Items",
   "version": 1
 }

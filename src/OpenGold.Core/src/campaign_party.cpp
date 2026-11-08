@@ -1514,15 +1514,9 @@ void CampaignParty::set_gear_preference(MemberId id, GearPreference preference)
     edit(id).gear_preference = preference;
 }
 
-namespace
-{
-// A typical early monster's Armor Class (EQUIP-1).
-constexpr int target_armor_class = 13;
-} // namespace
-
 rules::GearRating CampaignParty::known_gear_rating(const PartyMember &m) const
 {
-    return rules_->gear_rating(m.character.sheet(), known_definitions(m), target_armor_class);
+    return rules_->gear_rating(m.character.sheet(), known_definitions(m), rated_armor_class);
 }
 
 std::vector<CampaignParty::EquipmentPlan>
@@ -1842,32 +1836,68 @@ bool CampaignParty::can_use(MemberId id, const por::Equipment &item) const
                                 rules_key(equipment_conversion(item), item));
 }
 
-bool CampaignParty::adds_no_armor_class(MemberId id, const por::Equipment &item) const
+CampaignParty::GearInPlace CampaignParty::gear_in_place(const PartyMember &m,
+                                                        const por::Equipment &item) const
 {
-    const auto &m = member(id);
-    auto key = rules_key(equipment_conversion(item), item);
-    if (const auto parsed = rules::parse_item_key(key); parsed.unidentified)
+    using rules::EquipmentSlot;
+    GearInPlace result{.key = rules_key(equipment_conversion(item), item)};
+    if (const auto parsed = rules::parse_item_key(result.key); parsed.unidentified)
     {
-        key = std::string(parsed.base);
+        result.key = std::string(parsed.base);
     }
-    const auto slot = rules_->equipment_info(key).slot;
-    if (slot != rules::EquipmentSlot::armor && slot != rules::EquipmentSlot::shield)
+    const auto info = rules_->equipment_info(result.key);
+    result.slot = info.slot;
+    if (info.slot != EquipmentSlot::weapon && info.slot != EquipmentSlot::armor &&
+        info.slot != EquipmentSlot::shield)
     {
-        return false;
+        return result;
     }
-    // In place of the armor or shield worn; a shield also in place of the
-    // weapons whose hand it takes, which add nothing to Armor Class.
-    auto wearing = known_definitions(m);
-    std::erase_if(wearing,
+    result.gear = known_definitions(m);
+    std::erase_if(result.gear,
                   [&](const std::string &definition)
                   {
                       const auto worn = rules_->equipment_info(definition).slot;
-                      return worn == slot || (slot == rules::EquipmentSlot::shield &&
-                                              worn == rules::EquipmentSlot::weapon);
+                      switch (info.slot)
+                      {
+                      case EquipmentSlot::weapon:
+                          return worn == EquipmentSlot::weapon ||
+                                 (info.hands == 2 && worn == EquipmentSlot::shield);
+                      case EquipmentSlot::shield:
+                          // The weapons whose hand it takes add nothing to
+                          // Armor Class.
+                          return worn == EquipmentSlot::shield || worn == EquipmentSlot::weapon;
+                      default:
+                          return worn == info.slot;
+                      }
                   });
-    wearing.push_back(key);
-    const auto with_item = rules_->gear_rating(m.character.sheet(), wearing, target_armor_class);
-    return with_item.armor_class <= known_gear_rating(m).armor_class;
+    result.gear.push_back(result.key);
+    return result;
+}
+
+bool CampaignParty::adds_no_armor_class(MemberId id, const por::Equipment &item) const
+{
+    const auto preview_item = preview(id, item);
+    return preview_item.armor_class && *preview_item.armor_class <= preview_item.armor_class_now;
+}
+
+ItemPreview CampaignParty::preview(MemberId id, const por::Equipment &item) const
+{
+    const auto &m = member(id);
+    const auto in_place = gear_in_place(m, item);
+    ItemPreview result{.armor_class_now = known_gear_rating(m).armor_class,
+                       .weight_hundredths = entry_weight(*rules_, equipment_conversion(item),
+                                                         carried_quantity(item), &item)};
+    const auto &sheet = m.character.sheet();
+    if (in_place.slot == rules::EquipmentSlot::weapon)
+    {
+        result.attack = rules_->weapon_attack(sheet, in_place.gear);
+    }
+    else if (!in_place.gear.empty())
+    {
+        result.armor_class =
+            rules_->gear_rating(sheet, in_place.gear, rated_armor_class).armor_class;
+    }
+    return result;
 }
 
 void CampaignParty::read_manual(MemberId id, std::uint64_t item)

@@ -570,6 +570,7 @@
     }
   ],
   "portrait": "NPCs/phlan-arms-09-13.png",
+  "shopkeeper": "Ilvaran Tessic",
   "type": "Arms & Armor",
   "version": 1
 }

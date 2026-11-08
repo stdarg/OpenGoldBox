@@ -8,7 +8,9 @@ opens the shop itself on its square
 ([SECRET-1](../../docs/SRD-DECISIONS.md#secret-1-2026-10-29-the-rogues-shop-and-its-secret-door)).
 `fixed_location`,
 `kind`, and `id` identify an existing place and are immutable in the editor.
-Retail `type`, `portrait`, and `offerings` are editable. Temple `type` is always
+Retail `type`, `shopkeeper`, `portrait`, and `offerings` are editable. A
+shop's `shopkeeper` is its keeper's name, which the game shows with the shop's
+`type` over the portrait; each shop started with a random one. Temple `type` is always
 `Temple`; service price and `offered` are editable. Stock quantity `-1` means
 unlimited, `0` means unavailable, and positive values set a limit. An original
 item may carry a `magic_bonus`, added to its own enchantment: the Rogue's Shop

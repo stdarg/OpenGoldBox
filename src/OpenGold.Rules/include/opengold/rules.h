@@ -326,6 +326,20 @@ struct GearRating
     double round_damage{};
 };
 
+// The weapon attack a character makes with a set of gear, as a shop's hover
+// shows it: the bonus added to the d20, enchantment included, and the damage
+// a hit deals. `sides` is 0 for a fixed damage, which is `damage_bonus`.
+struct WeaponAttackView
+{
+    int attack_bonus{};
+    int dice{}, sides{}, damage_bonus{};
+    // A Versatile weapon's die with both hands, `sides` being its die in
+    // one; 0 for any other weapon.
+    int two_handed_sides{};
+    std::string damage_type; // "Slashing"
+    bool trained{}, disadvantage{};
+};
+
 // How long a status effect lasts, as the sheet and the combat panel show it.
 enum class EffectEnd
 {
@@ -1065,6 +1079,10 @@ class RulesModule
     [[nodiscard]] virtual GearRating gear_rating(const CharacterSheet &,
                                                  std::span<const std::string> gear,
                                                  int target_armor_class) const = 0;
+    // The attack the gear's weapon makes, ranged for a bow, crossbow or
+    // sling; none when the gear holds no weapon.
+    [[nodiscard]] virtual std::optional<WeaponAttackView>
+    weapon_attack(const CharacterSheet &, std::span<const std::string> gear) const = 0;
     // Whether the character is trained with an armor or shield key and has
     // the Strength it asks; any other item suits everyone.
     [[nodiscard]] virtual bool suits(const CharacterSheet &, std::string_view key) const = 0;

@@ -201,7 +201,9 @@ ShopData load_shop_data(const std::filesystem::path &directory)
         else if (kind == "shop")
         {
             data.shops.push_back({id, archive, record, markers(location), portrait,
-                                  shop_offerings(file), entrance(location)});
+                                  shop_offerings(file), entrance(location),
+                                  field<std::string>(file, "shopkeeper"),
+                                  field<std::string>(file, "type")});
         }
         else
         {

@@ -68,6 +68,14 @@ var map_cells: Array = []
 var data_dir := ""
 var repo_dir := ""
 
+# A shopkeeper's random name is one of these given names with one of these
+# family names; the game shows it over the shopkeeper's portrait.
+const GIVEN_NAMES := ["Agna", "Aelith", "Bettrin", "Bram", "Corwin", "Dessa", "Dorvan",
+    "Hendrick", "Ilvaran", "Kesta", "Mira", "Nessa", "Oswin", "Rosa", "Selwyn", "Talla",
+    "Torgan", "Wren", "Ysolde"]
+const FAMILY_NAMES := ["Ashforge", "Brisk", "Fenwick", "Gale", "Holloway", "Ironbrow",
+    "Kettering", "Marlow", "Ostrel", "Pell", "Sall", "Tallow", "Tessic", "Varr", "Wendle"]
+
 var status_label: Label
 var map_choice: OptionButton
 var map_widget: Control
@@ -75,6 +83,9 @@ var location_list: ItemList
 var title_label: Label
 var fixed_label: Label
 var type_choice: OptionButton
+var keeper_title: Label
+var keeper_row: HBoxContainer
+var keeper_name: LineEdit
 var portrait_choice: OptionButton
 var portrait_view: TextureRect
 var portrait_note: Label
@@ -259,10 +270,16 @@ func _default_record(location: Dictionary) -> Dictionary:
         offerings = _without_ammunition(shop_stock(int(location["source_record"])))
         if int(location["source_record"]) == 54:
             offerings.append_array(_authored_gear())
-    return {"version": 1, "id": location["id"], "name": location["name"],
+    var record := {"version": 1, "id": location["id"], "name": location["name"],
             "kind": location["kind"], "fixed_location": _fixed_location(location),
             "type": "Temple" if temple else location["default_type"],
             "portrait": location["portrait"], "offerings": offerings}
+    if not temple:
+        record["shopkeeper"] = _random_name()
+    return record
+
+func _random_name() -> String:
+    return "%s %s" % [GIVEN_NAMES.pick_random(), FAMILY_NAMES.pick_random()]
 
 func _without_ammunition(items: Array) -> Array:
     return items.filter(func(item: Dictionary) -> bool:
@@ -296,6 +313,8 @@ func _valid_record(record: Dictionary, location: Dictionary) -> bool:
         if record.get("type", "") != "Temple":
             return false
     elif not SHOP_TYPES.has(record.get("type", "")):
+        return false
+    elif not record.get("shopkeeper") is String or String(record["shopkeeper"]).strip_edges().is_empty():
         return false
     if not record.get("offerings") is Array or not record.get("portrait") is String:
         return false
@@ -412,6 +431,18 @@ func _build_ui() -> void:
     var fields := VBoxContainer.new()
     fields.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     details.add_child(fields)
+    keeper_title = _make_label("Shopkeeper's name")
+    fields.add_child(keeper_title)
+    keeper_row = HBoxContainer.new()
+    fields.add_child(keeper_row)
+    keeper_name = LineEdit.new()
+    keeper_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    keeper_name.text_changed.connect(_on_keeper_name_changed)
+    keeper_row.add_child(keeper_name)
+    var random_name := Button.new()
+    random_name.text = "Random name"
+    random_name.pressed.connect(_on_random_name)
+    keeper_row.add_child(random_name)
     fields.add_child(_make_label("Type"))
     type_choice = OptionButton.new()
     type_choice.item_selected.connect(_on_type_selected)
@@ -573,6 +604,9 @@ func _select_location(id: String) -> void:
         for type in SHOP_TYPES:
             type_choice.add_item(type)
         type_choice.select(SHOP_TYPES.find(String(record["type"])))
+    keeper_title.visible = not type_choice.disabled
+    keeper_row.visible = not type_choice.disabled
+    keeper_name.text = String(record.get("shopkeeper", ""))
     add_row.visible = not type_choice.disabled
     stock_title.text = "Offered" if type_choice.disabled else "Stock (-1 = ∞)"
     action_title.text = "" if type_choice.disabled else "Action"
@@ -585,6 +619,20 @@ func _on_type_selected(index: int) -> void:
         return
     records[selected_id]["type"] = SHOP_TYPES[index]
     _write_record(selected_id)
+
+# A name saves as it is typed; an empty one is not saved.
+func _on_keeper_name_changed(text: String) -> void:
+    if selected_id.is_empty() or _location_meta(selected_id)["kind"] != "shop":
+        return
+    if text.strip_edges().is_empty():
+        _set_status("A shopkeeper needs a name", true)
+        return
+    records[selected_id]["shopkeeper"] = text.strip_edges()
+    _write_record(selected_id)
+
+func _on_random_name() -> void:
+    keeper_name.text = _random_name()
+    _on_keeper_name_changed(keeper_name.text)
 
 func _scan_portraits() -> void:
     portrait_paths.clear()
@@ -824,6 +872,16 @@ func _run_check() -> void:
         _fatal("Temple relocation was allowed")
         return
     records["podol-temple-ilmater"]["fixed_location"] = fixed
+    var keeper := String(records["phlan-arms-13-08"]["shopkeeper"])
+    records["phlan-arms-13-08"]["shopkeeper"] = " "
+    if _valid_record(records["phlan-arms-13-08"], _location_meta("phlan-arms-13-08")):
+        _fatal("A shop without its shopkeeper's name was allowed")
+        return
+    records["phlan-arms-13-08"]["shopkeeper"] = keeper
+    var shop_record := _default_record(_location_meta("phlan-arms-13-08"))
+    if String(shop_record["shopkeeper"]).split(" ").size() != 2:
+        _fatal("A new shop record lacks a random shopkeeper's name")
+        return
     var first_price := int(records["phlan-arms-13-08"]["offerings"][0]["price_gp"])
     records["phlan-arms-13-08"]["offerings"][0]["price_gp"] = -1
     if _valid_record(records["phlan-arms-13-08"], _location_meta("phlan-arms-13-08")):
@@ -839,7 +897,7 @@ func _run_check() -> void:
     if not _portraits_exported():
         _fatal("The game lacks an exported portrait: run --export-portraits")
         return
-    print("Shop manager checks passed: 13 shops, 4 temples, 2 maps, fixed locations, original stock, the Rogue's Shop's secret door, exported portraits")
+    print("Shop manager checks passed: 13 shops, 4 temples, 2 maps, fixed locations, original stock, shopkeepers' names, the Rogue's Shop's secret door, exported portraits")
     get_tree().quit()
 
 # The map shows the Rogue's Shop's secret door south of (4,13) and the wall

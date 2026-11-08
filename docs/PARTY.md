@@ -219,6 +219,16 @@ Scale Mail for a Barbarian whose Unarmored Defense is as good, or Chain Mail
 for a member in Plate. Dark red comes first, then yellow, then gray, each with
 its note under the heading (the user's request, 2026-11-08).
 
+Hovering over a shop's item tells what it would do for the chosen member, held
+or worn as auto-equip would have it, in place of what the member holds or
+wears: a weapon's d20 roll to hit Armor Class 13, with its attack bonus
+(ability, training and enchantment), and its damage dice (a Versatile weapon's
+die in one hand and in both); armor or a shield's Armor Class on the member
+beside the member's Armor Class now; then every item's price and weight. An
+untrained weapon says it adds no training bonus, and one used with
+Disadvantage says so. An unidentified item shows its plain stats (the user's
+request, 2026-11-08).
+
 In the inventory, Sell (in a shop) and Drop give up the selected item: the first
 press shows the shop's offer, half the shops' price bargained by Charisma
 ([the sale price](SRD-DECISIONS.md#the-sale-price)), or warns that a dropped item is

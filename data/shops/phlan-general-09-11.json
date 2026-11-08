@@ -196,6 +196,7 @@
     }
   ],
   "portrait": "NPCs/phlan-general-09-11.png",
+  "shopkeeper": "Agna Wendle",
   "type": "General Items",
   "version": 1
 }

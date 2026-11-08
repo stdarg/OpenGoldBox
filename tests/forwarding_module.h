@@ -68,6 +68,13 @@ class ForwardingModule : public rules::RulesModule
         return rules_->gear_rating(sheet, gear, target_armor_class);
     }
 
+    std::optional<rules::WeaponAttackView>
+    weapon_attack(const rules::CharacterSheet &sheet,
+                  std::span<const std::string> gear) const override
+    {
+        return rules_->weapon_attack(sheet, gear);
+    }
+
     bool suits(const rules::CharacterSheet &sheet, std::string_view key) const override
     {
         return rules_->suits(sheet, key);

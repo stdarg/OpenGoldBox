@@ -147,6 +147,7 @@
     }
   ],
   "portrait": "NPCs/kovel-old-thief.png",
+  "shopkeeper": "Wren Tallow",
   "type": "Rogue's Shop",
   "version": 1
 }

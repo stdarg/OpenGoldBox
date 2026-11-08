@@ -126,6 +126,7 @@
     }
   ],
   "portrait": "NPCs/phlan-silver-10-13.png",
+  "shopkeeper": "Nessa Gale",
   "type": "Silver Items",
   "version": 1
 }
