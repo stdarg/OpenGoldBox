@@ -754,11 +754,12 @@ void synthetic()
     tour.restart();
     step_to_prompt(tour);
     check(!tour.continue_dialogue(ticket), "Stale pre-restart ticket rejected");
-    const auto bad = program({45, 1, 0, 0x80, 0});
+    // Opcode 0x1F, which the original leaves undefined, with its two operands.
+    const auto bad = program({0x1F, 0, 0, 0, 0, 0});
     RolfTourSession unsupported({}, bad, {}, 0x9914);
     unsupported.advance(0);
     check(unsupported.snapshot().phase == TourPhase::faulted,
-          "Unsupported services stop with diagnostics");
+          "Undefined instructions stop with diagnostics");
 }
 
 void installed_monster_picture(const char *directory)

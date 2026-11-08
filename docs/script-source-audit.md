@@ -9,6 +9,7 @@ or the Apple II release require separate validation.
 
 | Source | Use and limit |
 | --- | --- |
+| talonius, [Pool of Radiance source reconstruction](https://github.com/talonius/pool-of-radiance) | Turbo Pascal source that builds SSI's v1.3 `START.EXE` and `GAME.OVR` byte for byte; `eclvm.pas` holds every command's handler and the game loop, `eclmenu.pas` the operand loading, memory zones and the IF skip table. The authority on what the original does, ahead of the sources below, since 2026-11-08. It is derived from SSI's code and grants no license: OpenGoldBox learns behavior from it and copies none of it. |
 | Stephen S. Lee, [Exhaustive Game Information v2.00](https://gamefaqs.gamespot.com/c64/578753-pool-of-radiance/faqs/73869), April 2, 2026 | Sections 12.3 and 12.4 describe PoR commands and flags; section 14's `19B5` and `1FDC` function listings provide implementation details. The cross-listed URL says C64, but the document identifies itself as the **PC 1.3** guide. Primary source for the corrections below. |
 | Lee's [v2.00 announcement](https://www.gog.com/forum/forgotten_realms_collection/pool_of_radiance_detailed_faq_v200_now_available) | Identifies updated findings including CALL services, OR flags, CLOCK and SPELL; use the actual FAQ to establish behavior. |
 | marainein, [ECL analysis](https://forums.goldbox.games/index.php?topic=2519.0), 2013 | Independently documents zero-based Slums dispatch, event 1's creature calls and completion flag, and event 3's fourth-table-entry selection. Used for the installed-data event/revisit regression. Its older interpretation of CLEARMONSTERS is superseded by the detailed PC research. |
@@ -70,6 +71,12 @@ analysis can refine paths using selector bounds and table contents. The runtime
 already selects only the actual branch and reads tables as data.
 
 ## Compatibility questions and deliberate limits
+
+The reconstructed source (above) confirms each answer below that the DOS
+probe settled, and settles the rest: `0x1F` has no handler and leaves the
+instruction pointer where it is, so the original would run it forever; ECL
+CLOCK reads an unset variable; LOAD PIECES shares LOAD FILES's handler and
+loads the wall sets its operands name.
 
 | Topic | Current decision / next evidence needed |
 | --- | --- |
