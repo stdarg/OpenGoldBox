@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_FORMATS_H
 #define OPENGOLD_FORMATS_H
 
+#include <array>
 #include <cstdint>
 #include <span>
 #include <vector>
@@ -70,6 +71,9 @@ struct ImageDecodeResult
 [[nodiscard]] ImageDecodeResult decode_ega_combat_icon(std::span<const std::uint8_t> dax,
                                                        std::uint8_t record_id,
                                                        std::uint8_t frame_index = 0);
+// The red, green and blue of an EGA color, 0 to 15, as the decoders draw it.
+[[nodiscard]] std::array<std::uint8_t, 3> ega_rgb(std::uint8_t index);
+
 // A decompressed 17-byte-header HEAD/BODY/PIC record, using normal EGA colors.
 [[nodiscard]] ImageDecodeResult decode_ega_picture(std::span<const std::uint8_t> record);
 

@@ -4136,6 +4136,18 @@ void play_pyramid(Expedition &trip)
     check(town.snapshot().overland && town.script_variable(por::EclAddress{0x4AA2}) == 255 &&
               heard.find("BEGINNING TO RECOVER") != std::string::npos,
           "Leaving the Pyramid, the valley begins to heal and its rivers open");
+    // The original's Yarash ending recolors the valley's tiles, by START.EXE's
+    // two lists: Black to Blue and Light Gray to Green, then Light Gray alone.
+    const auto &world = opengold::test::TourAccess::overland_world(town);
+    const auto &plain = opengold::test::TourAccess::overland_tiles(town, false),
+               &healed = opengold::test::TourAccess::overland_tiles(town, true);
+    check(world.healing.size() == 2 && world.healing[0].tiles.size() == 11 &&
+              world.healing[1].tiles.size() == 18 && world.healing[0].to[0] == 1 &&
+              world.healing[0].to[7] == 2 && world.healing[1].to[0] == 0,
+          "START.EXE gives the valley's two recolorings");
+    check(healed.size() == plain.size() && healed[101].rgba != plain[101].rgba &&
+              healed[86].rgba != plain[86].rgba && healed[0].rgba == plain[0].rgba,
+          "The healed valley's tiles take their new colors and the rest keep theirs");
 }
 
 void pyramid(const std::filesystem::path &directory)

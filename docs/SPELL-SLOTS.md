@@ -18,7 +18,7 @@ Part of [#176](https://github.com/stdarg/OpenGoldBox/issues/176) (levels 5–15)
   slots. A Warlock's Pact Magic slots join them at their level; a Short Rest
   gives back as many of that level as Pact Magic has, and Magical Cunning half
   of them, rounded up.
-- The vital state (`SRD13`) and the combat checkpoint (`OGCOMBAT 76`) store
+- The vital state (`SRD13`) and the combat checkpoint (`OGCOMBAT 77`) store
   all nine counts. The rest screen lists a pool for each level the character
   has ("Level-three spell slots").
 - One slot a turn, as before, whatever its level.

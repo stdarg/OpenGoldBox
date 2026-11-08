@@ -38,5 +38,20 @@ func run_checks() -> void:
         push_error("Town advance arrow must follow the rendered name inside its row")
         quit(1)
         return
+    # A member who will fight for the monsters is named in the original's
+    # yellow, over the leader's gold.
+    var lines := PackedStringArray(["Ari", "Fighter"])
+    row.call("show_member", null, lines, PackedStringArray(), &"", PackedStringArray(), true)
+    var gold: Color = row.get_theme_color("gold", "OpenGoldPalette")
+    if row.call("name_color") != gold:
+        push_error("The leader is named in gold")
+        quit(1)
+        return
+    row.call("show_member", null, lines, PackedStringArray(), &"", PackedStringArray(), true, true)
+    var hostile: Color = row.get_theme_color("hostile", "OpenGoldPalette")
+    if row.call("name_color") != hostile or hostile == gold:
+        push_error("A member who will turn on the party is named in yellow")
+        quit(1)
+        return
     print("Party advance layout passed")
     quit(0)

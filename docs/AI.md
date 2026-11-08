@@ -177,6 +177,15 @@ side, heals only its own, and strikes a character already down only on
 Nightmare and Infernal, as above; the rules mark each such command hostile or
 friendly for it.
 
+**Attack Ally**, as the original asked: before a member under the player's
+command attacks or casts a harmful spell at someone on its own side, the
+fight asks. Yes, and every companion and every creature fighting beside the
+party that still stands turns on it for the rest of the fight (the rules'
+`turn_against_party`); the companions leave the party afterwards, as the
+original drops every hostile creature after a fight, and the script hears
+that an ally was attacked (`0x6E33`; the nomads hold it against the party). A
+Quick member, run by the computer, is never asked and never turns anyone.
+
 **Original.** The same: it kept its target while that target was visible and in
 the fight, otherwise picked a random visible enemy, and enemies within reach
 came first. It never read Hit Points or AC.

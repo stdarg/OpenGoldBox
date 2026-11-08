@@ -2648,13 +2648,14 @@ void RolfTourView::show_party_rows()
                 ? PackedStringArray({name, i18n::text(cs.race) + " / " + i18n::class_summary(cs)})
                 : PackedStringArray(
                       {name, i18n::class_summary(cs), i18n::text(cs.race), i18n::text(cs.gender)});
-        button->call(
-            "show_member",
-            portraits_->texture(m.character.appearance(), m.character.creation_data()), identity,
-            armor_and_hit_points(campaign_->profile(id).armor_class, m.vitals.hit_points,
-                                 cs.hit_points),
-            low_hit_points_color(m.vitals.hit_points, cs.hit_points),
-            compact ? PackedStringArray() : PackedStringArray({gear.weapons, gear.armor}), leader);
+        button->call("show_member",
+                     portraits_->texture(m.character.appearance(), m.character.creation_data()),
+                     identity,
+                     armor_and_hit_points(campaign_->profile(id).armor_class, m.vitals.hit_points,
+                                          cs.hit_points),
+                     low_hit_points_color(m.vitals.hit_points, cs.hit_points),
+                     compact ? PackedStringArray() : PackedStringArray({gear.weapons, gear.armor}),
+                     leader, session_ && session_->turns_on_party(id));
         auto *arrow = &required_node<Button>(*button, "Advance");
         arrow->call("place_in_member_row", name);
         arrow->set_visible(embedded_party_ && campaign_->can_advance(id) && session_->can_leave());

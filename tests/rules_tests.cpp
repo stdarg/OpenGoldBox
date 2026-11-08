@@ -932,6 +932,25 @@ void death_save_turn_entry_tests()
     }
 }
 
+// The original's Attack Ally: the creatures the game names leave the party's
+// side for the rest of the fight, and a reload keeps them there and keeps the
+// fact that an ally was attacked.
+void attack_ally_tests()
+{
+    auto module = srd5::load(pack());
+    auto e = duel();
+    e.participants.push_back({3, "bandit", "Helper", Side::party, {1, 6}});
+    auto session = module->create(e, 7);
+    check(!session->snapshot().allies_attacked, "No ally is attacked at first");
+    session->turn_against_party({3});
+    check(session->snapshot().allies_attacked && unit(*session, 3).side == Side::opposition &&
+              unit(*session, 1).side == Side::party,
+          "Attacking an ally turns the named creature against the party");
+    const auto restored = module->restore(session->save());
+    check(restored->snapshot().allies_attacked && unit(*restored, 3).side == Side::opposition,
+          "The turned creature and the attack on an ally survive a reload");
+}
+
 void allied_transit_tests()
 {
     auto module = srd5::load(pack());
@@ -1300,7 +1319,7 @@ void checkpoint_cutoff_tests()
         }
         return false;
     };
-    check(checkpoint.starts_with("OGCOMBAT 76 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 77 "), "Checkpoints use the current format");
     auto older_format = checkpoint;
     older_format.replace(9, 2, "26");
     check(refused_as_older(older_format), "Format 26 checkpoint is refused as older");
@@ -1515,6 +1534,7 @@ int main()
         death_save_turn_entry_tests();
         opportunity_reuse_tests();
         allied_transit_tests();
+        attack_ally_tests();
         checkpoint_validation_tests();
         checkpoint_cutoff_tests();
         installed();

@@ -55,7 +55,11 @@ valley's healing), `opengold_creatures GAME`, `opengold_maps GAME`, coab's
 - **The valley's healing:** back on the wilderness map with the pollution
   stopped, the Central Wilderness's script patches the original's colours of
   36 valley tiles, moves the Pyramid's landmarks and opens the rivers
-  (`0x4AA2` = 255).
+  (`0x4AA2` = 255). The engine recolors the valley's tiles too, as the
+  original's Yarash ending does, by START.EXE's two lists: 11 tiles turn
+  Black to Blue and Light Gray to Green, 18 more Light Gray to Green (since
+  2026-11-08; the original's few seconds of the colors spreading are not
+  played).
 
 ## Monster conversions (MON7CHA)
 

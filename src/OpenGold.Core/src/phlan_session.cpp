@@ -1268,6 +1268,21 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     // room for (PLACE-1), are worth neither experience nor treasure.
     std::vector<unsigned> unpaid_records;
     std::set<rules::EntityId> enemies, party_ids;
+    // Companions who turned on the party when one of its members attacked
+    // its own side are its turncoats now, and leave it after the fight.
+    if (result.allies_attacked)
+    {
+        for (const auto &unit : result.combatants)
+        {
+            const auto &slots = campaign_->state().slots;
+            if (unit.side == rules::Side::opposition &&
+                std::ranges::find(slots, unit.id) != slots.end() &&
+                std::ranges::find(encounter_->turncoats, unit.id) == encounter_->turncoats.end())
+            {
+                encounter_->turncoats.push_back(unit.id);
+            }
+        }
+    }
     // In a duel only the champion fights; the rest of the party stands by.
     const auto champion = encounter_->champion;
     const auto &turned = encounter_->turncoats;
@@ -1290,6 +1305,12 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             {
                 return false;
             }
+            continue;
+        }
+        // A creature that fought beside the party until it was attacked.
+        if (unit.side == rules::Side::opposition && opengold::is_ally(unit.id) &&
+            result.allies_attacked)
+        {
             continue;
         }
         if (unit.side == rules::Side::opposition)
@@ -1472,7 +1493,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         // duel lost, 129 (0x81) the party fled; scripts test "above 128" for a
         // flight.
         std::vector<EclMemoryWrite> results;
-        for (auto write : std::array<EclMemoryWrite, 7>{
+        for (auto write : std::array<EclMemoryWrite, 8>{
                  {{ecl_combat_result, static_cast<std::uint16_t>(fled        ? 129
                                                                  : duel_lost ? 128
                                                                              : 0)},
@@ -1481,7 +1502,10 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                   {EclAddress{0x6DE3}, 0},
                   {EclAddress{0x6E70}, 0},
                   {EclAddress{0x6E71}, 0},
-                  {EclAddress{0x6E72}, 0}}})
+                  {EclAddress{0x6E72}, 0},
+                  // Whether a member attacked its own side (Attack Ally),
+                  // which the nomads hold against the party (ECL7:17 0x9ABA).
+                  {ecl_allies_attacked, static_cast<std::uint16_t>(result.allies_attacked)}}})
         {
             results.push_back(write);
         }

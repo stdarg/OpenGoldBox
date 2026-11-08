@@ -88,6 +88,9 @@ inline constexpr EclAddress ecl_training_hall_name{0x982C};
 // fights for the monsters, 0x80 when the computer runs it on the party's side.
 inline constexpr EclAddress ecl_character_allegiance{0x6C0C};
 
+// 1 when a member attacked its own side in the last fight (Attack Ally).
+inline constexpr EclAddress ecl_allies_attacked{0x6E33};
+
 // The number of members in the party, companions and the dead included.
 inline constexpr EclAddress ecl_party_size{0x6E3E};
 

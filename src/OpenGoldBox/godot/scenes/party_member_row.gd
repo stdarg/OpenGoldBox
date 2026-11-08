@@ -23,23 +23,38 @@ var _health := PackedStringArray()
 var _health_color := &""
 var _condition := PackedStringArray()
 var _leader := false
+# A member who will fight for the monsters: its name is drawn in the original's
+# yellow.
+var _hostile := false
 
 
 # A row with no `condition` lines is compact.
 func show_member(portrait: Texture2D, identity: PackedStringArray, health: PackedStringArray,
-        health_color: StringName, condition: PackedStringArray, leader: bool) -> void:
+        health_color: StringName, condition: PackedStringArray, leader: bool,
+        hostile := false) -> void:
     _portrait = portrait
     _identity = identity
     _health = health
     _health_color = health_color
     _condition = condition
     _leader = leader
+    _hostile = hostile
     tooltip_text = "\n".join(identity + PackedStringArray(["".join(health)]) + condition)
     queue_redraw()
 
 
 func set_highlight(active: bool) -> void:
     theme_type_variation = &"SelectedMemberRow" if active else &"ButtonText16"
+
+
+# The name's color: the original's yellow for a member who will fight for the
+# monsters, gold for the leader, else the text's.
+func name_color() -> Color:
+    if _hostile:
+        return get_theme_color("hostile", "OpenGoldPalette")
+    if _leader:
+        return get_theme_color("gold", "OpenGoldPalette")
+    return get_theme_color("font_color")
 
 
 # Where the lines start, past the portrait.
@@ -92,7 +107,7 @@ func _draw() -> void:
     var right := size.x - style.get_margin(SIDE_RIGHT)
     var left := text_left()
     for row in _identity.size():
-        var shade := get_theme_color("gold", "OpenGoldPalette") if row == 0 and _leader else color
+        var shade := name_color() if row == 0 else color
         draw_string(font, Vector2(left, baseline + row * line),
             _identity[row], HORIZONTAL_ALIGNMENT_LEFT, right - left, font_size, shade)
     if _condition.is_empty():

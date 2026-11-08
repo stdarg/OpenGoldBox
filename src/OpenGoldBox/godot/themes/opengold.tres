@@ -437,6 +437,7 @@ OpenGoldPalette/colors/panel = Color(0.10980392156862745, 0.15294117647058825, 0
 OpenGoldPalette/colors/line = Color(0.2549019607843137, 0.3137254901960784, 0.34509803921568627, 1)
 OpenGoldPalette/colors/gold = Color(0.8431372549019608, 0.7058823529411765, 0.4745098039215686, 1)
 OpenGoldPalette/colors/party = Color(0.4745098039215686, 0.8392156862745098, 0.8313725490196079, 1)
+OpenGoldPalette/colors/hostile = Color(1.0, 1.0, 0.3333333333333333, 1)
 OpenGoldPalette/colors/map_black = Color(0.0, 0.0, 0.0, 1)
 OpenGoldPalette/colors/character_palette_0 = Color(0.0, 0.0, 0.0, 1)
 OpenGoldPalette/colors/character_palette_1 = Color(0.0, 0.0, 0.6666666666666666, 1)

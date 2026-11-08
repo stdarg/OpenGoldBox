@@ -50,6 +50,10 @@ class CombatDemo
 
     [[nodiscard]] const rules::CombatSession &combat() const;
     bool submit(const rules::Command &command);
+    // The original's "Attack Ally", once the player says yes: the attacker's
+    // own side loses every companion and every creature fighting beside it
+    // that still stands, who fight for the opposition from now on.
+    void attack_allies(rules::EntityId attacker);
     void continue_script();
     void revisit();
     [[nodiscard]] std::string save_combat() const;

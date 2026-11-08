@@ -24,8 +24,9 @@ every field:
 - Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 45` (`campaign_format` in
   `campaign_save.cpp`). Format 45 records the class each level was taken in
   (multiclassing, [MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)).
-- The internal training-combat checkpoint: `OGCOMBAT 76` (`checkpoint_format`
-  in `srd5.cpp`); 76 keeps each class's resource counts apart.
+- The internal training-combat checkpoint: `OGCOMBAT 77` (`checkpoint_format`
+  in `srd5.cpp`); 76 keeps each class's resource counts apart, 77 records
+  whether a member attacked its own side (Attack Ally).
 - Records embedded by the SRD module: character profile recipe `PC44` (an
   explicit spell ID list and each level's class), vital state `SRD13`, effect
   state `FX9` and concentration `CN1`. A vital state keeps one count of a class

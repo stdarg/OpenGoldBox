@@ -127,6 +127,9 @@ struct PhlanResources
     // (WILDCOM, then RANDCOM). Null without START.EXE.
     std::shared_ptr<const OverlandWorld> overland;
     std::vector<Image> overland_tiles;
+    // The same tiles once the Pyramid's pollution is stopped and the valley
+    // heals (the original's Yarash ending).
+    std::vector<Image> healed_overland_tiles;
     Image party_icon;
     std::vector<Image> wilderness_art;
     // On the town only: the original's closing story from GAME.OVR, one string
@@ -524,6 +527,13 @@ class RolfTourSession
         return machine_.variable(address);
     }
 
+    // Whether the member will fight for the monsters in the next fight, as a
+    // script or a treacherous companion decided; the original shows its name
+    // in yellow.
+    [[nodiscard]] bool turns_on_party(MemberId id) const
+    {
+        return campaign_ && turncoat(id);
+    }
     [[nodiscard]] const std::optional<opengold::CampaignEncounter> &pending_encounter() const
     {
         static const std::optional<opengold::CampaignEncounter> not_ready;

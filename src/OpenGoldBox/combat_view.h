@@ -276,6 +276,14 @@ class CombatView : public godot::Control
     unsigned effect_target_index_{};
     void initiative_input(const godot::Ref<godot::InputEvent> &event);
     void optional_effect_input(const godot::Ref<godot::InputEvent> &event);
+    // The original's "Attack Ally": an attack by a member under the player's
+    // command on its own side waits for the player's yes.
+    std::optional<opengold::rules::Command> ally_attack_;
+    bool ally_attack_confirmed_{};
+    [[nodiscard]] bool attacks_own_side(const opengold::rules::Command &command) const;
+    void attack_ally();
+    void spare_ally();
+    void ally_attack_input(const godot::Ref<godot::InputEvent> &event);
     void begin_nick();
     void nick_selected(std::int64_t index);
     void confirm_nick();

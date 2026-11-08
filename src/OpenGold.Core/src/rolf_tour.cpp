@@ -430,6 +430,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                 town->wilderness_art.push_back(std::move(art.image));
             }
         }
+        town->healed_overland_tiles = healed_overland_tiles(*overland, town->overland_tiles);
         town->overland = std::make_shared<const OverlandWorld>(std::move(*overland));
     }
     pictures("HEAD3.DAX", town->heads);
@@ -1090,8 +1091,13 @@ Image RolfTourSession::observe_view()
                     return false;
                 }
             }};
-        return render_overland_window(*town_->overland, town_->overland_tiles, town_->party_icon,
-                                      view);
+        // The valley's colors heal once the pollution is stopped, as the
+        // original recolors its tiles on the way back from the Pyramid, and
+        // stay healed once its rivers open.
+        const bool healed = variable(0x4AA2) != 0 || variable(0x4AB3) == 254;
+        return render_overland_window(*town_->overland,
+                                      healed ? town_->healed_overland_tiles : town_->overland_tiles,
+                                      town_->party_icon, view);
     }
     const auto pose = snapshot_.pose;
     auto view =

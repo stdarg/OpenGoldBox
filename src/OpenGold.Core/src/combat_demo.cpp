@@ -1138,7 +1138,8 @@ void CombatDemo::finish_combat()
         {EclAddress{0x6DE3}, 0},
         {EclAddress{0x6E70}, 0},
         {EclAddress{0x6E71}, 0},
-        {EclAddress{0x6E72}, 0}};
+        {EclAddress{0x6E72}, 0},
+        {ecl_allies_attacked, static_cast<std::uint16_t>(state.allies_attacked)}};
     if (!vm_->resume_host(combat_ticket_, reply))
     {
         throw std::runtime_error("Combat outcome rejected by ECL");
@@ -1175,6 +1176,30 @@ bool CombatDemo::submit(const Command &command)
     synchronize_party();
     finish_combat();
     return true;
+}
+
+void CombatDemo::attack_allies(rules::EntityId attacker)
+{
+    if (!combat_)
+    {
+        return;
+    }
+    std::vector<rules::EntityId> turning;
+    for (const auto &unit : combat_->snapshot().combatants)
+    {
+        if (unit.id == attacker || unit.side != Side::party)
+        {
+            continue;
+        }
+        const auto &slots = campaign_ ? campaign_->state().slots : std::array<MemberId, 8>{};
+        const bool companion = std::ranges::find(slots, unit.id) != slots.end() &&
+                               !campaign_->member(unit.id).npc_source.empty();
+        if (companion || is_ally(unit.id))
+        {
+            turning.push_back(unit.id);
+        }
+    }
+    combat_->turn_against_party(turning);
 }
 
 void CombatDemo::revisit()

@@ -931,6 +931,9 @@ struct Snapshot
     std::vector<Cell> walls;
     // Gold the fight's offerings (Revivify) took from the party purse so far.
     unsigned offerings_gold{};
+    // A member under the player's command attacked its own side (the
+    // original's "Attack Ally"), which scripts hear of after the fight.
+    bool allies_attacked{};
     // Pre-turn decisions; legal commands carry eligible actors and allies.
     std::vector<EntityId> initiative_choices;
     std::vector<HeldItemView> held_items;
@@ -1003,6 +1006,11 @@ class CombatSession
     [[nodiscard]] virtual std::vector<Cell> movement_reach(EntityId actor) const = 0;
 
     virtual bool submit(const Command &command) = 0;
+    // A member under the player's command attacks its own side, as the
+    // original allowed once asked: `turning` (the party's companions and the
+    // creatures fighting beside it, as the game names them) go over to the
+    // opposition for the rest of the fight.
+    virtual void turn_against_party(const std::vector<EntityId> &turning) = 0;
     [[nodiscard]] virtual std::string save() const = 0;
 
   protected:

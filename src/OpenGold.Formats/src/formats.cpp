@@ -107,6 +107,11 @@ constexpr std::array<std::array<std::uint8_t, 3>, 16> ega_palette{{{0, 0, 0},
 
 } // namespace
 
+std::array<std::uint8_t, 3> ega_rgb(std::uint8_t index)
+{
+    return ega_palette.at(index);
+}
+
 DaxDecodeResult decode_dax_archive(std::span<const std::uint8_t> bytes)
 {
     if (bytes.size() < 2)

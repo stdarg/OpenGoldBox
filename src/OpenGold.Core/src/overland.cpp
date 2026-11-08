@@ -14,6 +14,10 @@ namespace
 constexpr std::size_t landmark_offset = 0x0C36, squares_offset = 0x3648,
                       window_offset = 0x3C78, combat_tile_offset = 0x2744;
 constexpr std::size_t combat_tile_count = 0x42;
+// The valley's healing: its two lists of tiles, the colors both remaps start
+// from, and what each turns them into.
+constexpr std::size_t healing_tiles_offset = 0x0900, healing_from_offset = 0x091D;
+constexpr std::array<std::size_t, 2> healing_tile_counts{11, 18};
 
 std::uint16_t word_at(std::span<const std::uint8_t> image, std::size_t at)
 {
@@ -429,7 +433,79 @@ std::optional<OverlandWorld> read_overland_world(std::span<const std::uint8_t> i
     {
         return std::nullopt;
     }
+    // Read only when the remaps start from every color in order, as the
+    // release this engine reads has them; another layout heals nothing.
+    auto tiles_at = data + healing_tiles_offset;
+    const auto from_at = data + healing_from_offset;
+    if (from_at + 48 <= image.size())
+    {
+        std::array<std::uint8_t, 16> from{};
+        std::copy_n(image.begin() + static_cast<std::ptrdiff_t>(from_at), 16, from.begin());
+        bool in_order = true;
+        for (std::size_t color = 0; color < from.size(); ++color)
+        {
+            in_order = in_order && from[color] == color;
+        }
+        for (std::size_t list = 0; in_order && list < healing_tile_counts.size(); ++list)
+        {
+            OverlandWorld::Recolor recolor;
+            recolor.tiles.assign(
+                image.begin() + static_cast<std::ptrdiff_t>(tiles_at),
+                image.begin() + static_cast<std::ptrdiff_t>(tiles_at + healing_tile_counts[list]));
+            tiles_at += healing_tile_counts[list];
+            recolor.from = from;
+            std::copy_n(image.begin() + static_cast<std::ptrdiff_t>(from_at + 16 * (list + 1)), 16,
+                        recolor.to.begin());
+            world.healing.push_back(std::move(recolor));
+        }
+    }
     return world;
+}
+
+std::vector<Image> healed_overland_tiles(const OverlandWorld &world, std::vector<Image> tiles)
+{
+    // A pixel's EGA color: transparent pixels are color 0, as the tiles
+    // decode it.
+    const auto color_of = [](const std::uint8_t *pixel) -> std::optional<std::uint8_t>
+    {
+        if (pixel[3] == 0)
+        {
+            return std::uint8_t{0};
+        }
+        for (std::uint8_t color = 1; color < 16; ++color)
+        {
+            const auto rgb = ega_rgb(color);
+            if (std::equal(rgb.begin(), rgb.end(), pixel))
+            {
+                return color;
+            }
+        }
+        return std::nullopt;
+    };
+    for (const auto &recolor : world.healing)
+    {
+        for (const auto tile : recolor.tiles)
+        {
+            if (tile >= tiles.size())
+            {
+                continue;
+            }
+            auto &rgba = tiles[tile].rgba;
+            for (std::size_t at = 0; at + 4 <= rgba.size(); at += 4)
+            {
+                const auto color = color_of(&rgba[at]);
+                if (!color || recolor.from[*color] == recolor.to[*color])
+                {
+                    continue;
+                }
+                const auto to = recolor.to[*color];
+                const auto rgb = ega_rgb(to);
+                std::copy(rgb.begin(), rgb.end(), rgba.begin() + static_cast<std::ptrdiff_t>(at));
+                rgba[at + 3] = to == 0 ? 0 : 255;
+            }
+        }
+    }
+    return tiles;
 }
 
 OverlandPassage overland_passage(std::uint8_t t) noexcept

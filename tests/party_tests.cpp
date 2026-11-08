@@ -1679,6 +1679,10 @@ class InvalidInitialSession final : public CombatSession
         return false;
     }
 
+    void turn_against_party(const std::vector<EntityId> &) override
+    {
+    }
+
     std::string save() const override
     {
         return {};
@@ -2580,6 +2584,49 @@ void victory_beside_dead_member()
     }
     check(town.resolve_combat(result) && town.snapshot().phase != por::TourPhase::combat,
           "The victory resolves although a dead member sat it out");
+}
+
+// The original's Attack Ally: once a member attacks its own side, the
+// party's companion fights for the monsters and leaves the party after the
+// fight, and the script hears that an ally was attacked (0x6E33).
+void attack_ally_turns_companions()
+{
+    const auto resources = orc_encounter_resources();
+    auto party = std::make_shared<CampaignParty>(module());
+    const auto leader = party->add_pc(character("fighter"));
+    const auto companion = party->recruit("por:MON3CHA:99", character("fighter", "Gil"));
+    por::RolfTourSession town({}, resources->programs.at(0), {}, 0x9914, {}, resources);
+    (void)start_orc_encounter(town, party);
+    auto result = [&]
+    {
+        CombatDemo combat(module());
+        combat.campaign_party(party);
+        combat.encounter(*town.pending_encounter(), 42);
+        combat.attack_allies(leader);
+        return combat.combat().snapshot();
+    }();
+    const auto side_of = [&](EntityId id)
+    {
+        return std::ranges::find(result.combatants, id, &rules::CombatantView::id)->side;
+    };
+    check(result.allies_attacked && side_of(companion) == Side::opposition &&
+              side_of(leader) == Side::party,
+          "Attacking an ally turns the companion against the party");
+    result.outcome = Outcome::victory;
+    for (auto &unit : result.combatants)
+    {
+        if (unit.side == Side::opposition)
+        {
+            unit.hit_points = 0;
+        }
+    }
+    check(town.resolve_combat(result), "The fight against the turned companion resolves");
+    settle(town);
+    const auto &slots = party->state().slots;
+    check(std::ranges::find(slots, companion) == slots.end() &&
+              std::ranges::find(slots, leader) != slots.end() &&
+              town.script_variable(por::EclAddress{0x6E33}) == 1,
+          "The companion leaves the party and the script hears an ally was attacked");
 }
 
 // When every monster runs off the field the party wins, but nothing is left to
@@ -3507,6 +3554,7 @@ int main()
         victory_beside_dead_member();
         failed_combat_result_rolls_back();
         victory_when_every_monster_fled();
+        attack_ally_turns_companions();
         victory_with_a_monster_left_out();
         monsters_bring_their_gear();
         monster_picture_before_combat();

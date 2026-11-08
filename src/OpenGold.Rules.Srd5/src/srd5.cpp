@@ -842,7 +842,7 @@ constexpr std::string_view profile_magic = "PC44";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 76;
+constexpr unsigned checkpoint_format = 77;
 // A broken monster's turns of getting no nearer the edge before it charges
 // (MORALE-2).
 constexpr int panic_charge_after_turns = 2;
@@ -5773,6 +5773,7 @@ class Session final : public CombatSession
     [[nodiscard]] std::vector<Command> offered_commands() const;
     std::vector<Cell> movement_reach(EntityId actor) const override;
     bool submit(const Command &command) override;
+    void turn_against_party(const std::vector<EntityId> &turning) override;
     // Records the enemy a command on the actor's own turn aims at.
     void remember_target(const Command &command);
     // What the computer weighs in the spell as the actor casts it (#266).
@@ -6186,6 +6187,7 @@ class Session final : public CombatSession
     unsigned morale_{100};
     bool spares_the_party_{};
     bool daylight_{}; // Encounter::daylight
+    bool allies_attacked_{};
     // What the party purse is worth in gold, and what offerings have taken of it.
     unsigned gold_{}, offerings_gold_{};
     // A party member who has just died: Revivify may bring it back for a minute.
@@ -8621,6 +8623,7 @@ Snapshot Session::snapshot() const
     s.initiative_choices = initiative_choices_;
     s.elapsed_milliseconds = elapsed_ms_;
     s.offerings_gold = offerings_gold_;
+    s.allies_attacked = allies_attacked_;
     s.held_items = items_;
     s.physical_inventory = physical_inventory_;
     s.actor = champion_move_ ? champion_move_->actor
@@ -15859,6 +15862,22 @@ bool Session::across_wind_wall(Cell from, Cell to) const
         }
     }
     return false;
+}
+
+void Session::turn_against_party(const std::vector<EntityId> &turning)
+{
+    allies_attacked_ = true;
+    for (auto &a : actors_)
+    {
+        if (a.source.side == Side::party && !a.life.dead && a.life.hp > 0 &&
+            std::ranges::find(turning, a.source.id) != turning.end())
+        {
+            a.source.side = Side::opposition;
+            log(a.source.name + " turns on the party.",
+                {"{name} turns on the party.", {{"name", a.source.name}}});
+        }
+    }
+    ++revision_;
 }
 
 void Session::dominate(Actor &caster, Actor &target, int dc)
@@ -28293,7 +28312,8 @@ std::string Session::save() const
         out << std::quoted(entry.english) << '\n';
     }
     out << scope_ << ' ' << elapsed_ms_ << ' ' << morale_ << ' ' << spares_the_party_ << ' '
-        << gold_ << ' ' << offerings_gold_ << ' ' << daylight_ << ' ' << actors_.size() << '\n';
+        << gold_ << ' ' << offerings_gold_ << ' ' << daylight_ << ' ' << allies_attacked_ << ' '
+        << actors_.size() << '\n';
     for (const auto &a : actors_)
     {
         detail::write_effects(out, all_effects(a));
@@ -29417,7 +29437,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     unsigned effects_count{};
     input >> session->scope_ >> session->elapsed_ms_ >> session->morale_ >>
         session->spares_the_party_ >> session->gold_ >> session->offerings_gold_ >>
-        session->daylight_ >> effects_count;
+        session->daylight_ >> session->allies_attacked_ >> effects_count;
     if (session->morale_ > 100 || session->offerings_gold_ > session->gold_)
     {
         throw std::runtime_error("Invalid checkpoint morale");

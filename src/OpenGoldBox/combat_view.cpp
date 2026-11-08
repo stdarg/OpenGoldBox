@@ -4,6 +4,7 @@
 #include "opengold/path_text.h"
 #include "initiative_controls.h"
 #include "optional_effect_controls.h"
+#include "ally_attack_controls.h"
 #include "combat_weapon_controls.h"
 #include "nick_controls.h"
 #include "godot_images.h"
@@ -633,6 +634,10 @@ void CombatView::_ready()
         presentation::guarded(this, &CombatView::refresh).unbind(1));
     presentation::setup_weapon_controls(*this, i18n::text,
                                         presentation::guarded(this, &CombatView::weapon_selected));
+    presentation::setup_ally_attack(*this, i18n::text,
+                                    presentation::guarded(this, &CombatView::attack_ally),
+                                    presentation::guarded(this, &CombatView::spare_ally),
+                                    presentation::guarded(this, &CombatView::ally_attack_input));
     ready_ = true;
     layout();
     if (Engine::get_singleton()->is_editor_hint())
@@ -2109,8 +2114,82 @@ Array CombatView::spell_effect_rows() const
     return rows;
 }
 
+bool CombatView::attacks_own_side(const Command &command) const
+{
+    if (!campaign_ || ally_attack_confirmed_ || command.intent != rules::Intent::hostile ||
+        !command.target || command.target == command.actor || opengold::is_ally(command.actor) ||
+        is_quick(command.actor))
+    {
+        return false;
+    }
+    const auto state = demo_.snapshot();
+    const auto side_of = [&](EntityId id) -> std::optional<rules::Side>
+    {
+        const auto unit = std::ranges::find(state.combatants, id, &rules::CombatantView::id);
+        return unit == state.combatants.end() ? std::nullopt : std::optional{unit->side};
+    };
+    return side_of(command.actor) == rules::Side::party &&
+           side_of(command.target) == rules::Side::party;
+}
+
+void CombatView::attack_ally()
+{
+    auto &window = required_node<Window>(*this, "AttackAlly");
+    window.hide();
+    if (!ally_attack_)
+    {
+        return;
+    }
+    const auto chosen = *std::exchange(ally_attack_, std::nullopt);
+    demo_.change().attack_allies(chosen.actor);
+    // Turning the companions renewed the commands: the same attack, anew.
+    for (const auto &c : demo_.legal_commands())
+    {
+        if (c.actor == chosen.actor && c.target == chosen.target && c.verb == chosen.verb &&
+            c.item == chosen.item && c.destination == chosen.destination)
+        {
+            ally_attack_confirmed_ = true;
+            act(c);
+            ally_attack_confirmed_ = false;
+            return;
+        }
+    }
+    refresh();
+}
+
+void CombatView::spare_ally()
+{
+    required_node<Window>(*this, "AttackAlly").hide();
+    ally_attack_.reset();
+    refresh();
+}
+
+void CombatView::ally_attack_input(const Ref<InputEvent> &event)
+{
+    const Ref<InputEventKey> key = event;
+    if (key.is_valid() && key->is_pressed() && !key->is_echo() &&
+        key->get_keycode() == Key::KEY_ESCAPE)
+    {
+        required_node<Window>(*this, "AttackAlly").set_input_as_handled();
+        spare_ally();
+    }
+}
+
 void CombatView::act(Command command)
 {
+    if (attacks_own_side(command))
+    {
+        const auto state = demo_.snapshot();
+        const auto target =
+            std::ranges::find(state.combatants, command.target, &rules::CombatantView::id);
+        ally_attack_ = command;
+        required_node<Label>(*this, "AttackAlly/Text")
+            .set_text(i18n::format(N_("Attack {name}, an ally? Your allies will turn on you."),
+                                   {{"name", String::utf8(target->name.c_str())}}));
+        required_node<Window>(*this, "AttackAlly").popup_centered();
+        required_node<Button>(*this, "AttackAlly/Spare").grab_focus();
+        return;
+    }
     try
     {
         const auto before = demo_.snapshot();

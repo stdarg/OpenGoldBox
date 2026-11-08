@@ -46,6 +46,12 @@ struct TourAccess
         return *town.town_->overland;
     }
 
+    // The wilderness tiles, plain or as the healed valley shows them.
+    static const std::vector<Image> &overland_tiles(const por::RolfTourSession &town, bool healed)
+    {
+        return healed ? town.town_->healed_overland_tiles : town.town_->overland_tiles;
+    }
+
     // Everything the creatures of New Phlan and its districts carry into a fight.
     static std::vector<por::Equipment> creature_equipment(const por::RolfTourSession &town)
     {

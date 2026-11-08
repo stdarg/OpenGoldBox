@@ -37,6 +37,17 @@ struct OverlandWorld
     };
     std::vector<CombatTile> combat_tiles;
 
+    // The valley's healing once the Pyramid's pollution is stopped (the
+    // original's Yarash ending): in each of the tiles listed (128 and up in
+    // the second set), every EGA color `from` holds becomes `to`'s.
+    struct Recolor
+    {
+        std::vector<std::uint8_t> tiles;
+        std::array<std::uint8_t, 16> from{}, to{};
+    };
+
+    std::vector<Recolor> healing;
+
     [[nodiscard]] std::uint8_t at(unsigned x, unsigned y) const
     {
         return squares.at(y * columns + x);
@@ -46,6 +57,11 @@ struct OverlandWorld
 // Reads the wilderness from START.EXE's unpacked image; nothing when the image
 // lacks it.
 [[nodiscard]] std::optional<OverlandWorld> read_overland_world(std::span<const std::uint8_t> image);
+
+// The wilderness tiles as the healed valley shows them, by the world's
+// healing; tiles it does not name stay as they are.
+[[nodiscard]] std::vector<Image> healed_overland_tiles(const OverlandWorld &world,
+                                                       std::vector<Image> tiles);
 
 // What a square of the grid allows a party stepping onto it.
 enum class OverlandPassage
