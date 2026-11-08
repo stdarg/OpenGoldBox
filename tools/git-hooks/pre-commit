@@ -30,8 +30,11 @@ if [ "$major" != 23 ]; then
     exit 1
 fi
 
-# git clang-format exits 1 when the staged lines need formatting.
-if ! git clang-format --staged --diff >/dev/null 2>&1; then
+# git clang-format exits 1 when the staged lines need formatting. It is given
+# the C++ files: left to its own list of extensions, it would also format
+# staged JSON, which .clang-format does not describe.
+# shellcheck disable=SC2086 # One path per word; the tree has no spaces in C++ paths.
+if ! git clang-format --staged --diff -- $cpp_files >/dev/null 2>&1; then
     # Formatting rewrites the working-tree file, so re-staging it would also
     # stage changes the author left out of this commit.
     partly_staged=""
@@ -41,13 +44,13 @@ if ! git clang-format --staged --diff >/dev/null 2>&1; then
         fi
     done
     if [ -n "$partly_staged" ]; then
-        git clang-format --staged --diff >&2
+        git clang-format --staged --diff -- $cpp_files >&2
         echo "pre-commit: the staged C++ lines above need formatting, and these files" \
             "also have unstaged changes:$partly_staged" >&2
-        echo "Run 'git clang-format --staged', stage the result and commit again." >&2
+        echo "Run 'git clang-format --staged --$partly_staged', stage the result and commit again." >&2
         exit 1
     fi
-    git clang-format --staged >/dev/null
+    git clang-format --staged -- $cpp_files >/dev/null
     # shellcheck disable=SC2086 # One path per word; the tree has no spaces in C++ paths.
     git add -- $cpp_files
     echo "pre-commit: formatted the staged C++ lines with clang-format."
@@ -55,7 +58,7 @@ fi
 
 # Braces need clang-tidy and a configured build's compile_commands.json.
 build=""
-for dir in build build-game build/debug build/macos-universal; do
+for dir in build build-game build/debug build/macos-universal build/linux; do
     if [ -f "$dir/compile_commands.json" ]; then
         build=$dir
         break

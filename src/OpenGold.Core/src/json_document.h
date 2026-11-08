@@ -5,7 +5,6 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <variant>
 #include <vector>
 
@@ -16,25 +15,36 @@ namespace opengold::detail
 // lookup is a scan.
 struct Json
 {
+    // Its own type rather than std::pair<std::string, Json>: a pair would hold
+    // Json while Json is still incomplete, which Clang rejects with libstdc++.
+    struct Member;
     using Array = std::vector<Json>;
-    using Object = std::vector<std::pair<std::string, Json>>;
+    using Object = std::vector<Member>;
     std::variant<std::nullptr_t, bool, double, std::string, Array, Object> value;
 
-    [[nodiscard]] const Json *find(std::string_view key) const
+    [[nodiscard]] const Json *find(std::string_view key) const;
+};
+
+struct Json::Member
+{
+    std::string name;
+    Json value;
+};
+
+inline const Json *Json::find(std::string_view key) const
+{
+    if (const auto *object = std::get_if<Object>(&value))
     {
-        if (const auto *object = std::get_if<Object>(&value))
+        for (const auto &[name, member] : *object)
         {
-            for (const auto &[name, member] : *object)
+            if (name == key)
             {
-                if (name == key)
-                {
-                    return &member;
-                }
+                return &member;
             }
         }
-        return nullptr;
     }
-};
+    return nullptr;
+}
 
 // Parses a whole document; throws std::runtime_error on anything else.
 [[nodiscard]] Json parse_json(std::string_view text);

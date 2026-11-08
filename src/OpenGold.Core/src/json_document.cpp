@@ -333,7 +333,7 @@ bool fits_one_line(const Json &value)
         return std::all_of(object->begin(), object->end(),
                            [](const auto &member)
                            {
-                               return is_scalar(member.second);
+                               return is_scalar(member.value);
                            });
     }
     return true;
@@ -369,9 +369,9 @@ void write_json(std::string &out, const Json &value, std::size_t indent)
     for (std::size_t n = 0; n < object.size(); ++n)
     {
         out += n ? separator : "";
-        write_string(out, object[n].first);
+        write_string(out, object[n].name);
         out += ": ";
-        write_json(out, object[n].second, indent + 2);
+        write_json(out, object[n].value, indent + 2);
     }
     out += object.empty() ? "" : close;
     out += '}';
@@ -391,8 +391,8 @@ bool json_equal(const Json &a, const Json &b)
                std::all_of(object->begin(), object->end(),
                            [&](const auto &member)
                            {
-                               const auto *found = b.find(member.first);
-                               return found && json_equal(member.second, *found);
+                               const auto *found = b.find(member.name);
+                               return found && json_equal(member.value, *found);
                            });
     }
     if (const auto *array = std::get_if<Json::Array>(&a.value))

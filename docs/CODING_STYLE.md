@@ -158,13 +158,14 @@ On each commit that stages C++ files it:
 
 1. Stops if `clang-format` or `git-clang-format` is missing, or is not LLVM 23,
    since another major release would reformat lines nobody changed.
-2. Formats the staged lines (`git clang-format --staged`) and stages the
-   result. If a file to format also has unstaged changes, re-staging it would
-   commit those too, so instead it shows the formatting and stops; run
-   `git clang-format --staged`, stage the result and commit again.
+2. Formats the staged lines of the staged C++ files only
+   (`git clang-format --staged -- <files>`), so staged JSON is left alone, and
+   stages the result. If a file to format also has unstaged changes, re-staging
+   it would commit those too, so instead it shows the formatting and stops; run
+   the command it names, stage the result and commit again.
 3. Runs clang-tidy on each staged file and stops on a missing brace. It uses
-   the first of `build`, `build-game`, `build/debug` and `build/macos-universal`
-   that has a `compile_commands.json`. Without clang-tidy or such a build, and
+   the first of `build`, `build-game`, `build/debug`, `build/macos-universal`
+   and `build/linux` that has a `compile_commands.json`. Without clang-tidy or such a build, and
    for a header that only compiles inside the file including it, it says the
    braces were not checked and lets the commit through.
 

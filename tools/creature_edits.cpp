@@ -72,9 +72,9 @@ Json *member(Json &object, std::string_view key)
     const auto found = std::find_if(members->begin(), members->end(),
                                     [&](const auto &entry)
                                     {
-                                        return entry.first == key;
+                                        return entry.name == key;
                                     });
-    return found == members->end() ? nullptr : &found->second;
+    return found == members->end() ? nullptr : &found->value;
 }
 
 Json::Array &array_member(Json &object, std::string_view key, const std::string &file)
@@ -1122,11 +1122,16 @@ std::string report_json(const ImportReport &report, ReportFiles detail)
     Json::Array files;
     for (const auto &file : report.files)
     {
-        files.push_back(
-            detail == ReportFiles::paths
-                ? Json{file.path}
-                : Json{Json::Object{{"path", Json{file.path}},
-                                    {"diff", Json{file_diff(file.before, file.after)}}}});
+        // Not a ?: : GCC 16 takes the object's initializer list in a ?: branch
+        // for a dangling pointer.
+        if (detail == ReportFiles::paths)
+        {
+            files.push_back(Json{file.path});
+            continue;
+        }
+
+        files.push_back(Json{Json::Object{{"path", Json{file.path}},
+                                          {"diff", Json{file_diff(file.before, file.after)}}}});
     }
     return detail::json_file_text(Json{Json::Object{
         {"ok", Json{true}},

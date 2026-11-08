@@ -238,8 +238,8 @@ git config core.hooksPath tools/git-hooks
   re-stages them, then runs `clang-tidy` on each staged C++ file and refuses a
   missing brace. It needs `clang-format` and `git-clang-format` from LLVM 23 on
   `PATH`, and stops the commit without them. Braces are checked only when
-  `clang-tidy` is on `PATH` and one of `build`, `build-game`, `build/debug` or
-  `build/macos-universal` holds a `compile_commands.json` (any configure with
+  `clang-tidy` is on `PATH` and one of `build`, `build-game`, `build/debug`,
+  `build/macos-universal` or `build/linux` holds a `compile_commands.json` (any configure with
   Ninja writes one); otherwise it says so and lets the commit through.
 - `commit-msg` refuses a `Co-Authored-By` line naming Claude or Anthropic.
 
