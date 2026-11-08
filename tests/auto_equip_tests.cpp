@@ -5,6 +5,7 @@
 // cursed items and, when asked, unidentified magic stay packed.
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
+#include "opengold/character_pool.h"
 #include "opengold/srd5.h"
 #include "test_support.h"
 #include <algorithm>
@@ -25,9 +26,9 @@ using opengold::test::check;
 
 // Original item types (the original's item list).
 constexpr std::uint8_t dagger = 8, long_sword = 36, short_sword = 37, two_handed_sword = 38,
-                       long_bow = 43, leather = 50, ring_mail = 53, chain_mail = 55, shield = 59,
-                       gauntlets = 63, fire_resistance = 69, necklace = 76, bracers = 77,
-                       feather_falling = 90, protection = 93;
+                       long_bow = 43, leather = 50, ring_mail = 53, scale_mail = 54,
+                       chain_mail = 55, shield = 59, gauntlets = 63, fire_resistance = 69,
+                       necklace = 76, bracers = 77, feather_falling = 90, protection = 93;
 
 std::unique_ptr<RulesModule> module()
 {
@@ -220,6 +221,60 @@ void armor()
           "Ring Mail asks for no Strength");
 }
 
+// The Character Pool's character of that name, as a player adds one.
+Character pool_character(std::string_view name)
+{
+    por::CharacterArt art;
+    Image head;
+    head.width = 88;
+    head.height = 40;
+    head.rgba.assign(88 * 40 * 4, 128);
+    Image body;
+    body.width = 88;
+    body.height = 48;
+    body.rgba.assign(88 * 48 * 4, 128);
+    art.set_original_head(1, por::PortraitPart{"fixture", head});
+    art.set_original_body(1, por::PortraitPart{"fixture", body});
+    for (const auto &preset : character_pool(*srd5::character_rules(), art))
+    {
+        if (preset.creation_data().name == name)
+        {
+            return preset;
+        }
+    }
+    throw std::runtime_error("No pool character of that name");
+}
+
+// A shop grays out armor or a shield that would not raise the member's Armor
+// Class: Scale Mail for the pool's Barbarian, whose Unarmored Defense is as
+// good, and armor no better than the armor worn. A shield that raises it, and
+// anything that is not armor, are not grayed.
+void armor_that_adds_nothing()
+{
+    CampaignParty party(module());
+    const auto barbarian = party.add_pc(pool_character("Arlen Ashfall"));
+    check(!party.adds_no_armor_class(barbarian, item(shield)), "A Shield raises a Barbarian's AC");
+    wield(party, barbarian, item(shield));
+    check(party.adds_no_armor_class(barbarian, item(scale_mail)),
+          "Scale Mail does not raise the Barbarian's AC with Unarmored Defense");
+    check(!party.adds_no_armor_class(barbarian, item(long_sword)), "A weapon is not grayed");
+
+    const auto id = party.add_pc(fighter());
+    check(!party.adds_no_armor_class(id, item(leather)),
+          "Leather Armor raises an unarmored Fighter's AC");
+    wield(party, id, item(chain_mail));
+    check(party.adds_no_armor_class(id, item(leather)) &&
+              party.adds_no_armor_class(id, item(chain_mail)),
+          "Armor no better than the Chain Mail worn adds nothing");
+    check(!party.adds_no_armor_class(id, item(chain_mail, 1)), "Chain Mail +1 raises it");
+
+    const auto two_handed = party.add_pc(fighter());
+    wield(party, two_handed, item(two_handed_sword));
+    check(
+        !party.adds_no_armor_class(two_handed, item(shield)),
+        "A Shield raises the AC of a Fighter holding a Two-Handed Sword, which it would put away");
+}
+
 // The keys of the items the member wears, sorted.
 std::vector<std::string> worn_keys(const CampaignParty &party, MemberId id)
 {
@@ -332,6 +387,7 @@ int main()
         better_weapon();
         shield_or_both_hands();
         armor();
+        armor_that_adds_nothing();
         two_weapons();
         worn_items();
         magic();

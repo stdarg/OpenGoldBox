@@ -1921,6 +1921,10 @@ String payment_notice(const CoinPayment &payment)
 // Dark red, for items the chosen member cannot use fully; light enough to read
 // on the panel's dark ground.
 const Color unusable_item_color{0.78f, 0.22f, 0.22f};
+// Yellow, for what the party purse cannot pay for.
+const Color unaffordable_item_color{1.0f, 0.86f, 0.3f};
+// Gray, for armor or a shield that would not raise the member's Armor Class.
+const Color no_gain_item_color{0.55f, 0.55f, 0.55f};
 
 // What the member carries, in whole pounds, rounded up so that a load at the
 // limit never reads as under it.
@@ -2397,28 +2401,61 @@ void RolfTourView::refresh()
         }
         displayed_ticket_ = s.continue_ticket;
     }
-    // What the chosen member could not use fully is drawn in dark red, and
+    // What the chosen member could not use fully is drawn in dark red; in a
+    // shop, else what the purse cannot pay for in yellow, else armor or a
+    // shield that would not raise the member's Armor Class in gray. All are
     // drawn again whenever another member is chosen.
-    String unusable_note;
+    String color_notes;
     if (shopping && campaign_ && campaign_->selected())
     {
         const auto chosen = campaign_->selected();
+        const auto name = String::utf8(campaign_->member(chosen).character.sheet().name.c_str());
         const auto &listed = treasure ? session_->treasure_pile() : session_->shop_stock();
-        bool any_unusable = false;
+        const auto purse = gold_value(campaign_->state().wealth);
+        bool any_unusable = false, any_unaffordable = false, any_no_gain = false;
         for (int row = 0; row < choices->get_item_count() && row < static_cast<int>(listed.size());
              ++row)
         {
-            const bool usable = campaign_->can_use(chosen, listed[static_cast<std::size_t>(row)]);
-            any_unusable = any_unusable || !usable;
-            choices->set_item_custom_fg_color(row, usable ? Color() : unusable_item_color);
+            const auto &item = listed[static_cast<std::size_t>(row)];
+            Color color;
+            if (!campaign_->can_use(chosen, item))
+            {
+                any_unusable = true;
+                color = unusable_item_color;
+            }
+            else if (!treasure && item.stored.value > purse)
+            {
+                any_unaffordable = true;
+                color = unaffordable_item_color;
+            }
+            else if (!treasure && campaign_->adds_no_armor_class(chosen, item))
+            {
+                any_no_gain = true;
+                color = no_gain_item_color;
+            }
+            choices->set_item_custom_fg_color(row, color);
         }
+        std::vector<String> notes;
         if (any_unusable)
         {
-            unusable_note = i18n::format(
+            notes.push_back(i18n::format(
                 treasure
                     ? N_("Dark red: {name} is not trained to use it, or cannot use it.")
                     : N_("Dark red: {name} is not trained to use it, or cannot use it, but can still buy it."),
-                {{"name", String::utf8(campaign_->member(chosen).character.sheet().name.c_str())}});
+                {{"name", name}}));
+        }
+        if (any_unaffordable)
+        {
+            notes.push_back(i18n::text(N_("Yellow: the party cannot afford it.")));
+        }
+        if (any_no_gain)
+        {
+            notes.push_back(i18n::format(N_("Gray: it would not raise {name}'s Armor Class."),
+                                         {{"name", name}}));
+        }
+        for (const auto &note : notes)
+        {
+            color_notes += (color_notes.is_empty() ? String() : String("  ")) + note;
         }
     }
     auto &dialogue_box = required_node<Node>(*this, "%DialogueBounds");
@@ -2448,16 +2485,16 @@ void RolfTourView::refresh()
         if (line.is_empty() || (!treasure_leave_warned_ && treasure_notice_.is_empty()))
         {
             const auto lead = line.is_empty() ? i18n::text(N_("Choose what to take.")) : line;
-            line = unusable_note.is_empty() ? lead : lead + String("  ") + unusable_note;
+            line = color_notes.is_empty() ? lead : lead + String("  ") + color_notes;
         }
         dialogue_box.call("show_news", line);
     }
     else if (shopping)
     {
-        // A purchase's news first; otherwise the dark red note, else prices.
+        // A purchase's news first; otherwise the color notes, else prices.
         dialogue_box.call("show_news", (!s.diagnostic.empty() ? i18n::text(s.diagnostic)
-                                        : !unusable_note.is_empty()
-                                            ? unusable_note
+                                        : !color_notes.is_empty()
+                                            ? color_notes
                                             : i18n::text("Prices are per listed item or bundle.")) +
                                            gear_change_notices(s));
     }

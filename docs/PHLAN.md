@@ -112,7 +112,9 @@ what the shops sell it for, bargained by Charisma
 ([SELL-1](SRD-DECISIONS.md#sell-1-2026-11-05-selling-and-dropping-items)); see
 [party](PARTY.md) for equipping and using items.
 What the chosen buyer cannot use fully is listed in dark red, with a note
-that it can still be bought ([party](PARTY.md)). Scripts that ask
+that it can still be bought; what the purse cannot pay for in yellow; and
+armor or a shield that would not raise the buyer's Armor Class in gray
+([party](PARTY.md)). Scripts that ask
 for particular coins make change; see [coin payments](#coin-payments).
 
 ### Equipment conversion in the game

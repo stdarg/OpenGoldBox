@@ -301,6 +301,11 @@ class CampaignParty
     // Whether the member could use `item` fully (the rules' can_use_item):
     // a shop or a treasure shows the rest in dark red.
     [[nodiscard]] bool can_use(MemberId id, const por::Equipment &item) const;
+    // Whether `item` is armor or a shield that would not raise the member's
+    // Armor Class in place of the armor or shield it wears, judged as
+    // auto-equip judges it (EQUIP-1): Scale Mail on a Barbarian whose
+    // Unarmored Defense is as good. A shop shows such an item in gray.
+    [[nodiscard]] bool adds_no_armor_class(MemberId id, const por::Equipment &item) const;
     // Auto-equip (EQUIP-1): a melee weapon, armor, shield or worn item (a
     // ring, bracers, a cloak, gauntlets, a necklace or boots) the member just
     // gained goes on when the gear it makes rates better than what the

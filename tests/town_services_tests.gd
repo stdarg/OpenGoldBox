@@ -30,6 +30,7 @@ var hp_pattern := RegEx.new()
 var gold_pattern := RegEx.new()
 var buyer_pattern := RegEx.new()
 # Purchases auto-equip put on (EQUIP-1, on by default): the shop says so.
+# What the purse cannot pay for is listed in yellow.
 var auto_equipped := 0
 # Sell and Drop (SELL-1) are checked once, in the first shop a rich party buys at.
 var sold_and_dropped := false
@@ -200,6 +201,7 @@ func check_shop(x: int, y: int, party: String) -> void:
 			if not shown.to_lower().begins_with(want.to_lower()):
 				bug("a shop item differs from its record", record["id"] + ": '" + shown + "' for '" + want + "'")
 	var gold := party_gold()
+	check_shop_colors(stock, gold)
 	if party == "poor":
 		await buy(0, stock[0], false)
 	else:
@@ -217,6 +219,24 @@ func check_shop(x: int, y: int, party: String) -> void:
 		if not await press("CampaignTown/%Continue"): await choose("")
 	if not exploring():
 		bug("leaving the shop does not return to the street", "dialogue '" + dialogue() + "'")
+
+# What the party purse cannot pay for is listed in yellow, unless the chosen
+# member cannot use it (dark red), and the news says what yellow means.
+func check_shop_colors(stock: Array, gold: int) -> void:
+	var list: ItemList = town().get_node("%Choices")
+	var yellow := Color(1.0, 0.86, 0.3)
+	var dark_red := Color(0.78, 0.22, 0.22)
+	var any_yellow := false
+	for i in range(stock.size()):
+		var price := gp(stock[i].split(" / ")[1].trim_suffix(" gp"))
+		var color := list.get_item_custom_fg_color(i)
+		var shown_yellow := color.is_equal_approx(yellow)
+		any_yellow = any_yellow or shown_yellow
+		var wrong := not (shown_yellow or color.is_equal_approx(dark_red)) if price > gold else shown_yellow
+		if wrong:
+			bug("a shop item's color does not say whether the party can afford it", stock[i] + " at " + str(gold) + " gp shows " + str(color))
+	if any_yellow != dialogue().contains("Yellow: the party cannot afford it."):
+		bug("the shop's news does not explain yellow", "'" + dialogue() + "'")
 
 # At the game's full size a shop's cards stand two to a row, each with three
 # lines; the check's own smaller window keeps one card a row.

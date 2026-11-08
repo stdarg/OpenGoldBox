@@ -210,6 +210,15 @@ change with the chosen member. Such items can still be bought or taken, and
 untrained gear equipped with the penalties above (the user's decision,
 2026-11-05). Nothing unidentified gives its magic away.
 
+A shop also lists in yellow what the party purse cannot pay for, and in gray
+armor or a shield that would not raise the chosen member's Armor Class in
+place of the armor or shield it wears (and the weapons a shield's hand would
+put away), rated as auto-equip rates it
+([EQUIP-1](SRD-DECISIONS.md#equip-1-2026-11-05-auto-equip-better-gear)):
+Scale Mail for a Barbarian whose Unarmored Defense is as good, or Chain Mail
+for a member in Plate. Dark red comes first, then yellow, then gray, each with
+its note under the heading (the user's request, 2026-11-08).
+
 In the inventory, Sell (in a shop) and Drop give up the selected item: the first
 press shows the shop's offer, half the shops' price bargained by Charisma
 ([the sale price](SRD-DECISIONS.md#the-sale-price)), or warns that a dropped item is

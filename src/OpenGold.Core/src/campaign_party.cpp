@@ -1514,10 +1514,14 @@ void CampaignParty::set_gear_preference(MemberId id, GearPreference preference)
     edit(id).gear_preference = preference;
 }
 
+namespace
+{
+// A typical early monster's Armor Class (EQUIP-1).
+constexpr int target_armor_class = 13;
+} // namespace
+
 rules::GearRating CampaignParty::known_gear_rating(const PartyMember &m) const
 {
-    // A typical early monster's Armor Class (EQUIP-1).
-    constexpr int target_armor_class = 13;
     return rules_->gear_rating(m.character.sheet(), known_definitions(m), target_armor_class);
 }
 
@@ -1836,6 +1840,34 @@ bool CampaignParty::can_use(MemberId id, const por::Equipment &item) const
 {
     return rules_->can_use_item(member(id).character.sheet(),
                                 rules_key(equipment_conversion(item), item));
+}
+
+bool CampaignParty::adds_no_armor_class(MemberId id, const por::Equipment &item) const
+{
+    const auto &m = member(id);
+    auto key = rules_key(equipment_conversion(item), item);
+    if (const auto parsed = rules::parse_item_key(key); parsed.unidentified)
+    {
+        key = std::string(parsed.base);
+    }
+    const auto slot = rules_->equipment_info(key).slot;
+    if (slot != rules::EquipmentSlot::armor && slot != rules::EquipmentSlot::shield)
+    {
+        return false;
+    }
+    // In place of the armor or shield worn; a shield also in place of the
+    // weapons whose hand it takes, which add nothing to Armor Class.
+    auto wearing = known_definitions(m);
+    std::erase_if(wearing,
+                  [&](const std::string &definition)
+                  {
+                      const auto worn = rules_->equipment_info(definition).slot;
+                      return worn == slot || (slot == rules::EquipmentSlot::shield &&
+                                              worn == rules::EquipmentSlot::weapon);
+                  });
+    wearing.push_back(key);
+    const auto with_item = rules_->gear_rating(m.character.sheet(), wearing, target_armor_class);
+    return with_item.armor_class <= known_gear_rating(m).armor_class;
 }
 
 void CampaignParty::read_manual(MemberId id, std::uint64_t item)
