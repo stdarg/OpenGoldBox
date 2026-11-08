@@ -671,9 +671,9 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
             // The map's own script's creatures, then those of the scripts
             // that share it; a record keeps its first conversion.
             std::vector<const AreaConversions *> listed{encounters.area(area.script)};
-            for (const auto shared : geo.shared_with)
+            for (const auto sharing_script : geo.shared_with)
             {
-                listed.push_back(encounters.area(shared));
+                listed.push_back(encounters.area(sharing_script));
             }
             for (const auto *entry : listed)
             {

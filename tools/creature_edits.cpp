@@ -43,7 +43,10 @@ std::string read_text(const fs::path &path)
     {
         throw ImportError("Cannot read " + path.string());
     }
-    return {std::istreambuf_iterator<char>(in), {}};
+    std::string text{std::istreambuf_iterator<char>(in), {}};
+    // The repository stores LF; a Windows checkout may end lines with CRLF.
+    std::erase(text, '\r');
+    return text;
 }
 
 // Written beside the file and renamed over it, so a failed write leaves the

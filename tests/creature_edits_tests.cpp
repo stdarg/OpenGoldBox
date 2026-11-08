@@ -26,10 +26,13 @@ const std::vector<fs::path> imported_files{"data/rules/srd-5.2.1/combat.rules",
                                            "docs/SAVES.md",
                                            "docs/DEVIATIONS.md"};
 
+// As the importer reads it: LF line ends, as stored, in a Windows checkout too.
 std::string read(const fs::path &path)
 {
     std::ifstream in(path, std::ios::binary);
-    return {std::istreambuf_iterator<char>(in), {}};
+    std::string text{std::istreambuf_iterator<char>(in), {}};
+    std::erase(text, '\r');
+    return text;
 }
 
 // A Markdown list as one line per item, without its wrapping.

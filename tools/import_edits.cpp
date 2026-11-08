@@ -13,7 +13,11 @@ std::string today()
 {
     const auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::tm local{};
+#ifdef _WIN32
+    localtime_s(&local, &now);
+#else
     localtime_r(&now, &local);
+#endif
     char text[16];
     std::strftime(text, sizeof text, "%Y-%m-%d", &local);
     return text;

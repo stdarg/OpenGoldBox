@@ -5143,7 +5143,7 @@ void arena_duel(const std::filesystem::path &directory)
         {
             for (unsigned x = 0; x < 16; ++x)
             {
-                if ((town.map().at(x, y).event_raw & 127) == event &&
+                if (town.map().at(x, y).event_number() == event &&
                     (!best || distance({x, y}) < distance(*best)))
                 {
                     best = std::pair{x, y};

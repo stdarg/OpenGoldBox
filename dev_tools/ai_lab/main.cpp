@@ -474,7 +474,7 @@ void print_differences(const std::vector<Job> &jobs, const std::vector<Pairing> 
             win_gap += static_cast<int>(job.result.won) - static_cast<int>(baseline.won);
             dead_gap += job.result.members_dead - baseline.members_dead;
         }
-        const double count = std::max<std::size_t>(1, hit_point_gaps.size());
+        const auto count = static_cast<double>(std::max<std::size_t>(1, hit_point_gaps.size()));
         double mean = 0;
         for (const double gap : hit_point_gaps)
         {

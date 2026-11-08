@@ -96,7 +96,7 @@ void monster_gear(const RolfTourSession &town)
         "a Long Sword +1");
     auto known_sword = magic_sword;
     known_sword.identify();
-    check(shop_offer(known_sword, 1, 0, armory) == known_sword.stored.value / 2,
+    check(shop_offer(known_sword, 1, 0, armory) == static_cast<unsigned>(known_sword.stored.value / 2),
           "No shop sells a Long Sword +1: the armory pays half its own value");
 }
 
