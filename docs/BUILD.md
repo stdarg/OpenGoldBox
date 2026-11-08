@@ -334,6 +334,29 @@ Checked automatically on 2026-11-07: Bazzite 44 (x86_64), GCC 16.2 from
 Homebrew, Godot 4.7.2-stable (official) with its debug export template. It has
 not been run on another distribution yet.
 
+## Releasing on GitHub
+
+`tools/release.py` builds this platform's package for players and uploads it to
+a draft GitHub release, on macOS and Linux. Run it from a clean checkout of
+`main` that matches `origin/main`, with the GitHub CLI logged in (`gh auth
+login`) and `OPENGOLD_GAME_DIR` set:
+
+```bash
+tools/release.py
+```
+
+It runs `./build.sh --test-all` (with `--package` on macOS), so nothing untested
+is uploaded, then uploads the disk image or the `.tar.gz` to the draft release
+`v<version>`, the version being `project()`'s in `CMakeLists.txt`. The first
+platform creates the draft at the current commit; the next one, built from the
+same commit, adds its package to it. It refuses a published release and a draft
+made from another commit, so raise the version for each release.
+
+It never publishes. A draft is visible only to people who can push to the
+repository: check its files on GitHub, write the notes, then publish it there,
+which creates the tag. The debug symbols archive stays with you; the script
+prints where it is.
+
 ## The demos
 
 The demos are reference scenes in `demos/godot/`, backed by the C++ extension in

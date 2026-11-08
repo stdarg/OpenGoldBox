@@ -422,6 +422,8 @@ if(OPENGOLD_BUILD_TESTS)
     if(Python3_Interpreter_FOUND)
         add_test(NAME opengold_session_board_tests
                  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tests/session_board_tests.py)
+        add_test(NAME opengold_release_tool_tests
+                 COMMAND ${Python3_EXECUTABLE} -B ${PROJECT_SOURCE_DIR}/tests/release_tool_tests.py)
     endif()
     add_executable(opengold_creature_edits_tests tests/creature_edits_tests.cpp)
     target_link_libraries(opengold_creature_edits_tests PRIVATE opengold_creature_edits)
