@@ -558,6 +558,48 @@ void fear_checks()
     check(frightened, "A seed where the foe fails its save");
 }
 
+// A frightened creature that is also entranced can only end its turn. Fear
+// first narrows its choices to fleeing, so the End Turn the entrancement keeps
+// is no longer among them.
+void frightened_and_entranced_checks()
+{
+    const auto rules = dummy_rules();
+    const std::vector<std::string> gear{"quarterstaff"};
+    const auto pattern_caster =
+        rules->character_profile(with_spells(wizard(5, "Second Wizard"), {"hypnotic_pattern"}), gear);
+    bool both = false;
+    for (std::uint64_t seed = 1; seed < 200 && !both; ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(5), {"fear"}),
+                       {{3, "campaign-character", "Second Wizard", Side::party, {1, 4},
+                         pattern_caster.data},
+                        {98, "dummy", "Foe", Side::opposition, {6, 2}}},
+                       seed);
+        check(submit(*c, "fear") && submit_cell(*c, "area_move", Cell{6, 2}) &&
+                  submit(*c, "area_cast") && logged(*c, "Foe Wisdom save:"),
+              "Fear's cone");
+        // The pattern must come before the foe's own turn.
+        if (!logged(*c, "Foe is Frightened.") || !submit(*c, "end") || c->snapshot().actor != 3)
+        {
+            continue;
+        }
+        check(submit(*c, "hypnotic_pattern") && submit_cell(*c, "area_move", Cell{8, 2}) &&
+                  submit(*c, "area_cast"),
+              "The pattern appears");
+        if (!logged(*c, "Foe is entranced by the pattern.") || !submit(*c, "end") ||
+            c->snapshot().actor != 98)
+        {
+            continue;
+        }
+        both = true;
+        const auto commands = c->legal_commands();
+        check(commands.size() == 1 && commands.front().verb == "end" &&
+                  commands.front().actor == 98,
+              "A frightened, entranced creature only ends its turn");
+    }
+    check(both, "A seed where the foe fails both saves");
+}
+
 void cloud_checks()
 {
     const auto rules = dummy_rules();
@@ -2193,6 +2235,7 @@ int main()
         haste_checks();
         hypnotic_pattern_checks();
         fear_checks();
+        frightened_and_entranced_checks();
         cloud_checks();
         species_save_checks();
         vampiric_touch_checks();

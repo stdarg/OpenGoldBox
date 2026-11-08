@@ -20391,7 +20391,9 @@ void Session::hold_still(std::vector<Command> &commands, const Actor &a) const
                                   {
                                       return offer.verb == "end";
                                   });
-    auto kept = *end;
+    // Fear or Command may already have narrowed the choices to fleeing.
+    auto kept = end != commands.end() ? *end
+                                      : Command{revision_, a.source.id, 0, "end", "End turn"};
     commands.clear();
     commands.push_back(std::move(kept));
 }
@@ -20433,7 +20435,10 @@ void Session::flee_turning(std::vector<Command> &commands, const Actor &a) const
                                   {
                                       return offer.verb == "end";
                                   });
-    auto kept = farthest ? *farthest : *end;
+    // Fear or Command may already have narrowed the choices to fleeing.
+    auto kept = farthest                ? *farthest
+                : end != commands.end() ? *end
+                                        : Command{revision_, a.source.id, 0, "end", "End turn"};
     commands.clear();
     commands.push_back(std::move(kept));
 }
