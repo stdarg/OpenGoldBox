@@ -365,13 +365,18 @@ func finish_fight() -> String:
 	Engine.time_scale = 8.0
 	var deadline := Time.get_ticks_msec() + 120000
 	var outcome := "endless"
-	var ended := false
+	# The town takes a won fight's screen away the frame after it shows
+	# Victory, so the end is also looked for as the screen leaves.
+	var ended := [false]
+	var look_for_end := func() -> void:
+		var turn: String = combat.get_node("StatusStack/Turn").text
+		if not ended[0] and (turn.contains(tr("Victory")) or turn.contains("defeat")):
+			ended[0] = true
+			check_quick_end(combat)
+	combat.tree_exiting.connect(look_for_end)
 	while Time.get_ticks_msec() < deadline:
 		await settle(2)
-		var turn: String = combat.get_node("StatusStack/Turn").text if fighting() else ""
-		if not ended and (turn.contains(tr("Victory")) or turn.contains("defeat")):
-			ended = true
-			check_quick_end(combat)
+		if fighting(): look_for_end.call()
 		if not fighting():
 			outcome = "won"
 			break
