@@ -33,6 +33,10 @@ GAME`, `opengold_maps GAME`, coab's `LoadWalldef`, `CMD_LoadFiles`,
   - **the mystic** (8,9), once the party has beaten three spectres: he asks to
     join (`ADD NPC 24`) against the undead, and attacks if sent away. With
     him, he names the vampire behind the curse and, at (15,1), the way to it.
+    He is the vampire's: the original makes record 24 hostile as it joins, so
+    in the party's next fight he fights against it, and he leaves the party
+    after it; beaten, he leaves his gear and his 200 experience (the Cluebook:
+    "he will turn on you and fight for the vampire").
   - the black marble crypt (12,4): a scroll (journal entry 43) and the
     vampire's coffin, which the party may examine, overturn or sanctify.
   - **the vampire** in its pit (15,0), down wooden stairs to (14,0), with his
@@ -68,7 +72,8 @@ GAME`, `opengold_maps GAME`, coab's `LoadWalldef`, `CMD_LoadFiles`,
 
 The mystic (`ADD NPC 24`): a level-6 magic-user with Intelligence 15, 10 in
 the rest, and a Ring of Protection +2. He joins as a level-6 Wizard with those
-scores (a Sage) and his ring on.
+scores (a Sage) and his ring on, and turns on the party in its next fight
+(since 2026-11-08).
 
 ## Engine support
 

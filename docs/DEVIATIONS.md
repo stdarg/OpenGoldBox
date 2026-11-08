@@ -291,7 +291,9 @@ in the game: answering YES at a hall lists its services in the dialogue
   field.
   [OVERLAND-1](SRD-DECISIONS.md#overland-1-2026-10-24-the-wilderness-map).
 - **Kovel Mansion** (2026-10-24). Casting Knock on a locked cabinet needs a
-  member with the spell, which the original never checked. Thief skills the
+  member with the spell. The original looked only at the first member's
+  memorized spells, a slip in its code; any member may cast it here (the
+  user's choice, 2026-11-08). Thief skills the
   scripts roll are a Rogue's Sleight of Hand checks. A trap that hurts the
   whole party rolls each member's damage on its own.
   [KOVEL-1](SRD-DECISIONS.md#kovel-1-2026-10-24-kovel-mansion).

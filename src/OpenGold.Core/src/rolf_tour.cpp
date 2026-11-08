@@ -893,6 +893,7 @@ void RolfTourSession::reset_run()
     snapshot_.choosing_member = false;
     victory_ = false;
     duel_ = false;
+    turncoats_.clear();
     who_slots_.clear();
     temple_visit_.reset();
     hall_visit_.reset();
@@ -1005,6 +1006,7 @@ void RolfTourSession::roll_back_event()
     snapshot_.choosing_member = false;
     victory_ = false;
     duel_ = false;
+    turncoats_.clear();
     who_slots_.clear();
     temple_visit_.reset();
     hall_visit_.reset();

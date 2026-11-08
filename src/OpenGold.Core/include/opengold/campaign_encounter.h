@@ -109,6 +109,10 @@ struct CampaignEncounter
     bool daylight{};
     // Monsters on the party's side, standing beside it.
     std::vector<rules::Participant> allies;
+    // Party members who fight for the monsters, standing with them (the
+    // original's hostile members: Tyranthraxus's converts, the graveyard's
+    // treacherous mystic).
+    std::vector<rules::EntityId> turncoats;
     // The whole band, with its gear, so the AI lab can size the fight for another
     // party and difficulty just as the game does.
     std::vector<BandMember> band;

@@ -445,7 +445,7 @@ void RolfTourSession::configure_town()
     machine_.bind_variable(ecl_clock_hour, 12);
     machine_.bind_variable(ecl_clock_day, 1);
     machine_.bind_variable(ecl_script_bank, 3);
-    machine_.bind_variable(EclAddress{0x6E3E}, 1);
+    machine_.bind_variable(ecl_party_size, 1);
     // Kuto's Well's setup writes these two engine cells (65 or 8, and a table
     // value) when its plaza or catacombs load. Their meaning is unverified;
     // they are stored for the script and have no effect yet.
@@ -559,11 +559,43 @@ EclHostReply RolfTourSession::clock_reply() const
     return reply;
 }
 
+// The original makes creature record 24 hostile as it joins, whatever the
+// area (eclvm.pas EclAddNpc): Valhingen Graveyard's mystic, who turns on the
+// party and fights for the vampire.
+constexpr unsigned joins_against_party = 24;
+
+bool RolfTourSession::turncoat(MemberId id) const
+{
+    const auto &source = campaign_->member(id).npc_source;
+    return turncoats_.contains(id) ||
+           (source.starts_with("por:MON") &&
+            source.ends_with("CHA:" + std::to_string(joins_against_party)));
+}
+
 EclHostReply RolfTourSession::character_reply(PartySlot slot) const
 {
     if (campaign_)
     {
-        return party_character_reply(*campaign_, slot);
+        auto reply = party_character_reply(*campaign_, slot);
+        // The party's size, which the scripts loop over member by member
+        // (Tyranthraxus's vote) and test before a companion joins.
+        const auto &slots = campaign_->state().slots;
+        reply.writes.push_back(
+            {ecl_party_size, static_cast<std::uint16_t>(std::ranges::count_if(slots,
+                                                                              [](MemberId id)
+                                                                              {
+                                                                                  return id !=
+                                                                                         MemberId{};
+                                                                              }))});
+        // The record's allegiance byte: 0x81 for a member fighting for the
+        // monsters (the original's hostile and computer-controlled), else 0.
+        if (const auto id = slot.index < 8 ? campaign_->state().slots[slot.index] : MemberId{};
+            id && turncoat(id))
+        {
+            std::ranges::find(reply.writes, ecl_character_allegiance, &EclMemoryWrite::address)
+                ->value = 0x81;
+        }
+        return reply;
     }
     EclHostReply reply;
     std::array<std::uint16_t, 285> fields{};
@@ -609,6 +641,23 @@ void RolfTourSession::read_character()
     if (campaign_)
     {
         const auto exchange = campaign_->read_character(selected_character_, machine_);
+        // A script that sets the allegiance byte to 0x81 turns the member
+        // against the party (Tyranthraxus's vote, ECL5:7 0xA771); 0 or 0x80
+        // turns it back.
+        if (const auto id = selected_character_.index < 8
+                                ? campaign_->state().slots[selected_character_.index]
+                                : MemberId{})
+        {
+            const auto allegiance = machine_.variable(ecl_character_allegiance);
+            if (allegiance == 0x81)
+            {
+                turncoats_.insert(id);
+            }
+            else if (allegiance == 0 || allegiance == 0x80)
+            {
+                turncoats_.erase(id);
+            }
+        }
         if (exchange)
         {
             const auto payer = campaign_->state().slots[selected_character_.index];
@@ -1131,6 +1180,57 @@ bool RolfTourSession::reject_combat(std::string diagnostic)
     return true;
 }
 
+RolfTourSession::TurncoatLoot RolfTourSession::part_with_turncoats(const rules::Snapshot &result)
+{
+    TurncoatLoot loot;
+    for (const auto id : encounter_->turncoats)
+    {
+        const auto unit = std::ranges::find(result.combatants, id, &rules::CombatantView::id);
+        const bool beaten = unit != result.combatants.end() && unit->hit_points == 0;
+        const auto &member = campaign_->member(id);
+        if (beaten && result.outcome == rules::Outcome::victory)
+        {
+            ++loot.defeated;
+            for (const auto &item : member.character.inventory().items())
+            {
+                if (const auto source = member.item_sources.find(item.id);
+                    source != member.item_sources.end())
+                {
+                    loot.items.push_back(source->second);
+                }
+            }
+            // A companion's original record pays its experience, as the
+            // monster it fought as.
+            const auto &source = member.npc_source;
+            const auto prefix = "por:MON" + std::to_string(area_resources().bank) + "CHA:";
+            if (source.starts_with(prefix))
+            {
+                const auto record = static_cast<unsigned>(std::stoul(source.substr(prefix.size())));
+                if (const auto found = area_resources().conversions.find(record);
+                    found != area_resources().conversions.end())
+                {
+                    loot.experience += found->second.award_xp;
+                }
+            }
+        }
+        else if (beaten)
+        {
+            ++loot.defeated;
+        }
+        // The original takes every hostile creature off its list after a fight.
+        if (beaten)
+        {
+            campaign_->lose(id);
+        }
+        else
+        {
+            campaign_->remove(id);
+        }
+        turncoats_.erase(id);
+    }
+    return loot;
+}
+
 bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
 {
     if (diagnostic_log_enabled())
@@ -1152,16 +1252,28 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     std::set<rules::EntityId> enemies, party_ids;
     // In a duel only the champion fights; the rest of the party stands by.
     const auto champion = encounter_->champion;
-    std::set<rules::EntityId> expected_party;
+    const auto &turned = encounter_->turncoats;
+    std::set<rules::EntityId> expected_party, turncoats_seen;
     for (auto id : campaign_->state().slots)
     {
-        if (id && (!champion || id == champion))
+        if (id && (!champion || id == champion) && std::ranges::find(turned, id) == turned.end())
         {
             expected_party.insert(id);
         }
     }
     for (const auto &unit : result.combatants)
     {
+        // A member who fought for the monsters is beaten, or got away with them.
+        if (unit.side == rules::Side::opposition &&
+            std::ranges::find(turned, unit.id) != turned.end())
+        {
+            if (!turncoats_seen.insert(unit.id).second ||
+                (result.outcome == rules::Outcome::victory && unit.hit_points && !unit.fled))
+            {
+                return false;
+            }
+            continue;
+        }
         if (unit.side == rules::Side::opposition)
         {
             if (unit.id < 1000 || unit.id >= 1000 + staged_records_.size() ||
@@ -1230,6 +1342,10 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     // leaving those half applied (Effective C++ Item 29).
     try
     {
+        // Those who fought for the monsters leave the party first, so they
+        // share in nothing it wins.
+        const auto turncoat_loot = part_with_turncoats(result);
+        defeated += turncoat_loot.defeated;
         if (fled)
         {
             // The party fled (the original's rule): members left on the field are
@@ -1312,6 +1428,16 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             if (staged_treasure_)
             {
                 award_staged_treasure();
+            }
+            // A beaten turncoat's gear is the party's, and its record's
+            // experience too.
+            if (turncoat_loot.experience)
+            {
+                campaign_->award_experience(turncoat_loot.experience, reward + ":turncoats");
+            }
+            for (const auto &item : turncoat_loot.items)
+            {
+                treasure_pile_.push_back(item);
             }
         }
         // The original's combat results (coab ovr006): 0 won, 128 (0x80) a
@@ -2903,8 +3029,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // SPELL: which member can cast the original's spell arg(0), as the
         // spell's place in that member's list (255 for nobody) and the
         // member's slot. Only Knock (31) is asked, by Kovel Mansion's locks
-        // (ECL3:14 0x9ECA); its caster spends the spell now. The original PC
-        // game did nothing here, so anyone could "cast" it (KOVEL-1).
+        // (ECL3:14 0x9ECA); its caster spends the spell now. The original
+        // looked only at the first member's spells, by a slip in its code;
+        // every member is asked here (KOVEL-1).
         constexpr unsigned knock = 31;
         if (arg(0) != knock)
         {
@@ -3076,6 +3203,29 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 if (!encounter_->champion)
                 {
                     throw EclError("A duel needs a chosen member");
+                }
+            }
+            else
+            {
+                std::size_t living = 0;
+                for (const auto id : campaign_->state().slots)
+                {
+                    if (id && !campaign_->member(id).vitals.dead)
+                    {
+                        ++living;
+                        if (turncoat(id))
+                        {
+                            encounter_->turncoats.push_back(id);
+                        }
+                    }
+                }
+                // With every member gone over to the monsters, no one is left
+                // to fight them: the party is lost.
+                if (living && encounter_->turncoats.size() == living)
+                {
+                    snapshot_.phase = TourPhase::defeated;
+                    ++snapshot_.revision;
+                    return true;
                 }
             }
             if (!overland())

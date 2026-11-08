@@ -551,6 +551,22 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     {
         participant.resting = encounter.party_resting;
     }
+    // Members fighting for the monsters stand with them, under the computer.
+    for (const auto id : encounter.turncoats)
+    {
+        const auto turned = std::ranges::find(participants, id, &Participant::id);
+        if (turned == participants.end())
+        {
+            throw std::runtime_error("A member who turned on the party is not in it");
+        }
+        turned->side = Side::opposition;
+        encounter.enemies.insert(encounter.enemies.begin(), std::move(*turned));
+        participants.erase(turned);
+    }
+    if (participants.empty())
+    {
+        throw std::runtime_error("No member is left to fight for the party");
+    }
     if (cells.size() < participants.size() + 1)
     {
         throw std::runtime_error("Original battlefield cannot fit the complete encounter");

@@ -44,8 +44,11 @@ GAME`, `opengold_maps GAME`, coab's `CMD_Program` (8), `CMD_LoadFiles` and
   join them against him (`ADD NPC 88`); and the audience hall, open to the
   sky, around the Pool of Radiance.
 - **The finale:** Tyranthraxus, possessing an ancient bronze dragon, sends his
-  guards, then offers the party command of his armies. Each member votes; the
-  party attacks, and beaten, Tyranthraxus is destroyed: the game is won
+  guards, then offers the party command of his armies. Each member votes; a
+  member who votes to join him, and every evil companion but Genheeris,
+  fights for him (the record's allegiance byte set to `0x81`) and leaves the
+  party after the fight (since 2026-11-08). The party attacks, and beaten,
+  Tyranthraxus is destroyed: the game is won
   (`PROGRAM 8`), and the party walks back to the civilized city (`NEW ECL 0`).
 
 ## Monster conversions (MON5CHA)

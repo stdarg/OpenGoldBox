@@ -5060,13 +5060,36 @@ void play_valjevo_castle(Expedition &trip, std::string &heard)
                       }),
           "Genheeris turns on Tyranthraxus and joins the party");
     // Down the stairs at (3,6) into Tyranthraxus's audience hall: his guards,
-    // his offer refused, and the dragon he possesses beaten.
+    // his offer, which the last member to vote accepts, and the dragon he
+    // possesses beaten, with that member on its side.
+    std::string convert;
     const Answer lair = [&](const por::TourSnapshot &s)
     {
         heard += s.dialogue + "\n";
         if (s.dialogue.find("UP THESE STAIRS") != std::string::npos)
         {
             return prefer({"NO"})(s);
+        }
+        if (s.dialogue.find("HOW DO YOU VOTE?") != std::string::npos)
+        {
+            const auto voter = s.dialogue.substr(0, s.dialogue.find(" HOW DO YOU VOTE?"));
+            const auto &slots = party->state().slots;
+            const auto last = std::find_if(slots.rbegin(), slots.rend(),
+                                           [&](const auto id)
+                                           {
+                                               return id && party->member(id).npc_source.empty();
+                                           });
+            auto name = last != slots.rend() ? party->member(*last).character.sheet().name : "";
+            std::ranges::transform(name, name.begin(),
+                                   [](unsigned char c)
+                                   {
+                                       return static_cast<char>(std::toupper(c));
+                                   });
+            if (!name.empty() && voter.ends_with(name))
+            {
+                convert = party->member(*last).character.sheet().name;
+                return prefer({"JOIN TYRANTHRAXUS"})(s);
+            }
         }
         return prefer({"ATTACK", "YES", "Fight", "Bash"})(s);
     };
@@ -5077,6 +5100,20 @@ void play_valjevo_castle(Expedition &trip, std::string &heard)
               heard.find("You have won") != std::string::npos &&
               town.script_variable(por::EclAddress{0x4AFD}) == 255,
           "Tyranthraxus is beaten in his audience hall and the game is won");
+    std::string upper_convert = convert;
+    std::ranges::transform(upper_convert, upper_convert.begin(),
+                           [](unsigned char c)
+                           {
+                               return static_cast<char>(std::toupper(c));
+                           });
+    check(!convert.empty() &&
+              heard.find(upper_convert + " HOW DO YOU VOTE?") != std::string::npos &&
+              std::none_of(slots.begin(), slots.end(),
+                           [&](const auto id)
+                           {
+                               return id && party->member(id).character.sheet().name == convert;
+                           }),
+          "A member who votes to join Tyranthraxus fights for him and leaves the party");
     const auto &story = opengold::test::TourAccess::closing_story(town);
     check(story.size() == 2 && heard.find(story[0]) != std::string::npos &&
               heard.find(story[1]) != std::string::npos,
@@ -5146,6 +5183,8 @@ void play_valhingen_graveyard(Expedition &trip)
               sheet.scores[rules::Ability::strength] == 10 &&
               party->member(*mystic).equipped.size() == 1,
           "The mystic is a level-6 Wizard with his record's scores, his ring worn");
+    const auto mystic_id = *mystic;
+    const auto fights_before = fights_started.size();
     // The black marble crypt: the scroll read and the coffin sanctified.
     heal(*party);
     walk_to(town, party, 12, 4, noting, true);
@@ -5167,6 +5206,20 @@ void play_valhingen_graveyard(Expedition &trip)
                               return opengold::is_ally(unit.first);
                           }),
           "Samir Ahwahl fights the vampire on the party's side");
+    // As the Cluebook warns, the mystic turns on the party and fights for the
+    // vampire: the original makes record 24 hostile as it joins.
+    const bool mystic_fought = std::any_of(
+        fights_started.begin() + static_cast<std::ptrdiff_t>(fights_before), fights_started.end(),
+        [&](const auto &fight)
+        {
+            return std::any_of(fight.cells.begin(), fight.cells.end(),
+                               [&](const auto &unit)
+                               {
+                                   return unit.first == mystic_id;
+                               });
+        });
+    check(mystic_fought && std::ranges::find(slots, mystic_id) == slots.end(),
+          "The mystic fights against the party and leaves it");
     // Back at its sanctified coffin, the vampire is destroyed.
     heal(*party);
     walk_to(town, party, 12, 4, noting, true);

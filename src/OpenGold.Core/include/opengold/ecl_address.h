@@ -84,6 +84,13 @@ inline constexpr EclAddress ecl_shop_service{0x6E6C};
 // before PROGRAM 0.
 inline constexpr EclAddress ecl_training_hall_name{0x982C};
 
+// The loaded character's allegiance (the record's byte 0x10C): 0x81 when it
+// fights for the monsters, 0x80 when the computer runs it on the party's side.
+inline constexpr EclAddress ecl_character_allegiance{0x6C0C};
+
+// The number of members in the party, companions and the dead included.
+inline constexpr EclAddress ecl_party_size{0x6E3E};
+
 // The archive bank (ECLn.DAX) of the script a NEW ECL loads.
 inline constexpr EclAddress ecl_script_bank{0x6E12};
 

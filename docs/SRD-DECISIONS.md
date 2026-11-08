@@ -1763,8 +1763,9 @@ they await the user's review ([audit](audits/kovel-mansion.md)):
   none, as the original's non-thieves had none.
 - **Find Traps** in effect is the original's magic that sees a trap.
 - **Cast Knock** on a locked cabinet needs a member who can cast Knock, and
-  spends it. The original PC game did nothing for the script's spell check,
-  so any party "cast" it.
+  spends it. The original's spell check looked only at the first member's
+  memorized spells, by a slip in its code (`eclvm.pas` EclSpell); every member
+  is checked here (the user's choice, 2026-11-08).
 - **Traps that hurt the whole party** roll each member's damage and saving
   throw (Constitution, DC 13, as MENDOR-1's) on their own. The original rolled
   the damage once for everyone.

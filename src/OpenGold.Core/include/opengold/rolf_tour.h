@@ -737,6 +737,24 @@ class RolfTourSession
     std::optional<unsigned> monster_picture_id_; // SETUP MONSTER's PIC record.
     // CALL 0x8001 before COMBAT: the member WHO chose fights alone.
     bool duel_{};
+    // Members a script made hostile (the record's byte 0x10C set to 0x81, as
+    // a vote to join Tyranthraxus does): in the event's next COMBAT they fight
+    // for the monsters, and afterwards they leave the party.
+    std::set<MemberId> turncoats_;
+    // Whether the member fights for the monsters: one a script made hostile,
+    // or a companion the original makes hostile as it joins.
+    [[nodiscard]] bool turncoat(MemberId id) const;
+
+    // What the members who fought for the monsters leave once a fight ends:
+    // each leaves the party, and a beaten one's gear and its record's
+    // experience go to the victors.
+    struct TurncoatLoot
+    {
+        unsigned defeated{}, experience{};
+        std::vector<Equipment> items;
+    };
+
+    TurncoatLoot part_with_turncoats(const rules::Snapshot &result);
     // Whether Podol Plaza's script rolled a roaming group since the party
     // entered the area; a cancelled auction needs one (PODOL-1).
     bool plaza_group_rolled_{};

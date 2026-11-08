@@ -58,7 +58,7 @@ unless named otherwise. Test files: `ecl` [ecl_tests.cpp](../tests/ecl_tests.cpp
 | 31 | SPRITE OFF | rolf_tour.cpp | `tour` `synthetic` | Runs, unasserted (Rolf's tour) | — |
 | 32 | FIND ITEM | `ecl_party_host.cpp` | `party` `script_handoff`; VM `ecl` | — | — |
 | 34 | ECL CLOCK | Time passes for its steps (campaign only, [nomad camp](audits/nomad-camp.md)) | VM faults without the host | Runs, unasserted (nomad escort) | Without a campaign party |
-| 36 | ADD NPC | Converted companions | `party` `script_handoff` | Dirten, Skullcrusher, the mad fighter | NPCs without a conversion |
+| 36 | ADD NPC | Converted companions; record 24 joins hostile and fights for the monsters in the next COMBAT | `party` `script_handoff` | Dirten, Skullcrusher, the mad fighter; the graveyard's mystic turns (`exp` `valhingen_graveyard`) | NPCs without a conversion |
 | 37 | LOAD PIECES | Checks the district's wall banks | — | Runs at every area entry | Unverified wall banks |
 | 38 | PROGRAM 0 | Training hall | `party` `training_hall_service`; `exp` `hall_event_tests` | — | Halls without a known class word |
 | 38 | PROGRAM 9 | Inn and camp | `party` `recovery_hosts`; `campaign_rest_tests.cpp` | Inn (`exp` `rest_at_inn`); nomad camp | A party not eligible for a Long Rest |
