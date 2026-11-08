@@ -651,15 +651,20 @@ with archers one square behind it. The Troll's `reach` row is removed.
 The original asks which character speaks each time the party parleys. The user
 chose a standing leader instead: the first member until another is made leader
 with **Make leader** on a character's sheet (exploration) or under the party
-roster. The leader's name shows with a gold star. The leader parleys: twice its
-Charisma goes into the scripts' reaction rolls (variable `0x6DCF`). The
-original's formula is unknown; plain Charisma left the scripts' better outcomes
-out of reach, New Phlan's own script doubles the value, and the user chose
-twice Charisma (Charisma 12 avoids a Slums kobold fight 30% of the time
-parleying Abusive, Charisma 18 70%). The leader is the
+roster. The leader's name shows with a gold star. The leader parleys: the
+original's reaction score for its Charisma goes into the scripts' reaction
+rolls (variable `0x6DCF`): 0 for Charisma 3, then 5 a point up to 25 at 8 to
+12, 30, 35 and 40 at 13 to 15, 50 at 16, 55 at 17 and 60 at 18 or more. Until
+2026-11-08 the original's table was unknown and twice Charisma stood in for
+it; the user chose the original's table once its source was found
+([the source](https://github.com/talonius/pool-of-radiance), `eclmenu.pas`).
+The leader is the
 first buyer in a shop unless the script has just asked which member acts. A
 leader who is down hands the parley to the next conscious member. As in the
-original, Parley replaces Advance once the monsters are adjacent, and a meeting
+original, Parley replaces Advance once the monsters are adjacent and on the
+wilderness map, the monsters answer each choice as the original's table does
+(since 2026-11-08; before, a flight always tested the party's speed and
+waiting beside some monsters started a fight), and a meeting
 that ends without a fight says so ("The monsters go on their way.", "You get
 away.").
 
@@ -1928,8 +1933,9 @@ they await the user's review ([audit](audits/valjevo-castle.md)):
   Tyranthraxus; the nomad shaman's Wizard profile for Al-Hyam Dazid and
   Genheeris.
 - **Genheeris** joins as a level-6 Wizard with his record's scores.
-- **The victory** restores every member, the dead and the stoned too, as the
-  original did (the user's choice, 2026-10-25).
+- **The victory** heals no one, as in the original (the user's choice,
+  2026-11-08; from 2026-10-25 it restored every member, as Curse of the Azure
+  Bonds's engine does, which was taken for the original's).
 - **Since 2026-10-25** the Knight parries, the Medusa bites with its Snake
   Hair, and Tyranthraxus has the dragon's Repulsion Breath, Legendary Actions
   and Legendary Resistance

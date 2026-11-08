@@ -281,6 +281,24 @@ enum class ExplorationCommand
     northwest
 };
 
+// One answer at the original's encounter menu (eclvm.pas EclEncounter):
+// `result` is what the script receives (0 the monsters leave, 1 a fight, 2
+// the party gets away, 3 a parley), or nothing while the meeting goes on; then
+// `closer` says whether the monsters came a step closer or both sides waited.
+struct EncounterTurn
+{
+    std::optional<unsigned> result;
+    bool closer{};
+};
+
+// The original's table for the script's `response` (0 to 4) to the party's
+// `choice` (0 Fight, 1 Wait, 2 Flee, 3 Advance, 4 Parley) with the monsters
+// `distance` steps away. `party_escapes` when its slowest member keeps up with
+// the meeting's flight threshold; `monsters_outrun` when the monsters are
+// faster than the party's fastest member.
+[[nodiscard]] EncounterTurn encounter_turn(std::size_t choice, unsigned response, unsigned distance,
+                                           bool party_escapes, bool monsters_outrun);
+
 // Original tour followed by the New Phlan movement/search/script scheduler.
 // Bound VM position cells are authoritative; snapshots are read-only views.
 class RolfTourSession

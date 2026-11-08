@@ -189,6 +189,21 @@ bool party_has_item(const CampaignParty &party, unsigned type)
     return false;
 }
 
+bool has_ranger(const CampaignParty &party)
+{
+    return std::ranges::any_of(party.state().slots,
+                               [&](MemberId id)
+                               {
+                                   if (!id)
+                                   {
+                                       return false;
+                                   }
+                                   const auto &taken =
+                                       party.member(id).character.sheet().level_classes;
+                                   return std::ranges::find(taken, "ranger") != taken.end();
+                               });
+}
+
 unsigned party_strength(const CampaignParty &party)
 {
     unsigned result = 0;
@@ -289,6 +304,15 @@ std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attri
     // encounter menu's Flee compares the slowest member, so it is the slowest
     // member too. For a thief skill the original leaves it 0.
     return {low, high, total / count, movement ? low : 0};
+}
+
+unsigned reaction_score(int charisma)
+{
+    // The original reads this table for Charisma 3 to 18 (and 25); a
+    // Charisma above 18 keeps 18's score.
+    constexpr std::array<unsigned, 16> by_charisma{0,  5,  10, 15, 20, 25, 25, 25,
+                                                   25, 25, 30, 35, 40, 50, 55, 60};
+    return by_charisma[static_cast<std::size_t>(std::clamp(charisma, 3, 18) - 3)];
 }
 
 EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)

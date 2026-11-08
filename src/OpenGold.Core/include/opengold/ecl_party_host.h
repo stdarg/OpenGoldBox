@@ -18,6 +18,8 @@ inline constexpr std::array<EclAddress, 7> ecl_coin_addresses{
 
 // Whether an active member carries an item of the original type.
 [[nodiscard]] bool party_has_item(const CampaignParty &party, unsigned original_type);
+// Whether a member, living or not, has a Ranger level, as PARTY SURPRISE asks.
+[[nodiscard]] bool has_ranger(const CampaignParty &party);
 // The original PARTY STRENGTH value.
 [[nodiscard]] unsigned party_strength(const CampaignParty &party);
 // CHECK PARTY: the lowest, highest and average of a party attribute (movement
@@ -25,6 +27,9 @@ inline constexpr std::array<EclAddress, 7> ecl_coin_addresses{
 // party in the fourth value (coab CMD_CheckParty).
 [[nodiscard]] std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attribute,
                                                   unsigned effect);
+// The reaction score (0x6DCF) the scripts add to a parley's reaction roll,
+// from the speaker's Charisma, as the original's table gives it.
+[[nodiscard]] unsigned reaction_score(int charisma);
 // The script memory writes describing the member in a party slot.
 [[nodiscard]] EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot);
 } // namespace opengold::por

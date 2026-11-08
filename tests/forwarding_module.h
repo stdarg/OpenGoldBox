@@ -288,12 +288,6 @@ class ForwardingModule : public rules::RulesModule
         rules_->temple_service(state, sheet, service, random_state);
     }
 
-    void restore_after_victory(rules::VitalState &state,
-                               const rules::CharacterSheet &sheet) const override
-    {
-        rules_->restore_after_victory(state, sheet);
-    }
-
     rules::HazardAttackResult hazard_attack(rules::VitalState &state,
                                             const rules::CharacterSheet &sheet,
                                             std::span<const std::string> gear,

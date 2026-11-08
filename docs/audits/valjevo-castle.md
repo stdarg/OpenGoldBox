@@ -77,10 +77,10 @@ Missing before this audit, now done:
    its map and holds their creatures too, so the castle's scripts load each
    other's quarters and the old town's map.
 2. **The area rows**, the conversions and Genheeris.
-3. **`PROGRAM 8`, the game won:** every member is restored to all its Hit
-   Points, the dead and the stoned too (since 2026-10-25, the user's choice),
-   the won cell (`0x4AFD`, coab's area byte `0x3FA`) is set, and the closing
-   words wait for a key press before the script goes on.
+3. **`PROGRAM 8`, the game won:** the won cell (`0x4AFD`, coab's area byte
+   `0x3FA`) is set, and the closing words wait for a key press before the
+   script goes on. As in the original, no one is healed (the user's choice,
+   2026-11-08).
 4. **The castle's harm:** a bucket of sand, boulders and falling stones are
    bludgeoning missiles; drowning and the trap door's fall bludgeoning; the
    gnoll's scalding pot fire; the hedge's thorn poison.

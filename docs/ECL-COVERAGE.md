@@ -43,12 +43,12 @@ unless named otherwise. Test files: `ecl` [ecl_tests.cpp](../tests/ecl_tests.cpp
 | 1F | (undefined) | Faults by design | `ecl` `por_operations` | — | Always |
 | 20 | NEW ECL | Script, previous script, bank `0x6E12` | `save` fog saves; VM `ecl` | West gate round trip (`exp` `defeat_four_orcs`) | — |
 | 21 | LOAD FILES | Map, wall art and map memory per area | `save`; `party` `rejected_combat_handoff` | West gate round trip; Kuto's Well (`exp` `enter_kutos_well`) | Resources outside the supported areas; invalid facing |
-| 22 | PARTY SURPRISE | Writes 0, 0 (converted parties have no surprise modifiers) | — | — | — |
+| 22 | PARTY SURPRISE | 1 for a Ranger in the party, then 0 | `exp` `party_surprise_tests` | — | — |
 | 23 | SURPRISE | Stores the bits COMBAT reads | VM only | — | Unsupported surprise values, at COMBAT |
 | 24 | COMBAT | Monsters, temples, shops, treasure | `tour` `shopping_tests`; `party` `recovery_hosts`; `exp` `script_treasure_tests` | Orcs; shops; Ilmater's temple (`exp` `podol_temple`); New Phlan's city watch and Tempus's priests (`exp` `city_watch_fight`) | Other town combat routes |
 | 27 | TREASURE | Coins and item lists | `tour`; `exp` `script_treasure_tests`, `deferred_treasure_tests` | Ohlo's reward; the original shop list; holy symbols | Unsupported town lists |
 | 28 | ROB | Form 1: a share of the coins (items kept by the user's choice) | `exp` (the refused form) | Norris's surrender; the Pitt's bribe and drinking (`exp` `podol_pitt`) | Every other form |
-| 29 | ENCOUNTER MENU | Slums encounter menu | — | `exp` `slums_encounter_menu` | Other contexts |
+| 29 | ENCOUNTER MENU | Every area's meetings, answered by the original's table | `exp` `encounter_table_tests` | `exp` `slums_encounter_menu` | Distances beyond 2 |
 | 2D | CALL 0x2C90, 0xC018 | Redraw (rolf_tour.cpp) | `tour` `synthetic` (0x2C90) | Rolf's tour redraws | Invalid poses |
 | 2D | CALL 0xC01E | Scripted walk (rolf_tour.cpp) | — | Runs, unasserted | Invalid poses |
 | 2D | CALL 0x8001 | Duel flag | — | The Pitt's duel (`exp` `podol_pitt`) | A duel without a chosen member |
@@ -62,7 +62,7 @@ unless named otherwise. Test files: `ecl` [ecl_tests.cpp](../tests/ecl_tests.cpp
 | 37 | LOAD PIECES | Checks the district's wall banks | — | Runs at every area entry | Unverified wall banks |
 | 38 | PROGRAM 0 | Training hall | `party` `training_hall_service`; `exp` `hall_event_tests` | — | Halls without a known class word |
 | 38 | PROGRAM 9 | Inn and camp | `party` `recovery_hosts`; `campaign_rest_tests.cpp` | Inn (`exp` `rest_at_inn`); nomad camp | A party not eligible for a Long Rest |
-| 38 | PROGRAM 8 | Restores every member and wins the game ([audit](audits/valjevo-castle.md)) | `exp` `victory_program_tests` | Tyranthraxus's fall (`exp` `valjevo_castle`) | — |
+| 38 | PROGRAM 8 | Wins the game ([audit](audits/valjevo-castle.md)) | `exp` `victory_program_tests` | Tyranthraxus's fall (`exp` `valjevo_castle`) | — |
 | 39 | WHO | Asks its question and chooses the acting member | `party` `script_handoff`, `shop_buyer_switch` | Inn payer; the Pitt's champion | No member |
 | 3A | DELAY | rolf_tour.cpp | `tour` `synthetic` | Runs, unasserted | — |
 | 3B | SPELL | Knock (31) | VM only | Kovel's cabinet (`exp` `kovel_mansion`) | Every other spell |
@@ -72,8 +72,8 @@ unless named otherwise. Test files: `ecl` [ecl_tests.cpp](../tests/ecl_tests.cpp
 
 - **Not implemented:** CALL 0x8000 and opcode 0x1F. Each stops the
   event with an explicit error, and the event's checkpoint undoes it.
-- **No synthetic test:** PICTURE, CLEAR MONSTERS, PARTY SURPRISE, ENCOUNTER
-  MENU, CALL 0xC01E, 0x8001 and 0xBA03, DAMAGE, LOAD PIECES, PROTECTION.
+- **No synthetic test:** PICTURE, CLEAR MONSTERS, CALL 0xC01E, 0x8001 and
+  0xBA03, DAMAGE, LOAD PIECES, PROTECTION.
 - **Table-driven random encounter:** Podol Plaza's roaming group table is
   checked roll by roll ([audit](audits/podol-plaza.md#status)).
 - **No original event checks the effect:** CLEAR MONSTERS, PARTY SURPRISE,

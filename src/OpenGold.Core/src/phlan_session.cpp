@@ -770,15 +770,13 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
     machine_.bind_variable(EclAddress{0x6DCA}, searching ? 1 : 0);
     event_searched_ = searching;
     // The spokesman's reaction score (0x6DCF), which the scripts add to reaction
-    // rolls. The original's formula is unknown; twice Charisma, as New Phlan's
-    // own script doubles it, was chosen (LEADER-1).
+    // rolls: the original's table on Charisma, read for the leader (LEADER-1).
     if (campaign_)
     {
         if (const auto speaker = campaign_->spokesman())
         {
-            machine_.bind_variable(
-                EclAddress{0x6DCF},
-                static_cast<std::uint16_t>(2 * campaign_->reaction_charisma(speaker)));
+            machine_.bind_variable(EclAddress{0x6DCF}, static_cast<std::uint16_t>(reaction_score(
+                                                           campaign_->reaction_charisma(speaker))));
         }
     }
     if (!machine_.start(entry.value_or(static_cast<std::size_t>(trigger))))
@@ -1959,6 +1957,58 @@ void RolfTourSession::award_staged_treasure()
     }
 }
 
+EncounterTurn encounter_turn(std::size_t choice, unsigned response, unsigned distance,
+                             bool party_escapes, bool monsters_outrun)
+{
+    constexpr std::size_t fight = 0, wait = 1, flee = 2, advance = 3, parley = 4;
+    // Adjacent monsters answer with `adjacent`; others come a step closer.
+    const auto close_in = [&](std::optional<unsigned> adjacent)
+    {
+        return distance == 0 ? EncounterTurn{adjacent, false} : EncounterTurn{std::nullopt, true};
+    };
+    const auto fight_or_flight = [&]
+    {
+        return EncounterTurn{choice == flee ? 2U : 1U, false};
+    };
+    switch (response)
+    {
+    case 0:
+        // Only this answer tests the party's speed.
+        return {choice == flee && party_escapes ? 2U : 1U, false};
+    case 1:
+        if (choice == wait)
+        {
+            return {};
+        }
+        if (choice == advance || choice == parley)
+        {
+            return close_in(choice == parley ? std::optional<unsigned>{3U} : std::nullopt);
+        }
+        return fight_or_flight();
+    case 2:
+        // The monsters leave, unless the party attacks monsters it can outrun.
+        return {choice == fight && !monsters_outrun ? 1U : 0U, false};
+    case 3:
+        if (choice == wait || choice == advance)
+        {
+            return close_in(std::nullopt);
+        }
+        if (choice == parley)
+        {
+            return close_in(3U);
+        }
+        return fight_or_flight();
+    case 4:
+        if (choice == fight || choice == flee)
+        {
+            return fight_or_flight();
+        }
+        return close_in(3U);
+    default:
+        throw EclError("Invalid encounter response");
+    }
+}
+
 void RolfTourSession::show_encounter_menu()
 {
     // The first operand names the distance sprite, the third the close-up
@@ -1996,8 +2046,10 @@ void RolfTourSession::show_encounter_menu()
     {
         meeting_pose_ = snapshot_.pose;
     }
-    // As in the original, Parley replaces Advance once the monsters are adjacent.
-    snapshot_.choices = {"Fight", "Wait", "Flee", encounter_distance_ ? "Advance" : "Parley"};
+    // As in the original, Parley replaces Advance once the monsters are
+    // adjacent, and on the wilderness map, where no one advances.
+    snapshot_.choices = {"Fight", "Wait", "Flee",
+                         encounter_distance_ && !overland() ? "Advance" : "Parley"};
     snapshot_.phase = TourPhase::awaiting_continue;
     snapshot_.continue_ticket = ++next_ticket_;
     ++snapshot_.revision;
@@ -2128,18 +2180,15 @@ bool RolfTourSession::choose_encounter(std::size_t choice)
     {
         return false;
     }
-    // The fourth choice is Advance at a distance and Parley when adjacent.
-    if (choice == 3 && encounter_distance_ == 0)
+    // The fourth choice is Advance at a distance and Parley when adjacent or
+    // on the wilderness map.
+    if (choice == 3 && (encounter_distance_ == 0 || overland()))
     {
         choice = 4;
     }
     const auto &request = *encounter_menu_;
     const auto &args = request.arguments;
     const auto response = args[4 + choice].number();
-    if (response > 4)
-    {
-        throw EclError("Invalid encounter response");
-    }
     int slowest = 1000, fastest = 0;
     for (auto id : campaign_->state().slots)
     {
@@ -2155,43 +2204,28 @@ bool RolfTourSession::choose_encounter(std::size_t choice)
             fastest = std::max(fastest, movement);
         }
     }
-    unsigned result = 1;
     // On Easy a flight always succeeds (DIFF-2).
-    if (choice == 2 && (slowest >= args[12].number() || spares_the_party(difficulty_)))
+    const auto turn = encounter_turn(choice, response, encounter_distance_,
+                                     slowest >= static_cast<int>(args[12].number()) ||
+                                         spares_the_party(difficulty_),
+                                     static_cast<int>(args[13].number()) > fastest);
+    if (!turn.result)
     {
-        result = 2;
-    }
-    else if (response == 2 && (choice != 0 || args[13].number() > fastest))
-    {
-        result = 0;
-    }
-    else if (response == 4)
-    {
-        result = 3;
-    }
-    else if (response == 1 && (choice == 1 || (choice == 3 && encounter_distance_ > 0)))
-    {
-        if (choice == 3)
-        {
-            --encounter_distance_;
-        }
+        // The meeting goes on: the monsters came a step closer, or both sides
+        // waited.
+        encounter_distance_ -= turn.closer ? 1 : 0;
         show_encounter_menu();
         return true;
     }
-    else if (response == 3 && encounter_distance_ > 0)
-    {
-        --encounter_distance_;
-        show_encounter_menu();
-        return true;
-    }
+    const auto result = turn.result;
     EclHostReply reply;
-    reply.writes = {{args[3].address(), static_cast<std::uint16_t>(result)}};
+    reply.writes = {{args[3].address(), static_cast<std::uint16_t>(*result)}};
     if (!machine_.resume_host(request.id, reply))
     {
         return false;
     }
     // The script ends the meeting quietly (0); the event's end says so.
-    encounter_outcome_ = result == 0 ? "The monsters go on their way." : "";
+    encounter_outcome_ = *result == 0 ? "The monsters go on their way." : "";
     encounter_menu_.reset();
     snapshot_.choices.clear();
     snapshot_.continue_ticket = 0;
@@ -2785,9 +2819,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     case 34:
     {
-        // Supported converted party profiles have no original surprise modifiers.
+        // PARTY SURPRISE: 1 in the first output when a Ranger travels with the
+        // party, which the SURPRISE that follows takes from the party's chance
+        // of being surprised; the second is always 0 (the original's eclvm.pas).
         std::map<EclAddress, std::uint16_t> outputs;
-        outputs[address_arg(0)] = 0;
+        outputs[address_arg(0)] = campaign_ && has_ranger(*campaign_) ? 1 : 0;
         outputs[address_arg(1)] = 0;
         for (auto [address, value] : outputs)
         {
@@ -3391,14 +3427,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             open_hall(request.id);
             return true;
         }
-        // Tyranthraxus defeated (coab CMD_Program 8): every member is restored,
-        // the dead and the stoned too, and the game is won (area byte 0x3FA, the cell 0x4AFD). The
-        // original pauses on its closing words; then the script goes on, back
-        // to the civilized city.
+        // Tyranthraxus defeated (PROGRAM 8): the game is won (area byte 0x3FA,
+        // the cell 0x4AFD). The original pauses on its closing words, healing
+        // no one; then the script goes on, back to the civilized city.
         if (arg(0) == 8 && campaign_)
         {
             read_character();
-            campaign_->heal_after_victory();
             snapshot_.dialogue.clear();
             for (const auto &page : town_->closing_story)
             {

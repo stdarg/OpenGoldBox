@@ -192,8 +192,8 @@ Add an entry whenever a new departure is decided.
 ## Party and parley
 
 - **Party leader** (2026-10-08). The original asked who speaks at every parley.
-  OpenGoldBox has a standing leader, who parleys with twice their Charisma and
-  buys first in shops.
+  OpenGoldBox has a standing leader, who parleys with the original's reaction
+  score for their Charisma and buys first in shops.
   [LEADER-1](SRD-DECISIONS.md#leader-1-2026-10-08-a-party-leader-speaks-for-the-party).
 - **Ready-made characters** (2026-10-12). The original had only the characters
   a player created. OpenGoldBox adds a Character Pool of ready-made

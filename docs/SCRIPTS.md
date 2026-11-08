@@ -190,7 +190,7 @@ refused.
 | 32 | FIND ITEM | Search actual party inventory and return the comparison flags. |
 | 36 | ADD NPC | Recruit the requested NPC with the correct live state and allegiance. |
 | 37 | LOAD PIECES | Load the selected wall artwork; retain all three operands pending the [operand investigation](#reverse-engineering-load-pieces-0x37). |
-| 38 | PROGRAM | 0 opens a training hall's services and 9 the inn's paid rest; 8, the victory after Tyranthraxus (`ECL5:7`), wins the game and restores the party ([Valjevo Castle](audits/valjevo-castle.md)). |
+| 38 | PROGRAM | 0 opens a training hall's services and 9 the inn's paid rest; 8, the victory after Tyranthraxus (`ECL5:7`), wins the game ([Valjevo Castle](audits/valjevo-castle.md)). |
 | 39 | WHO | Present character selection and change the selected character. |
 | 3A | DELAY | Provide presentation pacing without blocking the game update loop. |
 | 3C | PROTECTION | Display the requested rune text through the appropriate presentation service. |

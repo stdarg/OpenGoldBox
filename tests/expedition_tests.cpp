@@ -766,16 +766,80 @@ void victory_program_tests()
     check(town.snapshot().phase == por::TourPhase::awaiting_continue &&
               town.snapshot().dialogue.starts_with("The first page.\n\nThe second page.\n\n") &&
               town.snapshot().dialogue.find("You have won") != std::string::npos &&
-              party->member(arden).vitals.hit_points == party->hit_point_maximum(arden) &&
-              !party->member(bryn).vitals.dead &&
-              party->member(bryn).vitals.hit_points == party->hit_point_maximum(bryn),
-          "The victory restores the party, the dead too, and pauses on its closing words");
+              party->member(arden).vitals.hit_points == 1 && party->member(bryn).vitals.dead,
+          "The victory pauses on its closing words and, as in the original, heals no one");
     check(route_choose(town, town.snapshot().continue_ticket, 0),
           "The closing words are acknowledged");
     settle_synthetic(town);
     check(town.snapshot().phase == por::TourPhase::completed &&
               town.script_variable(por::EclAddress{0x4AFD}) == 255,
           "The game's won cell is set and the event ends");
+}
+
+// PARTY SURPRISE reports a Ranger in the party in its first output and 0 in
+// its second, as the original did.
+void party_surprise_tests()
+{
+    for (const bool ranger : {false, true})
+    {
+        auto party = std::make_shared<CampaignParty>(module());
+        (void)party->add_pc(character("Arden"));
+        (void)party->add_pc(character("Bryn", 7, ranger ? "ranger" : "cleric"));
+        // PARTY SURPRISE 0x6E79, 0x6E7A, then EXIT.
+        auto surprise = program({0x22, 1, 0x79, 0x6E, 1, 0x7A, 0x6E, 0});
+        por::RolfTourSession town({}, surprise, {}, 0x9914, {},
+                                  std::make_shared<por::PhlanResources>());
+        town.campaign_party(party);
+        settle_synthetic(town);
+        test::TourAccess::set_variable(town, por::EclAddress{0x6E7A}, 9);
+        check(route_explore(town, por::ExplorationCommand::look), "The surprise event starts");
+        settle_synthetic(town);
+        check(town.script_variable(por::EclAddress{0x6E79}) == (ranger ? 1u : 0u) &&
+                  town.script_variable(por::EclAddress{0x6E7A}) == 0,
+              ranger ? "A Ranger in the party is reported to the surprise roll"
+                     : "A party without a Ranger reports none");
+    }
+}
+
+// The encounter menu answers as the original's table does (eclvm.pas
+// EclEncounter), at a distance and adjacent.
+void encounter_table_tests()
+{
+    constexpr std::size_t fight = 0, wait = 1, flee = 2, advance = 3, parley = 4;
+    const auto turn = [](std::size_t choice, unsigned response, unsigned distance,
+                         bool escapes = false, bool outrun = false)
+    {
+        return por::encounter_turn(choice, response, distance, escapes, outrun);
+    };
+    const auto ends = [](por::EncounterTurn t, unsigned result)
+    {
+        return t.result == result;
+    };
+    const auto waits = [](por::EncounterTurn t)
+    {
+        return !t.result && !t.closer;
+    };
+    const auto closes = [](por::EncounterTurn t)
+    {
+        return !t.result && t.closer;
+    };
+    check(ends(turn(flee, 0, 1, true), 2) && ends(turn(flee, 0, 1, false), 1) &&
+              ends(turn(wait, 0, 0), 1) && ends(turn(parley, 0, 0), 1),
+          "Answer 0: a flight needs the slowest member to keep up; anything else is a fight");
+    check(ends(turn(flee, 1, 0), 2) && ends(turn(flee, 3, 1), 2) && ends(turn(flee, 4, 0), 2),
+          "Answers 1, 3 and 4 let the party flee whatever its speed");
+    check(waits(turn(wait, 1, 1)) && closes(turn(advance, 1, 2)) && ends(turn(parley, 1, 0), 3) &&
+              ends(turn(fight, 1, 2), 1),
+          "Answer 1: waiting waits, advancing closes in, adjacent the monsters parley");
+    check(ends(turn(fight, 2, 1, false, true), 0) && ends(turn(fight, 2, 1, false, false), 1) &&
+              ends(turn(wait, 2, 1), 0) && ends(turn(flee, 2, 0, true), 0),
+          "Answer 2: the monsters leave, unless attacked when the party can catch them");
+    check(waits(turn(wait, 3, 0)) && closes(turn(wait, 3, 1)) && ends(turn(parley, 3, 0), 3) &&
+              ends(turn(fight, 3, 2), 1),
+          "Answer 3: the monsters close in; adjacent, both sides wait or parley");
+    check(closes(turn(wait, 4, 1)) && closes(turn(advance, 4, 2)) && ends(turn(wait, 4, 0), 3) &&
+              ends(turn(fight, 4, 0), 1),
+          "Answer 4: the monsters close in to parley, and a fight is still a fight");
 }
 
 Purse party_purse(const PartyState &state)
@@ -5904,8 +5968,8 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
     check(!leader_could_speak || speaker == charming, "The leader speaks for the party if able");
     const auto &speaker_sheet = talkers.party->member(speaker).character.sheet();
     check(parley->dialogue.ends_with("\n" + speaker_sheet.name + " speaks for the party.") &&
-              reaction_score == 2u * speaker_sheet.scores[rules::Ability::charisma],
-          "Whoever speaks for the party does so with twice its Charisma");
+              reaction_score == por::reaction_score(speaker_sheet.scores[rules::Ability::charisma]),
+          "Whoever speaks for the party does so with the original's score for its Charisma");
 
     auto waiting = load_expedition(save, directory);
     (void)meet_camp_monsters(
@@ -8136,6 +8200,8 @@ int main(int argc, char **argv)
         coin_purse_tests();
         script_payment_tests();
         victory_program_tests();
+        party_surprise_tests();
+        encounter_table_tests();
         hall_event_tests();
         random_treasure_tables();
         script_treasure_tests();
