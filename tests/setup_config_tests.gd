@@ -1,6 +1,7 @@
 extends SceneTree
 
-const CONFIG := "res://settings.cfg"
+# The game's settings.cfg: the check's own when ctest names one, else the project's.
+var CONFIG := OS.get_environment("OPENGOLD_SETTINGS_FILE") if OS.has_environment("OPENGOLD_SETTINGS_FILE") else ProjectSettings.globalize_path("res://settings.cfg")
 var scenario := "first"
 var real_path := ""
 var captures := ""

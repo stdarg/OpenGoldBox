@@ -16,6 +16,7 @@ file(MAKE_DIRECTORY "${WORK}/home")
 foreach(variable HOME APPDATA XDG_DATA_HOME)
     set(ENV{${variable}} "${WORK}/home")
 endforeach()
+set(ENV{OPENGOLD_SETTINGS_FILE} "${WORK}/home/settings.cfg")
 set(ENV{OPENGOLD_LANG} en)
 
 if(NOT DEFINED SCENE)

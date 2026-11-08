@@ -37,7 +37,7 @@ func saved_zoom(config_path: String) -> int:
     return int(config.get_value("combat", "combat_zoom", -1))
 
 func run_checks() -> void:
-    var config_path := ProjectSettings.globalize_path("res://settings.cfg")
+    var config_path := OS.get_environment("OPENGOLD_SETTINGS_FILE") if OS.has_environment("OPENGOLD_SETTINGS_FILE") else ProjectSettings.globalize_path("res://settings.cfg")
     var had_config := FileAccess.file_exists(config_path)
     var original_config := FileAccess.get_file_as_bytes(config_path) if had_config else PackedByteArray()
     if had_config:

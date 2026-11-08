@@ -7,14 +7,15 @@ endif()
 if(NOT DEFINED TEST_TIMEOUT)
     set(TEST_TIMEOUT 30)
 endif()
-# USER_HOME gives the check its own, empty Godot user data, so checks run at
-# the same time (other ctest runs or worktrees) never share saves or settings.
+# USER_HOME gives the check its own, empty Godot user data and settings.cfg,
+# so checks run at the same time never share saves or settings.
 if(DEFINED USER_HOME)
     file(REMOVE_RECURSE "${USER_HOME}")
     file(MAKE_DIRECTORY "${USER_HOME}")
     foreach(variable HOME APPDATA XDG_DATA_HOME)
         set(ENV{${variable}} "${USER_HOME}")
     endforeach()
+    set(ENV{OPENGOLD_SETTINGS_FILE} "${USER_HOME}/settings.cfg")
 endif()
 execute_process(
     COMMAND "${GODOT}" ${display_arguments} --path "${PROJECT}" --script "${SCRIPT}" -- ${ARGS}

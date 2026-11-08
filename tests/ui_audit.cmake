@@ -19,6 +19,7 @@ set(ENV{OPENGOLD_SLUMS_FIXTURES} "${fixtures}")
 foreach(variable HOME APPDATA XDG_DATA_HOME)
     set(ENV{${variable}} "${WORK}/home")
 endforeach()
+set(ENV{OPENGOLD_SETTINGS_FILE} "${WORK}/home/settings.cfg")
 set(ENV{OPENGOLD_LANG} en)
 execute_process(
     COMMAND "${CMAKE_COMMAND}" "-DGODOT=${GODOT}" "-DPROJECT=${PROJECT}"

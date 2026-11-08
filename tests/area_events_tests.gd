@@ -45,7 +45,8 @@ var endings := 0
 # each finished fight so the next one ends the other way; settings.cfg goes
 # back as it was at the end. A finished fight's party cards show QUICK only
 # when it is kept.
-var settings_path := ProjectSettings.globalize_path("res://settings.cfg")
+# The game's settings.cfg: the check's own when ctest names one, else the project's.
+var settings_path := OS.get_environment("OPENGOLD_SETTINGS_FILE") if OS.has_environment("OPENGOLD_SETTINGS_FILE") else ProjectSettings.globalize_path("res://settings.cfg")
 var kept_settings = null
 var keep_quick := false
 var quick_ends := 0

@@ -1,8 +1,9 @@
 extends SceneTree
 
-# The zoom buttons save the zoom in the project's settings.cfg, which later
-# checks read, so the file is put back as it was before this check ends.
-var settings_path := ProjectSettings.globalize_path("res://settings.cfg")
+# The zoom buttons save the zoom in the game's settings.cfg (the check's own
+# when ctest names one, else the project's), so the file is put back as it was
+# before this check ends.
+var settings_path := OS.get_environment("OPENGOLD_SETTINGS_FILE") if OS.has_environment("OPENGOLD_SETTINGS_FILE") else ProjectSettings.globalize_path("res://settings.cfg")
 var kept_settings = null
 
 func keep_settings() -> void:

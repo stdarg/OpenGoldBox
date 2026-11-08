@@ -801,10 +801,16 @@ func play_items(items: Array, stage: String) -> bool:
         if not has_town(): return false
     return true
 
-# A run from the editor's executable keeps its settings in the project folder,
-# which other runs share: the first change remembers the setting to put back.
+# The game's settings.cfg: the one ctest names for the check, else the project
+# folder's for a run from the editor's executable, which other runs share.
+func settings_path() -> String:
+    if OS.has_environment("OPENGOLD_SETTINGS_FILE"):
+        return OS.get_environment("OPENGOLD_SETTINGS_FILE")
+    return "res://settings.cfg" if OS.has_feature("editor") else "user://settings.cfg"
+
+# The first change remembers the setting to put back.
 func set_difficulty(value: String) -> void:
-    var path := "res://settings.cfg" if OS.has_feature("editor") else "user://settings.cfg"
+    var path := settings_path()
     var settings := ConfigFile.new()
     settings.load(path)
     if not changed_difficulty:
@@ -815,7 +821,7 @@ func set_difficulty(value: String) -> void:
 
 func restore_difficulty() -> void:
     if not changed_difficulty: return
-    var path := "res://settings.cfg" if OS.has_feature("editor") else "user://settings.cfg"
+    var path := settings_path()
     var settings := ConfigFile.new()
     settings.load(path)
     if difficulty_before.is_empty():

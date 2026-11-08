@@ -2,6 +2,8 @@ extends SceneTree
 
 var args: PackedStringArray
 var capture_dir := ""
+# The game's settings.cfg: the check's own when ctest names one, else the project's.
+var settings_path := OS.get_environment("OPENGOLD_SETTINGS_FILE") if OS.has_environment("OPENGOLD_SETTINGS_FILE") else ProjectSettings.globalize_path("res://settings.cfg")
 
 func _initialize() -> void:
 	args = OS.get_cmdline_args() + OS.get_cmdline_user_args()
@@ -90,7 +92,7 @@ func run_checks() -> void:
 	await key(dialog, KEY_ENTER)
 	require(TranslationServer.get_locale() == "es", "Enter did not activate Spanish")
 	var config := ConfigFile.new()
-	require(config.load("res://settings.cfg") == OK and config.get_value("interface", "language") == "es", "Spanish preference was not saved")
+	require(config.load(settings_path) == OK and config.get_value("interface", "language") == "es", "Spanish preference was not saved")
 	if args.has("--splash"):
 		require(current_scene.name == "Startup" and not dialog.visible, "Language selection should continue to splash")
 		var background: Texture2D = current_scene.get_node("ImageFit/Image").texture
@@ -130,6 +132,6 @@ func run_checks() -> void:
 	await settle()
 	require(TranslationServer.get_locale() == "en", "Continue button did not select English")
 	config.set_value("interface", "language", "es")
-	require(config.save("res://settings.cfg") == OK, "Cannot prepare restart check")
+	require(config.save(settings_path) == OK, "Cannot prepare restart check")
 	print("Language dialog passed: exact options, arrows/Enter/button, saved preference, startup ordering and localized splashes.")
 	quit(0)

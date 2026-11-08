@@ -8,7 +8,7 @@
 #   tools/linux_release_build.sh [--test | --test-all]
 #
 # The first run creates the distrobox container opengold-alma8 and installs
-# GCC 14 (gcc-toolset-14), CMake, Ninja, Python 3.11 and the libraries Godot
+# GCC 14 (gcc-toolset-14), CMake, Ninja, ccache, Python 3.11 and the libraries Godot
 # needs. It then runs ./build.sh linux-release, which writes build/linux-release/
 # and linux-package/ and fails if the package needs a glibc newer than 2.28.
 # The container shares your home folder, so Godot, its export templates and
@@ -23,7 +23,7 @@ CONTAINER=opengold-alma8
 IMAGE=docker.io/library/almalinux:8
 TOOLSET=/opt/rh/gcc-toolset-14/root/usr/bin
 PACKAGES="gcc-toolset-14-gcc-c++ gcc-toolset-14-binutils gcc-toolset-14-libstdc++-devel
-    cmake ninja-build python3.11 git which tar
+    cmake ninja-build ccache python3.11 git which tar
     fontconfig freetype libX11 libXcursor libXext libXi libXinerama libXrandr libXrender
     libxkbcommon libwayland-client libwayland-cursor libwayland-egl
     mesa-libGL mesa-libEGL mesa-dri-drivers vulkan-loader mesa-vulkan-drivers

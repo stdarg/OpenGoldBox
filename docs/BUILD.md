@@ -333,8 +333,9 @@ tools/linux_release_build.sh --test-all
 
 The first run creates the [distrobox](https://distrobox.it) container
 `opengold-alma8` (Bazzite ships distrobox; elsewhere install it and podman) and
-installs GCC 14 from `gcc-toolset-14`, CMake, Ninja, Python 3.11 and the
-libraries Godot needs. Every run then builds the `linux-release` preset into
+installs GCC 14 from `gcc-toolset-14`, CMake, Ninja, ccache, Python 3.11 and
+the libraries Godot needs; ccache lets later runs reuse the compiled objects.
+Every run then builds the `linux-release` preset into
 `build/linux-release/` and `linux-package/`, with the same options as
 `./build.sh`. The container shares your home folder, so Godot, its export
 templates and `OPENGOLD_GAME_DIR` are the host's, and the package smoke check

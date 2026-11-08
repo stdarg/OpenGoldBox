@@ -148,6 +148,10 @@ still prompt; overrides supply the initial path/language when applicable.
 A reset flag supersedes its corresponding environment override for that run.
 An explicit confirmed dialog selection also takes precedence for the remainder
 of the run. On the next ordinary launch, environment overrides apply again.
+
+`OPENGOLD_SETTINGS_FILE` names the `settings.cfg` to read and write instead of
+the usual one, for that launch. The Godot checks give each check its own, so
+they run at the same time without sharing settings.
 Every game view and campaign-save identity check uses the same resolved path.
 
 ## MD5 compatibility warning
@@ -219,13 +223,14 @@ settings, resets, environment precedence, invalid folders, synthetic checksum
 mismatches, warning Continue/Quit, cancellation, preservation of unrelated keys,
 and malformed-config save failure. It creates synthetic files rather than
 copying original game assets. It requires `OPENGOLD_GAME_DIR` pointing to the
-local reference installation and writes the ignored development config; back up
-that file before running the test. Tests should use a workspace-local APPDATA.
+local reference installation. Run by hand, it writes the ignored development
+config, so back up that file first; under CTest it writes its own copy
+(`OPENGOLD_SETTINGS_FILE`). Tests should use a workspace-local APPDATA.
 `tests/language_dialog_tests.gd` checks keyboard progression, saved-language
 restoration and the shared splash background with the new reset flag.
 CTest runs both, and `tests/startup_tests.gd`, through `tests/settings_check.cmake`
 (`opengold_godot_setup_*`, `opengold_godot_language*`, `opengold_godot_startup*`;
-skipped without `OPENGOLD_GAME_DIR`), which keeps the development config aside
-while each check runs and puts it back afterwards.
+skipped without `OPENGOLD_GAME_DIR`), which gives each check a `settings.cfg` of
+its own in its work folder, so the development config is never touched.
 
 See [LOCALIZATION.md](LOCALIZATION.md) for catalogs and translated splash assets.

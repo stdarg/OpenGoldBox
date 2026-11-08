@@ -58,9 +58,18 @@ For the demos, Godot is located by `find_program`, which searches `PATH` and the
 locations on each platform. If it is not found, CMake prints a status line and
 the checks are simply **not registered** — confirm they exist with
 `ctest -N` rather than assuming a clean run covered them. Set
-`OPENGOLD_DEMO_GODOT` to override. Godot tests share a project and user-data
-path, so each holds a CTest `RESOURCE_LOCK`; `ctest -j` runs them one at a time
-while native tests run alongside.
+`OPENGOLD_DEMO_GODOT` to override. The demo checks share a project and
+user-data path, so each holds a CTest `RESOURCE_LOCK`; `ctest -j` runs them one
+at a time while native tests run alongside. The game's Godot checks run side by
+side: each gets its own user data and `settings.cfg` (`OPENGOLD_SETTINGS_FILE`,
+see [CONFIGURATION.md](CONFIGURATION.md#environment-overrides)), and they share
+only the imported project, which `opengold_godot_prepare` makes before any of
+them starts. A check that changes files in the project folder runs with
+`RUN_SERIAL`, alone, as the portrait fallback and Slums encounter checks do.
+Checks drawn in a real window (`GRAPHICAL=ON`, and the package smoke check's
+windowed run) share `RESOURCE_LOCK godot_window`, so one window is open at a
+time: side by side they compete for the screen and time out. A new windowed
+check takes that lock too.
 
 On macOS the checks run a copy of the installed Godot that stays out of the
 player's way, made at configure time in the build folder's `godot-out-of-dock`

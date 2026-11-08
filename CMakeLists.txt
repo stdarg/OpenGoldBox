@@ -12,8 +12,17 @@ project(OpenGoldBox VERSION 0.1.0 LANGUAGES CXX)
 # location, and hash_dir=false keeps the build directory out of the key.
 find_program(OPENGOLD_CCACHE ccache)
 if(OPENGOLD_CCACHE)
-    set(CMAKE_CXX_COMPILER_LAUNCHER
-        "${OPENGOLD_CCACHE};base_dir=${PROJECT_SOURCE_DIR};hash_dir=false")
+    execute_process(COMMAND "${OPENGOLD_CCACHE}" --version OUTPUT_VARIABLE ccache_version_text)
+    string(REGEX MATCH "[0-9]+\\.[0-9]+" ccache_version "${ccache_version_text}")
+    if(ccache_version VERSION_LESS 4.8)
+        # Older ccache, such as AlmaLinux 8's 3.7 in the Linux release container,
+        # takes its settings only from the environment.
+        set(CMAKE_CXX_COMPILER_LAUNCHER "${CMAKE_COMMAND};-E;env;CCACHE_BASEDIR=${PROJECT_SOURCE_DIR}"
+            "CCACHE_NOHASHDIR=1;${OPENGOLD_CCACHE}")
+    else()
+        set(CMAKE_CXX_COMPILER_LAUNCHER
+            "${OPENGOLD_CCACHE};base_dir=${PROJECT_SOURCE_DIR};hash_dir=false")
+    endif()
     # ccache cannot cache MSVC's shared PDB (/Zi); embedded debug info (/Z7) is cacheable.
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
 endif()

@@ -113,6 +113,14 @@ bool flag(const char *name)
 String path()
 {
     auto *os = OS::get_singleton();
+    // Each Godot check names its own file, so checks can run at the same time
+    // without sharing the project's settings.
+    const auto override = os->get_environment("OPENGOLD_SETTINGS_FILE").strip_edges();
+    if (!override.is_empty())
+    {
+        return override;
+    }
+
     // Editor runs share Godot's executable, so keep development settings in the project.
     if (os->has_feature("editor"))
     {
