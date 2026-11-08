@@ -48,13 +48,19 @@ elseif(APPLE)
     set(export_preset "macOS")
     set(export_path "${game_output}/OpenGoldBox.app")
     set(export_config "export_presets.macos.cfg.in")
-    set(pre_export_commands COMMAND "${CMAKE_COMMAND}" -E rm -rf "${export_path}")
+    set(pre_export_commands
+        COMMAND "${CMAKE_COMMAND}" "-DEXECUTABLE=${export_path}/Contents/MacOS/OpenGoldBox"
+            -P "${PROJECT_SOURCE_DIR}/cmake/refuse_running_game.cmake"
+        COMMAND "${CMAKE_COMMAND}" -E rm -rf "${export_path}")
 else()
     # Laid out as on Windows: the executable, its .pck and the GDExtension
     # side by side, with data/ next to them.
     set(game_output "${PROJECT_SOURCE_DIR}/linux-package")
     set(export_preset "Linux")
     set(export_path "${game_output}/opengoldbox.x86_64")
+    set(pre_export_commands
+        COMMAND "${CMAKE_COMMAND}" "-DEXECUTABLE=${export_path}"
+            -P "${PROJECT_SOURCE_DIR}/cmake/refuse_running_game.cmake")
     set(export_config "export_presets.linux.cfg.in")
     # A build links against the newest glibc symbols of the machine it runs
     # on, so the package needs that glibc or newer. The linux-release preset

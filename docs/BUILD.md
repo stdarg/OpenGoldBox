@@ -213,6 +213,13 @@ Install the Godot macOS export templates matching your editor, then:
 open mac-package/OpenGoldBox.app
 ```
 
+Quit the game before building again. The export stops with "The game is
+running from ..." while it runs, because Godot reads each scene from the
+game's `.pck` when it needs one: a running game handed a rewritten `.pck` can
+no longer open its screens. Explore New Phlan, for one, then does nothing
+until the game is restarted. Linux's export checks the same; on Windows the
+running game holds its files.
+
 Add `--test` for the native tests or `--test-all` for every test, including the
 Godot checks. The script runs these commands:
 

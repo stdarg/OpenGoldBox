@@ -792,6 +792,18 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_balance_tools_smoke PROPERTIES TIMEOUT 900
         SKIP_REGULAR_EXPRESSION "Skipped: ")
 endif()
+# The game's export refuses to replace a copy of the game that is running,
+# which would leave that copy unable to open its screens.
+if(OPENGOLD_BUILD_TESTS AND NOT WIN32)
+    add_executable(opengold_stand_in_game tests/stand_in_game.cpp)
+    add_test(NAME opengold_running_game_guard COMMAND "${CMAKE_COMMAND}"
+        "-DSTAND_IN=$<TARGET_FILE:opengold_stand_in_game>"
+        "-DGUARD=${PROJECT_SOURCE_DIR}/cmake/refuse_running_game.cmake"
+        "-DWORK=${CMAKE_BINARY_DIR}/running-game-guard"
+        -P "${PROJECT_SOURCE_DIR}/tests/running_game_guard.cmake")
+    set_tests_properties(opengold_running_game_guard PROPERTIES
+        PASS_REGULAR_EXPRESSION "Running game guard passed")
+endif()
 
 if(OPENGOLD_BUILD_GODOT)
     set_target_properties(opengold_core opengold_formats opengold_rules opengold_rules_srd5 PROPERTIES POSITION_INDEPENDENT_CODE ON)
