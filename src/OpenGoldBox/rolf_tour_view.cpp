@@ -3209,13 +3209,22 @@ void RolfTourView::check_town()
         {
             capture_frame("phlan-shop");
             const auto gold_before = gold();
-            // The list's first item, the stock's first in alphabetical order.
-            const auto price = session_->shop_stock()[shop_rows_.at(0)].stored.value;
+            // The check buys the Shield, wherever the alphabetical list puts it.
+            const auto shield =
+                std::ranges::find_if(shop_rows_,
+                                     [&](std::size_t n)
+                                     {
+                                         return session_->shop_stock()[n].label() == "Shield";
+                                     });
             if (required_node<ItemList>(*this, "%Choices").get_item_count() != 55 ||
-                required_node<Button>(*this, "%Continue").is_disabled())
+                required_node<Button>(*this, "%Continue").is_disabled() ||
+                shield == shop_rows_.end())
             {
                 throw std::runtime_error("Arms shop list is not available in Godot");
             }
+            const auto price = session_->shop_stock()[*shield].stored.value;
+            required_node<ItemList>(*this, "%Choices")
+                .select(static_cast<std::int32_t>(shield - shop_rows_.begin()));
             required_node<Button>(*this, "%Continue").emit_signal("pressed");
             if (gold() != gold_before - price || inventory_size() != 1)
             {

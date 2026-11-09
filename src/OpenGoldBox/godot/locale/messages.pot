@@ -7001,7 +7001,7 @@ msgstr ""
 msgid "OPENGOLDBOX  /  Rolf's welcome"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2433 src/OpenGoldBox/rolf_tour_view.cpp:3452
+#: src/OpenGoldBox/rolf_tour_view.cpp:2433 src/OpenGoldBox/rolf_tour_view.cpp:3461
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "OPENGOLDBOX  /  {district}"
 msgstr ""
@@ -12266,7 +12266,7 @@ msgstr ""
 msgid "{die} (maximum d{die}) {modifier} (Constitution) + {racial} (racial bonus) = {hp} HP"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:2429 src/OpenGoldBox/rolf_tour_view.cpp:3449
+#: src/OpenGoldBox/rolf_tour_view.cpp:2429 src/OpenGoldBox/rolf_tour_view.cpp:3458
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{district}    N ↑"
 msgstr ""
