@@ -653,6 +653,15 @@ void installed_town(const RolfTourSession &finished)
         check(opengold::phlan_shopkeeper_portrait(town.snapshot(), town.shops()).empty(),
               "Shopkeeper portrait ends when shopping ends");
         settle_town(town);
+        // The party stands outside the door it came in by, its back to it.
+        const auto outside = town.snapshot().pose;
+        const auto door = reversed(outside.facing);
+        const auto &street = town.map().at(outside.x, outside.y);
+        check(town.snapshot().phase == TourPhase::completed &&
+                  (outside.x + 16 + step_x(door)) % 16 == target.x &&
+                  (outside.y + 16 + step_y(door)) % 16 == target.y &&
+                  (street.doors[index(door)] == 1 || !street.walls[index(door)]),
+              "Leaving a shop puts the party outside its door, facing away from it");
     }
 
     // A price changed in the manager is the price the shop charges.

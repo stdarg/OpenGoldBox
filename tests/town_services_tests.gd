@@ -5,7 +5,8 @@ extends SceneTree
 # OPENGOLD_TOWN_SERVICE_FIXTURES) is a party one step from a place's door,
 # facing it: "<kind>-<x>-<y>[-<party>].ogs". The check loads it from Load
 # game, steps in as a player does and uses every service:
-# - a shop must list its data/shops record (names and prices), sell every
+# - a shop must list its data/shops record (names and prices) in alphabetical
+#   order, put the party back outside its door facing away on Leave, sell every
 #   item at its price to the buyer chosen, and refuse a party that cannot pay;
 #   in the first shop, Sell and Drop must each give up an item after asking;
 # - a temple must list its record's services and prices, offer each to the
@@ -37,6 +38,7 @@ var auto_equipped := 0
 # Sell and Drop (SELL-1) are checked once, in the first shop a rich party buys at.
 var sold_and_dropped := false
 var offer_pattern := RegEx.new()
+var place_pattern := RegEx.new()
 # Hovering over a weapon tells its roll to hit, and over armor its Armor Class.
 var weapon_hovers := 0
 var armor_hovers := 0
@@ -48,6 +50,7 @@ func _initialize() -> void:
 	hp_pattern.compile("HP (-?\\d+)/(\\d+)")
 	gold_pattern.compile("party (\\d+) gp")
 	offer_pattern.compile("The shop offers (\\d+) gp for ")
+	place_pattern.compile("Party (\\(\\d+, \\d+\\))\\s+(North|East|South|West)")
 	sale_line_pattern.compile(" / sells for (\\d+) gp$")
 	buyer_pattern.compile("buying for (.+): party (\\d+) gp, carrying (\\d+)/(\\d+) lb")
 	for arg in OS.get_cmdline_user_args():
@@ -226,7 +229,16 @@ func double_click(index: int) -> void:
 			await process_frame
 	await settle()
 
+# Where the party stands: "(13, 9)" and its facing, from the town's
+# coordinates line.
+func party_place() -> Array:
+	var found := place_pattern.search(town().get_node("%Coordinates").text)
+	return [found.get_string(1), found.get_string(2)] if found else ["", ""]
+
+const OPPOSITE := {"North": "South", "South": "North", "East": "West", "West": "East"}
+
 func check_shop(x: int, y: int, party: String) -> void:
+	var door_side := party_place()
 	if not await enter(shopping):
 		bug("the shop does not open", "(" + str(x) + "," + str(y) + ") dialogue '" + dialogue() + "'")
 		return
@@ -241,11 +253,21 @@ func check_shop(x: int, y: int, party: String) -> void:
 			if int(offering["quantity"]) != 0: expected.append(offering)
 		if stock.size() != expected.size():
 			bug("the shop lists other stock than its record", record["id"] + ": " + str(stock.size()) + " listed, " + str(expected.size()) + " in the record")
-		for i in range(mini(stock.size(), expected.size())):
-			var shown: String = stock[i].replace(",", "")
-			var want: String = expected[i]["name"] + " / " + str(int(expected[i]["price_gp"])) + " gp"
-			if not shown.to_lower().begins_with(want.to_lower()):
-				bug("a shop item differs from its record", record["id"] + ": '" + shown + "' for '" + want + "'")
+		# The list is the record's stock in alphabetical order.
+		var listed := []
+		for line in stock:
+			listed.append(line.replace(",", "").to_lower())
+		for offering in expected:
+			var want: String = (offering["name"] + " / " + str(int(offering["price_gp"])) + " gp").to_lower()
+			var at := listed.find_custom(func(shown: String) -> bool: return shown.begins_with(want))
+			if at < 0:
+				bug("a shop item differs from its record", record["id"] + ": no '" + want + "'")
+			else:
+				listed.remove_at(at)
+		for i in range(1, stock.size()):
+			var before: String = stock[i - 1].split(" / ")[0]
+			if before.naturalnocasecmp_to(stock[i].split(" / ")[0]) > 0:
+				bug("a shop does not list its stock alphabetically", record["id"] + ": '" + before + "' before '" + stock[i] + "'")
 	var gold := party_gold()
 	check_shop_colors(stock, gold)
 	check_shop_layout(record, stock)
@@ -267,6 +289,10 @@ func check_shop(x: int, y: int, party: String) -> void:
 		if not await press("CampaignTown/%Continue"): await choose("")
 	if not exploring():
 		bug("leaving the shop does not return to the street", "dialogue '" + dialogue() + "'")
+	# Back outside the door the party came in by, facing away from it.
+	var outside := party_place()
+	if outside[0] != door_side[0] or outside[1] != OPPOSITE.get(door_side[1], ""):
+		bug("leaving the shop does not put the party outside its door facing away", str(door_side) + " -> " + str(outside))
 
 # What the party purse cannot pay for is listed in yellow, unless the chosen
 # member cannot use it (dark red), and the news says what yellow means.

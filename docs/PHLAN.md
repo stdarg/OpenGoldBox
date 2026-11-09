@@ -114,14 +114,15 @@ what the shops sell it for, bargained by Charisma
 What the chosen buyer cannot use fully is listed in dark red, with a note
 that it can still be bought; what the purse cannot pay for in yellow; and
 armor or a shield that would not raise the buyer's Armor Class in gray
-([party](PARTY.md)). The stock stands in three columns; a double click on an
+([party](PARTY.md)). The stock stands in three columns, in alphabetical order; a double click on an
 item buys it, as choosing it and Buy do, and hovering over it tells a weapon's
 roll to hit Armor Class 13 and its damage, or armor's Armor Class on the
 buyer ([party](PARTY.md)). Over the shopkeeper's portrait stand the
 shopkeeper's name and the shop's type, "Bettrin Ashforge - Arms & Armor",
 from the shop's record in `data/shops`. The **Filter** beside Leave shop lists
 the shop's armor and shields, weapons, other goods, or All, the default; the
-next shop opens on All again. Scripts that ask
+next shop opens on All again. **Leave shop** puts the party back outside, on
+the square it came in from, facing away from the shop's door. Scripts that ask
 for particular coins make change; see [coin payments](#coin-payments).
 
 ### Equipment conversion in the game

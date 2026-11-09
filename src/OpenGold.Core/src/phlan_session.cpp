@@ -1812,6 +1812,10 @@ void RolfTourSession::finish_event()
     // A clock the event's script set is the campaign's before anything saves.
     synchronize_clock();
     event_checkpoint_.reset();
+    if (std::exchange(step_out_after_shop_, false))
+    {
+        step_out_of_shop();
+    }
     snapshot_.phase = TourPhase::completed;
     snapshot_.choices.clear();
     snapshot_.continue_ticket = 0;
@@ -2638,6 +2642,7 @@ bool RolfTourSession::leave_shop(std::uint64_t ticket)
     if (!shop_request_)
     {
         // OpenGoldBox's own shop: no script waits on it.
+        step_out_of_shop();
         snapshot_.continue_ticket = 0;
         snapshot_.phase = TourPhase::completed;
         ++snapshot_.revision;
@@ -2652,10 +2657,36 @@ bool RolfTourSession::leave_shop(std::uint64_t ticket)
     }
     selected_character_ = selected;
     shop_request_ = 0;
+    step_out_after_shop_ = true;
     snapshot_.continue_ticket = 0;
     snapshot_.phase = TourPhase::running;
     ++snapshot_.revision;
     return true;
+}
+
+void RolfTourSession::step_out_of_shop()
+{
+    const auto shop = snapshot_.pose;
+    // The square the party last stepped from (0x49F0, 0x49F1), when it is
+    // beside the shop; otherwise the square behind the party, which came in
+    // facing forward.
+    const PartyPose from{machine_.variable(EclAddress{0x49F0}),
+                         machine_.variable(EclAddress{0x49F1}), shop.facing};
+    for (const auto side :
+         {MapDirection::north, MapDirection::east, MapDirection::south, MapDirection::west})
+    {
+        const auto x = (static_cast<int>(shop.x) + step_x(side) + 16) % 16;
+        const auto y = (static_cast<int>(shop.y) + step_y(side) + 16) % 16;
+        if (static_cast<unsigned>(x) == from.x && static_cast<unsigned>(y) == from.y)
+        {
+            bind_pose({from.x, from.y, side});
+            return;
+        }
+    }
+    const auto behind = reversed(shop.facing);
+    bind_pose({static_cast<unsigned>((static_cast<int>(shop.x) + step_x(behind) + 16) % 16),
+               static_cast<unsigned>((static_cast<int>(shop.y) + step_y(behind) + 16) % 16),
+               behind});
 }
 
 std::string RolfTourSession::shoot_arrows(unsigned arrows, std::string_view missile,

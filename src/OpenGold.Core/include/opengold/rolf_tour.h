@@ -873,6 +873,12 @@ class RolfTourSession
     // The script's shop request the party is shopping for; 0 at a shop
     // OpenGoldBox opens itself (SECRET-1).
     std::uint64_t shop_request_{};
+    // Set when the party leaves a shop: once the shop's script ends, the party
+    // stands outside its door (step_out_of_shop).
+    bool step_out_after_shop_{};
+    // Puts the party on the square it stepped into the shop from, outside the
+    // door, facing away from the door (the user's request, 2026-11-09).
+    void step_out_of_shop();
     // Whether this event searched: a Look, or a step in Search mode.
     bool event_searched_{};
     // Whether a data/shops location's map is the one the party is on.

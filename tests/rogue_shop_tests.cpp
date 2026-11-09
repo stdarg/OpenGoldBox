@@ -485,10 +485,10 @@ void rogue_checks(const char *directory)
     auto loaded = decode_campaign(bytes, *srd5::character_rules(), *module(), "rogue-shop", &town);
     check(loaded.town && loaded.town->map().at(shop_x, shop_y).doors[index(MapDirection::south)] == 1,
           "The opened secret door stays open after loading");
-    // Back out through the open door and in again: the shop opens at once.
-    step(town, ExplorationCommand::turn_around);
-    step(town, ExplorationCommand::forward);
-    check(town.snapshot().pose.y == shop_y + 1, "The party walks out through the open door");
+    // Leaving puts the party outside the open door, its back to it; turned
+    // round, it goes in again and the shop opens at once.
+    check(town.snapshot().pose == PartyPose{shop_x, shop_y + 1, MapDirection::south},
+          "Leaving puts the party outside the secret door, facing away from it");
     step(town, ExplorationCommand::turn_around);
     write_fixture(*party, town, directory, "alley-open");
     step(town, ExplorationCommand::forward);

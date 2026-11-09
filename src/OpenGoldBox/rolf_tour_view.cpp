@@ -2544,23 +2544,34 @@ void RolfTourView::refresh()
         }
         else if (shopping)
         {
+            // The stock the filter passes, in alphabetical order of its names
+            // as the player reads them.
             shop_rows_.clear();
             const auto &stock = session_->shop_stock();
+            std::vector<String> names;
             for (std::size_t n = 0; n < stock.size(); ++n)
             {
-                const auto &item = stock[n];
-                if (!passes_shop_filter(item))
+                names.push_back(i18n::text(stock[n].label()));
+                if (passes_shop_filter(stock[n]))
                 {
-                    continue;
+                    shop_rows_.push_back(n);
                 }
-                shop_rows_.push_back(n);
+            }
+            std::ranges::stable_sort(shop_rows_,
+                                     [&](std::size_t a, std::size_t b)
+                                     {
+                                         return names[a].naturalnocasecmp_to(names[b]) < 0;
+                                     });
+            for (const auto n : shop_rows_)
+            {
+                const auto &item = stock[n];
                 // Stock without an equipment conversion stays for sale, disclosed.
                 const bool usable =
                     !opengold::equipment_conversion(item).starts_with("por:unsupported:");
-                choices->add_item(i18n::format(
-                    usable ? N_("{item} / {price} gp")
-                           : N_("{item} / {price} gp / cannot be equipped"),
-                    {{"item", i18n::text(item.label())}, {"price", item.stored.value}}));
+                choices->add_item(i18n::format(usable
+                                                   ? N_("{item} / {price} gp")
+                                                   : N_("{item} / {price} gp / cannot be equipped"),
+                                               {{"item", names[n]}, {"price", item.stored.value}}));
             }
         }
         else if (!s.host_choices.empty())
@@ -3198,7 +3209,8 @@ void RolfTourView::check_town()
         {
             capture_frame("phlan-shop");
             const auto gold_before = gold();
-            const auto price = session_->shop_stock()[0].stored.value;
+            // The list's first item, the stock's first in alphabetical order.
+            const auto price = session_->shop_stock()[shop_rows_.at(0)].stored.value;
             if (required_node<ItemList>(*this, "%Choices").get_item_count() != 55 ||
                 required_node<Button>(*this, "%Continue").is_disabled())
             {
