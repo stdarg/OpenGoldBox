@@ -12,6 +12,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace opengold::por
 {
@@ -21,6 +22,9 @@ struct WallArtReplacements
 {
     static constexpr unsigned scale = 4;
     std::map<std::string, std::array<Image, 10>> sets;
+    // Why each set that could not be loaded was left out, naming its file: the
+    // original art shows for it.
+    std::vector<std::string> problems;
 };
 
 // "WALLDEF1.DAX:1:4": appearance 4 (one-based) of WALLDEF1.DAX record 1.
@@ -32,7 +36,9 @@ struct WallArtReplacements
 
 // Reads data/art/walls: one folder per appearance, named after its key with
 // "." and ":" as "_" (WALLDEF1_DAX_1_4), holding the ten wall_view_file PNGs.
-// A missing folder means no new art. Throws on a set the game cannot use.
+// A missing folder means no new art. A set the game cannot use (a piece that is
+// missing, unreadable or not the original's size times `scale`) is left out
+// and named in `problems`.
 [[nodiscard]] WallArtReplacements load_wall_art_replacements(const std::filesystem::path &folder,
                                                              const PngDecoder &decode);
 

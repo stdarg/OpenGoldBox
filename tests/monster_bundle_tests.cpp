@@ -168,35 +168,43 @@ void handmade()
                   !bundle.creature(2, 4),
               "A copy keeps its own name and gear, apart from its source");
     }
+    // A creature the game cannot use is left out, naming its file, so the
+    // original art shows for it.
+    const auto left_out = [&](const std::filesystem::path &folder,
+                              const std::filesystem::path &file, const std::string &message)
+    {
+        const auto bundle = load_monster_bundle(folder, png_size_only);
+        check(bundle.monsters.empty() && bundle.problems.size() == 1 &&
+                  bundle.problems[0].find(file.string()) != std::string::npos,
+              message);
+    };
     const auto refused = [&](std::string record, std::string_view from, std::string_view to,
-                             const std::string &message)
+                             const std::filesystem::path &file, const std::string &message)
     {
         Folder folder;
         record.replace(record.find(from), from.size(), to);
         write(folder.path / "custom_1_0", record);
-        test::rejects(
-            [&]
-            {
-                (void)load_monster_bundle(folder.path, png_size_only);
-            },
-            message);
+        left_out(folder.path, folder.path / "custom_1_0" / file, message);
     };
-    refused(copy_record, "item_000__one_hand/ready.png", "../ready.png",
-            "Art outside the creature's folder is refused");
-    refused(copy_record, "opengold-monster-v1", "opengold-monster-v9",
-            "An unknown format is refused");
-    refused(copy_record, "\"kind\": \"weapon\"", "\"kind\": \"wand\"",
-            "An unknown kind of item is refused");
+    refused(copy_record, "item_000__one_hand/ready.png", "../ready.png", "../ready.png",
+            "Art outside the creature's folder is left out");
+    refused(copy_record, "opengold-monster-v1", "opengold-monster-v9", "monster.json",
+            "An unknown format is left out");
+    refused(copy_record, "\"kind\": \"weapon\"", "\"kind\": \"wand\"", "monster.json",
+            "An unknown kind of item is left out");
     Folder small;
     write(small.path / "custom_1_0", copy_record);
-    std::ofstream(small.path / "custom_1_0/item_000__one_hand/ready.png", std::ios::binary)
+    const auto wrong_size = small.path / "custom_1_0/item_000__one_hand/ready.png";
+    std::ofstream(wrong_size, std::ios::binary)
         << text(root / "data/art/walls/WALLDEF1_DAX_1_1/far_front.png");
-    test::rejects(
-        [&]
-        {
-            (void)load_monster_bundle(small.path, png_size_only);
-        },
-        "Art that is not 128 x 128 is refused");
+    left_out(small.path, wrong_size, "Art that is not 128 x 128 is left out");
+    Folder twice;
+    write(twice.path / "custom_1_0", copy_record);
+    write(twice.path / "custom_1_1", copy_record);
+    const auto bundle = load_monster_bundle(twice.path, png_size_only);
+    check(bundle.monsters.size() == 1 && bundle.problems.size() == 1 &&
+              bundle.problems[0].find("monster.json") != std::string::npos,
+          "Of two folders exporting one creature, one loads and the other is named");
 }
 
 // Each Wild Shape and summoned form wears the new art of the creature drawn

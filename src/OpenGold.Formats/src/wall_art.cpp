@@ -3,6 +3,19 @@
 
 namespace opengold::por
 {
+namespace
+{
+// Data-layout facts: each perspective's size in 8 x 8 tiles.
+constexpr std::array<unsigned, 10> columns{1, 1, 1, 3, 2, 2, 7, 2, 2, 1};
+constexpr std::array<unsigned, 10> rows{2, 4, 4, 4, 8, 8, 8, 11, 11, 2};
+} // namespace
+
+WallViewSize wall_view_size(WallView view)
+{
+    const auto at = static_cast<unsigned>(view);
+    return {columns.at(at) * 8, rows.at(at) * 8};
+}
+
 std::optional<WallTiles> decode_wall_tiles(std::span<const std::uint8_t> record)
 {
     // PoR 8X8D: one 17-byte image header, then count packed 8x8 frames.
@@ -53,10 +66,8 @@ std::optional<WallArtSet> decode_wall_art(std::span<const std::uint8_t> definiti
         return std::nullopt;
     }
 
-    // Data-layout facts: ten stored perspectives per 156-byte appearance.
+    // Data-layout fact: ten stored perspectives per 156-byte appearance.
     constexpr std::array<unsigned, 10> offsets{0, 2, 6, 10, 22, 38, 54, 110, 132, 154};
-    constexpr std::array<unsigned, 10> columns{1, 1, 1, 3, 2, 2, 7, 2, 2, 1};
-    constexpr std::array<unsigned, 10> rows{2, 4, 4, 4, 8, 8, 8, 11, 11, 2};
     // Normal EGA palette. Wall index 8 is gray; black (0) is opaque.
     constexpr std::array<std::array<std::uint8_t, 3>, 16> palette{{{0, 0, 0},
                                                                    {0, 0, 170},

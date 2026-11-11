@@ -8,10 +8,11 @@
 #include <memory>
 
 // The game's combat screen, prepared for the party to fight `encounter`, not
-// yet attached. The party's members wear the art their equipment selects.
+// yet attached. The party's members wear the art their equipment selects in
+// `looks`, or with no looks the original icons they were saved with.
 // The game and the developer tools that stage fights open it this one way.
 [[nodiscard]] presentation::NodeOwner<> campaign_combat_scene(
     const std::shared_ptr<opengold::CampaignParty> &party, const opengold::por::CharacterArt &art,
-    const opengold::por::CombatBodyCatalog &catalog, opengold::CampaignEncounter encounter);
+    const opengold::por::CombatBodyCatalog *looks, opengold::CampaignEncounter encounter);
 
 #endif

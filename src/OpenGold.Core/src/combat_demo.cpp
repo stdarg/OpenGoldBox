@@ -768,23 +768,10 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
             flask.stored.stack_size = 1;
             party->purchase(id, flask);
         }
-        auto appearance = found->appearance();
-        std::string missing;
-        if (body_catalog)
-        {
-            const auto resolved = resolve_combat_appearance(party->member(id), *body_catalog);
-            if (!resolved.selection.matched)
-            {
-                missing = resolved.selection.label;
-            }
-            result.encounter.art.push_back({id, resolved.icon(art, IconPose::ready),
-                                            resolved.icon(art, IconPose::action), missing});
-        }
-        else
-        {
-            result.encounter.art.push_back({id, art.icon(appearance, IconPose::ready),
-                                            art.icon(appearance, IconPose::action), missing});
-        }
+        auto icons =
+            party_combat_icons(party->member(id), art, body_catalog ? &*body_catalog : nullptr);
+        result.encounter.art.push_back({id, std::move(icons.ready), std::move(icons.action),
+                                        std::move(icons.missing_combination)});
     }
     // Every member gains the experience for `level` and takes default choices.
     if (level > 1)

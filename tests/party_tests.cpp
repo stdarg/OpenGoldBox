@@ -1975,6 +1975,45 @@ void dynamic_checkpoint()
         });
 }
 
+// Party combat looks that cannot be loaded name their files, and each member
+// then shows the original icon it was saved with.
+void unloadable_combat_looks()
+{
+    const auto folder = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/art";
+    const auto options = folder / "combat-weapon-options.tsv";
+    const auto shipped = por::load_combat_looks(folder / "combat-body-looks.tsv", options);
+    check(shipped.looks && shipped.problem.empty(), "The shipped combat looks load");
+    const auto missing = por::load_combat_looks(folder / "no-such-looks.tsv", options);
+    check(!missing.looks && missing.problem.find("no-such-looks.tsv") != std::string::npos,
+          "Missing combat looks are named");
+    const auto broken = std::filesystem::temp_directory_path() / "opengold-broken-looks.tsv";
+    std::ofstream(broken) << "not\ta\tcatalog\n";
+    const auto unreadable = por::load_combat_looks(folder / "combat-body-looks.tsv", broken);
+    check(!unreadable.looks && unreadable.problem.find(broken.string()) != std::string::npos,
+          "Combat looks that cannot be read are named");
+    std::filesystem::remove(broken);
+    const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
+    if (!directory || !*directory)
+    {
+        return;
+    }
+    const auto art = por::CharacterArt::load(directory);
+    CampaignParty party(module());
+    const auto id = party.add_pc(character());
+    const auto &member = party.member(id);
+    const auto original = por::party_combat_icons(member, art, nullptr);
+    const auto appearance = member.character.appearance();
+    check(original.ready.rgba == art.icon(appearance, por::IconPose::ready).rgba &&
+              original.action.rgba == art.icon(appearance, por::IconPose::action).rgba &&
+              original.missing_combination.empty(),
+          "Without combat looks a member shows the original icon it was saved with");
+    const auto looked = por::party_combat_icons(member, art, &*shipped.looks);
+    check(looked.ready.rgba == por::resolve_combat_appearance(member, *shipped.looks)
+                                   .icon(art, por::IconPose::ready)
+                                   .rgba,
+          "With combat looks a member shows the look its gear selects");
+}
+
 void combat_demo_fixture()
 {
     const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
@@ -3543,6 +3582,7 @@ int main()
         caster_advancement();
         temple_party_purse();
         dynamic_checkpoint();
+        unloadable_combat_looks();
         combat_demo_fixture();
         script_handoff();
         companion_joins_scanned_slot();

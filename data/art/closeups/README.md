@@ -10,7 +10,8 @@ Each folder is one original record, named after its archive and record:
 so on, one 352 × 422 PNG for each frame the original holds on screen, in order:
 the 3D view's 5:6 shape, so the game shows it without stretching.
 The new frames keep the original's timing. A close-up with no folder, or one
-whose folder is incomplete, shows the original.
+whose folder is incomplete, shows the original; for an incomplete folder the
+game's log names the file it could not use.
 
 Do not edit this folder by hand. The catalog's **Export to game** writes it from
 `dev_tools/combat_sprite_catalog/closeups/art`; see

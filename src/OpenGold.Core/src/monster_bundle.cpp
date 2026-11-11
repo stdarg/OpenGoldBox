@@ -14,6 +14,12 @@ namespace
 using detail::Json;
 constexpr std::uint16_t art_size = 128;
 
+// A pose file that cannot be used; its message names the file.
+struct UnusableArtFile : std::runtime_error
+{
+    using std::runtime_error::runtime_error;
+};
+
 template <typename T> const T &field(const Json &object, std::string_view key)
 {
     return detail::json_field<T>(object, key, "Monster data");
@@ -34,7 +40,7 @@ std::vector<std::uint8_t> read_bytes(const std::filesystem::path &path)
     std::ifstream in(path, std::ios::binary);
     if (!in)
     {
-        throw std::runtime_error("Cannot read monster art " + path_text(path));
+        throw UnusableArtFile("Cannot read monster art " + path_text(path));
     }
     return {std::istreambuf_iterator<char>(in), {}};
 }
@@ -46,13 +52,15 @@ Image pose(const std::filesystem::path &folder, const std::string &relative,
     const std::filesystem::path path(relative);
     if (path.is_absolute() || std::ranges::find(path, "..") != path.end())
     {
-        throw std::runtime_error("Monster art outside its folder: " + relative);
+        throw UnusableArtFile("Cannot load monster art " + path_text(folder / path) +
+                              ": it is outside its folder");
     }
     auto image = decode(read_bytes(folder / path));
     if (!image || image->width != art_size || image->height != art_size ||
         image->rgba.size() != std::size_t{art_size} * art_size * 4)
     {
-        throw std::runtime_error("Monster art is not 128 x 128: " + path_text(folder / path));
+        throw UnusableArtFile("Cannot load monster art " + path_text(folder / path) +
+                              ": it is not 128 x 128");
     }
     return std::move(*image);
 }
@@ -76,7 +84,18 @@ MonsterItem item(const Json &entry)
 
 ExportedMonster monster(const std::filesystem::path &folder, const PngDecoder &decode)
 {
-    const auto file = detail::read_json_file(folder / "monster.json", "monster data");
+    const auto file = [&]
+    {
+        try
+        {
+            return detail::read_json_file(folder / "monster.json", "monster data");
+        }
+        catch (const std::exception &error)
+        {
+            // Its message names the file already.
+            throw UnusableArtFile(error.what());
+        }
+    }();
     if (field<std::string>(file, "format") != "opengold-monster-v1")
     {
         throw std::runtime_error("Unknown monster data format in " + path_text(folder));
@@ -167,14 +186,28 @@ MonsterBundle load_monster_bundle(const std::filesystem::path &folder, const Png
     }
     for (const auto &entry : std::filesystem::directory_iterator(folder))
     {
-        if (entry.is_directory())
+        if (!entry.is_directory())
+        {
+            continue;
+        }
+        const auto data = path_text(entry.path() / "monster.json");
+        try
         {
             auto exported = monster(entry.path(), decode);
             const auto key = exported.key;
             if (!bundle.monsters.emplace(key, std::move(exported)).second)
             {
-                throw std::runtime_error("Monster exported twice: " + key);
+                bundle.problems.push_back("Cannot load monster data " + data +
+                                          ": another folder already exports " + key);
             }
+        }
+        catch (const UnusableArtFile &error)
+        {
+            bundle.problems.emplace_back(error.what());
+        }
+        catch (const std::exception &error)
+        {
+            bundle.problems.push_back("Cannot load monster data " + data + ": " + error.what());
         }
     }
     return bundle;

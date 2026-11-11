@@ -35,6 +35,14 @@ struct WallArtSet
     std::vector<std::array<Image, 10>> originals;
 };
 
+// The size in pixels the original draws a view's piece at, for every appearance.
+struct WallViewSize
+{
+    unsigned width{}, height{};
+};
+
+[[nodiscard]] WallViewSize wall_view_size(WallView view);
+
 // Inputs are decompressed DAX records. Resource selection belongs to the host.
 [[nodiscard]] std::optional<WallTiles> decode_wall_tiles(std::span<const std::uint8_t> record);
 [[nodiscard]] std::optional<WallArtSet> decode_wall_art(std::span<const std::uint8_t> definitions,

@@ -567,7 +567,7 @@ String PartyTestBridge::start_fight(const Dictionary &configuration)
                                          presentation::path_from_godot(game_combat_weapon_file()));
         presentation::attach_child(*get_parent(),
                                    campaign_combat_scene(fighters, por::CharacterArt::load(dir),
-                                                         body, std::move(encounter)));
+                                                         &body, std::move(encounter)));
         return {};
     }
     catch (const std::exception &e)

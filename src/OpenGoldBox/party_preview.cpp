@@ -8,6 +8,7 @@
 #include "godot_nodes.h"
 #include "localization.h"
 #include "game_resources.h"
+#include "game_combat_looks.h"
 #include "character_creation_view.h"
 #include "character_pool_dialog.h"
 #include "town_sheet_dialog.h"
@@ -74,9 +75,7 @@ Character check_fighter()
 
 void CharacterCreationView::setup_party()
 {
-    body_catalog_ =
-        por::CombatBodyCatalog::load(presentation::path_from_godot(game_combat_body_file()),
-                                     presentation::path_from_godot(game_combat_weapon_file()));
+    body_catalog_ = game_combat_looks();
     const auto pack = presentation::path_from_godot(game_rules_file());
     campaign_ = std::make_shared<CampaignParty>(srd5::load(pack));
     auto panel = presentation::instantiate_scene("res://scenes/party_panel.tscn");
@@ -593,15 +592,11 @@ void CharacterCreationView::refresh_party()
         required_node<TextureRect>(*this, "PartyPanel/Portrait")
             .set_texture(
                 portraits_->texture(m.character.appearance(), m.character.creation_data()));
-        const auto resolved = por::resolve_combat_appearance(m, *body_catalog_);
-        for (unsigned pose = 0; pose < 2; ++pose)
-        {
-            const auto icon =
-                resolved.icon(*art_, pose != 0 ? por::IconPose::action : por::IconPose::ready);
-            required_node<TextureRect>(*this,
-                                       pose ? "PartyPanel/ActionSprite" : "PartyPanel/ReadySprite")
-                .set_texture(presentation::image_texture(icon));
-        }
+        const auto icons = por::party_combat_icons(m, *art_, looks_or_none(body_catalog_));
+        required_node<TextureRect>(*this, "PartyPanel/ReadySprite")
+            .set_texture(presentation::image_texture(icons.ready));
+        required_node<TextureRect>(*this, "PartyPanel/ActionSprite")
+            .set_texture(presentation::image_texture(icons.action));
     }
     if (state.roster.empty())
     {
@@ -765,7 +760,7 @@ void CharacterCreationView::equipment_art_check()
         const unsigned member = (check_stage_ - 1) / 8, step = (check_stage_ - 1) % 8;
         const std::array<por::CombatEquipment, 1> sword{{{36, "Long Sword", "longsword"}}};
         const std::array<unsigned, 8> bodies{
-            0, body_catalog_->choose(sword, 24).body, 24, 32, 34, 33, 0, 34};
+            0, body_catalog_.value().choose(sword, 24).body, 24, 32, 34, 33, 0, 34};
         verify_preview(member, bodies[step]);
         if (step < 5)
         {
@@ -875,8 +870,9 @@ void CharacterCreationView::equipment_art_check()
         enemy.width = enemy.height = 24;
         enemy.rgba.assign(24 * 24 * 4, 255);
         encounter.art.push_back({1000, enemy, enemy});
-        presentation::attach_child(
-            *this, campaign_combat_scene(campaign_, *art_, *body_catalog_, std::move(encounter)));
+        presentation::attach_child(*this, campaign_combat_scene(campaign_, *art_,
+                                                                looks_or_none(body_catalog_),
+                                                                std::move(encounter)));
         verify_combat();
         for (bool action : {false, true})
         {
@@ -896,7 +892,7 @@ void CharacterCreationView::equipment_art_check()
         auto appearance = character.appearance();
         appearance.combat_body = 24;
         character.appearance(appearance);
-        for (const auto &option : body_catalog_->options())
+        for (const auto &option : body_catalog_.value().options())
         {
             if (option.original_type)
             {
@@ -926,7 +922,7 @@ void CharacterCreationView::equipment_art_check()
                         std::vector<std::uint64_t>{inventory[index].id},
                     "Game Equip did not replace the weapon");
             const auto resolved =
-                por::resolve_combat_appearance(campaign_->member(id), *body_catalog_);
+                por::resolve_combat_appearance(campaign_->member(id), body_catalog_.value());
             require(resolved.appearance == appearance, "Game equipment changed character anatomy");
             for (bool action : {false, true})
             {
@@ -1290,8 +1286,9 @@ void CharacterCreationView::start_check_fight()
         encounter.positions.push_back(member.cell);
     }
     encounter.positions.push_back(bandit_cell);
-    presentation::attach_child(
-        *this, campaign_combat_scene(campaign_, *art_, *body_catalog_, std::move(encounter)));
+    presentation::attach_child(*this,
+                               campaign_combat_scene(campaign_, *art_, looks_or_none(body_catalog_),
+                                                     std::move(encounter)));
     check_fight_ = true;
     leave_roster();
 }
@@ -1656,8 +1653,8 @@ void CharacterCreationView::update_party_navigation()
         presentation::NodeOwner<> owned;
         try
         {
-            owned =
-                campaign_combat_scene(campaign_, *art_, *body_catalog_, *town->pending_encounter());
+            owned = campaign_combat_scene(campaign_, *art_, looks_or_none(body_catalog_),
+                                          *town->pending_encounter());
         }
         catch (const std::exception &e)
         {

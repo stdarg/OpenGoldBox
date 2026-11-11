@@ -52,14 +52,18 @@ struct ExportedMonster
 struct MonsterBundle
 {
     std::map<std::string, ExportedMonster> monsters;
+    // Why each creature that could not be loaded was left out, naming its
+    // file: the original art shows for it.
+    std::vector<std::string> problems;
 
     // The original creature MON<bank>CHA.DAX record `record`, if exported.
     [[nodiscard]] const ExportedMonster *creature(unsigned bank, unsigned record) const;
 };
 
 // Reads data/monsters: one folder per creature holding monster.json and each
-// weapon set's ready.png and action.png. A missing folder means no export.
-// Throws on a record the game cannot use.
+// weapon set's ready.png and action.png. A missing folder means no export. A
+// creature the game cannot use is left out and named in `problems`; of two
+// folders exporting the same creature, the first read loads.
 [[nodiscard]] MonsterBundle load_monster_bundle(const std::filesystem::path &folder,
                                                 const PngDecoder &decode);
 

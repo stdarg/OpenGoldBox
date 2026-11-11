@@ -265,6 +265,33 @@ ResolvedCombatAppearance resolve_wielded_appearance(const PartyMember &member,
     return {std::move(appearance), std::move(selection)};
 }
 
+PartyCombatIcons party_combat_icons(const PartyMember &member, const CharacterArt &art,
+                                    const CombatBodyCatalog *looks)
+{
+    if (!looks)
+    {
+        const auto appearance = member.character.appearance();
+        return {art.icon(appearance, IconPose::ready), art.icon(appearance, IconPose::action), {}};
+    }
+    const auto resolved = resolve_combat_appearance(member, *looks);
+    return {resolved.icon(art, IconPose::ready), resolved.icon(art, IconPose::action),
+            resolved.selection.matched ? std::string{} : resolved.selection.label};
+}
+
+CombatLooksLoad load_combat_looks(const std::filesystem::path &assignments,
+                                  const std::filesystem::path &options_file)
+{
+    try
+    {
+        return {CombatBodyCatalog::load(assignments, options_file), {}};
+    }
+    catch (const std::exception &error)
+    {
+        return {std::nullopt, "Cannot load the party's combat looks " + path_text(assignments) +
+                                  " and " + path_text(options_file) + ": " + error.what()};
+    }
+}
+
 Image ResolvedCombatAppearance::icon(const CharacterArt &art, IconPose pose) const
 {
     // Missing artwork must not falsely show the weapon baked into the saved body.

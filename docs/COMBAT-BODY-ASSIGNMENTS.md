@@ -105,6 +105,10 @@ combat limitations.
 Rebuild the game after editing to refresh its packaged catalogs. The reviewer
 always edits the shared source catalog, not a packaged copy.
 
+If the game cannot load the two catalogs (`combat-body-looks.tsv` and
+`combat-weapon-options.tsv`), each party member shows the original combat icon
+it was saved with, and the game's log names both files and says why.
+
 ## Validation
 
 Native party tests cover every enabled catalog combination, equipment changes

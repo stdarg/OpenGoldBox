@@ -464,6 +464,17 @@ String WallArtCatalog::load_new_art(const String &folder)
     try
     {
         auto replacements = load_wall_art_files(folder);
+        // The game shows the original for a set it cannot load; the viewer
+        // refuses the folder, so whoever made the art sees why.
+        if (!replacements.problems.empty())
+        {
+            String problems;
+            for (const auto &problem : replacements.problems)
+            {
+                problems += godot_string(problem) + "\n";
+            }
+            return problems.strip_edges();
+        }
         // Compose every profile before keeping any, so a bad set changes nothing.
         std::vector<WallArtSet> composed;
         for (const auto &map : maps_)

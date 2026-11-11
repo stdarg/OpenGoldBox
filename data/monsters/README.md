@@ -19,7 +19,10 @@ size and humanoid height, its equipment and its weapon sets:
   shows its melee weapon's set, with its readied shield where a set has it,
   and a shot or throw its ranged weapon's. A creature whose art has no set for
   the attack keeps the set it shows. A creature without art here keeps its
-  original combat icon, with the icon's action pose.
+  original combat icon, with the icon's action pose. So does a creature whose
+  folder the game cannot use (a `monster.json` it cannot read, a pose missing
+  or not 128 × 128): the game's log names the file, and the other creatures
+  load as usual.
 - **Equipment.** Each original item names its `MONnITM` slot
   (`source_index`); one the catalog left out is not carried into a fight and
   is not left behind after it. Gear added in the catalog has `source_index`

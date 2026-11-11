@@ -6,6 +6,7 @@
 #include "opengold/wall_art_replacements.h"
 #include "test_support.h"
 #include "repository_data.h"
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -91,26 +92,39 @@ void shipped_folder()
           "Without the folder the game shows only original art");
 }
 
+// A set the game cannot use is left out, naming its file, and the rest load:
+// the original shows for that appearance alone.
 void broken_folders()
 {
     const auto folder = std::filesystem::temp_directory_path() / "opengold-wall-art-test";
     std::filesystem::remove_all(folder);
+    std::filesystem::create_directories(folder);
+    const auto shipped = root / "data/art/walls/WALLDEF1_DAX_1_1";
+    for (const auto *name : {"WALLDEF1_DAX_1_1", "WALLDEF1_DAX_1_2", "WALLDEF1_DAX_1_3"})
+    {
+        std::filesystem::copy(shipped, folder / name);
+    }
     std::filesystem::create_directories(folder / "WALLDEF1_DAX_1_4-0002");
-    check(throws(
-              [&]
-              {
-                  (void)load_wall_art_replacements(folder, png_size_only);
-              }),
-          "A numbered export copy is not a game set");
-    std::filesystem::remove_all(folder);
-    std::filesystem::create_directories(folder / "WALLDEF1_DAX_1_4");
-    std::ofstream(folder / "WALLDEF1_DAX_1_4" / "far_front.png") << "not a png";
-    check(throws(
-              [&]
-              {
-                  (void)load_wall_art_replacements(folder, png_size_only);
-              }),
-          "A set with a missing or unreadable piece is refused");
+    const auto unreadable = folder / "WALLDEF1_DAX_1_2" / "far_front.png";
+    std::ofstream(unreadable, std::ios::trunc) << "not a png";
+    const auto wrong_size = folder / "WALLDEF1_DAX_1_3" / "near_front.png";
+    std::filesystem::copy_file(shipped / "far_front.png", wrong_size,
+                               std::filesystem::copy_options::overwrite_existing);
+    const auto loaded = load_wall_art_replacements(folder, png_size_only);
+    check(loaded.sets.size() == 1 && loaded.sets.contains("WALLDEF1.DAX:1:1"),
+          "Only the usable set loads");
+    const auto names = [&](const std::filesystem::path &file)
+    {
+        return std::ranges::any_of(loaded.problems,
+                                   [&](const std::string &problem)
+                                   {
+                                       return problem.find(file.string()) != std::string::npos;
+                                   });
+    };
+    check(loaded.problems.size() == 3, "Each set left out is named once");
+    check(names(unreadable), "An unreadable piece is named");
+    check(names(wrong_size), "A piece of the wrong size is named");
+    check(names(folder / "WALLDEF1_DAX_1_4-0002"), "A folder named for no appearance is named");
     std::filesystem::remove_all(folder);
 }
 

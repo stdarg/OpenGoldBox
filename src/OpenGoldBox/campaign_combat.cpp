@@ -6,16 +6,14 @@
 
 presentation::NodeOwner<> campaign_combat_scene(
     const std::shared_ptr<opengold::CampaignParty> &party, const opengold::por::CharacterArt &art,
-    const opengold::por::CombatBodyCatalog &catalog, opengold::CampaignEncounter encounter)
+    const opengold::por::CombatBodyCatalog *looks, opengold::CampaignEncounter encounter)
 {
     std::vector<opengold::CombatArt> images;
     for (const auto &participant : party->participants())
     {
-        const auto resolved =
-            opengold::por::resolve_combat_appearance(party->member(participant.id), catalog);
-        images.push_back({participant.id, resolved.icon(art, opengold::por::IconPose::ready),
-                          resolved.icon(art, opengold::por::IconPose::action),
-                          resolved.selection.matched ? std::string{} : resolved.selection.label});
+        auto icons = opengold::por::party_combat_icons(party->member(participant.id), art, looks);
+        images.push_back({participant.id, std::move(icons.ready), std::move(icons.action),
+                          std::move(icons.missing_combination)});
     }
     auto owned = presentation::instantiate_scene("res://scenes/combat_demo.tscn");
     auto *combat = godot::Object::cast_to<CombatView>(owned.get());

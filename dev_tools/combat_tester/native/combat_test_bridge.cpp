@@ -683,7 +683,7 @@ String CombatTestBridge::start(const Dictionary &config)
         const auto art = CharacterArt::load(dir);
         const auto body = CombatBodyCatalog::load(resource("data/art/combat-body-looks.tsv"),
                                                   resource("data/art/combat-weapon-options.tsv"));
-        auto owned = campaign_combat_scene(party, art, body, std::move(encounter));
+        auto owned = campaign_combat_scene(party, art, &body, std::move(encounter));
         owned->set_name("CombatTestFight");
         presentation::attach_child(*get_parent(), std::move(owned));
         return {};

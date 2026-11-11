@@ -55,7 +55,10 @@ for the walls and animated close-ups of the 3D view, `combat` for the creatures 
 and Wild Shape's and summoned forms; party members keep theirs). Each is `new`
 or `original`; the default, also used for any other value, is `new`, and new
 settings files receive it. The Options screen's 3D view art and Combat art
-switch them, redrawing the view or the fight on screen at once.
+switch them, redrawing the view or the fight on screen at once. With `new`,
+any piece of new art the game cannot load (a wall look, a close-up, a
+creature, or the party's combat looks) shows the original art it replaces,
+and the game's log names the file it could not load.
 
 `[gear]` is auto-equip ([EQUIP-1](SRD-DECISIONS.md#equip-1-2026-11-05-auto-equip-better-gear)):
 `auto_equip` is `on` or `off`, and `unidentified_magic` is `skip`, which

@@ -90,6 +90,31 @@ struct ResolvedCombatAppearance
 [[nodiscard]] ResolvedCombatAppearance resolve_combat_appearance(const PartyMember &member,
                                                                  const CombatBodyCatalog &catalog);
 
+// A party member's combat icons, ready and acting.
+struct PartyCombatIcons
+{
+    Image ready, action;
+    // The gear combination the looks have no art for; empty when they have.
+    std::string missing_combination;
+};
+
+// The look `looks` gives what the member has in hand or, with no looks (their
+// files could not be loaded), the original icon the member was saved with.
+[[nodiscard]] PartyCombatIcons party_combat_icons(const PartyMember &member,
+                                                  const CharacterArt &art,
+                                                  const CombatBodyCatalog *looks);
+
+// The party's combat looks, or none when their files cannot be loaded: then
+// `problem` names the files and says why.
+struct CombatLooksLoad
+{
+    std::optional<CombatBodyCatalog> looks;
+    std::string problem;
+};
+
+[[nodiscard]] CombatLooksLoad load_combat_looks(const std::filesystem::path &assignments,
+                                                const std::filesystem::path &options_file);
+
 // The same character with `weapon_definition` in hand (empty: bare-handed), and its
 // shield unless it took that off: what a fight says it holds, not what it set out with.
 [[nodiscard]] ResolvedCombatAppearance

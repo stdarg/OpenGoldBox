@@ -10,8 +10,10 @@ piece's size: `far_front`, `far_left`, `far_right`, `middle_front`,
 
 An appearance without a folder keeps its original art from the player's game
 files, enlarged four times. With 3D view art set to Original (Options,
-Interface) every wall shows its original art. The game refuses a folder it cannot use, such as
-one with a missing piece or a piece of the wrong size.
+Interface) every wall shows its original art. A folder the game cannot use,
+such as one with a missing or unreadable piece or a piece of the wrong size,
+is left out: that appearance shows its original art, and the game's log names
+the file. The other folders load as usual.
 
 The [Replacement Art Creator](../../../dev_tools/replacement_art_creator/README.md)
 writes these folders with **Export to game**, and the

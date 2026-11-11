@@ -15,6 +15,7 @@
 #include "godot_nodes.h"
 #include <godot_cpp/classes/popup_menu.hpp>
 #include "game_resources.h"
+#include "game_combat_looks.h"
 #include "game_monsters.h"
 #include "opengold/creature_art.h"
 #include "combat_view.h"
@@ -1183,20 +1184,21 @@ CombatView::ArtSet CombatView::build_art() const
     if (campaign_)
     {
         const auto originals = por::CharacterArt::load(directory);
-        const auto catalog =
-            por::CombatBodyCatalog::load(presentation::path_from_godot(game_combat_body_file()),
-                                         presentation::path_from_godot(game_combat_weapon_file()));
+        const auto looks = game_combat_looks();
         campaign_art.clear();
         for (const auto id : campaign_->state().slots)
         {
             if (id)
             {
-                const auto resolved =
-                    por::resolve_combat_appearance(campaign_->member(id), catalog);
-                campaign_art.push_back(
-                    {id, resolved.icon(originals, por::IconPose::ready),
-                     resolved.icon(originals, por::IconPose::action),
-                     resolved.selection.matched ? std::string{} : resolved.selection.label});
+                auto icons =
+                    por::party_combat_icons(campaign_->member(id), originals, looks_or_none(looks));
+                campaign_art.push_back({id, std::move(icons.ready), std::move(icons.action),
+                                        std::move(icons.missing_combination)});
+                if (!looks)
+                {
+                    continue;
+                }
+                const auto &catalog = *looks;
                 // Every look the fight can give it: each weapon it carries that
                 // the catalog draws, or empty hands, with its shield and without.
                 auto &in_hand = campaign_art.back().in_hand;

@@ -22,6 +22,7 @@
 #include "godot_sound_output.h"
 #include "monster_picture_timing.h"
 #include "close_up_art.h"
+#include "unloadable_art.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/option_button.hpp>
@@ -2334,16 +2335,21 @@ void RolfTourView::sync_monster_picture()
     }
     // New art drawn from the close-up's description replaces it, with its
     // timing, unless the 3D view shows the original's art; a folder that cannot
-    // be used leaves the original.
+    // be used leaves the original, and the log names its file.
     const auto source = session_->scene_animation_source();
     if (!source || original_walls_)
     {
         return;
     }
-    auto replacement = presentation::load_close_up_art(
+    const auto folder =
         game_data_path("data/art/closeups")
-            .path_join(presentation::close_up_folder_name(source->first, source->second)),
-        monster_delays_);
+            .path_join(presentation::close_up_folder_name(source->first, source->second));
+    auto replacement = presentation::load_close_up_art(folder, monster_delays_);
+    if (!replacement.problem.is_empty())
+    {
+        log_unloadable_art(std::string(
+            ("Cannot load close-up art " + folder + ": " + replacement.problem).utf8().get_data()));
+    }
     if (replacement.art)
     {
         monster_frames_ = std::move(replacement.art->frames);

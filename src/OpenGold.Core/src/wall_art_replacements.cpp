@@ -60,6 +60,32 @@ std::vector<std::uint8_t> read_bytes(const std::filesystem::path &path)
     return bytes;
 }
 
+// One appearance's ten pieces, each the original's size times the new art's
+// scale. Throws naming the first file that cannot be used.
+std::array<Image, 10> wall_pieces(const std::filesystem::path &folder, const PngDecoder &decode)
+{
+    std::array<Image, 10> pieces;
+    for (unsigned view = 0; view < pieces.size(); ++view)
+    {
+        const auto path = folder / view_files[view];
+        auto image = decode(read_bytes(path));
+        if (!image || !consistent(*image) || image->width == 0 || image->height == 0)
+        {
+            throw std::runtime_error("Cannot decode wall art " + path_text(path));
+        }
+        const auto original = wall_view_size(static_cast<WallView>(view));
+        const auto width = original.width * WallArtReplacements::scale,
+                   height = original.height * WallArtReplacements::scale;
+        if (image->width != width || image->height != height)
+        {
+            throw std::runtime_error("Cannot load wall art " + path_text(path) + ": it must be " +
+                                     std::to_string(width) + " x " + std::to_string(height));
+        }
+        pieces[view] = std::move(*image);
+    }
+    return pieces;
+}
+
 // Nearest-neighbor enlargement, so an original piece keeps its hard pixels.
 Image enlarged(const Image &piece, unsigned scale)
 {
@@ -120,24 +146,21 @@ WallArtReplacements load_wall_art_replacements(const std::filesystem::path &fold
         {
             continue;
         }
-        const auto name = path_text(entry.path().filename());
-        const auto key = key_from_folder(name);
+        const auto key = key_from_folder(path_text(entry.path().filename()));
         if (!key)
         {
-            throw std::runtime_error("Unknown wall art folder " + path_text(entry.path()));
+            result.problems.push_back("Cannot load wall art " + path_text(entry.path()) +
+                                      ": the folder names no wall appearance");
+            continue;
         }
-        std::array<Image, 10> pieces;
-        for (unsigned view = 0; view < pieces.size(); ++view)
+        try
         {
-            const auto path = entry.path() / view_files[view];
-            auto image = decode(read_bytes(path));
-            if (!image || !consistent(*image) || image->width == 0 || image->height == 0)
-            {
-                throw std::runtime_error("Cannot decode wall art " + path_text(path));
-            }
-            pieces[view] = std::move(*image);
+            result.sets.emplace(*key, wall_pieces(entry.path(), decode));
         }
-        result.sets.emplace(*key, std::move(pieces));
+        catch (const std::exception &error)
+        {
+            result.problems.emplace_back(error.what());
+        }
     }
     return result;
 }
