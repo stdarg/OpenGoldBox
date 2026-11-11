@@ -114,7 +114,7 @@ what the shops sell it for, bargained by Charisma
 What the chosen buyer cannot use fully is listed in dark red, with a note
 that it can still be bought; what the purse cannot pay for in yellow; and
 armor or a shield that would not raise the buyer's Armor Class in gray
-([party](PARTY.md)). The stock stands in three columns, in alphabetical order; a double click on an
+([party](PARTY.md)). The stock stands in three columns, in alphabetical order down each column in turn; a double click on an
 item buys it, as choosing it and Buy do, and hovering over it tells a weapon's
 roll to hit Armor Class 13 and its damage, or armor's Armor Class on the
 buyer ([party](PARTY.md)). Over the shopkeeper's portrait stand the

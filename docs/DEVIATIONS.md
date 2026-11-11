@@ -366,7 +366,7 @@ in the game: answering YES at a hall lists its services in the dialogue
 - **Shops list their stock alphabetically, and leaving one puts the party
   outside** (2026-11-09). The original lists a shop's items in its list's
   order and leaves the party standing in the shop's square. OpenGoldBox sorts
-  the list by name, and after Leave shop the party stands on the square it came
+  the list by name, reading down each column, and after Leave shop the party stands on the square it came
   in from, its back to the door ([PHLAN](PHLAN.md)).
 
 - **Tyranthraxus's name** (2026-11-01). The original's record for his human

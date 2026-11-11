@@ -6,8 +6,9 @@ extends SceneTree
 # facing it: "<kind>-<x>-<y>[-<party>].ogs". The check loads it from Load
 # game, steps in as a player does and uses every service:
 # - a shop must list its data/shops record (names and prices) in alphabetical
-#   order, put the party back outside its door facing away on Leave, sell every
-#   item at its price to the buyer chosen, and refuse a party that cannot pay;
+#   order down its columns, put the party back outside its door facing away on
+#   Leave, sell every item at its price to the buyer chosen, and refuse a party
+#   that cannot pay;
 #   in the first shop, Sell and Drop must each give up an item after asking;
 # - a temple must list its record's services and prices, offer each to the
 #   members it helps and no one else, take the price once paid, and cure;
@@ -96,6 +97,17 @@ func choices() -> Array:
 	if not list.is_visible_in_tree(): return items
 	for i in range(list.item_count): items.append(list.get_item_text(i))
 	return items
+
+# The list's items as the player reads them on the screen: down the first
+# column, then down the next.
+func read_down_the_columns() -> Array:
+	var list: ItemList = town().get_node("%Choices")
+	var order := range(list.item_count)
+	order.sort_custom(func(a: int, b: int) -> bool:
+		var at_a := list.get_item_rect(a).position
+		var at_b := list.get_item_rect(b).position
+		return at_a.x < at_b.x or (at_a.x == at_b.x and at_a.y < at_b.y))
+	return order.map(func(i: int) -> String: return list.get_item_text(i))
 
 # Picks the choice that starts with `text` and continues; false if none does.
 func choose(text: String) -> bool:
@@ -264,10 +276,11 @@ func check_shop(x: int, y: int, party: String) -> void:
 				bug("a shop item differs from its record", record["id"] + ": no '" + want + "'")
 			else:
 				listed.remove_at(at)
-		for i in range(1, stock.size()):
-			var before: String = stock[i - 1].split(" / ")[0]
-			if before.naturalnocasecmp_to(stock[i].split(" / ")[0]) > 0:
-				bug("a shop does not list its stock alphabetically", record["id"] + ": '" + before + "' before '" + stock[i] + "'")
+		var read := read_down_the_columns()
+		for i in range(1, read.size()):
+			var before: String = read[i - 1].split(" / ")[0]
+			if before.naturalnocasecmp_to(read[i].split(" / ")[0]) > 0:
+				bug("a shop does not list its stock alphabetically down its columns", record["id"] + ": '" + before + "' before '" + read[i] + "'")
 	var gold := party_gold()
 	check_shop_colors(stock, gold)
 	check_shop_layout(record, stock)

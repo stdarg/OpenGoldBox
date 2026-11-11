@@ -525,6 +525,37 @@ namespace
 constexpr int shop_column_count = 3;
 constexpr int shop_column_margin = 16;
 
+// The rows in the order an ItemList, which fills across, needs so that they
+// read down its columns, as a newspaper's do: the first columns one row
+// longer than the rest, so only the last row is short.
+std::vector<std::size_t> down_the_columns(const std::vector<std::size_t> &rows, int columns)
+{
+    if (rows.empty())
+    {
+        return {};
+    }
+    const auto count = rows.size();
+    const auto width = static_cast<std::size_t>(columns);
+    const auto height = (count + width - 1) / width;
+    const auto long_columns = count - (height - 1) * width;
+    std::vector<std::size_t> across;
+    for (std::size_t row = 0; row < height; ++row)
+    {
+        for (std::size_t column = 0; column < width; ++column)
+        {
+            if (row == height - 1 && column >= long_columns)
+            {
+                break;
+            }
+            const auto top = column < long_columns
+                                 ? column * height
+                                 : long_columns * height + (column - long_columns) * (height - 1);
+            across.push_back(rows[top + row]);
+        }
+    }
+    return across;
+}
+
 } // namespace
 
 // A shop lists its stock in three equal columns across the list; every other
@@ -2545,7 +2576,7 @@ void RolfTourView::refresh()
         else if (shopping)
         {
             // The stock the filter passes, in alphabetical order of its names
-            // as the player reads them.
+            // as the player reads them, down each column.
             shop_rows_.clear();
             const auto &stock = session_->shop_stock();
             std::vector<String> names;
@@ -2562,6 +2593,7 @@ void RolfTourView::refresh()
                                      {
                                          return names[a].naturalnocasecmp_to(names[b]) < 0;
                                      });
+            shop_rows_ = down_the_columns(shop_rows_, shop_column_count);
             for (const auto n : shop_rows_)
             {
                 const auto &item = stock[n];
