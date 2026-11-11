@@ -30,11 +30,14 @@ bool save_combat_zoom(int percent);
 bool save_monster_ability(const std::string &ability, const godot::String &from);
 // [art] walls and combat: "original" shows the original game's art in the 3D
 // view and for the creatures in a fight in place of the new art (#274). Party
-// members keep theirs either way.
+// members keep theirs either way. portraits: "original" shows the player
+// characters' original head-and-body portraits in place of the new ones.
 bool original_wall_art();
 bool original_combat_art();
+bool original_portraits();
 bool save_original_wall_art(bool original);
 bool save_original_combat_art(bool original);
+bool save_original_portraits(bool original);
 // [gear] auto_equip: "off" leaves gained gear in the pack; otherwise a better
 // weapon, armor, shield or worn item goes on (EQUIP-1). unidentified_magic: "equip" lets
 // auto-equip put on an unidentified magic item; otherwise it stays packed.

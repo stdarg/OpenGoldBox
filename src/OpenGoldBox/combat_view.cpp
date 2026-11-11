@@ -17,6 +17,7 @@
 #include "game_resources.h"
 #include "game_combat_looks.h"
 #include "game_monsters.h"
+#include "portrait_catalog.h"
 #include "opengold/creature_art.h"
 #include "combat_view.h"
 #include "combat_sprite_layout.h"
@@ -1297,60 +1298,15 @@ CombatView::ArtSet CombatView::build_art() const
     }
     if (campaign_)
     {
-        auto legacy = por::CharacterArt::load(presentation::path_from_godot(settings::game_path()));
-        Ref<JSON> catalog_json;
-        catalog_json.instantiate();
-        Dictionary catalog;
-        if (catalog_json->parse(
-                FileAccess::get_file_as_string("res://bin/portraits/portraits.json")) == OK &&
-            catalog_json->get_data().get_type() == Variant::DICTIONARY)
-        {
-            catalog = catalog_json->get_data();
-        }
+        // As every screen shows them: new, or the original head and body.
+        auto catalog = PortraitCatalog::load();
         for (const auto id : campaign_->state().slots)
         {
             if (id)
             {
                 const auto &member = campaign_->member(id);
-                std::string filename = member.character.appearance().portrait;
-                if (filename.empty())
-                {
-                    int best = -1;
-                    for (const auto &key : catalog.keys())
-                    {
-                        const Dictionary entry = catalog[key];
-                        const auto &draft = member.character.creation_data();
-                        const int score = 4 * (String(entry.get("Race", "")).to_lower() ==
-                                               gs(draft.race).to_lower()) +
-                                          2 * (String(entry.get("Gender", "")).to_lower() ==
-                                               gs(draft.gender).to_lower()) +
-                                          (String(entry.get("Class", "")).to_lower() ==
-                                           gs(draft.character_class).to_lower());
-                        if (score > best)
-                        {
-                            best = score;
-                            filename = String(key).utf8().get_data();
-                        }
-                    }
-                }
-                if (!filename.empty())
-                {
-                    const Ref<Texture2D> portrait = ResourceLoader::get_singleton()->load(
-                        gs("res://bin/portraits/" + filename));
-                    if (portrait.is_valid())
-                    {
-                        portraits.emplace(id, portrait);
-                        continue;
-                    }
-                }
-                const auto &appearance = member.character.appearance();
-                if (appearance.portrait_head > 255 &&
-                    !legacy.heads().contains(appearance.portrait_head))
-                {
-                    presentation::load_additional_portrait_heads(legacy);
-                }
-                const auto image = presentation::rgba_image(legacy.portrait(appearance));
-                portraits.emplace(id, ImageTexture::create_from_image(image));
+                portraits.emplace(id, catalog.texture(member.character.appearance(),
+                                                      member.character.creation_data()));
             }
         }
     }

@@ -4,6 +4,7 @@
 #include "godot_nodes.h"
 #include "guarded_handlers.h"
 #include "localization.h"
+#include "portrait_dialog.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/option_button.hpp>
@@ -28,6 +29,10 @@ void TownSheetDialog::connect_controls()
 {
     required_node<Button>(*this, "MakeLeader")
         .connect("pressed", presentation::guarded(this, &TownSheetDialog::make_leader));
+    required_node<Button>(*this, "ChangePortrait")
+        .connect("pressed", presentation::guarded(this, &TownSheetDialog::change_portrait));
+    presentation::attach_child(*this, presentation::instantiate_control<PortraitDialog>(
+                                          "res://scenes/portrait_dialog.tscn"));
     required_node<Button>(*this, "Close")
         .connect("pressed", presentation::guarded(this, &TownSheetDialog::close));
     // In the order of opengold::GearPreference.
@@ -39,15 +44,15 @@ void TownSheetDialog::connect_controls()
     connect("close_requested", presentation::guarded(this, &TownSheetDialog::close));
 }
 
-void TownSheetDialog::connect_host(CampaignAccess campaign, std::function<void()> leader_changed,
+void TownSheetDialog::connect_host(CampaignAccess campaign, std::function<void()> party_changed,
                                    FailureReport report)
 {
-    if (!campaign || !leader_changed || !report)
+    if (!campaign || !party_changed || !report)
     {
         throw std::logic_error("The town sheet needs its campaign, a follow-up and a report");
     }
     campaign_ = std::move(campaign);
-    leader_changed_ = std::move(leader_changed);
+    party_changed_ = std::move(party_changed);
     report_ = std::move(report);
 }
 
@@ -68,8 +73,15 @@ void TownSheetDialog::show_member(std::int64_t slot)
     {
         return;
     }
-    const auto &m = campaign.member(campaign.state().slots[slot]);
-    member_ = m.id;
+    member_ = campaign.state().slots[slot];
+    show_sheet();
+    popup_centered();
+}
+
+void TownSheetDialog::show_sheet()
+{
+    const auto &campaign = campaign_();
+    const auto &m = campaign.member(member_);
     if (!portraits_)
     {
         portraits_ = PortraitCatalog::load();
@@ -85,7 +97,6 @@ void TownSheetDialog::show_member(std::int64_t slot)
     auto &preference = required_node<OptionButton>(*this, "GearPreference");
     preference.set_visible(auto_equip);
     preference.select(static_cast<int>(m.gear_preference));
-    popup_centered();
 }
 
 void TownSheetDialog::make_leader()
@@ -96,7 +107,24 @@ void TownSheetDialog::make_leader()
     }
     campaign_().make_leader(member_);
     required_node<Button>(*this, "MakeLeader").set_disabled(true);
-    leader_changed_();
+    party_changed_();
+}
+
+// Opens the member's portrait to change; each change redraws the sheet and
+// the party.
+void TownSheetDialog::change_portrait()
+{
+    if (!member_ || !portraits_)
+    {
+        return;
+    }
+    required_node<PortraitDialog>(*this, "PortraitDialog")
+        .open(campaign_, member_, *portraits_,
+              [this]
+              {
+                  show_sheet();
+                  party_changed_();
+              });
 }
 
 void TownSheetDialog::gear_preference_selected(std::int64_t index)

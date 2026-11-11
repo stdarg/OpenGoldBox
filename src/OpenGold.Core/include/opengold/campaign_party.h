@@ -247,6 +247,8 @@ class CampaignParty
     // a fight too.
     void set_quick(MemberId id);
     void set_gear_preference(MemberId id, GearPreference preference);
+    // A new look, such as another portrait, which a player may choose at any time.
+    void set_appearance(MemberId id, por::CharacterAppearance appearance);
     void take_control();
     void set_quick_magic(bool on);
     // A member left on the field when the party flees is lost for good: dead

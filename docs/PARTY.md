@@ -24,7 +24,11 @@ member's portrait, 300 × 300 pixels, at the top right. The name, hit points and
 attributes sit to its left, and the rest of the sheet runs full width below
 it. The portrait is part of the text, so it scrolls away with it. The size and
 the gap beside it are `sheet_portrait_size` and `sheet_portrait_gap` in the
-theme's `OpenGoldMetrics`.
+theme's `OpenGoldMetrics`. **Change portrait…** on the sheet changes the
+member's portrait at any time: another new portrait of its race and gender
+(Previous, Next or the list) while it shows a new one, else its original head
+and body ([character creation](CHARACTER-CREATION.md)). Each change shows at
+once on the sheet and the party's cards.
 
 Losing shared-party combat opens a defeat window with **Reload a Saved Game**
 and **Exit to OS**. Return to party is blocked; defeat does not revive anyone.

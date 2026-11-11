@@ -329,6 +329,47 @@ func check_shop_colors(stock: Array, gold: int) -> void:
 # for four rows (six characters and two NPCs) in the list, each drawing three
 # lines; their tooltip adds class, race, gender, weapon and armor. The check's
 # own smaller window keeps one card a row.
+# A member's portrait changes from its sheet at any time: another new one
+# while the Options screen's Portraits are New, else the original's head and
+# body. The party's card shows each change at once.
+func check_portrait_change() -> void:
+	var creation := town().get_parent()
+	var card: Node = town().get_node("%PartyList/Rows/Member0")
+	var choice: OptionButton = creation.get_node("GameMenu/Options/Interface/PortraitArt")
+	for mode in ["original", "new"]:
+		var original: bool = mode == "original"
+		choice.select(1 if original else 0)
+		choice.item_selected.emit(1 if original else 0)
+		await settle(10)
+		var before := portrait_name(card.get("_portrait"))
+		if before.begins_with("original-head-") != original:
+			bug("a party card does not show the " + mode + " portrait", "'" + before + "'")
+		card.emit_signal("opened")
+		await settle(10)
+		var sheet: Window = creation.get_node("TownSheet")
+		sheet.get_node("ChangePortrait").pressed.emit()
+		await settle(10)
+		var dialog: Window = sheet.get_node("PortraitDialog")
+		if not dialog.visible or dialog.get_node("%NewArt").visible == original or \
+				dialog.get_node("%Original").visible != original:
+			bug("Change portrait does not offer the " + mode + " portrait", "")
+		if original:
+			dialog.get_node("%Original/HeadNext").pressed.emit()
+			dialog.get_node("%Original/BodyNext").pressed.emit()
+		else:
+			dialog.get_node("%Next").pressed.emit()
+		await settle(10)
+		var after := portrait_name(dialog.get_node("%Preview").texture)
+		var shown := portrait_name(card.get("_portrait"))
+		if after == before or shown != after:
+			bug("a " + mode + " portrait change does not show on the party card", before + " -> " + after + ", card " + shown)
+		dialog.get_node("%Close").pressed.emit()
+		sheet.get_node("Close").pressed.emit()
+		await settle(10)
+
+func portrait_name(texture: Texture2D) -> String:
+	return "" if texture == null else texture.resource_name
+
 func check_party_cards(where: String) -> void:
 	var window_size := root.size
 	root.size = Vector2i(1920, 1080)
@@ -751,7 +792,9 @@ func run() -> void:
 		if not await load_fixture(file): continue
 		places += 1
 		if party == "wounded": check_hit_point_colors()
-		if places == 1: await check_party_cards("while exploring")
+		if places == 1:
+			await check_party_cards("while exploring")
+			await check_portrait_change()
 		if party == "outlaw":
 			await check_refusal()
 			continue

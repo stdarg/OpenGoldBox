@@ -153,6 +153,8 @@ void GameMenuView::open_options()
         .select(settings::original_wall_art() ? 1 : 0);
     required_node<OptionButton>(*this, "Options/Interface/CombatArt")
         .select(settings::original_combat_art() ? 1 : 0);
+    required_node<OptionButton>(*this, "Options/Interface/PortraitArt")
+        .select(settings::original_portraits() ? 1 : 0);
     required_node<OptionButton>(*this, "Options/Gameplay/AutoEquip")
         .select(settings::auto_equip() ? 0 : 1);
     required_node<OptionButton>(*this, "Options/Gameplay/UnidentifiedMagic")
@@ -262,7 +264,8 @@ void GameMenuView::build_options()
     // The new art or the original game's (#274).
     for (const auto &[path, selected] :
          {std::pair{"Options/Interface/WallArt", &GameMenuView::wall_art_selected},
-          std::pair{"Options/Interface/CombatArt", &GameMenuView::combat_art_selected}})
+          std::pair{"Options/Interface/CombatArt", &GameMenuView::combat_art_selected},
+          std::pair{"Options/Interface/PortraitArt", &GameMenuView::portrait_art_selected}})
     {
         auto &art = required_node<OptionButton>(*this, path);
         art.add_item(i18n::text(N_("New")));
@@ -316,6 +319,12 @@ void GameMenuView::wall_art_selected(std::int64_t index)
 void GameMenuView::combat_art_selected(std::int64_t index)
 {
     settings::save_original_combat_art(index == 1);
+    emit_signal("art_changed");
+}
+
+void GameMenuView::portrait_art_selected(std::int64_t index)
+{
+    settings::save_original_portraits(index == 1);
     emit_signal("art_changed");
 }
 

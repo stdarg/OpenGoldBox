@@ -3,6 +3,7 @@
 #include "opengold/character_creator.h"
 #include "opengold/campaign_party.h"
 #include "opengold/combat_body_catalog.h"
+#include "original_portrait_parts.h"
 #include "portrait_catalog.h"
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/input_event.hpp>
@@ -58,11 +59,17 @@ class CharacterCreationView : public godot::Control
     unsigned check_stage_{}, check_frames_{}, check_head_{}, check_default_{};
     unsigned drag_check_stage_{}, modal_check_stage_{};
     bool ready_{}, refreshing_{}, checking_{}, portrait_check_{}, capture_{}, fatal_{},
-        portrait_chosen_{}, on_portrait_page_{};
+        portrait_chosen_{}, original_chosen_{}, on_portrait_page_{};
+    // The race and gender the original portrait was last chosen at random for.
+    std::string original_portrait_of_;
     void layout();
     void refresh();
     void refresh_art();
     void recommend_portrait();
+    // The original portrait's head or body, `direction` places on.
+    void original_head(std::int64_t direction);
+    void original_body(std::int64_t direction);
+    void step_original_part(presentation::OriginalPart part, std::int64_t direction);
     // Short for Gnomes, Large for Goliaths, Regular for everyone else.
     void recommend_icon_size();
     // Shows a random portrait of the draft's race; `again` picks a new one

@@ -74,6 +74,16 @@ void CharacterCreationView::refresh_portraits()
     }
     on_portrait_page_ = on_page;
     filtered_portraits_.clear();
+    const auto &appearance = creator_->appearance();
+    if (!portraits_->shows_new(appearance, creator_->draft()))
+    {
+        required_node<Control>(*this, "PortraitPreview")
+            .call("show_texture", portraits_->original(appearance));
+        presentation::show_original_parts(required_node<Node>(*this, "OriginalParts"),
+                                          portraits_->original_art(), creator_->draft(),
+                                          appearance);
+        return;
+    }
     const auto matches = [&](const char *node, const std::string &value)
     {
         auto *c = &required_node<OptionButton>(*this, node);

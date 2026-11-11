@@ -29,6 +29,14 @@ func run_checks() -> void:
     await settle()
     var creation := current_scene as Control
     require(creation.has_node("PartyPanel"), "Original character assets load")
+    # Hide the Goliath's packaged portraits (goliath-<gender>-<class>-NN.png), but
+    # keep its additional head (goliath-<gender>.png), so every screen,
+    # combat too, must compose it; hidden before any screen loads one.
+    for file in DirAccess.get_files_at(portraits):
+        if file.begins_with("goliath-") and file.get_slice(".", 0).get_slice_count("-") > 2:
+            hidden.append(portraits.path_join(file))
+            require(DirAccess.rename_absolute(hidden.back(), hidden.back() + ".hidden") == OK, "Hide " + file)
+    require(not hidden.is_empty(), "Goliath portraits are packaged")
     creation.get_node("Party").pressed.emit()
     creation.get_node("PartyPanel/Pool").pressed.emit()
     var choices: ItemList = creation.get_node("PoolModal/List")
@@ -42,16 +50,27 @@ func run_checks() -> void:
     require(selected, "Pool supplies a Goliath")
     creation.get_node("PoolModal/Add").pressed.emit()
     creation.get_node("PoolModal/Close").pressed.emit()
-    # Hide the Goliath's packaged portraits (goliath-<gender>-<class>-NN.png), but
-    # keep its additional head (goliath-<gender>.png), so combat must compose it.
-    for file in DirAccess.get_files_at(portraits):
-        if file.begins_with("goliath-") and file.get_slice(".", 0).get_slice_count("-") > 2:
-            hidden.append(portraits.path_join(file))
-            require(DirAccess.rename_absolute(hidden.back(), hidden.back() + ".hidden") == OK, "Hide " + file)
-    require(not hidden.is_empty(), "Goliath portraits are packaged")
+    # Outside a fight too: the party panel shows the original head and body.
+    creation.get_node("PartyPanel/Roster").item_selected.emit(creation.get_node("PartyPanel/Roster").item_count - 1)
+    await settle()
+    var shown: Texture2D = creation.get_node("PartyPanel/Portrait").texture
+    require(shown != null and shown.resource_name.begins_with("original-head-"),
+            "A portrait that cannot load shows the original head and body: " + ("none" if shown == null else shown.resource_name))
     creation.call("start_check_fight")
     await settle()
     require(creation.has_node("CampaignCombat"), "Combat opens when a Goliath portrait must be composed")
     restore_portraits()
+    # The Options screen's Portraits: Original shows every character's original
+    # portrait at once.
+    var option: OptionButton = creation.get_node("GameMenu/Options/Interface/PortraitArt")
+    option.select(1)
+    option.item_selected.emit(1)
+    await settle()
+    shown = creation.get_node("PartyPanel/Portrait").texture
+    var original_name := "" if shown == null else shown.resource_name
+    option.select(0)
+    option.item_selected.emit(0)
+    await settle()
+    require(original_name.begins_with("original-head-"), "Portraits: Original shows the original portrait: " + original_name)
     print("Portrait fallback checks passed: composed additional-head portrait in campaign combat")
     quit(0)

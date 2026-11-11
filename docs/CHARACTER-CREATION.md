@@ -84,7 +84,13 @@ Art loads from the `OPENGOLD_GAME_DIR` environment variable.
    current portrait. An empty result disables selection and navigation. Any
    portrait may be selected regardless of the character's traits. Initial
    recommendations favor race, then gender, then class; manual choices persist
-   through later edits.
+   through later edits. While the Options screen's **Portraits** are Original,
+   or the character's new portrait cannot be loaded, the page builds the
+   original game's head-and-body portrait instead: **◀ Head** and **Head ▶**
+   step through the original's heads (a race the original lacks, such as the
+   Goliath, wears its own head first), **◀ Body** and **Body ▶** through its
+   bodies. Each character starts with a random original portrait, chosen again
+   for another race or gender until the player builds one.
 9. Show the character sheet: race, gender, class, level, background, six scores,
     saving throws, Hit Dice, HP and inventory (initially empty), plus skill bonuses,
     Expertise and their grant sources. **Features and choices** lists every
@@ -185,8 +191,11 @@ archive IDs and indexed combat pixels. No extracted artwork is distributed.
   with nearest filtering in creation, pool and party previews.
 - Campaign saves store the selected basename;
   characters without a current catalog entry display a deterministic recommendation.
-- Legacy head/body decoding remains for compatibility and the existing pool's
-  combat-color assignment. Those parts are no longer selectable portraits.
+- Every character also has an original head-and-body portrait, shown in place
+  of the new one while the Options screen's Portraits are Original or the new
+  portrait cannot be loaded; the log then names the file. Characters saved
+  before original portraits could be chosen show head 1 on body 1 until a
+  player changes them.
 
 ### Combat parts
 

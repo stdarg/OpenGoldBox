@@ -65,6 +65,20 @@ struct AdditionalPortraitHead
 [[nodiscard]] std::span<const AdditionalPortraitHead> additional_portrait_heads();
 [[nodiscard]] std::optional<unsigned> matching_portrait_head(std::string_view race,
                                                              std::string_view gender);
+class CharacterArt;
+
+// The heads a character of `race` and `gender` may wear in its original
+// portrait: the race's own added head first, for a race the original lacks
+// and whose head `art` has, then the original's heads.
+[[nodiscard]] std::vector<unsigned>
+portrait_heads_for(const CharacterArt &art, std::string_view race, std::string_view gender);
+
+// Gives `appearance` an original portrait chosen at random from `pick`: the
+// race's own head for a race the original lacks, else one of the original's
+// heads, on any body.
+void choose_original_portrait(CharacterAppearance &appearance, const CharacterArt &art,
+                              std::string_view race, std::string_view gender, std::uint32_t pick);
+
 // Fit approved source artwork to the original head panel without palette
 // quantization. Trim padding and crop at the cataloged neck baseline. The final
 // neck placement is fitted to the selected original body during composition.

@@ -1514,6 +1514,11 @@ void CampaignParty::set_gear_preference(MemberId id, GearPreference preference)
     edit(id).gear_preference = preference;
 }
 
+void CampaignParty::set_appearance(MemberId id, por::CharacterAppearance appearance)
+{
+    edit(id).character.appearance(std::move(appearance));
+}
+
 rules::GearRating CampaignParty::known_gear_rating(const PartyMember &m) const
 {
     return rules_->gear_rating(m.character.sheet(), known_definitions(m), rated_armor_class);

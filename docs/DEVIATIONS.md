@@ -369,13 +369,23 @@ in the game: answering YES at a hall lists its services in the dialogue
   the list by name, reading down each column, and after Leave shop the party stands on the square it came
   in from, its back to the door ([PHLAN](PHLAN.md)).
 
+- **Portraits change at any time** (2026-11-11). The original chose a
+  character's head and body once, at creation; only its combat icon could be
+  changed later (Encamp, Alter, Icon). OpenGoldBox's **Change portrait…** on a
+  member's sheet changes its portrait whenever the player likes, and a new
+  character's original portrait starts as a random head and body
+  ([PARTY](PARTY.md)).
+
 - **Tyranthraxus's name** (2026-11-01). The original's record for his human
   form misspells him TYRANITHRAXUS. OpenGoldBox spells it Tyranthraxus.
 - **New art** (2026-10-29). The original drew its own walls and combat icons.
   OpenGoldBox shows new walls in the 3D view and new figures for monsters in a
   fight, and (2026-11-06) new animated close-ups wherever the Combat Sprite
   Catalog has art drawn from a close-up's written description; the Options
-  screen's 3D view art and Combat art bring back the original game's, at once. Party members keep their figures either way
+  screen's 3D view art and Combat art bring back the original game's, at once. Party members keep their figures either way.
+  Characters have new portraits too, and (2026-11-11) the Options screen's
+  Portraits bring back the original's head-and-body portraits, which also show
+  for any new portrait that cannot be loaded
   ([#274](https://github.com/stdarg/OpenGoldBox/issues/274),
   [CONFIGURATION](CONFIGURATION.md)).
 - **Modern shell.** A Godot interface that follows the Gold Box screens'

@@ -1,5 +1,9 @@
 #include "godot_text.h"
 #include "portrait_catalog.h"
+#include "application_settings.h"
+#include "godot_images.h"
+#include "godot_path.h"
+#include "unloadable_art.h"
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/json.hpp>
@@ -37,10 +41,12 @@ PortraitCatalog PortraitCatalog::load()
     PortraitCatalog result;
     Ref<JSON> json;
     json.instantiate();
-    if (json->parse(FileAccess::get_file_as_string("res://bin/portraits/portraits.json")) != OK ||
+    constexpr auto catalog_file = "res://bin/portraits/portraits.json";
+    if (json->parse(FileAccess::get_file_as_string(catalog_file)) != OK ||
         json->get_data().get_type() != Variant::DICTIONARY)
     {
-        throw std::runtime_error("Cannot read portrait catalog. Run build-opengoldbox.cmd.");
+        log_unloadable_art(std::string("Cannot load the portrait catalog ") + catalog_file);
+        return result;
     }
     const Dictionary catalog = json->get_data();
     const Array keys = catalog.keys();
@@ -67,13 +73,11 @@ PortraitCatalog PortraitCatalog::load()
         opengold::por::validate_character_appearance(a);
         if (!ResourceLoader::get_singleton()->exists(gs("res://bin/portraits/" + p.filename)))
         {
-            throw std::runtime_error("Missing portrait: " + p.filename);
+            log_unloadable_art("Cannot load portrait res://bin/portraits/" + p.filename +
+                               ": the file is missing");
+            continue;
         }
         result.portraits_.push_back(std::move(p));
-    }
-    if (result.portraits_.empty())
-    {
-        throw std::runtime_error("Empty portrait catalog");
     }
     std::sort(result.portraits_.begin(), result.portraits_.end(),
               [](const auto &a, const auto &b)
@@ -90,6 +94,10 @@ bool PortraitCatalog::same(const std::string &catalog_value, const std::string &
 
 std::string PortraitCatalog::recommended(const opengold::rules::CharacterDraft &draft) const
 {
+    if (portraits_.empty())
+    {
+        return {};
+    }
     const Portrait *best = &portraits_.front();
     int score = -1;
     for (const auto &p : portraits_)
@@ -125,31 +133,93 @@ std::string PortraitCatalog::of_race_and_gender(const opengold::rules::Character
     return matches[pick % matches.size()]->filename;
 }
 
+std::string PortraitCatalog::shown_file(const opengold::por::CharacterAppearance &appearance,
+                                        const opengold::rules::CharacterDraft &draft) const
+{
+    const bool cataloged = std::any_of(portraits_.begin(), portraits_.end(),
+                                       [&](const auto &p)
+                                       {
+                                           return p.filename == appearance.portrait;
+                                       });
+    return cataloged ? appearance.portrait : recommended(draft);
+}
+
+bool PortraitCatalog::shows_new(const opengold::por::CharacterAppearance &appearance,
+                                const opengold::rules::CharacterDraft &draft)
+{
+    if (settings::original_portraits() || portraits_.empty())
+    {
+        return false;
+    }
+    return new_texture(shown_file(appearance, draft)).is_valid();
+}
+
 Ref<ImageTexture> PortraitCatalog::texture(const opengold::por::CharacterAppearance &appearance,
                                            const opengold::rules::CharacterDraft &draft)
 {
-    auto filename = appearance.portrait;
-    if (std::none_of(portraits_.begin(), portraits_.end(),
-                     [&](const auto &p)
-                     {
-                         return p.filename == filename;
-                     }))
-    {
-        filename = recommended(draft);
-    }
+    return shows_new(appearance, draft) ? new_texture(shown_file(appearance, draft))
+                                        : original(appearance);
+}
+
+Ref<ImageTexture> PortraitCatalog::new_texture(const std::string &filename)
+{
     if (const auto found = textures_.find(filename); found != textures_.end())
     {
         return found->second;
     }
-    Ref<Texture2D> texture =
-        ResourceLoader::get_singleton()->load(gs("res://bin/portraits/" + filename));
-    if (texture.is_null())
+    if (unloadable_.contains(filename))
     {
-        throw std::runtime_error("Cannot load portrait: " + filename);
+        return {};
     }
-    auto result = ImageTexture::create_from_image(texture->get_image());
+    const auto path = "res://bin/portraits/" + filename;
+    Ref<Texture2D> texture = ResourceLoader::get_singleton()->load(gs(path));
+    const auto image = texture.is_valid() ? texture->get_image() : Ref<Image>();
+    if (image.is_null())
+    {
+        unloadable_.insert(filename);
+        log_unloadable_art("Cannot load portrait " + path);
+        return {};
+    }
+    auto result = ImageTexture::create_from_image(image);
     // Named for its file, so a check can tell which portrait a page draws.
     result->set_name(gs(filename));
     textures_.emplace(filename, result);
+    return result;
+}
+
+const opengold::por::CharacterArt &PortraitCatalog::original_art()
+{
+    if (!original_art_)
+    {
+        auto art =
+            opengold::por::CharacterArt::load(presentation::path_from_godot(settings::game_path()));
+        presentation::load_additional_portrait_heads(art);
+        original_art_ = std::move(art);
+    }
+    return *original_art_;
+}
+
+Ref<ImageTexture> PortraitCatalog::original(const opengold::por::CharacterAppearance &appearance)
+{
+    const auto &art = original_art();
+    // A saved part the game's files lack shows as their first.
+    auto shown = appearance;
+    if (!art.heads().contains(shown.portrait_head))
+    {
+        shown.portrait_head = art.heads().begin()->first;
+    }
+    if (!art.bodies().contains(shown.portrait_body))
+    {
+        shown.portrait_body = art.bodies().begin()->first;
+    }
+    const auto name = "original-head-" + std::to_string(shown.portrait_head) + "-body-" +
+                      std::to_string(shown.portrait_body);
+    if (const auto found = textures_.find(name); found != textures_.end())
+    {
+        return found->second;
+    }
+    auto result = presentation::image_texture(art.portrait(shown));
+    result->set_name(gs(name));
+    textures_.emplace(name, result);
     return result;
 }

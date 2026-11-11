@@ -48,7 +48,7 @@ bool save_config(const std::function<void(ConfigFile &)> &change)
     {
         config->set_value("combat", "combat_zoom", 100);
     }
-    for (const char *key : {"walls", "combat"})
+    for (const char *key : {"walls", "combat", "portraits"})
     {
         if (!config->has_section_key("art", key))
         {
@@ -230,6 +230,16 @@ bool original_wall_art()
 bool original_combat_art()
 {
     return read("art", "combat").to_lower() == "original";
+}
+
+bool original_portraits()
+{
+    return read("art", "portraits").to_lower() == "original";
+}
+
+bool save_original_portraits(bool original)
+{
+    return save("art", "portraits", original ? "original" : "new");
 }
 
 bool save_original_wall_art(bool original)

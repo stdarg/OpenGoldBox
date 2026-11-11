@@ -5,6 +5,7 @@
 #include "training_control.h"
 #include "godot_images.h"
 #include "application_settings.h"
+#include <godot_cpp/classes/texture_rect.hpp>
 #include "character_creation_view.h"
 #include "character_sheet_text.h"
 #include "character_text.h"
@@ -166,6 +167,15 @@ void CharacterCreationView::_ready()
     required_node<Control>(*this, "PortraitScroll/PortraitSheet")
         .connect("portrait_chosen",
                  presentation::guarded(this, &CharacterCreationView::portrait_selected));
+    for (const auto &[path, method, direction] :
+         {std::tuple{"OriginalParts/HeadPrevious", &CharacterCreationView::original_head, -1},
+          std::tuple{"OriginalParts/HeadNext", &CharacterCreationView::original_head, 1},
+          std::tuple{"OriginalParts/BodyPrevious", &CharacterCreationView::original_body, -1},
+          std::tuple{"OriginalParts/BodyNext", &CharacterCreationView::original_body, 1}})
+    {
+        required_node<Button>(*this, path)
+            .connect("pressed", presentation::guarded(this, method).bind(direction));
+    }
     required_node<LineEdit>(*this, "Name")
         .connect("text_changed", presentation::guarded(this, &CharacterCreationView::name_changed));
     for (int i = 0; i < 6; ++i)
@@ -337,14 +347,55 @@ void CharacterCreationView::layout()
 
 void CharacterCreationView::recommend_portrait()
 {
-    if (portrait_chosen_)
+    auto a = creator_->appearance();
+    const auto &d = creator_->draft();
+    if (!portrait_chosen_)
+    {
+        a.portrait = portraits_->recommended(d);
+    }
+    // The original portrait starts at random, again for another race or
+    // gender, until the player builds one.
+    const auto original_of = d.race + "/" + d.gender;
+    if (!original_chosen_ && original_portrait_of_ != original_of)
+    {
+        opengold::por::choose_original_portrait(
+            a, portraits_->original_art(), d.race, d.gender,
+            static_cast<std::uint32_t>(UtilityFunctions::randi()));
+        original_portrait_of_ = original_of;
+    }
+    creator_->appearance(a);
+}
+
+void CharacterCreationView::original_head(std::int64_t direction)
+{
+    step_original_part(presentation::OriginalPart::head, direction);
+}
+
+void CharacterCreationView::original_body(std::int64_t direction)
+{
+    step_original_part(presentation::OriginalPart::body, direction);
+}
+
+void CharacterCreationView::step_original_part(presentation::OriginalPart part,
+                                               std::int64_t direction)
+{
+    if (added_to_party_)
     {
         return;
     }
-    auto a = creator_->appearance();
-    const auto &d = creator_->draft();
-    a.portrait = portraits_->recommended(d);
-    creator_->appearance(a);
+    perform(
+        [&]
+        {
+            const auto a = presentation::stepped_original_part(creator_->appearance(),
+                                                               portraits_->original_art(),
+                                                               creator_->draft(), part, direction);
+            creator_->appearance(a);
+            if (completed_)
+            {
+                completed_->appearance(a);
+            }
+            original_chosen_ = true;
+        });
 }
 
 void CharacterCreationView::recommend_icon_size()
@@ -462,10 +513,19 @@ void CharacterCreationView::refresh()
     show("TrainingFixedTitle", step == CreationStep::training);
     show("Training", step == CreationStep::training);
     show("SpeciesChoices", step == CreationStep::race && creator_->has_species_choices());
-    for (const auto *n : {"PortraitGender", "PortraitClass", "PortraitRace", "PortraitIdentity",
-                          "PortraitFilters", "PortraitScroll"})
+    // The new portraits to pick from, else the original's head and body.
+    const bool new_portraits = portraits_->shows_new(a, d);
+    for (const auto *n :
+         {"PortraitGender", "PortraitClass", "PortraitRace", "PortraitFilters", "PortraitScroll"})
     {
-        show(n, portrait);
+        show(n, portrait && new_portraits);
+    }
+    show("PortraitIdentity", portrait);
+    show("OriginalParts", portrait && !new_portraits);
+    for (const auto *n : {"OriginalParts/HeadPrevious", "OriginalParts/HeadNext",
+                          "OriginalParts/BodyPrevious", "OriginalParts/BodyNext"})
+    {
+        required_node<Button>(*this, n).set_disabled(added_to_party_);
     }
     show("PortraitPreview", portrait || step == CreationStep::sheet);
     if (!portrait)
@@ -1048,6 +1108,8 @@ void CharacterCreationView::restart()
             completed_.reset();
             added_to_party_ = false;
             portrait_chosen_ = false;
+            original_chosen_ = false;
+            original_portrait_of_.clear();
             recommend_portrait();
             required_node<LineEdit>(*this, "Name").set_text("");
             selected_score_ = -1;
@@ -1788,6 +1850,28 @@ void CharacterCreationView::check_run()
         {
             throw std::runtime_error("Clearing filters failed");
         }
+        // Portraits: Original turns the page into the original's head and body.
+        settings::save_original_portraits(true);
+        refresh();
+        if (!required_node<Control>(*this, "OriginalParts").is_visible() ||
+            required_node<Control>(*this, "PortraitScroll").is_visible())
+        {
+            throw std::runtime_error(
+                "Portraits: Original does not offer the original head and body");
+        }
+        const auto head = creator_->appearance().portrait_head;
+        required_node<Button>(*this, "OriginalParts/HeadNext").emit_signal("pressed");
+        const Ref<Texture2D> preview =
+            required_node<TextureRect>(*this, "PortraitPreview").get_texture();
+        const auto expected =
+            "original-head-" + std::to_string(creator_->appearance().portrait_head) + "-";
+        if (creator_->appearance().portrait_head == head || preview.is_null() ||
+            !preview->get_name().begins_with(gs(expected)))
+        {
+            throw std::runtime_error("The Portrait page does not change the original head");
+        }
+        settings::save_original_portraits(false);
+        refresh();
         ++check_default_;
         if (portrait_check_)
         {

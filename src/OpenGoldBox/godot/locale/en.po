@@ -160,11 +160,11 @@ msgstr "2 Sorcery Points: one target has Disadvantage on its save against the sp
 msgid "3D view art"
 msgstr "3D view art"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:302
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:303
 msgid "< Body"
 msgstr "< Body"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:278
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:279
 msgid "< Head"
 msgstr "< Head"
 
@@ -449,7 +449,7 @@ msgstr "A wave of lethargy washes over {name}."
 msgid "A wielder of divine magic. Primary ability: Wisdom. Hit Die: d8."
 msgstr "A wielder of divine magic. Primary ability: Wisdom. Hit Die: d8."
 
-#: src/OpenGoldBox/combat_view.cpp:2985 src/OpenGoldBox/combat_view.cpp:3018
+#: src/OpenGoldBox/combat_view.cpp:2941 src/OpenGoldBox/combat_view.cpp:2974
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "AC {ac}"
 msgstr "AC {ac}"
@@ -520,7 +520,7 @@ msgstr "Acolyte background"
 msgid "Acrobatics"
 msgstr "Acrobatics"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:404 src/OpenGoldBox/godot/scenes/party_panel.tscn:187
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:405 src/OpenGoldBox/godot/scenes/party_panel.tscn:187
 msgid "Action"
 msgstr "Action"
 
@@ -528,7 +528,7 @@ msgstr "Action"
 msgid "Action Surge"
 msgstr "Action Surge"
 
-#: src/OpenGoldBox/combat_view.cpp:3103
+#: src/OpenGoldBox/combat_view.cpp:3059
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Action Surge ({remaining}/{maximum})"
 msgstr "Action Surge ({remaining}/{maximum})"
@@ -541,11 +541,11 @@ msgstr "Action Surge action ready (no Magic)."
 msgid "Action Surge: one additional action, except Magic, on your turn. One use per Short or Long Rest."
 msgstr "Action Surge: one additional action, except Magic, on your turn. One use per Short or Long Rest."
 
-#: src/OpenGoldBox/combat_view.cpp:2947
+#: src/OpenGoldBox/combat_view.cpp:2903
 msgid "Action ready"
 msgstr "Action ready"
 
-#: src/OpenGoldBox/combat_view.cpp:2947
+#: src/OpenGoldBox/combat_view.cpp:2903
 msgid "Action spent"
 msgstr "Action spent"
 
@@ -605,7 +605,7 @@ msgstr "Add a party member first"
 msgid "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 msgstr "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1168 src/OpenGoldBox/godot/scenes/character_creation.tscn:1483 src/OpenGoldBox/party_preview.cpp:1079
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1169 src/OpenGoldBox/godot/scenes/character_creation.tscn:1496 src/OpenGoldBox/party_preview.cpp:1079
 msgid "Add to party"
 msgstr "Add to party"
 
@@ -649,7 +649,7 @@ msgstr "Adds 1d4 to attack rolls and saving throws."
 msgid "Adrenaline Rush"
 msgstr "Adrenaline Rush"
 
-#: src/OpenGoldBox/combat_view.cpp:3086
+#: src/OpenGoldBox/combat_view.cpp:3042
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Adrenaline Rush ({remaining}/{maximum})"
 msgstr "Adrenaline Rush ({remaining}/{maximum})"
@@ -742,7 +742,7 @@ msgstr "Agonizing Blast (Vicious Mockery)"
 msgid "Aid"
 msgstr "Aid"
 
-#: src/OpenGoldBox/combat_view.cpp:3648
+#: src/OpenGoldBox/combat_view.cpp:3604
 msgid "Aim the spell."
 msgstr "Aim the spell."
 
@@ -758,7 +758,7 @@ msgstr "Alert"
 msgid "Alert: add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 msgstr "Alert: add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 
-#: src/OpenGoldBox/character_creation_view.cpp:54
+#: src/OpenGoldBox/character_creation_view.cpp:55
 msgid "Alignment"
 msgstr "Alignment"
 
@@ -971,7 +971,7 @@ msgstr "Armor of Shadows"
 msgid "Armor of Shadows (Mage Armor)"
 msgstr "Armor of Shadows (Mage Armor)"
 
-#: src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/scenes/character_creation.tscn:723
+#: src/OpenGoldBox/character_creation_view.cpp:85 src/OpenGoldBox/godot/scenes/character_creation.tscn:724
 msgid "Arms"
 msgstr "Arms"
 
@@ -987,15 +987,15 @@ msgstr "Arrow keys: move / turn   •   L: look   •   S: search   •   M: cas
 msgid "Arrow: party & facing\nGold: doors   Teal: visited"
 msgstr "Arrow: party & facing\nGold: doors   Teal: visited"
 
-#: src/OpenGoldBox/combat_view.cpp:782
+#: src/OpenGoldBox/combat_view.cpp:783
 msgid "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end"
 msgstr "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end"
 
-#: src/OpenGoldBox/combat_view.cpp:3629
+#: src/OpenGoldBox/combat_view.cpp:3585
 msgid "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end | Q: party Quick | M: Quick magic"
 msgstr "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z: slot | Enter: end | Q: party Quick | M: Quick magic"
 
-#: src/OpenGoldBox/combat_view.cpp:3642
+#: src/OpenGoldBox/combat_view.cpp:3598
 msgid "Arrows: choose | Space: use | Escape: skip"
 msgstr "Arrows: choose | Space: use | Escape: skip"
 
@@ -1035,12 +1035,12 @@ msgstr "Attack rolls and save DCs of your lineage's spells."
 msgid "Attack twice with your pact weapon when you take the Attack action."
 msgstr "Attack twice with your pact weapon when you take the Attack action."
 
-#: src/OpenGoldBox/combat_view.cpp:2189
+#: src/OpenGoldBox/combat_view.cpp:2145
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Attack {name}, an ally? Your allies will turn on you."
 msgstr "Attack {name}, an ally? Your allies will turn on you."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:163
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:164
 msgid "Attribute"
 msgstr "Attribute"
 
@@ -1060,7 +1060,7 @@ msgstr "Attribute bonuses: Intelligence, Wisdom, Charisma.\nSkills: Insight, Rel
 msgid "Attribute bonuses: Strength, Dexterity, Constitution.\nSkills: Athletics, Intimidation.\nFeat: Savage Attacker."
 msgstr "Attribute bonuses: Strength, Dexterity, Constitution.\nSkills: Athletics, Intimidation.\nFeat: Savage Attacker."
 
-#: src/OpenGoldBox/character_creation_view.cpp:55 src/OpenGoldBox/character_sheet_text.cpp:120
+#: src/OpenGoldBox/character_creation_view.cpp:56 src/OpenGoldBox/character_sheet_text.cpp:120
 msgid "Attributes"
 msgstr "Attributes"
 
@@ -1088,7 +1088,7 @@ msgstr "Aura of Protection"
 msgid "Aura of Protection: you and allies within 10 feet add your Charisma modifier (at least +1) to saving throws, unless you are Incapacitated."
 msgstr "Aura of Protection: you and allies within 10 feet add your Charisma modifier (at least +1) to saving throws, unless you are Incapacitated."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1443
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1456
 msgid "Auto-equip"
 msgstr "Auto-equip"
 
@@ -1096,11 +1096,11 @@ msgstr "Auto-equip"
 msgid "Automatically equip items better than currently equipped items"
 msgstr "Automatically equip items better than currently equipped items"
 
-#: src/OpenGoldBox/character_creation_view.cpp:532 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:354 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:126 src/OpenGoldBox/level_up_dialog.cpp:99
+#: src/OpenGoldBox/character_creation_view.cpp:592 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:355 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:126 src/OpenGoldBox/level_up_dialog.cpp:99
 msgid "Back"
 msgstr "Back"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:130
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:131
 msgid "Background"
 msgstr "Background"
 
@@ -1203,7 +1203,7 @@ msgstr "Bardic spellcasting with prepared Bard spells; Jack of All Trades at lev
 msgid "Barkskin"
 msgstr "Barkskin"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:991
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:992
 msgid "Base"
 msgstr "Base"
 
@@ -1299,7 +1299,7 @@ msgstr "Bestow Curse: forced Dodge"
 msgid "Bite"
 msgstr "Bite"
 
-#: src/OpenGoldBox/character_creation_view.cpp:79 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_creation_view.cpp:80 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Black"
 msgstr "Black"
 
@@ -1420,7 +1420,7 @@ msgstr "Blowgun"
 msgid "Bludgeoning"
 msgstr "Bludgeoning"
 
-#: src/OpenGoldBox/character_creation_view.cpp:79 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_creation_view.cpp:80 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Blue"
 msgstr "Blue"
 
@@ -1432,11 +1432,11 @@ msgstr "Blur"
 msgid "Boar"
 msgstr "Boar"
 
-#: src/OpenGoldBox/character_creation_view.cpp:83 src/OpenGoldBox/godot/scenes/character_creation.tscn:636
+#: src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/scenes/character_creation.tscn:637
 msgid "Body"
 msgstr "Body"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:310
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:311
 msgid "Body >"
 msgstr "Body >"
 
@@ -1444,11 +1444,20 @@ msgstr "Body >"
 msgid "Body left behind (Magic Jar)"
 msgstr "Body left behind (Magic Jar)"
 
+#: src/OpenGoldBox/original_portrait_parts.cpp:61
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Body {number} of {count}"
+msgstr "Body {number} of {count}"
+
+#: src/OpenGoldBox/godot/scenes/original_portrait_parts.tscn:37
+msgid "Body ▶"
+msgstr "Body ▶"
+
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:2135 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Bone bow"
 msgstr "Bone bow"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1000
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1001
 msgid "Bonus"
 msgstr "Bonus"
 
@@ -1492,7 +1501,7 @@ msgstr "Bonus action: heal a visible ally within 60 feet. Uses the selected slot
 msgid "Bonus action; 60 feet; heals 2d4 + Wisdom modifier."
 msgstr "Bonus action; 60 feet; heals 2d4 + Wisdom modifier."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:146
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:147
 msgid "Bonuses"
 msgstr "Bonuses"
 
@@ -1580,7 +1589,7 @@ msgstr "Breath weapons"
 msgid "Bronze"
 msgstr "Bronze"
 
-#: src/OpenGoldBox/character_creation_view.cpp:80
+#: src/OpenGoldBox/character_creation_view.cpp:81
 msgid "Brown"
 msgstr "Brown"
 
@@ -1723,7 +1732,7 @@ msgstr "Can roll a d20 again once."
 msgid "Can target another creature as a Magic action."
 msgstr "Can target another creature as a Magic action."
 
-#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:830 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:90 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:292
+#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:890 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:90 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:292
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -1888,7 +1897,7 @@ msgstr "Cast [M]"
 msgid "Cast a spell or use a feature outside combat."
 msgstr "Cast a spell or use a feature outside combat."
 
-#: src/OpenGoldBox/combat_view.cpp:3160 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/combat_view.cpp:3116 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Cast spell"
 msgstr "Cast spell"
 
@@ -1953,6 +1962,10 @@ msgstr "Champion: a second Fighting Style feat."
 msgid "Champion: weapon/unarmed criticals on 19–20.\nAdvantage on Initiative and Strength (Athletics).\nCritical hit: optional half-Speed move, no opportunity attacks."
 msgstr "Champion: weapon/unarmed criticals on 19–20.\nAdvantage on Initiative and Strength (Athletics).\nCritical hit: optional half-Speed move, no opportunity attacks."
 
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1446
+msgid "Change portrait…"
+msgstr "Change portrait…"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Channel Divinity"
 msgstr "Channel Divinity"
@@ -1981,7 +1994,7 @@ msgstr "Character"
 msgid "Character Pool"
 msgstr "Character Pool"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1471
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1484
 msgid "Character Pool / 48 level-one characters"
 msgstr "Character Pool / 48 level-one characters"
 
@@ -1989,7 +2002,7 @@ msgstr "Character Pool / 48 level-one characters"
 msgid "Character Sheet"
 msgstr "Character Sheet"
 
-#: src/OpenGoldBox/character_creation_view.cpp:286
+#: src/OpenGoldBox/character_creation_view.cpp:296
 msgid "Character art could not be loaded. Restart with --reset-game-path to choose your Pool of Radiance folder."
 msgstr "Character art could not be loaded. Restart with --reset-game-path to choose your Pool of Radiance folder."
 
@@ -2001,7 +2014,7 @@ msgstr "Character creation"
 msgid "Character loaded."
 msgstr "Character loaded."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1193
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1194
 msgid "Character modifiers"
 msgstr "Character modifiers"
 
@@ -2013,7 +2026,7 @@ msgstr "Character save name"
 msgid "Character saved."
 msgstr "Character saved."
 
-#: src/OpenGoldBox/character_creation_view.cpp:61 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:271
+#: src/OpenGoldBox/character_creation_view.cpp:62 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:271
 msgid "Character sheet"
 msgstr "Character sheet"
 
@@ -2085,7 +2098,7 @@ msgstr "Charmed and fighting for the creature that dominated it; it saves again 
 msgid "Charmed until the fight ends; a hit slays it."
 msgstr "Charmed until the fight ends; a hit slays it."
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:35 src/OpenGoldBox/combat_view.cpp:3052 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:35 src/OpenGoldBox/combat_view.cpp:3008 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Chill Touch"
 msgstr "Chill Touch"
 
@@ -2094,7 +2107,7 @@ msgstr "Chill Touch"
 msgid "Chill Touch ({source}): cannot regain HP."
 msgstr "Chill Touch ({source}): cannot regain HP."
 
-#: src/OpenGoldBox/combat_view.cpp:3110
+#: src/OpenGoldBox/combat_view.cpp:3066
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Choose Temporary HP\n\nCurrent: {current} — {current_source}\nNew: {offered} — {offered_source}\n\nThe amounts do not add. The Bonus Action and use are already spent."
 msgstr "Choose Temporary HP\n\nCurrent: {current} — {current_source}\nNew: {offered} — {offered_source}\n\nThe amounts do not add. The Bonus Action and use are already spent."
@@ -2140,11 +2153,11 @@ msgstr "Choose a one-handed weapon"
 msgid "Choose a proficient skill"
 msgstr "Choose a proficient skill"
 
-#: src/OpenGoldBox/character_creation_view.cpp:799
+#: src/OpenGoldBox/character_creation_view.cpp:859
 msgid "Choose a swatch to recolor this part in the combat preview."
 msgstr "Choose a swatch to recolor this part in the combat preview."
 
-#: src/OpenGoldBox/character_creation_view.cpp:797
+#: src/OpenGoldBox/character_creation_view.cpp:857
 msgid "Choose a swatch to recolor this part when it is equipped in combat."
 msgstr "Choose a swatch to recolor this part when it is equipped in combat."
 
@@ -2172,11 +2185,11 @@ msgstr "Choose an existing folder containing the Pool of Radiance game files."
 msgid "Choose an option"
 msgstr "Choose an option"
 
-#: src/OpenGoldBox/character_creation_view.cpp:734
+#: src/OpenGoldBox/character_creation_view.cpp:794
 msgid "Choose cantrips and prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr "Choose cantrips and prepared spells. Unfilled choices remain pending; Back preserves your choices."
 
-#: src/OpenGoldBox/character_creation_view.cpp:736
+#: src/OpenGoldBox/character_creation_view.cpp:796
 msgid "Choose cantrips, spellbook entries and prepared spells. Back preserves your choices."
 msgstr "Choose cantrips, spellbook entries and prepared spells. Back preserves your choices."
 
@@ -2188,11 +2201,11 @@ msgstr "Choose game folder"
 msgid "Choose language"
 msgstr "Choose language"
 
-#: src/OpenGoldBox/character_creation_view.cpp:589
+#: src/OpenGoldBox/character_creation_view.cpp:649
 msgid "Choose one starting class. The classes you checked on the last page are future goals, not extra levels."
 msgstr "Choose one starting class. The classes you checked on the last page are future goals, not extra levels."
 
-#: src/OpenGoldBox/character_creation_view.cpp:730
+#: src/OpenGoldBox/character_creation_view.cpp:790
 msgid "Choose prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr "Choose prepared spells. Unfilled choices remain pending; Back preserves your choices."
 
@@ -2204,19 +2217,19 @@ msgstr "Choose the folder containing START.EXE and the original DAX game files."
 msgid "Choose the new class's training"
 msgstr "Choose the new class's training"
 
-#: src/OpenGoldBox/character_creation_view.cpp:713
+#: src/OpenGoldBox/character_creation_view.cpp:773
 msgid "Choose the required training options. Back preserves your selections."
 msgstr "Choose the required training options. Back preserves your selections."
 
-#: src/OpenGoldBox/character_creation_view.cpp:850
+#: src/OpenGoldBox/character_creation_view.cpp:910
 msgid "Choose the spells Magic Initiate teaches."
 msgstr "Choose the spells Magic Initiate teaches."
 
-#: src/OpenGoldBox/character_creation_view.cpp:738
+#: src/OpenGoldBox/character_creation_view.cpp:798
 msgid "Choose the spells Magic Initiate teaches. Unfilled choices remain pending; Back preserves your choices."
 msgstr "Choose the spells Magic Initiate teaches. Unfilled choices remain pending; Back preserves your choices."
 
-#: src/OpenGoldBox/combat_view.cpp:3689
+#: src/OpenGoldBox/combat_view.cpp:3645
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Choose up to {maximum} creatures. Chosen: {chosen}"
 msgstr "Choose up to {maximum} creatures. Chosen: {chosen}"
@@ -2242,7 +2255,7 @@ msgstr "Choose what to take."
 msgid "Choose who receives {spell}."
 msgstr "Choose who receives {spell}."
 
-#: src/OpenGoldBox/character_creation_view.cpp:739
+#: src/OpenGoldBox/character_creation_view.cpp:799
 msgid "Choose your available cantrips. Unfilled choices remain pending; Back preserves your selections."
 msgstr "Choose your available cantrips. Unfilled choices remain pending; Back preserves your selections."
 
@@ -2354,7 +2367,7 @@ msgstr "Circle of Death"
 msgid "Circle of the Land"
 msgstr "Circle of the Land"
 
-#: src/OpenGoldBox/character_creation_view.cpp:56 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:141 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:97 src/OpenGoldBox/level_up_dialog.cpp:139
+#: src/OpenGoldBox/character_creation_view.cpp:57 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:141 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:97 src/OpenGoldBox/level_up_dialog.cpp:139
 msgid "Class"
 msgstr "Class"
 
@@ -2407,11 +2420,11 @@ msgstr "Cleric features"
 msgid "Cleric skills"
 msgstr "Cleric skills"
 
-#: src/OpenGoldBox/combat_view.cpp:3683
+#: src/OpenGoldBox/combat_view.cpp:3639
 msgid "Click a foe: aim the next at it | Escape: cancel"
 msgstr "Click a foe: aim the next at it | Escape: cancel"
 
-#: src/OpenGoldBox/combat_view.cpp:3693
+#: src/OpenGoldBox/combat_view.cpp:3649
 msgid "Click: choose or remove | Space or Cast spell: cast | Escape: cancel"
 msgstr "Click: choose or remove | Space or Cast spell: cast | Escape: cancel"
 
@@ -2431,7 +2444,7 @@ msgstr "Cloak of Displacement"
 msgid "Cloak of Elvenkind"
 msgstr "Cloak of Elvenkind"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1246 src/OpenGoldBox/godot/scenes/character_creation.tscn:1331 src/OpenGoldBox/godot/scenes/character_creation.tscn:1376 src/OpenGoldBox/godot/scenes/character_creation.tscn:1421 src/OpenGoldBox/godot/scenes/game_menu.tscn:431 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:301 src/OpenGoldBox/godot/scenes/tour_cast_panel.tscn:46 src/OpenGoldBox/godot/scenes/tour_member_sheet.tscn:39
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1247 src/OpenGoldBox/godot/scenes/character_creation.tscn:1332 src/OpenGoldBox/godot/scenes/character_creation.tscn:1377 src/OpenGoldBox/godot/scenes/character_creation.tscn:1422 src/OpenGoldBox/godot/scenes/game_menu.tscn:454 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:301 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:80 src/OpenGoldBox/godot/scenes/tour_cast_panel.tscn:46 src/OpenGoldBox/godot/scenes/tour_member_sheet.tscn:39
 msgid "Close"
 msgstr "Close"
 
@@ -2471,11 +2484,11 @@ msgstr "Color Spray (Magic Initiate)"
 msgid "Color Spray (level 2 slot)"
 msgstr "Color Spray (level 2 slot)"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1019
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1020
 msgid "Color-1"
 msgstr "Color-1"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1030
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1031
 msgid "Color-2"
 msgstr "Color-2"
 
@@ -2488,7 +2501,7 @@ msgstr "Colossus Slayer"
 msgid "Colossus Slayer adds {damage} damage."
 msgstr "Colossus Slayer adds {damage} damage."
 
-#: src/OpenGoldBox/character_creation_view.cpp:59
+#: src/OpenGoldBox/character_creation_view.cpp:60
 msgid "Combat appearance"
 msgstr "Combat appearance"
 
@@ -2500,7 +2513,7 @@ msgstr "Combat art"
 msgid "Combat begins. Each square is 5 feet."
 msgstr "Combat begins. Each square is 5 feet."
 
-#: src/OpenGoldBox/character_creation_view.cpp:524
+#: src/OpenGoldBox/character_creation_view.cpp:584
 msgid "Combat icon"
 msgstr "Combat icon"
 
@@ -2863,7 +2876,7 @@ msgstr "Cursed (Rotting Fist)"
 msgid "Cutting Words"
 msgstr "Cutting Words"
 
-#: src/OpenGoldBox/character_creation_view.cpp:79
+#: src/OpenGoldBox/character_creation_view.cpp:80
 msgid "Cyan"
 msgstr "Cyan"
 
@@ -2922,7 +2935,7 @@ msgstr "Dark One's Own Luck used"
 msgid "Dark One's Own Luck: a failed save or ability check you could still pass gains 1d10, as many times as your Charisma modifier (at least once) per Long Rest."
 msgstr "Dark One's Own Luck: a failed save or ability check you could still pass gains 1d10, as many times as your Charisma modifier (at least once) per Long Rest."
 
-#: src/OpenGoldBox/character_creation_view.cpp:81
+#: src/OpenGoldBox/character_creation_view.cpp:82
 msgid "Dark gray"
 msgstr "Dark gray"
 
@@ -3020,7 +3033,7 @@ msgstr "Deflect Energy: Deflect Attacks works against any damage type.\nProficie
 msgid "Delayed Blast Fireball"
 msgstr "Delayed Blast Fireball"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1532
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1545
 msgid "Desired Class(es)"
 msgstr "Desired Class(es)"
 
@@ -3056,7 +3069,7 @@ msgstr "Dexterity save: 1d6 Acid damage to each creature in a 5-foot-radius sphe
 msgid "Dexterity save: 1d8 Radiant damage, visible creature within 60 feet."
 msgstr "Dexterity save: 1d8 Radiant damage, visible creature within 60 feet."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:971
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:972
 msgid "Dice Rolls"
 msgstr "Dice Rolls"
 
@@ -3249,7 +3262,7 @@ msgstr "Dodge"
 msgid "Dodging"
 msgstr "Dodging"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1742 src/OpenGoldBox/godot/scenes/character_creation.tscn:1753 src/OpenGoldBox/godot/scenes/character_creation.tscn:1764 src/OpenGoldBox/godot/scenes/character_creation.tscn:1775 src/OpenGoldBox/godot/scenes/character_creation.tscn:1786 src/OpenGoldBox/godot/scenes/character_creation.tscn:1797
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1755 src/OpenGoldBox/godot/scenes/character_creation.tscn:1766 src/OpenGoldBox/godot/scenes/character_creation.tscn:1777 src/OpenGoldBox/godot/scenes/character_creation.tscn:1788 src/OpenGoldBox/godot/scenes/character_creation.tscn:1799 src/OpenGoldBox/godot/scenes/character_creation.tscn:1810
 msgid "Does not meet targeted class requirements"
 msgstr "Does not meet targeted class requirements"
 
@@ -3293,11 +3306,11 @@ msgstr "Draconic Spirit"
 msgid "Drag a character up or down to change the party's order. A fight puts the first half of the party in the front rank."
 msgstr "Drag a character up or down to change the party's order. A fight puts the first half of the party in the front rank."
 
-#: src/OpenGoldBox/character_creation_view.cpp:184
+#: src/OpenGoldBox/character_creation_view.cpp:194
 msgid "Drag this rolled result onto an attribute to assign it."
 msgstr "Drag this rolled result onto an attribute to assign it."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:982
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:983
 msgid "Drag to the attribute of your choice."
 msgstr "Drag to the attribute of your choice."
 
@@ -3381,7 +3394,7 @@ msgstr "Drink it as a Bonus Action: your Strength becomes 21 for an hour."
 msgid "Drop"
 msgstr "Drop"
 
-#: src/OpenGoldBox/character_creation_view.cpp:200
+#: src/OpenGoldBox/character_creation_view.cpp:210
 msgid "Drop a roll here. Drag a filled box onto another ability to swap."
 msgstr "Drop a roll here. Drag a filled box onto another ability to swap."
 
@@ -3474,7 +3487,7 @@ msgstr "Easy"
 msgid "Eight hours passed; no one can benefit from another Long Rest so soon."
 msgstr "Eight hours passed; no one can benefit from another Long Rest so soon."
 
-#: src/OpenGoldBox/combat_view.cpp:3054 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/combat_view.cpp:3010 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Eldritch Blast"
 msgstr "Eldritch Blast"
 
@@ -3611,7 +3624,7 @@ msgstr "Encounter challenge"
 msgid "End turn"
 msgstr "End turn"
 
-#: src/OpenGoldBox/combat_view.cpp:3554
+#: src/OpenGoldBox/combat_view.cpp:3510
 msgid "Enemy turn"
 msgstr "Enemy turn"
 
@@ -3656,7 +3669,7 @@ msgstr "Entangle"
 msgid "Entangle (Magic Initiate)"
 msgstr "Entangle (Magic Initiate)"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:194
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:195
 msgid "Enter a character name"
 msgstr "Enter a character name"
 
@@ -3905,7 +3918,7 @@ msgstr "Faerie Fire (Magic Initiate)"
 msgid "Faerie Fire (level 2 slot)"
 msgstr "Faerie Fire (level 2 slot)"
 
-#: src/OpenGoldBox/combat_view.cpp:3136
+#: src/OpenGoldBox/combat_view.cpp:3092
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Failed Medicine check: d20 {roll} + {modifier} = {total} vs DC {dc}.\nSecond Wind uses: {uses}\n\nAdd 1d10. Spend one use only if the check succeeds.\nThe original Action is already spent."
 msgstr "Failed Medicine check: d20 {roll} + {modifier} = {total} vs DC {dc}.\nSecond Wind uses: {uses}\n\nAdd 1d10. Spend one use only if the check succeeds.\nThe original Action is already spent."
@@ -4055,7 +4068,7 @@ msgstr "Fighter skills"
 msgid "Fighting Style"
 msgstr "Fighting Style"
 
-#: src/OpenGoldBox/character_creation_view.cpp:649
+#: src/OpenGoldBox/character_creation_view.cpp:709
 msgid "Fill all six boxes to continue.\nAssigned scores include bonuses."
 msgstr "Fill all six boxes to continue.\nAssigned scores include bonuses."
 
@@ -4063,7 +4076,7 @@ msgstr "Fill all six boxes to continue.\nAssigned scores include bonuses."
 msgid "Filter"
 msgstr "Filter"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:242
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:243
 msgid "Filter by"
 msgstr "Filter by"
 
@@ -4120,7 +4133,7 @@ msgstr "Finish the rest's choices before casting Simulacrum"
 msgid "Fire"
 msgstr "Fire"
 
-#: src/OpenGoldBox/combat_view.cpp:3049 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/combat_view.cpp:3005 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Fire Bolt"
 msgstr "Fire Bolt"
 
@@ -4388,7 +4401,7 @@ msgstr "Forcecage (cage)"
 msgid "Free move"
 msgstr "Free move"
 
-#: src/OpenGoldBox/combat_view.cpp:3634
+#: src/OpenGoldBox/combat_view.cpp:3590
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Free move: {feet} ft | Arrows/click: move | Escape or Finish free move: finish"
 msgstr "Free move: {feet} ft | Arrows/click: move | Escape or Finish free move: finish"
@@ -4471,7 +4484,7 @@ msgstr "Full hit points."
 msgid "Future class goals: {classes}\n\n"
 msgstr "Future class goals: {classes}\n\n"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1563
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1576
 msgid "Future goals only. Choose one starting class next. Later Ability Score Improvements can raise scores to help you qualify."
 msgstr "Future goals only. Choose one starting class next. Later Ability Score Improvements can raise scores to help you qualify."
 
@@ -4508,7 +4521,7 @@ msgstr "Gain the Skilled feat: training in three skills."
 msgid "Gains {value} Temporary Hit Points at the start of each of its turns."
 msgstr "Gains {value} Temporary Hit Points at the start of each of its turns."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:425
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:426
 msgid "Game art from the original, portraits from OpenGoldBox, rules from SRD 5.2.1"
 msgstr "Game art from the original, portraits from OpenGoldBox, rules from SRD 5.2.1"
 
@@ -4528,7 +4541,7 @@ msgstr "Gauntlets"
 msgid "Gauntlets of Ogre Power"
 msgstr "Gauntlets of Ogre Power"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:111 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:143
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:112 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:143
 msgid "Gender"
 msgstr "Gender"
 
@@ -4713,7 +4726,7 @@ msgstr "Greater Restoration: curse"
 msgid "Greatsword"
 msgstr "Greatsword"
 
-#: src/OpenGoldBox/character_creation_view.cpp:79 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_creation_view.cpp:80 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Green"
 msgstr "Green"
 
@@ -4782,7 +4795,7 @@ msgstr "HP restored:"
 msgid "HP {current} / {maximum}"
 msgstr "HP {current} / {maximum}"
 
-#: src/OpenGoldBox/character_creation_view.cpp:83 src/OpenGoldBox/godot/scenes/character_creation.tscn:665
+#: src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/scenes/character_creation.tscn:666
 msgid "Hair / Face"
 msgstr "Hair / Face"
 
@@ -4854,9 +4867,18 @@ msgstr "Harm"
 msgid "Haste"
 msgstr "Haste"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:286
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:287
 msgid "Head >"
 msgstr "Head >"
+
+#: src/OpenGoldBox/original_portrait_parts.cpp:57
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Head {number} of {count}"
+msgstr "Head {number} of {count}"
+
+#: src/OpenGoldBox/godot/scenes/original_portrait_parts.tscn:21
+msgid "Head ▶"
+msgstr "Head ▶"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Heal"
@@ -5430,7 +5452,7 @@ msgstr "It can keep someone up again after a Long Rest."
 msgid "It could not get away. It runs at its enemies and strikes wildly at whoever is in reach, friend or foe, with Disadvantage; attack rolls against it have Advantage, and it has no Bonus Actions or Reactions."
 msgstr "It could not get away. It runs at its enemies and strikes wildly at whoever is in reach, friend or foe, with Disadvantage; attack rolls against it have Advantage, and it has no Bonus Actions or Reactions."
 
-#: src/OpenGoldBox/combat_view.cpp:3568
+#: src/OpenGoldBox/combat_view.cpp:3524
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "It is not {name}'s turn."
 msgstr "It is not {name}'s turn."
@@ -5674,7 +5696,7 @@ msgstr "Leave shop"
 msgid "Leave the animal shape"
 msgstr "Leave the animal shape"
 
-#: src/OpenGoldBox/combat_view.cpp:3649
+#: src/OpenGoldBox/combat_view.cpp:3605
 msgid "Left click or arrows: move | Right click, Space or Enter: cast | Escape: cancel"
 msgstr "Left click or arrows: move | Right click, Space or Enter: cast | Escape: cancel"
 
@@ -5694,7 +5716,7 @@ msgstr "Legendary Actions"
 msgid "Legendary Resistance"
 msgstr "Legendary Resistance"
 
-#: src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/scenes/character_creation.tscn:752
+#: src/OpenGoldBox/character_creation_view.cpp:85 src/OpenGoldBox/godot/scenes/character_creation.tscn:753
 msgid "Legs"
 msgstr "Legs"
 
@@ -5883,7 +5905,7 @@ msgstr "Light armor"
 msgid "Light attack — {weapon} ({hand})"
 msgstr "Light attack — {weapon} ({hand})"
 
-#: src/OpenGoldBox/character_creation_view.cpp:81
+#: src/OpenGoldBox/character_creation_view.cpp:82
 msgid "Light blue"
 msgstr "Light blue"
 
@@ -5891,7 +5913,7 @@ msgstr "Light blue"
 msgid "Light crossbow"
 msgstr "Light crossbow"
 
-#: src/OpenGoldBox/character_creation_view.cpp:81
+#: src/OpenGoldBox/character_creation_view.cpp:82
 msgid "Light cyan"
 msgstr "Light cyan"
 
@@ -5899,11 +5921,11 @@ msgstr "Light cyan"
 msgid "Light extra attack"
 msgstr "Light extra attack"
 
-#: src/OpenGoldBox/character_creation_view.cpp:80
+#: src/OpenGoldBox/character_creation_view.cpp:81
 msgid "Light gray"
 msgstr "Light gray"
 
-#: src/OpenGoldBox/character_creation_view.cpp:81
+#: src/OpenGoldBox/character_creation_view.cpp:82
 msgid "Light green"
 msgstr "Light green"
 
@@ -5916,7 +5938,7 @@ msgstr "Light hammer"
 msgid "Light ranged attack — {weapon} ({hand})"
 msgstr "Light ranged attack — {weapon} ({hand})"
 
-#: src/OpenGoldBox/character_creation_view.cpp:82
+#: src/OpenGoldBox/character_creation_view.cpp:83
 msgid "Light red"
 msgstr "Light red"
 
@@ -6067,7 +6089,7 @@ msgstr "Mage Armor (Magic Initiate)"
 msgid "Mage Armor (level 2 slot)"
 msgstr "Mage Armor (level 2 slot)"
 
-#: src/OpenGoldBox/character_creation_view.cpp:80
+#: src/OpenGoldBox/character_creation_view.cpp:81
 msgid "Magenta"
 msgstr "Magenta"
 
@@ -6176,7 +6198,7 @@ msgstr "Magic Missile (Magic Initiate)"
 msgid "Magic Missile (level 2 slot)"
 msgstr "Magic Missile (level 2 slot)"
 
-#: src/OpenGoldBox/combat_view.cpp:3521
+#: src/OpenGoldBox/combat_view.cpp:3477
 msgid "Magic Missile is aimed at you. Cast Shield or decline."
 msgstr "Magic Missile is aimed at you. Cast Shield or decline."
 
@@ -6233,7 +6255,7 @@ msgstr "Main hand"
 msgid "Main hand — {item}"
 msgstr "Main hand — {item}"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1433 src/OpenGoldBox/godot/scenes/party_panel.tscn:256
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1434 src/OpenGoldBox/godot/scenes/party_panel.tscn:256
 msgid "Make leader"
 msgstr "Make leader"
 
@@ -6265,11 +6287,11 @@ msgstr "Mass Healing Word"
 msgid "Maul"
 msgstr "Maul"
 
-#: src/OpenGoldBox/town_sheet_dialog.cpp:36
+#: src/OpenGoldBox/town_sheet_dialog.cpp:41
 msgid "Maximize damage"
 msgstr "Maximize damage"
 
-#: src/OpenGoldBox/town_sheet_dialog.cpp:35
+#: src/OpenGoldBox/town_sheet_dialog.cpp:40
 msgid "Maximize defense"
 msgstr "Maximize defense"
 
@@ -6597,7 +6619,7 @@ msgstr "Missing or unreadable game files:"
 msgid "Misty Step"
 msgstr "Misty Step"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1190 src/OpenGoldBox/godot/scenes/party_panel.tscn:155
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1191 src/OpenGoldBox/godot/scenes/party_panel.tscn:155
 msgid "Modifiers"
 msgstr "Modifiers"
 
@@ -6637,7 +6659,7 @@ msgstr "Moonbeam"
 msgid "Morningstar"
 msgstr "Morningstar"
 
-#: src/OpenGoldBox/combat_view.cpp:3479 src/OpenGoldBox/godot/scenes/combat_demo.tscn:117
+#: src/OpenGoldBox/combat_view.cpp:3435 src/OpenGoldBox/godot/scenes/combat_demo.tscn:117
 msgid "Move"
 msgstr "Move"
 
@@ -6726,19 +6748,19 @@ msgstr "Mystic Arcanum: choose a level 7 Warlock spell to cast once per Long Res
 msgid "Mystic Arcanum: choose a level 8 Warlock spell to cast once per Long Rest without a spell slot.\nOne more Eldritch Invocation; Witch Sight is open."
 msgstr "Mystic Arcanum: choose a level 8 Warlock spell to cast once per Long Rest without a spell slot.\nOne more Eldritch Invocation; Witch Sight is open."
 
-#: src/OpenGoldBox/combat_view.cpp:2869
+#: src/OpenGoldBox/combat_view.cpp:2825
 msgid "NPC"
 msgstr "NPC"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:223 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:74
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:224 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:74
 msgid "Name"
 msgstr "Name"
 
-#: src/OpenGoldBox/character_creation_view.cpp:591
+#: src/OpenGoldBox/character_creation_view.cpp:651
 msgid "Name your character (up to 40 characters), then choose a race and gender."
 msgstr "Name your character (up to 40 characters), then choose a race and gender."
 
-#: src/OpenGoldBox/character_creation_view.cpp:53
+#: src/OpenGoldBox/character_creation_view.cpp:54
 msgid "Name, Race & Gender"
 msgstr "Name, Race & Gender"
 
@@ -6824,7 +6846,7 @@ msgstr "Neutralize Poison"
 msgid "Never"
 msgstr "Never"
 
-#: src/OpenGoldBox/game_menu_view.cpp:268
+#: src/OpenGoldBox/game_menu_view.cpp:271
 msgid "New"
 msgstr "New"
 
@@ -6832,7 +6854,7 @@ msgstr "New"
 msgid "New Phlan"
 msgstr "New Phlan"
 
-#: src/OpenGoldBox/character_creation_view.cpp:540 src/OpenGoldBox/godot/scenes/character_creation.tscn:366 src/OpenGoldBox/level_up_dialog.cpp:453
+#: src/OpenGoldBox/character_creation_view.cpp:600 src/OpenGoldBox/godot/scenes/character_creation.tscn:367 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:60 src/OpenGoldBox/level_up_dialog.cpp:453
 msgid "Next"
 msgstr "Next"
 
@@ -6887,7 +6909,7 @@ msgstr "No armor"
 msgid "No character created yet."
 msgstr "No character created yet."
 
-#: src/OpenGoldBox/combat_view.cpp:3721
+#: src/OpenGoldBox/combat_view.cpp:3677
 msgid "No combat artwork assigned"
 msgstr "No combat artwork assigned"
 
@@ -6916,7 +6938,7 @@ msgstr "No member can be healed by it now"
 msgid "No numeric racial modifiers."
 msgstr "No numeric racial modifiers."
 
-#: src/OpenGoldBox/combat_view.cpp:4320
+#: src/OpenGoldBox/combat_view.cpp:4276
 msgid "No one else can get away. Your party fights on."
 msgstr "No one else can get away. Your party fights on."
 
@@ -6977,7 +6999,7 @@ msgstr "North"
 msgid "Not enough gold"
 msgstr "Not enough gold"
 
-#: src/OpenGoldBox/character_creation_view.cpp:803
+#: src/OpenGoldBox/character_creation_view.cpp:863
 msgid "Not present"
 msgstr "Not present"
 
@@ -6985,7 +7007,7 @@ msgstr "Not present"
 msgid "Not trained: no training bonus to hit"
 msgstr "Not trained: no training bonus to hit"
 
-#: src/OpenGoldBox/character_creation_view.cpp:623
+#: src/OpenGoldBox/character_creation_view.cpp:683
 msgid "Not yet qualified. You may still plan for this class."
 msgstr "Not yet qualified. You may still plan for this class."
 
@@ -7018,7 +7040,7 @@ msgstr "Oath of Devotion: Aura of Devotion. You and allies in your Aura of Prote
 msgid "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot."
 msgstr "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot."
 
-#: src/OpenGoldBox/game_menu_view.cpp:224
+#: src/OpenGoldBox/game_menu_view.cpp:226
 msgid "Off"
 msgstr "Off"
 
@@ -7038,7 +7060,7 @@ msgstr "Oil"
 msgid "Old Town"
 msgstr "Old Town"
 
-#: src/OpenGoldBox/game_menu_view.cpp:223
+#: src/OpenGoldBox/game_menu_view.cpp:225
 msgid "On"
 msgstr "On"
 
@@ -7190,7 +7212,7 @@ msgstr "Open Level-Up"
 msgid "Opportunity Attacks against you have Disadvantage."
 msgstr "Opportunity Attacks against you have Disadvantage."
 
-#: src/OpenGoldBox/combat_view.cpp:3454 src/OpenGoldBox/godot/scenes/combat_demo.tscn:344
+#: src/OpenGoldBox/combat_view.cpp:3410 src/OpenGoldBox/godot/scenes/combat_demo.tscn:344
 msgid "Opportunity attack"
 msgstr "Opportunity attack"
 
@@ -7214,7 +7236,7 @@ msgstr "Orc / Adrenaline Rush: Bonus Action Dash and Temporary HP equal to profi
 msgid "Orcs are strong, tireless folk who press on where others falter.\n\nRacial traits:\n- Adrenaline Rush: Dash as a Bonus Action and gain Temporary Hit Points, a few times between rests.\n- Relentless Endurance: drop to 1 Hit Point instead of 0, once per Long Rest."
 msgstr "Orcs are strong, tireless folk who press on where others falter.\n\nRacial traits:\n- Adrenaline Rush: Dash as a Bonus Action and gain Temporary Hit Points, a few times between rests.\n- Relentless Endurance: drop to 1 Hit Point instead of 0, once per Long Rest."
 
-#: src/OpenGoldBox/game_menu_view.cpp:269
+#: src/OpenGoldBox/game_menu_view.cpp:272
 msgid "Original"
 msgstr "Original"
 
@@ -7393,7 +7415,7 @@ msgstr "Paralyzing venom"
 msgid "Parry"
 msgstr "Parry"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:334
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:335
 msgid "Part"
 msgstr "Part"
 
@@ -7402,7 +7424,7 @@ msgstr "Part"
 msgid "Party ({x}, {y})   {direction}"
 msgstr "Party ({x}, {y})   {direction}"
 
-#: src/OpenGoldBox/combat_view.cpp:2958
+#: src/OpenGoldBox/combat_view.cpp:2914
 msgid "Party incapacitated / defeat"
 msgstr "Party incapacitated / defeat"
 
@@ -7512,7 +7534,7 @@ msgstr "Piercing"
 msgid "Pike"
 msgstr "Pike"
 
-#: src/OpenGoldBox/character_creation_view.cpp:82
+#: src/OpenGoldBox/character_creation_view.cpp:83
 msgid "Pink"
 msgstr "Pink"
 
@@ -7536,7 +7558,7 @@ msgstr "Podol Plaza"
 msgid "Poison"
 msgstr "Poison"
 
-#: src/OpenGoldBox/combat_view.cpp:3050
+#: src/OpenGoldBox/combat_view.cpp:3006
 msgid "Poison Spray"
 msgstr "Poison Spray"
 
@@ -7604,21 +7626,25 @@ msgstr "Polymorphed"
 msgid "Pool of Radiance game files"
 msgstr "Pool of Radiance game files"
 
-#: src/OpenGoldBox/character_creation_view.cpp:60
+#: src/OpenGoldBox/character_creation_view.cpp:61 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:11 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:54
 msgid "Portrait"
 msgstr "Portrait"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:261
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:262
 msgid "Portrait class"
 msgstr "Portrait class"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:252
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:253
 msgid "Portrait gender"
 msgstr "Portrait gender"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:270
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:271
 msgid "Portrait race"
 msgstr "Portrait race"
+
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:427
+msgid "Portraits"
+msgstr "Portraits"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Potent Cantrip"
@@ -7710,9 +7736,13 @@ msgstr "Prepared spells: {spells}"
 msgid "Preserve Life"
 msgstr "Preserve Life"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1984
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:2004
 msgid "Press Esc to return"
 msgstr "Press Esc to return"
+
+#: src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:47
+msgid "Previous"
+msgstr "Previous"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Previously selected training cannot be replaced"
@@ -7866,7 +7896,7 @@ msgstr "Pyramid, the laboratories"
 msgid "Pyramid, the prison of souls"
 msgstr "Pyramid, the prison of souls"
 
-#: src/OpenGoldBox/combat_view.cpp:3811
+#: src/OpenGoldBox/combat_view.cpp:3767
 msgid "QUICK"
 msgstr "QUICK"
 
@@ -7878,11 +7908,11 @@ msgstr "Quarterstaff"
 msgid "Quick"
 msgstr "Quick"
 
-#: src/OpenGoldBox/combat_view.cpp:3442 src/OpenGoldBox/godot/scenes/combat_demo.tscn:325
+#: src/OpenGoldBox/combat_view.cpp:3398 src/OpenGoldBox/godot/scenes/combat_demo.tscn:325
 msgid "Quick magic: Off"
 msgstr "Quick magic: Off"
 
-#: src/OpenGoldBox/combat_view.cpp:3441
+#: src/OpenGoldBox/combat_view.cpp:3397
 msgid "Quick magic: On"
 msgstr "Quick magic: On"
 
@@ -7903,11 +7933,11 @@ msgstr "Race"
 msgid "Race / {race}"
 msgstr "Race / {race}"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:206
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:207
 msgid "Race Selection"
 msgstr "Race Selection"
 
-#: src/OpenGoldBox/portrait_picker.cpp:85
+#: src/OpenGoldBox/portrait_picker.cpp:95
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Race: {race}\nClass: {class}\nGender: {gender}"
 msgstr "Race: {race}\nClass: {class}\nGender: {gender}"
@@ -8164,7 +8194,7 @@ msgstr "Ray of Enfeeblement"
 msgid "Ray of Enfeeblement subtracts {damage} damage."
 msgstr "Ray of Enfeeblement subtracts {damage} damage."
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:33 src/OpenGoldBox/combat_view.cpp:3055
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:33 src/OpenGoldBox/combat_view.cpp:3011
 msgid "Ray of Frost"
 msgstr "Ray of Frost"
 
@@ -8200,11 +8230,11 @@ msgstr "Read Magic"
 msgid "Read it in camp: Constitution and its maximum rise by 2. Its magic is then spent."
 msgstr "Read it in camp: Constitution and its maximum rise by 2. Its magic is then spent."
 
-#: src/OpenGoldBox/combat_view.cpp:3512
+#: src/OpenGoldBox/combat_view.cpp:3468
 msgid "Read the encounter text, then Continue."
 msgstr "Read the encounter text, then Continue."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:391 src/OpenGoldBox/godot/scenes/party_panel.tscn:174
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:392 src/OpenGoldBox/godot/scenes/party_panel.tscn:174
 msgid "Ready"
 msgstr "Ready"
 
@@ -8236,7 +8266,7 @@ msgstr "Reckless attack"
 msgid "Recover slots"
 msgstr "Recover slots"
 
-#: src/OpenGoldBox/character_creation_view.cpp:80 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_creation_view.cpp:81 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Red"
 msgstr "Red"
 
@@ -8274,7 +8304,7 @@ msgstr "Regenerate"
 msgid "Regeneration"
 msgstr "Regeneration"
 
-#: src/OpenGoldBox/character_creation_view.cpp:831
+#: src/OpenGoldBox/character_creation_view.cpp:891
 msgid "Reincarnate"
 msgstr "Reincarnate"
 
@@ -8415,16 +8445,16 @@ msgstr "Replay tour"
 msgid "Repulsion Breath"
 msgstr "Repulsion Breath"
 
-#: src/OpenGoldBox/character_creation_view.cpp:622
+#: src/OpenGoldBox/character_creation_view.cpp:682
 msgid "Requirements met."
 msgstr "Requirements met."
 
-#: src/OpenGoldBox/character_creation_view.cpp:566
+#: src/OpenGoldBox/character_creation_view.cpp:626
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Requires {requirements}"
 msgstr "Requires {requirements}"
 
-#: src/OpenGoldBox/character_creation_view.cpp:646
+#: src/OpenGoldBox/character_creation_view.cpp:706
 msgid "Reroll all six"
 msgstr "Reroll all six"
 
@@ -8694,7 +8724,7 @@ msgstr "Retaliation attack"
 msgid "Return to game"
 msgstr "Return to game"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1179
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1180
 msgid "Return to party"
 msgstr "Return to party"
 
@@ -8714,11 +8744,11 @@ msgstr "Reverse Gravity"
 msgid "Review character"
 msgstr "Review character"
 
-#: src/OpenGoldBox/character_creation_view.cpp:855
+#: src/OpenGoldBox/character_creation_view.cpp:915
 msgid "Review the new body, then cast Reincarnate."
 msgstr "Review the new body, then cast Reincarnate."
 
-#: src/OpenGoldBox/character_creation_view.cpp:810
+#: src/OpenGoldBox/character_creation_view.cpp:870
 msgid "Review your character before adding it to the party."
 msgstr "Review your character before adding it to the party."
 
@@ -8803,7 +8833,7 @@ msgstr "Roll Flaming Sphere"
 msgid "Roll a d20 and add the saving throw bonus. Meet or exceed DC {dc} to save.\n\n"
 msgstr "Roll a d20 and add the saving throw bonus. Meet or exceed DC {dc} to save.\n\n"
 
-#: src/OpenGoldBox/character_creation_view.cpp:646 src/OpenGoldBox/godot/scenes/character_creation.tscn:173
+#: src/OpenGoldBox/character_creation_view.cpp:706 src/OpenGoldBox/godot/scenes/character_creation.tscn:174
 msgid "Roll all six"
 msgstr "Roll all six"
 
@@ -8833,12 +8863,12 @@ msgstr "Rooted (Flesh to Stone)"
 msgid "Rotting Fist curse"
 msgstr "Rotting Fist curse"
 
-#: src/OpenGoldBox/combat_view.cpp:2942
+#: src/OpenGoldBox/combat_view.cpp:2898
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Round {round} / {name} reaction\nMove {feet} ft | {action}"
 msgstr "Round {round} / {name} reaction\nMove {feet} ft | {action}"
 
-#: src/OpenGoldBox/combat_view.cpp:2943
+#: src/OpenGoldBox/combat_view.cpp:2899
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Round {round} / {name} turn\nMove {feet} ft | {action}"
 msgstr "Round {round} / {name} turn\nMove {feet} ft | {action}"
@@ -8868,7 +8898,7 @@ msgstr "SRD 5.2.1 combat subset | Authored test arena | Original Slums dialogue 
 msgid "STR"
 msgstr "STR"
 
-#: src/OpenGoldBox/combat_view.cpp:3051
+#: src/OpenGoldBox/combat_view.cpp:3007
 msgid "Sacred Flame"
 msgstr "Sacred Flame"
 
@@ -8949,7 +8979,7 @@ msgstr "Save name"
 msgid "Saved at once; they take effect from the next fight."
 msgstr "Saved at once; they take effect from the next fight."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1257 src/OpenGoldBox/godot/scenes/character_creation.tscn:1260 src/OpenGoldBox/godot/scenes/party_panel.tscn:162
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1258 src/OpenGoldBox/godot/scenes/character_creation.tscn:1261 src/OpenGoldBox/godot/scenes/party_panel.tscn:162
 msgid "Saving Throws"
 msgstr "Saving Throws"
 
@@ -9080,7 +9110,7 @@ msgstr "Select a character save to overwrite, or enter a new name."
 msgid "Select a character save. Previous versions are available for recovery."
 msgstr "Select a character save. Previous versions are available for recovery."
 
-#: src/OpenGoldBox/character_creation_view.cpp:743
+#: src/OpenGoldBox/character_creation_view.cpp:803
 msgid "Select a part's Color-1 or Color-2, then a swatch. Watch both poses change. Absent parts are disabled."
 msgstr "Select a part's Color-1 or Color-2, then a swatch. Watch both poses change. Absent parts are disabled."
 
@@ -9108,7 +9138,7 @@ msgstr "Select an inventory item first"
 msgid "Select an item first."
 msgstr "Select an item first."
 
-#: src/OpenGoldBox/character_creation_view.cpp:592
+#: src/OpenGoldBox/character_creation_view.cpp:652
 msgid "Select an option, then continue."
 msgstr "Select an option, then continue."
 
@@ -9120,32 +9150,32 @@ msgstr "Select weapon"
 msgid "Selected"
 msgstr "Selected"
 
-#: src/OpenGoldBox/combat_view.cpp:3620
+#: src/OpenGoldBox/combat_view.cpp:3576
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: Nick attack on {name}. Left/Right: target | Space: use | Escape: cancel"
 msgstr "Selected: Nick attack on {name}. Left/Right: target | Space: use | Escape: cancel"
 
-#: src/OpenGoldBox/combat_view.cpp:3623
+#: src/OpenGoldBox/combat_view.cpp:3579
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: Stabilize on {name}. Left/Right: target | Space: use | Escape: cancel"
 msgstr "Selected: Stabilize on {name}. Left/Right: target | Space: use | Escape: cancel"
 
-#: src/OpenGoldBox/combat_view.cpp:3622
+#: src/OpenGoldBox/combat_view.cpp:3578
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: Throw at {name}. Left/Right: target | Space: use | Escape: cancel"
 msgstr "Selected: Throw at {name}. Left/Right: target | Space: use | Escape: cancel"
 
-#: src/OpenGoldBox/combat_view.cpp:3505
+#: src/OpenGoldBox/combat_view.cpp:3461
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: {action}. Click a highlighted creature."
 msgstr "Selected: {action}. Click a highlighted creature."
 
-#: src/OpenGoldBox/combat_view.cpp:3495
+#: src/OpenGoldBox/combat_view.cpp:3451
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: {action}. Click a highlighted square."
 msgstr "Selected: {action}. Click a highlighted square."
 
-#: src/OpenGoldBox/combat_view.cpp:3507
+#: src/OpenGoldBox/combat_view.cpp:3463
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: {action}. Press Space to use it."
 msgstr "Selected: {action}. Press Space to use it."
@@ -9171,7 +9201,7 @@ msgstr "Shake awake"
 msgid "Shatter"
 msgstr "Shatter"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:105 src/OpenGold.Rules.Srd5/src/srd5.cpp:31379 src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:694
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:105 src/OpenGold.Rules.Srd5/src/srd5.cpp:31379 src/OpenGoldBox/character_creation_view.cpp:85 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:695
 msgid "Shield"
 msgstr "Shield"
 
@@ -9199,7 +9229,7 @@ msgstr "Shining (Shining Smite)"
 msgid "Shining Smite"
 msgstr "Shining Smite"
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:34 src/OpenGoldBox/combat_view.cpp:3053 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:34 src/OpenGoldBox/combat_view.cpp:3009 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Shocking Grasp"
 msgstr "Shocking Grasp"
 
@@ -9248,11 +9278,11 @@ msgstr "Shortbow"
 msgid "Shortsword"
 msgstr "Shortsword"
 
-#: src/OpenGoldBox/character_creation_view.cpp:540
+#: src/OpenGoldBox/character_creation_view.cpp:600
 msgid "Show character sheet"
 msgstr "Show character sheet"
 
-#: src/OpenGoldBox/combat_view.cpp:3722
+#: src/OpenGoldBox/combat_view.cpp:3678
 msgid "Showing unarmed with the saved body."
 msgstr "Showing unarmed with the saved body."
 
@@ -9284,15 +9314,15 @@ msgstr "Simulacrum copies a living member that is no simulacrum"
 msgid "Size"
 msgstr "Size"
 
-#: src/OpenGoldBox/character_creation_view.cpp:757
+#: src/OpenGoldBox/character_creation_view.cpp:817
 msgid "Size: Large"
 msgstr "Size: Large"
 
-#: src/OpenGoldBox/character_creation_view.cpp:757
+#: src/OpenGoldBox/character_creation_view.cpp:817
 msgid "Size: Regular"
 msgstr "Size: Regular"
 
-#: src/OpenGoldBox/character_creation_view.cpp:757
+#: src/OpenGoldBox/character_creation_view.cpp:817
 msgid "Size: Short"
 msgstr "Size: Short"
 
@@ -9321,7 +9351,7 @@ msgstr "Skillful"
 msgid "Skip"
 msgstr "Skip"
 
-#: src/OpenGoldBox/combat_view.cpp:3159
+#: src/OpenGoldBox/combat_view.cpp:3115
 msgid "Skip effect"
 msgstr "Skip effect"
 
@@ -9365,7 +9395,7 @@ msgstr "Slippery Mind: proficiency in Wisdom and Charisma saving throws.\nSneak 
 msgid "Slot level 1"
 msgstr "Slot level 1"
 
-#: src/OpenGoldBox/combat_view.cpp:3399
+#: src/OpenGoldBox/combat_view.cpp:3355
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Slot level {level}"
 msgstr "Slot level {level}"
@@ -9720,7 +9750,7 @@ msgstr "Speed reduced by 15 feet."
 msgid "Spell"
 msgstr "Spell"
 
-#: src/OpenGoldBox/character_creation_view.cpp:58
+#: src/OpenGoldBox/character_creation_view.cpp:59
 msgid "Spell Choices"
 msgstr "Spell Choices"
 
@@ -9816,7 +9846,7 @@ msgstr "Starry Wisp"
 msgid "Start"
 msgstr "Start"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:376 src/OpenGoldBox/party_preview.cpp:1078
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:377 src/OpenGoldBox/party_preview.cpp:1078
 msgid "Start over"
 msgstr "Start over"
 
@@ -10119,7 +10149,7 @@ msgstr "Taking damage calls for a Constitution save to keep its spell."
 msgid "Target"
 msgstr "Target"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1297
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1298
 msgid "Target DC"
 msgstr "Target DC"
 
@@ -10152,7 +10182,7 @@ msgstr "Target: {target}\nReduce Speed by 10 feet until your next turn starts.\n
 msgid "Teal: party | Orange: enemies\nStone: obstacle | Brown: difficult terrain\nSaving is available in training combat."
 msgstr "Teal: party | Orange: enemies\nStone: obstacle | Brown: difficult terrain\nSaving is available in training combat."
 
-#: src/OpenGoldBox/combat_view.cpp:772
+#: src/OpenGoldBox/combat_view.cpp:773
 msgid "Teal: party | Orange: enemies\nWheel: scroll | Shift+wheel: sideways\nMiddle-drag: pan | Scrollbars: navigate"
 msgstr "Teal: party | Orange: enemies\nWheel: scroll | Shift+wheel: sideways\nMiddle-drag: pan | Scrollbars: navigate"
 
@@ -10283,7 +10313,7 @@ msgstr "The Thieves' hall trains Rogues, Bards and Monks."
 msgid "The Wand of Secrets has no charges left."
 msgstr "The Wand of Secrets has no charges left."
 
-#: src/OpenGoldBox/combat_view.cpp:3532
+#: src/OpenGoldBox/combat_view.cpp:3488
 msgid "The attack is fully deflected. Redirect it at the attacker for 1 Focus Point, or decline."
 msgstr "The attack is fully deflected. Redirect it at the attacker for 1 Focus Point, or decline."
 
@@ -10311,6 +10341,10 @@ msgstr "The beam turns to {target}."
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "The cantrip reaches 30 feet farther per Warlock level."
 msgstr "The cantrip reaches 30 feet farther per Warlock level."
+
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:443
+msgid "The characters' portraits: the new pictures, or the original game's head and body portraits."
+msgstr "The characters' portraits: the new pictures, or the original game's head and body portraits."
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:22727
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -10620,7 +10654,7 @@ msgstr "This item is cursed. It cannot be unequipped until Remove Curse is cast 
 msgid "This member did not complete the rest."
 msgstr "This member did not complete the rest."
 
-#: src/OpenGoldBox/character_creation_view.cpp:800
+#: src/OpenGoldBox/character_creation_view.cpp:860
 msgid "This part is not present in either pose. Choose another head or body to use it."
 msgstr "This part is not present in either pose. Choose another head or body to use it."
 
@@ -10718,7 +10752,7 @@ msgstr "To hit AC {ac}: roll {roll} or more ({bonus})"
 msgid "To hit AC {ac}: roll {roll} or more ({bonus}), with Disadvantage"
 msgstr "To hit AC {ac}: roll {roll} or more ({bonus}), with Disadvantage"
 
-#: src/OpenGoldBox/character_creation_view.cpp:584
+#: src/OpenGoldBox/character_creation_view.cpp:644
 msgid "To start in a class, your scores must reach its minimums. Classes in gray do not qualify; go Back to change your scores or bonuses."
 msgstr "To start in a class, your scores must reach its minimums. Classes in gray do not qualify; go Back to change your scores or bonuses."
 
@@ -10739,7 +10773,7 @@ msgstr "Topple"
 msgid "Torch attack"
 msgstr "Torch attack"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1009
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1010
 msgid "Total"
 msgstr "Total"
 
@@ -10751,7 +10785,7 @@ msgstr "Touch: once per turn the creature takes 1d4 less damage of a chosen type
 msgid "Touch: the creature adds 1d4 to Athletics or Medicine checks, as chosen; Concentration."
 msgstr "Touch: the creature adds 1d4 to Athletics or Medicine checks, as chosen; Concentration."
 
-#: src/OpenGoldBox/character_creation_view.cpp:57 src/OpenGoldBox/godot/scenes/combat_demo.tscn:55 src/OpenGoldBox/training_control.h:159
+#: src/OpenGoldBox/character_creation_view.cpp:58 src/OpenGoldBox/godot/scenes/combat_demo.tscn:55 src/OpenGoldBox/training_control.h:159
 msgid "Training"
 msgstr "Training"
 
@@ -10763,7 +10797,7 @@ msgstr "Training arena"
 msgid "Training choices pending"
 msgstr "Training choices pending"
 
-#: src/OpenGoldBox/combat_view.cpp:1367
+#: src/OpenGoldBox/combat_view.cpp:1323
 msgid "Training combat saved."
 msgstr "Training combat saved."
 
@@ -10957,11 +10991,11 @@ msgstr "Tyranthraxus, the vampire"
 msgid "Unable to continue"
 msgstr "Unable to continue"
 
-#: src/OpenGoldBox/combat_view.cpp:2930
+#: src/OpenGoldBox/combat_view.cpp:2886
 msgid "Unable to load rules"
 msgstr "Unable to load rules"
 
-#: src/OpenGoldBox/combat_view.cpp:2870
+#: src/OpenGoldBox/combat_view.cpp:2826
 msgid "Unarmed"
 msgstr "Unarmed"
 
@@ -11037,7 +11071,7 @@ msgstr "Unseen even when it attacks or casts a spell."
 msgid "Unseen until it attacks or casts a spell."
 msgstr "Unseen until it attacks or casts a spell."
 
-#: src/OpenGoldBox/combat_view.cpp:2866
+#: src/OpenGoldBox/combat_view.cpp:2822
 msgid "Unspecified"
 msgstr "Unspecified"
 
@@ -11105,7 +11139,7 @@ msgstr "Use it while exploring, a charge each time: it points out the nearest hi
 msgid "Use new"
 msgstr "Use new"
 
-#: src/OpenGoldBox/combat_view.cpp:3551
+#: src/OpenGoldBox/combat_view.cpp:3507
 msgid "Use or decline the opportunity attack."
 msgstr "Use or decline the opportunity attack."
 
@@ -11171,7 +11205,7 @@ msgstr "Vex ({source}): source's next attack against this creature has Advantage
 msgid "Vicious Mockery"
 msgstr "Vicious Mockery"
 
-#: src/OpenGoldBox/combat_view.cpp:2956
+#: src/OpenGoldBox/combat_view.cpp:2912
 msgid "Victory"
 msgstr "Victory"
 
@@ -11183,7 +11217,7 @@ msgstr "Victory."
 msgid "View Character"
 msgstr "View Character"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1155
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1156
 msgid "View party"
 msgstr "View party"
 
@@ -11395,7 +11429,7 @@ msgstr "Warlock skills"
 msgid "Warrior of the Open Hand"
 msgstr "Warrior of the Open Hand"
 
-#: src/OpenGoldBox/character_creation_view.cpp:83 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:607 src/OpenGoldBox/godot/scenes/combat_demo.tscn:931
+#: src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:608 src/OpenGoldBox/godot/scenes/combat_demo.tscn:931
 msgid "Weapon"
 msgstr "Weapon"
 
@@ -11444,7 +11478,7 @@ msgstr "Western wilderness, the cave"
 msgid "Whip"
 msgstr "Whip"
 
-#: src/OpenGoldBox/character_creation_view.cpp:82 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_creation_view.cpp:83 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "White"
 msgstr "White"
 
@@ -11683,7 +11717,7 @@ msgstr "Write a scroll of {spell} (Magic Ink of level {level} or higher, {hours}
 msgid "Yarash"
 msgstr "Yarash"
 
-#: src/OpenGoldBox/character_creation_view.cpp:82
+#: src/OpenGoldBox/character_creation_view.cpp:83
 msgid "Yellow"
 msgstr "Yellow"
 
@@ -11691,44 +11725,44 @@ msgstr "Yellow"
 msgid "Yellow: the party cannot afford it."
 msgstr "Yellow: the party cannot afford it."
 
-#: src/OpenGoldBox/combat_view.cpp:3527
+#: src/OpenGoldBox/combat_view.cpp:3483
 msgid "You are hit. Cast Shield (+5 AC) or decline."
 msgstr "You are hit. Cast Shield (+5 AC) or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3529
+#: src/OpenGoldBox/combat_view.cpp:3485
 msgid "You are hit. Deflect the attack (1d10 + Dexterity + Monk level less damage) or decline."
 msgstr "You are hit. Deflect the attack (1d10 + Dexterity + Monk level less damage) or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3544
+#: src/OpenGoldBox/combat_view.cpp:3500
 msgid "You are hit. Halve the damage with Uncanny Dodge, or decline."
 msgstr "You are hit. Halve the damage with Uncanny Dodge, or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3546
+#: src/OpenGoldBox/combat_view.cpp:3502
 msgid "You are hit. Resist this damage type for the rest of the turn with Superior Hunter's Defense, or decline."
 msgstr "You are hit. Resist this damage type for the rest of the turn with Superior Hunter's Defense, or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3538
+#: src/OpenGoldBox/combat_view.cpp:3494
 msgid "You are hit. Use Stone's Endurance (1d12 + Constitution modifier less damage), or decline."
 msgstr "You are hit. Use Stone's Endurance (1d12 + Constitution modifier less damage), or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3523
+#: src/OpenGoldBox/combat_view.cpp:3479
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "You are hit: {total} against AC {ac}. Cast Shield (+5 AC) or decline."
 msgstr "You are hit: {total} against AC {ac}. Cast Shield (+5 AC) or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3535
+#: src/OpenGoldBox/combat_view.cpp:3491
 msgid "You are hurt. Cast Hellish Rebuke at the attacker, or decline."
 msgstr "You are hurt. Cast Hellish Rebuke at the attacker, or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3549
+#: src/OpenGoldBox/combat_view.cpp:3505
 msgid "You are hurt. Strike back at the attacker with a melee attack (Retaliation), or decline."
 msgstr "You are hurt. Strike back at the attacker with a melee attack (Retaliation), or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:3541
+#: src/OpenGoldBox/combat_view.cpp:3497
 msgid "You are hurt. Strike the attacker with Storm's Thunder (1d8 Thunder damage), or decline."
 msgstr "You are hurt. Strike the attacker with Storm's Thunder (1d8 Thunder damage), or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:1658
+#: src/OpenGoldBox/combat_view.cpp:1614
 msgid "You cannot run off the battlefield now: an enemy is faster, you have no movement left, or you must stay."
 msgstr "You cannot run off the battlefield now: an enemy is faster, you have no movement left, or you must stay."
 
@@ -11756,15 +11790,15 @@ msgstr "You get away."
 msgid "You have lost the fight."
 msgstr "You have lost the fight."
 
-#: src/OpenGoldBox/combat_view.cpp:110
+#: src/OpenGoldBox/combat_view.cpp:111
 msgid "Your attack hit. Add Fire's Burn (1d10 Fire damage), or decline."
 msgstr "Your attack hit. Add Fire's Burn (1d10 Fire damage), or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:102
+#: src/OpenGoldBox/combat_view.cpp:103
 msgid "Your attack hit. Add Frost's Chill (1d6 Cold damage, Speed 10 feet lower), or decline."
 msgstr "Your attack hit. Add Frost's Chill (1d6 Cold damage, Speed 10 feet lower), or decline."
 
-#: src/OpenGoldBox/combat_view.cpp:107
+#: src/OpenGoldBox/combat_view.cpp:108
 msgid "Your attack hit. Knock the target Prone with Hill's Tumble, or decline."
 msgstr "Your attack hit. Knock the target Prone with Hill's Tumble, or decline."
 
@@ -11772,7 +11806,7 @@ msgstr "Your attack hit. Knock the target Prone with Hill's Tumble, or decline."
 msgid "Your camp is attacked!"
 msgstr "Your camp is attacked!"
 
-#: src/OpenGoldBox/character_creation_view.cpp:872
+#: src/OpenGoldBox/character_creation_view.cpp:932
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Your character: {race} / {gender} / {class}"
 msgstr "Your character: {race} / {gender} / {class}"
@@ -11781,7 +11815,7 @@ msgstr "Your character: {race} / {gender} / {class}"
 msgid "Your melee weapon is your pact weapon: proficiency, Charisma for its attack and damage rolls, and Necrotic, Psychic or Radiant damage if you like."
 msgstr "Your melee weapon is your pact weapon: proficiency, Charisma for its attack and damage rolls, and Necrotic, Psychic or Radiant damage if you like."
 
-#: src/OpenGoldBox/combat_view.cpp:2957 src/OpenGoldBox/rolf_tour_view.cpp:1936
+#: src/OpenGoldBox/combat_view.cpp:2913 src/OpenGoldBox/rolf_tour_view.cpp:1936
 msgid "Your party flees the battle."
 msgstr "Your party flees the battle."
 
@@ -11789,7 +11823,7 @@ msgstr "Your party flees the battle."
 msgid "Your party has been defeated."
 msgstr "Your party has been defeated."
 
-#: src/OpenGoldBox/combat_view.cpp:3552
+#: src/OpenGoldBox/combat_view.cpp:3508
 msgid "Your party is fleeing."
 msgstr "Your party is fleeing."
 
@@ -12117,7 +12151,7 @@ msgstr "{ability} +{bonus}"
 msgid "{ability} {minimum}"
 msgstr "{ability} {minimum}"
 
-#: src/OpenGoldBox/combat_view.cpp:3276
+#: src/OpenGoldBox/combat_view.cpp:3232
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{action} ({count} left)"
 msgstr "{action} ({count} left)"
@@ -12940,7 +12974,7 @@ msgstr "{name} falls upward."
 msgid "{name} fights on with {hp} Hit Points (Relentless Rage)."
 msgstr "{name} fights on with {hp} Hit Points (Relentless Rage)."
 
-#: src/OpenGoldBox/combat_view.cpp:3517
+#: src/OpenGoldBox/combat_view.cpp:3473
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} fights under computer control (Quick). Space or Take control: play the party yourself."
 msgstr "{name} fights under computer control (Quick). Space or Take control: play the party yourself."
@@ -13750,7 +13784,7 @@ msgstr "{name} returns from the Lower Planes."
 msgid "{name} returns from the maze."
 msgstr "{name} returns from the maze."
 
-#: src/OpenGoldBox/character_creation_view.cpp:844
+#: src/OpenGoldBox/character_creation_view.cpp:904
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} returns in a new body: {species}. Make the species' choices, then continue."
 msgstr "{name} returns in a new body: {species}. Make the species' choices, then continue."
@@ -14700,6 +14734,11 @@ msgstr "{name}'s javelin becomes a bolt of lightning."
 msgid "{name}'s mind clears."
 msgstr "{name}'s mind clears."
 
+#: src/OpenGoldBox/portrait_dialog.cpp:85
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name}'s portrait"
+msgstr "{name}'s portrait"
+
 #: src/OpenGoldBox/rest_dialog_impl.h:480
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}'s simulacrum"
@@ -14775,12 +14814,12 @@ msgstr "{name}: skill lesson (learned at this level)"
 msgid "{name}: {type} damage {before} -> {after}."
 msgstr "{name}: {type} damage {before} -> {after}."
 
-#: src/OpenGoldBox/character_creation_view.cpp:749 src/OpenGoldBox/character_creation_view.cpp:752
+#: src/OpenGoldBox/character_creation_view.cpp:809 src/OpenGoldBox/character_creation_view.cpp:812
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{number} / {count}"
 msgstr "{number} / {count}"
 
-#: src/OpenGoldBox/character_creation_view.cpp:782
+#: src/OpenGoldBox/character_creation_view.cpp:842
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{part} / Color-{bank}: choose a color"
 msgstr "{part} / Color-{bank}: choose a color"
@@ -14865,7 +14904,7 @@ msgstr "{spell} takes hold of {name}."
 msgid "{spell} with {name}"
 msgstr "{spell} with {name}"
 
-#: src/OpenGoldBox/combat_view.cpp:3677
+#: src/OpenGoldBox/combat_view.cpp:3633
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{spell}: aim {left} more of {maximum}. Aimed at: {chosen}"
 msgstr "{spell}: aim {left} more of {maximum}. Aimed at: {chosen}"
@@ -14875,7 +14914,7 @@ msgstr "{spell}: aim {left} more of {maximum}. Aimed at: {chosen}"
 msgid "{spell}: {place}"
 msgstr "{spell}: {place}"
 
-#: src/OpenGoldBox/combat_view.cpp:2886
+#: src/OpenGoldBox/combat_view.cpp:2842
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{type}\nAC {ac}  HP {hp}/{maximum}\nWeapon: {weapon}"
 msgstr "{type}\nAC {ac}  HP {hp}/{maximum}\nWeapon: {weapon}"
@@ -14905,3 +14944,11 @@ msgstr "↑ North"
 #: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:408 src/OpenGoldBox/rolf_tour_view.cpp:2549
 msgid "↑ Step"
 msgstr "↑ Step"
+
+#: src/OpenGoldBox/godot/scenes/original_portrait_parts.tscn:26
+msgid "◀ Body"
+msgstr "◀ Body"
+
+#: src/OpenGoldBox/godot/scenes/original_portrait_parts.tscn:10
+msgid "◀ Head"
+msgstr "◀ Head"

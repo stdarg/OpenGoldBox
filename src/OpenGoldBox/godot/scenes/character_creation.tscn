@@ -23,6 +23,7 @@
 [ext_resource type="Script" path="res://scenes/portrait_zoom.gd" id="94_portrait_zoom"]
 
 [ext_resource type="Script" path="res://scenes/portrait_preview.gd" id="93_portrait_preview"]
+[ext_resource type="PackedScene" path="res://scenes/original_portrait_parts.tscn" id="95_original_parts"]
 
 [node name="CharacterCreation" type="CharacterCreationView"]
 texture_filter = 1
@@ -1432,6 +1433,18 @@ offset_bottom = -20
 metadata/layout_reference = Rect2(1606, 1024, 150, 36)
 text = "Make leader"
 
+[node name="ChangePortrait" type="Button" parent="TownSheet"]
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -514
+offset_top = -56
+offset_right = -324
+offset_bottom = -20
+metadata/layout_reference = Rect2(1406, 1024, 190, 36)
+text = "Change portrait…"
+
 [node name="GearPreferenceLabel" type="Label" parent="TownSheet"]
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -1930,6 +1943,13 @@ layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 2
 script = ExtResource("95_portrait_sheet")
+
+[node name="OriginalParts" parent="." instance=ExtResource("95_original_parts")]
+visible = false
+offset_left = 288
+offset_top = 150
+offset_right = 728
+offset_bottom = 238
 
 [node name="PortraitPreview" type="TextureRect" parent="."]
 anchor_left = 1

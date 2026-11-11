@@ -583,4 +583,39 @@ CharacterColorUsage CharacterArt::color_usage(const CharacterAppearance &a) cons
     }
     return usage;
 }
+
+std::vector<unsigned> portrait_heads_for(const CharacterArt &art, std::string_view race,
+                                         std::string_view gender)
+{
+    std::vector<unsigned> heads;
+    if (const auto own = matching_portrait_head(race, gender); own && art.heads().contains(*own))
+    {
+        heads.push_back(*own);
+    }
+    for (const auto &[id, part] : art.heads())
+    {
+        if (id <= 255)
+        {
+            heads.push_back(id);
+        }
+    }
+    return heads;
+}
+
+void choose_original_portrait(CharacterAppearance &appearance, const CharacterArt &art,
+                              std::string_view race, std::string_view gender, std::uint32_t pick)
+{
+    const auto heads = portrait_heads_for(art, race, gender);
+    if (heads.empty() || art.bodies().empty())
+    {
+        throw std::runtime_error("The original portraits are missing");
+    }
+    // A race's own head leaves the whole pick to the body.
+    const bool own_head = heads.front() > 255;
+    appearance.portrait_head = own_head ? heads.front() : heads[pick % heads.size()];
+    const auto body_pick = own_head ? pick : pick / static_cast<std::uint32_t>(heads.size());
+    const auto body = std::next(art.bodies().begin(),
+                                static_cast<std::ptrdiff_t>(body_pick % art.bodies().size()));
+    appearance.portrait_body = body->first;
+}
 } // namespace opengold::por

@@ -96,6 +96,8 @@ void CharacterCreationView::art_changed()
     {
         town->show_original_walls(settings::original_wall_art());
     }
+    // The party's portraits, new or original.
+    show_leader_change();
     if (auto *combat = Object::cast_to<CombatView>(get_node_or_null("CampaignCombat")))
     {
         combat->refresh_art();

@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[node name="OriginalParts" type="GridContainer"]
+size_flags_horizontal = 4
+columns = 3
+
+[node name="HeadPrevious" type="Button" parent="."]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "◀ Head"
+
+[node name="HeadNumber" type="Label" parent="."]
+custom_minimum_size = Vector2(200, 40)
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HeadNext" type="Button" parent="."]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "Head ▶"
+
+[node name="BodyPrevious" type="Button" parent="."]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "◀ Body"
+
+[node name="BodyNumber" type="Label" parent="."]
+custom_minimum_size = Vector2(200, 40)
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BodyNext" type="Button" parent="."]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "Body ▶"

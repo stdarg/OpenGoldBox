@@ -864,6 +864,50 @@ void additional_portrait_tests()
     }
 }
 
+// An original portrait is chosen at random, and a race the original lacks
+// wears its own head first.
+void original_portrait_choice_tests()
+{
+    Image head;
+    head.width = 88;
+    head.height = 40;
+    head.rgba.assign(88 * 40 * 4, 200);
+    Image body;
+    body.width = 88;
+    body.height = 48;
+    body.rgba.assign(88 * 48 * 4, 128);
+    CharacterArt art;
+    for (const unsigned id : {1u, 2u, 3u})
+    {
+        art.set_original_head(id, PortraitPart{"original", head});
+    }
+    for (const unsigned id : {1u, 2u})
+    {
+        art.set_original_body(id, PortraitPart{"original", body});
+    }
+    const auto goliath = *matching_portrait_head("goliath", "male");
+    art.add_portrait_head(goliath, head);
+    check(portrait_heads_for(art, "human", "female") == std::vector<unsigned>{1, 2, 3},
+          "An original race may wear any original head");
+    check(portrait_heads_for(art, "goliath", "male") == std::vector<unsigned>{goliath, 1, 2, 3},
+          "A new race wears its own head first, then may wear the original's");
+    std::set<std::pair<unsigned, unsigned>> chosen;
+    for (std::uint32_t pick = 0; pick < 6; ++pick)
+    {
+        CharacterAppearance a;
+        choose_original_portrait(a, art, "human", "female", pick);
+        check(art.heads().contains(a.portrait_head) && a.portrait_head <= 255 &&
+                  art.bodies().contains(a.portrait_body),
+              "A random original portrait uses the original's heads and bodies");
+        chosen.insert({a.portrait_head, a.portrait_body});
+    }
+    check(chosen.size() == 6, "Six picks give every head on every body");
+    CharacterAppearance a;
+    choose_original_portrait(a, art, "goliath", "male", 1);
+    check(a.portrait_head == goliath && a.portrait_body == 2,
+          "A new race starts with its own head, on a body the pick chooses");
+}
+
 void art_tests()
 {
     std::vector<std::uint8_t> raw(17 + 24 * 24 / 2);
@@ -1430,6 +1474,7 @@ int main()
         starting_gold_tests();
         inventory_tests();
         additional_portrait_tests();
+        original_portrait_choice_tests();
         art_tests();
         ordinary_creation_tests();
         spell_pick_tests();

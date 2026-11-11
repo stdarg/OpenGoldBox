@@ -9,9 +9,9 @@
 #include <optional>
 
 // A party member's sheet opened from the exploration screen's party list,
-// where the member can also be made leader. The window's controls come from
-// the creation scene; the campaign view hears when the leader changes, so
-// neither depends on the other's internals (Effective C++ Item 31).
+// where the member can also be made leader or given another portrait. The window's controls come
+// from the creation scene; the campaign view hears when the leader changes, so neither depends on
+// the other's internals (Effective C++ Item 31).
 class TownSheetDialog : public godot::Window
 {
     GDCLASS(TownSheetDialog, godot::Window)
@@ -21,9 +21,9 @@ class TownSheetDialog : public godot::Window
 
     void _ready() override;
     // The host's campaign, read at each use because loading a save replaces
-    // it; what follows a change of leader; and where a failed handler is
-    // shown. All three are required.
-    void connect_host(CampaignAccess campaign, std::function<void()> leader_changed,
+    // it; what follows a change of leader or portrait; and where a failed
+    // handler is shown. All three are required.
+    void connect_host(CampaignAccess campaign, std::function<void()> party_changed,
                       FailureReport report);
     // Shows the member in a party slot; an empty or invalid slot is ignored.
     void show_member(std::int64_t slot);
@@ -40,13 +40,16 @@ class TownSheetDialog : public godot::Window
   private:
     void connect_controls();
     CampaignAccess campaign_;
-    std::function<void()> leader_changed_;
+    std::function<void()> party_changed_;
     FailureReport report_;
     opengold::MemberId member_{};
     // Loaded when the first sheet opens.
     std::optional<PortraitCatalog> portraits_;
 
+    // Draws the shown member's sheet.
+    void show_sheet();
     void make_leader();
+    void change_portrait();
     // The member's auto-equip preference (EQUIP-1), shown only while the
     // Options screen has auto-equip on.
     void gear_preference_selected(std::int64_t index);

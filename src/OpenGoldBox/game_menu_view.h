@@ -46,6 +46,7 @@ class GameMenuView : public godot::Control
     void zoom_changed(double value);
     void wall_art_selected(std::int64_t index);
     void combat_art_selected(std::int64_t index);
+    void portrait_art_selected(std::int64_t index);
     void auto_equip_selected(std::int64_t index);
     void unidentified_magic_selected(std::int64_t index);
     void keep_quick_selected(std::int64_t index);

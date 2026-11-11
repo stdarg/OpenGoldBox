@@ -1,0 +1,80 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/original_portrait_parts.tscn" id="1_parts"]
+
+[node name="PortraitDialog" type="PortraitDialog"]
+visible = false
+transient = true
+exclusive = true
+unresizable = true
+size = Vector2i(640, 700)
+title = "Portrait"
+
+[node name="Background" type="Panel" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_type_variation = &"DialogSurface"
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_type_variation = &"Margin24"
+
+[node name="Rows" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_type_variation = &"VBoxContainerGap8"
+
+[node name="Preview" type="TextureRect" parent="Margin/Rows"]
+unique_name_in_owner = true
+texture_filter = 1
+custom_minimum_size = Vector2(440, 440)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NewArt" type="HBoxContainer" parent="Margin/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Previous" type="Button" parent="Margin/Rows/NewArt"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 40)
+layout_mode = 2
+text = "Previous"
+
+[node name="Choice" type="OptionButton" parent="Margin/Rows/NewArt"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Portrait"
+
+[node name="Next" type="Button" parent="Margin/Rows/NewArt"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 40)
+layout_mode = 2
+text = "Next"
+
+[node name="Original" parent="Margin/Rows" instance=ExtResource("1_parts")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Problem" type="Label" parent="Margin/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+theme_type_variation = &"LabelMuted"
+
+[node name="Bottom" type="HBoxContainer" parent="Margin/Rows"]
+layout_mode = 2
+alignment = 2
+
+[node name="Close" type="Button" parent="Margin/Rows/Bottom"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 40)
+layout_mode = 2
+text = "Close"
