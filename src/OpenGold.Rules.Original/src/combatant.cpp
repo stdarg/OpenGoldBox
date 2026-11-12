@@ -11,7 +11,7 @@ namespace opengold::original
 namespace
 {
 
-constexpr std::string_view profile_format = "combatant6";
+constexpr std::string_view profile_format = "combatant7";
 
 std::vector<int> numbers_of(const Combatant &c)
 {
@@ -38,7 +38,10 @@ std::vector<int> numbers_of(const Combatant &c)
                     after.modifier, missile.empty_handed_backstabs ? 1 : 0});
     numbers.insert(numbers.end(), c.class_levels.begin(), c.class_levels.end());
     numbers.insert(numbers.end(),
-                   {c.strength, c.elf ? 1 : 0, c.save_bonus, static_cast<int>(c.effects.size())});
+                   {c.strength, c.race, c.striker ? 1 : 0, c.striker ? c.striker->plus : 0,
+                    c.striker && c.striker->silver ? 1 : 0, c.striker ? c.striker->weapon_class : 0,
+                    c.weapon_type, c.wards_gaze ? 1 : 0, c.save_bonus,
+                    static_cast<int>(c.effects.size())});
     for (const auto &effect : c.effects)
     {
         numbers.insert(numbers.end(),
@@ -147,7 +150,14 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
         }
     }
     c.strength = *next++;
-    c.elf = *next++ != 0;
+    c.race = *next++;
+    if (*next++ != 0)
+    {
+        c.striker = StrikingItem{next[0], next[1] != 0, next[2]};
+    }
+    next += 3;
+    c.weapon_type = *next++;
+    c.wards_gaze = *next++ != 0;
     c.save_bonus = *next++;
     const auto effect_count = *next++;
     for (int n = 0; n < effect_count; ++n, next += 4)
@@ -282,6 +292,41 @@ Missile missile_of(const por::CharacterRecord &record, std::span<const CarriedIt
     return m;
 }
 
+// The item a creature's blows land with: a thrown weapon itself, the arrows
+// or quarrels a launcher fires, else the readied weapon (charhlp.pas,
+// FindDamagingRangedWeapon); none without a weapon.
+std::optional<StrikingItem> striker_of(std::span<const CarriedItem> carried,
+                                       const CarriedItem *weapon)
+{
+    if (!weapon)
+    {
+        return std::nullopt;
+    }
+    namespace bit = por::item_property;
+    const CarriedItem *strikes = weapon;
+    if (!weapon->type.has(bit::thrown) && weapon->type.has(bit::fires_ammunition))
+    {
+        const auto *shot = weapon->type.has(bit::fires_quarrels) ? readied_in(carried, bolt_slot)
+                           : weapon->type.has(bit::fires_arrows) ? readied_in(carried, arrow_slot)
+                                                                 : nullptr;
+        strikes = shot ? shot : weapon;
+    }
+    // Name word 177 is "Silver", in the item's third name part.
+    return StrikingItem{strikes->item.magic_bonus, strikes->item.name_components[2] == 177,
+                        strikes->type.damage_type};
+}
+
+// A mirror (name word 118 in any part) or the wooden holy symbol (word 152
+// with 252 in its third part) (effhndlr.pas, EffGazeBlock).
+bool wards_gaze(const por::ItemRecord &item)
+{
+    const auto &words = item.name_components;
+    const bool mirror = std::find(words.begin(), words.end(), 118) != words.end();
+    const bool holy_symbol =
+        std::find(words.begin(), words.end(), 152) != words.end() && words[2] == 252;
+    return mirror || holy_symbol;
+}
+
 } // namespace
 
 Combatant combatant_from_record(const por::CharacterRecord &record,
@@ -414,7 +459,14 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
         c.missile = missile_of(record, carried, *weapon);
     }
     c.strength = strength;
-    c.elf = record.race == elf_race;
+    c.race = record.race;
+    c.weapon_type = weapon ? weapon->item.type : -1;
+    c.striker = striker_of(carried, weapon);
+    c.wards_gaze = std::any_of(carried.begin(), carried.end(),
+                               [](const CarriedItem &item)
+                               {
+                                   return item.item.readied() && wards_gaze(item.item);
+                               });
     // Code 0 is no effect: the original dispatches none for it.
     for (const auto &effect : effects)
     {

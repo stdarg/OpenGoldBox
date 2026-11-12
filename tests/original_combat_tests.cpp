@@ -1208,7 +1208,7 @@ void a_ghoul_paralyses()
     auto fight = attack_until(ghoul, victim(), paralysed);
     check(paralysed(*fight.session), "A ghoul's touch paralyses");
     auto elf = victim();
-    elf.elf = true;
+    elf.race = 2;
     auto spared = attack_until(ghoul, elf,
                                [](const rules::CombatSession &session)
                                {
@@ -1371,6 +1371,259 @@ void a_wight_drains_levels()
           "A fighter/thief loses the level that took the most experience");
 }
 
+// The item a creature's blows land with (charhlp.pas, FindDamagingRangedWeapon):
+// a bow's silver arrows, a thrown dagger itself, none bare-handed; and a
+// readied mirror wards off a gaze.
+void strikers_come_from_the_gear()
+{
+    namespace bit = por::item_property;
+    const auto record = kobold_record();
+    por::ItemTemplate bow_type;
+    bow_type.range = 8;
+    bow_type.properties = bit::fires_arrows | bit::dexterity_missile | bit::fires_ammunition;
+    por::ItemRecord bow;
+    bow.type = 42;
+    bow.readied_raw = 1;
+    por::ItemTemplate arrow_type;
+    arrow_type.worn_location = 11;
+    arrow_type.damage_type = 0x01;
+    por::ItemRecord arrows;
+    arrows.readied_raw = 1;
+    arrows.magic_bonus = 1;
+    arrows.name_components = {0, 0, 177};
+    por::ItemTemplate mirror_type;
+    mirror_type.worn_location = 13;
+    por::ItemRecord mirror;
+    mirror.readied_raw = 1;
+    mirror.name_components = {118, 0, 0};
+    const std::vector<original::CarriedItem> archer{
+        {bow, bow_type}, {arrows, arrow_type}, {mirror, mirror_type}};
+    const auto shooting = original::combatant_from_record(record, archer);
+    check(shooting.striker == original::StrikingItem{1, true, 0x01} && shooting.weapon_type == 42,
+          "A bow strikes with its silver arrows +1, which pierce");
+    check(shooting.wards_gaze, "A readied mirror wards off a gaze");
+    check(original::Combatant::decode(shooting.encode()) == shooting,
+          "And it all survives encoding");
+    const auto bare = original::combatant_from_record(record);
+    check(!bare.striker && bare.weapon_type == -1 && !bare.wards_gaze,
+          "Bare-handed, nothing strikes");
+}
+
+// The party's attacker strikes the target at each of its turns until the
+// condition holds or 30 rounds pass; a far-off ogre keeps the fight going.
+Fight strike_until(const original::Combatant &attacker, const original::Combatant &target,
+                   const std::function<bool(const rules::CombatSession &)> &done,
+                   std::uint64_t seed = 53)
+{
+    auto ogre = creature(1000, 0);
+    ogre.movement = 0;
+    auto fight = arrange({{"Attacker", rules::Side::party, {3, 3}, attacker},
+                          {"Target", rules::Side::opposition, {4, 3}, target},
+                          {"Ogre", rules::Side::opposition, {7, 7}, ogre}},
+                         seed);
+    auto &session = *fight.session;
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            if (actor == "Attacker")
+            {
+                if (const auto melee = offered(session, "melee", "Target"))
+                {
+                    return *melee;
+                }
+            }
+            return order(session, "end");
+        },
+        [&]
+        {
+            return done(session) || session.snapshot().round > 30;
+        },
+        600);
+    return fight;
+}
+
+// The damage of the attacker's first hit on the target.
+int first_hit(const original::Combatant &attacker, const original::Combatant &target)
+{
+    auto fight = strike_until(attacker, target,
+                              [](const rules::CombatSession &session)
+                              {
+                                  return logged(session, "{attacker} hits {name} for {damage}.",
+                                                "Attacker") > 0;
+                              });
+    for (const auto &entry : fight.session->snapshot().log_entries)
+    {
+        if (entry.message.source == "{attacker} hits {name} for {damage}.")
+        {
+            return std::stoi(entry.message.arguments[2].value);
+        }
+    }
+    return -1;
+}
+
+// What a target's defenses make of 10 damage (effhndlr.pas, WEAPON_DAMAGE_DEFENDER).
+void defenses_weigh_the_weapon()
+{
+    const auto hitter = [](std::optional<original::StrikingItem> striker, int race, int level)
+    {
+        auto c = monster({2, 1, 1, 9}, {0, 0, 0, 0}, {});
+        c.striker = striker;
+        c.race = race;
+        c.level = level;
+        return c;
+    };
+    const auto defended = [](int code)
+    {
+        auto c = creature(1000, 0);
+        c.effects.push_back({code, 0, 0, false});
+        return c;
+    };
+    const original::StrikingItem mundane{0, false, 0}, magic{1, false, 0}, silver{0, true, 0},
+        mace{0, false, 0x80};
+    check(first_hit(hitter(mundane, 7, 5), defended(119)) == 0,
+          "A character's mundane sword cannot harm what needs magic");
+    check(first_hit(hitter(magic, 7, 5), defended(119)) == 10, "A magic one can");
+    check(first_hit(hitter(std::nullopt, 0, 4), defended(119)) == 10,
+          "Nor can a monster below level 4; one of level 4 can, bare-clawed");
+    check(first_hit(hitter(silver, 7, 1), defended(123)) == 5 &&
+              first_hit(hitter(mundane, 7, 1), defended(123)) == 0,
+          "A wraith takes half from silver, nothing from iron");
+    check(first_hit(hitter(silver, 7, 1), defended(96)) == 10 &&
+              first_hit(hitter(std::nullopt, 0, 9), defended(96)) == 0,
+          "A werecreature takes silver whole, claws not at all");
+    check(first_hit(hitter(mace, 7, 1), defended(94)) == 5 &&
+              first_hit(hitter(mundane, 7, 1), defended(94)) == 10,
+          "Half from a mace, all from a sword (94)");
+    check(first_hit(hitter(mundane, 7, 1), defended(115)) == 5 &&
+              first_hit(hitter(mace, 7, 1), defended(115)) == 10,
+          "Half from a sword, all from a mace (115)");
+    check(first_hit(hitter(magic, 7, 1), defended(116)) == 5, "Half from magic (116)");
+    auto vial = hitter(mundane, 7, 1);
+    vial.weapon_type = 85;
+    const int holy = first_hit(vial, defended(117));
+    check(holy >= 2 && holy <= 7, "Holy water burns the undead for 1d6+1");
+}
+
+// A troll starts regenerating 3 rounds after its first wound, 3 a round, and
+// downed by a weapon rises again with all its Hit Points 3d6 rounds later
+// (effhndlr.pas, 98 to 102).
+void a_troll_rises_again()
+{
+    auto troll = creature(30, 6);
+    troll.effects = {{100, 0, 0, false}, {101, 0, 0, false}};
+    auto hitter = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {});
+    auto fight = strike_until(hitter, troll,
+                              [](const rules::CombatSession &session)
+                              {
+                                  return session.snapshot().round > 6;
+                              });
+    // One point a hit, regenerating 3 a round from the 3rd round after the first.
+    const auto &healing = view_of(fight.session->snapshot(), "Target");
+    check(healing.hit_points == 30, "Its wounds close as fast as one sword opens them");
+    auto killer = monster({2, 1, 1, 40}, {0, 0, 0, 0}, {});
+    auto again = strike_until(killer, troll,
+                              [](const rules::CombatSession &session)
+                              {
+                                  return logged(session, "{name} rises again.") > 0;
+                              });
+    check(logged(*again.session, "{name} rises again.") > 0 &&
+              view_of(again.session->snapshot(), "Target").hit_points == 30,
+          "Downed by a sword, it rises again whole");
+}
+
+// One that fights while down stands again with 6 less its wounds, and falls
+// dead 1d4+1 rounds later (effhndlr.pas, 95 and 99).
+void fighting_on_while_down()
+{
+    auto berserker = creature(5, 1);
+    berserker.effects = {{99, 0, 0, false}};
+    auto hitter = monster({2, 1, 1, 6}, {0, 0, 0, 0}, {});
+    auto fight = strike_until(hitter, berserker,
+                              [](const rules::CombatSession &session)
+                              {
+                                  return logged(session, "{name} falls dead.") > 0 ||
+                                         logged(session, "{name} is killed.") > 0;
+                              });
+    auto &session = *fight.session;
+    check(logged(session, "{name} gets back up.") == 1, "Downed, it gets back up");
+    check(view_of(session.snapshot(), "Target").dead, "And soon after it is dead");
+}
+
+// Displacement turns aside the first attack each round (effhndlr.pas, EffDisplaced).
+void displacement_turns_the_first_attack()
+{
+    auto displacer = creature(1000, 0);
+    displacer.effects = {{89, 0, 0, false}};
+    auto hitter = monster({4, 1, 1, 0}, {0, 0, 0, 0}, {});
+    auto fight = strike_until(hitter, displacer,
+                              [](const rules::CombatSession &session)
+                              {
+                                  return session.snapshot().round > 8;
+                              });
+    auto &session = *fight.session;
+    std::vector<std::string> swings;
+    for (const auto &entry : session.snapshot().log_entries)
+    {
+        if (entry.message.source == "{attacker} misses {name}." ||
+            entry.message.source == "{attacker} hits {name} for {damage}.")
+        {
+            swings.push_back(entry.message.source);
+        }
+    }
+    bool first_missed = true;
+    for (std::size_t n = 0; n + 1 < swings.size(); n += 2)
+    {
+        first_missed = first_missed && swings[n] == "{attacker} misses {name}.";
+    }
+    check(swings.size() >= 8 && first_missed, "Each round's first swing misses");
+}
+
+// An invisible creature cannot be singled out but by one that sees the
+// invisible, nor one warded by a mirror by a gazing monster (cbtacts.pas, CanTarget).
+void some_cannot_be_targeted()
+{
+    const auto can_strike =
+        [](const original::Combatant &attacker, const original::Combatant &target)
+    {
+        auto fight = arrange({{"Attacker", rules::Side::party, {3, 3}, attacker},
+                              {"Target", rules::Side::opposition, {4, 3}, target}},
+                             59);
+        until_turn_of(*fight.session, "Attacker");
+        return offered(*fight.session, "melee", "Target").has_value();
+    };
+    auto hidden = creature(50, 0);
+    hidden.effects = {{25, 0, 12, false}};
+    auto seer = creature(50);
+    seer.effects = {{24, 0, 0, false}};
+    check(!can_strike(creature(50), hidden) && can_strike(seer, hidden),
+          "Only one that sees the invisible can strike an invisible creature");
+    auto basilisk = creature(50);
+    basilisk.effects = {{126, 0, 0, false}};
+    auto warded = creature(50, 0);
+    warded.wards_gaze = true;
+    check(!can_strike(basilisk, warded) && can_strike(basilisk, creature(50, 0)),
+          "A gazing monster cannot single out one holding up a mirror");
+}
+
+// A mummy's fear paralyses its enemies for 1d4 rounds as the fight starts,
+// unless saved against or immune to paralysis (effhndlr.pas, EffMummyFear).
+void a_mummy_frightens()
+{
+    auto mummy = creature(50, 0);
+    mummy.effects = {{82, 0, 0, false}};
+    auto brave = victim();
+    brave.effects = {{109, 0, 0, false}};
+    auto fight = arrange({{"Coward", rules::Side::party, {0, 1}, victim()},
+                          {"Brave", rules::Side::party, {0, 3}, brave},
+                          {"Mummy", rules::Side::opposition, {7, 3}, mummy}},
+                         61);
+    auto &session = *fight.session;
+    check(view_of(session.snapshot(), "Coward").status == "helpless" &&
+              view_of(session.snapshot(), "Brave").status.empty(),
+          "The coward is paralysed with fear, the immune one is not");
+}
+
 } // namespace
 
 int main()
@@ -1403,6 +1656,13 @@ int main()
         both_claws_rake();
         a_mummy_rots();
         a_wight_drains_levels();
+        strikers_come_from_the_gear();
+        defenses_weigh_the_weapon();
+        a_troll_rises_again();
+        fighting_on_while_down();
+        displacement_turns_the_first_attack();
+        some_cannot_be_targeted();
+        a_mummy_frightens();
         real_records_fight();
         std::cout << "Original-rules combat passed.\n";
     }

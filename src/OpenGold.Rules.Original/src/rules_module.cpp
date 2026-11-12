@@ -51,7 +51,11 @@ Combatant character_combatant(const CharacterSheet &sheet)
     c.initiative_bonus = dexterity_missile_bonus(dexterity);
     c.intelligence = sheet.scores[Ability::intelligence];
     c.strength = strength;
-    c.elf = sheet.race == "elf";
+    // The original's race numbers, 1 (dwarf) to 7 (human).
+    constexpr std::array<std::string_view, 7> races{"dwarf",    "elf",      "gnome", "half_elf",
+                                                    "halfling", "half_orc", "human"};
+    const auto race = std::find(races.begin(), races.end(), sheet.race);
+    c.race = race == races.end() ? 7 : static_cast<int>(race - races.begin()) + 1;
     c.thief_level = original.class_levels[static_cast<std::size_t>(ClassSlot::thief)];
     // Unarmed and unarmored, a thief can backstab.
     c.backstabs = c.thief_level > 0;

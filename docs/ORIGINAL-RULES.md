@@ -270,10 +270,27 @@ gear.
      and a victim left with no Hit Points is killed. A creature's numbers as
      the fight leaves them (levels, effects still running) go back to the
      game with its Hit Points (`VitalState::resources`).
-   - 6c. Defenses: weapons that cannot harm a creature, halved damage,
-     regeneration, fighting on while down, displacement, camouflage and
-     evasion.
-   - 6d. Gazes, breath and the mummy's fear.
+   - 6c. *Done 2026-11-12:* defenses. A creature's blows land with its
+     striking item (a thrown weapon, a launcher's arrows or quarrels, else
+     its readied weapon; none for natural attacks), whose magic, silver and
+     weapon class the defenses weigh: magic needed against characters and
+     creatures below level 4, silver or magic, a wraith's (half from
+     silver), halving by slashing, piercing, bludgeoning or magic, missile
+     and boulder evasion from afar, holy water and oil. A troll regenerates 3
+     a round from the third round after its first wound and rises again,
+     whole, 3d6 rounds after a weapon downs it; plain regeneration heals 3 a
+     round. One that fights while down stands again with 6 less its wounds
+     and falls dead 1d4+1 rounds later. Displacement turns aside the first
+     attack each round, blinking every attack until the blinker has acted.
+     An invisible (camouflaged) creature cannot be singled out but by one
+     that sees the invisible, and is 4 harder to hit; attacking makes it
+     visible. A gazing monster cannot single out one holding up a mirror or
+     the wooden holy symbol. A mummy's fear paralyses its enemies for 1d4
+     rounds as the fight starts, unless saved against (+1 for a side of 6, +2
+     for a human) or immune to paralysis.
+   - The gazes, the lightning breath and the ankheg's acid fire only when
+     the original's AI acts for a monster with a target (MONSTER_SPECIAL), so
+     they come with step 9.
 7. Into the game: fights in the campaign under the original rules, on screen.
    Readying items mid-fight (the View menu) changes a creature's numbers as
    the original recomputes them (`RecalcStats`, `RecalcAttacksLeft`), so a
@@ -282,7 +299,9 @@ gear.
 8. Spells in combat.
 9. The original's AI. It readies its best weapon and armor at each of its
    turns (`EquipWeaponAndArmor`): many monsters carry their weapons unreadied
-   (Pool of Radiance's goblin guards their short swords).
+   (Pool of Radiance's goblin guards their short swords). Its monsters' own
+   specials fire as it acts: the petrifying and charming gazes (a mirror
+   turning the first back), the lightning breath and the ankheg's acid.
 
 ## Encumbrance
 
@@ -333,6 +352,9 @@ tuned with the AI lab once the original rules play.
 | Bandage saves the first dying party member anywhere on the field (`combat.pas`, `BandageDying`) | The one who bandages must stand next to the dying member (the user, 2026-11-12) |
 | A saving throw is added up in a byte, so a total below 0 (a low roll with penalties) wraps around and saves (`fxengine.pas`, `RollSavingThrow`) | A total below 0 fails |
 | A drider's paralysing touch passes a save penalty of 2 that the paralysis ignores, so it is no harder to save against than a thri-kreen's (`effhndlr.pas`, `EffDriderPara`) | The penalty of 2 counts |
+| Displacement is readied only as the fight starts, so it turns aside one attack a fight, where its notes say one a round (`effhndlr.pas`, `EffDisplaced`) | One a round |
+| Evading a missile or boulder takes the hit from the primary attacks' count whatever attack it was, a byte that wraps below 0 (`effhndlr.pas`, the missile evasion) | From the count of the attack evaded |
+| A free attack's check that an attacker sees the invisible reads the creature leaving instead (`cbtacts.pas`, `AttacksOfOpportunity`) | The attacker's own sight |
 | A level drain divides by the victim's class levels, so a creature without any (a monster) divides by zero (`effhndlr.pas`, the level drain) | It loses its highest level's share |
 | A level drain keeps the drained class's level as the victim's highest level, so a fighter 5 / thief 6 drained in fighter counts as level 4 (`effhndlr.pas`, the level drain) | The highest of its classes |
 | Each hit of a holding bite's own bite starts another hold, stacking holds on the biter and immobility on the victim, which can outlast the fight (`effhndlr.pas`, `EffBiteHold`) | One hold at a time |

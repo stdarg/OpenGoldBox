@@ -29,7 +29,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 7";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 8";
 
 enum class Condition : unsigned
 {
@@ -61,7 +61,12 @@ constexpr std::array<int, 16> effects_ending_at_zero{7,  11, 30, 31, 32, 51,  52
 namespace effect
 {
 constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_rot = 57,
-              paralysis = 52, immobile = 58;
+              paralysis = 52, immobile = 58, see_invisible = 24, invisible = 25, blink = 37,
+              regenerating_soon = 59, camouflage = 72, mummy_fear = 82, displacement = 89,
+              fighting_on = 95, regeneration = 98, fights_while_down = 99, troll_burn = 100,
+              troll_heal = 101, troll_return = 102, gaze_block = 126;
+// Displacement keeps whether it has turned an attack aside in this bit of its strength.
+constexpr int displaced = 0x10;
 } // namespace effect
 
 // What a hit carries, by the attacker's effects, in the original's order: a
@@ -397,6 +402,7 @@ class Session final : public rules::CombatSession
     {
         rules::validate_battlefield(board_);
         log({"Combat begins.", {}});
+        combat_start();
         update_hostile_hit_points();
         // A fight ends only as a round ends, unless a side has no one able to
         // fight from the start (combat.pas, CombatMain and EndOfRound).
@@ -471,6 +477,16 @@ class Session final : public rules::CombatSession
     void drain_levels(Fighter &victim, int levels);
     void rake(Fighter &attacker, Fighter &victim);
     void attached_turn(Fighter &f);
+    void combat_start();
+    void round_end_effects();
+    void expire(Fighter &f, const Effect &ended);
+    void went_down(Fighter &f);
+    [[nodiscard]] bool cell_free(const Fighter &f) const;
+    void stand_up(Fighter &f, int hit_points, std::string_view message);
+    [[nodiscard]] bool can_target(const Fighter &attacker, const Fighter &target) const;
+    [[nodiscard]] bool turned_aside(Fighter &defender);
+    [[nodiscard]] int weapon_damage_defenses(const Fighter &attacker, Fighter &defender, int damage,
+                                             int phase, int &primary_hits);
     void age_effects();
     [[nodiscard]] bool saving_throw(const Fighter &f, int save, int modifier);
     void update_hostile_hit_points();
@@ -610,6 +626,7 @@ void Session::end_round()
 {
     age_effects();
     update_hostile_hit_points();
+    round_end_effects();
     for (auto &f : fighters_)
     {
         if (f.condition == Condition::dying && ++f.overkill > 9)
@@ -697,8 +714,15 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
             --left;
             attacker.attack_phase = phase;
             const auto natural = roll(20);
+            // Attacking makes it visible (fxengine.pas, AttackRoll).
+            while (attacker.has(effect::invisible))
+            {
+                attacker.remove(effect::invisible);
+            }
+            const int modifier = defender.has(effect::invisible) ? -4 : 0;
             // One made helpless partway through is hit by the rest (cbtacts.pas, RollAttacks).
-            if (!attack_hits(natural, attacker.numbers.thac0, armor_class, 0) &&
+            const bool aside = natural > 1 && turned_aside(defender);
+            if ((aside || !attack_hits(natural, attacker.numbers.thac0, armor_class, modifier)) &&
                 !defender.helpless())
             {
                 log({"{attacker} misses {name}.",
@@ -715,12 +739,13 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
             {
                 damage *= attacker.numbers.thief_level / 4 + 2;
             }
+            damage = weapon_damage_defenses(attacker, defender, damage, phase, primary_hits);
             log({"{attacker} hits {name} for {damage}.",
                  {{"attacker", attacker.name},
                   {"name", defender.name},
                   {"damage", std::to_string(damage)}}});
-            inflict(defender, damage);
             primary_hits += phase == 0 ? 1 : 0;
+            inflict(defender, damage);
             if (defender.able())
             {
                 on_hit(attacker, defender, phase, primary_hits);
@@ -741,6 +766,10 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
 std::optional<std::string> Session::attack_verb(const Fighter &attacker,
                                                 const Fighter &target) const
 {
+    if (!can_target(attacker, target))
+    {
+        return std::nullopt;
+    }
     const auto &missile = attacker.numbers.missile;
     const bool next_to = adjacent(attacker, target);
     if (!missile)
@@ -802,6 +831,8 @@ void Session::shoot(Fighter &attacker, Fighter &target)
     numbers.backstabs = missile.empty_handed_backstabs;
     numbers.large_attack.reset();
     numbers.missile.reset();
+    numbers.striker.reset();
+    numbers.weapon_type = -1;
 }
 
 // A fighter sweeps through level-0 enemies: when the defender is one, next to
@@ -854,7 +885,7 @@ void Session::free_attacks(Fighter &mover, Cell next)
     {
         if (!mover.able() || enemy.side == mover.side || !enemy.able() || enemy.helpless() ||
             enemy.has(effect::bite_hold) || enemy.has(effect::blood_drain) ||
-            !adjacent(enemy, mover) || adjacent(enemy, stepped))
+            !can_target(enemy, mover) || !adjacent(enemy, mover) || adjacent(enemy, stepped))
         {
             continue;
         }
@@ -967,6 +998,7 @@ void Session::inflict(Fighter &target, int damage)
     }
     target.initiative = 0;
     end_effects_at_zero(target);
+    went_down(target);
 }
 
 // It loses the effects that end at 0 Hit Points; a hold or a drain it had
@@ -1033,7 +1065,8 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
             paralyze(defender, roll(8) + roll(8), 0);
             break;
         case 68:
-            if (!defender.numbers.elf)
+            // Race 2 is the elf (half-elves are not spared).
+            if (defender.numbers.race != 2)
             {
                 paralyze(defender, 63, 0);
             }
@@ -1190,6 +1223,7 @@ void Session::kill(Fighter &victim)
     victim.initiative = 0;
     log({"{name} is killed.", {{"name", victim.name}}});
     end_effects_at_zero(victim);
+    went_down(victim);
 }
 
 // Both claws hit: two rakes of 2d4 with the rear claws, then its actions end
@@ -1283,16 +1317,312 @@ void Session::age_effects()
     for (auto &f : fighters_)
     {
         auto &effects = f.numbers.effects;
+        std::vector<Effect> ended;
         std::erase_if(effects,
-                      [](const Effect &e)
+                      [&ended](const Effect &e)
                       {
+                          if (e.minutes == 1)
+                          {
+                              ended.push_back(e);
+                          }
                           return e.minutes == 1;
                       });
         for (auto &e : effects)
         {
             e.minutes = e.minutes > 1 ? e.minutes - 1 : e.minutes;
         }
+        for (const auto &e : ended)
+        {
+            expire(f, e);
+        }
     }
+}
+
+// An effect whose time ran out, by its handler (effhndlr.pas): a troll's
+// regeneration starts 3 rounds after its first wound; one fighting on past
+// its death falls dead; a troll comes back with all its Hit Points when its
+// square is free, or tries again a minute later.
+void Session::expire(Fighter &f, const Effect &ended)
+{
+    switch (ended.code)
+    {
+    case effect::regenerating_soon:
+        f.numbers.effects.push_back({effect::regeneration, 0, 0, false});
+        break;
+    case effect::fighting_on:
+        if (f.able())
+        {
+            f.condition = Condition::dead;
+            f.hit_points = 0;
+            f.initiative = 0;
+            log({"{name} falls dead.", {{"name", f.name}}});
+        }
+        break;
+    case effect::troll_return:
+        if (f.condition == Condition::okay)
+        {
+            break;
+        }
+        if (cell_free(f))
+        {
+            stand_up(f, f.numbers.max_hit_points, "{name} rises again.");
+        }
+        else
+        {
+            f.numbers.effects.push_back({effect::troll_return, 1, 0, true});
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+// At a fight's start (combatst.pas, COMBAT_START): one that fights on while
+// down may stand; a mummy's fear grips its enemies once; displacement is
+// ready; camouflage hides.
+void Session::combat_start()
+{
+    bool feared = false;
+    for (auto &f : fighters_)
+    {
+        if (f.has(effect::fights_while_down))
+        {
+            went_down(f);
+        }
+        if (f.has(effect::mummy_fear) && !feared)
+        {
+            feared = true;
+            // The first mummy's fear is the only one: every mummy loses its own.
+            for (auto &other : fighters_)
+            {
+                other.remove(effect::mummy_fear);
+            }
+            const auto enemies = std::count_if(fighters_.begin(), fighters_.end(),
+                                               [&f](const Fighter &other)
+                                               {
+                                                   return other.side != f.side;
+                                               });
+            for (auto &other : fighters_)
+            {
+                if (other.side == f.side || !other.able())
+                {
+                    continue;
+                }
+                // Paralysis by fear: saved against with +1 for a side of 6
+                // or more and +2 for a human; immunity to paralysis spares
+                // (effhndlr.pas, EffMummyFear).
+                const int modifier = (enemies >= 6 ? 1 : 0) + (other.numbers.race == 7 ? 2 : 0);
+                if (other.has(109) || other.has(111) || other.has(125) ||
+                    saving_throw(other, 0, modifier))
+                {
+                    log({"{name} is unaffected.", {{"name", other.name}}});
+                    continue;
+                }
+                other.numbers.effects.push_back({effect::paralysis, roll(4), 12, false});
+                log({"{name} is paralyzed with fear.", {{"name", other.name}}});
+            }
+        }
+        if (auto *displacement = f.find_effect(effect::displacement))
+        {
+            displacement->strength &= ~effect::displaced;
+        }
+        if (f.has(effect::camouflage) && roll(100) <= 95)
+        {
+            f.numbers.effects.push_back({effect::invisible, 1, 12, false});
+        }
+    }
+}
+
+// At a round's end, after effects age (combat.pas, EndOfRound): regeneration
+// heals 3; camouflage hides again, 95 times in 100; displacement is ready for
+// the next round.
+void Session::round_end_effects()
+{
+    for (auto &f : fighters_)
+    {
+        if (f.has(effect::regeneration))
+        {
+            f.hit_points = std::min(f.hit_points + 3, f.numbers.max_hit_points);
+        }
+        if (f.has(effect::camouflage) && roll(100) <= 95)
+        {
+            f.numbers.effects.push_back({effect::invisible, 1, 12, false});
+        }
+        if (auto *displacement = f.find_effect(effect::displacement))
+        {
+            displacement->strength &= ~effect::displaced;
+        }
+    }
+}
+
+// A creature just gone down (fxengine.pas, HIT_POINTS_ZERO): one that fights
+// on while down stands again, dying less than 6 below 0 or unconscious, with
+// 6 less its wounds, for 1d4+1 rounds; a troll downed by anything but fire or
+// acid (any weapon) comes back in 3d6 rounds.
+void Session::went_down(Fighter &f)
+{
+    if (f.has(effect::fights_while_down) &&
+        ((f.condition == Condition::dying && f.overkill < 6) ||
+         f.condition == Condition::unconscious) &&
+        cell_free(f))
+    {
+        const int hit_points = f.condition == Condition::dying ? 6 - f.overkill : 6;
+        f.remove(effect::fights_while_down);
+        stand_up(f, hit_points, "{name} gets back up.");
+        f.numbers.effects.push_back({effect::fighting_on, roll(4) + 1, 0, true});
+        return;
+    }
+    if (f.has(effect::troll_burn) && !f.able() && !f.has(effect::troll_return))
+    {
+        f.numbers.effects.push_back({effect::troll_return, roll(6) + roll(6) + roll(6), 0, true});
+    }
+}
+
+bool Session::cell_free(const Fighter &f) const
+{
+    const auto mine = squares_of(f);
+    return std::none_of(fighters_.begin(), fighters_.end(),
+                        [&](const Fighter &other)
+                        {
+                            if (other.id == f.id || other.condition == Condition::dead ||
+                                other.condition == Condition::fled ||
+                                other.condition == Condition::surrendered ||
+                                other.condition == Condition::gone)
+                            {
+                                return false;
+                            }
+                            const auto theirs = squares_of(other);
+                            return std::any_of(mine.begin(), mine.end(),
+                                               [&theirs](Cell c)
+                                               {
+                                                   return std::find(theirs.begin(), theirs.end(),
+                                                                    c) != theirs.end();
+                                               });
+                        });
+}
+
+// Back on its feet, without turns this round (its initiative is spent).
+void Session::stand_up(Fighter &f, int hit_points, std::string_view message)
+{
+    f.condition = Condition::okay;
+    f.hit_points = hit_points;
+    f.overkill = 0;
+    f.initiative = 0;
+    log({std::string(message), {{"name", f.name}}});
+}
+
+// Whether the attacker may single out the target (cbtacts.pas, CanTarget): not
+// an invisible one unless it sees the invisible, not a blinking one before it
+// has acted this round, and nothing that holds up a mirror or holy symbol to a
+// gazing monster.
+bool Session::can_target(const Fighter &attacker, const Fighter &target) const
+{
+    if (target.has(effect::invisible) && !attacker.has(effect::see_invisible))
+    {
+        return false;
+    }
+    if (target.has(effect::blink) && target.initiative > 0)
+    {
+        return false;
+    }
+    return !(attacker.has(effect::gaze_block) && target.numbers.wards_gaze);
+}
+
+// An attack roll a defender turns aside, even a natural 20 (fxengine.pas,
+// ATTACK_ROLL_DEF): a blinking one before it has acted this round, and a
+// displaced one the first attack each round. The original readied
+// displacement only at the fight's start, so it turned aside one attack a
+// fight; once a round here, as its own notes say (an obvious bug, fixed).
+bool Session::turned_aside(Fighter &defender)
+{
+    if (defender.has(effect::blink) && defender.initiative > 0)
+    {
+        return true;
+    }
+    auto *displacement = defender.find_effect(effect::displacement);
+    if (displacement && (displacement->strength & effect::displaced) == 0)
+    {
+        displacement->strength |= effect::displaced;
+        return true;
+    }
+    return false;
+}
+
+// What the defender's effects make of a weapon's damage, in the original's
+// order (effhndlr.pas, WEAPON_DAMAGE_DEFENDER): evading missiles and boulders
+// from afar, a troll's regeneration beginning, halving by weapon class or
+// magic, weapons that cannot harm it, and oil or holy water.
+int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, int damage,
+                                    int phase, int &primary_hits)
+{
+    const auto &striker = attacker.numbers.striker;
+    const int plus = striker ? striker->plus : 0;
+    const bool silver = striker && striker->silver;
+    const int weapon_class = striker ? striker->weapon_class : 0;
+    const bool piercing = (weapon_class & 0x01) != 0, bludgeoning = (weapon_class & 0x80) != 0;
+    const auto evades = [&](int chance)
+    {
+        if (distance(attacker, defender) <= 1 || roll(100) > chance)
+        {
+            return false;
+        }
+        log({"{name} avoids it.", {{"name", defender.name}}});
+        // The original took the hit from the primary attacks' count whatever
+        // attack it was, wrapping below 0 (an obvious bug, fixed).
+        if (phase == 0 && primary_hits > 0)
+        {
+            --primary_hits;
+        }
+        return true;
+    };
+    if (defender.has(104) && attacker.numbers.weapon_type >= 0 && evades(60))
+    {
+        damage = 0;
+    }
+    const int boulder = attacker.numbers.weapon_type;
+    if (defender.has(120) && (boulder == 87 || boulder == 88) && evades(50))
+    {
+        damage = 0;
+    }
+    if (defender.has(effect::troll_heal) && !defender.has(effect::regeneration) &&
+        !defender.has(effect::regenerating_soon))
+    {
+        defender.numbers.effects.push_back({effect::regenerating_soon, 3, 0, true});
+    }
+    if (defender.has(115) && striker && (weapon_class == 0 || piercing))
+    {
+        damage /= 2;
+    }
+    if (defender.has(116) && plus > 0)
+    {
+        damage /= 2;
+    }
+    if (defender.has(119) && plus == 0 && (attacker.numbers.race > 0 || attacker.numbers.level < 4))
+    {
+        damage = 0;
+    }
+    if (defender.has(123))
+    {
+        damage = plus > 0 ? damage : silver ? damage / 2 : 0;
+    }
+    if (defender.has(96) && plus == 0 && !silver)
+    {
+        damage = 0;
+    }
+    if (defender.has(94) && striker && (piercing || bludgeoning))
+    {
+        damage /= 2;
+    }
+    // A flask of oil burns a mummy for 3d8; holy water burns the undead for 1d6+1.
+    if (defender.has(122) && attacker.numbers.weapon_type == 86)
+    {
+        damage = roll(8) + roll(8) + roll(8);
+    }
+    if (defender.has(117) && attacker.numbers.weapon_type == 85)
+    {
+        damage = roll(6) + 1;
+    }
+    return damage;
 }
 
 // A saving throw (fxengine.pas, RollSavingThrow): a natural 1 fails and a

@@ -58,6 +58,18 @@ struct Missile
     bool operator==(const Missile &) const = default;
 };
 
+// The item a creature's blows land with, as defenses weigh it: its magic,
+// whether it is silver, and its weapon class (ItemTemplate::damage_type: 0
+// slashing, bit 0x01 piercing, bit 0x80 bludgeoning).
+struct StrikingItem
+{
+    int plus{};
+    bool silver{};
+    int weapon_class{};
+
+    bool operator==(const StrikingItem &) const = default;
+};
+
 // An effect on a creature (fxengine.pas): its code, the minutes left (0 for
 // one that lasts), the strength its handler keeps data in, and whether its
 // handler runs as it is removed.
@@ -108,10 +120,21 @@ struct Combatant
     std::optional<Missile> missile;
     // What its readied protective items add to its saving throws.
     int save_bonus{};
-    // Its Strength score, which a holding bite cannot hold from 19 up, and
-    // whether it is an elf, whom a ghoul's touch does not paralyse.
+    // Its Strength score, which a holding bite cannot hold from 19 up.
     int strength{10};
-    bool elf{};
+    // Its race by the original's numbers: 0 a monster, then dwarf, elf,
+    // gnome, half-elf, halfling, half-orc and human (1 to 7).
+    int race{};
+    // What its blows land with: the thrown weapon, the arrows or quarrels a
+    // launcher fires, or the readied weapon; none for natural attacks
+    // (charhlp.pas, FindDamagingRangedWeapon).
+    std::optional<StrikingItem> striker;
+    // Its readied weapon's item type, -1 for none: holy water, oil and
+    // boulders count by it.
+    int weapon_type{-1};
+    // A readied mirror or wooden holy symbol, which a gazing monster cannot
+    // look upon (effhndlr.pas, EffGazeBlock).
+    bool wards_gaze{};
     // Its effects: a monster's from its record (MONnSPC), and those the fight
     // adds.
     std::vector<Effect> effects;
