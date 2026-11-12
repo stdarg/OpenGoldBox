@@ -81,6 +81,8 @@ int highest_first_level_hit_points(Profession profession, int constitution)
     return bonus < 0 && total <= -bonus + classes ? 1 : (total + bonus) / classes;
 }
 
+constexpr std::array<Aging, 3> every_aging{Aging::off, Aging::original, Aging::add};
+
 void rolled_characters_keep_the_limits()
 {
     RandomState random{20261112};
@@ -93,31 +95,40 @@ void rolled_characters_keep_the_limits()
             {
                 for (int n = 0; n < 300; ++n)
                 {
-                    const auto rolled = roll_character(race, gender, profession, random);
+                    const auto rolled = roll_character(race, profession, random);
                     const auto who = named(race, gender, profession);
-                    for (const auto ability : every_ability)
-                    {
-                        const int score = rolled.scores[ability];
-                        check(score >= limits.minimum[ability] &&
-                                  score <= limits.maximum[ability] &&
-                                  score >= class_minimums(profession)[ability],
-                              "A rolled score leaves its limits: " + who);
-                    }
-                    const bool fighter = level_in(first_levels(profession), ClassSlot::fighter) > 0;
-                    const bool eighteen = rolled.scores[Ability::strength] == 18;
-                    check(rolled.exceptional_strength <= limits.exceptional_strength_maximum &&
-                              (rolled.exceptional_strength > 0) ==
-                                  (fighter && eighteen && limits.exceptional_strength_maximum > 0),
-                          "Exceptional Strength is wrong: " + who);
-                    const int constitution = rolled.scores[Ability::constitution];
-                    check(rolled.hit_points >=
-                                  lowest_first_level_hit_points(profession, constitution) &&
-                              rolled.hit_points <=
-                                  highest_first_level_hit_points(profession, constitution),
-                          "First-level Hit Points leave their range: " + who);
                     check(rolled.gold >= 20 && rolled.gold <= 200,
                           "Starting gold leaves its range: " + who);
-                    check(rolled.age > 0, "A character has no age: " + who);
+                    check(rolled.starting_age > 0, "A character has no age: " + who);
+                    for (const auto aging : every_aging)
+                    {
+                        const auto scores = ability_scores(race, gender, profession, rolled, aging,
+                                                           rolled.starting_age);
+                        for (const auto ability : every_ability)
+                        {
+                            check(scores[ability] >= limits.minimum[ability] &&
+                                      scores[ability] <= limits.maximum[ability] &&
+                                      scores[ability] >= class_minimums(profession)[ability],
+                                  "A rolled score leaves its limits: " + who);
+                        }
+                        const bool fighter =
+                            level_in(first_levels(profession), ClassSlot::fighter) > 0;
+                        const int strength = scores[Ability::strength];
+                        const int exceptional =
+                            exceptional_strength(race, gender, profession, rolled, strength);
+                        check(exceptional <= limits.exceptional_strength_maximum &&
+                                  (exceptional > 0) == (fighter && strength == 18 &&
+                                                        limits.exceptional_strength_maximum > 0),
+                              "Exceptional Strength is wrong: " + who);
+                        const int constitution = scores[Ability::constitution];
+                        const int hit_points =
+                            first_level_hit_points(profession, rolled, constitution);
+                        check(hit_points >=
+                                      lowest_first_level_hit_points(profession, constitution) &&
+                                  hit_points <=
+                                      highest_first_level_hit_points(profession, constitution),
+                              "First-level Hit Points leave their range: " + who);
+                    }
                 }
             }
         }
@@ -137,14 +148,18 @@ void racial_adjustments_apply()
     check(racial_adjustments(Race::human) == opengold::rules::AbilityArray<int>{},
           "A human has no racial adjustment");
     RandomState random{7};
+    const auto score = [&random](Race race, Ability ability)
+    {
+        const auto rolled = roll_character(race, Profession::fighter, random);
+        return ability_scores(race, Gender::male, Profession::fighter, rolled, Aging::original,
+                              rolled.starting_age)[ability];
+    };
     bool dwarf_nineteen = false;
     bool elf_nineteen = false;
     for (int n = 0; n < 2000; ++n)
     {
-        dwarf_nineteen |= roll_character(Race::dwarf, Gender::male, Profession::fighter, random)
-                              .scores[Ability::constitution] == 19;
-        elf_nineteen |= roll_character(Race::elf, Gender::male, Profession::fighter, random)
-                            .scores[Ability::dexterity] == 19;
+        dwarf_nineteen |= score(Race::dwarf, Ability::constitution) == 19;
+        elf_nineteen |= score(Race::elf, Ability::dexterity) == 19;
     }
     check(dwarf_nineteen && elf_nineteen,
           "Racial adjustments raise a dwarf's Constitution and an elf's Dexterity to 19");
@@ -154,14 +169,86 @@ void rolls_repeat_from_the_same_state()
 {
     RandomState first{99};
     RandomState second{99};
-    const auto a = roll_character(Race::half_elf, Gender::female,
-                                  Profession::cleric_fighter_magic_user, first);
-    const auto b = roll_character(Race::half_elf, Gender::female,
-                                  Profession::cleric_fighter_magic_user, second);
-    check(a.scores == b.scores && a.hit_points == b.hit_points && a.gold == b.gold &&
-              a.age == b.age && first == second,
+    const auto profession = Profession::cleric_fighter_magic_user;
+    const auto a = roll_character(Race::half_elf, profession, first);
+    const auto b = roll_character(Race::half_elf, profession, second);
+    check(a.rolls == b.rolls && a.first_level_hit_dice == b.first_level_hit_dice &&
+              a.gold == b.gold && a.starting_age == b.starting_age && first == second,
           "The same dice state rolls the same character");
-    check(a.scores[Ability::wisdom] >= 13, "A cleric multi-class has at least 13 Wisdom");
+    check(ability_scores(Race::half_elf, Gender::female, profession, a, Aging::original,
+                         a.starting_age)[Ability::wisdom] >= 13,
+          "A cleric multi-class has at least 13 Wisdom");
+}
+
+void aging()
+{
+    check(age_category(Race::human, 18) == AgeCategory::young_adult &&
+              age_category(Race::human, 21) == AgeCategory::mature &&
+              age_category(Race::human, 95) == AgeCategory::venerable,
+          "A human's age groups");
+    using opengold::rules::AbilityArray;
+    // Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma.
+    check(age_changes(Aging::off, Race::human, 95) == AbilityArray<int>{},
+          "Without aging, age changes nothing");
+    check(age_changes(Aging::original, Race::human, 18) == AbilityArray<int>{0, 0, 0, 0, -1, 0},
+          "The original's young adult loses 1 Wisdom");
+    check(age_changes(Aging::add, Race::human, 18) == AbilityArray<int>{0, 0, 1, 0, -1, 0},
+          "AD&D's young adult also gains 1 Constitution");
+    check(age_changes(Aging::original, Race::human, 30) == AbilityArray<int>{1, 0, 0, 0, 0, 0},
+          "A mature character gains 1 Strength and loses the young adult's Wisdom");
+    check(age_changes(Aging::original, Race::human, 95) == AbilityArray<int>{-3, -3, -3, 2, 3, 0},
+          "A venerable character's changes add up");
+    check(age_changes(Aging::add, Race::human, 95) == AbilityArray<int>{-3, -3, -2, 2, 3, 0},
+          "AD&D keeps the young adult's Constitution into old age");
+
+    RolledCharacter rolled;
+    rolled.rolls = {12, 12, 12, 12, 12, 12};
+    rolled.starting_age = 18;
+    const auto scores_at = [&rolled](Aging aging, int age)
+    {
+        return ability_scores(Race::human, Gender::male, Profession::fighter, rolled, aging, age);
+    };
+    check(scores_at(Aging::off, 95) == AbilityArray<int>{12, 12, 12, 12, 12, 12},
+          "Without aging the rolls are the scores");
+    check(scores_at(Aging::original, 18) == AbilityArray<int>{12, 12, 12, 12, 11, 12} &&
+              scores_at(Aging::original, 95) == scores_at(Aging::original, 18),
+          "The original changes the scores once, by the starting age");
+    check(scores_at(Aging::add, 18) == AbilityArray<int>{12, 12, 13, 12, 11, 12},
+          "AD&D aging adds the young adult's Constitution at creation");
+    check(scores_at(Aging::add, 95) == AbilityArray<int>{9, 9, 10, 14, 15, 12},
+          "AD&D aging changes the scores as the character grows older");
+    rolled.rolls[Ability::strength] = 4;
+    check(scores_at(Aging::add, 18)[Ability::strength] == 9 &&
+              scores_at(Aging::add, 95)[Ability::strength] == 6,
+          "Age takes a fighter's Strength below the class's minimum, which only creation keeps");
+    check(ability_scores(Race::human, Gender::male, Profession::magic_user, rolled, Aging::add,
+                         95)[Ability::strength] == 3,
+          "Age never takes a score below 3");
+}
+
+void thief_skill_chances()
+{
+    const auto human = [](int level, int dexterity)
+    {
+        return thief_skills(Race::human, level, dexterity);
+    };
+    check(human(1, 13) == std::array<int, 8>{30, 25, 20, 15, 10, 10, 85, 0},
+          "A level 1 human thief's chances");
+    check(skill_chance(human(1, 10), ThiefSkill::pick_pockets) == 20,
+          "Dexterity 10 costs 10 percent of Pick Pockets, not the original's 19");
+    check(skill_chance(human(1, 16), ThiefSkill::open_locks) == 30,
+          "Dexterity 16 adds 5 percent to Open Locks, not the original's -5");
+    check(skill_chance(human(1, 9), ThiefSkill::move_silently) == 0,
+          "A chance never falls below 0, where the original wrapped around");
+    check(human(4, 5) == human(4, 9) && human(4, 23) == human(4, 19),
+          "Dexterity beyond the original's table uses its ends");
+    check(human(12, 13) == human(9, 13), "A thief above level 9 keeps level 9's chances");
+    check(skill_chance(thief_skills(Race::dwarf, 1, 13), ThiefSkill::climb_walls) == 75,
+          "A dwarf climbs 10 percent worse");
+    check(skill_chance(thief_skills(Race::half_orc, 1, 13), ThiefSkill::read_languages) == 0,
+          "A racial penalty above the chance leaves none");
+    check(thief_skills(Race::human, 0, 18) == std::array<int, 8>{},
+          "A character without thief levels has no chances");
 }
 
 void thac0_is_the_best_class()
@@ -312,6 +399,8 @@ int main()
         rolled_characters_keep_the_limits();
         racial_adjustments_apply();
         rolls_repeat_from_the_same_state();
+        aging();
+        thief_skill_chances();
         thac0_is_the_best_class();
         saving_throws_are_the_best_class();
         experience_and_level_limits();

@@ -215,6 +215,17 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   | Missile to-hit and initiative | +3 | +4 | +5 |
 
   The original gave 5 better and +4 from 21, and 6 better and +5 from 24.
+- **Thief skills and Dexterity** (the user, 2026-11-12). Pick Pockets at
+  Dexterity 10 is −10 (the original's −19) and Open Locks at 16 is +5 (its −5),
+  in step with their neighbors. The original's table covers Dexterity 9 to 19;
+  lower scores use its 9 row and higher ones its 19 row. No chance falls below
+  0, where the original wrapped around past 200%.
+- **Aging** (the user, 2026-11-12). Each game chooses Off, As the original or
+  AD&D when it starts ([ORIGINAL-RULES.md](ORIGINAL-RULES.md#decisions)). The
+  original only changed the scores at creation, by the starting age, and left
+  out AD&D's +1 Constitution for young adults. Off and AD&D depart from it:
+  Off ignores age, and AD&D adds that Constitution and changes the scores again
+  as a character grows older, also with the game's years.
 
 ## Party and parley
 

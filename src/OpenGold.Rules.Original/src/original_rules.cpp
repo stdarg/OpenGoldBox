@@ -227,6 +227,39 @@ constexpr std::array<SlotRow, 5> cleric_slots{
 constexpr std::array<SlotRow, 5> magic_user_slots{
     {{2, 0, 0}, {2, 1, 0}, {3, 2, 0}, {4, 2, 1}, {4, 2, 2}}};
 
+using SkillRow = std::array<int, 8>;
+// A thief's chances by thief level 1 to 9.
+constexpr std::array<SkillRow, 9> thief_base{{{30, 25, 20, 15, 10, 10, 85, 0},
+                                              {35, 29, 25, 21, 15, 10, 86, 0},
+                                              {40, 33, 30, 27, 20, 15, 87, 0},
+                                              {45, 37, 35, 33, 25, 15, 88, 20},
+                                              {50, 42, 40, 40, 31, 20, 90, 25},
+                                              {55, 47, 45, 47, 37, 20, 92, 30},
+                                              {60, 52, 50, 55, 43, 25, 94, 35},
+                                              {65, 57, 55, 62, 49, 25, 96, 40},
+                                              {70, 62, 60, 70, 56, 30, 98, 45}}};
+constexpr std::array<SkillRow, 7> thief_race_adjustments{{{0, 10, 15, 0, 0, 0, -10, -5},
+                                                          {5, -5, 0, 5, 10, 5, 0, 0},
+                                                          {0, 5, 10, 5, 5, 10, -15, 0},
+                                                          {10, 0, 0, 0, 5, 0, 0, 0},
+                                                          {5, 5, 5, 10, 15, 5, -15, -5},
+                                                          {-5, 5, 5, 0, 0, 5, 5, -10},
+                                                          {}}};
+// Dexterity 9 to 19's adjustments to the first five skills. The original has
+// -19 for Pick Pockets at 10 and -5 for Open Locks at 16, out of step with
+// their neighbors; the user approved -10 and +5 (docs/DEVIATIONS.md).
+constexpr std::array<std::array<int, 5>, 11> thief_dexterity_adjustments{{{-15, -10, -10, -20, -10},
+                                                                          {-10, -5, -10, -15, -5},
+                                                                          {-5, 0, -5, -10, 0},
+                                                                          {0, 0, 0, -5, 0},
+                                                                          {},
+                                                                          {},
+                                                                          {},
+                                                                          {0, 5, 0, 0, 0},
+                                                                          {5, 10, 0, 5, 5},
+                                                                          {10, 15, 5, 10, 10},
+                                                                          {15, 20, 10, 12, 12}}};
+
 [[nodiscard]] int roll_dice(RandomState &random, Dice dice)
 {
     int total = 0;
@@ -243,8 +276,10 @@ constexpr std::array<SlotRow, 5> magic_user_slots{
     return std::ranges::find(classes, slot) != classes.end();
 }
 
-// What age does to an ability, by the original's age categories.
-[[nodiscard]] int age_change(Race race, Ability ability, int age)
+// What the original's age categories do to an ability at this age. Each
+// category's changes add to those before it; the young adult's -1 Wisdom is
+// undone at maturity.
+[[nodiscard]] int original_age_change(Race race, Ability ability, int age)
 {
     const auto &category = age_categories[index(race)];
     const auto over = [&](std::size_t n)
@@ -274,18 +309,23 @@ constexpr std::array<SlotRow, 5> magic_user_slots{
     return profession >= P::cleric_fighter && profession <= P::cleric_thief;
 }
 
-[[nodiscard]] int roll_ability(Race race, Gender gender, Profession profession, int age,
-                               Ability ability, RandomState &random)
+[[nodiscard]] int best_of_six(int adjustment, RandomState &random)
 {
-    const int adjustment = racial_adjustments(race)[ability];
     int best = 0;
     for (int roll = 0; roll < 6; ++roll)
     {
         best = std::max(best, roll_dice(random, {3, 6}) + adjustment);
     }
+    return best;
+}
+
+// The score at the starting age, as the original's creation leaves it.
+[[nodiscard]] int starting_score(Race race, Gender gender, Profession profession,
+                                 const RolledCharacter &rolled, Aging aging, Ability ability)
+{
     const auto limits = ability_limits(race, gender);
-    int score = std::clamp(best + age_change(race, ability, age), limits.minimum[ability],
-                           limits.maximum[ability]);
+    const int aged = rolled.rolls[ability] + age_changes(aging, race, rolled.starting_age)[ability];
+    int score = std::clamp(aged, limits.minimum[ability], limits.maximum[ability]);
     score = std::max(score, class_minimums(profession)[ability]);
     if (ability == Ability::wisdom && is_cleric_multi_class(profession))
     {
@@ -301,20 +341,6 @@ constexpr std::array<SlotRow, 5> magic_user_slots{
         return 1;
     }
     return (total + bonus) / class_count;
-}
-
-[[nodiscard]] int first_level_hit_points(Profession profession, int constitution,
-                                         RandomState &random)
-{
-    int total = 0;
-    for (const auto slot : classes_of(profession))
-    {
-        const auto dice = hit_dice[index(slot)];
-        total += std::max(roll_dice(random, dice), dice.sides * 2 / 3);
-    }
-    const auto class_count = static_cast<int>(classes_of(profession).size());
-    return divided_among_classes(total, constitution_hit_point_bonus(profession, constitution),
-                                 class_count);
 }
 
 [[nodiscard]] int starting_gold(Profession profession, RandomState &random)
@@ -421,25 +447,101 @@ AbilityArray<int> class_minimums(Profession profession)
     return in_original_order(m[0], m[1], m[2], m[3], m[4], m[5]);
 }
 
-RolledCharacter roll_character(Race race, Gender gender, Profession profession, RandomState &random)
+AgeCategory age_category(Race race, int age)
 {
-    RolledCharacter rolled;
-    rolled.age = starting_age(race, profession, random);
+    const auto &category = age_categories[index(race)];
+    const auto older = std::ranges::count_if(category,
+                                             [age](int oldest)
+                                             {
+                                                 return age > oldest;
+                                             });
+    return static_cast<AgeCategory>(older);
+}
+
+AbilityArray<int> age_changes(Aging aging, Race race, int age)
+{
+    AbilityArray<int> changes;
+    if (aging == Aging::off)
+    {
+        return changes;
+    }
     for (const auto ability : original_ability_order)
     {
-        rolled.scores[ability] =
-            roll_ability(race, gender, profession, rolled.age, ability, random);
-        if (ability == Ability::strength && rolled.scores[ability] == 18 &&
-            has_class(profession, C::fighter))
-        {
-            rolled.exceptional_strength = std::min(
-                roll_die(random, 100), ability_limits(race, gender).exceptional_strength_maximum);
-        }
+        changes[ability] = original_age_change(race, ability, age);
     }
+    if (aging == Aging::add)
+    {
+        // AD&D's young adult also gains 1 Constitution, which every older age
+        // group keeps.
+        changes[Ability::constitution] += 1;
+    }
+    return changes;
+}
+
+RolledCharacter roll_character(Race race, Profession profession, RandomState &random)
+{
+    RolledCharacter rolled;
+    rolled.starting_age = starting_age(race, profession, random);
+    for (const auto ability : original_ability_order)
+    {
+        rolled.rolls[ability] = best_of_six(racial_adjustments(race)[ability], random);
+    }
+    rolled.strength_percentile = roll_die(random, 100);
     rolled.gold = starting_gold(profession, random);
-    rolled.hit_points =
-        first_level_hit_points(profession, rolled.scores[Ability::constitution], random);
+    const auto classes = classes_of(profession);
+    for (std::size_t n = 0; n < classes.size(); ++n)
+    {
+        const auto dice = hit_dice[index(classes[n])];
+        rolled.first_level_hit_dice[n] = std::max(roll_dice(random, dice), dice.sides * 2 / 3);
+    }
     return rolled;
+}
+
+AbilityArray<int> ability_scores(Race race, Gender gender, Profession profession,
+                                 const RolledCharacter &rolled, Aging aging, int current_age)
+{
+    AbilityArray<int> scores;
+    const auto since_start = [&](Ability ability)
+    {
+        if (aging != Aging::add)
+        {
+            return 0;
+        }
+        return age_changes(aging, race, current_age)[ability] -
+               age_changes(aging, race, rolled.starting_age)[ability];
+    };
+    const auto limits = ability_limits(race, gender);
+    for (const auto ability : original_ability_order)
+    {
+        const int start = starting_score(race, gender, profession, rolled, aging, ability);
+        const int change = since_start(ability);
+        scores[ability] =
+            change == 0 ? start : std::clamp(start + change, 3, limits.maximum[ability]);
+    }
+    return scores;
+}
+
+int exceptional_strength(Race race, Gender gender, Profession profession,
+                         const RolledCharacter &rolled, int strength)
+{
+    if (strength != 18 || !has_class(profession, C::fighter))
+    {
+        return 0;
+    }
+    return std::min(rolled.strength_percentile,
+                    ability_limits(race, gender).exceptional_strength_maximum);
+}
+
+int first_level_hit_points(Profession profession, const RolledCharacter &rolled, int constitution)
+{
+    const auto class_count = classes_of(profession).size();
+    int total = 0;
+    for (std::size_t n = 0; n < class_count; ++n)
+    {
+        total += rolled.first_level_hit_dice[n];
+    }
+    return divided_among_classes(total, constitution_hit_point_bonus(profession, constitution),
+                                 static_cast<int>(class_count));
 }
 
 int starting_age(Race race, Profession profession, RandomState &random)
@@ -518,6 +620,33 @@ int dexterity_missile_bonus(int dexterity) noexcept
         return dexterity - 15;
     }
     return dexterity <= 21 ? 4 : 5;
+}
+
+std::array<int, 8> thief_skills(Race race, int thief_level, int dexterity)
+{
+    std::array<int, 8> skills{};
+    if (thief_level < 1)
+    {
+        return skills;
+    }
+    const auto &base = thief_base[static_cast<std::size_t>(std::min(thief_level, 9) - 1)];
+    const auto &racial = thief_race_adjustments[index(race)];
+    const auto &nimble =
+        thief_dexterity_adjustments[static_cast<std::size_t>(std::clamp(dexterity, 9, 19) - 9)];
+    for (std::size_t skill = 0; skill < skills.size(); ++skill)
+    {
+        // A racial penalty larger than the chance leaves none at all, as in the
+        // original. The original kept the chance in a byte, so a Dexterity
+        // penalty larger than the chance wrapped around to more than 200
+        // percent; OpenGoldBox stops at 0.
+        if (racial[skill] < 0 && -racial[skill] > base[skill])
+        {
+            continue;
+        }
+        const int dexterity_change = skill < nimble.size() ? nimble[skill] : 0;
+        skills[skill] = std::max(0, base[skill] + racial[skill] + dexterity_change);
+    }
+    return skills;
 }
 
 int thac0(const ClassLevels &levels)

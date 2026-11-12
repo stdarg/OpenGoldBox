@@ -125,24 +125,72 @@ struct AbilityLimits
 [[nodiscard]] rules::AbilityArray<int> racial_adjustments(Race race);
 [[nodiscard]] rules::AbilityArray<int> class_minimums(Profession profession);
 
-// A character as rolled at creation, before it is named.
+// How age changes a character's ability scores, chosen for each game.
+enum class Aging : unsigned
+{
+    // Age changes nothing.
+    off,
+    // As the original: the starting age changes the scores once, at creation.
+    original,
+    // AD&D's age table, with the young adult's +1 Constitution the original
+    // left out; the scores change again as the character grows older.
+    add
+};
+
+inline constexpr Aging default_aging = Aging::original;
+
+enum class AgeCategory : unsigned
+{
+    young_adult,
+    mature,
+    middle_aged,
+    old,
+    venerable
+};
+
+[[nodiscard]] AgeCategory age_category(Race race, int age);
+// What reaching this age has done to each ability under the aging rule; each
+// category's changes add to those before it.
+[[nodiscard]] rules::AbilityArray<int> age_changes(Aging aging, Race race, int age);
+
+// A character as rolled at creation, before it is named. Its scores are
+// worked out from these rolls for the game's aging rule (ability_scores).
 struct RolledCharacter
 {
-    rules::AbilityArray<int> scores;
-    // 1 to 100 (18/00) on a Strength of 18 for a character with fighter levels;
-    // otherwise 0.
-    int exceptional_strength{};
-    int age{};
-    int hit_points{};
+    // Each ability's best of six 3d6 rolls with the racial adjustment, before
+    // age and the race's and class's limits.
+    rules::AbilityArray<int> rolls;
+    // The d100 that becomes exceptional Strength on a fighter's 18.
+    int strength_percentile{};
+    int starting_age{};
+    // Each class's first-level Hit Die, in classes_of order: at least two
+    // thirds of the die, as the original guarantees.
+    std::array<int, 3> first_level_hit_dice{};
     int gold{};
 };
 
-// Rolls a new character as the original's creation does: each ability the
-// best of six 3d6 rolls with the racial adjustment, changed for its age, kept
-// within the race's limits and raised to the profession's minimums; then its
-// age, first-level Hit Points and starting gold.
-[[nodiscard]] RolledCharacter roll_character(Race race, Gender gender, Profession profession,
-                                             RandomState &random);
+// Rolls a new character as the original's creation does, the racial
+// adjustments included: its abilities, its age, its first-level Hit Dice and
+// its starting gold.
+[[nodiscard]] RolledCharacter roll_character(Race race, Profession profession, RandomState &random);
+
+// The character's scores at its current age. At its starting age each
+// ability is changed for age, kept within the race's limits and raised to the
+// class's minimums, as the original's creation does. Under AD&D aging, the
+// changes of each older age group follow, keeping the score between 3 and the
+// race's maximum.
+[[nodiscard]] rules::AbilityArray<int> ability_scores(Race race, Gender gender,
+                                                      Profession profession,
+                                                      const RolledCharacter &rolled, Aging aging,
+                                                      int current_age);
+// 1 to 100 (18/00) for a character with fighter levels and a Strength of 18,
+// up to the race's limit; otherwise 0.
+[[nodiscard]] int exceptional_strength(Race race, Gender gender, Profession profession,
+                                       const RolledCharacter &rolled, int strength);
+// First-level Hit Points: the class dice with the Constitution bonus, divided
+// among a multi-class character's classes.
+[[nodiscard]] int first_level_hit_points(Profession profession, const RolledCharacter &rolled,
+                                         int constitution);
 
 [[nodiscard]] int starting_age(Race race, Profession profession, RandomState &random);
 // The Hit Points every level of every class adds for this Constitution, before
@@ -154,6 +202,29 @@ struct RolledCharacter
 [[nodiscard]] int dexterity_armor_class_bonus(int dexterity) noexcept;
 // What Dexterity adds to a missile's to-hit roll and to initiative.
 [[nodiscard]] int dexterity_missile_bonus(int dexterity) noexcept;
+
+enum class ThiefSkill : unsigned
+{
+    pick_pockets,
+    open_locks,
+    find_remove_traps,
+    move_silently,
+    hide_in_shadows,
+    hear_noise,
+    climb_walls,
+    read_languages
+};
+
+// A thief's chance in percent for each skill, by its thief level, race and
+// Dexterity. Dexterity below 9 counts as 9 and above 19 as 19, the ends of
+// the original's table; no chance falls below 0.
+[[nodiscard]] std::array<int, 8> thief_skills(Race race, int thief_level, int dexterity);
+
+[[nodiscard]] constexpr int skill_chance(const std::array<int, 8> &skills,
+                                         ThiefSkill skill) noexcept
+{
+    return skills[static_cast<std::size_t>(skill)];
+}
 
 // The best THAC0 of the character's classes at their levels.
 [[nodiscard]] int thac0(const ClassLevels &levels);
