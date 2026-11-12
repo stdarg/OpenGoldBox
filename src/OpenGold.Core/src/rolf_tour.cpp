@@ -1,4 +1,5 @@
 #include "archive_io.h"
+#include "area_loading.h"
 #include "opengold/path_text.h"
 #include "opengold/diagnostic_log.h"
 #include "opengold/authored_items.h"
@@ -44,18 +45,8 @@ std::string join_script_text(std::string shown, std::string_view added)
 
 namespace
 {
-std::filesystem::path resolve_archive(const std::filesystem::path &directory, std::string_view name)
-{
-    return detail::find_archive<EclError>(directory, name, "Ambiguous archive " + std::string(name),
-                                          "Missing " + std::string(name));
-}
-
-std::vector<std::uint8_t> read_archive(const std::filesystem::path &path)
-{
-    return detail::read_archive_bytes<EclError>(path, "Archive exceeds size limit",
-                                                "Cannot open " + path_text(path),
-                                                "Incomplete archive read");
-}
+using detail::read_archive;
+using detail::resolve_archive;
 
 // The original's closing story, told when Tyranthraxus falls (PROGRAM 8):
 // GAME.OVR's Pascal strings at a fixed place in the release this engine reads,
@@ -341,41 +332,8 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
     catch (const EclError &)
     {
     }
-    // An archive's fixed item lists (shop stock in town, script treasure in areas).
-    const auto item_lists = [&](const std::string &name)
-    {
-        std::map<unsigned, std::vector<Equipment>> lists;
-        for (const auto &record : archive(name.c_str()).records)
-        {
-            const auto items = decode_items(record.bytes);
-            if (!items)
-            {
-                throw EclError("Invalid treasure record in " + name);
-            }
-            auto &stock = lists[record.id];
-            for (const auto &item : *items)
-            {
-                if (item.type >= templates->size())
-                {
-                    throw EclError("Invalid item type in " + name);
-                }
-                Equipment equipment;
-                equipment.index = stock.size();
-                equipment.stored = item;
-                equipment.base = (*templates)[item.type];
-                equipment.bonuses = equipment_bonuses(item, equipment.base);
-                if (is_magic(item) && !item_words.empty())
-                {
-                    equipment.decoded_name = item_name(item, item_words);
-                    equipment.unidentified_name =
-                        item_name(item, item_words, item.hidden_name_words);
-                }
-                stock.push_back(std::move(equipment));
-            }
-        }
-        return lists;
-    };
-    town->treasure = item_lists("ITEM3.DAX");
+    const detail::AreaFiles files(directory, *templates, item_words);
+    town->treasure = files.item_lists("ITEM3.DAX");
 
     town->item_templates = *templates;
     town->monsters = std::move(monsters);
@@ -448,26 +406,13 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
     town->wall_art = *wall_art;
     town->closing_story = std::move(closing_story);
 
-    constexpr unsigned no_wall_bank = 255;
+    using detail::AreaSource;
+    using detail::no_wall_bank;
 
     // The districts beyond New Phlan, one row per area: its script, its archive
     // bank (ECLn, GEOn, WALLDEFn, MONnCHA and so on) and the maps its script
     // loads with each map's three wall banks (`LOAD PIECES`). What its original
     // creature records fight as is in data/encounters/conversions.json.
-    struct DistrictMap
-    {
-        unsigned id;
-        std::array<unsigned, 3> pieces;
-        // Other scripts that load this map, whose creatures it also holds.
-        std::vector<unsigned> shared_with{};
-    };
-
-    struct AreaSource
-    {
-        unsigned script, bank;
-        std::vector<DistrictMap> maps;
-    };
-
     const std::array areas{
         AreaSource{20, 2, {{20, {2, 4, 1}}}},
         AreaSource{29, 8, {{29, {3, 20, 1}}, {32, {18, 17, 1}}}},
@@ -586,89 +531,10 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
         }
         town->programs.emplace(area.script, area_program);
         town->script_banks.emplace(area.script, area.bank);
-        const auto wall_definitions = archive(("WALLDEF" + bank + ".DAX").c_str()),
-                   wall_tiles = archive(("8X8D" + bank + ".DAX").c_str());
         for (const auto &geo : area.maps)
         {
-            auto district = std::make_shared<PhlanResources>();
-            const auto area_map =
-                maps.find({"GEO" + bank + ".DAX", static_cast<std::uint8_t>(geo.id)});
-            if (!area_map)
-            {
-                throw EclError("Missing area map GEO" + bank + ":" + std::to_string(geo.id));
-            }
-            district->map = area_map->get();
-            district->script = area.script;
-            district->shared_with = geo.shared_with;
-            district->bank = area.bank;
-            district->pieces = geo.pieces;
-            district->treasure = item_lists("ITEM" + bank + ".DAX");
-            // Three five-appearance slots, each with the common tiles followed
-            // by its bank's own 70 tiles. Decode independently before
-            // concatenating.
-            for (std::size_t slot = 0; slot < geo.pieces.size();)
-            {
-                const auto id = geo.pieces[slot];
-                // Bank 255 loads nothing (the Pyramid's LOAD PIECES 1,3,255):
-                // its five appearances stay blank.
-                if (id == no_wall_bank)
-                {
-                    district->wall_art.appearances.resize(district->wall_art.appearances.size() +
-                                                          5);
-                    district->wall_art.originals.resize(district->wall_art.appearances.size());
-                    ++slot;
-                    continue;
-                }
-                // A bank of several blocks fills that many slots, its tiles
-                // those of each block in turn, block n's in record id * 10 + n
-                // (coab LoadWalldef): Valhingen Graveyard's LOAD PIECES 21,22,20,
-                // whose script sets the cells that keep the original from
-                // loading slot 2's own bank.
-                const auto &definition = find_record(wall_definitions, id);
-                constexpr std::size_t block_size = 780;
-                const auto blocks = definition.size() / block_size;
-                if (blocks == 0 || slot + blocks > geo.pieces.size())
-                {
-                    throw EclError("Invalid wall definition bank " + std::to_string(id));
-                }
-                WallTiles walls(1);
-                auto common = decode_wall_tiles(find_record(shared, 203));
-                if (!common || common->size() != 45)
-                {
-                    throw EclError("Invalid common wall tiles");
-                }
-                walls.insert(walls.end(), common->begin(), common->end());
-                for (std::size_t block = 0; block < blocks; ++block)
-                {
-                    const auto tile_record =
-                        blocks == 1 ? id : static_cast<unsigned>(id * 10 + block + 1);
-                    auto local_bank = decode_wall_tiles(find_record(wall_tiles, tile_record));
-                    if (!local_bank || local_bank->size() != 70)
-                    {
-                        throw EclError("Invalid wall tile bank " + std::to_string(tile_record));
-                    }
-                    walls.insert(walls.end(), local_bank->begin(), local_bank->end());
-                }
-                auto decoded = decode_wall_art(definition, walls);
-                if (!decoded || decoded->appearances.size() != 5 * blocks)
-                {
-                    throw EclError("Invalid wall definition bank " + std::to_string(id));
-                }
-                auto with_new_art = with_replacements(
-                    std::move(*decoded),
-                    wall_appearance_keys("WALLDEF" + bank + ".DAX", id, 5 * blocks), new_wall_art);
-                district->wall_art.scale = with_new_art.scale;
-                district->wall_art.appearances.insert(district->wall_art.appearances.end(),
-                                                      with_new_art.appearances.begin(),
-                                                      with_new_art.appearances.end());
-                with_new_art.originals.resize(with_new_art.appearances.size());
-                district->wall_art.originals.insert(district->wall_art.originals.end(),
-                                                    with_new_art.originals.begin(),
-                                                    with_new_art.originals.end());
-                slot += blocks;
-            }
-            district->sprite_archive =
-                read_archive(resolve_archive(directory, "SPRIT" + bank + ".DAX"));
+            auto district =
+                detail::load_district(files, maps, area, geo, new_wall_art, terrain_art);
             // The map's own script's creatures, then those of the scripts
             // that share it; a record keeps its first conversion.
             std::vector<const AreaConversions *> listed{encounters.area(area.script)};
@@ -689,19 +555,6 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
                     }
                     district->encounter_creatures.emplace(id, creature->get());
                     district->conversions.emplace(id, conversion);
-                }
-            }
-            district->combat_archive =
-                read_archive(resolve_archive(directory, "CPIC" + bank + ".DAX"));
-            district->terrain_art = terrain_art;
-            pictures(("HEAD" + bank + ".DAX").c_str(), district->heads);
-            pictures(("BODY" + bank + ".DAX").c_str(), district->bodies);
-            pictures(("PIC" + bank + ".DAX").c_str(), district->pictures);
-            for (const auto &record : archive(("PIC" + bank + ".DAX").c_str()).records)
-            {
-                if (auto animation = decode_ega_animation(record.bytes))
-                {
-                    district->animations.emplace(record.id, std::move(animation.frames));
                 }
             }
             town->districts.emplace(geo.id, std::move(district));
