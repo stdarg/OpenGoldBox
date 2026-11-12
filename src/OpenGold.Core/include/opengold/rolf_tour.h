@@ -91,6 +91,9 @@ struct SpentGear
 
 struct PhlanResources
 {
+    // A campaign that starts by running a script's load entry (Curse's script
+    // 1 of disk 2) rather than Rolf's tour of New Phlan.
+    std::optional<unsigned> opening_script;
     std::map<unsigned, std::shared_ptr<const EclProgram>> programs;
     // Each area script's archive bank, including a script with no map of its
     // own (the dragon's cave).
@@ -333,6 +336,15 @@ class RolfTourSession
     {
         return program_->game();
     }
+
+  private:
+    // A Pool of Radiance script cell where this campaign's game keeps it.
+    [[nodiscard]] EclAddress cell(EclAddress pool_of_radiance_cell) const
+    {
+        return game_address(pool_of_radiance_cell, game());
+    }
+
+  public:
     void restart();
     void campaign_party(std::shared_ptr<opengold::CampaignParty> party);
     // Attach an already validated replacement without restarting its restored VM.
@@ -571,6 +583,7 @@ class RolfTourSession
     // Clears everything one run of the tour builds up; restart() also reloads
     // the town's map and a fresh script machine.
     void reset_run();
+    void start_opening();
     // The PIC record scene_animation() shows, if any.
     [[nodiscard]] std::optional<unsigned> scene_animation_record() const;
     GeoMap map_;

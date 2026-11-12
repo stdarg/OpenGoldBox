@@ -424,28 +424,40 @@ void RolfTourSession::configure_town()
     // The Cadorna Textile House's well searches 0x4900-0x497F for a falling
     // charm on the climber (ECL4:2 0xACF5); no script writes there, so it
     // finds none.
-    for (std::uint16_t a = 0x4900; a <= 0x4AFF; ++a)
+    // Each zone where the campaign's game keeps it (game_address).
+    const auto bind_range = [this](std::uint16_t first, std::uint16_t last)
     {
-        machine_.bind_variable(EclAddress{a}, 0);
-    }
-    for (std::uint16_t a = 0x6B00; a <= 0x6C1C; ++a)
+        const auto from = cell(EclAddress{first}).location, to = cell(EclAddress{last}).location;
+        for (auto a = from; a <= to; ++a)
+        {
+            machine_.bind_variable(EclAddress{a}, 0);
+        }
+    };
+    const bool pool_of_radiance = game() == GoldBoxGame::pool_of_radiance;
+    bind_range(0x4900, 0x4AFF);
+    if (pool_of_radiance)
     {
-        machine_.bind_variable(EclAddress{a}, 0);
+        bind_range(0x6B00, 0x6C1C);
     }
-    for (std::uint16_t a = 0x6DA8; a <= 0x6EFF; ++a)
+    else
     {
-        machine_.bind_variable(EclAddress{a}, 0);
+        // The current character's record, in Curse's 422-byte layout, which
+        // the party does not fill yet (docs/GAMES.md).
+        for (std::uint16_t a = 0x7C00; a <= 0x7DA5; ++a)
+        {
+            machine_.bind_variable(EclAddress{a}, 0);
+        }
     }
-    for (std::uint16_t a = 0x9800; a <= 0x98FF; ++a)
-    {
-        machine_.bind_variable(EclAddress{a}, 0);
-    }
+    bind_range(0x6DA8, 0x6EFF);
+    bind_range(0x9800, 0x98FF);
     machine_.bind_variable(EclAddress{0xB8}, 0);
     machine_.bind_variable(EclAddress{0xB9}, 0);
-    machine_.bind_variable(ecl_clock_hour, 12);
-    machine_.bind_variable(ecl_clock_day, 1);
-    machine_.bind_variable(ecl_script_bank, 3);
-    machine_.bind_variable(ecl_party_size, 1);
+    machine_.bind_variable(cell(ecl_clock_hour), 12);
+    machine_.bind_variable(cell(ecl_clock_day), 1);
+    // The disk the opening script came from: New Phlan's 3 in Pool of Radiance.
+    machine_.bind_variable(cell(ecl_script_bank),
+                           pool_of_radiance ? 3 : static_cast<std::uint16_t>(town_->bank));
+    machine_.bind_variable(cell(ecl_party_size), 1);
     // Kuto's Well's setup writes these two engine cells (65 or 8, and a table
     // value) when its plaza or catacombs load. Their meaning is unverified;
     // they are stored for the script and have no effect yet.
@@ -460,9 +472,12 @@ void RolfTourSession::configure_town()
     {
         selected_character_ = campaign_->state().selected_slot;
     }
-    for (const auto &w : character_reply(selected_character_).writes)
+    if (pool_of_radiance)
     {
-        machine_.bind_variable(w.address, w.value);
+        for (const auto &w : character_reply(selected_character_).writes)
+        {
+            machine_.bind_variable(w.address, w.value);
+        }
     }
     for (const std::uint8_t op :
          std::initializer_list<std::uint8_t>{10, 28, 32, 33, 36, 39, 40, 50, 55, 56, 57, 60})
@@ -472,8 +487,11 @@ void RolfTourSession::configure_town()
     // When the Pyramid falls the Central Wilderness's script patches the
     // original's colours of 36 wilderness tiles in two buffers (ECL7:26
     // 0xAD54); the art here keeps them (PYRAMID-1).
-    machine_.ignore_cells(EclAddress{0xD000}, EclAddress{0xD7FF});
-    machine_.ignore_cells(EclAddress{0x6300}, EclAddress{0x6AFF});
+    if (pool_of_radiance)
+    {
+        machine_.ignore_cells(EclAddress{0xD000}, EclAddress{0xD7FF});
+        machine_.ignore_cells(EclAddress{0x6300}, EclAddress{0x6AFF});
+    }
     if (campaign_)
     {
         for (const std::uint8_t op :
@@ -487,7 +505,7 @@ void RolfTourSession::configure_town()
 
 void RolfTourSession::synchronize_clock()
 {
-    if (adopt_script_clock())
+    if (adopt_script_clock() && game() == GoldBoxGame::pool_of_radiance)
     {
         for (const auto &w : character_reply(selected_character_).writes)
         {
@@ -519,23 +537,27 @@ void RolfTourSession::pass_time(std::chrono::milliseconds elapsed)
 bool RolfTourSession::adopt_script_clock()
 {
     bool scripted_clock = false;
-    for (const auto cell : {ecl_clock_hour, ecl_clock_minute_tens, ecl_clock_minute_ones})
+    const auto hour = cell(ecl_clock_hour), tens = cell(ecl_clock_minute_tens),
+               ones = cell(ecl_clock_minute_ones);
+    for (const auto clock_cell : {hour, tens, ones})
     {
-        scripted_clock = machine_.consume_script_write(cell) || scripted_clock;
+        scripted_clock = machine_.consume_script_write(clock_cell) || scripted_clock;
     }
     if (!scripted_clock || !campaign_)
     {
         return false;
     }
-    const std::uint64_t scripted = machine_.variable(ecl_clock_hour) * 60U +
-                                   machine_.variable(ecl_clock_minute_tens) * 10U +
-                                   machine_.variable(ecl_clock_minute_ones);
+    const std::uint64_t scripted =
+        machine_.variable(hour) * 60U + machine_.variable(tens) * 10U + machine_.variable(ones);
     if (scripted >= 1440)
     {
         throw EclError("Invalid script clock");
     }
     const auto now = clock_minute_of_day(campaign_->state().time_minutes);
-    read_character();
+    if (game() == GoldBoxGame::pool_of_radiance)
+    {
+        read_character();
+    }
     campaign_->advance_time(std::chrono::minutes{(scripted + 1440 - now) % 1440});
     return true;
 }
@@ -550,12 +572,13 @@ EclHostReply RolfTourSession::clock_reply() const
     const auto minutes = campaign_->state().time_minutes;
     const auto minute_of_day = clock_minute_of_day(minutes);
     const auto days = minutes / 1440 + (minutes % 1440 + 720) / 1440;
-    reply.writes = {{ecl_clock_minute_ones, static_cast<std::uint16_t>(minute_of_day % 10)},
-                    {ecl_clock_minute_tens, static_cast<std::uint16_t>((minute_of_day % 60) / 10)},
-                    {ecl_clock_hour, static_cast<std::uint16_t>(minute_of_day / 60)},
-                    {ecl_clock_day, static_cast<std::uint16_t>(days % 30 + 1)},
-                    {ecl_clock_month, static_cast<std::uint16_t>((days / 30) % 12 + 1)},
-                    {ecl_clock_year, static_cast<std::uint16_t>((days / 360) % 256)}};
+    reply.writes = {
+        {cell(ecl_clock_minute_ones), static_cast<std::uint16_t>(minute_of_day % 10)},
+        {cell(ecl_clock_minute_tens), static_cast<std::uint16_t>((minute_of_day % 60) / 10)},
+        {cell(ecl_clock_hour), static_cast<std::uint16_t>(minute_of_day / 60)},
+        {cell(ecl_clock_day), static_cast<std::uint16_t>(days % 30 + 1)},
+        {cell(ecl_clock_month), static_cast<std::uint16_t>((days / 30) % 12 + 1)},
+        {cell(ecl_clock_year), static_cast<std::uint16_t>((days / 360) % 256)}};
     return reply;
 }
 
@@ -1125,7 +1148,7 @@ std::optional<unsigned> RolfTourSession::scene_animation_record() const
         return std::nullopt;
     }
     const auto beside_the_party =
-        snapshot_.sprite_frame == 0 && machine_.variable(EclAddress{0x6DE1}) == 255;
+        snapshot_.sprite_frame == 0 && machine_.variable(cell(EclAddress{0x6DE1})) == 255;
     const auto id = picture_           ? picture_animation_id_
                     : beside_the_party ? monster_picture_id_
                                        : std::nullopt;
@@ -1669,11 +1692,16 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
 
 void RolfTourSession::finish_event()
 {
-    read_character();
-    // Another script may follow in this event; it must see the settled purse.
-    for (const auto &w : character_reply(selected_character_).writes)
+    // The party and the current character's cells meet in Pool of Radiance's
+    // record only (docs/GAMES.md).
+    if (game() == GoldBoxGame::pool_of_radiance)
     {
-        machine_.bind_variable(w.address, w.value);
+        read_character();
+        // Another script may follow in this event; it must see the settled purse.
+        for (const auto &w : character_reply(selected_character_).writes)
+        {
+            machine_.bind_variable(w.address, w.value);
+        }
     }
     publish_pose();
     if (transition_)
@@ -2883,7 +2911,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         encounter_distance_ = std::min<unsigned>(arg(1), open_squares_ahead(map_, snapshot_.pose));
         // The Pitt's buccaneer names sprite 19, which SPRIT1 lacks: met face
         // to face, the original shows the head (0x6DE1) and body portrait.
-        const auto head_id = machine_.variable(EclAddress{0x6DE1});
+        const auto head_id = machine_.variable(cell(EclAddress{0x6DE1}));
         if (!decode_ega_sprite(area_resources().sprite_archive,
                                static_cast<std::uint8_t>(arg(0)), 0) &&
             encounter_distance_ == 0 && head_id != 255)
@@ -2937,7 +2965,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             roll_plaza_group(request, reply);
         }
-        const auto head_id = machine_.variable(EclAddress{0x6DE1});
+        const auto head_id = machine_.variable(cell(EclAddress{0x6DE1}));
         if (head_id == 255)
         {
             const auto found = area_resources().pictures.find(arg(0));
@@ -3501,7 +3529,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // maps reads to tell them apart (the Temple of Bane, ECL1:24 0x993D).
         if (current_area_)
         {
-            reply.writes.push_back({ecl_current_map, static_cast<std::uint16_t>(current_area_)});
+            reply.writes.push_back(
+                {game_address(ecl_current_map, game()), static_cast<std::uint16_t>(current_area_)});
         }
         break;
     }

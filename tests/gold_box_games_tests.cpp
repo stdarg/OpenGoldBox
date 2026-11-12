@@ -3,6 +3,7 @@
 // runs in tests/game_census.cmake.
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
+#include "opengold/campaign_session.h"
 #include "opengold/character_art.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/curse_records.h"
@@ -20,6 +21,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -317,6 +319,64 @@ void the_loaders_read_curse()
     check(sounds.at(10).audible, "Curse's footstep sounds");
 }
 
+// Curse's opening, as the game plays it: its first script wakes the party in a
+// small room, shows picture 10, then leaves it on its first map, square (7,13)
+// facing east, with the view drawn (docs/GAMES.md, phase 3 step 1).
+void curse_opening_reaches_the_first_map()
+{
+    using opengold::por::TourPhase;
+    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    const auto folder = games ? std::filesystem::path(games) / "CURSE" : std::filesystem::path();
+    if (!games || opengold::identify_game(folder) != GoldBoxGame::curse_of_the_azure_bonds)
+    {
+        std::cout << "Curse's files are not here; its opening is not played.\n";
+        return;
+    }
+    auto session = opengold::load_campaign(folder, GoldBoxGame::curse_of_the_azure_bonds);
+    const auto settle = [&session]
+    {
+        for (int step = 0; step < 50 && session.snapshot().phase == TourPhase::running; ++step)
+        {
+            session.advance(1.0);
+        }
+    };
+    const auto diagnostics = [&session]
+    {
+        return session.snapshot().diagnostic +
+               (session.script_diagnostics().empty() ? "" : session.script_diagnostics().front());
+    };
+    settle();
+    check(session.snapshot().phase == TourPhase::awaiting_continue &&
+              session.snapshot().dialogue.find("YOU AWAKEN") != std::string::npos,
+          "The opening wakes the party: " + diagnostics());
+    check(session.snapshot().area_id == 1, "Its first map is loaded");
+    check(session.choose(session.snapshot().continue_ticket, 0), "The party goes on");
+    settle();
+    check(session.picture().has_value(), "Picture 10 shows: " + diagnostics());
+    check(session.choose(session.snapshot().continue_ticket, 0), "The party goes on again");
+    settle();
+    const auto &snapshot = session.snapshot();
+    check(snapshot.phase == TourPhase::completed, "The opening ends: " + diagnostics());
+    check(snapshot.pose.x == 7 && snapshot.pose.y == 13 &&
+              snapshot.pose.facing == opengold::por::MapDirection::east,
+          "The party stands on square (7,13) facing east");
+    check(!session.picture().has_value(), "The redraw puts the view back over the picture");
+    check(session.script_diagnostics().empty(), "The opening needs nothing unsupported");
+    const auto colours = [](const opengold::Image &image)
+    {
+        std::set<std::uint32_t> seen;
+        for (std::size_t p = 0; p + 3 < image.rgba.size(); p += 4)
+        {
+            seen.insert(image.rgba[p] << 16 | image.rgba[p + 1] << 8 | image.rgba[p + 2]);
+        }
+        return seen.size();
+    };
+    const auto view = session.observe_view();
+    check(colours(view) > 2, "The 3D view shows the room's walls");
+    check(session.explore(opengold::por::ExplorationCommand::turn_left), "The party turns");
+    check(session.observe_view().rgba != view.rgba, "Turning shows another view");
+}
+
 // A save names its game; a save made before format 48 is Pool of Radiance's.
 void a_save_names_its_game()
 {
@@ -359,6 +419,7 @@ int main()
         engine_routines_are_the_games();
         the_loaders_read_curse();
         a_save_names_its_game();
+        curse_opening_reaches_the_first_map();
         the_font_has_eight_bytes_a_glyph();
         std::cout << "Gold Box games passed.\n";
     }

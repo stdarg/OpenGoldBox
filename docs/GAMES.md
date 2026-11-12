@@ -190,6 +190,9 @@ In small steps, each with its check:
    5. `load_campaign(folder, game)`, the one way the game starts a campaign.
    6. A test walks *Curse*'s first map: the awakening text, picture 10, the
       party at (7,13) facing east, the view drawn.
+
+   Steps 1 to 6 done 2026-11-12: `load_campaign` starts *Curse*'s campaign,
+   and `opengold_gold_box_games_tests` plays its opening on the real files.
    7. A folder for each game in the settings; New Game asks for the game;
       the title pictures; the exploration screen, area names and saves by
       game.

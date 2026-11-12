@@ -131,3 +131,19 @@ blocks lie 56h bytes into the driver, and the song table 332h bytes after them.
 The table holds 21 songs of four voices; sound command *n* plays song *n* − 1.
 The sequencer and its commands are *Pool of Radiance*'s, and so are the first
 twelve sounds, tick for tick.
+
+## The opening
+
+A new game starts on disk 2: the original runs script 1 of `ECL2.DAX`, and
+only its load entry. That entry loads map `GEO2:1` with the wall banks 1, 2
+and 3, puts the party on square (7,13) facing east, says the party wakes in a
+small room, shows picture 10 of `PIC2.DAX` (the arm marked with the azure
+bonds) and redraws the view (CALL 2E10h). The script's other entries run when
+the party first steps. Before it runs, the original's script setup marks a 3D
+map as shown and no portrait up (cells 4BE6h and 7EE1h).
+
+`load_campaign(folder, GoldBoxGame::curse_of_the_azure_bonds)` plays it with
+the engine *Pool of Radiance* uses: the shared area loader reads the map, its
+walls, sprites and pictures, and the session binds the script memory where
+*Curse* keeps it. *Curse*'s areas are listed in `curse_campaign.cpp`; only the
+opening room so far.

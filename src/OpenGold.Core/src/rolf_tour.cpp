@@ -706,6 +706,12 @@ void RolfTourSession::restart()
         map_ = *town_->map;
         wall_art_ = town_->wall_art;
     }
+    else if (town_ && town_->opening_script)
+    {
+        // A campaign whose opening loads its first map shows none before.
+        map_ = {};
+        wall_art_ = {};
+    }
     machine_ = EclMachine(program_);
     reset_run();
     apply_entrances();
@@ -775,9 +781,9 @@ void RolfTourSession::reset_run()
              0x03DE, 0x49C9, 0x49FD, 0x4AC5, 0x4A07, 0x4A0F, 0x4A10, 0x4A11, 0x6DE1, 0x6E79,
              0x6E7A, 0x6E7B, 0x6E7C, 0x6E7D, 0x9801, 0xC04B, 0xC04C, 0xC04D, 0xC04E, 0xC04F})
     {
-        machine_.bind_variable(EclAddress{address}, 0);
+        machine_.bind_variable(cell(EclAddress{address}), 0);
     }
-    machine_.bind_variable(ecl_clock_hour, 12); // Research fixture: midday.
+    machine_.bind_variable(cell(ecl_clock_hour), 12); // Research fixture: midday.
     for (const std::uint8_t opcode : std::initializer_list<std::uint8_t>{12, 13, 14, 45, 49, 58})
     {
         machine_.enable_host(opcode);
@@ -786,9 +792,32 @@ void RolfTourSession::reset_run()
     {
         configure_town();
     }
+    if (town_ && town_->opening_script)
+    {
+        start_opening();
+        return;
+    }
     if (!machine_.start_at_for_inspection(entry_))
     {
         fail("Invalid isolated tour entry");
+    }
+}
+
+// A campaign's opening runs its first script's load entry, as the original's
+// game loop does for a new game: the party is already exploring, and its
+// first step runs the script's other entries (eclvm.pas, the main loop).
+void RolfTourSession::start_opening()
+{
+    snapshot_.tour_finished = true;
+    current_script_ = *town_->opening_script;
+    // The original's script setup (EclInit): a 3D map is shown and no
+    // portrait is up.
+    machine_.bind_variable(cell(ecl_in_3d_area), 1);
+    machine_.bind_variable(cell(EclAddress{0x6DE1}), 255);
+    event_stage_ = EventStage::none;
+    if (!machine_.start(4))
+    {
+        fail("The campaign's opening script cannot start");
     }
 }
 

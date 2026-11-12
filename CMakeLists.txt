@@ -173,6 +173,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/game_census.cpp
     src/OpenGold.Core/src/ecl_address.cpp
     src/OpenGold.Core/src/area_loading.cpp
+    src/OpenGold.Core/src/curse_campaign.cpp
     src/OpenGold.Core/src/ecl_machine.cpp
     src/OpenGold.Core/src/por_effects.cpp
     src/OpenGold.Core/src/rolf_tour.cpp
