@@ -357,10 +357,11 @@ original::Combatant creature(int hit_points, int level = 1)
 }
 
 Fight arrange(const std::vector<Placed> &placed, std::uint64_t seed,
-              const std::vector<rules::Cell> &walls = {})
+              const std::vector<rules::Cell> &walls = {}, unsigned morale = 100)
 {
     Fight fight{original::rules_module(), nullptr};
     rules::Encounter encounter;
+    encounter.morale = morale;
     encounter.battlefield = {8, 8, std::vector<rules::Terrain>(64, rules::Terrain::open)};
     for (const auto wall : walls)
     {
@@ -872,6 +873,134 @@ void a_thrown_weapon_leaves_the_hand()
     check(!offered(*restored, "throw", "Ogre"), "A saved fight remembers the dagger is gone");
 }
 
+// A monster with morale 50 (its NPC byte 0x80 + 25) that has lost three
+// quarters of its Hit Points, in an encounter of morale 50.
+original::Combatant shaken(int movement, int intelligence)
+{
+    auto c = creature(20, 0);
+    c.hit_points = 5;
+    c.morale = 0x80 + 25;
+    c.movement = movement;
+    c.intelligence = intelligence;
+    return c;
+}
+
+// What happens at the shaken monster's first turn, the fighter ending its own.
+std::string monster_turn(const original::Combatant &monster, unsigned morale = 50)
+{
+    auto fight = arrange({{"Fighter", rules::Side::party, {0, 3}, creature(50)},
+                          {"Monster", rules::Side::opposition, {5, 3}, monster}},
+                         31, {}, morale);
+    auto &session = *fight.session;
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return actor_name(session) == "Monster" ||
+                   session.snapshot().outcome != rules::Outcome::ongoing;
+        });
+    const auto &view = view_of(session.snapshot(), "Monster");
+    if (view.panicked)
+    {
+        return "flees";
+    }
+    if (view.surrendered)
+    {
+        check(view.hit_points == 0 && session.snapshot().outcome == rules::Outcome::victory,
+              "One that gives up has no Hit Points left, and its side has lost");
+        return "surrenders";
+    }
+    return "fights";
+}
+
+// Morale (combatai.pas, CheckMorale): a monster holds while its morale is at
+// least the share of Hit Points it has lost, or its side's Hit Points left are
+// at least 100 less the encounter's morale. Broken, it runs when no enemy is
+// faster, gives up when its Intelligence is 6 or more, and fights on otherwise.
+void morale_breaks()
+{
+    check(monster_turn(shaken(12, 10)) == "flees", "No enemy faster: it flees in panic");
+    check(monster_turn(shaken(6, 10)) == "surrenders", "Slower and clever: it surrenders");
+    check(monster_turn(shaken(6, 3)) == "fights", "Slower and dull: it fights on");
+    check(monster_turn(shaken(6, 10), 100) == "fights", "An encounter of morale 100 never breaks");
+    auto steady = shaken(6, 10);
+    steady.morale = 0x80 + 40;
+    check(monster_turn(steady) == "fights", "Morale 80 holds with 75 lost");
+    auto character = shaken(6, 10);
+    character.morale = 0;
+    check(monster_turn(character) == "fights", "A player's character never checks");
+}
+
+// Fleeing off the field (cbtacts.pas, AttemptFlee): it gets away with more
+// movement than the fastest enemy and is blocked with less; with no one of its
+// party left, the party has fled (postcbt.pas, DetermineCombatResults).
+void fleeing_off_the_field()
+{
+    const auto flee = [](int enemy_movement, bool hired)
+    {
+        auto runner = creature(20);
+        if (hired)
+        {
+            runner.morale = 0x80 + 30;
+        }
+        auto ogre = creature(1000, 0);
+        ogre.movement = enemy_movement;
+        auto fallen = creature(5);
+        fallen.hit_points = 0;
+        auto fight = arrange({{"Runner", rules::Side::party, {0, 3}, runner},
+                              {"Fallen", rules::Side::party, {0, 5}, fallen},
+                              {"Ogre", rules::Side::opposition, {6, 3}, ogre}},
+                             37);
+        auto &session = *fight.session;
+        until_turn_of(session, "Runner");
+        const auto step = offered(session, "flee");
+        check(step && !session.snapshot().battlefield.contains(step->destination),
+              "On the edge it is offered a step off the field");
+        session.submit(*step);
+        return session.snapshot();
+    };
+    const auto away = flee(6, false);
+    check(view_of(away, "Runner").fled && away.outcome == rules::Outcome::fled,
+          "Faster than the ogre it gets away, and the party has fled");
+    const auto blocked = flee(15, false);
+    check(!view_of(blocked, "Runner").fled && blocked.outcome == rules::Outcome::ongoing,
+          "Slower than the ogre its escape is blocked");
+    check(flee(6, true).outcome == rules::Outcome::defeat,
+          "A hired NPC getting away does not save a party whose own are down");
+    auto fight = arrange({{"Runner", rules::Side::party, {3, 3}, creature(20)},
+                          {"Ogre", rules::Side::opposition, {6, 3}, creature(1000, 0)}},
+                         37);
+    until_turn_of(*fight.session, "Runner");
+    check(!offered(*fight.session, "flee"), "Away from the edge there is no fleeing");
+}
+
+// A fight saved with a monster in panic goes on as it would have.
+void a_panic_survives_a_save()
+{
+    auto fight = arrange({{"Fighter", rules::Side::party, {0, 3}, creature(50)},
+                          {"Monster", rules::Side::opposition, {5, 3}, shaken(12, 10)}},
+                         41, {}, 50);
+    auto &session = *fight.session;
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return view_of(session.snapshot(), "Monster").panicked;
+        });
+    const auto checkpoint = session.save();
+    const auto restored = fight.module->restore(checkpoint);
+    check(restored->save() == checkpoint && view_of(restored->snapshot(), "Monster").panicked,
+          "The panic and the encounter's morale are saved");
+}
+
 } // namespace
 
 int main()
@@ -892,6 +1021,9 @@ int main()
         missiles_shoot_what_they_see();
         shots_spend_ammunition();
         a_thrown_weapon_leaves_the_hand();
+        morale_breaks();
+        fleeing_off_the_field();
+        a_panic_survives_a_save();
         real_records_fight();
         std::cout << "Original-rules combat passed.\n";
     }

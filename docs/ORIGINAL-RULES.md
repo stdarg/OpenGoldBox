@@ -222,7 +222,26 @@ gear.
    original's terrain heights come with its battlefields; and the shots spent
    leave the party's inventory, as the original drops a thrown weapon in the
    loot.
-5. Morale, fleeing and surrender.
+5. Morale, fleeing and surrender. *Done 2026-11-12:* a creature whose
+   record's NPC byte is 0x80 or more checks its morale as its turn starts
+   (the player's characters never do). It holds while its morale (twice the
+   byte's low 7 bits, 0 past 102) is at least the share of Hit Points it has
+   lost, and an enemy of the party also holds while the opposition's Hit
+   Points left (in steps of 5, as of the round's start) are at least 100 less
+   the encounter's morale. Broken, it flees in panic when no enemy is faster
+   (the reconstruction's comment says "twice as fast", but its arithmetic
+   compares the movements themselves, and this follows the arithmetic),
+   surrenders with Intelligence 6 or more, and fights on otherwise; it may
+   rally at its next turn. A party NPC without a morale of its own takes the
+   encounter's. A creature on the field's edge with a step left can flee: it
+   gets away with no enemy in sight or more movement than the fastest enemy,
+   or on 1 in 2 when they tie. With none of the party left fighting, the
+   party has fled when one of its own characters got away, and is defeated
+   otherwise. Left for later: where a panicked creature runs is the AI's
+   (step 9), which runs monsters along the party's facing; the script's
+   change to the party's movement (PARTY_MOVE_MODIFIER) comes with step 7, as
+   does what the game does after a flight: the members left behind are lost,
+   as in the original.
 6. Saving throws, then the monsters' special abilities (MONnSPC).
 7. Into the game: fights in the campaign under the original rules, on screen.
 8. Spells in combat.

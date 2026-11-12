@@ -27,15 +27,22 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 3";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 4";
 
 enum class Condition : unsigned
 {
     okay,
     unconscious,
     dying,
-    dead
+    dead,
+    // Off the field: it got away with its Hit Points, or gave up with none.
+    fled,
+    surrendered
 };
+
+// The record's NPC byte from 0x80 up marks a creature whose morale counts;
+// below it are the player's characters, who never check (combatai.pas, CheckMorale).
+constexpr unsigned non_player = 0x80;
 
 struct Fighter
 {
@@ -66,6 +73,8 @@ struct Fighter
     // its facing (0 to 4), mod 8 (cbtacts.pas, NoteAttackDirection).
     int flank_count{}, flank_spread{};
     bool guarding{};
+    // Its morale broke at its turn's start: it runs for the edge.
+    bool fleeing{};
 
     [[nodiscard]] bool able() const noexcept
     {
@@ -311,12 +320,13 @@ class Session final : public rules::CombatSession
 {
   public:
     Session(rules::Identity identity, rules::Battlefield board, std::vector<Fighter> fighters,
-            std::uint64_t seed)
+            std::uint64_t seed, unsigned morale)
         : identity_(std::move(identity)), board_(std::move(board)), fighters_(std::move(fighters)),
-          random_{seed}
+          random_{seed}, morale_threshold_(std::min(morale, 100U))
     {
         rules::validate_battlefield(board_);
         log({"Combat begins.", {}});
+        update_hostile_hit_points();
         begin_round();
         next_actor();
     }
@@ -342,6 +352,12 @@ class Session final : public rules::CombatSession
     EntityId actor_{};
     rules::Outcome outcome_{rules::Outcome::ongoing};
     std::vector<rules::LogEntry> log_;
+    // The encounter's morale, 0 to 100, which the opposition's whole strength
+    // is weighed against (the script's MORALE_THRESHOLD).
+    unsigned morale_threshold_{100};
+    // The opposition's Hit Points left of its whole, in steps of 5, as of the
+    // round's start (cbtacts.pas, UpdateHostileHpPercent).
+    int hostile_hit_points_percent_{100};
 
     int roll(int sides)
     {
@@ -368,6 +384,12 @@ class Session final : public rules::CombatSession
     void guards_strike(Fighter &mover);
     [[nodiscard]] bool can_bandage(const Fighter &bandager, const Fighter &dying) const;
     void inflict(Fighter &target, int damage);
+    void update_hostile_hit_points();
+    [[nodiscard]] int highest_enemy_movement(const Fighter &f) const;
+    bool check_morale(Fighter &f);
+    void attempt_flee(Fighter &f);
+    void put_out_of_play(Fighter &f, Condition condition);
+    [[nodiscard]] std::vector<Cell> off_field_steps(const Fighter &f) const;
     void settle_outcome();
 };
 
@@ -471,6 +493,11 @@ void Session::next_actor()
             // (combat.pas, the creature's turn).
             best->flank_count = best->flank_spread = 0;
             best->guarding = false;
+            if (check_morale(*best))
+            {
+                settle_outcome();
+                continue;
+            }
             actor_ = best->id;
             return;
         }
@@ -482,6 +509,7 @@ void Session::next_actor()
 // (combat.pas, EndOfRound).
 void Session::end_round()
 {
+    update_hostile_hit_points();
     for (auto &f : fighters_)
     {
         if (f.condition == Condition::dying && ++f.overkill > 9)
@@ -823,6 +851,140 @@ void Session::inflict(Fighter &target, int damage)
     target.initiative = 0;
 }
 
+// The opposition's Hit Points left, those of the creatures still fighting
+// against the whole of every one's, rounded down to a step of 5.
+void Session::update_hostile_hit_points()
+{
+    int left = 0, whole = 0;
+    for (const auto &f : fighters_)
+    {
+        if (f.side != Side::opposition)
+        {
+            continue;
+        }
+        left += f.able() ? f.hit_points : 0;
+        whole += f.numbers.max_hit_points;
+    }
+    if (whole > 0)
+    {
+        hostile_hit_points_percent_ = left * 20 / whole * 5;
+    }
+}
+
+int Session::highest_enemy_movement(const Fighter &f) const
+{
+    int highest = 0;
+    for (const auto &other : fighters_)
+    {
+        if (other.side != f.side && other.able())
+        {
+            highest = std::max(highest, other.numbers.movement);
+        }
+    }
+    return highest;
+}
+
+// A creature whose morale counts checks it as its turn starts (combatai.pas,
+// CheckMorale): it holds while its morale (twice the byte's low 7 bits, 0
+// past 102) is at least the share of its Hit Points it has lost; an enemy of
+// the party also holds while the opposition's Hit Points left are at least
+// 100 less the encounter's morale. Broken, it runs when no enemy is faster,
+// gives up when its Intelligence is 6 or more, and otherwise fights on. It
+// may rally at its next turn. True when it surrendered.
+bool Session::check_morale(Fighter &f)
+{
+    f.fleeing = false;
+    if (f.numbers.morale < non_player)
+    {
+        return false;
+    }
+    int morale = static_cast<int>(f.numbers.morale & 0x7F) * 2;
+    if (morale > 102)
+    {
+        morale = 0;
+    }
+    if (morale != 0 && morale >= 100 - f.hit_points * 100 / f.numbers.max_hit_points)
+    {
+        return false;
+    }
+    const int group = hostile_hit_points_percent_;
+    if (group != 0 && group >= 100 - static_cast<int>(morale_threshold_) &&
+        f.side == Side::opposition)
+    {
+        return false;
+    }
+    if (highest_enemy_movement(f) <= f.numbers.movement)
+    {
+        f.fleeing = true;
+        log({"{name} flees in panic.", {{"name", f.name}}});
+        return false;
+    }
+    if (f.numbers.intelligence > 5)
+    {
+        put_out_of_play(f, Condition::surrendered);
+        log({"{name} surrenders.", {{"name", f.name}}});
+        return true;
+    }
+    return false;
+}
+
+// Off the field (fxengine.pas, PutOutOfPlayWithStatus): one that gave up has
+// no Hit Points left; one that got away keeps its own. Its actions end.
+void Session::put_out_of_play(Fighter &f, Condition condition)
+{
+    f.condition = condition;
+    if (condition != Condition::fled)
+    {
+        f.hit_points = 0;
+    }
+    f.fleeing = false;
+    end_actions(f);
+}
+
+// Stepping off the field (cbtacts.pas, AttemptFlee): it gets away with no
+// enemy in sight, or with more movement than the fastest enemy, or on a 1 in
+// 2 when they tie. Its actions end either way.
+void Session::attempt_flee(Fighter &f)
+{
+    const bool watched =
+        std::any_of(fighters_.begin(), fighters_.end(),
+                    [this, &f](const Fighter &other)
+                    {
+                        return other.side != f.side && other.able() && sees(board_, f, other);
+                    });
+    const int fastest = highest_enemy_movement(f);
+    const bool away =
+        !watched || fastest < f.numbers.movement || (fastest == f.numbers.movement && roll(2) == 1);
+    if (away)
+    {
+        put_out_of_play(f, Condition::fled);
+        log({"{name} got away.", {{"name", f.name}}});
+        return;
+    }
+    log({"{name} cannot get away.", {{"name", f.name}}});
+    end_actions(f);
+}
+
+// The squares just off the field next to a creature on its edge.
+std::vector<Cell> Session::off_field_steps(const Fighter &f) const
+{
+    std::vector<Cell> steps;
+    for (const auto square : squares_of(f))
+    {
+        for (int direction = 0; direction < 8; ++direction)
+        {
+            const Cell step{square.x + step_x[static_cast<std::size_t>(direction)],
+                            square.y + step_y[static_cast<std::size_t>(direction)]};
+            if (!board_.contains(step) &&
+                std::find(steps.begin(), steps.end(), step) == steps.end())
+            {
+                steps.push_back(step);
+            }
+        }
+    }
+    return steps;
+}
+
 // A side with no one left able to fight has lost. When the party wins, its
 // dying members wake unconscious (postcbt.pas).
 void Session::settle_outcome()
@@ -835,9 +997,19 @@ void Session::settle_outcome()
                                return f.side == side && f.able();
                            });
     };
+    // With none of the party left fighting, it fled when one of its own
+    // characters got away, and is defeated otherwise (postcbt.pas,
+    // DetermineCombatResults).
     if (!side_standing(Side::party))
     {
-        outcome_ = rules::Outcome::defeat;
+        const bool got_away = std::any_of(fighters_.begin(), fighters_.end(),
+                                          [](const Fighter &f)
+                                          {
+                                              return f.side == Side::party &&
+                                                     f.condition == Condition::fled &&
+                                                     f.numbers.morale < non_player;
+                                          });
+        outcome_ = got_away ? rules::Outcome::fled : rules::Outcome::defeat;
     }
     else if (!side_standing(Side::opposition))
     {
@@ -855,6 +1027,7 @@ void Session::settle_outcome()
     {
         actor_ = 0;
         log({outcome_ == rules::Outcome::victory ? "The party wins the fight."
+             : outcome_ == rules::Outcome::fled  ? "The party has fled."
                                                  : "The party is defeated.",
              {}});
     }
@@ -865,7 +1038,8 @@ rules::MovementGrid Session::grid_for(const Fighter &mover) const
     std::vector<rules::Occupant> occupants;
     for (const auto &f : fighters_)
     {
-        if (f.id == mover.id || f.condition == Condition::dead)
+        if (f.id == mover.id || f.condition == Condition::dead || f.condition == Condition::fled ||
+            f.condition == Condition::surrendered)
         {
             continue;
         }
@@ -917,7 +1091,12 @@ rules::Snapshot Session::snapshot() const
         view.status = f->condition == Condition::dead          ? "dead"
                       : f->condition == Condition::dying       ? "dying"
                       : f->condition == Condition::unconscious ? "unconscious"
+                      : f->condition == Condition::fled        ? "fled"
+                      : f->condition == Condition::surrendered ? "surrendered"
                                                                : "";
+        view.fled = f->condition == Condition::fled;
+        view.surrendered = f->condition == Condition::surrendered;
+        view.panicked = f->fleeing;
         view.persistent = {f->condition == Condition::okay ? f->hit_points : 0,
                            f->condition == Condition::dead,
                            {},
@@ -989,6 +1168,19 @@ std::vector<rules::Command> Session::legal_commands() const
             offer("bandage", f.id);
         }
     }
+    // Stepping off the field offers to flee, with a step left (combat.pas, MoveMenu).
+    if (actor->half_moves >= 2)
+    {
+        for (const auto step : off_field_steps(*actor))
+        {
+            rules::Command flee;
+            flee.revision = revision_;
+            flee.actor = actor->id;
+            flee.verb = "flee";
+            flee.destination = step;
+            commands.push_back(flee);
+        }
+    }
     offer("end");
     return commands;
 }
@@ -1018,14 +1210,14 @@ std::vector<Cell> Session::movement_reach(EntityId id) const
 bool Session::submit(const rules::Command &command)
 {
     const auto legal = legal_commands();
-    const bool offered =
-        std::any_of(legal.begin(), legal.end(),
-                    [&command](const rules::Command &c)
-                    {
-                        return c.revision == command.revision && c.actor == command.actor &&
-                               c.verb == command.verb && c.target == command.target &&
-                               (c.verb != "move" || c.destination == command.destination);
-                    });
+    const bool offered = std::any_of(
+        legal.begin(), legal.end(),
+        [&command](const rules::Command &c)
+        {
+            return c.revision == command.revision && c.actor == command.actor &&
+                   c.verb == command.verb && c.target == command.target &&
+                   ((c.verb != "move" && c.verb != "flee") || c.destination == command.destination);
+        });
     if (!offered)
     {
         return false;
@@ -1060,6 +1252,11 @@ bool Session::submit(const rules::Command &command)
         auto &target = *find(command.target);
         note_attack(actor, target);
         shoot(actor, target);
+        settle_outcome();
+    }
+    else if (command.verb == "flee")
+    {
+        attempt_flee(actor);
         settle_outcome();
     }
     else if (command.verb == "guard")
@@ -1122,14 +1319,14 @@ std::string Session::save() const
         out(plant);
     }
     out(random_.value, round_, revision_, actor_, static_cast<unsigned>(outcome_),
-        fighters_.size());
+        morale_threshold_, hostile_hit_points_percent_, fighters_.size());
     for (const auto &f : fighters_)
     {
         out(f.id, f.name, f.definition, static_cast<unsigned>(f.side), f.cell.x, f.cell.y,
             f.footprint.width, f.footprint.height, f.facing_left, f.numbers.encode(), f.hit_points,
             static_cast<unsigned>(f.condition), f.overkill, f.initiative, f.half_moves,
             f.attacks_left[0], f.attacks_left[1], f.surprised, f.attack_phase, f.sweep_budget,
-            f.direction, f.flank_count, f.flank_spread, f.guarding);
+            f.direction, f.flank_count, f.flank_spread, f.guarding, f.fleeing);
     }
     out(log_.size());
     for (const auto &entry : log_)
@@ -1179,6 +1376,13 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
     session->revision_ = in.as<std::uint64_t>();
     session->actor_ = in.as<EntityId>();
     session->outcome_ = in.as<rules::Outcome>();
+    session->morale_threshold_ = in.as<unsigned>();
+    session->hostile_hit_points_percent_ = in.as<int>();
+    if (session->morale_threshold_ > 100 || session->hostile_hit_points_percent_ < 0 ||
+        session->hostile_hit_points_percent_ > 100)
+    {
+        throw std::runtime_error("Invalid original-rules combat checkpoint");
+    }
     const auto count = in.as<std::size_t>();
     if (count > 256)
     {
@@ -1213,7 +1417,9 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         f.flank_count = in.as<int>();
         f.flank_spread = in.as<int>();
         f.guarding = in.as<bool>();
-        if (f.attack_phase < 0 || f.attack_phase > 1 || f.direction < 0 || f.direction > 7)
+        f.fleeing = in.as<bool>();
+        if (f.condition > Condition::surrendered || f.attack_phase < 0 || f.attack_phase > 1 ||
+            f.direction < 0 || f.direction > 7)
         {
             throw std::runtime_error("Invalid original-rules combat checkpoint");
         }
@@ -1290,8 +1496,19 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
         }
         fighters.push_back(std::move(f));
     }
+    // A party NPC without a morale of its own takes the encounter's (combatst.pas,
+    // InitCreatureCombatData).
+    const auto threshold = std::min(encounter.morale, 100U);
+    for (auto &f : fighters)
+    {
+        const auto own = f.numbers.morale & 0x7F;
+        if (f.side == Side::party && f.numbers.morale >= non_player && (own == 0 || own > 102))
+        {
+            f.numbers.morale = non_player + threshold;
+        }
+    }
     return std::make_unique<Session>(std::move(identity), std::move(encounter.battlefield),
-                                     std::move(fighters), seed);
+                                     std::move(fighters), seed, threshold);
 }
 
 std::unique_ptr<rules::CombatSession> restore_session(rules::Identity identity,
