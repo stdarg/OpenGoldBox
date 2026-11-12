@@ -3,6 +3,8 @@
 #include <compare>
 #include <cstdint>
 
+#include "opengold/gold_box_game.h"
+
 namespace opengold::por
 {
 // A cell of the original script memory. Addresses and the values stored in
@@ -99,5 +101,15 @@ inline constexpr EclAddress ecl_script_bank{0x6E12};
 
 // Slums event 1 sets this to 255 once its four-orc fight is won.
 inline constexpr EclAddress ecl_slums_orc_victory{0x4ACA};
+
+// The addresses above are Pool of Radiance's. Later games moved the script
+// memory's zones whole: the game's state (Pool of Radiance's 4900h-4CFFh), the
+// party's and the current character's (6B00h-6EFFh) and the strings
+// (9700h-98FFh). A cell keeps its place within its zone, and the cells outside
+// the zones (the party's position at C04Bh and the rest) stay where they are.
+// The address of a Pool of Radiance cell in the game's memory; throws EclError
+// for a cell of the current character's record (6B00h-6C1Ch), whose layout
+// differs by game (docs/games/curse.md).
+[[nodiscard]] EclAddress game_address(EclAddress pool_of_radiance_cell, GoldBoxGame game);
 } // namespace opengold::por
 #endif

@@ -27,7 +27,9 @@ struct ScriptId
 class EclCatalog
 {
   public:
-    [[nodiscard]] static EclCatalog load(const std::filesystem::path &directory);
+    // The game's scripts in the folder; Pool of Radiance's unless told otherwise.
+    [[nodiscard]] static EclCatalog load(const std::filesystem::path &directory,
+                                         GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 
     [[nodiscard]] const auto &all() const noexcept
     {

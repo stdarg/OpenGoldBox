@@ -107,6 +107,11 @@ class EclProgram
         return game_;
     }
 
+    [[nodiscard]] EclMemory memory() const noexcept
+    {
+        return memory_;
+    }
+
     // This program with those operands read in place of its record's. The
     // record and a running script's image keep the original bytes, so a save
     // holds none of them.

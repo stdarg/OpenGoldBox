@@ -1,4 +1,5 @@
 #include "opengold/ecl_machine.h"
+#include "opengold/game_census.h"
 #include <charconv>
 #include <iostream>
 
@@ -66,7 +67,7 @@ int inspect(const EclProgram &p)
 
     for (const auto &i : walk.instructions)
     {
-        const auto &spec = ecl_opcode(i.opcode);
+        const auto &spec = ecl_opcode(i.opcode, p.game());
         std::cout << "0x" << std::hex << i.address << std::dec << " " << spec.name;
 
         for (const auto &a : i.operands)
@@ -246,7 +247,10 @@ int main(int argc, char **argv)
         {
             throw EclError("Incorrect argument count");
         }
-        const auto catalog = EclCatalog::load(argv[2]);
+        // The folder's game decides where its scripts run and which commands they have.
+        const auto game =
+            opengold::identify_game(argv[2]).value_or(opengold::GoldBoxGame::pool_of_radiance);
+        const auto catalog = EclCatalog::load(argv[2], game);
         if (mode == "--list")
         {
             for (const auto &[id, p] : catalog.all())

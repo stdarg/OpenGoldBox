@@ -135,6 +135,37 @@ host's special cases, shops, companions and encounter tables.
 
 Done when every test passes with no visible change.
 
+A survey (2026-11-12) found *Pool of Radiance* knowledge in about 30 files, of
+two kinds. **Engine code with *Pool of Radiance*'s values built in:** the script
+machine's memory window and commands, about 40 fixed script-memory addresses,
+the 285-byte character record read by its byte offsets, and file names with
+disk numbers. **The campaign itself:** the Phlan session, Rolf's tour, the
+wilderness, teleports, secret doors and traps, NPC portraits and place names.
+The first kind becomes per game; the second stays *Pool of Radiance*'s, behind
+one seam, and *Curse* gets its own.
+
+The steps, each pushed on its own with every test passing:
+
+1. **The script machine runs a game's scripts:** its memory window and commands
+   come from the game, not from *Pool of Radiance*'s constants. *Done
+   2026-11-12.*
+2. **The script memory map per game:** the fixed addresses (party position,
+   clock, current character, combat and rest cells) become a table for each
+   game; *Curse*'s comes from its reconstructed source. *Done 2026-11-12:*
+   *Curse* moved *Pool of Radiance*'s zones whole, so one translation
+   (`game_address`) serves every cell but the current character's.
+3. **One creature model:** the code stops reading the 285-byte record by its
+   offsets and reads named fields, which *Curse*'s 422-byte record fills too.
+4. **Files by game:** disks and banks are counted from the folder (*Pool of
+   Radiance* has eight, *Curse* six), and the names, sounds and wilderness in
+   `START.EXE` are read per game.
+5. **A save names its game** (phase 0's save change; a campaign format change).
+   An old save loads as *Pool of Radiance*.
+6. **The campaign behind one seam:** the game reaches *Pool of Radiance*'s own
+   content (the Phlan session, the wilderness, teleports, secrets, portraits,
+   place names) through one interface chosen by the game, so *Curse*'s can sit
+   beside it.
+
 ### 3. *Curse of the Azure Bonds*
 
 In small steps, each with its check:

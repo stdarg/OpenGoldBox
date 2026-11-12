@@ -50,6 +50,25 @@ counterpart.
 
 What these commands do is for step 3 of the plan, when the scripts run.
 
+### Script memory
+
+Scripts read and write the game through numbered cells. *Curse* moved
+*Pool of Radiance*'s zones of cells whole, and each cell kept its place within
+its zone (`game_address`):
+
+| Zone | *Pool of Radiance* | *Curse* |
+|---|---|---|
+| The game's state (map, clock, flags) | 4900h–4CFFh | 4B00h–4EFFh |
+| The current character, then the party's and the fight's cells | 6B00h–6EFFh | 7C00h–7FFFh |
+| Strings | 9700h–98FFh | 7A00h–7BFFh |
+| The script itself | 9900h–B6FFh | 8000h–9DFFh |
+
+Every cell *Curse*'s source names (the map loaded, the clock, morale,
+surprise, the party's size and the rest) is where this puts it. The cells
+outside the zones, such as the party's position at C04Bh, did not move. The
+exception is the current character's record at the start of zone 1: it follows
+the 422-byte layout below, not a shift.
+
 ## Creatures
 
 The record grew from 285 to 422 bytes: each ability now keeps a permanent and

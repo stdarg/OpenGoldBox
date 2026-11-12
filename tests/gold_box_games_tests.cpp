@@ -3,6 +3,8 @@
 // runs in tests/game_census.cmake.
 #include "opengold/curse_records.h"
 #include "opengold/ecl.h"
+#include "opengold/ecl_address.h"
+#include "opengold/ecl_machine.h"
 #include "opengold/formats.h"
 #include "opengold/game_census.h"
 #include "test_support.h"
@@ -155,6 +157,74 @@ void curse_scripts_run_in_their_own_bank()
         "Pool of Radiance has no command 40h");
 }
 
+// The script machine runs a Curse script in Curse's bank: its entries, its
+// commands and a write into its own code.
+void the_machine_runs_curse_scripts()
+{
+    std::vector<std::uint8_t> record{0, 0};
+    constexpr std::uint16_t body = 0x8000 + 5 * 4;
+    for (int entry = 0; entry < 5; ++entry)
+    {
+        record.insert(record.end(), {0x01, 0x01, body & 0xff, body >> 8});
+    }
+    constexpr std::uint16_t own_byte = body + 12;                      // The EXIT below.
+    record.insert(record.end(), {0x09, 0x00, 0x07, 0x01, 0x00, 0x40}); // SAVE 7 at 4000h
+    record.insert(record.end(), {0x09, 0x00, 0x00, 0x01, own_byte & 0xff, own_byte >> 8});
+    record.push_back(0x00); // EXIT, overwritten with EXIT
+    opengold::por::EclMachine machine(
+        std::make_shared<const opengold::por::EclProgram>(opengold::por::EclProgram::decode(
+            record, "CURSE:1", GoldBoxGame::curse_of_the_azure_bonds)));
+    machine.bind_variable(opengold::por::EclAddress{0x4000}, 0);
+    check(machine.start(0), "A Curse script starts at its first entry");
+    const auto result = machine.run();
+    check(result.state == opengold::por::EclState::completed,
+          "It runs to its EXIT: " + result.diagnostic);
+    check(machine.variable(opengold::por::EclAddress{0x4000}) == 7, "SAVE wrote the variable");
+}
+
+// Every cell Curse's source names lies where moving Pool of Radiance's zones puts it.
+void curse_script_memory_is_pool_of_radiance_moved()
+{
+    using opengold::por::EclAddress;
+    using opengold::por::game_address;
+    constexpr auto curse = GoldBoxGame::curse_of_the_azure_bonds;
+    const std::vector<std::pair<std::uint16_t, std::uint16_t>> cells{
+        {0x49C5, 0x4BC5}, // The 3D map loaded.
+        {0x49C9, 0x4BC9}, // The clock's hour.
+        {0x49E6, 0x4BE6}, // A 3D map is loaded.
+        {0x49F2, 0x4BF2}, // The script before the last NEW ECL.
+        {0x6DC1, 0x7EC1}, // The monsters' distance.
+        {0x6DC6, 0x7EC6}, // Morale.
+        {0x6DC9, 0x7EC9}, // The party's next step blocked.
+        {0x6DCA, 0x7ECA}, // Search flags.
+        {0x6DCB, 0x7ECB}, // Surprise.
+        {0x6DD2, 0x7ED2}, // Rest checks.
+        {0x6DD5, 0x7ED5}, // Leaving the map.
+        {0x6DE1, 0x7EE1}, // The portrait's head.
+        {0x6DE6, 0x7EE6}, // The mirror duel.
+        {0x6E33, 0x7F33}, // An ally attacked.
+        {0x6E3E, 0x7F3E}, // The party's size.
+        {0x6E70, 0x7F70}, // Monsters' to-hit.
+        {0x6E72, 0x7F72}, // The party's movement in combat.
+        {0x9700, 0x7A00}, // The strings.
+        {0xC04B, 0xC04B}, // The party's position stays.
+    };
+    for (const auto &[pool, expected] : cells)
+    {
+        check(game_address(EclAddress{pool}, curse).location == expected,
+              "Cell " + std::to_string(pool) + " in Curse");
+        check(game_address(EclAddress{pool}, GoldBoxGame::pool_of_radiance).location == pool,
+              "Pool of Radiance keeps its own cells");
+    }
+    rejects(
+        []
+        {
+            static_cast<void>(game_address(opengold::por::ecl_character_hit_points,
+                                           GoldBoxGame::curse_of_the_azure_bonds));
+        },
+        "The character record's cells are not moved: its layout changed");
+}
+
 void the_font_has_eight_bytes_a_glyph()
 {
     std::vector<std::uint8_t> font(64 * 8);
@@ -176,6 +246,8 @@ int main()
         each_game_is_told_apart_by_its_files();
         curse_creatures_are_read_from_their_layout();
         curse_scripts_run_in_their_own_bank();
+        the_machine_runs_curse_scripts();
+        curse_script_memory_is_pool_of_radiance_moved();
         the_font_has_eight_bytes_a_glyph();
         std::cout << "Gold Box games passed.\n";
     }

@@ -12,7 +12,7 @@
 
 namespace opengold::por
 {
-EclCatalog EclCatalog::load(const std::filesystem::path &directory)
+EclCatalog EclCatalog::load(const std::filesystem::path &directory, GoldBoxGame game)
 {
     try
     {
@@ -56,7 +56,7 @@ EclCatalog EclCatalog::load(const std::filesystem::path &directory)
             for (const auto &record : dax.records)
             {
                 auto program =
-                    EclProgram::decode(record.bytes, name + ":" + std::to_string(record.id));
+                    EclProgram::decode(record.bytes, name + ":" + std::to_string(record.id), game);
                 catalog.programs_.emplace(ScriptId{name, record.id},
                                           std::make_shared<const EclProgram>(std::move(program)));
             }
@@ -122,14 +122,17 @@ EclAddress indexed_address(EclAddress base, std::size_t index)
     return EclAddress(static_cast<std::uint16_t>(base.location + index));
 }
 
-bool program_address(EclAddress address)
+// Whether the address lies in the running script's own bank, which differs by game.
+bool program_address(const EclProgram &program, EclAddress address)
 {
-    return address.location >= EclProgram::origin && address.location < EclProgram::limit;
+    const auto memory = program.memory();
+    return address.location >= memory.origin && address.location < memory.limit;
 }
 
-bool byte_address(EclAddress address)
+bool byte_address(const EclProgram &program, EclAddress address)
 {
-    return program_address(address) || (address >= ecl_party_x && address <= ecl_cell_event);
+    return program_address(program, address) ||
+           (address >= ecl_party_x && address <= ecl_cell_event);
 }
 
 EclConditions relation(int c)
@@ -174,7 +177,7 @@ void EclMachine::seed_random(std::uint32_t seed)
 void EclMachine::enable_host(std::uint8_t opcode)
 {
     require_configurable();
-    if (!ecl_opcode(opcode).requires_host)
+    if (!ecl_opcode(opcode, program_->game()).requires_host)
     {
         throw EclError("Opcode is not a host operation");
     }
@@ -184,7 +187,8 @@ void EclMachine::enable_host(std::uint8_t opcode)
 void EclMachine::ignore_cells(EclAddress first, EclAddress last)
 {
     require_configurable();
-    if (last.location < first.location || program_address(first) || program_address(last))
+    if (last.location < first.location || program_address(*program_, first) ||
+        program_address(*program_, last))
     {
         throw EclError("Invalid ignored cells");
     }
@@ -194,11 +198,11 @@ void EclMachine::ignore_cells(EclAddress first, EclAddress last)
 void EclMachine::bind_variable(EclAddress address, std::uint16_t v)
 {
     require_configurable();
-    if (program_address(address))
+    if (program_address(*program_, address))
     {
         throw EclError("Program addresses cannot be bound as variables");
     }
-    const std::uint16_t value = byte_address(address) ? v & 255 : v;
+    const std::uint16_t value = byte_address(*program_, address) ? v & 255 : v;
     const auto found = std::lower_bound(variables_.begin(), variables_.end(), address.location,
                                         [](const auto &entry, std::uint16_t key)
                                         {
@@ -221,7 +225,7 @@ void EclMachine::bind_string(EclAddress address, std::string_view v)
     // Check the whole range before changing any binding.
     for (std::size_t n = 0; n <= v.size(); ++n)
     {
-        if (program_address(indexed_address(address, n)))
+        if (program_address(*program_, indexed_address(address, n)))
         {
             throw EclError("Program addresses cannot be bound as strings");
         }
@@ -235,9 +239,9 @@ void EclMachine::bind_string(EclAddress address, std::string_view v)
 
 std::uint16_t EclMachine::variable(EclAddress address) const
 {
-    if (program_address(address))
+    if (program_address(*program_, address))
     {
-        const auto offset = address.location - EclProgram::origin + 2;
+        const auto offset = address.location - program_->memory().origin + 2;
         if (offset >= image_.size())
         {
             throw EclError("Read beyond loaded script image");
@@ -299,9 +303,9 @@ void EclMachine::write(EclAddress address, std::uint16_t v)
     {
         script_writes_.insert(address);
     }
-    if (program_address(address))
+    if (program_address(*program_, address))
     {
-        image_[address.location - EclProgram::origin + 2] = static_cast<std::uint8_t>(v);
+        image_[address.location - program_->memory().origin + 2] = static_cast<std::uint8_t>(v);
         // A table may share the script image with code. Invalidate affected decoded
         // spans after a write so subsequent fetches see this machine's new bytes.
         for (auto it = instruction_spans_.begin(); it != instruction_spans_.end();)
@@ -319,7 +323,8 @@ void EclMachine::write(EclAddress address, std::uint16_t v)
     else
     {
         // variable() above has checked the address is bound.
-        bound_variable(variables_, address.location)->second = byte_address(address) ? v & 255 : v;
+        bound_variable(variables_, address.location)->second =
+            byte_address(*program_, address) ? v & 255 : v;
     }
 }
 
@@ -418,7 +423,7 @@ bool EclMachine::start(std::size_t slot)
     total_instructions_ = 0;
     try
     {
-        auto cursor = EclProgram::origin;
+        auto cursor = program_->memory().origin;
         for (std::size_t n = 0; n <= slot; ++n)
         {
             const auto entry = program_->instruction(cursor, image_);
@@ -468,7 +473,7 @@ bool EclMachine::start_at_for_inspection(std::uint32_t address)
 
 void EclMachine::execute(const EclInstruction &i)
 {
-    const auto &spec = ecl_opcode(i.opcode);
+    const auto &spec = ecl_opcode(i.opcode, program_->game());
     if (!spec.executable)
     {
         throw EclError("Unsupported execution: " + std::string(spec.name));
@@ -807,7 +812,8 @@ void EclMachine::request_host(const EclInstruction &i)
 {
     if (!host_opcodes_.contains(i.opcode))
     {
-        throw EclError("Host capability unavailable: " + std::string(ecl_opcode(i.opcode).name));
+        throw EclError("Host capability unavailable: " +
+                       std::string(ecl_opcode(i.opcode, program_->game()).name));
     }
     EclRequest request;
     request.kind = EclRequestKind::host;
@@ -876,7 +882,7 @@ EclRunResult EclMachine::run(std::size_t budget)
             executing_ = false;
             std::ostringstream message;
             message << program_->source() << " @ 0x" << std::hex << pc_ << " (record offset 0x"
-                    << (pc_ - EclProgram::origin + 2) << ", stack depth " << std::dec
+                    << (pc_ - program_->memory().origin + 2) << ", stack depth " << std::dec
                     << stack_.size() << "): " << error.what();
             diagnostic_ = message.str();
             state_ = EclState::faulted;
