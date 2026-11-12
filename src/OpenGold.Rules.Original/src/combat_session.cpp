@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <numeric>
 #include <optional>
 #include <span>
 #include <cstdlib>
@@ -28,7 +29,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 6";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 7";
 
 enum class Condition : unsigned
 {
@@ -38,7 +39,9 @@ enum class Condition : unsigned
     dead,
     // Off the field: it got away with its Hit Points, or gave up with none.
     fled,
-    surrendered
+    surrendered,
+    // Dead forever, past raising: drained below level 2.
+    gone
 };
 
 // The record's NPC byte from 0x80 up marks a creature whose morale counts;
@@ -63,9 +66,9 @@ constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_r
 
 // What a hit carries, by the attacker's effects, in the original's order: a
 // primary attack's hit and a secondary one's (effhndlr.pas, HIT_PHASE_1 and
-// HIT_PHASE_2). Level drain (85, 86) comes with its own step.
-constexpr std::array<int, 6> primary_hit_effects{87, 68, 76, 73, 77, 0};
-constexpr std::array<int, 8> secondary_hit_effects{64, 65, 66, 67, 68, 69, 70, 87};
+// HIT_PHASE_2).
+constexpr std::array<int, 8> primary_hit_effects{85, 86, 87, 68, 76, 73, 77, 0};
+constexpr std::array<int, 10> secondary_hit_effects{64, 65, 66, 67, 68, 69, 70, 85, 86, 87};
 
 struct Fighter
 {
@@ -459,6 +462,7 @@ class Session final : public rules::CombatSession
     void poison(Fighter &victim, int modifier);
     void paralyze(Fighter &victim, int minutes, int modifier);
     void kill(Fighter &victim);
+    void drain_levels(Fighter &victim, int levels);
     void rake(Fighter &attacker, Fighter &victim);
     void attached_turn(Fighter &f);
     void age_effects();
@@ -1037,6 +1041,12 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
             // The original passed -2 and its paralysis ignored it (an obvious bug, fixed).
             paralyze(defender, roll(9) + 10, -2);
             break;
+        case 85:
+            drain_levels(defender, 1);
+            break;
+        case 86:
+            drain_levels(defender, 2);
+            break;
         case 87:
             // Mummy rot: no healing for 10 days, and death in 1d6 months
             // unless cured (effhndlr.pas, EffRotTouch).
@@ -1098,6 +1108,77 @@ void Session::paralyze(Fighter &victim, int minutes, int modifier)
     }
     log({"{name} is paralyzed.", {{"name", victim.name}}});
     victim.numbers.effects.push_back({effect::paralysis, minutes, 12, false});
+}
+
+// A level drain, no save (effhndlr.pas, EffDrainOne and EffDrainTwo). Each
+// level takes the Hit Points of a level (its maximum over its levels) from
+// its maximum and its current; one below level 2 is dead forever. Otherwise
+// the class whose level took the most experience (the later on a tie) loses
+// a level, its THAC0 and saving throws following the class tables, and one
+// left with no Hit Points is killed. The original divided by zero for a
+// creature without class levels, which loses its highest level's share here;
+// and it kept the drained class's level as the highest, where the highest of
+// its classes is kept here (both obvious bugs, fixed).
+void Session::drain_levels(Fighter &victim, int levels)
+{
+    log({levels == 1 ? "{name} is drained a level." : "{name} is drained 2 levels.",
+         {{"name", victim.name}}});
+    auto &numbers = victim.numbers;
+    for (int n = 0; n < levels && victim.condition != Condition::gone; ++n)
+    {
+        auto &classes = numbers.class_levels;
+        const int total = std::accumulate(classes.begin(), classes.end(), 0);
+        const int per_level = numbers.max_hit_points / std::max({total, numbers.level, 1});
+        numbers.max_hit_points = std::max(numbers.max_hit_points - per_level, 1);
+        victim.hit_points = std::max(victim.hit_points - per_level, 0);
+        if (numbers.level < 2)
+        {
+            victim.condition = Condition::gone;
+            victim.hit_points = 0;
+            victim.initiative = 0;
+            log({"{name} is dead forever.", {{"name", victim.name}}});
+            end_effects_at_zero(victim);
+            return;
+        }
+        std::size_t drained = classes.size();
+        int most = -1;
+        for (std::size_t slot = 0; slot < classes.size(); ++slot)
+        {
+            if (classes[slot] <= 0)
+            {
+                continue;
+            }
+            const int experience =
+                experience_for_level(static_cast<ClassSlot>(slot), classes[slot]).value_or(0);
+            if (experience >= most)
+            {
+                most = experience;
+                drained = slot;
+            }
+        }
+        if (drained < classes.size())
+        {
+            const auto before = classes;
+            --classes[drained];
+            numbers.thac0 += thac0(classes) - thac0(before);
+            const auto saves_before = saving_throws(before);
+            const auto saves_after = saving_throws(classes);
+            for (std::size_t save = 0; save < numbers.saving_throws.size(); ++save)
+            {
+                numbers.saving_throws[save] += saves_after[save] - saves_before[save];
+            }
+            numbers.level = *std::max_element(classes.begin(), classes.end());
+        }
+        else
+        {
+            --numbers.level;
+        }
+        if (victim.hit_points == 0 && victim.condition != Condition::dead)
+        {
+            kill(victim);
+            return;
+        }
+    }
 }
 
 // Killed outright, whatever its Hit Points.
@@ -1430,7 +1511,7 @@ rules::MovementGrid Session::grid_for(const Fighter &mover) const
     for (const auto &f : fighters_)
     {
         if (f.id == mover.id || f.condition == Condition::dead || f.condition == Condition::fled ||
-            f.condition == Condition::surrendered)
+            f.condition == Condition::surrendered || f.condition == Condition::gone)
         {
             continue;
         }
@@ -1478,21 +1559,23 @@ rules::Snapshot Session::snapshot() const
         view.movement_feet = f->half_moves * 5 / 2;
         view.action = f->id == actor_;
         view.conscious = f->able();
-        view.dead = f->condition == Condition::dead;
+        view.dead = f->condition == Condition::dead || f->condition == Condition::gone;
         view.status = f->condition == Condition::dead          ? "dead"
                       : f->condition == Condition::dying       ? "dying"
                       : f->condition == Condition::unconscious ? "unconscious"
                       : f->condition == Condition::fled        ? "fled"
                       : f->condition == Condition::surrendered ? "surrendered"
+                      : f->condition == Condition::gone        ? "gone"
                       : f->helpless()                          ? "helpless"
                                                                : "";
         view.fled = f->condition == Condition::fled;
         view.surrendered = f->condition == Condition::surrendered;
         view.panicked = f->fleeing;
-        view.persistent = {f->condition == Condition::okay ? f->hit_points : 0,
-                           f->condition == Condition::dead,
-                           {},
-                           {}};
+        // What outlasts the fight: its Hit Points (one that got away keeps
+        // them), death, and its numbers as the fight left them (levels
+        // drained, effects still running), for the game to keep.
+        const bool keeps = f->condition == Condition::okay || f->condition == Condition::fled;
+        view.persistent = {keeps ? f->hit_points : 0, view.dead, f->numbers.encode(), {}};
         state.combatants.push_back(std::move(view));
     }
     return state;
@@ -1811,7 +1894,7 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         f.guarding = in.as<bool>();
         f.fleeing = in.as<bool>();
         f.turned = in.as<bool>();
-        if (f.condition > Condition::surrendered || f.attack_phase < 0 || f.attack_phase > 1 ||
+        if (f.condition > Condition::gone || f.attack_phase < 0 || f.attack_phase > 1 ||
             f.direction < 0 || f.direction > 7)
         {
             throw std::runtime_error("Invalid original-rules combat checkpoint");

@@ -11,7 +11,7 @@ namespace opengold::original
 namespace
 {
 
-constexpr std::string_view profile_format = "combatant5";
+constexpr std::string_view profile_format = "combatant6";
 
 std::vector<int> numbers_of(const Combatant &c)
 {
@@ -36,6 +36,7 @@ std::vector<int> numbers_of(const Combatant &c)
                     missile.needs_no_ammunition ? 1 : 0, missile.quantity,
                     missile.empty_handed_thac0, after.rate_per_two_rounds, after.dice, after.sides,
                     after.modifier, missile.empty_handed_backstabs ? 1 : 0});
+    numbers.insert(numbers.end(), c.class_levels.begin(), c.class_levels.end());
     numbers.insert(numbers.end(),
                    {c.strength, c.elf ? 1 : 0, c.save_bonus, static_cast<int>(c.effects.size())});
     for (const auto &effect : c.effects)
@@ -137,6 +138,14 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
         c.missile = m;
     }
     next += 13;
+    for (auto &level : c.class_levels)
+    {
+        level = *next++;
+        if (level < 0)
+        {
+            return std::nullopt;
+        }
+    }
     c.strength = *next++;
     c.elf = *next++ != 0;
     c.save_bonus = *next++;
@@ -385,6 +394,7 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     c.level =
         std::max({l.cleric, l.druid, l.fighter, l.paladin, l.ranger, l.mage, l.thief, l.monk});
     c.level = std::max<int>(c.level, record.highest_level_raw);
+    c.class_levels = {l.cleric, l.druid, l.fighter, l.paladin, l.ranger, l.mage, l.thief, l.monk};
     c.attack_level = l.fighter > 0 && record.race > monster_race ? l.fighter : 1;
     c.initiative_bonus = dexterity_missile_bonus(dexterity);
     c.morale = record.npc_flag;

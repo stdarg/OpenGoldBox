@@ -260,7 +260,13 @@ gear.
      and flies off; a holding bite on a victim of Strength below 19, which
      bites from behind with 3d4 each turn; and a rear-claw rake after both
      claws hit. Immunity to paralysis and poison saves but on a natural 1.
-   - 6b-2. Level drain.
+   - 6b-2. *Done 2026-11-12:* level drain, with no save. Each level takes
+     the Hit Points of one of the creature's levels from its maximum and its
+     current; below level 2 it is dead forever. Otherwise the class whose
+     level took the most experience loses a level, with its THAC0 and saves,
+     and a victim left with no Hit Points is killed. A creature's numbers as
+     the fight leaves them (levels, effects still running) go back to the
+     game with its Hit Points (`VitalState::resources`).
    - 6c. Defenses: weapons that cannot harm a creature, halved damage,
      regeneration, fighting on while down, displacement, camouflage and
      evasion.
@@ -324,4 +330,6 @@ tuned with the AI lab once the original rules play.
 | Bandage saves the first dying party member anywhere on the field (`combat.pas`, `BandageDying`) | The one who bandages must stand next to the dying member (the user, 2026-11-12) |
 | A saving throw is added up in a byte, so a total below 0 (a low roll with penalties) wraps around and saves (`fxengine.pas`, `RollSavingThrow`) | A total below 0 fails |
 | A drider's paralysing touch passes a save penalty of 2 that the paralysis ignores, so it is no harder to save against than a thri-kreen's (`effhndlr.pas`, `EffDriderPara`) | The penalty of 2 counts |
+| A level drain divides by the victim's class levels, so a creature without any (a monster) divides by zero (`effhndlr.pas`, the level drain) | It loses its highest level's share |
+| A level drain keeps the drained class's level as the victim's highest level, so a fighter 5 / thief 6 drained in fighter counts as level 4 (`effhndlr.pas`, the level drain) | The highest of its classes |
 | Each hit of a holding bite's own bite starts another hold, stacking holds on the biter and immobility on the victim, which can outlast the fight (`effhndlr.pas`, `EffBiteHold`) | One hold at a time |

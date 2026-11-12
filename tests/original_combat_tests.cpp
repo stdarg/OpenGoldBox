@@ -2,6 +2,7 @@
 #include "opengold/creature_catalog.h"
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
+#include "opengold/original_rules.h"
 #include "test_support.h"
 
 #include <algorithm>
@@ -1286,6 +1287,66 @@ void a_mummy_rots()
     check(logged(*fight.session, "{name} is diseased.") == 1, "Mummy rot, once");
 }
 
+// The victim's numbers as the fight leaves them (CombatantView::persistent).
+original::Combatant left_by_fight(const rules::CombatSession &session, std::string_view name)
+{
+    const auto numbers =
+        original::Combatant::decode(view_of(session.snapshot(), name).persistent.resources);
+    check(numbers.has_value(), std::string(name) + "'s numbers outlast the fight");
+    return *numbers;
+}
+
+// A wight's touch drains a level, no save: the Hit Points of a level, and the
+// class whose level took the most experience, its THAC0 and saves following;
+// below level 2 the victim is dead forever (effhndlr.pas, EffDrainOne).
+void a_wight_drains_levels()
+{
+    const auto wight = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{85, 0, 0, false}});
+    const auto drained = [](const rules::CombatSession &session)
+    {
+        return logged(session, "{name} is drained a level.") > 0;
+    };
+    const auto character = [](std::array<int, 8> levels, int hit_points)
+    {
+        auto c = victim(hit_points);
+        c.class_levels = levels;
+        c.level = *std::max_element(levels.begin(), levels.end());
+        c.thac0 = original::thac0(levels);
+        c.saving_throws = original::saving_throws(levels);
+        return c;
+    };
+    using original::ClassSlot;
+    std::array<int, 8> fighter_3{};
+    fighter_3[static_cast<std::size_t>(ClassSlot::fighter)] = 3;
+    auto fight = attack_until(wight, character(fighter_3, 30), drained);
+    auto fighter_2 = fighter_3;
+    fighter_2[static_cast<std::size_t>(ClassSlot::fighter)] = 2;
+    const auto after = left_by_fight(*fight.session, "Victim");
+    check(after.class_levels == fighter_2 && after.level == 2 && after.max_hit_points == 20 &&
+              after.thac0 == original::thac0(fighter_2) &&
+              after.saving_throws == original::saving_throws(fighter_2),
+          "A level-3 fighter of 30 Hit Points is left a level-2 fighter of 20");
+    check(view_of(fight.session->snapshot(), "Victim").hit_points == 30 - 1 - 10,
+          "Its own Hit Points lose the level's 10 after the touch's 1");
+
+    std::array<int, 8> fighter_1{};
+    fighter_1[static_cast<std::size_t>(ClassSlot::fighter)] = 1;
+    auto last = attack_until(wight, character(fighter_1, 10), drained);
+    const auto &gone = view_of(last.session->snapshot(), "Victim");
+    check(gone.dead && gone.status == "gone", "Drained below level 2, it is dead forever");
+
+    std::array<int, 8> multi{};
+    multi[static_cast<std::size_t>(ClassSlot::fighter)] = 2;
+    multi[static_cast<std::size_t>(ClassSlot::thief)] = 3;
+    const bool thief_cost_more = original::experience_for_level(ClassSlot::thief, 3).value_or(0) >=
+                                 original::experience_for_level(ClassSlot::fighter, 2).value_or(0);
+    auto expected = multi;
+    --expected[static_cast<std::size_t>(thief_cost_more ? ClassSlot::thief : ClassSlot::fighter)];
+    auto split = attack_until(wight, character(multi, 30), drained);
+    check(left_by_fight(*split.session, "Victim").class_levels == expected,
+          "A fighter/thief loses the level that took the most experience");
+}
+
 } // namespace
 
 int main()
@@ -1317,6 +1378,7 @@ int main()
         a_bite_holds();
         both_claws_rake();
         a_mummy_rots();
+        a_wight_drains_levels();
         real_records_fight();
         std::cout << "Original-rules combat passed.\n";
     }

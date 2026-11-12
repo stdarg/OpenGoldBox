@@ -84,6 +84,9 @@ struct Combatant
     std::array<int, 5> saving_throws{};
     // The highest level of its classes: a level-0 creature can be swept.
     int level{};
+    // Its levels by the original's class slots (ClassSlot), which a level
+    // drain takes from.
+    std::array<int, 8> class_levels{};
     // How many level-0 enemies a fighter sweeps through in a round.
     int attack_level{1};
     // Dexterity's missile adjustment, which initiative adds.

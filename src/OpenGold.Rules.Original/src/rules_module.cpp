@@ -46,6 +46,7 @@ Combatant character_combatant(const CharacterSheet &sheet)
                     strength_damage_bonus(strength, original.exceptional_strength)};
     c.saving_throws = original.saving_throws;
     c.level = *std::max_element(original.class_levels.begin(), original.class_levels.end());
+    c.class_levels = original.class_levels;
     c.attack_level = fighter > 0 ? fighter : 1;
     c.initiative_bonus = dexterity_missile_bonus(dexterity);
     c.intelligence = sheet.scores[Ability::intelligence];
