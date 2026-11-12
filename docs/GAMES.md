@@ -26,7 +26,7 @@ The user decided these on 2026-11-12:
 | Order | Game | Released | Folder | Status |
 |---|---|---|---|---|
 | 1 | *Pool of Radiance* | 1988 | `POOLRAD` | Playable |
-| 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Not started |
+| 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Every file decodes ([curse.md](games/curse.md)) |
 | 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Not started |
 | 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Not started |
 | 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Not started |
@@ -59,19 +59,20 @@ so this matters only where a behavior is in doubt.
 
 ### What our readers decode today
 
-Running the current tools on each folder (2026-11-12):
+The census (2026-11-12) puts every file through the decoders:
 
-| Game | Maps (GEO) | Scripts (ECL) | Monsters and items |
-|---|---|---|---|
-| *Pool of Radiance* | 29 | 29 | 172 records |
-| *Curse* | 16 | entry table fails | character record fails |
-| *Secret* | 17 | entry table fails | character record fails |
-| *Gateway* | 30 | entry table fails | its item file is `ITEMS.1` |
-| *Pools of Darkness* | 32 | entry table fails | item file fails |
-| *Treasures* | 41 | entry table fails | item file fails |
+| Game | Files that decode | What does not decode yet |
+|---|---|---|
+| *Pool of Radiance* | All | — |
+| *Curse* | All | — |
+| *Secret* | Maps, pictures, combat icons, sprites, item lists, effects, item types | Scripts, creatures, some creatures' items, some walls, the font, the name tables and sounds, `SOUND.DAX` |
+| *Gateway* | Maps, combat heads and bodies, effects, some walls and items | Scripts, creatures, pictures, combat icons, `ITEMS.1`, music and sounds |
+| *Pools of Darkness* | Maps, effects | Nearly everything else: its pictures are 256-color VGA, and it adds new files |
+| *Treasures* | Maps, effects | As for *Pools of Darkness* |
+| *Unlimited Adventures* | — | Everything: its data sits in `DISK1` to `DISK3` |
 
-The archives (DAX) and maps are shared. Scripts, characters, monsters and items
-differ in each game.
+The archives (DAX) and maps are shared by all six campaigns. Scripts,
+creatures, items and pictures change from game to game.
 
 ## How the work stays safe
 
@@ -106,6 +107,24 @@ as a test, with one row for each game and kind of file. The facts it needs
 the reconstructed sources and go into `docs/games/<game>.md`.
 
 Done for a game when its census decodes every file.
+
+**Status:** done for *Pool of Radiance* and *Curse* (2026-11-12). Run it with
+`build/opengold_census FOLDER...`, where a folder is one game's or one holding
+several (`/Users/edmond/GoldBox`). It prints a row for each kind of file: how
+many pieces decoded and the first that did not. The test
+`opengold_game_census` requires every finished game to decode completely. It
+reads the games from `OPENGOLD_GOLDBOX_DIR` (the folder holding `POOLRAD`,
+`CURSE` and the rest) and from `OPENGOLD_GAME_DIR`, and skips when neither is
+set. A game joins its list in `tests/game_census.cmake` when its census
+completes.
+
+Two notes on what "decodes" means:
+
+- A script decodes when every command reachable from its entries decodes. A
+  path the walker reaches only by running past the end of an ON GOTO's list is
+  not counted: the scripts keep the choice in range, and data may follow.
+- Decoding is not playing. What *Curse*'s new script commands do, and which of
+  its creatures' fields the game uses how, belong to step 3.
 
 ### 2. The engine apart from *Pool of Radiance*
 

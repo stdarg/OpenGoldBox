@@ -371,4 +371,80 @@ std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &directo
     }
     return effects;
 }
+
+std::vector<SoundEffect> decode_curse_sound_effects(std::span<const std::uint8_t> image)
+{
+    // The driver opens with its tick divider (chain the BIOS handler every 13
+    // ticks), the exit countdown and the coded error message.
+    constexpr std::array<std::uint8_t, 10> driver_start{0x0d, 0x00, 0x00, 0x30, 0x00,
+                                                        0x00, 0xd2, 0xf5, 0xee, 0xad};
+    const auto found =
+        std::search(image.begin(), image.end(), driver_start.begin(), driver_start.end());
+    if (found == image.end())
+    {
+        invalid("no Curse of the Azure Bonds sound driver in START.EXE");
+    }
+    const auto driver = static_cast<std::size_t>(found - image.begin());
+    // Its voice blocks follow 56h bytes in, and its PC-speaker song table 332h
+    // bytes after them. Their addresses count from the start of the code segment
+    // the driver is linked into, which ProgramSpeakerVoices names:
+    // mov di, voice blocks ... mov ax, [si + song table].
+    constexpr std::size_t voice_blocks_in_driver = 0x56, song_table_after_blocks = 0x332;
+    std::size_t voice_blocks = 0, song_table = 0;
+    for (std::size_t p = driver; p + 3 < image.size() && p < driver + 0x4000 && !song_table; ++p)
+    {
+        if (image[p] != 0xbf)
+        {
+            continue;
+        }
+        const auto blocks = word(image, p + 1);
+        for (std::size_t q = p + 3; q + 4 <= image.size() && q < p + 16; ++q)
+        {
+            if (image[q] == 0x8b && image[q + 1] == 0x84 &&
+                word(image, q + 2) == blocks + song_table_after_blocks)
+            {
+                voice_blocks = blocks;
+                song_table = blocks + song_table_after_blocks;
+                break;
+            }
+        }
+    }
+    if (!song_table || voice_blocks > driver + voice_blocks_in_driver)
+    {
+        invalid("no song table in the Curse of the Azure Bonds sound driver");
+    }
+    const auto segment = image.subspan(driver + voice_blocks_in_driver - voice_blocks);
+    // InstallSoundTimer loads the timer's divisor: mov al,0B6h; out 43h,al; mov ax,divisor.
+    constexpr std::array<std::uint8_t, 5> set_timer{0xb0, 0xb6, 0xe6, 0x43, 0xb8};
+    const auto timer_code =
+        std::search(segment.begin(), segment.end(), set_timer.begin(), set_timer.end());
+    if (timer_code == segment.end())
+    {
+        invalid("no timer rate in the Curse of the Azure Bonds sound driver");
+    }
+    const auto timer =
+        word(segment, static_cast<std::size_t>(timer_code - segment.begin()) + set_timer.size());
+    // Sound command n plays song n - 1 (GDConsts in the original); commands 2
+    // to 13 are the game's sounds.
+    constexpr std::array<std::string_view, 21> names{
+        "Silence",          "Spell bolt",       "Attack missed",
+        "Attack hit",       "Creature down",    "Missile flight",
+        "Melee hit",        "Lightning bolt",   "Melee miss",
+        "Footstep",         "Fireball",         "Missile launch",
+        "Title picture",    "Unused effect 14", "Unused effect 15",
+        "Unused effect 16", "Unused effect 17", "Unused effect 18",
+        "Unused effect 19", "Unused effect 20", "Instrument setup (silent)"};
+    std::vector<SoundEffect> effects;
+    for (std::size_t i = 0; i < names.size(); ++i)
+    {
+        std::array<std::uint16_t, 4> entries{};
+        for (std::size_t voice = 0; voice < entries.size(); ++voice)
+        {
+            entries[voice] = word(segment, song_table + i * 8 + voice * 2);
+        }
+        effects.push_back({static_cast<unsigned>(i + 1), std::string(names[i]), i >= 13, timer,
+                           decode_speaker_sequence(segment, entries)});
+    }
+    return effects;
+}
 } // namespace opengold::por

@@ -134,6 +134,7 @@ add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/ecl.cpp
     src/OpenGold.Formats/src/wall_art.cpp
     src/OpenGold.Formats/src/por_sound.cpp
+    src/OpenGold.Formats/src/curse_records.cpp
 )
 
 target_include_directories(opengold_formats
@@ -168,6 +169,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/creature_catalog.cpp
     src/OpenGold.Core/src/creature_factory.cpp
     src/OpenGold.Core/src/map_catalog.cpp
+    src/OpenGold.Core/src/game_census.cpp
     src/OpenGold.Core/src/ecl_machine.cpp
     src/OpenGold.Core/src/por_effects.cpp
     src/OpenGold.Core/src/rolf_tour.cpp
@@ -224,6 +226,15 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_original_rules_tests tests/original_rules_tests.cpp)
     target_link_libraries(opengold_original_rules_tests PRIVATE opengold_rules_original)
     add_test(NAME opengold_original_rules_tests COMMAND opengold_original_rules_tests)
+
+    add_executable(opengold_gold_box_games_tests tests/gold_box_games_tests.cpp)
+    target_link_libraries(opengold_gold_box_games_tests PRIVATE opengold_core)
+    add_test(NAME opengold_gold_box_games_tests COMMAND opengold_gold_box_games_tests)
+    add_test(NAME opengold_game_census COMMAND "${CMAKE_COMMAND}"
+        "-DCENSUS=$<TARGET_FILE:opengold_census>"
+        -P "${PROJECT_SOURCE_DIR}/tests/game_census.cmake")
+    set_tests_properties(opengold_game_census PROPERTIES TIMEOUT 300
+        SKIP_REGULAR_EXPRESSION "Skipped: ")
 
     add_executable(opengold_concentration_tests tests/concentration_tests.cpp)
     target_include_directories(opengold_concentration_tests PRIVATE src/OpenGold.Rules.Srd5/src)
@@ -782,6 +793,8 @@ target_link_libraries(opengold_creature_data PUBLIC opengold_creature_edits)
 add_executable(opengold_import_edits tools/import_edits.cpp)
 target_link_libraries(opengold_import_edits PRIVATE opengold_creature_edits)
 target_compile_definitions(opengold_import_edits PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+add_executable(opengold_census tools/census.cpp)
+target_link_libraries(opengold_census PRIVATE opengold_core)
 add_executable(opengold_scripts tools/scripts.cpp)
 target_link_libraries(opengold_scripts PRIVATE opengold_core)
 add_executable(opengold_magic_items tools/magic_items.cpp)

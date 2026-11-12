@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <vector>
 
@@ -93,6 +94,15 @@ struct AnimationDecodeResult
         return status == FormatResult::ok;
     }
 };
+
+// One character of the game's 8x8 font: a byte a row, top row first, with the
+// leftmost pixel in bit 7.
+using FontGlyph = std::array<std::uint8_t, 8>;
+
+// The game's font (8X8D1.DAX record 201): its glyphs in order, eight bytes each.
+// The original draws a character from glyph (upper-case code mod 64).
+[[nodiscard]] std::optional<std::vector<FontGlyph>>
+decode_game_font(std::span<const std::uint8_t> record);
 
 // A decompressed PIC record: a frame count, then per frame a 32-bit delay and a
 // picture. Frames after the first store only the XOR difference from the first.

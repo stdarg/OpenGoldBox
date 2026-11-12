@@ -13,6 +13,9 @@ No original executable instructions run in OpenGoldBox.
   the packed header and backward run-length encoding.
 - Local inspection on September 7, 2026 establishes the data layout below for
   the Steam PC 1.3 executable. Later/other platform releases are unsupported.
+- *Curse of the Azure Bonds* keeps this sequencer in a driver at another place
+  in its `START.EXE`; `decode_curse_sound_effects` finds it
+  ([games/curse.md](games/curse.md#sound-effects)).
 
 The PC directory has 21 entries: silence (1), the eleven documented gameplay
 effects (2–12), eight unused effects (13–20), and silent instrument setup (21).

@@ -9,6 +9,8 @@
 #include <string_view>
 #include <vector>
 
+#include "opengold/gold_box_game.h"
+
 namespace opengold::por
 {
 class EclError : public std::runtime_error
@@ -39,7 +41,20 @@ struct EclOpcode
     bool variable_list{}, executable{}, requires_host{};
 };
 
-[[nodiscard]] const EclOpcode &ecl_opcode(std::uint8_t opcode);
+// A game's opcode; throws EclError for an opcode the game does not have, or a
+// game whose scripts are not decoded yet.
+[[nodiscard]] const EclOpcode &ecl_opcode(std::uint8_t opcode,
+                                          GoldBoxGame game = GoldBoxGame::pool_of_radiance);
+
+// Where a game's scripts run in the script machine's memory: the first address
+// of the script bank and the address past its end.
+struct EclMemory
+{
+    std::uint32_t origin{}, limit{};
+};
+
+// Throws EclError for a game whose scripts are not decoded yet.
+[[nodiscard]] EclMemory ecl_memory(GoldBoxGame game);
 [[nodiscard]] std::string unpack_ecl_text(std::span<const std::uint8_t> bytes);
 
 // A literal operand an instruction reads in place of the one its record
@@ -54,12 +69,14 @@ struct EclOperandOverride
 class EclProgram
 {
   public:
+    // Pool of Radiance's script bank (ecl_memory); the script machine runs only its scripts.
     static constexpr std::uint32_t origin = 0x9900;
     static constexpr std::uint32_t limit = 0xB700; // PoR zone 3 ends at B6FF.
     // Validates record size and five entry jumps. Reachable bodies decode on demand:
     // embedded data is not interpreted as instructions. Prefix is retained, not guessed.
     [[nodiscard]] static EclProgram decode(std::span<const std::uint8_t> record,
-                                           std::string_view source);
+                                           std::string_view source,
+                                           GoldBoxGame game = GoldBoxGame::pool_of_radiance);
     [[nodiscard]] EclInstruction instruction(std::uint32_t address) const;
     // Decode a machine's private, potentially modified copy of this record.
     [[nodiscard]] EclInstruction instruction(std::uint32_t address,
@@ -85,6 +102,11 @@ class EclProgram
         return body_start_;
     }
 
+    [[nodiscard]] GoldBoxGame game() const noexcept
+    {
+        return game_;
+    }
+
     // This program with those operands read in place of its record's. The
     // record and a running script's image keep the original bytes, so a save
     // holds none of them.
@@ -98,6 +120,8 @@ class EclProgram
     std::string source_;
     std::array<std::uint16_t, 5> entries_{};
     std::uint32_t body_start_{};
+    GoldBoxGame game_{GoldBoxGame::pool_of_radiance};
+    EclMemory memory_{origin, limit};
 };
 
 struct EclWalkError

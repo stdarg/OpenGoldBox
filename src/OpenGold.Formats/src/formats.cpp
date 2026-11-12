@@ -360,4 +360,21 @@ AnimationDecodeResult decode_ega_animation(std::span<const std::uint8_t> record)
     }
     return {FormatResult::ok, std::move(frames)};
 }
+
+std::optional<std::vector<FontGlyph>> decode_game_font(std::span<const std::uint8_t> record)
+{
+    constexpr std::size_t glyph_size = std::tuple_size_v<FontGlyph>;
+    // Upper-case code mod 64 needs the first 64 glyphs.
+    if (record.size() < 64 * glyph_size || record.size() % glyph_size != 0)
+    {
+        return std::nullopt;
+    }
+    std::vector<FontGlyph> glyphs(record.size() / glyph_size);
+    for (std::size_t glyph = 0; glyph < glyphs.size(); ++glyph)
+    {
+        std::copy_n(record.begin() + static_cast<std::ptrdiff_t>(glyph * glyph_size), glyph_size,
+                    glyphs[glyph].begin());
+    }
+    return glyphs;
+}
 } // namespace opengold

@@ -35,6 +35,11 @@ decode_speaker_sequence(std::span<const std::uint8_t> segment,
                         const std::array<std::uint16_t, 4> &entries);
 [[nodiscard]] std::vector<SoundEffect>
 load_sound_effects(const std::filesystem::path &game_directory);
+// The sound effects of Curse of the Azure Bonds' START.EXE, from its unpacked
+// image (unpack_sound_executable). Its driver keeps Pool of Radiance's
+// sequencer; docs/games/curse.md says where the effects are.
+[[nodiscard]] std::vector<SoundEffect>
+decode_curse_sound_effects(std::span<const std::uint8_t> image);
 
 } // namespace opengold::por
 #endif
