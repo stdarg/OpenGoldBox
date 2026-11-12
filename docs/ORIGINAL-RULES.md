@@ -113,6 +113,76 @@ lines in all:
 7. **The monsters' tactics and the original rules' difficulty levels.** The
    original rules become the default once they play from start to end.
 
+## Combat (plan step 4)
+
+Started 2026-11-12, needed by every later game (docs/GAMES.md). What the
+original does, from *Pool of Radiance*'s combat units (`combat.pas`,
+`cbtacts.pas`, `combatai.pas`, `fxengine.pas`, `charhlp.pas`, `postcbt.pas`):
+
+- **The round.** Each creature's initiative is d6 plus its Dexterity missile
+  adjustment, at least 1; a side taken by surprise loses 6 in the first round.
+  The highest initiative left acts next, ties settled by a fresh d100. A
+  creature acts until its actions end. Delay lets it act again later in the
+  round; Guard ends its turn ready to strike. At the round's end the clock
+  moves a minute, each dying creature bleeds 1 and dies past −9, and a side
+  with no one able to act loses.
+- **Movement** counts half-moves, twice the creature's movement: a straight
+  step costs 2, a diagonal 3, times the ground's cost. Heavy armor caps it.
+  Leaving an enemy's side gives it a free attack, against the mover's rear
+  Armor Class; stepping next to a guarding enemy draws its strike.
+- **To hit:** d20 against THAC0 minus the target's Armor Class; a natural 1
+  misses and a natural 20 hits. A creature struck from several sides is hit
+  from behind with its rear Armor Class (no Dexterity or shield). A thief in
+  light armor with a light weapon backstabs such a target for multiplied
+  damage. Missiles lose accuracy with distance in bands.
+- **Attacks** are rates per two rounds; a monster has two attacks with their
+  own dice; a readied weapon replaces the first, with Strength and its magic.
+  A fighter sweeps through level-0 enemies around it, one attack each up to
+  its level. Damage stops a spell being cast. Attacking a helpless creature
+  kills it.
+- **Down:** 0 Hit Points is unconscious, below 0 dying, more than 9 below 0
+  dead. Bandage saves the first dying member. After a won fight the dying
+  wake unconscious.
+- **Morale:** monsters only, from the record's morale and the share of Hit
+  Points lost, and the group's; a broken monster flees or, when it cannot
+  outrun its enemies and is not stupid, surrenders.
+- **Spells** with a casting time take effect at the caster's next action and
+  are lost to damage before then. Saving throws: d20 with its bonuses against
+  the category's number; 1 fails and 20 saves.
+- **The original's AI** takes a stance, checks morale, then tries an item, a
+  spell it began, turning undead, a spell, its best weapon, a target and its
+  moves and attacks, and guards when nothing else is possible.
+
+*Curse of the Azure Bonds* keeps this loop and turn order and adds monster
+attacks (engulfing, eye rays, hugs, claws and rakes), dual-class levels and
+many spells.
+
+**Where it lives:** `src/OpenGold.Rules.Original` gains the combat session and
+the rules module behind the interfaces the SRD rules implement (`RulesModule`,
+`CombatSession`), so the game's fights, party and screens drive either. Monsters
+fight with their records' own values (THAC0, Armor Class, Hit Points, attacks,
+movement, saving throws, special abilities) and award their records'
+experience; party members' numbers come from their original-rules sheets and
+gear.
+
+**Steps,** each with its tests:
+
+0. Groundwork: Strength's to-hit and damage, armor movement, attack rates and
+   the to-hit rule in the tables; the original's item types; the movement grid
+   shared, with the original's step costs.
+1. A melee fight between original-rules characters and a monster record
+   resolves: initiative, turns, movement, to-hit, damage, unconscious, dying
+   and death, the result, saving and restoring mid-fight.
+2. The real monster records, their readied weapons and their statistics.
+3. The rest of melee: free attacks, guarding, delaying, attacks from behind,
+   backstabs, sweeps, bandaging.
+4. Missiles: rates of fire, ammunition, distance, thrown weapons.
+5. Morale, fleeing and surrender.
+6. Saving throws, then the monsters' special abilities (MONnSPC).
+7. Into the game: fights in the campaign under the original rules, on screen.
+8. Spells in combat.
+9. The original's AI.
+
 ## Difficulty
 
 The original had no difficulty levels: the camp's Alter menu offers only
