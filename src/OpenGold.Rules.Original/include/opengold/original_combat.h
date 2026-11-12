@@ -26,6 +26,37 @@ struct AttackForm
     bool operator==(const AttackForm &) const = default;
 };
 
+// A readied missile weapon: one whose type reaches past the next square
+// (charhlp.pas, HasRangedWeapon).
+struct Missile
+{
+    // Squares it reaches: its type's range less 1 (cbtacts.pas, CombatAimMenu).
+    int range{1};
+    // Its attacks in two rounds, never fewer than 2 (cbtacts.pas, RecalcAttacksLeft).
+    int rate_per_two_rounds{2};
+    // Its own ammunition: each throw spends one (darts, daggers, spears).
+    bool thrown{};
+    // Thrown with Strength too (a dagger, hand axe, spear or javelin): it
+    // strikes an enemy next to it as in melee, shoots with one there, and may
+    // guard (C_Item.PROPS_THROWABLE).
+    bool throwable{};
+    // Whether it has something to shoot: itself when thrown, the readied
+    // arrows or quarrels it fires, or nothing at all for a sling
+    // (charhlp.pas, FindDamagingRangedWeapon).
+    bool loaded{};
+    bool needs_no_ammunition{};
+    // The count of what it shoots, 0 for a single item: one shot a round at
+    // most, and gone after it (cbtacts.pas, MakeAttack).
+    int quantity{};
+    // What a thrown weapon's thrower fights with once the last has left its
+    // hand: its THAC0, first attack and backstab with no weapon.
+    int empty_handed_thac0{20};
+    AttackForm empty_handed_attack{};
+    bool empty_handed_backstabs{};
+
+    bool operator==(const Missile &) const = default;
+};
+
 // A creature's numbers in a fight under the original rules.
 struct Combatant
 {
@@ -56,6 +87,8 @@ struct Combatant
     // A large creature (its combat icon's size), which weapons strike with
     // their dice for large creatures.
     bool large{};
+    // Its readied missile weapon, if any.
+    std::optional<Missile> missile;
 
     [[nodiscard]] std::string encode() const;
     [[nodiscard]] static std::optional<Combatant> decode(std::string_view data);

@@ -11,7 +11,7 @@ namespace opengold::original
 namespace
 {
 
-constexpr std::string_view profile_format = "combatant2";
+constexpr std::string_view profile_format = "combatant3";
 
 std::vector<int> numbers_of(const Combatant &c)
 {
@@ -28,6 +28,14 @@ std::vector<int> numbers_of(const Combatant &c)
                                    c.backstabs ? 1 : 0, c.large ? 1 : 0, c.large_attack ? 1 : 0});
     const auto large = c.large_attack.value_or(AttackForm{});
     numbers.insert(numbers.end(), {large.dice, large.sides, large.modifier});
+    const auto missile = c.missile.value_or(Missile{});
+    const auto &after = missile.empty_handed_attack;
+    numbers.insert(numbers.end(),
+                   {c.missile ? 1 : 0, missile.range, missile.rate_per_two_rounds,
+                    missile.thrown ? 1 : 0, missile.throwable ? 1 : 0, missile.loaded ? 1 : 0,
+                    missile.needs_no_ammunition ? 1 : 0, missile.quantity,
+                    missile.empty_handed_thac0, after.rate_per_two_rounds, after.dice, after.sides,
+                    after.modifier, missile.empty_handed_backstabs ? 1 : 0});
     return numbers;
 }
 
@@ -97,6 +105,26 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     if (large_attack)
     {
         c.large_attack = AttackForm{c.attacks[0].rate_per_two_rounds, next[0], next[1], next[2]};
+    }
+    next += 3;
+    if (*next++ != 0)
+    {
+        Missile m;
+        m.range = next[0];
+        m.rate_per_two_rounds = next[1];
+        m.thrown = next[2] != 0;
+        m.throwable = next[3] != 0;
+        m.loaded = next[4] != 0;
+        m.needs_no_ammunition = next[5] != 0;
+        m.quantity = next[6];
+        m.empty_handed_thac0 = next[7];
+        m.empty_handed_attack = {next[8], next[9], next[10], next[11]};
+        m.empty_handed_backstabs = next[12] != 0;
+        if (m.range < 1 || m.rate_per_two_rounds < 2 || m.quantity < 0)
+        {
+            return std::nullopt;
+        }
+        c.missile = m;
     }
     if (c.max_hit_points < 1 || c.movement < 0 ||
         std::any_of(
@@ -172,6 +200,54 @@ int load_of(const por::CharacterRecord &record, std::span<const CarriedItem> car
 bool elf_weapon(std::uint8_t type) noexcept
 {
     return type == 36 || type == 37 || (type > 40 && type < 45);
+}
+
+// The readied missile weapon (cbtacts.pas, RecalcAttacksLeft and CombatAimMenu;
+// charhlp.pas, FindDamagingRangedWeapon). A thrown weapon is its own
+// ammunition; a launcher shoots the arrows or quarrels readied, and one whose
+// only properties are Dexterity and firing (a sling) shoots with none.
+Missile missile_of(const por::CharacterRecord &record, std::span<const CarriedItem> carried,
+                   const CarriedItem &weapon)
+{
+    namespace bit = por::item_property;
+    const auto &type = weapon.type;
+    Missile m;
+    m.range = type.range - 1;
+    m.rate_per_two_rounds = std::max<int>(type.rate_of_fire, 2);
+    m.thrown = type.has(bit::thrown);
+    m.throwable = m.thrown && type.has(bit::strength_bonus);
+    const CarriedItem *shot = m.thrown ? &weapon : nullptr;
+    if (type.has(bit::fires_ammunition))
+    {
+        if (type.has(bit::fires_arrows))
+        {
+            shot = readied_in(carried, arrow_slot);
+        }
+        if (type.has(bit::fires_quarrels))
+        {
+            shot = readied_in(carried, bolt_slot);
+        }
+    }
+    m.needs_no_ammunition =
+        !shot && type.properties == (bit::dexterity_missile | bit::fires_ammunition);
+    m.loaded = shot || m.needs_no_ammunition;
+    m.quantity = shot ? shot->item.stack_size : 0;
+    if (m.thrown)
+    {
+        std::vector<CarriedItem> rest;
+        for (const auto &c : carried)
+        {
+            if (&c != &weapon)
+            {
+                rest.push_back(c);
+            }
+        }
+        const auto empty_handed = combatant_from_record(record, rest);
+        m.empty_handed_thac0 = empty_handed.thac0;
+        m.empty_handed_attack = empty_handed.attacks[0];
+        m.empty_handed_backstabs = empty_handed.backstabs;
+    }
+    return m;
 }
 
 } // namespace
@@ -298,6 +374,10 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
                    (weapon_type >= 35 && weapon_type <= 37));
     // The combat icon's size: above 0x80, or a size above 1 (cbtacts.pas, RollAttacks).
     c.large = record.icon_size_raw > 0x80 || (record.icon_size_raw & 7) > 1;
+    if (weapon && weapon->type.range > 1)
+    {
+        c.missile = missile_of(record, carried, *weapon);
+    }
     return c;
 }
 

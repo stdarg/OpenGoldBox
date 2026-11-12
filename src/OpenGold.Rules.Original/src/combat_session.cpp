@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <optional>
 #include <cstdlib>
 #include <sstream>
 #include <stdexcept>
@@ -13,7 +14,7 @@
 #include <vector>
 
 // A fight under the original rules, as Pool of Radiance's combat units play it
-// (docs/ORIGINAL-RULES.md, "Combat"): plan step 1, melee.
+// (docs/ORIGINAL-RULES.md, "Combat"): melee and missiles.
 namespace opengold::original::detail
 {
 namespace
@@ -26,7 +27,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 2";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 3";
 
 enum class Condition : unsigned
 {
@@ -94,6 +95,54 @@ bool adjacent(const Fighter &a, const Fighter &b)
     const int dx = gap(a.cell.x, a.footprint.width, b.cell.x, b.footprint.width);
     const int dy = gap(a.cell.y, a.footprint.height, b.cell.y, b.footprint.height);
     return std::max(dx, dy) == 1;
+}
+
+// The squares a creature covers.
+std::vector<Cell> squares_of(const Fighter &f)
+{
+    std::vector<Cell> squares;
+    for (int dy = 0; dy < f.footprint.height; ++dy)
+    {
+        for (int dx = 0; dx < f.footprint.width; ++dx)
+        {
+            squares.push_back({f.cell.x + dx, f.cell.y + dy});
+        }
+    }
+    return squares;
+}
+
+// The original's distance between two creatures: a straight line's steps
+// counted 2 straight and 3 diagonal, halved, between their nearest squares
+// (charhlp.pas, CalcDistance; pathing.pas, NextPathStep).
+int distance(const Fighter &a, const Fighter &b)
+{
+    int nearest = 1000;
+    for (const auto from : squares_of(a))
+    {
+        for (const auto to : squares_of(b))
+        {
+            const int dx = std::abs(to.x - from.x), dy = std::abs(to.y - from.y);
+            nearest = std::min(nearest, (2 * std::max(dx, dy) + std::min(dx, dy)) / 2);
+        }
+    }
+    return nearest;
+}
+
+// Whether a line runs from a square of one creature to a square of the other
+// that walls do not block; creatures do not (pathing.pas, BuildTargetList).
+bool sees(const rules::Battlefield &board, const Fighter &a, const Fighter &b)
+{
+    for (const auto from : squares_of(a))
+    {
+        for (const auto to : squares_of(b))
+        {
+            if (rules::has_line_of_sight(board, from, to))
+            {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 // The original's eight directions: 0 north and clockwise to 7 north-west.
@@ -309,6 +358,10 @@ class Session final : public rules::CombatSession
     void end_actions(Fighter &fighter);
     void note_attack(const Fighter &attacker, Fighter &defender);
     void make_attack(Fighter &attacker, Fighter &defender, bool from_behind);
+    [[nodiscard]] std::optional<std::string> attack_verb(const Fighter &attacker,
+                                                         const Fighter &target) const;
+    [[nodiscard]] bool enemy_next_to(const Fighter &f) const;
+    void shoot(Fighter &attacker, Fighter &target);
     bool sweep(Fighter &attacker, Fighter &defender);
     void step_to(Fighter &mover, Cell next);
     void free_attacks(Fighter &mover, Cell next);
@@ -367,6 +420,17 @@ void Session::begin_round()
         {
             f.attacks_left[form] = attacks_this_round(f.numbers.attacks[form].rate_per_two_rounds,
                                                       static_cast<int>(round_));
+        }
+        // A loaded missile weapon attacks at its own rate, no more often than
+        // it has shots (cbtacts.pas, RecalcAttacksLeft).
+        if (const auto &missile = f.numbers.missile; missile && missile->loaded)
+        {
+            f.attacks_left[0] =
+                attacks_this_round(missile->rate_per_two_rounds, static_cast<int>(round_));
+            if (!missile->needs_no_ammunition)
+            {
+                f.attacks_left[0] = std::min(f.attacks_left[0], std::max(missile->quantity, 1));
+            }
         }
     }
 }
@@ -524,6 +588,76 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
     {
         end_actions(attacker);
     }
+}
+
+// The attack the attacker can make on the target, if any (cbtacts.pas,
+// AimTargetMenu): melee next to it, without a missile weapon or with one it
+// can throw; otherwise a loaded missile weapon shoots a target it sees within
+// range, unless an enemy stands next to it and the weapon is not throwable.
+std::optional<std::string> Session::attack_verb(const Fighter &attacker,
+                                                const Fighter &target) const
+{
+    const auto &missile = attacker.numbers.missile;
+    const bool next_to = adjacent(attacker, target);
+    if (!missile)
+    {
+        return next_to ? std::optional<std::string>("melee") : std::nullopt;
+    }
+    if (!missile->loaded || (!missile->throwable && enemy_next_to(attacker)))
+    {
+        return std::nullopt;
+    }
+    if (next_to)
+    {
+        return "melee";
+    }
+    if (distance(attacker, target) > missile->range || !sees(board_, attacker, target))
+    {
+        return std::nullopt;
+    }
+    return missile->thrown ? "throw" : "ranged";
+}
+
+bool Session::enemy_next_to(const Fighter &f) const
+{
+    return std::any_of(fighters_.begin(), fighters_.end(),
+                       [&f](const Fighter &other)
+                       {
+                           return other.side != f.side && other.able() && adjacent(f, other);
+                       });
+}
+
+// A missile attack, which spends a shot for each attack made: a thrown
+// weapon's last throw leaves its thrower empty-handed, and a launcher's last
+// arrow or quarrel leaves it nothing to shoot (cbtacts.pas, MakeAttack).
+void Session::shoot(Fighter &attacker, Fighter &target)
+{
+    const int before = attacker.attacks_left[0];
+    make_attack(attacker, target, false);
+    auto &missile = *attacker.numbers.missile;
+    if (missile.needs_no_ammunition)
+    {
+        return;
+    }
+    if (missile.quantity > 0)
+    {
+        missile.quantity = std::max(missile.quantity - (before - attacker.attacks_left[0]), 0);
+    }
+    if (missile.quantity > 0)
+    {
+        return;
+    }
+    if (!missile.thrown)
+    {
+        missile.loaded = false;
+        return;
+    }
+    auto &numbers = attacker.numbers;
+    numbers.thac0 = missile.empty_handed_thac0;
+    numbers.attacks[0] = missile.empty_handed_attack;
+    numbers.backstabs = missile.empty_handed_backstabs;
+    numbers.large_attack.reset();
+    numbers.missile.reset();
 }
 
 // A fighter sweeps through level-0 enemies: when the defender is one, next to
@@ -816,15 +950,19 @@ std::vector<rules::Command> Session::legal_commands() const
         {
             // A creature down is out of the fight (charhlp.pas, InflictDamage
             // clears its enabled flag) and is no target.
-            if (f.side != actor->side && f.able() && adjacent(*actor, f))
+            if (f.side == actor->side || !f.able())
             {
-                rules::Command melee;
-                melee.revision = revision_;
-                melee.actor = actor_;
-                melee.target = f.id;
-                melee.verb = "melee";
-                melee.intent = rules::Intent::hostile;
-                commands.push_back(melee);
+                continue;
+            }
+            if (auto verb = attack_verb(*actor, f))
+            {
+                rules::Command attack;
+                attack.revision = revision_;
+                attack.actor = actor_;
+                attack.target = f.id;
+                attack.verb = std::move(*verb);
+                attack.intent = rules::Intent::hostile;
+                commands.push_back(attack);
             }
         }
     }
@@ -838,7 +976,11 @@ std::vector<rules::Command> Session::legal_commands() const
         command.target = target;
         commands.push_back(command);
     };
-    offer("guard");
+    // Guard needs a weapon that strikes next to it (combat.pas, DoneMenu).
+    if (!actor->numbers.missile || actor->numbers.missile->throwable)
+    {
+        offer("guard");
+    }
     offer("delay");
     for (const auto &f : fighters_)
     {
@@ -911,6 +1053,13 @@ bool Session::submit(const rules::Command &command)
         {
             make_attack(actor, target, false);
         }
+        settle_outcome();
+    }
+    else if (command.verb == "ranged" || command.verb == "throw")
+    {
+        auto &target = *find(command.target);
+        note_attack(actor, target);
+        shoot(actor, target);
         settle_outcome();
     }
     else if (command.verb == "guard")

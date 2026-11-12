@@ -205,7 +205,23 @@ gear.
    dying member next to the one bandaging (the user, 2026-11-12). Guard is
    offered to every creature until step 4 tells ranged weapons apart: the
    original offers it only without one, or with a throwable one.
-4. Missiles: rates of fire, ammunition, distance, thrown weapons.
+4. Missiles: rates of fire, ammunition, distance, thrown weapons. *Done
+   2026-11-12:* a readied weapon whose type's range is above 1 is a missile
+   weapon (`original::Missile`). It reaches its range less 1, counted as the
+   original counts a line (2 a straight step, 3 a diagonal one, halved), at
+   a target it sees, with no penalty for distance (the user, 2026-11-12). It
+   attacks at its rate of fire (at least once a round), no more often than it
+   has shots. A bow shoots the readied arrows, a crossbow the quarrels, a
+   sling needs nothing, and a thrown weapon is its own ammunition: each shot
+   spends one, and the last thrown weapon leaves its thrower empty-handed.
+   With an enemy next to it a creature cannot shoot, unless its weapon is one
+   it throws with Strength (a dagger, hand axe, spear or javelin), which then
+   strikes as in melee; only such a weapon, or none, can guard. Two things
+   wait for step 7: sight on the shared battlefield is blocked by its
+   obstacles, where the original also weighs each square's height, so the
+   original's terrain heights come with its battlefields; and the shots spent
+   leave the party's inventory, as the original drops a thrown weapon in the
+   loot.
 5. Morale, fleeing and surrender.
 6. Saving throws, then the monsters' special abilities (MONnSPC).
 7. Into the game: fights in the campaign under the original rules, on screen.

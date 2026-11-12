@@ -356,11 +356,17 @@ original::Combatant creature(int hit_points, int level = 1)
     return c;
 }
 
-Fight arrange(const std::vector<Placed> &placed, std::uint64_t seed)
+Fight arrange(const std::vector<Placed> &placed, std::uint64_t seed,
+              const std::vector<rules::Cell> &walls = {})
 {
     Fight fight{original::rules_module(), nullptr};
     rules::Encounter encounter;
     encounter.battlefield = {8, 8, std::vector<rules::Terrain>(64, rules::Terrain::open)};
+    for (const auto wall : walls)
+    {
+        encounter.battlefield.terrain[static_cast<std::size_t>(wall.y * 8 + wall.x)] =
+            rules::Terrain::obstacle;
+    }
     rules::EntityId id = 1;
     for (const auto &p : placed)
     {
@@ -686,6 +692,186 @@ void bandage_needs_a_neighbor()
     check(!far_offered, "One across the field cannot");
 }
 
+// A bow, a sling and a thrown dagger as the original reads them from a
+// creature's readied items (cbtacts.pas, RecalcAttacksLeft and CombatAimMenu).
+void readied_missiles_count()
+{
+    namespace bit = por::item_property;
+    const auto record = kobold_record();
+    por::ItemTemplate bow_type;
+    bow_type.worn_location = 0;
+    bow_type.range = 8;
+    bow_type.rate_of_fire = 4;
+    bow_type.small_medium_damage = {1, 6, 0};
+    bow_type.properties = bit::fires_arrows | bit::dexterity_missile | bit::fires_ammunition;
+    por::ItemRecord bow;
+    bow.type = 42;
+    bow.readied_raw = 1;
+    por::ItemTemplate arrow_type;
+    arrow_type.worn_location = 11;
+    por::ItemRecord arrows;
+    arrows.readied_raw = 1;
+    arrows.stack_size = 10;
+    const std::vector<original::CarriedItem> archer{{bow, bow_type}, {arrows, arrow_type}};
+    const auto shooting = original::combatant_from_record(record, archer);
+    check(shooting.missile && shooting.missile->range == 7 &&
+              shooting.missile->rate_per_two_rounds == 4 && shooting.missile->loaded &&
+              shooting.missile->quantity == 10 && !shooting.missile->thrown,
+          "A bow reaches its range less 1, fires twice a round and has its 10 arrows");
+    check(original::Combatant::decode(shooting.encode()) == shooting,
+          "A missile weapon survives the profile's encoding");
+    const std::vector<original::CarriedItem> bow_alone{{bow, bow_type}};
+    check(!original::combatant_from_record(record, bow_alone).missile->loaded,
+          "A bow without arrows readied has nothing to shoot");
+    auto sling_type = bow_type;
+    sling_type.properties = bit::dexterity_missile | bit::fires_ammunition;
+    sling_type.rate_of_fire = 0;
+    const std::vector<original::CarriedItem> slinger{{bow, sling_type}};
+    const auto sling = original::combatant_from_record(record, slinger).missile;
+    check(sling && sling->loaded && sling->needs_no_ammunition && sling->rate_per_two_rounds == 2,
+          "A sling shoots with nothing readied, at least once a round");
+    por::ItemTemplate dagger_type;
+    dagger_type.worn_location = 0;
+    dagger_type.range = 4;
+    dagger_type.small_medium_damage = {1, 4, 0};
+    dagger_type.properties = bit::thrown | bit::strength_bonus;
+    por::ItemRecord dagger;
+    dagger.type = 8;
+    dagger.readied_raw = 1;
+    dagger.magic_bonus = 1;
+    const std::vector<original::CarriedItem> thrower{{dagger, dagger_type}};
+    const auto throwing = original::combatant_from_record(record, thrower);
+    const auto empty_handed = original::combatant_from_record(record);
+    check(throwing.missile && throwing.missile->thrown && throwing.missile->throwable &&
+              throwing.missile->loaded && throwing.missile->quantity == 0 &&
+              throwing.missile->empty_handed_thac0 == empty_handed.thac0 &&
+              throwing.missile->empty_handed_attack == empty_handed.attacks[0] &&
+              throwing.thac0 == empty_handed.thac0 - 1,
+          "A dagger +1 is its own single shot, and its thrower then fights empty-handed");
+}
+
+original::Combatant archer(int arrows)
+{
+    auto c = creature(50);
+    original::Missile bow;
+    bow.range = 7;
+    bow.rate_per_two_rounds = 4;
+    bow.loaded = true;
+    bow.quantity = arrows;
+    c.missile = bow;
+    return c;
+}
+
+// The archer's turn, the others ending theirs until it comes.
+void until_turn_of(rules::CombatSession &session, std::string_view name)
+{
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return actor_name(session) == name;
+        });
+}
+
+// A missile weapon shoots what it sees within its range, with no penalty for
+// distance (the user, 2026-11-12), but not with an enemy next to it; it cannot
+// guard (cbtacts.pas, AimTargetMenu; combat.pas, DoneMenu).
+void missiles_shoot_what_they_see()
+{
+    const auto can_shoot = [](rules::Cell target, const std::vector<rules::Cell> &walls)
+    {
+        auto fight = arrange({{"Archer", rules::Side::party, {0, 3}, archer(10)},
+                              {"Ogre", rules::Side::opposition, target, creature(1000, 0)}},
+                             21, walls);
+        until_turn_of(*fight.session, "Archer");
+        check(!offered(*fight.session, "guard"), "An archer cannot guard");
+        return offered(*fight.session, "ranged", "Ogre").has_value();
+    };
+    check(can_shoot({7, 3}, {}), "7 squares away is within a range of 7");
+    check(can_shoot({6, 6}, {}), "6 across and 3 down counts 7");
+    check(!can_shoot({7, 6}, {}), "7 across and 3 down counts 8, out of range");
+    check(!can_shoot({7, 3}, {{3, 3}}), "A wall between blocks the shot");
+    auto fight = arrange({{"Archer", rules::Side::party, {0, 3}, archer(10)},
+                          {"Kobold", rules::Side::opposition, {1, 3}, creature(1000, 0)},
+                          {"Ogre", rules::Side::opposition, {5, 3}, creature(1000, 0)}},
+                         21);
+    until_turn_of(*fight.session, "Archer");
+    check(!offered(*fight.session, "ranged") && !offered(*fight.session, "melee"),
+          "With a kobold next to it the archer neither shoots nor strikes");
+}
+
+// Each shot spends an arrow: 2 a round from 3 arrows, then 1, then none
+// (cbtacts.pas, RecalcAttacksLeft and MakeAttack).
+void shots_spend_ammunition()
+{
+    auto fight = arrange({{"Archer", rules::Side::party, {0, 3}, archer(3)},
+                          {"Ogre", rules::Side::opposition, {5, 3}, creature(1000, 0)}},
+                         23);
+    auto &session = *fight.session;
+    std::vector<int> volleys;
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            if (actor == "Archer")
+            {
+                if (const auto shot = offered(session, "ranged", "Ogre"))
+                {
+                    const int before =
+                        logged(session, "{attacker} hits {name} for {damage}.", "Archer") +
+                        logged(session, "{attacker} misses {name}.", "Archer");
+                    session.submit(*shot);
+                    volleys.push_back(
+                        logged(session, "{attacker} hits {name} for {damage}.", "Archer") +
+                        logged(session, "{attacker} misses {name}.", "Archer") - before);
+                    return order(session, "end");
+                }
+                volleys.push_back(0);
+            }
+            return order(session, "end");
+        },
+        [&]
+        {
+            return !volleys.empty() && volleys.back() == 0;
+        },
+        60);
+    check(volleys == std::vector<int>{2, 1, 0}, "Two arrows, then the last, then none");
+}
+
+// A thrown dagger strikes next to an enemy as in melee and keeps it; thrown,
+// its single dagger is gone and its thrower fights empty-handed.
+void a_thrown_weapon_leaves_the_hand()
+{
+    auto thrower = creature(50);
+    thrower.thac0 = 15;
+    thrower.attacks[0] = {2, 1, 4, 1};
+    original::Missile dagger;
+    dagger.range = 3;
+    dagger.thrown = dagger.throwable = dagger.loaded = true;
+    dagger.empty_handed_thac0 = 16;
+    dagger.empty_handed_attack = {2, 1, 2, 0};
+    thrower.missile = dagger;
+    auto fight = arrange({{"Thrower", rules::Side::party, {0, 3}, thrower},
+                          {"Kobold", rules::Side::opposition, {1, 3}, creature(1000, 0)},
+                          {"Ogre", rules::Side::opposition, {3, 3}, creature(1000, 0)}},
+                         29);
+    auto &session = *fight.session;
+    until_turn_of(session, "Thrower");
+    check(offered(session, "melee", "Kobold").has_value() &&
+              offered(session, "throw", "Ogre").has_value() && offered(session, "guard"),
+          "A dagger strikes the kobold next to it, can be thrown at the ogre, and guards");
+    session.submit(order(session, "throw", "Ogre"));
+    until_turn_of(session, "Thrower");
+    check(!offered(session, "throw", "Ogre") && offered(session, "melee", "Kobold"),
+          "Thrown, the dagger is gone; empty-handed, its thrower still strikes in melee");
+    const auto restored = fight.module->restore(session.save());
+    check(!offered(*restored, "throw", "Ogre"), "A saved fight remembers the dagger is gone");
+}
+
 } // namespace
 
 int main()
@@ -702,6 +888,10 @@ int main()
         a_thief_backstabs_from_behind();
         a_fighter_sweeps_level_0_enemies();
         bandage_needs_a_neighbor();
+        readied_missiles_count();
+        missiles_shoot_what_they_see();
+        shots_spend_ammunition();
+        a_thrown_weapon_leaves_the_hand();
         real_records_fight();
         std::cout << "Original-rules combat passed.\n";
     }
