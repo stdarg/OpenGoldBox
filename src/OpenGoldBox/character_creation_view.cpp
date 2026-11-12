@@ -353,14 +353,17 @@ void CharacterCreationView::recommend_portrait()
     {
         a.portrait = portraits_->recommended(d);
     }
-    // The original portrait starts at random, again for another race or
-    // gender, until the player builds one.
+    // A character that shows a new portrait never sees the original's head
+    // and body, so its original portrait is chosen at random; one built on the
+    // Portrait page starts at the first head and body. Either is chosen again
+    // for another race or gender until the player builds one.
     const auto original_of = d.race + "/" + d.gender;
     if (!original_chosen_ && original_portrait_of_ != original_of)
     {
+        const bool new_portraits = portraits_->shows_new(a, d);
         opengold::por::choose_original_portrait(
             a, portraits_->original_art(), d.race, d.gender,
-            static_cast<std::uint32_t>(UtilityFunctions::randi()));
+            new_portraits ? static_cast<std::uint32_t>(UtilityFunctions::randi()) : 0);
         original_portrait_of_ = original_of;
     }
     creator_->appearance(a);

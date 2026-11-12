@@ -372,8 +372,9 @@ in the game: answering YES at a hall lists its services in the dialogue
 - **Portraits change at any time** (2026-11-11). The original chose a
   character's head and body once, at creation; only its combat icon could be
   changed later (Encamp, Alter, Icon). OpenGoldBox's **Change portrait…** on a
-  member's sheet changes its portrait whenever the player likes, and a new
-  character's original portrait starts as a random head and body
+  member's sheet changes its portrait whenever the player likes. A character
+  that never built an original portrait (one made while new portraits show, or
+  saved before they could be chosen) gets a random head and body
   ([PARTY](PARTY.md)).
 
 - **Tyranthraxus's name** (2026-11-01). The original's record for his human

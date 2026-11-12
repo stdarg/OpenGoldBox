@@ -11,6 +11,9 @@ struct SavedCampaign
 {
     PartyState party;
     std::optional<por::RolfTourSession> town;
+    // Members saved before characters chose original portraits, still on the
+    // default head and body: the game gives each a random original portrait.
+    std::vector<MemberId> unchosen_portraits;
 };
 template <bool Reading> struct SaveCodec;
 [[nodiscard]] std::string campaign_asset_identity(const std::filesystem::path &directory);

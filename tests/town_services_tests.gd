@@ -148,12 +148,18 @@ func slot_path(slot: String) -> String:
 	return ProjectSettings.globalize_path("user://saves/" + slot.to_utf8_buffer().hex_encode() + ".ogs")
 
 # Loads a fixture as a player does: Party, Load, its slot, Explore.
-func load_fixture(file: String) -> bool:
-	var slot := file.get_basename()
+# `saved_as` names another slot, written with the campaign format `format`.
+func load_fixture(file: String, saved_as := "", format := 0) -> bool:
+	var slot := file.get_basename() if saved_as.is_empty() else saved_as
 	var path := slot_path(slot)
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
+	var bytes := FileAccess.get_file_as_bytes(fixtures.path_join(file))
+	if format > 0:
+		# The checksum covers the body only, so the header names any format.
+		var text := bytes.get_string_from_utf8()
+		bytes = ("OPENGOLD-CAMPAIGN " + str(format) + text.substr(text.find("\n"))).to_utf8_buffer()
 	var out := FileAccess.open(path, FileAccess.WRITE)
-	out.store_buffer(FileAccess.get_file_as_bytes(fixtures.path_join(file)))
+	out.store_buffer(bytes)
 	out.close()
 	change_scene_to_file("res://scenes/character_creation.tscn")
 	await settle(8)
@@ -366,6 +372,31 @@ func check_portrait_change() -> void:
 		dialog.get_node("%Close").pressed.emit()
 		sheet.get_node("Close").pressed.emit()
 		await settle(10)
+
+# A save from before characters chose original portraits (format 45) gives
+# its members on the default head 1 and body 1 random ones; a current save
+# keeps them.
+func check_saves_before_portraits(file: String) -> void:
+	var option: OptionButton = town().get_parent().get_node("GameMenu/Options/Interface/PortraitArt")
+	option.select(1)
+	option.item_selected.emit(1)
+	var shown := {}
+	for format in [46, 45]:
+		if not await load_fixture(file, "portraits-" + str(format), format):
+			return
+		var names := []
+		for slot in range(8):
+			var card: Control = town().get_node("%PartyList/Rows/Member" + str(slot))
+			if card.visible: names.append(portrait_name(card.get("_portrait")))
+		shown[format] = names
+	option = town().get_parent().get_node("GameMenu/Options/Interface/PortraitArt")
+	option.select(0)
+	option.item_selected.emit(0)
+	var defaults: Array = shown[46].filter(func(n): return n == "original-head-1-body-1")
+	if defaults.is_empty():
+		bug("the portrait check's save has no member on the default head and body", str(shown[46]))
+	elif shown[45].all(func(n): return n == "original-head-1-body-1"):
+		bug("a save from before original portraits keeps the default head and body", str(shown[45]))
 
 func portrait_name(texture: Texture2D) -> String:
 	return "" if texture == null else texture.resource_name
@@ -795,6 +826,8 @@ func run() -> void:
 		if places == 1:
 			await check_party_cards("while exploring")
 			await check_portrait_change()
+			await check_saves_before_portraits(file)
+			if not await load_fixture(file): continue
 		if party == "outlaw":
 			await check_refusal()
 			continue

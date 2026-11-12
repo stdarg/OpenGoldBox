@@ -45,8 +45,10 @@ template <class F> std::string rejection_message(F f)
     return {};
 }
 
-// The only campaign format this build reads and writes.
-constexpr unsigned current_campaign_format = 45;
+// The campaign format this build writes. It also reads format 45, saved
+// before characters chose original portraits.
+constexpr unsigned current_campaign_format = 46;
+constexpr unsigned unchosen_portraits_format = 45;
 
 // The checksum line covers only the body, so rewriting the header number
 // changes nothing but the claimed format.
@@ -324,8 +326,10 @@ void file_safety(const std::filesystem::path &directory)
         });
 }
 
-// Before 1.0 there is no save migration: only the current campaign format with
-// the current rules identity loads, and older saves are refused with one message.
+// Before 1.0 there is no save migration but one: only the current campaign
+// format with the current rules identity loads, and older saves are refused
+// with one message. Format 45 still loads, listing its members on the default
+// head and body for a random original portrait.
 void check_campaign_format_cutoff(const std::string &saved, const rules::RulesModule &rules,
                                   const por::RolfTourSession &town_template)
 {
@@ -341,9 +345,26 @@ void check_campaign_format_cutoff(const std::string &saved, const rules::RulesMo
     check(saved.starts_with("OPENGOLD-CAMPAIGN " + std::to_string(current_campaign_format) + "\n"),
           "The writer emits the current campaign format");
     check(decode_error(saved).empty(), "The current writer's campaign loads");
-    check(decode_error(with_campaign_format(saved, current_campaign_format - 1)) ==
+    check(decode_error(with_campaign_format(saved, unchosen_portraits_format - 1)) ==
               rules::older_save_message,
           "An older campaign format is refused as an older pre-release save");
+    const auto current =
+        decode_campaign(saved, *srd5::character_rules(), rules, "fixture-v1", &town_template);
+    const auto before_portraits =
+        decode_campaign(with_campaign_format(saved, unchosen_portraits_format),
+                        *srd5::character_rules(), rules, "fixture-v1", &town_template);
+    std::vector<MemberId> defaults;
+    for (const auto &m : before_portraits.party.roster)
+    {
+        if (m.character.appearance().portrait_head == 1 &&
+            m.character.appearance().portrait_body == 1)
+        {
+            defaults.push_back(m.id);
+        }
+    }
+    check(current.unchosen_portraits.empty() && !defaults.empty() &&
+              before_portraits.unchosen_portraits == defaults,
+          "A save from before original portraits lists its members on the default head and body");
     check(decode_error(changed_identity(saved, rules.identity().version, "0.6.61")) ==
               rules::older_save_message,
           "A campaign from another rules version is refused as an older pre-release save");

@@ -16,9 +16,13 @@ namespace opengold
 namespace
 {
 constexpr std::size_t limit = 16 * 1024 * 1024;
-// The only campaign format this build reads or writes. Pre-1.0 formats are
-// rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 45;
+// The campaign format this build writes. Pre-1.0 formats are rejected rather
+// than migrated; change this format in place until 1.0. The one exception is
+// format 45, the same fields saved before characters chose original portraits:
+// it still loads, and its members on head 1 and body 1 (the default, never
+// chosen) are listed for a random original portrait.
+constexpr unsigned campaign_format = 46;
+constexpr unsigned unchosen_portraits_format = 45;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -967,11 +971,12 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
             "Unsupported campaign save version");
     const auto version =
         saved_format(bytes.substr(campaign_magic.size(), header_end - campaign_magic.size()));
-    if (version < campaign_format)
+    if (version < unchosen_portraits_format)
     {
         throw std::runtime_error(rules::older_save_message);
     }
-    require(version == campaign_format, "Unsupported campaign save version");
+    require(version == campaign_format || version == unchosen_portraits_format,
+            "Unsupported campaign save version");
     const auto end = bytes.find('\n', header_end + 1);
     require(end != bytes.npos, "Truncated campaign save");
     const auto body = bytes.substr(end + 1);
@@ -994,6 +999,12 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     for (const auto &m : result.party.roster)
     {
         validate_saved_member(m, module);
+        const auto &appearance = m.character.appearance();
+        if (version == unchosen_portraits_format && appearance.portrait_head == 1 &&
+            appearance.portrait_body == 1)
+        {
+            result.unchosen_portraits.push_back(m.id);
+        }
     }
     bool has_town{};
     in.field(has_town);
