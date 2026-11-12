@@ -339,7 +339,7 @@ class RolfTourSession
 
   private:
     // A Pool of Radiance script cell where this campaign's game keeps it.
-    [[nodiscard]] EclAddress cell(EclAddress pool_of_radiance_cell) const
+    [[nodiscard]] EclAddress game_cell(EclAddress pool_of_radiance_cell) const
     {
         return game_address(pool_of_radiance_cell, game());
     }

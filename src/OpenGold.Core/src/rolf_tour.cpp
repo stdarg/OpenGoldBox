@@ -781,9 +781,9 @@ void RolfTourSession::reset_run()
              0x03DE, 0x49C9, 0x49FD, 0x4AC5, 0x4A07, 0x4A0F, 0x4A10, 0x4A11, 0x6DE1, 0x6E79,
              0x6E7A, 0x6E7B, 0x6E7C, 0x6E7D, 0x9801, 0xC04B, 0xC04C, 0xC04D, 0xC04E, 0xC04F})
     {
-        machine_.bind_variable(cell(EclAddress{address}), 0);
+        machine_.bind_variable(game_cell(EclAddress{address}), 0);
     }
-    machine_.bind_variable(cell(ecl_clock_hour), 12); // Research fixture: midday.
+    machine_.bind_variable(game_cell(ecl_clock_hour), 12); // Research fixture: midday.
     for (const std::uint8_t opcode : std::initializer_list<std::uint8_t>{12, 13, 14, 45, 49, 58})
     {
         machine_.enable_host(opcode);
@@ -812,8 +812,8 @@ void RolfTourSession::start_opening()
     current_script_ = *town_->opening_script;
     // The original's script setup (EclInit): a 3D map is shown and no
     // portrait is up.
-    machine_.bind_variable(cell(ecl_in_3d_area), 1);
-    machine_.bind_variable(cell(EclAddress{0x6DE1}), 255);
+    machine_.bind_variable(game_cell(ecl_in_3d_area), 1);
+    machine_.bind_variable(game_cell(EclAddress{0x6DE1}), 255);
     event_stage_ = EventStage::none;
     if (!machine_.start(4))
     {
@@ -915,8 +915,9 @@ void RolfTourSession::roll_back_event()
 
 void RolfTourSession::publish_pose()
 {
-    const auto facing = map_direction(machine_.variable(ecl_party_facing));
-    const PartyPose next{machine_.variable(ecl_party_x), machine_.variable(ecl_party_y),
+    const auto facing = map_direction(machine_.variable(game_cell(ecl_party_facing)));
+    const PartyPose next{machine_.variable(game_cell(ecl_party_x)),
+                         machine_.variable(game_cell(ecl_party_y)),
                          facing.value_or(MapDirection::north)};
     if (next.x >= 16 || next.y >= 16 || !facing)
     {
@@ -926,9 +927,9 @@ void RolfTourSession::publish_pose()
     snapshot_.overland = overland();
     if (overland())
     {
-        snapshot_.overland_x = machine_.variable(ecl_overland_x);
-        snapshot_.overland_y = machine_.variable(ecl_overland_y);
-        snapshot_.overland_direction = machine_.variable(ecl_overland_direction) % 8;
+        snapshot_.overland_x = machine_.variable(game_cell(ecl_overland_x));
+        snapshot_.overland_y = machine_.variable(game_cell(ecl_overland_y));
+        snapshot_.overland_direction = machine_.variable(game_cell(ecl_overland_direction)) % 8;
     }
     else
     {
@@ -946,7 +947,7 @@ Image RolfTourSession::observe_view()
         // DrawOverlandWindow): each shows its own tile while its condition holds.
         const auto variable = [&](std::uint16_t address)
         {
-            return machine_.variable(EclAddress{address});
+            return machine_.variable(game_cell(EclAddress{address}));
         };
         const OverlandView view{
             town_->overland->window_start[travel_mode_ - 2] + snapshot_.overland_x,
@@ -1049,8 +1050,9 @@ void RolfTourSession::handle_host(const EclRequest &request)
         const auto routines = ecl_engine_routines(game());
         if (service == EclAddress{routines.move_forward})
         {
-            const auto facing = map_direction(machine_.variable(ecl_party_facing));
-            PartyPose pose{machine_.variable(ecl_party_x), machine_.variable(ecl_party_y),
+            const auto facing = map_direction(machine_.variable(game_cell(ecl_party_facing)));
+            PartyPose pose{machine_.variable(game_cell(ecl_party_x)),
+                           machine_.variable(game_cell(ecl_party_y)),
                            facing.value_or(MapDirection::north)};
             if (pose.x >= 16 || pose.y >= 16 || !facing)
             {
@@ -1059,22 +1061,24 @@ void RolfTourSession::handle_host(const EclRequest &request)
             pose.x = (static_cast<int>(pose.x) + step_x(pose.facing) + 16) % 16;
             pose.y = (static_cast<int>(pose.y) + step_y(pose.facing) + 16) % 16;
             const auto &cell = map_.at(pose.x, pose.y);
-            reply.writes = {{ecl_party_x, static_cast<std::uint16_t>(pose.x)},
-                            {ecl_party_y, static_cast<std::uint16_t>(pose.y)},
-                            {ecl_wall_ahead, cell.walls[index(pose.facing)]},
-                            {ecl_cell_event, cell.event_raw}};
+            reply.writes = {{game_cell(ecl_party_x), static_cast<std::uint16_t>(pose.x)},
+                            {game_cell(ecl_party_y), static_cast<std::uint16_t>(pose.y)},
+                            {game_cell(ecl_wall_ahead), cell.walls[index(pose.facing)]},
+                            {game_cell(ecl_cell_event), cell.event_raw}};
         }
         else if (service == EclAddress{routines.redraw_view} ||
                  service == EclAddress{routines.refresh_wall_ahead})
         {
-            const auto x = machine_.variable(ecl_party_x), y = machine_.variable(ecl_party_y),
-                       f = machine_.variable(ecl_party_facing);
+            const auto x = machine_.variable(game_cell(ecl_party_x)),
+                       y = machine_.variable(game_cell(ecl_party_y)),
+                       f = machine_.variable(game_cell(ecl_party_facing));
             if (x >= 16 || y >= 16 || f >= 4)
             {
                 throw EclError("Invalid redraw pose");
             }
             const auto &cell = map_.at(x, y);
-            reply.writes = {{ecl_wall_ahead, cell.walls[f]}, {ecl_cell_event, cell.event_raw}};
+            reply.writes = {{game_cell(ecl_wall_ahead), cell.walls[f]},
+                            {game_cell(ecl_cell_event), cell.event_raw}};
             ++snapshot_.redraws;
             // Curse's redraw draws the view over the picture a script showed.
             if (game() != GoldBoxGame::pool_of_radiance &&
@@ -1101,7 +1105,7 @@ void RolfTourSession::handle_host(const EclRequest &request)
             // The original plays its footstep for selector 8 and its fireball
             // for 10, Valhingen Graveyard's thunder (coab CMD_Call). Curse
             // plays the footstep for any other selector too.
-            auto selector = machine_.variable(EclAddress{0x03DE});
+            auto selector = machine_.variable(game_cell(EclAddress{0x03DE}));
             if (game() != GoldBoxGame::pool_of_radiance && selector != 10)
             {
                 selector = 8;
@@ -1353,7 +1357,8 @@ bool RolfTourSession::explore(ExplorationCommand command)
         {
             const auto direction = static_cast<unsigned>(command) -
                                    static_cast<unsigned>(ExplorationCommand::north);
-            machine_.bind_variable(ecl_overland_direction, static_cast<std::uint16_t>(direction));
+            machine_.bind_variable(game_cell(ecl_overland_direction),
+                                   static_cast<std::uint16_t>(direction));
             snapshot_.overland_direction = direction;
             pending_movement_ = command;
             begin_event(EventTrigger::step);
@@ -1407,12 +1412,13 @@ bool RolfTourSession::explore(ExplorationCommand command)
         pose.x = x;
         pose.y = y;
     }
-    machine_.bind_variable(ecl_party_x, static_cast<std::uint16_t>(pose.x));
-    machine_.bind_variable(ecl_party_y, static_cast<std::uint16_t>(pose.y));
-    machine_.bind_variable(ecl_party_facing, static_cast<std::uint16_t>(index(pose.facing)));
+    machine_.bind_variable(game_cell(ecl_party_x), static_cast<std::uint16_t>(pose.x));
+    machine_.bind_variable(game_cell(ecl_party_y), static_cast<std::uint16_t>(pose.y));
+    machine_.bind_variable(game_cell(ecl_party_facing),
+                           static_cast<std::uint16_t>(index(pose.facing)));
     const auto &cell = map_.at(pose.x, pose.y);
-    machine_.bind_variable(ecl_wall_ahead, cell.walls[index(pose.facing)]);
-    machine_.bind_variable(ecl_cell_event, cell.event_raw);
+    machine_.bind_variable(game_cell(ecl_wall_ahead), cell.walls[index(pose.facing)]);
+    machine_.bind_variable(game_cell(ecl_cell_event), cell.event_raw);
     publish_pose();
     return true;
 }
