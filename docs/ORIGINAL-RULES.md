@@ -313,9 +313,11 @@ gear.
      Sleep work; Detect Magic changes nothing in a fight; Enlarge and Reduce
      come with Strength in 8b. A character has its race's innate effects:
      the Constitution saves of dwarves, gnomes and halflings and the elf's
-     and half-elf's resistance to sleep and charm. The dwarf's and gnome's
-     attack bonuses and defenses against their foes come next, with the
-     names of those foes.
+     and half-elf's resistance to sleep and charm. A dwarf strikes orcs,
+     goblins and hobgoblins (and GAGOOL and MACE) 1 better and a gnome
+     kobolds and goblins; giants (ogres, trolls, fire and hill giants) strike
+     both 4 worse, and bugbears and gnolls a gnome, by the monster's record
+     name (`kin_of`).
    - 8b. The second- and third-level spells.
    - 8c. *Done 2026-11-12:* turning undead, once a fight for one with cleric
      levels: one d20 for the whole attempt against up to 1d12 undead enemies
@@ -385,6 +387,7 @@ tuned with the AI lab once the original rules play.
 | A free attack's check that an attacker sees the invisible reads the creature leaving instead (`cbtacts.pas`, `AttacksOfOpportunity`) | The attacker's own sight |
 | Magic Missile throws level div 2 missiles, none at level 1, where the manual promises one at levels 1 and 2 (`magic.pas`, the missile) | One missile for every two levels from level 1, as the manual says |
 | Protection from Evil or Good takes 2 from an evil or good attacker's roll before that roll is made, which overwrites it (`effhndlr.pas`, `EffProtEvil`) | The 2 counts |
+| A dwarf's or gnome's defense against giants judges the defender's own target instead of the attacker, and reads eight names from its list of five (`effhndlr.pas`, `EffDwarfGiantDefense`) | The attacker, among the five giants |
 | A level drain divides by the victim's class levels, so a creature without any (a monster) divides by zero (`effhndlr.pas`, the level drain) | It loses its highest level's share |
 | A level drain keeps the drained class's level as the victim's highest level, so a fighter 5 / thief 6 drained in fighter counts as level 4 (`effhndlr.pas`, the level drain) | The highest of its classes |
 | Each hit of a holding bite's own bite starts another hold, stacking holds on the biter and immobility on the victim, which can outlast the fight (`effhndlr.pas`, `EffBiteHold`) | One hold at a time |

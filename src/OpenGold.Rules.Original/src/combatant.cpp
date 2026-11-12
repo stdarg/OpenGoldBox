@@ -11,7 +11,7 @@ namespace opengold::original
 namespace
 {
 
-constexpr std::string_view profile_format = "combatant9";
+constexpr std::string_view profile_format = "combatant10";
 
 std::vector<int> numbers_of(const Combatant &c)
 {
@@ -38,7 +38,7 @@ std::vector<int> numbers_of(const Combatant &c)
                     after.modifier, missile.empty_handed_backstabs ? 1 : 0});
     numbers.insert(numbers.end(), c.class_levels.begin(), c.class_levels.end());
     numbers.insert(numbers.end(),
-                   {c.strength, c.undead_level, c.constitution, c.alignment, c.creature_type,
+                   {c.strength, c.undead_level, c.constitution, c.alignment, c.creature_type, c.kin,
                     c.race, c.striker ? 1 : 0, c.striker ? c.striker->plus : 0,
                     c.striker && c.striker->silver ? 1 : 0, c.striker ? c.striker->weapon_class : 0,
                     c.weapon_type, c.wards_gaze ? 1 : 0, c.save_bonus,
@@ -164,6 +164,7 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     c.constitution = *next++;
     c.alignment = *next++;
     c.creature_type = *next++;
+    c.kin = *next++;
     c.race = *next++;
     if (*next++ != 0)
     {
@@ -346,6 +347,42 @@ bool wards_gaze(const por::ItemRecord &item)
     return mirror || holy_symbol;
 }
 
+// The kind of foe a monster is to the races that know it, by its record's
+// name, for a monster of creature type 1: a dwarf's foes and a gnome's of one
+// square, giants that stand two squares tall, and bugbears and gnolls
+// (effhndlr.pas, the racial attack bonuses and defenses).
+int kin_of(const por::CharacterRecord &record)
+{
+    if (record.type != 1)
+    {
+        return 0;
+    }
+    const auto named = [&record](std::initializer_list<std::string_view> names)
+    {
+        return std::find(names.begin(), names.end(), record.name) != names.end();
+    };
+    const int icon = record.icon_size_raw;
+    int kinds = 0;
+    if (icon == 1 && named({"ORC", "ORC LEADER", "GOBLIN", "GOBLIN LEADER", "HOBGOBLIN",
+                            "HOBGOBLIN CHIEF", "GAGOOL", "MACE"}))
+    {
+        kinds |= kin::dwarf_foe;
+    }
+    if (icon == 1 && named({"KOBOLD", "KOBOLD LEADER", "GOBLIN", "GOBLIN LEADER"}))
+    {
+        kinds |= kin::gnome_foe;
+    }
+    if ((icon & 0x7F) == 2 && named({"OGRE", "OGRE LEADER", "TROLL", "FIRE GIANT", "HILL GIANT"}))
+    {
+        kinds |= kin::giant;
+    }
+    if (named({"BUGBEAR", "GNOLL"}))
+    {
+        kinds |= kin::bugbear;
+    }
+    return kinds;
+}
+
 } // namespace
 
 Combatant combatant_from_record(const por::CharacterRecord &record,
@@ -482,6 +519,7 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     c.constitution = record.current_abilities.constitution;
     c.alignment = record.alignment;
     c.creature_type = record.type;
+    c.kin = kin_of(record);
     // Memorized spells; those still being learned (bit 0x80) are not ready.
     for (const auto spell : record.memorized_spells)
     {

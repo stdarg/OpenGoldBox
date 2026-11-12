@@ -1924,6 +1924,57 @@ void cure_light_wounds_stops_bleeding()
           "The cure lands, and the healed member stays down");
 }
 
+// The kinds of foe the races know, from a monster's record name (gdconsts.pas).
+void races_know_their_foes()
+{
+    auto orc = kobold_record();
+    orc.name = "ORC";
+    orc.type = 1;
+    orc.icon_size_raw = 1;
+    auto giant = orc;
+    giant.name = "HILL GIANT";
+    giant.icon_size_raw = 2;
+    check(original::combatant_from_record(orc).kin == original::kin::dwarf_foe &&
+              original::combatant_from_record(giant).kin == original::kin::giant,
+          "An orc is a dwarf's foe, a hill giant a giant");
+
+    // A giant hitting on 11 or better strikes a gnome, 4 harder to hit, less often.
+    const auto hits_on = [](int race)
+    {
+        auto target = creature(10000);
+        target.race = race;
+        if (race == 3)
+        {
+            target.effects = {{47, 0, 255, false}};
+        }
+        auto ogre = creature(10000, 6);
+        ogre.thac0 = 21;
+        ogre.kin = original::kin::giant;
+        auto fight = arrange({{"Target", rules::Side::party, {3, 3}, target},
+                              {"Ogre", rules::Side::opposition, {4, 3}, ogre}},
+                             97);
+        auto &session = *fight.session;
+        play_until(
+            session,
+            [&](const std::string &actor)
+            {
+                if (actor == "Ogre")
+                {
+                    return order(session, "melee", "Target");
+                }
+                return order(session, "end");
+            },
+            [&]
+            {
+                return session.snapshot().round > 200;
+            },
+            1000);
+        return logged(session, "{attacker} hits {name} for {damage}.", "Ogre");
+    };
+    const int human = hits_on(7), gnome = hits_on(3);
+    check(gnome + 25 < human, "A giant hits a gnome far less often than a human");
+}
+
 } // namespace
 
 int main()
@@ -1970,6 +2021,7 @@ int main()
         sleep_takes_the_weak();
         charm_person_turns_a_foe();
         cure_light_wounds_stops_bleeding();
+        races_know_their_foes();
         real_records_fight();
         std::cout << "Original-rules combat passed.\n";
     }

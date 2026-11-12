@@ -866,6 +866,15 @@ int attack_modifier(const Fighter &attacker, const Fighter &defender)
     {
         modifier -= 4;
     }
+    // A dwarf or gnome strikes its foes 1 better, and giants, bugbears and
+    // gnolls strike it 4 worse (effhndlr.pas, 18, 26, 47, 48). The original
+    // judged the giant by the defender's own target instead of the attacker,
+    // reading eight names from its list of five (obvious bugs, fixed).
+    const int foe = defender.numbers.kin, kind = attacker.numbers.kin;
+    modifier += attacker.has(26) && (foe & kin::dwarf_foe) ? 1 : 0;
+    modifier += attacker.has(18) && (foe & kin::gnome_foe) ? 1 : 0;
+    modifier -= defender.has(47) && (kind & kin::giant) ? 4 : 0;
+    modifier -= defender.has(48) && (kind & kin::bugbear) ? 4 : 0;
     const int alignment = attacker.numbers.alignment;
     const bool evil = alignment == 2 || alignment == 5 || alignment == 8;
     const bool good = alignment == 0 || alignment == 3 || alignment == 6;

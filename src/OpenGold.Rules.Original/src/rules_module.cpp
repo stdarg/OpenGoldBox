@@ -61,6 +61,9 @@ Combatant character_combatant(const CharacterSheet &sheet)
     // Constitution saves against poison (90) and against spells and wands
     // (97), and the elf's and half-elf's resistance to sleep and charm (107, 124).
     constexpr int dwarf = 1, elf = 2, gnome = 3, half_elf = 4, halfling = 5;
+    // A dwarf's and a gnome's bonus against their foes (26, 18), their
+    // defense against giants (47), and a gnome's against bugbears (48).
+    constexpr int dwarf_attack = 26, gnome_attack = 18, giant_defense = 47, bugbear_defense = 48;
     const auto innate = [&c](int code)
     {
         c.effects.push_back({code, 0, 255, false});
@@ -72,6 +75,19 @@ Combatant character_combatant(const CharacterSheet &sheet)
     if (c.race == dwarf || c.race == halfling || c.race == gnome)
     {
         innate(97);
+    }
+    if (c.race == dwarf)
+    {
+        innate(dwarf_attack);
+    }
+    if (c.race == gnome)
+    {
+        innate(gnome_attack);
+        innate(bugbear_defense);
+    }
+    if (c.race == dwarf || c.race == gnome)
+    {
+        innate(giant_defense);
     }
     if (c.race == elf)
     {

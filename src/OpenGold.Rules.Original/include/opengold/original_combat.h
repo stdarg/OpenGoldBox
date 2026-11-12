@@ -128,6 +128,9 @@ struct Combatant
     // (0 lawful good to 8 chaotic evil, in the original's order); and its
     // creature type (above 1, Charm Person cannot charm it).
     int constitution{10}, alignment{4}, creature_type{};
+    // The kind of foe it is to the races that know it (Combatant::kin bits):
+    // a dwarf's or a gnome's sworn foe, a giant, a bugbear or gnoll.
+    int kin{};
     // The spells it has memorized, by number (original_spells.h), a copy each.
     std::vector<int> spells;
     // Its race by the original's numbers: 0 a monster, then dwarf, elf,
@@ -151,6 +154,13 @@ struct Combatant
     [[nodiscard]] static std::optional<Combatant> decode(std::string_view data);
     bool operator==(const Combatant &) const = default;
 };
+
+// The kinds of foe the races know (chargen.pas and gdconsts.pas): bits of
+// Combatant::kin, from the monster's record name.
+namespace kin
+{
+inline constexpr int dwarf_foe = 1, gnome_foe = 2, giant = 4, bugbear = 8;
+} // namespace kin
 
 // An item a creature carries, with its type (ITEMS); it fights with those it
 // has readied (por::ItemRecord::readied).
