@@ -194,7 +194,17 @@ gear.
    172 records fights with sensible numbers, and the Slums' kobolds fight a
    party to the end.
 3. The rest of melee: free attacks, guarding, delaying, attacks from behind,
-   backstabs, sweeps, bandaging.
+   backstabs, sweeps, bandaging. *Done 2026-11-12:* creatures face one of
+   eight directions and turn toward an attacker until a third attacks them in
+   a turn; the attacks on a creature and their angles count toward an attack
+   from behind (its Armor Class from behind) and a thief's backstab (that
+   Armor Class less 2, level div 4 + 2 times the damage). Stepping away from
+   an enemy draws its free attack; a guard strikes an enemy coming next to it;
+   Delay acts again at initiative 1; a fighter among more level-0 enemies than
+   its attacks sweeps through up to its level of them; bandaging needs the
+   dying member next to the one bandaging (the user, 2026-11-12). Guard is
+   offered to every creature until step 4 tells ranged weapons apart: the
+   original offers it only without one, or with a throwable one.
 4. Missiles: rates of fire, ammunition, distance, thrown weapons.
 5. Morale, fleeing and surrender.
 6. Saving throws, then the monsters' special abilities (MONnSPC).

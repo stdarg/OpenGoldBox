@@ -11,7 +11,7 @@ namespace opengold::original
 namespace
 {
 
-constexpr std::string_view profile_format = "combatant1";
+constexpr std::string_view profile_format = "combatant2";
 
 std::vector<int> numbers_of(const Combatant &c)
 {
@@ -24,7 +24,10 @@ std::vector<int> numbers_of(const Combatant &c)
     }
     numbers.insert(numbers.end(), c.saving_throws.begin(), c.saving_throws.end());
     numbers.insert(numbers.end(), {c.level, c.attack_level, c.initiative_bonus,
-                                   static_cast<int>(c.morale), c.intelligence});
+                                   static_cast<int>(c.morale), c.intelligence, c.thief_level,
+                                   c.backstabs ? 1 : 0, c.large ? 1 : 0, c.large_attack ? 1 : 0});
+    const auto large = c.large_attack.value_or(AttackForm{});
+    numbers.insert(numbers.end(), {large.dice, large.sides, large.modifier});
     return numbers;
 }
 
@@ -87,6 +90,14 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     c.initiative_bonus = *next++;
     c.morale = static_cast<unsigned>(*next++);
     c.intelligence = *next++;
+    c.thief_level = *next++;
+    c.backstabs = *next++ != 0;
+    c.large = *next++ != 0;
+    const bool large_attack = *next++ != 0;
+    if (large_attack)
+    {
+        c.large_attack = AttackForm{c.attacks[0].rate_per_two_rounds, next[0], next[1], next[2]};
+    }
     if (c.max_hit_points < 1 || c.movement < 0 ||
         std::any_of(
             c.attacks.begin(), c.attacks.end(),
@@ -217,6 +228,11 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
             plus += arrows->item.magic_bonus;
         }
         c.attacks[0].modifier += plus;
+        // Against a large creature the weapon's large dice and modifier take
+        // the small ones' place (cbtacts.pas, RollAttacks).
+        c.large_attack = AttackForm{
+            c.attacks[0].rate_per_two_rounds, type.large_damage.count, type.large_damage.sides,
+            c.attacks[0].modifier - type.small_medium_damage.modifier + type.large_damage.modifier};
         if (record.race == elf_race && elf_weapon(weapon->item.type))
         {
             ++plus;
@@ -272,6 +288,16 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     c.initiative_bonus = dexterity_missile_bonus(dexterity);
     c.morale = record.npc_flag;
     c.intelligence = record.current_abilities.intelligence;
+    c.thief_level = l.thief;
+    // A backstab needs no armor or leather (type 50), and no weapon, a club (7),
+    // a dagger (8) or a broad, long or short sword (35 to 37) (cbtacts.pas, IsBackstab).
+    const auto *armor = readied_in(carried, 2);
+    const auto weapon_type = weapon ? weapon->item.type : std::uint8_t{0};
+    c.backstabs = l.thief > 0 && (!armor || armor->item.type == 50) &&
+                  (!weapon || weapon_type == 7 || weapon_type == 8 ||
+                   (weapon_type >= 35 && weapon_type <= 37));
+    // The combat icon's size: above 0x80, or a size above 1 (cbtacts.pas, RollAttacks).
+    c.large = record.icon_size_raw > 0x80 || (record.icon_size_raw & 7) > 1;
     return c;
 }
 

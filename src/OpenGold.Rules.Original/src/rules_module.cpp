@@ -49,6 +49,9 @@ Combatant character_combatant(const CharacterSheet &sheet)
     c.attack_level = fighter > 0 ? fighter : 1;
     c.initiative_bonus = dexterity_missile_bonus(dexterity);
     c.intelligence = sheet.scores[Ability::intelligence];
+    c.thief_level = original.class_levels[static_cast<std::size_t>(ClassSlot::thief)];
+    // Unarmed and unarmored, a thief can backstab.
+    c.backstabs = c.thief_level > 0;
     return c;
 }
 

@@ -46,6 +46,16 @@ struct Combatant
     // The record's NPC byte: from 0x80 up, (byte & 0x7F) * 2 is its morale.
     unsigned morale{};
     int intelligence{10};
+    // A thief's level, and whether its armor and weapon let it backstab: no
+    // armor or leather, and no weapon, a club, a dagger or a sword.
+    int thief_level{};
+    bool backstabs{};
+    // The first attack's dice and modifier against a large creature, when a
+    // readied weapon has its own for them; its rate is the first attack's.
+    std::optional<AttackForm> large_attack;
+    // A large creature (its combat icon's size), which weapons strike with
+    // their dice for large creatures.
+    bool large{};
 
     [[nodiscard]] std::string encode() const;
     [[nodiscard]] static std::optional<Combatant> decode(std::string_view data);

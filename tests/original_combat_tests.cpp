@@ -6,9 +6,11 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -336,6 +338,354 @@ void real_records_fight()
           "A fight with the Slums' kobolds ends");
 }
 
+// A creature of hand-made numbers placed on an open field.
+struct Placed
+{
+    std::string name;
+    rules::Side side;
+    rules::Cell cell;
+    original::Combatant numbers;
+};
+
+original::Combatant creature(int hit_points, int level = 1)
+{
+    original::Combatant c;
+    c.hit_points = c.max_hit_points = hit_points;
+    c.attacks[0] = {2, 1, 2, 0};
+    c.level = level;
+    return c;
+}
+
+Fight arrange(const std::vector<Placed> &placed, std::uint64_t seed)
+{
+    Fight fight{original::rules_module(), nullptr};
+    rules::Encounter encounter;
+    encounter.battlefield = {8, 8, std::vector<rules::Terrain>(64, rules::Terrain::open)};
+    rules::EntityId id = 1;
+    for (const auto &p : placed)
+    {
+        rules::Participant participant;
+        participant.id = id++;
+        participant.name = p.name;
+        participant.definition = p.side == rules::Side::party ? "member" : "monster";
+        participant.side = p.side;
+        participant.cell = p.cell;
+        participant.character_profile = p.numbers.encode();
+        encounter.participants.push_back(participant);
+    }
+    fight.session = fight.module->create(std::move(encounter), seed);
+    return fight;
+}
+
+const rules::CombatantView &view_of(const rules::Snapshot &state, std::string_view name)
+{
+    return *std::find_if(state.combatants.begin(), state.combatants.end(),
+                         [name](const rules::CombatantView &v)
+                         {
+                             return v.name == name;
+                         });
+}
+
+std::string actor_name(const rules::CombatSession &session)
+{
+    const auto state = session.snapshot();
+    for (const auto &v : state.combatants)
+    {
+        if (v.id == state.actor)
+        {
+            return v.name;
+        }
+    }
+    return {};
+}
+
+// The legal command of this verb, at this target or destination when given.
+std::optional<rules::Command> offered(const rules::CombatSession &session, std::string_view verb,
+                                      std::string_view target = {},
+                                      std::optional<rules::Cell> destination = {})
+{
+    const auto state = session.snapshot();
+    for (const auto &c : session.legal_commands())
+    {
+        if (c.verb == verb && (target.empty() || c.target == view_of(state, target).id) &&
+            (!destination || c.destination == *destination))
+        {
+            return c;
+        }
+    }
+    return std::nullopt;
+}
+
+rules::Command order(const rules::CombatSession &session, std::string_view verb,
+                     std::string_view target = {}, std::optional<rules::Cell> destination = {})
+{
+    const auto command = offered(session, verb, target, destination);
+    check(command.has_value(), actor_name(session) + " is offered " + std::string(verb));
+    return *command;
+}
+
+// How many log entries have this template, from this attacker when given.
+int logged(const rules::CombatSession &session, std::string_view source,
+           std::string_view attacker = {})
+{
+    int count = 0;
+    for (const auto &entry : session.snapshot().log_entries)
+    {
+        const bool by = attacker.empty() ||
+                        std::any_of(entry.message.arguments.begin(), entry.message.arguments.end(),
+                                    [attacker](const rules::MessageArgument &a)
+                                    {
+                                        return a.name == "attacker" && a.value == attacker;
+                                    });
+        count += entry.message.source == source && by ? 1 : 0;
+    }
+    return count;
+}
+
+// Each creature does what the policy gives it until the condition holds.
+void play_until(rules::CombatSession &session,
+                const std::function<rules::Command(const std::string &actor)> &policy,
+                const std::function<bool()> &done, unsigned steps = 200)
+{
+    for (unsigned step = 0;
+         step < steps && !done() && session.snapshot().outcome == rules::Outcome::ongoing; ++step)
+    {
+        check(session.submit(policy(actor_name(session))), "Every chosen command is legal");
+    }
+}
+
+// A guard strikes an enemy that comes next to it; one that only ended its
+// actions does not (cbtacts.pas, GuardersAttack).
+void a_guard_strikes_who_comes_near()
+{
+    for (const bool guards : {true, false})
+    {
+        auto kobold = creature(50, 0);
+        kobold.movement = 6;
+        auto fight = arrange({{"Guard", rules::Side::party, {1, 3}, creature(50)},
+                              {"Kobold", rules::Side::opposition, {5, 3}, kobold}},
+                             3);
+        auto &session = *fight.session;
+        bool came = false;
+        play_until(
+            session,
+            [&](const std::string &actor)
+            {
+                if (actor == "Guard")
+                {
+                    return order(session, guards ? "guard" : "end");
+                }
+                const bool ready = logged(session, "{name} guards.") > 0 || !guards;
+                if (ready && !came && session.snapshot().round > 1)
+                {
+                    came = true;
+                    return order(session, "move", {}, rules::Cell{2, 3});
+                }
+                return order(session, "end");
+            },
+            [&]
+            {
+                return came;
+            });
+        check(came, "The kobold comes next to the guard");
+        check(logged(session, "{attacker} strikes from guard.", "Guard") == (guards ? 1 : 0),
+              guards ? "The guard strikes it" : "One not guarding does not");
+    }
+}
+
+// Stepping away from an enemy draws its free attack, as from behind
+// (cbtacts.pas, AttacksOfOpportunity).
+void leaving_an_enemy_draws_a_free_attack()
+{
+    auto fight = arrange({{"Fighter", rules::Side::party, {3, 3}, creature(50)},
+                          {"Kobold", rules::Side::opposition, {4, 3}, creature(50, 0)}},
+                         5);
+    auto &session = *fight.session;
+    bool left = false;
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            if (actor == "Kobold")
+            {
+                left = true;
+                return order(session, "move", {}, rules::Cell{7, 3});
+            }
+            return order(session, "end");
+        },
+        [&]
+        {
+            return left;
+        });
+    check(logged(session, "{attacker} strikes {name} leaving.", "Fighter") == 1,
+          "The fighter strikes the kobold as it leaves");
+    check(logged(session, "{attacker} hits {name} for {damage}.", "Fighter") +
+                  logged(session, "{attacker} misses {name}.", "Fighter") ==
+              1,
+          "Once");
+}
+
+// Delay: the creature acts again later in the round, at initiative 1 (combat.pas, DoneMenu).
+void delay_acts_later_in_the_round()
+{
+    auto fight = arrange({{"A", rules::Side::party, {0, 1}, creature(20)},
+                          {"B", rules::Side::party, {0, 3}, creature(20)},
+                          {"C", rules::Side::party, {0, 5}, creature(20)},
+                          {"Kobold", rules::Side::opposition, {7, 3}, creature(20, 0)}},
+                         9);
+    auto &session = *fight.session;
+    const auto first = actor_name(session);
+    session.submit(order(session, "delay"));
+    check(view_of(session.snapshot(), first).initiative == 1, "Delaying leaves initiative 1");
+    check(actor_name(session) != first || session.snapshot().combatants.front().initiative == 1,
+          "Another acts first unless all are at 1");
+    bool again = false;
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            again = actor == first && session.snapshot().round == 1;
+            return order(session, "end");
+        },
+        [&]
+        {
+            return again || session.snapshot().round > 1;
+        });
+    check(again, first + " acts again in the same round");
+}
+
+// A thief behind a defender that has stopped turning to face its attackers
+// backstabs: against its Armor Class from behind, for its level div 4 + 2
+// times the damage (cbtacts.pas, IsBackstab). Another in that place does not.
+void a_thief_backstabs_from_behind()
+{
+    for (const bool thief : {true, false})
+    {
+        auto third = creature(50);
+        third.thief_level = thief ? 1 : 0;
+        third.backstabs = thief;
+        auto fight = arrange({{"A", rules::Side::party, {2, 3}, creature(50)},
+                              {"B", rules::Side::party, {3, 2}, creature(50)},
+                              {"Thief", rules::Side::party, {3, 4}, third},
+                              {"Ogre", rules::Side::opposition, {3, 3}, creature(1000, 0)}},
+                             13);
+        auto &session = *fight.session;
+        play_until(
+            session,
+            [&](const std::string &actor)
+            {
+                if (actor == "Ogre")
+                {
+                    return order(session, "end");
+                }
+                if (actor == "Thief" && view_of(session.snapshot(), actor).initiative > 1)
+                {
+                    return order(session, "delay");
+                }
+                return order(session, "melee", "Ogre");
+            },
+            [&]
+            {
+                return logged(session, "{attacker} backstabs {name}.") > 0;
+            });
+        check((logged(session, "{attacker} backstabs {name}.", "Thief") > 0) == thief,
+              thief ? "The thief backstabs" : "A fighter there does not");
+        const auto &entries = session.snapshot().log_entries;
+        for (std::size_t n = 0; n + 1 < entries.size(); ++n)
+        {
+            if (entries[n].message.source == "{attacker} backstabs {name}." &&
+                entries[n + 1].message.source == "{attacker} hits {name} for {damage}.")
+            {
+                check(std::stoi(entries[n + 1].message.arguments[2].value) % 2 == 0,
+                      "A level-1 thief's backstab does double damage");
+            }
+        }
+    }
+}
+
+// A fighter among more level-0 enemies than its attacks sweeps through as
+// many as its level (cbtacts.pas, SweepAttack); a level-1 fighter does not.
+void a_fighter_sweeps_level_0_enemies()
+{
+    for (const int level : {3, 1})
+    {
+        auto fighter_numbers = creature(50, level);
+        fighter_numbers.attack_level = level;
+        auto fight = arrange({{"Fighter", rules::Side::party, {3, 3}, fighter_numbers},
+                              {"K1", rules::Side::opposition, {2, 3}, creature(50, 0)},
+                              {"K2", rules::Side::opposition, {4, 3}, creature(50, 0)},
+                              {"K3", rules::Side::opposition, {3, 2}, creature(50, 0)},
+                              {"K4", rules::Side::opposition, {3, 4}, creature(50, 0)}},
+                             17);
+        auto &session = *fight.session;
+        bool struck = false;
+        play_until(
+            session,
+            [&](const std::string &actor)
+            {
+                if (actor == "Fighter")
+                {
+                    struck = true;
+                    return order(session, "melee", "K1");
+                }
+                return order(session, "end");
+            },
+            [&]
+            {
+                return struck;
+            });
+        const int swings = logged(session, "{attacker} hits {name} for {damage}.", "Fighter") +
+                           logged(session, "{attacker} misses {name}.", "Fighter");
+        check(logged(session, "{attacker} sweeps.", "Fighter") == (level == 3 ? 1 : 0) &&
+                  swings == (level == 3 ? 3 : 1),
+              level == 3 ? "A level-3 fighter sweeps through three kobolds"
+                         : "A level-1 fighter strikes once");
+    }
+}
+
+// Only a party member next to a dying one can bandage it (the user, 2026-11-12).
+void bandage_needs_a_neighbor()
+{
+    auto ogre = creature(1000, 0);
+    ogre.thac0 = 0;
+    ogre.movement = 0;
+    ogre.attacks[0] = {2, 1, 1, 5};
+    auto fight = arrange({{"Victim", rules::Side::party, {4, 3}, creature(1)},
+                          {"Helper", rules::Side::party, {3, 3}, creature(50)},
+                          {"Far", rules::Side::party, {0, 0}, creature(50)},
+                          {"Ogre", rules::Side::opposition, {5, 3}, ogre}},
+                         19);
+    auto &session = *fight.session;
+    bool far_offered = false;
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            const bool dying = view_of(session.snapshot(), "Victim").status == "dying";
+            if (actor == "Ogre" && !dying && view_of(session.snapshot(), "Victim").conscious)
+            {
+                return order(session, "melee", "Victim");
+            }
+            if (actor == "Far")
+            {
+                far_offered = far_offered || offered(session, "bandage", "Victim").has_value();
+            }
+            if (actor == "Helper" && dying)
+            {
+                return order(session, "bandage", "Victim");
+            }
+            return order(session, "end");
+        },
+        [&]
+        {
+            return logged(session, "{name} is bandaged.") > 0;
+        });
+    check(logged(session, "{name} is bandaged.") == 1 &&
+              view_of(session.snapshot(), "Victim").status == "unconscious",
+          "The member next to the dying one bandages it");
+    check(!far_offered, "One across the field cannot");
+}
+
 } // namespace
 
 int main()
@@ -346,6 +696,12 @@ int main()
         a_melee_fight_resolves();
         a_saved_fight_goes_on_unchanged();
         readied_gear_counts();
+        a_guard_strikes_who_comes_near();
+        leaving_an_enemy_draws_a_free_attack();
+        delay_acts_later_in_the_round();
+        a_thief_backstabs_from_behind();
+        a_fighter_sweeps_level_0_enemies();
+        bandage_needs_a_neighbor();
         real_records_fight();
         std::cout << "Original-rules combat passed.\n";
     }

@@ -26,7 +26,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 1";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 2";
 
 enum class Condition : unsigned
 {
@@ -53,7 +53,18 @@ struct Fighter
     int initiative{};
     int half_moves{};
     std::array<int, 2> attacks_left{};
+    // The attack form it strikes with next: the second (1) before the first (0).
+    int attack_phase{1};
+    // How many level-0 enemies it may still sweep through: its attack level,
+    // until its first attack of the round.
+    int sweep_budget{};
     bool surprised{};
+    // Facing, 0 north and clockwise to 7 north-west.
+    int direction{};
+    // Attacks on it since its own turn began, and the sum of their angles from
+    // its facing (0 to 4), mod 8 (cbtacts.pas, NoteAttackDirection).
+    int flank_count{}, flank_spread{};
+    bool guarding{};
 
     [[nodiscard]] bool able() const noexcept
     {
@@ -83,6 +94,55 @@ bool adjacent(const Fighter &a, const Fighter &b)
     const int dx = gap(a.cell.x, a.footprint.width, b.cell.x, b.footprint.width);
     const int dy = gap(a.cell.y, a.footprint.height, b.cell.y, b.footprint.height);
     return std::max(dx, dy) == 1;
+}
+
+// The original's eight directions: 0 north and clockwise to 7 north-west.
+constexpr std::array<int, 8> step_x{0, 1, 1, 1, 0, -1, -1, -1};
+constexpr std::array<int, 8> step_y{-1, -1, 0, 1, 1, 1, 0, -1};
+
+// Whether a direction leads from one cell toward another: the other cell lies
+// in the 90-degree cone around the cell one step that way (pathing.pas, IsDirToward).
+bool leads_toward(Cell from, Cell to, int direction)
+{
+    const int nx = from.x + step_x[static_cast<std::size_t>(direction)];
+    const int ny = from.y + step_y[static_cast<std::size_t>(direction)];
+    const int tx = to.x, ty = to.y;
+    if (from == to || (nx == tx && ny == ty))
+    {
+        return true;
+    }
+    switch (direction)
+    {
+    case 0:
+        return (tx >= nx && ty <= nx - tx + ny) || (tx <= nx && ty <= tx - nx + ny);
+    case 1:
+        return (tx >= nx && ty <= nx - tx + ny) || (tx >= nx + ny - ty && ty <= ny);
+    case 2:
+        return (tx >= nx + ny - ty && ty <= ny) || (tx >= nx + ty - ny && ty >= ny);
+    case 3:
+        return (tx >= nx + ty - ny && ty >= ny) || (tx >= nx && ty >= tx - nx + ny);
+    case 4:
+        return (tx >= nx && ty >= tx - nx + ny) || (tx <= nx && ty >= nx - tx + ny);
+    case 5:
+        return (tx <= nx && ty >= nx - tx + ny) || (tx <= nx + ny - ty && ty >= ny);
+    case 6:
+        return (tx <= nx + ny - ty && ty >= ny) || (tx <= nx + ty - ny && ty <= ny);
+    default:
+        return (tx <= nx + ty - ny && ty <= ny) || (tx <= nx && ty <= tx - nx + ny);
+    }
+}
+
+// The first direction that leads from one cell toward another (cbtacts.pas, DirTowardTarget).
+int direction_toward(Cell from, Cell to)
+{
+    for (int direction = 0; direction < 8; ++direction)
+    {
+        if (leads_toward(from, to, direction))
+        {
+            return direction;
+        }
+    }
+    return 0;
 }
 
 // The English of a message: its template with each {name} replaced.
@@ -143,10 +203,11 @@ class Reader
     {
     }
 
-    long long number()
+    // Unsigned numbers read as unsigned: the random state uses all 64 bits.
+    template <class Number> Number number()
     {
         skip();
-        long long value{};
+        Number value{};
         const auto [end, error] =
             std::from_chars(text_.data() + at_, text_.data() + text_.size(), value);
         if (error != std::errc{})
@@ -159,12 +220,16 @@ class Reader
 
     template <class T> T as()
     {
-        return static_cast<T>(number());
+        if constexpr (std::is_same_v<T, std::uint64_t>)
+        {
+            return number<std::uint64_t>();
+        }
+        return static_cast<T>(number<long long>());
     }
 
     std::string text()
     {
-        const auto size = static_cast<std::size_t>(number());
+        const auto size = static_cast<std::size_t>(number<long long>());
         if (at_ >= text_.size() || text_[at_] != ':' || size > text_.size() - at_ - 1)
         {
             throw std::runtime_error("Invalid original-rules combat checkpoint");
@@ -242,7 +307,13 @@ class Session final : public rules::CombatSession
     void next_actor();
     void end_round();
     void end_actions(Fighter &fighter);
-    void melee(Fighter &attacker, Fighter &target);
+    void note_attack(const Fighter &attacker, Fighter &defender);
+    void make_attack(Fighter &attacker, Fighter &defender, bool from_behind);
+    bool sweep(Fighter &attacker, Fighter &defender);
+    void step_to(Fighter &mover, Cell next);
+    void free_attacks(Fighter &mover, Cell next);
+    void guards_strike(Fighter &mover);
+    [[nodiscard]] bool can_bandage(const Fighter &bandager, const Fighter &dying) const;
     void inflict(Fighter &target, int damage);
     void settle_outcome();
 };
@@ -290,6 +361,8 @@ void Session::begin_round()
             }
         }
         f.half_moves = 2 * f.numbers.movement;
+        f.attack_phase = 1;
+        f.sweep_budget = f.numbers.attack_level;
         for (std::size_t form = 0; form < f.attacks_left.size(); ++form)
         {
             f.attacks_left[form] = attacks_this_round(f.numbers.attacks[form].rate_per_two_rounds,
@@ -330,6 +403,10 @@ void Session::next_actor()
         }
         if (best)
         {
+            // A turn starts afresh: no flanking counted and no guard kept
+            // (combat.pas, the creature's turn).
+            best->flank_count = best->flank_spread = 0;
+            best->guarding = false;
             actor_ = best->id;
             return;
         }
@@ -356,32 +433,73 @@ void Session::end_round()
     }
 }
 
+// Its actions end: no initiative, guard or movement left, though the attacks
+// it has not made stay for a guard's strike or a free attack (charhlp.pas, EndActions).
 void Session::end_actions(Fighter &fighter)
 {
     fighter.initiative = 0;
-    fighter.attacks_left = {};
+    fighter.guarding = false;
     fighter.half_moves = 0;
 }
 
-// Each attack the attacker has left this round, against one target: d20
-// against THAC0 minus Armor Class, then the attack form's dice, until the
-// target is down (cbtacts.pas, RollAttacks).
-void Session::melee(Fighter &attacker, Fighter &target)
+// Counts an attack on the defender for flanking: one more attacker, and the
+// angle between its facing and the attack (0 to 4) added to its spread, mod 8
+// (cbtacts.pas, NoteAttackDirection).
+void Session::note_attack(const Fighter &attacker, Fighter &defender)
 {
-    for (std::size_t form = 0; form < attacker.attacks_left.size(); ++form)
+    ++defender.flank_count;
+    int angle = (direction_toward(defender.cell, attacker.cell) - defender.direction + 8) % 8;
+    if (angle > 4)
     {
-        const auto &attack = attacker.numbers.attacks[form];
-        for (; attacker.attacks_left[form] > 0; --attacker.attacks_left[form])
+        angle = 8 - angle;
+    }
+    defender.flank_spread = (defender.flank_spread + angle) % 8;
+}
+
+// An attack (cbtacts.pas, MakeAttack and RollAttacks). The defender turns to
+// face the attacker unless it is struck from behind or already attacked three
+// times. A thief backstabs a defender attacked more than once from the side it
+// faces away from, against its Armor Class from behind less 2, for its level
+// div 4 + 2 times the damage; others strike from behind there once the attacks
+// on it have spread wide. Attacks run from the attacker's current form down to
+// the first until the defender goes down; with none left its actions end.
+void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind)
+{
+    if (defender.flank_count < 3 && !from_behind)
+    {
+        defender.direction = direction_toward(defender.cell, attacker.cell);
+    }
+    attacker.direction = direction_toward(attacker.cell, defender.cell);
+    attacker.facing_left = defender.cell.x < attacker.cell.x;
+    const bool behind_its_back =
+        defender.flank_count > 1 &&
+        direction_toward(attacker.cell, defender.cell) == defender.direction;
+    const bool backstab = attacker.numbers.backstabs && behind_its_back;
+    const bool behind = from_behind || (behind_its_back && defender.flank_spread > 4);
+    const int armor_class = backstab ? defender.numbers.rear_armor_class + 2
+                            : behind ? defender.numbers.rear_armor_class
+                                     : defender.numbers.armor_class;
+    if (backstab)
+    {
+        log({"{attacker} backstabs {name}.",
+             {{"attacker", attacker.name}, {"name", defender.name}}});
+    }
+    for (int phase = attacker.attack_phase; phase >= 0 && defender.able(); --phase)
+    {
+        auto &left = attacker.attacks_left[static_cast<std::size_t>(phase)];
+        auto attack = attacker.numbers.attacks[static_cast<std::size_t>(phase)];
+        if (phase == 0 && defender.numbers.large && attacker.numbers.large_attack)
         {
-            if (!target.able())
-            {
-                return;
-            }
+            attack = *attacker.numbers.large_attack;
+        }
+        for (; left > 0 && defender.able(); --left)
+        {
+            attacker.attack_phase = phase;
             const auto natural = roll(20);
-            if (!attack_hits(natural, attacker.numbers.thac0, target.numbers.armor_class, 0))
+            if (!attack_hits(natural, attacker.numbers.thac0, armor_class, 0))
             {
                 log({"{attacker} misses {name}.",
-                     {{"attacker", attacker.name}, {"name", target.name}}});
+                     {{"attacker", attacker.name}, {"name", defender.name}}});
                 continue;
             }
             int dice = 0;
@@ -389,14 +507,161 @@ void Session::melee(Fighter &attacker, Fighter &target)
             {
                 dice += roll(std::max(attack.sides, 1));
             }
-            const auto damage = hit_damage(dice, attack.modifier);
+            auto damage = hit_damage(dice, attack.modifier);
+            if (backstab)
+            {
+                damage *= attacker.numbers.thief_level / 4 + 2;
+            }
             log({"{attacker} hits {name} for {damage}.",
                  {{"attacker", attacker.name},
-                  {"name", target.name},
+                  {"name", defender.name},
                   {"damage", std::to_string(damage)}}});
-            inflict(target, damage);
+            inflict(defender, damage);
         }
     }
+    attacker.sweep_budget = 0;
+    if (attacker.attacks() == 0)
+    {
+        end_actions(attacker);
+    }
+}
+
+// A fighter sweeps through level-0 enemies: when the defender is one, next to
+// it, and more of them stand around it than it has attacks this round, it
+// strikes each once, the defender first, up to its attack level (cbtacts.pas,
+// SweepAttack).
+bool Session::sweep(Fighter &attacker, Fighter &defender)
+{
+    if (attacker.attacks_left[0] >= attacker.sweep_budget || defender.numbers.level != 0 ||
+        !adjacent(attacker, defender))
+    {
+        return false;
+    }
+    std::vector<Fighter *> weak{&defender};
+    for (auto &f : fighters_)
+    {
+        if (&f != &defender && f.side != attacker.side && f.able() && f.numbers.level == 0 &&
+            adjacent(attacker, f))
+        {
+            weak.push_back(&f);
+        }
+    }
+    if (static_cast<int>(weak.size()) <= attacker.attacks_left[0])
+    {
+        return false;
+    }
+    weak.resize(
+        std::min<std::size_t>(weak.size(), static_cast<std::size_t>(attacker.sweep_budget)));
+    log({"{attacker} sweeps.", {{"attacker", attacker.name}}});
+    for (auto *target : weak)
+    {
+        note_attack(attacker, *target);
+        attacker.attacks_left = {1, 0};
+        attacker.attack_phase = 0;
+        make_attack(attacker, *target, false);
+    }
+    end_actions(attacker);
+    return true;
+}
+
+// Each enemy next to the mover now but not after its step strikes once, as
+// from behind, while the mover stays up: unless it no longer acts this round,
+// has already been attacked and has the mover out of the five directions in
+// front of it (cbtacts.pas, AttacksOfOpportunity).
+void Session::free_attacks(Fighter &mover, Cell next)
+{
+    auto stepped = mover;
+    stepped.cell = next;
+    for (auto &enemy : fighters_)
+    {
+        if (!mover.able() || enemy.side == mover.side || !enemy.able() || !adjacent(enemy, mover) ||
+            adjacent(enemy, stepped))
+        {
+            continue;
+        }
+        bool facing = false;
+        for (int scan = enemy.direction + 6; scan <= enemy.direction + 10; ++scan)
+        {
+            facing = facing || leads_toward(enemy.cell, mover.cell, scan % 8);
+        }
+        if (enemy.initiative <= 0 && enemy.flank_count > 0 && !facing)
+        {
+            continue;
+        }
+        int phase = enemy.numbers.attacks[0].rate_per_two_rounds == 0 ? 1 : 0;
+        for (int form = 0; form < 2; ++form)
+        {
+            if (enemy.attacks_left[static_cast<std::size_t>(form)] > 0)
+            {
+                phase = form;
+            }
+        }
+        auto &left = enemy.attacks_left[static_cast<std::size_t>(phase)];
+        left = std::max(left, 1);
+        enemy.attack_phase = phase;
+        log({"{attacker} strikes {name} leaving.",
+             {{"attacker", enemy.name}, {"name", mover.name}}});
+        make_attack(enemy, mover, true);
+    }
+}
+
+// A guarding enemy the mover comes next to strikes it once and stops guarding
+// (cbtacts.pas, GuardersAttack).
+void Session::guards_strike(Fighter &mover)
+{
+    for (auto &guard : fighters_)
+    {
+        if (!mover.able() || !guard.guarding || guard.side == mover.side || !guard.able() ||
+            !adjacent(guard, mover))
+        {
+            continue;
+        }
+        guard.guarding = false;
+        if (guard.attacks() == 0)
+        {
+            continue;
+        }
+        note_attack(guard, mover);
+        log({"{attacker} strikes from guard.", {{"attacker", guard.name}}});
+        make_attack(guard, mover, false);
+    }
+}
+
+// One step: the enemies left behind strike first, then the mover pays 2
+// half-moves, or 3 on a diagonal, times the ground's cost, its flanking counts
+// clear, and guards it comes next to strike (cbtacts.pas, CombatMoveCreature).
+void Session::step_to(Fighter &mover, Cell next)
+{
+    free_attacks(mover, next);
+    if (!mover.able())
+    {
+        mover.half_moves = 0;
+        return;
+    }
+    const auto cost = grid_for(mover).step_cost(mover.cell, next);
+    if (!cost || *cost > mover.half_moves)
+    {
+        mover.half_moves = 0;
+        return;
+    }
+    mover.half_moves -= *cost;
+    mover.direction = direction_toward(mover.cell, next);
+    mover.facing_left = next.x < mover.cell.x || (next.x == mover.cell.x && mover.facing_left);
+    mover.cell = next;
+    mover.flank_count = mover.flank_spread = 0;
+    guards_strike(mover);
+    if (!mover.able())
+    {
+        mover.half_moves = 0;
+    }
+}
+
+// Bandaging saves a dying party member next to the one bandaging (the user,
+// 2026-11-12; the original reached any on the field).
+bool Session::can_bandage(const Fighter &bandager, const Fighter &dying) const
+{
+    return bandager.side == Side::party && dying.side == Side::party &&
+           dying.condition == Condition::dying && adjacent(bandager, dying);
 }
 
 // Exactly 0 Hit Points leaves a creature unconscious, below 0 dying, and
@@ -563,11 +828,26 @@ std::vector<rules::Command> Session::legal_commands() const
             }
         }
     }
-    rules::Command end;
-    end.revision = revision_;
-    end.actor = actor_;
-    end.verb = "end";
-    commands.push_back(end);
+    // The Done menu (combat.pas, DoneMenu): Guard, Delay, Bandage and ending its actions.
+    const auto offer = [&commands, actor, this](std::string verb, EntityId target = 0)
+    {
+        rules::Command command;
+        command.revision = revision_;
+        command.actor = actor->id;
+        command.verb = std::move(verb);
+        command.target = target;
+        commands.push_back(command);
+    };
+    offer("guard");
+    offer("delay");
+    for (const auto &f : fighters_)
+    {
+        if (can_bandage(*actor, f))
+        {
+            offer("bandage", f.id);
+        }
+    }
+    offer("end");
     return commands;
 }
 
@@ -611,19 +891,47 @@ bool Session::submit(const rules::Command &command)
     auto &actor = *find(actor_);
     if (command.verb == "move")
     {
-        const auto cost = grid_for(actor).reachable(actor.half_moves).cost_to(command.destination);
-        actor.facing_left = command.destination.x < actor.cell.x ||
-                            (command.destination.x == actor.cell.x && actor.facing_left);
-        actor.half_moves -= *cost;
-        actor.cell = command.destination;
+        // Step by step along the cheapest path, which free attacks and guards may cut short.
+        for (const auto cell :
+             grid_for(actor).reachable(actor.half_moves).path_to(command.destination))
+        {
+            if (!actor.able() || actor.half_moves <= 0)
+            {
+                break;
+            }
+            step_to(actor, cell);
+        }
+        settle_outcome();
     }
     else if (command.verb == "melee")
     {
         auto &target = *find(command.target);
-        actor.facing_left = target.cell.x < actor.cell.x;
-        melee(actor, target);
-        end_actions(actor);
+        note_attack(actor, target);
+        if (!sweep(actor, target))
+        {
+            make_attack(actor, target, false);
+        }
         settle_outcome();
+    }
+    else if (command.verb == "guard")
+    {
+        end_actions(actor);
+        actor.guarding = true;
+        log({"{name} guards.", {{"name", actor.name}}});
+    }
+    else if (command.verb == "delay")
+    {
+        // It acts again later this round, at initiative 1.
+        actor.initiative = 1;
+        actor_ = 0;
+    }
+    else if (command.verb == "bandage")
+    {
+        auto &dying = *find(command.target);
+        dying.condition = Condition::unconscious;
+        dying.overkill = 0;
+        log({"{name} is bandaged.", {{"name", dying.name}}});
+        end_actions(actor);
     }
     else
     {
@@ -631,7 +939,8 @@ bool Session::submit(const rules::Command &command)
     }
     ++revision_;
     if (outcome_ == rules::Outcome::ongoing &&
-        (actor.initiative == 0 || (actor.half_moves == 0 && actor.attacks() == 0)))
+        (actor_ == 0 || actor.initiative == 0 || !actor.able() ||
+         (actor.half_moves == 0 && actor.attacks() == 0)))
     {
         next_actor();
     }
@@ -670,7 +979,8 @@ std::string Session::save() const
         out(f.id, f.name, f.definition, static_cast<unsigned>(f.side), f.cell.x, f.cell.y,
             f.footprint.width, f.footprint.height, f.facing_left, f.numbers.encode(), f.hit_points,
             static_cast<unsigned>(f.condition), f.overkill, f.initiative, f.half_moves,
-            f.attacks_left[0], f.attacks_left[1], f.surprised);
+            f.attacks_left[0], f.attacks_left[1], f.surprised, f.attack_phase, f.sweep_budget,
+            f.direction, f.flank_count, f.flank_spread, f.guarding);
     }
     out(log_.size());
     for (const auto &entry : log_)
@@ -748,6 +1058,16 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         f.half_moves = in.as<int>();
         f.attacks_left = {in.as<int>(), in.as<int>()};
         f.surprised = in.as<bool>();
+        f.attack_phase = in.as<int>();
+        f.sweep_budget = in.as<int>();
+        f.direction = in.as<int>();
+        f.flank_count = in.as<int>();
+        f.flank_spread = in.as<int>();
+        f.guarding = in.as<bool>();
+        if (f.attack_phase < 0 || f.attack_phase > 1 || f.direction < 0 || f.direction > 7)
+        {
+            throw std::runtime_error("Invalid original-rules combat checkpoint");
+        }
         session->fighters_.push_back(std::move(f));
     }
     const auto entries = in.as<std::size_t>();
