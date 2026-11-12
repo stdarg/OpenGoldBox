@@ -505,10 +505,15 @@ void combat_tables()
               strength_damage_bonus(18, 90) == 4 && strength_damage_bonus(18, 100) == 6 &&
               strength_damage_bonus(19, 0) == 7 && strength_damage_bonus(25, 0) == 14,
           "Strength's damage bonus");
-    check(armored_movement(12, 150, false) == 12 && armored_movement(12, 151, false) == 9 &&
-              armored_movement(12, 400, false) == 6 && armored_movement(12, 400, true) == 9 &&
-              armored_movement(12, 300, true) == 12 && armored_movement(12, 100, true) == 12,
-          "Movement in armor");
+    check(weight_allowance(3, 0) == -350 && weight_allowance(10, 0) == 0 &&
+              weight_allowance(16, 0) == 350 && weight_allowance(17, 0) == 500 &&
+              weight_allowance(18, 0) == 750 && weight_allowance(18, 100) == 3000 &&
+              weight_allowance(25, 0) == 15000,
+          "Strength's weight allowance");
+    check(encumbered_movement(12, 1012, 500) == 12 && encumbered_movement(12, 1013, 500) == 9 &&
+              encumbered_movement(12, 1524, 500) == 6 && encumbered_movement(12, 1525, 500) == 3,
+          "A load slows in steps past 512, 768 and 1,024 coins over the allowance");
+    check(encumbered_movement(6, 1013, 500) == 6, "A load never speeds a slow creature up");
     check(attacks_this_round(3, 1) == 2 && attacks_this_round(3, 2) == 1 &&
               attacks_this_round(2, 1) == 1 && attacks_this_round(2, 2) == 1,
           "Three attacks in two rounds: two, then one");

@@ -246,16 +246,20 @@ void readied_gear_counts()
     por::ItemRecord magic_sword;
     magic_sword.type = 36;
     magic_sword.magic_bonus = 1;
+    magic_sword.readied_raw = 1;
     por::ItemTemplate chain_mail;
     chain_mail.worn_location = 2;
     chain_mail.protection_raw = 0x80 | 55; // Armor Class 5.
     por::ItemRecord mail;
     mail.weight = 300;
+    mail.readied_raw = 1;
+    por::ItemRecord shield;
+    shield.readied_raw = 1;
     por::ItemTemplate shield_type;
     shield_type.worn_location = 1;
     shield_type.protection_raw = 0x80 | 1;
-    const std::vector<original::ReadiedItem> gear{
-        {magic_sword, sword}, {mail, chain_mail}, {por::ItemRecord{}, shield_type}};
+    const std::vector<original::CarriedItem> gear{
+        {magic_sword, sword}, {mail, chain_mail}, {shield, shield_type}};
     const auto armed = original::combatant_from_record(record, gear);
     check(armed.attacks[0].dice == 1 && armed.attacks[0].sides == 8 &&
               armed.attacks[0].modifier == 3 + 1,
@@ -263,12 +267,20 @@ void readied_gear_counts()
     check(armed.thac0 == 20 - 1 - 1, "+1 to hit for Strength, +1 for the sword's magic");
     check(armed.armor_class == 4 && armed.rear_armor_class == 7,
           "Chain mail and a shield: Armor Class 4, and 7 from behind without the shield");
-    // The original sets 9 in such armor even for a slower creature (charhlp.pas,
-    // ArmorMoveAdjust), so a kobold of 6 moves 9 in chain mail; put to the user.
-    check(armed.movement == 9, "Chain mail of 300 coins sets movement 9, as the original does");
+    // Armor slows only by its weight in the load (the user, 2026-11-12): 300
+    // coins is well within Strength 18/50's 1,000.
+    check(armed.movement == 6, "Chain mail does not change a kobold's 6");
     record.base_movement = 12;
-    check(original::combatant_from_record(record, gear).movement == 9,
-          "Chain mail slows a creature of 12 to 9");
+    check(original::combatant_from_record(record, gear).movement == 12,
+          "Nor a creature's 12, within its allowance");
+    record.wealth[3] = 2000;
+    check(original::combatant_from_record(record, gear).movement == 3,
+          "2,000 gold more is 1,300 coins over the allowance: movement 3");
+    auto unready = gear;
+    unready[1].item.readied_raw = 0;
+    check(original::combatant_from_record(record, unready).armor_class == 6 &&
+              original::combatant_from_record(record, unready).movement == 3,
+          "Mail carried but not worn protects nothing and still weighs");
 }
 
 // Pool of Radiance's own records, when its files are here (OPENGOLD_GAME_DIR):
@@ -286,15 +298,12 @@ void real_records_fight()
     original::Content content;
     for (const auto &[id, creature] : catalog.all())
     {
-        std::vector<original::ReadiedItem> readied;
+        std::vector<original::CarriedItem> carried;
         for (const auto &item : creature.equipment)
         {
-            if (item.stored.readied())
-            {
-                readied.push_back({item.stored, item.base});
-            }
+            carried.push_back({item.stored, item.base});
         }
-        const auto numbers = original::combatant_from_record(creature.stored, readied);
+        const auto numbers = original::combatant_from_record(creature.stored, carried);
         check(numbers.thac0 >= -20 && numbers.thac0 <= 25 && numbers.armor_class >= -20 &&
                   numbers.armor_class <= 20 && numbers.hit_points > 0 && numbers.movement >= 0,
               id.key() + " " + creature.stored.name + " fights with sensible numbers");

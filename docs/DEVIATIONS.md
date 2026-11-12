@@ -231,6 +231,18 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   rolling 1) wraps around to more than 250 damage and kills anything; its own
   check for damage below zero can never succeed. OpenGoldBox counts such a hit
   as 0 damage.
+- **Armor and movement** (the user, 2026-11-12). The original set a creature's
+  movement to 9 in armor of 151 to 399 coins and 6 in heavier armor, whatever
+  its own movement, so a slower creature moved faster in armor. Armor slows a
+  creature only by its weight in the load it carries; the load's tables
+  ([ORIGINAL-RULES.md](ORIGINAL-RULES.md#encumbrance)) only ever slow.
+- **Distance and missiles** (the user, 2026-11-12). The original made a
+  missile's target harder to hit with distance, and for a weapon of range 3 or
+  less it counted every target as far, even next to the shooter. A target
+  within the weapon's range has no distance penalty.
+- **Bandaging** (the user, 2026-11-12). The original's Bandage saved the first
+  dying party member anywhere on the field. The one who bandages must stand
+  next to the dying member.
 
 ## Party and parley
 

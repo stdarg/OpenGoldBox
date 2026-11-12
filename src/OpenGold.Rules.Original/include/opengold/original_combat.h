@@ -52,22 +52,23 @@ struct Combatant
     bool operator==(const Combatant &) const = default;
 };
 
-// An item a creature has readied, with its type (ITEMS).
-struct ReadiedItem
+// An item a creature carries, with its type (ITEMS); it fights with those it
+// has readied (por::ItemRecord::readied).
+struct CarriedItem
 {
     por::ItemRecord item;
     por::ItemTemplate type;
 };
 
-// A creature as its record and readied items make it fight. As the original
-// does at the start of every fight and turn (charhlp.pas, RecalcStats): its
-// own THAC0, Armor Class, Hit Points, movement and attacks, with Strength
-// unarmed or with a weapon that takes it, the weapon's dice and magic, the
-// best armor, shield, ring and protective magic, and armor's weight on its
-// movement. The original loads a monster's record unchanged, its current Hit
-// Points included (eclvm.pas, EclLoadMonster).
+// A creature as its record and items make it fight. As the original does at
+// the start of every fight and turn (charhlp.pas, RecalcStats): its own
+// THAC0, Armor Class, Hit Points, movement and attacks, with Strength unarmed
+// or with a weapon that takes it, the readied weapon's dice and magic, the
+// best armor, shield, ring and protective magic, and its load of items and
+// coins on its movement. The original loads a monster's record unchanged, its
+// current Hit Points included (eclvm.pas, EclLoadMonster).
 [[nodiscard]] Combatant combatant_from_record(const por::CharacterRecord &record,
-                                              std::span<const ReadiedItem> readied = {});
+                                              std::span<const CarriedItem> carried = {});
 
 // What the original rules' module knows of a game: its monsters, by the key a
 // fight's participant names them with (por::CreatureId::key(), "MON2CHA.DAX:0").

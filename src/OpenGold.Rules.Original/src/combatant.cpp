@@ -104,8 +104,8 @@ namespace
 {
 
 // The original's equipment slots (ItemTemplate::worn_location) and race codes.
-constexpr std::uint8_t weapon_slot = 0, shield_slot = 1, armor_slot = 2, first_ring_slot = 9,
-                       arrow_slot = 11, bolt_slot = 12;
+constexpr std::uint8_t weapon_slot = 0, shield_slot = 1, first_ring_slot = 9, arrow_slot = 11,
+                       bolt_slot = 12;
 constexpr std::uint8_t monster_race = 0, elf_race = 2;
 
 // The original keeps Armor Class as 60 minus it, so that better is more: its
@@ -115,14 +115,46 @@ constexpr int stored(int armor_class) noexcept
     return 60 - armor_class;
 }
 
-const ReadiedItem *readied_in(std::span<const ReadiedItem> readied, std::uint8_t slot)
+const CarriedItem *readied_in(std::span<const CarriedItem> carried, std::uint8_t slot)
 {
-    const auto found = std::find_if(readied.begin(), readied.end(),
-                                    [slot](const ReadiedItem &r)
+    const auto found = std::find_if(carried.begin(), carried.end(),
+                                    [slot](const CarriedItem &c)
                                     {
-                                        return r.type.worn_location == slot;
+                                        return c.item.readied() && c.type.worn_location == slot;
                                     });
-    return found == readied.end() ? nullptr : &*found;
+    return found == carried.end() ? nullptr : &*found;
+}
+
+// Name word 186 is "Holding": a readied bag of holding carries 5,000 coins'
+// weight for nothing (charhlp.pas, RecalcStats).
+constexpr std::uint8_t holding_word = 186;
+constexpr int bag_of_holding_weight = 5000;
+
+// The coins' weight of every item carried and every coin.
+int load_of(const por::CharacterRecord &record, std::span<const CarriedItem> carried)
+{
+    int load = 0, readied_load = 0;
+    bool bag = false;
+    for (const auto &c : carried)
+    {
+        const int weight = c.item.weight * std::max<int>(c.item.stack_size, 1);
+        load += weight;
+        if (c.item.readied())
+        {
+            readied_load += weight;
+            bag = bag || c.item.name_components[0] == holding_word;
+        }
+    }
+    for (const auto coins : record.wealth)
+    {
+        load += coins;
+    }
+    if (bag)
+    {
+        load =
+            std::max(load < bag_of_holding_weight ? 0 : load - bag_of_holding_weight, readied_load);
+    }
+    return load;
 }
 
 // An elf's +1 to hit with a bow or a sword: item types 36, 37 and 41 to 44.
@@ -134,7 +166,7 @@ bool elf_weapon(std::uint8_t type) noexcept
 } // namespace
 
 Combatant combatant_from_record(const por::CharacterRecord &record,
-                                std::span<const ReadiedItem> readied)
+                                std::span<const CarriedItem> carried)
 {
     Combatant c;
     const int strength = record.current_abilities.strength;
@@ -151,7 +183,7 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
                            attack.damage.modifier};
     }
     c.thac0 = record.base_thac0;
-    const auto *weapon = readied_in(readied, weapon_slot);
+    const auto *weapon = readied_in(carried, weapon_slot);
     if (!weapon && uses_strength)
     {
         c.thac0 -= strength_to_hit_bonus(strength, exceptional);
@@ -174,8 +206,8 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
             c.attacks[0].modifier += strength_damage_bonus(strength, exceptional);
         }
         int plus = weapon->item.magic_bonus;
-        const auto *bolts = readied_in(readied, bolt_slot);
-        const auto *arrows = readied_in(readied, arrow_slot);
+        const auto *bolts = readied_in(carried, bolt_slot);
+        const auto *arrows = readied_in(carried, arrow_slot);
         if (type.has(bit::fires_quarrels) && bolts)
         {
             plus += bolts->item.magic_bonus;
@@ -195,13 +227,9 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     // armor of their own, the best ring and the best armor, never worse than
     // the creature's own (charhlp.pas, AddItemArmorAdjust).
     std::array<int, 5> adjustments{dexterity_armor_class_bonus(dexterity), 0, 0, 0, 0};
-    for (const auto &r : readied)
+    for (const auto &r : carried)
     {
-        if (r.type.worn_location == armor_slot)
-        {
-            c.movement = armored_movement(c.movement, r.item.weight, r.item.magic_bonus != 0);
-        }
-        if (r.type.protection_raw <= 0x7F)
+        if (!r.item.readied() || r.type.protection_raw <= 0x7F)
         {
             continue;
         }
@@ -227,6 +255,8 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
         }
     }
     adjustments[4] = std::max(adjustments[4], stored(record.base_armor_class));
+    c.movement = encumbered_movement(c.movement, load_of(record, carried),
+                                     weight_allowance(strength, exceptional));
     c.armor_class =
         stored(adjustments[0] + adjustments[1] + adjustments[2] + adjustments[3] + adjustments[4]);
     // From behind: the armor, its pluses and the ring, without Dexterity and

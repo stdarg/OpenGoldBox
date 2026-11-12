@@ -256,9 +256,14 @@ enum class ThiefSkill : unsigned
 // takes Strength.
 [[nodiscard]] int strength_to_hit_bonus(int strength, int exceptional_strength) noexcept;
 [[nodiscard]] int strength_damage_bonus(int strength, int exceptional_strength) noexcept;
-// A creature's movement in body armor weighing this many coins: its own up
-// to 150, 9 to 399 and 6 above; magic armor adds 3 to a movement of 9 or less.
-[[nodiscard]] int armored_movement(int movement, int armor_weight, bool magic_armor) noexcept;
+// How many coins' weight Strength lets a creature carry before it slows
+// (charhlp.pas, WeightAllowance); below zero for a weak one.
+[[nodiscard]] int weight_allowance(int strength, int exceptional_strength) noexcept;
+// A creature's movement under this load, in coins' weight: up to 512 over its
+// allowance changes nothing, then 9, 6 to 1,024 over and 3 beyond. A load only
+// slows (charhlp.pas, EncumbranceAdjust); armor slows only by its weight in
+// the load (the user, 2026-11-12, docs/DEVIATIONS.md).
+[[nodiscard]] int encumbered_movement(int movement, int load, int allowance) noexcept;
 // The attacks a rate per two rounds gives this round: an odd round, as the
 // original counts them, rounds a half attack up and an even round down.
 [[nodiscard]] int attacks_this_round(int rate_per_two_rounds, int round) noexcept;

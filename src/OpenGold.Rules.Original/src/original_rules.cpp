@@ -850,14 +850,57 @@ int strength_damage_bonus(int strength, int exceptional_strength) noexcept
     return scale <= 29 ? scale - 17 : 14;
 }
 
-int armored_movement(int movement, int armor_weight, bool magic_armor) noexcept
+int weight_allowance(int strength, int exceptional_strength) noexcept
 {
-    int moved = armor_weight <= 150 ? movement : armor_weight <= 399 ? 9 : 6;
-    if (magic_armor && moved <= 9)
+    const auto scale = strength_scale(strength, exceptional_strength);
+    if (scale >= 1 && scale <= 3)
     {
-        moved += 3;
+        return -350;
     }
-    return moved;
+    if (scale >= 4 && scale <= 5)
+    {
+        return -250;
+    }
+    if (scale >= 6 && scale <= 7)
+    {
+        return -150;
+    }
+    if (scale >= 12 && scale <= 13)
+    {
+        return 100;
+    }
+    if (scale >= 14 && scale <= 15)
+    {
+        return 200;
+    }
+    if (scale == 16)
+    {
+        return 350;
+    }
+    if (scale >= 17 && scale <= 21)
+    {
+        return (scale - 17) * 250 + 500;
+    }
+    if (scale >= 22 && scale <= 26)
+    {
+        return (scale - 22) * 1000 + 2000;
+    }
+    if (scale == 27)
+    {
+        return 7500;
+    }
+    if (scale >= 28)
+    {
+        return (scale - 28) * 3000 + 9000;
+    }
+    return 0;
+}
+
+int encumbered_movement(int movement, int load, int allowance) noexcept
+{
+    const int over = std::max(load - allowance, 0);
+    const int limit = over <= 512 ? movement : over <= 768 ? 9 : over <= 1024 ? 6 : 3;
+    return std::min(movement, limit);
 }
 
 int attacks_this_round(int rate_per_two_rounds, int round) noexcept
