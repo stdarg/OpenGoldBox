@@ -169,7 +169,11 @@ The steps, each pushed on its own with every test passing:
 6. **The campaign behind one seam:** the game reaches *Pool of Radiance*'s own
    content (the Phlan session, the wilderness, teleports, secrets, portraits,
    place names) through one interface chosen by the game, so *Curse*'s can sit
-   beside it.
+   beside it. *Moved into phase 3, step 1 (2026-11-12):* the game
+   accepts only a *Pool of Radiance* 1.3 folder today (the settings check its
+   files' checksums), so no other game reaches the session yet. The seam is
+   built with *Curse*'s session, its second user, rather than designed ahead
+   of it.
 
 ### 3. *Curse of the Azure Bonds*
 
