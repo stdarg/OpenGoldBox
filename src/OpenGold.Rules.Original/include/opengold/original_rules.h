@@ -149,6 +149,12 @@ struct RolledCharacter
 // a multi-class character's total is divided among its classes.
 [[nodiscard]] int constitution_hit_point_bonus(Profession profession, int constitution);
 
+// How many points better (or, below zero, worse) Dexterity makes Armor Class.
+// It is lost against an attack from behind.
+[[nodiscard]] int dexterity_armor_class_bonus(int dexterity) noexcept;
+// What Dexterity adds to a missile's to-hit roll and to initiative.
+[[nodiscard]] int dexterity_missile_bonus(int dexterity) noexcept;
+
 // The best THAC0 of the character's classes at their levels.
 [[nodiscard]] int thac0(const ClassLevels &levels);
 // The roll each saving throw needs: the best of the character's classes.

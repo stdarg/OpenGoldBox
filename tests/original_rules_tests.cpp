@@ -246,6 +246,40 @@ void spell_slots_and_wisdom()
           "A fighter has no spell slots");
 }
 
+void dexterity_bonuses()
+{
+    struct Expected
+    {
+        int dexterity, armor_class, missiles;
+    };
+
+    // The original's values up to 18.
+    constexpr std::array<Expected, 12> original{{{3, -4, -3},
+                                                 {4, -3, -2},
+                                                 {5, -2, -1},
+                                                 {6, -1, 0},
+                                                 {7, 0, 0},
+                                                 {14, 0, 0},
+                                                 {15, 1, 0},
+                                                 {16, 2, 1},
+                                                 {17, 3, 2},
+                                                 {18, 4, 3},
+                                                 {2, -4, -4},
+                                                 {1, -4, -4}}};
+    for (const auto &expected : original)
+    {
+        check(dexterity_armor_class_bonus(expected.dexterity) == expected.armor_class &&
+                  dexterity_missile_bonus(expected.dexterity) == expected.missiles,
+              "Dexterity " + std::to_string(expected.dexterity) + " has the original's bonuses");
+    }
+    check(dexterity_armor_class_bonus(19) > dexterity_armor_class_bonus(18) &&
+              dexterity_missile_bonus(19) > dexterity_missile_bonus(18),
+          "A natural 19 is worth more than 18 in a fight");
+    check(dexterity_armor_class_bonus(21) == 5 && dexterity_armor_class_bonus(22) == 6 &&
+              dexterity_missile_bonus(21) == 4 && dexterity_missile_bonus(25) == 5,
+          "Each step above 18 comes two points sooner than in the original");
+}
+
 void constitution_and_age()
 {
     check(constitution_hit_point_bonus(Profession::fighter, 18) == 4,
@@ -282,6 +316,7 @@ int main()
         saving_throws_are_the_best_class();
         experience_and_level_limits();
         spell_slots_and_wisdom();
+        dexterity_bonuses();
         constitution_and_age();
         std::cout << "Original rules passed.\n";
     }

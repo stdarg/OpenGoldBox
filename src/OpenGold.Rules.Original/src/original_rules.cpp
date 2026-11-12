@@ -476,6 +476,50 @@ int constitution_hit_point_bonus(Profession profession, int constitution)
     return bonus;
 }
 
+// Above 18 each step comes two points sooner than in the original, so an elf's
+// natural 19 is worth more than 18 (docs/DEVIATIONS.md, the original rules).
+int dexterity_armor_class_bonus(int dexterity) noexcept
+{
+    if (dexterity <= 3)
+    {
+        return -4;
+    }
+    if (dexterity <= 6)
+    {
+        return dexterity - 7;
+    }
+    if (dexterity <= 14)
+    {
+        return 0;
+    }
+    if (dexterity <= 18)
+    {
+        return dexterity - 14;
+    }
+    return dexterity <= 21 ? 5 : 6;
+}
+
+int dexterity_missile_bonus(int dexterity) noexcept
+{
+    if (dexterity <= 2)
+    {
+        return -4;
+    }
+    if (dexterity <= 5)
+    {
+        return dexterity - 6;
+    }
+    if (dexterity <= 15)
+    {
+        return 0;
+    }
+    if (dexterity <= 18)
+    {
+        return dexterity - 15;
+    }
+    return dexterity <= 21 ? 4 : 5;
+}
+
 int thac0(const ClassLevels &levels)
 {
     int best = 0;

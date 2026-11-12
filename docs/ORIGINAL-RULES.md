@@ -54,6 +54,10 @@ The user decided these on 2026-11-11 and 2026-11-12:
   - **Under the SRD:** the original's Half-Elf becomes a species.
   - **Approval:** each adaptation is a new rule, so its numbers are put to the
     user before it is built.
+- **Dexterity above 18 is worth more in a fight** (2026-11-12): each step of
+  its Armor Class and missile bonuses comes two points sooner than in the
+  original, so an elf's natural 19 beats 18. Every departure from the original
+  rules is listed in [DEVIATIONS.md](DEVIATIONS.md#the-original-rules).
 
 ## What the original rules cover
 

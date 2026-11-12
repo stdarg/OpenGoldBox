@@ -14,7 +14,11 @@ Add an entry whenever a new departure is decided.
   class restrictions and spell memorization. OpenGoldBox uses SRD 5.2.1 behind
   a replaceable rules library. Campaign scripts and encounter identities and
   counts are kept through conversion adapters.
-  [PRD §1](PRD.md#1-product-summary), [RULES.md](RULES.md).
+  [PRD §1](PRD.md#1-product-summary), [RULES.md](RULES.md). Since 2026-11-11
+  the SRD rules are an option: the original rules are the default, the player
+  can switch at any time, and every character keeps a build for each
+  ([ORIGINAL-RULES.md](ORIGINAL-RULES.md), being built). Departures within the
+  original rules are listed under [The original rules](#the-original-rules).
 - **Battle squares** (2026-10-15). In the original a combat square is 10
   feet: the manual's "Protection From Evil, 10' Radius" reaches "everyone
   within 1 square", and a Lightning Bolt (40 or 80 feet in AD&D) is "4 or 8
@@ -188,6 +192,29 @@ Add an entry whenever a new departure is decided.
   Disadvantage, while attacks on it have Advantage. It has no Bonus Actions or
   Reactions and casts no spells. Confused creatures gave the model, without their
   turn-wasting d10.
+
+## The original rules
+
+Departures from the original game's own rules, when OpenGoldBox plays by them
+([ORIGINAL-RULES.md](ORIGINAL-RULES.md)).
+
+- **Racial ability adjustments** (the user, 2026-11-11). The original's
+  creation never applied them: a leftover variable made every character roll
+  as a human. OpenGoldBox adds them to each 3d6 roll as the original meant
+  to: a dwarf +1 Constitution and −1 Charisma, an elf +1 Dexterity and −1
+  Constitution, a halfling −1 Strength and +1 Dexterity, a half-orc +1
+  Strength, +1 Constitution and −2 Charisma. An elf can now have a Dexterity
+  of 19, and a dwarf a Constitution of 19.
+- **Dexterity above 18** (the user, 2026-11-12). In the original, 19 and 20
+  are worth no more in a fight than 18. OpenGoldBox starts each higher step two
+  points sooner:
+
+  | Dexterity | 18 | 19–21 | 22–25 |
+  |---|---|---|---|
+  | Armor Class | 4 better | 5 better | 6 better |
+  | Missile to-hit and initiative | +3 | +4 | +5 |
+
+  The original gave 5 better and +4 from 21, and 6 better and +5 from 24.
 
 ## Party and parley
 
