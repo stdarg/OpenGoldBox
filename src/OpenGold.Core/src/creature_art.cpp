@@ -128,10 +128,10 @@ rules::Participant staged_fighter(rules::EntityId id, std::string definition, st
 {
     rules::Participant fighter{id, std::move(definition), std::move(name), side, {}};
     fighter.footprint = combat_footprint(creature.stored);
-    // Morale is record byte 0x84: from 0x80 up a creature's own is
-    // (byte & 0x7F) * 2, and above 102 it has none (the encounter's
-    // decides). Most monsters have none; a few never break.
-    const auto byte = creature.stored.raw[0x84];
+    // Morale is the record's NPC byte (Pool of Radiance's 0x84): from 0x80
+    // up a creature's own is (byte & 0x7F) * 2, and above 102 it has none
+    // (the encounter's decides). Most monsters have none; a few never break.
+    const auto byte = creature.stored.npc_flag;
     const unsigned own = byte >= 0x80 ? (byte & 0x7Fu) * 2 : 0;
     fighter.morale = own > 102 ? 0 : std::min(own, 100u);
     fighter.intelligence = std::min<unsigned>(creature.stored.abilities.intelligence, 30);

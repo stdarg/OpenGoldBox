@@ -4441,10 +4441,10 @@ bool RolfTourSession::choose_at_temple(std::size_t choice)
 
 bool fights_for_party(const PhlanResources &area, unsigned record)
 {
-    // Record byte 0x10E is the side a creature fights on (coab combat_team):
-    // 0, the party's, only for Valhingen Graveyard's efreeti, who helps a
-    // party carrying his bottle.
-    return area.encounter_creatures.at(record).stored.raw.at(0x10E) == 0;
+    // The record's hostile byte (Pool of Radiance's 0x10E) is the side a
+    // creature fights on (coab combat_team): 0, the party's, only for
+    // Valhingen Graveyard's efreeti, who helps a party carrying his bottle.
+    return area.encounter_creatures.at(record).stored.hostile == 0;
 }
 
 std::string creature_name(const PhlanResources &area, unsigned record,

@@ -1,4 +1,5 @@
 #include "opengold/pool_radiance.h"
+#include "opengold/curse_records.h"
 #include "little_endian.h"
 
 #include <algorithm>
@@ -97,9 +98,10 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> b)
         return std::nullopt;
     }
     CharacterRecord c;
-    copy(b, 0, c.raw);
+    c.raw.assign(b.begin(), b.end());
     c.name.assign(b.begin() + 1, b.begin() + 1 + b[0]);
     c.abilities = {b[16], b[17], b[18], b[19], b[20], b[21], b[22]};
+    c.current_abilities = c.abilities;
     c.base_thac0 = 60 - b[45];
     c.base_armor_class = 60 - b[169];
     c.max_hit_points = b[50];
@@ -118,16 +120,17 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> b)
     c.alignment = b[160];
     c.type = b[159];
     c.npc_flag = b[132];
+    c.icon_size_raw = b[108];
     c.attack_level = b[107];
     c.highest_level_raw = b[115];
     c.drained_levels = b[116];
     c.drained_hit_points = b[117];
     c.undead_level = b[118];
     copy(b, 119, c.thief_skills);
-    copy(b, 51, c.spell_book);
-    copy(b, 23, c.memorized_spells);
-    copy(b, 178, c.cleric_spell_slots);
-    copy(b, 181, c.mage_spell_slots);
+    c.spell_book.assign(b.begin() + 51, b.begin() + 51 + 55);
+    c.memorized_spells.assign(b.begin() + 23, b.begin() + 23 + 21);
+    std::copy_n(b.begin() + 178, 3, c.spell_slots[0].begin());
+    std::copy_n(b.begin() + 181, 3, c.spell_slots[2].begin());
     c.spell_byte_44_raw = b[44];
     c.experience = format::read_u32(b, 172);
     c.base_xp_award = format::read_u16(b, 184);
@@ -157,6 +160,20 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> b)
     c.current.hit_points_raw = b[283];
     c.current.movement = b[284];
     return c;
+}
+
+std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> bytes,
+                                                GoldBoxGame game)
+{
+    switch (game)
+    {
+    case GoldBoxGame::pool_of_radiance:
+        return decode_character(bytes);
+    case GoldBoxGame::curse_of_the_azure_bonds:
+        return curse::decode_creature(bytes);
+    default:
+        return std::nullopt;
+    }
 }
 
 std::optional<std::vector<ItemRecord>> decode_items(std::span<const std::uint8_t> bytes)

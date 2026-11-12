@@ -155,7 +155,9 @@ The steps, each pushed on its own with every test passing:
    *Curse* moved *Pool of Radiance*'s zones whole, so one translation
    (`game_address`) serves every cell but the current character's.
 3. **One creature model:** the code stops reading the 285-byte record by its
-   offsets and reads named fields, which *Curse*'s 422-byte record fills too.
+   offsets and reads named fields, which *Curse*'s 422-byte record fills too. *Done
+   2026-11-12:* `decode_character(bytes, game)` fills the same fields from
+   either layout; the size, morale and side bytes have names.
 4. **Files by game:** disks and banks are counted from the folder (*Pool of
    Radiance* has eight, *Curse* six), and the names, sounds and wilderness in
    `START.EXE` are read per game.

@@ -330,19 +330,19 @@ void footprints()
 {
     CharacterRecord c;
     c.name = "BUGBEAR";
-    c.raw[108] = 129;
+    c.icon_size_raw = 129;
     require(combat_footprint(c) == rules::Footprint{}, "Byte 108's high bit leaves one square");
     c.name = "GNOLL";
-    c.raw[108] = 2;
+    c.icon_size_raw = 2;
     require(combat_footprint(c) == rules::Footprint{1, 2}, "Tall art fills 1 by 2");
     c.name = "WOLF";
-    c.raw[108] = 3;
+    c.icon_size_raw = 3;
     require(combat_footprint(c) == rules::Footprint{2, 1}, "Wide art fills 2 by 1");
     c.name = "WYVERN";
-    c.raw[108] = 132;
+    c.icon_size_raw = 132;
     require(combat_footprint(c) == rules::Footprint{2, 2}, "Big art fills 2 by 2");
     c.name = "OGRE LEADER";
-    c.raw[108] = 1;
+    c.icon_size_raw = 1;
     require(combat_footprint(c) == rules::Footprint{1, 2}, "Every ogre fills 1 by 2");
 }
 

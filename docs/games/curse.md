@@ -112,7 +112,10 @@ and a character remembers its levels before a change of class. Byte offsets:
 | 409–421 | Current THAC0, front and rear Armor Class, attacks, their dice, hit points and movement |
 
 The other bytes hold pointers and the running game's bookkeeping, which the
-files leave meaningless.
+files leave meaningless. `curse::decode_creature` reads the record into the
+fields *Pool of Radiance*'s records fill (`por::CharacterRecord`), with the
+current abilities, the levels before a change of class and the longer spell
+lists besides.
 
 ## Sound effects
 

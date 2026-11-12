@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "opengold/gold_box_game.h"
+
 namespace opengold::por
 {
 
@@ -55,25 +57,37 @@ struct StoredCurrentStats
     std::uint8_t hit_points_raw{}, movement{};
 };
 
+// A creature or character record of any Gold Box game, decoded into the same
+// fields: Pool of Radiance's 285 bytes (decode_character) or Curse of the Azure
+// Bonds' 422 (curse::decode_creature, docs/games/curse.md).
 struct CharacterRecord
 {
-    std::array<std::uint8_t, 285> raw{};
+    GoldBoxGame game{GoldBoxGame::pool_of_radiance};
+    std::vector<std::uint8_t> raw; // The record's bytes in its game's layout.
     std::string name;
     AbilityScores abilities;
+    // The scores effects and items make of them; Pool of Radiance keeps only one.
+    AbilityScores current_abilities;
     int base_thac0{}, base_armor_class{}; // Descending AC; 60 minus encoded byte.
     std::uint8_t max_hit_points{}, rolled_hit_points{}, base_movement{};
     std::array<BaseAttack, 2> base_attacks;
     SavingThrows saves;
     ClassLevels levels;
-    std::uint8_t race{}, character_class{}, gender{}, alignment{}, type{}, npc_flag{};
+    // A dual-class character's levels before the change; zero in Pool of Radiance.
+    ClassLevels levels_before_class_change;
+    // The NPC byte; for a monster, from 0x80 up, its morale (creature_art.cpp).
+    std::uint8_t npc_flag{};
+    std::uint8_t race{}, character_class{}, gender{}, alignment{}, type{};
+    // The combat icon's size: 2 one by two squares, 3 two by one, 4 two by two.
+    std::uint8_t icon_size_raw{};
     std::uint16_t age{};
     std::uint8_t attack_level{}, highest_level_raw{}, drained_levels{}, drained_hit_points{},
         undead_level{};
     std::array<std::uint8_t, 8> thief_skills{};
     // Byte values are retained: known-spell flags/counters and memorized spell IDs.
-    std::array<std::uint8_t, 55> spell_book{};
-    std::array<std::uint8_t, 21> memorized_spells{};
-    std::array<std::uint8_t, 3> cleric_spell_slots{}, mage_spell_slots{};
+    std::vector<std::uint8_t> spell_book, memorized_spells;
+    // Spell slots by list (cleric, druid, magic-user) and spell level from 1.
+    std::array<std::array<std::uint8_t, 5>, 3> spell_slots{};
     std::uint8_t spell_byte_44_raw{};
     std::uint32_t experience{};
     std::uint16_t base_xp_award{};
@@ -128,6 +142,10 @@ struct EffectRecord
 
 // nullopt means invalid length/content; an empty vector means a valid empty record.
 [[nodiscard]] std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> bytes);
+// A creature record in the game's own layout; nullopt for a game whose records
+// are not decoded yet.
+[[nodiscard]] std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> bytes,
+                                                              GoldBoxGame game);
 [[nodiscard]] std::optional<std::vector<ItemRecord>>
 decode_items(std::span<const std::uint8_t> bytes);
 [[nodiscard]] std::optional<std::vector<EffectRecord>>

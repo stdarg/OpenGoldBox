@@ -165,17 +165,11 @@ void check_records(RowBuilder &row, const std::vector<GameFile> &files,
 
 void check_creature(GoldBoxGame game, const Bytes &bytes)
 {
-    switch (game)
+    if (game != GoldBoxGame::pool_of_radiance && game != GoldBoxGame::curse_of_the_azure_bonds)
     {
-    case GoldBoxGame::pool_of_radiance:
-        require(por::decode_character(bytes).has_value(), "not a Pool of Radiance character");
-        return;
-    case GoldBoxGame::curse_of_the_azure_bonds:
-        require(curse::decode_creature(bytes).has_value(), "not a Curse creature");
-        return;
-    default:
         throw std::runtime_error("this game's creature records are not decoded yet");
     }
+    require(por::decode_character(bytes, game).has_value(), "not a creature record");
 }
 
 void check_script(GoldBoxGame game, const GameFile &file, const DaxRecord &record)

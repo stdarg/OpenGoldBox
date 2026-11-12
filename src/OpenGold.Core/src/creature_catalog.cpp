@@ -249,7 +249,7 @@ rules::Footprint combat_footprint(const CharacterRecord &character)
         return {1, 2};
     }
 
-    switch (character.raw[108] & 0x7F)
+    switch (character.icon_size_raw & 0x7F)
     {
     case 2:
         return {1, 2};

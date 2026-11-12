@@ -90,16 +90,19 @@ void curse_creatures_are_read_from_their_layout()
 
     const auto creature = opengold::curse::decode_creature(bytes);
     check(creature.has_value(), "A 422-byte record must decode");
+    check(creature->game == GoldBoxGame::curse_of_the_azure_bonds && creature->raw == bytes,
+          "It keeps its game and bytes");
     check(creature->name == name, "The name");
-    check(creature->abilities[0].permanent == 18 && creature->abilities[0].current == 17,
+    check(creature->abilities.strength == 18 && creature->current_abilities.strength == 17,
           "Strength's permanent and current scores");
-    check(creature->abilities[5].current == 9, "Charisma's current score");
-    check(creature->exceptional_strength == 50, "Exceptional Strength");
+    check(creature->current_abilities.charisma == 9, "Charisma's current score");
+    check(creature->abilities.exceptional_strength == 50, "Exceptional Strength");
     check(creature->base_thac0 == 10 && creature->base_armor_class == 3,
           "THAC0 and Armor Class are 60 minus the stored byte");
     check(creature->race == 7 && creature->character_class == 2, "Race and class");
     check(creature->max_hit_points == 70 && creature->current.hit_points_raw == 66, "Hit points");
-    check(creature->known_spells[0] == 47, "Known spells");
+    check(creature->spell_book.size() == 100 && creature->spell_book[0] == 47, "Known spells");
+    check(creature->memorized_spells.size() == 84, "84 memorized spells");
     check(creature->base_movement == 12 && creature->current.movement == 9, "Movement");
     check(creature->wealth[0] == 1234, "Coins");
     check(creature->levels.fighter == 10, "Fighter level");
@@ -110,6 +113,8 @@ void curse_creatures_are_read_from_their_layout()
     check(creature->experience == 1872 && creature->base_xp_award == 1950,
           "Experience and its award");
     check(creature->item_count == 3 && creature->hostile == 1, "Items and hostility");
+    check(opengold::por::decode_character(bytes, GoldBoxGame::curse_of_the_azure_bonds).has_value(),
+          "decode_character reads each game's layout");
 
     bytes.push_back(0);
     check(!opengold::curse::decode_creature(bytes), "Pool of Radiance's sizes are not Curse's");
