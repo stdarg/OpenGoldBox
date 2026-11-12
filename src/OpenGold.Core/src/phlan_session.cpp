@@ -72,7 +72,11 @@ void RolfTourSession::change_area(unsigned id)
     current_area_ = id;
     snapshot_.area_id = id;
     map_ = *resource.map;
-    wall_art_ = resource.wall_art;
+    // Curse's walls are what its scripts loaded last (LOAD PIECES), whatever the map.
+    if (game() == GoldBoxGame::pool_of_radiance || wall_art_.appearances.empty())
+    {
+        wall_art_ = resource.wall_art;
+    }
     apply_entrances();
     snapshot_.visited = visited_areas_[id];
     snapshot_.seen = seen_areas_[id];
@@ -3496,6 +3500,28 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             }
             break;
         }
+        // In Curse a script loads any map of its disk; 255 keeps the current one.
+        if (game() != GoldBoxGame::pool_of_radiance)
+        {
+            if (arg(0) == 255)
+            {
+                break;
+            }
+            if (!town_->districts.contains(arg(0)))
+            {
+                throw EclError("Resources outside the supported areas (map " +
+                               std::to_string(arg(0)) + ")");
+            }
+            change_area(arg(0));
+            const auto &here = map_.at(machine_.variable(game_cell(ecl_party_x)),
+                                       machine_.variable(game_cell(ecl_party_y)));
+            const auto facing = machine_.variable(game_cell(ecl_party_facing));
+            reply.writes = {
+                {game_cell(ecl_wall_ahead), here.walls[facing % 4]},
+                {game_cell(ecl_cell_event), here.event_raw},
+                {game_address(ecl_current_map, game()), static_cast<std::uint16_t>(arg(0))}};
+            break;
+        }
         // Map 255 keeps the current map: Sokal Keep's elf scroll loads the
         // rune glyphs (bank 16) and then its own art again (bank 2).
         if (current_area_ && arg(0) == 255 && (arg(1) == 16 || arg(1) == 2) && arg(2) == 255)
@@ -3562,6 +3588,22 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         const std::array<unsigned, 3> banks{arg(0), arg(1), arg(2)};
         if (banks == std::array<unsigned, 3>{127, 127, 127})
         {
+            break;
+        }
+        // In Curse a script loads the view's walls itself, as the original does
+        // (eclvm.pas EclLoadFiles): those of its own disk.
+        if (game() != GoldBoxGame::pool_of_radiance)
+        {
+            const auto disk = town_->script_banks.find(current_script_);
+            const auto walls = disk == town_->script_banks.end()
+                                   ? town_->wall_sets.end()
+                                   : town_->wall_sets.find({disk->second, banks});
+            if (walls == town_->wall_sets.end())
+            {
+                throw EclError("Unknown wall banks for script " + std::to_string(current_script_));
+            }
+            wall_art_ = walls->second;
+            ++snapshot_.revision;
             break;
         }
         // A script may load its wall banks before its map (Kovel Mansion's

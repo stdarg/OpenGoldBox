@@ -375,6 +375,13 @@ void curse_opening_reaches_the_first_map()
     check(colours(view) > 2, "The 3D view shows the room's walls");
     check(session.explore(opengold::por::ExplorationCommand::turn_left), "The party turns");
     check(session.observe_view().rgba != view.rgba, "Turning shows another view");
+    // Through the room's west door the innkeeper welcomes the party to Tilverton.
+    check(session.explore(opengold::por::ExplorationCommand::turn_left), "The party faces west");
+    check(session.explore(opengold::por::ExplorationCommand::forward), "The party steps");
+    settle();
+    check(session.snapshot().pose.x == 6 && session.snapshot().pose.y == 13 &&
+              session.snapshot().dialogue.find("TILVERTON") != std::string::npos,
+          "The innkeeper speaks: " + diagnostics());
 }
 
 // A save names its game; a save made before format 48 is Pool of Radiance's.

@@ -76,6 +76,13 @@ class AreaFiles
     mutable std::map<std::string, DaxDecodeResult> archives_;
 };
 
+// The walls LOAD PIECES loads into the view's three slots from the disk's
+// WALLDEF and 8X8D files: bank 255 leaves a slot blank, and a bank of several
+// blocks fills that many slots.
+[[nodiscard]] WallArtSet load_wall_art(const AreaFiles &files, unsigned disk,
+                                       const std::array<unsigned, 3> &pieces,
+                                       const WallArtReplacements &new_wall_art);
+
 // One map of an area, without its creatures: the campaign adds those.
 [[nodiscard]] std::shared_ptr<PhlanResources>
 load_district(const AreaFiles &files, const MapCatalog &maps, const AreaSource &area,

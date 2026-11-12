@@ -196,7 +196,13 @@ In small steps, each with its check:
    7. A folder for each game in the settings; New Game asks for the game;
       the title pictures; the exploration screen, area names and saves by
       game.
-2. Walking the maps, with walls, doors and events.
+2. Walking the maps, with walls, doors and events. *In progress
+   (2026-11-12):* every script and map of *Curse* loads with its disk, and
+   LOAD PIECES loads the view's walls as the original does. Tilverton's
+   streets walk from the inn: the innkeeper, the shops' greetings, the
+   training hall, the sage and the street talk. Events that start a fight
+   wait for step 5, and events that read the current character (the temple)
+   for step 4.
 3. The scripts' text and menus, and the commands *Curse* adds. The script
    coverage ([ECL-COVERAGE.md](ECL-COVERAGE.md)) is kept for each game.
 4. Making a party, and bringing a *Pool of Radiance* party across.

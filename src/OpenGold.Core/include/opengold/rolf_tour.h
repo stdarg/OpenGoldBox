@@ -94,6 +94,9 @@ struct PhlanResources
     // A campaign that starts by running a script's load entry (Curse's script
     // 1 of disk 2) rather than Rolf's tour of New Phlan.
     std::optional<unsigned> opening_script;
+    // The walls a campaign's LOAD PIECES may load, by disk and the three banks
+    // (Curse's; Pool of Radiance's areas list their walls with their maps).
+    std::map<std::pair<unsigned, std::array<unsigned, 3>>, WallArtSet> wall_sets;
     std::map<unsigned, std::shared_ptr<const EclProgram>> programs;
     // Each area script's archive bank, including a script with no map of its
     // own (the dragon's cave).

@@ -5,7 +5,10 @@
 #include "opengold/map_catalog.h"
 #include "opengold/por_sound.h"
 
+#include <algorithm>
+#include <map>
 #include <stdexcept>
+#include <string>
 
 namespace opengold
 {
@@ -14,16 +17,51 @@ namespace
 
 using por::EclError;
 
-// Curse of the Azure Bonds' areas, as its scripts load them: script, disk
-// and maps with their LOAD PIECES wall banks (docs/games/curse.md). The game
-// starts with script 1 of disk 2, in the room the party wakes in.
-const std::vector<por::detail::AreaSource> &curse_areas()
-{
-    static const std::vector<por::detail::AreaSource> areas{{1, 2, {{1, {1, 2, 3}}}}};
-    return areas;
-}
-
 constexpr unsigned curse_opening_script = 1, curse_opening_disk = 2;
+constexpr std::uint8_t load_files = 0x21, load_pieces = 0x37;
+
+// What Curse's scripts load, read from the scripts themselves: a script's
+// number is the same on every disk, its disk is the ECLn.DAX that holds it,
+// and its LOAD FILES and LOAD PIECES name maps and wall banks of that disk.
+struct ScriptLoads
+{
+    unsigned disk{};
+    std::vector<unsigned> maps;
+    std::vector<std::array<unsigned, 3>> walls;
+};
+
+std::map<unsigned, ScriptLoads> script_loads(const por::EclCatalog &catalog)
+{
+    std::map<unsigned, ScriptLoads> loads;
+    for (const auto &[id, program] : catalog.all())
+    {
+        auto &script = loads[id.record];
+        script.disk = static_cast<unsigned>(std::stoul(id.archive.substr(3)));
+        for (const auto &i : por::walk_reachable(*program).instructions)
+        {
+            const bool written = std::all_of(i.operands.begin(), i.operands.end(),
+                                             [](const auto &operand)
+                                             {
+                                                 return operand.tag == 0;
+                                             });
+            if (!written || i.operands.size() != 3)
+            {
+                continue;
+            }
+            const std::array<unsigned, 3> values{i.operands[0].value, i.operands[1].value,
+                                                 i.operands[2].value};
+            if (i.opcode == load_files && values[0] != 255 && values[0] != 127)
+            {
+                script.maps.push_back(values[0]);
+            }
+            if (i.opcode == load_pieces && values[0] != 127)
+            {
+                script.walls.push_back(values);
+            }
+        }
+    }
+    return loads;
+}
 
 por::RolfTourSession load_curse_campaign(const std::filesystem::path &folder)
 {
@@ -54,22 +92,53 @@ por::RolfTourSession load_curse_campaign(const std::filesystem::path &folder)
     root->item_templates = *templates;
     root->bank = curse_opening_disk;
     root->opening_script = curse_opening_script;
-    for (const auto &area : curse_areas())
+    const auto loads = script_loads(catalog);
+    for (const auto &[id, program] : catalog.all())
     {
-        const auto bank = std::to_string(area.bank);
-        const auto program =
-            catalog.find({"ECL" + bank + ".DAX", static_cast<std::uint8_t>(area.script)});
-        if (!program)
+        root->programs.emplace(id.record, program);
+        root->script_banks.emplace(id.record, loads.at(id.record).disk);
+    }
+    for (const auto &[script, load] : loads)
+    {
+        for (const auto &walls : load.walls)
         {
-            throw EclError("Missing area script ECL" + bank + ":" + std::to_string(area.script));
+            const auto key = std::make_pair(load.disk, walls);
+            if (!root->wall_sets.contains(key))
+            {
+                root->wall_sets.emplace(key,
+                                        por::detail::load_wall_art(files, load.disk, walls, {}));
+            }
         }
-        root->programs.emplace(area.script, program);
-        root->script_banks.emplace(area.script, area.bank);
-        for (const auto &geo : area.maps)
+    }
+    // Each map once, held by the scripts that load it; its walls until a
+    // script's LOAD PIECES replaces them are the first such script's.
+    for (const auto &[map_id, map] : maps.all())
+    {
+        const auto map_disk = static_cast<unsigned>(std::stoul(map_id.archive.substr(3)));
+        std::vector<unsigned> scripts;
+        std::array<unsigned, 3> walls{por::detail::no_wall_bank, por::detail::no_wall_bank,
+                                      por::detail::no_wall_bank};
+        for (const auto &[script, load] : loads)
         {
-            root->districts.emplace(geo.id,
-                                    por::detail::load_district(files, maps, area, geo, {}, {}));
+            if (load.disk == map_disk &&
+                std::find(load.maps.begin(), load.maps.end(), map_id.record) != load.maps.end())
+            {
+                if (scripts.empty() && !load.walls.empty())
+                {
+                    walls = load.walls.front();
+                }
+                scripts.push_back(script);
+            }
         }
+        if (scripts.empty())
+        {
+            continue;
+        }
+        const por::detail::AreaSource area{scripts.front(), map_disk, {}};
+        const por::detail::DistrictMap geo{
+            map_id.record, walls, {scripts.begin() + 1, scripts.end()}};
+        root->districts.emplace(map_id.record,
+                                por::detail::load_district(files, maps, area, geo, {}, {}));
     }
     return por::RolfTourSession(por::GeoMap{}, opening, {}, 0, {}, std::move(root));
 }

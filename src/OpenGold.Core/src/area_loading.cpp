@@ -152,6 +152,40 @@ WallArtSet wall_bank(const AreaFiles &files, const std::string &bank, unsigned i
 
 } // namespace
 
+WallArtSet load_wall_art(const AreaFiles &files, unsigned disk,
+                         const std::array<unsigned, 3> &pieces,
+                         const WallArtReplacements &new_wall_art)
+{
+    const auto bank = std::to_string(disk);
+    WallArtSet walls;
+    // Three five-appearance slots, each from its LOAD PIECES bank.
+    for (std::size_t slot = 0; slot < pieces.size();)
+    {
+        const auto id = pieces[slot];
+        if (id == no_wall_bank)
+        {
+            walls.appearances.resize(walls.appearances.size() + 5);
+            walls.originals.resize(walls.appearances.size());
+            ++slot;
+            continue;
+        }
+        std::size_t blocks{};
+        auto with_new_art = wall_bank(files, bank, id, new_wall_art, blocks);
+        if (slot + blocks > pieces.size())
+        {
+            throw EclError("Invalid wall definition bank " + std::to_string(id));
+        }
+        walls.scale = with_new_art.scale;
+        walls.appearances.insert(walls.appearances.end(), with_new_art.appearances.begin(),
+                                 with_new_art.appearances.end());
+        with_new_art.originals.resize(with_new_art.appearances.size());
+        walls.originals.insert(walls.originals.end(), with_new_art.originals.begin(),
+                               with_new_art.originals.end());
+        slot += blocks;
+    }
+    return walls;
+}
+
 std::shared_ptr<PhlanResources> load_district(const AreaFiles &files, const MapCatalog &maps,
                                               const AreaSource &area, const DistrictMap &geo,
                                               const WallArtReplacements &new_wall_art,
@@ -170,33 +204,7 @@ std::shared_ptr<PhlanResources> load_district(const AreaFiles &files, const MapC
     district->bank = area.bank;
     district->pieces = geo.pieces;
     district->treasure = files.item_lists("ITEM" + bank + ".DAX");
-    // Three five-appearance slots, each from its LOAD PIECES bank.
-    for (std::size_t slot = 0; slot < geo.pieces.size();)
-    {
-        const auto id = geo.pieces[slot];
-        if (id == no_wall_bank)
-        {
-            district->wall_art.appearances.resize(district->wall_art.appearances.size() + 5);
-            district->wall_art.originals.resize(district->wall_art.appearances.size());
-            ++slot;
-            continue;
-        }
-        std::size_t blocks{};
-        auto with_new_art = wall_bank(files, bank, id, new_wall_art, blocks);
-        if (slot + blocks > geo.pieces.size())
-        {
-            throw EclError("Invalid wall definition bank " + std::to_string(id));
-        }
-        district->wall_art.scale = with_new_art.scale;
-        district->wall_art.appearances.insert(district->wall_art.appearances.end(),
-                                              with_new_art.appearances.begin(),
-                                              with_new_art.appearances.end());
-        with_new_art.originals.resize(with_new_art.appearances.size());
-        district->wall_art.originals.insert(district->wall_art.originals.end(),
-                                            with_new_art.originals.begin(),
-                                            with_new_art.originals.end());
-        slot += blocks;
-    }
+    district->wall_art = load_wall_art(files, area.bank, geo.pieces, new_wall_art);
     district->sprite_archive =
         read_archive(resolve_archive(files.directory(), "SPRIT" + bank + ".DAX"));
     district->combat_archive =
