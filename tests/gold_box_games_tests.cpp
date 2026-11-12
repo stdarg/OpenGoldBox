@@ -1,6 +1,8 @@
 // Telling the Gold Box games apart and reading what Curse of the Azure Bonds
 // changed (docs/GAMES.md, docs/games/curse.md). The census of the real files
 // runs in tests/game_census.cmake.
+#include "opengold/campaign_party.h"
+#include "opengold/campaign_save.h"
 #include "opengold/character_art.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/curse_records.h"
@@ -11,6 +13,7 @@
 #include "opengold/game_census.h"
 #include "opengold/magic_item_catalog.h"
 #include "opengold/sound_bank.h"
+#include "opengold/srd5.h"
 #include "test_support.h"
 
 #include <cstdlib>
@@ -280,6 +283,34 @@ void the_loaders_read_curse()
     check(sounds.at(10).audible, "Curse's footstep sounds");
 }
 
+// A save names its game; a save made before format 48 is Pool of Radiance's.
+void a_save_names_its_game()
+{
+    const auto rules_file =
+        std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules";
+    opengold::CampaignParty party(opengold::srd5::load(rules_file));
+    const auto module = opengold::srd5::load(rules_file);
+    const auto creation_rules = opengold::srd5::character_rules();
+    const auto &creation = *creation_rules;
+    const auto curse_save =
+        opengold::encode_campaign(party, nullptr, "files", GoldBoxGame::curse_of_the_azure_bonds);
+    check(curse_save.starts_with("OPENGOLD-CAMPAIGN 48\n"), "Saves are format 48");
+    check(opengold::decode_campaign(curse_save, creation, *module, "files", nullptr).game ==
+              GoldBoxGame::curse_of_the_azure_bonds,
+          "The save keeps its game");
+    const auto older = opengold::encode_campaign_in_format(party, nullptr, "files", 47);
+    check(opengold::decode_campaign(older, creation, *module, "files", nullptr).game ==
+              GoldBoxGame::pool_of_radiance,
+          "A format 47 save is Pool of Radiance's");
+    rejects(
+        [&]
+        {
+            static_cast<void>(opengold::encode_campaign_in_format(
+                party, nullptr, "files", 47, GoldBoxGame::curse_of_the_azure_bonds));
+        },
+        "Format 47 cannot record another game");
+}
+
 } // namespace
 
 int main()
@@ -292,6 +323,7 @@ int main()
         the_machine_runs_curse_scripts();
         curse_script_memory_is_pool_of_radiance_moved();
         the_loaders_read_curse();
+        a_save_names_its_game();
         the_font_has_eight_bytes_a_glyph();
         std::cout << "Gold Box games passed.\n";
     }

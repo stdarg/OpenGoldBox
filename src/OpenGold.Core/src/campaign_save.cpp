@@ -21,11 +21,14 @@ constexpr std::size_t limit = 16 * 1024 * 1024;
 // format 45, the same fields saved before characters chose original portraits:
 // it still loads, and its members on head 1 and body 1 (the default, never
 // chosen) are listed for a random original portrait.
-constexpr unsigned campaign_format = 47;
+constexpr unsigned campaign_format = 48;
 constexpr unsigned unchosen_portraits_format = 45;
 // The first format with a creation draft's rules data (the original rules'
 // rolls); earlier saves are all SRD, whose drafts have none.
 constexpr unsigned draft_rules_data_format = 47;
+// The first format that names the campaign's game; earlier saves are all Pool
+// of Radiance's (docs/GAMES.md).
+constexpr unsigned game_format = 48;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -890,14 +893,16 @@ static_assert(!encodes_const_campaign<SaveReader>, "Only the writer may visit co
 } // namespace
 
 std::string encode_campaign(const CampaignParty &party, const por::RolfTourSession *town,
-                            std::string_view assets)
+                            std::string_view assets, GoldBoxGame game)
 {
-    return encode_campaign_in_format(party, town, assets, campaign_format);
+    return encode_campaign_in_format(party, town, assets, campaign_format, game);
 }
 
 std::string encode_campaign_in_format(const CampaignParty &party, const por::RolfTourSession *town,
-                                      std::string_view assets, unsigned format)
+                                      std::string_view assets, unsigned format, GoldBoxGame game)
 {
+    require(format >= game_format || game == GoldBoxGame::pool_of_radiance,
+            "An older campaign format cannot record another game");
     require(format >= unchosen_portraits_format && format <= campaign_format,
             "This build cannot write that campaign format");
     require(format >= draft_rules_data_format ||
@@ -913,7 +918,13 @@ std::string encode_campaign_in_format(const CampaignParty &party, const por::Rol
     auto identity = party.identity();
     std::string asset(assets);
     const auto &state = party.state();
-    out.fields(identity, asset, state);
+    out.fields(identity, asset);
+    if (format >= game_format)
+    {
+        auto game_number = static_cast<unsigned>(game);
+        out.field(game_number);
+    }
+    out.field(state);
     bool has_town = town != nullptr;
     out.field(has_town);
     if (town)
@@ -1020,6 +1031,13 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     }
     require(asset == assets, "Campaign original asset identity mismatch");
     SavedCampaign result;
+    if (version >= game_format)
+    {
+        unsigned game_number{};
+        in.field(game_number);
+        require(game_number < gold_box_games.size(), "Unknown campaign game");
+        result.game = gold_box_games[game_number];
+    }
     in.field(result.party);
     CampaignParty::validate(result.party);
     for (const auto &m : result.party.roster)

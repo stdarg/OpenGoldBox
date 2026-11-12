@@ -46,10 +46,11 @@ template <class F> std::string rejection_message(F f)
 }
 
 // The campaign format this build writes. It also reads format 45, saved
-// before characters chose original portraits, and 46, before drafts carried
-// the original rules' rolls.
-constexpr unsigned current_campaign_format = 47;
+// before characters chose original portraits, 46, before drafts carried the
+// original rules' rolls, and 47, before a save named its game.
+constexpr unsigned current_campaign_format = 48;
 constexpr unsigned unchosen_portraits_format = 45;
+constexpr unsigned draft_rules_data_format = 47;
 
 // The checksum line covers only the body, so rewriting the header number
 // changes nothing but the claimed format.
@@ -356,7 +357,7 @@ void check_campaign_format_cutoff(const CampaignParty &party, const por::RolfTou
         encode_campaign_in_format(party, &town, "fixture-v1", unchosen_portraits_format),
         *srd5::character_rules(), rules, "fixture-v1", &town_template);
     const auto before_rules_data = decode_campaign(
-        encode_campaign_in_format(party, &town, "fixture-v1", current_campaign_format - 1),
+        encode_campaign_in_format(party, &town, "fixture-v1", draft_rules_data_format - 1),
         *srd5::character_rules(), rules, "fixture-v1", &town_template);
     check(before_rules_data.party.roster.size() == current.party.roster.size() &&
               before_rules_data.unchosen_portraits.empty(),

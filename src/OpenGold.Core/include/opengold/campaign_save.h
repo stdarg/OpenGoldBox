@@ -14,17 +14,22 @@ struct SavedCampaign
     // Members saved before characters chose original portraits, still on the
     // default head and body: the game gives each a random original portrait.
     std::vector<MemberId> unchosen_portraits;
+    // The game the campaign belongs to; saves before format 48 are Pool of Radiance's.
+    GoldBoxGame game{GoldBoxGame::pool_of_radiance};
 };
 template <bool Reading> struct SaveCodec;
 [[nodiscard]] std::string campaign_asset_identity(const std::filesystem::path &directory);
 [[nodiscard]] std::string encode_campaign(const CampaignParty &, const por::RolfTourSession *,
-                                          std::string_view assets);
+                                          std::string_view assets,
+                                          GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 // The campaign in an earlier format this build still reads, from 45, for
 // checks that such saves load. Throws when the party holds what that format
-// cannot record: before 47, a character made under the original rules.
-[[nodiscard]] std::string encode_campaign_in_format(const CampaignParty &,
-                                                    const por::RolfTourSession *,
-                                                    std::string_view assets, unsigned format);
+// cannot record: before 47, a character made under the original rules; before
+// 48, a game other than Pool of Radiance.
+[[nodiscard]] std::string
+encode_campaign_in_format(const CampaignParty &, const por::RolfTourSession *,
+                          std::string_view assets, unsigned format,
+                          GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 [[nodiscard]] SavedCampaign decode_campaign(std::string_view, const rules::CharacterRules &,
                                             const rules::RulesModule &, std::string_view assets,
                                             const por::RolfTourSession *town_template);

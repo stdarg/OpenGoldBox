@@ -165,7 +165,7 @@ The steps, each pushed on its own with every test passing:
    take the game. The wilderness in `START.EXE` is *Pool of Radiance*'s own
    content and moves with step 6.
 5. **A save names its game** (phase 0's save change; a campaign format change).
-   An old save loads as *Pool of Radiance*.
+   An old save loads as *Pool of Radiance*. *Done 2026-11-12:* campaign format 48.
 6. **The campaign behind one seam:** the game reaches *Pool of Radiance*'s own
    content (the Phlan session, the wilderness, teleports, secrets, portraits,
    place names) through one interface chosen by the game, so *Curse*'s can sit
