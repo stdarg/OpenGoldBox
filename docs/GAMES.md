@@ -109,7 +109,8 @@ the reconstructed sources and go into `docs/games/<game>.md`.
 Done for a game when its census decodes every file.
 
 **Status:** done for *Pool of Radiance* and *Curse* (2026-11-12). Run it with
-`build/opengold_census FOLDER...`, where a folder is one game's or one holding
+`opengold_census FOLDER...` (in `build/macos-universal` after `./build.sh`,
+or `build` in a native build), where a folder is one game's or one holding
 several (`/Users/edmond/GoldBox`). It prints a row for each kind of file: how
 many pieces decoded and the first that did not. The test
 `opengold_game_census` requires every finished game to decode completely. It
