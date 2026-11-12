@@ -56,6 +56,31 @@ Combatant character_combatant(const CharacterSheet &sheet)
                                                     "halfling", "half_orc", "human"};
     const auto race = std::find(races.begin(), races.end(), sheet.race);
     c.race = race == races.end() ? 7 : static_cast<int>(race - races.begin()) + 1;
+    c.constitution = sheet.scores[Ability::constitution];
+    // The innate effects each race gets at creation (chargen.pas): the
+    // Constitution saves against poison (90) and against spells and wands
+    // (97), and the elf's and half-elf's resistance to sleep and charm (107, 124).
+    constexpr int dwarf = 1, elf = 2, gnome = 3, half_elf = 4, halfling = 5;
+    const auto innate = [&c](int code)
+    {
+        c.effects.push_back({code, 0, 255, false});
+    };
+    if (c.race == dwarf || c.race == halfling)
+    {
+        innate(90);
+    }
+    if (c.race == dwarf || c.race == halfling || c.race == gnome)
+    {
+        innate(97);
+    }
+    if (c.race == elf)
+    {
+        innate(107);
+    }
+    if (c.race == half_elf)
+    {
+        innate(124);
+    }
     c.thief_level = original.class_levels[static_cast<std::size_t>(ClassSlot::thief)];
     // Unarmed and unarmored, a thief can backstab.
     c.backstabs = c.thief_level > 0;

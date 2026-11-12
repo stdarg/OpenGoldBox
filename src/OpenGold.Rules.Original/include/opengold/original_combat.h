@@ -124,6 +124,12 @@ struct Combatant
     int strength{10};
     // Its undead level for turning (1 skeleton to 10 vampire), 0 for the living.
     int undead_level{};
+    // Its Constitution, for the racial saving throw bonuses; its alignment
+    // (0 lawful good to 8 chaotic evil, in the original's order); and its
+    // creature type (above 1, Charm Person cannot charm it).
+    int constitution{10}, alignment{4}, creature_type{};
+    // The spells it has memorized, by number (original_spells.h), a copy each.
+    std::vector<int> spells;
     // Its race by the original's numbers: 0 a monster, then dwarf, elf,
     // gnome, half-elf, halfling, half-orc and human (1 to 7).
     int race{};

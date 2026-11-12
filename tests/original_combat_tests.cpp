@@ -1691,6 +1691,239 @@ void clerics_turn_undead()
           "A turned skeleton is forced to flee");
 }
 
+// A caster of this class and level with these spells memorized.
+original::Combatant caster(original::ClassSlot slot, int level, std::vector<int> spells)
+{
+    auto c = creature(30, level);
+    c.class_levels[static_cast<std::size_t>(slot)] = level;
+    c.spells = std::move(spells);
+    return c;
+}
+
+std::optional<rules::Command> cast_command(const rules::CombatSession &session, int spell)
+{
+    for (const auto &c : session.legal_commands())
+    {
+        if (c.verb == "cast" && c.item == static_cast<unsigned>(spell))
+        {
+            return c;
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<rules::Command> aim_at(const rules::CombatSession &session, std::string_view name)
+{
+    return offered(session, "aim", name);
+}
+
+std::optional<rules::Command> aim_at_cell(const rules::CombatSession &session, rules::Cell cell)
+{
+    return offered(session, "aim", {}, cell);
+}
+
+// Bless takes 3 off the caster's initiative and goes off later in the round,
+// aimed then: the caster's side within 2 of the aim, but not one with an enemy
+// next to it (magic.pas; combat.pas, CastSpellCombat).
+void bless_waits_for_its_turn()
+{
+    using original::ClassSlot;
+    auto fight = arrange({{"Cleric", rules::Side::party, {1, 3}, caster(ClassSlot::cleric, 3, {1})},
+                          {"Ally", rules::Side::party, {1, 4}, creature(20)},
+                          {"Engaged", rules::Side::party, {2, 2}, creature(20)},
+                          {"Kobold", rules::Side::opposition, {3, 1}, creature(20, 0)}},
+                         71);
+    auto &session = *fight.session;
+    until_turn_of(session, "Cleric");
+    const auto round = session.snapshot().round;
+    check(session.submit(*cast_command(session, 1)), "The cleric casts Bless");
+    check(logged(session, "{name} begins casting {spell}.") == 1 && actor_name(session) != "Cleric",
+          "It begins casting, and its turn passes");
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return actor_name(session) == "Cleric";
+        });
+    check(session.snapshot().round == round && aim_at_cell(session, {1, 3}).has_value(),
+          "Later in the round it aims Bless");
+    session.submit(*aim_at_cell(session, {1, 3}));
+    const auto blessed = [&](std::string_view name)
+    {
+        const auto numbers = left_by_fight(session, name);
+        return std::any_of(numbers.effects.begin(), numbers.effects.end(),
+                           [](const original::Effect &e)
+                           {
+                               return e.code == 1;
+                           });
+    };
+    check(blessed("Cleric") && blessed("Ally") && !blessed("Engaged") && !blessed("Kobold"),
+          "Its side is blessed, but not one beside an enemy, nor the enemy");
+    check(left_by_fight(session, "Cleric").spells.empty(), "The memorized Bless is spent");
+}
+
+// A spell being cast is lost to damage before it goes off, and its memorized
+// copy with it (cbtacts.pas, ProcessAttackResult).
+void damage_loses_a_spell()
+{
+    using original::ClassSlot;
+    int lost = 0;
+    for (std::uint64_t seed = 1; seed <= 30 && lost == 0; ++seed)
+    {
+        auto fight = arrange(
+            {{"Cleric", rules::Side::party, {1, 3}, caster(ClassSlot::cleric, 3, {2})},
+             {"Ogre", rules::Side::opposition, {2, 3}, monster({2, 1, 1, 3}, {0, 0, 0, 0}, {})}},
+            seed);
+        auto &session = *fight.session;
+        play_until(
+            session,
+            [&](const std::string &actor)
+            {
+                if (actor == "Cleric")
+                {
+                    if (const auto cast = cast_command(session, 2))
+                    {
+                        return *cast;
+                    }
+                    if (const auto aim = aim_at_cell(session, {2, 3}))
+                    {
+                        return *aim;
+                    }
+                }
+                if (actor == "Ogre")
+                {
+                    if (const auto melee = offered(session, "melee", "Cleric"))
+                    {
+                        return *melee;
+                    }
+                }
+                return order(session, "end");
+            },
+            [&]
+            {
+                return session.snapshot().round > 1;
+            });
+        if (logged(session, "{name} loses a spell.") > 0)
+        {
+            ++lost;
+            check(left_by_fight(session, "Cleric").spells.empty() &&
+                      logged(session, "{name} casts {spell}.") == 0,
+                  "The lost Curse is gone from memory and never cast");
+        }
+    }
+    check(lost > 0, "An ogre's blow between beginning and casting loses the spell");
+}
+
+// Magic Missile: a missile of 1d4+1 at level 1, magic damage that Shield stops
+// (magic.pas; effhndlr.pas, EffShield).
+void magic_missiles()
+{
+    using original::ClassSlot;
+    const auto missile = [](original::Combatant target)
+    {
+        auto fight =
+            arrange({{"Mage", rules::Side::party, {1, 3}, caster(ClassSlot::magic_user, 1, {15})},
+                     {"Target", rules::Side::opposition, {6, 3}, target}},
+                    73);
+        auto &session = *fight.session;
+        until_turn_of(session, "Mage");
+        session.submit(*cast_command(session, 15));
+        session.submit(*aim_at(session, "Target"));
+        for (const auto &entry : session.snapshot().log_entries)
+        {
+            if (entry.message.source == "{name} takes {damage}.")
+            {
+                return std::stoi(entry.message.arguments[1].value);
+            }
+        }
+        return 0;
+    };
+    const int damage = missile(creature(50, 0));
+    check(damage >= 2 && damage <= 5, "One missile of 1d4+1 at level 1");
+    auto shielded = creature(50, 0);
+    shielded.effects = {{17, 5, 1, false}};
+    check(missile(shielded) == 0, "Shield stops it");
+}
+
+// Sleep: 4d4 levels' worth within 1 of the aim, the nearest first; anything
+// of level 6 or more never sleeps (magic.pas, the sleep).
+void sleep_takes_the_weak()
+{
+    using original::ClassSlot;
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 1, {21})},
+                 {"Kobold 1", rules::Side::opposition, {4, 3}, creature(5, 0)},
+                 {"Kobold 2", rules::Side::opposition, {5, 3}, creature(5, 0)},
+                 {"Ogre", rules::Side::opposition, {4, 4}, creature(50, 6)}},
+                79);
+    auto &session = *fight.session;
+    until_turn_of(session, "Mage");
+    session.submit(*cast_command(session, 21));
+    session.submit(*aim_at_cell(session, {4, 3}));
+    const auto state = session.snapshot();
+    check(view_of(state, "Kobold 1").status == "helpless" &&
+              view_of(state, "Kobold 2").status == "helpless",
+          "The kobolds fall asleep");
+    check(view_of(state, "Ogre").status.empty(), "A level-6 ogre does not");
+}
+
+// Charm Person takes a creature over unless it saves (magic.pas, the charm).
+void charm_person_turns_a_foe()
+{
+    using original::ClassSlot;
+    auto foe = victim(20);
+    foe.creature_type = 0;
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 1, {10})},
+                 {"Bandit", rules::Side::opposition, {4, 3}, foe}},
+                83);
+    auto &session = *fight.session;
+    until_turn_of(session, "Mage");
+    session.submit(*cast_command(session, 10));
+    session.submit(*aim_at(session, "Bandit"));
+    check(view_of(session.snapshot(), "Bandit").side == rules::Side::party,
+          "The charmed bandit fights for the party");
+}
+
+// Cure Light Wounds reaches a downed member next to the cleric and heals it,
+// though it stays down in the fight (magic.pas, the cure).
+void cure_light_wounds_stops_bleeding()
+{
+    using original::ClassSlot;
+    auto downed = creature(10);
+    downed.hit_points = 0;
+    auto fight = arrange({{"Cleric", rules::Side::party, {1, 3}, caster(ClassSlot::cleric, 1, {3})},
+                          {"Wounded", rules::Side::party, {2, 3}, downed},
+                          {"Kobold", rules::Side::opposition, {7, 7}, creature(5, 0)}},
+                         89);
+    auto &session = *fight.session;
+    until_turn_of(session, "Cleric");
+    session.submit(*cast_command(session, 3));
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return actor_name(session) == "Cleric";
+        });
+    check(aim_at(session, "Wounded").has_value(), "Within a touch, the wounded can be healed");
+    const auto checkpoint = session.save();
+    const auto restored = fight.module->restore(checkpoint);
+    check(restored->save() == checkpoint && aim_at(*restored, "Wounded").has_value(),
+          "A fight saved while aiming goes on aiming");
+    session.submit(*aim_at(session, "Wounded"));
+    const auto &healed = view_of(session.snapshot(), "Wounded");
+    check(logged(session, "{name} is healed.") == 1 && healed.status == "unconscious",
+          "The cure lands, and the healed member stays down");
+}
+
 } // namespace
 
 int main()
@@ -1731,6 +1964,12 @@ int main()
         some_cannot_be_targeted();
         a_mummy_frightens();
         clerics_turn_undead();
+        bless_waits_for_its_turn();
+        damage_loses_a_spell();
+        magic_missiles();
+        sleep_takes_the_weak();
+        charm_person_turns_a_foe();
+        cure_light_wounds_stops_bleeding();
         real_records_fight();
         std::cout << "Original-rules combat passed.\n";
     }

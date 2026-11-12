@@ -3,6 +3,7 @@
 #include "opengold/dice.h"
 #include "opengold/movement_grid.h"
 #include "opengold/original_rules.h"
+#include "opengold/original_spells.h"
 
 #include <algorithm>
 #include <charconv>
@@ -30,7 +31,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 9";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 10";
 
 enum class Condition : unsigned
 {
@@ -65,7 +66,9 @@ constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_r
               paralysis = 52, immobile = 58, see_invisible = 24, invisible = 25, blink = 37,
               regenerating_soon = 59, camouflage = 72, mummy_fear = 82, displacement = 89,
               fighting_on = 95, regeneration = 98, fights_while_down = 99, troll_burn = 100,
-              troll_heal = 101, troll_return = 102, gaze_block = 126;
+              troll_heal = 101, troll_return = 102, gaze_block = 126, bless = 1, curse = 2,
+              protection_from_evil = 8, protection_from_good = 9, resist_cold = 10, charm = 11,
+              shield = 17, resist_fire = 20, sleep = 53;
 // Displacement keeps whether it has turned an attack aside in this bit of its strength.
 constexpr int displaced = 0x10;
 } // namespace effect
@@ -112,6 +115,15 @@ struct Fighter
     bool turned{};
     // It has tried to turn undead in this fight: once a fight.
     bool tried_turning{};
+    // Casting: whether it may still start a spell this round (damage and
+    // silence stop it), the spell it has begun that goes off at its next
+    // turn, and the spell it is aiming now with the creatures picked so far
+    // and the picks it has left.
+    bool cast_allowed{true};
+    int pending_spell{}, aiming{}, picks_left{};
+    std::vector<EntityId> picked;
+    // Its side before a charm took it over.
+    Side own_side{Side::party};
 
     [[nodiscard]] bool able() const noexcept
     {
@@ -396,6 +408,49 @@ class Reader
     }
 };
 
+int attack_modifier(const Fighter &attacker, const Fighter &defender);
+
+// A caster's level for a spell: its cleric or magic-user level, 12 for an
+// item's own power (magic.pas, GetCasterLevel).
+int caster_level(const Fighter &caster, const Spell &spell)
+{
+    switch (spell.caster_class)
+    {
+    case SpellClass::cleric:
+        return caster.numbers.class_levels[static_cast<std::size_t>(ClassSlot::cleric)];
+    case SpellClass::magic_user:
+        return caster.numbers.class_levels[static_cast<std::size_t>(ClassSlot::magic_user)];
+    default:
+        return 12;
+    }
+}
+
+// A spell's range in squares at a level: a touch is 1 (magic.pas).
+int spell_range(const Spell &spell, int level)
+{
+    if (spell.range_fixed == 255)
+    {
+        return 1;
+    }
+    const int range = spell.range_fixed + spell.range_per_level * level;
+    return range == 0 && spell.area != 0 ? 1 : range;
+}
+
+// The original's doubled distance between two squares along a line: 2 a
+// straight step, 3 a diagonal one (pathing.pas, NextPathStep).
+int doubled_distance(Cell a, Cell b)
+{
+    const int dx = std::abs(a.x - b.x), dy = std::abs(a.y - b.y);
+    return 2 * std::max(dx, dy) + std::min(dx, dy);
+}
+
+// The spells built so far; the rest are not offered yet.
+bool spell_built(int number)
+{
+    constexpr std::array<int, 17> built{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 15, 16, 17, 19, 20, 21};
+    return std::find(built.begin(), built.end(), number) != built.end();
+}
+
 class Session final : public rules::CombatSession
 {
   public:
@@ -482,6 +537,21 @@ class Session final : public rules::CombatSession
     void rake(Fighter &attacker, Fighter &victim);
     void attached_turn(Fighter &f);
     void turn_undead(Fighter &cleric);
+    void begin_cast(Fighter &caster, int spell_number);
+    void start_aiming(Fighter &caster, int spell_number);
+    void resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell aim);
+    void lose_spell(Fighter &caster);
+    [[nodiscard]] std::vector<rules::Command> aiming_commands(const Fighter &caster) const;
+    [[nodiscard]] bool reachable_by_spell(const Fighter &caster, const Fighter &target) const;
+    [[nodiscard]] std::vector<EntityId> within(Cell aim, int radius) const;
+    void cast_generic(Fighter &caster, int number, int level, const std::vector<EntityId> &targets,
+                      int damage, int element);
+    bool add_with_message(Fighter &target, Effect added, bool negates, bool saved, int element,
+                          int caster_level, const Spell *spell);
+    void nonweapon_damage(Fighter &target, int damage, int save_result, bool saved, int element,
+                          int caster_level, int spell_number);
+    void charm(Fighter &target, Side charmer);
+    void cast_sleep(int level, Cell aim);
     void combat_start();
     void round_end_effects();
     void expire(Fighter &f, const Effect &ended);
@@ -493,7 +563,8 @@ class Session final : public rules::CombatSession
     [[nodiscard]] int weapon_damage_defenses(const Fighter &attacker, Fighter &defender, int damage,
                                              int phase, int &primary_hits);
     void age_effects();
-    [[nodiscard]] bool saving_throw(const Fighter &f, int save, int modifier);
+    [[nodiscard]] bool saving_throw(const Fighter &f, int save, int modifier,
+                                    const Fighter *caster = nullptr, int element = 0);
     void update_hostile_hit_points();
     [[nodiscard]] int highest_enemy_movement(const Fighter &f) const;
     bool check_morale(Fighter &f);
@@ -546,6 +617,9 @@ void Session::begin_round()
             }
         }
         f.half_moves = f.has(effect::immobile) ? 0 : 2 * f.numbers.movement;
+        f.cast_allowed = true;
+        f.pending_spell = f.aiming = f.picks_left = 0;
+        f.picked.clear();
         f.attack_phase = 1;
         f.sweep_budget = f.numbers.attack_level;
         for (std::size_t form = 0; form < f.attacks_left.size(); ++form)
@@ -618,6 +692,18 @@ void Session::next_actor()
             {
                 continue;
             }
+            // A spell begun earlier in the round goes off now (combat.pas,
+            // ManualControl): its targets are chosen as it does.
+            if (best->pending_spell)
+            {
+                const int pending = best->pending_spell;
+                best->pending_spell = 0;
+                start_aiming(*best, pending);
+                if (best->initiative <= 0)
+                {
+                    continue;
+                }
+            }
             actor_ = best->id;
             return;
         }
@@ -652,6 +738,7 @@ void Session::end_round()
 void Session::end_actions(Fighter &fighter)
 {
     fighter.initiative = 0;
+    fighter.pending_spell = 0;
     fighter.guarding = false;
     fighter.half_moves = 0;
 }
@@ -690,9 +777,12 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
         direction_toward(attacker.cell, defender.cell) == defender.direction;
     const bool backstab = attacker.numbers.backstabs && behind_its_back;
     const bool behind = from_behind || (behind_its_back && defender.flank_spread > 4);
+    // Shield keeps the front Armor Class at 3 or better (effhndlr.pas, EffShield).
+    const int front = defender.has(effect::shield) ? std::min(defender.numbers.armor_class, 3)
+                                                   : defender.numbers.armor_class;
     const int armor_class = backstab ? defender.numbers.rear_armor_class + 2
                             : behind ? defender.numbers.rear_armor_class
-                                     : defender.numbers.armor_class;
+                                     : front;
     if (defender.helpless())
     {
         slay_helpless(attacker, defender);
@@ -724,7 +814,7 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
             {
                 attacker.remove(effect::invisible);
             }
-            const int modifier = defender.has(effect::invisible) ? -4 : 0;
+            const int modifier = attack_modifier(attacker, defender);
             // One made helpless partway through is hit by the rest (cbtacts.pas, RollAttacks).
             const bool aside = natural > 1 && turned_aside(defender);
             if ((aside || !attack_hits(natural, attacker.numbers.thac0, armor_class, modifier)) &&
@@ -762,6 +852,29 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
     {
         end_actions(attacker);
     }
+}
+
+// What an attacker's and a defender's effects do to its attack roll
+// (fxengine.pas, AttackRoll): Bless +1, Curse -1, an invisible defender 4
+// harder, and a protected one 2 harder for an attacker of the alignment it is
+// protected from. The original lost that 2 to a roll made after it (an
+// obvious bug, fixed).
+int attack_modifier(const Fighter &attacker, const Fighter &defender)
+{
+    int modifier = (attacker.has(effect::bless) ? 1 : 0) - (attacker.has(effect::curse) ? 1 : 0);
+    if (defender.has(effect::invisible))
+    {
+        modifier -= 4;
+    }
+    const int alignment = attacker.numbers.alignment;
+    const bool evil = alignment == 2 || alignment == 5 || alignment == 8;
+    const bool good = alignment == 0 || alignment == 3 || alignment == 6;
+    if ((evil && defender.has(effect::protection_from_evil)) ||
+        (good && defender.has(effect::protection_from_good)))
+    {
+        modifier -= 2;
+    }
+    return modifier;
 }
 
 // The attack the attacker can make on the target, if any (cbtacts.pas,
@@ -983,6 +1096,16 @@ bool Session::can_bandage(const Fighter &bandager, const Fighter &dying) const
 // more than 9 below 0 dead (charhlp.pas, InflictDamage).
 void Session::inflict(Fighter &target, int damage)
 {
+    // Any damage stops casting this round and loses a spell being cast
+    // (cbtacts.pas, ProcessAttackResult).
+    if (damage > 0)
+    {
+        target.cast_allowed = false;
+        if (target.pending_spell || target.aiming)
+        {
+            lose_spell(target);
+        }
+    }
     if (target.hit_points >= damage)
     {
         target.hit_points -= damage;
@@ -1015,6 +1138,11 @@ void Session::end_effects_at_zero(Fighter &f)
         if (code == effect::bite_hold || code == effect::blood_drain)
         {
             release(f, code);
+        }
+        else if (code == effect::charm && f.has(effect::charm))
+        {
+            f.side = f.own_side;
+            f.remove(code);
         }
         else
         {
@@ -1217,6 +1345,509 @@ void Session::drain_levels(Fighter &victim, int levels)
             kill(victim);
             return;
         }
+    }
+}
+
+// Casting (combat.pas, CastSpellCombat): a spell with a casting time takes it
+// off the caster's initiative and goes off at its next turn this round; one
+// without goes off now.
+void Session::begin_cast(Fighter &caster, int spell_number)
+{
+    const auto &known = *spell(spell_number);
+    const int delay = known.casting_time / 3;
+    if (delay == 0)
+    {
+        start_aiming(caster, spell_number);
+        return;
+    }
+    log({"{name} begins casting {spell}.",
+         {{"name", caster.name}, {"spell", std::string(known.name), true}}});
+    caster.pending_spell = spell_number;
+    caster.initiative = std::max(caster.initiative - delay, 1);
+    actor_ = 0;
+}
+
+// Choosing targets as the spell goes off (cbtacts.pas, SelectCombatTargets):
+// a spell on the caster goes off at once; others wait for their aim.
+void Session::start_aiming(Fighter &caster, int spell_number)
+{
+    const auto &known = *spell(spell_number);
+    const int area = known.area & 0x0F;
+    caster.aiming = spell_number;
+    caster.picked.clear();
+    if (area == 0)
+    {
+        resolve_spell(caster, {caster.id}, caster.cell);
+        return;
+    }
+    caster.picks_left = area <= 7 ? (area & 3) + 1 : 1;
+}
+
+// Whether the caster can single out a creature for its spell: within range,
+// in sight, and no veto (cbtacts.pas, AimTargetMenu). Healing reaches the
+// downed but not the dead.
+bool Session::reachable_by_spell(const Fighter &caster, const Fighter &target) const
+{
+    const auto &known = *spell(caster.aiming);
+    const bool heals = caster.aiming == 3;
+    if (!(target.able() || (heals && target.downed())) ||
+        std::find(caster.picked.begin(), caster.picked.end(), target.id) != caster.picked.end())
+    {
+        return false;
+    }
+    return distance(caster, target) <= spell_range(known, caster_level(caster, known)) &&
+           sees(board_, caster, target) && can_target(caster, target);
+}
+
+std::vector<rules::Command> Session::aiming_commands(const Fighter &caster) const
+{
+    std::vector<rules::Command> commands;
+    const auto &known = *spell(caster.aiming);
+    const int area = known.area & 0x0F;
+    const auto command = [&](std::string verb)
+    {
+        rules::Command c;
+        c.revision = revision_;
+        c.actor = caster.id;
+        c.verb = std::move(verb);
+        c.label = std::string(known.name);
+        c.item = static_cast<unsigned>(caster.aiming);
+        return c;
+    };
+    if (area >= 8 && area <= 14)
+    {
+        // A square in range and in sight, open ground (cbtacts.pas, ManualAimCursor).
+        const int range = spell_range(known, caster_level(caster, known));
+        for (int y = 0; y < board_.height; ++y)
+        {
+            for (int x = 0; x < board_.width; ++x)
+            {
+                const Cell cell{x, y};
+                if (board_.at(cell) == rules::Terrain::obstacle ||
+                    doubled_distance(caster.cell, cell) / 2 > range ||
+                    !rules::has_line_of_sight(board_, caster.cell, cell))
+                {
+                    continue;
+                }
+                auto aim = command("aim");
+                aim.destination = cell;
+                commands.push_back(aim);
+            }
+        }
+    }
+    else
+    {
+        for (const auto &f : fighters_)
+        {
+            if (reachable_by_spell(caster, f))
+            {
+                auto aim = command("aim");
+                aim.target = f.id;
+                aim.destination = f.cell;
+                aim.intent = known.offensive ? rules::Intent::hostile : rules::Intent::friendly;
+                commands.push_back(aim);
+            }
+        }
+        if (!caster.picked.empty())
+        {
+            commands.push_back(command("aim_done"));
+        }
+    }
+    commands.push_back(command("abort"));
+    return commands;
+}
+
+// Everyone standing within a radius of a square that a line from it reaches,
+// allies and the caster too; the nearest first (cbtacts.pas, SelectCombatTargets).
+std::vector<EntityId> Session::within(Cell aim, int radius) const
+{
+    std::vector<std::pair<int, EntityId>> found;
+    for (const auto &f : fighters_)
+    {
+        if (!f.able())
+        {
+            continue;
+        }
+        int nearest = 1000;
+        for (const auto square : squares_of(f))
+        {
+            if (rules::has_line_of_sight(board_, aim, square))
+            {
+                nearest = std::min(nearest, doubled_distance(aim, square));
+            }
+        }
+        if (nearest <= 2 * radius + 1)
+        {
+            found.emplace_back(nearest, f.id);
+        }
+    }
+    std::stable_sort(found.begin(), found.end(),
+                     [](const auto &a, const auto &b)
+                     {
+                         return a.first < b.first;
+                     });
+    std::vector<EntityId> ids;
+    for (const auto &[gap, id] : found)
+    {
+        ids.push_back(id);
+    }
+    return ids;
+}
+
+// A spell lost: its memorized copy is gone (cbtacts.pas, ProcessAttackResult).
+void Session::lose_spell(Fighter &caster)
+{
+    const int lost = caster.aiming ? caster.aiming : caster.pending_spell;
+    auto &spells = caster.numbers.spells;
+    if (const auto copy = std::find(spells.begin(), spells.end(), lost); copy != spells.end())
+    {
+        spells.erase(copy);
+    }
+    if (caster.pending_spell || caster.aiming)
+    {
+        log({"{name} loses a spell.", {{"name", caster.name}}});
+    }
+    caster.pending_spell = caster.aiming = caster.picks_left = 0;
+    caster.picked.clear();
+}
+
+// The spell goes off at its targets (magic.pas, CastSpell): the caster turns
+// to its aim and shows itself, the memorized copy is spent, and its actions end.
+void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell aim)
+{
+    const int number = caster.aiming;
+    const auto &known = *spell(number);
+    const int level = caster_level(caster, known);
+    caster.aiming = caster.picks_left = 0;
+    caster.picked.clear();
+    if (aim != caster.cell)
+    {
+        caster.direction = direction_toward(caster.cell, aim);
+        caster.facing_left = aim.x < caster.cell.x;
+    }
+    while (caster.has(effect::invisible))
+    {
+        caster.remove(effect::invisible);
+    }
+    auto &spells = caster.numbers.spells;
+    if (const auto copy = std::find(spells.begin(), spells.end(), number); copy != spells.end())
+    {
+        spells.erase(copy);
+    }
+    log({"{name} casts {spell}.",
+         {{"name", caster.name}, {"spell", std::string(known.name), true}}});
+    const auto roll_dice = [this](int count, int sides)
+    {
+        int total = 0;
+        for (int n = 0; n < count; ++n)
+        {
+            total += roll(sides);
+        }
+        return total;
+    };
+    std::vector<EntityId> kept;
+    switch (number)
+    {
+    case 1:
+        // Bless: the caster's side, but not one with an enemy next to it.
+        for (const auto id : targets)
+        {
+            const auto &f = *find(id);
+            if (f.side == caster.side && !enemy_next_to(f))
+            {
+                kept.push_back(id);
+            }
+        }
+        cast_generic(caster, number, level, kept, 0, 0);
+        break;
+    case 2:
+        for (const auto id : targets)
+        {
+            if (find(id)->side != caster.side)
+            {
+                kept.push_back(id);
+            }
+        }
+        cast_generic(caster, number, level, kept, 0, 0);
+        break;
+    case 3:
+        // Cure Light Wounds: 1d8, not through rot; the dying stop bleeding but
+        // stay down (magic.pas, the cure).
+        for (const auto id : targets)
+        {
+            auto &f = *find(id);
+            if (f.has(effect::rot) || !(f.able() || f.downed()))
+            {
+                continue;
+            }
+            f.hit_points = std::min(f.hit_points + roll(8), f.numbers.max_hit_points);
+            if (f.condition == Condition::dying)
+            {
+                f.condition = Condition::unconscious;
+                f.overkill = 0;
+            }
+            log({"{name} is healed.", {{"name", f.name}}});
+        }
+        break;
+    case 4:
+        cast_generic(caster, number, level, targets, roll(8), 8);
+        break;
+    case 9:
+        // Burning Hands: the caster's level in fire.
+        cast_generic(caster, number, level, targets, level, 9);
+        break;
+    case 10:
+        // Charm Person cannot take a creature of type above 1 or a large one
+        // (magic.pas, the charm).
+        for (const auto id : targets)
+        {
+            auto &f = *find(id);
+            if (f.numbers.creature_type > 1 || f.numbers.large)
+            {
+                log({"{name} is unaffected.", {{"name", f.name}}});
+                continue;
+            }
+            kept.push_back(id);
+        }
+        cast_generic(caster, number, level, kept, 0, 0);
+        break;
+    case 15:
+    {
+        // Magic Missile: a missile of 1d4+1 for every two levels, the first at
+        // level 1. The original's level div 2 gave none at level 1, against
+        // its manual (an obvious bug, fixed).
+        const int missiles = (level + 1) / 2;
+        cast_generic(caster, number, level, targets, roll_dice(missiles, 4) + missiles, 8);
+        break;
+    }
+    case 20:
+        cast_generic(caster, number, level, targets, roll(8) + level, 12);
+        break;
+    case 21:
+        cast_sleep(level, aim);
+        break;
+    default:
+        cast_generic(caster, number, level, targets, 0, 0);
+        break;
+    }
+    end_actions(caster);
+}
+
+// The original's resolver (magic.pas, ResolveSpell): each target saves if the
+// spell allows, a touch must hit first, the one damage roll is shared, and the
+// spell's effect is added through the immunities.
+void Session::cast_generic(Fighter &caster, int number, int level,
+                           const std::vector<EntityId> &targets, int damage, int element)
+{
+    if (damage <= 0)
+    {
+        element = 0;
+    }
+    const auto &known = *spell(number);
+    for (const auto id : targets)
+    {
+        auto &target = *find(id);
+        bool saved = false;
+        if (known.save_result != 0)
+        {
+            saved = saving_throw(target, known.save_type, 0, &caster, element);
+        }
+        if (known.range_fixed == 255)
+        {
+            const int natural = roll(20);
+            if (!attack_hits(natural, caster.numbers.thac0, target.numbers.armor_class,
+                             attack_modifier(caster, target)))
+            {
+                log({"{attacker} misses {name}.",
+                     {{"attacker", caster.name}, {"name", target.name}}});
+                saved = true;
+                damage = 0;
+            }
+        }
+        if (damage > 0)
+        {
+            nonweapon_damage(target, damage, known.save_result, saved, element, level, number);
+        }
+        if (known.effect > 0 && target.condition != Condition::dead)
+        {
+            const int minutes = known.minutes_fixed + known.minutes_per_level * level;
+            const int strength = known.effect == effect::charm
+                                     ? (caster.side == Side::opposition ? 128 : 0) + level
+                                     : level;
+            if (add_with_message(target,
+                                 {known.effect, minutes, strength, known.effect == effect::charm},
+                                 known.save_result == 1, saved, element, level, &known) &&
+                known.effect == effect::charm)
+            {
+                charm(target, caster.side);
+            }
+        }
+    }
+}
+
+// The chance magic resistance resists a caster of this level: 15% at level
+// 11 and 5 more a level above (50% for the stronger kind, 105); the original's
+// byte wraps a chance below 0 to one that always resists (effhndlr.pas, 105, 106).
+bool magic_resists(const Fighter &target, int caster_level, int roll_100)
+{
+    for (const auto [code, base] : {std::pair{105, 50}, std::pair{106, 15}})
+    {
+        if (!target.has(code))
+        {
+            continue;
+        }
+        const int chance = base - (11 - caster_level) * 5;
+        if (chance < 0 || roll_100 <= chance)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+// An effect added as a spell adds it (fxengine.pas, AddEffectWithMessage): the
+// target's immunities may nullify it, a save that negates refuses it, and an
+// effect it has already is replaced by a longer or lasting one.
+bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool saved, int element,
+                               int caster_level, const Spell *known)
+{
+    const int code = added.code;
+    const auto is = [code](std::initializer_list<int> codes)
+    {
+        return std::find(codes.begin(), codes.end(), code) != codes.end();
+    };
+    bool immune =
+        (target.has(105) || target.has(106)) && magic_resists(target, caster_level, roll(100));
+    immune = immune || (target.has(107) && is({effect::sleep, effect::charm}) && roll(100) <= 90);
+    immune = immune || (target.has(124) && is({effect::sleep, effect::charm}) && roll(100) <= 30);
+    immune = immune || (target.has(108) && is({effect::charm, effect::sleep}));
+    immune = immune || (target.has(109) && is({effect::paralysis}));
+    immune = immune || (target.has(110) && (element & 2));
+    immune = immune || (target.has(111) && is({effect::poisoned, effect::paralysis}));
+    immune = immune || (target.has(112) && (element & 1));
+    immune = immune || (target.has(125) &&
+                        is({effect::charm, effect::sleep, effect::paralysis, effect::poisoned}));
+    if (immune || (negates && saved))
+    {
+        log({"{name} is unaffected.", {{"name", target.name}}});
+        return false;
+    }
+    if (auto *old = target.find_effect(code);
+        old && ((old->minutes != 0 && added.minutes > old->minutes) || added.minutes == 0))
+    {
+        target.remove(code);
+    }
+    target.numbers.effects.push_back(added);
+    if (code == effect::sleep && target.condition == Condition::okay)
+    {
+        target.initiative = 0;
+    }
+    log({"{name} is affected by {spell}.",
+         {{"name", target.name}, {"spell", std::string(known ? known->name : ""), true}}});
+    return true;
+}
+
+// Damage that is not a weapon's (fxengine.pas, InflictNonWeaponDamage): the
+// target's resistances weigh it by its element (1 fire, 2 cold, 4
+// electricity, 8 magic, 16 acid), then a save halves or negates it.
+void Session::nonweapon_damage(Fighter &target, int damage, int save_result, bool saved,
+                               int element, int caster_level, int spell_number)
+{
+    if (target.has(91) && (spell_number == 15 || (element & 4)))
+    {
+        damage = 0;
+    }
+    if ((element & 2) && target.has(effect::resist_cold))
+    {
+        damage /= 2;
+    }
+    if ((element & 1) && target.has(effect::resist_fire))
+    {
+        damage /= 2;
+    }
+    if ((element & 8) && (target.has(105) || target.has(106)) &&
+        magic_resists(target, caster_level, roll(100)))
+    {
+        damage = 0;
+    }
+    if ((element & 1) && target.has(112))
+    {
+        damage = 0;
+    }
+    if ((element & 4) && target.has(114))
+    {
+        damage /= 2;
+    }
+    if ((element & 2) && target.has(118))
+    {
+        damage /= 2;
+    }
+    if (spell_number == 15 && target.has(effect::shield))
+    {
+        damage = 0;
+    }
+    if ((element & 1) && target.has(93))
+    {
+        damage /= 2;
+    }
+    if (target.has(effect::troll_heal) && !target.has(effect::regeneration) &&
+        !target.has(effect::regenerating_soon))
+    {
+        target.numbers.effects.push_back({effect::regenerating_soon, 3, 0, true});
+    }
+    if (saved && save_result == 1)
+    {
+        damage = 0;
+    }
+    if (saved && save_result == 2)
+    {
+        damage /= 2;
+    }
+    if (damage <= 0)
+    {
+        return;
+    }
+    log({"{name} takes {damage}.", {{"name", target.name}, {"damage", std::to_string(damage)}}});
+    inflict(target, damage);
+}
+
+// A charmed creature fights for its charmer (effhndlr.pas, the charm).
+void Session::charm(Fighter &target, Side charmer)
+{
+    target.own_side = target.side;
+    target.side = charmer;
+    target.fleeing = false;
+}
+
+// Sleep (magic.pas, the sleep): 4d4 levels' worth around the aim, the nearest
+// first, allies too; a creature costs 1 up to level 1, 2 at 2, 4 at 3, 6 at 4,
+// 10 at 5 for a monster and 20 otherwise, 20 from 6 up, spent before its
+// immunities are tried. Those already asleep are passed over.
+void Session::cast_sleep(int level, Cell aim)
+{
+    int pool = roll(4) + roll(4) + roll(4) + roll(4);
+    const auto &known = *spell(21);
+    for (const auto id : within(aim, known.area & 7))
+    {
+        auto &f = *find(id);
+        if (f.has(effect::sleep))
+        {
+            continue;
+        }
+        const int highest = f.numbers.level;
+        const int cost = highest <= 1   ? 1
+                         : highest == 2 ? 2
+                         : highest == 3 ? 4
+                         : highest == 4 ? 6
+                         : highest == 5 ? (f.numbers.race == 0 ? 10 : 20)
+                                        : 20;
+        if (cost > pool)
+        {
+            continue;
+        }
+        pool -= cost;
+        add_with_message(f, {effect::sleep, 5 * level, level, false}, false, false, 0, level,
+                         &known);
     }
 }
 
@@ -1721,7 +2352,8 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
 // natural 20 saves; otherwise the roll with the creature's save bonus and the
 // modifier must reach its number for the save. A total below 0 fails, where
 // the original's byte wrapped it to a success (an obvious bug, fixed).
-bool Session::saving_throw(const Fighter &f, int save, int modifier)
+bool Session::saving_throw(const Fighter &f, int save, int modifier, const Fighter *caster,
+                           int element)
 {
     const int natural = roll(20);
     if (natural == 1 || natural == 20)
@@ -1732,6 +2364,39 @@ bool Session::saving_throw(const Fighter &f, int save, int modifier)
     if (save == 0 && (f.has(111) || f.has(125)))
     {
         return true;
+    }
+    // The saver's effects (effhndlr.pas, SAVING_THROW): Constitution for a
+    // dwarf, gnome or halfling against poison, spells and wands; Shield;
+    // protection against a caster of that alignment; and resistance to the
+    // cold or fire the spell carries.
+    const int constitution = f.numbers.constitution;
+    const int hardiness = constitution < 4     ? 0
+                          : constitution <= 6  ? 1
+                          : constitution <= 10 ? 2
+                          : constitution <= 13 ? 3
+                          : constitution <= 17 ? 4
+                          : constitution <= 20 ? 5
+                                               : 0;
+    if ((f.has(90) && save == 0) || (f.has(97) && (save == 4 || save == 2)))
+    {
+        modifier += hardiness;
+    }
+    modifier += f.has(effect::shield) ? 1 : 0;
+    if (caster)
+    {
+        const int alignment = caster->numbers.alignment;
+        const bool evil = alignment == 2 || alignment == 5 || alignment == 8;
+        const bool good = alignment == 0 || alignment == 3 || alignment == 6;
+        if ((evil && f.has(effect::protection_from_evil)) ||
+            (good && f.has(effect::protection_from_good)))
+        {
+            modifier += 2;
+        }
+    }
+    if (((element & 2) && f.has(effect::resist_cold)) ||
+        ((element & 1) && f.has(effect::resist_fire)))
+    {
+        modifier += 3;
     }
     const int total = natural + f.numbers.save_bonus + modifier;
     return total >= 0 && total >= f.numbers.saving_throws[static_cast<std::size_t>(save)];
@@ -1792,16 +2457,28 @@ bool Session::check_morale(Fighter &f)
     {
         return false;
     }
+    // A charmed creature never breaks (effhndlr.pas, the charm at MORALE_CHECK).
+    if (f.has(effect::charm))
+    {
+        return false;
+    }
     int morale = static_cast<int>(f.numbers.morale & 0x7F) * 2;
     if (morale > 102)
     {
         morale = 0;
     }
+    // Bless adds 5 and Curse takes 5, never below 0, which fails (EffBless, EffCurse).
+    const auto blessed = [&f](int value)
+    {
+        value += f.has(effect::bless) ? 5 : 0;
+        return f.has(effect::curse) ? std::max(value - 5, 0) : value;
+    };
+    morale = morale == 0 ? 0 : blessed(morale);
     if (morale != 0 && morale >= 100 - f.hit_points * 100 / f.numbers.max_hit_points)
     {
         return false;
     }
-    const int group = hostile_hit_points_percent_;
+    const int group = hostile_hit_points_percent_ == 0 ? 0 : blessed(hostile_hit_points_percent_);
     if (group != 0 && group >= 100 - static_cast<int>(morale_threshold_) &&
         f.side == Side::opposition)
     {
@@ -2012,6 +2689,10 @@ std::vector<rules::Command> Session::legal_commands() const
     {
         return commands;
     }
+    if (actor->aiming)
+    {
+        return aiming_commands(*actor);
+    }
     for (const auto &cell : movement_reach(actor_))
     {
         rules::Command move;
@@ -2053,6 +2734,28 @@ std::vector<rules::Command> Session::legal_commands() const
         command.target = target;
         commands.push_back(command);
     };
+    // Cast, while it may and has a spell ready for a fight (combat.pas, CombatMenu).
+    if (actor->cast_allowed)
+    {
+        std::vector<int> offered_spells;
+        for (const int number : actor->numbers.spells)
+        {
+            const auto *known = spell(number);
+            if (known && known->when != 0 && spell_built(number) &&
+                std::find(offered_spells.begin(), offered_spells.end(), number) ==
+                    offered_spells.end())
+            {
+                offered_spells.push_back(number);
+                rules::Command cast;
+                cast.revision = revision_;
+                cast.actor = actor->id;
+                cast.verb = "cast";
+                cast.item = static_cast<unsigned>(number);
+                cast.label = std::string(known->name);
+                commands.push_back(cast);
+            }
+        }
+    }
     // Guard needs a weapon that strikes next to it (combat.pas, DoneMenu).
     if (!actor->numbers.missile || actor->numbers.missile->throwable)
     {
@@ -2114,14 +2817,16 @@ std::vector<Cell> Session::movement_reach(EntityId id) const
 bool Session::submit(const rules::Command &command)
 {
     const auto legal = legal_commands();
-    const bool offered = std::any_of(
-        legal.begin(), legal.end(),
-        [&command](const rules::Command &c)
-        {
-            return c.revision == command.revision && c.actor == command.actor &&
-                   c.verb == command.verb && c.target == command.target &&
-                   ((c.verb != "move" && c.verb != "flee") || c.destination == command.destination);
-        });
+    const bool offered =
+        std::any_of(legal.begin(), legal.end(),
+                    [&command](const rules::Command &c)
+                    {
+                        return c.revision == command.revision && c.actor == command.actor &&
+                               c.verb == command.verb && c.target == command.target &&
+                               c.item == command.item &&
+                               ((c.verb != "move" && c.verb != "flee" && c.verb != "aim") ||
+                                c.destination == command.destination);
+                    });
     if (!offered)
     {
         return false;
@@ -2159,6 +2864,37 @@ bool Session::submit(const rules::Command &command)
     {
         turn_undead(actor);
     }
+    else if (command.verb == "cast")
+    {
+        begin_cast(actor, static_cast<int>(command.item));
+    }
+    else if (command.verb == "aim")
+    {
+        const auto &known = *spell(actor.aiming);
+        const int area = known.area & 0x0F;
+        if (area >= 8 && area <= 14)
+        {
+            resolve_spell(actor, within(command.destination, area & 7), command.destination);
+        }
+        else
+        {
+            actor.picked.push_back(command.target);
+            if (--actor.picks_left <= 0)
+            {
+                resolve_spell(actor, actor.picked, find(command.target)->cell);
+            }
+        }
+    }
+    else if (command.verb == "aim_done")
+    {
+        resolve_spell(actor, actor.picked, find(actor.picked.back())->cell);
+    }
+    else if (command.verb == "abort")
+    {
+        log({"{name} aborts the spell.", {{"name", actor.name}}});
+        lose_spell(actor);
+        end_actions(actor);
+    }
     else if (command.verb == "flee")
     {
         attempt_flee(actor);
@@ -2188,7 +2924,7 @@ bool Session::submit(const rules::Command &command)
         end_actions(actor);
     }
     ++revision_;
-    if (outcome_ == rules::Outcome::ongoing &&
+    if (outcome_ == rules::Outcome::ongoing && (actor_ == 0 || !actor.aiming) &&
         (actor_ == 0 || actor.initiative == 0 || !actor.able() ||
          (actor.half_moves == 0 && actor.attacks() == 0)))
     {
@@ -2231,7 +2967,12 @@ std::string Session::save() const
             static_cast<unsigned>(f.condition), f.overkill, f.initiative, f.half_moves,
             f.attacks_left[0], f.attacks_left[1], f.surprised, f.attack_phase, f.sweep_budget,
             f.direction, f.flank_count, f.flank_spread, f.guarding, f.fleeing, f.turned,
-            f.tried_turning);
+            f.tried_turning, f.cast_allowed, f.pending_spell, f.aiming, f.picks_left,
+            static_cast<unsigned>(f.own_side), f.picked.size());
+        for (const auto id : f.picked)
+        {
+            out(id);
+        }
     }
     out(log_.size());
     for (const auto &entry : log_)
@@ -2325,6 +3066,21 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         f.fleeing = in.as<bool>();
         f.turned = in.as<bool>();
         f.tried_turning = in.as<bool>();
+        f.cast_allowed = in.as<bool>();
+        f.pending_spell = in.as<int>();
+        f.aiming = in.as<int>();
+        f.picks_left = in.as<int>();
+        f.own_side = in.as<Side>();
+        const auto picked = in.as<std::size_t>();
+        if (picked > 8 || (f.pending_spell && !spell(f.pending_spell)) ||
+            (f.aiming && !spell(f.aiming)))
+        {
+            throw std::runtime_error("Invalid original-rules combat checkpoint");
+        }
+        for (std::size_t n = 0; n < picked; ++n)
+        {
+            f.picked.push_back(in.as<EntityId>());
+        }
         if (f.condition > Condition::gone || f.attack_phase < 0 || f.attack_phase > 1 ||
             f.direction < 0 || f.direction > 7)
         {

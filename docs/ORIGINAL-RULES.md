@@ -297,11 +297,25 @@ gear.
    fight needs each creature's items, not only the profile worked out at its
    start.
 8. Spells in combat. In parts:
-   - 8a. The casting framework, with the first-level spells: the Cast
-     command, casting time (the spell goes off later in the round and is lost
-     to damage before then), targets (one creature or several, a radius at a
-     square, the caster), the save, the shared damage roll and the effect
-     each target gets, with immunities.
+   - 8a. *Done 2026-11-12:* the casting framework, with the first-level
+     spells (`original_spells.h` holds the original's spell table). Cast
+     offers each memorized spell; one with a casting time takes casting
+     time / 3 off the caster's initiative and goes off at its next turn in
+     the same round, aimed then, and damage before then loses it with its
+     memorized copy. Targets: the caster, separate creatures in range and
+     sight, or everyone within a radius of a square, allies too, found by
+     lines from that square. Each target saves if the spell allows, a touch
+     spell needs an attack roll, one damage roll is shared, and the effect
+     goes through the immunities and magic resistance; an effect a creature
+     has already is replaced by a longer one. Bless, Curse, Cure Light
+     Wounds, Cause Light Wounds, Protection from Evil and Good, Resist Cold,
+     Burning Hands, Charm Person, Magic Missile, Shield, Shocking Grasp and
+     Sleep work; Detect Magic changes nothing in a fight; Enlarge and Reduce
+     come with Strength in 8b. A character has its race's innate effects:
+     the Constitution saves of dwarves, gnomes and halflings and the elf's
+     and half-elf's resistance to sleep and charm. The dwarf's and gnome's
+     attack bonuses and defenses against their foes come next, with the
+     names of those foes.
    - 8b. The second- and third-level spells.
    - 8c. *Done 2026-11-12:* turning undead, once a fight for one with cleric
      levels: one d20 for the whole attempt against up to 1d12 undead enemies
@@ -369,6 +383,8 @@ tuned with the AI lab once the original rules play.
 | Displacement is readied only as the fight starts, so it turns aside one attack a fight, where its notes say one a round (`effhndlr.pas`, `EffDisplaced`) | One a round |
 | Evading a missile or boulder takes the hit from the primary attacks' count whatever attack it was, a byte that wraps below 0 (`effhndlr.pas`, the missile evasion) | From the count of the attack evaded |
 | A free attack's check that an attacker sees the invisible reads the creature leaving instead (`cbtacts.pas`, `AttacksOfOpportunity`) | The attacker's own sight |
+| Magic Missile throws level div 2 missiles, none at level 1, where the manual promises one at levels 1 and 2 (`magic.pas`, the missile) | One missile for every two levels from level 1, as the manual says |
+| Protection from Evil or Good takes 2 from an evil or good attacker's roll before that roll is made, which overwrites it (`effhndlr.pas`, `EffProtEvil`) | The 2 counts |
 | A level drain divides by the victim's class levels, so a creature without any (a monster) divides by zero (`effhndlr.pas`, the level drain) | It loses its highest level's share |
 | A level drain keeps the drained class's level as the victim's highest level, so a fighter 5 / thief 6 drained in fighter counts as level 4 (`effhndlr.pas`, the level drain) | The highest of its classes |
 | Each hit of a holding bite's own bite starts another hold, stacking holds on the biter and immobility on the victim, which can outlast the fight (`effhndlr.pas`, `EffBiteHold`) | One hold at a time |

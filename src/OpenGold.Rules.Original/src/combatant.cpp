@@ -11,7 +11,7 @@ namespace opengold::original
 namespace
 {
 
-constexpr std::string_view profile_format = "combatant8";
+constexpr std::string_view profile_format = "combatant9";
 
 std::vector<int> numbers_of(const Combatant &c)
 {
@@ -38,15 +38,18 @@ std::vector<int> numbers_of(const Combatant &c)
                     after.modifier, missile.empty_handed_backstabs ? 1 : 0});
     numbers.insert(numbers.end(), c.class_levels.begin(), c.class_levels.end());
     numbers.insert(numbers.end(),
-                   {c.strength, c.undead_level, c.race, c.striker ? 1 : 0,
-                    c.striker ? c.striker->plus : 0, c.striker && c.striker->silver ? 1 : 0,
-                    c.striker ? c.striker->weapon_class : 0, c.weapon_type, c.wards_gaze ? 1 : 0,
-                    c.save_bonus, static_cast<int>(c.effects.size())});
+                   {c.strength, c.undead_level, c.constitution, c.alignment, c.creature_type,
+                    c.race, c.striker ? 1 : 0, c.striker ? c.striker->plus : 0,
+                    c.striker && c.striker->silver ? 1 : 0, c.striker ? c.striker->weapon_class : 0,
+                    c.weapon_type, c.wards_gaze ? 1 : 0, c.save_bonus,
+                    static_cast<int>(c.effects.size())});
     for (const auto &effect : c.effects)
     {
         numbers.insert(numbers.end(),
                        {effect.code, effect.minutes, effect.strength, effect.on_remove ? 1 : 0});
     }
+    numbers.push_back(static_cast<int>(c.spells.size()));
+    numbers.insert(numbers.end(), c.spells.begin(), c.spells.end());
     return numbers;
 }
 
@@ -86,10 +89,17 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
         numbers.push_back(value);
         rest.remove_prefix(static_cast<std::size_t>(end - rest.data()));
     }
-    // The fixed numbers, then four for each effect.
-    const auto fixed = numbers_of(Combatant{}).size();
-    if (numbers.size() < fixed || (numbers.size() - fixed) % 4 != 0 ||
-        static_cast<std::size_t>(numbers[fixed - 1]) != (numbers.size() - fixed) / 4)
+    // The fixed numbers ending with the effects' count, four for each effect,
+    // then the spells' count and a number for each spell.
+    const auto fixed = numbers_of(Combatant{}).size() - 1;
+    if (numbers.size() < fixed + 1 || numbers[fixed - 1] < 0)
+    {
+        return std::nullopt;
+    }
+    const auto effect_numbers = static_cast<std::size_t>(numbers[fixed - 1]) * 4;
+    if (numbers.size() < fixed + effect_numbers + 1 || numbers[fixed + effect_numbers] < 0 ||
+        numbers.size() !=
+            fixed + effect_numbers + 1 + static_cast<std::size_t>(numbers[fixed + effect_numbers]))
     {
         return std::nullopt;
     }
@@ -151,6 +161,9 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     }
     c.strength = *next++;
     c.undead_level = *next++;
+    c.constitution = *next++;
+    c.alignment = *next++;
+    c.creature_type = *next++;
     c.race = *next++;
     if (*next++ != 0)
     {
@@ -168,6 +181,11 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
             return std::nullopt;
         }
         c.effects.push_back({next[0], next[1], next[2], next[3] != 0});
+    }
+    const auto spell_count = *next++;
+    for (int n = 0; n < spell_count; ++n)
+    {
+        c.spells.push_back(*next++);
     }
     if (c.max_hit_points < 1 || c.movement < 0 ||
         std::any_of(
@@ -461,6 +479,17 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     }
     c.strength = strength;
     c.undead_level = record.undead_level;
+    c.constitution = record.current_abilities.constitution;
+    c.alignment = record.alignment;
+    c.creature_type = record.type;
+    // Memorized spells; those still being learned (bit 0x80) are not ready.
+    for (const auto spell : record.memorized_spells)
+    {
+        if (spell != 0 && spell < 0x80)
+        {
+            c.spells.push_back(spell);
+        }
+    }
     c.race = record.race;
     c.weapon_type = weapon ? weapon->item.type : -1;
     c.striker = striker_of(carried, weapon);

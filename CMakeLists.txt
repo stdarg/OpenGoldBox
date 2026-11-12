@@ -124,6 +124,7 @@ add_library(opengold_rules_original STATIC
     src/OpenGold.Rules.Original/src/original_rules.cpp
     src/OpenGold.Rules.Original/src/character_rules.cpp
     src/OpenGold.Rules.Original/src/combatant.cpp
+    src/OpenGold.Rules.Original/src/spells.cpp
     src/OpenGold.Rules.Original/src/combat_session.cpp
     src/OpenGold.Rules.Original/src/rules_module.cpp
 )
