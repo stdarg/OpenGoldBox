@@ -3,7 +3,7 @@
 Ten original head designs for Tieflings, Goliaths, Gnomes, Dragonborn, and Orcs.
 Each transparent source sheet contains two right-facing heads, ordered left to
 right. These are combat head components, separate from the chest-up artwork in
-`art/portraits`.
+`new-art-pack/portraits`.
 
 ## Source artwork
 

@@ -8,7 +8,8 @@
 // The in-game menu Escape opens (Return to game, Save game, Load game,
 // Options, Exit to main menu, Exit to desktop) and its Options screen. The
 // host decides what the menu allows, pauses the game beneath it and answers
-// its signals: save_requested(saving), main_menu_requested, closed.
+// its signals: save_requested(saving), main_menu_requested, closed,
+// art_changed and new_art_changed (another new art folder was chosen).
 class GameMenuView : public godot::Control
 {
     GDCLASS(GameMenuView, godot::Control)
@@ -47,10 +48,17 @@ class GameMenuView : public godot::Control
     void wall_art_selected(std::int64_t index);
     void combat_art_selected(std::int64_t index);
     void portrait_art_selected(std::int64_t index);
+    // The new art download's folder: shown, chosen, and checked before it is
+    // kept. It changes only while the menu may load a game, since changing it
+    // loads the game again with the new art.
+    void show_new_art_folder(const godot::String &problem = {});
+    void choose_new_art_folder();
+    void new_art_folder_chosen(const godot::String &folder);
     void auto_equip_selected(std::int64_t index);
     void unidentified_magic_selected(std::int64_t index);
     void keep_quick_selected(std::int64_t index);
     // "Do not equip unidentified magic items" is offered only while auto-equip is on.
     void show_unidentified_magic(bool shown);
+    bool may_change_art_folder_{};
 };
 #endif

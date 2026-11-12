@@ -7,8 +7,9 @@ extends SceneTree
 # the fight and Continue starts it, and the finished fight shows no key hints.
 const SLOT = "Slums encounter fixture"
 # The trolls' close-up, PIC2 record 31, holds five frames. The check gives it
-# new art for the length of the run (data/art/closeups).
-const TROLL_ART = "res://data/art/closeups/pic2_dax_31"
+# new art in a new art folder of its own for the length of the run.
+const NEW_ART = "user://slums-new-art"
+const TROLL_ART = "user://slums-new-art/closeups/pic2_dax_31"
 const TROLL_FRAMES = 5
 var fixture := ""
 var originals := {}
@@ -35,6 +36,10 @@ func require(ok: bool, message: String) -> void:
 
 func write_troll_art() -> void:
     DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(TROLL_ART))
+    var manifest := FileAccess.open(ProjectSettings.globalize_path(NEW_ART.path_join("new-art-pack.json")), FileAccess.WRITE)
+    manifest.store_string(JSON.stringify({"format": "opengold-new-art-pack-v1", "name": "Slums check", "version": "0"}))
+    manifest.close()
+    OS.set_environment("OPENGOLD_NEW_ART_DIR", ProjectSettings.globalize_path(NEW_ART))
     for n in range(TROLL_FRAMES):
         var image := Image.create(352, 422, false, Image.FORMAT_RGBA8)
         image.fill(Color(0.1, 0.6, 0.2))

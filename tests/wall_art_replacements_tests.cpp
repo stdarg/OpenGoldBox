@@ -1,4 +1,4 @@
-// New wall art from data/art/walls (#272, #273): the folder the Replacement
+// New wall art from new-art-pack/walls (#272, #273): the folder the Replacement
 // Art Creator exports to, the per-appearance swap with original fallback, and
 // the exploration view composed at the new art's scale.
 #include "opengold/exploration_view.h"
@@ -81,8 +81,8 @@ WallArtSet one_appearance(std::uint8_t red)
 
 void shipped_folder()
 {
-    const auto shipped = load_wall_art_replacements(root / "data/art/walls", png_size_only);
-    check(shipped.sets.size() == 168, "data/art/walls holds the 168 used appearances");
+    const auto shipped = load_wall_art_replacements(root / "new-art-pack/walls", png_size_only);
+    check(shipped.sets.size() == 168, "new-art-pack/walls holds the 168 used appearances");
     check(shipped.sets.contains("WALLDEF3.DAX:0:1") && shipped.sets.contains("WALLDEF2.DAX:4:5"),
           "Sets are keyed by their WALLDEF archive, record and appearance");
     const auto &near_front = shipped.sets.at("WALLDEF3.DAX:0:1")[6];
@@ -99,7 +99,7 @@ void broken_folders()
     const auto folder = std::filesystem::temp_directory_path() / "opengold-wall-art-test";
     std::filesystem::remove_all(folder);
     std::filesystem::create_directories(folder);
-    const auto shipped = root / "data/art/walls/WALLDEF1_DAX_1_1";
+    const auto shipped = root / "new-art-pack/walls/WALLDEF1_DAX_1_1";
     for (const auto *name : {"WALLDEF1_DAX_1_1", "WALLDEF1_DAX_1_2", "WALLDEF1_DAX_1_3"})
     {
         std::filesystem::copy(shipped, folder / name);
@@ -214,7 +214,7 @@ void scaled_view()
 
 void game_uses_new_art(const std::filesystem::path &directory)
 {
-    const auto shipped = load_wall_art_replacements(root / "data/art/walls", png_size_only);
+    const auto shipped = load_wall_art_replacements(root / "new-art-pack/walls", png_size_only);
     // Loading checks every district's sets against its original pieces too.
     const auto tour = RolfTourSession::load(directory, repository_encounters(), shipped);
     check(tour.wall_art().scale == 4 && tour.wall_art().appearances.size() == 15,

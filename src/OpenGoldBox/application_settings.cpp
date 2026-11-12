@@ -1,4 +1,5 @@
 #include "application_settings.h"
+#include "localization.h"
 #include "opengold/diagnostic_log.h"
 #include "opengold/difficulty.h"
 #include "opengold/encounter_budget.h"
@@ -230,6 +231,46 @@ bool original_wall_art()
 bool original_combat_art()
 {
     return read("art", "combat").to_lower() == "original";
+}
+
+String new_art_problem(const String &directory)
+{
+    if (!directory.is_absolute_path() || !DirAccess::dir_exists_absolute(directory))
+    {
+        return N_("Choose an existing folder holding the OpenGoldBox new art.");
+    }
+    Ref<JSON> json;
+    json.instantiate();
+    const auto manifest = directory.path_join("new-art-pack.json");
+    if (!FileAccess::file_exists(manifest) ||
+        json->parse(FileAccess::get_file_as_string(manifest)) != OK ||
+        json->get_data().get_type() != Variant::DICTIONARY ||
+        Dictionary(json->get_data()).get("format", "") != Variant("opengold-new-art-pack-v1"))
+    {
+        return N_("This folder is not the OpenGoldBox new art: it has no new-art-pack.json.");
+    }
+    return {};
+}
+
+String new_art_directory()
+{
+    const auto override =
+        OS::get_singleton()->get_environment("OPENGOLD_NEW_ART_DIR").strip_edges();
+    const auto directory = override.is_empty() ? read("art", "directory") : override;
+    // Asked for on every portrait drawn, so each folder is checked once.
+    static String checked;
+    static bool usable{};
+    if (directory != checked)
+    {
+        checked = directory;
+        usable = !directory.is_empty() && new_art_problem(directory).is_empty();
+    }
+    return usable ? directory : String();
+}
+
+bool save_new_art_directory(const String &directory)
+{
+    return save("art", "directory", directory);
 }
 
 bool original_portraits()

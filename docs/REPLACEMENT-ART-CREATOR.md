@@ -7,7 +7,7 @@ wall image and, when needed, a separate feature image. You can inspect original
 pieces from your own game files on the **Reference** tab, but the **Create** tab
 uses an independent brief and newly generated images.
 
-**Export to game** puts a set in `data/art/walls`, where the game shows it in
+**Export to game** puts a set in `new-art-pack/walls`, where the game shows it in
 place of the original appearance. The Tile Art Viewer's **Map Browser** reads
 the same folder, so it shows what the game shows. An appearance with no set
 there keeps its original art.
@@ -132,7 +132,7 @@ exports.
    Inspect seams, projection, repetition, and transparency. If the result needs
    work, revise the new source PNG, import it again, and rebuild.
 8. Click **Export to game**. The creator writes ten PNGs and a `manifest.json`
-   to `data/art/walls/<appearance>/` (for example `WALLDEF1_DAX_1_4`),
+   to `new-art-pack/walls/<appearance>/` (for example `WALLDEF1_DAX_1_4`),
    replacing that appearance's earlier set. The game now shows it, and so does
    the Tile Art Viewer after a restart. Commit the folder to keep the change.
    To keep a copy outside the game instead, click **Export selected set…** and
@@ -163,10 +163,10 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD \
 ```
 
 1. Open **Map Browser** and choose a map. The viewer automatically loads the
-   game's new art from `data/art/walls` and starts with **Show new art**
+   game's new art from `new-art-pack/walls` and starts with **Show new art**
    enabled. After **Export to game**, restart the viewer to see the new set.
 2. The first-person view is composed exactly as the game composes it: new art
-   where `data/art/walls` has a set, and locally decoded originals, enlarged
+   where `new-art-pack/walls` has a set, and locally decoded originals, enlarged
    four times, for missing appearances.
 3. Navigate with the arrow keys: **Left** and **Right** turn, **Up** moves
    forward, and **Down** turns around. You can move through walls in this
@@ -185,13 +185,13 @@ Art Catalog, map controls, and source-piece export features.
 | Save brief | `dev_tools/replacement_art_creator/data/briefs.json` |
 | Import a new PNG | `dev_tools/replacement_art_creator/godot/art/` and its path in `briefs.json` |
 | Save a reference description | `dev_tools/tile_art_viewer/data/tile_art_catalog.csv` |
-| Export to game | `data/art/walls/<appearance>/`, replacing that appearance's set |
+| Export to game | `new-art-pack/walls/<appearance>/`, replacing that appearance's set |
 | Export selected set… | A new child folder inside the parent folder you choose |
 
 The source game files are read from `OPENGOLD_GAME_DIR`; these operations do
 not write to that directory. The imported images and brief file are in your
 checkout, so check your Git changes if you want to keep or share them. The
-game's `data/art/walls` contains only new art and each set's manifest.
+game's `new-art-pack/walls` contains only new art and each set's manifest.
 
 ## Common problems
 

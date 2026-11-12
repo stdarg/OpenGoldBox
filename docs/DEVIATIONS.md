@@ -433,11 +433,11 @@ in the game: answering YES at a hall lists its services in the dialogue
 - **Save files.** OpenGoldBox uses its own versioned save format. Importing
   original saves is wanted but not yet supported. [PRD §14](PRD.md#14-save-games), [SAVES.md](SAVES.md).
 - **New wall art.** The first-person view draws the new wall art in
-  `data/art/walls`, at four times the original resolution, in place of each
+  `new-art-pack/walls`, at four times the original resolution, in place of each
   original appearance it covers. Appearances without new art keep the
   original pieces from the player's game files.
   [#272](https://github.com/stdarg/OpenGoldBox/issues/272),
-  [data/art/walls](../data/art/walls/README.md).
+  [new-art-pack/walls](../new-art-pack/walls/README.md).
 - **Party members show the weapon they attack with** (2026-11-02). A character holding
   a sword draws its carried bow to shoot, drawn by the same equipment compositor as
   its other sprites, and shows its sword again when it strikes, without the shield if

@@ -7,7 +7,7 @@
 #include <godot_cpp/variant/packed_byte_array.hpp>
 #include <algorithm>
 
-// The core reads data/art/walls but has no PNG codec; Godot decodes for it.
+// The core reads the new art's walls but has no PNG codec; Godot decodes for it.
 // The Tile Art Viewer shares this file so it shows what the game shows.
 inline std::optional<opengold::Image> decode_wall_png(std::span<const std::uint8_t> bytes)
 {

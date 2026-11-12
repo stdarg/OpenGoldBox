@@ -4,7 +4,9 @@ extends Panel
 
 
 func open(file: String, caption: String) -> void:
-    (get_node("Image") as TextureRect).texture = load(file)
+    # A file in the new art's folder, read as it is rather than imported.
+    var image := Image.load_from_file(file)
+    (get_node("Image") as TextureRect).texture = null if image == null else ImageTexture.create_from_image(image)
     (get_node("Caption") as Label).text = caption
     show()
 

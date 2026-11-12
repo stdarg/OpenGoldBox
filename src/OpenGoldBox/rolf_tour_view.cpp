@@ -2337,13 +2337,13 @@ void RolfTourView::sync_monster_picture()
     // timing, unless the 3D view shows the original's art; a folder that cannot
     // be used leaves the original, and the log names its file.
     const auto source = session_->scene_animation_source();
-    if (!source || original_walls_)
+    const auto closeups = new_art_path("closeups");
+    if (!source || original_walls_ || closeups.is_empty())
     {
         return;
     }
     const auto folder =
-        game_data_path("data/art/closeups")
-            .path_join(presentation::close_up_folder_name(source->first, source->second));
+        closeups.path_join(presentation::close_up_folder_name(source->first, source->second));
     auto replacement = presentation::load_close_up_art(folder, monster_delays_);
     if (!replacement.problem.is_empty())
     {
@@ -2913,16 +2913,36 @@ void RolfTourView::show_party_rows()
     }
 }
 
+void RolfTourView::forget_portraits()
+{
+    portraits_.reset();
+}
+
+// A complete NPC or shopkeeper portrait from the new art's portraits/ folder;
+// null without the new art, or, logged once, when the file cannot be loaded:
+// the view then shows the original's picture.
 Ref<Texture2D> RolfTourView::npc_portrait(std::string_view file)
 {
-    auto found = npc_portraits_.find(file);
+    const auto folder = new_art_path("portraits");
+    if (folder.is_empty())
+    {
+        return {};
+    }
+    const auto path = folder.path_join(String::utf8(std::string(file).c_str()));
+    const std::string key = path.utf8().get_data();
+    auto found = npc_portraits_.find(key);
     if (found == npc_portraits_.end())
     {
-        const auto path = "res://bin/portraits/" + std::string(file);
-        found =
-            npc_portraits_
-                .emplace(file, ResourceLoader::get_singleton()->load(String::utf8(path.c_str())))
-                .first;
+        const auto image = Image::load_from_file(path);
+        if (image.is_null())
+        {
+            log_unloadable_art("Cannot load portrait " + key);
+        }
+        found = npc_portraits_
+                    .emplace(key, image.is_null()
+                                      ? Ref<Texture2D>()
+                                      : Ref<Texture2D>(ImageTexture::create_from_image(image)))
+                    .first;
     }
     return found->second;
 }

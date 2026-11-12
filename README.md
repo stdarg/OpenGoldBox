@@ -35,6 +35,12 @@ for the language and the folder on first run, or set `OPENGOLD_GAME_DIR`).
 Settings and saves go to your user-data folder; see
 [configuration](docs/CONFIGURATION.md).
 
+The new art (walls, close-ups, monster figures and portraits) is a separate,
+optional download, kept in the repository as [`new-art-pack`](new-art-pack/README.md).
+Without it the game shows the original game's art. To see the new art, choose its
+folder on the Options screen (Interface, **New art folder**); running from a
+checkout, choose this repository's `new-art-pack`.
+
 - Windows (PowerShell): `.\build-opengoldbox.cmd`, then `.\win-package\opengoldbox.exe`.
   The build also makes the package for players,
   `build\game\OpenGoldBox-<version>-windows-x86_64.zip`, which runs from any folder,
@@ -411,7 +417,7 @@ Each tool's README has its build and self-check commands.
   monster and NPC record with its combat art, weapon sets and record editing.
   Its Close-ups tab plays the 3D view's 74 animated close-ups beside a written
   description of each, and plays new art drawn only from that description.
-  Its export is the game's `data/monsters` and `data/art/closeups`.
+  Its export is the game's `data/monsters` and `new-art-pack/closeups`.
 - [Creature Stats Editor](dev_tools/docs/creature-stats-editor.md): changes a
   monster's Hit Points, stats, spellcasting and fight ratings, the scripts'
   wandering and rest chances, and the companions who join the party, and

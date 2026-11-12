@@ -396,6 +396,40 @@ func check_saves_before_portraits(file: String) -> void:
 	elif shown[45].all(func(n): return n == "original-head-1-body-1"):
 		bug("a save from before original portraits keeps the default head and body", str(shown[45]))
 
+# Without the new art the 3D view shows the original walls; choosing its folder
+# on the Options screen while exploring shows the new walls at once, still
+# exploring. From here on the choice, not OPENGOLD_NEW_ART_DIR, names the art.
+func check_new_art_folder(file: String) -> void:
+	var art := OS.get_environment("OPENGOLD_NEW_ART_DIR")
+	OS.set_environment("OPENGOLD_NEW_ART_DIR", "")
+	if not await load_fixture(file, "new-art-folder"):
+		return
+	var before := wall_width()
+	var escape := InputEventKey.new()
+	escape.keycode = KEY_ESCAPE
+	escape.pressed = true
+	Input.parse_input_event(escape)
+	await settle(4)
+	var menu: Node = town().get_parent().get_node("GameMenu")
+	menu.get_node("Menu/Options").pressed.emit()
+	await settle(4)
+	var choose: Button = menu.get_node("Options/Interface/NewArtChoose")
+	if choose.disabled:
+		bug("the new art folder cannot be chosen while exploring", "")
+	menu.get_node("Options/Interface/NewArtDialog").dir_selected.emit(art)
+	await settle(4)
+	menu.get_node("Options/Close").pressed.emit()
+	menu.get_node("Menu/Resume").pressed.emit()
+	await settle(8)
+	if not exploring():
+		bug("choosing the new art folder leaves the 3D view", "")
+	if before != 88 or wall_width() != 352:
+		bug("choosing the new art folder does not show the new walls at once", str(before) + " -> " + str(wall_width()) + " pixels wide")
+
+func wall_width() -> int:
+	var image: Image = town().tour_visuals().get("wall_image")
+	return 0 if image == null else image.get_width()
+
 func portrait_name(texture: Texture2D) -> String:
 	return "" if texture == null else texture.resource_name
 
@@ -825,6 +859,7 @@ func run() -> void:
 			await check_party_cards("while exploring")
 			await check_portrait_change()
 			await check_saves_before_portraits(file)
+			await check_new_art_folder(file)
 			if not await load_fixture(file): continue
 		if party == "outlaw":
 			await check_refusal()

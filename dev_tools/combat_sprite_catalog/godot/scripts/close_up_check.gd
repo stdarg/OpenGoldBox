@@ -52,7 +52,7 @@ static func run(catalog: SpriteCatalog) -> String:
     if catalog.close_up_frame_at(orc[0].delays, 0.5) != 0 or catalog.close_up_frame_at(orc[0].delays, 16 / 18.2) != 2:
         return "The orc's close-up plays with the game's timing"
     if not CloseUpStore.up_to_date():
-        return "data/art/closeups is out of date: run --export-to-game"
+        return "new-art-pack/closeups is out of date: run --export-to-game"
 
     var temp := ProjectSettings.globalize_path("user://close-up-check-%d" % Time.get_ticks_usec())
     var panel = CloseUpPanel.new()

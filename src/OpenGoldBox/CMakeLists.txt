@@ -92,8 +92,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_options(opengoldbox_game PRIVATE "LINKER:--exclude-libs,ALL")
 endif()
 
-file(GLOB portrait_sources CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/art/portraits/*.png"
-    "${PROJECT_SOURCE_DIR}/data/art/portraits/*.png" "${PROJECT_SOURCE_DIR}/art/portraits/portraits.json")
+# The heads of races the original lacks, which their original head-and-body
+# portraits need. The new art's portraits are in its own folder.
+file(GLOB portrait_sources CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/data/art/portraits/*.png")
 set(portrait_outputs)
 foreach(source IN LISTS portrait_sources)
     get_filename_component(name "${source}" NAME)
@@ -104,26 +105,18 @@ foreach(source IN LISTS portrait_sources)
         DEPENDS "${source}" VERBATIM)
     list(APPEND portrait_outputs "${output}")
 endforeach()
-file(GLOB npc_portrait_sources CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/art/portraits/NPCs/*.png")
-foreach(source IN LISTS npc_portrait_sources)
-    get_filename_component(name "${source}" NAME)
-    set(output "${game_project}/bin/portraits/NPCs/${name}")
-    add_custom_command(OUTPUT "${output}"
-        COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_project}/bin/portraits/NPCs"
-        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${source}" "${output}"
-        DEPENDS "${source}" VERBATIM)
-    list(APPEND portrait_outputs "${output}")
+# Portraits earlier builds copied, now in the new art's folder, would still be
+# packed into the game: everything but the race heads goes.
+foreach(stale NPCs shops)
+    file(REMOVE_RECURSE "${game_project}/bin/portraits/${stale}")
 endforeach()
-# Portraits the Shop & Temple Manager exports for the shops and temples it edits.
-file(GLOB shop_portrait_sources CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/data/art/portraits/shops/*.png")
-foreach(source IN LISTS shop_portrait_sources)
-    get_filename_component(name "${source}" NAME)
-    set(output "${game_project}/bin/portraits/shops/${name}")
-    add_custom_command(OUTPUT "${output}"
-        COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_project}/bin/portraits/shops"
-        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${source}" "${output}"
-        DEPENDS "${source}" VERBATIM)
-    list(APPEND portrait_outputs "${output}")
+file(GLOB built_portraits "${game_project}/bin/portraits/*")
+foreach(built IN LISTS built_portraits)
+    get_filename_component(name "${built}" NAME)
+    string(REGEX REPLACE "\\.import$" "" source_name "${name}")
+    if(NOT IS_DIRECTORY "${built}" AND NOT EXISTS "${PROJECT_SOURCE_DIR}/data/art/portraits/${source_name}")
+        file(REMOVE "${built}")
+    endif()
 endforeach()
 set(splash_outputs)
 foreach(name OpenGoldBoxSplashBackground OpenGoldBoxEngineLettering OpenGoldBoxGameLettering
@@ -149,19 +142,15 @@ add_custom_command(OUTPUT "${combat_weapon_output}"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_weapon_source}" "${combat_weapon_output}"
     DEPENDS "${combat_weapon_source}" VERBATIM)
 add_custom_target(opengoldbox_assets DEPENDS ${portrait_outputs} ${splash_outputs} "${combat_body_output}" "${combat_weapon_output}")
-# New wall art (data/art/walls) is read by the core, not imported by Godot,
-# so the project copy is replaced whole and hidden from the importer.
+# The new art is a separate download the game reads from the folder chosen in
+# Options, so the project holds none of it; copies earlier builds made go.
 set(wall_art_project_commands
     COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_project}/data/art/walls"
-    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/walls" "${game_project}/data/art/walls"
-    COMMAND "${CMAKE_COMMAND}" -E touch "${game_project}/data/art/walls/.gdignore"
     COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_project}/data/art/missiles"
-    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/missiles" "${game_project}/data/art/missiles"
-    COMMAND "${CMAKE_COMMAND}" -E touch "${game_project}/data/art/missiles/.gdignore"
     COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_project}/data/art/closeups"
-    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/closeups" "${game_project}/data/art/closeups"
-    COMMAND "${CMAKE_COMMAND}" -E touch "${game_project}/data/art/closeups/.gdignore"
-    # So is the Combat Sprite Catalog's export (data/monsters, #274).
+    # The Combat Sprite Catalog's creature data (data/monsters, #274) is read
+    # by the core, not imported by Godot, so its copy is replaced whole and
+    # hidden from the importer.
     COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_project}/data/monsters"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${game_project}/data/monsters"
     COMMAND "${CMAKE_COMMAND}" -E touch "${game_project}/data/monsters/.gdignore")
@@ -498,8 +487,6 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_godot_creation_explorer PROPERTIES TIMEOUT 620)
     opengold_creation_check(portrait_fallback "Portrait fallback checks passed"
         -DSCRIPT=portrait_fallback_tests)
-    # It hides the Goliath portraits in the project for a moment, so it runs alone.
-    set_tests_properties(opengold_godot_creation_portrait_fallback PROPERTIES RUN_SERIAL TRUE)
     opengold_creation_check(handoff "Combat handoff checks passed" -DSCRIPT=combat_handoff_tests)
     opengold_creation_check(roster_layout "Roster layout checks passed"
         -DSCRIPT=roster_layout_tests)
@@ -661,9 +648,9 @@ if(WIN32)
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${game_output}/data/shops"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${game_output}/data/encounters"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${game_output}/data/companions"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/walls" "${game_output}/data/art/walls"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/missiles" "${game_output}/data/art/missiles"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/closeups" "${game_output}/data/art/closeups"
+        COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/walls"
+        COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/missiles"
+        COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/closeups"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${game_output}/data/monsters"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_output}/data/art"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_body_source}" "${game_output}/data/art/combat-body-looks.tsv"
@@ -684,9 +671,9 @@ elseif(APPLE)
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${export_path}/Contents/Resources/data/shops"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${export_path}/Contents/Resources/data/encounters"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${export_path}/Contents/Resources/data/companions"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/walls" "${export_path}/Contents/Resources/data/art/walls"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/missiles" "${export_path}/Contents/Resources/data/art/missiles"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/closeups" "${export_path}/Contents/Resources/data/art/closeups"
+        COMMAND "${CMAKE_COMMAND}" -E rm -rf "${export_path}/Contents/Resources/data/art/walls"
+        COMMAND "${CMAKE_COMMAND}" -E rm -rf "${export_path}/Contents/Resources/data/art/missiles"
+        COMMAND "${CMAKE_COMMAND}" -E rm -rf "${export_path}/Contents/Resources/data/art/closeups"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${export_path}/Contents/Resources/data/monsters"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${export_path}/Contents/Resources/data/art"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_body_source}" "${export_path}/Contents/Resources/data/art/combat-body-looks.tsv"
@@ -704,9 +691,9 @@ else()
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${game_output}/data/shops"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${game_output}/data/encounters"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${game_output}/data/companions"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/walls" "${game_output}/data/art/walls"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/missiles" "${game_output}/data/art/missiles"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/closeups" "${game_output}/data/art/closeups"
+        COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/walls"
+        COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/missiles"
+        COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/closeups"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${game_output}/data/monsters"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_output}/data/art"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_body_source}" "${game_output}/data/art/combat-body-looks.tsv"
@@ -786,3 +773,15 @@ if(APPLE)
 endif()
 
 opengold_enable_warnings("${CMAKE_CURRENT_SOURCE_DIR}")
+
+# Every check plays with the repository's new art, as a player who downloaded
+# it and chose its folder; a check that wants none sets OPENGOLD_NEW_ART_DIR
+# itself (empty: the original art only).
+get_property(game_tests DIRECTORY PROPERTY TESTS)
+foreach(game_test IN LISTS game_tests)
+    get_test_property(${game_test} ENVIRONMENT game_test_environment)
+    if(NOT game_test_environment MATCHES "OPENGOLD_NEW_ART_DIR=")
+        set_property(TEST ${game_test} APPEND PROPERTY ENVIRONMENT
+            "OPENGOLD_NEW_ART_DIR=${PROJECT_SOURCE_DIR}/new-art-pack")
+    endif()
+endforeach()

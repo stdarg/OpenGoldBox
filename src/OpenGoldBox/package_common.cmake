@@ -27,7 +27,8 @@ function(write_third_party_notices output extra_notices)
 endfunction()
 
 # A player supplies the original game; a package must hold none of its files.
-# Stops on any file the MD5_MANIFEST names, any .DAX, a settings.cfg or a .TMP.
+# Stops on any file the MD5_MANIFEST names, any .DAX, a settings.cfg, a .TMP or
+# the new art, which is a separate download.
 function(check_package_files package_folder)
     file(READ "${MD5_MANIFEST}" manifest)
     string(JSON original_count LENGTH "${manifest}" files)
@@ -47,6 +48,11 @@ function(check_package_files package_folder)
         endif()
         if(upper STREQUAL "SETTINGS.CFG" OR upper MATCHES "\\.TMP$")
             message(FATAL_ERROR "The package contains a development leftover: ${path}")
+        endif()
+        # The new art is a separate download (new-art-pack).
+        if(path MATCHES "data/art/(walls|missiles|closeups)/" OR path MATCHES "data/monsters/.*\\.png$"
+                OR upper STREQUAL "NEW-ART-PACK.JSON")
+            message(FATAL_ERROR "The package contains the new art, a separate download: ${path}")
         endif()
     endforeach()
 endfunction()

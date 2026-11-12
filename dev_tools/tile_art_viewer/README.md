@@ -65,7 +65,7 @@ piece at its own resolution with transparency. Changing position or facing
 clears the selection.
 
 For new art review, the viewer automatically loads the game's new wall art
-from [`data/art/walls`](../../data/art/walls), which the separate
+from [`new-art-pack/walls`](../../new-art-pack/walls), which the separate
 [Replacement Art Creator](../replacement_art_creator/README.md) writes with
 **Export to game**. It reads and composes that folder with the game's own code,
 so the 352 × 352 Map Browser preview is what the game shows. **Show new art** is

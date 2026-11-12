@@ -21,7 +21,6 @@ foreach(required
         Contents/Frameworks/opengoldbox_game.dylib
         Contents/Resources/OpenGoldBox.pck
         Contents/Resources/data/rules/srd-5.2.1/combat.rules
-        Contents/Resources/data/art/walls/WALLDEF3_DAX_0_1/near_front.png
         Contents/Resources/data/monsters/mon2cha_dax_4/monster.json
         Contents/Resources/data/art/combat-body-looks.tsv)
     if(NOT EXISTS "${APP_BUNDLE}/${required}")

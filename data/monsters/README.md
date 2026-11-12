@@ -5,8 +5,11 @@ writes these folders with **Export to game** or `--export-to-game`; the game
 reads them and nothing in `dev_tools/` ([#274](https://github.com/stdarg/OpenGoldBox/issues/274)).
 Each folder is one creature, named like its catalog record (`mon2cha_dax_4` is
 `MON2CHA.DAX` record 4, `custom_...` a copy the catalog made). It holds
-`monster.json` and, for each weapon set with reviewed art, `ready.png` and
-`action.png`, 128 × 128 pixels.
+`monster.json`. Each weapon set with reviewed art has its `ready.png` and
+`action.png`, 128 × 128 pixels, in the new art download, in the folder of the
+same name under its `monsters/` (`new-art-pack/monsters` in the repository);
+the paths in `monster.json` are relative to that folder. Without the new art a
+creature keeps its name, gear and size and shows its original combat icon.
 
 `monster.json` gives the creature's original record, its name, its sprite
 size and humanoid height, its equipment and its weapon sets:

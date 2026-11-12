@@ -7,6 +7,7 @@
 #include "godot_nodes.h"
 #include "guarded_handlers.h"
 #include "rolf_tour_view.h"
+#include "town_sheet_dialog.h"
 #include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/classes/viewport.hpp>
 #include <godot_cpp/classes/window.hpp>
@@ -31,6 +32,8 @@ void CharacterCreationView::attach_game_menu()
                       .bind(static_cast<int>(PartyAction::return_to_party)));
     menu->connect("closed", presentation::guarded(this, &CharacterCreationView::game_menu_closed));
     menu->connect("art_changed", presentation::guarded(this, &CharacterCreationView::art_changed));
+    menu->connect("new_art_changed",
+                  presentation::guarded(this, &CharacterCreationView::new_art_changed));
     presentation::attach_child(*this, std::move(owned));
 }
 
@@ -102,6 +105,31 @@ void CharacterCreationView::art_changed()
     {
         combat->refresh_art();
     }
+}
+
+// Another new art folder: every screen reads its portraits again, and the game
+// in progress is built again from itself with the new walls, close-ups and
+// monsters, so what the player sees changes at once.
+void CharacterCreationView::new_art_changed()
+{
+    reload_portraits();
+    required_node<TownSheetDialog>(*this, "TownSheet").forget_portraits();
+    auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
+    if (town)
+    {
+        town->forget_portraits();
+    }
+    if (campaign_ && !campaign_defeated_ && !campaign_->in_combat() && town && town->can_leave())
+    {
+        const bool exploring = town->is_visible();
+        reload_in_memory();
+        error_ = String();
+        if (exploring)
+        {
+            party_action(PartyAction::explore);
+        }
+    }
+    art_changed();
 }
 
 void CharacterCreationView::game_menu_closed()

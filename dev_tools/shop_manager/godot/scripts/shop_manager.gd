@@ -18,12 +18,12 @@ const TEMPLE_SERVICES := [
     # cannot help (TEMPLE-1).
     ["resurrection", "Resurrection", 11000],
 ]
-# A record names its portrait as the game finds it, in its portraits folder.
-# The game ships art/portraits itself; a portrait drawn for this tool is
-# exported to GAME_PORTRAITS, which the game ships as its portraits' shops.
-const GAME_ART := "art/portraits/"
+# A record names its portrait as the game finds it, in the new art's portraits
+# folder (new-art-pack/portraits); a portrait drawn for this tool is exported
+# to GAME_PORTRAITS, the new art's shops folder.
+const GAME_ART := "new-art-pack/portraits/"
 const MANAGER_PORTRAITS := "dev_tools/shop_manager/portraits/"
-const GAME_PORTRAITS := "data/art/portraits/shops"
+const GAME_PORTRAITS := "new-art-pack/portraits/shops"
 const PORTRAIT_NOTE := "Add new PNGs to dev_tools/shop_manager/portraits. A chosen portrait is exported to the game."
 # Arrows and quarrels: the game has no ammunition (AMMO-UNLIMITED), so no
 # shop offers them.
@@ -636,7 +636,7 @@ func _on_random_name() -> void:
 
 func _scan_portraits() -> void:
     portrait_paths.clear()
-    for relative in ["art/portraits/NPCs", "dev_tools/shop_manager/portraits"]:
+    for relative in ["new-art-pack/portraits/NPCs", "dev_tools/shop_manager/portraits"]:
         var absolute := repo_dir.path_join(relative)
         var directory := DirAccess.open(absolute)
         if directory == null:

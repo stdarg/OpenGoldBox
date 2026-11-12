@@ -82,7 +82,10 @@ MonsterItem item(const Json &entry)
     return result;
 }
 
-ExportedMonster monster(const std::filesystem::path &folder, const PngDecoder &decode)
+// The creature in `folder`, with its weapon sets from `art` unless `art` is
+// empty. Art it cannot use is named in `problems` and left out.
+ExportedMonster monster(const std::filesystem::path &folder, const std::filesystem::path &art,
+                        const PngDecoder &decode, std::vector<std::string> &problems)
 {
     const auto file = [&]
     {
@@ -120,17 +123,37 @@ ExportedMonster monster(const std::filesystem::path &folder, const PngDecoder &d
     {
         result.equipment.push_back(item(entry));
     }
-    for (const auto &entry : field<Json::Array>(file, "variants"))
+    const auto &sets = field<Json::Array>(file, "variants");
+    for (const auto &entry : sets)
     {
-        result.variants.push_back({field<std::string>(entry, "id"),
-                                   field<std::string>(entry, "weapon_id"),
-                                   field<std::string>(entry, "shield_id"),
-                                   pose(folder, field<std::string>(entry, "ready"), decode),
-                                   pose(folder, field<std::string>(entry, "action"), decode)});
+        (void)field<std::string>(entry, "id");
+        (void)field<std::string>(entry, "ready");
+        (void)field<std::string>(entry, "action");
     }
     if (!result.creature_archive.starts_with("MON") || result.name.empty())
     {
         throw std::runtime_error("Monster data names no creature in " + path_text(folder));
+    }
+    if (art.empty())
+    {
+        return result;
+    }
+    const auto poses = art / folder.filename();
+    try
+    {
+        for (const auto &entry : sets)
+        {
+            result.variants.push_back({field<std::string>(entry, "id"),
+                                       field<std::string>(entry, "weapon_id"),
+                                       field<std::string>(entry, "shield_id"),
+                                       pose(poses, field<std::string>(entry, "ready"), decode),
+                                       pose(poses, field<std::string>(entry, "action"), decode)});
+        }
+    }
+    catch (const UnusableArtFile &error)
+    {
+        result.variants.clear();
+        problems.emplace_back(error.what());
     }
     return result;
 }
@@ -177,7 +200,8 @@ const ExportedMonster *MonsterBundle::creature(unsigned bank, unsigned record) c
     return found == monsters.end() ? nullptr : &found->second;
 }
 
-MonsterBundle load_monster_bundle(const std::filesystem::path &folder, const PngDecoder &decode)
+MonsterBundle load_monster_bundle(const std::filesystem::path &folder,
+                                  const std::filesystem::path &art, const PngDecoder &decode)
 {
     MonsterBundle bundle;
     if (!std::filesystem::is_directory(folder))
@@ -193,7 +217,7 @@ MonsterBundle load_monster_bundle(const std::filesystem::path &folder, const Png
         const auto data = path_text(entry.path() / "monster.json");
         try
         {
-            auto exported = monster(entry.path(), decode);
+            auto exported = monster(entry.path(), art, decode, bundle.problems);
             const auto key = exported.key;
             if (!bundle.monsters.emplace(key, std::move(exported)).second)
             {

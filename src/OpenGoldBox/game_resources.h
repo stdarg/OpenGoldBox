@@ -1,6 +1,7 @@
 #ifndef OPENGOLDBOX_GAME_RESOURCES_H
 #define OPENGOLDBOX_GAME_RESOURCES_H
 
+#include "application_settings.h"
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 
@@ -54,6 +55,14 @@ inline godot::String game_combat_weapon_file()
         return executable_dir.get_base_dir().path_join("Resources").path_join(relative);
     }
     return executable_dir.path_join(relative);
+}
+
+// A file or folder in the new art's folder, such as "walls"; empty without the
+// new art, when the game shows the original art.
+inline godot::String new_art_path(const char *relative)
+{
+    const auto folder = settings::new_art_directory();
+    return folder.is_empty() ? godot::String() : folder.path_join(relative);
 }
 
 // A file or folder the game ships beside its executable, such as data/shops.

@@ -35,7 +35,7 @@ mv "$project_dir/project.godot.icon-tmp" "$project_dir/project.godot"
 # The game's data, as its own build stages it, so a fresh checkout works too.
 cp "$repo_dir/data/art/combat-body-looks.tsv" "$repo_dir/data/art/combat-weapon-options.tsv" \
     "$project_dir/data/art/"
-for folder in art/missiles art/walls companions encounters monsters rules shops; do
+for folder in companions encounters monsters rules shops; do
     mkdir -p "$project_dir/data/$folder"
     rsync -a --delete "$repo_dir/data/$folder/" "$project_dir/data/$folder/"
 done
@@ -47,6 +47,8 @@ if [[ ! -s "$project_dir/.godot/extension_list.cfg" ]]; then
         [[ -s "$project_dir/.godot/extension_list.cfg" ]]
 fi
 
+# The new art, as a player who downloaded it and chose its folder.
+export OPENGOLD_NEW_ART_DIR="${OPENGOLD_NEW_ART_DIR:-$repo_dir/new-art-pack}"
 export OPENGOLD_GAME_DIR="$game_dir"
 if [[ $# -gt 1 ]]; then
     exec "$godot_bin" --path "$project_dir" "${@:2}"

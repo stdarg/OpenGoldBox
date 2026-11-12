@@ -218,7 +218,7 @@ keeps the original's timing. **Show new animation** plays the new art as the
 game will, or says why it cannot: a missing frame, an extra frame, or a frame
 of another size. Turn it off to play the original again.
 
-**Export to game** copies every art folder to [`data/art/closeups`](../../data/art/closeups/README.md),
+**Export to game** copies every art folder to [`new-art-pack/closeups`](../../new-art-pack/closeups/README.md),
 which the game reads; so does the headless `--export-to-game` mode. The game
 plays a close-up's new art in its place unless the Options screen's **3D view
 art** is Original, and shows the original for a close-up with no usable art.
@@ -245,17 +245,18 @@ saving and export.
 ### Export to game
 
 **Export to game** writes every saved record of a `MONnCHA` creature, and
-every copy, to [`data/monsters`](../../data/monsters/README.md), which the game
-reads: its name, sprite size, humanoid height, equipment and each weapon set's
-PNGs. Unsaved edits are not exported. A record flagged for regeneration exports
+every copy: its name, sprite size, humanoid height and equipment to
+[`data/monsters`](../../data/monsters/README.md), which the game ships, and each
+weapon set's PNGs to `new-art-pack/monsters`, the separate new art download,
+in the folder of the same name. Unsaved edits are not exported. A record flagged for regeneration exports
 its data but no art, and a set missing a 128 × 128 pose is left out. Records of
 shared `CPIC` icons are not exported. The headless `--export-to-game` mode does
 the same without the game files, and `--catalog-check` fails when the export is
 out of date. So does `opengold_monster_export_check` in the game's ctest suite,
 which needs neither the game files nor this tool's native library: after
-changing the catalog's records or art, export and commit `data/monsters` with
-them. The same export, button and checks cover the Close-ups tab's art and
-[`data/art/closeups`](../../data/art/closeups/README.md).
+changing the catalog's records or art, export and commit `data/monsters` and
+`new-art-pack/monsters` with them. The same export, button and checks cover the Close-ups tab's art and
+[`new-art-pack/closeups`](../../new-art-pack/closeups/README.md).
 
 Run `--metadata-check` in place of `--catalog-check` to verify JSON persistence,
 draft retention, paired one-handed setups, separate ranged and two-handed setups,

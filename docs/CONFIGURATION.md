@@ -24,8 +24,10 @@ keep_quick="off"
 legendary="hard"
 
 [art]
+directory="/Users/you/OpenGoldBox-new-art"
 walls="new"
 combat="new"
+portraits="new"
 
 [gear]
 auto_equip="on"
@@ -60,6 +62,18 @@ Portraits switch them, redrawing the view or the fight on screen at once. With `
 any piece of new art the game cannot load (a wall look, a close-up, a
 creature, or the party's combat looks) shows the original art it replaces,
 and the game's log names the file it could not load.
+
+The new art is a separate, optional download (`new-art-pack` in the
+repository). `directory` names its folder, absolute; the Options screen's
+**New art folder** (Interface) chooses it, accepting only a folder holding
+the download's `new-art-pack.json`, and the game shows the new art at once,
+loading the game in progress again with it. It can change whenever the menu
+could load a game, not during a fight or an event. Without a folder, or with
+one that is not the new art, the game shows only the original art, whatever
+`walls`, `combat` and `portraits` say. The environment variable
+`OPENGOLD_NEW_ART_DIR` overrides `directory`, as `OPENGOLD_GAME_DIR` does the
+game's folder; the game's checks and developer tools set it to the
+repository's `new-art-pack`.
 
 `[gear]` is auto-equip ([EQUIP-1](SRD-DECISIONS.md#equip-1-2026-11-05-auto-equip-better-gear)):
 `auto_equip` is `on` or `off`, and `unidentified_magic` is `skip`, which

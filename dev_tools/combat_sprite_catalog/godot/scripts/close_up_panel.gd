@@ -124,7 +124,7 @@ func _init() -> void:
     var export := Button.new()
     export.name = "Export"
     export.text = "Export to game"
-    export.tooltip_text = "Copy the new close-up art to data/art/closeups, which the game plays."
+    export.tooltip_text = "Copy the new close-up art to new-art-pack/closeups, which the game plays."
     export.pressed.connect(_export)
     buttons.add_child(export)
     status = Label.new()
@@ -248,4 +248,4 @@ func _save() -> void:
 
 func _export() -> void:
     var error := CloseUpStore.export_all(root)
-    status.text = "Exported the new close-up art to data/art/closeups" if error.is_empty() else error
+    status.text = "Exported the new close-up art to new-art-pack/closeups" if error.is_empty() else error

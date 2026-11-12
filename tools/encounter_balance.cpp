@@ -175,7 +175,7 @@ const por::CreatureCatalog &game_creatures()
 const por::MonsterBundle &game_monsters()
 {
     static const auto monsters = por::load_monster_bundle(
-        std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters", test::png_size_only);
+        std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters", {}, test::png_size_only);
     return monsters;
 }
 

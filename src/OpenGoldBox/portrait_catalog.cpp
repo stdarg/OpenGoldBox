@@ -1,6 +1,7 @@
 #include "godot_text.h"
 #include "portrait_catalog.h"
 #include "application_settings.h"
+#include "game_resources.h"
 #include "godot_images.h"
 #include "godot_path.h"
 #include "unloadable_art.h"
@@ -39,41 +40,61 @@ std::string normalized(std::string s)
 PortraitCatalog PortraitCatalog::load()
 {
     PortraitCatalog result;
+    result.folder_ = new_art_path("portraits");
+    if (result.folder_.is_empty())
+    {
+        return result;
+    }
     Ref<JSON> json;
     json.instantiate();
-    constexpr auto catalog_file = "res://bin/portraits/portraits.json";
+    const auto catalog_file = result.folder_.path_join("portraits.json");
     if (json->parse(FileAccess::get_file_as_string(catalog_file)) != OK ||
         json->get_data().get_type() != Variant::DICTIONARY)
     {
-        log_unloadable_art(std::string("Cannot load the portrait catalog ") + catalog_file);
+        log_unloadable_art(std::string("Cannot load the portrait catalog ") +
+                           catalog_file.utf8().get_data());
         return result;
     }
     const Dictionary catalog = json->get_data();
     const Array keys = catalog.keys();
     for (int64_t i = 0; i < keys.size(); ++i)
     {
-        if (catalog[keys[i]].get_type() != Variant::DICTIONARY)
-        {
-            throw std::runtime_error("Invalid portrait metadata");
-        }
-        const Dictionary entry = catalog[keys[i]];
+        const auto filename = std::string(String(keys[i]).utf8().get_data());
+        const Dictionary entry = catalog[keys[i]].get_type() == Variant::DICTIONARY
+                                     ? Dictionary(catalog[keys[i]])
+                                     : Dictionary();
         const auto field = [&](const char *key)
         {
-            if (!entry.has(key) || entry[key].get_type() != Variant::STRING ||
-                String(entry[key]).is_empty())
-            {
-                throw std::runtime_error("Missing portrait metadata");
-            }
-            return std::string(String(entry[key]).utf8().get_data());
+            return entry.has(key) && entry[key].get_type() == Variant::STRING
+                       ? std::string(String(entry[key]).utf8().get_data())
+                       : std::string();
         };
-        Portrait p{String(keys[i]).utf8().get_data(), field("Gender"), field("Class"),
-                   field("Race")};
-        opengold::por::CharacterAppearance a;
-        a.portrait = p.filename;
-        opengold::por::validate_character_appearance(a);
-        if (!ResourceLoader::get_singleton()->exists(gs("res://bin/portraits/" + p.filename)))
+        Portrait p{filename, field("Gender"), field("Class"), field("Race")};
+        const auto file = result.file_path(filename);
+        // A file name a save may hold: no folders, a .png.
+        const bool storable = [&]
         {
-            log_unloadable_art("Cannot load portrait res://bin/portraits/" + p.filename +
+            opengold::por::CharacterAppearance a;
+            a.portrait = filename;
+            try
+            {
+                opengold::por::validate_character_appearance(a);
+                return true;
+            }
+            catch (const std::exception &)
+            {
+                return false;
+            }
+        }();
+        if (!storable || p.gender.empty() || p.klass.empty() || p.race.empty())
+        {
+            log_unloadable_art("Cannot load portrait " + std::string(file.utf8().get_data()) +
+                               ": its entry in portraits.json is not usable");
+            continue;
+        }
+        if (!FileAccess::file_exists(file))
+        {
+            log_unloadable_art("Cannot load portrait " + std::string(file.utf8().get_data()) +
                                ": the file is missing");
             continue;
         }
@@ -85,6 +106,11 @@ PortraitCatalog PortraitCatalog::load()
                   return a.filename < b.filename;
               });
     return result;
+}
+
+String PortraitCatalog::file_path(const std::string &filename) const
+{
+    return folder_.is_empty() ? String() : folder_.path_join(gs(filename));
 }
 
 bool PortraitCatalog::same(const std::string &catalog_value, const std::string &draft_value)
@@ -171,13 +197,12 @@ Ref<ImageTexture> PortraitCatalog::new_texture(const std::string &filename)
     {
         return {};
     }
-    const auto path = "res://bin/portraits/" + filename;
-    Ref<Texture2D> texture = ResourceLoader::get_singleton()->load(gs(path));
-    const auto image = texture.is_valid() ? texture->get_image() : Ref<Image>();
+    const auto path = file_path(filename);
+    const auto image = path.is_empty() ? Ref<Image>() : Image::load_from_file(path);
     if (image.is_null())
     {
         unloadable_.insert(filename);
-        log_unloadable_art("Cannot load portrait " + path);
+        log_unloadable_art("Cannot load portrait " + std::string(path.utf8().get_data()));
         return {};
     }
     auto result = ImageTexture::create_from_image(image);

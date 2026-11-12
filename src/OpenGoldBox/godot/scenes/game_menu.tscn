@@ -442,6 +442,48 @@ autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "The characters' portraits: the new pictures, or the original game's head and body portraits."
 
+[node name="NewArtLabel" type="Label" parent="Options/Interface"]
+offset_left = 20
+offset_top = 404
+offset_right = 280
+offset_bottom = 440
+text = "New art folder"
+
+[node name="NewArtFolder" type="Label" parent="Options/Interface"]
+anchor_right = 1
+offset_left = 290
+offset_top = 404
+offset_right = -220
+offset_bottom = 440
+text_overrun_behavior = 3
+
+[node name="NewArtChoose" type="Button" parent="Options/Interface"]
+anchor_left = 1
+anchor_right = 1
+offset_left = -200
+offset_top = 400
+offset_right = -20
+offset_bottom = 440
+text = "Choose…"
+
+[node name="NewArtNote" type="Label" parent="Options/Interface"]
+anchor_right = 1
+offset_left = 290
+offset_right = -20
+offset_top = 448
+offset_bottom = 504
+autowrap_mode = 3
+theme_type_variation = &"LabelMuted"
+
+[node name="NewArtDialog" type="FileDialog" parent="Options/Interface"]
+title = "Choose the new art folder"
+size = Vector2i(900, 600)
+visible = false
+transient = true
+exclusive = true
+file_mode = 2
+access = 2
+
 [node name="Close" type="Button" parent="Options"]
 anchor_left = 1
 anchor_right = 1

@@ -1269,12 +1269,15 @@ unsigned wilderness_fights = 0;
 // The last encounter fight() played, as the town staged it.
 std::optional<CampaignEncounter> last_encounter;
 
-// The monsters every fight in the game has: the catalog's export in data/monsters.
+// The monsters every fight in the game has: the catalog's export in data/monsters,
+// with its art from new-art-pack/monsters.
 const std::shared_ptr<const por::MonsterBundle> &game_monsters()
 {
     static const auto monsters =
         std::make_shared<const por::MonsterBundle>(por::load_monster_bundle(
-            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters", test::png_size_only));
+            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters",
+            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "new-art-pack/monsters",
+            test::png_size_only));
     return monsters;
 }
 
@@ -7093,8 +7096,9 @@ void exported_monsters(const std::filesystem::path &directory)
         return std::pair{*last_encounter, party_items(*trip.party)};
     };
     const auto [original, original_items] = orc_fight({});
-    auto bundle = por::load_monster_bundle(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters",
-                                           test::png_size_only);
+    auto bundle = por::load_monster_bundle(
+        std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters",
+        std::filesystem::path(OPENGOLD_SOURCE_DIR) / "new-art-pack/monsters", test::png_size_only);
     auto &tusker = bundle.monsters.at("MON2CHA.DAX:13");
     tusker.name = "TUSKER";
     std::erase_if(tusker.equipment,
@@ -7153,7 +7157,8 @@ void exported_monsters(const std::filesystem::path &directory)
     };
     const auto [shipped, shipped_items] =
         orc_fight(std::make_shared<const por::MonsterBundle>(por::load_monster_bundle(
-            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters", marked)));
+            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters",
+            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "new-art-pack/monsters", marked)));
     bool armed_both_ways = false;
     for (const auto &art : shipped.art)
     {

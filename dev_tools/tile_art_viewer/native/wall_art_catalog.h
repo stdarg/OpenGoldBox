@@ -27,7 +27,7 @@ class WallArtCatalog : public godot::Control
     [[nodiscard]] godot::Array maps() const;
     [[nodiscard]] godot::Array shop_stock(int record) const;
     [[nodiscard]] godot::Array item_catalog() const;
-    // Reads new wall art the way the game does (data/art/walls).
+    // Reads new wall art the way the game does (new-art-pack/walls).
     godot::String load_new_art(const godot::String &folder);
     // Appearance key ("WALLDEF1.DAX:1:4") to its ten new pieces.
     [[nodiscard]] godot::Dictionary new_art_sets() const;

@@ -187,10 +187,12 @@ effect support.
 `CharacterArt` in `OpenGold.Core` reads the installed game's DAX files, retaining
 archive IDs and indexed combat pixels. No extracted artwork is distributed.
 
-- Complete portraits and metadata come from `art/portraits/portraits.json` and its
-  sibling PNGs. Build copies go to `src/OpenGoldBox/godot/bin/portraits/`. The
-  Godot boundary parses the catalog and loads full-resolution images, displayed
-  with nearest filtering in creation, pool and party previews.
+- Complete portraits and metadata come from `portraits/portraits.json` and its
+  sibling PNGs in the new art's folder (`new-art-pack/portraits/` in the
+  repository), the separate download chosen on the Options screen. The game
+  reads the PNGs from that folder as they are, at full resolution, displayed
+  with nearest filtering in creation, pool and party previews. Without the new
+  art every character shows its original head-and-body portrait.
 - Campaign saves store the selected basename;
   characters without a current catalog entry display a deterministic recommendation.
 - Every character also has an original head-and-body portrait, shown in place

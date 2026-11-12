@@ -33,7 +33,6 @@ mv "$project_dir/project.godot.icon-tmp" "$project_dir/project.godot"
 cp "$repo_dir/data/art/combat-body-looks.tsv" "$repo_dir/data/art/combat-weapon-options.tsv" "$project_dir/data/art/"
 rsync -a --delete "$repo_dir/data/rules/srd-5.2.1/" "$project_dir/data/rules/srd-5.2.1/"
 rsync -a --delete "$repo_dir/data/monsters/" "$project_dir/data/monsters/"
-rsync -a --delete "$repo_dir/data/art/missiles/" "$project_dir/data/art/missiles/"
 rsync -a "$repo_dir/data/art/portraits/" "$project_dir/bin/portraits/"
 if [[ ! -s "$project_dir/.godot/extension_list.cfg" ]]; then
     # Godot can crash as the import exits; the import is done once it lists
@@ -42,6 +41,8 @@ if [[ ! -s "$project_dir/.godot/extension_list.cfg" ]]; then
         [[ -s "$project_dir/.godot/extension_list.cfg" ]]
 fi
 
+# The new art, as a player who downloaded it and chose its folder.
+export OPENGOLD_NEW_ART_DIR="${OPENGOLD_NEW_ART_DIR:-$repo_dir/new-art-pack}"
 export OPENGOLD_GAME_DIR="$game_dir"
 export OPENGOLD_COMBAT_TEST_CONFIG="$tool_dir/config/parties.json"
 exec "$godot_bin" --path "$project_dir" res://combat_tester/setup.tscn

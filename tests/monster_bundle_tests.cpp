@@ -38,7 +38,8 @@ std::string text(const std::filesystem::path &path)
 // The shipped export: names, readied weapon sets and the art's scale.
 void shipped()
 {
-    const auto bundle = load_monster_bundle(root / "data/monsters", png_size_only);
+    const auto bundle =
+        load_monster_bundle(root / "data/monsters", root / "new-art-pack/monsters", png_size_only);
     check(bundle.monsters.size() >= 160, "The catalog's creatures are exported");
     const auto &orc = slums(bundle, 4);
     check(orc.name == "ORC" && orc.creature_archive == "MON2CHA.DAX" && orc.creature_record == 4,
@@ -110,7 +111,7 @@ void shipped()
           "With the art it shows the sword alone only after the shield is off");
     check(readied_variant(bearer, false)->shield_id == bare_attacks.melee->shield_id,
           "It still stands in its sword and shield");
-    check(load_monster_bundle(root / "no-such-folder", png_size_only).monsters.empty(),
+    check(load_monster_bundle(root / "no-such-folder", {}, png_size_only).monsters.empty(),
           "No export, no new creatures");
 }
 
@@ -147,61 +148,83 @@ const std::string copy_record = R"({"format": "opengold-monster-v1", "key": "CUS
     "variants": [{"id": "item_000__one_hand", "weapon_id": "item_000", "shield_id": "",
       "ready": "item_000__one_hand/ready.png", "action": "item_000__one_hand/action.png"}]})";
 
-// A copy the catalog made, and records the game refuses.
+// A copy the catalog made, and records the game refuses. Each folder holds
+// the creature's data in data/ and its art in art/, as the game keeps them.
 void handmade()
 {
-    const auto png = text(root / "data/monsters/mon2cha_dax_2/item_000__item_001/ready.png");
-    const auto write = [&](const std::filesystem::path &folder, const std::string &record)
+    const auto png =
+        text(root / "new-art-pack/monsters/mon2cha_dax_2/item_000__item_001/ready.png");
+    const auto write =
+        [&](const std::filesystem::path &folder, const std::string &name, const std::string &record)
     {
-        std::filesystem::create_directories(folder / "item_000__one_hand");
-        std::ofstream(folder / "monster.json") << record;
-        std::ofstream(folder / "item_000__one_hand/ready.png", std::ios::binary) << png;
-        std::ofstream(folder / "item_000__one_hand/action.png", std::ios::binary) << png;
+        std::filesystem::create_directories(folder / "data" / name);
+        std::filesystem::create_directories(folder / "art" / name / "item_000__one_hand");
+        std::ofstream(folder / "data" / name / "monster.json") << record;
+        std::ofstream(folder / "art" / name / "item_000__one_hand/ready.png", std::ios::binary)
+            << png;
+        std::ofstream(folder / "art" / name / "item_000__one_hand/action.png", std::ios::binary)
+            << png;
+    };
+    const auto load = [&](const std::filesystem::path &folder, bool with_art = true)
+    {
+        return load_monster_bundle(
+            folder / "data", with_art ? folder / "art" : std::filesystem::path{}, png_size_only);
     };
     {
         Folder folder;
-        write(folder.path / "custom_1_0", copy_record);
-        const auto bundle = load_monster_bundle(folder.path, png_size_only);
+        write(folder.path, "custom_1_0", copy_record);
+        const auto bundle = load(folder.path);
         const auto &copy = bundle.monsters.at("CUSTOM:1_0");
         check(copy.origin_key == "MON2CHA.DAX:4" && copy.name == "ORC CAPTAIN" &&
                   copy.equipment[1].source_index == -1 && art_scale(copy) == 2.1 &&
-                  !bundle.creature(2, 4),
+                  !bundle.creature(2, 4) && copy.variants.size() == 1,
               "A copy keeps its own name and gear, apart from its source");
+        const auto artless = load(folder.path, false);
+        check(artless.monsters.at("CUSTOM:1_0").name == "ORC CAPTAIN" &&
+                  artless.monsters.at("CUSTOM:1_0").variants.empty() && artless.problems.empty(),
+              "Without new art a creature keeps its name and gear, and no weapon sets");
     }
-    // A creature the game cannot use is left out, naming its file, so the
-    // original art shows for it.
+    // A creature whose data the game cannot use is left out, and one whose art
+    // it cannot use fights without it; either names its file, so the original
+    // art shows.
     const auto left_out = [&](const std::filesystem::path &folder,
-                              const std::filesystem::path &file, const std::string &message)
+                              const std::filesystem::path &file, bool keeps_creature,
+                              const std::string &message)
     {
-        const auto bundle = load_monster_bundle(folder, png_size_only);
-        check(bundle.monsters.empty() && bundle.problems.size() == 1 &&
+        const auto bundle = load(folder);
+        const bool kept =
+            bundle.monsters.size() == 1 && bundle.monsters.begin()->second.variants.empty();
+        check((keeps_creature ? kept : bundle.monsters.empty()) && bundle.problems.size() == 1 &&
                   bundle.problems[0].find(file.string()) != std::string::npos,
               message);
     };
     const auto refused = [&](std::string record, std::string_view from, std::string_view to,
-                             const std::filesystem::path &file, const std::string &message)
+                             const std::filesystem::path &file, bool keeps_creature,
+                             const std::string &message)
     {
         Folder folder;
         record.replace(record.find(from), from.size(), to);
-        write(folder.path / "custom_1_0", record);
-        left_out(folder.path, folder.path / "custom_1_0" / file, message);
+        write(folder.path, "custom_1_0", record);
+        left_out(folder.path, folder.path / file, keeps_creature, message);
     };
-    refused(copy_record, "item_000__one_hand/ready.png", "../ready.png", "../ready.png",
-            "Art outside the creature's folder is left out");
-    refused(copy_record, "opengold-monster-v1", "opengold-monster-v9", "monster.json",
-            "An unknown format is left out");
-    refused(copy_record, "\"kind\": \"weapon\"", "\"kind\": \"wand\"", "monster.json",
-            "An unknown kind of item is left out");
+    refused(copy_record, "item_000__one_hand/ready.png", "../ready.png",
+            "art/custom_1_0/../ready.png", true,
+            "Art outside the creature's folder is left out, and the creature kept");
+    refused(copy_record, "opengold-monster-v1", "opengold-monster-v9",
+            "data/custom_1_0/monster.json", false, "An unknown format is left out");
+    refused(copy_record, "\"kind\": \"weapon\"", "\"kind\": \"wand\"",
+            "data/custom_1_0/monster.json", false, "An unknown kind of item is left out");
     Folder small;
-    write(small.path / "custom_1_0", copy_record);
-    const auto wrong_size = small.path / "custom_1_0/item_000__one_hand/ready.png";
+    write(small.path, "custom_1_0", copy_record);
+    const auto wrong_size = small.path / "art/custom_1_0/item_000__one_hand/ready.png";
     std::ofstream(wrong_size, std::ios::binary)
-        << text(root / "data/art/walls/WALLDEF1_DAX_1_1/far_front.png");
-    left_out(small.path, wrong_size, "Art that is not 128 x 128 is left out");
+        << text(root / "new-art-pack/walls/WALLDEF1_DAX_1_1/far_front.png");
+    left_out(small.path, wrong_size, true,
+             "Art that is not 128 x 128 is left out, and the creature kept");
     Folder twice;
-    write(twice.path / "custom_1_0", copy_record);
-    write(twice.path / "custom_1_1", copy_record);
-    const auto bundle = load_monster_bundle(twice.path, png_size_only);
+    write(twice.path, "custom_1_0", copy_record);
+    write(twice.path, "custom_1_1", copy_record);
+    const auto bundle = load(twice.path);
     check(bundle.monsters.size() == 1 && bundle.problems.size() == 1 &&
               bundle.problems[0].find("monster.json") != std::string::npos,
           "Of two folders exporting one creature, one loads and the other is named");
@@ -211,7 +234,8 @@ void handmade()
 // with its original icon.
 void forms()
 {
-    const auto bundle = load_monster_bundle(root / "data/monsters", png_size_only);
+    const auto bundle =
+        load_monster_bundle(root / "data/monsters", root / "new-art-pack/monsters", png_size_only);
     for (const auto &entry : form_icons)
     {
         const auto *creature = bundle.creature(entry.bank, entry.icon);

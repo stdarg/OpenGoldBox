@@ -1,9 +1,11 @@
 extends RefCounted
 
-# Exports the catalog's saved monster records into data/monsters, which the
-# game ships (#274): one folder per creature, named like its catalog JSON, with
-# monster.json and each weapon set's ready.png and action.png. The game reads
-# only this export, never the catalog's own folders.
+# Exports the catalog's saved monster records (#274): one folder per creature,
+# named like its catalog JSON. Its monster.json (name, gear, size and weapon
+# sets) goes to data/monsters, which the game ships; each weapon set's
+# ready.png and action.png go to the folder of the same name in
+# new-art-pack/monsters, the separate new art download. The game reads only
+# this export, never the catalog's own folders.
 
 const MonsterMetadata = preload("res://scripts/monster_metadata.gd")
 const FORMAT := "opengold-monster-v1"
@@ -12,6 +14,18 @@ const ART_SIZE := 128
 
 static func game_folder() -> String:
     return ProjectSettings.globalize_path("res://../../../data/monsters").simplify_path()
+
+
+static func art_folder() -> String:
+    return ProjectSettings.globalize_path("res://../../../new-art-pack/monsters").simplify_path()
+
+
+# Where the art of an export to `target` goes: the new art's folder for the
+# game's export, else beside `target`.
+static func _art_target(target: String, art_target: String) -> String:
+    if not art_target.is_empty():
+        return art_target
+    return art_folder() if target.is_empty() else target + "-art"
 
 
 # The original MONnITM slot an item came from, or -1 for gear added in the
@@ -85,8 +99,9 @@ static func _write(path: String, text: String) -> String:
 
 
 # Replaces the export with the saved records. Returns an error message, or "".
-static func export_all(root: String = "", target: String = "") -> String:
+static func export_all(root: String = "", target: String = "", art_target: String = "") -> String:
     var tool := root if not root.is_empty() else MonsterMetadata.tool_root()
+    var art := _art_target(target, art_target)
     var folder := target if not target.is_empty() else game_folder()
     var records := {}
     var json_folder := tool.path_join("json")
@@ -99,19 +114,22 @@ static func export_all(root: String = "", target: String = "") -> String:
             return "Cannot read " + json_folder.path_join(name)
         if _exported(parsed):
             records[name.trim_suffix(".json")] = parsed
-    if DirAccess.make_dir_recursive_absolute(folder) != OK:
-        return "Cannot create " + folder
-    for name in DirAccess.get_directories_at(folder):
-        if not records.has(name):
-            _remove_tree(folder.path_join(name))
+    for parent in [folder, art]:
+        if DirAccess.make_dir_recursive_absolute(parent) != OK:
+            return "Cannot create " + parent
+        for name in DirAccess.get_directories_at(parent):
+            if not records.has(name):
+                _remove_tree(parent.path_join(name))
     for id in records:
         var record: Dictionary = records[id]
         var exported := game_record(record, tool)
         var destination := folder.path_join(id)
-        if DirAccess.dir_exists_absolute(destination):
-            _remove_tree(destination)
+        var art_destination := art.path_join(id)
+        for old in [destination, art_destination]:
+            if DirAccess.dir_exists_absolute(old):
+                _remove_tree(old)
         for variant in exported.variants:
-            var variant_folder := destination.path_join(str(variant.id))
+            var variant_folder := art_destination.path_join(str(variant.id))
             if DirAccess.make_dir_recursive_absolute(variant_folder) != OK:
                 return "Cannot create " + variant_folder
             for pose in ["ready", "action"]:
@@ -129,9 +147,11 @@ static func export_all(root: String = "", target: String = "") -> String:
     return ""
 
 
-# Whether data/monsters holds exactly what an export would write now.
-static func up_to_date(root: String = "", target: String = "") -> bool:
+# Whether data/monsters and the new art's monsters hold exactly what an export
+# would write now.
+static func up_to_date(root: String = "", target: String = "", art_target: String = "") -> bool:
     var tool := root if not root.is_empty() else MonsterMetadata.tool_root()
+    var art := _art_target(target, art_target)
     var folder := target if not target.is_empty() else game_folder()
     var expected := {}
     var json_folder := tool.path_join("json")
@@ -142,6 +162,9 @@ static func up_to_date(root: String = "", target: String = "") -> bool:
             expected[name.trim_suffix(".json")] = parsed
     if Array(DirAccess.get_directories_at(folder)).size() != expected.size():
         return false
+    for name in DirAccess.get_directories_at(art):
+        if not expected.has(name):
+            return false
     for id in expected:
         var record: Dictionary = expected[id]
         var exported := game_record(record, tool)
@@ -155,6 +178,6 @@ static func up_to_date(root: String = "", target: String = "") -> bool:
                     continue
                 for pose in ["ready", "action"]:
                     if FileAccess.get_md5(tool.path_join(str(saved[pose]))) != \
-                            FileAccess.get_md5(folder.path_join(id).path_join(str(variant[pose]))):
+                            FileAccess.get_md5(art.path_join(id).path_join(str(variant[pose]))):
                         return false
     return true

@@ -172,7 +172,7 @@ text = "Export selected set…"
 
 [node name="ExportToGame" type="Button" parent="Margin/Main/Split/Tabs/Create/ArtActions"]
 layout_mode = 2
-tooltip_text = "Replace this appearance's set in data/art/walls, which the game and the Tile Art Viewer show."
+tooltip_text = "Replace this appearance's set in new-art-pack/walls, the new art the game and the Tile Art Viewer show."
 text = "Export to game"
 
 [node name="Sources" type="Label" parent="Margin/Main/Split/Tabs/Create"]

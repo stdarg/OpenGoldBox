@@ -43,9 +43,9 @@ std::string bytes(const std::filesystem::path &path)
     return {std::istreambuf_iterator<char>(in), {}};
 }
 
-// Every portrait a record names ships with the game: the game's own from
-// art/portraits, and the manager's as up-to-date copies it exported to
-// data/art/portraits/shops.
+// Every portrait a record names is in the new art: the game's own from
+// new-art-pack/portraits, and the manager's as up-to-date copies it exported
+// to new-art-pack/portraits/shops.
 void portraits_ship(const ShopData &data)
 {
     std::vector<std::string> portraits;
@@ -63,14 +63,14 @@ void portraits_ship(const ShopData &data)
         if (portrait.starts_with("shops/"))
         {
             const auto name = portrait.substr(6);
-            const auto copy = bytes(root / "data/art/portraits/shops" / name);
+            const auto copy = bytes(root / "new-art-pack/portraits/shops" / name);
             check(!copy.empty() && copy == bytes(root / "dev_tools/shop_manager/portraits" / name),
                   "The manager exported " + name + " as drawn");
         }
         else
         {
-            check(std::filesystem::exists(root / "art/portraits" / portrait),
-                  "The game ships " + portrait);
+            check(std::filesystem::exists(root / "new-art-pack/portraits" / portrait),
+                  "The new art has " + portrait);
         }
     }
 }

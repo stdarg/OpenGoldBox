@@ -11,9 +11,9 @@ This document gives the window's size for anyone making portrait art, and
 describes how each kind of picture reaches the screen.
 
 Character portraits in creation, the party panel and the pool are a separate
-system. They are square 1254x1254 PNGs in `art/portraits/`, described in
+system. They are square 1254x1254 PNGs in `new-art-pack/portraits/`, described in
 [CHARACTER-CREATION.md](CHARACTER-CREATION.md) and
-`art/portraits/README.md`.
+`new-art-pack/portraits/README.md`.
 
 ## Player portrait representation audit (2026-10-08)
 
@@ -37,9 +37,9 @@ gender column use 96 as the denominator; the overall column uses 288.
 | Latin American | 8 (8.3%) | 10 (10.4%) | 9 (9.4%) | 27 (9.4%) |
 | Unspecified or unclear | 3 (3.1%) | 7 (7.3%) | 8 (8.3%) | 18 (6.2%) |
 
-The briefs are in `art/portraits/prompts.json`, `roster-prompts.json`,
+The briefs are in `new-art-pack/portraits/prompts.json`, `roster-prompts.json`,
 `class-expansion-prompts.json`, and `full-coverage-prompts.json`; catalog
-gender and fantasy race are in `art/portraits/portraits.json`. The 18 portraits
+gender and fantasy race are in `new-art-pack/portraits/portraits.json`. The 18 portraits
 without a clear ancestry cue remain unspecified rather than being classified
 from skin tone or facial features alone. Orc, Goliath, and Tiefling colors make
 such visual judgments especially unreliable. NPC portraits are outside this
@@ -73,7 +73,7 @@ Image generators usually produce squares. When you generate one:
 
 - Compose the subject in the middle five-sixths of the width.
 - Crop it to 1045x1254.
-- Record the crop next to the prompt, as `art/portraits/NPCs/prompts.json`
+- Record the crop next to the prompt, as `new-art-pack/portraits/NPCs/prompts.json`
   does, so that regenerating the image does not bring the square back.
 
 ## Complete NPC portraits
@@ -83,12 +83,12 @@ distinct cluebook NPCs have a complete portrait.
 
 | Item | Location |
 | --- | --- |
-| Sources | `art/portraits/NPCs/*.png`; the 39 cluebook portraits are 1145x1374 RGB |
-| Name-to-file map | `art/portraits/NPCs/portraits.json` (no code reads it yet) |
-| Cluebook source locations and art direction | `art/portraits/NPCs/cluebook-portraits.json`; earlier `prompts.json` and `shopkeeper-prompts.json` |
-| Install rule | `src/OpenGoldBox/CMakeLists.txt` copies NPC PNGs to `godot/bin/portraits/NPCs/` |
+| Sources | `new-art-pack/portraits/NPCs/*.png`; the 39 cluebook portraits are 1145x1374 RGB |
+| Name-to-file map | `new-art-pack/portraits/NPCs/portraits.json` (no code reads it yet) |
+| Cluebook source locations and art direction | `new-art-pack/portraits/NPCs/cluebook-portraits.json`; earlier `prompts.json` and `shopkeeper-prompts.json` |
+| Install rule | None: they are part of the new art download, read from its `portraits/NPCs/` |
 | When each shows | `speaking_npc_portrait()` in `npc_portraits.h` |
-| Loaded by | `RolfTourView::npc_portrait()`, from `res://bin/portraits/`, on first use |
+| Loaded by | `RolfTourView::npc_portrait()`, from the new art's `portraits/`, on first use; without it the view shows the original's picture |
 
 `draw_scene()` draws the portrait over the whole view rectangle. It is not
 stretched 1.2 again, because the art is already made in the window's on-screen
@@ -111,7 +111,7 @@ Temple priests are shown the same way while their temple speaks on its square:
 its greeting and its Heal list. Each temple's record names its priest: Bishop
 Braccio at Tyr's, and portraits drawn for the manager at Sune's, Tempus's and
 Ilmater's, which the manager exports to
-[`data/art/portraits/shops/`](../data/art/portraits/shops/README.md).
+[`new-art-pack/portraits/shops/`](../new-art-pack/portraits/shops/README.md).
 
 - **Rolf:** during his opening tour.
 - **Norris the Gray:** in Kuto's Well (`ECL8:29`) when sprite 16 is up, which
@@ -140,7 +140,7 @@ The other 29 portraits are cataloged and installed, but no script cue selects
 them yet. Identify each one's exact script cue and connect the portrait before
 marking that scene covered. `cluebook-portraits.json` keeps this distinction explicit.
 
-To add one, put the 5:6 PNG in `art/portraits/NPCs/`, catalog it, and add its
+To add one, put the 5:6 PNG in `new-art-pack/portraits/NPCs/`, catalog it, and add its
 condition to `speaking_npc_portrait()`.
 
 ## Heads and bodies (legacy)
@@ -239,7 +239,7 @@ and 29 (campfire) appear in every `PIC` archive.
 
 New close-up art is drawn in the view window's 5:6 shape, at 352 × 422, one
 frame for each frame the original holds on screen; it keeps the original's
-timing. `sync_monster_picture()` plays it from `data/art/closeups` in place of
+timing. `sync_monster_picture()` plays it from `new-art-pack/closeups` in place of
 the original unless 3D view art is Original. It is drawn only from the written
 description in the Combat Sprite Catalog's
 [Close-ups](../dev_tools/combat_sprite_catalog/README.md#close-ups) tab.

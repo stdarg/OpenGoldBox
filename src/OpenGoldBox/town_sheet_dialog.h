@@ -29,6 +29,8 @@ class TownSheetDialog : public godot::Window
     void show_member(std::int64_t slot);
     // Sizes the window and its controls to the campaign view.
     void fit(godot::Vector2 view_size);
+    // Reads the portraits again when next shown, from another new art folder.
+    void forget_portraits();
     // Shows a failed handler's error; called by presentation::run_guarded.
     void report_failure(const std::exception &failure);
 

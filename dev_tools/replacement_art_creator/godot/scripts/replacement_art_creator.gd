@@ -5,7 +5,7 @@ const INDEX_PATH := "../data/appearance_index.csv"
 const BRIEFS_PATH := "../data/briefs.json"
 const METADATA_PATH := "../../tile_art_viewer/data/tile_art_catalog.csv"
 # The game's new wall art, one folder per appearance (WALLDEF1_DAX_1_4).
-const GAME_ART_PATH := "../../../data/art/walls"
+const GAME_ART_PATH := "../../../new-art-pack/walls"
 const KINDS := ["solid", "door", "opening", "landmark", "facade", "rect_opening", "cave_opening"]
 const CSV_COLUMNS := [
     "index", "archive", "record", "appearance", "view", "view_name", "name", "width", "height",

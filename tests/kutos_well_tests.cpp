@@ -264,7 +264,7 @@ void norris_portrait()
     check(speaking_npc_portrait(state).empty(), "Sprite 16 elsewhere is not Norris");
     state.tour_finished = false;
     check(speaking_npc_portrait(state) == "NPCs/rolf.png", "Rolf speaks during his tour");
-    check(std::filesystem::exists(root / "art/portraits/NPCs/norris-the-gray.png"),
+    check(std::filesystem::exists(root / "new-art-pack/portraits/NPCs/norris-the-gray.png"),
           "Norris's portrait is in the art folder");
 }
 } // namespace

@@ -4,7 +4,7 @@ extends RefCounted
 # record) has a description in closeups/json/<folder>.json, and its new art,
 # drawn only from that description, in closeups/art/<folder>/frame_<n>.png.
 # The game never reads these: Export to game copies the art to
-# data/art/closeups, where the game finds it.
+# new-art-pack/closeups, the new art the game reads.
 
 const FORMAT := "opengold-closeup-v1"
 
@@ -14,7 +14,7 @@ static func tool_root() -> String:
 
 
 static func game_folder() -> String:
-    return ProjectSettings.globalize_path("res://../../../data/art/closeups").simplify_path()
+    return ProjectSettings.globalize_path("res://../../../new-art-pack/closeups").simplify_path()
 
 
 static func json_path(folder: String, root: String = "") -> String:
@@ -71,7 +71,7 @@ static func _remove_tree(path: String) -> void:
     DirAccess.remove_absolute(path)
 
 
-# Replaces data/art/closeups's folders with the art there is now. The game
+# Replaces new-art-pack/closeups's folders with the art there is now. The game
 # checks each set as it plays it and shows the original for one it cannot use;
 # the tab shows why. Returns an error message, or "".
 static func export_all(root: String = "", target: String = "") -> String:
@@ -92,7 +92,7 @@ static func export_all(root: String = "", target: String = "") -> String:
     return ""
 
 
-# Whether data/art/closeups holds exactly what an export would write now.
+# Whether new-art-pack/closeups holds exactly what an export would write now.
 static func up_to_date(root: String = "", target: String = "") -> bool:
     var tool := root if not root.is_empty() else tool_root()
     var destination := target if not target.is_empty() else game_folder()

@@ -984,18 +984,20 @@ namespace
 {
 // The hill giant's own rock, cut from its ready pose and drawn twice the size
 // it is in the giant's hand, so it reads in flight; it tumbles a quarter turn
-// between frames. The demo ships no such file and keeps the original's boulder.
+// between frames. Without the new art, or when the file cannot be read, the
+// original's boulder flies.
 std::optional<std::array<Ref<ImageTexture>, 2>> new_boulder_art()
 {
-    const auto path = game_data_path("data/art/missiles/boulder.png");
-    if (!FileAccess::file_exists(path))
+    const auto path = new_art_path("missiles/boulder.png");
+    if (path.is_empty() || !FileAccess::file_exists(path))
     {
         return std::nullopt;
     }
     const auto upright = godot::Image::load_from_file(path);
     if (upright.is_null())
     {
-        throw std::runtime_error("Cannot read the boulder missile art");
+        log_unloadable_art(std::string(("Cannot load missile art " + path).utf8().get_data()));
+        return std::nullopt;
     }
     const Ref<godot::Image> turned = upright->duplicate();
     turned->rotate_90(CLOCKWISE);

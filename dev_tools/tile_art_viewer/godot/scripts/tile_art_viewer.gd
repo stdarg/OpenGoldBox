@@ -5,7 +5,7 @@ const VIEW_NAMES := [
     "Middle right", "Near front", "Near left", "Near right", "Far extension"
 ]
 const METADATA_FILE := "../data/tile_art_catalog.csv"
-const NEW_ART_FOLDER := "../../../data/art/walls"
+const NEW_ART_FOLDER := "../../../new-art-pack/walls"
 const CSV_COLUMNS := [
     "index", "archive", "record", "appearance", "view", "view_name", "name", "width", "height",
     "description", "usage", "map_archive", "map_record", "map_name", "profile_index",
@@ -766,7 +766,7 @@ func _load_replacement_pack(folder: String) -> void:
     replacement_sets = loaded
     catalog_show_replacement.disabled = false
     show_replacement.disabled = false
-    var location_hint := "New art: data/art/walls, as the game shows it (restart after changing it)"
+    var location_hint := "New art: new-art-pack/walls, as the game shows it (restart after changing it)"
     catalog_show_replacement.tooltip_text = location_hint
     show_replacement.tooltip_text = location_hint
     _set_replacement_mode(true)

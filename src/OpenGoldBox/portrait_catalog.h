@@ -10,12 +10,11 @@
 #include <string>
 #include <vector>
 
-// The portraits shipped in res://bin/portraits with the gender, class and race
-// each shows, and the original game's head-and-body portraits that show in
-// their place when the Options screen's Portraits are Original or a new
-// portrait cannot be loaded. Kept apart from the character creation view so
-// the pool and the party panel can show portraits without depending on the
-// view (Effective C++ Item 31).
+// The new art's portraits (portraits/ in its folder, listed in portraits.json)
+// with the gender, class and race each shows, and the original game's head-and-body portraits that
+// show in their place when the Options screen's Portraits are Original or a new portrait cannot be
+// loaded. Kept apart from the character creation view so the pool and the party panel can show
+// portraits without depending on the view (Effective C++ Item 31).
 class PortraitCatalog
 {
   public:
@@ -24,8 +23,9 @@ class PortraitCatalog
         std::string filename, gender, klass, race;
     };
 
-    // Reads portraits.json. A catalog that cannot be read, or a portrait whose
-    // file is missing, is logged and left out: the original portraits show.
+    // Reads the new art's portraits.json; none without the new art. A catalog
+    // that cannot be read, or a portrait whose file is missing, is logged and
+    // left out: the original portraits show.
     [[nodiscard]] static PortraitCatalog load();
 
     // Sorted by file name; empty when no new portrait could be read.
@@ -51,6 +51,9 @@ class PortraitCatalog
     // head-and-body portrait.
     [[nodiscard]] bool shows_new(const opengold::por::CharacterAppearance &appearance,
                                  const opengold::rules::CharacterDraft &draft);
+    // Where a new portrait's file is: an absolute path in the new art's
+    // folder, or empty without the new art.
+    [[nodiscard]] godot::String file_path(const std::string &filename) const;
     // The new portrait's file: the appearance's, or the recommended one when
     // the catalog lacks it.
     [[nodiscard]] std::string shown_file(const opengold::por::CharacterAppearance &appearance,
@@ -70,6 +73,7 @@ class PortraitCatalog
     // The new portrait's texture; null, and logged once, when it cannot load.
     [[nodiscard]] godot::Ref<godot::ImageTexture> new_texture(const std::string &filename);
 
+    godot::String folder_;
     std::vector<Portrait> portraits_;
     std::map<std::string, godot::Ref<godot::ImageTexture>> textures_;
     std::set<std::string> unloadable_;

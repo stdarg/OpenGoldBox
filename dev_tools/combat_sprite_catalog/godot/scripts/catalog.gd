@@ -66,7 +66,7 @@ func _ready() -> void:
             push_error(export_error)
             get_tree().quit(1)
             return
-        print("Exported the monsters to %s and the close-ups to %s" % [MonsterExport.game_folder(), CloseUpStore.game_folder()])
+        print("Exported the monsters to %s and %s, and the close-ups to %s" % [MonsterExport.game_folder(), MonsterExport.art_folder(), CloseUpStore.game_folder()])
         get_tree().quit()
         return
     if "--metadata-check" in OS.get_cmdline_user_args():
@@ -479,7 +479,7 @@ func _build_ui() -> void:
     editor.add_child(save_button)
     var export_button := Button.new()
     export_button.text = "Export to game"
-    export_button.tooltip_text = "Write every saved monster's name, gear and art to data/monsters"
+    export_button.tooltip_text = "Write every saved monster's name and gear to data/monsters, and its art to new-art-pack/monsters"
     export_button.pressed.connect(_export_to_game)
     editor.add_child(export_button)
     metadata_status = Label.new()
@@ -767,7 +767,7 @@ func _save_monster() -> void:
 # The game reads saved records only, so unsaved edits stay out of the export.
 func _export_to_game() -> void:
     var error: String = MonsterExport.export_all(metadata_root)
-    metadata_status.text = "Exported the saved monsters to data/monsters" if error.is_empty() else error
+    metadata_status.text = "Exported the saved monsters to data/monsters and new-art-pack/monsters" if error.is_empty() else error
 
 func _rename_monster() -> void:
     if selected < 0: return
@@ -1273,7 +1273,9 @@ func _metadata_check() -> void:
     assert(copy_export.origin_key == first.key and copy_export.equipment.size() == 5)
     assert(not str(FileAccess.get_file_as_string(copy_folder.path_join("monster.json"))).contains("dev_tools"))
     assert(copy_export.variants.size() == reloaded.data.variants.size())
-    assert(FileAccess.file_exists(copy_folder.path_join(str(copy_export.variants[0].ready))))
+    var copy_art := (exported + "-art").path_join(MonsterMetadata.record_id(copied_key))
+    assert(FileAccess.file_exists(copy_art.path_join(str(copy_export.variants[0].ready))))
+    assert(not FileAccess.file_exists(copy_folder.path_join(str(copy_export.variants[0].ready))))
     var flagged: Dictionary = MonsterMetadata.load_record(rows[selected], _art_for(selected), metadata_root).data
     flagged.flag_for_regeneration = true
     assert(MonsterMetadata.save_record(flagged, metadata_root).is_empty())
@@ -1281,6 +1283,7 @@ func _metadata_check() -> void:
     assert(MonsterExport.export_all(metadata_root, exported).is_empty())
     copy_export = JSON.parse_string(FileAccess.get_file_as_string(copy_folder.path_join("monster.json")))
     assert(copy_export.variants.is_empty() and DirAccess.get_directories_at(copy_folder).is_empty())
+    assert(not DirAccess.dir_exists_absolute(copy_art) or DirAccess.get_directories_at(copy_art).is_empty())
     show_new_art.button_pressed = false
     _remove_check_tree(metadata_root)
     print("Monster metadata checks passed: JSON save/load, rename/copy with PNGs, gear-edit preview retention, weapon sets, original fallback, export to game")
@@ -1447,7 +1450,7 @@ func _catalog_check() -> void:
         assert(catalog.monster_image(original_index, false) != null)
         assert(catalog.monster_image(original_index, true) != null)
     if not MonsterExport.up_to_date():
-        push_error("data/monsters is out of date: run --export-to-game")
+        push_error("data/monsters or new-art-pack/monsters is out of date: run --export-to-game")
         get_tree().quit(1)
         return
     var close_up_error: String = CloseUpCheck.run(catalog)

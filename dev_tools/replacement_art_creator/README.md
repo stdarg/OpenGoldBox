@@ -3,7 +3,7 @@
 This separate Godot tool lists 210 technical appearance IDs, stores independent
 briefs, imports newly created PNGs, projects each appearance into the ten
 renderer slots, previews a synthetic corridor, and exports replacement sets.
-The game's new wall art in [`data/art/walls`](../../data/art/walls) covers all
+The game's new wall art in [`new-art-pack/walls`](../../new-art-pack/walls) covers all
 168 appearances visible in the current map catalog, with ten new perspective
 PNGs per appearance. Four earlier pilot appearances are retained. Their prompts and
 hashes are in [`data/provenance.json`](data/provenance.json); the 45 new source
@@ -96,7 +96,7 @@ between Reference and Create.
 4. Press **Build ten views**. Select a perspective piece to inspect it; use
    Far, Middle, and Near above the synthetic corridor to check alignment and
    transparent openings. **Export to game** writes ten PNGs and a manifest to
-   `data/art/walls/<appearance>/`, replacing that appearance's earlier set; the
+   `new-art-pack/walls/<appearance>/`, replacing that appearance's earlier set; the
    game and the Tile Art Viewer show it from there. **Export selected set…**
    writes a copy into a subfolder of a directory you choose instead, where
    repeated exports create numbered folders.
@@ -113,12 +113,12 @@ feature distortion, or unwanted repetition appear.
 
 ## Review in a real map
 
-The Tile Art Viewer loads `data/art/walls` at startup with the game's own
+The Tile Art Viewer loads `new-art-pack/walls` at startup with the game's own
 loader and composer, so its map preview is what the game shows. Its **Show new
 art** toggle controls both Art Catalog and Map Browser; it starts on. Restart
 the viewer after **Export to game** to review the new set. Appearances without
 a new set display the user's locally decoded original art, enlarged four
-times, as the game does; `data/art/walls` has sets for every appearance marked
+times, as the game does; `new-art-pack/walls` has sets for every appearance marked
 used by the current catalog. It contains only new art.
 Click a visible piece in either view to inspect it, then use **See in Art
 Catalog** to open its entry. Turn off **Show new art** to compare with the
@@ -152,7 +152,7 @@ loads all original pieces and saves a description into a temporary CSV copy.
 The usage check verifies the list filters, appearance status, and unused-piece
 labels against the catalog metadata.
 The pack audit checks all 168 used appearances, 168 manifests, and 1,680
-perspective PNG dimensions in `data/art/walls`. The viewer check loads that
+perspective PNG dimensions in `new-art-pack/walls`. The viewer check loads that
 folder, renders it at a mapped location, and checks that switching back
 restores the original inspector. `opengold_wall_art_replacements_tests` checks
 the folder as the game reads it.
@@ -161,7 +161,7 @@ To rebuild every used set from the source sprites and briefs, export them into
 the game's folder; each set replaces the one already there:
 
 ```bash
-/Applications/Godot_mono.app/Contents/MacOS/Godot --headless --path dev_tools/replacement_art_creator/godot -- --export-used=$PWD/data/art/walls
+/Applications/Godot_mono.app/Contents/MacOS/Godot --headless --path dev_tools/replacement_art_creator/godot -- --export-used=$PWD/new-art-pack/walls
 ```
 
 The 42 appearances marked wholly unused by current inspection profiles have

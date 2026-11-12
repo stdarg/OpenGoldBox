@@ -211,8 +211,8 @@ CreatureData::CreatureData(const fs::path &repository, const fs::path &game_dire
     loaded->rules = srd5::parse_content(loaded->rules_text);
     loaded->creation = srd5::character_rules();
     loaded->encounters = por::load_encounter_data(repository / "data/encounters");
-    loaded->monsters = std::make_shared<const por::MonsterBundle>(
-        por::load_monster_bundle(repository / "data/monsters", std::move(decode)));
+    loaded->monsters = std::make_shared<const por::MonsterBundle>(por::load_monster_bundle(
+        repository / "data/monsters", repository / "new-art-pack/monsters", std::move(decode)));
     loaded->companions = load_companions(repository / "data/companions");
     loaded->town =
         por::RolfTourSession::load(game_directory, loaded->encounters, {}, loaded->monsters)

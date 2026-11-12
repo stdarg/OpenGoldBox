@@ -48,14 +48,14 @@ without one. **Random name** picks a new given and family name. The game shows
 the name and the shop's type over the shopkeeper's portrait, "Bettrin
 Ashforge - Arms & Armor". A new shop record starts with a random name.
 
-Portraits can be selected from `art/portraits/NPCs/` or
+Portraits can be selected from `new-art-pack/portraits/NPCs/` or
 [`portraits/`](portraits/). Add a new PNG to the latter folder and press
-**Refresh portraits**. The game ships `art/portraits/` itself. A portrait from
-[`portraits/`](portraits/) is exported to
-[`data/art/portraits/shops/`](../../data/art/portraits/shops/README.md), which
-the game ships, as soon as it is chosen; **Export portraits to game** exports
+**Refresh portraits**. `new-art-pack/portraits/` is the new art download's own. A
+portrait from [`portraits/`](portraits/) is exported to
+[`new-art-pack/portraits/shops/`](../../new-art-pack/portraits/shops/README.md), in the
+new art download, as soon as it is chosen; **Export portraits to game** exports
 again after a PNG is redrawn. Unused copies are removed. A record names its
-portrait as the game finds it, never by this folder: `art/portraits/NPCs/x.png`
+portrait as the game finds it, never by this folder: `new-art-pack/portraits/NPCs/x.png`
 is saved as `NPCs/x.png`, and `portraits/x.png` as `shops/x.png`, its exported
 copy.
 The default Tyr record uses Bishop Braccio's existing portrait. Sune, Tempus,

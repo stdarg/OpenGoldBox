@@ -78,6 +78,7 @@ class CharacterCreationView : public godot::Control
     std::optional<PortraitCatalog> portraits_;
     std::vector<std::size_t> filtered_portraits_;
     void load_portraits();
+    void fill_portrait_filters();
     void refresh_portraits();
     void match_portrait_filters();
     void portrait_filter_selected(std::int64_t index);
@@ -209,6 +210,10 @@ class CharacterCreationView : public godot::Control
     void open_saves(bool saving);
     void save_campaign(const std::filesystem::path &path);
     void load_campaign(const std::filesystem::path &path);
+    // Loads a campaign from a save's bytes: a file's, or the game in progress
+    // saved in memory.
+    void load_campaign_bytes(const std::string &bytes);
+    void reload_in_memory();
     void save_checkpoint_check(const std::string &name);
     void load_checkpoint_check();
     bool save_read_check_{};
@@ -259,6 +264,9 @@ class CharacterCreationView : public godot::Control
     void game_menu_closed();
     // The town's walls and a fight's creatures take the new art setting.
     void art_changed();
+    void new_art_changed();
+    // Reads the portraits again, from another new art folder.
+    void reload_portraits();
 
     struct Paused
     {

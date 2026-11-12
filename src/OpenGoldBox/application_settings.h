@@ -35,6 +35,14 @@ bool save_monster_ability(const std::string &ability, const godot::String &from)
 bool original_wall_art();
 bool original_combat_art();
 bool original_portraits();
+// [art] directory: the folder of the optional new art download, or empty
+// while there is none or it is not the new art: then the game shows only the
+// original art. OPENGOLD_NEW_ART_DIR overrides it, as OPENGOLD_GAME_DIR does
+// the game's folder.
+godot::String new_art_directory();
+// Why `directory` is not the new art's folder, or empty when it is.
+godot::String new_art_problem(const godot::String &directory);
+bool save_new_art_directory(const godot::String &directory);
 bool save_original_wall_art(bool original);
 bool save_original_combat_art(bool original);
 bool save_original_portraits(bool original);

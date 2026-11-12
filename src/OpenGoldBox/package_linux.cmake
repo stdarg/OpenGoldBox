@@ -69,7 +69,7 @@ file(COPY_FILE "${PROJECT_LICENSE}" "${package}/LICENSE.txt")
 write_third_party_notices("${package}/THIRD-PARTY-NOTICES.txt" "")
 
 check_package_files("${package}")
-foreach(required data/rules/srd-5.2.1/combat.rules data/art/walls/WALLDEF3_DAX_0_1/near_front.png
+foreach(required data/rules/srd-5.2.1/combat.rules
         data/monsters/mon2cha_dax_4/monster.json data/art/combat-body-looks.tsv)
     if(NOT EXISTS "${package}/${required}")
         message(FATAL_ERROR "Linux package is missing ${required}")

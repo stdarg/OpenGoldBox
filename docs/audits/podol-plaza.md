@@ -216,7 +216,7 @@ the auction is over, 255 striding openly or cover blown.
   shows the head-and-body portrait instead. The temple's place record already
   exists: `data/shops/podol-temple-ilmater.json` marks (1,15) on `GEO1:18`
   with the shop manager's Ilmater portrait. No NPC portrait in
-  `art/portraits/NPCs` covers this area.
+  `new-art-pack/portraits/NPCs` covers this area.
 
 ## Fights
 

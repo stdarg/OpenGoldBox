@@ -107,7 +107,21 @@ void CharacterCreationView::save_campaign(const std::filesystem::path &path)
     refresh_party();
 }
 
+// The game in progress, saved in memory and loaded again: loading builds its
+// session from the new art in use now.
+void CharacterCreationView::reload_in_memory()
+{
+    const auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
+    load_campaign_bytes(encode_campaign(*campaign_, town ? town->saved_session() : nullptr,
+                                        campaign_asset_identity(game_directory())));
+}
+
 void CharacterCreationView::load_campaign(const std::filesystem::path &path)
+{
+    load_campaign_bytes(read_campaign_file(path));
+}
+
+void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
 {
     if (campaign_->in_combat())
     {
@@ -122,7 +136,7 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
     auto module = rules_module();
     const auto &new_wall_art = game_wall_art();
     const auto monsters = game_monsters();
-    auto saved = decode_campaign(read_campaign_file(path), *srd5::character_rules(), *module,
+    auto saved = decode_campaign(bytes, *srd5::character_rules(), *module,
                                  campaign_asset_identity(directory),
                                  std::function<por::RolfTourSession()>(
                                      [&]

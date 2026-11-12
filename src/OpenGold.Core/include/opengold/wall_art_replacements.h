@@ -34,7 +34,7 @@ struct WallArtReplacements
 // The file each perspective piece is stored in, such as "far_front.png".
 [[nodiscard]] std::string_view wall_view_file(WallView view);
 
-// Reads data/art/walls: one folder per appearance, named after its key with
+// Reads the new art's walls/: one folder per appearance, named after its key with
 // "." and ":" as "_" (WALLDEF1_DAX_1_4), holding the ten wall_view_file PNGs.
 // A missing folder means no new art. A set the game cannot use (a piece that is
 // missing, unreadable or not the original's size times `scale`) is left out

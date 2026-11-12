@@ -56,6 +56,11 @@ void TownSheetDialog::connect_host(CampaignAccess campaign, std::function<void()
     report_ = std::move(report);
 }
 
+void TownSheetDialog::forget_portraits()
+{
+    portraits_.reset();
+}
+
 void TownSheetDialog::report_failure(const std::exception &failure)
 {
     report_(failure);

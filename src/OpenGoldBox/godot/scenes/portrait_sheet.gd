@@ -76,7 +76,10 @@ func _process(_delta: float) -> void:
         if _pending.is_empty():
             break
         var file: String = _pending.pop_front()
-        var image := (load(file) as Texture2D).get_image()
+        # A file in the new art's folder, read as it is rather than imported.
+        var image := Image.load_from_file(file)
+        if image == null:
+            continue
         image.resize(_cell(), _cell(), Image.INTERPOLATE_LANCZOS)
         _thumbnails[file] = ImageTexture.create_from_image(image)
     queue_redraw()

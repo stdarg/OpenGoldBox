@@ -2128,7 +2128,9 @@ void combat_demo_fixture()
     // daggers from the stat block, which their art would not show.
     {
         const auto monsters = std::make_shared<const por::MonsterBundle>(por::load_monster_bundle(
-            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters", test::png_size_only));
+            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters",
+            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "new-art-pack/monsters",
+            test::png_size_only));
         const auto armed =
             make_combat_demo(module(), *characters, directory, {.monsters = monsters});
         check(!armed.encounter.enemies.empty(), "The demo has its kobolds");

@@ -34,7 +34,7 @@ struct MonsterVariant
 };
 
 // A creature from data/monsters: an original MONnCHA record, or a copy of one
-// the catalog made, with its name, gear and new art.
+// the catalog made, with its name, gear and the new art's weapon sets.
 struct ExportedMonster
 {
     std::string key; // "MON2CHA.DAX:4", or "CUSTOM:..." for a copy
@@ -45,26 +45,31 @@ struct ExportedMonster
     unsigned width_squares{1}, height_squares{1};
     std::string humanoid_size{"na"}; // "small", "normal", "tall" or "na"
     std::vector<MonsterItem> equipment;
-    std::vector<MonsterVariant> variants; // none while art awaits regeneration
+    // None without new art, or while its art awaits regeneration.
+    std::vector<MonsterVariant> variants;
 };
 
 // Every exported creature, by key.
 struct MonsterBundle
 {
     std::map<std::string, ExportedMonster> monsters;
-    // Why each creature that could not be loaded was left out, naming its
-    // file: the original art shows for it.
+    // Why each creature or creature's art that could not be loaded was left
+    // out, naming its file: the original art shows for it.
     std::vector<std::string> problems;
 
     // The original creature MON<bank>CHA.DAX record `record`, if exported.
     [[nodiscard]] const ExportedMonster *creature(unsigned bank, unsigned record) const;
 };
 
-// Reads data/monsters: one folder per creature holding monster.json and each
-// weapon set's ready.png and action.png. A missing folder means no export. A
-// creature the game cannot use is left out and named in `problems`; of two
-// folders exporting the same creature, the first read loads.
+// Reads data/monsters: one folder per creature holding its monster.json. Each
+// weapon set's ready.png and action.png come from the folder of the same name
+// in `art` (the new art's monsters/); an empty `art` means no new art, so no
+// creature has weapon sets. A missing folder means no export. A creature the
+// game cannot use is left out, and art it cannot use leaves the creature
+// without weapon sets; both are named in `problems`. Of two folders exporting
+// the same creature, the first read loads.
 [[nodiscard]] MonsterBundle load_monster_bundle(const std::filesystem::path &folder,
+                                                const std::filesystem::path &art,
                                                 const PngDecoder &decode);
 
 // The weapon set to show, with the readied shield where a set has it: an

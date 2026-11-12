@@ -108,6 +108,8 @@ class RolfTourView : public godot::Control
 
     // Redraws from the session and party, e.g. after the leader changes.
     void refresh();
+    // Reads the party's portraits again, from another new art folder.
+    void forget_portraits();
     // The 3D view art setting changed: the walls follow it at once (#274).
     void show_original_walls(bool original);
 

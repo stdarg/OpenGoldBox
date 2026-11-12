@@ -8,7 +8,9 @@ var _caption := ""
 func show_portrait(file: String, caption: String) -> void:
     _file = file
     _caption = caption
-    texture = load(file)
+    # A file in the new art's folder, read as it is rather than imported.
+    var image := Image.load_from_file(file)
+    texture = null if image == null else ImageTexture.create_from_image(image)
 
 
 # A picture without a file to zoom into: an original head-and-body portrait.

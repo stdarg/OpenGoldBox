@@ -19,12 +19,32 @@ using presentation::gs;
 
 void CharacterCreationView::load_portraits()
 {
+    fill_portrait_filters();
+    for (const char *name : {"PortraitGender", "PortraitClass", "PortraitRace"})
+    {
+        required_node<OptionButton>(*this, name)
+            .connect("item_selected",
+                     presentation::guarded(this, &CharacterCreationView::portrait_filter_selected));
+    }
+}
+
+void CharacterCreationView::reload_portraits()
+{
+    fill_portrait_filters();
+    refresh();
+}
+
+// The new art's portraits, read again in place (the pool keeps a pointer to
+// them), with filters for the genders, classes and races they show.
+void CharacterCreationView::fill_portrait_filters()
+{
     portraits_ = PortraitCatalog::load();
     for (int field = 0; field < 3; ++field)
     {
         const char *names[]{"PortraitGender", "PortraitClass", "PortraitRace"};
         const char *labels[]{N_("All genders"), N_("All classes"), N_("All races")};
         auto *control = &required_node<OptionButton>(*this, names[field]);
+        control->clear();
         control->add_item(i18n::text(labels[field]));
         std::set<std::string> values;
         for (const auto &p : portraits_->entries())
@@ -36,9 +56,6 @@ void CharacterCreationView::load_portraits()
             control->add_item(i18n::text(value));
             control->set_item_metadata(control->get_item_count() - 1, gs(value));
         }
-        control->connect(
-            "item_selected",
-            presentation::guarded(this, &CharacterCreationView::portrait_filter_selected));
     }
 }
 
@@ -106,7 +123,7 @@ void CharacterCreationView::refresh_portraits()
         if (p.filename == current)
         {
             required_node<Control>(*this, "PortraitPreview")
-                .call("show_portrait", gs("res://bin/portraits/" + p.filename), caption(p));
+                .call("show_portrait", portraits_->file_path(p.filename), caption(p));
         }
         if (!matches("PortraitGender", p.gender) || !matches("PortraitClass", p.klass) ||
             !matches("PortraitRace", p.race))
@@ -118,7 +135,7 @@ void CharacterCreationView::refresh_portraits()
             selected = static_cast<int>(filtered_portraits_.size());
         }
         filtered_portraits_.push_back(i);
-        files.push_back(gs("res://bin/portraits/" + p.filename));
+        files.push_back(portraits_->file_path(p.filename));
         captions.push_back(caption(p));
     }
     required_node<Control>(*this, "PortraitScroll/PortraitSheet")

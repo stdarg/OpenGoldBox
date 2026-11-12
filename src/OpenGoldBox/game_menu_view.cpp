@@ -9,6 +9,7 @@
 #include <godot_cpp/classes/h_box_container.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/classes/label.hpp>
+#include <godot_cpp/classes/file_dialog.hpp>
 #include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/viewport.hpp>
@@ -32,6 +33,8 @@ void GameMenuView::_bind_methods()
     ADD_SIGNAL(MethodInfo("closed"));
     // The 3D view art or the Combat art setting changed (#274).
     ADD_SIGNAL(MethodInfo("art_changed"));
+    // Another new art folder was chosen and kept.
+    ADD_SIGNAL(MethodInfo("new_art_changed"));
 }
 
 void GameMenuView::_ready()
@@ -52,6 +55,10 @@ void GameMenuView::_ready()
         .connect("pressed", presentation::guarded(this, &GameMenuView::exit_to_desktop));
     required_node<Button>(*this, "Options/Close")
         .connect("pressed", presentation::guarded(this, &GameMenuView::close_options));
+    required_node<Button>(*this, "Options/Interface/NewArtChoose")
+        .connect("pressed", presentation::guarded(this, &GameMenuView::choose_new_art_folder));
+    required_node<FileDialog>(*this, "Options/Interface/NewArtDialog")
+        .connect("dir_selected", presentation::guarded(this, &GameMenuView::new_art_folder_chosen));
     required_node<Button>(*this, "Options/Gameplay/Defaults")
         .connect("pressed", presentation::guarded(this, &GameMenuView::restore_ability_defaults));
     for (std::int64_t section : {0, 1})
@@ -97,6 +104,7 @@ void GameMenuView::open(Allowed allowed)
     required_node<Button>(*this, "Menu/Save").set_disabled(!allowed.save);
     required_node<Button>(*this, "Menu/Load").set_disabled(!allowed.load);
     required_node<Button>(*this, "Menu/MainMenu").set_disabled(!allowed.main_menu);
+    may_change_art_folder_ = allowed.load;
     required_node<Control>(*this, "Options").hide();
     required_node<Control>(*this, "Menu").show();
     show();
@@ -155,6 +163,7 @@ void GameMenuView::open_options()
         .select(settings::original_combat_art() ? 1 : 0);
     required_node<OptionButton>(*this, "Options/Interface/PortraitArt")
         .select(settings::original_portraits() ? 1 : 0);
+    show_new_art_folder();
     required_node<OptionButton>(*this, "Options/Gameplay/AutoEquip")
         .select(settings::auto_equip() ? 0 : 1);
     required_node<OptionButton>(*this, "Options/Gameplay/UnidentifiedMagic")
@@ -326,6 +335,57 @@ void GameMenuView::portrait_art_selected(std::int64_t index)
 {
     settings::save_original_portraits(index == 1);
     emit_signal("art_changed");
+}
+
+void GameMenuView::show_new_art_folder(const String &problem)
+{
+    const auto folder = settings::new_art_directory();
+    required_node<Label>(*this, "Options/Interface/NewArtFolder")
+        .set_text(folder.is_empty() ? i18n::text(N_("None")) : folder);
+    required_node<Button>(*this, "Options/Interface/NewArtChoose")
+        .set_disabled(!may_change_art_folder_);
+    required_node<Label>(*this, "Options/Interface/NewArtNote")
+        .set_text(
+            !problem.is_empty() ? i18n::text(problem.utf8().get_data())
+            : !may_change_art_folder_
+                ? i18n::text(N_("Finish the fight or event to choose another folder."))
+            : folder.is_empty()
+                ? i18n::text(N_(
+                      "The original game's art shows until you choose the folder of the OpenGoldBox new art download."))
+                : i18n::text(
+                      N_("The art settings above choose the new art or the original game's.")));
+}
+
+void GameMenuView::choose_new_art_folder()
+{
+    if (!may_change_art_folder_)
+    {
+        return;
+    }
+    auto &dialog = required_node<FileDialog>(*this, "Options/Interface/NewArtDialog");
+    const auto folder = settings::new_art_directory();
+    if (!folder.is_empty())
+    {
+        dialog.set_current_dir(folder);
+    }
+    dialog.popup_centered_ratio(.7f);
+}
+
+void GameMenuView::new_art_folder_chosen(const String &folder)
+{
+    const auto problem = settings::new_art_problem(folder);
+    if (!problem.is_empty())
+    {
+        show_new_art_folder(problem);
+        return;
+    }
+    if (!settings::save_new_art_directory(folder))
+    {
+        show_new_art_folder(N_("Cannot save the settings."));
+        return;
+    }
+    show_new_art_folder();
+    emit_signal("new_art_changed");
 }
 
 void GameMenuView::auto_equip_selected(std::int64_t index)

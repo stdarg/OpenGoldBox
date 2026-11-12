@@ -17,7 +17,7 @@
 // for each frame the original holds on screen, in order. That is the 3D view's
 // 5:6 shape, which shows the original's 88 x 88 pictures 1.2 times taller than
 // wide, at four times their width. The new frames keep the original's timing. The game reads
-// data/art/closeups; the Combat Sprite Catalog's Close-ups tab shares this file,
+// closeups/ in the new art's folder; the Combat Sprite Catalog's Close-ups tab shares this file,
 // so it plays what the game plays.
 namespace presentation
 {
