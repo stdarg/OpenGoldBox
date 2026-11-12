@@ -70,8 +70,14 @@ its zone (`game_address`):
 Every cell *Curse*'s source names (the map loaded, the clock, morale,
 surprise, the party's size and the rest) is where this puts it. The cells
 outside the zones, such as the party's position at C04Bh, did not move. The
-exception is the current character's record at the start of zone 1: it follows
-the 422-byte layout below, not a shift.
+current character's cells at the start of zone 1 are not the record's bytes:
+the original serves each from a field of the record (SpecialReadZ1), at the
+same offsets as *Pool of Radiance* (Constitution at +18h, race at +72h, thief
+skills at +A5h, coins from +BBh, status at +100h, side at +10Ch), so they move
+with the zone. *Curse*'s scripts also read Intelligence (+15h), class (+73h),
+magic-user level (+C9h), gender (+D6h) and a script flag (+E4h); OpenGoldBox
+gives them Intelligence and gender, and the class and level once the
+characters carry the original's classes.
 
 ## Creatures
 

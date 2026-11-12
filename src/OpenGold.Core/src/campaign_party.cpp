@@ -3242,7 +3242,8 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
     state_ = std::move(next);
 }
 
-std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot, const por::EclMachine &vm)
+std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot, const por::EclMachine &vm,
+                                                          GoldBoxGame game)
 {
     outside_combat();
     if (slot.index > ecl_scanned_slots)
@@ -3255,7 +3256,7 @@ std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot, const 
         return {};
     }
     const auto &current = member(id);
-    const auto hp = vm.variable(por::ecl_character_hit_points);
+    const auto hp = vm.variable(por::game_address(por::ecl_character_hit_points, game));
     if (hp != current.vitals.hit_points && diagnostic_log_enabled())
     {
         log_diagnostic(LogPriority::info, "party",
@@ -3271,7 +3272,7 @@ std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot, const 
     Purse after_script;
     for (unsigned n = 0; n < 7; ++n)
     {
-        after_script[n] = vm.variable(por::ecl_coin_addresses[n]);
+        after_script[n] = vm.variable(por::game_address(por::ecl_coin_addresses[n], game));
     }
     // A script read changes only HP and coins, which pending Long Rest spell or
     // training choices do not depend on; the inn's script continues after its rest.

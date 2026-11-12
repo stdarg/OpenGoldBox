@@ -200,9 +200,8 @@ In small steps, each with its check:
    (2026-11-12):* every script and map of *Curse* loads with its disk, and
    LOAD PIECES loads the view's walls as the original does. Tilverton's
    streets walk from the inn: the innkeeper, the shops' greetings, the
-   training hall, the sage and the street talk. Events that start a fight
-   wait for step 5, and events that read the current character (the temple)
-   for step 4.
+   training hall, the sage and the street talk, and the current character's
+   cells. Events that start a fight wait for step 5.
 3. The scripts' text and menus, and the commands *Curse* adds. The script
    coverage ([ECL-COVERAGE.md](ECL-COVERAGE.md)) is kept for each game.
 4. Making a party, and bringing a *Pool of Radiance* party across.

@@ -18,9 +18,6 @@ struct Zone
 constexpr std::array<Zone, 3> pool_of_radiance_zones{
     {{0x4900, 0x4CFF}, {0x6B00, 0x6EFF}, {0x9700, 0x98FF}}};
 
-// The current character's record, which zone 1 opens with.
-constexpr Zone character_record{0x6B00, 0x6C1C};
-
 using ZoneStarts = std::array<std::uint16_t, 3>;
 
 ZoneStarts zone_starts(GoldBoxGame game)
@@ -42,11 +39,6 @@ ZoneStarts zone_starts(GoldBoxGame game)
 EclAddress game_address(EclAddress cell, GoldBoxGame game)
 {
     const auto starts = zone_starts(game);
-    if (game != GoldBoxGame::pool_of_radiance && cell.location >= character_record.first &&
-        cell.location <= character_record.last)
-    {
-        throw EclError("The character record's cells differ by game");
-    }
     for (std::size_t zone = 0; zone < pool_of_radiance_zones.size(); ++zone)
     {
         const auto [first, last] = pool_of_radiance_zones[zone];

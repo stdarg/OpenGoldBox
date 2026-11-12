@@ -521,8 +521,10 @@ class CampaignParty
     // Applies the script's HP and coin changes. The script sees the party purse
     // as the slot's money, and coins are seen and settled as script_coins()
     // describes; the result reports any change the purse made.
-    [[nodiscard]] std::optional<CoinExchange> read_character(PartySlot slot,
-                                                             const por::EclMachine &vm);
+    // The cells are Pool of Radiance's, moved to where `game` keeps them.
+    [[nodiscard]] std::optional<CoinExchange>
+    read_character(PartySlot slot, const por::EclMachine &vm,
+                   GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 
     [[nodiscard]] PartyState checkpoint() const
     {

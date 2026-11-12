@@ -231,13 +231,9 @@ void curse_script_memory_is_pool_of_radiance_moved()
         check(game_address(EclAddress{pool}, GoldBoxGame::pool_of_radiance).location == pool,
               "Pool of Radiance keeps its own cells");
     }
-    rejects(
-        []
-        {
-            static_cast<void>(game_address(opengold::por::ecl_character_hit_points,
-                                           GoldBoxGame::curse_of_the_azure_bonds));
-        },
-        "The character record's cells are not moved: its layout changed");
+    // The current character's cells keep their offsets in zone 1 (eclmenu.pas SpecialReadZ1).
+    check(game_address(opengold::por::ecl_character_hit_points, curse).location == 0x7D19,
+          "The character's hit points move with zone 1");
 }
 
 // A script's CALL runs an engine routine by the address its game gives it:

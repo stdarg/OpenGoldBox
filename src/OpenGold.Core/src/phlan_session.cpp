@@ -440,19 +440,7 @@ void RolfTourSession::configure_town()
     };
     const bool pool_of_radiance = game() == GoldBoxGame::pool_of_radiance;
     bind_range(0x4900, 0x4AFF);
-    if (pool_of_radiance)
-    {
-        bind_range(0x6B00, 0x6C1C);
-    }
-    else
-    {
-        // The current character's record, in Curse's 422-byte layout, which
-        // the party does not fill yet (docs/GAMES.md).
-        for (std::uint16_t a = 0x7C00; a <= 0x7DA5; ++a)
-        {
-            machine_.bind_variable(EclAddress{a}, 0);
-        }
-    }
+    bind_range(0x6B00, 0x6C1C);
     bind_range(0x6DA8, 0x6EFF);
     bind_range(0x9800, 0x98FF);
     machine_.bind_variable(game_cell(EclAddress{0xB8}), 0);
@@ -477,12 +465,9 @@ void RolfTourSession::configure_town()
     {
         selected_character_ = campaign_->state().selected_slot;
     }
-    if (pool_of_radiance)
+    for (const auto &w : character_reply(selected_character_).writes)
     {
-        for (const auto &w : character_reply(selected_character_).writes)
-        {
-            machine_.bind_variable(w.address, w.value);
-        }
+        machine_.bind_variable(w.address, w.value);
     }
     for (const std::uint8_t op :
          std::initializer_list<std::uint8_t>{10, 28, 32, 33, 36, 39, 40, 50, 55, 56, 57, 60})
@@ -510,7 +495,7 @@ void RolfTourSession::configure_town()
 
 void RolfTourSession::synchronize_clock()
 {
-    if (adopt_script_clock() && game() == GoldBoxGame::pool_of_radiance)
+    if (adopt_script_clock())
     {
         for (const auto &w : character_reply(selected_character_).writes)
         {
@@ -559,10 +544,7 @@ bool RolfTourSession::adopt_script_clock()
         throw EclError("Invalid script clock");
     }
     const auto now = clock_minute_of_day(campaign_->state().time_minutes);
-    if (game() == GoldBoxGame::pool_of_radiance)
-    {
-        read_character();
-    }
+    read_character();
     campaign_->advance_time(std::chrono::minutes{(scripted + 1440 - now) % 1440});
     return true;
 }
@@ -605,6 +587,29 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
     if (campaign_)
     {
         auto reply = party_character_reply(*campaign_, slot);
+        // The view's cells are Pool of Radiance's; the game keeps them elsewhere.
+        for (auto &write : reply.writes)
+        {
+            write.address = game_cell(write.address);
+        }
+        if (game() == GoldBoxGame::curse_of_the_azure_bonds && slot.index < 8)
+        {
+            // Curse's scripts also read the character's Intelligence and gender.
+            if (const auto id = campaign_->state().slots[slot.index])
+            {
+                const auto &member = campaign_->member(id);
+                const auto at = [&reply, this](std::uint16_t offset) -> std::uint16_t &
+                {
+                    const auto address = game_cell(EclAddress(
+                        static_cast<std::uint16_t>(ecl_character_record.location + offset)));
+                    return std::ranges::find(reply.writes, address, &EclMemoryWrite::address)
+                        ->value;
+                };
+                at(0x15) = static_cast<std::uint16_t>(
+                    member.character.sheet().scores[rules::Ability::intelligence]);
+                at(0xD6) = member.character.creation_data().gender == "female" ? 1 : 0;
+            }
+        }
         // The party's size, which the scripts loop over member by member
         // (Tyranthraxus's vote) and test before a companion joins.
         const auto &slots = campaign_->state().slots;
@@ -620,7 +625,8 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
         if (const auto id = slot.index < 8 ? campaign_->state().slots[slot.index] : MemberId{};
             id && turncoat(id))
         {
-            std::ranges::find(reply.writes, ecl_character_allegiance, &EclMemoryWrite::address)
+            std::ranges::find(reply.writes, game_cell(ecl_character_allegiance),
+                              &EclMemoryWrite::address)
                 ->value = 0x81;
         }
         return reply;
@@ -645,7 +651,8 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
     for (unsigned n = 0; n < fields.size(); ++n)
     {
         reply.writes.push_back(
-            {EclAddress(static_cast<std::uint16_t>(ecl_character_record.location + n)), fields[n]});
+            {game_cell(EclAddress(static_cast<std::uint16_t>(ecl_character_record.location + n))),
+             fields[n]});
     }
     reply.writes.push_back({game_cell(EclAddress{0x6DB1}), static_cast<std::uint16_t>(slot.index)});
     reply.writes.push_back({game_cell(EclAddress{0x6DB4}), static_cast<std::uint16_t>(slot.index)});
@@ -668,7 +675,7 @@ void RolfTourSession::read_character()
 {
     if (campaign_)
     {
-        const auto exchange = campaign_->read_character(selected_character_, machine_);
+        const auto exchange = campaign_->read_character(selected_character_, machine_, game());
         // A script that sets the allegiance byte to 0x81 turns the member
         // against the party (Tyranthraxus's vote, ECL5:7 0xA771); 0 or 0x80
         // turns it back.
@@ -1702,16 +1709,11 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
 
 void RolfTourSession::finish_event()
 {
-    // The party and the current character's cells meet in Pool of Radiance's
-    // record only (docs/GAMES.md).
-    if (game() == GoldBoxGame::pool_of_radiance)
+    read_character();
+    // Another script may follow in this event; it must see the settled purse.
+    for (const auto &w : character_reply(selected_character_).writes)
     {
-        read_character();
-        // Another script may follow in this event; it must see the settled purse.
-        for (const auto &w : character_reply(selected_character_).writes)
-        {
-            machine_.bind_variable(w.address, w.value);
-        }
+        machine_.bind_variable(w.address, w.value);
     }
     publish_pose();
     if (transition_)

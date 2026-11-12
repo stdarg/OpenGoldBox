@@ -107,9 +107,9 @@ inline constexpr EclAddress ecl_slums_orc_victory{0x4ACA};
 // party's and the current character's (6B00h-6EFFh) and the strings
 // (9700h-98FFh). A cell keeps its place within its zone, and the cells outside
 // the zones (the party's position at C04Bh and the rest) stay where they are.
-// The address of a Pool of Radiance cell in the game's memory; throws EclError
-// for a cell of the current character's record (6B00h-6C1Ch), whose layout
-// differs by game (docs/games/curse.md).
+// The current character's cells at the start of zone 1 are not its record's
+// bytes but the fields the original serves at each offset, the same offsets in
+// both games. The address of a Pool of Radiance cell in the game's memory.
 [[nodiscard]] EclAddress game_address(EclAddress pool_of_radiance_cell, GoldBoxGame game);
 } // namespace opengold::por
 #endif
