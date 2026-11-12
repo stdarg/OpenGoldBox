@@ -398,8 +398,14 @@ class Session final : public rules::CombatSession
         rules::validate_battlefield(board_);
         log({"Combat begins.", {}});
         update_hostile_hit_points();
-        begin_round();
-        next_actor();
+        // A fight ends only as a round ends, unless a side has no one able to
+        // fight from the start (combat.pas, CombatMain and EndOfRound).
+        settle_outcome();
+        if (outcome_ == rules::Outcome::ongoing)
+        {
+            begin_round();
+            next_actor();
+        }
     }
 
     static std::unique_ptr<Session> restored(rules::Identity identity, std::string_view checkpoint);
@@ -563,7 +569,8 @@ void Session::next_actor()
             else if (f.initiative == best->initiative)
             {
                 const auto tiebreak = roll(100);
-                if (tiebreak > best_tiebreak)
+                // A full tie goes to the later creature (combat.pas, NextCreature).
+                if (tiebreak >= best_tiebreak)
                 {
                     best = &f;
                     best_tiebreak = tiebreak;
@@ -586,14 +593,8 @@ void Session::next_actor()
             // A holding bite or a drinking stirge spends its turn on its victim
             // (effhndlr.pas, ACTION_START).
             attached_turn(*best);
-            if (best->initiative <= 0 || !best->able())
+            if (best->initiative <= 0 || !best->able() || check_morale(*best))
             {
-                settle_outcome();
-                continue;
-            }
-            if (check_morale(*best))
-            {
-                settle_outcome();
                 continue;
             }
             actor_ = best->id;
@@ -1710,7 +1711,6 @@ bool Session::submit(const rules::Command &command)
             }
             step_to(actor, cell);
         }
-        settle_outcome();
     }
     else if (command.verb == "melee")
     {
@@ -1720,19 +1720,16 @@ bool Session::submit(const rules::Command &command)
         {
             make_attack(actor, target, false);
         }
-        settle_outcome();
     }
     else if (command.verb == "ranged" || command.verb == "throw")
     {
         auto &target = *find(command.target);
         note_attack(actor, target);
         shoot(actor, target);
-        settle_outcome();
     }
     else if (command.verb == "flee")
     {
         attempt_flee(actor);
-        settle_outcome();
     }
     else if (command.verb == "guard")
     {

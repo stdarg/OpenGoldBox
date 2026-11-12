@@ -183,7 +183,10 @@ gear.
    plays two fighters against three kobolds, checks every Hit Point against
    the log, and replays a fight from its seed and from a mid-fight save. A
    creature down is out of the fight and no target; the original's
-   "helpless" (sleep, paralysis) comes with the effects in step 6.
+   "helpless" (sleep, paralysis) comes with the effects in step 6. A fight
+   ends only as a round ends (`EndOfRound`): the creatures with turns left
+   still take them after a side is down, and the dying bleed first. On a full
+   tie of initiative and d100 the later creature acts first (`NextCreature`).
 2. The real monster records, their readied weapons and their statistics. *Done
    2026-11-12:* `combatant_from_record(record, readied)` works out a
    creature's numbers as the original does at the start of every fight and

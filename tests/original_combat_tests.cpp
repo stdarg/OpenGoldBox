@@ -918,8 +918,19 @@ std::string monster_turn(const original::Combatant &monster, unsigned morale = 5
     }
     if (view.surrendered)
     {
-        check(view.hit_points == 0 && session.snapshot().outcome == rules::Outcome::victory,
-              "One that gives up has no Hit Points left, and its side has lost");
+        check(view.hit_points == 0, "One that gives up has no Hit Points left");
+        play_until(
+            session,
+            [&](const std::string &)
+            {
+                return order(session, "end");
+            },
+            [&]
+            {
+                return session.snapshot().outcome != rules::Outcome::ongoing;
+            });
+        check(session.snapshot().outcome == rules::Outcome::victory,
+              "As the round ends, its side has lost");
         return "surrenders";
     }
     return "fights";
@@ -969,6 +980,18 @@ void fleeing_off_the_field()
         check(step && !session.snapshot().battlefield.contains(step->destination),
               "On the edge it is offered a step off the field");
         session.submit(*step);
+        // A fight ends as its round ends (combat.pas, EndOfRound).
+        const auto round = session.snapshot().round;
+        play_until(
+            session,
+            [&](const std::string &)
+            {
+                return order(session, "end");
+            },
+            [&]
+            {
+                return session.snapshot().round > round;
+            });
         return session.snapshot();
     };
     const auto away = flee(6, false);
@@ -1074,8 +1097,9 @@ void the_helpless_are_slain()
     again.submit(order(again, "melee", "Kobold"));
     const auto &kobold = view_of(again.snapshot(), "Kobold");
     check(logged(again, "{attacker} slays the helpless {name}.", "Fighter") == 1 &&
-              kobold.status == "dying" && kobold.hit_points == -5,
-          "One blow leaves it dying 5 below 0");
+              kobold.status == "dying" &&
+              kobold.hit_points == (again.snapshot().outcome == rules::Outcome::ongoing ? -5 : -6),
+          "One blow leaves it dying 5 below 0, a point less once the round ends");
     check(actor_name(again) != "Fighter", "The blow spends the fighter's attacks");
 
     auto third = arrange({{"Fighter", rules::Side::party, {3, 3}, creature(50)},
