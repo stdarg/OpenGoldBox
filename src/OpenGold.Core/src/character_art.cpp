@@ -371,7 +371,7 @@ Image compose_character_icon(const IndexedIcon &head, const IndexedIcon &body,
     return result;
 }
 
-CharacterArt CharacterArt::load(const std::filesystem::path &directory)
+CharacterArt CharacterArt::load(const std::filesystem::path &directory, GoldBoxGame game)
 {
     std::map<std::string, std::filesystem::path> paths;
     for (const auto &entry : std::filesystem::directory_iterator(directory))
@@ -403,7 +403,8 @@ CharacterArt CharacterArt::load(const std::filesystem::path &directory)
         return std::move(decoded.records);
     };
     CharacterArt art;
-    for (unsigned disk = 1; disk <= 8; ++disk)
+    const auto portrait_disks = game_disks(game).player_portraits;
+    for (const auto disk : portrait_disks)
     {
         for (const auto &stem : {std::string("HEAD"), std::string("BODY")})
         {
@@ -441,7 +442,7 @@ CharacterArt CharacterArt::load(const std::filesystem::path &directory)
         art.combat_bodies_.emplace(bank + 33, with_dagger(art.combat_bodies_.at(bank + 7), bank));
         art.combat_bodies_.emplace(bank + 34, with_dagger(art.combat_bodies_.at(bank + 24), bank));
     }
-    if (art.heads_.empty() || art.bodies_.empty())
+    if (!portrait_disks.empty() && (art.heads_.empty() || art.bodies_.empty()))
     {
         throw std::runtime_error("Missing portraits");
     }

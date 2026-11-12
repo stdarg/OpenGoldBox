@@ -114,7 +114,9 @@ class CreatureCatalog
     // Reads all eight MONnCHA / MONnITM banks, SPC banks where supplied, and ITEMS.
     // Throws CatalogError on incomplete/corrupt required input; never returns a partial catalog.
     // Stock PoR has no MON1SPC or MON3SPC; the other six SPC banks are required.
-    [[nodiscard]] static CreatureCatalog load(const std::filesystem::path &game_directory);
+    // The game's creatures; Pool of Radiance's unless told otherwise.
+    [[nodiscard]] static CreatureCatalog load(const std::filesystem::path &game_directory,
+                                              GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 
     [[nodiscard]] const std::map<CreatureId, Creature> &all() const noexcept
     {

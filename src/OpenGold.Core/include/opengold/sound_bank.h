@@ -22,7 +22,9 @@ class SoundBank
   public:
     // Accepts decoded effects, including hand-authored effects for unit tests.
     explicit SoundBank(std::vector<SoundEffect> effects);
-    [[nodiscard]] static SoundBank load(const std::filesystem::path &game_directory);
+    // The game's sound effects; Pool of Radiance's unless told otherwise.
+    [[nodiscard]] static SoundBank load(const std::filesystem::path &game_directory,
+                                        GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 
     [[nodiscard]] std::span<const SoundClip> clips() const noexcept
     {

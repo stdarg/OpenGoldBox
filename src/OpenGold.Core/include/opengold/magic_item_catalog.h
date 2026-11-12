@@ -3,6 +3,7 @@
 
 #include "opengold/pool_radiance.h"
 #include <cstdint>
+#include "opengold/gold_box_game.h"
 #include <filesystem>
 #include <stdexcept>
 #include <string>
@@ -46,7 +47,9 @@ struct MagicItemCatalog
     std::vector<std::string> item_words, spell_names;
     std::vector<MagicItemList> lists;
 
-    [[nodiscard]] static MagicItemCatalog load(const std::filesystem::path &directory);
+    // The game's magic items; Pool of Radiance's unless told otherwise.
+    [[nodiscard]] static MagicItemCatalog load(const std::filesystem::path &directory,
+                                               GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 };
 } // namespace opengold::por
 #endif

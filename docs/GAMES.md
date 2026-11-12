@@ -160,7 +160,10 @@ The steps, each pushed on its own with every test passing:
    either layout; the size, morale and side bytes have names.
 4. **Files by game:** disks and banks are counted from the folder (*Pool of
    Radiance* has eight, *Curse* six), and the names, sounds and wilderness in
-   `START.EXE` are read per game.
+   `START.EXE` are read per game. *Done 2026-11-12:* `game_disks` lists each game's
+   disks; the creature, magic item and portrait catalogs and the sound bank
+   take the game. The wilderness in `START.EXE` is *Pool of Radiance*'s own
+   content and moves with step 6.
 5. **A save names its game** (phase 0's save change; a campaign format change).
    An old save loads as *Pool of Radiance*.
 6. **The campaign behind one seam:** the game reaches *Pool of Radiance*'s own

@@ -18,7 +18,7 @@ Since 2026-11-12 every file of the game decodes.
 | `MON*ITM`, `ITEM*` | Creatures' items, item lists | None: 63 bytes an item |
 | `MON*SPC` | Creatures' effects | None: 9 bytes an effect |
 | `ITEMS` | Item types | None |
-| `HEAD*`, `BODY*`, `PIC*` | Portraits and close-ups | None |
+| `HEAD2`–`HEAD6`, `BODY2`–`BODY6`, `PIC*` | Each disk's portraits and close-ups for the scripts | Same format; a number can mean another picture on another disk, and none are for the player |
 | `TITLE` | Title pictures | Four pictures instead of two |
 | `BIGPIC1`, `2`, `6` | Four large pictures, such as the overland map | New file; ordinary pictures |
 | `SKY` | The north sky, the sun and the horizon (records 250 to 252) | New file; ordinary pictures |
@@ -32,6 +32,10 @@ Since 2026-11-12 every file of the game decodes.
 
 *Pool of Radiance*'s `ICON`, `BACPAC`, `SQRPACI` and `FINAL` files have no
 counterpart.
+
+The original shows a portrait from the current disk's `HEAD` and `BODY`
+files. *Curse*'s characters are not given portraits: the record's portrait
+fields come only from a *Pool of Radiance* character brought across.
 
 ## Scripts
 

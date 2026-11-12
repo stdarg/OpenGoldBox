@@ -434,7 +434,7 @@ std::string Equipment::label() const
     return known ? name : name + std::string(unknown_magic);
 }
 
-CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)
+CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory, GoldBoxGame game)
 {
     try
     {
@@ -483,14 +483,19 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)
             item_words = std::move(*decoded);
         }
         CreatureCatalog catalog;
-        for (std::uint8_t bank = 1; bank <= 8; ++bank)
+        const auto disks = game_disks(game);
+        for (const auto disk : disks.monsters)
         {
+            const auto bank = static_cast<std::uint8_t>(disk);
             const std::string prefix = "MON" + std::to_string(bank);
             auto characters = read_archive(required(prefix + "CHA.DAX"));
             auto items = read_archive(required(prefix + "ITM.DAX"));
             Archive effects;
             const auto spc_name = prefix + "SPC.DAX";
-            if (files.contains(spc_name) || (bank != 1 && bank != 3))
+            const bool has_no_effects = std::find(disks.monsters_without_effects.begin(),
+                                                  disks.monsters_without_effects.end(),
+                                                  disk) != disks.monsters_without_effects.end();
+            if (files.contains(spc_name) || !has_no_effects)
             {
                 effects = read_archive(required(spc_name));
             }
@@ -514,7 +519,7 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)
             {
                 Creature creature;
                 creature.id = {bank, id};
-                auto character = decode_character(bytes);
+                auto character = decode_character(bytes, game);
                 if (!character)
                 {
                     throw CatalogError("Invalid character " + creature.id.key());

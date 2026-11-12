@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <bit>
 #include <fstream>
+#include <iterator>
 #include <stdexcept>
 #include <string_view>
 
@@ -446,5 +447,36 @@ std::vector<SoundEffect> decode_curse_sound_effects(std::span<const std::uint8_t
                            decode_speaker_sequence(segment, entries)});
     }
     return effects;
+}
+
+std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &game_directory,
+                                            GoldBoxGame game)
+{
+    switch (game)
+    {
+    case GoldBoxGame::pool_of_radiance:
+        return load_sound_effects(game_directory);
+    case GoldBoxGame::curse_of_the_azure_bonds:
+    {
+        auto path = game_directory / "START.EXE";
+        if (!std::filesystem::exists(path))
+        {
+            path = game_directory / "start.exe";
+        }
+        std::ifstream input(path, std::ios::binary);
+        if (!input)
+        {
+            invalid("cannot open START.EXE");
+        }
+        const std::vector<std::uint8_t> file(std::istreambuf_iterator<char>(input), {});
+        if (file.size() > max_image)
+        {
+            invalid("invalid START.EXE size");
+        }
+        return decode_curse_sound_effects(unpack_sound_executable(file));
+    }
+    default:
+        invalid("the sounds of " + std::string(game_title(game)) + " are not decoded yet");
+    }
 }
 } // namespace opengold::por

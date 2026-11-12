@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdint>
 #include <string_view>
+#include <vector>
 
 namespace opengold
 {
@@ -73,6 +74,21 @@ inline constexpr std::array<GoldBoxGame, 7> gold_box_games{
     }
     return {};
 }
+
+// The disk numbers a game's files carry, as in MON3CHA.DAX or HEAD2.DAX.
+struct GameDisks
+{
+    // MONnCHA.DAX and MONnITM.DAX, and MONnSPC.DAX but on the disks listed after.
+    std::vector<unsigned> monsters, monsters_without_effects;
+    std::vector<unsigned> item_lists; // ITEMn.DAX
+    // The HEADn.DAX and BODYn.DAX the player's portraits come from. Pool of
+    // Radiance repeats them on every disk; Curse has none for the player, and
+    // its HEAD and BODY files hold each disk's pictures for the scripts.
+    std::vector<unsigned> player_portraits;
+};
+
+// Throws std::invalid_argument for a game whose files are not mapped yet.
+[[nodiscard]] GameDisks game_disks(GoldBoxGame game);
 
 } // namespace opengold
 

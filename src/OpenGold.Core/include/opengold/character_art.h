@@ -4,6 +4,7 @@
 #include "opengold/formats.h"
 #include <array>
 #include <cstdint>
+#include "opengold/gold_box_game.h"
 #include <filesystem>
 #include <map>
 #include <optional>
@@ -115,7 +116,9 @@ struct CharacterColorUsage
 class CharacterArt
 {
   public:
-    [[nodiscard]] static CharacterArt load(const std::filesystem::path &directory);
+    // The game's portraits and combat icons; Pool of Radiance's unless told otherwise.
+    [[nodiscard]] static CharacterArt load(const std::filesystem::path &directory,
+                                           GoldBoxGame game = GoldBoxGame::pool_of_radiance);
     // The parts are private so each keeps the size the composition relies on:
     // portrait heads 88x40, bodies 88x48, combat icons 24 pixels wide and at
     // most 24 high (Effective C++ Item 22). These add or replace a part after

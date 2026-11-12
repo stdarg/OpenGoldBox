@@ -262,20 +262,6 @@ void check_wall_art(const std::map<std::string, GameFile> &by_name, const GameFi
     require(art.has_value() && art->appearances.size() == 5 * blocks, "not wall art");
 }
 
-std::vector<por::SoundEffect> sound_effects(GoldBoxGame game, const Bytes &image,
-                                            const std::filesystem::path &folder)
-{
-    switch (game)
-    {
-    case GoldBoxGame::pool_of_radiance:
-        return por::load_sound_effects(folder);
-    case GoldBoxGame::curse_of_the_azure_bonds:
-        return por::decode_curse_sound_effects(image);
-    default:
-        throw std::runtime_error("this game's sound effects are not decoded yet");
-    }
-}
-
 void check_names_and_sounds(RowBuilder &row, GoldBoxGame game, const GameFile &start,
                             const std::filesystem::path &folder)
 {
@@ -294,7 +280,7 @@ void check_names_and_sounds(RowBuilder &row, GoldBoxGame game, const GameFile &s
     row.check(start.name + " sound effects",
               [&]
               {
-                  const auto effects = sound_effects(game, image, folder);
+                  const auto effects = por::load_sound_effects(folder, game);
                   require(std::any_of(effects.begin(), effects.end(),
                                       [](const por::SoundEffect &effect)
                                       {

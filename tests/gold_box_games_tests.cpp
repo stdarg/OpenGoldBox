@@ -1,14 +1,19 @@
 // Telling the Gold Box games apart and reading what Curse of the Azure Bonds
 // changed (docs/GAMES.md, docs/games/curse.md). The census of the real files
 // runs in tests/game_census.cmake.
+#include "opengold/character_art.h"
+#include "opengold/creature_catalog.h"
 #include "opengold/curse_records.h"
 #include "opengold/ecl.h"
 #include "opengold/ecl_address.h"
 #include "opengold/ecl_machine.h"
 #include "opengold/formats.h"
 #include "opengold/game_census.h"
+#include "opengold/magic_item_catalog.h"
+#include "opengold/sound_bank.h"
 #include "test_support.h"
 
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -242,6 +247,39 @@ void the_font_has_eight_bytes_a_glyph()
           "Upper-case letters need the first 64 glyphs");
 }
 
+// The game's own loaders read Curse's files, when the developer has them
+// (OPENGOLD_GOLDBOX_DIR, docs/GAMES.md).
+void the_loaders_read_curse()
+{
+    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    const auto folder = games ? std::filesystem::path(games) / "CURSE" : std::filesystem::path();
+    if (!games || opengold::identify_game(folder) != GoldBoxGame::curse_of_the_azure_bonds)
+    {
+        std::cout << "Curse's files are not here; its loaders are not checked.\n";
+        return;
+    }
+    constexpr auto curse = GoldBoxGame::curse_of_the_azure_bonds;
+    const auto creatures = opengold::por::CreatureCatalog::load(folder, curse);
+    check(creatures.all().size() == 81, "Curse has 81 creature records");
+    bool found_ettin = false;
+    for (const auto &[id, creature] : creatures.all())
+    {
+        if (creature.stored.name == "ETTIN")
+        {
+            found_ettin =
+                creature.stored.base_armor_class == 3 && creature.stored.max_hit_points == 70;
+        }
+    }
+    check(found_ettin, "The ettin has Armor Class 3 and 70 hit points");
+    const auto items = opengold::por::MagicItemCatalog::load(folder, curse);
+    check(!items.lists.empty(), "Curse's magic items list");
+    const auto art = opengold::por::CharacterArt::load(folder, curse);
+    check(art.heads().empty() && art.combat_heads().size() == 56,
+          "Curse's player characters have combat icons but no portraits to choose");
+    const auto sounds = opengold::por::SoundBank::load(folder, curse);
+    check(sounds.at(10).audible, "Curse's footstep sounds");
+}
+
 } // namespace
 
 int main()
@@ -253,6 +291,7 @@ int main()
         curse_scripts_run_in_their_own_bank();
         the_machine_runs_curse_scripts();
         curse_script_memory_is_pool_of_radiance_moved();
+        the_loaders_read_curse();
         the_font_has_eight_bytes_a_glyph();
         std::cout << "Gold Box games passed.\n";
     }

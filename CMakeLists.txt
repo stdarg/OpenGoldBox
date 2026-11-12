@@ -135,6 +135,7 @@ add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/wall_art.cpp
     src/OpenGold.Formats/src/por_sound.cpp
     src/OpenGold.Formats/src/curse_records.cpp
+    src/OpenGold.Formats/src/gold_box_game.cpp
 )
 
 target_include_directories(opengold_formats

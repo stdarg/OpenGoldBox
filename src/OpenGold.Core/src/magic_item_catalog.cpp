@@ -49,10 +49,11 @@ Records read_dax(const std::filesystem::path &directory, const std::string &name
 
 // Lists named by a constant: TREASURE's item code below 128 picks an ITEMn list, and
 // LOAD MONSTER's first operand a MONn creature. n is the script's bank.
-std::map<ListKey, std::set<std::string>> script_references(const std::filesystem::path &directory)
+std::map<ListKey, std::set<std::string>> script_references(const std::filesystem::path &directory,
+                                                           GoldBoxGame game)
 {
     std::map<ListKey, std::set<std::string>> references;
-    const auto catalog = EclCatalog::load(directory);
+    const auto catalog = EclCatalog::load(directory, game);
 
     for (const auto &[id, program] : catalog.all())
     {
@@ -61,7 +62,7 @@ std::map<ListKey, std::set<std::string>> script_references(const std::filesystem
 
         for (const auto &i : walk_reachable(*program).instructions)
         {
-            const auto name = ecl_opcode(i.opcode).name;
+            const auto name = ecl_opcode(i.opcode, game).name;
 
             if (name == "TREASURE" && i.operands.size() == 8 && i.operands[7].tag == 0 &&
                 i.operands[7].value < 128)
@@ -110,8 +111,9 @@ std::vector<std::string> spells_of(const ItemRecord &item, const std::vector<std
     return spells;
 }
 
-void add_lists(MagicItemCatalog &catalog, const std::string &archive, const Records &records,
-               const Records *carriers, const std::map<ListKey, std::set<std::string>> &references)
+void add_lists(MagicItemCatalog &catalog, GoldBoxGame game, const std::string &archive,
+               const Records &records, const Records *carriers,
+               const std::map<ListKey, std::set<std::string>> &references)
 {
     for (const auto &[record, bytes] : records)
     {
@@ -141,8 +143,9 @@ void add_lists(MagicItemCatalog &catalog, const std::string &archive, const Reco
         if (carriers)
         {
             const auto creature = carriers->find(record);
-            const auto decoded =
-                creature == carriers->end() ? std::nullopt : decode_character(creature->second);
+            const auto decoded = creature == carriers->end()
+                                     ? std::nullopt
+                                     : decode_character(creature->second, game);
             list.carrier = decoded ? decoded->name : "";
         }
 
@@ -162,7 +165,7 @@ bool is_magic(const ItemRecord &item) noexcept
            item.effect_codes[1] != 0;
 }
 
-MagicItemCatalog MagicItemCatalog::load(const std::filesystem::path &directory)
+MagicItemCatalog MagicItemCatalog::load(const std::filesystem::path &directory, GoldBoxGame game)
 {
     MagicItemCatalog catalog;
     const auto image = unpack_sound_executable(read_game_file(directory, "START.EXE"));
@@ -176,20 +179,21 @@ MagicItemCatalog MagicItemCatalog::load(const std::filesystem::path &directory)
 
     catalog.item_words = std::move(*words);
     catalog.spell_names = std::move(*spells);
-    const auto references = script_references(directory);
+    const auto references = script_references(directory, game);
+    const auto disks = game_disks(game);
 
-    for (int bank = 1; bank <= 8; ++bank)
+    for (const auto bank : disks.item_lists)
     {
         const auto digit = std::to_string(bank);
-        add_lists(catalog, "ITEM" + digit + ".DAX", read_dax(directory, "ITEM" + digit + ".DAX"),
-                  nullptr, references);
+        add_lists(catalog, game, "ITEM" + digit + ".DAX",
+                  read_dax(directory, "ITEM" + digit + ".DAX"), nullptr, references);
     }
 
-    for (int bank = 1; bank <= 8; ++bank)
+    for (const auto bank : disks.monsters)
     {
         const auto digit = std::to_string(bank);
         const auto carriers = read_dax(directory, "MON" + digit + "CHA.DAX");
-        add_lists(catalog, "MON" + digit + "ITM.DAX",
+        add_lists(catalog, game, "MON" + digit + "ITM.DAX",
                   read_dax(directory, "MON" + digit + "ITM.DAX"), &carriers, references);
     }
 

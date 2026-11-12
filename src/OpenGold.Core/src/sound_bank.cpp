@@ -32,9 +32,9 @@ SoundBank::SoundBank(std::vector<SoundEffect> effects)
     }
 }
 
-SoundBank SoundBank::load(const std::filesystem::path &game_directory)
+SoundBank SoundBank::load(const std::filesystem::path &game_directory, GoldBoxGame game)
 {
-    return SoundBank(load_sound_effects(game_directory));
+    return SoundBank(load_sound_effects(game_directory, game));
 }
 
 const SoundClip &SoundBank::at(unsigned id) const

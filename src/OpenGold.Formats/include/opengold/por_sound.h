@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "opengold/gold_box_game.h"
+
 namespace opengold::por
 {
 
@@ -40,6 +42,9 @@ load_sound_effects(const std::filesystem::path &game_directory);
 // sequencer; docs/games/curse.md says where the effects are.
 [[nodiscard]] std::vector<SoundEffect>
 decode_curse_sound_effects(std::span<const std::uint8_t> image);
+// The game's sound effects from START.EXE in its folder.
+[[nodiscard]] std::vector<SoundEffect>
+load_sound_effects(const std::filesystem::path &game_directory, GoldBoxGame game);
 
 } // namespace opengold::por
 #endif
