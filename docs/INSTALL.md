@@ -295,6 +295,17 @@ files skip without it, so set it before a full test run.
 Do not commit original SSI game files or derived assets. Keep local copies in
 ignored directories such as `testdata/local/` or `user-data/`.
 
+## New art
+
+The new art (walls, close-ups, monster poses and portraits) is in the
+repository's [`new-art-pack`](../new-art-pack/README.md), which players get as a
+separate download. A game run from a checkout shows only the original art until
+you choose that folder on the Options screen (Interface, **New art folder**), or
+set `OPENGOLD_NEW_ART_DIR` to it ([configuration](CONFIGURATION.md)). The game's
+tests set it for themselves, and the Party and Combat testers use the
+repository's `new-art-pack` unless it is set. The developer tools that make new
+art publish it there.
+
 ## Developer tools
 
 Each tool builds what it needs on first launch; none needs the game build

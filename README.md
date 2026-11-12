@@ -39,7 +39,9 @@ The new art (walls, close-ups, monster figures and portraits) is a separate,
 optional download, kept in the repository as [`new-art-pack`](new-art-pack/README.md).
 Without it the game shows the original game's art. To see the new art, choose its
 folder on the Options screen (Interface, **New art folder**); running from a
-checkout, choose this repository's `new-art-pack`.
+checkout, choose this repository's `new-art-pack`. The choice is remembered and
+takes effect at once, even in the middle of a game (though not during a fight
+or an event).
 
 - Windows (PowerShell): `.\build-opengoldbox.cmd`, then `.\win-package\opengoldbox.exe`.
   The build also makes the package for players,
@@ -70,7 +72,9 @@ See [building the game and each demo](docs/BUILD.md). The scenes under
 
 - **Party:** create level-one characters (nine species with their lineage and
   ancestry choices, twelve classes, four backgrounds) with 972 portraits to
-  choose from, or pick from a 48-character pool; up to six PCs and two NPCs.
+  choose from in the new art, or the original game's head-and-body portraits
+  without it, or pick from a 48-character pool; up to six PCs and two NPCs.
+  A character's portrait can be changed at any time from its sheet.
   Every new character brings 3d6 × 10 gp, and the party shares one purse; any
   coin pays a price, with change. What a character can carry is limited by
   weight and Strength. Better weapons, armor and shields go on when bought or
@@ -235,9 +239,12 @@ Starting-class prerequisite checks are an OpenGoldBox house rule. A scrollable
 **Desired Class(es)** checklist records future goals and shows unmet ability
 requirements; acquiring additional classes is not implemented.
 
-Choose from 972 complete portraits with optional gender, class, and in-game race
-filters. Portrait controls stay available throughout creation and sheet review;
-selected artwork carries into the party and campaign saves. Customize ready/action combat sprites with separate head/body parts
+With the new art, choose from 972 complete portraits with optional gender,
+class, and in-game race filters; without it, or with the Options screen's
+**Portraits** set to Original, build the original game's portrait from its heads
+and bodies. Portrait controls stay available throughout creation and sheet review;
+selected artwork carries into the party and campaign saves, and **Change
+portrait…** on a member's sheet changes it at any time. Customize ready/action combat sprites with separate head/body parts
 and twelve region colors. The shared character sheet includes inventory, live
 stats, a **Modifiers** dialog and a **Saving Throws** calculator.
 

@@ -426,14 +426,17 @@ in the game: answering YES at a hall lists its services in the dialogue
   Portraits bring back the original's head-and-body portraits, which also show
   for any new portrait that cannot be loaded
   ([#274](https://github.com/stdarg/OpenGoldBox/issues/274),
-  [CONFIGURATION](CONFIGURATION.md)).
+  [CONFIGURATION](CONFIGURATION.md)). Since 2026-11-12 the new art is a
+  separate, optional download, chosen on the Options screen's **New art
+  folder**; without it the game shows the original game's art, and every
+  character its original portrait.
 - **Modern shell.** A Godot interface that follows the Gold Box screens'
   structure without their DOS-era limits.
   [PRD §5.2](PRD.md#52-modern-shell-original-game).
 - **Save files.** OpenGoldBox uses its own versioned save format. Importing
   original saves is wanted but not yet supported. [PRD §14](PRD.md#14-save-games), [SAVES.md](SAVES.md).
-- **New wall art.** The first-person view draws the new wall art in
-  `new-art-pack/walls`, at four times the original resolution, in place of each
+- **New wall art.** The first-person view draws the new wall art from the new
+  art download (`new-art-pack/walls` in the repository), at four times the original resolution, in place of each
   original appearance it covers. Appearances without new art keep the
   original pieces from the player's game files.
   [#272](https://github.com/stdarg/OpenGoldBox/issues/272),

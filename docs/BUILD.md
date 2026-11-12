@@ -155,11 +155,12 @@ cmake --build build/game --target OpenGoldBox
 `win-package/` also collects development leftovers, so every build stages the
 package players get in `build/game/package/OpenGoldBox/` and zips it as
 `build/game/OpenGoldBox-<version>-windows-x86_64.zip`. It holds only the executables, the
-PCK, the DLLs, `data/`, `LICENSE.txt` and `THIRD-PARTY-NOTICES.txt`; the
+PCK, the DLLs, `data/`, `LICENSE.txt` and `THIRD-PARTY-NOTICES.txt`, and none
+of the new art, which is a separate download ([`new-art-pack`](../new-art-pack/README.md)); the
 notices for the Godot Engine and its third-party components are written by the
 Godot that built the export, so they match it. The build fails if the package
 holds any file the original game's MD5 manifest names, any `.DAX`, a
-`settings.cfg` or a `.TMP` file. Players unzip it anywhere, including a
+`settings.cfg`, a `.TMP` file or any of the new art. Players unzip it anywhere, including a
 read-only folder: settings and saves go to
 `%APPDATA%\Godot\app_userdata\OpenGold` (see
 [configuration](CONFIGURATION.md)). The package uses the debug export
@@ -242,7 +243,8 @@ configured earlier with Unix Makefiles must be deleted once
 
 This also writes two files in `build/macos-universal/`:
 
-- `OpenGoldBox-<version>-macos.dmg`, about 1.4 GB, for players: the app and a
+- `OpenGoldBox-<version>-macos.dmg`, for players: the app (about 220 MB, without
+  the new art, which is a separate download) and a
   link to Applications to drag it onto. The build opens the finished image,
   verifies the app's signature and starts it once.
 - `OpenGoldBox-<version>-macos-symbols.zip`, for you: keep it with the release.
@@ -250,7 +252,8 @@ This also writes two files in `build/macos-universal/`:
 
 Each build of the app adds `LICENSE.txt` and `THIRD-PARTY-NOTICES.txt` to its
 `Contents/Resources`, and fails if the bundle holds any file the original game's
-MD5 manifest names, any `.DAX`, a `settings.cfg` or a `.TMP` file. As on Windows,
+MD5 manifest names, any `.DAX`, a `settings.cfg`, a `.TMP` file or any of the
+new art. As on Windows,
 the app uses the debug export template, so a crash leaves a full backtrace. The
 version comes from `project()` in the top-level `CMakeLists.txt`; raise it for a
 release, since it is the only thing in a crash report that names the build.
@@ -312,7 +315,8 @@ side, with `data/` next to them.
 
 Every build also writes two files in `build/linux/`:
 
-- `OpenGoldBox-<version>-linux-x86_64.tar.gz`, about 1.4 GB, for players: an
+- `OpenGoldBox-<version>-linux-x86_64.tar.gz`, for players, without the new art,
+  which is a separate download: an
   `OpenGoldBox` folder to unpack anywhere and start with `opengoldbox.x86_64`.
   Its game library has its debug information stripped.
 - `OpenGoldBox-<version>-linux-symbols.tar.gz`, for you: the unstripped library,
@@ -321,7 +325,8 @@ Every build also writes two files in `build/linux/`:
 
 As on the other systems, the package gets `LICENSE.txt` and
 `THIRD-PARTY-NOTICES.txt`, uses the debug export template, and the build fails
-if it holds any original game file, a `settings.cfg` or a `.TMP` file.
+if it holds any original game file, a `settings.cfg`, a `.TMP` file or any of
+the new art.
 
 ##### Which Linux systems it runs on
 
@@ -402,6 +407,9 @@ It then uploads the disk image, the `.tar.gz` or the `.zip` to the draft release
 platform creates the draft at the current commit; the next one, built from the
 same commit, adds its package to it. It refuses a published release and a draft
 made from another commit, so raise the version for each release.
+
+It does not upload the new art, which is a separate download
+([`new-art-pack`](../new-art-pack/README.md)).
 
 It never publishes. A draft is visible only to people who can push to the
 repository: check its files on GitHub, write the notes, then publish it there,

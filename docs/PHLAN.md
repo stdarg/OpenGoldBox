@@ -91,7 +91,7 @@ adds (below). The arms and silver shops leave out the original's arrows and
 quarrels, as the game has no ammunition
 ([AMMO-UNLIMITED](SRD-DECISIONS.md#unlimited-ranged-ammunition--approved-exception)). The portrait files are under `new-art-pack/portraits/NPCs/`; a record may
 also name `shops/<file>`, a portrait made for the manager that it exports to
-`new-art-pack/portraits/shops/`, which the game ships. The shopkeeper fills the
+`new-art-pack/portraits/shops/`, part of the new art download. The shopkeeper fills the
 existing view window for the shop's greeting and throughout the shopping phase,
 including stock selection and purchases; leaving the shop restores the
 exploration view. Ordinary shop keys remain available while the portrait is
