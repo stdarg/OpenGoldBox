@@ -1,4 +1,5 @@
 // Fights under the original rules (docs/ORIGINAL-RULES.md, plan step 4).
+#include "opengold/creature_catalog.h"
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
 #include "test_support.h"
@@ -51,7 +52,8 @@ por::CharacterRecord kobold_record()
     record.max_hit_points = 4;
     record.base_movement = 6;
     record.base_attacks[0] = {2, {1, 4, 0}};
-    record.current_abilities.intelligence = 8;
+    record.current_abilities = {10, 8, 10, 10, 10, 10, 0};
+    record.abilities = record.current_abilities;
     return record;
 }
 
@@ -229,6 +231,102 @@ void a_saved_fight_goes_on_unchanged()
     check(play(*restored) == log, "A fight saved partway goes on as it would have");
 }
 
+// A sword's damage, Strength and magic, and armor and a shield, as the
+// original works them out for a creature (charhlp.pas, RecalcStats).
+void readied_gear_counts()
+{
+    auto record = kobold_record();
+    record.strength_bonus_flag_raw = 1;
+    record.current_abilities.strength = 18;
+    record.current_abilities.exceptional_strength = 50;
+    por::ItemTemplate sword;
+    sword.worn_location = 0;
+    sword.small_medium_damage = {1, 8, 0};
+    sword.properties = por::item_property::strength_bonus;
+    por::ItemRecord magic_sword;
+    magic_sword.type = 36;
+    magic_sword.magic_bonus = 1;
+    por::ItemTemplate chain_mail;
+    chain_mail.worn_location = 2;
+    chain_mail.protection_raw = 0x80 | 55; // Armor Class 5.
+    por::ItemRecord mail;
+    mail.weight = 300;
+    por::ItemTemplate shield_type;
+    shield_type.worn_location = 1;
+    shield_type.protection_raw = 0x80 | 1;
+    const std::vector<original::ReadiedItem> gear{
+        {magic_sword, sword}, {mail, chain_mail}, {por::ItemRecord{}, shield_type}};
+    const auto armed = original::combatant_from_record(record, gear);
+    check(armed.attacks[0].dice == 1 && armed.attacks[0].sides == 8 &&
+              armed.attacks[0].modifier == 3 + 1,
+          "A long sword +1 in the hands of Strength 18/50: 1d8 + 3 + 1");
+    check(armed.thac0 == 20 - 1 - 1, "+1 to hit for Strength, +1 for the sword's magic");
+    check(armed.armor_class == 4 && armed.rear_armor_class == 7,
+          "Chain mail and a shield: Armor Class 4, and 7 from behind without the shield");
+    // The original sets 9 in such armor even for a slower creature (charhlp.pas,
+    // ArmorMoveAdjust), so a kobold of 6 moves 9 in chain mail; put to the user.
+    check(armed.movement == 9, "Chain mail of 300 coins sets movement 9, as the original does");
+    record.base_movement = 12;
+    check(original::combatant_from_record(record, gear).movement == 9,
+          "Chain mail slows a creature of 12 to 9");
+}
+
+// Pool of Radiance's own records, when its files are here (OPENGOLD_GAME_DIR):
+// every creature fights with sensible numbers, and kobolds of the Slums fight
+// a party to the end.
+void real_records_fight()
+{
+    const char *game = std::getenv("OPENGOLD_GAME_DIR");
+    if (!game)
+    {
+        std::cout << "Pool of Radiance's files are not here; its records are not checked.\n";
+        return;
+    }
+    const auto catalog = por::CreatureCatalog::load(game);
+    original::Content content;
+    for (const auto &[id, creature] : catalog.all())
+    {
+        std::vector<original::ReadiedItem> readied;
+        for (const auto &item : creature.equipment)
+        {
+            if (item.stored.readied())
+            {
+                readied.push_back({item.stored, item.base});
+            }
+        }
+        const auto numbers = original::combatant_from_record(creature.stored, readied);
+        check(numbers.thac0 >= -20 && numbers.thac0 <= 25 && numbers.armor_class >= -20 &&
+                  numbers.armor_class <= 20 && numbers.hit_points > 0 && numbers.movement >= 0,
+              id.key() + " " + creature.stored.name + " fights with sensible numbers");
+        content.bestiary.emplace(id.key(), numbers);
+    }
+    check(content.bestiary.size() == catalog.all().size(), "Every record is in the bestiary");
+    const auto module = original::rules_module(std::move(content));
+    rules::Encounter encounter;
+    encounter.battlefield = {10, 8, std::vector<rules::Terrain>(80, rules::Terrain::open)};
+    rules::Participant member;
+    member.id = 1;
+    member.name = "Fighter";
+    member.definition = "member";
+    member.cell = {1, 3};
+    member.character_profile = module->character_profile(fighter(17, 10), {}).data;
+    encounter.participants.push_back(member);
+    for (rules::EntityId n = 0; n < 2; ++n)
+    {
+        rules::Participant kobold;
+        kobold.id = 2 + n;
+        kobold.name = "Kobold";
+        kobold.definition = "MON2CHA.DAX:0";
+        kobold.side = rules::Side::opposition;
+        kobold.cell = {8, 2 + static_cast<int>(n) * 2};
+        encounter.participants.push_back(kobold);
+    }
+    auto session = module->create(std::move(encounter), 11);
+    play(*session);
+    check(session->snapshot().outcome != rules::Outcome::ongoing,
+          "A fight with the Slums' kobolds ends");
+}
+
 } // namespace
 
 int main()
@@ -238,6 +336,8 @@ int main()
         a_combatant_survives_its_encoding();
         a_melee_fight_resolves();
         a_saved_fight_goes_on_unchanged();
+        readied_gear_counts();
+        real_records_fight();
         std::cout << "Original-rules combat passed.\n";
     }
     catch (const std::exception &error)

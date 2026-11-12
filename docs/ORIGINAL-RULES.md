@@ -184,7 +184,15 @@ gear.
    the log, and replays a fight from its seed and from a mid-fight save. A
    creature down is out of the fight and no target; the original's
    "helpless" (sleep, paralysis) comes with the effects in step 6.
-2. The real monster records, their readied weapons and their statistics.
+2. The real monster records, their readied weapons and their statistics. *Done
+   2026-11-12:* `combatant_from_record(record, readied)` works out a
+   creature's numbers as the original does at the start of every fight and
+   turn (`RecalcStats`): Strength unarmed or with a weapon that takes it, the
+   weapon's dice and magic, an elf's +1 with swords and bows, ammunition's
+   magic, the best armor, shield, ring and protective magic, Armor Class from
+   behind, and armor's weight on movement. Every one of *Pool of Radiance*'s
+   172 records fights with sensible numbers, and the Slums' kobolds fight a
+   party to the end.
 3. The rest of melee: free attacks, guarding, delaying, attacks from behind,
    backstabs, sweeps, bandaging.
 4. Missiles: rates of fire, ammunition, distance, thrown weapons.
@@ -219,3 +227,4 @@ tuned with the AI lab once the original rules play.
 | The thief skill table's Dexterity adjustments break their own order at Dexterity 10 (pick pockets −19, between −15 at 9 and −5 at 11) and 16 (open locks −5, between 0 at 15 and +10 at 17) (`gdconsts.pas`, `dexAdj`) | Corrected to −10 and +5 (the user, 2026-11-12) |
 | A thief's chance is kept in a byte, so a Dexterity penalty above it wraps around: a level 1 thief of Dexterity 9 moves silently 251% of the time (`classcal.pas`, the thief skills) | Stops at 0 |
 | A hit's damage is added up in a byte, so dice plus a negative modifier below zero wrap around to more than 250 damage (`cbtacts.pas`, `CalcWeaponDamage`) | Counts as 0 damage (the user, 2026-11-12) |
+| Armor of 151 to 399 coins sets movement to 9, and heavier armor to 6, whatever the creature's own movement, so a creature slower than that moves faster in armor (`charhlp.pas`, `ArmorMoveAdjust`) | Put to the user |
