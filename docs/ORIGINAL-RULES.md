@@ -175,7 +175,15 @@ gear.
    costs (`StepCosts`).
 1. A melee fight between original-rules characters and a monster record
    resolves: initiative, turns, movement, to-hit, damage, unconscious, dying
-   and death, the result, saving and restoring mid-fight.
+   and death, the result, saving and restoring mid-fight. *Done
+   2026-11-12:* `original::rules_module()` (`original_combat.h`) runs a fight
+   behind the game's rules interface; a character fights unarmed as the
+   original's characters start (1d2 with Strength), a monster with its
+   record's numbers (`combatant_from_record`). `opengold_original_combat_tests`
+   plays two fighters against three kobolds, checks every Hit Point against
+   the log, and replays a fight from its seed and from a mid-fight save. A
+   creature down is out of the fight and no target; the original's
+   "helpless" (sleep, paralysis) comes with the effects in step 6.
 2. The real monster records, their readied weapons and their statistics.
 3. The rest of melee: free attacks, guarding, delaying, attacks from behind,
    backstabs, sweeps, bandaging.

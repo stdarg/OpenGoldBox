@@ -123,9 +123,13 @@ target_link_libraries(opengold_rules_srd5 PUBLIC opengold_rules)
 add_library(opengold_rules_original STATIC
     src/OpenGold.Rules.Original/src/original_rules.cpp
     src/OpenGold.Rules.Original/src/character_rules.cpp
+    src/OpenGold.Rules.Original/src/combatant.cpp
+    src/OpenGold.Rules.Original/src/combat_session.cpp
+    src/OpenGold.Rules.Original/src/rules_module.cpp
 )
 target_include_directories(opengold_rules_original PUBLIC src/OpenGold.Rules.Original/include)
-target_link_libraries(opengold_rules_original PUBLIC opengold_rules)
+# The original's monster records come decoded from the Formats library.
+target_link_libraries(opengold_rules_original PUBLIC opengold_rules opengold_formats)
 
 add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/formats.cpp
@@ -230,6 +234,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_original_rules_tests tests/original_rules_tests.cpp)
     target_link_libraries(opengold_original_rules_tests PRIVATE opengold_rules_original)
     add_test(NAME opengold_original_rules_tests COMMAND opengold_original_rules_tests)
+    add_executable(opengold_original_combat_tests tests/original_combat_tests.cpp)
+    target_link_libraries(opengold_original_combat_tests PRIVATE opengold_rules_original)
+    add_test(NAME opengold_original_combat_tests COMMAND opengold_original_combat_tests)
 
     add_executable(opengold_gold_box_games_tests tests/gold_box_games_tests.cpp)
     target_link_libraries(opengold_gold_box_games_tests PRIVATE opengold_core opengold_rules_srd5)
