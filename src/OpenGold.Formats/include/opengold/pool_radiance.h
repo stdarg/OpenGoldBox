@@ -122,13 +122,33 @@ struct ItemRecord
     }
 };
 
+// The property bits of an item type (ItemTemplate::properties).
+namespace item_property
+{
+inline constexpr std::uint8_t fires_arrows = 0x01;
+// Dexterity's missile bonus adds to its to-hit roll.
+inline constexpr std::uint8_t dexterity_missile = 0x02;
+// Strength's bonuses add to its to-hit roll and damage.
+inline constexpr std::uint8_t strength_bonus = 0x04;
+inline constexpr std::uint8_t fires_ammunition = 0x08;
+inline constexpr std::uint8_t thrown = 0x10;
+inline constexpr std::uint8_t fires_quarrels = 0x80;
+} // namespace item_property
+
 struct ItemTemplate
 {
     std::array<std::uint8_t, 16> raw{};
     std::uint8_t worn_location{}, hands{}, rate_of_fire{}, protection_raw{}, damage_type{},
         melee_flag{};
     DamageDice large_damage, small_medium_damage;
-    std::uint8_t range{}, class_restrictions{}, ammunition_type{};
+    std::uint8_t range{}, class_restrictions{};
+    // The weapon's property bits (ItemProperty), byte 14 of the original's item types.
+    std::uint8_t properties{};
+
+    [[nodiscard]] bool has(std::uint8_t property) const noexcept
+    {
+        return (properties & property) != 0;
+    }
 };
 
 struct EffectRecord

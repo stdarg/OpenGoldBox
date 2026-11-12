@@ -756,4 +756,126 @@ std::array<int, 3> spell_slots(ClassSlot slot, int level, int wisdom)
     }
     return slots;
 }
+
+int strength_scale(int strength, int exceptional_strength) noexcept
+{
+    if (strength < 18)
+    {
+        return std::max(strength, 0);
+    }
+    if (strength > 18)
+    {
+        return std::min(strength, 25) + 5;
+    }
+    if (exceptional_strength <= 0)
+    {
+        return 18;
+    }
+    if (exceptional_strength <= 50)
+    {
+        return 19;
+    }
+    if (exceptional_strength <= 75)
+    {
+        return 20;
+    }
+    if (exceptional_strength <= 90)
+    {
+        return 21;
+    }
+    return exceptional_strength <= 99 ? 22 : 23;
+}
+
+int strength_to_hit_bonus(int strength, int exceptional_strength) noexcept
+{
+    const auto scale = strength_scale(strength, exceptional_strength);
+    if (scale < 1)
+    {
+        return 0;
+    }
+    if (scale <= 3)
+    {
+        return -3;
+    }
+    if (scale <= 5)
+    {
+        return -2;
+    }
+    if (scale <= 7)
+    {
+        return -1;
+    }
+    if (scale <= 16)
+    {
+        return 0;
+    }
+    if (scale <= 19)
+    {
+        return 1;
+    }
+    if (scale <= 22)
+    {
+        return 2;
+    }
+    if (scale <= 25)
+    {
+        return 3;
+    }
+    return scale <= 27 ? 4 : scale - 23;
+}
+
+int strength_damage_bonus(int strength, int exceptional_strength) noexcept
+{
+    const auto scale = strength_scale(strength, exceptional_strength);
+    if (scale < 1)
+    {
+        return 0;
+    }
+    if (scale <= 2)
+    {
+        return -2;
+    }
+    if (scale <= 5)
+    {
+        return -1;
+    }
+    if (scale <= 15)
+    {
+        return 0;
+    }
+    if (scale <= 19)
+    {
+        return scale == 16 ? 1 : scale - 16;
+    }
+    return scale <= 29 ? scale - 17 : 14;
+}
+
+int armored_movement(int movement, int armor_weight, bool magic_armor) noexcept
+{
+    int moved = armor_weight <= 150 ? movement : armor_weight <= 399 ? 9 : 6;
+    if (magic_armor && moved <= 9)
+    {
+        moved += 3;
+    }
+    return moved;
+}
+
+int attacks_this_round(int rate_per_two_rounds, int round) noexcept
+{
+    return (rate_per_two_rounds + (round % 2 != 0 ? 1 : 0)) / 2;
+}
+
+bool attack_hits(int natural_roll, int thac0, int armor_class, int modifier) noexcept
+{
+    if (natural_roll <= 1)
+    {
+        return false;
+    }
+    return natural_roll >= 20 || natural_roll + modifier >= thac0 - armor_class;
+}
+
+int hit_damage(int dice_total, int modifier) noexcept
+{
+    return std::max(dice_total + modifier, 0);
+}
 } // namespace opengold::original

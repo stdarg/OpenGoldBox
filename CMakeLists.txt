@@ -101,7 +101,8 @@ if(OPENGOLD_BUILD_FUZZERS)
     add_link_options(-fsanitize=address,undefined)
 endif()
 
-add_library(opengold_rules STATIC src/OpenGold.Rules/src/rules.cpp src/OpenGold.Rules/src/character_rules.cpp)
+add_library(opengold_rules STATIC src/OpenGold.Rules/src/rules.cpp src/OpenGold.Rules/src/character_rules.cpp
+    src/OpenGold.Rules/src/movement_grid.cpp)
 target_include_directories(opengold_rules PUBLIC src/OpenGold.Rules/include)
 add_library(opengold_rules_srd5 STATIC
     src/OpenGold.Rules.Srd5/src/srd5.cpp
@@ -112,7 +113,6 @@ add_library(opengold_rules_srd5 STATIC
     src/OpenGold.Rules.Srd5/src/training.cpp
     src/OpenGold.Rules.Srd5/src/spell_access.cpp
     src/OpenGold.Rules.Srd5/src/sheet_details.cpp
-    src/OpenGold.Rules.Srd5/src/combat_grid.cpp
     src/OpenGold.Rules.Srd5/src/status_effects.cpp
     src/OpenGold.Rules.Srd5/src/life_cycle.cpp
     src/OpenGold.Rules.Srd5/src/damage.cpp

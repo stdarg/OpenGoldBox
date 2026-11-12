@@ -13,6 +13,7 @@
 #include "opengold/formats.h"
 #include "opengold/game_census.h"
 #include "opengold/magic_item_catalog.h"
+#include "opengold/pool_radiance.h"
 #include "opengold/sound_bank.h"
 #include "opengold/srd5.h"
 #include "test_support.h"
@@ -21,6 +22,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <set>
 #include <string>
 #include <vector>
@@ -380,6 +382,29 @@ void curse_opening_reaches_the_first_map()
           "The innkeeper speaks: " + diagnostics());
 }
 
+// An item type's property bits, byte 14 of ITEMS, as Pool of Radiance's own
+// files hold them (OPENGOLD_GAME_DIR).
+void item_types_carry_their_properties()
+{
+    const char *game = std::getenv("OPENGOLD_GAME_DIR");
+    if (!game)
+    {
+        return;
+    }
+    std::ifstream file(std::filesystem::path(game) / "ITEMS", std::ios::binary);
+    const std::vector<std::uint8_t> bytes(std::istreambuf_iterator<char>(file), {});
+    const auto types = opengold::por::decode_item_templates(bytes);
+    check(types.has_value() && types->size() > 36, "ITEMS decodes");
+    namespace bit = opengold::por::item_property;
+    const auto &quarrels = (*types)[28], &long_sword = (*types)[36], &darts = (*types)[9];
+    check(quarrels.has(bit::fires_quarrels) && quarrels.has(bit::fires_ammunition) &&
+              quarrels.has(bit::dexterity_missile),
+          "Quarrels: fired, as ammunition, with Dexterity");
+    check(long_sword.has(bit::strength_bonus) && !long_sword.has(bit::thrown),
+          "A long sword takes Strength");
+    check(darts.has(bit::thrown) && darts.rate_of_fire == 6, "Darts are thrown, three a round");
+}
+
 // A save names its game; a save made before format 48 is Pool of Radiance's.
 void a_save_names_its_game()
 {
@@ -422,6 +447,7 @@ int main()
         engine_routines_are_the_games();
         the_loaders_read_curse();
         a_save_names_its_game();
+        item_types_carry_their_properties();
         curse_opening_reaches_the_first_map();
         the_font_has_eight_bytes_a_glyph();
         std::cout << "Gold Box games passed.\n";

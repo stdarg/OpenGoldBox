@@ -1,13 +1,12 @@
-#include "combat_grid.h"
+#include "opengold/movement_grid.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <queue>
 #include <stdexcept>
 
-namespace opengold::srd5::detail
+namespace opengold::rules
 {
-using namespace rules;
 
 namespace
 {
@@ -31,14 +30,19 @@ void validate_battlefield(const Battlefield &board)
 
 MovementGrid::MovementGrid(const Battlefield &board, Cell origin,
                            std::span<const Occupant> occupants, bool crawling, bool flying,
-                           bool incorporeal, Footprint footprint)
+                           bool incorporeal, Footprint footprint, StepCosts costs)
     : board_(board), origin_(origin), crawling_(crawling), flying_(flying),
-      incorporeal_(incorporeal), footprint_(footprint)
+      incorporeal_(incorporeal), footprint_(footprint), costs_(costs)
 {
     validate_battlefield(board_);
     if (footprint_.width < 1 || footprint_.height < 1 || board_.at(origin_) == Terrain::obstacle)
     {
         throw std::runtime_error("Invalid movement origin");
+    }
+    if (costs_.straight < 1 || costs_.diagonal < 1 || costs_.difficult_factor < 1 ||
+        costs_.overgrown_factor < 1 || costs_.crawling_extra < 0)
+    {
+        throw std::runtime_error("Invalid step costs");
     }
     occupancy_.resize(board_.terrain.size(), Occupancy::empty);
     held_.resize(board_.terrain.size());
@@ -147,8 +151,11 @@ std::optional<int> MovementGrid::square_step_cost(Cell from, Cell to) const
     const bool difficult = (!flying_ && ground == Terrain::difficult) ||
                            occupant == Occupancy::incapacitated_enemy ||
                            ground == Terrain::obstacle;
-    return (!flying_ && ground == Terrain::overgrown ? 20 : difficult ? 10 : 5) +
-           (crawling_ ? 5 : 0);
+    const int base = dx && dy ? costs_.diagonal : costs_.straight;
+    const int factor = !flying_ && ground == Terrain::overgrown ? costs_.overgrown_factor
+                       : difficult                              ? costs_.difficult_factor
+                                                                : 1;
+    return base * factor + (crawling_ ? costs_.crawling_extra : 0);
 }
 
 ReachableCells MovementGrid::reachable(int budget) const
@@ -172,7 +179,7 @@ ReachableCells MovementGrid::reachable(int budget) const
     }
 
     // Dijkstra: the cheapest queued cell is final when removed. Every edge
-    // costs at least 5, so a route through a more expensive cell cannot improve it.
+    // costs more than 0, so a route through a more expensive cell cannot improve it.
     // Equal costs use the row-major cell index, preserving deterministic paths
     // (and therefore which opportunity attacks occur along those paths).
     using QueueItem = std::pair<int, int>;
@@ -242,4 +249,4 @@ std::vector<Cell> ReachableCells::path_to(Cell destination) const
     std::reverse(path.begin(), path.end());
     return path;
 }
-} // namespace opengold::srd5::detail
+} // namespace opengold::rules

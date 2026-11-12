@@ -226,6 +226,11 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   out AD&D's +1 Constitution for young adults. Off and AD&D depart from it:
   Off ignores age, and AD&D adds that Constitution and changes the scores again
   as a character grows older, also with the game's years.
+- **Damage below zero** (the user, 2026-11-12). The original adds a hit's
+  dice and its modifier in a byte, so a total below zero (a 1d4−2 attack
+  rolling 1) wraps around to more than 250 damage and kills anything; its own
+  check for damage below zero can never succeed. OpenGoldBox counts such a hit
+  as 0 damage.
 
 ## Party and parley
 

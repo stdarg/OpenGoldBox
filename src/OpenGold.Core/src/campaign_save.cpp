@@ -373,7 +373,7 @@ template <bool Reading> struct SaveCodec
     {
         fields(v.raw, v.worn_location, v.hands, v.rate_of_fire, v.protection_raw, v.damage_type,
                v.melee_flag, v.large_damage, v.small_medium_damage, v.range, v.class_restrictions,
-               v.ammunition_type);
+               v.properties);
     }
 
     void field(Visited<por::EquipmentBonuses> v)

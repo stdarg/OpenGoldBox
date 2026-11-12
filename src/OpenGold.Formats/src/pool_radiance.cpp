@@ -253,7 +253,7 @@ std::optional<std::vector<ItemTemplate>> decode_item_templates(std::span<const s
         item.small_medium_damage = damage(b, 9);
         item.range = b[12];
         item.class_restrictions = b[13];
-        item.ammunition_type = b[14];
+        item.properties = b[14];
         result.push_back(item);
     }
     return result;

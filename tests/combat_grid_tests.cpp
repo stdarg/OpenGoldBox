@@ -259,6 +259,30 @@ void allied_transit()
 // A creature filling two squares one above the other (FOOT-1) moves both
 // together: every square must be open, the dearest square sets the cost, and
 // it stops only where both squares are free.
+// The original rules count half-moves: 2 a straight step and 3 a diagonal
+// one, times the ground's cost (docs/ORIGINAL-RULES.md).
+void original_step_costs()
+{
+    Battlefield board{5, 5, std::vector<Terrain>(25, Terrain::open)};
+    board.terrain[2 * 5 + 2] = Terrain::difficult;
+    const StepCosts half_moves{2, 3, 2, 4, 0};
+    const MovementGrid grid(board, {0, 0}, {}, false, false, false, {}, half_moves);
+    const auto reach = grid.reachable(12);
+    check(reach.cost_to({1, 0}) == 2 && reach.cost_to({1, 1}) == 3,
+          "A straight step costs 2 and a diagonal 3");
+    check(reach.cost_to({3, 3}) == 10,
+          "Around the difficult square: two diagonal and two straight steps");
+    check(reach.cost_to({2, 2}) == 3 + 6, "Difficult ground doubles the step into it");
+    check(!reach.cost_to({4, 4}), "Twelve half-moves do not reach the far corner");
+    rejects(
+        [&]
+        {
+            static_cast<void>(
+                MovementGrid(board, {0, 0}, {}, false, false, false, {}, {0, 3, 2, 4, 0}));
+        },
+        "A step must cost something");
+}
+
 void tall_footprint()
 {
     Battlefield board{5, 5, std::vector<Terrain>(25, Terrain::open)};
@@ -382,6 +406,7 @@ int main()
     {
         allied_transit();
         tall_footprint();
+        original_step_costs();
         boundaries_and_ties();
         exhaustive_movement();
         exhaustive_sight();

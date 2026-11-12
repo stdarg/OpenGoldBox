@@ -245,5 +245,29 @@ enum class ThiefSkill : unsigned
 // Spell slots of levels 1 to 3 for a cleric or magic-user level, with the
 // cleric's Wisdom bonus; zeros for other classes.
 [[nodiscard]] std::array<int, 3> spell_slots(ClassSlot slot, int level, int wisdom);
+
+// Combat (docs/ORIGINAL-RULES.md, plan step 4).
+
+// Strength on the original's 0 to 30 scale its tables use: up to 17 as it is,
+// 18 by its exceptional percentage as 18 (none) to 23 (18/00), and 19 to 25
+// as 24 to 30.
+[[nodiscard]] int strength_scale(int strength, int exceptional_strength) noexcept;
+// What Strength adds to a weapon's to-hit roll and damage, for a weapon that
+// takes Strength.
+[[nodiscard]] int strength_to_hit_bonus(int strength, int exceptional_strength) noexcept;
+[[nodiscard]] int strength_damage_bonus(int strength, int exceptional_strength) noexcept;
+// A creature's movement in body armor weighing this many coins: its own up
+// to 150, 9 to 399 and 6 above; magic armor adds 3 to a movement of 9 or less.
+[[nodiscard]] int armored_movement(int movement, int armor_weight, bool magic_armor) noexcept;
+// The attacks a rate per two rounds gives this round: an odd round, as the
+// original counts them, rounds a half attack up and an even round down.
+[[nodiscard]] int attacks_this_round(int rate_per_two_rounds, int round) noexcept;
+// Whether a d20 roll hits: 1 always misses, 20 always hits, and otherwise the
+// roll with its modifier must reach THAC0 minus the target's Armor Class.
+[[nodiscard]] bool attack_hits(int natural_roll, int thac0, int armor_class, int modifier) noexcept;
+// A hit's damage from its dice and modifier. The original summed them in a
+// byte, so a total below zero wrapped to more than 250; it is 0 here
+// (docs/DEVIATIONS.md, the user, 2026-11-12).
+[[nodiscard]] int hit_damage(int dice_total, int modifier) noexcept;
 } // namespace opengold::original
 #endif

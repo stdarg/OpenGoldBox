@@ -169,7 +169,10 @@ gear.
 
 0. Groundwork: Strength's to-hit and damage, armor movement, attack rates and
    the to-hit rule in the tables; the original's item types; the movement grid
-   shared, with the original's step costs.
+   shared, with the original's step costs. *Done 2026-11-12:* the tables in
+   `original_rules.h`, the item types' property bits
+   (`ItemTemplate::properties`), and `opengold/movement_grid.h` with its step
+   costs (`StepCosts`).
 1. A melee fight between original-rules characters and a monster record
    resolves: initiative, turns, movement, to-hit, damage, unconscious, dying
    and death, the result, saving and restoring mid-fight.
@@ -207,3 +210,4 @@ tuned with the AI lab once the original rules play.
 | Age gives no young adult the +1 Constitution of AD&D's table, which every older age group keeps (`chargen.pas`, the ability roll). The other changes match AD&D's table added up | The Aging setting: As the original keeps it, AD&D adds it (the user, 2026-11-12) |
 | The thief skill table's Dexterity adjustments break their own order at Dexterity 10 (pick pockets −19, between −15 at 9 and −5 at 11) and 16 (open locks −5, between 0 at 15 and +10 at 17) (`gdconsts.pas`, `dexAdj`) | Corrected to −10 and +5 (the user, 2026-11-12) |
 | A thief's chance is kept in a byte, so a Dexterity penalty above it wraps around: a level 1 thief of Dexterity 9 moves silently 251% of the time (`classcal.pas`, the thief skills) | Stops at 0 |
+| A hit's damage is added up in a byte, so dice plus a negative modifier below zero wrap around to more than 250 damage (`cbtacts.pas`, `CalcWeaponDamage`) | Counts as 0 damage (the user, 2026-11-12) |

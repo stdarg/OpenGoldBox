@@ -483,6 +483,43 @@ void creation_behind_the_rules_interface()
 }
 } // namespace
 
+// Combat's tables (docs/ORIGINAL-RULES.md, plan step 4), from the original's.
+void combat_tables()
+{
+    check(strength_scale(17, 0) == 17 && strength_scale(18, 0) == 18 &&
+              strength_scale(18, 50) == 19 && strength_scale(18, 51) == 20 &&
+              strength_scale(18, 90) == 21 && strength_scale(18, 99) == 22 &&
+              strength_scale(18, 100) == 23 && strength_scale(19, 0) == 24 &&
+              strength_scale(25, 0) == 30,
+          "Strength's scale");
+    check(strength_to_hit_bonus(3, 0) == -3 && strength_to_hit_bonus(7, 0) == -1 &&
+              strength_to_hit_bonus(16, 0) == 0 && strength_to_hit_bonus(17, 0) == 1 &&
+              strength_to_hit_bonus(18, 50) == 1 && strength_to_hit_bonus(18, 51) == 2 &&
+              strength_to_hit_bonus(18, 100) == 3 && strength_to_hit_bonus(21, 0) == 4 &&
+              strength_to_hit_bonus(25, 0) == 7,
+          "Strength's to-hit bonus");
+    check(strength_damage_bonus(2, 0) == -2 && strength_damage_bonus(5, 0) == -1 &&
+              strength_damage_bonus(15, 0) == 0 && strength_damage_bonus(16, 0) == 1 &&
+              strength_damage_bonus(17, 0) == 1 && strength_damage_bonus(18, 0) == 2 &&
+              strength_damage_bonus(18, 50) == 3 && strength_damage_bonus(18, 75) == 3 &&
+              strength_damage_bonus(18, 90) == 4 && strength_damage_bonus(18, 100) == 6 &&
+              strength_damage_bonus(19, 0) == 7 && strength_damage_bonus(25, 0) == 14,
+          "Strength's damage bonus");
+    check(armored_movement(12, 150, false) == 12 && armored_movement(12, 151, false) == 9 &&
+              armored_movement(12, 400, false) == 6 && armored_movement(12, 400, true) == 9 &&
+              armored_movement(12, 300, true) == 12 && armored_movement(12, 100, true) == 12,
+          "Movement in armor");
+    check(attacks_this_round(3, 1) == 2 && attacks_this_round(3, 2) == 1 &&
+              attacks_this_round(2, 1) == 1 && attacks_this_round(2, 2) == 1,
+          "Three attacks in two rounds: two, then one");
+    check(!attack_hits(1, 2, 10, 20) && attack_hits(20, 30, -10, -20),
+          "A natural 1 misses and a natural 20 hits");
+    check(attack_hits(15, 20, 5, 0) && !attack_hits(14, 20, 5, 0) && attack_hits(14, 20, 5, 1),
+          "THAC0 20 against Armor Class 5 needs 15, or 14 with a +1");
+    check(hit_damage(1, -2) == 0 && hit_damage(4, -2) == 2,
+          "Damage below zero is none (the original wrapped it past 250)");
+}
+
 int main()
 {
     try
@@ -500,6 +537,7 @@ int main()
         dexterity_bonuses();
         constitution_and_age();
         creation_behind_the_rules_interface();
+        combat_tables();
         std::cout << "Original rules passed.\n";
     }
     catch (const std::exception &error)
