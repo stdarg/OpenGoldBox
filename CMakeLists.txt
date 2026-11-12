@@ -120,6 +120,9 @@ add_library(opengold_rules_srd5 STATIC
 )
 target_include_directories(opengold_rules_srd5 PUBLIC src/OpenGold.Rules.Srd5/include)
 target_link_libraries(opengold_rules_srd5 PUBLIC opengold_rules)
+add_library(opengold_rules_original STATIC src/OpenGold.Rules.Original/src/original_rules.cpp)
+target_include_directories(opengold_rules_original PUBLIC src/OpenGold.Rules.Original/include)
+target_link_libraries(opengold_rules_original PUBLIC opengold_rules)
 
 add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/formats.cpp
@@ -215,6 +218,10 @@ if(OPENGOLD_BUILD_TESTS)
     enable_testing()
     add_test(NAME opengold_fuzz_smoke_tests COMMAND opengold_fuzz_smoke_tests)
     set_tests_properties(opengold_fuzz_smoke_tests PROPERTIES TIMEOUT 60 LABELS "fuzz;native")
+    add_executable(opengold_original_rules_tests tests/original_rules_tests.cpp)
+    target_link_libraries(opengold_original_rules_tests PRIVATE opengold_rules_original)
+    add_test(NAME opengold_original_rules_tests COMMAND opengold_original_rules_tests)
+
     add_executable(opengold_concentration_tests tests/concentration_tests.cpp)
     target_include_directories(opengold_concentration_tests PRIVATE src/OpenGold.Rules.Srd5/src)
     target_link_libraries(opengold_concentration_tests PRIVATE opengold_rules_srd5)
