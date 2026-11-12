@@ -2,7 +2,7 @@
 
 OpenGoldBox plays by the original *Pool of Radiance* rules by default: AD&D 1st
 edition as the game applied them. The SRD 5.2.1 rules (see [RULES.md](RULES.md))
-are an option, and the player can switch between the two at any time. This page
+are an option, chosen when a new game begins. This page
 records the decisions and the plan. It grows as each part is built.
 
 The reference for the original rules is the reconstructed source of
@@ -14,8 +14,7 @@ and writes its own code and text. It never copies the source.
 
 The user decided these on 2026-11-11 and 2026-11-12:
 
-- **The original rules are the default.** The SRD rules are a game option, and
-  the player can switch at any time.
+- **The original rules are the default.** The SRD rules are an option.
 - **The difficulty levels keep their names** (Easy, Normal, Hard, Nightmare,
   Infernal), but each set of rules has its own effects for them. The balance
   settings built so far (DIFF-2's table, `encounter_challenge`, the `[monsters]`
@@ -23,37 +22,17 @@ The user decided these on 2026-11-11 and 2026-11-12:
   designed from the original game; see [Difficulty](#difficulty).
 - **Obvious bugs in the original are fixed, not kept.** Each one is put to the
   user for direction and then recorded in [DEVIATIONS.md](DEVIATIONS.md).
-- **Every character has two builds.**
-  - **The shared core, used under both sets of rules:** name, portrait,
-    gender, alignment, the ability scores as rolled, experience, money, carried
-    items, wounds (as a share of maximum Hit Points), and whether the character
-    is alive, unconscious or dead.
-  - **A build for each set of rules:** classes, level-up choices, spells and
-    Hit Point rolls. A build is made automatically the first time a character
-    meets those rules, and then kept. Switching back and forth loses nothing.
-  - **Level:** each build's level comes from the shared experience under its
-    own rules' table.
-- **Classes across the rules** follow the mapping the original scripts already
-  use (`ecl_party_host.cpp`):
-
-  | SRD class | Original class |
-  |---|---|
-  | Barbarian, Paladin, Ranger | Fighter |
-  | Druid, Monk | Cleric |
-  | Sorcerer, Warlock | Magic-User |
-  | Bard | Thief |
-
-  - **Going back:** a Magic-User's SRD build is a Wizard and a Thief's a Rogue.
-  - **SRD multiclass:** becomes the original's multi-class when the race
-    allows it.
-  - **Race limits:** when the original does not allow the race that class, the
-    character keeps its race and takes the nearest class the race allows.
-- **Every race is kept under both sets of rules,** with its benefits adapted.
-  - **Under the original rules:** the SRD's Dragonborn, Goliath, Orc and
-    Tiefling become races.
-  - **Under the SRD:** the original's Half-Elf becomes a species.
-  - **Approval:** each adaptation is a new rule, so its numbers are put to the
-    user before it is built.
+- **The rules are chosen for each game** (2026-11-12): a new game's first
+  question is which rules it plays by, and the choice is kept for that save.
+  The player does not switch mid-game. A character belongs to its game's rules,
+  and the Character Pool offers only characters made under the same rules.
+  The choice stays hidden, with the SRD rules in effect, until the original
+  rules can play a fight.
+- **Races:** the original rules offer only the original's six races.
+- **Until the original rules' difficulty levels are built** (step 7), every
+  level plays the original as it was. The Options screen shows
+  `encounter_challenge` and the `[monsters]` ability switches only under the
+  SRD rules.
 - **Dexterity above 18 is worth more in a fight** (2026-11-12): each step of
   its Armor Class and missile bonuses comes two points sooner than in the
   original, so an elf's natural 19 beats 18. Every departure from the original
@@ -119,12 +98,13 @@ lines in all:
    (`src/OpenGold.Rules.Original`) with tests: the tables, creation,
    THAC0, saving throws, levels and spell slots.
 2. **Choosing the rules.**
-   - A `rules` setting and the Options screen's choice.
+   - The new game's first question: the rules, then (under the original
+     rules) the Aging setting.
    - The game's direct calls to the SRD module replaced by the selected rules.
-   - The two builds, in the party and in saves.
+   - Each save keeping its rules, and the Character Pool keeping each
+     character to its rules.
    - The difficulty settings split per set of rules.
-3. **Character creation, the sheet and level-ups** under the original rules,
-   and the adapted races.
+3. **Character creation, the sheet and level-ups** under the original rules.
 4. **Combat** under the original rules, with the original monsters' own
    statistics.
 5. **Magic:** spells, memorizing, scribing and resting.

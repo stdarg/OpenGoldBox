@@ -15,8 +15,8 @@ Add an entry whenever a new departure is decided.
   a replaceable rules library. Campaign scripts and encounter identities and
   counts are kept through conversion adapters.
   [PRD §1](PRD.md#1-product-summary), [RULES.md](RULES.md). Since 2026-11-11
-  the SRD rules are an option: the original rules are the default, the player
-  can switch at any time, and every character keeps a build for each
+  the SRD rules are an option: the original rules are the default, and a new
+  game's first question is which rules it plays by
   ([ORIGINAL-RULES.md](ORIGINAL-RULES.md), being built). Departures within the
   original rules are listed under [The original rules](#the-original-rules).
 - **Battle squares** (2026-10-15). In the original a combat square is 10

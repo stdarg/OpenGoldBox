@@ -7852,6 +7852,10 @@ void write_town_service_fixtures(const std::filesystem::path &directory,
         const auto name = kind + "-" + std::to_string(x) + "-" + std::to_string(y) +
                           (who.empty() ? std::string{} : "-" + who) + ".ogs";
         write_campaign_file(folder / name, encode_campaign(*party, &town, assets));
+        // The same place saved before characters chose original portraits, for
+        // the town check's older save (format 45).
+        write_campaign_file(folder / (name + ".format45"),
+                            encode_campaign_in_format(*party, &town, assets, 45));
     };
     auto probe = create_party(directory);
     for (unsigned y = 0; y < 16; ++y)

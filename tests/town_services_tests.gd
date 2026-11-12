@@ -148,16 +148,12 @@ func slot_path(slot: String) -> String:
 	return ProjectSettings.globalize_path("user://saves/" + slot.to_utf8_buffer().hex_encode() + ".ogs")
 
 # Loads a fixture as a player does: Party, Load, its slot, Explore.
-# `saved_as` names another slot, written with the campaign format `format`.
-func load_fixture(file: String, saved_as := "", format := 0) -> bool:
+# `saved_as` names another slot.
+func load_fixture(file: String, saved_as := "") -> bool:
 	var slot := file.get_basename() if saved_as.is_empty() else saved_as
 	var path := slot_path(slot)
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	var bytes := FileAccess.get_file_as_bytes(fixtures.path_join(file))
-	if format > 0:
-		# The checksum covers the body only, so the header names any format.
-		var text := bytes.get_string_from_utf8()
-		bytes = ("OPENGOLD-CAMPAIGN " + str(format) + text.substr(text.find("\n"))).to_utf8_buffer()
 	var out := FileAccess.open(path, FileAccess.WRITE)
 	out.store_buffer(bytes)
 	out.close()
@@ -381,8 +377,10 @@ func check_saves_before_portraits(file: String) -> void:
 	option.select(1)
 	option.item_selected.emit(1)
 	var shown := {}
-	for format in [46, 45]:
-		if not await load_fixture(file, "portraits-" + str(format), format):
+	# The expedition test writes each place also as format 45, beside it.
+	for format in [0, 45]:
+		var source := file if format == 0 else file + ".format45"
+		if not await load_fixture(source, "portraits-" + str(format)):
 			return
 		var names := []
 		for slot in range(8):
@@ -392,9 +390,9 @@ func check_saves_before_portraits(file: String) -> void:
 	option = town().get_parent().get_node("GameMenu/Options/Interface/PortraitArt")
 	option.select(0)
 	option.item_selected.emit(0)
-	var defaults: Array = shown[46].filter(func(n): return n == "original-head-1-body-1")
+	var defaults: Array = shown[0].filter(func(n): return n == "original-head-1-body-1")
 	if defaults.is_empty():
-		bug("the portrait check's save has no member on the default head and body", str(shown[46]))
+		bug("the portrait check's save has no member on the default head and body", str(shown[0]))
 	elif shown[45].all(func(n): return n == "original-head-1-body-1"):
 		bug("a save from before original portraits keeps the default head and body", str(shown[45]))
 
