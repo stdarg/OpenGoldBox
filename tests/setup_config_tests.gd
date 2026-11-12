@@ -35,6 +35,14 @@ func read_config() -> ConfigFile:
 	config.load(CONFIG)
 	return config
 
+# The startup menu after the language: its Pool of Radiance button, or the
+# named game's (the user's design, 2026-11-12).
+func pick_game(folder := "POOLRAD") -> void:
+	var menu: Window = current_scene.get_node("GameMenu")
+	require(menu.visible and menu.exclusive, "The startup menu must offer the games")
+	menu.get_node("Buttons/Games/" + folder).pressed.emit()
+	await settle()
+
 func run_checks() -> void:
 	require(not real_path.is_empty(), "Set OPENGOLD_GAME_DIR to the local reference installation for this test")
 	OS.unset_environment("OPENGOLD_LANG")
@@ -78,9 +86,13 @@ func run_checks() -> void:
 			require(FileAccess.get_file_as_string(CONFIG) == original, "Reset erased saved choices before confirmation")
 			require(TranslationServer.get_locale() == "en", "Reset language did not supersede environment override")
 		await choose_spanish(language, true)
+		await pick_game()
 		require(path_dialog.visible and path_dialog.get_node("Continue").text == "Continuar", "Folder dialog did not use the confirmed language")
 		require(path_dialog.get_node("Title").text == TranslationServer.translate("Pool of Radiance game files"), "Folder heading was translated before confirmation")
 		original = FileAccess.get_file_as_string(CONFIG)
+	if scenario in ["valid", "override", "missing-path", "cancel-path", "mismatch", "missing-file", "warning-quit"]:
+		require(not language.visible, "A saved language must not be asked again")
+		await pick_game()
 	if scenario in ["valid", "override"]:
 		require(not path_dialog.visible and not language.visible, "Complete config should skip setup")
 		require(current_scene.get_node("ImageFit/Image/Text").texture != null, "Splash did not start")
@@ -96,7 +108,9 @@ func run_checks() -> void:
 			await settle()
 			require(false, "Cancel did not exit")
 			return
-		await choose_spanish(language)
+		await choose_spanish(language, true)
+		await pick_game()
+		require(current_scene.get_node("ImageFit/Image/Text").texture.resource_path.ends_with("OpenGoldBoxEngineLettering.es.png"), "Confirmation skipped first Spanish splash")
 	else:
 		require(path_dialog.visible and not language.visible, "Expected folder setup after language was resolved")
 		await capture(path_dialog, "game-path-" + scenario)

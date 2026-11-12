@@ -195,7 +195,13 @@ In small steps, each with its check:
    and `opengold_gold_box_games_tests` plays its opening on the real files.
    7. A folder for each game in the settings; New Game asks for the game;
       the title pictures; the exploration screen, area names and saves by
-      game.
+      game. *Started 2026-11-12, to the user's design:* startup shows a
+      title picture (a placeholder), the language dialog, then a menu with
+      Options, a button for each game and Exit to desktop. Choosing *Curse*
+      asks for its folder, and the exploration screen plays *Curse*'s
+      campaign, its first map named Tilverton (`opengold_godot_startup_menu`
+      checks it on screen). Still to come: the title pictures of each game,
+      the names of *Curse*'s other areas, and saves by game.
 2. Walking the maps, with walls, doors and events. *In progress
    (2026-11-12):* every script and map of *Curse* loads with its disk, and
    LOAD PIECES loads the view's walls as the original does. Tilverton's

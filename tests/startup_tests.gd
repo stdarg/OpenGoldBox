@@ -21,6 +21,15 @@ func settle() -> void:
 func restart_startup() -> void:
 	change_scene_to_file("res://scenes/startup.tscn")
 	await settle()
+	await pick_game()
+
+# The startup menu after the language: its Pool of Radiance button, or the
+# named game's (the user's design, 2026-11-12).
+func pick_game(folder := "POOLRAD") -> void:
+	var menu: Window = current_scene.get_node("GameMenu")
+	require(menu.visible and menu.exclusive, "The startup menu must offer the games")
+	menu.get_node("Buttons/Games/" + folder).pressed.emit()
+	await settle()
 
 func is_splash(index: int) -> bool:
 	if not require(current_scene != null and current_scene.name == "Startup", "Expected splash scene"):

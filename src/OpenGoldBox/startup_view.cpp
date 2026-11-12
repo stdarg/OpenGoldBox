@@ -3,11 +3,13 @@
 #include "application_settings.h"
 #include "guarded_handlers.h"
 #include "godot_nodes.h"
+#include "game_menu_view.h"
 #include <godot_cpp/classes/line_edit.hpp>
 #include <godot_cpp/classes/file_dialog.hpp>
 #include <godot_cpp/classes/rich_text_label.hpp>
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/button.hpp>
+#include <godot_cpp/classes/v_box_container.hpp>
 #include <godot_cpp/classes/item_list.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/window.hpp>
@@ -18,6 +20,7 @@
 #include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/classes/texture_rect.hpp>
 #include <algorithm>
+#include <array>
 #include <godot_cpp/classes/texture2d.hpp>
 #include <godot_cpp/classes/viewport.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -43,10 +46,172 @@ void StartupView::_ready()
 void StartupView::open_startup()
 {
     i18n::initialize();
+    show_title();
     choose_language();
 }
 
-void StartupView::choose_game_path()
+// The title screen behind the startup dialogs: a placeholder until the game's
+// own title art is made.
+void StartupView::show_title()
+{
+    auto *image = &required_node<TextureRect>(*this, "ImageFit/Image"); // scene-owned
+    Ref<Texture2D> texture =
+        ResourceLoader::get_singleton()->load("res://bin/splashes/OpenGoldBoxSplashBackground.png");
+    if (texture.is_valid())
+    {
+        image->set_texture(texture);
+    }
+}
+
+namespace
+{
+
+struct MenuGame
+{
+    opengold::GoldBoxGame game;
+    const char *title;
+};
+
+// The games the startup menu offers, in release order (docs/GAMES.md).
+constexpr std::array<MenuGame, 2> playable_games{
+    {{opengold::GoldBoxGame::pool_of_radiance, N_("Pool of Radiance")},
+     {opengold::GoldBoxGame::curse_of_the_azure_bonds, N_("Curse of the Azure Bonds")}}};
+
+const char *menu_title(opengold::GoldBoxGame game)
+{
+    for (const auto &entry : playable_games)
+    {
+        if (entry.game == game)
+        {
+            return entry.title;
+        }
+    }
+    return "";
+}
+
+} // namespace
+
+// After the language, the startup menu: Options, a button for each game and
+// Exit to desktop (the user's design, 2026-11-12).
+void StartupView::show_game_menu()
+{
+    auto *menu = &required_node<Window>(*this, "GameMenu"); // scene-owned
+    if (!game_menu_ready_)
+    {
+        game_menu_ready_ = true;
+        connect_path_dialogs();
+        i18n::prepare_ui(*menu);
+        menu->connect("close_requested",
+                      presentation::guarded(this, &StartupView::exit_to_desktop));
+        required_node<Button>(*menu, "Buttons/Options")
+            .connect("pressed", presentation::guarded(this, &StartupView::open_options));
+        required_node<Button>(*menu, "Buttons/Exit")
+            .connect("pressed", presentation::guarded(this, &StartupView::exit_to_desktop));
+        auto *games = &required_node<VBoxContainer>(*menu, "Buttons/Games");
+        for (const auto &[game, title] : playable_games)
+        {
+            auto *button = memnew(Button); // owned by the menu once added
+            button->set_name(std::string(opengold::game_folder(game)).c_str());
+            button->set_text(i18n::text(title));
+            button->set_custom_minimum_size({0, 52});
+            button->connect("pressed", presentation::guarded(this, &StartupView::game_chosen)
+                                           .bind(static_cast<std::int64_t>(game)));
+            games->add_child(button);
+        }
+    }
+    choosing_game_ = true;
+    menu->popup_centered();
+    required_node<Button>(*menu, "Buttons/Games/POOLRAD").grab_focus();
+}
+
+void StartupView::game_chosen(std::int64_t chosen)
+{
+    const auto game = static_cast<opengold::GoldBoxGame>(chosen);
+    settings::choose_game(game);
+    required_node<Window>(*this, "GameMenu").hide();
+    choosing_game_ = false;
+    folders_needed_ = {game};
+    // The party's portraits and combat art still come from Pool of Radiance's
+    // files (docs/GAMES.md), so another game needs its folder too.
+    if (game != opengold::GoldBoxGame::pool_of_radiance &&
+        !settings::validate_game_path(settings::game_path()).usable)
+    {
+        folders_needed_.push_back(opengold::GoldBoxGame::pool_of_radiance);
+    }
+    next_folder();
+}
+
+void StartupView::open_options()
+{
+    auto owned = presentation::instantiate_scene("res://scenes/game_menu.tscn");
+    auto *options = Object::cast_to<GameMenuView>(owned.get());
+    if (!options)
+    {
+        throw std::runtime_error("Invalid game menu scene");
+    }
+    options->set_name("Options");
+    options->connect("closed", presentation::guarded(this, &StartupView::options_closed));
+    presentation::attach_child(*this, std::move(owned));
+    required_node<Window>(*this, "GameMenu").hide();
+    options->open_options_alone();
+}
+
+void StartupView::options_closed()
+{
+    if (auto *options = get_node_or_null("Options"))
+    {
+        options->queue_free();
+    }
+    show_game_menu();
+}
+
+void StartupView::exit_to_desktop()
+{
+    // The same graceful shutdown as the window's close button.
+    get_tree()->get_root()->emit_signal("close_requested");
+}
+
+// Asks for the next game's folder when it is not set or no longer holds the
+// game; startup goes on once every folder is known.
+void StartupView::next_folder()
+{
+    if (folders_needed_.empty())
+    {
+        begin_startup();
+        return;
+    }
+    const auto game = folders_needed_.front();
+    auto *dialog = &required_node<Window>(*this, "PathDialog");
+    const auto heading =
+        game == opengold::GoldBoxGame::pool_of_radiance
+            ? i18n::text("Pool of Radiance game files")
+            : i18n::format(N_("{game} game files"), {{"game", i18n::text(menu_title(game))}});
+    dialog->set_title(heading);
+    required_node<Label>(*dialog, "Title").set_text(heading);
+    pending_path_ = settings::game_folder(game);
+    if (game == opengold::GoldBoxGame::pool_of_radiance)
+    {
+        const auto saved = settings::saved_game_path();
+        if (pending_path_.is_empty())
+        {
+            pending_path_ = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
+        }
+        if (settings::flag("--reset-game-path") || saved.is_empty() ||
+            !settings::validate_game_path(saved).usable)
+        {
+            show_path();
+            return;
+        }
+    }
+    else if (!settings::validate_game_folder(pending_path_, game).usable)
+    {
+        show_path();
+        return;
+    }
+    check_path();
+}
+
+void StartupView::connect_path_dialogs()
 {
     // Translate these dialogs only after language selection has been confirmed.
     i18n::prepare_ui(required_node<Window>(*this, "PathDialog"));
@@ -71,19 +236,6 @@ void StartupView::choose_game_path()
         .connect("pressed", presentation::guarded(this, &StartupView::close_language));
     required_node<Button>(*warning, "Continue")
         .connect("pressed", presentation::guarded(this, &StartupView::continue_path));
-    const auto saved = settings::saved_game_path();
-    pending_path_ = settings::game_path();
-    if (pending_path_.is_empty())
-    {
-        pending_path_ = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
-    }
-    if (settings::flag("--reset-game-path") || saved.is_empty() ||
-        !settings::validate_game_path(saved).usable)
-    {
-        show_path();
-        return;
-    }
-    check_path();
 }
 
 void StartupView::choose_language()
@@ -115,7 +267,7 @@ void StartupView::choose_language()
             .connect("pressed", presentation::guarded(this, &StartupView::close_language));
         return;
     }
-    choose_game_path();
+    show_game_menu();
 }
 
 void StartupView::show_path(const String &message)
@@ -162,7 +314,7 @@ void StartupView::accept_path()
 
 void StartupView::check_path()
 {
-    const auto result = settings::validate_game_path(pending_path_);
+    const auto result = settings::validate_game_folder(pending_path_, folders_needed_.front());
     if (!result.usable)
     {
         String message = result.error.is_empty() ? i18n::text("Missing or unreadable game files:")
@@ -195,7 +347,7 @@ void StartupView::check_path()
 void StartupView::continue_path()
 {
     required_node<Window>(*this, "ChecksumWarning").hide();
-    if (save_pending_path_ && !settings::save_game_path(pending_path_))
+    if (save_pending_path_ && !settings::save_game_folder(folders_needed_.front(), pending_path_))
     {
         show_path(i18n::text(
             "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."));
@@ -204,7 +356,8 @@ void StartupView::continue_path()
     save_pending_path_ = false;
     choosing_path_ = false;
     get_viewport()->set_input_as_handled();
-    begin_startup();
+    folders_needed_.erase(folders_needed_.begin());
+    next_folder();
 }
 
 void StartupView::begin_startup()
@@ -242,7 +395,7 @@ void StartupView::accept_language()
     choosing_language_ = false;
     // Do not let the Enter press used here also advance the first splash.
     dialog->set_input_as_handled();
-    choose_game_path();
+    show_game_menu();
 }
 
 void StartupView::activate_language(std::int64_t)
@@ -344,8 +497,8 @@ void StartupView::_input(const Ref<InputEvent> &event)
 void StartupView::respond_to_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;
-    if (finishing_ || choosing_language_ || choosing_path_ || key.is_null() || !key->is_pressed() ||
-        key->is_echo())
+    if (finishing_ || choosing_language_ || choosing_path_ || choosing_game_ || key.is_null() ||
+        !key->is_pressed() || key->is_echo())
     {
         return;
     }

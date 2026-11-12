@@ -4,6 +4,9 @@
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/input_event.hpp>
 #include <exception>
+#include <vector>
+
+#include "opengold/gold_box_game.h"
 
 class StartupView : public godot::Control
 {
@@ -40,7 +43,18 @@ class StartupView : public godot::Control
     void preview_language(std::int64_t index);
     void close_language();
     void choose_language();
-    void choose_game_path();
+    void connect_path_dialogs();
+    void show_title();
+    void show_game_menu();
+    void game_chosen(std::int64_t game);
+    void open_options();
+    void options_closed();
+    void exit_to_desktop();
+    void next_folder();
+    bool game_menu_ready_{};
+    bool choosing_game_{};
+    // The games whose folders startup still needs, the first being asked now.
+    std::vector<opengold::GoldBoxGame> folders_needed_;
     void show_path(const godot::String &message = {});
     void browse_path();
     void picked_path(const godot::String &directory);

@@ -12,6 +12,9 @@ the language and the game folder again.
 path="D:/Games/POOLRAD/GAME/POOLRAD"
 difficulty="normal"
 
+[games]
+CURSE="D:/Games/CURSE"
+
 [interface]
 language="es"
 
@@ -37,6 +40,14 @@ unidentified_magic="skip"
 Use the actual folder containing `START.EXE`, `ITEMS`, and the original `.DAX`
 archives, not the Steam launcher directory. Store an absolute folder path.
 The supported language codes are `en` and `es`.
+
+After the language, the startup menu offers Options, a button for each game
+and Exit to desktop. Choosing a game asks for its folder the first time:
+`[game] path` holds *Pool of Radiance*'s, and `[games]` the others' by their
+folder name (`CURSE` for *Curse of the Azure Bonds*), or `OPENGOLD_GOLDBOX_DIR`
+names a folder holding them all. A party still takes its portraits and combat
+art from *Pool of Radiance*'s files, so choosing another game asks for that
+folder too when it is not set ([GAMES.md](GAMES.md)).
 
 `difficulty` is one of `easy`, `normal`, `hard`, `nightmare` and `infernal`,
 easiest first; the default, also used for an unknown value, is `normal`. On

@@ -607,6 +607,10 @@ if(OPENGOLD_BUILD_TESTS)
     opengold_settings_check(startup startup_tests "Startup check passed: no flag")
     opengold_settings_check(startup_splash startup_tests "Startup check passed: two"
         -DARGS=--splash)
+    # The startup menu: Options, a button for each game and Exit to desktop.
+    opengold_settings_check(startup_menu startup_menu_tests "Startup menu passed: Options")
+    opengold_settings_check(startup_menu_exit startup_menu_tests
+        "Startup menu passed: Exit to desktop" -DARGS=--menu-exit)
     # The main check leaves Spanish saved for a second process to restore.
     opengold_settings_check(language language_dialog_tests "Language dialog passed"
         -DARGS=--reset-lang -DRESTART_ARGS=--language-restore

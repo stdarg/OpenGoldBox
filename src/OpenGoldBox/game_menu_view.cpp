@@ -1,4 +1,5 @@
 #include "game_menu_view.h"
+#include <utility>
 #include "application_settings.h"
 #include "godot_nodes.h"
 #include "guarded_handlers.h"
@@ -111,6 +112,15 @@ void GameMenuView::open(Allowed allowed)
     required_node<Button>(*this, "Menu/Resume").grab_focus();
 }
 
+void GameMenuView::open_options_alone()
+{
+    options_alone_ = true;
+    may_change_art_folder_ = true;
+    required_node<Control>(*this, "Menu").hide();
+    show();
+    open_options();
+}
+
 void GameMenuView::close()
 {
     if (!is_visible())
@@ -199,6 +209,12 @@ void GameMenuView::open_options()
 
 void GameMenuView::close_options()
 {
+    if (std::exchange(options_alone_, false))
+    {
+        required_node<Control>(*this, "Options").hide();
+        close();
+        return;
+    }
     required_node<Control>(*this, "Options").hide();
     required_node<Control>(*this, "Menu").show();
     required_node<Button>(*this, "Menu/Options").grab_focus();

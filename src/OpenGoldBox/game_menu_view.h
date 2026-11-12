@@ -22,6 +22,8 @@ class GameMenuView : public godot::Control
     void _ready() override;
     void _input(const godot::Ref<godot::InputEvent> &event) override;
     void open(Allowed allowed);
+    // Only the Options screen, as the startup menu opens it; closing it closes the view.
+    void open_options_alone();
     void close();
     [[nodiscard]] bool is_open() const;
     // Shows a failed handler's error; called by presentation::run_guarded.
@@ -36,6 +38,7 @@ class GameMenuView : public godot::Control
     void exit_to_main_menu();
     void exit_to_desktop();
     void open_options();
+    bool options_alone_{};
     void close_options();
     void show_section(std::int64_t section);
     void build_options();

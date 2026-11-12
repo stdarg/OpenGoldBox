@@ -11,6 +11,7 @@
 #include "game_monsters.h"
 #include "game_wall_art.h"
 #include "rolf_tour_view.h"
+#include "opengold/campaign_session.h"
 #include "inventory_label.h"
 #include "opengold/campaign_party.h"
 #include "opengold/npc_portraits.h"
@@ -67,6 +68,17 @@ const std::array<Vector2, 4> direction{Vector2(0, -1), Vector2(1, 0), Vector2(0,
 constexpr unsigned original_fireball_sound = 11;
 constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_("South"),
                                                      N_("West")};
+
+// A Curse of the Azure Bonds area's name: map 1 is Tilverton, as its
+// innkeeper says; an area not named yet shows the game's title.
+[[nodiscard]] const char *curse_area_name(unsigned area_id)
+{
+    if (area_id == 1)
+    {
+        return N_("Tilverton");
+    }
+    return N_("Curse of the Azure Bonds");
+}
 
 // The areas the session can enter: the town (0), the Slums (20), Kuto's
 // Well's plaza (29) and catacombs (32), and Podol Plaza (18).
@@ -154,6 +166,14 @@ constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_
         return N_("Zhentil Outpost");
     }
     return N_("New Phlan");
+}
+
+// The name of an area of the game being played.
+[[nodiscard]] const char *place_name(unsigned area_id)
+{
+    return settings::chosen_game() == opengold::GoldBoxGame::pool_of_radiance
+               ? district_name(area_id)
+               : curse_area_name(area_id);
 }
 
 // A Teleport destination's name: its place, and which of the place's maps.
@@ -448,15 +468,29 @@ void RolfTourView::restart()
         }
         else
         {
-            const auto directory = settings::game_path();
-            session_.emplace(RolfTourSession::load(presentation::path_from_godot(directory),
-                                                   game_encounters(), game_wall_art(),
-                                                   game_monsters()));
+            // The game chosen on the startup menu: Pool of Radiance's campaign
+            // with OpenGoldBox's data for it, or another game's from its folder.
+            const auto game = settings::chosen_game();
+            const bool pool_of_radiance = game == opengold::GoldBoxGame::pool_of_radiance;
+            if (pool_of_radiance)
+            {
+                session_.emplace(opengold::load_campaign(
+                    presentation::path_from_godot(settings::game_path()), game,
+                    {&game_encounters(), &game_wall_art(), game_monsters()}));
+            }
+            else
+            {
+                session_.emplace(opengold::load_campaign(
+                    presentation::path_from_godot(settings::game_folder(game)), game));
+            }
             session_->encounter_challenge(settings::encounter_challenge());
             session_->difficulty(settings::difficulty());
             session_->set_auto_equip(auto_equip_setting());
-            use_shop_data(*session_);
-            session_->companion_rules(opengold::srd5::character_rules(), game_companions());
+            if (pool_of_radiance)
+            {
+                use_shop_data(*session_);
+                session_->companion_rules(opengold::srd5::character_rules(), game_companions());
+            }
             if (campaign_)
             {
                 session_->campaign_party(campaign_);
@@ -464,6 +498,11 @@ void RolfTourView::restart()
             for (unsigned i = 0; i < sprites_.size(); ++i)
             {
                 const auto &source = session_->sprites()[i];
+                // Only Rolf's tour has a guide to show (Curse's campaign has none).
+                if (source.width == 0 || source.height == 0)
+                {
+                    continue;
+                }
                 sprites_[i] = presentation::image_texture(source);
             }
         }
@@ -2393,6 +2432,11 @@ void RolfTourView::refresh()
         for (unsigned n = 0; n < 3; ++n)
         {
             const auto &source = session_->sprites()[n];
+            // Only Rolf's tour has a guide to show (Curse's campaign has none).
+            if (source.width == 0 || source.height == 0)
+            {
+                continue;
+            }
             sprites_[n] = presentation::image_texture(source);
         }
         rendered_sprite_id_ = session_->snapshot().sprite_id;
@@ -2450,7 +2494,7 @@ void RolfTourView::refresh()
     const bool shopping = loaded && (s.phase == TourPhase::shopping || treasure);
     const bool answer = loaded && s.phase == TourPhase::awaiting_input;
     const bool multiple = waiting && s.choices.size() > 1;
-    const String district = i18n::text(district_name(s.area_id));
+    const String district = i18n::text(place_name(s.area_id));
     // While a shopkeeper greets or serves the party, the shopkeeper's name
     // and the shop's type stand over the portrait.
     const auto *shop = loaded ? opengold::phlan_shop_serving(s, session_->shops()) : nullptr;
@@ -2481,7 +2525,7 @@ void RolfTourView::refresh()
     required_node<Label>(*this, "%Speaker")
         .set_text(i18n::text(faulted           ? N_("Unable to continue")
                              : shopping        ? N_("Shop / select an item")
-                             : s.tour_finished ? district_name(s.area_id)
+                             : s.tour_finished ? place_name(s.area_id)
                                                : N_("Rolf  /  Council guide")));
     if (treasure && campaign_ && campaign_->selected())
     {
@@ -3505,7 +3549,7 @@ void RolfTourView::check_district_labels(const TourSnapshot &s)
     {
         return;
     }
-    const String district = i18n::text(district_name(s.area_id));
+    const String district = i18n::text(place_name(s.area_id));
     const String location = required_node<Label>(*this, "%Location").get_text();
     const String map_title = required_node<Label>(*this, "%MapTitle").get_text();
     const String speaker = required_node<Label>(*this, "%Speaker").get_text();

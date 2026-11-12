@@ -3,6 +3,8 @@
 #include "opengold/diagnostic_log.h"
 #include "opengold/difficulty.h"
 #include "opengold/encounter_budget.h"
+#include "opengold/game_census.h"
+#include "godot_path.h"
 #include <godot_cpp/classes/config_file.hpp>
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/file_access.hpp>
@@ -12,6 +14,7 @@
 #include <godot_cpp/variant/dictionary.hpp>
 #include <algorithm>
 #include <functional>
+#include <map>
 #include <optional>
 
 using namespace godot;
@@ -19,6 +22,8 @@ using namespace godot;
 namespace
 {
 std::optional<String> confirmed_path, confirmed_language;
+opengold::GoldBoxGame current_game = opengold::GoldBoxGame::pool_of_radiance;
+std::map<opengold::GoldBoxGame, String> confirmed_folders;
 
 String read(const char *section, const char *key)
 {
@@ -455,6 +460,69 @@ Validation validate_game_path(const String &directory)
     // Missing/unreadable source files cannot support the existing loaders. A different
     // revision can be tried after an explicit compatibility warning.
     result.usable = result.missing.is_empty();
+    return result;
+}
+
+opengold::GoldBoxGame chosen_game()
+{
+    return current_game;
+}
+
+void choose_game(opengold::GoldBoxGame game)
+{
+    current_game = game;
+}
+
+String game_folder(opengold::GoldBoxGame game)
+{
+    if (game == opengold::GoldBoxGame::pool_of_radiance)
+    {
+        return game_path();
+    }
+    if (const auto found = confirmed_folders.find(game); found != confirmed_folders.end())
+    {
+        return found->second;
+    }
+    const std::string folder(opengold::game_folder(game));
+    const auto saved = read("games", folder.c_str());
+    if (!saved.is_empty())
+    {
+        return saved;
+    }
+    const auto all_games =
+        OS::get_singleton()->get_environment("OPENGOLD_GOLDBOX_DIR").strip_edges();
+    return all_games.is_empty() ? String() : all_games.path_join(folder.c_str());
+}
+
+bool save_game_folder(opengold::GoldBoxGame game, const String &directory)
+{
+    if (game == opengold::GoldBoxGame::pool_of_radiance)
+    {
+        return save_game_path(directory);
+    }
+    const std::string folder(opengold::game_folder(game));
+    if (!save("games", folder.c_str(), directory))
+    {
+        return false;
+    }
+    confirmed_folders[game] = directory;
+    return true;
+}
+
+Validation validate_game_folder(const String &directory, opengold::GoldBoxGame game)
+{
+    if (game == opengold::GoldBoxGame::pool_of_radiance)
+    {
+        return validate_game_path(directory);
+    }
+    Validation result;
+    if (directory.is_absolute_path() && DirAccess::dir_exists_absolute(directory) &&
+        opengold::identify_game(presentation::path_from_godot(directory)) == game)
+    {
+        result.usable = true;
+        return result;
+    }
+    result.error = N_("Choose the folder that holds this game's files.");
     return result;
 }
 } // namespace settings

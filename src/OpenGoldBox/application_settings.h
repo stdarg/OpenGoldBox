@@ -4,6 +4,8 @@
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/packed_string_array.hpp>
 
+#include "opengold/gold_box_game.h"
+
 namespace settings
 {
 bool flag(const char *name);
@@ -72,5 +74,17 @@ struct Validation
 };
 
 Validation validate_game_path(const godot::String &directory);
+
+// The game chosen on the startup menu: Pool of Radiance until another is chosen.
+[[nodiscard]] opengold::GoldBoxGame chosen_game();
+void choose_game(opengold::GoldBoxGame game);
+// A game's folder. Pool of Radiance's is game_path(); another's is kept under
+// [games] by its folder name, or found in OPENGOLD_GOLDBOX_DIR.
+[[nodiscard]] godot::String game_folder(opengold::GoldBoxGame game);
+bool save_game_folder(opengold::GoldBoxGame game, const godot::String &directory);
+// Pool of Radiance's folder is checked file by file (validate_game_path);
+// another game's must hold that game's files.
+[[nodiscard]] Validation validate_game_folder(const godot::String &directory,
+                                              opengold::GoldBoxGame game);
 } // namespace settings
 #endif

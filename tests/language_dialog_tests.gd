@@ -42,11 +42,20 @@ func capture(viewport: Viewport, name: String) -> void:
 	await RenderingServer.frame_post_draw
 	require(viewport.get_texture().get_image().save_png(capture_dir.path_join(name + ".png")) == OK, "Cannot capture language dialog")
 
+# The startup menu after the language: its Pool of Radiance button, or the
+# named game's (the user's design, 2026-11-12).
+func pick_game(folder := "POOLRAD") -> void:
+	var menu: Window = current_scene.get_node("GameMenu")
+	require(menu.visible and menu.exclusive, "The startup menu must offer the games")
+	menu.get_node("Buttons/Games/" + folder).pressed.emit()
+	await settle()
+
 func run_checks() -> void:
 	if args.has("--language-restore"):
 		require(TranslationServer.get_locale() == "es", "Saved Spanish preference did not survive process restart")
 		change_scene_to_file("res://scenes/startup.tscn")
 		await settle()
+		await pick_game()
 		require(current_scene.name == "CharacterCreation", "No-flag startup should skip the language dialog and splashes")
 		require(current_scene.get_node("PageTitle").text == "Nombre, raza y género", "Restored language did not reach character creation")
 		print("Language restore passed across process restart.")
@@ -65,7 +74,8 @@ func run_checks() -> void:
 	choices.select(0)
 	choices.item_selected.emit(0)
 	require(dialog.title == "Language" and dialog.get_node("Title").text == "Choose language" and dialog.get_node("Continue").text == "Continue", "English dialog preview is incorrect")
-	require(current_scene.get_node("ImageFit/Image").texture == null and current_scene.get_node("ImageFit/Image/Text").texture == null, "Splash must not start behind the language dialog")
+	require(current_scene.get_node("ImageFit/Image").texture != null, "The title picture must show behind the language dialog")
+	require(current_scene.get_node("ImageFit/Image/Text").texture == null, "Splash must not start behind the language dialog")
 	await capture(dialog, "language-dialog")
 	if args.has("--language-close"):
 		current_scene.tree_exiting.connect(func(): print("Language dialog close: scene teardown passed."))
@@ -93,6 +103,7 @@ func run_checks() -> void:
 	require(TranslationServer.get_locale() == "es", "Enter did not activate Spanish")
 	var config := ConfigFile.new()
 	require(config.load(settings_path) == OK and config.get_value("interface", "language") == "es", "Spanish preference was not saved")
+	await pick_game()
 	if args.has("--splash"):
 		require(current_scene.name == "Startup" and not dialog.visible, "Language selection should continue to splash")
 		var background: Texture2D = current_scene.get_node("ImageFit/Image").texture
