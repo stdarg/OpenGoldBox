@@ -47,7 +47,9 @@ and Exit to desktop. Choosing a game asks for its folder the first time:
 folder name (`CURSE` for *Curse of the Azure Bonds*), or `OPENGOLD_GOLDBOX_DIR`
 names a folder holding them all. A party still takes its portraits and combat
 art from *Pool of Radiance*'s files, so choosing another game asks for that
-folder too when it is not set ([GAMES.md](GAMES.md)).
+folder too when it is not set ([GAMES.md](GAMES.md)). `--game=POOLRAD` or `--game=CURSE` on the
+command line picks the game without the menu, as the packaged game's own checks
+do.
 
 `difficulty` is one of `easy`, `normal`, `hard`, `nightmare` and `infernal`,
 easiest first; the default, also used for an unknown value, is `normal`. On

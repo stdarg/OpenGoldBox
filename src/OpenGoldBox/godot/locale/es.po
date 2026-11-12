@@ -1732,7 +1732,7 @@ msgstr "Puede volver a tirar un d20 una vez."
 msgid "Can target another creature as a Magic action."
 msgstr "Puede elegir como objetivo a otra criatura como acción mágica."
 
-#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:893 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:90 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:445
+#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:893 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:90 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:467
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -1808,7 +1808,7 @@ msgstr "No se puede leer la lista de comprobación de archivos del juego."
 msgid "Cannot regain Hit Points."
 msgstr "No puede recuperar puntos de golpe."
 
-#: src/OpenGoldBox/startup_view.cpp:447
+#: src/OpenGoldBox/startup_view.cpp:469
 msgid "Cannot save language."
 msgstr "No se puede guardar el idioma."
 
@@ -1817,7 +1817,7 @@ msgstr "No se puede guardar el idioma."
 msgid "Cannot save screenshot: {path}"
 msgstr "No se puede guardar la captura de pantalla: {path}"
 
-#: src/OpenGoldBox/startup_view.cpp:352
+#: src/OpenGoldBox/startup_view.cpp:374
 msgid "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."
 msgstr "No se puede guardar la configuración. Comprueba que settings.cfg, en la carpeta de datos de usuario del juego, se pueda escribir y sea válido."
 
@@ -2205,7 +2205,7 @@ msgstr "Elige trucos, entradas del libro de conjuros y conjuros preparados. Atr�
 msgid "Choose game folder"
 msgstr "Elige la carpeta del juego"
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:443
+#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:465
 msgid "Choose language"
 msgstr "Elige idioma"
 
@@ -2221,7 +2221,7 @@ msgstr "Elige conjuros preparados. Las elecciones sin completar quedan pendiente
 msgid "Choose the folder containing START.EXE and the original DAX game files."
 msgstr "Elige la carpeta que contiene START.EXE y los archivos DAX originales del juego."
 
-#: src/OpenGoldBox/application_settings.cpp:524
+#: src/OpenGoldBox/application_settings.cpp:525
 msgid "Choose the folder that holds this game's files."
 msgstr "Elige la carpeta con los archivos de este juego."
 
@@ -2743,7 +2743,7 @@ msgstr "Contingencia: {spell} ({trigger})"
 msgid "Contingency: {spell} takes effect on {name}."
 msgstr "Contingencia: {spell} surte efecto en {name}."
 
-#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:444
+#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:466
 msgid "Continue"
 msgstr "Continuar"
 
@@ -5648,7 +5648,7 @@ msgstr "Lanza de caballería"
 msgid "Land's Aid"
 msgstr "Ayuda de la tierra"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:330 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:442
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:330 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:464
 msgid "Language"
 msgstr "Idioma"
 
@@ -6639,7 +6639,7 @@ msgstr "Los proyectiles no mágicos desde más de 5 pies fallan contra él."
 msgid "Missing HP: {amount}. Damage and other HP losses are not individually recorded."
 msgstr "PG perdidos: {amount}. El daño y otras pérdidas de PG no se registran por separado."
 
-#: src/OpenGoldBox/startup_view.cpp:320
+#: src/OpenGoldBox/startup_view.cpp:342
 msgid "Missing or unreadable game files:"
 msgstr "Faltan archivos del juego o no se pueden leer:"
 
@@ -7662,7 +7662,7 @@ msgstr "Polimorfado"
 msgid "Pool of Radiance"
 msgstr "Pool of Radiance"
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:186
+#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:209
 msgid "Pool of Radiance game files"
 msgstr "Archivos de Pool of Radiance"
 
@@ -12386,7 +12386,7 @@ msgstr "{feat}: {spell}; bonificador de ataque de conjuro {attack}."
 msgid "{finder} finds {name}."
 msgstr "{finder} encuentra a {name}."
 
-#: src/OpenGoldBox/startup_view.cpp:187
+#: src/OpenGoldBox/startup_view.cpp:210
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{game} game files"
 msgstr "Archivos de {game}"

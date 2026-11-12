@@ -119,6 +119,28 @@ void StartupView::show_game_menu()
             games->add_child(button);
         }
     }
+    // --game=POOLRAD (or CURSE) picks the game without the menu, for the
+    // packaged game's own checks.
+    auto *os = OS::get_singleton(); // borrowed engine singleton
+    for (const auto &arguments : {os->get_cmdline_args(), os->get_cmdline_user_args()})
+    {
+        for (int i = 0; i < arguments.size(); ++i)
+        {
+            if (!arguments[i].begins_with("--game="))
+            {
+                continue;
+            }
+            const auto folder = arguments[i].trim_prefix("--game=");
+            for (const auto &[game, title] : playable_games)
+            {
+                if (folder == String(std::string(opengold::game_folder(game)).c_str()))
+                {
+                    game_chosen(static_cast<std::int64_t>(game));
+                    return;
+                }
+            }
+        }
+    }
     choosing_game_ = true;
     menu->popup_centered();
     required_node<Button>(*menu, "Buttons/Games/POOLRAD").grab_focus();

@@ -71,8 +71,8 @@ endif()
 # What setup saves once the player has chosen the language and the game folder.
 file(WRITE "${user_data}/settings.cfg"
     "[game]\npath=\"${game_files}\"\n\n[interface]\nlanguage=\"en\"\n")
-run_game("Godot party check passed" -- --party-check --save-check-write)
-run_game("Godot campaign restart check passed" -- --save-check-read)
+run_game("Godot party check passed" -- --game=POOLRAD --party-check --save-check-write)
+run_game("Godot campaign restart check passed" -- --game=POOLRAD --save-check-read)
 
 if(failure STREQUAL "")
     file(GLOB saves "${user_data}/checks/save-check/*.ogs")

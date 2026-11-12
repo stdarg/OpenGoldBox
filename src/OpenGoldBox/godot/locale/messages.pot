@@ -1732,7 +1732,7 @@ msgstr ""
 msgid "Can target another creature as a Magic action."
 msgstr ""
 
-#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:893 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:90 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:445
+#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:893 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:90 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:467
 msgid "Cancel"
 msgstr ""
 
@@ -1808,7 +1808,7 @@ msgstr ""
 msgid "Cannot regain Hit Points."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:447
+#: src/OpenGoldBox/startup_view.cpp:469
 msgid "Cannot save language."
 msgstr ""
 
@@ -1817,7 +1817,7 @@ msgstr ""
 msgid "Cannot save screenshot: {path}"
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:352
+#: src/OpenGoldBox/startup_view.cpp:374
 msgid "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."
 msgstr ""
 
@@ -2205,7 +2205,7 @@ msgstr ""
 msgid "Choose game folder"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:443
+#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:465
 msgid "Choose language"
 msgstr ""
 
@@ -2221,7 +2221,7 @@ msgstr ""
 msgid "Choose the folder containing START.EXE and the original DAX game files."
 msgstr ""
 
-#: src/OpenGoldBox/application_settings.cpp:524
+#: src/OpenGoldBox/application_settings.cpp:525
 msgid "Choose the folder that holds this game's files."
 msgstr ""
 
@@ -2743,7 +2743,7 @@ msgstr ""
 msgid "Contingency: {spell} takes effect on {name}."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:444
+#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:466
 msgid "Continue"
 msgstr ""
 
@@ -5648,7 +5648,7 @@ msgstr ""
 msgid "Land's Aid"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:330 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:442
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:330 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:464
 msgid "Language"
 msgstr ""
 
@@ -6639,7 +6639,7 @@ msgstr ""
 msgid "Missing HP: {amount}. Damage and other HP losses are not individually recorded."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:320
+#: src/OpenGoldBox/startup_view.cpp:342
 msgid "Missing or unreadable game files:"
 msgstr ""
 
@@ -7662,7 +7662,7 @@ msgstr ""
 msgid "Pool of Radiance"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:186
+#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:209
 msgid "Pool of Radiance game files"
 msgstr ""
 
@@ -12386,7 +12386,7 @@ msgstr ""
 msgid "{finder} finds {name}."
 msgstr ""
 
-#: src/OpenGoldBox/startup_view.cpp:187
+#: src/OpenGoldBox/startup_view.cpp:210
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{game} game files"
 msgstr ""
