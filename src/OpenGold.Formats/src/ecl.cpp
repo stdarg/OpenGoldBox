@@ -114,6 +114,21 @@ const EclOpcode &ecl_opcode(std::uint8_t op, GoldBoxGame game)
     return opcodes[op];
 }
 
+EclEngineRoutines ecl_engine_routines(GoldBoxGame game)
+{
+    switch (game)
+    {
+    case GoldBoxGame::pool_of_radiance:
+        return {0x2C90, 0xC018, 0xC01E, 0x8001, 0x8000, 0xBA03, 0};
+    case GoldBoxGame::curse_of_the_azure_bonds:
+        // Curse matches the address less 7FFFh against its routines' numbers
+        // (AE11h, 4019h, 401Fh, 2, 1, 3201h, E804h); these are the addresses.
+        return {0x2E10, 0xC018, 0xC01E, 0x8001, 0x8000, 0xB200, 0x6803};
+    default:
+        throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");
+    }
+}
+
 EclMemory ecl_memory(GoldBoxGame game)
 {
     switch (game)

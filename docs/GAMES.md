@@ -179,7 +179,20 @@ The steps, each pushed on its own with every test passing:
 
 In small steps, each with its check:
 
-1. Choosing *Curse* at New Game shows its title and a first map.
+1. Choosing *Curse* at New Game shows its title and a first map. In the
+   engine first, then the screens:
+   1. The engine routines a script calls (redraw the view, play a sound) by
+      their address in each game: *Curse*'s redraw is CALL 2E10.
+   2. The loading of an area's map, walls and pictures shared by both games.
+   3. The opening's script cells in the game's memory (`game_address`).
+   4. *Curse*'s opening: script 1 of disk 2 runs its load entry only; the 3D
+      view on and no portrait to start.
+   5. `load_campaign(folder, game)`, the one way the game starts a campaign.
+   6. A test walks *Curse*'s first map: the awakening text, picture 10, the
+      party at (7,13) facing east, the view drawn.
+   7. A folder for each game in the settings; New Game asks for the game;
+      the title pictures; the exploration screen, area names and saves by
+      game.
 2. Walking the maps, with walls, doors and events.
 3. The scripts' text and menus, and the commands *Curse* adds. The script
    coverage ([ECL-COVERAGE.md](ECL-COVERAGE.md)) is kept for each game.

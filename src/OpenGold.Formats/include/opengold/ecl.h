@@ -55,6 +55,33 @@ struct EclMemory
 
 // Throws EclError for a game whose scripts are not decoded yet.
 [[nodiscard]] EclMemory ecl_memory(GoldBoxGame game);
+
+// The original engine routines a script's CALL may run, by the address it
+// names in each game. Any other address does nothing.
+struct EclEngineRoutines
+{
+    // Redraw the 3D view from the party's square; both redraw it in Pool of
+    // Radiance, while Curse's second only reads the wall ahead.
+    std::uint16_t redraw_view{}, refresh_wall_ahead{};
+    std::uint16_t move_forward{};
+    // The selected member fights alone; in the mirror duel, against a copy of itself.
+    std::uint16_t duel{}, mirror_duel{};
+    // Play the sound the selector cell 3DEh names.
+    std::uint16_t sound{};
+    // Show the portrait animation's next frame; Pool of Radiance has none (0).
+    std::uint16_t portrait_animation_step{};
+
+    [[nodiscard]] bool contains(std::uint16_t address) const noexcept
+    {
+        return address != 0 &&
+               (address == redraw_view || address == refresh_wall_ahead ||
+                address == move_forward || address == duel || address == mirror_duel ||
+                address == sound || address == portrait_animation_step);
+    }
+};
+
+// Throws EclError for a game whose scripts are not decoded yet.
+[[nodiscard]] EclEngineRoutines ecl_engine_routines(GoldBoxGame game);
 [[nodiscard]] std::string unpack_ecl_text(std::span<const std::uint8_t> bytes);
 
 // A literal operand an instruction reads in place of the one its record

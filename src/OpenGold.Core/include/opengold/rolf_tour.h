@@ -327,6 +327,12 @@ class RolfTourSession
     RolfTourSession(GeoMap map, std::shared_ptr<const EclProgram> program,
                     std::array<opengold::Image, 3> sprites, std::uint32_t entry,
                     WallArtSet wall_art = {}, std::shared_ptr<const PhlanResources> town = {});
+
+    // The game whose campaign this is, which its scripts belong to.
+    [[nodiscard]] GoldBoxGame game() const noexcept
+    {
+        return program_->game();
+    }
     void restart();
     void campaign_party(std::shared_ptr<opengold::CampaignParty> party);
     // Attach an already validated replacement without restarting its restored VM.

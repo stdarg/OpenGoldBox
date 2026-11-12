@@ -1164,7 +1164,8 @@ void RolfTourSession::handle_host(const EclRequest &request)
     {
         // The address of the original engine routine the script calls.
         const auto service = request.arguments[0].address();
-        if (service == EclAddress{0xC01E})
+        const auto routines = ecl_engine_routines(game());
+        if (service == EclAddress{routines.move_forward})
         {
             const auto facing = map_direction(machine_.variable(ecl_party_facing));
             PartyPose pose{machine_.variable(ecl_party_x), machine_.variable(ecl_party_y),
@@ -1181,7 +1182,8 @@ void RolfTourSession::handle_host(const EclRequest &request)
                             {ecl_wall_ahead, cell.walls[index(pose.facing)]},
                             {ecl_cell_event, cell.event_raw}};
         }
-        else if (service == EclAddress{0x2C90} || service == EclAddress{0xC018})
+        else if (service == EclAddress{routines.redraw_view} ||
+                 service == EclAddress{routines.refresh_wall_ahead})
         {
             const auto x = machine_.variable(ecl_party_x), y = machine_.variable(ecl_party_y),
                        f = machine_.variable(ecl_party_facing);
@@ -1192,24 +1194,36 @@ void RolfTourSession::handle_host(const EclRequest &request)
             const auto &cell = map_.at(x, y);
             reply.writes = {{ecl_wall_ahead, cell.walls[f]}, {ecl_cell_event, cell.event_raw}};
             ++snapshot_.redraws;
+            // Curse's redraw draws the view over the picture a script showed.
+            if (game() != GoldBoxGame::pool_of_radiance &&
+                service == EclAddress{routines.redraw_view})
+            {
+                picture_.reset();
+                picture_animation_id_.reset();
+            }
         }
-        else if (service == EclAddress{0x8001})
+        else if (service == EclAddress{routines.duel})
         {
             // The original's one-on-one duel: the next COMBAT is the
             // selected member's alone (coab's isDuel).
             duel_ = true;
         }
-        else if (service == EclAddress{0x8000})
+        else if (service == EclAddress{routines.mirror_duel})
         {
             // The training hall's arena duel (eclmenu.pas CharFightsAlone):
             // the selected member fights alone against a copy of itself.
             duel_ = mirror_duel_ = true;
         }
-        else if (service == EclAddress{0xBA03})
+        else if (service == EclAddress{routines.sound})
         {
             // The original plays its footstep for selector 8 and its fireball
-            // for 10, Valhingen Graveyard's thunder (coab CMD_Call).
-            const auto selector = machine_.variable(EclAddress{0x03DE});
+            // for 10, Valhingen Graveyard's thunder (coab CMD_Call). Curse
+            // plays the footstep for any other selector too.
+            auto selector = machine_.variable(EclAddress{0x03DE});
+            if (game() != GoldBoxGame::pool_of_radiance && selector != 10)
+            {
+                selector = 8;
+            }
             if (selector != 8 && selector != 10)
             {
                 throw EclError("Unsupported tour sound selector");
@@ -1222,6 +1236,10 @@ void RolfTourSession::handle_host(const EclRequest &request)
             {
                 ++snapshot_.thunder;
             }
+        }
+        else if (service == EclAddress{routines.portrait_animation_step})
+        {
+            // Curse steps the portrait animation a frame; the view shows it whole.
         }
         else if (service == EclAddress{0x0806} || service == EclAddress{0x2C4E} ||
                  service == EclAddress{0x2C51} || service == EclAddress{0xC003} ||
@@ -1245,8 +1263,9 @@ void RolfTourSession::handle_host(const EclRequest &request)
     {
         throw EclError("Tour host reply rejected");
     }
-    if (opcode == 45 && (request.arguments[0].address() == EclAddress{0x2C90} ||
-                         request.arguments[0].address() == EclAddress{0xC01E}))
+    if (opcode == 45 &&
+        (request.arguments[0].address() == EclAddress{ecl_engine_routines(game()).redraw_view} ||
+         request.arguments[0].address() == EclAddress{ecl_engine_routines(game()).move_forward}))
     {
         publish_pose();
     }

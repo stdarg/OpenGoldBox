@@ -489,8 +489,7 @@ void EclMachine::execute(const EclInstruction &i)
     if (i.opcode == 45)
     {
         const auto address = encoded_address(a[0]);
-        if (address != 0x2C90 && address != 0x8000 && address != 0x8001 && address != 0xBA03 &&
-            address != 0xC018 && address != 0xC01E)
+        if (!ecl_engine_routines(program_->game()).contains(address))
         {
             pc_ = i.next;
             return;

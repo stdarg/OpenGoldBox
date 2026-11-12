@@ -238,6 +238,40 @@ void curse_script_memory_is_pool_of_radiance_moved()
         "The character record's cells are not moved: its layout changed");
 }
 
+// A script's CALL runs an engine routine by the address its game gives it:
+// Curse's view redraw, 2E10h, means nothing to Pool of Radiance.
+void engine_routines_are_the_games()
+{
+    using namespace opengold::por;
+    const auto run_call = [](GoldBoxGame game)
+    {
+        const auto origin = ecl_memory(game).origin;
+        const auto body = static_cast<std::uint16_t>(origin + 5 * 4);
+        std::vector<std::uint8_t> record{0, 0};
+        for (int entry = 0; entry < 5; ++entry)
+        {
+            record.insert(record.end(), {0x01, 0x01, static_cast<std::uint8_t>(body & 0xff),
+                                         static_cast<std::uint8_t>(body >> 8)});
+        }
+        record.insert(record.end(), {0x2D, 0x02, 0x10, 0x2E, 0x00}); // CALL 2E10h, EXIT
+        EclMachine machine(
+            std::make_shared<const EclProgram>(EclProgram::decode(record, "CALL", game)));
+        machine.enable_host(0x2D);
+        check(machine.start(0), "The script starts");
+        return machine.run();
+    };
+    const auto curse = run_call(GoldBoxGame::curse_of_the_azure_bonds);
+    check(curse.state == EclState::waiting && curse.request.has_value(),
+          "Curse's redraw reaches the host");
+    check(run_call(GoldBoxGame::pool_of_radiance).state == EclState::completed,
+          "In Pool of Radiance 2E10h is no routine, and the CALL does nothing");
+    const auto routines = ecl_engine_routines(GoldBoxGame::curse_of_the_azure_bonds);
+    check(routines.redraw_view == 0x2E10 && routines.sound == 0xB200 &&
+              routines.move_forward ==
+                  ecl_engine_routines(GoldBoxGame::pool_of_radiance).move_forward,
+          "Curse's routines: its own redraw and sound, Pool of Radiance's step forward");
+}
+
 void the_font_has_eight_bytes_a_glyph()
 {
     std::vector<std::uint8_t> font(64 * 8);
@@ -322,6 +356,7 @@ int main()
         curse_scripts_run_in_their_own_bank();
         the_machine_runs_curse_scripts();
         curse_script_memory_is_pool_of_radiance_moved();
+        engine_routines_are_the_games();
         the_loaders_read_curse();
         a_save_names_its_game();
         the_font_has_eight_bytes_a_glyph();
