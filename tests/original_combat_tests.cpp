@@ -1975,6 +1975,162 @@ void races_know_their_foes()
     check(gnome + 25 < human, "A giant hits a gnome far less often than a human");
 }
 
+// The caster casts the spell at once at the creature or square, from its turn.
+void cast_now(rules::CombatSession &session, std::string_view caster_name, int spell,
+              const std::function<std::optional<rules::Command>()> &aim)
+{
+    until_turn_of(session, caster_name);
+    check(session.submit(*cast_command(session, spell)), "The spell is cast");
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return actor_name(session) == caster_name;
+        });
+    const auto chosen = aim();
+    check(chosen.has_value(), "Its aim is offered");
+    session.submit(*chosen);
+}
+
+// Hold Person holds a man but not a large creature (magic.pas, the hold).
+void hold_person_holds()
+{
+    using original::ClassSlot;
+    auto ogre = victim(50);
+    ogre.large = true;
+    auto fight =
+        arrange({{"Cleric", rules::Side::party, {0, 3}, caster(ClassSlot::cleric, 3, {23, 23})},
+                 {"Bandit", rules::Side::opposition, {4, 3}, victim(20)},
+                 {"Ogre", rules::Side::opposition, {4, 5}, ogre}},
+                101);
+    auto &session = *fight.session;
+    cast_now(session, "Cleric", 23,
+             [&]
+             {
+                 return aim_at(session, "Bandit");
+             });
+    // Two more picks are offered; the cleric stops at one.
+    session.submit(order(session, "aim_done"));
+    check(view_of(session.snapshot(), "Bandit").status == "helpless", "The bandit is held");
+    cast_now(session, "Cleric", 23,
+             [&]
+             {
+                 return aim_at(session, "Ogre");
+             });
+    session.submit(order(session, "aim_done"));
+    check(view_of(session.snapshot(), "Ogre").status.empty(), "The ogre is not");
+}
+
+// Fireball: one roll of the caster's level in d6 for all within 3 of the aim,
+// the caster's own side too (magic.pas, the fireball).
+void fireball_burns_all_around()
+{
+    using original::ClassSlot;
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 0}, caster(ClassSlot::magic_user, 5, {47})},
+                 {"Friend", rules::Side::party, {5, 4}, victim(100)},
+                 {"Foe", rules::Side::opposition, {6, 5}, victim(100)}},
+                103);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 47,
+             [&]
+             {
+                 return aim_at_cell(session, {6, 5});
+             });
+    const auto state = session.snapshot();
+    const int friend_lost = 100 - view_of(state, "Friend").hit_points;
+    const int foe_lost = 100 - view_of(state, "Foe").hit_points;
+    check(friend_lost >= 5 && friend_lost <= 30 && friend_lost == foe_lost,
+          "Friend and foe take the same 5d6, neither saving but on a 20");
+}
+
+// Haste doubles a creature's attacks (effhndlr.pas, EffHasted).
+void haste_doubles_attacks()
+{
+    using original::ClassSlot;
+    auto fighter = creature(50);
+    fighter.thac0 = -20;
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 0}, caster(ClassSlot::magic_user, 5, {48})},
+                 {"Fighter", rules::Side::party, {3, 3}, fighter},
+                 {"Ogre", rules::Side::opposition, {4, 3}, creature(1000, 0)}},
+                107);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 48,
+             [&]
+             {
+                 return aim_at_cell(session, {2, 2});
+             });
+    const auto round = session.snapshot().round;
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return session.snapshot().round > round && actor_name(session) == "Fighter";
+        });
+    const int before = logged(session, "{attacker} hits {name} for {damage}.", "Fighter");
+    session.submit(order(session, "melee", "Ogre"));
+    check(logged(session, "{attacker} hits {name} for {damage}.", "Fighter") - before == 2,
+          "Hasted, the fighter strikes twice a round");
+}
+
+// Mirror images take blows (effhndlr.pas, EffMirrorImage).
+void mirror_images_take_blows()
+{
+    auto mage = victim(50);
+    mage.effects = {{28, 10, 4, false}};
+    auto fight = attack_until(monster({4, 1, 1, 0}, {0, 0, 0, 0}, {}), mage,
+                              [](const rules::CombatSession &session)
+                              {
+                                  return logged(session, "{name} loses an image.") > 0;
+                              });
+    check(logged(*fight.session, "{name} loses an image.") > 0, "A blow takes an image");
+}
+
+// Silence stops casting within a square of the silenced (effhndlr.pas, EffSilence).
+void silence_stops_casting()
+{
+    using original::ClassSlot;
+    auto quiet = creature(20);
+    quiet.effects = {{21, 10, 1, false}};
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {3, 3}, caster(ClassSlot::magic_user, 1, {15})},
+                 {"Quiet", rules::Side::party, {3, 4}, quiet},
+                 {"Kobold", rules::Side::opposition, {7, 7}, creature(5, 0)}},
+                109);
+    until_turn_of(*fight.session, "Mage");
+    check(!cast_command(*fight.session, 15), "Beside the silenced, the mage cannot cast");
+}
+
+// Protection from Normal Missiles turns away a mundane arrow from afar
+// (effhndlr.pas, EffProtNormalMissiles).
+void missiles_turned_away()
+{
+    auto shot = archer(20);
+    shot.thac0 = -20;
+    shot.striker = original::StrikingItem{0, false, 1};
+    shot.weapon_type = 42;
+    auto warded = creature(100, 0);
+    warded.effects = {{41, 10, 1, false}};
+    auto fight = arrange({{"Archer", rules::Side::party, {0, 3}, shot},
+                          {"Warded", rules::Side::opposition, {5, 3}, warded}},
+                         113);
+    auto &session = *fight.session;
+    until_turn_of(session, "Archer");
+    session.submit(*offered(session, "ranged", "Warded"));
+    check(logged(session, "{name} avoids it.") > 0 &&
+              view_of(session.snapshot(), "Warded").hit_points == 100,
+          "The arrows do nothing");
+}
+
 } // namespace
 
 int main()
@@ -2022,6 +2178,12 @@ int main()
         charm_person_turns_a_foe();
         cure_light_wounds_stops_bleeding();
         races_know_their_foes();
+        hold_person_holds();
+        fireball_burns_all_around();
+        haste_doubles_attacks();
+        mirror_images_take_blows();
+        silence_stops_casting();
+        missiles_turned_away();
         real_records_fight();
         std::cout << "Original-rules combat passed.\n";
     }

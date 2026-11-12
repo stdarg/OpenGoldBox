@@ -318,7 +318,26 @@ gear.
      kobolds and goblins; giants (ogres, trolls, fire and hill giants) strike
      both 4 worse, and bugbears and gnolls a gnome, by the monster's record
      name (`kin_of`).
-   - 8b. The second- and third-level spells.
+   - 8b-1. *Done 2026-11-12:* the second- and third-level spells that work
+     through the resolver and effects: Hold Person (the fewer held, the
+     harder to save; not a creature of type above 1 or a large one), Resist
+     Fire, Silence 15' Radius (no casting within a square of the silenced;
+     its save is rolled but, as the original compiled it, changes nothing),
+     Detect Invisibility, Invisibility and Invisibility 10' Radius, Mirror
+     Image, Ray of Enfeeblement (a quarter less weapon damage), Cure and
+     Cause Blindness (4 worse to hit, to be hit and to save), Cause Disease
+     (nothing in the fight), Prayer (+1 to its side's attacks and saves
+     within 6 squares, -1 to the other side's), Remove and Bestow Curse (4
+     worse attacks and saves), Blink, Fireball (one roll for all within 3 of
+     the aim, the caster's own too), Haste and Slow (double or half the
+     rates of movement and attacks, up to the caster's level of creatures,
+     one under the other spell only freed of it), Protection from Evil and
+     Good 10' Radius (an aura of a square) and Protection from Normal
+     Missiles. Two things wait for step 7: a fireball outdoors reaches 2 and
+     not 3, and the year Haste ages a creature.
+   - 8b-2. Stinking Cloud's clouds on the field, Lightning Bolt's path and
+     bounce, Dispel Magic, Animate Dead, Slow Poison, Snake Charm, Enlarge,
+     Reduce and Strength, and Spiritual Hammer's hammer.
    - 8c. *Done 2026-11-12:* turning undead, once a fight for one with cleric
      levels: one d20 for the whole attempt against up to 1d12 undead enemies
      in sight, the lowest kinds first and the nearest of those, by the
@@ -388,6 +407,7 @@ tuned with the AI lab once the original rules play.
 | Magic Missile throws level div 2 missiles, none at level 1, where the manual promises one at levels 1 and 2 (`magic.pas`, the missile) | One missile for every two levels from level 1, as the manual says |
 | Protection from Evil or Good takes 2 from an evil or good attacker's roll before that roll is made, which overwrites it (`effhndlr.pas`, `EffProtEvil`) | The 2 counts |
 | A dwarf's or gnome's defense against giants judges the defender's own target instead of the attacker, and reads eight names from its list of five (`effhndlr.pas`, `EffDwarfGiantDefense`) | The attacker, among the five giants |
+| Mirror Image takes only a spell aimed at its caster, never a blow, where the manual says the images take attacks (`effhndlr.pas`, `EffMirrorImage`) | The images take blows too |
 | A level drain divides by the victim's class levels, so a creature without any (a monster) divides by zero (`effhndlr.pas`, the level drain) | It loses its highest level's share |
 | A level drain keeps the drained class's level as the victim's highest level, so a fighter 5 / thief 6 drained in fighter counts as level 4 (`effhndlr.pas`, the level drain) | The highest of its classes |
 | Each hit of a holding bite's own bite starts another hold, stacking holds on the biter and immobility on the victim, which can outlast the fight (`effhndlr.pas`, `EffBiteHold`) | One hold at a time |

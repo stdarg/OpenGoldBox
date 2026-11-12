@@ -68,7 +68,10 @@ constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_r
               fighting_on = 95, regeneration = 98, fights_while_down = 99, troll_burn = 100,
               troll_heal = 101, troll_return = 102, gaze_block = 126, bless = 1, curse = 2,
               protection_from_evil = 8, protection_from_good = 9, resist_cold = 10, charm = 11,
-              shield = 17, resist_fire = 20, sleep = 53;
+              shield = 17, resist_fire = 20, sleep = 53, silence = 21, mirror_image = 28,
+              enfeebled = 29, blind = 33, bestow_curse = 36, hasted = 39, missile_protection = 41,
+              slowed = 42, protection_from_evil_aura = 45, protection_from_good_aura = 46,
+              prayer = 49;
 // Displacement keeps whether it has turned an attack aside in this bit of its strength.
 constexpr int displaced = 0x10;
 } // namespace effect
@@ -172,6 +175,11 @@ struct Fighter
         {
             effects.erase(found);
         }
+    }
+
+    [[nodiscard]] const Effect *find_effect(int code) const
+    {
+        return const_cast<Fighter *>(this)->find_effect(code);
     }
 
     [[nodiscard]] Effect *find_effect(int code)
@@ -410,6 +418,25 @@ class Reader
 
 int attack_modifier(const Fighter &attacker, const Fighter &defender);
 
+// Haste doubles a creature's rates of movement and attacks and Slow halves
+// them; together they cancel (effhndlr.pas, EffHasted, EffSlowed).
+int paced(const Fighter &f, int rate)
+{
+    const bool hasted = f.has(effect::hasted), slowed = f.has(effect::slowed);
+    if (hasted && !slowed)
+    {
+        return rate * 2;
+    }
+    return slowed && !hasted ? rate / 2 : rate;
+}
+
+// Its movement in squares this round, as the original weighs flight and
+// morale with it (cbtacts.pas, CalcCreatureMovement).
+int movement_of(const Fighter &f)
+{
+    return paced(f, 2 * f.numbers.movement) / 2;
+}
+
 // A caster's level for a spell: its cleric or magic-user level, 12 for an
 // item's own power (magic.pas, GetCasterLevel).
 int caster_level(const Fighter &caster, const Spell &spell)
@@ -447,7 +474,9 @@ int doubled_distance(Cell a, Cell b)
 // The spells built so far; the rest are not offered yet.
 bool spell_built(int number)
 {
-    constexpr std::array<int, 17> built{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 15, 16, 17, 19, 20, 21};
+    constexpr std::array<int, 40> built{1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 15, 16, 17,
+                                        19, 20, 21, 23, 24, 25, 29, 30, 32, 33, 37, 38, 40, 42,
+                                        43, 44, 45, 47, 48, 49, 50, 52, 53, 54, 55, 0};
     return std::find(built.begin(), built.end(), number) != built.end();
 }
 
@@ -545,11 +574,16 @@ class Session final : public rules::CombatSession
     [[nodiscard]] bool reachable_by_spell(const Fighter &caster, const Fighter &target) const;
     [[nodiscard]] std::vector<EntityId> within(Cell aim, int radius) const;
     void cast_generic(Fighter &caster, int number, int level, const std::vector<EntityId> &targets,
-                      int damage, int element);
+                      int damage, int element, int save_modifier = 0, int minutes = -1);
+    [[nodiscard]] bool silenced(const Fighter &f) const;
+    [[nodiscard]] int prayer_bonus(const Fighter &f) const;
+    [[nodiscard]] bool protected_from(const Fighter &f, int code, int aura) const;
+    bool mirror_absorbs(Fighter &target);
+    [[nodiscard]] bool aura_protects(const Fighter &attacker, const Fighter &defender) const;
     bool add_with_message(Fighter &target, Effect added, bool negates, bool saved, int element,
                           int caster_level, const Spell *spell);
     void nonweapon_damage(Fighter &target, int damage, int save_result, bool saved, int element,
-                          int caster_level, int spell_number);
+                          int caster_level, int spell_number, bool single_target);
     void charm(Fighter &target, Side charmer);
     void cast_sleep(int level, Cell aim);
     void combat_start();
@@ -616,7 +650,7 @@ void Session::begin_round()
                 f.initiative = 0;
             }
         }
-        f.half_moves = f.has(effect::immobile) ? 0 : 2 * f.numbers.movement;
+        f.half_moves = f.has(effect::immobile) ? 0 : paced(f, 2 * f.numbers.movement);
         f.cast_allowed = true;
         f.pending_spell = f.aiming = f.picks_left = 0;
         f.picked.clear();
@@ -624,15 +658,15 @@ void Session::begin_round()
         f.sweep_budget = f.numbers.attack_level;
         for (std::size_t form = 0; form < f.attacks_left.size(); ++form)
         {
-            f.attacks_left[form] = attacks_this_round(f.numbers.attacks[form].rate_per_two_rounds,
-                                                      static_cast<int>(round_));
+            f.attacks_left[form] = attacks_this_round(
+                paced(f, f.numbers.attacks[form].rate_per_two_rounds), static_cast<int>(round_));
         }
         // A loaded missile weapon attacks at its own rate, no more often than
         // it has shots (cbtacts.pas, RecalcAttacksLeft).
         if (const auto &missile = f.numbers.missile; missile && missile->loaded)
         {
-            f.attacks_left[0] =
-                attacks_this_round(missile->rate_per_two_rounds, static_cast<int>(round_));
+            f.attacks_left[0] = attacks_this_round(paced(f, missile->rate_per_two_rounds),
+                                                   static_cast<int>(round_));
             if (!missile->needs_no_ammunition)
             {
                 f.attacks_left[0] = std::min(f.attacks_left[0], std::max(missile->quantity, 1));
@@ -691,6 +725,13 @@ void Session::next_actor()
             if (best->initiative <= 0 || !best->able() || check_morale(*best))
             {
                 continue;
+            }
+            // Silence within a square stops its casting for the round
+            // (effhndlr.pas, EffSilence at ACTION_START).
+            if (silenced(*best) && best->cast_allowed)
+            {
+                best->cast_allowed = false;
+                log({"{name} is silenced.", {{"name", best->name}}});
             }
             // A spell begun earlier in the round goes off now (combat.pas,
             // ManualControl): its targets are chosen as it does.
@@ -780,9 +821,12 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
     // Shield keeps the front Armor Class at 3 or better (effhndlr.pas, EffShield).
     const int front = defender.has(effect::shield) ? std::min(defender.numbers.armor_class, 3)
                                                    : defender.numbers.armor_class;
-    const int armor_class = backstab ? defender.numbers.rear_armor_class + 2
-                            : behind ? defender.numbers.rear_armor_class
-                                     : front;
+    // Blindness leaves both Armor Classes 4 worse (effhndlr.pas, EffBlind).
+    const int blind = defender.has(effect::blind) ? 4 : 0;
+    const int armor_class = (backstab ? defender.numbers.rear_armor_class + 2
+                             : behind ? defender.numbers.rear_armor_class
+                                      : front) +
+                            blind;
     if (defender.helpless())
     {
         slay_helpless(attacker, defender);
@@ -814,7 +858,8 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
             {
                 attacker.remove(effect::invisible);
             }
-            const int modifier = attack_modifier(attacker, defender);
+            const int modifier = attack_modifier(attacker, defender) + prayer_bonus(attacker) -
+                                 (aura_protects(attacker, defender) ? 2 : 0);
             // One made helpless partway through is hit by the rest (cbtacts.pas, RollAttacks).
             const bool aside = natural > 1 && turned_aside(defender);
             if ((aside || !attack_hits(natural, attacker.numbers.thac0, armor_class, modifier)) &&
@@ -862,6 +907,9 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
 int attack_modifier(const Fighter &attacker, const Fighter &defender)
 {
     int modifier = (attacker.has(effect::bless) ? 1 : 0) - (attacker.has(effect::curse) ? 1 : 0);
+    // Blindness and Bestow Curse take 4 from the attacker's rolls (effhndlr.pas, 33, 36).
+    modifier -= attacker.has(effect::blind) ? 4 : 0;
+    modifier -= attacker.has(effect::bestow_curse) ? 4 : 0;
     if (defender.has(effect::invisible))
     {
         modifier -= 4;
@@ -1635,6 +1683,98 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     case 21:
         cast_sleep(level, aim);
         break;
+    case 23:
+    case 49:
+    {
+        // Hold Person: the fewer held, the harder to save, each in turn from
+        // the last picked; a creature of type above 1 or a large one is not
+        // held (magic.pas, the hold).
+        const int count = static_cast<int>(targets.size());
+        const int modifier = count == 1 ? (number == 23 ? -2 : -3) : count == 2 ? -1 : 0;
+        for (auto id = targets.rbegin(); id != targets.rend(); ++id)
+        {
+            auto &f = *find(*id);
+            if (f.numbers.creature_type > 1 || f.numbers.large)
+            {
+                log({"{name} is unaffected.", {{"name", f.name}}});
+                continue;
+            }
+            cast_generic(caster, number, level, {*id}, 0, 0, modifier);
+        }
+        break;
+    }
+    case 32:
+    {
+        // Mirror Image: 1d4 images.
+        const int minutes = known.minutes_fixed + known.minutes_per_level * level;
+        add_with_message(caster, {effect::mirror_image, minutes, roll(4), false}, false, false, 0,
+                         level, &known);
+        break;
+    }
+    case 37:
+        for (const auto id : targets)
+        {
+            auto &f = *find(id);
+            if (f.has(effect::blind))
+            {
+                f.remove(effect::blind);
+                log({"{name} can see.", {{"name", f.name}}});
+            }
+        }
+        break;
+    case 40:
+        // Cause Disease lasts 1d6 x 10 minutes before the disease takes hold.
+        cast_generic(caster, number, level, targets, 0, 0, 0, roll(6) * 10);
+        break;
+    case 42:
+        // Prayer: its strength keeps the caster's side in bit 4.
+        add_with_message(
+            caster,
+            {effect::prayer, level, (caster.side == Side::opposition ? 0x10 : 0) + level, false},
+            false, false, 0, level, &known);
+        break;
+    case 43:
+        for (const auto id : targets)
+        {
+            auto &f = *find(id);
+            if (f.has(effect::bestow_curse))
+            {
+                f.remove(effect::bestow_curse);
+                log({"{name} is un-cursed.", {{"name", f.name}}});
+            }
+        }
+        break;
+    case 47:
+        // Fireball: the caster's level in d6, one roll for all, saved for half.
+        cast_generic(caster, number, level, targets, roll_dice(level, 6), 9);
+        break;
+    case 48:
+    case 55:
+    {
+        // Haste the caster's side, or Slow its enemies, up to its level of
+        // them, the nearest first; one under the opposite spell is only freed
+        // of it (magic.pas, Haste and Slow).
+        const bool haste = number == 48;
+        int left = level;
+        for (const auto id : targets)
+        {
+            auto &f = *find(id);
+            if ((f.side == caster.side) != haste || left <= 0)
+            {
+                continue;
+            }
+            --left;
+            const int opposite = haste ? effect::slowed : effect::hasted;
+            if (f.has(opposite))
+            {
+                f.remove(opposite);
+                log({"{name} is cured.", {{"name", f.name}}});
+                continue;
+            }
+            cast_generic(caster, number, level, {id}, 0, 0);
+        }
+        break;
+    }
     default:
         cast_generic(caster, number, level, targets, 0, 0);
         break;
@@ -1646,7 +1786,8 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
 // spell allows, a touch must hit first, the one damage roll is shared, and the
 // spell's effect is added through the immunities.
 void Session::cast_generic(Fighter &caster, int number, int level,
-                           const std::vector<EntityId> &targets, int damage, int element)
+                           const std::vector<EntityId> &targets, int damage, int element,
+                           int save_modifier, int minutes)
 {
     if (damage <= 0)
     {
@@ -1659,7 +1800,7 @@ void Session::cast_generic(Fighter &caster, int number, int level,
         bool saved = false;
         if (known.save_result != 0)
         {
-            saved = saving_throw(target, known.save_type, 0, &caster, element);
+            saved = saving_throw(target, known.save_type, save_modifier, &caster, element);
         }
         if (known.range_fixed == 255)
         {
@@ -1675,16 +1816,18 @@ void Session::cast_generic(Fighter &caster, int number, int level,
         }
         if (damage > 0)
         {
-            nonweapon_damage(target, damage, known.save_result, saved, element, level, number);
+            nonweapon_damage(target, damage, known.save_result, saved, element, level, number,
+                             targets.size() == 1 && (known.area & 0x0F) < 8);
         }
         if (known.effect > 0 && target.condition != Condition::dead)
         {
-            const int minutes = known.minutes_fixed + known.minutes_per_level * level;
+            const int lasting =
+                minutes >= 0 ? minutes : known.minutes_fixed + known.minutes_per_level * level;
             const int strength = known.effect == effect::charm
                                      ? (caster.side == Side::opposition ? 128 : 0) + level
                                      : level;
             if (add_with_message(target,
-                                 {known.effect, minutes, strength, known.effect == effect::charm},
+                                 {known.effect, lasting, strength, known.effect == effect::charm},
                                  known.save_result == 1, saved, element, level, &known) &&
                 known.effect == effect::charm)
             {
@@ -1760,8 +1903,13 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
 // target's resistances weigh it by its element (1 fire, 2 cold, 4
 // electricity, 8 magic, 16 acid), then a save halves or negates it.
 void Session::nonweapon_damage(Fighter &target, int damage, int save_result, bool saved,
-                               int element, int caster_level, int spell_number)
+                               int element, int caster_level, int spell_number, bool single_target)
 {
+    // Mirror images take a single target's spell (effhndlr.pas, EffMirrorImage).
+    if (single_target && mirror_absorbs(target))
+    {
+        damage = 0;
+    }
     if (target.has(91) && (spell_number == 15 || (element & 4)))
     {
         damage = 0;
@@ -1858,6 +2006,85 @@ void Session::cast_sleep(int level, Cell aim)
         add_with_message(f, {effect::sleep, 5 * level, level, false}, false, false, 0, level,
                          &known);
     }
+}
+
+// Whether a carrier of Silence stands within a square of it, itself
+// included (effhndlr.pas, EffSilence's aura).
+bool Session::silenced(const Fighter &f) const
+{
+    return std::any_of(fighters_.begin(), fighters_.end(),
+                       [&](const Fighter &carrier)
+                       {
+                           return carrier.able() && carrier.has(effect::silence) &&
+                                  (carrier.id == f.id || distance(carrier, f) <= 1);
+                       });
+}
+
+// Prayer: within 6 squares of the first one praying, in its sight, its own
+// side gets +1 to attacks and saves and the other side -1 (effhndlr.pas,
+// EffPrayer, EffAlliedPrayer).
+int Session::prayer_bonus(const Fighter &f) const
+{
+    for (const auto &carrier : fighters_)
+    {
+        const auto *node = carrier.able() ? carrier.find_effect(effect::prayer) : nullptr;
+        if (!node ||
+            (carrier.id != f.id && (distance(carrier, f) > 6 || !sees(board_, carrier, f))))
+        {
+            continue;
+        }
+        const Side praying = (node->strength & 0x10) ? Side::opposition : Side::party;
+        return f.side == praying ? 1 : -1;
+    }
+    return 0;
+}
+
+// Protected by its own spell, or by a 10' radius one within a square of it
+// (effhndlr.pas, 45 and 46).
+bool Session::protected_from(const Fighter &f, int code, int aura) const
+{
+    if (f.has(code))
+    {
+        return true;
+    }
+    return std::any_of(fighters_.begin(), fighters_.end(),
+                       [&](const Fighter &carrier)
+                       {
+                           return carrier.able() && carrier.has(aura) &&
+                                  (carrier.id == f.id || distance(carrier, f) <= 1);
+                       });
+}
+
+// An evil or good attacker 2 worse against one only a 10' radius protects
+// (its own spell already counts in attack_modifier).
+bool Session::aura_protects(const Fighter &attacker, const Fighter &defender) const
+{
+    const int alignment = attacker.numbers.alignment;
+    const bool evil = alignment == 2 || alignment == 5 || alignment == 8;
+    const bool good = alignment == 0 || alignment == 3 || alignment == 6;
+    return (evil && !defender.has(effect::protection_from_evil) &&
+            protected_from(defender, effect::protection_from_evil,
+                           effect::protection_from_evil_aura)) ||
+           (good && !defender.has(effect::protection_from_good) &&
+            protected_from(defender, effect::protection_from_good,
+                           effect::protection_from_good_aura));
+}
+
+// A mirror image takes the harm on 1d(images + 1) above 1, and is gone
+// (effhndlr.pas, EffMirrorImage).
+bool Session::mirror_absorbs(Fighter &target)
+{
+    auto *images = target.find_effect(effect::mirror_image);
+    if (!images || roll(images->strength + 1) <= 1)
+    {
+        return false;
+    }
+    log({"{name} loses an image.", {{"name", target.name}}});
+    if (--images->strength <= 0)
+    {
+        target.remove(effect::mirror_image);
+    }
+    return true;
 }
 
 // The roll a cleric needs to turn undead, by the undead's level (1 skeleton to
@@ -2307,7 +2534,25 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
         }
         return true;
     };
+    // Ray of Enfeeblement takes a quarter of the attacker's damage (effhndlr.pas, EffEnfeeble).
+    if (attacker.has(effect::enfeebled))
+    {
+        damage -= damage / 4;
+    }
+    // Mirror images take blows too, as the manual says; the original let them
+    // take only a spell's (an obvious bug, fixed).
+    if (mirror_absorbs(defender))
+    {
+        damage = 0;
+    }
     if (defender.has(104) && attacker.numbers.weapon_type >= 0 && evades(60))
+    {
+        damage = 0;
+    }
+    // Protection from Normal Missiles: no harm from a mundane weapon from afar
+    // (effhndlr.pas, EffProtNormalMissiles).
+    if (defender.has(effect::missile_protection) && striker && plus == 0 &&
+        attacker.numbers.weapon_type >= 0 && evades(100))
     {
         damage = 0;
     }
@@ -2391,13 +2636,18 @@ bool Session::saving_throw(const Fighter &f, int save, int modifier, const Fight
         modifier += hardiness;
     }
     modifier += f.has(effect::shield) ? 1 : 0;
+    modifier -= f.has(effect::blind) ? 4 : 0;
+    modifier -= f.has(effect::bestow_curse) ? 4 : 0;
+    modifier += prayer_bonus(f);
     if (caster)
     {
         const int alignment = caster->numbers.alignment;
         const bool evil = alignment == 2 || alignment == 5 || alignment == 8;
         const bool good = alignment == 0 || alignment == 3 || alignment == 6;
-        if ((evil && f.has(effect::protection_from_evil)) ||
-            (good && f.has(effect::protection_from_good)))
+        if ((evil &&
+             protected_from(f, effect::protection_from_evil, effect::protection_from_evil_aura)) ||
+            (good &&
+             protected_from(f, effect::protection_from_good, effect::protection_from_good_aura)))
         {
             modifier += 2;
         }
@@ -2438,7 +2688,7 @@ int Session::highest_enemy_movement(const Fighter &f) const
     {
         if (other.side != f.side && other.able())
         {
-            highest = std::max(highest, other.numbers.movement);
+            highest = std::max(highest, movement_of(other));
         }
     }
     return highest;
@@ -2493,7 +2743,7 @@ bool Session::check_morale(Fighter &f)
     {
         return false;
     }
-    if (highest_enemy_movement(f) <= f.numbers.movement)
+    if (highest_enemy_movement(f) <= movement_of(f))
     {
         f.fleeing = true;
         log({"{name} flees in panic.", {{"name", f.name}}});
@@ -2534,8 +2784,8 @@ void Session::attempt_flee(Fighter &f)
                         return other.side != f.side && other.able() && sees(board_, f, other);
                     });
     const int fastest = highest_enemy_movement(f);
-    const bool away =
-        !watched || fastest < f.numbers.movement || (fastest == f.numbers.movement && roll(2) == 1);
+    const int own = movement_of(f);
+    const bool away = !watched || fastest < own || (fastest == own && roll(2) == 1);
     if (away)
     {
         put_out_of_play(f, Condition::fled);
@@ -2744,7 +2994,7 @@ std::vector<rules::Command> Session::legal_commands() const
         commands.push_back(command);
     };
     // Cast, while it may and has a spell ready for a fight (combat.pas, CombatMenu).
-    if (actor->cast_allowed)
+    if (actor->cast_allowed && !silenced(*actor))
     {
         std::vector<int> offered_spells;
         for (const int number : actor->numbers.spells)
