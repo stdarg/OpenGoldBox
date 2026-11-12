@@ -57,7 +57,7 @@ Modernization should improve presentation and usability without silently changin
 7. Make the project easy for outside contributors to understand and extend.
 8. Provide a clean path for reverse engineering additional file formats and game systems.
 9. Allow visual improvements such as optional pixel-art upscaling without destroying the original aesthetic.
-10. Build a reusable foundation that could potentially support other SSI Gold Box titles later.
+10. Play the other SSI Gold Box games after *Pool of Radiance* (decided 2026-11-12; see [GAMES.md](GAMES.md)).
 
 ### 3.2 Secondary Goals
 
@@ -1248,19 +1248,11 @@ These are explicitly outside the initial scope but should influence architectura
 
 ### Other Gold Box Games
 
-Potential future support could include:
+**Decision, 2026-11-12:** playing every Gold Box game is now a goal, starting
+with the rest of the *Forgotten Realms* series in release order. The decisions,
+the status of each game and the plan are in [GAMES.md](GAMES.md).
 
-- *Curse of the Azure Bonds*
-- *Secret of the Silver Blades*
-- *Pools of Darkness*
-- *Champions of Krynn*
-- *Death Knights of Krynn*
-- *The Dark Queen of Krynn*
-- other related SSI titles
-
-The project should **not** prematurely generalize for these games.
-
-Instead:
+The method stays:
 
 > Make *Pool of Radiance* work cleanly first, then extract reusable abstractions from proven similarities.
 
@@ -1334,8 +1326,8 @@ The following items require further investigation:
 | UI philosophy | Modern interface, original gameplay |
 | Graphics | Original assets with optional modern scaling |
 | First engineering milestone | Decode and display one original graphic |
-| Premature multi-game engine | Avoid |
-| Long-term Gold Box support | Possible after *Pool of Radiance* |
+| Shared engine code | Only once a second game proves the need |
+| Long-term Gold Box support | Every Gold Box game ([GAMES.md](GAMES.md)) |
 
 ---
 

@@ -1,0 +1,154 @@
+# The Gold Box games
+
+OpenGoldBox's goal is to play every SSI Gold Box game. *Pool of Radiance* came
+first. The next step is the rest of the *Forgotten Realms* series. The *Krynn*
+games and *Buck Rogers* games follow later with the same method.
+
+This page records the decisions, what works today and the plan. It grows as
+each game is built.
+
+## Decisions
+
+The user decided these on 2026-11-12:
+
+- **All Gold Box games are the goal.** This replaces the PRD's "avoid a
+  premature multi-game engine". The PRD's method still holds: code becomes
+  shared only when a second game proves the need.
+- **The new games play by the original rules** ([ORIGINAL-RULES.md](ORIGINAL-RULES.md)).
+  The SRD 5.2.1 rules come to them only after every game is playable, as
+  content work (monster conversions, shops, art mappings) for each game.
+- **The games come in release order.** Each one builds on the one before.
+- **Unlimited Adventures:** OpenGoldBox plays adventures made with it and
+  offers an updated construction kit.
+
+## The games
+
+| Order | Game | Released | Folder | Status |
+|---|---|---|---|---|
+| 1 | *Pool of Radiance* | 1988 | `POOLRAD` | Playable |
+| 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Not started |
+| 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Not started |
+| 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Not started |
+| 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Not started |
+| 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Not started |
+| 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | Not started |
+
+The developer's copies live in `/Users/edmond/GoldBox/<folder>`.
+
+The original let a party travel on: *Curse* imports a *Pool of Radiance*
+party, *Secret* a *Curse* party and *Pools of Darkness* a *Secret* party.
+*Treasures* imports a *Gateway* party. OpenGoldBox follows the original.
+
+## What the games share
+
+The reconstructed DOS sources of each game (kept outside this repository) show
+one engine family. Games 1 to 6 are Turbo Pascal programs with the same units:
+the script machine, combat, magic, character creation, saving and the rest.
+Each game grows the one before, from about 33,000 lines in *Pool of Radiance*
+to about 42,000 in *Treasures*. *Unlimited Adventures* was rewritten in C; it
+is a construction kit, and its data comes in `DISK1` to `DISK3`.
+
+Those sources carry no license, so OpenGoldBox learns from them and writes its
+own code and text, as with the *Pool of Radiance* source
+([ORIGINAL-RULES.md](ORIGINAL-RULES.md)). They also describe nearby versions,
+not always the exact copies: the developer's `GAME.OVR` of *Pool of Radiance*,
+*Curse* and *Pools of Darkness*, *Secret*'s `START.EXE` and `GAME.OVR`, and
+*Gateway*'s `GAME.EXE` differ from the files the sources rebuild, probably
+because the store releases patched them. OpenGoldBox reads only the data files,
+so this matters only where a behavior is in doubt.
+
+### What our readers decode today
+
+Running the current tools on each folder (2026-11-12):
+
+| Game | Maps (GEO) | Scripts (ECL) | Monsters and items |
+|---|---|---|---|
+| *Pool of Radiance* | 29 | 29 | 172 records |
+| *Curse* | 16 | entry table fails | character record fails |
+| *Secret* | 17 | entry table fails | character record fails |
+| *Gateway* | 30 | entry table fails | its item file is `ITEMS.1` |
+| *Pools of Darkness* | 32 | entry table fails | item file fails |
+| *Treasures* | 41 | entry table fails | item file fails |
+
+The archives (DAX) and maps are shared. Scripts, characters, monsters and items
+differ in each game.
+
+## How the work stays safe
+
+- **One game at a time, reading before playing.** Each game starts with
+  read-only work whose result can be measured.
+- **The *Pool of Radiance* tests guard what exists.** Every shared change keeps
+  them passing, and *Pool of Radiance* stays the default game.
+- **Code becomes shared when a second game needs it**, not before.
+- **Every step ends with a check that runs the real game.** Tests read the
+  original files from the game's folder and skip when it is missing, as the
+  *Pool of Radiance* tests do.
+- **Each game's differences are written down** in `docs/games/<game>.md`, in
+  our own words.
+
+## Plan
+
+### 0. Groundwork
+
+- The PRD's goal says all Gold Box games, and this page tracks them.
+- The game recognizes each of the seven folders by its files.
+- The settings hold one folder for each game.
+- A save records which game it belongs to (a campaign format change).
+
+Done when every test passes and an old save still loads as *Pool of Radiance*.
+
+### 1. A reading census for every game
+
+A census tool decodes every file of every game: pictures, walls, sprites,
+fonts, monsters, items, scripts, sounds and, in the later games, music. It runs
+as a test, with one row for each game and kind of file. The facts it needs
+(record sizes, where scripts load, file names, new script commands) come from
+the reconstructed sources and go into `docs/games/<game>.md`.
+
+Done for a game when its census decodes every file.
+
+### 2. The engine apart from *Pool of Radiance*
+
+What the code knows about *Pool of Radiance* moves into per-game data or
+modules: the Phlan session, Rolf's tour, teleports, script secrets, the script
+host's special cases, shops, companions and encounter tables.
+
+Done when every test passes with no visible change.
+
+### 3. *Curse of the Azure Bonds*
+
+In small steps, each with its check:
+
+1. Choosing *Curse* at New Game shows its title and a first map.
+2. Walking the maps, with walls, doors and events.
+3. The scripts' text and menus, and the commands *Curse* adds. The script
+   coverage ([ECL-COVERAGE.md](ECL-COVERAGE.md)) is kept for each game.
+4. Making a party, and bringing a *Pool of Radiance* party across.
+5. Combat with *Curse*'s monsters, spells and items.
+6. Shops, temples, training and the higher level limits.
+7. A route test that plays from the start to the end, like the
+   *Pool of Radiance* expedition checks.
+
+### 4 to 7. The other campaigns
+
+*Secret of the Silver Blades*, *Gateway to the Savage Frontier*,
+*Pools of Darkness* and *Treasures of the Savage Frontier*, in that order. Each
+repeats steps 1 and 3 and adds only its own differences. *Pools of Darkness*
+and *Treasures* bring 256-color VGA pictures and music, so their census needs
+new decoders.
+
+### 8. *Unlimited Adventures*
+
+1. Playing adventures made with the original construction kit.
+2. An updated construction kit for making new ones.
+
+### 9. The SRD rules for the new games
+
+Once every game plays: monster conversions, shops and art mappings for each
+game, as *Pool of Radiance* has.
+
+### Later: *Krynn* and *Buck Rogers*
+
+*Champions of Krynn*, *Death Knights of Krynn*, *The Dark Queen of Krynn*,
+*Buck Rogers: Countdown to Doomsday* and *Buck Rogers: Matrix Cubed*, with the
+same method.
