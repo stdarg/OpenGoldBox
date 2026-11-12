@@ -46,8 +46,9 @@ template <class F> std::string rejection_message(F f)
 }
 
 // The campaign format this build writes. It also reads format 45, saved
-// before characters chose original portraits.
-constexpr unsigned current_campaign_format = 46;
+// before characters chose original portraits, and 46, before drafts carried
+// the original rules' rolls.
+constexpr unsigned current_campaign_format = 47;
 constexpr unsigned unchosen_portraits_format = 45;
 
 // The checksum line covers only the body, so rewriting the header number
@@ -330,7 +331,8 @@ void file_safety(const std::filesystem::path &directory)
 // format with the current rules identity loads, and older saves are refused
 // with one message. Format 45 still loads, listing its members on the default
 // head and body for a random original portrait.
-void check_campaign_format_cutoff(const std::string &saved, const rules::RulesModule &rules,
+void check_campaign_format_cutoff(const CampaignParty &party, const por::RolfTourSession &town,
+                                  const std::string &saved, const rules::RulesModule &rules,
                                   const por::RolfTourSession &town_template)
 {
     const auto decode_error = [&](const std::string &bytes)
@@ -350,9 +352,15 @@ void check_campaign_format_cutoff(const std::string &saved, const rules::RulesMo
           "An older campaign format is refused as an older pre-release save");
     const auto current =
         decode_campaign(saved, *srd5::character_rules(), rules, "fixture-v1", &town_template);
-    const auto before_portraits =
-        decode_campaign(with_campaign_format(saved, unchosen_portraits_format),
-                        *srd5::character_rules(), rules, "fixture-v1", &town_template);
+    const auto before_portraits = decode_campaign(
+        encode_campaign_in_format(party, &town, "fixture-v1", unchosen_portraits_format),
+        *srd5::character_rules(), rules, "fixture-v1", &town_template);
+    const auto before_rules_data = decode_campaign(
+        encode_campaign_in_format(party, &town, "fixture-v1", current_campaign_format - 1),
+        *srd5::character_rules(), rules, "fixture-v1", &town_template);
+    check(before_rules_data.party.roster.size() == current.party.roster.size() &&
+              before_rules_data.unchosen_portraits.empty(),
+          "A save from before drafts carried rules data loads");
     std::vector<MemberId> defaults;
     for (const auto &m : before_portraits.party.roster)
     {
@@ -436,7 +444,7 @@ void roundtrip(const std::filesystem::path &directory)
     loaded.town->attach_restored_party(replacement);
     check(encode_campaign(*replacement, &*loaded.town, "fixture-v1") == saved,
           "Complete serialized state round trips");
-    check_campaign_format_cutoff(saved, *rules, base);
+    check_campaign_format_cutoff(*party, town, saved, *rules, base);
     const auto encounter = [](const CampaignParty &p)
     {
         rules::Encounter e{{8, 8, std::vector<rules::Terrain>(64)}, p.participants()};

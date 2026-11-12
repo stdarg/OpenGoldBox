@@ -1,5 +1,5 @@
 // The original rules' tables and creation (docs/ORIGINAL-RULES.md).
-#include "opengold/original_rules.h"
+#include "opengold/original.h"
 #include "test_support.h"
 #include <iostream>
 #include <string>
@@ -389,6 +389,98 @@ void constitution_and_age()
             (void)starting_age(Race::human, Profession::monk, random);
         });
 }
+
+opengold::rules::CharacterDraft draft(std::string race, std::string profession,
+                                      std::string alignment)
+{
+    opengold::rules::CharacterDraft result;
+    result.name = "Tester";
+    result.race = std::move(race);
+    result.gender = "male";
+    result.character_class = std::move(profession);
+    result.alignment = std::move(alignment);
+    return result;
+}
+
+void creation_behind_the_rules_interface()
+{
+    using opengold::rules::CreationField;
+    const auto rules = character_rules();
+    check(rules->identity() == identity() && identity().module == "opengold.original",
+          "The original rules name themselves");
+    check(rules->ability_generation() == opengold::rules::AbilityGeneration::rolled_in_place,
+          "The original rolls each ability in place");
+    const auto races = rules->choices(CreationField::race);
+    check(races.size() == 6 && std::ranges::none_of(races,
+                                                    [](const auto &race)
+                                                    {
+                                                        return race.id == "half_orc";
+                                                    }),
+          "Creation offers the original's six races");
+    check(rules->choices(CreationField::background).empty(), "The original has no backgrounds");
+    auto dwarf = draft("dwarf", "fighter", "lawful_good");
+    check(!rules->allows(dwarf, CreationField::character_class, "magic_user") &&
+              rules->allows(dwarf, CreationField::character_class, "fighter_thief"),
+          "A dwarf may not be a magic-user, but may be a fighter/thief");
+    auto thief = draft("human", "thief", "lawful_good");
+    check(!rules->allows(thief, CreationField::alignment, "lawful_good") &&
+              rules->allows(thief, CreationField::alignment, "neutral"),
+          "A thief is never lawful good");
+
+    RandomState random{11};
+    auto mage = draft("elf", "fighter_magic_user", "chaotic_good");
+    check(!rules->ability_score(mage, Ability::strength), "No score before the roll");
+    rules->roll_in_place(mage, random);
+    const auto sheet = rules->evaluate(mage, opengold::rules::NameRequirement::required);
+    check(sheet.character_class == "Fighter/Magic-User" && sheet.level == 1 &&
+              sheet.level_classes == std::vector<std::string>{"fighter", "magic_user"},
+          "A fighter/magic-user starts at level 1 in both classes");
+    check(sheet.original && sheet.original->thac0 == 20 && sheet.hit_points >= 1 &&
+              sheet.original->magic_user_slots == std::array<int, 3>{1, 0, 0},
+          "The sheet carries the original's THAC0, Hit Points and spell slots");
+    for (const auto ability : every_ability)
+    {
+        check(rules->ability_score(mage, ability) == sheet.scores[ability],
+              "The draft's scores are the sheet's");
+    }
+    const auto rolled_again = mage.rules_data;
+    rules->roll_in_place(mage, random);
+    check(mage.rules_data != rolled_again, "Rolling again replaces the roll");
+
+    // The game's aging rule changes the same rolls' scores.
+    const auto youth = draft("human", "fighter", "neutral");
+    auto rolled = youth;
+    RandomState same{5};
+    rules->roll_in_place(rolled, same);
+    const auto original_con = rules->evaluate(rolled, opengold::rules::NameRequirement::required)
+                                  .scores[Ability::constitution];
+    const auto add_con = character_rules(Aging::add)
+                             ->evaluate(rolled, opengold::rules::NameRequirement::required)
+                             .scores[Ability::constitution];
+    check(add_con == std::min(original_con + 1, 18),
+          "AD&D aging gives a young adult 1 more Constitution");
+
+    auto unnamed = rolled;
+    unnamed.name.clear();
+    rejects(
+        [&]
+        {
+            (void)rules->evaluate(unnamed, opengold::rules::NameRequirement::required);
+        });
+    auto tampered = rolled;
+    tampered.rules_data = "1 99 12";
+    rejects(
+        [&]
+        {
+            (void)rules->evaluate(tampered, opengold::rules::NameRequirement::required);
+        });
+    auto forbidden = draft("dwarf", "magic_user", "neutral");
+    rejects(
+        [&]
+        {
+            rules->roll_in_place(forbidden, random);
+        });
+}
 } // namespace
 
 int main()
@@ -407,6 +499,7 @@ int main()
         spell_slots_and_wisdom();
         dexterity_bonuses();
         constitution_and_age();
+        creation_behind_the_rules_interface();
         std::cout << "Original rules passed.\n";
     }
     catch (const std::exception &error)

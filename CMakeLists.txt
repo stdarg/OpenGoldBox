@@ -120,7 +120,10 @@ add_library(opengold_rules_srd5 STATIC
 )
 target_include_directories(opengold_rules_srd5 PUBLIC src/OpenGold.Rules.Srd5/include)
 target_link_libraries(opengold_rules_srd5 PUBLIC opengold_rules)
-add_library(opengold_rules_original STATIC src/OpenGold.Rules.Original/src/original_rules.cpp)
+add_library(opengold_rules_original STATIC
+    src/OpenGold.Rules.Original/src/original_rules.cpp
+    src/OpenGold.Rules.Original/src/character_rules.cpp
+)
 target_include_directories(opengold_rules_original PUBLIC src/OpenGold.Rules.Original/include)
 target_link_libraries(opengold_rules_original PUBLIC opengold_rules)
 

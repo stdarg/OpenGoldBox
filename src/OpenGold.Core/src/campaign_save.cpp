@@ -21,8 +21,11 @@ constexpr std::size_t limit = 16 * 1024 * 1024;
 // format 45, the same fields saved before characters chose original portraits:
 // it still loads, and its members on head 1 and body 1 (the default, never
 // chosen) are listed for a random original portrait.
-constexpr unsigned campaign_format = 46;
+constexpr unsigned campaign_format = 47;
 constexpr unsigned unchosen_portraits_format = 45;
+// The first format with a creation draft's rules data (the original rules'
+// rolls); earlier saves are all SRD, whose drafts have none.
+constexpr unsigned draft_rules_data_format = 47;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -93,6 +96,8 @@ template <bool Reading> struct SaveCodec
     std::stringstream stream;
     const rules::CharacterRules *creation{};
     const rules::RulesModule *module{};
+    // The format being read, which decides the fields older formats lack.
+    unsigned format{campaign_format};
 
     explicit SaveCodec(std::string_view bytes)
         requires reading
@@ -289,6 +294,10 @@ template <bool Reading> struct SaveCodec
         fields(v.race, v.gender, v.character_class, v.alignment, v.background, v.name,
                v.target_classes, v.rolls, v.assignment, v.adjustment, v.rolled, v.training,
                v.cantrips, v.spells);
+        if (format >= draft_rules_data_format)
+        {
+            field(v.rules_data);
+        }
     }
 
     void field(Visited<rules::SpellChoices> v)
@@ -883,8 +892,24 @@ static_assert(!encodes_const_campaign<SaveReader>, "Only the writer may visit co
 std::string encode_campaign(const CampaignParty &party, const por::RolfTourSession *town,
                             std::string_view assets)
 {
+    return encode_campaign_in_format(party, town, assets, campaign_format);
+}
+
+std::string encode_campaign_in_format(const CampaignParty &party, const por::RolfTourSession *town,
+                                      std::string_view assets, unsigned format)
+{
+    require(format >= unchosen_portraits_format && format <= campaign_format,
+            "This build cannot write that campaign format");
+    require(format >= draft_rules_data_format ||
+                std::ranges::all_of(party.state().roster,
+                                    [](const auto &member)
+                                    {
+                                        return member.character.creation_data().rules_data.empty();
+                                    }),
+            "An older campaign format cannot record original-rules characters");
     require(!party.in_combat(), "Cannot save during combat");
     SaveWriter out;
+    out.format = format;
     auto identity = party.identity();
     std::string asset(assets);
     const auto &state = party.state();
@@ -898,7 +923,7 @@ std::string encode_campaign(const CampaignParty &party, const por::RolfTourSessi
     out.rest(state);
     auto body = out.stream.str();
     require(body.size() <= limit, "Campaign save too large");
-    return std::string(campaign_magic) + std::to_string(campaign_format) + "\n" +
+    return std::string(campaign_magic) + std::to_string(format) + "\n" +
            std::to_string(fingerprint(body)) + "\n" + body;
 }
 
@@ -975,7 +1000,7 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     {
         throw std::runtime_error(rules::older_save_message);
     }
-    require(version == campaign_format || version == unchosen_portraits_format,
+    require(version >= unchosen_portraits_format && version <= campaign_format,
             "Unsupported campaign save version");
     const auto end = bytes.find('\n', header_end + 1);
     require(end != bytes.npos, "Truncated campaign save");
@@ -983,6 +1008,7 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     require(bytes.substr(header_end + 1, end - header_end - 1) == std::to_string(fingerprint(body)),
             "Campaign save checksum mismatch");
     SaveReader in(body);
+    in.format = version;
     in.creation = &creation;
     in.module = &module;
     rules::Identity identity;

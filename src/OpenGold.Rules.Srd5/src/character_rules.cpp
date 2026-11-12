@@ -133,6 +133,21 @@ class CreatorRules final : public CharacterRules
     std::vector<CreationChoice> choices(CreationField field) const override;
     std::vector<ScoreAdjustment> adjustments(std::string_view background) const override;
     std::array<AbilityRoll, 6> roll(RandomState &state) const override;
+
+    AbilityGeneration ability_generation() const override
+    {
+        return AbilityGeneration::assigned_totals;
+    }
+
+    void roll_in_place(CharacterDraft &, RandomState &) const override
+    {
+        throw std::logic_error("SRD creation assigns rolled totals; it rolls with roll()");
+    }
+
+    bool allows(const CharacterDraft &, CreationField, std::string_view) const override
+    {
+        return true;
+    }
     std::optional<int> ability_score(const CharacterDraft &draft, Ability ability) const override;
     CharacterSheet evaluate(const CharacterDraft &draft, NameRequirement name) const override;
 

@@ -103,6 +103,10 @@ struct CharacterDraft
     // means no cantrips selected yet, never an instruction to refill the preset.
     std::optional<std::vector<std::string>> cantrips;
     std::optional<SpellChoices> spells;
+    // What a module's creation rolled that the fields above do not hold, in
+    // the module's own encoding: the original rules keep each ability's roll,
+    // the starting age, the first Hit Dice and the gold here. Empty for SRD.
+    std::string rules_data;
 };
 
 struct CharacterSheet
@@ -125,6 +129,26 @@ struct CharacterSheet
     // Keeps minimum-one HP gains separate from retroactive modifier changes.
     std::vector<int> hit_point_modifiers;
     std::vector<AbilityAdjustment> ability_adjustments;
+
+    // What a sheet under the original rules (AD&D 1st edition) shows that an
+    // SRD sheet has no place for; empty under the SRD.
+    struct Original
+    {
+        // Levels by the original's class slots: cleric, druid, fighter,
+        // paladin, ranger, magic-user, thief, monk.
+        std::array<int, 8> class_levels{};
+        int thac0{20};
+        // Paralysis/poison/death, petrification/polymorph, rod/staff/wand,
+        // breath weapon, spell.
+        std::array<int, 5> saving_throws{};
+        int exceptional_strength{}, age{}, gold{};
+        // Percent chances, empty for a character without thief levels.
+        std::array<int, 8> thief_skills{};
+        // Spell slots of levels 1 to 3.
+        std::array<int, 3> cleric_slots{}, magic_user_slots{};
+    };
+
+    std::optional<Original> original;
     // The class taken at each level, by stable ID: the first is the starting
     // class (character_class names it), and a multiclass character's later
     // levels may name others (MULTI-1). One entry per level.
@@ -142,6 +166,15 @@ enum class NameRequirement
     required
 };
 
+// How a module's creation makes ability scores: the SRD's six totals the
+// player assigns, or the original's roll of each ability in place, which the
+// player rerolls until keeping one.
+enum class AbilityGeneration
+{
+    assigned_totals,
+    rolled_in_place
+};
+
 // Every operation is pure, so a module that omits one fails to compile
 // instead of failing in play (Effective C++ Item 34).
 class CharacterRules
@@ -153,6 +186,16 @@ class CharacterRules
     [[nodiscard]] virtual std::vector<ScoreAdjustment>
     adjustments(std::string_view background) const = 0;
     [[nodiscard]] virtual std::array<AbilityRoll, 6> roll(RandomState &random_state) const = 0;
+    [[nodiscard]] virtual AbilityGeneration ability_generation() const = 0;
+    // Rolls a rolled_in_place draft's abilities, with what the rules roll
+    // alongside them, replacing any earlier roll. The draft's race and class
+    // must be chosen first, since they set the limits. Assigned-total rules
+    // roll with roll() instead.
+    virtual void roll_in_place(CharacterDraft &draft, RandomState &random_state) const = 0;
+    // Whether the draft's earlier choices allow this one: the original limits
+    // classes by race and alignments by class. The SRD allows every choice.
+    [[nodiscard]] virtual bool allows(const CharacterDraft &draft, CreationField field,
+                                      std::string_view id) const = 0;
     [[nodiscard]] virtual std::optional<int> ability_score(const CharacterDraft &draft,
                                                            Ability ability) const = 0;
 

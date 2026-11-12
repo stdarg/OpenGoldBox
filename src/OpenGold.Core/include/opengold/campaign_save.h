@@ -19,6 +19,12 @@ template <bool Reading> struct SaveCodec;
 [[nodiscard]] std::string campaign_asset_identity(const std::filesystem::path &directory);
 [[nodiscard]] std::string encode_campaign(const CampaignParty &, const por::RolfTourSession *,
                                           std::string_view assets);
+// The campaign in an earlier format this build still reads, from 45, for
+// checks that such saves load. Throws when the party holds what that format
+// cannot record: before 47, a character made under the original rules.
+[[nodiscard]] std::string encode_campaign_in_format(const CampaignParty &,
+                                                    const por::RolfTourSession *,
+                                                    std::string_view assets, unsigned format);
 [[nodiscard]] SavedCampaign decode_campaign(std::string_view, const rules::CharacterRules &,
                                             const rules::RulesModule &, std::string_view assets,
                                             const por::RolfTourSession *town_template);
