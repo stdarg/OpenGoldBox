@@ -242,10 +242,38 @@ gear.
    change to the party's movement (PARTY_MOVE_MODIFIER) comes with step 7, as
    does what the game does after a flight: the members left behind are lost,
    as in the original.
-6. Saving throws, then the monsters' special abilities (MONnSPC).
+6. Saving throws, then the monsters' special abilities (MONnSPC). In parts:
+   - 6a. *Done 2026-11-12:* a creature's effects (a monster's from its
+     record) with their minutes, which a round ages by one; those that end at
+     0 Hit Points end as a creature goes down or leaves the field. Saving
+     throws: a natural 1 fails, a 20 saves, otherwise the roll with the
+     readied items' save bonus and the modifier against the creature's
+     number. A helpless creature (asleep, paralysed, nauseous or charmed by a
+     snake) loses its turns and makes no free attack or guard strike; an
+     attack on it is one blow of its Hit Points and 5 more, which leaves it
+     dying, and one made helpless partway through an attack is hit by the
+     rest.
+   - 6b-1. *Done 2026-11-12:* what a hit that leaves its target standing
+     carries, by the attack that hit (a secondary attack resolves before the
+     primary): poison, which kills unless saved against; paralysis (a ghoul's
+     sparing elves); mummy rot; a stirge's drinking until it has had 12 to 15
+     and flies off; a holding bite on a victim of Strength below 19, which
+     bites from behind with 3d4 each turn; and a rear-claw rake after both
+     claws hit. Immunity to paralysis and poison saves but on a natural 1.
+   - 6b-2. Level drain.
+   - 6c. Defenses: weapons that cannot harm a creature, halved damage,
+     regeneration, fighting on while down, displacement, camouflage and
+     evasion.
+   - 6d. Gazes, breath and the mummy's fear.
 7. Into the game: fights in the campaign under the original rules, on screen.
+   Readying items mid-fight (the View menu) changes a creature's numbers as
+   the original recomputes them (`RecalcStats`, `RecalcAttacksLeft`), so a
+   fight needs each creature's items, not only the profile worked out at its
+   start.
 8. Spells in combat.
-9. The original's AI.
+9. The original's AI. It readies its best weapon and armor at each of its
+   turns (`EquipWeaponAndArmor`): many monsters carry their weapons unreadied
+   (Pool of Radiance's goblin guards their short swords).
 
 ## Encumbrance
 
@@ -294,3 +322,6 @@ tuned with the AI lab once the original rules play.
 | Armor of 151 to 399 coins sets movement to 9, and heavier armor to 6, whatever the creature's own movement, so a creature slower than that moves faster in armor (`charhlp.pas`, `ArmorMoveAdjust`) | Armor slows only by its weight in the load, which only slows (the user, 2026-11-12) |
 | A missile weapon of range 3 or less counts every target as beyond two range bands, so its target's Armor Class is 5 better even next to the shooter (`cbtacts.pas`, `ApplyRangePenalty`) | No distance penalty within a weapon's range (the user, 2026-11-12) |
 | Bandage saves the first dying party member anywhere on the field (`combat.pas`, `BandageDying`) | The one who bandages must stand next to the dying member (the user, 2026-11-12) |
+| A saving throw is added up in a byte, so a total below 0 (a low roll with penalties) wraps around and saves (`fxengine.pas`, `RollSavingThrow`) | A total below 0 fails |
+| A drider's paralysing touch passes a save penalty of 2 that the paralysis ignores, so it is no harder to save against than a thri-kreen's (`effhndlr.pas`, `EffDriderPara`) | The penalty of 2 counts |
+| Each hit of a holding bite's own bite starts another hold, stacking holds on the biter and immobility on the victim, which can outlast the fight (`effhndlr.pas`, `EffBiteHold`) | One hold at a time |

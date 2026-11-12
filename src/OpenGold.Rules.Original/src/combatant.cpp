@@ -11,7 +11,7 @@ namespace opengold::original
 namespace
 {
 
-constexpr std::string_view profile_format = "combatant3";
+constexpr std::string_view profile_format = "combatant5";
 
 std::vector<int> numbers_of(const Combatant &c)
 {
@@ -36,6 +36,13 @@ std::vector<int> numbers_of(const Combatant &c)
                     missile.needs_no_ammunition ? 1 : 0, missile.quantity,
                     missile.empty_handed_thac0, after.rate_per_two_rounds, after.dice, after.sides,
                     after.modifier, missile.empty_handed_backstabs ? 1 : 0});
+    numbers.insert(numbers.end(),
+                   {c.strength, c.elf ? 1 : 0, c.save_bonus, static_cast<int>(c.effects.size())});
+    for (const auto &effect : c.effects)
+    {
+        numbers.insert(numbers.end(),
+                       {effect.code, effect.minutes, effect.strength, effect.on_remove ? 1 : 0});
+    }
     return numbers;
 }
 
@@ -75,7 +82,10 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
         numbers.push_back(value);
         rest.remove_prefix(static_cast<std::size_t>(end - rest.data()));
     }
-    if (numbers.size() != numbers_of(Combatant{}).size())
+    // The fixed numbers, then four for each effect.
+    const auto fixed = numbers_of(Combatant{}).size();
+    if (numbers.size() < fixed || (numbers.size() - fixed) % 4 != 0 ||
+        static_cast<std::size_t>(numbers[fixed - 1]) != (numbers.size() - fixed) / 4)
     {
         return std::nullopt;
     }
@@ -125,6 +135,19 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
             return std::nullopt;
         }
         c.missile = m;
+    }
+    next += 13;
+    c.strength = *next++;
+    c.elf = *next++ != 0;
+    c.save_bonus = *next++;
+    const auto effect_count = *next++;
+    for (int n = 0; n < effect_count; ++n, next += 4)
+    {
+        if (next[0] < 1 || next[0] > 255 || next[1] < 0 || next[2] < 0)
+        {
+            return std::nullopt;
+        }
+        c.effects.push_back({next[0], next[1], next[2], next[3] != 0});
     }
     if (c.max_hit_points < 1 || c.movement < 0 ||
         std::any_of(
@@ -253,7 +276,8 @@ Missile missile_of(const por::CharacterRecord &record, std::span<const CarriedIt
 } // namespace
 
 Combatant combatant_from_record(const por::CharacterRecord &record,
-                                std::span<const CarriedItem> carried)
+                                std::span<const CarriedItem> carried,
+                                std::span<const por::EffectRecord> effects)
 {
     Combatant c;
     const int strength = record.current_abilities.strength;
@@ -340,6 +364,7 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
             {
                 adjustments[2] += r.item.magic_bonus;
             }
+            c.save_bonus += r.item.save_bonus;
         }
         else
         {
@@ -377,6 +402,17 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     if (weapon && weapon->type.range > 1)
     {
         c.missile = missile_of(record, carried, *weapon);
+    }
+    c.strength = strength;
+    c.elf = record.race == elf_race;
+    // Code 0 is no effect: the original dispatches none for it.
+    for (const auto &effect : effects)
+    {
+        if (effect.code != 0)
+        {
+            c.effects.push_back(
+                {effect.code, effect.duration_raw, effect.data, effect.table_flag != 0});
+        }
     }
     return c;
 }

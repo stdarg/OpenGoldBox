@@ -305,7 +305,14 @@ void real_records_fight()
         {
             carried.push_back({item.stored, item.base});
         }
-        const auto numbers = original::combatant_from_record(creature.stored, carried);
+        std::vector<por::EffectRecord> effects;
+        for (const auto &effect : creature.effects)
+        {
+            effects.push_back(effect.stored);
+        }
+        const auto numbers = original::combatant_from_record(creature.stored, carried, effects);
+        check(original::Combatant::decode(numbers.encode()) == numbers,
+              id.key() + " survives its profile's encoding");
         check(numbers.thac0 >= -20 && numbers.thac0 <= 25 && numbers.armor_class >= -20 &&
                   numbers.armor_class <= 20 && numbers.hit_points > 0 && numbers.movement >= 0,
               id.key() + " " + creature.stored.name + " fights with sensible numbers");
@@ -1001,6 +1008,284 @@ void a_panic_survives_a_save()
           "The panic and the encounter's morale are saved");
 }
 
+// A monster's effects come from its record (MONnSPC), code 0 being none, and
+// a readied ring's save bonus adds to its saving throws (charhlp.pas, RecalcStats).
+void effects_come_from_the_record()
+{
+    por::EffectRecord paralysis;
+    paralysis.code = 68;
+    por::EffectRecord none;
+    por::EffectRecord timed;
+    timed.code = 52;
+    timed.duration_raw = 3;
+    timed.data = 12;
+    const std::vector<por::EffectRecord> effects{paralysis, none, timed};
+    por::ItemTemplate ring_type;
+    ring_type.worn_location = 9;
+    ring_type.protection_raw = 0x80;
+    por::ItemRecord ring;
+    ring.readied_raw = 1;
+    ring.magic_bonus = 1;
+    ring.save_bonus = 1;
+    const std::vector<original::CarriedItem> carried{{ring, ring_type}};
+    const auto ghoul = original::combatant_from_record(kobold_record(), carried, effects);
+    check(ghoul.effects == std::vector<original::Effect>{{68, 0, 0, false}, {52, 3, 12, false}},
+          "The record's effects, without the empty one");
+    check(ghoul.save_bonus == 1, "A ring of protection +1 adds 1 to saving throws");
+    check(original::Combatant::decode(ghoul.encode()) == ghoul, "Effects survive the encoding");
+}
+
+// A helpless creature (paralysed here, for 2 minutes) loses its turns until
+// the paralysis wears off at the second round's end; an attack on it is one
+// blow that leaves it dying at -5, and it makes no free attack
+// (charhlp.pas, IsHelpless; cbtacts.pas, RollAttacks).
+void the_helpless_are_slain()
+{
+    auto held = creature(20, 0);
+    held.effects.push_back({52, 2, 12, false});
+    auto fight = arrange({{"Fighter", rules::Side::party, {3, 3}, creature(50)},
+                          {"Kobold", rules::Side::opposition, {4, 3}, held}},
+                         43);
+    auto &session = *fight.session;
+    std::vector<unsigned> kobold_turns;
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            if (actor == "Kobold")
+            {
+                kobold_turns.push_back(session.snapshot().round);
+            }
+            return order(session, "end");
+        },
+        [&]
+        {
+            return session.snapshot().round > 3;
+        });
+    check(kobold_turns == std::vector<unsigned>{3}, "It acts first in round 3, once it can move");
+
+    auto second = arrange({{"Fighter", rules::Side::party, {3, 3}, creature(50)},
+                           {"Kobold", rules::Side::opposition, {4, 3}, held}},
+                          43);
+    auto &again = *second.session;
+    until_turn_of(again, "Fighter");
+    check(view_of(again.snapshot(), "Kobold").status == "helpless", "Paralysed, it is helpless");
+    again.submit(order(again, "melee", "Kobold"));
+    const auto &kobold = view_of(again.snapshot(), "Kobold");
+    check(logged(again, "{attacker} slays the helpless {name}.", "Fighter") == 1 &&
+              kobold.status == "dying" && kobold.hit_points == -5,
+          "One blow leaves it dying 5 below 0");
+    check(actor_name(again) != "Fighter", "The blow spends the fighter's attacks");
+
+    auto third = arrange({{"Fighter", rules::Side::party, {3, 3}, creature(50)},
+                          {"Kobold", rules::Side::opposition, {4, 3}, held}},
+                         43);
+    until_turn_of(*third.session, "Fighter");
+    third.session->submit(order(*third.session, "move", {}, rules::Cell{0, 3}));
+    check(logged(*third.session, "{attacker} strikes {name} leaving.") == 0,
+          "A helpless kobold strikes no one leaving it");
+}
+
+// A monster that always hits, with these attack forms and effects.
+original::Combatant monster(original::AttackForm primary, original::AttackForm secondary,
+                            std::vector<original::Effect> effects)
+{
+    auto c = creature(1000, 1);
+    c.thac0 = -20;
+    c.attacks = {primary, secondary};
+    c.effects = std::move(effects);
+    return c;
+}
+
+// A victim that fails every saving throw but on a natural 20.
+original::Combatant victim(int hit_points = 500)
+{
+    auto c = creature(hit_points);
+    c.saving_throws = {21, 21, 21, 21, 21};
+    return c;
+}
+
+// The monster attacks the victim at each of its turns, the victim ending its
+// own, until the condition holds or 20 rounds pass.
+Fight attack_until(const original::Combatant &attacker, const original::Combatant &target,
+                   const std::function<bool(const rules::CombatSession &)> &done,
+                   std::uint64_t seed = 47)
+{
+    auto fight = arrange({{"Victim", rules::Side::party, {3, 3}, target},
+                          {"Monster", rules::Side::opposition, {4, 3}, attacker}},
+                         seed);
+    auto &session = *fight.session;
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            if (actor == "Monster")
+            {
+                if (const auto melee = offered(session, "melee", "Victim"))
+                {
+                    return *melee;
+                }
+            }
+            return order(session, "end");
+        },
+        [&]
+        {
+            return done(session) || session.snapshot().round > 20;
+        },
+        400);
+    return fight;
+}
+
+// Poison on a secondary attack's hit kills unless saved against; immunity to
+// poison saves but on a natural 1 (effhndlr.pas, 64 to 70, 111).
+void poison_kills()
+{
+    const auto spider = monster({0, 0, 0, 0}, {2, 1, 1, 0}, {{64, 0, 0, false}});
+    const auto poisoned = [](const rules::CombatSession &session)
+    {
+        return logged(session, "{name} is poisoned.") > 0;
+    };
+    auto fight = attack_until(spider, victim(), poisoned);
+    check(poisoned(*fight.session) && view_of(fight.session->snapshot(), "Victim").dead,
+          "A failed save against the spider's bite kills");
+    int immune_deaths = 0;
+    for (std::uint64_t seed = 1; seed <= 20; ++seed)
+    {
+        auto immune = victim();
+        immune.effects.push_back({111, 0, 0, false});
+        auto first_bite = attack_until(
+            spider, immune,
+            [](const rules::CombatSession &session)
+            {
+                return logged(session, "{attacker} hits {name} for {damage}.", "Monster") > 0;
+            },
+            seed);
+        immune_deaths += poisoned(*first_bite.session) ? 1 : 0;
+    }
+    check(immune_deaths < 5, "Immune to poison, it dies of a bite only on a natural 1");
+    const auto primary_only = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{64, 0, 0, false}});
+    auto fangless = attack_until(primary_only, victim(),
+                                 [](const rules::CombatSession &session)
+                                 {
+                                     return session.snapshot().round > 5;
+                                 });
+    check(!poisoned(*fangless.session), "Poison rides only on a secondary attack");
+}
+
+// A ghoul's touch paralyses for 63 minutes, but not an elf (effhndlr.pas, 68).
+void a_ghoul_paralyses()
+{
+    const auto ghoul = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{68, 0, 0, false}});
+    const auto paralysed = [](const rules::CombatSession &session)
+    {
+        return logged(session, "{name} is paralyzed.") > 0;
+    };
+    auto fight = attack_until(ghoul, victim(), paralysed);
+    check(paralysed(*fight.session), "A ghoul's touch paralyses");
+    auto elf = victim();
+    elf.elf = true;
+    auto spared = attack_until(ghoul, elf,
+                               [](const rules::CombatSession &session)
+                               {
+                                   return session.snapshot().round > 5;
+                               });
+    check(!paralysed(*spared.session), "An elf is not paralysed");
+}
+
+// A stirge's hit fastens it to its victim, which cannot move; at each of its
+// turns it drinks 1d4 until it has had 12 to 15, then lets go and flies off
+// (effhndlr.pas, 75 and 76).
+void a_stirge_drinks_its_fill()
+{
+    const auto stirge = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{76, 0, 0, false}});
+    auto fight = attack_until(stirge, victim(),
+                              [](const rules::CombatSession &session)
+                              {
+                                  return logged(session, "{name} is forced to flee.") > 0;
+                              });
+    auto &session = *fight.session;
+    int drunk = 0;
+    for (const auto &entry : session.snapshot().log_entries)
+    {
+        if (entry.message.source == "{attacker} drinks {name}'s blood for {damage}.")
+        {
+            drunk += std::stoi(entry.message.arguments[2].value);
+        }
+    }
+    check(logged(session, "{name} is forced to flee.") == 1 && drunk >= 12 && drunk <= 15,
+          "Full after 12 to 15, the stirge flees");
+    until_turn_of(session, "Victim");
+    check(offered(session, "move").has_value(), "Let go, its victim can move again");
+}
+
+// A holding bite fastens on a victim of Strength below 19 and bites it from
+// behind with 3d4 at each of its turns (effhndlr.pas, 74 and 77).
+void a_bite_holds()
+{
+    const auto spider = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{77, 0, 0, false}});
+    const auto held = [](const rules::CombatSession &session)
+    {
+        return logged(session, "{name} is held fast.") > 0;
+    };
+    auto fight = attack_until(spider, victim(), held);
+    auto &session = *fight.session;
+    check(held(session), "Strength 10 is held fast");
+    const int bites = logged(session, "{attacker} hits {name} for {damage}.", "Monster") +
+                      logged(session, "{attacker} misses {name}.", "Monster");
+    until_turn_of(session, "Victim");
+    check(!offered(session, "move"), "Held, it cannot move");
+    const auto swings = [&]
+    {
+        return logged(session, "{attacker} hits {name} for {damage}.", "Monster") +
+               logged(session, "{attacker} misses {name}.", "Monster");
+    };
+    const auto round = session.snapshot().round;
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return swings() > bites || session.snapshot().round > round + 2;
+        });
+    check(swings() > bites && actor_name(session) != "Monster",
+          "The spider bites again at its turn, unbidden");
+    auto strong = victim();
+    strong.strength = 19;
+    auto free = attack_until(spider, strong,
+                             [](const rules::CombatSession &s)
+                             {
+                                 return s.snapshot().round > 5;
+                             });
+    check(!held(*free.session), "Strength 19 is not held");
+}
+
+// Two claws that both hit bring two rakes of 2d4 (cbtacts.pas, RearClawRake).
+void both_claws_rake()
+{
+    const auto cat = monster({4, 1, 2, 0}, {2, 1, 6, 0}, {{73, 0, 0, false}});
+    auto fight = attack_until(cat, victim(),
+                              [](const rules::CombatSession &session)
+                              {
+                                  return logged(session, "{attacker} rakes {name}.") > 0;
+                              });
+    check(logged(*fight.session, "{attacker} rakes {name}.") > 0, "Both claws hit: it rakes");
+}
+
+// A mummy's touch rots: the victim can no longer be healed (effhndlr.pas, 87).
+void a_mummy_rots()
+{
+    const auto mummy = monster({2, 1, 1, 0}, {0, 0, 0, 0}, {{87, 0, 0, false}});
+    auto fight = attack_until(mummy, victim(),
+                              [](const rules::CombatSession &session)
+                              {
+                                  return logged(session, "{name} is diseased.") > 0;
+                              });
+    check(logged(*fight.session, "{name} is diseased.") == 1, "Mummy rot, once");
+}
+
 } // namespace
 
 int main()
@@ -1024,6 +1309,14 @@ int main()
         morale_breaks();
         fleeing_off_the_field();
         a_panic_survives_a_save();
+        effects_come_from_the_record();
+        the_helpless_are_slain();
+        poison_kills();
+        a_ghoul_paralyses();
+        a_stirge_drinks_its_fill();
+        a_bite_holds();
+        both_claws_rake();
+        a_mummy_rots();
         real_records_fight();
         std::cout << "Original-rules combat passed.\n";
     }

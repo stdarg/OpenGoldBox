@@ -11,6 +11,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 // Fights under the original rules (docs/ORIGINAL-RULES.md, plan step 4): the
 // rules module the game's combat runs through, and the numbers a creature
@@ -57,6 +58,19 @@ struct Missile
     bool operator==(const Missile &) const = default;
 };
 
+// An effect on a creature (fxengine.pas): its code, the minutes left (0 for
+// one that lasts), the strength its handler keeps data in, and whether its
+// handler runs as it is removed.
+struct Effect
+{
+    int code{};
+    int minutes{};
+    int strength{};
+    bool on_remove{};
+
+    bool operator==(const Effect &) const = default;
+};
+
 // A creature's numbers in a fight under the original rules.
 struct Combatant
 {
@@ -89,6 +103,15 @@ struct Combatant
     bool large{};
     // Its readied missile weapon, if any.
     std::optional<Missile> missile;
+    // What its readied protective items add to its saving throws.
+    int save_bonus{};
+    // Its Strength score, which a holding bite cannot hold from 19 up, and
+    // whether it is an elf, whom a ghoul's touch does not paralyse.
+    int strength{10};
+    bool elf{};
+    // Its effects: a monster's from its record (MONnSPC), and those the fight
+    // adds.
+    std::vector<Effect> effects;
 
     [[nodiscard]] std::string encode() const;
     [[nodiscard]] static std::optional<Combatant> decode(std::string_view data);
@@ -111,7 +134,8 @@ struct CarriedItem
 // coins on its movement. The original loads a monster's record unchanged, its
 // current Hit Points included (eclvm.pas, EclLoadMonster).
 [[nodiscard]] Combatant combatant_from_record(const por::CharacterRecord &record,
-                                              std::span<const CarriedItem> carried = {});
+                                              std::span<const CarriedItem> carried = {},
+                                              std::span<const por::EffectRecord> effects = {});
 
 // What the original rules' module knows of a game: its monsters, by the key a
 // fight's participant names them with (por::CreatureId::key(), "MON2CHA.DAX:0").

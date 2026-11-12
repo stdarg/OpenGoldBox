@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <charconv>
 #include <optional>
+#include <span>
 #include <cstdlib>
 #include <sstream>
 #include <stdexcept>
@@ -27,7 +28,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 4";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 6";
 
 enum class Condition : unsigned
 {
@@ -43,6 +44,28 @@ enum class Condition : unsigned
 // The record's NPC byte from 0x80 up marks a creature whose morale counts;
 // below it are the player's characters, who never check (combatai.pas, CheckMorale).
 constexpr unsigned non_player = 0x80;
+
+// The effects that leave a creature helpless: nausea, snake charm, paralysis
+// and sleep (charhlp.pas, IsHelpless).
+constexpr std::array<int, 4> helpless_effects{31, 51, 52, 53};
+
+// The effects a creature loses as it goes down or leaves the field, the first
+// of each code (fxengine.pas, RemoveEffectsHp0).
+constexpr std::array<int, 16> effects_ending_at_zero{7,  11, 30, 31, 32, 51,  52, 53,
+                                                     54, 58, 59, 95, 98, 137, 74, 75};
+
+// Effect codes the fight itself uses.
+namespace effect
+{
+constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_rot = 57,
+              paralysis = 52, immobile = 58;
+} // namespace effect
+
+// What a hit carries, by the attacker's effects, in the original's order: a
+// primary attack's hit and a secondary one's (effhndlr.pas, HIT_PHASE_1 and
+// HIT_PHASE_2). Level drain (85, 86) comes with its own step.
+constexpr std::array<int, 6> primary_hit_effects{87, 68, 76, 73, 77, 0};
+constexpr std::array<int, 8> secondary_hit_effects{64, 65, 66, 67, 68, 69, 70, 87};
 
 struct Fighter
 {
@@ -75,6 +98,8 @@ struct Fighter
     bool guarding{};
     // Its morale broke at its turn's start: it runs for the edge.
     bool fleeing{};
+    // Forced to flee for the rest of the fight: a stirge that has drunk its fill.
+    bool turned{};
 
     [[nodiscard]] bool able() const noexcept
     {
@@ -90,6 +115,49 @@ struct Fighter
     [[nodiscard]] int attacks() const noexcept
     {
         return attacks_left[0] + attacks_left[1];
+    }
+
+    [[nodiscard]] bool has(int code) const noexcept
+    {
+        return std::any_of(numbers.effects.begin(), numbers.effects.end(),
+                           [code](const Effect &e)
+                           {
+                               return e.code == code;
+                           });
+    }
+
+    [[nodiscard]] bool helpless() const noexcept
+    {
+        return std::any_of(helpless_effects.begin(), helpless_effects.end(),
+                           [this](int code)
+                           {
+                               return has(code);
+                           });
+    }
+
+    // Removes the first effect of the code, if any.
+    void remove(int code)
+    {
+        auto &effects = numbers.effects;
+        const auto found = std::find_if(effects.begin(), effects.end(),
+                                        [code](const Effect &e)
+                                        {
+                                            return e.code == code;
+                                        });
+        if (found != effects.end())
+        {
+            effects.erase(found);
+        }
+    }
+
+    [[nodiscard]] Effect *find_effect(int code)
+    {
+        const auto found = std::find_if(numbers.effects.begin(), numbers.effects.end(),
+                                        [code](const Effect &e)
+                                        {
+                                            return e.code == code;
+                                        });
+        return found == numbers.effects.end() ? nullptr : &*found;
     }
 };
 
@@ -384,6 +452,17 @@ class Session final : public rules::CombatSession
     void guards_strike(Fighter &mover);
     [[nodiscard]] bool can_bandage(const Fighter &bandager, const Fighter &dying) const;
     void inflict(Fighter &target, int damage);
+    void slay_helpless(Fighter &attacker, Fighter &defender);
+    void end_effects_at_zero(Fighter &f);
+    void release(Fighter &holder, int code);
+    void on_hit(Fighter &attacker, Fighter &defender, int phase, int primary_hits);
+    void poison(Fighter &victim, int modifier);
+    void paralyze(Fighter &victim, int minutes, int modifier);
+    void kill(Fighter &victim);
+    void rake(Fighter &attacker, Fighter &victim);
+    void attached_turn(Fighter &f);
+    void age_effects();
+    [[nodiscard]] bool saving_throw(const Fighter &f, int save, int modifier);
     void update_hostile_hit_points();
     [[nodiscard]] int highest_enemy_movement(const Fighter &f) const;
     bool check_morale(Fighter &f);
@@ -435,7 +514,7 @@ void Session::begin_round()
                 f.initiative = 0;
             }
         }
-        f.half_moves = 2 * f.numbers.movement;
+        f.half_moves = f.has(effect::immobile) ? 0 : 2 * f.numbers.movement;
         f.attack_phase = 1;
         f.sweep_budget = f.numbers.attack_level;
         for (std::size_t form = 0; form < f.attacks_left.size(); ++form)
@@ -493,6 +572,21 @@ void Session::next_actor()
             // (combat.pas, the creature's turn).
             best->flank_count = best->flank_spread = 0;
             best->guarding = false;
+            // A helpless creature's turn ends as it starts (effhndlr.pas, the
+            // helpless effects at TURN_START).
+            if (best->helpless())
+            {
+                end_actions(*best);
+                continue;
+            }
+            // A holding bite or a drinking stirge spends its turn on its victim
+            // (effhndlr.pas, ACTION_START).
+            attached_turn(*best);
+            if (best->initiative <= 0 || !best->able())
+            {
+                settle_outcome();
+                continue;
+            }
             if (check_morale(*best))
             {
                 settle_outcome();
@@ -509,6 +603,7 @@ void Session::next_actor()
 // (combat.pas, EndOfRound).
 void Session::end_round()
 {
+    age_effects();
     update_hostile_hit_points();
     for (auto &f : fighters_)
     {
@@ -571,11 +666,17 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
     const int armor_class = backstab ? defender.numbers.rear_armor_class + 2
                             : behind ? defender.numbers.rear_armor_class
                                      : defender.numbers.armor_class;
+    if (defender.helpless())
+    {
+        slay_helpless(attacker, defender);
+        return;
+    }
     if (backstab)
     {
         log({"{attacker} backstabs {name}.",
              {{"attacker", attacker.name}, {"name", defender.name}}});
     }
+    int primary_hits = 0;
     for (int phase = attacker.attack_phase; phase >= 0 && defender.able(); --phase)
     {
         auto &left = attacker.attacks_left[static_cast<std::size_t>(phase)];
@@ -584,11 +685,16 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
         {
             attack = *attacker.numbers.large_attack;
         }
-        for (; left > 0 && defender.able(); --left)
+        // Each attack is spent before it is rolled, so that what a hit carries
+        // (a rake) may take over the rest.
+        while (left > 0 && defender.able())
         {
+            --left;
             attacker.attack_phase = phase;
             const auto natural = roll(20);
-            if (!attack_hits(natural, attacker.numbers.thac0, armor_class, 0))
+            // One made helpless partway through is hit by the rest (cbtacts.pas, RollAttacks).
+            if (!attack_hits(natural, attacker.numbers.thac0, armor_class, 0) &&
+                !defender.helpless())
             {
                 log({"{attacker} misses {name}.",
                      {{"attacker", attacker.name}, {"name", defender.name}}});
@@ -609,6 +715,11 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
                   {"name", defender.name},
                   {"damage", std::to_string(damage)}}});
             inflict(defender, damage);
+            primary_hits += phase == 0 ? 1 : 0;
+            if (defender.able())
+            {
+                on_hit(attacker, defender, phase, primary_hits);
+            }
         }
     }
     attacker.sweep_budget = 0;
@@ -736,8 +847,9 @@ void Session::free_attacks(Fighter &mover, Cell next)
     stepped.cell = next;
     for (auto &enemy : fighters_)
     {
-        if (!mover.able() || enemy.side == mover.side || !enemy.able() || !adjacent(enemy, mover) ||
-            adjacent(enemy, stepped))
+        if (!mover.able() || enemy.side == mover.side || !enemy.able() || enemy.helpless() ||
+            enemy.has(effect::bite_hold) || enemy.has(effect::blood_drain) ||
+            !adjacent(enemy, mover) || adjacent(enemy, stepped))
         {
             continue;
         }
@@ -774,7 +886,7 @@ void Session::guards_strike(Fighter &mover)
     for (auto &guard : fighters_)
     {
         if (!mover.able() || !guard.guarding || guard.side == mover.side || !guard.able() ||
-            !adjacent(guard, mover))
+            guard.helpless() || !adjacent(guard, mover))
         {
             continue;
         }
@@ -849,6 +961,276 @@ void Session::inflict(Fighter &target, int damage)
              {{"name", target.name}}});
     }
     target.initiative = 0;
+    end_effects_at_zero(target);
+}
+
+// It loses the effects that end at 0 Hit Points; a hold or a drain it had
+// lets its victim go (fxengine.pas, RemoveEffectsHp0).
+void Session::end_effects_at_zero(Fighter &f)
+{
+    for (const auto code : effects_ending_at_zero)
+    {
+        if (code == effect::bite_hold || code == effect::blood_drain)
+        {
+            release(f, code);
+        }
+        else
+        {
+            f.remove(code);
+        }
+    }
+}
+
+// A hold or a drain ends: its victim, whose combat number its strength keeps,
+// may move again.
+void Session::release(Fighter &holder, int code)
+{
+    const auto *hold = holder.find_effect(code);
+    if (!hold)
+    {
+        return;
+    }
+    if (auto *victim = find(static_cast<EntityId>(hold->strength)))
+    {
+        victim->remove(effect::immobile);
+    }
+    holder.remove(code);
+}
+
+// What a hit that leaves its target standing carries (cbtacts.pas, RollAttacks;
+// effhndlr.pas). The original stacked a new hold at each hit of a holding
+// bite; one hold at a time here (an obvious bug, fixed).
+void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primary_hits)
+{
+    const auto effects = phase == 0 ? std::span<const int>(primary_hit_effects)
+                                    : std::span<const int>(secondary_hit_effects);
+    for (const auto code : effects)
+    {
+        if (code == 0 || !attacker.has(code) || !defender.able())
+        {
+            continue;
+        }
+        switch (code)
+        {
+        case 64:
+            poison(defender, 0);
+            break;
+        case 65:
+            poison(defender, 4);
+            break;
+        case 66:
+            poison(defender, 2);
+            break;
+        case 70:
+            poison(defender, -2);
+            break;
+        case 67:
+            paralyze(defender, roll(8) + roll(8), 0);
+            break;
+        case 68:
+            if (!defender.numbers.elf)
+            {
+                paralyze(defender, 63, 0);
+            }
+            break;
+        case 69:
+            // The original passed -2 and its paralysis ignored it (an obvious bug, fixed).
+            paralyze(defender, roll(9) + 10, -2);
+            break;
+        case 87:
+            // Mummy rot: no healing for 10 days, and death in 1d6 months
+            // unless cured (effhndlr.pas, EffRotTouch).
+            if (!defender.has(effect::rot))
+            {
+                defender.numbers.effects.push_back({effect::rot, 14400, 0, true});
+                defender.numbers.effects.push_back(
+                    {effect::mummy_rot, 43200, roll(6) * 16 + 15, true});
+                log({"{name} is diseased.", {{"name", defender.name}}});
+            }
+            break;
+        case 76:
+            // A stirge drinks 12 to 15 Hit Points' worth, its strength the
+            // victim's, which cannot move meanwhile (effhndlr.pas, EffBloodAttach).
+            attacker.numbers.effects.push_back(
+                {effect::blood_drain, 12 * 16 + 15, static_cast<int>(defender.id), true});
+            defender.numbers.effects.push_back({effect::immobile, 0, 0, false});
+            defender.half_moves = 0;
+            break;
+        case 73:
+            if (primary_hits == 2)
+            {
+                rake(attacker, defender);
+            }
+            break;
+        case 77:
+            if (defender.numbers.strength < 19 && !attacker.has(effect::bite_hold))
+            {
+                attacker.numbers.effects.push_back(
+                    {effect::bite_hold, 0, static_cast<int>(defender.id), true});
+                defender.numbers.effects.push_back({effect::immobile, 0, 0, false});
+                defender.half_moves = 0;
+                log({"{name} is held fast.", {{"name", defender.name}}});
+            }
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+// A poisoned touch kills unless saved against (save 0, paralysis and poison).
+void Session::poison(Fighter &victim, int modifier)
+{
+    if (saving_throw(victim, 0, modifier))
+    {
+        return;
+    }
+    log({"{name} is poisoned.", {{"name", victim.name}}});
+    victim.numbers.effects.push_back({effect::poisoned, 0, 0, false});
+    kill(victim);
+}
+
+void Session::paralyze(Fighter &victim, int minutes, int modifier)
+{
+    if (saving_throw(victim, 0, modifier))
+    {
+        return;
+    }
+    log({"{name} is paralyzed.", {{"name", victim.name}}});
+    victim.numbers.effects.push_back({effect::paralysis, minutes, 12, false});
+}
+
+// Killed outright, whatever its Hit Points.
+void Session::kill(Fighter &victim)
+{
+    victim.condition = Condition::dead;
+    victim.hit_points = 0;
+    victim.initiative = 0;
+    log({"{name} is killed.", {{"name", victim.name}}});
+    end_effects_at_zero(victim);
+}
+
+// Both claws hit: two rakes of 2d4 with the rear claws, then its actions end
+// (cbtacts.pas, RearClawRake).
+void Session::rake(Fighter &attacker, Fighter &victim)
+{
+    auto &rear = attacker.numbers.attacks[1];
+    const auto own = rear;
+    rear = {own.rate_per_two_rounds, 2, 4, own.modifier};
+    attacker.attacks_left = {0, 2};
+    attacker.attack_phase = 1;
+    log({"{attacker} rakes {name}.", {{"attacker", attacker.name}, {"name", victim.name}}});
+    make_attack(attacker, victim, false);
+    rear = own;
+    attacker.attacks_left = {0, 0};
+    end_actions(attacker);
+}
+
+// At its turn's start a creature holding a victim bites it from behind with
+// 3d4, and a stirge drinks 1d4 from its victim; either spends its turn. A
+// stirge that has drunk its fill lets go and flies off (effhndlr.pas, 74 and 75).
+void Session::attached_turn(Fighter &f)
+{
+    if (const auto *hold = f.find_effect(effect::bite_hold))
+    {
+        auto *victim = find(static_cast<EntityId>(hold->strength));
+        if (!f.able() || !victim || !victim->able())
+        {
+            release(f, effect::bite_hold);
+        }
+        else
+        {
+            auto &bite = f.numbers.attacks[0];
+            const auto own = bite;
+            bite = {own.rate_per_two_rounds, 3, 4, own.modifier};
+            f.attacks_left = {1, 0};
+            f.attack_phase = 0;
+            make_attack(f, *victim, true);
+            bite = own;
+            end_actions(f);
+            if (!victim->able())
+            {
+                release(f, effect::bite_hold);
+            }
+        }
+    }
+    if (const auto *drain = f.find_effect(effect::blood_drain))
+    {
+        auto *victim = find(static_cast<EntityId>(drain->strength));
+        if (!f.able() || !victim || !victim->able())
+        {
+            release(f, effect::blood_drain);
+            return;
+        }
+        const int damage = roll(4);
+        log({"{attacker} drinks {name}'s blood for {damage}.",
+             {{"attacker", f.name}, {"name", victim->name}, {"damage", std::to_string(damage)}}});
+        inflict(*victim, damage);
+        end_actions(f);
+        auto *left = f.find_effect(effect::blood_drain);
+        if (left && victim->able() && left->minutes / 16 > damage)
+        {
+            left->minutes -= damage * 16;
+            return;
+        }
+        release(f, effect::blood_drain);
+        if (f.able() && victim->able())
+        {
+            f.turned = true;
+        }
+    }
+}
+
+// An attack on a helpless creature is one blow of its Hit Points and 5 more,
+// which leaves it dying 5 below 0; the attacker's attacks are spent
+// (cbtacts.pas, RollAttacks).
+void Session::slay_helpless(Fighter &attacker, Fighter &defender)
+{
+    log({"{attacker} slays the helpless {name}.",
+         {{"attacker", attacker.name}, {"name", defender.name}}});
+    inflict(defender, defender.hit_points + 5);
+    attacker.attacks_left = {0, 0};
+    attacker.sweep_budget = 0;
+    end_actions(attacker);
+}
+
+// A round is a minute: every creature's timed effects age by one, and those
+// with a minute or less left end (fxengine.pas, the clock's advance).
+void Session::age_effects()
+{
+    for (auto &f : fighters_)
+    {
+        auto &effects = f.numbers.effects;
+        std::erase_if(effects,
+                      [](const Effect &e)
+                      {
+                          return e.minutes == 1;
+                      });
+        for (auto &e : effects)
+        {
+            e.minutes = e.minutes > 1 ? e.minutes - 1 : e.minutes;
+        }
+    }
+}
+
+// A saving throw (fxengine.pas, RollSavingThrow): a natural 1 fails and a
+// natural 20 saves; otherwise the roll with the creature's save bonus and the
+// modifier must reach its number for the save. A total below 0 fails, where
+// the original's byte wrapped it to a success (an obvious bug, fixed).
+bool Session::saving_throw(const Fighter &f, int save, int modifier)
+{
+    const int natural = roll(20);
+    if (natural == 1 || natural == 20)
+    {
+        return natural == 20;
+    }
+    // Immunity to paralysis and poison makes those saves (effhndlr.pas, 111 and 125).
+    if (save == 0 && (f.has(111) || f.has(125)))
+    {
+        return true;
+    }
+    const int total = natural + f.numbers.save_bonus + modifier;
+    return total >= 0 && total >= f.numbers.saving_throws[static_cast<std::size_t>(save)];
 }
 
 // The opposition's Hit Points left, those of the creatures still fighting
@@ -894,6 +1276,14 @@ int Session::highest_enemy_movement(const Fighter &f) const
 bool Session::check_morale(Fighter &f)
 {
     f.fleeing = false;
+    release(f, effect::bite_hold);
+    release(f, effect::blood_drain);
+    if (f.turned)
+    {
+        f.fleeing = true;
+        log({"{name} is forced to flee.", {{"name", f.name}}});
+        return false;
+    }
     if (f.numbers.morale < non_player)
     {
         return false;
@@ -939,6 +1329,7 @@ void Session::put_out_of_play(Fighter &f, Condition condition)
     }
     f.fleeing = false;
     end_actions(f);
+    end_effects_at_zero(f);
 }
 
 // Stepping off the field (cbtacts.pas, AttemptFlee): it gets away with no
@@ -1093,6 +1484,7 @@ rules::Snapshot Session::snapshot() const
                       : f->condition == Condition::unconscious ? "unconscious"
                       : f->condition == Condition::fled        ? "fled"
                       : f->condition == Condition::surrendered ? "surrendered"
+                      : f->helpless()                          ? "helpless"
                                                                : "";
         view.fled = f->condition == Condition::fled;
         view.surrendered = f->condition == Condition::surrendered;
@@ -1326,7 +1718,7 @@ std::string Session::save() const
             f.footprint.width, f.footprint.height, f.facing_left, f.numbers.encode(), f.hit_points,
             static_cast<unsigned>(f.condition), f.overkill, f.initiative, f.half_moves,
             f.attacks_left[0], f.attacks_left[1], f.surprised, f.attack_phase, f.sweep_budget,
-            f.direction, f.flank_count, f.flank_spread, f.guarding, f.fleeing);
+            f.direction, f.flank_count, f.flank_spread, f.guarding, f.fleeing, f.turned);
     }
     out(log_.size());
     for (const auto &entry : log_)
@@ -1418,6 +1810,7 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         f.flank_spread = in.as<int>();
         f.guarding = in.as<bool>();
         f.fleeing = in.as<bool>();
+        f.turned = in.as<bool>();
         if (f.condition > Condition::surrendered || f.attack_phase < 0 || f.attack_phase > 1 ||
             f.direction < 0 || f.direction > 7)
         {
