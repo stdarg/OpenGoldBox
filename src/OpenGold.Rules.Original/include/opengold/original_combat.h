@@ -122,6 +122,8 @@ struct Combatant
     int save_bonus{};
     // Its Strength score, which a holding bite cannot hold from 19 up.
     int strength{10};
+    // Its undead level for turning (1 skeleton to 10 vampire), 0 for the living.
+    int undead_level{};
     // Its race by the original's numbers: 0 a monster, then dwarf, elf,
     // gnome, half-elf, halfling, half-orc and human (1 to 7).
     int race{};

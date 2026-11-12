@@ -22,6 +22,7 @@ namespace opengold::original::detail
 namespace
 {
 
+using original::ClassSlot;
 using rules::Cell;
 using rules::EntityId;
 using rules::Message;
@@ -29,7 +30,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 8";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 9";
 
 enum class Condition : unsigned
 {
@@ -106,8 +107,11 @@ struct Fighter
     bool guarding{};
     // Its morale broke at its turn's start: it runs for the edge.
     bool fleeing{};
-    // Forced to flee for the rest of the fight: a stirge that has drunk its fill.
+    // Forced to flee for the rest of the fight: a stirge that has drunk its
+    // fill, or undead a cleric turned.
     bool turned{};
+    // It has tried to turn undead in this fight: once a fight.
+    bool tried_turning{};
 
     [[nodiscard]] bool able() const noexcept
     {
@@ -477,6 +481,7 @@ class Session final : public rules::CombatSession
     void drain_levels(Fighter &victim, int levels);
     void rake(Fighter &attacker, Fighter &victim);
     void attached_turn(Fighter &f);
+    void turn_undead(Fighter &cleric);
     void combat_start();
     void round_end_effects();
     void expire(Fighter &f, const Effect &ended);
@@ -1213,6 +1218,93 @@ void Session::drain_levels(Fighter &victim, int levels)
             return;
         }
     }
+}
+
+// The roll a cleric needs to turn undead, by the undead's level (1 skeleton to
+// 10 vampire) and the cleric's level (1 to 8, 9 to 13, 14 up): above 0 it
+// turns, 0 destroys, below 0 destroys on that much or more, 99 never
+// (cbtacts.pas, CombatTurnUndead).
+constexpr std::array<std::array<int, 10>, 10> turning_table{{
+    {10, 7, 4, 1, 1, 0, 0, -1, -1, -1},
+    {13, 10, 7, 1, 1, 0, 0, 0, -1, -1},
+    {16, 13, 10, 4, 1, 1, 0, 0, 0, -1},
+    {19, 16, 13, 7, 4, 1, 1, 0, 0, -1},
+    {20, 19, 16, 10, 7, 4, 1, 1, 0, 0},
+    {99, 20, 19, 13, 10, 7, 4, 1, 1, 0},
+    {99, 99, 20, 16, 13, 10, 7, 4, 1, 0},
+    {99, 99, 99, 20, 16, 13, 10, 7, 4, 1},
+    {99, 99, 99, 99, 20, 16, 13, 10, 7, 1},
+    {99, 99, 99, 99, 99, 20, 16, 13, 10, 4},
+}};
+
+// Turning undead, once a fight (cbtacts.pas, CombatTurnUndead): one d20 for
+// the whole attempt against up to 1d12 undead enemies in sight, the lowest
+// first and the nearest of those; each it beats is turned, or destroyed, and
+// the first it fails ends the attempt. Destruction goes on to at least six.
+// The cleric's actions end.
+void Session::turn_undead(Fighter &cleric)
+{
+    cleric.tried_turning = true;
+    log({"{name} turns undead.", {{"name", cleric.name}}});
+    const int level = cleric.numbers.class_levels[static_cast<std::size_t>(ClassSlot::cleric)];
+    const auto column = static_cast<std::size_t>(level <= 8 ? level - 1 : level <= 13 ? 8 : 9);
+    int budget = roll(12);
+    int at_least = 6;
+    const int natural = roll(20);
+    bool any = false;
+    while (budget > 0)
+    {
+        Fighter *target = nullptr;
+        for (auto &f : fighters_)
+        {
+            if (f.side == cleric.side || !f.able() || f.turned || f.numbers.undead_level < 1 ||
+                f.numbers.undead_level > 10 || !sees(board_, cleric, f))
+            {
+                continue;
+            }
+            if (!target || f.numbers.undead_level < target->numbers.undead_level ||
+                (f.numbers.undead_level == target->numbers.undead_level &&
+                 distance(cleric, f) < distance(cleric, *target)))
+            {
+                target = &f;
+            }
+        }
+        if (!target)
+        {
+            break;
+        }
+        const int need =
+            turning_table[static_cast<std::size_t>(target->numbers.undead_level - 1)][column];
+        if (natural < std::abs(need))
+        {
+            break;
+        }
+        any = true;
+        if (need > 0)
+        {
+            target->turned = true;
+            log({"{name} is turned.", {{"name", target->name}}});
+        }
+        else
+        {
+            target->condition = Condition::gone;
+            target->hit_points = 0;
+            target->initiative = 0;
+            log({"{name} is destroyed.", {{"name", target->name}}});
+            end_effects_at_zero(*target);
+        }
+        at_least = std::max(at_least - 1, 0);
+        --budget;
+        if (budget == 0 && at_least > 0 && need < 0)
+        {
+            budget = 1;
+        }
+    }
+    if (!any)
+    {
+        log({"Nothing happens.", {}});
+    }
+    end_actions(cleric);
 }
 
 // Killed outright, whatever its Hit Points.
@@ -1967,6 +2059,12 @@ std::vector<rules::Command> Session::legal_commands() const
         offer("guard");
     }
     offer("delay");
+    // Turn, once a fight for one with cleric levels (combat.pas, CombatMenu).
+    if (actor->numbers.class_levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0 &&
+        !actor->tried_turning)
+    {
+        offer("turn");
+    }
     for (const auto &f : fighters_)
     {
         if (can_bandage(*actor, f))
@@ -2057,6 +2155,10 @@ bool Session::submit(const rules::Command &command)
         note_attack(actor, target);
         shoot(actor, target);
     }
+    else if (command.verb == "turn")
+    {
+        turn_undead(actor);
+    }
     else if (command.verb == "flee")
     {
         attempt_flee(actor);
@@ -2128,7 +2230,8 @@ std::string Session::save() const
             f.footprint.width, f.footprint.height, f.facing_left, f.numbers.encode(), f.hit_points,
             static_cast<unsigned>(f.condition), f.overkill, f.initiative, f.half_moves,
             f.attacks_left[0], f.attacks_left[1], f.surprised, f.attack_phase, f.sweep_budget,
-            f.direction, f.flank_count, f.flank_spread, f.guarding, f.fleeing, f.turned);
+            f.direction, f.flank_count, f.flank_spread, f.guarding, f.fleeing, f.turned,
+            f.tried_turning);
     }
     out(log_.size());
     for (const auto &entry : log_)
@@ -2221,6 +2324,7 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         f.guarding = in.as<bool>();
         f.fleeing = in.as<bool>();
         f.turned = in.as<bool>();
+        f.tried_turning = in.as<bool>();
         if (f.condition > Condition::gone || f.attack_phase < 0 || f.attack_phase > 1 ||
             f.direction < 0 || f.direction > 7)
         {

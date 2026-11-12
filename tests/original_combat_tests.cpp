@@ -1624,6 +1624,73 @@ void a_mummy_frightens()
           "The coward is paralysed with fear, the immune one is not");
 }
 
+// A cleric of this level.
+original::Combatant cleric(int level)
+{
+    auto c = creature(30, level);
+    c.class_levels[static_cast<std::size_t>(original::ClassSlot::cleric)] = level;
+    return c;
+}
+
+original::Combatant undead(int undead_level)
+{
+    auto c = creature(30, 0);
+    c.undead_level = undead_level;
+    c.morale = 0x80 + 50;
+    return c;
+}
+
+// Turning undead, once a fight (cbtacts.pas, CombatTurnUndead): a level-8
+// cleric destroys every skeleton it sees, a level-1 one cannot turn a vampire,
+// and a turned skeleton is forced to flee.
+void clerics_turn_undead()
+{
+    auto fight = arrange({{"Cleric", rules::Side::party, {1, 3}, cleric(8)},
+                          {"Skeleton 1", rules::Side::opposition, {5, 2}, undead(1)},
+                          {"Skeleton 2", rules::Side::opposition, {5, 4}, undead(1)},
+                          {"Skeleton 3", rules::Side::opposition, {6, 3}, undead(1)},
+                          {"Hidden", rules::Side::opposition, {7, 7}, undead(1)}},
+                         67, {{6, 6}, {6, 7}, {7, 6}});
+    auto &session = *fight.session;
+    until_turn_of(session, "Cleric");
+    session.submit(order(session, "turn"));
+    const auto state = session.snapshot();
+    check(view_of(state, "Skeleton 1").status == "gone" &&
+              view_of(state, "Skeleton 2").status == "gone" &&
+              view_of(state, "Skeleton 3").status == "gone",
+          "A level-8 cleric destroys every skeleton in sight");
+    check(view_of(state, "Hidden").status.empty(), "Not one behind a wall");
+    until_turn_of(session, "Cleric");
+    check(!offered(session, "turn"), "Turning is once a fight");
+
+    auto vampire = arrange({{"Cleric", rules::Side::party, {1, 3}, cleric(1)},
+                            {"Vampire", rules::Side::opposition, {5, 3}, undead(10)}},
+                           67);
+    until_turn_of(*vampire.session, "Cleric");
+    vampire.session->submit(order(*vampire.session, "turn"));
+    check(logged(*vampire.session, "Nothing happens.") == 1,
+          "A level-1 cleric cannot turn a vampire");
+
+    auto turned = arrange({{"Cleric", rules::Side::party, {1, 3}, cleric(4)},
+                           {"Skeleton", rules::Side::opposition, {5, 3}, undead(1)}},
+                          67);
+    auto &rout = *turned.session;
+    until_turn_of(rout, "Cleric");
+    rout.submit(order(rout, "turn"));
+    play_until(
+        rout,
+        [&](const std::string &)
+        {
+            return order(rout, "end");
+        },
+        [&]
+        {
+            return view_of(rout.snapshot(), "Skeleton").panicked;
+        });
+    check(logged(rout, "{name} is turned.") == 1 && logged(rout, "{name} is forced to flee.") == 1,
+          "A turned skeleton is forced to flee");
+}
+
 } // namespace
 
 int main()
@@ -1663,6 +1730,7 @@ int main()
         displacement_turns_the_first_attack();
         some_cannot_be_targeted();
         a_mummy_frightens();
+        clerics_turn_undead();
         real_records_fight();
         std::cout << "Original-rules combat passed.\n";
     }

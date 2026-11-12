@@ -296,7 +296,21 @@ gear.
    the original recomputes them (`RecalcStats`, `RecalcAttacksLeft`), so a
    fight needs each creature's items, not only the profile worked out at its
    start.
-8. Spells in combat.
+8. Spells in combat. In parts:
+   - 8a. The casting framework, with the first-level spells: the Cast
+     command, casting time (the spell goes off later in the round and is lost
+     to damage before then), targets (one creature or several, a radius at a
+     square, the caster), the save, the shared damage roll and the effect
+     each target gets, with immunities.
+   - 8b. The second- and third-level spells.
+   - 8c. *Done 2026-11-12:* turning undead, once a fight for one with cleric
+     levels: one d20 for the whole attempt against up to 1d12 undead enemies
+     in sight, the lowest kinds first and the nearest of those, by the
+     original's table; each it beats is turned (forced to flee for the rest
+     of the fight) or destroyed, and the first it fails ends the attempt.
+     Destruction on a roll goes on to at least six; destruction without one
+     (a 0 in the table) does not, as in the original.
+   - 8d. Spells from items: wands, scrolls and potions.
 9. The original's AI. It readies its best weapon and armor at each of its
    turns (`EquipWeaponAndArmor`): many monsters carry their weapons unreadied
    (Pool of Radiance's goblin guards their short swords). Its monsters' own

@@ -11,7 +11,7 @@ namespace opengold::original
 namespace
 {
 
-constexpr std::string_view profile_format = "combatant7";
+constexpr std::string_view profile_format = "combatant8";
 
 std::vector<int> numbers_of(const Combatant &c)
 {
@@ -38,10 +38,10 @@ std::vector<int> numbers_of(const Combatant &c)
                     after.modifier, missile.empty_handed_backstabs ? 1 : 0});
     numbers.insert(numbers.end(), c.class_levels.begin(), c.class_levels.end());
     numbers.insert(numbers.end(),
-                   {c.strength, c.race, c.striker ? 1 : 0, c.striker ? c.striker->plus : 0,
-                    c.striker && c.striker->silver ? 1 : 0, c.striker ? c.striker->weapon_class : 0,
-                    c.weapon_type, c.wards_gaze ? 1 : 0, c.save_bonus,
-                    static_cast<int>(c.effects.size())});
+                   {c.strength, c.undead_level, c.race, c.striker ? 1 : 0,
+                    c.striker ? c.striker->plus : 0, c.striker && c.striker->silver ? 1 : 0,
+                    c.striker ? c.striker->weapon_class : 0, c.weapon_type, c.wards_gaze ? 1 : 0,
+                    c.save_bonus, static_cast<int>(c.effects.size())});
     for (const auto &effect : c.effects)
     {
         numbers.insert(numbers.end(),
@@ -150,6 +150,7 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
         }
     }
     c.strength = *next++;
+    c.undead_level = *next++;
     c.race = *next++;
     if (*next++ != 0)
     {
@@ -459,6 +460,7 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
         c.missile = missile_of(record, carried, *weapon);
     }
     c.strength = strength;
+    c.undead_level = record.undead_level;
     c.race = record.race;
     c.weapon_type = weapon ? weapon->item.type : -1;
     c.striker = striker_of(carried, weapon);
