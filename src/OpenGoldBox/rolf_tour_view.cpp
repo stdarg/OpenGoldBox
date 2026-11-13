@@ -1997,12 +1997,14 @@ String rest_notice(const std::string &resource, const std::string &text)
          N_("The river's stench drives you back."),
          N_("Tyranthraxus is destroyed, and Phlan is free of him. You have won."),
          N_("You have won."),
+         N_("The party gains experience."),
          N_("The way to another area is not in the game yet.")})
     {
         result = result.replace(String::utf8(source), i18n::text(source));
     }
     // The parley's spokesman and the members lost in a flight are named.
-    const String speaks = " speaks for the party.", lost = " is left behind and lost.";
+    const String speaks = " speaks for the party.", lost = " is left behind and lost.",
+                 gains = " gains experience.";
     auto lines = result.split("\n");
     for (int n = 0; n < lines.size(); ++n)
     {
@@ -2017,6 +2019,12 @@ String rest_notice(const std::string &resource, const std::string &text)
             lines[n] =
                 i18n::format(N_("{name} is left behind and lost."),
                              {{"name", lines[n].substr(0, lines[n].length() - lost.length())}});
+        }
+        else if (lines[n].ends_with(gains) && lines[n] != "The party gains experience.")
+        {
+            lines[n] =
+                i18n::format(N_("{name} gains experience."),
+                             {{"name", lines[n].substr(0, lines[n].length() - gains.length())}});
         }
     }
     return String("\n").join(lines);

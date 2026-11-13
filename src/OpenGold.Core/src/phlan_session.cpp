@@ -88,7 +88,7 @@ void RolfTourSession::change_area(unsigned id)
 }
 
 // The script commands the party answers; Curse adds DUMP (62) and DESTROY
-// ITEMS (64).
+// ITEMS (64), Secret AWARD EXPERIENCE (65).
 void RolfTourSession::enable_party_commands()
 {
     for (const std::uint8_t op :
@@ -100,6 +100,10 @@ void RolfTourSession::enable_party_commands()
     {
         machine_.enable_host(62);
         machine_.enable_host(64);
+    }
+    if (game() == GoldBoxGame::secret_of_the_silver_blades)
+    {
+        machine_.enable_host(65);
     }
 }
 
@@ -468,10 +472,12 @@ void RolfTourSession::configure_town()
     machine_.bind_variable(game_cell(ecl_script_bank),
                            pool_of_radiance ? 3 : static_cast<std::uint16_t>(town_->bank));
     machine_.bind_variable(game_cell(ecl_party_size), 1);
-    // Kuto's Well's setup writes these two engine cells (65 or 8, and a table
-    // value) when its plaza or catacombs load. Their meaning is unverified;
-    // they are stored for the script and have no effect yet.
+    // The view's wall and ceiling/floor colour selectors (the reconstructions'
+    // WriteGbvm), which Kuto's Well's setup writes when its plaza or catacombs
+    // load; stored for the script, with no effect yet. Secret's disk 3 scripts
+    // also write C05Ah, which its original ignores.
     machine_.bind_variable(game_cell(EclAddress{0xC059}), 0);
+    machine_.bind_variable(game_cell(EclAddress{0xC05A}), 0);
     machine_.bind_variable(game_cell(EclAddress{0xC05F}), 0);
     for (const auto address : {ecl_overland_direction, ecl_overland_target_x,
                                ecl_overland_target_y, ecl_overland_terrain, ecl_overland_tile})
@@ -3797,6 +3803,25 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // DESTROY ITEMS (Curse): every item of the type in the party is gone.
         campaign_->destroy_items(static_cast<std::uint8_t>(arg(0)));
         break;
+    case 65:
+    {
+        // AWARD EXPERIENCE (Secret, eclvm EclAwardExperience): the second
+        // operand to every member, or with a first of 0 to the selected
+        // character alone, each share divided among its classes.
+        const bool whole_party = arg(0) != 0;
+        MemberId only{};
+        if (!whole_party)
+        {
+            read_character();
+            only = campaign_->state().slots.at(selected_character_.index);
+        }
+        campaign_->grant_script_experience(arg(1), only);
+        const auto line = whole_party || !only ? std::string("The party gains experience.")
+                                               : campaign_->member(only).character.sheet().name +
+                                                     " gains experience.";
+        snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") + line;
+        break;
+    }
     case 60:
     {
         // PROTECTION: a line of rune glyphs at the operand's address, which the

@@ -2290,6 +2290,38 @@ void CampaignParty::award_experience(unsigned amount, std::string reward_id, Mem
     state_ = std::move(next);
 }
 
+void CampaignParty::grant_script_experience(unsigned amount, MemberId only)
+{
+    editable();
+    auto next = state_;
+    for (auto id : next.slots)
+    {
+        if (!id || (only && id != only))
+        {
+            continue;
+        }
+        auto &member = member_in(next, id);
+        if (member.vitals.dead)
+        {
+            continue;
+        }
+        const auto &sheet = member.character.sheet();
+        const auto classes = sheet.original ? std::ranges::count_if(sheet.original->class_levels,
+                                                                    [](int level)
+                                                                    {
+                                                                        return level > 0;
+                                                                    })
+                                            : 1;
+        const auto share = amount / static_cast<unsigned>(std::max<std::ptrdiff_t>(classes, 1));
+        if (share > std::numeric_limits<unsigned>::max() - member.experience)
+        {
+            throw std::runtime_error("Experience overflow");
+        }
+        member.experience += share;
+    }
+    state_ = std::move(next);
+}
+
 CampaignParty::HallTraining CampaignParty::hall_training(MemberId id, TrainingHall hall) const
 {
     const auto &m = member(id);
