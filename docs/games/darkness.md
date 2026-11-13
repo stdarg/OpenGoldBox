@@ -1,0 +1,118 @@
+# Pools of Darkness: how its files differ
+
+*Pools of Darkness* (1991) is the last of the four *Pool of Radiance* games and
+runs on the engine *Secret of the Silver Blades* grew. This page records what
+its files change, as the census (`opengold_census`, [GAMES.md](../GAMES.md))
+reads them. The facts come from the reconstructed source of the DOS release
+and from the files themselves; the wording is our own.
+
+## Scripts, creatures and items
+
+Since 2026-11-13 the scripts (`ECL1`, 56), creatures (`MON1CHA`, 122), their
+items (`MON1ITM`, 42 lists), the item definitions (`ITEM0`) and the item types
+(`ITEMS`) decode. The game has one file of each kind: no disk numbers, so a
+record's number alone names it. *Treasures of the Savage Frontier* keeps all
+of these layouts ([treasure.md](treasure.md)); OpenGoldBox reads both with
+`late_records.h`.
+
+### Scripts
+
+Scripts load as in *Secret*: at 8000h, up to 9DFFh, behind two header bytes
+and five entry jumps, with the same operand tags and packed text. A new game
+starts with script 16. The command numbers stay, but nine commands are
+replaced and four take other operands:
+
+| Code | Command | Operands | In *Secret* |
+|---|---|---|---|
+| 0Ch | SETUP MONSTER | 4: sprite, greatest distance, picture, directions the fight may come from | 3 |
+| 1Dh | WAIT KEY | none: waits for the player to go on | PARTY STRENGTH |
+| 1Fh | JOURNAL ENTRY | 1: tells the party which journal entry to read | unused |
+| 21h | LOAD FILES | 2: a map and one wall set (FFh keeps the current set) | 3 |
+| 22h | YES NO | none: a yes or no question; yes sets the equal flag | PARTY SURPRISE |
+| 23h | CLEAR AND EXIT | none: clears the text box and ends the script | SURPRISE |
+| 27h | TREASURE | 4 and a list: platinum, gems, jewelry, then the number of items and that many item numbers | 8 |
+| 29h | (unused) | none: the command is skipped | ENCOUNTER MENU |
+| 2Ch | PLAY SOUND | 1: from 80h up a piece of music (less 80h), 2 to 14 a sound effect | PARLAY |
+| 31h | ACTION MENU | 2 and a list, as HORIZONTAL MENU, asking "what do you do?" first | SPRITE OFF |
+| 37h | FIND NPC | 2: a name, and the cell that receives the party member's place | LOAD PIECES |
+| 3Ch | STORE | 1: opens one of eleven shops whose stock the program lists | PROTECTION |
+
+Data may follow CLEAR AND EXIT, as after EXIT, so the census's walk stops
+there. TREASURE's items are numbers in `ITEM0`'s definitions; FFh is a scroll
+of three random magic-user spells. One script (49) holds a 29h, which the
+original skips. The census decodes the scripts; what the new commands do, the
+memory cells and CALL's engine routines belong to step 3, and OpenGoldBox's
+script machine does not run them yet.
+
+### Creatures
+
+A creature is 510 bytes. A character can hold 141 memorized spells and know
+125, has spell slots for nine spell levels in three lists, keeps only
+platinum, gems and jewelry, and remembers the experience and hit points a
+level drain took. Byte offsets:
+
+| Offset | Field |
+|---|---|
+| 0 | Name: a length byte and up to 15 letters |
+| 16–27 | Six abilities, each a permanent and a current score |
+| 28, 29 | Exceptional Strength: current, permanent |
+| 30–170 | Memorized spells, one a slot; bit 7 while still being memorized |
+| 171 | Hours of rest before memorizing finishes |
+| 172 | THAC0, as 60 minus the value |
+| 173, 174 | Race, class |
+| 175 | A paladin's Cure Disease uses left |
+| 176 | Age (two bytes) |
+| 178 | Maximum hit points |
+| 179–303 | Known spells |
+| 304 | Attack level |
+| 305 | Combat icon size |
+| 306–310 | Five saving throws |
+| 311 | Movement |
+| 312 | Hit Dice: the character's level for the spells and effects that ask for it |
+| 313, 314 | Level at the change of class, undead level |
+| 315–322 | Thief skills |
+| 327 | NPC flag; for a monster, from 80h up, its morale |
+| 331–336 | Coins: platinum, gems, jewelry (two bytes each) |
+| 337–343 | Levels: cleric, druid, fighter, paladin, ranger, magic-user, thief |
+| 344–350 | The same levels before the change of class |
+| 351–357 | The highest level reached in each class |
+| 358, 359 | Gender, alignment |
+| 360, 361 | Attacks per two rounds, first and second attack |
+| 362–367 | Their dice: two counts, two sides, two modifiers |
+| 368 | Armor Class, as 60 minus the value |
+| 369 | The creature's number |
+| 370 | Experience (four bytes) |
+| 374, 378 | Experience and maximum hit points before a level drain |
+| 379, 380 | Class mask, hit points rolled |
+| 381–407 | Spell slots: cleric, druid and magic-user lists, levels 1 to 9 |
+| 408 | Experience for defeating it (two bytes); there is no award for each hit point |
+| 410–413 | Combat icon head and body, order, icon size |
+| 414–419 | Combat icon colors |
+| 420, 421 | Creature type flags, immunities |
+| 422 | Number of items |
+| 479–482 | Hands in use, saving throw bonus, encumbrance (two bytes) |
+| 491 | Magic resistance |
+| 493–496 | Status, in play, side, quick fight |
+| 497–509 | Current THAC0, front and rear Armor Class, attacks, their dice, hit points and movement |
+
+The other bytes hold pointers and the running game's bookkeeping.
+`late::decode_creature` reads the record into the fields every game's records
+share (`por::CharacterRecord`): the coins go to platinum, gems and jewelry,
+the Hit Dice to the highest level, and the slots of spell levels 1 to 5. The
+bulette, creature 1, has 9 Hit Dice, THAC0 12, AC −2 and 41 hit points.
+
+### Items
+
+An item is 17 bytes: the last 17 of the earlier games' 63, without the name
+area. In order: the type, three name words, the magic bonus, the saving throw
+bonus, readied, the name words still hidden, cursed, the weight (two bytes),
+the count, the value (two bytes), then three bytes of charges, effect and
+special power, or a scroll's three spells. `MON1ITM` holds each creature's
+list. `ITEM0` holds one record of 254 definitions, numbered from 1, which
+TREASURE and the shops copy into a new item. OpenGoldBox reads such a list as
+the earlier games' items with no names (`decode_items(bytes, game)`).
+
+### Item types
+
+`ITEMS` holds 128 types of 16 bytes, the earlier games' layout, but with no
+header: type 0, empty, starts the file (`decode_item_templates(bytes, game)`).

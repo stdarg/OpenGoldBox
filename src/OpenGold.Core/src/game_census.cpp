@@ -165,8 +165,8 @@ void check_records(RowBuilder &row, const std::vector<GameFile> &files,
 
 void check_creature(GoldBoxGame game, const Bytes &bytes)
 {
-    if (game != GoldBoxGame::pool_of_radiance && game != GoldBoxGame::curse_of_the_azure_bonds &&
-        game != GoldBoxGame::secret_of_the_silver_blades)
+    if (game == GoldBoxGame::gateway_to_the_savage_frontier ||
+        game == GoldBoxGame::unlimited_adventures)
     {
         throw std::runtime_error("this game's creature records are not decoded yet");
     }
@@ -502,10 +502,11 @@ GameCensus take_census(const std::filesystem::path &folder, GoldBoxGame game)
             RowBuilder row("ITEMS: item types");
             row.add_file(file.name);
             row.check(file.name,
-                      [&file]
+                      [&file, game]
                       {
-                          require(por::decode_item_templates(read_bytes(file.path)).has_value(),
-                                  "not item types");
+                          require(
+                              por::decode_item_templates(read_bytes(file.path), game).has_value(),
+                              "not item types");
                       });
             census.rows.push_back(std::move(row).take());
         }

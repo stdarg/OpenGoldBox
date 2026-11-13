@@ -187,6 +187,9 @@ decode_effects(std::span<const std::uint8_t> bytes);
 // DOS ITEMS: two uninterpreted header bytes followed by 16-byte templates, indexed by item type.
 [[nodiscard]] std::optional<std::vector<ItemTemplate>>
 decode_item_templates(std::span<const std::uint8_t> bytes);
+// The game's own ITEMS: Pools of Darkness' and Treasures' have no header bytes.
+[[nodiscard]] std::optional<std::vector<ItemTemplate>>
+decode_item_templates(std::span<const std::uint8_t> bytes, GoldBoxGame game);
 // START.EXE's name tables, read from its unpacked image (unpack_sound_executable). Item words
 // are indexed by name component: 0 is empty, 1 is "Battle Axe", 255 the last. Spells are
 // indexed by spell number: 0 is empty, 1 is "Bless".

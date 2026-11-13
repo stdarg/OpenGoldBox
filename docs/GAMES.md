@@ -67,8 +67,8 @@ The census (2026-11-12) puts every file through the decoders:
 | *Curse* | All | — |
 | *Secret* | All but one (2026-11-13) | `SOUND.DAX`, the title music's own driver and song |
 | *Gateway* | Maps, combat heads and bodies, effects, some walls and items | Scripts, creatures, pictures, combat icons, `ITEMS.1`, music and sounds |
-| *Pools of Darkness* | Maps, effects | Nearly everything else: its pictures are 256-color VGA, and it adds new files |
-| *Treasures* | Maps, effects | As for *Pools of Darkness* |
+| *Pools of Darkness* | Maps, effects; scripts, creatures and items (2026-11-13) | Nearly everything else: its pictures are 256-color VGA, and it adds new files |
+| *Treasures* | Maps, effects; scripts, creatures and items (2026-11-13) | As for *Pools of Darkness* |
 | *Unlimited Adventures* | — | Everything: its data sits in `DISK1` to `DISK3` |
 
 The archives (DAX) and maps are shared by all six campaigns. Scripts,

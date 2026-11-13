@@ -141,6 +141,7 @@ add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/por_sound.cpp
     src/OpenGold.Formats/src/curse_records.cpp
     src/OpenGold.Formats/src/secret_records.cpp
+    src/OpenGold.Formats/src/late_records.cpp
     src/OpenGold.Formats/src/gold_box_game.cpp
 )
 
@@ -254,6 +255,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_curse_walk COMMAND opengold_gold_box_games_tests --curse-walk)
     # Curse's story, beat by beat, with a party made for it (plan step 7).
     add_test(NAME opengold_curse_route COMMAND opengold_gold_box_games_tests --curse-route)
+    add_executable(opengold_late_records_tests tests/late_records_tests.cpp)
+    target_link_libraries(opengold_late_records_tests PRIVATE opengold_formats)
+    add_test(NAME opengold_late_records_tests COMMAND opengold_late_records_tests)
     add_test(NAME opengold_game_census COMMAND "${CMAKE_COMMAND}"
         "-DCENSUS=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/game_census.cmake")

@@ -96,10 +96,50 @@ std::vector<EclOpcode> secret_opcodes()
     return opcodes;
 }
 
+// Pools of Darkness keeps Secret's numbering but replaces nine commands and
+// changes the operands of four (docs/games/darkness.md). Its scripts are only
+// decoded so far, not run.
+std::vector<EclOpcode> darkness_opcodes()
+{
+    auto opcodes = secret_opcodes();
+    opcodes.at(0x0C).operands = 4; // SETUP MONSTER gains the fight's directions.
+    opcodes.at(0x1D) = {"WAIT KEY", 0};
+    opcodes.at(0x1F) = {"JOURNAL ENTRY", 1};
+    opcodes.at(0x21).operands = 2; // LOAD FILES: a map and one wall set.
+    opcodes.at(0x22) = {"YES NO", 0};
+    opcodes.at(0x23) = {"CLEAR AND EXIT", 0};
+    opcodes.at(0x27).operands = 4; // TREASURE: three kinds of wealth, then a list of items.
+    opcodes.at(0x27).variable_list = true;
+    opcodes.at(0x29) = {"UNUSED 29", 0};
+    opcodes.at(0x2C) = {"PLAY SOUND", 1};
+    opcodes.at(0x31) = {"ACTION MENU", 2, true};
+    opcodes.at(0x37) = {"FIND NPC", 2};
+    opcodes.at(0x3C) = {"STORE", 1};
+    for (auto &opcode : opcodes)
+    {
+        opcode.executable = false;
+        opcode.requires_host = false;
+    }
+    return opcodes;
+}
+
+// Treasures of the Savage Frontier adds three commands to Pools of Darkness'
+// (docs/games/treasure.md).
+std::vector<EclOpcode> treasures_opcodes()
+{
+    auto opcodes = darkness_opcodes();
+    opcodes.push_back({"LOAD WALL SETS", 4});
+    opcodes.push_back({"FIND NAMED ITEM", 4});
+    opcodes.push_back({"TAKE NAMED ITEM", 4});
+    return opcodes;
+}
+
 std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
 {
     static const std::vector<EclOpcode> curse = curse_opcodes();
     static const std::vector<EclOpcode> secret = secret_opcodes();
+    static const std::vector<EclOpcode> darkness = darkness_opcodes();
+    static const std::vector<EclOpcode> treasures = treasures_opcodes();
     switch (game)
     {
     case GoldBoxGame::pool_of_radiance:
@@ -108,9 +148,24 @@ std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
         return curse;
     case GoldBoxGame::secret_of_the_silver_blades:
         return secret;
+    case GoldBoxGame::pools_of_darkness:
+        return darkness;
+    case GoldBoxGame::treasures_of_the_savage_frontier:
+        return treasures;
     default:
         throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");
     }
+}
+
+// Whether a script goes on to the command after this one: EXIT, GOTO, RETURN
+// and NEW ECL leave, and so does Pools of Darkness' and Treasures' CLEAR AND
+// EXIT, which data may follow.
+bool falls_through(std::uint8_t opcode, GoldBoxGame game)
+{
+    const bool clears_and_exits =
+        opcode == 0x23 && (game == GoldBoxGame::pools_of_darkness ||
+                           game == GoldBoxGame::treasures_of_the_savage_frontier);
+    return opcode != 0 && opcode != 1 && opcode != 19 && opcode != 32 && !clears_and_exits;
 }
 
 } // namespace
@@ -152,7 +207,10 @@ EclMemory ecl_memory(GoldBoxGame game)
         return {EclProgram::origin, EclProgram::limit};
     case GoldBoxGame::curse_of_the_azure_bonds:
     case GoldBoxGame::secret_of_the_silver_blades:
+    case GoldBoxGame::pools_of_darkness:
         return {0x8000, 0x9E00};
+    case GoldBoxGame::treasures_of_the_savage_frontier:
+        return {0x8000, 0xB6B1};
     default:
         throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");
     }
@@ -373,7 +431,7 @@ EclWalk walk_reachable(const EclProgram &program)
                 queue.emplace_back(program.instruction(i.next).next, fallthrough_from);
             }
 
-            if (i.opcode != 0 && i.opcode != 1 && i.opcode != 19 && i.opcode != 32)
+            if (falls_through(i.opcode, program.game()))
             {
                 queue.emplace_back(i.next,
                                    i.opcode == 37 ? std::optional(i.address) : fallthrough_from);

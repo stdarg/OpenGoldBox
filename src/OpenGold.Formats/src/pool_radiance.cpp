@@ -1,5 +1,6 @@
 #include "opengold/pool_radiance.h"
 #include "opengold/curse_records.h"
+#include "opengold/late_records.h"
 #include "opengold/secret_records.h"
 #include "little_endian.h"
 
@@ -174,6 +175,9 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> by
         return curse::decode_creature(bytes);
     case GoldBoxGame::secret_of_the_silver_blades:
         return secret::decode_creature(bytes);
+    case GoldBoxGame::pools_of_darkness:
+    case GoldBoxGame::treasures_of_the_savage_frontier:
+        return late::decode_creature(bytes, game);
     default:
         return std::nullopt;
     }
@@ -215,6 +219,11 @@ std::optional<std::vector<ItemRecord>> decode_items(std::span<const std::uint8_t
 std::optional<std::vector<ItemRecord>> decode_items(std::span<const std::uint8_t> bytes,
                                                     GoldBoxGame game)
 {
+    if (game == GoldBoxGame::pools_of_darkness ||
+        game == GoldBoxGame::treasures_of_the_savage_frontier)
+    {
+        return late::decode_items(bytes);
+    }
     if (game == GoldBoxGame::pool_of_radiance || bytes.size() % 63 != 0)
     {
         return decode_items(bytes);
@@ -251,12 +260,24 @@ std::optional<std::vector<EffectRecord>> decode_effects(std::span<const std::uin
 
 std::optional<std::vector<ItemTemplate>> decode_item_templates(std::span<const std::uint8_t> bytes)
 {
-    if (bytes.size() < 18 || (bytes.size() - 2) % 16 != 0 || (bytes.size() - 2) / 16 > 256)
+    return decode_item_templates(bytes, GoldBoxGame::pool_of_radiance);
+}
+
+std::optional<std::vector<ItemTemplate>> decode_item_templates(std::span<const std::uint8_t> bytes,
+                                                               GoldBoxGame game)
+{
+    // Pools of Darkness and Treasures read the types from the file's first byte.
+    const std::size_t header = game == GoldBoxGame::pools_of_darkness ||
+                                       game == GoldBoxGame::treasures_of_the_savage_frontier
+                                   ? 0
+                                   : 2;
+    if (bytes.size() < header + 16 || (bytes.size() - header) % 16 != 0 ||
+        (bytes.size() - header) / 16 > 256)
     {
         return std::nullopt;
     }
     std::vector<ItemTemplate> result;
-    for (std::size_t p = 2; p < bytes.size(); p += 16)
+    for (std::size_t p = header; p < bytes.size(); p += 16)
     {
         const auto b = bytes.subspan(p, 16);
         ItemTemplate item;
