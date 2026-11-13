@@ -859,7 +859,7 @@ msgstr ""
 msgid "Already added. Use Rejoin party for a reserved member."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:644 src/OpenGold.Rules.Original/src/rules_module.cpp:650
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:652 src/OpenGold.Rules.Original/src/rules_module.cpp:658
 msgid "Already using another item there"
 msgstr ""
 
@@ -1982,7 +1982,7 @@ msgstr ""
 msgid "Cast spell"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1162
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1192
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr ""
@@ -2255,6 +2255,11 @@ msgstr ""
 msgid "Choose a proficient skill"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Choose a spell for {name} to learn."
+msgstr ""
+
 #: src/OpenGoldBox/character_creation_view.cpp:886
 msgid "Choose a swatch to recolor this part in the combat preview."
 msgstr ""
@@ -2518,7 +2523,7 @@ msgstr ""
 msgid "Cleave"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:50 src/OpenGold.Rules.Srd5/src/character_class.cpp:21
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:50 src/OpenGold.Rules.Srd5/src/character_class.cpp:21 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Cleric"
 msgstr ""
 
@@ -2769,6 +2774,11 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Confusion"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Congratulations... {name} has trained."
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -3560,7 +3570,7 @@ msgstr ""
 msgid "Drop a roll here. Drag a filled box onto another ability to swap."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_class.cpp:22
+#: src/OpenGold.Rules.Srd5/src/character_class.cpp:22 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Druid"
 msgstr ""
 
@@ -4201,7 +4211,7 @@ msgstr ""
 msgid "Fiends"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:52 src/OpenGold.Rules.Srd5/src/character_class.cpp:23
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:52 src/OpenGold.Rules.Srd5/src/character_class.cpp:23 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Fighter"
 msgstr ""
 
@@ -5275,7 +5285,7 @@ msgstr ""
 msgid "Hit Point maximum lowered by {value} until a Long Rest."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:464 src/OpenGold.Rules.Original/src/rules_module.cpp:479
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:472 src/OpenGold.Rules.Original/src/rules_module.cpp:487
 msgid "Hit Points outside the character's range"
 msgstr ""
 
@@ -5635,7 +5645,7 @@ msgstr ""
 msgid "Invalid original-rules combat checkpoint"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:437
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:445
 msgid "Invalid original-rules profile"
 msgstr ""
 
@@ -5696,7 +5706,7 @@ msgstr ""
 msgid "It takes a bottle of Magic Ink of the spell's level or higher"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:611
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:619
 msgid "It's cursed"
 msgstr ""
 
@@ -6874,7 +6884,7 @@ msgstr ""
 msgid "Modifiers"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_class.cpp:24
+#: src/OpenGold.Rules.Srd5/src/character_class.cpp:24 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Monk"
 msgstr ""
 
@@ -7206,7 +7216,7 @@ msgstr ""
 msgid "No one in the party needs {spell}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4945 src/OpenGold.Rules.Original/src/rules_module.cpp:448
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4945 src/OpenGold.Rules.Original/src/rules_module.cpp:456
 msgid "No original-rules record for "
 msgstr ""
 
@@ -7222,7 +7232,7 @@ msgstr ""
 msgid "No spell choices for this class"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:424
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:432
 msgid "No such level under the original rules"
 msgstr ""
 
@@ -7262,8 +7272,12 @@ msgstr ""
 msgid "North"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:499
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:507
 msgid "Not an item of the original rules"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Not enough experience."
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/rolf_tour_view.cpp:2175
@@ -7443,7 +7457,7 @@ msgstr ""
 msgid "Only a damaged simulacrum can be repaired"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:979
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1009
 msgid "Only a magic-user's training learns a spell"
 msgstr ""
 
@@ -7649,7 +7663,7 @@ msgstr ""
 msgid "Padded Armor"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_class.cpp:25
+#: src/OpenGold.Rules.Srd5/src/character_class.cpp:25 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Paladin"
 msgstr ""
 
@@ -8479,7 +8493,7 @@ msgstr ""
 msgid "Ranged spell attack: 1d8 damage of a chosen type, 120 feet; an 8 rolls another d8."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_class.cpp:26
+#: src/OpenGold.Rules.Srd5/src/character_class.cpp:26 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Ranger"
 msgstr ""
 
@@ -10631,7 +10645,7 @@ msgstr ""
 msgid "That potion works only in combat"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1177
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1207
 msgid "That spell cannot be cast now"
 msgstr ""
 
@@ -10639,11 +10653,11 @@ msgstr ""
 msgid "That spell cannot be copied into the spellbook"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:990
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1020
 msgid "That spell cannot be learned"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:767
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:775
 msgid "That spell cannot be memorized"
 msgstr ""
 
@@ -10757,7 +10771,7 @@ msgstr ""
 msgid "The cantrip reaches 30 feet farther per Warlock level."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1007
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1037
 msgid "The character has no levels in a class it trained in"
 msgstr ""
 
@@ -10796,7 +10810,7 @@ msgstr ""
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1181
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1211
 msgid "The dead cannot be healed"
 msgstr ""
 
@@ -11089,7 +11103,7 @@ msgstr ""
 msgid "This armor imposes Disadvantage on Dexterity (Stealth) checks."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:958
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:988
 msgid "This character is not ready to train"
 msgstr ""
 
@@ -11227,7 +11241,7 @@ msgstr ""
 msgid "Too heavy to carry"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:772
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:780
 msgid "Too many spells of that level"
 msgstr ""
 
@@ -11256,6 +11270,10 @@ msgstr ""
 msgid "Touch: the creature adds 1d4 to Athletics or Medicine checks, as chosen; Concentration."
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Train"
+msgstr ""
+
 #: src/OpenGoldBox/character_creation_view.cpp:58 src/OpenGoldBox/godot/scenes/combat_demo.tscn:55 src/OpenGoldBox/training_control.h:159
 msgid "Training"
 msgstr ""
@@ -11270,6 +11288,14 @@ msgstr ""
 
 #: src/OpenGoldBox/combat_view.cpp:1328
 msgid "Training combat saved."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Training costs 1000 gp."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Training costs 1000 gp. Who will train?"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -11534,7 +11560,7 @@ msgstr ""
 msgid "Unfilled cantrip choices remain pending. More choices will become available as spell support expands."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:603
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:611
 msgid "Unknown equipment candidate"
 msgstr ""
 
@@ -11924,6 +11950,14 @@ msgstr ""
 msgid "Warrior of the Open Hand"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "We don't train that class here."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "We only train conscious people."
+msgstr ""
+
 #: src/OpenGoldBox/character_creation_view.cpp:87 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:608 src/OpenGoldBox/godot/scenes/combat_demo.tscn:931
 msgid "Weapon"
 msgstr ""
@@ -12208,7 +12242,7 @@ msgstr ""
 msgid "Write a scroll of {spell} (Magic Ink of level {level} or higher, {hours} hours)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:624
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:632
 msgid "Wrong class"
 msgstr ""
 
@@ -12310,7 +12344,7 @@ msgstr ""
 msgid "Your character: {race} / {gender} / {class}"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:654
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:662
 msgid "Your hands are full!"
 msgstr ""
 
@@ -12347,6 +12381,11 @@ msgstr ""
 #: src/OpenGoldBox/character_sheet_text.cpp:139
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "[theme_font=sheet_title]{name}[/theme_font]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "a level {level} {class}"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -15372,6 +15411,11 @@ msgstr ""
 msgid "{name} wanders in confusion."
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name} will become:"
+msgstr ""
+
 #: src/OpenGoldBox/rest_dialog_impl.h:525
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} writes a scroll of {spell}."
@@ -15620,6 +15664,11 @@ msgstr ""
 #: src/OpenGoldBox/character_sheet_view.cpp:118
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{source} ({bonus})"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{spell}"
 msgstr ""
 
 #: src/OpenGoldBox/localization.cpp:126

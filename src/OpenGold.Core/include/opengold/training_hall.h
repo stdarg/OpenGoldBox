@@ -49,8 +49,18 @@ enum class TrainingDenial
     highest_level,    // There is no next level to train toward.
     ready_to_advance, // Enough experience already: advance first.
     already_trained,  // One of this service per level.
-    gold              // The party's gold cannot pay the fee.
+    gold,             // The party's gold cannot pay the fee.
+    not_conscious,    // The original trains only conscious people.
+    experience        // Not enough experience for any class this hall trains.
 };
+
+// The original's classes a hall trains, by their stable IDs, as its script's
+// class mask has them (chargen.pas, TrainingMenu): the fighters' hall
+// fighters, paladins and rangers, the clerics' clerics and druids.
+[[nodiscard]] std::vector<std::string_view> original_hall_classes(TrainingHall hall);
+
+// What the original's training costs (chargen.pas, TrainingMenu).
+constexpr std::uint32_t original_training_fee = 1000;
 
 // One member's experience session: its fee, the experience it grants and
 // whether the hall can sell it now.

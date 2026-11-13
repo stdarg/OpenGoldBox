@@ -1131,6 +1131,23 @@ class RulesModule
                        std::span<const std::string> gear, Ability ability, std::string_view skill,
                        RandomState &random_state) const = 0;
 
+    // Whether characters gain levels only by training at a hall that teaches
+    // their classes, for a fee, as the original's do; otherwise anywhere.
+    [[nodiscard]] virtual bool trains_at_halls() const
+    {
+        return false;
+    }
+
+    // The classes (stable IDs) a level gained with this much experience
+    // raises; none when the character is not ready.
+    [[nodiscard]] virtual std::vector<std::string> classes_to_train(const CharacterSheet &sheet,
+                                                                    unsigned experience) const
+    {
+        (void)sheet;
+        (void)experience;
+        return {};
+    }
+
     // Whether the rules play the original's records as they are, as the
     // original rules do: items keyed by their records (por::original_item_key)
     // and monsters by theirs (CreatureId::key()), rather than converted to the

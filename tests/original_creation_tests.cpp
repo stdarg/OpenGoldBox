@@ -1,6 +1,8 @@
 #include "opengold/campaign_save.h"
 #include "opengold/character_creator.h"
 #include "opengold/character_pool.h"
+#include "opengold/coin_purse.h"
+#include "opengold/training_hall.h"
 #include "opengold/original_combat.h"
 #include "opengold/original.h"
 #include "test_support.h"
@@ -128,11 +130,21 @@ void a_fighter_trains_and_keeps_the_level()
     party.award_experience(1000, "test:first");
     check(party.member(id).experience == (strong ? 1100U : 1000U),
           "A fighter's share of experience follows its Strength");
-    check(!party.can_advance(id), "A fighter is not ready below 2001 experience");
+    check(!party.ready_to_advance(id), "A fighter is not ready below 2001 experience");
     party.award_experience(1001, "test:second");
-    check(party.can_advance(id), "A fighter is ready at 2001 experience");
+    check(party.ready_to_advance(id) && !party.can_advance(id),
+          "A fighter is ready at 2001 experience, and trains only at a hall");
+    party.add_coins(Coin::gold, 3000);
+    check(party.hall_training(id, TrainingHall::clerics).denial == TrainingDenial::other_hall,
+          "The clerics' hall does not train a fighter");
+    const auto hall = party.hall_training(id, TrainingHall::fighters);
+    check(hall.denial == TrainingDenial::none &&
+              hall.classes == std::vector<std::string>{"fighter"},
+          "The fighters' hall trains it as a fighter");
     const int before = party.member(id).character.sheet().hit_points;
-    party.advance(id, party.default_advancement(id));
+    const auto gold = gold_value(party.state().wealth);
+    party.train_at_hall_level(id, TrainingHall::fighters, {});
+    check(gold_value(party.state().wealth) == gold - 1000, "Training costs 1000 gp");
     const auto &trained = party.member(id).character.sheet();
     check(trained.original->class_levels[2] == 2 && trained.level == 2 &&
               trained.hit_points > before &&
@@ -156,7 +168,7 @@ void a_fighter_trains_and_keeps_the_level()
 
     // Experience for two levels trains one, and is cut short of the second.
     party.award_experience(60000, "test:lots");
-    party.advance(id, party.default_advancement(id));
+    party.train_at_hall_level(id, TrainingHall::fighters, {});
     check(party.member(id).character.sheet().original->class_levels[2] == 3 &&
               party.member(id).experience == 8000,
           "Training takes one level and keeps just short of the next but one");
@@ -435,7 +447,7 @@ void a_magic_user_memorizes_and_learns()
     check(rested.resources.empty(), "A day's rest memorizes the spent spells again");
 
     party.award_experience(2501, "test:mage-level");
-    check(party.can_advance(mage), "A magic-user is ready at 2501 experience");
+    check(party.ready_to_advance(mage), "A magic-user is ready at 2501 experience");
     const auto learning = party.advancement_options(mage, party.default_advancement(mage));
     check(std::ranges::any_of(learning.spells,
                               [](const rules::AdvancementOption &option)
@@ -443,9 +455,8 @@ void a_magic_user_memorizes_and_learns()
                                   return option.id == "magic_user:magic_missile";
                               }),
           "Training offers the magic-user a spell it does not know");
-    auto choice = party.default_advancement(mage);
-    choice.spells = {"magic_user:magic_missile"};
-    party.advance(mage, choice);
+    party.add_coins(Coin::gold, 1000);
+    party.train_at_hall_level(mage, TrainingHall::magic_users, {"magic_user:magic_missile"});
     const auto &after = party.member(mage).character.sheet().original->known_spells;
     check(std::ranges::find(after, 15) != after.end(), "It learns Magic Missile");
 }

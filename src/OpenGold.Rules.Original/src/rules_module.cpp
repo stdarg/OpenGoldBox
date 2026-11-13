@@ -306,6 +306,14 @@ class OriginalModule final : public RulesModule
     {
         return true;
     }
+
+    [[nodiscard]] bool trains_at_halls() const override
+    {
+        return true;
+    }
+
+    [[nodiscard]] std::vector<std::string> classes_to_train(const CharacterSheet &sheet,
+                                                            unsigned experience) const override;
     void roll_advancement(const CharacterSheet &sheet, unsigned experience,
                           AdvancementChoice &choice, RandomState &random_state) const override;
     [[nodiscard]] unsigned experience_after_advance(const CharacterSheet &before,
@@ -949,10 +957,32 @@ bool OriginalModule::ready_to_advance(const CharacterSheet &sheet, unsigned expe
     return !ready_classes(sheet, experience).empty();
 }
 
+std::vector<std::string> OriginalModule::classes_to_train(const CharacterSheet &sheet,
+                                                          unsigned experience) const
+{
+    std::vector<std::string> classes;
+    for (const auto slot : ready_classes(sheet, experience))
+    {
+        classes.emplace_back(class_slot_id(slot));
+    }
+    return classes;
+}
+
+// A hall trains only its classes (the choice's "hall" names them): the
+// others wait for their own hall.
 void OriginalModule::roll_advancement(const CharacterSheet &sheet, unsigned experience,
                                       AdvancementChoice &choice, RandomState &random_state) const
 {
-    const auto trained = ready_classes(sheet, experience);
+    auto trained = ready_classes(sheet, experience);
+    if (const auto hall = choice.training.find("hall"); hall != choice.training.end())
+    {
+        std::erase_if(trained,
+                      [&hall](ClassSlot slot)
+                      {
+                          return std::ranges::find(hall->second, class_slot_id(slot)) ==
+                                 hall->second.end();
+                      });
+    }
     if (trained.empty())
     {
         throw std::runtime_error("This character is not ready to train");

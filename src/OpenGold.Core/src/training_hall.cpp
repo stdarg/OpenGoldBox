@@ -90,4 +90,21 @@ std::uint32_t skill_training_fee(std::string_view grant)
 {
     return grant.starts_with("expertise:") ? expertise_training_fee : proficiency_training_fee;
 }
+
+std::vector<std::string_view> original_hall_classes(TrainingHall hall)
+{
+    switch (hall)
+    {
+    case TrainingHall::fighters:
+        return {"fighter", "paladin", "ranger"};
+    case TrainingHall::clerics:
+        return {"cleric", "druid"};
+    case TrainingHall::magic_users:
+        return {"magic_user"};
+    case TrainingHall::thieves:
+        return {"thief"};
+    }
+    return {};
+}
+
 } // namespace opengold

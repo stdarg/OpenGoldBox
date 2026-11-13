@@ -1764,5 +1764,22 @@
   "Warrior of the Open Hand",
   "Wild Resurgence",
   "Armor",
-  "Readied"
+  "Readied",
+  "Training costs 1000 gp.",
+  "We don't train that class here.",
+  "Not enough experience.",
+  "We only train conscious people.",
+  "Training costs 1000 gp. Who will train?",
+  "{name} will become:",
+  "a level {level} {class}",
+  "Train",
+  "Choose a spell for {name} to learn.",
+  "Congratulations... {name} has trained.",
+  "Cleric",
+  "Druid",
+  "Fighter",
+  "Paladin",
+  "Ranger",
+  "Monk",
+  "{spell}"
 ]

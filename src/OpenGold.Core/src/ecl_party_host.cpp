@@ -59,8 +59,14 @@ int group_levels(const PartyMember &m, AdndGroup group)
 std::uint16_t adnd_race_code(std::string_view species_id)
 {
     using Code = std::pair<std::string_view, unsigned>;
-    static constexpr std::array<Code, 6> codes{
-        {{"dwarf", 1}, {"elf", 2}, {"gnome", 3}, {"halfling", 5}, {"orc", 6}, {"human", 7}}};
+    // The original rules' half-elf is 4.
+    static constexpr std::array<Code, 7> codes{{{"dwarf", 1},
+                                                {"elf", 2},
+                                                {"gnome", 3},
+                                                {"half_elf", 4},
+                                                {"halfling", 5},
+                                                {"orc", 6},
+                                                {"human", 7}}};
     const auto match = std::ranges::find(codes, species_id, &Code::first);
     return static_cast<std::uint16_t>(match == codes.end() ? 6 : match->second);
 }

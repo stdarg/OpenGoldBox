@@ -2030,6 +2030,80 @@ void original_rules_orcs(const std::filesystem::path &directory)
     }
 }
 
+// The original's hall under the original rules: a member is chosen, told what
+// it will become, trained for 1000 gp, and turned away without the
+// experience; a magic-user learns a spell.
+void original_hall_tests()
+{
+    auto party =
+        new_campaign_party({GameRules::Set::original, original::default_aging}, rules_files());
+    std::uint64_t seed = 70;
+    for (const auto *klass : {"fighter", "magic_user"})
+    {
+        CharacterCreator creator(party->character_rules(), seed++);
+        creator.select(rules::CreationField::race, "human");
+        creator.select(rules::CreationField::character_class, klass);
+        creator.name(klass == std::string_view("fighter") ? "Arden" : "Mira");
+        for (const bool roll : {false, false, false, true, false, false})
+        {
+            if (roll)
+            {
+                creator.roll();
+            }
+            creator.next();
+        }
+        (void)party->add_pc(creator.create_character());
+    }
+    party->set_wealth({0, 0, 0, 2500, 0, 0, 0});
+    party->award_experience(2600, "test:original-hall");
+    for (const auto *hall : {"FIGHTERS ", "MAGIC USERS "})
+    {
+        auto resources = std::make_shared<por::PhlanResources>();
+        por::RolfTourSession town({}, program({0x38, 0, 0, 0}), {}, 0x9914, {}, resources);
+        town.campaign_party(party);
+        settle_synthetic(town);
+        test::TourAccess::set_string(town, por::ecl_training_hall_name, hall);
+        check(route_explore(town, por::ExplorationCommand::look), "The hall's event starts");
+        for (unsigned n = 0; n < 100 && town.snapshot().phase == por::TourPhase::running; ++n)
+        {
+            town.advance(.5);
+        }
+        const bool fighters = std::string_view(hall) == "FIGHTERS ";
+        check(town.snapshot().choices.size() == 3 && town.snapshot().choices.back() == "Leave",
+              "The original's hall lists the members and Leave");
+        const std::size_t trainee = fighters ? 0 : 1;
+        if (fighters)
+        {
+            check(route_choose(town, town.snapshot().continue_ticket, 1) &&
+                      town.snapshot().dialogue.find("We don't train that class here.") !=
+                          std::string::npos,
+                  "The fighters' hall does not train a magic-user");
+        }
+        check(route_choose(town, town.snapshot().continue_ticket, trainee) &&
+                  town.snapshot().dialogue.find("will become:") != std::string::npos &&
+                  town.snapshot().dialogue.find("a level 2") != std::string::npos,
+              "The hall says what the member will become");
+        check(route_choose(town, town.snapshot().continue_ticket, 0), "The member trains");
+        if (!fighters)
+        {
+            check(town.snapshot().dialogue.find("Choose a spell") != std::string::npos,
+                  "A magic-user chooses a spell to learn");
+            check(route_choose(town, town.snapshot().continue_ticket, 0), "It learns a spell");
+        }
+        const auto &member = party->member(party->state().slots[trainee]);
+        check(member.character.sheet().level == 2 &&
+                  town.snapshot().dialogue.find("has trained") != std::string::npos,
+              "The member is trained a level");
+        check(
+            route_choose(town, town.snapshot().continue_ticket, town.snapshot().choices.size() - 1),
+            "The party leaves the hall");
+    }
+    check(gold_value(party->state().wealth) == 500, "Each training cost 1000 gp");
+    check(party->member(party->state().slots[1]).character.sheet().original->known_spells.size() ==
+              5,
+          "The magic-user learned a fifth spell");
+}
+
 // Accepts the inn's quote ("YES") or declines it, and names the payer.
 Answer inn_answer(bool stay, std::string payer)
 {
@@ -8234,6 +8308,7 @@ int main(int argc, char **argv)
                 std::cout << "Pool of Radiance's files are not here; skipped.\n";
                 return 0;
             }
+            original_hall_tests();
             original_rules_orcs(directory);
             std::cout << "Original-rules campaign tests passed\n";
             return 0;

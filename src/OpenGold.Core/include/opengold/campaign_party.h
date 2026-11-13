@@ -378,6 +378,24 @@ class CampaignParty
     // A training hall's experience session: half the experience between the
     // member's level and the next, once per level, paid in the party's gold.
     [[nodiscard]] ExperienceOffer experience_offer(MemberId id, TrainingHall hall) const;
+
+    // Training under rules that train at halls (the original's): the member's
+    // classes this hall would raise a level now, or why it turns the member
+    // away.
+    struct HallTraining
+    {
+        TrainingDenial denial{TrainingDenial::none};
+        std::vector<std::string> classes;
+    };
+
+    [[nodiscard]] HallTraining hall_training(MemberId id, TrainingHall hall) const;
+    // Pays the fee and trains the member: a level in the classes
+    // hall_training() names, a magic-user's learning `spells` (one). Atomic:
+    // throws, changing nothing, when the hall cannot.
+    void train_at_hall_level(MemberId id, TrainingHall hall, std::vector<std::string> spells);
+    // Whether the member has the experience and the state to gain a level,
+    // wherever the rules let it.
+    [[nodiscard]] bool ready_to_advance(MemberId id) const;
     // Atomic: throws, changing nothing, unless experience_offer() allows it.
     void buy_experience(MemberId id, TrainingHall hall);
     // Why the hall cannot teach the member a skill now; none when it can. The

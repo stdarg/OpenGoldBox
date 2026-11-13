@@ -179,6 +179,17 @@ lines in all:
      (Enlarge, Reduce, Strength, the Potion of Giant Strength).
 6. **Training, the temple, thief skills, turning undead and conditions,** and
    the original scripts reading the original values.
+
+   In part (2026-11-13):
+   - **Training** is the original's (`TrainingMenu`): a level is gained only
+     at a hall that teaches one of the member's classes, for 1,000 gp, and
+     raises the classes that hall teaches whose experience the member has (the
+     fighters' hall fighters, paladins and rangers; the clerics' clerics and
+     druids). The hall turns away the unconscious, the poor, the wrong class
+     and the inexperienced as the original words it, says what the member
+     will become, and lets a magic-user choose its new spell.
+   - **Thief skills:** a thief may pick locks, as the original offers Pick to
+     a party with one; scripts read a half-elf's own race code.
 7. **The monsters' tactics and the original rules' difficulty levels.** The
    original rules become the default once they play from start to end.
 

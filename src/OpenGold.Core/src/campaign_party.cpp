@@ -2209,6 +2209,69 @@ void CampaignParty::award_experience(unsigned amount, std::string reward_id, Mem
     state_ = std::move(next);
 }
 
+CampaignParty::HallTraining CampaignParty::hall_training(MemberId id, TrainingHall hall) const
+{
+    const auto &m = member(id);
+    const auto &sheet = m.character.sheet();
+    const auto taught = original_hall_classes(hall);
+    const auto here = [&taught](const std::string &klass)
+    {
+        return std::ranges::find(taught, klass) != taught.end();
+    };
+    HallTraining offer;
+    const bool active = std::ranges::find(state_.slots, id) != state_.slots.end();
+    if (!active || m.vitals.dead)
+    {
+        offer.denial = TrainingDenial::not_active;
+    }
+    else if (m.vitals.hit_points <= 0)
+    {
+        offer.denial = TrainingDenial::not_conscious;
+    }
+    else if (std::ranges::none_of(sheet.level_classes, here))
+    {
+        offer.denial = TrainingDenial::other_hall;
+    }
+    else if (gold_value(state_.wealth) < original_training_fee)
+    {
+        offer.denial = TrainingDenial::gold;
+    }
+    else
+    {
+        for (auto &klass : rules_->classes_to_train(sheet, m.experience))
+        {
+            if (here(klass))
+            {
+                offer.classes.push_back(std::move(klass));
+            }
+        }
+        if (offer.classes.empty())
+        {
+            offer.denial = TrainingDenial::experience;
+        }
+    }
+    return offer;
+}
+
+void CampaignParty::train_at_hall_level(MemberId id, TrainingHall hall,
+                                        std::vector<std::string> spells)
+{
+    editable();
+    if (const auto offer = hall_training(id, hall); offer.denial != TrainingDenial::none)
+    {
+        throw std::runtime_error("The hall cannot train this member now");
+    }
+    auto choice = rules_->default_advancement(member(id).character.sheet());
+    for (const auto klass : original_hall_classes(hall))
+    {
+        choice.training["hall"].emplace_back(klass);
+    }
+    choice.spells = std::move(spells);
+    const auto purse = pay_gold(state_.wealth, original_training_fee).purse;
+    advance(id, choice);
+    state_.wealth = purse;
+}
+
 ExperienceOffer CampaignParty::experience_offer(MemberId id, TrainingHall hall) const
 {
     const auto &m = member(id);
@@ -2330,6 +2393,12 @@ void CampaignParty::train_skill(MemberId id, TrainingHall hall, const std::strin
 
 bool CampaignParty::can_advance(MemberId id) const
 {
+    // Under rules that train at halls a level is gained only there.
+    return !rules_->trains_at_halls() && ready_to_advance(id);
+}
+
+bool CampaignParty::ready_to_advance(MemberId id) const
+{
     if (combat_ || state_.short_rest || state_.spell_rest || state_.training_rest)
     {
         return false;
@@ -2367,7 +2436,7 @@ rules::AdvancementChoice CampaignParty::default_advancement(MemberId id) const
 PartyMember CampaignParty::preview_advancement(MemberId id,
                                                const rules::AdvancementChoice &choice) const
 {
-    if (!can_advance(id))
+    if (!ready_to_advance(id))
     {
         throw std::runtime_error("This character is not ready to level up");
     }
@@ -2633,11 +2702,12 @@ namespace
 bool tries_door(const PartyMember &m, DoorMethod method)
 {
     const bool conscious = !m.vitals.dead && m.vitals.hit_points > 0;
-    return conscious &&
-           (method == DoorMethod::bash ||
-            // A Rogue's levels, starting or taken later (MULTI-1).
-            std::ranges::find(m.character.sheet().level_classes, "rogue") !=
-                m.character.sheet().level_classes.end());
+    // A Rogue's levels, starting or taken later (MULTI-1), or under the
+    // original rules a thief's: the original offers Pick to a party with one.
+    const auto &classes = m.character.sheet().level_classes;
+    const bool picks = std::ranges::find(classes, "rogue") != classes.end() ||
+                       std::ranges::find(classes, "thief") != classes.end();
+    return conscious && (method == DoorMethod::bash || picks);
 }
 
 bool carries_thieves_tools(const PartyMember &m)

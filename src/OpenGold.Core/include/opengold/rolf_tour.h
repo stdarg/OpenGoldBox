@@ -639,11 +639,16 @@ class RolfTourSession
             lessons,
             lesson,
             back,
-            leave
+            leave,
+            // Under rules that train at halls (the original's): a member to
+            // train, training it, and a magic-user's new spell.
+            train,
+            confirm,
+            learn
         };
         Kind kind{};
         opengold::MemberId member{};
-        std::string grant; // a lesson's skill or Expertise grant
+        std::string grant; // a lesson's skill or Expertise grant, or a spell
     };
 
     struct HallVisit
@@ -657,6 +662,12 @@ class RolfTourSession
     std::optional<HallVisit> hall_visit_;
     void open_hall(std::uint64_t request);
     void show_hall(std::vector<opengold::rules::Message> notice);
+    // The hall as the original runs it (chargen.pas, TrainingMenu): its
+    // members, what one will become, and a magic-user's new spell.
+    void show_original_hall(std::vector<opengold::rules::Message> notice);
+    void show_hall_menu(std::vector<opengold::rules::Message> dialogue,
+                        std::vector<opengold::rules::Message> choices);
+    [[nodiscard]] bool choose_at_original_hall(const HallChoice &picked);
     bool choose_at_hall(std::size_t choice);
 
     // A temple's COMBAT request with the healing flag: the script waits on
