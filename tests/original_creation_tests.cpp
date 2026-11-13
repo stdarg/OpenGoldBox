@@ -450,6 +450,33 @@ void a_magic_user_memorizes_and_learns()
     check(std::ranges::find(after, 15) != after.end(), "It learns Magic Missile");
 }
 
+// A cleric's Cure Light Wounds in camp heals a member 1d8, up to its Hit
+// Points, and spends the memorized copy.
+void a_cleric_cures_in_camp()
+{
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module(), creation);
+    const auto cleric = member_with(party, creation, "cleric", "Tobin");
+    const auto fighter = member_with(party, creation, "fighter", "Gareth");
+    check(party.rest(), "The party rests a day");
+    party.choose_spells(cleric, {{}, std::vector<std::string>{"cleric:cure_light_wounds"}});
+    check(party.camp_actions(cleric).size() == 1, "The cleric can cast Cure Light Wounds");
+    auto state = party.checkpoint();
+    for (auto &member : state.roster)
+    {
+        if (member.id == fighter)
+        {
+            member.vitals.hit_points = 1;
+        }
+    }
+    party.restore(state);
+    party.use_camp_action(cleric, fighter, party.camp_actions(cleric).front().id);
+    const int healed = party.member(fighter).vitals.hit_points;
+    check(healed > 1 && healed <= std::min(9, party.member(fighter).character.sheet().hit_points),
+          "Cure Light Wounds heals 1d8");
+    check(party.camp_actions(cleric).empty(), "The spell is spent");
+}
+
 } // namespace
 
 int main()
@@ -462,6 +489,7 @@ int main()
         the_pool_offers_original_characters();
         arrows_spent_leave_the_inventory();
         a_magic_user_memorizes_and_learns();
+        a_cleric_cures_in_camp();
         std::cout << "Original creation tests passed\n";
         return 0;
     }

@@ -158,6 +158,25 @@ lines in all:
 4. **Combat** under the original rules, with the original monsters' own
    statistics.
 5. **Magic:** spells, memorizing, scribing and resting.
+
+   In part (2026-11-13):
+   - **Known spells:** a cleric knows every cleric spell of the levels it has
+     slots for; a magic-user starts with Detect Magic, Read Magic, Shield and
+     Sleep (`CreateCharacterMenu`) and learns one magic-user spell of a level
+     it will cast at each of its trainings (`TrainingMenu`).
+   - **Memorizing:** after the camp's day of rest each member with slots
+     memorizes as many spells as they hold, the same spell in several if the
+     player likes (`CampMemorizeMenu`). An hour's rest memorizes nothing.
+   - **Spent spells:** a member fights with its memorized spells; those it
+     casts stay spent through later fights until the next day's rest (the
+     member's state keeps what its last fight left).
+   - **Camp:** a cleric casts Cure Light Wounds in camp, healing a member 1d8
+     (`NoncombatCastMenu`).
+   - Still to come: the other camp spells, whose effects last beyond a fight
+     (with the conditions, step 6); scribing a scroll's spell into a
+     magic-user's book (`CampScribeMenu`); the original's rest of any length
+     and its preparation time (`CampSpellPrepTime`); and the Strength spells
+     (Enlarge, Reduce, Strength, the Potion of Giant Strength).
 6. **Training, the temple, thief skills, turning undead and conditions,** and
    the original scripts reading the original values.
 7. **The monsters' tactics and the original rules' difficulty levels.** The

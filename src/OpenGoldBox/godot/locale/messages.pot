@@ -859,7 +859,7 @@ msgstr ""
 msgid "Already added. Use Rejoin party for a reserved member."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:617 src/OpenGold.Rules.Original/src/rules_module.cpp:623
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:644 src/OpenGold.Rules.Original/src/rules_module.cpp:650
 msgid "Already using another item there"
 msgstr ""
 
@@ -937,7 +937,7 @@ msgstr ""
 msgid "Animal Shapes: Wolf"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:52 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:53 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Animate Dead"
 msgstr ""
 
@@ -1324,7 +1324,7 @@ msgstr ""
 msgid "Berserker: Retaliation. When a creature within 5 feet damages you, your Reaction makes a melee attack against it.\nA fourth Weapon Mastery."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:60 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:61 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Bestow Curse"
 msgstr ""
 
@@ -1404,7 +1404,7 @@ msgstr ""
 msgid "Blade Barrier (vertical)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:13 src/OpenGold.Rules.Srd5/src/effect_labels.h:49 src/OpenGold.Rules.Srd5/src/srd5.cpp:31364 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:14 src/OpenGold.Rules.Srd5/src/effect_labels.h:49 src/OpenGold.Rules.Srd5/src/srd5.cpp:31364 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Bless"
 msgstr ""
 
@@ -1477,7 +1477,7 @@ msgstr ""
 msgid "Blindness/Deafness (blindness option): Constitution save; repeat at end of turn; up to 1 minute. Level 2 slot."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:61 src/OpenGold.Rules.Srd5/src/effect_labels.h:276 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:62 src/OpenGold.Rules.Srd5/src/effect_labels.h:276 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Blink"
 msgstr ""
 
@@ -1715,7 +1715,7 @@ msgstr ""
 msgid "Burning"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:21 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:22 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Burning Hands"
 msgstr ""
 
@@ -1982,6 +1982,11 @@ msgstr ""
 msgid "Cast spell"
 msgstr ""
 
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1162
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Cast {spell}"
+msgstr ""
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:228
 msgid "Casting Animate Dead"
 msgstr ""
@@ -1994,15 +1999,15 @@ msgstr ""
 msgid "Casting Regenerate"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:54
+#: src/OpenGold.Rules.Original/src/spells.cpp:55
 msgid "Cause Blindness"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:56
+#: src/OpenGold.Rules.Original/src/spells.cpp:57
 msgid "Cause Disease"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:16
+#: src/OpenGold.Rules.Original/src/spells.cpp:17
 msgid "Cause Light Wounds"
 msgstr ""
 
@@ -2147,7 +2152,7 @@ msgstr ""
 msgid "Charm Monster"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:22 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:23 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Charm Person"
 msgstr ""
 
@@ -2973,7 +2978,7 @@ msgstr ""
 msgid "Cunning Strike: when an attack would deal Sneak Attack damage, give up a die to Poison the target if you carry a Poisoner's Kit (Constitution save or Poisoned), Trip it (Dexterity save or Prone) or Withdraw (half your Speed without provoking).\nUncanny Dodge: your Reaction halves the damage of a hit.\nSneak Attack 3d6; Proficiency Bonus +3."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:53 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:54 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Cure Blindness"
 msgstr ""
 
@@ -2981,11 +2986,11 @@ msgstr ""
 msgid "Cure Critical Wounds"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:55 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:56 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Cure Disease"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:15 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:16 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Cure Light Wounds"
 msgstr ""
 
@@ -3009,7 +3014,7 @@ msgstr ""
 msgid "Current selections"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:14
+#: src/OpenGold.Rules.Original/src/spells.cpp:15
 msgid "Curse"
 msgstr ""
 
@@ -3190,11 +3195,11 @@ msgstr ""
 msgid "Desired Class(es)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:43
+#: src/OpenGold.Rules.Original/src/spells.cpp:44
 msgid "Detect Invisibility"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:17 src/OpenGold.Rules.Original/src/spells.cpp:23 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:18 src/OpenGold.Rules.Original/src/spells.cpp:24 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Detect Magic"
 msgstr ""
 
@@ -3330,7 +3335,7 @@ msgstr ""
 msgid "Dispel Evil and Good: Dismissal"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:57 src/OpenGold.Rules.Original/src/spells.cpp:62 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:58 src/OpenGold.Rules.Original/src/spells.cpp:63 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Dispel Magic"
 msgstr ""
 
@@ -3587,7 +3592,7 @@ msgstr ""
 msgid "Druidic Warrior cantrips"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:84 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:85 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Dust of Disappearance"
 msgstr ""
 
@@ -3797,7 +3802,7 @@ msgstr ""
 msgid "Enhance Ability (Strength)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:24 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:25 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Enlarge"
 msgstr ""
 
@@ -4254,7 +4259,7 @@ msgstr ""
 msgid "Final score: {score}"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:36 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:37 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Find Traps"
 msgstr ""
 
@@ -4338,7 +4343,7 @@ msgstr ""
 msgid "Fire's Burn"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:63 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:64 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Fireball"
 msgstr ""
 
@@ -4608,7 +4613,7 @@ msgstr ""
 msgid "Frenzy adds {damage} damage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:26 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:27 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Friends"
 msgstr ""
 
@@ -5064,7 +5069,7 @@ msgstr ""
 msgid "Harm"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:64 src/OpenGold.Rules.Srd5/src/effect_labels.h:265 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:65 src/OpenGold.Rules.Srd5/src/effect_labels.h:265 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Haste"
 msgstr ""
 
@@ -5270,7 +5275,7 @@ msgstr ""
 msgid "Hit Point maximum lowered by {value} until a Long Rest."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:437 src/OpenGold.Rules.Original/src/rules_module.cpp:452
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:464 src/OpenGold.Rules.Original/src/rules_module.cpp:479
 msgid "Hit Points outside the character's range"
 msgstr ""
 
@@ -5295,7 +5300,7 @@ msgstr ""
 msgid "Hold Monster"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:37 src/OpenGold.Rules.Original/src/spells.cpp:65 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:38 src/OpenGold.Rules.Original/src/spells.cpp:66 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Hold Person"
 msgstr ""
 
@@ -5630,7 +5635,7 @@ msgstr ""
 msgid "Invalid original-rules combat checkpoint"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:410
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:437
 msgid "Invalid original-rules profile"
 msgstr ""
 
@@ -5646,11 +5651,11 @@ msgstr ""
 msgid "Investigation"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:45 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:46 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Invisibility"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:66
+#: src/OpenGold.Rules.Original/src/spells.cpp:67
 msgid "Invisibility, 10' Radius"
 msgstr ""
 
@@ -5691,7 +5696,7 @@ msgstr ""
 msgid "It takes a bottle of Magic Ink of the spell's level or higher"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:584
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:611
 msgid "It's cursed"
 msgstr ""
 
@@ -5764,7 +5769,7 @@ msgstr ""
 msgid "Javelin"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:81 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:82 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Javelin of Lightning"
 msgstr ""
 
@@ -5796,7 +5801,7 @@ msgstr ""
 msgid "Keep initiative"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:78
+#: src/OpenGold.Rules.Original/src/spells.cpp:79
 msgid "Keoghtum's Ointment"
 msgstr ""
 
@@ -5804,7 +5809,7 @@ msgstr ""
 msgid "Kept from the former body"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:46 src/OpenGoldBox/rolf_tour_view.cpp:2027
+#: src/OpenGold.Rules.Original/src/spells.cpp:47 src/OpenGoldBox/rolf_tour_view.cpp:2027
 msgid "Knock"
 msgstr ""
 
@@ -6189,7 +6194,7 @@ msgstr ""
 msgid "Lightning"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:68 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:69 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Lightning Bolt"
 msgstr ""
 
@@ -6424,7 +6429,7 @@ msgstr ""
 msgid "Magic Lock Picks"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:27 src/OpenGold.Rules.Srd5/src/srd5.cpp:31372 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:179
+#: src/OpenGold.Rules.Original/src/spells.cpp:28 src/OpenGold.Rules.Srd5/src/srd5.cpp:31372 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:179
 msgid "Magic Missile"
 msgstr ""
 
@@ -6513,7 +6518,7 @@ msgstr ""
 msgid "Male"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:88 src/OpenGold.Rules.Srd5/src/srd5.cpp:30257 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:89 src/OpenGold.Rules.Srd5/src/srd5.cpp:30257 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Manual of Bodily Health"
 msgstr ""
 
@@ -6835,7 +6840,7 @@ msgstr ""
 msgid "Mindless Rage"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:47 src/OpenGold.Rules.Srd5/src/effect_labels.h:113 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:48 src/OpenGold.Rules.Srd5/src/effect_labels.h:113 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Mirror Image"
 msgstr ""
 
@@ -7068,7 +7073,7 @@ msgstr ""
 msgid "Necklace"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:85 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:86 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Necklace of Missiles"
 msgstr ""
 
@@ -7201,7 +7206,7 @@ msgstr ""
 msgid "No one in the party needs {spell}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4936 src/OpenGold.Rules.Original/src/rules_module.cpp:421
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4945 src/OpenGold.Rules.Original/src/rules_module.cpp:448
 msgid "No original-rules record for "
 msgstr ""
 
@@ -7217,7 +7222,7 @@ msgstr ""
 msgid "No spell choices for this class"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:397
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:424
 msgid "No such level under the original rules"
 msgstr ""
 
@@ -7257,7 +7262,7 @@ msgstr ""
 msgid "North"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:472
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:499
 msgid "Not an item of the original rules"
 msgstr ""
 
@@ -7436,6 +7441,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Only a damaged simulacrum can be repaired"
+msgstr ""
+
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:979
+msgid "Only a magic-user's training learns a spell"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -7957,7 +7966,7 @@ msgstr ""
 msgid "Potent Spellcasting: Temporary Hit Points"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:79 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:80 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Potion of Giant Strength"
 msgstr ""
 
@@ -7965,11 +7974,11 @@ msgstr ""
 msgid "Potion of Greater Healing"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:83 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:84 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Potion of Healing"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:77 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:78 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Potion of Speed"
 msgstr ""
 
@@ -7985,7 +7994,7 @@ msgstr ""
 msgid "Powerful Build"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:58
+#: src/OpenGold.Rules.Original/src/spells.cpp:59
 msgid "Prayer"
 msgstr ""
 
@@ -8134,7 +8143,7 @@ msgstr ""
 msgid "Protection from Energy: Thunder"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:18 src/OpenGold.Rules.Original/src/spells.cpp:28
+#: src/OpenGold.Rules.Original/src/spells.cpp:19 src/OpenGold.Rules.Original/src/spells.cpp:29
 msgid "Protection from Evil"
 msgstr ""
 
@@ -8146,19 +8155,19 @@ msgstr ""
 msgid "Protection from Evil and Good (Magic Initiate)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:69
+#: src/OpenGold.Rules.Original/src/spells.cpp:70
 msgid "Protection from Evil, 10' Radius"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:19 src/OpenGold.Rules.Original/src/spells.cpp:30
+#: src/OpenGold.Rules.Original/src/spells.cpp:20 src/OpenGold.Rules.Original/src/spells.cpp:31
 msgid "Protection from Good"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:71
+#: src/OpenGold.Rules.Original/src/spells.cpp:72
 msgid "Protection from Good, 10' Radius"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:73
+#: src/OpenGold.Rules.Original/src/spells.cpp:74
 msgid "Protection from Normal Missiles"
 msgstr ""
 
@@ -8503,7 +8512,7 @@ msgstr ""
 msgid "Rapier follow-up (Advantage)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:48 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:49 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Ray of Enfeeblement"
 msgstr ""
 
@@ -8540,7 +8549,7 @@ msgstr ""
 msgid "Reaction when you take damage: reduce it by 1d12 + your Constitution modifier."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:32 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:33 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Read Magic"
 msgstr ""
 
@@ -8600,7 +8609,7 @@ msgstr ""
 msgid "Redirect the attack (1 Focus)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:25 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:26 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Reduce"
 msgstr ""
 
@@ -8683,7 +8692,7 @@ msgstr ""
 msgid "Remarkable Athlete"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:59 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:60 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Remove Curse"
 msgstr ""
 
@@ -8788,11 +8797,11 @@ msgstr ""
 msgid "Resilient Sphere"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:20
+#: src/OpenGold.Rules.Original/src/spells.cpp:21
 msgid "Resist Cold"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:38
+#: src/OpenGold.Rules.Original/src/spells.cpp:39
 msgid "Resist Fire"
 msgstr ""
 
@@ -8982,7 +8991,7 @@ msgstr ""
 msgid "Restart with --reset-game-path to choose your Pool of Radiance data folder."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:76
+#: src/OpenGold.Rules.Original/src/spells.cpp:77
 msgid "Restoration"
 msgstr ""
 
@@ -9563,7 +9572,7 @@ msgstr ""
 msgid "Shatter"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:33 src/OpenGold.Rules.Srd5/src/effect_labels.h:105 src/OpenGold.Rules.Srd5/src/srd5.cpp:31379 src/OpenGoldBox/character_creation_view.cpp:88 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:695
+#: src/OpenGold.Rules.Original/src/spells.cpp:34 src/OpenGold.Rules.Srd5/src/effect_labels.h:105 src/OpenGold.Rules.Srd5/src/srd5.cpp:31379 src/OpenGoldBox/character_creation_view.cpp:88 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:695
 msgid "Shield"
 msgstr ""
 
@@ -9591,7 +9600,7 @@ msgstr ""
 msgid "Shining Smite"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:34 src/OpenGold.Rules.Srd5/src/effect_labels.h:34 src/OpenGoldBox/combat_view.cpp:3014 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:35 src/OpenGold.Rules.Srd5/src/effect_labels.h:34 src/OpenGoldBox/combat_view.cpp:3014 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Shocking Grasp"
 msgstr ""
 
@@ -9656,7 +9665,7 @@ msgstr ""
 msgid "Silence"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:39
+#: src/OpenGold.Rules.Original/src/spells.cpp:40
 msgid "Silence, 15' Radius"
 msgstr ""
 
@@ -9725,7 +9734,7 @@ msgstr ""
 msgid "Slashing"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:35 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:36 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Sleep"
 msgstr ""
 
@@ -9766,7 +9775,7 @@ msgstr ""
 msgid "Slot level {level}"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:75 src/OpenGold.Rules.Srd5/src/effect_labels.h:380 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:76 src/OpenGold.Rules.Srd5/src/effect_labels.h:380 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Slow"
 msgstr ""
 
@@ -9775,7 +9784,7 @@ msgstr ""
 msgid "Slow ({source}): Speed reduced by 10 feet."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:40
+#: src/OpenGold.Rules.Original/src/spells.cpp:41
 msgid "Slow Poison"
 msgstr ""
 
@@ -9815,7 +9824,7 @@ msgstr ""
 msgid "Smite of Protection"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:41 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:42 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Snake Charm"
 msgstr ""
 
@@ -10184,7 +10193,7 @@ msgstr ""
 msgid "Spirit guardians flit around {name}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:42
+#: src/OpenGold.Rules.Original/src/spells.cpp:43
 msgid "Spiritual Hammer"
 msgstr ""
 
@@ -10268,7 +10277,7 @@ msgstr ""
 msgid "Step of the Wind: Disengage and Dash, carrying an ally (1 Focus)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:50 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:51 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Stinking Cloud"
 msgstr ""
 
@@ -10304,7 +10313,7 @@ msgstr ""
 msgid "Stout, hardy folk who resist poison and magic and fight giants and goblins well. A dwarf may be a fighter, a thief or both."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:51 src/OpenGoldBox/character_text.h:9 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:52 src/OpenGoldBox/character_text.h:9 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Strength"
 msgstr ""
 
@@ -10622,8 +10631,20 @@ msgstr ""
 msgid "That potion works only in combat"
 msgstr ""
 
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1177
+msgid "That spell cannot be cast now"
+msgstr ""
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "That spell cannot be copied into the spellbook"
+msgstr ""
+
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:990
+msgid "That spell cannot be learned"
+msgstr ""
+
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:767
+msgid "That spell cannot be memorized"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -10736,7 +10757,7 @@ msgstr ""
 msgid "The cantrip reaches 30 feet farther per Warlock level."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:884
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1007
 msgid "The character has no levels in a class it trained in"
 msgstr ""
 
@@ -10773,6 +10794,10 @@ msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:214
 msgid "The creature that hit it this turn attacks it with Disadvantage."
+msgstr ""
+
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1181
+msgid "The dead cannot be healed"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -11064,11 +11089,11 @@ msgstr ""
 msgid "This armor imposes Disadvantage on Dexterity (Stealth) checks."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:858
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:958
 msgid "This character is not ready to train"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:41
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:43
 msgid "This character was not made under the original rules"
 msgstr ""
 
@@ -11200,6 +11225,10 @@ msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:2176
 msgid "Too heavy to carry"
+msgstr ""
+
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:772
+msgid "Too many spells of that level"
 msgstr ""
 
 #: src/OpenGoldBox/level_up_dialog.cpp:591
@@ -11505,7 +11534,7 @@ msgstr ""
 msgid "Unfilled cantrip choices remain pending. More choices will become available as spell support expands."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:576
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:603
 msgid "Unknown equipment candidate"
 msgstr ""
 
@@ -11513,7 +11542,7 @@ msgstr ""
 msgid "Unknown training choice"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:81
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:83
 msgid "Unreadable original-rules training"
 msgstr ""
 
@@ -11561,7 +11590,7 @@ msgstr ""
 msgid "Untrained weapon: no proficiency bonus on attack rolls. Only an Evil wielder can hold it; it burns anyone else who takes it up."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:87
+#: src/OpenGold.Rules.Original/src/spells.cpp:88
 msgid "Unused power"
 msgstr ""
 
@@ -11839,7 +11868,7 @@ msgstr ""
 msgid "Wand of Lightning Bolts"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:86 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/spells.cpp:87 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Wand of Magic Missiles"
 msgstr ""
 
@@ -11847,7 +11876,7 @@ msgstr ""
 msgid "Wand of Paralysis"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/spells.cpp:82
+#: src/OpenGold.Rules.Original/src/spells.cpp:83
 msgid "Wand of Paralyzation"
 msgstr ""
 
@@ -12179,7 +12208,7 @@ msgstr ""
 msgid "Write a scroll of {spell} (Magic Ink of level {level} or higher, {hours} hours)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:597
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:624
 msgid "Wrong class"
 msgstr ""
 
@@ -12281,7 +12310,7 @@ msgstr ""
 msgid "Your character: {race} / {gender} / {class}"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:627
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:654
 msgid "Your hands are full!"
 msgstr ""
 

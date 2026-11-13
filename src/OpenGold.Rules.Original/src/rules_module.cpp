@@ -1115,17 +1115,77 @@ HazardAttackResult OriginalModule::hazard_attack(VitalState &, const CharacterSh
     throw unavailable("hazard_attack");
 }
 
-// What a member can do in camp comes with magic (plan step 5).
-std::vector<CampAction> OriginalModule::camp_actions(const CharacterSheet &,
-                                                     const VitalState &) const
+namespace
 {
-    return {};
+constexpr int cure_light_wounds = 3;
+constexpr std::string_view cast_prefix = "cast:";
+
+// The spells a member has memorized and not cast: its last fight's, or after
+// a day's rest its sheet's.
+std::vector<int> spells_left(const CharacterSheet &sheet, const VitalState &state)
+{
+    if (!state.resources.empty())
+    {
+        if (const auto last = Combatant::decode(state.resources))
+        {
+            return last->spells;
+        }
+    }
+    std::vector<int> memorized;
+    for (const auto &id : sheet.prepared_spells)
+    {
+        if (const auto number = spell_number(id))
+        {
+            memorized.push_back(*number);
+        }
+    }
+    return memorized;
+}
+} // namespace
+
+// Casting in camp (camp.pas, NoncombatCastMenu): Cure Light Wounds heals a
+// member 1d8. The spells whose effects last beyond a fight come with the
+// conditions (plan step 6).
+std::vector<CampAction> OriginalModule::camp_actions(const CharacterSheet &sheet,
+                                                     const VitalState &state) const
+{
+    if (state.dead || !sheet.original)
+    {
+        return {};
+    }
+    const auto left = spells_left(sheet, state);
+    if (std::ranges::find(left, cure_light_wounds) == left.end())
+    {
+        return {};
+    }
+    return {{std::string(cast_prefix) + spell_id(cure_light_wounds),
+             {"Cast {spell}", {{"spell", std::string(spell(cure_light_wounds)->name), true}}},
+             false}};
 }
 
-void OriginalModule::use_camp_action(const CharacterSheet &, VitalState &, const CharacterSheet &,
-                                     VitalState &, std::string_view, RandomState &) const
+void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &user_state,
+                                     const CharacterSheet &target, VitalState &target_state,
+                                     std::string_view action, RandomState &random_state) const
 {
-    throw unavailable("use_camp_action");
+    const auto number = action.starts_with(cast_prefix)
+                            ? spell_number(action.substr(cast_prefix.size()))
+                            : std::nullopt;
+    auto left = spells_left(user, user_state);
+    const auto copy = number ? std::ranges::find(left, *number) : left.end();
+    if (number != cure_light_wounds || copy == left.end() || user_state.dead)
+    {
+        throw std::runtime_error("That spell cannot be cast now");
+    }
+    if (target_state.dead)
+    {
+        throw std::runtime_error("The dead cannot be healed");
+    }
+    left.erase(copy);
+    auto numbers = Combatant::decode(user_state.resources).value_or(character_combatant(user));
+    numbers.spells = std::move(left);
+    user_state.resources = numbers.encode();
+    target_state.hit_points =
+        std::min(target_state.hit_points + roll_die(random_state, 8), target.hit_points);
 }
 
 void OriginalModule::drink_potion(const CharacterSheet &, VitalState &, std::string_view,
