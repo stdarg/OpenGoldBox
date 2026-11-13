@@ -86,7 +86,8 @@ void RolfTourSession::change_area(unsigned id)
     ++snapshot_.revision;
 }
 
-// The script commands the party answers; Curse adds DESTROY ITEMS (64).
+// The script commands the party answers; Curse adds DUMP (62) and DESTROY
+// ITEMS (64).
 void RolfTourSession::enable_party_commands()
 {
     for (const std::uint8_t op :
@@ -96,6 +97,7 @@ void RolfTourSession::enable_party_commands()
     }
     if (game() != GoldBoxGame::pool_of_radiance)
     {
+        machine_.enable_host(62);
         machine_.enable_host(64);
     }
 }
@@ -2927,7 +2929,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     // The party's own requests need a campaign party: a session copied without
     // one (detached_copy) refuses them rather than reading none.
     const bool clock_moved = adopt_script_clock();
-    constexpr std::array party_requests{11, 29, 30, 34, 35, 41, 46, 52, 54, 59};
+    constexpr std::array party_requests{11, 29, 30, 34, 35, 41, 46, 52, 54, 59, 62};
     if (!campaign_ && std::find(party_requests.begin(), party_requests.end(), op) !=
                           party_requests.end())
     {
@@ -3774,6 +3776,20 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             reply.writes.push_back(
                 {game_address(ecl_current_map, game()), static_cast<std::uint16_t>(current_area_)});
         }
+        break;
+    }
+    case 62:
+    {
+        // DUMP (Curse): the selected character leaves the party with what it
+        // carries, as Alias and Dragonbait leave at the Pit of Moander's way
+        // out (ovr003, CMD_Dump). Its slot stays empty, so a script that walks
+        // the slots still meets everyone once.
+        read_character();
+        if (const auto id = campaign_->state().slots.at(selected_character_.index))
+        {
+            campaign_->remove(id);
+        }
+        reply = character_reply(selected_character_);
         break;
     }
     case 64:

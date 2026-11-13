@@ -52,7 +52,10 @@ fields come only from a *Pool of Radiance* character brought across.
 | 3Fh | FIND SPECIAL | 1 |
 | 40h | DESTROY ITEMS | 1 |
 
-What these commands do is for step 3 of the plan, when the scripts run.
+DUMP sends the selected character (the last LOAD CHARACTER's) out of the
+party with what it carries, as Alias and Dragonbait leave at the Pit of
+Moander's way out; its slot stays empty. DESTROY ITEMS takes every item of a
+type from the party. FIND SPECIAL is not run yet.
 
 ### Script memory
 

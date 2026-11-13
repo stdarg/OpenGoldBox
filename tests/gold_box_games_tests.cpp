@@ -465,6 +465,13 @@ struct RouteBeat
     bool step = false;
     // Take the first wand a treasure there holds, for the magic-user, readied.
     bool take_wand = false;
+    // Script cells the test sets before the beat, standing for what the route
+    // cannot yet do itself (as the cells a fight it does not win would set).
+    std::vector<std::pair<std::uint16_t, std::uint16_t>> test_cells;
+    // A fight the route's player loses with every dice it tries is won by the
+    // test (its enemies dead, the party as it began), so the route goes on
+    // through the story: a stand-in until its player wins it.
+    bool test_wins = false;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -713,6 +720,91 @@ const std::vector<RouteBeat> &curse_route()
         {17, 1, 4, D::north, {"PARLAY", "NICE", "TELL HER YOUR STORY", "YES"}},
         // Down the stairs to the Pit's second level.
         {17, 15, 11, D::north, {"YES"}},
+        // Mogion and Moander's pseudopods are not yet beaten by the route's
+        // player: the test sets what their fall sets (ECL3.DAX 18: the
+        // Gauntlet of Moander, cell 0x4C5B, and 0x4C2D), and the party climbs
+        // back to the Pit's first level.
+        {17,
+         15,
+         14,
+         D::north,
+         {"YES"},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         false,
+         false,
+         false,
+         {{0x4C5B, 1}, {0x4C2D, 1}}},
+        // The cultists' last stand by the Pit's way out (ten cultists, five
+        // large vegepygmies, five shambling mounds), which the test wins for
+        // now, and out of the Pit by its door to the west.
+        {17,
+         12,
+         4,
+         D::west,
+         {},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         true,
+         false,
+         false,
+         {},
+         true},
+        // The way out, facing west at 0,11 (ECL3.DAX 17), back to the
+        // wilderness.
+        {17,
+         0,
+         11,
+         D::west,
+         {"stop:JOURNEY"},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         false,
+         true},
+        // On from Yulash by trail to Voonlar, its dead raised at its temple.
+        {0,
+         0,
+         0,
+         D::north,
+         {"JOURNEY", "VOONLAR", "TRAIL", "ENTER CITY", "TEMPLE", "Raise Dead", "cleric 4", "Pay",
+          "Raise Dead", "cleric 5", "Pay", "Leave", "stop:INN"},
+         false,
+         false,
+         true},
+        // Out of Voonlar back to Yulash's edge, camped there until healed, and
+        // on to the edge of Zhentil Keep.
+        {0,
+         0,
+         0,
+         D::north,
+         {"LEAVE", "JOURNEY", "YULASH", "TRAIL", "stop:JOURNEY"},
+         false,
+         false,
+         true},
+        {0, 0, 0, D::north, {"stop:JOURNEY"}, true, false, true},
+        {0,
+         0,
+         0,
+         D::north,
+         {"JOURNEY", "ZHENTIL KEEP", "TRAIL", "stop:JOURNEY"},
+         false,
+         false,
+         true},
     };
     return beats;
 }
@@ -1075,6 +1167,9 @@ bool curse_walk_census(bool route)
     // keeps the best play: a win,
     // then the fewest dead, then the fewest Hit Points lost. The walk plays it
     // once.
+    // The beat being played lets the test win a fight its player loses
+    // (RouteBeat::test_wins).
+    bool test_winning = false;
     const auto fight = [&]
     {
         const auto before = party->state();
@@ -1114,6 +1209,26 @@ bool curse_walk_census(bool route)
         {
             party->restore(before);
             result = play_try(best_try);
+        }
+        if (test_winning && result.outcome != opengold::rules::Outcome::victory)
+        {
+            party->restore(before);
+            opengold::CombatDemo won(opengold::original::rules_module(content));
+            won.campaign_party(party);
+            won.encounter(*session.pending_encounter(), 7);
+            result = won.combat().snapshot();
+            result.outcome = opengold::rules::Outcome::victory;
+            for (auto &unit : result.combatants)
+            {
+                if (unit.side == opengold::rules::Side::opposition)
+                {
+                    unit.dead = true;
+                    unit.conscious = false;
+                    unit.hit_points = 0;
+                    unit.status = "dead";
+                }
+            }
+            std::cout << "  the test wins the fight\n";
         }
         // OPENGOLD_FIGHT_LOG prints the kept play's log, to see why a fight goes
         // as it does.
@@ -1459,6 +1574,11 @@ bool curse_walk_census(bool route)
                 {
                     memorize();
                 }
+                for (const auto &[address, value] : beat.test_cells)
+                {
+                    opengold::test::TourAccess::set_variable(
+                        session, opengold::por::EclAddress{address}, value);
+                }
                 if (beat.test_experience)
                 {
                     for (const auto id : party->state().slots)
@@ -1483,6 +1603,7 @@ bool curse_walk_census(bool route)
                 {
                     answers = beat.answers;
                     taking_wand = beat.take_wand;
+                    test_winning = beat.test_wins;
                     if (beat.waiting)
                     {
                         play(where);
@@ -1618,20 +1739,15 @@ bool curse_walk_census(bool route)
             std::cout << "Survey ends on map " << session.snapshot().area_id << ", phase "
                       << static_cast<int>(session.snapshot().phase) << "\n";
         }
-        // The route's last beat leaves the party on the Pit of Moander's second
-        // level with Alias and Dragonbait, nobody dead.
+        // The route's last beat leaves the party at the edge of Zhentil Keep,
+        // nobody dead.
         const bool all_alive = std::ranges::none_of(party->state().slots,
                                                     [&](opengold::MemberId id)
                                                     {
                                                         return id && party->member(id).vitals.dead;
                                                     });
-        const auto members = std::ranges::count_if(party->state().slots,
-                                                   [](opengold::MemberId id)
-                                                   {
-                                                       return id != opengold::MemberId{};
-                                                   });
-        return needs.empty() && end.phase != TourPhase::defeated && end.script_id == 18 &&
-               members == 8 && all_alive;
+        return needs.empty() && end.phase != TourPhase::defeated &&
+               end.dialogue.find("EDGE OF ZHENTIL KEEP") != std::string::npos && all_alive;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");

@@ -268,12 +268,17 @@ In small steps, each with its check:
    not: its magic-user learns the spells a player takes, its clerics raise
    the dead with Raise Dead after a rest, and each fight is tried with every
    member casting, with the magic-user alone casting, and with the wand and
-   Hold Monster used at the right targets. Next: Mogion and Moander's
-   pseudopods. Its player now aims Hold Person at people only and uses the
-   wand on the mounds, and so beats Mogion, her six cultists and five
-   shambling mounds (ECL3.DAX 18 loads them together, as the original does),
-   but the three pseudopods that follow at once, 140 Hit Points each and
-   engulfing, beat what is left of it, even healed.
+   Hold Monster used at the right targets. Its player aims Hold Person at people only
+   and uses the wand on the mounds, and so beats Mogion, her six cultists and
+   five shambling mounds (ECL3.DAX 18 loads them together, as the original
+   does), but not yet the three pseudopods that follow at once (140 Hit
+   Points each, engulfing): the test sets what their fall sets (the Gauntlet
+   of Moander, cells 0x4C5B and 0x4C2D) and the route goes on. It beats the
+   cultists' last stand by the Pit's way out (a fight its player may lose is
+   won by the test, a stand-in named in the route), leaves by the west door
+   at 0,11, where Alias and Dragonbait leave the party (DUMP), raises its
+   dead at Voonlar's temple, camps at Yulash's edge and reaches the edge of
+   Zhentil Keep. Next: Zhentil Keep (Fzoul, Dexam).
 
 ### 4 to 7. The other campaigns
 
