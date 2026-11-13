@@ -255,8 +255,9 @@ In small steps, each with its check:
    guards, is taken up by Crimdrac the dracolich to the Wizard's Tower,
    parleys with the dragons on its roof, and kills Dracandros in the
    courtyard for the Helm of Dragons (the second bond). Each fight is played
-   with up to 40 dice and the best play kept, as a player reloads. Next: the
-   dead raised at Hap's temple, then Yulash (Moander).
+   with up to 40 dice and the best play kept, as a player reloads. It leaves
+   the tower by its secret passage to Hap and has its dead raised at the
+   Temple of Sune. Next: Yulash (Moander).
 
 ### 4 to 7. The other campaigns
 

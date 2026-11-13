@@ -560,6 +560,39 @@ const std::vector<RouteBeat> &curse_route()
          0,
          std::nullopt,
          true},
+        // Out of the tower by its secret passage, to Hap's village, and the
+        // dead raised at its Temple of Sune.
+        {51,
+         7,
+         15,
+         D::east,
+         {"WILDERNESS", "VILLAGE"},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         false,
+         true},
+        // (Stepping in from the street, as a building is entered only from
+        // outside: each sets cell 0x4C02 until the party is out again.)
+        {50,
+         3,
+         8,
+         D::west,
+         {"YES", "Raise Dead", "ranger 3", "Pay", "Raise Dead", "cleric 5", "Pay", "Raise Dead",
+          "magic_user 6", "Pay", "Leave"},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         false,
+         true},
     };
     return beats;
 }
@@ -1231,11 +1264,16 @@ bool curse_walk_census(bool route)
             std::cout << "Survey ends on map " << session.snapshot().area_id << ", phase "
                       << static_cast<int>(session.snapshot().phase) << "\n";
         }
-        // The route's last beat leaves the party in the Wizard's Tower
-        // (script 51), Dracandros dead.
-        constexpr unsigned wizards_tower_script = 51;
-        return needs.empty() && end.phase != TourPhase::defeated &&
-               end.script_id == wizards_tower_script;
+        // The route's last beat leaves the party in Hap (script 49), Dracandros
+        // dead and its own dead raised at the Temple of Sune.
+        constexpr unsigned hap_script = 49;
+        const bool all_alive = std::ranges::none_of(party->state().slots,
+                                                    [&](opengold::MemberId id)
+                                                    {
+                                                        return id && party->member(id).vitals.dead;
+                                                    });
+        return needs.empty() && end.phase != TourPhase::defeated && end.script_id == hap_script &&
+               all_alive;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");
