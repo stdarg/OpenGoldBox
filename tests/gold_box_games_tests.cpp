@@ -11,6 +11,8 @@
 #include "opengold/ecl_address.h"
 #include "opengold/ecl_machine.h"
 #include "opengold/formats.h"
+#include "tour_access.h"
+#include <map>
 #include "opengold/game_census.h"
 #include "opengold/magic_item_catalog.h"
 #include "opengold/pool_radiance.h"
@@ -382,6 +384,94 @@ void curse_opening_reaches_the_first_map()
           "The innkeeper speaks: " + diagnostics());
 }
 
+// Curse's step 2 (docs/GAMES.md): every square of the map the party stands on,
+// each of its events run to its end, answering the first choice; prints what
+// the scripts still need. Run with --curse-walk.
+void curse_walk_census()
+{
+    using opengold::por::TourPhase;
+    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    const auto folder = games ? std::filesystem::path(games) / "CURSE" : std::filesystem::path();
+    if (!games || opengold::identify_game(folder) != GoldBoxGame::curse_of_the_azure_bonds)
+    {
+        std::cout << "Curse's files are not here.\n";
+        return;
+    }
+    auto session = opengold::load_campaign(folder, GoldBoxGame::curse_of_the_azure_bonds);
+    std::map<std::string, std::vector<std::string>> needs;
+    std::map<std::string, unsigned> phases;
+    const auto play = [&](const std::string &where)
+    {
+        for (int step = 0; step < 400; ++step)
+        {
+            const auto &s = session.snapshot();
+            if (!s.diagnostic.empty())
+            {
+                needs[s.diagnostic].push_back(where);
+            }
+            switch (s.phase)
+            {
+            case TourPhase::running:
+                session.advance(1.0);
+                continue;
+            case TourPhase::awaiting_continue:
+                if (!session.choose(s.continue_ticket, 0) &&
+                    !session.continue_dialogue(s.continue_ticket))
+                {
+                    ++phases["stuck at a choice"];
+                    return;
+                }
+                continue;
+            case TourPhase::awaiting_input:
+                (void)session.input(s.continue_ticket, "0");
+                continue;
+            case TourPhase::shopping:
+                (void)session.leave_shop(s.continue_ticket);
+                continue;
+            case TourPhase::treasure:
+                (void)session.leave_treasure(s.continue_ticket);
+                continue;
+            default:
+                ++phases[std::to_string(static_cast<int>(s.phase))];
+                return;
+            }
+        }
+        ++phases["too long"];
+    };
+    play("opening");
+    const auto area = session.snapshot().area_id;
+    for (unsigned y = 0; y < 16; ++y)
+    {
+        for (unsigned x = 0; x < 16; ++x)
+        {
+            if (session.snapshot().area_id != area || !session.can_leave())
+            {
+                std::cout << "Left area " << area << " at " << x << "," << y << "\n";
+                break;
+            }
+            opengold::test::TourAccess::place(session, {x, y, opengold::por::MapDirection::north});
+            if (session.explore(opengold::por::ExplorationCommand::look))
+            {
+                play(std::to_string(x) + "," + std::to_string(y));
+            }
+        }
+    }
+    for (const auto &message : session.script_diagnostics())
+    {
+        needs[message].push_back("script");
+    }
+    std::cout << "Curse walk of area " << area << ":\n";
+    for (const auto &[message, places] : needs)
+    {
+        std::cout << "  " << places.size() << "x " << message << " (first at " << places.front()
+                  << ")\n";
+    }
+    for (const auto &[phase, count] : phases)
+    {
+        std::cout << "  ended " << count << "x in phase " << phase << "\n";
+    }
+}
+
 // An item type's property bits, byte 14 of ITEMS, as Pool of Radiance's own
 // files hold them (OPENGOLD_GAME_DIR).
 void item_types_carry_their_properties()
@@ -435,10 +525,15 @@ void a_save_names_its_game()
 
 } // namespace
 
-int main()
+int main(int argc, char **argv)
 {
     try
     {
+        if (argc == 2 && std::string_view(argv[1]) == "--curse-walk")
+        {
+            curse_walk_census();
+            return 0;
+        }
         each_game_is_told_apart_by_its_files();
         curse_creatures_are_read_from_their_layout();
         curse_scripts_run_in_their_own_bank();
