@@ -2026,7 +2026,7 @@ msgstr "Cast a spell or use a feature outside combat."
 msgid "Cast spell"
 msgstr "Cast spell"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1426
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1434
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr "Cast {spell}"
@@ -8438,6 +8438,10 @@ msgstr "Raise Dead can bring it back within ten days of its death."
 msgid "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 msgstr "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1459
+msgid "Raise Dead cannot bring this member back"
+msgstr "Raise Dead cannot bring this member back"
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:230
 msgid "Raised (Zombie)"
 msgstr "Raised (Zombie)"
@@ -10770,7 +10774,7 @@ msgstr "Temporary HP from {source}. Absorbs damage before ordinary HP; does not 
 msgid "Temporary HP:"
 msgstr "Temporary HP:"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1493
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1528
 msgid "That cannot be used now"
 msgstr "That cannot be used now"
 
@@ -10782,7 +10786,7 @@ msgstr "That is not a Manual of Bodily Health"
 msgid "That potion works only in combat"
 msgstr "That potion works only in combat"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1441
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1453
 msgid "That spell cannot be cast now"
 msgstr "That spell cannot be cast now"
 
@@ -10947,7 +10951,7 @@ msgstr "The cloud drifts."
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr "The creature that hit it this turn attacks it with Disadvantage."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1445
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1463
 msgid "The dead cannot be healed"
 msgstr "The dead cannot be healed"
 

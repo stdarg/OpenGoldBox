@@ -1381,7 +1381,11 @@ HazardAttackResult OriginalModule::hazard_attack(VitalState &state, const Charac
 
 namespace
 {
-constexpr int cure_light_wounds = 3;
+constexpr int cure_light_wounds = 3, cure_serious_wounds = 158, cure_critical_wounds = 171,
+              raise_dead = 175;
+// The spells a member may cast in camp: the cures, and Curse's Raise Dead.
+constexpr std::array<int, 4> camp_spells{cure_light_wounds, cure_serious_wounds,
+                                         cure_critical_wounds, raise_dead};
 constexpr std::string_view cast_prefix = "cast:";
 
 // The spells a member has memorized and not cast: its last fight's, or after
@@ -1408,7 +1412,9 @@ std::vector<int> spells_left(const CharacterSheet &sheet, const VitalState &stat
 } // namespace
 
 // Casting in camp (camp.pas, NoncombatCastMenu): Cure Light Wounds heals a
-// member 1d8. The spells whose effects last beyond a fight come with the
+// member 1d8, and Curse's Cure Serious and Cure Critical Wounds 2d8+1 and
+// 3d8+3; Curse's Raise Dead brings back a dead member who is no elf with 1
+// Hit Point. The spells whose effects last beyond a fight come with the
 // conditions (plan step 6).
 std::vector<CampAction> OriginalModule::camp_actions(const CharacterSheet &sheet,
                                                      const VitalState &state) const
@@ -1418,13 +1424,18 @@ std::vector<CampAction> OriginalModule::camp_actions(const CharacterSheet &sheet
         return {};
     }
     const auto left = spells_left(sheet, state);
-    if (std::ranges::find(left, cure_light_wounds) == left.end())
+    std::vector<CampAction> actions;
+    for (const int number : camp_spells)
     {
-        return {};
+        if (std::ranges::find(left, number) != left.end())
+        {
+            actions.push_back(
+                {std::string(cast_prefix) + spell_id(number),
+                 {"Cast {spell}", {{"spell", std::string(spell(number)->name), true}}},
+                 false});
+        }
     }
-    return {{std::string(cast_prefix) + spell_id(cure_light_wounds),
-             {"Cast {spell}", {{"spell", std::string(spell(cure_light_wounds)->name), true}}},
-             false}};
+    return actions;
 }
 
 void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &user_state,
@@ -1436,11 +1447,18 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
                             : std::nullopt;
     auto left = spells_left(user, user_state);
     const auto copy = number ? std::ranges::find(left, *number) : left.end();
-    if (number != cure_light_wounds || copy == left.end() || user_state.dead)
+    if (!number || std::ranges::find(camp_spells, *number) == camp_spells.end() ||
+        copy == left.end() || user_state.dead)
     {
         throw std::runtime_error("That spell cannot be cast now");
     }
-    if (target_state.dead)
+    const bool raising = *number == raise_dead;
+    constexpr int elf = static_cast<int>(Race::elf);
+    if (raising && (!target_state.dead || original_numbers(target).race == elf))
+    {
+        throw std::runtime_error("Raise Dead cannot bring this member back");
+    }
+    if (!raising && target_state.dead)
     {
         throw std::runtime_error("The dead cannot be healed");
     }
@@ -1448,8 +1466,25 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
     auto numbers = Combatant::decode(user_state.resources).value_or(character_combatant(user));
     numbers.spells = std::move(left);
     user_state.resources = numbers.encode();
-    target_state.hit_points =
-        std::min(target_state.hit_points + roll_die(random_state, 8), target.hit_points);
+    if (raising)
+    {
+        target_state.dead = false;
+        target_state.hit_points = 1;
+        return;
+    }
+    const auto roll_8s = [&](int dice)
+    {
+        int total = 0;
+        for (int die = 0; die < dice; ++die)
+        {
+            total += roll_die(random_state, 8);
+        }
+        return total;
+    };
+    const int healed = *number == cure_light_wounds     ? roll_8s(1)
+                       : *number == cure_serious_wounds ? roll_8s(2) + 1
+                                                        : roll_8s(3) + 3;
+    target_state.hit_points = std::min(target_state.hit_points + healed, target.hit_points);
 }
 
 namespace

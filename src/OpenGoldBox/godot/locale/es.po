@@ -2026,7 +2026,7 @@ msgstr "Lanza un conjuro o usa un rasgo fuera de combate."
 msgid "Cast spell"
 msgstr "Lanzar conjuro"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1426
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1434
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr "Lanzar {spell}"
@@ -8438,6 +8438,10 @@ msgstr "Revivir a los muertos puede devolverlo a la vida en los diez días sigui
 msgid "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 msgstr "Revivir a los muertos no puede traer de vuelta a {name}, que lleva demasiado tiempo muerto o es polvo."
 
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1459
+msgid "Raise Dead cannot bring this member back"
+msgstr "Alzar a los muertos no puede devolver a este miembro"
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:230
 msgid "Raised (Zombie)"
 msgstr "Alzado (zombi)"
@@ -10770,7 +10774,7 @@ msgstr "PG temporales de {source}. Absorben el daño antes que los PG normales; 
 msgid "Temporary HP:"
 msgstr "PG temporales:"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1493
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1528
 msgid "That cannot be used now"
 msgstr "Eso no se puede usar ahora"
 
@@ -10782,7 +10786,7 @@ msgstr "Eso no es un Manual de salud corporal"
 msgid "That potion works only in combat"
 msgstr "Esa poción solo funciona en combate"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1441
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1453
 msgid "That spell cannot be cast now"
 msgstr "Ese conjuro no se puede lanzar ahora"
 
@@ -10947,7 +10951,7 @@ msgstr "La nube se desplaza."
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr "La criatura que lo impactó este turno lo ataca con desventaja."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1445
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1463
 msgid "The dead cannot be healed"
 msgstr "Los muertos no se pueden curar"
 

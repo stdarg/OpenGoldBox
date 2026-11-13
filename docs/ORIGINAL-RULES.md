@@ -125,6 +125,9 @@ and a save each know which tables they use.
   can choose); Dimension Door moves the caster out of any hold; Curse's blink
   hides one once it has acted; an animal cannot single out one invisible to
   animals.
+- **Camp:** a cleric casts Cure Serious and Cure Critical Wounds (2d8+1,
+  3d8+3) in camp, and Raise Dead brings back a dead member who is no elf
+  with 1 Hit Point (its point of Constitution comes with the temple's).
 - Still to come: Cloudkill, the player's choice of Fire Shield, the
   rakshasa's death by a blessed crossbow bolt, *Curse*'s
   other new

@@ -489,6 +489,37 @@ void a_cleric_cures_in_camp()
     check(party.camp_actions(cleric).empty(), "The spell is spent");
 }
 
+// Curse's camp spells (its reconstruction's ovr023): Cure Serious Wounds
+// heals 2d8+1, and Raise Dead brings back a dead member with 1 Hit Point.
+void curse_clerics_heal_and_raise_in_camp()
+{
+    const auto module = original::rules_module();
+    const auto creation =
+        original::character_rules(original::default_aging, GoldBoxGame::curse_of_the_azure_bonds);
+    RandomState random{19};
+    auto draft = rules::CharacterDraft{};
+    draft.race = "human";
+    draft.gender = "male";
+    draft.character_class = "cleric";
+    draft.alignment = "lawful_good";
+    draft.name = "Kirin";
+    creation->roll_in_place(draft, random);
+    auto priest = creation->evaluate(draft, rules::NameRequirement::required);
+    priest.prepared_spells = {"cleric:cure_serious_wounds", "cleric:raise_dead"};
+    rules::VitalState own{priest.hit_points, false, {}, {}};
+    const auto actions = module->camp_actions(priest, own);
+    check(actions.size() == 2, "The priest can cast both in camp");
+    rules::VitalState hurt{1, false, {}, {}};
+    module->use_camp_action(priest, own, priest, hurt, "cast:cleric:cure_serious_wounds", random);
+    check(hurt.hit_points >= std::min(4, priest.hit_points) &&
+              hurt.hit_points <= std::min(18, priest.hit_points),
+          "Cure Serious Wounds heals 2d8+1");
+    rules::VitalState dead{0, true, {}, {}};
+    module->use_camp_action(priest, own, priest, dead, "cast:cleric:raise_dead", random);
+    check(!dead.dead && dead.hit_points == 1, "Raise Dead brings the dead back with 1 Hit Point");
+    check(module->camp_actions(priest, own).empty(), "Both spells are spent");
+}
+
 // The original's temple: Cure Light Wounds heals 1d8 a wounded member, and
 // Raise Dead brings the dead back with 1 Hit Point.
 void the_temple_heals_and_raises()
@@ -683,6 +714,7 @@ int main()
         a_potion_heals_outside_a_fight();
         an_npc_joins_as_its_record();
         a_drain_lasts_beyond_the_fight();
+        curse_clerics_heal_and_raise_in_camp();
         std::cout << "Original creation tests passed\n";
         return 0;
     }
