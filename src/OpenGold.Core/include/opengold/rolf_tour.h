@@ -608,6 +608,10 @@ class RolfTourSession
     // The experience a creature record of the area awards: its conversion's,
     // or under rules that play the original's records, the record's own.
     [[nodiscard]] unsigned record_experience(unsigned record) const;
+    // What the treasure a fight won is worth in experience: under rules that
+    // play the original's records, its coins, gems, jewelry and magic; else
+    // nothing.
+    [[nodiscard]] unsigned treasure_experience(const PendingLoot &loot) const;
     // Each member's share of a fight's experience: under rules that play the
     // original's records, the total divided among the party, as the original
     // does; otherwise the total, each member earning it.

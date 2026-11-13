@@ -380,10 +380,14 @@ gear.
      and quarrels are found by their item type (73, 28), as `RecalcStats`
      files them; step 4 had looked for them by their type's place, so no bow
      found its arrows.
-   - Still to come: readying items mid-fight, the party's facing, the original's
-     terrain heights for sight, the fireball's outdoor radius, the encounter's
-     morale and PARTY_MOVE_MODIFIER, treasure's experience, and showing
-     descending Armor Class on the screens.
+   - **Treasure's experience:** a won fight's monsters' coins, gems and
+     jewelry, and 400 for each plus of a magic item, add to its experience
+     (`DetermineLootExp`).
+   - **Armor Class** counts down as the original's does on every screen, the
+     shop's preview and auto-equip's comparison included.
+   - Still to come: readying items mid-fight (and the AI's
+     `EquipWeaponAndArmor`), the party's facing, the original's terrain
+     heights for sight, the fireball's outdoor radius and PARTY_MOVE_MODIFIER.
 8. Spells in combat. In parts:
    - 8a. *Done 2026-11-12:* the casting framework, with the first-level
      spells (`original_spells.h` holds the original's spell table). Cast

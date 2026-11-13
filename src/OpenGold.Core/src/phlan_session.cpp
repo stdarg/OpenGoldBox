@@ -1249,6 +1249,27 @@ unsigned RolfTourSession::record_experience(unsigned record) const
     return stored.base_xp_award + unsigned{stored.xp_per_hit_point} * stored.rolled_hit_points;
 }
 
+unsigned RolfTourSession::treasure_experience(const PendingLoot &loot) const
+{
+    if (!plays_original_records())
+    {
+        return 0;
+    }
+    // The original's worth of the monsters' coins, gems and jewelry, and 400
+    // for each plus of a magic item (postcbt.pas, DetermineLootExp).
+    const auto &w = loot.wealth;
+    unsigned experience =
+        w[0] / 200 + w[1] / 20 + w[2] / 2 + w[3] + w[4] * 5 + w[5] * 250 + w[6] * 2200;
+    for (const auto &item : loot.items)
+    {
+        if (item.stored.magic_bonus > 0)
+        {
+            experience += static_cast<unsigned>(item.stored.magic_bonus) * 400;
+        }
+    }
+    return experience;
+}
+
 unsigned RolfTourSession::experience_share(unsigned total) const
 {
     if (!plays_original_records())
@@ -1536,11 +1557,13 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                 {
                     experience += record_experience(record);
                 }
+                auto loot = encounter_loot(current_area_, std::move(paying), reward + ":loot",
+                                           machine_.variable(game_cell(EclAddress{0x6DE3})) != 1,
+                                           std::move(spent));
+                experience += treasure_experience(loot);
                 campaign_->award_experience(champion ? experience : experience_share(experience),
                                             reward, champion);
-                pending_loot_.push_back(encounter_loot(
-                    current_area_, std::move(paying), reward + ":loot",
-                    machine_.variable(game_cell(EclAddress{0x6DE3})) != 1, std::move(spent)));
+                pending_loot_.push_back(std::move(loot));
                 pile_loot();
             }
             // Treasure the script added to the fight is won with it.
