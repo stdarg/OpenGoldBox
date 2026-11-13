@@ -214,8 +214,13 @@ In small steps, each with its check:
    progress (2026-11-13):* a party made for *Curse* under the original rules
    follows *Curse*'s creation and tables (ORIGINAL-RULES.md, *Curse of the
    Azure Bonds*): paladins and rangers, 25,000 experience trained up at once,
-   300 platinum. Still to come: *Curse*'s character records (its NPCs, and
-   bringing a party across).
+   300 platinum. *Curse*'s NPCs join as their 422-byte records. A *Pool of
+   Radiance* character comes across as *Curse*'s `ConvertPoolRadPlayer`
+   brings it (`CampaignParty::bring_across`): its scores within *Curse*'s
+   limits, its levels, Hit Points, experience and drained levels, its
+   magic-user spells but Animate Dead, its items as they were readied, and
+   300 platinum; its money stays behind. Still to come: choosing the
+   characters on the party screen from a *Pool of Radiance* save.
 5. Combat with *Curse*'s monsters, spells and items. *In progress
    (2026-11-13):* *Curse*'s scripts load its own creatures and fight them as
    their records under the original rules; `opengold_gold_box_games_tests

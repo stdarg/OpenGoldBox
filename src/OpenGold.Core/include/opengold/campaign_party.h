@@ -267,6 +267,11 @@ class CampaignParty
     // when the leader is down. 0 when nobody can speak.
     [[nodiscard]] MemberId spokesman() const;
     MemberId add_pc(Character character);
+    // A member of another game's party brought into this one (Curse's Add
+    // Character from Pool of Radiance), as this party's rules take it in:
+    // its numbers, experience and items, and the platinum it starts with; its
+    // money stays behind. Throws when the rules take in no one.
+    MemberId bring_across(const PartyMember &from);
 
     // Developer tools only (dev_tools/party_tester): player characters may
     // also take the two NPC positions, so up to eight of them fight. A game

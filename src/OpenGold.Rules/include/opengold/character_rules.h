@@ -204,6 +204,17 @@ class CharacterRules
     // original's records.
     [[nodiscard]] virtual std::optional<CharacterDraft>
     record_draft(std::span<const std::uint8_t> record) const = 0;
+
+    // A character brought from the game before this one in the series (Curse's
+    // Add Character from Pool of Radiance) as these rules take it in, with the
+    // experience it had; none for rules that take none.
+    [[nodiscard]] virtual std::optional<CharacterDraft> imported_draft(const CharacterSheet &from,
+                                                                       unsigned experience) const
+    {
+        (void)from;
+        (void)experience;
+        return std::nullopt;
+    }
     [[nodiscard]] virtual std::vector<CreationChoice> choices(CreationField field) const = 0;
     [[nodiscard]] virtual std::vector<ScoreAdjustment>
     adjustments(std::string_view background) const = 0;

@@ -125,6 +125,11 @@ and a save each know which tables they use.
   can choose); Dimension Door moves the caster out of any hold; Curse's blink
   hides one once it has acted; an animal cannot single out one invisible to
   animals.
+- **From *Pool of Radiance*:** a character brought across keeps its scores
+  (held within *Curse*'s limits for its race and gender), levels, Hit Points,
+  age, experience and drained levels, its magic-user spell book but Animate
+  Dead, and its items; it starts with 300 platinum and none of its money
+  (`ConvertPoolRadPlayer`).
 - **Camp:** a cleric casts Cure Serious and Cure Critical Wounds (2d8+1,
   3d8+3) in camp, and Raise Dead brings back a dead member who is no elf
   with 1 Hit Point (its point of Constitution comes with the temple's).

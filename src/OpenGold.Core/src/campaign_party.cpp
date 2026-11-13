@@ -1071,6 +1071,36 @@ MemberId CampaignParty::add_pc(Character character)
     return id;
 }
 
+MemberId CampaignParty::bring_across(const PartyMember &from)
+{
+    const auto draft = character_rules()->imported_draft(from.character.sheet(), from.experience);
+    if (!draft)
+    {
+        throw std::runtime_error("These rules take in no character from another game");
+    }
+    const auto id = add_pc(Character(*character_rules(), *draft, from.character.appearance()));
+    for (const auto &item : from.character.inventory().items())
+    {
+        const auto source = from.item_sources.find(item.id);
+        if (source == from.item_sources.end())
+        {
+            continue;
+        }
+        const auto before = member(id).character.inventory().items().size();
+        take_item(id, source->second);
+        const auto &now = member(id).character.inventory().items();
+        if (now.size() > before && std::ranges::find(from.equipped, item.id) != from.equipped.end())
+        {
+            (void)equip(id, now.back().id);
+        }
+    }
+    add_coins(Coin::platinum,
+              static_cast<std::uint32_t>(member(id).character.sheet().original
+                                             ? member(id).character.sheet().original->platinum
+                                             : 0));
+    return id;
+}
+
 MemberId CampaignParty::recruit(std::string source, Character converted, unsigned morale)
 {
     editable();

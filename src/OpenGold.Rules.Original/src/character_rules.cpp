@@ -258,6 +258,79 @@ std::optional<por::CharacterRecord> decode_record(std::span<const std::uint8_t> 
 }
 
 constexpr std::string_view record_prefix = "record:";
+constexpr std::string_view imported_prefix = "imported:";
+
+// A character brought from another game (Curse's ConvertPoolRadPlayer): its
+// scores, levels, Hit Points, age, experience, drained levels and the
+// magic-user spells it learned, as the draft keeps them.
+struct Imported
+{
+    rules::AbilityArray<int> scores{};
+    int exceptional_strength{};
+    ClassLevels levels{};
+    int hit_points{}, age{}, experience{}, drained_levels{}, drained_hit_points{};
+    int race{}, profession{}, alignment{};
+    std::vector<int> learned;
+};
+
+std::string encode_imported(const Imported &from)
+{
+    std::ostringstream out;
+    out << imported_prefix << 1;
+    for (const auto ability : rules::all_abilities)
+    {
+        out << ' ' << from.scores[ability];
+    }
+    out << ' ' << from.exceptional_strength;
+    for (const int level : from.levels)
+    {
+        out << ' ' << level;
+    }
+    out << ' ' << from.hit_points << ' ' << from.age << ' ' << from.experience << ' '
+        << from.drained_levels << ' ' << from.drained_hit_points << ' ' << from.race << ' '
+        << from.profession << ' ' << from.alignment << ' ' << from.learned.size();
+    for (const int number : from.learned)
+    {
+        out << ' ' << number;
+    }
+    return out.str();
+}
+
+std::optional<Imported> imported_of(const CharacterDraft &draft)
+{
+    std::string_view data = draft.rules_data;
+    if (!data.starts_with(imported_prefix))
+    {
+        return std::nullopt;
+    }
+    std::istringstream in{std::string(data.substr(imported_prefix.size()))};
+    int version{};
+    Imported from;
+    in >> version;
+    for (const auto ability : rules::all_abilities)
+    {
+        in >> from.scores[ability];
+    }
+    in >> from.exceptional_strength;
+    for (int &level : from.levels)
+    {
+        in >> level;
+    }
+    std::size_t learned = 0;
+    in >> from.hit_points >> from.age >> from.experience >> from.drained_levels >>
+        from.drained_hit_points >> from.race >> from.profession >> from.alignment >> learned;
+    from.learned.resize(std::min<std::size_t>(learned, 128));
+    for (int &number : from.learned)
+    {
+        in >> number;
+    }
+    std::string rest;
+    if (!in || version != 1 || (in >> rest) || from.hit_points < 1)
+    {
+        throw std::invalid_argument("Unreadable imported character");
+    }
+    return from;
+}
 constexpr std::string_view hex = "0123456789abcdef";
 
 // A record's bytes as a draft keeps them.
@@ -385,6 +458,62 @@ class OriginalCharacterRules final : public rules::CharacterRules
         return draft;
     }
 
+    // A character brought from the game before (Curse's ConvertPoolRadPlayer):
+    // its scores kept within this game's limits for its race and gender, its
+    // levels, Hit Points, age, experience and drained levels, and the
+    // magic-user spells it learned but Animate Dead; it starts with this
+    // game's platinum (Curse's 300).
+    std::optional<CharacterDraft> imported_draft(const CharacterSheet &from,
+                                                 unsigned experience) const override
+    {
+        if (!from.original)
+        {
+            return std::nullopt;
+        }
+        const auto &o = *from.original;
+        const auto race = static_cast<Race>(o.race);
+        const auto gender = from.gender == "Female" ? Gender::female : Gender::male;
+        const auto limits = ability_limits(race, gender);
+        Imported in;
+        for (const auto ability : rules::all_abilities)
+        {
+            in.scores[ability] =
+                std::clamp(from.scores[ability], limits.minimum[ability], limits.maximum[ability]);
+        }
+        in.exceptional_strength =
+            in.scores[Ability::strength] == 18
+                ? std::min(o.exceptional_strength, limits.exceptional_strength_maximum)
+                : 0;
+        in.levels = o.class_levels;
+        in.hit_points = std::max(from.hit_points, 1);
+        in.age = o.age;
+        in.experience = static_cast<int>(std::min<unsigned>(experience, 100000000));
+        in.drained_levels = o.drained_levels;
+        in.drained_hit_points = o.drained_hit_points;
+        in.race = o.race;
+        in.profession = o.profession;
+        in.alignment = o.alignment;
+        constexpr int animate_dead = 36;
+        for (const int number : o.known_spells)
+        {
+            const auto *known = spell(number);
+            if (known && known->caster_class == SpellClass::magic_user && number != animate_dead)
+            {
+                in.learned.push_back(number);
+            }
+        }
+        CharacterDraft draft;
+        draft.name = from.name;
+        draft.race = std::string(named(races, race).id);
+        draft.gender = std::string(named(genders, gender).id);
+        draft.character_class =
+            std::string(named(professions, static_cast<Profession>(o.profession)).id);
+        draft.alignment = std::string(named(alignments, static_cast<Alignment>(o.alignment)).id);
+        draft.rules_data = encode_imported(in);
+        draft.rolled = true;
+        return draft;
+    }
+
     std::vector<CreationChoice> choices(CreationField field) const override
     {
         switch (field)
@@ -485,6 +614,10 @@ class OriginalCharacterRules final : public rules::CharacterRules
         {
             return record_scores(*record)[ability];
         }
+        if (const auto imported = imported_of(draft))
+        {
+            return imported->scores[ability];
+        }
         if (!draft.rolled)
         {
             return std::nullopt;
@@ -514,6 +647,10 @@ class OriginalCharacterRules final : public rules::CharacterRules
         if (const auto record = record_of(draft))
         {
             return record_sheet(draft, *record);
+        }
+        if (const auto imported = imported_of(draft))
+        {
+            return imported_sheet(draft, *imported);
         }
         const auto chosen = read_choices(draft, game_);
         const auto alignment = require_id(alignments, draft.alignment, "alignment");
@@ -600,6 +737,65 @@ class OriginalCharacterRules final : public rules::CharacterRules
     }
 
   private:
+    // A character brought from another game, as its draft keeps it.
+    [[nodiscard]] CharacterSheet imported_sheet(const CharacterDraft &draft,
+                                                const Imported &from) const
+    {
+        const auto race = static_cast<Race>(from.race);
+        const auto profession = static_cast<Profession>(from.profession);
+        CharacterSheet sheet;
+        sheet.identity = identity();
+        sheet.name = draft.name;
+        sheet.race = std::string(named(races, race).label);
+        sheet.gender = draft.gender == "female" ? "Female" : "Male";
+        sheet.character_class = std::string(named(professions, profession).label);
+        sheet.alignment =
+            std::string(named(alignments, static_cast<Alignment>(from.alignment)).label);
+        sheet.base = from.scores;
+        sheet.scores = from.scores;
+        sheet.level = std::max(1, *std::max_element(from.levels.begin(), from.levels.end()));
+        sheet.hit_points = from.hit_points;
+        for (std::size_t at = 0; at < class_slot_count; ++at)
+        {
+            if (from.levels[at] > 0)
+            {
+                sheet.level_classes.emplace_back(class_slot_id(static_cast<ClassSlot>(at)));
+            }
+        }
+        CharacterSheet::Original numbers;
+        numbers.class_levels = from.levels;
+        numbers.thac0 = thac0(from.levels, game_);
+        numbers.saving_throws = saving_throws(from.levels, game_);
+        numbers.exceptional_strength = from.exceptional_strength;
+        numbers.age = from.age;
+        numbers.race = from.race;
+        numbers.profession = from.profession;
+        numbers.alignment = from.alignment;
+        numbers.experience = from.experience;
+        numbers.platinum = starting_platinum(game_);
+        numbers.drained_levels = from.drained_levels;
+        numbers.drained_hit_points = from.drained_hit_points;
+        numbers.thief_skills = thief_skills(race, level_in(from.levels, ClassSlot::thief),
+                                            from.scores[Ability::dexterity]);
+        numbers.cleric_slots =
+            spell_slots(ClassSlot::cleric, level_in(from.levels, ClassSlot::cleric),
+                        from.scores[Ability::wisdom]);
+        numbers.magic_user_slots =
+            spell_slots(ClassSlot::magic_user, level_in(from.levels, ClassSlot::magic_user),
+                        from.scores[Ability::wisdom]);
+        // Its spell book as it was: no starting spells of this game's it lacked.
+        numbers.known_spells =
+            known_spells(from.levels, from.scores[Ability::wisdom], from.learned, game_);
+        std::erase_if(numbers.known_spells,
+                      [&from](int number)
+                      {
+                          return spell(number)->caster_class == SpellClass::magic_user &&
+                                 std::ranges::find(from.learned, number) == from.learned.end();
+                      });
+        sheet.original = numbers;
+        return sheet;
+    }
+
     // An NPC's sheet: its record's scores, levels, Hit Points, spells known
     // and memorized, and its race, class and alignment.
     [[nodiscard]] CharacterSheet record_sheet(const CharacterDraft &draft,

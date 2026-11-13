@@ -520,6 +520,54 @@ void curse_clerics_heal_and_raise_in_camp()
     check(module->camp_actions(priest, own).empty(), "Both spells are spent");
 }
 
+// A Pool of Radiance character brought into Curse (its ConvertPoolRadPlayer):
+// its levels, Hit Points, experience and items come along, with 300
+// platinum; its money stays behind.
+void a_pool_character_comes_to_curse()
+{
+    const char *game = std::getenv("OPENGOLD_GAME_DIR");
+    if (!game)
+    {
+        std::cout
+            << "Pool of Radiance's files are not here; bringing a character across is not checked.\n";
+        return;
+    }
+    std::ifstream file(std::filesystem::path(game) / "ITEMS", std::ios::binary);
+    const std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(file), {}};
+    const auto types = *por::decode_item_templates(bytes);
+    std::shared_ptr<const rules::CharacterRules> pool = original::character_rules();
+    CampaignParty first(original::rules_module({{}, types}), pool);
+    const auto id = first.add_pc(made_fighter(pool));
+    first.add_coins(Coin::gold, 3000);
+    first.award_experience(2001, "test:carried");
+    first.train_at_hall_level(id, TrainingHall::fighters, {});
+    const auto sword = carried(first, id, original_item(types, 36, 60));
+    first.equip(id, sword, rules::EquipmentOperation::equip);
+    const auto &veteran = first.member(id);
+
+    const auto curse_game = GoldBoxGame::curse_of_the_azure_bonds;
+    original::Content content;
+    content.game = curse_game;
+    content.item_types = types;
+    std::shared_ptr<const rules::CharacterRules> curse =
+        original::character_rules(original::default_aging, curse_game);
+    CampaignParty second(original::rules_module(content), curse);
+    const auto arrived = second.bring_across(veteran);
+    const auto &member = second.member(arrived);
+    const auto &sheet = member.character.sheet();
+    check(sheet.original->class_levels == veteran.character.sheet().original->class_levels &&
+              sheet.hit_points == veteran.character.sheet().hit_points &&
+              member.experience == veteran.experience &&
+              original::game_of(sheet.identity) == curse_game,
+          "Its levels, Hit Points and experience come along, under Curse's rules");
+    check(member.character.inventory().items().size() ==
+                  veteran.character.inventory().items().size() &&
+              member.equipped.size() == veteran.equipped.size(),
+          "Its items come along, readied as they were");
+    check(second.state().wealth[4] == 300 && second.state().wealth[3] == 0,
+          "It brings 300 platinum and none of its gold");
+}
+
 // The original's temple: Cure Light Wounds heals 1d8 a wounded member, and
 // Raise Dead brings the dead back with 1 Hit Point.
 void the_temple_heals_and_raises()
@@ -715,6 +763,7 @@ int main()
         an_npc_joins_as_its_record();
         a_drain_lasts_beyond_the_fight();
         curse_clerics_heal_and_raise_in_camp();
+        a_pool_character_comes_to_curse();
         std::cout << "Original creation tests passed\n";
         return 0;
     }
