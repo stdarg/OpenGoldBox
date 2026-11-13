@@ -104,7 +104,16 @@ and a save each know which tables they use.
   engulfs its victim, which suffocates in 2d4 of its turns while the mound
   crushes it with two blows of 2d8; an owlbear hugs on an attack roll of 18 or
   more and squeezes for 2d8.
-- Still to come: *Curse*'s monsters' other specials, its other new
+- **Specials:** a black dragon breathes acid along 6 squares (never through
+  its own) and a red one fire along 9, three wide, three times a fight, for
+  their Hit Points; a hell hound breathes 7 of fire at one beside it, half the
+  time; Tyranthraxus throws 16d6 of lightning in the first four rounds; a
+  giant slug spits acid (Curse left it untyped, fixed); a gaze paralyzes for
+  an hour; a beholder fires a disintegrating ray at 2 squares, a petrifying
+  one at 3, death at 4 and a 2d8+1 wound at 5, then Fear, Slow and Sleep; an
+  alias starts each fight invisible.
+- Still to come: the rakshasa's death by a blessed crossbow bolt, *Curse*'s
+  other new
   spells in fights and camp, and the paladin's and ranger's own abilities
   (GAMES.md, phase 3 step 5).
 
@@ -671,3 +680,4 @@ tuned with the AI lab once the original rules play.
 | *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |
 | *Curse:* a shambling mound struck by electricity rolls 1d8, throws the roll away and gains 8 Hit Points (`ovr013`, its absorbing of lightning) | It gains the 1d8 |
 | *Curse:* an owlbear's hug pins its victim, but the squeeze that should follow is in no list of the effects the fight calls, so it never hurts (`ovr014`, `AffectOwlbearHugRoundAttack`) | It squeezes for 2d8 each turn |
+| *Curse:* a giant slug's acid sets no damage type, so it takes the last attack's (`ovr023`, `AffectSpitAcid`) | Acid |

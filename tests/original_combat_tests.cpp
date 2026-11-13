@@ -2765,6 +2765,60 @@ void an_ankheg_spits_once()
     check(logged(session, "{name} spits acid.") == 1, "Once, and no more");
 }
 
+// Curse's breaths and powers (its reconstruction's ovr023): a black dragon
+// breathes acid down a line for its Hit Points, three times a fight; a hell
+// hound breathes 7 of fire at one beside it; a beholder at 4 squares fires
+// its death ray.
+void curse_monsters_breathe()
+{
+    auto dragon = special({{290, 0, 0, false}}, 40);
+    auto fight = arrange({{"Fighter", rules::Side::party, {2, 3}, victim(500)},
+                          {"Dragon", rules::Side::opposition, {5, 3}, dragon}},
+                         221);
+    auto &session = *fight.session;
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            return order(session, actor == "Dragon" ? "quick" : "end");
+        },
+        [&]
+        {
+            return session.snapshot().round > 8;
+        },
+        400);
+    const int lost = 500 - view_of(session.snapshot(), "Fighter").hit_points;
+    check(logged(session, "{name} breathes.") == 3 && lost >= 60,
+          "A black dragon breathes acid three times, 40 or 20 each, and no more");
+
+    auto hound = special({{331, 0, 0, false}}, 30);
+    auto burn = arrange({{"Fighter", rules::Side::party, {3, 3}, victim(500)},
+                         {"Hound", rules::Side::opposition, {4, 3}, hound}},
+                        223);
+    play_until(
+        *burn.session,
+        [&](const std::string &actor)
+        {
+            return order(*burn.session, actor == "Hound" ? "quick" : "end");
+        },
+        [&]
+        {
+            return logged(*burn.session, "{name} breathes fire.") > 0 ||
+                   burn.session->snapshot().round > 10;
+        },
+        400);
+    check(logged(*burn.session, "{name} breathes fire.") > 0, "A hell hound breathes fire");
+
+    auto beholder = special({{287, 0, 0, false}}, 60);
+    auto stare = arrange({{"Fighter", rules::Side::party, {1, 3}, victim(500)},
+                          {"Beholder", rules::Side::opposition, {5, 3}, beholder}},
+                         227);
+    until_turn_of(*stare.session, "Beholder");
+    stare.session->submit(order(*stare.session, "quick"));
+    check(logged(*stare.session, "{name} fires a death ray.") == 1,
+          "At 4 squares a beholder fires its death ray");
+}
+
 } // namespace
 
 int main()
@@ -2823,6 +2877,7 @@ int main()
         curse_effects_take_their_own_numbers();
         curse_defenses_hold();
         curse_touches_and_engulfs();
+        curse_monsters_breathe();
         a_cloud_sickens();
         dispel_magic_strips();
         the_dead_rise();

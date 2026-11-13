@@ -696,6 +696,10 @@ class Session final : public rules::CombatSession
     void lightning_path(Cell origin, Cell aim, int length, int damage, int level, bool bounce,
                         int save = 4);
     void monster_specials(Fighter &f);
+    void curse_specials(Fighter &f);
+    void beholder_rays(Fighter &f);
+    [[nodiscard]] int uses(Fighter &f, int code);
+    void spend_use(Fighter &f, int code);
     [[nodiscard]] EntityId standing_at(Cell cell) const;
     void combat_start();
     void round_end_effects();
@@ -3283,6 +3287,222 @@ void Session::monster_specials(Fighter &f)
         f.remove(121);
         f.remove(80);
     }
+    curse_specials(f);
+}
+
+// How many times a creature has used a power this fight, kept on it as an
+// effect of the power's code plus 100.
+int Session::uses(Fighter &f, int code)
+{
+    if (const auto *count = f.find_effect(code + 100))
+    {
+        return count->strength;
+    }
+    return 0;
+}
+
+void Session::spend_use(Fighter &f, int code)
+{
+    if (auto *count = f.find_effect(code + 100))
+    {
+        ++count->strength;
+        return;
+    }
+    f.numbers.effects.push_back({code + 100, 0, 1, false});
+}
+
+// Curse's monsters' own powers at their turn (its reconstruction's ovr023):
+// a breath of acid or fire along a path, a hell hound's fire, Tyranthraxus's
+// lightning, a slug's acid, a paralyzing gaze and a beholder's rays.
+void Session::curse_specials(Fighter &f)
+{
+    const auto breathe = [&](int code, int length, int width, int element, bool spare_friends)
+    {
+        if (!f.has(code) || uses(f, code) >= 3 || !acquire_target(f, 6, false, false))
+        {
+            return false;
+        }
+        const auto targets = path_area(f, find(f.lock)->cell, length, width);
+        if (spare_friends && std::ranges::any_of(targets,
+                                                 [&](EntityId id)
+                                                 {
+                                                     return find(id)->side == f.side;
+                                                 }))
+        {
+            return false;
+        }
+        log({"{name} breathes.", {{"name", f.name}}});
+        spend_use(f, code);
+        for (const auto id : targets)
+        {
+            auto &target = *find(id);
+            nonweapon_damage(target, f.numbers.max_hit_points, 2,
+                             saving_throw(target, 3, 0, &f, element), element, 12, 0, false);
+        }
+        end_actions(f);
+        return true;
+    };
+    // A black dragon breathes acid along 6 squares, never through its own;
+    // a red one fire along 9, three wide (DragonBreathAcid, DragonBreathFire).
+    if (breathe(290, 6, 1, 0x30, true) || breathe(328, 9, 3, 0x21, false))
+    {
+        return;
+    }
+    auto *lock = find(f.lock);
+    // A hell hound breathes 7 of fire at one beside it, half the time.
+    if (f.has(331) && acquire_target(f, 12, false, false) && (lock = find(f.lock)) &&
+        distance(f, *lock) <= 1 && roll(100) <= 50)
+    {
+        log({"{name} breathes fire.", {{"name", f.name}}});
+        nonweapon_damage(*lock, 7, 2, saving_throw(*lock, 3, 0, &f, 1), 0x21, 12, 0, false);
+        end_actions(f);
+        return;
+    }
+    // Tyranthraxus throws lightning in the first four rounds: 16d6 along
+    // the bolt and again on its way back (cast_throw_lightening).
+    if (f.has(332) && round_ <= 4 && acquire_target(f, 12, false, false))
+    {
+        const Cell aim = find(f.lock)->cell;
+        while (f.has(effect::invisible))
+        {
+            f.remove(effect::invisible);
+        }
+        log({"{name} throws lightning.", {{"name", f.name}}});
+        const auto bolt = [this]
+        {
+            int total = 0;
+            for (int die = 0; die < 16; ++die)
+            {
+                total += roll(6);
+            }
+            return total;
+        };
+        lightning_at(aim, bolt(), 12);
+        lightning_path(f.cell, aim, 8, bolt(), 12, true);
+        end_actions(f);
+        return;
+    }
+    // A giant slug spits acid as far as 6 squares, 3 times in 10, for its
+    // Hit Points, saved against for half (AffectSpitAcid); Curse left it
+    // untyped, as Pool of Radiance's ankheg (an obvious bug, fixed: acid).
+    if (f.has(286) && acquire_target(f, 12, false, false) && (lock = find(f.lock)) &&
+        distance(f, *lock) <= 6)
+    {
+        if (roll(100) <= 30)
+        {
+            log({"{name} spits acid.", {{"name", f.name}}});
+            nonweapon_damage(*lock, f.numbers.max_hit_points, 2, saving_throw(*lock, 3, 0, &f, 16),
+                             16, 12, 0, false);
+        }
+        else
+        {
+            log({"{name} spits acid and misses.", {{"name", f.name}}});
+        }
+    }
+    // A paralyzing gaze: saved against as petrification, or held for an hour
+    // (cast_gaze_paralyze).
+    if (f.has(326) && acquire_target(f, 12, false, false) && (lock = find(f.lock)) &&
+        sees(board_, f, *lock))
+    {
+        log({"{name} gazes.", {{"name", f.name}}});
+        if (!saving_throw(*lock, 1, 0, &f))
+        {
+            log({"{name} is paralyzed.", {{"name", lock->name}}});
+            lock->numbers.effects.push_back({effect::paralysis, 60, 12, false});
+        }
+    }
+    if (f.has(287))
+    {
+        beholder_rays(f);
+    }
+}
+
+// A beholder's eyes (Curse's attack_or_kill): up to four tries, each power
+// once a fight, by the target's distance: a disintegrating ray at exactly 2
+// squares, a petrifying one at 3, death at 4, a 2d8+1 wound at 5; then Fear,
+// Slow and Sleep.
+void Session::beholder_rays(Fighter &f)
+{
+    for (int tries = 0; tries < 4 && f.able(); ++tries)
+    {
+        if (!acquire_target(f, 12, false, false))
+        {
+            return;
+        }
+        auto &target = *find(f.lock);
+        const int range = distance(f, target);
+        const int used = uses(f, 287);
+        const auto power = [&](int bit)
+        {
+            if (used & bit)
+            {
+                return false;
+            }
+            if (auto *count = f.find_effect(387))
+            {
+                count->strength |= bit;
+            }
+            else
+            {
+                f.numbers.effects.push_back({387, 0, bit, false});
+            }
+            return true;
+        };
+        if (range == 2 && power(1))
+        {
+            log({"{name} fires a disintegrating ray.", {{"name", f.name}}});
+            if (!saving_throw(target, 3, 0, &f))
+            {
+                target.condition = Condition::gone;
+                target.hit_points = 0;
+                target.initiative = 0;
+                log({"{name} is disintegrated.", {{"name", target.name}}});
+                end_effects_at_zero(target);
+                went_down(target);
+            }
+        }
+        else if (range == 3 && power(2))
+        {
+            log({"{name} fires a petrifying ray.", {{"name", f.name}}});
+            if (!saving_throw(target, 1, 0, &f))
+            {
+                target.condition = Condition::stoned;
+                target.hit_points = 0;
+                target.initiative = 0;
+                log({"{name} is stoned.", {{"name", target.name}}});
+                end_effects_at_zero(target);
+                went_down(target);
+            }
+        }
+        else if (range == 4 && power(4))
+        {
+            log({"{name} fires a death ray.", {{"name", f.name}}});
+            if (!saving_throw(target, 0, 0, &f))
+            {
+                log({"{name} is slain.", {{"name", target.name}}});
+                kill(target);
+            }
+        }
+        else if (range == 5 && power(8))
+        {
+            log({"{name} fires a wounding ray.", {{"name", f.name}}});
+            nonweapon_damage(target, roll(8) + roll(8) + 1, 0, false, 8, 12, 0, false);
+        }
+        else
+        {
+            for (const auto [bit, number] :
+                 {std::pair{16, 184}, std::pair{32, 55}, std::pair{64, 21}})
+            {
+                if (power(bit))
+                {
+                    f.aiming = number;
+                    f.using_item = -1;
+                    resolve_spell(f, {target.id}, target.cell);
+                    break;
+                }
+            }
+        }
+    }
 }
 
 // The original's approach patterns: what each pattern adds to the direction,
@@ -3973,6 +4193,11 @@ void Session::combat_start()
     bool feared = false;
     for (auto &f : fighters_)
     {
+        // Curse's alias starts every fight invisible (add_affect_19).
+        if (f.has(338) && !f.has(effect::invisible))
+        {
+            f.numbers.effects.push_back({effect::invisible, 255, 255, false});
+        }
         if (f.has(effect::fights_while_down))
         {
             went_down(f);
