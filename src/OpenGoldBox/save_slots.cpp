@@ -56,6 +56,17 @@ std::string decoded(std::string_view stem)
 }
 } // namespace
 
+std::filesystem::path campaign_save_directory()
+{
+    return presentation::path_from_godot(
+        ProjectSettings::get_singleton()->globalize_path("user://saves"));
+}
+
+std::string campaign_save_name(const std::filesystem::path &file)
+{
+    return decoded(opengold::path_text(file.stem()));
+}
+
 void SaveSlots::_ready()
 {
     presentation::run_guarded(*this,
@@ -92,8 +103,7 @@ void SaveSlots::prepare_dialog()
         .connect("pressed", presentation::guarded(this, &SaveSlots::close));
     connect("close_requested", presentation::guarded(this, &SaveSlots::close));
     hide();
-    directory_ = presentation::path_from_godot(
-        ProjectSettings::get_singleton()->globalize_path("user://saves"));
+    directory_ = campaign_save_directory();
 }
 
 void SaveSlots::connect_host(FileAction save, FileAction load)

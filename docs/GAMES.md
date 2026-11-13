@@ -219,8 +219,11 @@ In small steps, each with its check:
    brings it (`CampaignParty::bring_across`): its scores within *Curse*'s
    limits, its levels, Hit Points, experience and drained levels, its
    magic-user spells but Animate Dead, its items as they were readied, and
-   300 platinum; its money stays behind. Still to come: choosing the
-   characters on the party screen from a *Pool of Radiance* save.
+   300 platinum; its money stays behind. The party screen's Add from Pool of
+   Radiance (*Curse* under the original rules) lists the *Pool of Radiance*
+   saves made under the original rules, shows each save's characters with
+   their classes and levels, and brings them in while the six PC positions
+   last (`opengold_godot_curse_from_pool_curse`).
 5. Combat with *Curse*'s monsters, spells and items. *In progress
    (2026-11-13):* *Curse*'s scripts load its own creatures and fight them as
    their records under the original rules; `opengold_gold_box_games_tests

@@ -25,7 +25,7 @@ msgstr ""
 msgid "   THAC0 {thac0}"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:568
+#: src/OpenGoldBox/party_preview.cpp:598
 msgid " (Reserve)"
 msgstr ""
 
@@ -49,7 +49,7 @@ msgstr ""
 msgid " (one-handed)"
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:180
+#: src/OpenGoldBox/save_slots.cpp:190
 msgid " (previous version)"
 msgstr ""
 
@@ -690,11 +690,19 @@ msgstr ""
 msgid "Add a party member first"
 msgstr ""
 
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1565
+msgid "Add character from Pool of Radiance"
+msgstr ""
+
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:237
+msgid "Add from Pool of Radiance"
+msgstr ""
+
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:31322
 msgid "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1169 src/OpenGoldBox/godot/scenes/character_creation.tscn:1496 src/OpenGoldBox/party_preview.cpp:1090
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1169 src/OpenGoldBox/godot/scenes/character_creation.tscn:1496 src/OpenGoldBox/godot/scenes/character_creation.tscn:1616 src/OpenGoldBox/party_preview.cpp:1122
 msgid "Add to party"
 msgstr ""
 
@@ -871,7 +879,7 @@ msgstr ""
 msgid "All races"
 msgstr ""
 
-#: src/OpenGoldBox/character_pool_dialog.cpp:149
+#: src/OpenGoldBox/character_pool_dialog.cpp:149 src/OpenGoldBox/pool_of_radiance_dialog.cpp:216
 msgid "All six PC positions are occupied."
 msgstr ""
 
@@ -1706,8 +1714,16 @@ msgstr ""
 msgid "Breath weapons"
 msgstr ""
 
+#: src/OpenGoldBox/pool_of_radiance_dialog.cpp:217
+msgid "Brings its levels, experience and items, and 300 platinum; its money stays behind."
+msgstr ""
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Bronze"
+msgstr ""
+
+#: src/OpenGoldBox/pool_of_radiance_dialog.cpp:214
+msgid "Brought into the party."
 msgstr ""
 
 #: src/OpenGoldBox/character_creation_view.cpp:84
@@ -1853,7 +1869,7 @@ msgstr ""
 msgid "Can target another creature as a Magic action."
 msgstr ""
 
-#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:917 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:90 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:468
+#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:917 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:101 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:468
 msgid "Cancel"
 msgstr ""
 
@@ -2168,7 +2184,7 @@ msgstr ""
 msgid "Character modifiers"
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:142
+#: src/OpenGoldBox/save_slots.cpp:152
 msgid "Character save name"
 msgstr ""
 
@@ -2178,6 +2194,10 @@ msgstr ""
 
 #: src/OpenGoldBox/character_creation_view.cpp:62 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:271
 msgid "Character sheet"
+msgstr ""
+
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1595
+msgid "Characters"
 msgstr ""
 
 #: src/OpenGoldBox/startup_view.cpp:561
@@ -2286,12 +2306,20 @@ msgstr ""
 msgid "Choose a Nick weapon and attack. This uses the Light extra attack for this turn and does not spend your Bonus Action."
 msgstr ""
 
+#: src/OpenGoldBox/pool_of_radiance_dialog.cpp:162
+msgid "Choose a Pool of Radiance save, then a character to bring into the party."
+msgstr ""
+
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:8775
 msgid "Choose a Push destination, or skip."
 msgstr ""
 
 #: src/OpenGoldBox/level_up_lab_view.cpp:342
 msgid "Choose a character and press Create Character."
+msgstr ""
+
+#: src/OpenGoldBox/pool_of_radiance_dialog.cpp:189
+msgid "Choose a character to bring into the party."
 msgstr ""
 
 #: src/OpenGoldBox/character_creation_view.cpp:660
@@ -2659,7 +2687,7 @@ msgstr ""
 msgid "Cloak of Elvenkind"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1247 src/OpenGoldBox/godot/scenes/character_creation.tscn:1332 src/OpenGoldBox/godot/scenes/character_creation.tscn:1377 src/OpenGoldBox/godot/scenes/character_creation.tscn:1422 src/OpenGoldBox/godot/scenes/game_menu.tscn:496 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:301 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:80 src/OpenGoldBox/godot/scenes/tour_cast_panel.tscn:46 src/OpenGoldBox/godot/scenes/tour_member_sheet.tscn:39
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1247 src/OpenGoldBox/godot/scenes/character_creation.tscn:1332 src/OpenGoldBox/godot/scenes/character_creation.tscn:1377 src/OpenGoldBox/godot/scenes/character_creation.tscn:1422 src/OpenGoldBox/godot/scenes/character_creation.tscn:1621 src/OpenGoldBox/godot/scenes/game_menu.tscn:496 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:301 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:80 src/OpenGoldBox/godot/scenes/tour_cast_panel.tscn:46 src/OpenGoldBox/godot/scenes/tour_member_sheet.tscn:39
 msgid "Close"
 msgstr ""
 
@@ -2828,7 +2856,7 @@ msgstr ""
 msgid "Confirm"
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:259
+#: src/OpenGoldBox/save_slots.cpp:269
 msgid "Confirm load"
 msgstr ""
 
@@ -3000,7 +3028,7 @@ msgstr ""
 msgid "Create a character before saving"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:581
+#: src/OpenGoldBox/party_preview.cpp:611
 msgid "Create a character, finish its sheet, then Add to party.\n\nA party holds six characters, and up to two others may join it on the way. Removed members remain in the roster."
 msgstr ""
 
@@ -3229,11 +3257,11 @@ msgstr ""
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1880
+#: src/OpenGoldBox/party_preview.cpp:1912
 msgid "Defeat"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1964
+#: src/OpenGoldBox/party_preview.cpp:1996
 msgid "Defeat test"
 msgstr ""
 
@@ -3265,7 +3293,7 @@ msgstr ""
 msgid "Delayed Blast Fireball"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1545
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1629
 msgid "Desired Class(es)"
 msgstr ""
 
@@ -3502,7 +3530,7 @@ msgstr ""
 msgid "Dodging"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1755 src/OpenGoldBox/godot/scenes/character_creation.tscn:1766 src/OpenGoldBox/godot/scenes/character_creation.tscn:1777 src/OpenGoldBox/godot/scenes/character_creation.tscn:1788 src/OpenGoldBox/godot/scenes/character_creation.tscn:1799 src/OpenGoldBox/godot/scenes/character_creation.tscn:1810
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1839 src/OpenGoldBox/godot/scenes/character_creation.tscn:1850 src/OpenGoldBox/godot/scenes/character_creation.tscn:1861 src/OpenGoldBox/godot/scenes/character_creation.tscn:1872 src/OpenGoldBox/godot/scenes/character_creation.tscn:1883 src/OpenGoldBox/godot/scenes/character_creation.tscn:1894
 msgid "Does not meet targeted class requirements"
 msgstr ""
 
@@ -3542,7 +3570,7 @@ msgstr ""
 msgid "Draconic Spirit"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:113
+#: src/OpenGoldBox/party_preview.cpp:115
 msgid "Drag a character up or down to change the party's order. A fight puts the first half of the party in the front rank."
 msgstr ""
 
@@ -3695,7 +3723,7 @@ msgstr ""
 msgid "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage, and Advantage on saves against being Poisoned."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:629
+#: src/OpenGoldBox/party_preview.cpp:659
 msgid "Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later."
 msgstr ""
 
@@ -3966,7 +3994,7 @@ msgstr ""
 msgid "Equipped / "
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1182 src/OpenGoldBox/rolf_tour_view.cpp:932
+#: src/OpenGoldBox/party_preview.cpp:1214 src/OpenGoldBox/rolf_tour_view.cpp:932
 msgid "Equipped."
 msgstr ""
 
@@ -4038,7 +4066,7 @@ msgstr ""
 msgid "Exit"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1888
+#: src/OpenGoldBox/party_preview.cpp:1920
 msgid "Exit to OS"
 msgstr ""
 
@@ -4373,7 +4401,7 @@ msgstr ""
 msgid "Finish Long Rest spell choices before combat"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1733
+#: src/OpenGoldBox/party_preview.cpp:1765
 msgid "Finish combat, dialogue or shopping before returning to the party."
 msgstr ""
 
@@ -4768,7 +4796,7 @@ msgstr ""
 msgid "Future class goals: {classes}\n\n"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1576
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1660
 msgid "Future goals only. Choose one starting class next. Later Ability Score Improvements can raise scores to help you qualify."
 msgstr ""
 
@@ -5694,7 +5722,7 @@ msgstr ""
 msgid "Insight"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1732
+#: src/OpenGoldBox/party_preview.cpp:1764
 msgid "Inspect your party and equipment."
 msgstr ""
 
@@ -6342,7 +6370,7 @@ msgstr ""
 msgid "Lizardfolk"
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:191 src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:281
+#: src/OpenGoldBox/save_slots.cpp:201 src/OpenGoldBox/save_slots.cpp:217 src/OpenGoldBox/save_slots.cpp:291
 msgid "Load"
 msgstr ""
 
@@ -6350,11 +6378,11 @@ msgstr ""
 msgid "Load Character"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1884
+#: src/OpenGoldBox/party_preview.cpp:1916
 msgid "Load a saved game to continue."
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:130
+#: src/OpenGoldBox/save_slots.cpp:140
 msgid "Load character"
 msgstr ""
 
@@ -6362,15 +6390,15 @@ msgstr ""
 msgid "Load combat"
 msgstr ""
 
-#: src/OpenGoldBox/campaign_save_view.cpp:66 src/OpenGoldBox/godot/scenes/game_menu.tscn:68 src/OpenGoldBox/godot/scenes/party_panel.tscn:246 src/OpenGoldBox/save_slots.cpp:131
+#: src/OpenGoldBox/campaign_save_view.cpp:66 src/OpenGoldBox/godot/scenes/game_menu.tscn:68 src/OpenGoldBox/godot/scenes/party_panel.tscn:257 src/OpenGoldBox/save_slots.cpp:141
 msgid "Load game"
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:256
+#: src/OpenGoldBox/save_slots.cpp:266
 msgid "Load this character? Any unsaved demo progress will be discarded."
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:257
+#: src/OpenGoldBox/save_slots.cpp:267
 msgid "Load this save? Any unsaved campaign progress will be discarded."
 msgstr ""
 
@@ -6617,7 +6645,7 @@ msgstr ""
 msgid "Main hand — {item}"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1434 src/OpenGoldBox/godot/scenes/party_panel.tscn:256
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1434 src/OpenGoldBox/godot/scenes/party_panel.tscn:267
 msgid "Make leader"
 msgstr ""
 
@@ -7279,6 +7307,10 @@ msgstr ""
 msgid "No Bonus Actions or Reactions, and a d10 decides what it does each turn. A Wisdom save at the end of each of its turns ends it."
 msgstr ""
 
+#: src/OpenGoldBox/pool_of_radiance_dialog.cpp:161
+msgid "No Pool of Radiance game saved under the original rules was found."
+msgstr ""
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:2877
 msgid "No armor"
 msgstr ""
@@ -7731,11 +7763,11 @@ msgstr ""
 msgid "Overchannel: a damaging Wizard spell cast with a level 1-5 slot deals its maximum damage. Free once per Long Rest; each later use deals you Necrotic damage, more each time."
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:259
+#: src/OpenGoldBox/save_slots.cpp:269
 msgid "Overwrite"
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:254
+#: src/OpenGoldBox/save_slots.cpp:264
 msgid "Overwrite this save? Its previous version will be retained."
 msgstr ""
 
@@ -8170,7 +8202,7 @@ msgstr ""
 msgid "Preserve Life"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:2004
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:2088
 msgid "Press Esc to return"
 msgstr ""
 
@@ -8819,7 +8851,7 @@ msgstr ""
 msgid "Religion"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1888
+#: src/OpenGoldBox/party_preview.cpp:1920
 msgid "Reload a Saved Game"
 msgstr ""
 
@@ -9457,7 +9489,7 @@ msgstr ""
 msgid "Savage Attacker: once per turn on a weapon hit, weapon damage is rolled twice and the higher result is kept automatically."
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:191 src/OpenGoldBox/save_slots.cpp:207 src/OpenGoldBox/save_slots.cpp:281
+#: src/OpenGoldBox/save_slots.cpp:201 src/OpenGoldBox/save_slots.cpp:217 src/OpenGoldBox/save_slots.cpp:291
 msgid "Save"
 msgstr ""
 
@@ -9465,7 +9497,7 @@ msgstr ""
 msgid "Save Character"
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:130
+#: src/OpenGoldBox/save_slots.cpp:140
 msgid "Save character"
 msgstr ""
 
@@ -9473,7 +9505,7 @@ msgstr ""
 msgid "Save combat"
 msgstr ""
 
-#: src/OpenGoldBox/campaign_save_view.cpp:66 src/OpenGoldBox/godot/scenes/game_menu.tscn:57 src/OpenGoldBox/godot/scenes/party_panel.tscn:236 src/OpenGoldBox/rest_dialog_impl.h:31 src/OpenGoldBox/rest_dialog_impl.h:65 src/OpenGoldBox/save_slots.cpp:131
+#: src/OpenGoldBox/campaign_save_view.cpp:66 src/OpenGoldBox/godot/scenes/game_menu.tscn:57 src/OpenGoldBox/godot/scenes/party_panel.tscn:247 src/OpenGoldBox/rest_dialog_impl.h:31 src/OpenGoldBox/rest_dialog_impl.h:65 src/OpenGoldBox/save_slots.cpp:141
 msgid "Save game"
 msgstr ""
 
@@ -9481,12 +9513,16 @@ msgstr ""
 msgid "Save game, Load game, Options and Exit (Escape)."
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:142 src/OpenGoldBox/save_slots.cpp:80
+#: src/OpenGoldBox/save_slots.cpp:152 src/OpenGoldBox/save_slots.cpp:91
 msgid "Save name"
 msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/game_menu.tscn:306
 msgid "Saved at once; they take effect from the next fight."
+msgstr ""
+
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1579
+msgid "Saved games"
 msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/character_creation.tscn:1258 src/OpenGoldBox/godot/scenes/character_creation.tscn:1261 src/OpenGoldBox/godot/scenes/party_panel.tscn:162
@@ -9620,11 +9656,11 @@ msgstr ""
 msgid "Sees Invisible creatures as if they were visible."
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:136
+#: src/OpenGoldBox/save_slots.cpp:146
 msgid "Select a character save to overwrite, or enter a new name."
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:137
+#: src/OpenGoldBox/save_slots.cpp:147
 msgid "Select a character save. Previous versions are available for recovery."
 msgstr ""
 
@@ -9636,11 +9672,11 @@ msgstr ""
 msgid "Select a save first."
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:138
+#: src/OpenGoldBox/save_slots.cpp:148
 msgid "Select a save to overwrite, or enter a new name."
 msgstr ""
 
-#: src/OpenGoldBox/save_slots.cpp:139
+#: src/OpenGoldBox/save_slots.cpp:149
 msgid "Select a save. Previous versions are available for recovery."
 msgstr ""
 
@@ -10388,7 +10424,7 @@ msgstr ""
 msgid "Start"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:377 src/OpenGoldBox/party_preview.cpp:1089
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:377 src/OpenGoldBox/party_preview.cpp:1121
 msgid "Start over"
 msgstr ""
 
@@ -11298,6 +11334,10 @@ msgstr ""
 
 #: src/OpenGoldBox/character_creation_view.cpp:887
 msgid "This part is not present in either pose. Choose another head or body to use it."
+msgstr ""
+
+#: src/OpenGoldBox/pool_of_radiance_dialog.cpp:188
+msgid "This save holds no player characters."
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -12525,7 +12565,7 @@ msgstr ""
 msgid "Your party flees the battle."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1882
+#: src/OpenGoldBox/party_preview.cpp:1914
 msgid "Your party has been defeated."
 msgstr ""
 
@@ -13223,6 +13263,11 @@ msgstr ""
 #: src/OpenGoldBox/character_sheet_view.cpp:190
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} / Saving Throws"
+msgstr ""
+
+#: src/OpenGoldBox/pool_of_radiance_dialog.cpp:86
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name} / {class} / Level {levels}"
 msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:795

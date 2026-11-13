@@ -225,6 +225,17 @@ offset_bottom = 60
 metadata/layout_reference = Rect2(1700, 24, 196, 36)
 text = "Character Pool"
 
+[node name="FromPool" type="Button" parent="."]
+visible = false
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -830
+offset_top = 24
+offset_right = -530
+offset_bottom = 60
+metadata/layout_reference = Rect2(1090, 24, 300, 36)
+text = "Add from Pool of Radiance"
+
 [node name="Save" type="Button" parent="."]
 anchor_left = 1.0
 anchor_right = 1.0

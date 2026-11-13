@@ -566,6 +566,22 @@ void a_pool_character_comes_to_curse()
           "Its items come along, readied as they were");
     check(second.state().wealth[4] == 300 && second.state().wealth[3] == 0,
           "It brings 300 platinum and none of its gold");
+    // The Pool of Radiance save the game's check brings characters from
+    // (opengold_godot_curse_from_pool): this fighter, a cleric and five
+    // fighters, one of them out of the party: seven, one more than Curse's
+    // party takes.
+    if (const char *fixture = std::getenv("OPENGOLD_POOL_SAVE_FIXTURE"))
+    {
+        (void)member_with(first, pool, "cleric", "Elmira");
+        for (const char *name : {"Brom", "Cassia", "Dain"})
+        {
+            (void)member_with(first, pool, "fighter", name);
+        }
+        first.remove(member_with(first, pool, "fighter", "Ferris"));
+        (void)member_with(first, pool, "fighter", "Hilda");
+        write_campaign_file(fixture,
+                            encode_campaign(first, nullptr, campaign_asset_identity(game)));
+    }
 }
 
 // Curse's paladin is protected from evil and lays on hands once a day for 2

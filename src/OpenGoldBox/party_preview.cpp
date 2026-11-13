@@ -12,6 +12,7 @@
 #include "game_rules.h"
 #include "character_creation_view.h"
 #include "character_pool_dialog.h"
+#include "pool_of_radiance_dialog.h"
 #include "town_sheet_dialog.h"
 #include "character_sheet_text.h"
 #include "equipment_choice_dialog.h"
@@ -22,6 +23,7 @@
 #include "vital_fixtures.h"
 #include "opengold/campaign_save.h"
 #include "opengold/combat_body_catalog.h"
+#include "opengold/original.h"
 #include "opengold/srd5.h"
 #include "godot_path.h"
 #include "guarded_handlers.h"
@@ -146,6 +148,20 @@ void CharacterCreationView::setup_party()
             [this](const std::exception &failure)
             {
                 report_failure(failure);
+            });
+    required_node<Button>(*this, "PartyPanel/FromPool")
+        .connect("pressed",
+                 presentation::guarded(this, &CharacterCreationView::show_pool_of_radiance));
+    required_node<PoolOfRadianceDialog>(*this, "FromPoolModal")
+        .connect_host(
+            [this]() -> CampaignParty &
+            {
+                return *campaign_;
+            },
+            [this]
+            {
+                roster_index_ = campaign_->state().roster.size() - 1;
+                refresh_party();
             });
     required_node<Button>(*this, "PartyPanel/ActionRow2/Modifiers")
         .connect("pressed", presentation::guarded(this, &CharacterCreationView::show_modifiers));
@@ -371,6 +387,20 @@ void CharacterCreationView::show_pool()
     {
         required_node<Label>(*this, "PartyPanel/Status").set_text(i18n::text(e.what()));
     }
+}
+
+void CharacterCreationView::show_pool_of_radiance()
+{
+    if (bringing_across())
+    {
+        required_node<PoolOfRadianceDialog>(*this, "FromPoolModal").open();
+    }
+}
+
+bool CharacterCreationView::bringing_across() const
+{
+    return game_rules_of(*campaign_).set == GameRules::Set::original &&
+           original::game_of(campaign_->identity()) == GoldBoxGame::curse_of_the_azure_bonds;
 }
 
 void CharacterCreationView::party_layout()
@@ -639,6 +669,8 @@ void CharacterCreationView::refresh_party()
         required_node<Button>(*this, gs(std::string("PartyPanel/ActionRow2/") + name))
             .set_disabled(state.roster.empty());
     }
+    // Curse adds characters from Pool of Radiance; its party's rules take them in.
+    required_node<Button>(*this, "PartyPanel/FromPool").set_visible(bringing_across());
     // Only an active member who is not already the leader can be made leader.
     const auto chosen = state.roster.empty() ? MemberId{} : state.roster[roster_index_].id;
     required_node<Button>(*this, "PartyPanel/MakeLeader")

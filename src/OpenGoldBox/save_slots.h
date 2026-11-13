@@ -4,7 +4,13 @@
 #include <exception>
 #include <filesystem>
 #include <functional>
+#include <string>
 #include <vector>
+
+// The folder the game keeps campaign saves in, and the name a player gave a
+// save file there (empty for a file that is not one).
+[[nodiscard]] std::filesystem::path campaign_save_directory();
+[[nodiscard]] std::string campaign_save_name(const std::filesystem::path &file);
 
 // Scene-owned shared save UI. Callbacks remain in the campaign host.
 class SaveSlots : public godot::Window
