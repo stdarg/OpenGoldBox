@@ -142,6 +142,9 @@ struct PhlanResources
     std::vector<Image> healed_overland_tiles;
     Image party_icon;
     std::vector<Image> wilderness_art;
+    // Curse's: the battlefield tiles and places' terrain its fights out of
+    // doors are built from (curse_wilderness); empty for Pool of Radiance.
+    std::optional<CurseWilderness> curse_wilderness;
     // On the town only: the original's closing story from GAME.OVR, one string
     // per page. Empty without that file.
     std::vector<std::string> closing_story;

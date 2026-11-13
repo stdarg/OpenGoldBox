@@ -3456,6 +3456,18 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             // a diagonal step faces the direction to its left (PLACE-2).
             const auto wilderness_facing = static_cast<MapDirection>(
                 machine_.variable(game_cell(ecl_overland_direction)) % 8 / 2);
+            // Curse fights out of doors (its 3D-area cell clear) on open ground
+            // grown from its current place's terrain (cell 0x4E42), as the
+            // original's SetupWildernessFloor does.
+            const bool curse_outdoors =
+                town_->curse_wilderness && machine_.variable(game_cell(ecl_in_3d_area)) == 0;
+            const auto curse_place_flags = [&]() -> unsigned
+            {
+                constexpr EclAddress curse_current_place{0x4E42};
+                const auto &flags = town_->curse_wilderness->place_flags;
+                const auto place = machine_.variable(curse_current_place);
+                return place < flags.size() ? flags[place] : 0U;
+            };
             auto field =
                 overland()
                     ? wilderness_battlefield(
@@ -3464,12 +3476,14 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                                                   machine_.variable(game_cell(ecl_overland_x)),
                                               machine_.variable(game_cell(ecl_overland_y))),
                           roll)
-                    : dungeon_battlefield(map_, p.x, p.y);
+                : curse_outdoors ? wilderness_battlefield(town_->curse_wilderness->combat_tiles,
+                                                          curse_place_flags(), roll)
+                                 : dungeon_battlefield(map_, p.x, p.y);
             encounter_ = opengold::CampaignEncounter{
                 std::move(field),
                 std::move(staged_enemies_),
                 std::move(staged_art_),
-                overland() ? town_->wilderness_art : area_resources().terrain_art,
+                overland() || curse_outdoors ? town_->wilderness_art : area_resources().terrain_art,
                 overland() ? wilderness_facing : p.facing,
                 script_surprise(machine_.variable(game_cell(ecl_encounter_surprise)))};
             encounter_->band = std::move(staged_band_);

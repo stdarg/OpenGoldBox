@@ -12,6 +12,8 @@
 #include "opengold/ecl_machine.h"
 #include "opengold/formats.h"
 #include "opengold/coin_purse.h"
+#include "opengold/overland.h"
+#include "opengold/por_sound.h"
 #include "opengold/original_combat.h"
 #include "opengold/original.h"
 #include "opengold/original_spells.h"
@@ -323,6 +325,39 @@ void the_loaders_read_curse()
           "Curse's player characters have combat icons but no portraits to choose");
     const auto sounds = opengold::por::SoundBank::load(folder, curse);
     check(sounds.at(10).audible, "Curse's footstep sounds");
+    // Its fights out of doors: open ground from its own battlefield tiles,
+    // trees where a place's terrain has them (ovr011, SetupWildernessFloor).
+    std::ifstream start(folder / "START.EXE", std::ios::binary);
+    const std::vector<std::uint8_t> start_bytes{std::istreambuf_iterator<char>(start), {}};
+    const auto image = opengold::por::unpack_sound_executable(start_bytes);
+    const auto wilderness = opengold::por::curse_wilderness(image);
+    check(wilderness && wilderness->combat_tiles.size() == 0x42 &&
+              wilderness->place_flags.size() == 33,
+          "Curse's START.EXE has its battlefield tiles and its places' terrain");
+    const auto field_with = [&](unsigned flags)
+    {
+        std::uint32_t seed = 11;
+        return opengold::por::wilderness_battlefield(
+            wilderness->combat_tiles, flags,
+            [&](int count, int sides)
+            {
+                int total = 0;
+                for (int n = 0; n < count; ++n)
+                {
+                    seed = seed * 1103515245 + 12345;
+                    total += static_cast<int>((seed >> 16) % static_cast<unsigned>(sides)) + 1;
+                }
+                return total;
+            });
+    };
+    const auto blocked = [](const opengold::por::DungeonBattlefield &field)
+    {
+        return std::ranges::count(field.geometry.terrain, opengold::rules::Terrain::obstacle);
+    };
+    const auto open_ground = field_with(0x80), forest = field_with(0x08);
+    check(open_ground.geometry.width == 50 && open_ground.geometry.height == 25 &&
+              blocked(open_ground) < blocked(forest),
+          "A wilderness field is open ground, with more trees in a forest");
 }
 
 // Curse's opening, as the game plays it: its first script wakes the party in a
@@ -593,6 +628,28 @@ const std::vector<RouteBeat> &curse_route()
          std::nullopt,
          false,
          true},
+        // Rested at Hap, out of its gate to the wilderness, toward Yulash.
+        {50,
+         3,
+         0,
+         D::north,
+         {"YES", "WILDERNESS", "stop:JOURNEY"},
+         true,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         false,
+         true},
+        {0, 0, 0, D::north, {"JOURNEY", "ESSEMBRA", "stop:JOURNEY"}, false, false, true},
+        {0, 0, 0, D::north, {"stop:JOURNEY"}, true, false, true},
+        {0, 0, 0, D::north, {"JOURNEY", "STANDING STONE", "stop:JOURNEY"}, false, false, true},
+        {0, 0, 0, D::north, {"stop:JOURNEY"}, true, false, true},
+        {0, 0, 0, D::north, {"JOURNEY", "HILLSFAR", "stop:JOURNEY"}, false, false, true},
+        {0, 0, 0, D::north, {"stop:JOURNEY"}, true, false, true},
+        {0, 0, 0, D::north, {"JOURNEY", "YULASH", "TRAIL", "stop:JOURNEY"}, false, false, true},
     };
     return beats;
 }
@@ -1264,16 +1321,15 @@ bool curse_walk_census(bool route)
             std::cout << "Survey ends on map " << session.snapshot().area_id << ", phase "
                       << static_cast<int>(session.snapshot().phase) << "\n";
         }
-        // The route's last beat leaves the party in Hap (script 49), Dracandros
-        // dead and its own dead raised at the Temple of Sune.
-        constexpr unsigned hap_script = 49;
+        // The route's last beat leaves the party at the edge of Yulash, nobody
+        // dead.
         const bool all_alive = std::ranges::none_of(party->state().slots,
                                                     [&](opengold::MemberId id)
                                                     {
                                                         return id && party->member(id).vitals.dead;
                                                     });
-        return needs.empty() && end.phase != TourPhase::defeated && end.script_id == hap_script &&
-               all_alive;
+        return needs.empty() && end.phase != TourPhase::defeated &&
+               end.dialogue.find("EDGE OF YULASH") != std::string::npos && all_alive;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");

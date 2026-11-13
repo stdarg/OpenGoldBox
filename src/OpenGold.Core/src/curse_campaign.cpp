@@ -83,8 +83,9 @@ por::RolfTourSession load_curse_campaign(const std::filesystem::path &folder)
     {
         throw EclError("Invalid item templates");
     }
-    auto words = por::decode_item_words(por::unpack_sound_executable(
-        por::detail::read_archive(por::detail::resolve_archive(folder, "START.EXE"))));
+    const auto start_image = por::unpack_sound_executable(
+        por::detail::read_archive(por::detail::resolve_archive(folder, "START.EXE")));
+    auto words = por::decode_item_words(start_image);
     if (!words)
     {
         throw EclError("START.EXE has no item name table");
@@ -123,6 +124,26 @@ por::RolfTourSession load_curse_campaign(const std::filesystem::path &folder)
         por::detail::resolve_archive(folder, "SPRIT" + wilderness + ".DAX"));
     root->combat_archive = por::detail::read_archive(
         por::detail::resolve_archive(folder, "CPIC" + wilderness + ".DAX"));
+    // Fights out of doors (the script's 3D-area cell clear) are on open
+    // ground drawn with WILDCOM's 34 tiles, then RANDCOM's 6.
+    root->curse_wilderness = por::curse_wilderness(start_image);
+    if (!root->curse_wilderness)
+    {
+        throw EclError("Curse's START.EXE has no wilderness battlefield tables");
+    }
+    for (const auto &[name, frames] : {std::pair{"WILDCOM.DAX", 34u}, std::pair{"RANDCOM.DAX", 6u}})
+    {
+        const auto archive = por::detail::read_archive(por::detail::resolve_archive(folder, name));
+        for (unsigned frame = 0; frame < frames; ++frame)
+        {
+            auto art = decode_ega_combat_icon(archive, 1, static_cast<std::uint8_t>(frame));
+            if (!art)
+            {
+                throw EclError(std::string("Invalid wilderness battlefield tile in ") + name);
+            }
+            root->wilderness_art.push_back(std::move(art.image));
+        }
+    }
     const auto loads = script_loads(catalog);
     for (const auto &[id, program] : catalog.all())
     {

@@ -257,7 +257,9 @@ In small steps, each with its check:
    courtyard for the Helm of Dragons (the second bond). Each fight is played
    with up to 40 dice and the best play kept, as a player reloads. It leaves
    the tower by its secret passage to Hap and has its dead raised at the
-   Temple of Sune. Next: Yulash (Moander).
+   Temple of Sune; it leaves Hap, beats Crimdrac on the road, passes the
+   bridge's old man and the Standing Stones and the Fire Knives' ambush, and
+   reaches Yulash by Hillsfar. Next: Yulash (Moander).
 
 ### 4 to 7. The other campaigns
 

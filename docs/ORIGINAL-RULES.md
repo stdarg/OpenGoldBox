@@ -135,6 +135,12 @@ and a save each know which tables they use.
   age, experience and drained levels, its magic-user spell book but Animate
   Dead, and its items; it starts with 300 platinum and none of its money
   (`ConvertPoolRadPlayer`).
+- **Fights out of doors** (a script's 3D-area cell clear: the wilderness, its
+  roads and camps) are on open ground built as *Pool of Radiance*'s wilderness
+  fields are, from *Curse*'s own battlefield tiles and the terrain flags of the
+  area's current place (cell 0x4E42, which no script sets), both read from its
+  START.EXE, and drawn with WILDCOM and RANDCOM (`ovr011`,
+  `SetupWildernessFloor`).
 - **Camp:** a cleric casts Cure Serious and Cure Critical Wounds (2d8+1,
   3d8+3) in camp, and Raise Dead brings back a dead member who is no elf
   with 1 Hit Point (its point of Constitution comes with the temple's).

@@ -103,5 +103,21 @@ struct OverlandView
 [[nodiscard]] DungeonBattlefield
 wilderness_battlefield(const OverlandWorld &world, std::uint8_t tile,
                        const std::function<int(int count, int sides)> &roll);
+// The same field from a table of battlefield tiles and the terrain's flags
+// (road or ridge, trees, ground cover), as Curse builds it for its places.
+[[nodiscard]] DungeonBattlefield
+wilderness_battlefield(std::span<const OverlandWorld::CombatTile> tiles, unsigned flags,
+                       const std::function<int(int count, int sides)> &roll);
+
+// Curse of the Azure Bonds's wilderness fights: its battlefield tiles and the
+// terrain flags of each place (the area's current place, script cell 0x4E42),
+// read from its unpacked START.EXE.
+struct CurseWilderness
+{
+    std::vector<OverlandWorld::CombatTile> combat_tiles;
+    std::vector<std::uint8_t> place_flags;
+};
+
+[[nodiscard]] std::optional<CurseWilderness> curse_wilderness(std::span<const std::uint8_t> image);
 } // namespace opengold::por
 #endif

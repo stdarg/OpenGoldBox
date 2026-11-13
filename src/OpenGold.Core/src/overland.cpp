@@ -164,8 +164,9 @@ constexpr std::uint8_t floor_frame = 0x16;
 class FieldBuilder
 {
   public:
-    FieldBuilder(const OverlandWorld &world, const std::function<int(int, int)> &roll)
-        : world_(world), roll_(roll), grid_(field_columns * field_rows, ground)
+    FieldBuilder(std::span<const OverlandWorld::CombatTile> tiles,
+                 const std::function<int(int, int)> &roll)
+        : tiles_(tiles), roll_(roll), grid_(field_columns * field_rows, ground)
     {
     }
 
@@ -177,7 +178,7 @@ class FieldBuilder
     [[nodiscard]] bool floor(int row, int column) const
     {
         const auto tile = grid_.at(static_cast<std::size_t>(row * field_columns + column));
-        return tile < world_.combat_tiles.size() && world_.combat_tiles[tile].frame == floor_frame;
+        return tile < tiles_.size() && tiles_[tile].frame == floor_frame;
     }
 
     int roll(int count, int sides) const
@@ -381,7 +382,7 @@ class FieldBuilder
                                   std::vector<std::uint8_t>(grid_.size())};
         for (std::size_t n = 0; n < grid_.size(); ++n)
         {
-            const auto &tile = world_.combat_tiles.at(grid_[n]);
+            const auto &tile = tiles_[grid_[n]];
             result.tiles[n] = tile.frame;
             result.geometry.terrain[n] =
                 tile.cost == 255 ? rules::Terrain::obstacle : rules::Terrain::open;
@@ -390,7 +391,7 @@ class FieldBuilder
     }
 
   private:
-    const OverlandWorld &world_;
+    std::span<const OverlandWorld::CombatTile> tiles_;
     const std::function<int(int, int)> &roll_;
     std::vector<std::uint8_t> grid_;
 };
@@ -581,16 +582,45 @@ Image render_overland_window(const OverlandWorld &world, std::span<const Image> 
 DungeonBattlefield wilderness_battlefield(const OverlandWorld &world, std::uint8_t tile,
                                           const std::function<int(int, int)> &roll)
 {
-    if (world.combat_tiles.size() <= 0x41)
+    return wilderness_battlefield(world.combat_tiles, terrain_flags(tile), roll);
+}
+
+DungeonBattlefield wilderness_battlefield(std::span<const OverlandWorld::CombatTile> tiles,
+                                          unsigned flags, const std::function<int(int, int)> &roll)
+{
+    if (tiles.size() < combat_tile_count)
     {
         throw std::invalid_argument("The wilderness has no combat terrain table");
     }
-    const auto flags = terrain_flags(tile);
-    FieldBuilder builder(world, roll);
+    FieldBuilder builder(tiles, roll);
     builder.road_or_ridge(flags);
     builder.trees(flags);
     builder.ground_cover(flags);
     builder.debris();
     return builder.field();
+}
+
+std::optional<CurseWilderness> curse_wilderness(std::span<const std::uint8_t> image)
+{
+    // Curse's START.EXE (the release this engine reads) keeps its battlefield
+    // tiles and its places' terrain in its data segment, where the first tile
+    // is open ground (cost 1, frame 0) and the next a tree (cost 255).
+    constexpr std::size_t tile_offset = 0xD284, place_offset = 0xAF34, place_count = 33;
+    if (image.size() < tile_offset + combat_tile_count * 4 ||
+        image.size() < place_offset + place_count || image[tile_offset] != 1 ||
+        image[tile_offset + 3] != 0 || image[tile_offset + 4] != 255)
+    {
+        return std::nullopt;
+    }
+    CurseWilderness wilderness;
+    for (std::size_t tile = 0; tile < combat_tile_count; ++tile)
+    {
+        const auto entry = tile_offset + tile * 4;
+        wilderness.combat_tiles.push_back({image[entry], image[entry + 3]});
+    }
+    wilderness.place_flags.assign(image.begin() + static_cast<std::ptrdiff_t>(place_offset),
+                                  image.begin() +
+                                      static_cast<std::ptrdiff_t>(place_offset + place_count));
+    return wilderness;
 }
 } // namespace opengold::por
