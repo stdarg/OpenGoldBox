@@ -167,8 +167,10 @@ struct Combatant
     // boulders count by it.
     int weapon_type{-1};
     // A readied mirror or wooden holy symbol, which a gazing monster cannot
-    // look upon (effhndlr.pas, EffGazeBlock).
+    // look upon (effhndlr.pas, EffGazeBlock); and a readied mirror, which turns
+    // a petrifying gaze back (EffPetrifyingGaze).
     bool wards_gaze{};
+    bool mirror{};
     // Its effects: a monster's from its record (MONnSPC), and those the fight
     // adds.
     std::vector<Effect> effects;

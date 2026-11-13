@@ -11,7 +11,7 @@ namespace opengold::original
 namespace
 {
 
-constexpr std::string_view profile_format = "combatant11";
+constexpr std::string_view profile_format = "combatant12";
 
 std::vector<int> numbers_of(const Combatant &c)
 {
@@ -41,7 +41,7 @@ std::vector<int> numbers_of(const Combatant &c)
                    {c.strength, c.undead_level, c.constitution, c.alignment, c.creature_type, c.kin,
                     c.race, c.striker ? 1 : 0, c.striker ? c.striker->plus : 0,
                     c.striker && c.striker->silver ? 1 : 0, c.striker ? c.striker->weapon_class : 0,
-                    c.weapon_type, c.wards_gaze ? 1 : 0, c.save_bonus,
+                    c.weapon_type, c.wards_gaze ? 1 : 0, c.mirror ? 1 : 0, c.save_bonus,
                     static_cast<int>(c.effects.size())});
     for (const auto &effect : c.effects)
     {
@@ -184,6 +184,7 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     next += 3;
     c.weapon_type = *next++;
     c.wards_gaze = *next++ != 0;
+    c.mirror = *next++ != 0;
     c.save_bonus = *next++;
     const auto effect_count = *next++;
     for (int n = 0; n < effect_count; ++n, next += 4)
@@ -604,6 +605,13 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
                                {
                                    return item.item.readied() && wards_gaze(item.item);
                                });
+    c.mirror = std::any_of(carried.begin(), carried.end(),
+                           [](const CarriedItem &item)
+                           {
+                               const auto &words = item.item.name_components;
+                               return item.item.readied() &&
+                                      std::find(words.begin(), words.end(), 118) != words.end();
+                           });
     // Code 0 is no effect: the original dispatches none for it.
     for (const auto &effect : effects)
     {

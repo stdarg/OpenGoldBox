@@ -367,11 +367,28 @@ gear.
      Shield does not stop), the Potion of Healing, Dust of Disappearance
      (never singled out, 4 harder to hit) and the Necklace of Missiles; the
      Potion of Giant Strength comes with Strength (plan step 5).
-9. The original's AI. It readies its best weapon and armor at each of its
-   turns (`EquipWeaponAndArmor`): many monsters carry their weapons unreadied
-   (Pool of Radiance's goblin guards their short swords). Its monsters' own
-   specials fire as it acts: the petrifying and charming gazes (a mirror
-   turning the first back), the lightning breath and the ankheg's acid.
+9. The original's AI. *Done 2026-11-13:* the command `quick` plays a
+   creature's turn as the original's AI does (`CombatAiControl`): its
+   approach pattern, then an item, a spell begun earlier, turning undead, a
+   spell (only for one whose morale counts: monsters and NPCs), and else the
+   fight: a lock on an enemy kept while it may be singled out, else a random
+   enemy in sight, else one through walls; up to 20 passes of a step or an
+   attack on an enemy in its weapon's reach; steps by the original's six
+   approach patterns, changing pattern, dropping the lock and stopping when
+   stuck; a lone magic-user that is not fleeing never walks; with nothing
+   to do it guards (or ends, with a missile weapon). A fleeing creature runs
+   first and tries to get away at the edge. The monsters' specials fire as
+   it starts to move and attack: the petrifying gaze (stoned; a mirror turns
+   a reflectable gaze back), the charming gaze, the lightning breath (always
+   in the first round, then half the time, for its maximum Hit Points, 3, 2
+   or 1 breaths) and the ankheg's acid, once a fight; and the fire and acid
+   touches (79, 80) burn on a hit. Two things wait for step 7, when a fight
+   knows each creature's items and the party's facing: the AI readies its
+   best weapon and shield at each turn (`EquipWeaponAndArmor`) and swaps a
+   bow for a melee weapon when an enemy is next to it (it guards meanwhile;
+   many monsters carry their weapons unreadied, Pool of Radiance's goblin
+   guards their short swords), and a fleeing creature runs along the party's
+   facing (away from its enemies meanwhile).
 
 ## Encumbrance
 
@@ -431,6 +448,14 @@ tuned with the AI lab once the original rules play.
 | Mirror Image takes only a spell aimed at its caster, never a blow, where the manual says the images take attacks (`effhndlr.pas`, `EffMirrorImage`) | The images take blows too |
 | Dispel Magic works on the first creature in its area, once for each creature there (`magic.pas`, the dispel) | Each creature in the area once |
 | Giving up an item's aim in a fight still spends its charge or scroll spell (`viewchar.pas`, `UseItem`) | The turn ends, nothing is spent |
+| A monster's AI skips any locked target on the party's side when it looks for an enemy in reach, so monsters never strike their lock first (`combatai.pas`, `AiMoveAttack`) | The lock counts on either side |
+| The AI strikes an enemy next to it that it may not single out, invisible, blinking or dusted (`combatai.pas`, `AiMoveAttack`) | Only one it may single out |
+| When nothing is in reach and no enemy can be found, the AI ends its turn twice, the second time wiping its guard (`combatai.pas`, `AiMoveAttack`) | It guards |
+| The AI's 20-pass limit lets the 21st pass run on (`combatai.pas`, `AiMoveAttack`) | 20 passes |
+| A combat-only ally without a morale of its own gets the encounter's morale unhalved, so it fails every check from 52 up and flees or surrenders at once (`combatst.pas`, `InitCreatureCombatData`) | The encounter's morale |
+| The charming gaze's reach is an unset value (`effhndlr.pas`, `EffCharmGaze`) | What the gazer sees |
+| A dragon with no enemy in reach of its breath breathes on itself and spends the breath (`magic.pas`, `EffBreatheLightning`) | It holds its breath |
+| The ankheg's acid is not marked as acid (`effhndlr.pas`, `EffSpitAcid`) | Acid |
 | A level drain divides by the victim's class levels, so a creature without any (a monster) divides by zero (`effhndlr.pas`, the level drain) | It loses its highest level's share |
 | A level drain keeps the drained class's level as the victim's highest level, so a fighter 5 / thief 6 drained in fighter counts as level 4 (`effhndlr.pas`, the level drain) | The highest of its classes |
 | Each hit of a holding bite's own bite starts another hold, stacking holds on the biter and immobility on the victim, which can outlast the fight (`effhndlr.pas`, `EffBiteHold`) | One hold at a time |

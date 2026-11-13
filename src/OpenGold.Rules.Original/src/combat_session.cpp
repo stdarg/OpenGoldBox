@@ -31,7 +31,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 13";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 15";
 
 enum class Condition : unsigned
 {
@@ -43,7 +43,9 @@ enum class Condition : unsigned
     fled,
     surrendered,
     // Dead forever, past raising: drained below level 2.
-    gone
+    gone,
+    // Turned to stone by a gaze.
+    stoned
 };
 
 // The record's NPC byte from 0x80 up marks a creature whose morale counts;
@@ -81,8 +83,8 @@ constexpr int displaced = 0x10;
 // What a hit carries, by the attacker's effects, in the original's order: a
 // primary attack's hit and a secondary one's (effhndlr.pas, HIT_PHASE_1 and
 // HIT_PHASE_2).
-constexpr std::array<int, 8> primary_hit_effects{85, 86, 87, 68, 76, 73, 77, 0};
-constexpr std::array<int, 10> secondary_hit_effects{64, 65, 66, 67, 68, 69, 70, 85, 86, 87};
+constexpr std::array<int, 9> primary_hit_effects{85, 86, 87, 68, 79, 80, 76, 73, 77};
+constexpr std::array<int, 11> secondary_hit_effects{64, 65, 66, 67, 68, 69, 70, 79, 85, 86, 87};
 
 struct Fighter
 {
@@ -133,6 +135,10 @@ struct Fighter
     // it), and the item it is using now, by its ordinal, -1 for none.
     bool item_use_allowed{true};
     int using_item{-1};
+    // The original's AI: the approach pattern it walks by (1 to 6, 0 before
+    // its first turn) and the enemy it has locked onto (combatai.pas).
+    int stance{};
+    EntityId lock{};
     // What it was before Animate Dead raised it, which it is again as it collapses.
     std::optional<Combatant> before_animation;
 
@@ -671,9 +677,10 @@ class Session final : public rules::CombatSession
     void revive(Fighter &f);
     [[nodiscard]] bool in_cloud(const Fighter &f) const;
     void breathe_cloud(Fighter &f);
-    bool lightning_at(Cell cell, int damage, int level);
-    void lightning_path(const Fighter &caster, Cell aim, int length, int damage, int level,
-                        bool bounce);
+    bool lightning_at(Cell cell, int damage, int level, int save = 4);
+    void lightning_path(Cell origin, Cell aim, int length, int damage, int level, bool bounce,
+                        int save = 4);
+    void monster_specials(Fighter &f);
     [[nodiscard]] EntityId standing_at(Cell cell) const;
     void combat_start();
     void round_end_effects();
@@ -692,6 +699,21 @@ class Session final : public rules::CombatSession
     [[nodiscard]] int highest_enemy_movement(const Fighter &f) const;
     bool check_morale(Fighter &f);
     void attempt_flee(Fighter &f);
+    // The original's AI (combatai.pas).
+    void ai_turn(Fighter &f);
+    bool ai_use_item(Fighter &f);
+    bool ai_cast(Fighter &f);
+    [[nodiscard]] bool ai_decides(const Fighter &f, int number, int least_priority) const;
+    bool ai_aim(Fighter &f);
+    [[nodiscard]] Fighter *cure_search(const Fighter &f);
+    bool acquire_target(Fighter &f, int range, bool relaxed, bool force_new);
+    [[nodiscard]] std::vector<EntityId> enemies_within(const Fighter &f, int range,
+                                                       bool sight) const;
+    bool ai_move_attack(Fighter &f);
+    bool ai_step(Fighter &f, int &last_direction, int &stuck);
+    bool can_step(const Fighter &f, int direction, bool &edge) const;
+    void finish_round(Fighter &f);
+    [[nodiscard]] bool missile_in_hand(const Fighter &f) const;
     void put_out_of_play(Fighter &f, Condition condition);
     [[nodiscard]] std::vector<Cell> off_field_steps(const Fighter &f) const;
     void settle_outcome();
@@ -915,6 +937,7 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
         defender.direction = direction_toward(defender.cell, attacker.cell);
     }
     attacker.direction = direction_toward(attacker.cell, defender.cell);
+    attacker.lock = defender.id;
     attacker.facing_left = defender.cell.x < attacker.cell.x;
     const bool behind_its_back =
         defender.flank_count > 1 &&
@@ -1374,6 +1397,14 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
         case 69:
             // The original passed -2 and its paralysis ignored it (an obvious bug, fixed).
             paralyze(defender, roll(9) + 10, -2);
+            break;
+        case 79:
+            // Fire on a hit, 2d10 and magical (effhndlr.pas, EffFireTouch).
+            nonweapon_damage(defender, roll(10) + roll(10), 0, false, 9, 0, 0, false);
+            break;
+        case 80:
+            // Acid on a hit, 1d4 (EffAcidTouch).
+            nonweapon_damage(defender, roll(4), 0, false, 16, 0, 0, false);
             break;
         case 85:
             drain_levels(defender, 1);
@@ -1936,7 +1967,7 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         // A Javelin of Lightning: 1d6+20 at its mark, then a bolt of 3 squares
         // of 20 beyond it (magic.pas, SpellJavelinOfLightning).
         lightning_at(aim, roll(6) + 20, level);
-        lightning_path(caster, aim, 3, 20, level, false);
+        lightning_path(caster.cell, aim, 3, 20, level, false);
         break;
     case 61:
         cast_generic(caster, number, level, targets, 0, 0, 0, roll_dice(5, 4));
@@ -1973,7 +2004,7 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         // then along a bolt of 8 squares (magic.pas, SpellLightningBolt).
         const int damage = roll_dice(level, 6);
         lightning_at(aim, damage, level);
-        lightning_path(caster, aim, 8, damage, level, true);
+        lightning_path(caster.cell, aim, 8, damage, level, true);
         break;
     }
     case 47:
@@ -2380,12 +2411,12 @@ EntityId Session::standing_at(Cell cell) const
 
 // Lightning strikes a square: one standing there saves against spells for
 // half; a wall turns the bolt (magic.pas, LightningAttackAt).
-bool Session::lightning_at(Cell cell, int damage, int level)
+bool Session::lightning_at(Cell cell, int damage, int level, int save)
 {
     if (const auto id = standing_at(cell))
     {
         auto &target = *find(id);
-        const bool saved = saving_throw(target, 4, 0, nullptr, 12);
+        const bool saved = saving_throw(target, save, 0, nullptr, 12);
         nonweapon_damage(target, damage, 2, saved, 12, level, 51, false);
     }
     return board_.contains(cell) && board_.at(cell) == rules::Terrain::obstacle;
@@ -2397,10 +2428,9 @@ bool Session::lightning_at(Cell cell, int damage, int level)
 // past the caster, costing 8 more when the wall is within 4 squares of it.
 // Each leg takes the whole distance walked so far from what is left, as the
 // original counts it.
-void Session::lightning_path(const Fighter &caster, Cell aim, int length, int damage, int level,
-                             bool bounce)
+void Session::lightning_path(Cell origin, Cell aim, int length, int damage, int level, bool bounce,
+                             int save)
 {
-    const Cell origin = caster.cell;
     if (origin == aim)
     {
         return;
@@ -2433,7 +2463,7 @@ void Session::lightning_path(const Fighter &caster, Cell aim, int length, int da
             {
                 budget = 0;
             }
-            blocked = lightning_at(walk.at, damage, level);
+            blocked = lightning_at(walk.at, damage, level, save);
             if (blocked)
             {
                 target = walk.at;
@@ -2648,6 +2678,707 @@ void Session::revive(Fighter &f)
         return;
     }
     f.numbers.effects.push_back({effect::revival, 1, 255, true});
+}
+
+// The original's AI, a turn (combatai.pas, CombatAiControl): the approach
+// pattern, then an item, a spell begun earlier, turning undead, a spell, and
+// else the fight: lock onto an enemy and move and attack until the turn is
+// done. Morale is checked as every turn starts (next_actor).
+void Session::ai_turn(Fighter &f)
+{
+    // The pattern: kept 3 times in 4 while it is 1 to 4; rerolled 1 to 4,
+    // or 5 to 6 one time in 8 (CombatAiControl).
+    if (f.stance == 0 || f.stance > 4 || roll(4) == 1)
+    {
+        f.stance = roll(8) == 8 ? roll(2) + 4 : roll(4);
+    }
+    if (ai_use_item(f))
+    {
+        end_actions(f);
+        return;
+    }
+    if (f.aiming)
+    {
+        if (!ai_aim(f))
+        {
+            lose_spell(f);
+            end_actions(f);
+        }
+        return;
+    }
+    const auto undead_in_sight = std::any_of(fighters_.begin(), fighters_.end(),
+                                             [&](const Fighter &o)
+                                             {
+                                                 return o.side != f.side && o.able() && !o.turned &&
+                                                        o.numbers.undead_level > 0 &&
+                                                        sees(board_, f, o);
+                                             });
+    if (f.numbers.class_levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0 &&
+        !f.tried_turning && undead_in_sight)
+    {
+        turn_undead(f);
+        return;
+    }
+    if (ai_cast(f))
+    {
+        return;
+    }
+    while (f.able() && f.initiative > 0)
+    {
+        if (!acquire_target(f, 255, true, false) || f.initiative <= 0)
+        {
+            finish_round(f);
+            return;
+        }
+        if (ai_move_attack(f))
+        {
+            return;
+        }
+    }
+}
+
+// The enemies standing within a range, in sight or through walls.
+std::vector<EntityId> Session::enemies_within(const Fighter &f, int range, bool sight) const
+{
+    std::vector<EntityId> found;
+    for (const auto &o : fighters_)
+    {
+        if (o.side != f.side && o.able() && distance(f, o) <= range &&
+            (!sight || sees(board_, f, o)))
+        {
+            found.push_back(o.id);
+        }
+    }
+    return found;
+}
+
+// Locking onto an enemy (cbtacts.pas, AcquireTarget): a lock still on an
+// enemy that may be singled out stays; else up to 20 random picks among the
+// enemies in range and sight that may be singled out; else, unless a new
+// lock was forced, among those in range through walls, any of them when
+// relaxed.
+bool Session::acquire_target(Fighter &f, int range, bool relaxed, bool force_new)
+{
+    if (const auto *locked = find(f.lock);
+        locked && !force_new && locked->side != f.side && locked->able() && can_target(f, *locked))
+    {
+        return true;
+    }
+    f.lock = 0;
+    for (int pass = 1; pass <= 2; ++pass)
+    {
+        const bool through_walls = pass == 2 && !force_new;
+        auto candidates = enemies_within(f, range, !through_walls);
+        for (int tries = 0; tries < 20 && !candidates.empty(); ++tries)
+        {
+            auto &pick =
+                candidates[static_cast<std::size_t>(roll(static_cast<int>(candidates.size())) - 1)];
+            if (pick == 0)
+            {
+                continue;
+            }
+            if (can_target(f, *find(pick)) || (through_walls && relaxed))
+            {
+                f.lock = pick;
+                return true;
+            }
+            pick = 0;
+            if (std::all_of(candidates.begin(), candidates.end(),
+                            [](EntityId id)
+                            {
+                                return id == 0;
+                            }))
+            {
+                break;
+            }
+        }
+    }
+    return false;
+}
+
+// Whether its readied weapon reaches past the next square: a missile weapon,
+// throwables too.
+bool Session::missile_in_hand(const Fighter &f) const
+{
+    return f.numbers.missile.has_value();
+}
+
+// Nothing more to do (combatai.pas, FinishRound): a helpless creature, one
+// with a missile weapon or one without a turn left ends its actions; another
+// guards.
+void Session::finish_round(Fighter &f)
+{
+    if (f.helpless() || missile_in_hand(f) || f.initiative <= 0)
+    {
+        end_actions(f);
+        return;
+    }
+    end_actions(f);
+    f.guarding = true;
+    log({"{name} guards.", {{"name", f.name}}});
+}
+
+// Moving and attacking (combatai.pas, AiMoveAttack): up to 20 passes, each a
+// step or an attack on an enemy within its weapon's reach. A fleeing creature
+// spends its movement running first. True when its turn is done; false when
+// it downed its target with attacks left, and locks onto another.
+bool Session::ai_move_attack(Fighter &f)
+{
+    monster_specials(f);
+    if (f.initiative <= 0 || !f.able())
+    {
+        return true;
+    }
+    int last_direction = 8, stuck = 0;
+    for (int pass = 1; pass <= 20; ++pass)
+    {
+        if (f.fleeing)
+        {
+            while (f.half_moves > 0 && f.initiative > 0 && f.able())
+            {
+                if (!ai_step(f, last_direction, stuck))
+                {
+                    break;
+                }
+            }
+        }
+        if (f.initiative <= 0 || !f.able())
+        {
+            return true;
+        }
+        const int reach = missile_in_hand(f) ? f.numbers.missile->range : 1;
+        // The lock, when it is an enemy within reach and in sight. The
+        // original skipped any lock on the party's side, so monsters never
+        // struck theirs first (an obvious bug, fixed).
+        Fighter *target = find(f.lock);
+        if (target && (!target->able() || target->side == f.side || !can_target(f, *target) ||
+                       distance(f, *target) > reach || !sees(board_, f, *target)))
+        {
+            target = nullptr;
+        }
+        if (!target)
+        {
+            const auto in_reach = enemies_within(f, reach, true);
+            if (in_reach.empty())
+            {
+                if (!acquire_target(f, 255, false, false))
+                {
+                    finish_round(f);
+                    return true;
+                }
+                if (!ai_step(f, last_direction, stuck))
+                {
+                    return true;
+                }
+                continue;
+            }
+            auto &pick = *find(
+                in_reach[static_cast<std::size_t>(roll(static_cast<int>(in_reach.size())) - 1)]);
+            // A missile weapon with an enemy next to it: the original readied
+            // another weapon here; until a fight knows a creature's items it
+            // guards (step 7).
+            if (missile_in_hand(f) && !f.numbers.missile->throwable && enemy_next_to(f))
+            {
+                finish_round(f);
+                return true;
+            }
+            // The original struck a pick next to it even one it may not single
+            // out (an obvious bug, fixed).
+            if (!can_target(f, pick))
+            {
+                continue;
+            }
+            target = &pick;
+        }
+        const auto verb = attack_verb(f, *target);
+        if (!verb)
+        {
+            finish_round(f);
+            return true;
+        }
+        note_attack(f, *target);
+        if (*verb == "melee")
+        {
+            if (!sweep(f, *target))
+            {
+                make_attack(f, *target, false);
+            }
+        }
+        else
+        {
+            shoot(f, *target);
+        }
+        if (f.attacks() <= 0 || f.initiative <= 0)
+        {
+            end_actions(f);
+            return true;
+        }
+        if (!target->able())
+        {
+            return false;
+        }
+    }
+    // The original ran on through the 21st pass (an obvious bug, fixed).
+    finish_round(f);
+    return true;
+}
+
+// A monster's own specials as its AI moves and attacks (combatai.pas,
+// MONSTER_SPECIAL): the petrifying gaze, the charming gaze, the lightning
+// breath and the ankheg's acid, at its lock.
+void Session::monster_specials(Fighter &f)
+{
+    auto *lock = find(f.lock);
+    if (f.has(83) && lock && lock->able())
+    {
+        // The petrifying gaze, at any range; a mirror turns a gaze that can be
+        // reflected back on the gazer (effhndlr.pas, EffPetrifyingGaze).
+        log({"{name} gazes.", {{"name", f.name}}});
+        Fighter *victim = lock;
+        if (f.has(127) && lock->numbers.mirror)
+        {
+            log({"{name} reflects it.", {{"name", lock->name}}});
+            victim = &f;
+        }
+        if (!saving_throw(*victim, 1, 0, &f))
+        {
+            victim->condition = Condition::stoned;
+            victim->hit_points = 0;
+            victim->initiative = 0;
+            log({"{name} is stoned.", {{"name", victim->name}}});
+            end_effects_at_zero(*victim);
+            went_down(*victim);
+        }
+        if (!f.able())
+        {
+            return;
+        }
+    }
+    lock = find(f.lock);
+    if (f.has(84) && lock && lock->able() && can_target(f, *lock) && sees(board_, f, *lock))
+    {
+        // The charming gaze: saved against at -2. The original's reach was an
+        // unset value; it reaches what the gazer sees here (an obvious bug, fixed).
+        log({"{name} gazes.", {{"name", f.name}}});
+        const bool saved = saving_throw(*lock, 4, -2, &f);
+        if (add_with_message(*lock,
+                             {effect::charm, 0, (f.side == Side::opposition ? 128 : 0) + 12, true},
+                             true, saved, 0, 12, spell(10)))
+        {
+            charm(*lock, f.side);
+        }
+    }
+    if (const auto *breath = f.find_effect(88); breath && (round_ == 1 || roll(100) > 50))
+    {
+        // The lightning breath: always in the first round, then half the time;
+        // at an enemy within 4 squares and the dragon's magic-user level, for
+        // its maximum Hit Points, saved against for half; 3, 2 or 1 breaths by
+        // its strength (effhndlr.pas and magic.pas, EffBreatheLightning). With
+        // no enemy in reach the original breathed on itself and spent the
+        // breath (an obvious bug, fixed: it holds its breath).
+        const int strength = breath->strength;
+        const int reach =
+            4 + f.numbers.class_levels[static_cast<std::size_t>(ClassSlot::magic_user)];
+        if (acquire_target(f, reach, false, true))
+        {
+            log({"{name} breathes.", {{"name", f.name}}});
+            const Cell aim = find(f.lock)->cell;
+            const int sx = (aim.x > f.cell.x) - (aim.x < f.cell.x);
+            const int sy = (aim.y > f.cell.y) - (aim.y < f.cell.y);
+            const Cell first{f.cell.x + sx + (sx > 0 ? 1 : 0), f.cell.y + sy + (sy > 0 ? 1 : 0)};
+            while (f.has(effect::invisible))
+            {
+                f.remove(effect::invisible);
+            }
+            const int damage = f.numbers.max_hit_points;
+            lightning_at(first, damage, 12, 3);
+            lightning_path(f.cell, first, 10, damage, 12, false, 3);
+            // A breath that came back off a wall may have downed the dragon,
+            // which loses the effect with its life.
+            if (auto *left = f.find_effect(88); left && strength > 253)
+            {
+                left->strength = strength - 1;
+            }
+            else if (left)
+            {
+                f.remove(88);
+            }
+            end_actions(f);
+            return;
+        }
+    }
+    lock = find(f.lock);
+    if (f.has(121) && roll(100) <= 25 && lock && lock->able() && distance(f, *lock) < 4)
+    {
+        // The ankheg's acid, once a fight: 8d4 acid, saved against for half
+        // (effhndlr.pas, EffSpitAcid). The original left it untyped (an
+        // obvious bug, fixed).
+        end_actions(f);
+        log({"{name} spits acid.", {{"name", f.name}}});
+        int damage = 0;
+        for (int die = 0; die < 8; ++die)
+        {
+            damage += roll(4);
+        }
+        nonweapon_damage(*lock, damage, 2, saving_throw(*lock, 3, 0, &f, 16), 16, 12, 0, false);
+        f.remove(121);
+        f.remove(80);
+    }
+}
+
+// The original's approach patterns: what each pattern adds to the direction,
+// in the order it tries them (combatai.pas, aiDirOffsets).
+constexpr std::array<std::array<int, 5>, 6> approach{{
+    {8, 7, 6, 1, 2},
+    {8, 1, 2, 7, 6},
+    {7, 1, 8, 6, 2},
+    {1, 7, 8, 2, 6},
+    {8, 7, 6, 5, 4},
+    {8, 1, 2, 3, 4},
+}};
+
+// Whether it can step that way (combatai.pas, AiCanStep): onto the field,
+// free of creatures, on ground it can pay for; a stinking cloud only for one
+// that breathes it unharmed. Off the field, edge is set.
+bool Session::can_step(const Fighter &f, int direction, bool &edge) const
+{
+    edge = false;
+    const auto dx = step_x[static_cast<std::size_t>(direction)];
+    const auto dy = step_y[static_cast<std::size_t>(direction)];
+    auto moved = f;
+    moved.cell = {f.cell.x + dx, f.cell.y + dy};
+    for (const auto square : squares_of(moved))
+    {
+        if (!board_.contains(square))
+        {
+            edge = true;
+            return false;
+        }
+    }
+    const auto cost = grid_for(f).step_cost(f.cell, moved.cell);
+    if (!cost || *cost > f.half_moves)
+    {
+        return false;
+    }
+    const bool breathes_freely =
+        f.has(effect::animated) || f.has(effect::coughing) || f.has(111) || f.has(125);
+    return breathes_freely || !in_cloud(moved);
+}
+
+// One step (combatai.pas, AiMoveStep): toward its lock, or away when
+// fleeing, trying the pattern's five directions; a fleeing creature that
+// finds the edge tries to get away. Stuck (no way, or turning back), it
+// changes pattern, then drops its lock, then stops. False when it cannot go on.
+bool Session::ai_step(Fighter &f, int &last_direction, int &stuck)
+{
+    const bool lone_mage =
+        f.numbers.class_levels[static_cast<std::size_t>(ClassSlot::magic_user)] > 0 &&
+        std::count_if(f.numbers.class_levels.begin(), f.numbers.class_levels.end(),
+                      [](int level)
+                      {
+                          return level > 0;
+                      }) == 1;
+    if (f.half_moves / 2 <= 0 || f.initiative <= 0 || (lone_mage && !f.fleeing))
+    {
+        finish_round(f);
+        return false;
+    }
+    int base = 0;
+    if (f.fleeing)
+    {
+        // Away from its enemies; the original ran along the party's facing,
+        // which the fight learns with step 7.
+        f.stance = roll(2);
+        int x = 0, y = 0, enemies = 0;
+        for (const auto &o : fighters_)
+        {
+            if (o.side != f.side && o.able())
+            {
+                x += o.cell.x;
+                y += o.cell.y;
+                ++enemies;
+            }
+        }
+        base = enemies ? direction_toward({x / enemies, y / enemies}, f.cell) : 0;
+    }
+    else if (const auto *locked = find(f.lock))
+    {
+        base = direction_toward(f.cell, locked->cell);
+    }
+    const auto &pattern = approach[static_cast<std::size_t>(std::clamp(f.stance, 1, 6) - 1)];
+    int chosen = -1;
+    for (const int offset : pattern)
+    {
+        const int direction = (base + offset) % 8;
+        bool edge = false;
+        if (can_step(f, direction, edge))
+        {
+            chosen = direction;
+            break;
+        }
+        if (edge && f.fleeing)
+        {
+            attempt_flee(f);
+            f.half_moves = 0;
+            f.fleeing = false;
+            return false;
+        }
+    }
+    if (chosen < 0 || chosen == (last_direction + 4) % 8)
+    {
+        ++stuck;
+        f.stance = f.stance % 6 + 1;
+        if (stuck > 1)
+        {
+            f.lock = 0;
+            if (stuck > 2)
+            {
+                f.half_moves = 0;
+                return false;
+            }
+            if (!acquire_target(f, 255, true, false))
+            {
+                finish_round(f);
+                return false;
+            }
+        }
+    }
+    if (chosen < 0)
+    {
+        return true;
+    }
+    last_direction = chosen;
+    step_to(f, {f.cell.x + step_x[static_cast<std::size_t>(chosen)],
+                f.cell.y + step_y[static_cast<std::size_t>(chosen)]});
+    if (!f.able())
+    {
+        end_actions(f);
+        return false;
+    }
+    return true;
+}
+
+// An AI uses an item (combatai.pas, SelectItemToUse): 1d7 passes, the k-th
+// taking powers of priority 8 - k or more; the first readied item (not a
+// scroll) whose spell it decides on is used.
+bool Session::ai_use_item(Fighter &f)
+{
+    const int passes = roll(7);
+    const bool enemy_left = std::any_of(fighters_.begin(), fighters_.end(),
+                                        [&f](const Fighter &o)
+                                        {
+                                            return o.side != f.side && o.able();
+                                        });
+    if (!f.item_use_allowed || !enemy_left)
+    {
+        return false;
+    }
+    for (int pass = 1; pass <= passes; ++pass)
+    {
+        for (const auto &item : f.numbers.items)
+        {
+            const int number = item.spells[0];
+            if (item.scroll || !item.readied || !spell_built(number) ||
+                !ai_decides(f, number, 8 - pass))
+            {
+                continue;
+            }
+            f.using_item = item.ordinal;
+            log({"{name} uses an item.", {{"name", f.name}}});
+            f.aiming = number;
+            f.picked.clear();
+            const auto &known = *spell(number);
+            f.picks_left = (known.area & 0x0F) <= 7 ? (known.area & 3) + 1 : 1;
+            if (!ai_aim(f))
+            {
+                f.aiming = f.picks_left = 0;
+                f.using_item = -1;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+// An AI casts (combatai.pas, SelectSpellToCast): one whose morale counts (a
+// monster or NPC); 1d7 passes, three random picks each among its memorized
+// spells, the first it decides on cast as anyone casts it.
+bool Session::ai_cast(Fighter &f)
+{
+    const int passes = roll(7);
+    const bool enemy_left = std::any_of(fighters_.begin(), fighters_.end(),
+                                        [&f](const Fighter &o)
+                                        {
+                                            return o.side != f.side && o.able();
+                                        });
+    const auto &spells = f.numbers.spells;
+    if (!f.cast_allowed || silenced(f) || !enemy_left || f.numbers.morale < non_player ||
+        spells.empty())
+    {
+        return false;
+    }
+    for (int pass = 1; pass <= passes; ++pass)
+    {
+        for (int pick = 0; pick < 3; ++pick)
+        {
+            const int number =
+                spells[static_cast<std::size_t>(roll(static_cast<int>(spells.size())) - 1)];
+            if (spell(number) && spell(number)->when != 0 && spell_built(number) &&
+                ai_decides(f, number, 8 - pass))
+            {
+                begin_cast(f, number);
+                if (f.aiming && !ai_aim(f))
+                {
+                    lose_spell(f);
+                    end_actions(f);
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Whether the AI takes this spell (combatai.pas, DecideCastSpell): of high
+// enough priority; one on itself always, Cure Light Wounds when someone needs
+// it; one at an enemy when an enemy is in range and sight, and none of those
+// has a friend within the spell's blast.
+bool Session::ai_decides(const Fighter &f, int number, int least_priority) const
+{
+    const auto &known = *spell(number);
+    if (known.ai_priority == 0 || known.ai_priority < least_priority)
+    {
+        return false;
+    }
+    if (number == 3)
+    {
+        return const_cast<Session *>(this)->cure_search(f) != nullptr;
+    }
+    if (!known.offensive)
+    {
+        return true;
+    }
+    const int range = spell_range(known, caster_level(f, known));
+    const auto targets = enemies_within(f, range, true);
+    if (targets.empty())
+    {
+        return false;
+    }
+    if (known.ai_radius == 0)
+    {
+        return true;
+    }
+    return std::none_of(targets.begin(), targets.end(),
+                        [&](EntityId id)
+                        {
+                            const auto &t = *find(id);
+                            return std::any_of(fighters_.begin(), fighters_.end(),
+                                               [&](const Fighter &o)
+                                               {
+                                                   return o.side == f.side && o.able() &&
+                                                          distance(o, t) <= known.ai_radius;
+                                               });
+                        });
+}
+
+// Whom an AI heals (combatai.pas, the cure search): within a square, the
+// wounded of its side with the fewest Hit Points (itself below half), else,
+// unless that one has fewer than 8, one downed beside it.
+Fighter *Session::cure_search(const Fighter &f)
+{
+    Fighter *best = nullptr;
+    for (auto &o : fighters_)
+    {
+        if (o.side != f.side || !o.able() || distance(f, o) > 1 ||
+            o.hit_points >= o.numbers.max_hit_points ||
+            (o.id == f.id && o.hit_points * 2 >= o.numbers.max_hit_points))
+        {
+            continue;
+        }
+        if (!best || o.hit_points < best->hit_points)
+        {
+            best = &o;
+        }
+    }
+    if (best && best->hit_points < 8)
+    {
+        return best;
+    }
+    for (auto &o : fighters_)
+    {
+        if (o.side == f.side && o.downed() && distance(f, o) <= 1)
+        {
+            return &o;
+        }
+    }
+    return best;
+}
+
+// The AI aims what it casts or uses (cbtacts.pas, SelectCombatTargets): on
+// itself, or Cure Light Wounds on whom the cure search finds, or at random
+// enemies in range and sight, not one with a friend within the blast nor a
+// helpless one for a spell that makes helpless. False when it finds none.
+bool Session::ai_aim(Fighter &f)
+{
+    const auto &known = *spell(f.aiming);
+    const int area = known.area & 0x0F;
+    if (f.aiming == 3)
+    {
+        auto *patient = cure_search(f);
+        if (!patient)
+        {
+            return false;
+        }
+        resolve_spell(f, {patient->id}, patient->cell);
+        return true;
+    }
+    if (!known.offensive)
+    {
+        resolve_spell(
+            f, area >= 8 && area <= 14 ? within(f.cell, area & 7) : std::vector<EntityId>{f.id},
+            f.cell);
+        return true;
+    }
+    const int range = spell_range(known, caster_level(f, known));
+    const bool makes_helpless = std::find(helpless_effects.begin(), helpless_effects.end(),
+                                          known.effect) != helpless_effects.end();
+    std::vector<EntityId> picked;
+    const int picks = area <= 7 ? (area & 3) + 1 : 1;
+    for (int n = 0; n < picks; ++n)
+    {
+        for (int tries = 0; tries < 20; ++tries)
+        {
+            if (!acquire_target(f, range, false, true))
+            {
+                break;
+            }
+            const auto &pick = *find(f.lock);
+            const bool crowded =
+                known.ai_radius > 0 && std::any_of(fighters_.begin(), fighters_.end(),
+                                                   [&](const Fighter &o)
+                                                   {
+                                                       return o.side == f.side && o.able() &&
+                                                              distance(o, pick) <= known.ai_radius;
+                                                   });
+            if (crowded || (makes_helpless && pick.helpless()))
+            {
+                continue;
+            }
+            if (std::find(picked.begin(), picked.end(), pick.id) == picked.end())
+            {
+                picked.push_back(pick.id);
+            }
+            break;
+        }
+    }
+    if (picked.empty())
+    {
+        log({"{name} aborts the spell.", {{"name", f.name}}});
+        return false;
+    }
+    const auto aim = find(picked.front())->cell;
+    resolve_spell(f, area >= 8 && area <= 14 ? within(aim, area & 7) : picked, aim);
+    return true;
 }
 
 // The roll a cleric needs to turn undead, by the undead's level (1 skeleton to
@@ -3476,7 +4207,8 @@ rules::MovementGrid Session::grid_for(const Fighter &mover) const
     for (const auto &f : fighters_)
     {
         if (f.id == mover.id || f.condition == Condition::dead || f.condition == Condition::fled ||
-            f.condition == Condition::surrendered || f.condition == Condition::gone)
+            f.condition == Condition::surrendered || f.condition == Condition::gone ||
+            f.condition == Condition::stoned)
         {
             continue;
         }
@@ -3531,6 +4263,7 @@ rules::Snapshot Session::snapshot() const
                       : f->condition == Condition::fled        ? "fled"
                       : f->condition == Condition::surrendered ? "surrendered"
                       : f->condition == Condition::gone        ? "gone"
+                      : f->condition == Condition::stoned      ? "stoned"
                       : f->helpless()                          ? "helpless"
                                                                : "";
         view.fled = f->condition == Condition::fled;
@@ -3663,6 +4396,8 @@ std::vector<rules::Command> Session::legal_commands() const
         offer("guard");
     }
     offer("delay");
+    // Quick: the original's AI plays its turn (combat.pas, TurnOnAuto).
+    offer("quick");
     // Turn, once a fight for one with cleric levels (combat.pas, CombatMenu).
     if (actor->numbers.class_levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0 &&
         !actor->tried_turning)
@@ -3818,6 +4553,10 @@ bool Session::submit(const rules::Command &command)
     {
         attempt_flee(actor);
     }
+    else if (command.verb == "quick")
+    {
+        ai_turn(actor);
+    }
     else if (command.verb == "guard")
     {
         end_actions(actor);
@@ -3893,7 +4632,7 @@ std::string Session::save() const
             f.attacks_left[0], f.attacks_left[1], f.surprised, f.attack_phase, f.sweep_budget,
             f.direction, f.flank_count, f.flank_spread, f.guarding, f.fleeing, f.turned,
             f.tried_turning, f.cast_allowed, f.pending_spell, f.aiming, f.picks_left,
-            static_cast<unsigned>(f.own_side), f.item_use_allowed, f.using_item,
+            static_cast<unsigned>(f.own_side), f.item_use_allowed, f.using_item, f.stance, f.lock,
             f.before_animation ? f.before_animation->encode() : std::string(), f.picked.size());
         for (const auto id : f.picked)
         {
@@ -4016,6 +4755,8 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         f.own_side = in.as<Side>();
         f.item_use_allowed = in.as<bool>();
         f.using_item = in.as<int>();
+        f.stance = in.as<int>();
+        f.lock = in.as<EntityId>();
         if (const auto before = in.text(); !before.empty())
         {
             f.before_animation = Combatant::decode(before);
@@ -4034,7 +4775,7 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         {
             f.picked.push_back(in.as<EntityId>());
         }
-        if (f.condition > Condition::gone || f.attack_phase < 0 || f.attack_phase > 1 ||
+        if (f.condition > Condition::stoned || f.attack_phase < 0 || f.attack_phase > 1 ||
             f.direction < 0 || f.direction > 7)
         {
             throw std::runtime_error("Invalid original-rules combat checkpoint");
@@ -4120,7 +4861,10 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
         const auto own = f.numbers.morale & 0x7F;
         if (f.side == Side::party && f.numbers.morale >= non_player && (own == 0 || own > 102))
         {
-            f.numbers.morale = non_player + threshold;
+            // The original stored the threshold unhalved, so an ally's morale
+            // was twice the encounter's and failed every check from 52 up (an
+            // obvious bug, fixed).
+            f.numbers.morale = non_player + threshold / 2;
         }
     }
     return std::make_unique<Session>(std::move(identity), std::move(encounter.battlefield),

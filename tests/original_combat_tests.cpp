@@ -2412,6 +2412,211 @@ void scrolls_are_read()
           "One of its two Magic Missiles is read");
 }
 
+// Everyone plays by the original's AI (Quick) until the condition holds or
+// the rounds run out.
+void all_quick(rules::CombatSession &session, const std::function<bool()> &done,
+               unsigned rounds = 30)
+{
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "quick");
+        },
+        [&]
+        {
+            return done() || session.snapshot().round > rounds;
+        },
+        2000);
+}
+
+// A fight played wholly by the AI ends, and the same dice play it the same
+// (combatai.pas, CombatAiControl).
+void the_ai_fights_to_the_end()
+{
+    const auto play = [](std::uint64_t seed)
+    {
+        auto kobold = creature(8, 0);
+        kobold.morale = 0x80 + 50;
+        auto fight = arrange({{"Fighter", rules::Side::party, {0, 2}, creature(20)},
+                              {"Ranger", rules::Side::party, {0, 5}, creature(20)},
+                              {"Kobold 1", rules::Side::opposition, {7, 1}, kobold},
+                              {"Kobold 2", rules::Side::opposition, {7, 4}, kobold},
+                              {"Kobold 3", rules::Side::opposition, {7, 6}, kobold}},
+                             seed);
+        auto &session = *fight.session;
+        all_quick(
+            session,
+            [&]
+            {
+                return session.snapshot().outcome != rules::Outcome::ongoing;
+            },
+            60);
+        check(session.snapshot().outcome != rules::Outcome::ongoing, "The AI's fight ends");
+        check(logged(session, "{attacker} hits {name} for {damage}.") > 0, "Blows land");
+        return session.snapshot().log();
+    };
+    check(play(173) == play(173), "The same dice play the same fight");
+}
+
+// A lone magic-user with nothing in reach guards rather than walk (combatai.pas, AiMoveStep).
+void a_lone_mage_stays()
+{
+    using original::ClassSlot;
+    auto mage = caster(ClassSlot::magic_user, 1, {});
+    mage.morale = 0x80 + 50;
+    auto fight = arrange({{"Fighter", rules::Side::party, {0, 3}, creature(20)},
+                          {"Mage", rules::Side::opposition, {7, 3}, mage}},
+                         179);
+    auto &session = *fight.session;
+    until_turn_of(session, "Mage");
+    session.submit(order(session, "quick"));
+    check(view_of(session.snapshot(), "Mage").cell == rules::Cell{7, 3} &&
+              logged(session, "{name} guards.") == 1,
+          "The mage guards where it stands");
+}
+
+// A monster caster casts at the party (combatai.pas, SelectSpellToCast).
+void a_monster_casts()
+{
+    using original::ClassSlot;
+    auto shaman = caster(ClassSlot::magic_user, 3, {15, 15, 15});
+    shaman.morale = 0x80 + 50;
+    auto fight = arrange({{"Fighter", rules::Side::party, {0, 3}, creature(50)},
+                          {"Shaman", rules::Side::opposition, {6, 3}, shaman}},
+                         181);
+    auto &session = *fight.session;
+    all_quick(
+        session,
+        [&]
+        {
+            return logged(session, "{name} casts {spell}.") > 0;
+        },
+        10);
+    check(logged(session, "{name} casts {spell}.") > 0 &&
+              view_of(session.snapshot(), "Fighter").hit_points < 50,
+          "The shaman's missiles strike the fighter");
+}
+
+// A fleeing monster runs for the edge and gets away (combatai.pas, AiMoveStep).
+void a_routed_monster_runs()
+{
+    auto coward = creature(20, 0);
+    coward.hit_points = 2;
+    coward.morale = 0x80 + 10;
+    coward.movement = 12;
+    auto slow = creature(50);
+    slow.movement = 3;
+    auto fight = arrange({{"Fighter", rules::Side::party, {0, 3}, slow},
+                          {"Coward", rules::Side::opposition, {5, 3}, coward}},
+                         191, {}, 50);
+    auto &session = *fight.session;
+    all_quick(
+        session,
+        [&]
+        {
+            return view_of(session.snapshot(), "Coward").fled;
+        },
+        10);
+    check(view_of(session.snapshot(), "Coward").fled, "The coward runs off the field");
+}
+
+// A cleric on Quick turns undead in sight (combatai.pas, TurnUndeadAi).
+void the_ai_turns_undead()
+{
+    auto fight = arrange({{"Cleric", rules::Side::party, {1, 3}, cleric(8)},
+                          {"Skeleton", rules::Side::opposition, {5, 3}, undead(1)}},
+                         193);
+    auto &session = *fight.session;
+    until_turn_of(session, "Cleric");
+    session.submit(order(session, "quick"));
+    check(view_of(session.snapshot(), "Skeleton").status == "gone",
+          "The cleric destroys the skeleton");
+}
+
+// A monster of the AI with these effects.
+original::Combatant special(std::vector<original::Effect> effects, int hit_points = 30)
+{
+    auto c = creature(hit_points, 4);
+    c.morale = 0x80 + 50;
+    c.effects = std::move(effects);
+    return c;
+}
+
+// The petrifying gaze stones whom it looks at, unless a mirror turns a
+// reflectable gaze back (effhndlr.pas, EffPetrifyingGaze).
+void a_gaze_stones()
+{
+    const auto gaze_at = [](original::Combatant fighter)
+    {
+        auto fight = arrange({{"Fighter", rules::Side::party, {0, 3}, fighter},
+                              {"Basilisk",
+                               rules::Side::opposition,
+                               {6, 3},
+                               special({{83, 0, 0, false}, {127, 0, 0, false}})}},
+                             197);
+        auto &session = *fight.session;
+        until_turn_of(session, "Basilisk");
+        session.submit(order(session, "quick"));
+        return session.snapshot();
+    };
+    check(view_of(gaze_at(victim()), "Fighter").status == "stoned", "The fighter is stoned");
+    auto mirrored = victim();
+    mirrored.mirror = true;
+    auto basilisk = special({{83, 0, 0, false}, {127, 0, 0, false}});
+    basilisk.saving_throws = {21, 21, 21, 21, 21};
+    auto fight = arrange({{"Fighter", rules::Side::party, {0, 3}, mirrored},
+                          {"Basilisk", rules::Side::opposition, {6, 3}, basilisk}},
+                         197);
+    auto &session = *fight.session;
+    until_turn_of(session, "Basilisk");
+    session.submit(order(session, "quick"));
+    check(view_of(session.snapshot(), "Basilisk").status == "stoned" &&
+              view_of(session.snapshot(), "Fighter").status.empty(),
+          "A mirror turns the gaze back on the basilisk");
+}
+
+// A dragon breathes lightning in the first round for its maximum Hit Points,
+// saved against for half (effhndlr.pas, EffBreatheLightning).
+void a_dragon_breathes()
+{
+    auto dragon = special({{88, 0, 255, false}}, 40);
+    dragon.hit_points = 25;
+    auto fight = arrange({{"Fighter", rules::Side::party, {2, 3}, victim(100)},
+                          {"Dragon", rules::Side::opposition, {5, 3}, dragon}},
+                         199);
+    auto &session = *fight.session;
+    until_turn_of(session, "Dragon");
+    session.submit(order(session, "quick"));
+    const int lost = 100 - view_of(session.snapshot(), "Fighter").hit_points;
+    check(logged(session, "{name} breathes.") == 1 && (lost == 40 || lost == 20),
+          "The breath strikes for the dragon's 40, or 20 saved");
+}
+
+// The ankheg spits acid once a fight (effhndlr.pas, EffSpitAcid).
+void an_ankheg_spits_once()
+{
+    auto fight = arrange({{"Fighter", rules::Side::party, {3, 3}, victim(500)},
+                          {"Ankheg",
+                           rules::Side::opposition,
+                           {5, 3},
+                           special({{121, 0, 0, false}, {80, 0, 0, false}}, 500)}},
+                         211);
+    auto &session = *fight.session;
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            return order(session, actor == "Ankheg" ? "quick" : "end");
+        },
+        [&]
+        {
+            return session.snapshot().round > 25;
+        },
+        400);
+    check(logged(session, "{name} spits acid.") == 1, "Once, and no more");
+}
+
 } // namespace
 
 int main()
@@ -2474,6 +2679,14 @@ int main()
         usable_items_come_from_the_gear();
         wands_and_potions();
         scrolls_are_read();
+        the_ai_fights_to_the_end();
+        a_lone_mage_stays();
+        a_monster_casts();
+        a_routed_monster_runs();
+        the_ai_turns_undead();
+        a_gaze_stones();
+        a_dragon_breathes();
+        an_ankheg_spits_once();
         real_records_fight();
         std::cout << "Original-rules combat passed.\n";
     }
