@@ -100,6 +100,9 @@ Fight start(std::uint64_t seed)
     return fight;
 }
 
+void all_quick(rules::CombatSession &session, const std::function<bool()> &done,
+               unsigned rounds = 30);
+
 // Attack an enemy in reach, else step to the square nearest an enemy, else end.
 rules::Command choose(const rules::CombatSession &session)
 {
@@ -340,10 +343,22 @@ void real_records_fight()
         kobold.cell = {8, 2 + static_cast<int>(n) * 2};
         encounter.participants.push_back(kobold);
     }
+    auto ai_encounter = encounter;
     auto session = module->create(std::move(encounter), 11);
     play(*session);
     check(session->snapshot().outcome != rules::Outcome::ongoing,
           "A fight with the Slums' kobolds ends");
+    // The same fight played wholly by the original's AI.
+    auto quick = module->create(std::move(ai_encounter), 11);
+    all_quick(
+        *quick,
+        [&]
+        {
+            return quick->snapshot().outcome != rules::Outcome::ongoing;
+        },
+        100);
+    check(quick->snapshot().outcome != rules::Outcome::ongoing,
+          "Played by the AI, the fight with the Slums' kobolds ends");
 }
 
 // A creature of hand-made numbers placed on an open field.
@@ -2414,8 +2429,7 @@ void scrolls_are_read()
 
 // Everyone plays by the original's AI (Quick) until the condition holds or
 // the rounds run out.
-void all_quick(rules::CombatSession &session, const std::function<bool()> &done,
-               unsigned rounds = 30)
+void all_quick(rules::CombatSession &session, const std::function<bool()> &done, unsigned rounds)
 {
     play_until(
         session,
