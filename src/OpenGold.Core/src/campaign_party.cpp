@@ -3774,6 +3774,18 @@ void CampaignParty::begin_combat()
     combat_checked_.clear();
 }
 
+// A member of the party in a fight's result, on its side or charmed onto the
+// monsters' (a monster or ally never has a member's ID).
+bool CampaignParty::fights_for_party(const rules::CombatantView &actor) const
+{
+    return !is_ally(actor.id) &&
+           (actor.side == rules::Side::party || std::ranges::any_of(state_.roster,
+                                                                    [&actor](const PartyMember &m)
+                                                                    {
+                                                                        return m.id == actor.id;
+                                                                    }));
+}
+
 void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
 {
     if (!combat_ || snapshot.identity != rules_->identity())
@@ -3795,7 +3807,7 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
     std::vector<MemberId> active;
     for (const auto &actor : snapshot.combatants)
     {
-        if (actor.side == rules::Side::party && !is_ally(actor.id))
+        if (fights_for_party(actor))
         {
             active.push_back(actor.id);
         }
@@ -3811,7 +3823,7 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
     std::vector<std::pair<MemberId, int>> newly_checked;
     for (const auto &actor : snapshot.combatants)
     {
-        if (actor.side == rules::Side::party && !is_ally(actor.id))
+        if (fights_for_party(actor))
         {
             const auto it = std::find_if(state_.roster.begin(), state_.roster.end(),
                                          [&](const auto &m)
@@ -3822,23 +3834,46 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
             {
                 throw std::runtime_error("Combat party identity mismatch");
             }
+            auto lasting = actor.persistent;
+            std::optional<PartyMember> changed;
             const auto checked = std::find(combat_checked_.begin(), combat_checked_.end(),
                                            std::pair{actor.id, actor.max_hit_points});
             if (checked == combat_checked_.end())
             {
+                // What the fight left on the member for good (the original
+                // rules' level drain) is its own from now on.
+                const auto changes = rules_->lasting_changes(it->character.sheet(), lasting);
+                if (!changes.empty())
+                {
+                    changed = *it;
+                    for (const auto &change : changes)
+                    {
+                        if (!changed->character.advance(*rules_, lasting, change))
+                        {
+                            throw std::runtime_error("Combat party identity mismatch");
+                        }
+                    }
+                }
+                const auto &member = changed ? *changed : *it;
                 if (actor.max_hit_points !=
-                    rules_->hit_point_maximum(it->character.sheet(), actor.persistent))
+                    rules_->hit_point_maximum(member.character.sheet(), lasting))
                 {
                     throw std::runtime_error("Combat party identity mismatch");
                 }
-                (void)rules_->character_profile(it->character.sheet(), equipped_definitions(*it));
+                (void)rules_->character_profile(member.character.sheet(),
+                                                equipped_definitions(member));
                 newly_checked.emplace_back(actor.id, actor.max_hit_points);
             }
-            vitals.emplace_back(actor.id, actor.persistent);
-            if (!actor.thrown_gear_left.empty() || actor.curse_lifted ||
-                !actor.item_uses_left.empty())
+            vitals.emplace_back(actor.id, lasting);
+            if (changed && actor.thrown_gear_left.empty() && !actor.curse_lifted &&
+                actor.item_uses_left.empty())
             {
-                auto member = *it;
+                thrown.push_back(std::move(*changed));
+            }
+            else if (!actor.thrown_gear_left.empty() || actor.curse_lifted ||
+                     !actor.item_uses_left.empty())
+            {
+                auto member = changed ? std::move(*changed) : *it;
                 for (const auto &[definition, left] : actor.thrown_gear_left)
                 {
                     keep_thrown_gear(member, definition, left);

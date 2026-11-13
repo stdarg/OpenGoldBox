@@ -219,8 +219,12 @@ In small steps, each with its check:
 5. Combat with *Curse*'s monsters, spells and items. *In progress
    (2026-11-13):* *Curse*'s scripts load its own creatures and fight them as
    their records under the original rules; `opengold_gold_box_games_tests
-   --curse-walk` walks every map with an original-rules party and lists what
-   the scripts still need.
+   --curse-walk` (the check `opengold_curse_walk`) walks every square of
+   every map with a party made for *Curse* and plays each event and fight,
+   failing on any the session cannot run. Every event runs: *Curse*'s halls
+   (every class, its class mask), its pictures from every disk, DESTROY
+   ITEMS, its NPCs as their records, CHECK PARTY on its own cells, and a
+   COMBAT with no one loaded.
 6. Shops, temples, training and the higher level limits.
 7. A route test that plays from the start to the end, like the
    *Pool of Radiance* expedition checks.

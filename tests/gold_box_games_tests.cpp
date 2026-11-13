@@ -392,7 +392,9 @@ void curse_opening_reaches_the_first_map()
 // Curse's step 2 (docs/GAMES.md): every square of the map the party stands on,
 // each of its events run to its end, answering the first choice; prints what
 // the scripts still need. Run with --curse-walk.
-void curse_walk_census()
+// True when every event it reached ran: no script needs a command or form
+// the session lacks.
+bool curse_walk_census()
 {
     using opengold::por::TourPhase;
     const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
@@ -400,7 +402,7 @@ void curse_walk_census()
     if (!games || opengold::identify_game(folder) != GoldBoxGame::curse_of_the_azure_bonds)
     {
         std::cout << "Curse's files are not here.\n";
-        return;
+        return true;
     }
     auto session = opengold::load_campaign(folder, GoldBoxGame::curse_of_the_azure_bonds);
     // A party under the original rules, fighting Curse's own creatures.
@@ -637,6 +639,7 @@ void curse_walk_census()
     {
         std::cout << "  ended " << count << "x in phase " << phase << "\n";
     }
+    return needs.empty();
 }
 
 // An item type's property bits, byte 14 of ITEMS, as Pool of Radiance's own
@@ -698,8 +701,7 @@ int main(int argc, char **argv)
     {
         if (argc == 2 && std::string_view(argv[1]) == "--curse-walk")
         {
-            curse_walk_census();
-            return 0;
+            return curse_walk_census() ? 0 : 1;
         }
         each_game_is_told_apart_by_its_files();
         curse_creatures_are_read_from_their_layout();

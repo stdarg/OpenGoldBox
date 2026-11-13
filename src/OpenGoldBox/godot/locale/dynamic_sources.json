@@ -1083,6 +1083,7 @@
   "The Clerics' hall trains Clerics and Druids.",
   "The Magic-users' hall trains Wizards, Sorcerers and Warlocks.",
   "The Thieves' hall trains Rogues, Bards and Monks.",
+  "The hall trains every class.",
   "{skill} Expertise ({fee} gp)",
   "{skill} ({fee} gp)",
   "Back",

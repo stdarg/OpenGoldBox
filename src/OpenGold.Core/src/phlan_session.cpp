@@ -213,6 +213,8 @@ Message hall_welcome(opengold::TrainingHall hall)
         return {"The Magic-users' hall trains Wizards, Sorcerers and Warlocks.", {}};
     case TrainingHall::thieves:
         return {"The Thieves' hall trains Rogues, Bards and Monks.", {}};
+    case TrainingHall::every_class:
+        return {"The hall trains every class.", {}};
     }
     return {};
 }
@@ -449,7 +451,9 @@ void RolfTourSession::configure_town()
         }
     };
     const bool pool_of_radiance = game() == GoldBoxGame::pool_of_radiance;
-    bind_range(0x4900, 0x4AFF);
+    // Curse's scripts keep their state anywhere in the game's zone (a
+    // marauders' ambush marks 4DCBh); Pool of Radiance's use its first half.
+    bind_range(0x4900, pool_of_radiance ? 0x4AFF : 0x4CFF);
     bind_range(0x6B00, 0x6C1C);
     bind_range(0x6DA8, 0x6EFF);
     bind_range(0x9800, 0x98FF);
@@ -1413,7 +1417,10 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         {
             continue;
         }
-        if (unit.side == rules::Side::opposition)
+        // A member charmed onto the monsters' side is still the party's.
+        const bool charmed_member =
+            unit.side == rules::Side::opposition && expected_party.contains(unit.id);
+        if (unit.side == rules::Side::opposition && !charmed_member)
         {
             if (unit.id < 1000 || unit.id >= 1000 + staged_records_.size() ||
                 !enemies.insert(unit.id).second)
@@ -1436,8 +1443,8 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         {
             continue;
         }
-        else if (unit.side != rules::Side::party || !expected_party.contains(unit.id) ||
-                 !party_ids.insert(unit.id).second ||
+        else if ((unit.side != rules::Side::party && !charmed_member) ||
+                 !expected_party.contains(unit.id) || !party_ids.insert(unit.id).second ||
                  campaign_->member(unit.id).vitals != unit.persistent)
         {
             return false;
@@ -3188,7 +3195,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         read_character();
         reply = character_reply(selected_character_);
-        auto values = check_party(*campaign_, address_arg(0), arg(1));
+        auto values =
+            check_party(*campaign_, pool_of_radiance_address(address_arg(0), game()), arg(1));
         // A trap the Wand of Secrets pointed out is seen as Find Traps sees it.
         constexpr unsigned find_traps_effect = 19;
         if (address_arg(0) == EclAddress{0} && arg(1) == find_traps_effect && on_wand_trap())
@@ -3963,7 +3971,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
 
 void RolfTourSession::open_hall(std::uint64_t request)
 {
-    const auto hall = opengold::training_hall_named(machine_.string(ecl_training_hall_name));
+    // Pool of Radiance's halls name their classes; Curse's set a class mask,
+    // every class (127) in each of its halls.
+    const auto hall = game() == GoldBoxGame::pool_of_radiance
+                          ? opengold::training_hall_named(machine_.string(ecl_training_hall_name))
+                      : machine_.variable(game_cell(ecl_training_class_mask)) == 127
+                          ? std::optional{opengold::TrainingHall::every_class}
+                          : std::nullopt;
     if (!hall)
     {
         throw EclError("Training hall without a known class word");

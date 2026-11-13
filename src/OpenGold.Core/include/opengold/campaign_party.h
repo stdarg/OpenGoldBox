@@ -597,6 +597,9 @@ class CampaignParty
     }
 
   private:
+    // A member of the party in a fight's result, on its side or charmed onto
+    // the monsters'.
+    [[nodiscard]] bool fights_for_party(const rules::CombatantView &actor) const;
     // The member's next level, or 0 at its rules cap or the Training Hall's
     // limit (LEVELS-2).
     [[nodiscard]] unsigned next_level(const PartyMember &m) const;

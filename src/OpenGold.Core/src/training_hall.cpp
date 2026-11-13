@@ -47,7 +47,9 @@ bool trains_any(TrainingHall hall, std::span<const std::string> class_ids)
     return std::any_of(class_ids.begin(), class_ids.end(),
                        [&](const std::string &id)
                        {
-                           return training_hall_for_class(id) == hall;
+                           const auto trained_by = training_hall_for_class(id);
+                           return trained_by &&
+                                  (hall == TrainingHall::every_class || trained_by == hall);
                        });
 }
 
@@ -56,7 +58,7 @@ std::vector<std::string_view> hall_classes(TrainingHall hall)
     std::vector<std::string_view> result;
     for (const auto &[id, trained_by] : class_halls)
     {
-        if (trained_by == hall)
+        if (hall == TrainingHall::every_class || trained_by == hall)
         {
             result.push_back(id);
         }
@@ -103,6 +105,8 @@ std::vector<std::string_view> original_hall_classes(TrainingHall hall)
         return {"magic_user"};
     case TrainingHall::thieves:
         return {"thief"};
+    case TrainingHall::every_class:
+        return {"cleric", "druid", "fighter", "paladin", "ranger", "magic_user", "thief", "monk"};
     }
     return {};
 }

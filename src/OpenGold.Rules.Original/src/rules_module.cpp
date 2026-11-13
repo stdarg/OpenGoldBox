@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <limits>
 #include <map>
+#include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -83,6 +84,54 @@ Training decode_training(std::string_view data)
         throw std::invalid_argument("Unreadable original-rules training");
     }
     return training;
+}
+
+// A level drain a fight left (effhndlr.pas, the level drain), as a level
+// history entry: "drain", the levels lost in each class slot and the Hit
+// Points lost with them.
+struct Drain
+{
+    ClassLevels levels{};
+    int hit_points{};
+};
+
+constexpr std::string_view drain_word = "drain";
+
+std::string encode_drain(const Drain &drain)
+{
+    std::string data(drain_word);
+    for (const int level : drain.levels)
+    {
+        data += ' ' + std::to_string(level);
+    }
+    return data + ' ' + std::to_string(drain.hit_points);
+}
+
+std::optional<Drain> decode_drain(std::string_view data)
+{
+    if (!data.starts_with(drain_word))
+    {
+        return std::nullopt;
+    }
+    std::istringstream in{std::string(data.substr(drain_word.size()))};
+    Drain drain;
+    for (int &level : drain.levels)
+    {
+        in >> level;
+    }
+    in >> drain.hit_points;
+    std::string rest;
+    if (!in || (in >> rest) || drain.hit_points < 0 ||
+        std::ranges::any_of(
+            drain.levels,
+            [](int level)
+            {
+                return level < 0;
+            }))
+    {
+        throw std::invalid_argument("Unreadable original-rules level drain");
+    }
+    return drain;
 }
 
 // The slots a character has for a spell's class and level.
@@ -321,6 +370,9 @@ class OriginalModule final : public RulesModule
                           AdvancementChoice &choice, RandomState &random_state) const override;
     [[nodiscard]] unsigned experience_after_advance(const CharacterSheet &before,
                                                     unsigned experience) const override;
+    [[nodiscard]] std::vector<AdvancementChoice>
+    lasting_changes(const CharacterSheet &sheet, const VitalState &after) const override;
+    void drain_character(CharacterSheet &sheet, VitalState &state, const Drain &drain) const;
     [[nodiscard]] unsigned experience_share(const CharacterSheet &sheet,
                                             unsigned award) const override;
     void recover(VitalState &state, const CharacterSheet &sheet) const override;
@@ -1006,6 +1058,11 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
                                        const AdvancementChoice &choice) const
 {
     const auto &numbers = original_numbers(sheet);
+    if (const auto drain = decode_drain(choice.rules_data))
+    {
+        drain_character(sheet, state, *drain);
+        return true;
+    }
     const auto training = decode_training(choice.rules_data);
     // The spell a magic-user learns, when the level is one of its own.
     const bool magic_user_trained =
@@ -1044,6 +1101,14 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
         }
         ++levels[at];
         next.level_classes.emplace_back(class_slot_id(static_cast<ClassSlot>(at)));
+        // Each class trained gives back a drained level, whose Hit Points are
+        // forgotten (chargen.pas, TrainingMenu).
+        auto &drained = *next.original;
+        if (drained.drained_levels > 0)
+        {
+            drained.drained_hit_points -= drained.drained_hit_points / drained.drained_levels;
+            --drained.drained_levels;
+        }
     }
     recount_levels(next);
     const int gain = training_hit_points(static_cast<Profession>(numbers.profession),
@@ -1053,6 +1118,68 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
     sheet = std::move(next);
     state.hit_points += gain;
     return true;
+}
+
+// The drain is the character's: its classes' levels, its sheet's highest level
+// and its Hit Points go down; the original keeps count for training and
+// Restoration to give back.
+void OriginalModule::drain_character(CharacterSheet &sheet, VitalState &state,
+                                     const Drain &drain) const
+{
+    auto next = sheet;
+    auto &numbers = *next.original;
+    int total = 0;
+    for (std::size_t at = 0; at < class_slot_count; ++at)
+    {
+        const int lost = drain.levels[at];
+        if (lost > numbers.class_levels[at])
+        {
+            throw std::invalid_argument("A drain takes more levels than the character has");
+        }
+        numbers.class_levels[at] -= lost;
+        total += lost;
+        const auto id = class_slot_id(static_cast<ClassSlot>(at));
+        for (int n = 0; n < lost; ++n)
+        {
+            const auto last = std::ranges::find(next.level_classes | std::views::reverse, id);
+            if (last != next.level_classes.rend() && next.level_classes.size() > 1)
+            {
+                next.level_classes.erase(std::next(last).base());
+            }
+        }
+    }
+    recount_levels(next);
+    next.level = std::max(1, next.level - total);
+    next.hit_points = std::max(1, next.hit_points - drain.hit_points);
+    numbers.drained_levels += total;
+    numbers.drained_hit_points += drain.hit_points;
+    state.hit_points = std::min(state.hit_points, next.hit_points);
+    sheet = std::move(next);
+}
+
+std::vector<AdvancementChoice> OriginalModule::lasting_changes(const CharacterSheet &sheet,
+                                                               const VitalState &after) const
+{
+    const auto last = Combatant::decode(after.resources);
+    if (after.resources.empty() || !last || !sheet.original)
+    {
+        return {};
+    }
+    Drain drain;
+    bool drained = false;
+    for (std::size_t at = 0; at < class_slot_count; ++at)
+    {
+        drain.levels[at] = std::max(0, sheet.original->class_levels[at] - last->class_levels[at]);
+        drained = drained || drain.levels[at] > 0;
+    }
+    if (!drained)
+    {
+        return {};
+    }
+    drain.hit_points = std::max(0, sheet.hit_points - last->max_hit_points);
+    AdvancementChoice change;
+    change.rules_data = encode_drain(drain);
+    return {change};
 }
 
 unsigned OriginalModule::experience_after_advance(const CharacterSheet &before,

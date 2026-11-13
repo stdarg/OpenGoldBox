@@ -241,6 +241,13 @@ lines in all:
    - **Encounters fight whole:** every monster a script loads fights, as in
      the original; the SRD's fitting of a fight to the party's levels is the
      SRD's alone.
+   - **Level drain lasts** (`effhndlr.pas`, the level drain): the levels and
+     Hit Points a fight drains stay drained, kept in the character's level
+     history; the original's count of them goes down by one for each class a
+     later training raises (`TrainingMenu`). Restoration's giving them back is
+     still to come.
+   - **A charmed member** who ends a fight on the monsters' side is still the
+     party's.
 7. **The monsters' tactics and the original rules' difficulty levels.** The
    original rules become the default once they play from start to end.
 

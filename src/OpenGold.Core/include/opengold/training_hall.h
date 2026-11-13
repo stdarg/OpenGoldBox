@@ -10,13 +10,15 @@
 namespace opengold
 {
 // New Phlan's four training halls (docs/TRAINING-HALL.md). Each trains the SRD
-// classes of one AD&D 2nd edition class group.
+// classes of one AD&D 2nd edition class group. Curse's halls train every
+// class (their scripts' class mask is 127).
 enum class TrainingHall
 {
     fighters,
     clerics,
     magic_users,
-    thieves
+    thieves,
+    every_class
 };
 
 // The hall that trains a class, by its rules class ID ("fighter").

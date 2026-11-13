@@ -614,6 +614,53 @@ void an_npc_joins_as_its_record()
     check(made > 0, "Some records are characters who could join");
 }
 
+// A level drain outlasts the fight (effhndlr.pas, the level drain): the
+// character keeps the lower level and Hit Points, and its next training gives
+// the level back (chargen.pas, TrainingMenu).
+void a_drain_lasts_beyond_the_fight()
+{
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module(), creation);
+    const auto id = party.add_pc(made_fighter(creation));
+    party.add_coins(Coin::gold, 3000);
+    party.award_experience(2001, "test:drain-first");
+    party.train_at_hall_level(id, TrainingHall::fighters, {});
+    party.award_experience(2001, "test:drain-second");
+    party.train_at_hall_level(id, TrainingHall::fighters, {});
+    const auto &module = party.rule_module();
+    auto character = party.member(id).character;
+    const auto before = character.sheet();
+    check(before.original->class_levels[2] == 3, "The fighter trained to level 3");
+
+    // What a wight's touch leaves at the fight's end: a level and its share.
+    auto drained = *original::Combatant::decode(module.character_profile(before, {}).data);
+    --drained.class_levels[2];
+    drained.level = 2;
+    drained.max_hit_points -= before.hit_points / 3;
+    rules::VitalState after{
+        std::min(before.hit_points, drained.max_hit_points), false, drained.encode(), {}};
+    const auto changes = module.lasting_changes(before, after);
+    check(changes.size() == 1, "The drain is a lasting change");
+    check(module.lasting_changes(before, {before.hit_points, false, {}, {}}).empty(),
+          "A fight that drains nothing leaves nothing");
+    check(character.advance(module, after, changes.front()), "The character takes the drain");
+    const auto &lower = character.sheet();
+    check(lower.original->class_levels[2] == 2 && lower.level == 2 &&
+              lower.hit_points == drained.max_hit_points &&
+              module.hit_point_maximum(lower, after) == drained.max_hit_points &&
+              lower.original->drained_levels == 1 &&
+              lower.original->drained_hit_points == before.hit_points / 3 &&
+              lower.original->thac0 == 19,
+          "It is a level-2 fighter with the drained Hit Points gone");
+
+    auto training = module.default_advancement(lower);
+    RandomState random{5};
+    module.roll_advancement(lower, party.member(id).experience, training, random);
+    check(character.advance(module, after, training) &&
+              character.sheet().original->class_levels[2] == 3 &&
+              character.sheet().original->drained_levels == 0,
+          "Training gives the drained level back");
+}
 } // namespace
 
 int main()
@@ -631,6 +678,7 @@ int main()
         scripts_harm_as_the_original();
         a_potion_heals_outside_a_fight();
         an_npc_joins_as_its_record();
+        a_drain_lasts_beyond_the_fight();
         std::cout << "Original creation tests passed\n";
         return 0;
     }

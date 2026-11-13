@@ -85,6 +85,9 @@ inline constexpr EclAddress ecl_shop_service{0x6E6C};
 // A training hall's script stores the class word it trains ("FIGHTERS ") here
 // before PROGRAM 0.
 inline constexpr EclAddress ecl_training_hall_name{0x982C};
+// Curse's halls store the classes they train as a mask here instead
+// (training_class_mask in its reconstruction), 127 for every class.
+inline constexpr EclAddress ecl_training_class_mask{0x6DA8};
 
 // The loaded character's allegiance (the record's byte 0x10C): 0x81 when it
 // fights for the monsters, 0x80 when the computer runs it on the party's side.
@@ -111,5 +114,7 @@ inline constexpr EclAddress ecl_slums_orc_victory{0x4ACA};
 // bytes but the fields the original serves at each offset, the same offsets in
 // both games. The address of a Pool of Radiance cell in the game's memory.
 [[nodiscard]] EclAddress game_address(EclAddress pool_of_radiance_cell, GoldBoxGame game);
+// The Pool of Radiance cell a game's cell is (game_address undone).
+[[nodiscard]] EclAddress pool_of_radiance_address(EclAddress game_cell, GoldBoxGame game);
 } // namespace opengold::por
 #endif

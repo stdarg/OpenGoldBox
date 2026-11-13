@@ -249,6 +249,8 @@ if(OPENGOLD_BUILD_TESTS)
     target_compile_definitions(opengold_gold_box_games_tests PRIVATE
         OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_gold_box_games_tests COMMAND opengold_gold_box_games_tests)
+    # Every map of Curse walked with an original-rules party: each event runs.
+    add_test(NAME opengold_curse_walk COMMAND opengold_gold_box_games_tests --curse-walk)
     add_test(NAME opengold_game_census COMMAND "${CMAKE_COMMAND}"
         "-DCENSUS=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/game_census.cmake")

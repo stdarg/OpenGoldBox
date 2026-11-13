@@ -1191,6 +1191,17 @@ class RulesModule
         return experience;
     }
 
+    // What a fight left on a character for good beyond its vital state (the
+    // original rules' level drain), as level history entries the character
+    // takes in order (advance_character); none by default.
+    [[nodiscard]] virtual std::vector<AdvancementChoice>
+    lasting_changes(const CharacterSheet &sheet, const VitalState &after_fight) const
+    {
+        (void)sheet;
+        (void)after_fight;
+        return {};
+    }
+
     // A member's share of an award of experience; all of it by default.
     [[nodiscard]] virtual unsigned experience_share(const CharacterSheet &sheet,
                                                     unsigned award) const

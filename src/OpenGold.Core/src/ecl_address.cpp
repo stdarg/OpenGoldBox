@@ -50,4 +50,18 @@ EclAddress game_address(EclAddress cell, GoldBoxGame game)
     return cell;
 }
 
+EclAddress pool_of_radiance_address(EclAddress cell, GoldBoxGame game)
+{
+    const auto starts = zone_starts(game);
+    for (std::size_t zone = 0; zone < pool_of_radiance_zones.size(); ++zone)
+    {
+        const auto [first, last] = pool_of_radiance_zones[zone];
+        if (cell.location >= starts[zone] && cell.location <= starts[zone] + (last - first))
+        {
+            return EclAddress(static_cast<std::uint16_t>(first + (cell.location - starts[zone])));
+        }
+    }
+    return cell;
+}
+
 } // namespace opengold::por
