@@ -50,7 +50,7 @@ struct Spell
     int ai_radius{};
 };
 
-// The spell of this number (1 to 56), or nothing.
+// The spell or item power of this number (1 to 67), or nothing.
 [[nodiscard]] const Spell *spell(int number) noexcept;
 
 } // namespace opengold::original

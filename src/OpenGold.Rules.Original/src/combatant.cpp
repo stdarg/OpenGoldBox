@@ -11,7 +11,7 @@ namespace opengold::original
 namespace
 {
 
-constexpr std::string_view profile_format = "combatant10";
+constexpr std::string_view profile_format = "combatant11";
 
 std::vector<int> numbers_of(const Combatant &c)
 {
@@ -50,6 +50,14 @@ std::vector<int> numbers_of(const Combatant &c)
     }
     numbers.push_back(static_cast<int>(c.spells.size()));
     numbers.insert(numbers.end(), c.spells.begin(), c.spells.end());
+    numbers.push_back(static_cast<int>(c.items.size()));
+    for (const auto &item : c.items)
+    {
+        numbers.insert(numbers.end(),
+                       {item.ordinal, item.readied ? 1 : 0, item.scroll ? 1 : 0, item.slot,
+                        item.identified ? 1 : 0, item.spells[0], item.spells[1], item.spells[2],
+                        item.charges, item.quantity});
+    }
     return numbers;
 }
 
@@ -90,16 +98,19 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
         rest.remove_prefix(static_cast<std::size_t>(end - rest.data()));
     }
     // The fixed numbers ending with the effects' count, four for each effect,
-    // then the spells' count and a number for each spell.
-    const auto fixed = numbers_of(Combatant{}).size() - 1;
-    if (numbers.size() < fixed + 1 || numbers[fixed - 1] < 0)
+    // the spells' count and a number for each spell, then the items' count and
+    // ten for each item.
+    const auto fixed = numbers_of(Combatant{}).size() - 2;
+    std::size_t at = fixed;
+    for (const std::size_t width : {std::size_t{4}, std::size_t{1}, std::size_t{10}})
     {
-        return std::nullopt;
+        if (numbers.size() < at || numbers[at - 1] < 0)
+        {
+            return std::nullopt;
+        }
+        at += static_cast<std::size_t>(numbers[at - 1]) * width + 1;
     }
-    const auto effect_numbers = static_cast<std::size_t>(numbers[fixed - 1]) * 4;
-    if (numbers.size() < fixed + effect_numbers + 1 || numbers[fixed + effect_numbers] < 0 ||
-        numbers.size() !=
-            fixed + effect_numbers + 1 + static_cast<std::size_t>(numbers[fixed + effect_numbers]))
+    if (numbers.size() != at - 1)
     {
         return std::nullopt;
     }
@@ -187,6 +198,18 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     for (int n = 0; n < spell_count; ++n)
     {
         c.spells.push_back(*next++);
+    }
+    const auto item_count = *next++;
+    for (int n = 0; n < item_count; ++n, next += 10)
+    {
+        c.items.push_back({next[0],
+                           next[1] != 0,
+                           next[2] != 0,
+                           next[3],
+                           next[4] != 0,
+                           {next[5], next[6], next[7]},
+                           next[8],
+                           next[9]});
     }
     if (c.max_hit_points < 1 || c.movement < 0 ||
         std::any_of(
@@ -383,6 +406,50 @@ int kin_of(const por::CharacterRecord &record)
     return kinds;
 }
 
+// The items a creature can use: a scroll (an item whose type sits in slots
+// 11 to 13) with a spell, or another item with a spell or power, numbers
+// above 56 being item powers 23 down (viewchar.pas, UseItem; magic.pas,
+// ItemReadable).
+std::vector<UsableItem> usable_items(std::span<const CarriedItem> carried)
+{
+    std::vector<UsableItem> items;
+    for (std::size_t n = 0; n < carried.size(); ++n)
+    {
+        const auto &c = carried[n];
+        const auto &bytes = c.item.effect_codes;
+        UsableItem usable;
+        usable.ordinal = static_cast<int>(n);
+        usable.readied = c.item.readied();
+        usable.slot = c.type.worn_location;
+        usable.identified = c.item.hidden_name_words == 0;
+        usable.quantity = c.item.stack_size;
+        if (usable.slot > 10 && usable.slot < 14)
+        {
+            usable.scroll = true;
+            for (std::size_t s = 0; s < bytes.size(); ++s)
+            {
+                const int number = bytes[s] & 0x7F;
+                usable.spells[s] = number >= 1 && number <= 56 ? number : 0;
+            }
+            if (usable.spells == std::array<int, 3>{})
+            {
+                continue;
+            }
+        }
+        else if (bytes[1] > 0 && bytes[2] < 0x80)
+        {
+            usable.spells[0] = bytes[1] > 56 ? bytes[1] - 23 : bytes[1];
+            usable.charges = bytes[0];
+        }
+        else
+        {
+            continue;
+        }
+        items.push_back(usable);
+    }
+    return items;
+}
+
 } // namespace
 
 Combatant combatant_from_record(const por::CharacterRecord &record,
@@ -520,6 +587,7 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     c.alignment = record.alignment;
     c.creature_type = record.type;
     c.kin = kin_of(record);
+    c.items = usable_items(carried);
     // Memorized spells; those still being learned (bit 0x80) are not ready.
     for (const auto spell : record.memorized_spells)
     {

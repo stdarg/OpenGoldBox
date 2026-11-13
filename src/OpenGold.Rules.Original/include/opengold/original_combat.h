@@ -83,6 +83,27 @@ struct Effect
     bool operator==(const Effect &) const = default;
 };
 
+// An item a creature can use in a fight (viewchar.pas, UseItem): a scroll
+// with up to three spells, or another item with a spell or power (spell
+// numbers 1 to 67) and its charges.
+struct UsableItem
+{
+    // Its place among the creature's items, for the game to keep what is spent.
+    int ordinal{};
+    bool readied{};
+    // A scroll, and its kind by its equip slot (11 to 13; 12 is a cleric's),
+    // and whether its spells are known.
+    bool scroll{};
+    int slot{};
+    bool identified{};
+    // A scroll's spells, 0 for one read; another item's spell or power first.
+    std::array<int, 3> spells{};
+    // Charges and the stack: 0 charges never run out.
+    int charges{}, quantity{};
+
+    bool operator==(const UsableItem &) const = default;
+};
+
 // A creature's numbers in a fight under the original rules.
 struct Combatant
 {
@@ -133,6 +154,8 @@ struct Combatant
     int kin{};
     // The spells it has memorized, by number (original_spells.h), a copy each.
     std::vector<int> spells;
+    // The items it can use in a fight.
+    std::vector<UsableItem> items;
     // Its race by the original's numbers: 0 a monster, then dwarf, elf,
     // gnome, half-elf, halfling, half-orc and human (1 to 7).
     int race{};

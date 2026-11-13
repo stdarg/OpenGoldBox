@@ -2322,6 +2322,96 @@ void snakes_are_charmed()
     check(view_of(session.snapshot(), "Snake").status == "helpless", "The snake is charmed");
 }
 
+// The items a creature can use, from its record's items (viewchar.pas, UseItem):
+// a wand's power (item power 88 is 65, the Wand of Magic Missiles) with its
+// charges, and a scroll's spells; an item without either is not one.
+void usable_items_come_from_the_gear()
+{
+    por::ItemTemplate wand_type;
+    wand_type.worn_location = 14;
+    por::ItemRecord wand;
+    wand.readied_raw = 1;
+    wand.effect_codes = {30, 88, 0};
+    por::ItemTemplate scroll_type;
+    scroll_type.worn_location = 11;
+    por::ItemRecord scroll;
+    scroll.effect_codes = {15, 21, 0};
+    por::ItemRecord plain;
+    const std::vector<original::CarriedItem> carried{
+        {wand, wand_type}, {plain, wand_type}, {scroll, scroll_type}};
+    const auto mage = original::combatant_from_record(kobold_record(), carried);
+    check(mage.items.size() == 2 && mage.items[0].spells[0] == 65 && mage.items[0].charges == 30 &&
+              mage.items[0].readied && mage.items[1].scroll && mage.items[1].ordinal == 2 &&
+              mage.items[1].spells == std::array<int, 3>{15, 21, 0},
+          "A wand of 30 charges and a scroll of Magic Missile and Sleep");
+    check(original::Combatant::decode(mage.encode()) == mage, "Usable items survive the encoding");
+}
+
+std::optional<rules::Command> use_command(const rules::CombatSession &session, int ordinal,
+                                          int spell)
+{
+    for (const auto &c : session.legal_commands())
+    {
+        if (c.verb == "use" && c.item == static_cast<unsigned>(ordinal * 256 + spell))
+        {
+            return c;
+        }
+    }
+    return std::nullopt;
+}
+
+// A wand's power goes off at once, at level 12, and spends a charge; Shield
+// does not stop a wand's missiles; giving up the aim keeps the charge.
+void wands_and_potions()
+{
+    auto mage = creature(30);
+    mage.items = {{0, true, false, 14, true, {65, 0, 0}, 30, 0},
+                  {1, true, false, 14, true, {62, 0, 0}, 1, 0}};
+    mage.hit_points = 10;
+    auto shielded = creature(100, 0);
+    shielded.effects = {{17, 10, 1, false}};
+    auto fight = arrange({{"Mage", rules::Side::party, {0, 3}, mage},
+                          {"Target", rules::Side::opposition, {5, 3}, shielded}},
+                         157);
+    auto &session = *fight.session;
+    until_turn_of(session, "Mage");
+    session.submit(*use_command(session, 0, 65));
+    session.submit(*aim_at(session, "Target"));
+    const int lost = 100 - view_of(session.snapshot(), "Target").hit_points;
+    check(lost >= 4 && lost <= 10, "The wand's missiles strike for 2d4+2 through Shield");
+    check(left_by_fight(session, "Mage").items[0].charges == 29, "A charge is spent");
+
+    until_turn_of(session, "Mage");
+    session.submit(*use_command(session, 0, 65));
+    session.submit(order(session, "abort"));
+    check(left_by_fight(session, "Mage").items[0].charges == 29, "An aim given up spends nothing");
+
+    until_turn_of(session, "Mage");
+    session.submit(*use_command(session, 1, 62));
+    const auto after = left_by_fight(session, "Mage");
+    check(view_of(session.snapshot(), "Mage").hit_points > 10 && after.items.size() == 1,
+          "The potion heals and is gone");
+}
+
+// A scroll is read once its spells are known, each spell once (magic.pas).
+void scrolls_are_read()
+{
+    auto reader = creature(30);
+    reader.items = {{0, true, true, 11, false, {15, 0, 0}, 0, 0},
+                    {1, true, true, 11, true, {15, 15, 0}, 0, 0}};
+    auto fight = arrange({{"Reader", rules::Side::party, {0, 3}, reader},
+                          {"Target", rules::Side::opposition, {5, 3}, creature(100, 0)}},
+                         163);
+    auto &session = *fight.session;
+    until_turn_of(session, "Reader");
+    check(!use_command(session, 0, 15) && use_command(session, 1, 15).has_value(),
+          "Only the known scroll is offered");
+    session.submit(*use_command(session, 1, 15));
+    session.submit(*aim_at(session, "Target"));
+    check(left_by_fight(session, "Reader").items[1].spells == std::array<int, 3>{0, 15, 0},
+          "One of its two Magic Missiles is read");
+}
+
 } // namespace
 
 int main()
@@ -2381,6 +2471,9 @@ int main()
         the_dead_rise();
         slow_poison_raises();
         snakes_are_charmed();
+        usable_items_come_from_the_gear();
+        wands_and_potions();
+        scrolls_are_read();
         real_records_fight();
         std::cout << "Original-rules combat passed.\n";
     }

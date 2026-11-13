@@ -31,7 +31,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 12";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 13";
 
 enum class Condition : unsigned
 {
@@ -72,7 +72,8 @@ constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_r
               enfeebled = 29, blind = 33, bestow_curse = 36, hasted = 39, missile_protection = 41,
               slowed = 42, protection_from_evil_aura = 45, protection_from_good_aura = 46,
               prayer = 49, coughing = 30, nausea = 31, stinking_cloud = 40, animated = 32,
-              snake_charm = 51, slow_poison_tick = 15, slow_poison = 22, revival = 78;
+              snake_charm = 51, slow_poison_tick = 15, slow_poison = 22, revival = 78,
+              read_magic = 16, dust = 71;
 // Displacement keeps whether it has turned an attack aside in this bit of its strength.
 constexpr int displaced = 0x10;
 } // namespace effect
@@ -128,6 +129,10 @@ struct Fighter
     std::vector<EntityId> picked;
     // Its side before a charm took it over.
     Side own_side{Side::party};
+    // Whether it may still use an item this round (silence and coughing stop
+    // it), and the item it is using now, by its ordinal, -1 for none.
+    bool item_use_allowed{true};
+    int using_item{-1};
     // What it was before Animate Dead raised it, which it is again as it collapses.
     std::optional<Combatant> before_animation;
 
@@ -444,6 +449,12 @@ int movement_of(const Fighter &f)
 // item's own power (magic.pas, GetCasterLevel).
 int caster_level(const Fighter &caster, const Spell &spell)
 {
+    // From an item a spell is cast at level 6, an item's own power at 12
+    // (magic.pas, GetCasterLevel).
+    if (caster.using_item >= 0)
+    {
+        return spell.caster_class == SpellClass::item ? 12 : 6;
+    }
     switch (spell.caster_class)
     {
     case SpellClass::cleric:
@@ -477,9 +488,10 @@ int doubled_distance(Cell a, Cell b)
 // The spells built so far; the rest are not offered yet.
 bool spell_built(int number)
 {
-    constexpr std::array built{26, 27, 36, 41, 46, 1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
-                               15, 16, 17, 19, 20, 21, 23, 24, 25, 29, 30, 32, 33, 37, 38, 40,
-                               42, 34, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55};
+    constexpr std::array built{26, 27, 36, 41, 46, 57, 58, 60, 61, 62, 63, 64, 65, 1,
+                               2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 15, 16, 17, 19,
+                               20, 21, 23, 24, 25, 29, 30, 32, 33, 37, 38, 40, 42, 34,
+                               43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55};
     return std::find(built.begin(), built.end(), number) != built.end();
 }
 
@@ -634,6 +646,7 @@ class Session final : public rules::CombatSession
     void start_aiming(Fighter &caster, int spell_number);
     void resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell aim);
     void lose_spell(Fighter &caster);
+    void spend_item(Fighter &user, int ordinal, int number);
     [[nodiscard]] std::vector<rules::Command> aiming_commands(const Fighter &caster) const;
     [[nodiscard]] bool reachable_by_spell(const Fighter &caster, const Fighter &target) const;
     [[nodiscard]] std::vector<EntityId> within(Cell aim, int radius) const;
@@ -728,6 +741,8 @@ void Session::begin_round()
         }
         f.half_moves = f.has(effect::immobile) ? 0 : paced(f, 2 * f.numbers.movement);
         f.cast_allowed = true;
+        f.item_use_allowed = true;
+        f.using_item = -1;
         f.pending_spell = f.aiming = f.picks_left = 0;
         f.picked.clear();
         f.attack_phase = 1;
@@ -807,12 +822,14 @@ void Session::next_actor()
             if (silenced(*best) && best->cast_allowed)
             {
                 best->cast_allowed = false;
+                best->item_use_allowed = false;
                 log({"{name} is silenced.", {{"name", best->name}}});
             }
             // Coughing stops casting too (effhndlr.pas, EffCoughing).
             if (best->has(effect::coughing) && best->cast_allowed)
             {
                 best->cast_allowed = false;
+                best->item_use_allowed = false;
                 log({"{name} is coughing.", {{"name", best->name}}});
             }
             // A spell begun earlier in the round goes off now (combat.pas,
@@ -999,7 +1016,7 @@ int attack_modifier(const Fighter &attacker, const Fighter &defender)
     // Blindness and Bestow Curse take 4 from the attacker's rolls (effhndlr.pas, 33, 36).
     modifier -= attacker.has(effect::blind) ? 4 : 0;
     modifier -= attacker.has(effect::bestow_curse) ? 4 : 0;
-    if (defender.has(effect::invisible))
+    if (defender.has(effect::invisible) || defender.has(effect::dust))
     {
         modifier -= 4;
     }
@@ -1681,10 +1698,18 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     {
         caster.remove(effect::invisible);
     }
-    auto &spells = caster.numbers.spells;
-    if (const auto copy = std::find(spells.begin(), spells.end(), number); copy != spells.end())
+    const int item = caster.using_item;
+    if (item >= 0)
     {
-        spells.erase(copy);
+        spend_item(caster, item, number);
+    }
+    else
+    {
+        auto &spells = caster.numbers.spells;
+        if (const auto copy = std::find(spells.begin(), spells.end(), number); copy != spells.end())
+        {
+            spells.erase(copy);
+        }
     }
     log({"{name} casts {spell}.",
          {{"name", caster.name}, {"spell", std::string(known.name), true}}});
@@ -1868,6 +1893,71 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     case 36:
         animate_dead(caster, level);
         break;
+    case 57:
+        // A Potion of Speed cures Slow, or hastes for 5d4 rounds.
+        if (caster.has(effect::slowed))
+        {
+            caster.remove(effect::slowed);
+            log({"{name} is cured.", {{"name", caster.name}}});
+        }
+        else
+        {
+            add_with_message(caster, {effect::hasted, roll_dice(5, 4), 12, false}, false, false, 0,
+                             level, &known);
+        }
+        break;
+    case 58:
+        // Keoghtum's Ointment: poison out (the dead stay dead), else disease,
+        // else 1d4+8 healed.
+        for (const auto id : targets)
+        {
+            auto &f = *find(id);
+            if (f.has(effect::poisoned))
+            {
+                f.remove(effect::poisoned);
+                f.remove(effect::slow_poison);
+            }
+            else if (f.has(effect::rot) || f.has(34) || f.has(43))
+            {
+                for (const int code : {34, 43, 44, 31, effect::rot, effect::mummy_rot})
+                {
+                    f.remove(code);
+                }
+                log({"{name} is cured.", {{"name", f.name}}});
+            }
+            else if (f.able())
+            {
+                f.hit_points = std::min(f.hit_points + roll(4) + 8, f.numbers.max_hit_points);
+                log({"{name} is healed.", {{"name", f.name}}});
+            }
+        }
+        break;
+    case 60:
+        // A Javelin of Lightning: 1d6+20 at its mark, then a bolt of 3 squares
+        // of 20 beyond it (magic.pas, SpellJavelinOfLightning).
+        lightning_at(aim, roll(6) + 20, level);
+        lightning_path(caster, aim, 3, 20, level, false);
+        break;
+    case 61:
+        cast_generic(caster, number, level, targets, 0, 0, 0, roll_dice(5, 4));
+        break;
+    case 62:
+        caster.hit_points =
+            std::min(caster.hit_points + roll_dice(2, 4) + 2, caster.numbers.max_hit_points);
+        log({"{name} is healed.", {{"name", caster.name}}});
+        break;
+    case 63:
+        // Dust of Disappearance for 2d10 x 10 rounds in a fight.
+        cast_generic(caster, number, level, targets, 0, 0, 0, roll_dice(2, 10) * 10);
+        break;
+    case 64:
+        // A Necklace of Missiles: a fireball of 3, 5 or 7 dice.
+        cast_generic(caster, number, level, targets, roll_dice(roll(3) * 2 + 1, 6), 9);
+        break;
+    case 65:
+        // A Wand of Magic Missiles: 2d4+2, which Shield does not stop.
+        cast_generic(caster, number, level, targets, roll_dice(2, 4) + 2, 8);
+        break;
     case 41:
     case 46:
         // Dispel Magic on everyone within a square of the aim. The original
@@ -1921,7 +2011,51 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         cast_generic(caster, number, level, targets, 0, 0);
         break;
     }
+    caster.using_item = -1;
     end_actions(caster);
+}
+
+// What using an item spends (viewchar.pas, UseItem): a scroll the spell read,
+// gone with its last; a stack one of it; another item a charge, gone at 0.
+// An item of no charges never runs out.
+void Session::spend_item(Fighter &user, int ordinal, int number)
+{
+    auto &items = user.numbers.items;
+    const auto item = std::find_if(items.begin(), items.end(),
+                                   [ordinal](const UsableItem &i)
+                                   {
+                                       return i.ordinal == ordinal;
+                                   });
+    if (item == items.end())
+    {
+        return;
+    }
+    if (item->scroll)
+    {
+        if (const auto read = std::find(item->spells.begin(), item->spells.end(), number);
+            read != item->spells.end())
+        {
+            *read = 0;
+        }
+        if (item->spells == std::array<int, 3>{})
+        {
+            items.erase(item);
+        }
+        return;
+    }
+    if (item->charges <= 0)
+    {
+        return;
+    }
+    if (item->quantity > 1)
+    {
+        --item->quantity;
+        return;
+    }
+    if (--item->charges == 0)
+    {
+        items.erase(item);
+    }
 }
 
 // The original's resolver (magic.pas, ResolveSpell): each target saves if the
@@ -2950,6 +3084,12 @@ bool Session::can_target(const Fighter &attacker, const Fighter &target) const
     {
         return false;
     }
+    // Dust of Disappearance hides it even from one that sees the invisible
+    // (effhndlr.pas, EffDustDisappear).
+    if (target.has(effect::dust))
+    {
+        return false;
+    }
     return !(attacker.has(effect::gaze_block) && target.numbers.wards_gaze);
 }
 
@@ -3481,6 +3621,42 @@ std::vector<rules::Command> Session::legal_commands() const
             }
         }
     }
+    // Use, for a readied item with a spell or power for a fight; a scroll's
+    // spells once it is known, or by Read Magic, or a cleric's scroll for a
+    // cleric (viewchar.pas, UseItemMenu; magic.pas, the scroll).
+    if (actor->item_use_allowed && !silenced(*actor))
+    {
+        const bool cleric =
+            actor->numbers.class_levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0;
+        for (const auto &item : actor->numbers.items)
+        {
+            const bool readable = !item.scroll || item.identified ||
+                                  actor->has(effect::read_magic) || (cleric && item.slot == 12);
+            if (!item.readied || !readable)
+            {
+                continue;
+            }
+            for (const int number : item.spells)
+            {
+                const auto *known = spell(number);
+                if (!known || known->when == 0 || !spell_built(number))
+                {
+                    continue;
+                }
+                rules::Command use;
+                use.revision = revision_;
+                use.actor = actor->id;
+                use.verb = "use";
+                use.item = static_cast<unsigned>(item.ordinal * 256 + number);
+                use.label = std::string(known->name);
+                commands.push_back(use);
+                if (!item.scroll)
+                {
+                    break;
+                }
+            }
+        }
+    }
     // Guard needs a weapon that strikes next to it (combat.pas, DoneMenu).
     if (!actor->numbers.missile || actor->numbers.missile->throwable)
     {
@@ -3593,6 +3769,13 @@ bool Session::submit(const rules::Command &command)
     {
         begin_cast(actor, static_cast<int>(command.item));
     }
+    else if (command.verb == "use")
+    {
+        // An item's spell goes off at once (viewchar.pas, UseItem).
+        actor.using_item = static_cast<int>(command.item / 256);
+        log({"{name} uses an item.", {{"name", actor.name}}});
+        start_aiming(actor, static_cast<int>(command.item % 256));
+    }
     else if (command.verb == "aim")
     {
         const auto &known = *spell(actor.aiming);
@@ -3617,7 +3800,18 @@ bool Session::submit(const rules::Command &command)
     else if (command.verb == "abort")
     {
         log({"{name} aborts the spell.", {{"name", actor.name}}});
-        lose_spell(actor);
+        // An item's aim given up ends the turn but spends nothing; the
+        // original spent the charge (an obvious bug, fixed).
+        if (actor.using_item >= 0)
+        {
+            actor.aiming = actor.picks_left = 0;
+            actor.picked.clear();
+            actor.using_item = -1;
+        }
+        else
+        {
+            lose_spell(actor);
+        }
         end_actions(actor);
     }
     else if (command.verb == "flee")
@@ -3699,7 +3893,7 @@ std::string Session::save() const
             f.attacks_left[0], f.attacks_left[1], f.surprised, f.attack_phase, f.sweep_budget,
             f.direction, f.flank_count, f.flank_spread, f.guarding, f.fleeing, f.turned,
             f.tried_turning, f.cast_allowed, f.pending_spell, f.aiming, f.picks_left,
-            static_cast<unsigned>(f.own_side),
+            static_cast<unsigned>(f.own_side), f.item_use_allowed, f.using_item,
             f.before_animation ? f.before_animation->encode() : std::string(), f.picked.size());
         for (const auto id : f.picked)
         {
@@ -3820,6 +4014,8 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         f.aiming = in.as<int>();
         f.picks_left = in.as<int>();
         f.own_side = in.as<Side>();
+        f.item_use_allowed = in.as<bool>();
+        f.using_item = in.as<int>();
         if (const auto before = in.text(); !before.empty())
         {
             f.before_animation = Combatant::decode(before);

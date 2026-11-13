@@ -7,8 +7,9 @@ namespace opengold::original
 namespace
 {
 
-// The original's spell table, numbers 1 to 56 (gdconsts.pas, spellTable).
-constexpr std::array<Spell, 56> spells{{
+// The original's spell table (gdconsts.pas, spellTable): spells 1 to 56,
+// then the powers of items, 57 to 67, cast at level 12.
+constexpr std::array<Spell, 67> spells{{
     {"Bless", SpellClass::cleric, 1, 6, 0, 6, 0, 10, 4, 0, 4, 1, 2, 10, 2, false, 0},
     {"Curse", SpellClass::cleric, 1, 6, 0, 6, 0, 10, 0, 0, 4, 2, 1, 10, 3, true, 0},
     {"Cure Light Wounds", SpellClass::cleric, 1, 0, 0, 0, 0, 4, 2, 0, 4, 0, 2, 5, 1, false, 0},
@@ -73,6 +74,18 @@ constexpr std::array<Spell, 56> spells{{
      3, 3, false, 0},
     {"Slow", SpellClass::magic_user, 3, 9, 1, 3, 1, 10, 0, 0, 4, 42, 1, 3, 5, true, 0},
     {"Restoration", SpellClass::cleric, 7, 0, 0, 0, 0, 4, 2, 0, 4, 0, 2, 6, 0, false, 0},
+    {"Potion of Speed", SpellClass::item, 6, 0, 0, 0, 0, 0, 1, 0, 4, 39, 2, 0, 3, false, 0},
+    {"Keoghtum's Ointment", SpellClass::item, 6, 0, 0, 0, 0, 4, 2, 0, 4, 0, 2, 0, 1, false, 0},
+    {"Potion of Giant Strength", SpellClass::item, 6, 0, 0, 0, 0, 0, 1, 0, 4, 38, 2, 0, 1, false,
+     0},
+    {"Javelin of Lightning", SpellClass::item, 6, 4, 4, 0, 0, 4, 0, 2, 4, 0, 1, 0, 7, true, 0},
+    {"Wand of Paralyzation", SpellClass::item, 6, 6, 0, 0, 0, 4, 0, 1, 0, 52, 1, 0, 7, true, 0},
+    {"Potion of Healing", SpellClass::item, 6, 0, 0, 0, 0, 0, 1, 0, 4, 39, 2, 0, 1, false, 0},
+    {"Dust of Disappearance", SpellClass::item, 6, 0, 0, 0, 0, 7, 4, 0, 4, 71, 2, 0, 2, false, 0},
+    {"Necklace of Missiles", SpellClass::item, 6, 7, 0, 0, 0, 11, 0, 2, 4, 0, 1, 0, 7, true, 3},
+    {"Wand of Magic Missiles", SpellClass::item, 6, 12, 0, 0, 0, 4, 0, 0, 4, 0, 1, 0, 6, true, 0},
+    {"Unused power", SpellClass::item, 6, 0, 0, 0, 0, 0, 1, 0, 4, 0, 2, 0, 0, false, 0},
+    {"Manual of Bodily Health", SpellClass::item, 6, 0, 0, 0, 0, 0, 1, 0, 4, 4, 0, 0, 0, false, 0},
 }};
 
 } // namespace

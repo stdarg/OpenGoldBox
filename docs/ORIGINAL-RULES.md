@@ -354,7 +354,19 @@ gear.
      of the fight) or destroyed, and the first it fails ends the attempt.
      Destruction on a roll goes on to at least six; destruction without one
      (a 0 in the table) does not, as in the original.
-   - 8d. Spells from items: wands, scrolls and potions.
+   - 8d. *Done 2026-11-13:* spells from items. A creature's usable items
+     (`UsableItem`): a scroll (an item of equip slots 11 to 13) with up to
+     three spells, or another item with a spell or one of the original's
+     item powers (57 to 67) and its charges. A readied one is used at once,
+     a real spell at level 6 and a power at 12, and its turn ends; a scroll's
+     spells are offered once it is known (or by Read Magic, or a cleric's
+     scroll to a cleric) and each is read once; a stack loses one of it,
+     another item a charge, gone at 0, and an item of no charges never runs
+     out. The powers: the Potion of Speed, Keoghtum's Ointment, the Javelin
+     of Lightning, the Wands of Paralyzation and of Magic Missiles (which
+     Shield does not stop), the Potion of Healing, Dust of Disappearance
+     (never singled out, 4 harder to hit) and the Necklace of Missiles; the
+     Potion of Giant Strength comes with Strength (plan step 5).
 9. The original's AI. It readies its best weapon and armor at each of its
    turns (`EquipWeaponAndArmor`): many monsters carry their weapons unreadied
    (Pool of Radiance's goblin guards their short swords). Its monsters' own
@@ -418,6 +430,7 @@ tuned with the AI lab once the original rules play.
 | A dwarf's or gnome's defense against giants judges the defender's own target instead of the attacker, and reads eight names from its list of five (`effhndlr.pas`, `EffDwarfGiantDefense`) | The attacker, among the five giants |
 | Mirror Image takes only a spell aimed at its caster, never a blow, where the manual says the images take attacks (`effhndlr.pas`, `EffMirrorImage`) | The images take blows too |
 | Dispel Magic works on the first creature in its area, once for each creature there (`magic.pas`, the dispel) | Each creature in the area once |
+| Giving up an item's aim in a fight still spends its charge or scroll spell (`viewchar.pas`, `UseItem`) | The turn ends, nothing is spent |
 | A level drain divides by the victim's class levels, so a creature without any (a monster) divides by zero (`effhndlr.pas`, the level drain) | It loses its highest level's share |
 | A level drain keeps the drained class's level as the victim's highest level, so a fighter 5 / thief 6 drained in fighter counts as level 4 (`effhndlr.pas`, the level drain) | The highest of its classes |
 | Each hit of a holding bite's own bite starts another hold, stacking holds on the biter and immobility on the victim, which can outlast the fight (`effhndlr.pas`, `EffBiteHold`) | One hold at a time |
