@@ -764,7 +764,9 @@ void RolfTourSession::reset_run()
     wand_traps_.clear();
     transition_ = message_only_ = false;
     shop_request_ = 0;
-    if (town_ && !town_->sprite_archive.empty())
+    // Rolf's tour of New Phlan shows his sprite; Curse's root sprites are the
+    // wilderness's encounters.
+    if (town_ && !town_->sprite_archive.empty() && game() == GoldBoxGame::pool_of_radiance)
     {
         for (unsigned n = 0; n < 3; ++n)
         {

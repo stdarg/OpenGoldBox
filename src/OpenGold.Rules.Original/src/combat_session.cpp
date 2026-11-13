@@ -721,9 +721,10 @@ class Session final : public rules::CombatSession
     bool check_morale(Fighter &f);
     void attempt_flee(Fighter &f);
     // The original's AI (combatai.pas).
-    void ai_turn(Fighter &f);
+    // A party member on Quick casts only with Quick magic on (`magic`).
+    void ai_turn(Fighter &f, bool magic);
     bool ai_use_item(Fighter &f);
-    bool ai_cast(Fighter &f);
+    bool ai_cast(Fighter &f, bool magic);
     [[nodiscard]] bool ai_decides(const Fighter &f, int number, int least_priority) const;
     bool ai_aim(Fighter &f);
     [[nodiscard]] Fighter *cure_search(const Fighter &f);
@@ -3096,7 +3097,7 @@ void Session::revive(Fighter &f)
 // pattern, then an item, a spell begun earlier, turning undead, a spell, and
 // else the fight: lock onto an enemy and move and attack until the turn is
 // done. Morale is checked as every turn starts (next_actor).
-void Session::ai_turn(Fighter &f)
+void Session::ai_turn(Fighter &f, bool magic)
 {
     // The pattern: kept 3 times in 4 while it is 1 to 4; rerolled 1 to 4,
     // or 5 to 6 one time in 8 (CombatAiControl).
@@ -3131,7 +3132,7 @@ void Session::ai_turn(Fighter &f)
         turn_undead(f);
         return;
     }
-    if (ai_cast(f))
+    if (ai_cast(f, magic))
     {
         return;
     }
@@ -3683,8 +3684,10 @@ bool Session::can_step(const Fighter &f, int direction, bool &edge) const
             return false;
         }
     }
-    const auto cost = grid_for(f).step_cost(f.cell, moved.cell);
-    if (!cost || *cost > f.half_moves)
+    // Each step is a stop: it may not end on another creature's square.
+    const auto grid = grid_for(f);
+    const auto cost = grid.step_cost(f.cell, moved.cell);
+    if (!cost || *cost > f.half_moves || !grid.can_stop_at(moved.cell))
     {
         return false;
     }
@@ -3831,7 +3834,7 @@ bool Session::ai_use_item(Fighter &f)
 // An AI casts (combatai.pas, SelectSpellToCast): one whose morale counts (a
 // monster or NPC); 1d7 passes, three random picks each among its memorized
 // spells, the first it decides on cast as anyone casts it.
-bool Session::ai_cast(Fighter &f)
+bool Session::ai_cast(Fighter &f, bool magic)
 {
     const int passes = roll(7);
     const bool enemy_left = std::any_of(fighters_.begin(), fighters_.end(),
@@ -3840,8 +3843,10 @@ bool Session::ai_cast(Fighter &f)
                                             return o.side != f.side && o.able();
                                         });
     const auto &spells = f.numbers.spells;
-    if (!f.cast_allowed || silenced(f) || !enemy_left || f.numbers.morale < non_player ||
-        spells.empty())
+    // A party member casts only with the party's Quick magic on (Curse's
+    // reference card: ALT M); monsters and NPCs always may.
+    if (!f.cast_allowed || silenced(f) || !enemy_left ||
+        (f.numbers.morale < non_player && !magic) || spells.empty())
     {
         return false;
     }
@@ -5216,8 +5221,13 @@ std::vector<rules::Command> Session::legal_commands() const
         offer("guard");
     }
     offer("delay");
-    // Quick: the original's AI plays its turn (combat.pas, TurnOnAuto).
+    // Quick: the original's AI plays its turn (combat.pas, TurnOnAuto); a party
+    // member's also with its spells, as with the party's Quick magic on.
     offer("quick");
+    if (actor->numbers.morale < non_player)
+    {
+        offer("quick_magic");
+    }
     // Turn, once a fight for one with cleric levels (combat.pas, CombatMenu).
     if (actor->numbers.class_levels[static_cast<std::size_t>(ClassSlot::cleric)] > 0 &&
         !actor->tried_turning)
@@ -5373,9 +5383,9 @@ bool Session::submit(const rules::Command &command)
     {
         attempt_flee(actor);
     }
-    else if (command.verb == "quick")
+    else if (command.verb == "quick" || command.verb == "quick_magic")
     {
-        ai_turn(actor);
+        ai_turn(actor, command.verb == "quick_magic");
     }
     else if (command.verb == "guard")
     {

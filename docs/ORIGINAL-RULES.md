@@ -614,7 +614,8 @@ gear.
 9. The original's AI. *Done 2026-11-13:* the command `quick` plays a
    creature's turn as the original's AI does (`CombatAiControl`): its
    approach pattern, then an item, a spell begun earlier, turning undead, a
-   spell (only for one whose morale counts: monsters and NPCs), and else the
+   spell (for monsters and NPCs, and for a party member only with the
+   party's Quick magic on: `quick_magic`, Curse's ALT M), and else the
    fight: a lock on an enemy kept while it may be singled out, else a random
    enemy in sight, else one through walls; up to 20 passes of a step or an
    attack on an enemy in its weapon's reach; steps by the original's six
@@ -632,7 +633,11 @@ gear.
    bow for a melee weapon when an enemy is next to it (it guards meanwhile;
    many monsters carry their weapons unreadied, Pool of Radiance's goblin
    guards their short swords), and a fleeing creature runs along the party's
-   facing (away from its enemies meanwhile).
+   facing (away from its enemies meanwhile). Each step is a stop, so it never
+   ends on another creature's square. The game's computer turns under these
+   rules (monsters, allies and party members on Quick) are this AI's: the
+   shared command chooser takes `quick` (or `quick_magic`) whenever the rules
+   offer it.
 
 ## Encumbrance
 

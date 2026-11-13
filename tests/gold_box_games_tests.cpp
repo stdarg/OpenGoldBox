@@ -14,6 +14,7 @@
 #include "opengold/coin_purse.h"
 #include "opengold/original_combat.h"
 #include "opengold/original.h"
+#include "opengold/original_spells.h"
 #include "opengold/character_creator.h"
 #include "opengold/combat_demo.h"
 #include "tour_access.h"
@@ -404,10 +405,13 @@ struct RouteBeat
     // Rest until every member is whole first, as a player would before a
     // known fight.
     bool rest_first = false;
+    // Walk into the map, its script taking over, as its way in from the last
+    // map does, instead of looking at a square of the map the party is on.
+    bool enter_map = false;
 };
 
 // Curse's story, beat by beat, as its cluebook tells it (the route test, plan
-// step 7): first Tilverton, until the king's carriage comes.
+// step 7): Tilverton, until the party is exiled to the wilderness.
 const std::vector<RouteBeat> &curse_route()
 {
     using D = opengold::por::MapDirection;
@@ -418,7 +422,13 @@ const std::vector<RouteBeat> &curse_route()
         {1, 1, 1, D::north, {}, true}, // twice, and the king's carriage comes:
                                        // the party surrenders, is freed from jail
                                        // and led to the Thieves' Guild, rested.
-        {1, 9, 3, D::north, {}},       // The guildmaster's news; the Fire Knives burst in.
+        {1, 9, 3, D::north, {}, true}, // The guildmaster's news, rested; the Fire Knives burst in.
+        {3, 0, 0, D::south, {}, true, true}, // Out through the guild's back to the sewers.
+        {4, 0, 0, D::south, {}, true, true}, // Through the sewers to the Fire Knives' hideout.
+        {4, 3, 13, D::north, {"stop:JOURNEY"}, true}, // The Fire Knives' leader and his
+                                                      // band; freed of the first bond,
+                                                      // the party is exiled to the
+                                                      // wilderness's menu.
     };
     return beats;
 }
@@ -461,16 +471,83 @@ bool curse_walk_census(bool route)
         opengold::original::character_rules(opengold::original::default_aging,
                                             GoldBoxGame::curse_of_the_azure_bonds);
     std::shared_ptr<opengold::CampaignParty> party;
+    // The walk's party is six fighters; the route's the cluebook's: two
+    // paladins, a ranger, two clerics and a magic-user.
+    const std::array<std::string, 6> walk_classes{"fighter", "fighter", "fighter",
+                                                  "fighter", "fighter", "fighter"};
+    const std::array<std::string, 6> route_classes{"paladin", "paladin", "ranger",
+                                                   "cleric",  "cleric",  "magic_user"};
+    // Each day's spells: the strongest a caster knows at each of its levels.
+    const auto memorize = [&]
+    {
+        constexpr std::array<std::string_view, 9> favorites{
+            "fireball",    "stinking_cloud",    "magic_missile", "sleep", "lightning_bolt",
+            "hold_person", "cure_light_wounds", "prayer",        "bless"};
+        if (!party->state().spell_rest)
+        {
+            return;
+        }
+        // Those the last Long Rest left choosing; choose_spells takes each off.
+        for (const auto id : std::vector(party->state().spell_rest->members))
+        {
+            const auto options = party->spell_choice_options(id);
+            const auto &numbers = *party->member(id).character.sheet().original;
+            if (!options.may_prepare)
+            {
+                party->keep_rest_spells(id);
+                continue;
+            }
+            std::vector<std::string> prepared;
+            for (const auto &[prefix, slots] :
+                 {std::pair{std::string("cleric:"), numbers.cleric_slots},
+                  std::pair{std::string("magic_user:"), numbers.magic_user_slots}})
+            {
+                for (int level = 1; level <= 5; ++level)
+                {
+                    std::vector<std::string> candidates;
+                    for (const auto &choice : options.preparation)
+                    {
+                        const auto number = opengold::original::spell_number(choice.id);
+                        if (choice.id.starts_with(prefix) && number &&
+                            opengold::original::spell(*number)->level == level)
+                        {
+                            candidates.push_back(choice.id);
+                        }
+                    }
+                    const auto rank = [&](const std::string &id)
+                    {
+                        const auto found =
+                            std::ranges::find_if(favorites,
+                                                 [&](std::string_view name)
+                                                 {
+                                                     return id.find(name) != std::string::npos;
+                                                 });
+                        return static_cast<int>(found - favorites.begin());
+                    };
+                    std::ranges::stable_sort(candidates, {}, rank);
+                    for (int n = 0; n < slots[static_cast<std::size_t>(level - 1)] &&
+                                    n < static_cast<int>(candidates.size());
+                         ++n)
+                    {
+                        prepared.push_back(candidates[static_cast<std::size_t>(n)]);
+                    }
+                }
+            }
+            party->choose_spells(id, {{}, prepared});
+        }
+    };
     const auto new_party = [&]
     {
         party = std::make_shared<opengold::CampaignParty>(opengold::original::rules_module(content),
                                                           creation);
+        const auto &classes = route ? route_classes : walk_classes;
         for (unsigned n = 0; n < 6; ++n)
         {
+            const auto &klass = classes[n];
             opengold::CharacterCreator creator(creation, 90 + n);
             creator.select(opengold::rules::CreationField::race, "human");
-            creator.select(opengold::rules::CreationField::character_class, "fighter");
-            creator.name("Fighter " + std::to_string(n + 1));
+            creator.select(opengold::rules::CreationField::character_class, klass);
+            creator.name(klass + " " + std::to_string(n + 1));
             for (const bool roll : {false, false, false, true, false, false})
             {
                 if (roll)
@@ -480,8 +557,13 @@ bool curse_walk_census(bool route)
                 creator.next();
             }
             const auto id = party->add_pc(creator.create_character());
-            // A long sword, plate mail and a shield, of Curse's own item types.
-            for (const std::uint8_t type : {36, 55, 59})
+            // A long sword, plate mail and a shield of Curse's own item types; a
+            // cleric's mace; a magic-user's dagger.
+            const std::vector<std::uint8_t> gear_types =
+                klass == "magic_user" ? std::vector<std::uint8_t>{8}
+                : klass == "cleric"   ? std::vector<std::uint8_t>{23, 55, 59}
+                                      : std::vector<std::uint8_t>{36, 55, 59};
+            for (const std::uint8_t type : gear_types)
             {
                 std::array<std::uint8_t, 63> raw{};
                 raw[46] = type;
@@ -492,18 +574,22 @@ bool curse_walk_census(bool route)
             }
         }
         party->add_coins(opengold::Coin::gold, 5000);
+        if (route && party->rest())
+        {
+            memorize();
+        }
     };
     new_party();
     session.campaign_party(party);
     std::map<std::string, std::vector<std::string>> needs;
     std::map<std::string, unsigned> phases;
     const bool trace = route || std::getenv("OPENGOLD_CURSE_TRACE");
-    // A fight, every side played by the original's AI.
-    const auto fight = [&]
+    // One play of the pending fight with these dice; the party ends as it left it.
+    const auto fight_once = [&](std::uint64_t seed)
     {
         opengold::CombatDemo combat(opengold::original::rules_module(content));
         combat.campaign_party(party);
-        combat.encounter(*session.pending_encounter(), 7);
+        combat.encounter(*session.pending_encounter(), seed);
         if (trace)
         {
             std::cout << "  fight:";
@@ -514,31 +600,78 @@ bool curse_walk_census(bool route)
             }
             std::cout << "\n";
         }
+        // Each turn chosen as the game's combat view chooses it: the party all
+        // on Quick with Quick magic on, everyone else at the default difficulty.
         for (int command = 0; command < 3000 && combat.combat().snapshot().outcome ==
                                                     opengold::rules::Outcome::ongoing;
              ++command)
         {
-            const auto legal = combat.combat().legal_commands();
-            const auto quick =
-                std::ranges::find(legal, std::string("quick"), &opengold::rules::Command::verb);
-            if (quick == legal.end() || !combat.submit(*quick))
+            const auto &session = combat.combat();
+            const auto state = session.snapshot();
+            const auto actor = std::ranges::find(state.combatants, state.actor,
+                                                 &opengold::rules::CombatantView::id);
+            const bool member = actor != state.combatants.end() &&
+                                actor->side == opengold::rules::Side::party &&
+                                !opengold::is_ally(state.actor);
+            const auto chosen =
+                member
+                    ? opengold::choose_quick_command(session, true, opengold::Searching::everyone)
+                    : opengold::choose_demo_command(session, opengold::Searching::everyone,
+                                                    opengold::default_difficulty);
+            if (!combat.submit(chosen))
             {
-                std::string verbs;
-                for (const auto &c : legal)
-                {
-                    verbs += " " + c.verb;
-                }
-                ++phases["fight stopped, legal:" + verbs.substr(0, 60) +
-                         (quick == legal.end() ? "" : " (quick refused)")];
+                ++phases["fight stopped at " + chosen.verb];
                 break;
             }
         }
-        const auto result = combat.combat().snapshot();
+        return combat.combat().snapshot();
+    };
+    // The pending fight. The route plays it with several dice from the party
+    // as it stood, as a player reloads a save, and keeps the best play: a win,
+    // then the fewest dead, then the fewest Hit Points lost. The walk plays it
+    // once.
+    const auto fight = [&]
+    {
+        const auto before = party->state();
+        const auto score = [](const opengold::rules::Snapshot &result)
+        {
+            int lost = result.outcome == opengold::rules::Outcome::victory ? 0 : 1'000'000;
+            for (const auto &unit : result.combatants)
+            {
+                if (unit.side == opengold::rules::Side::party)
+                {
+                    lost +=
+                        (unit.dead ? 1000 : 0) + unit.max_hit_points - std::max(unit.hit_points, 0);
+                }
+            }
+            return lost;
+        };
+        std::uint64_t seed = 7, best_seed = seed;
+        auto result = fight_once(seed);
+        auto best = score(result);
+        while (route && best > 0 && ++seed < 23)
+        {
+            party->restore(before);
+            result = fight_once(seed);
+            if (score(result) < best)
+            {
+                best = score(result);
+                best_seed = seed;
+            }
+        }
+        if (seed != best_seed && route)
+        {
+            party->restore(before);
+            result = fight_once(best_seed);
+        }
         ++phases["fights ended " + std::to_string(static_cast<int>(result.outcome))];
         return session.resolve_combat(result);
     };
     std::size_t diagnosed = 0;
     std::vector<std::string> answers;
+    // The survey declines every offer (the last choice), so it does not walk
+    // into a trap or surrender.
+    bool declining = false;
     const auto play = [&](const std::string &where)
     {
         const auto attribute = [&]
@@ -575,8 +708,21 @@ bool curse_walk_census(bool route)
                     }
                     std::cout << "]\n";
                 }
-                std::size_t pick =
-                    ++shown[s.dialogue] > 2 && !s.choices.empty() ? s.choices.size() - 1 : 0;
+                // An answer "stop:TEXT" ends the beat at the menu offering TEXT.
+                if (!answers.empty() && answers.front().starts_with("stop:") &&
+                    std::ranges::any_of(s.choices,
+                                        [&](const std::string &choice)
+                                        {
+                                            return choice.find(answers.front().substr(5)) !=
+                                                   std::string::npos;
+                                        }))
+                {
+                    answers.erase(answers.begin());
+                    return;
+                }
+                std::size_t pick = (++shown[s.dialogue] > 2 || declining) && !s.choices.empty()
+                                       ? s.choices.size() - 1
+                                       : 0;
                 if (!answers.empty())
                 {
                     const auto found = std::ranges::find_if(
@@ -714,22 +860,29 @@ bool curse_walk_census(bool route)
     {
         // Days of rest in camp until every member is whole, as a player rests
         // (or a script's PROGRAM 9 offers the camp).
+        const auto party_whole = [&]
+        {
+            return std::ranges::all_of(
+                party->state().slots,
+                [&](opengold::MemberId id)
+                {
+                    return !id || party->member(id).vitals.dead ||
+                           party->member(id).vitals.hit_points >=
+                               party->member(id).character.sheet().hit_points;
+                });
+        };
         const auto rest_until_healed = [&]
         {
             for (int day = 0; day < 90 && session.can_leave(); ++day)
             {
-                const bool whole = std::ranges::all_of(
-                    party->state().slots,
-                    [&](opengold::MemberId id)
-                    {
-                        return !id || party->member(id).vitals.dead ||
-                               party->member(id).vitals.hit_points >=
-                                   party->member(id).character.sheet().hit_points;
-                    });
-                if (whole || !session.camp(opengold::RestKind::long_rest))
+                if (party_whole() || !session.camp(opengold::RestKind::long_rest))
                 {
                     break;
                 }
+                // A camp may be interrupted, or the map's script run at it.
+                play("camp");
+                // The next day's camp waits on each caster's spells.
+                memorize();
             }
         };
         play("opening");
@@ -741,11 +894,19 @@ bool curse_walk_census(bool route)
             {
                 rest_until_healed();
             }
-            opengold::test::TourAccess::place(session, {beat.x, beat.y, beat.facing});
             answers = beat.answers;
-            if (session.explore(opengold::por::ExplorationCommand::look))
+            if (beat.enter_map)
             {
+                opengold::test::TourAccess::enter(session, beat.map, {beat.x, beat.y, beat.facing});
                 play(where);
+            }
+            else
+            {
+                opengold::test::TourAccess::place(session, {beat.x, beat.y, beat.facing});
+                if (session.explore(opengold::por::ExplorationCommand::look))
+                {
+                    play(where);
+                }
             }
             if (session.snapshot().camp_offered)
             {
@@ -765,14 +926,20 @@ bool curse_walk_census(bool route)
         {
             std::cout << "  ended " << count << "x in phase " << phase << "\n";
         }
+        for (const auto &[message, places] : needs)
+        {
+            std::cout << "  " << message << " (at " << places.front() << ")\n";
+        }
         const auto &end = session.snapshot();
-        std::cout << "Route ends on map " << end.area_id << " at " << end.pose.x << ","
-                  << end.pose.y << ", phase " << static_cast<int>(end.phase) << "\n";
+        std::cout << "Route ends on map " << end.area_id << " (script " << end.script_id << ") at "
+                  << end.pose.x << "," << end.pose.y << ", phase " << static_cast<int>(end.phase)
+                  << "\n";
         // OPENGOLD_CURSE_SURVEY walks the map the route ended on, printing each
         // square's event, to plan the route's next beats by.
         if (std::getenv("OPENGOLD_CURSE_SURVEY") && end.phase != TourPhase::defeated)
         {
             const auto map = end.area_id;
+            declining = true;
             for (unsigned y = 0; y < 16 && session.snapshot().area_id == map; ++y)
             {
                 for (unsigned x = 0; x < 16 && session.snapshot().area_id == map; ++x)
@@ -788,10 +955,21 @@ bool curse_walk_census(bool route)
                         play("survey " + std::to_string(map) + " " + std::to_string(x) + "," +
                              std::to_string(y));
                     }
+                    // A planning aid, so the party rests outside the map, where
+                    // no patrol interrupts it.
+                    for (int day = 0; day < 90 && !party_whole() && party->rest(); ++day)
+                    {
+                        memorize();
+                    }
                 }
             }
+            std::cout << "Survey ends on map " << session.snapshot().area_id << ", phase "
+                      << static_cast<int>(session.snapshot().phase) << "\n";
         }
-        return needs.empty() && end.phase != TourPhase::defeated;
+        // The route's last beat leaves the party in the wilderness (script 80).
+        constexpr unsigned wilderness_script = 80;
+        return needs.empty() && end.phase != TourPhase::defeated &&
+               end.script_id == wilderness_script;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");

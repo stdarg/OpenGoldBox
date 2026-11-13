@@ -238,7 +238,14 @@ In small steps, each with its check:
    TREASURE before it opens; its temple adds Heal; its halls train every
    class; the level limits are *Curse*'s (ORIGINAL-RULES.md).
 7. A route test that plays from the start to the end, like the
-   *Pool of Radiance* expedition checks.
+   *Pool of Radiance* expedition checks. *In progress (2026-11-13):*
+   `opengold_curse_route` plays Tilverton with the cluebook's party (two
+   paladins, a ranger, two clerics and a magic-user, on Quick with Quick
+   magic on): the shops, the sage, the king's carriage and jail, the
+   Thieves' Guild, the sewers and the Fire Knives' hideout, to the leader's
+   fight, the first bond's end and the exile to the wilderness. Each fight is
+   played with several dice and the best play kept, as a player reloads.
+   Next: the wilderness (resting on the road), Shadowdale and onwards.
 
 ### 4 to 7. The other campaigns
 

@@ -12,6 +12,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -2646,6 +2647,74 @@ void a_monster_casts()
           "The shaman's missiles strike the fighter");
 }
 
+// The AI steps only onto an empty square, so a monster behind another in a
+// corridor waits rather than share its square (combatai.pas, AiMoveStep).
+void the_ai_never_shares_a_square()
+{
+    auto kobold = creature(30, 0);
+    kobold.morale = 0x80 + 50;
+    std::vector<rules::Cell> walls;
+    for (int x = 0; x < 8; ++x)
+    {
+        walls.push_back({x, 2});
+        walls.push_back({x, 4});
+    }
+    auto fight = arrange({{"Fighter", rules::Side::party, {0, 3}, creature(200)},
+                          {"Kobold 1", rules::Side::opposition, {5, 3}, kobold},
+                          {"Kobold 2", rules::Side::opposition, {6, 3}, kobold}},
+                         197, walls);
+    auto &session = *fight.session;
+    bool shared = false;
+    all_quick(
+        session,
+        [&]
+        {
+            const auto state = session.snapshot();
+            std::set<std::pair<int, int>> taken;
+            for (const auto &unit : state.combatants)
+            {
+                shared =
+                    shared || (unit.conscious && !taken.insert({unit.cell.x, unit.cell.y}).second);
+            }
+            return shared;
+        },
+        6);
+    check(!shared, "No two creatures stand on one square");
+    check(logged(session, "{name} guards.") > 0, "The kobold behind waits its turn");
+}
+
+// A party member on Quick casts only with Quick magic on (Curse's reference
+// card: ALT M toggles magic for characters set to Quick).
+void quick_magic_lets_the_party_cast()
+{
+    using original::ClassSlot;
+    const auto casts = [](const std::string &verb)
+    {
+        auto fight = arrange(
+            {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 3, {15, 15, 15})},
+             {"Kobold", rules::Side::opposition, {6, 3}, creature(50, 0)}},
+            181);
+        auto &session = *fight.session;
+        play_until(
+            session,
+            [&](const std::string &)
+            {
+                return order(session,
+                             session.snapshot().actor == view_of(session.snapshot(), "Mage").id
+                                 ? verb
+                                 : "quick");
+            },
+            [&]
+            {
+                return session.snapshot().round > 3;
+            },
+            2000);
+        return logged(session, "{name} casts {spell}.") > 0;
+    };
+    check(!casts("quick"), "With Quick magic off the mage casts nothing");
+    check(casts("quick_magic"), "With Quick magic on the mage casts");
+}
+
 // A fleeing monster runs for the edge and gets away (combatai.pas, AiMoveStep).
 void a_routed_monster_runs()
 {
@@ -2946,6 +3015,8 @@ int main()
         the_ai_fights_to_the_end();
         a_lone_mage_stays();
         a_monster_casts();
+        quick_magic_lets_the_party_cast();
+        the_ai_never_shares_a_square();
         a_routed_monster_runs();
         the_ai_turns_undead();
         a_gaze_stones();

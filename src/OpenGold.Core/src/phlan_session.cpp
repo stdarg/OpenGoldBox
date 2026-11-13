@@ -3606,6 +3606,17 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         snapshot_.script_id = current_script_;
         transition_ = true;
         pending_movement_.reset();
+        // Curse's scripts of a disk with no map (the wilderness's, on disk 1)
+        // play in the root area, which holds that disk's creatures.
+        if (game() != GoldBoxGame::pool_of_radiance &&
+            std::ranges::none_of(town_->districts,
+                                 [bank](const auto &district)
+                                 {
+                                     return district.second->bank == bank;
+                                 }))
+        {
+            change_area(0);
+        }
         break;
     }
     case 33:

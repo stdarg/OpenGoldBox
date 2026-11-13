@@ -1548,6 +1548,12 @@ std::vector<Command> aimed_as_before(const rules::Snapshot &state,
 Command choose_from(const rules::Snapshot &state, const std::vector<Command> &every,
                     Searching searching, Difficulty difficulty)
 {
+    // Rules with an AI of their own (the original's Quick) play the turn by it.
+    if (const auto own_ai = std::ranges::find(every, std::string_view("quick"), &Command::verb);
+        own_ai != every.end())
+    {
+        return *own_ai;
+    }
     // A spell given up this turn stays given up.
     const auto given_up = [&](const Command &command)
     {
@@ -3536,6 +3542,14 @@ Command choose_quick_command(const CombatSession &session, bool magic, Searching
     constexpr auto quick_difficulty = ai_tuning::quick_difficulty;
     if (magic)
     {
+        // The original's AI casts for a party member with Quick magic on.
+        const auto offered = session.legal_commands();
+        if (const auto own_ai =
+                std::ranges::find(offered, std::string_view("quick_magic"), &Command::verb);
+            own_ai != offered.end())
+        {
+            return *own_ai;
+        }
         return choose_demo_command(session, searching, quick_difficulty);
     }
     const auto state = session.snapshot();

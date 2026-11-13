@@ -19,6 +19,8 @@ namespace
 using por::EclError;
 
 constexpr unsigned curse_opening_script = 1, curse_opening_disk = 2;
+// Disk 1 has no map: its scripts (80 to 82) are the wilderness.
+constexpr unsigned curse_wilderness_disk = 1;
 constexpr std::uint8_t load_files = 0x21, load_pieces = 0x37;
 
 // What Curse's scripts load, read from the scripts themselves: a script's
@@ -106,12 +108,21 @@ por::RolfTourSession load_curse_campaign(const std::filesystem::path &folder)
         }
         return found;
     };
+    // The root is the wilderness: its scripts play there, with their disk's
+    // creatures, encounter sprites, combat icons and treasure.
     auto root = std::make_shared<por::PhlanResources>();
+    const auto wilderness = std::to_string(curse_wilderness_disk);
     root->creatures = creatures;
     root->item_templates = *templates;
-    root->bank = curse_opening_disk;
+    root->bank = curse_wilderness_disk;
     root->opening_script = curse_opening_script;
-    root->encounter_creatures = disk_creatures(curse_opening_disk);
+    root->encounter_creatures = disk_creatures(curse_wilderness_disk);
+    root->map = por::GeoMap{};
+    root->treasure = files.item_lists("ITEM" + wilderness + ".DAX");
+    root->sprite_archive = por::detail::read_archive(
+        por::detail::resolve_archive(folder, "SPRIT" + wilderness + ".DAX"));
+    root->combat_archive = por::detail::read_archive(
+        por::detail::resolve_archive(folder, "CPIC" + wilderness + ".DAX"));
     const auto loads = script_loads(catalog);
     for (const auto &[id, program] : catalog.all())
     {
@@ -189,6 +200,8 @@ por::RolfTourSession load_curse_campaign(const std::filesystem::path &folder)
         district->animations.insert(animations.begin(), animations.end());
         root->districts.emplace(map_id.record, std::move(district));
     }
+    root->pictures = pictures;
+    root->animations = animations;
     return por::RolfTourSession(por::GeoMap{}, opening, {}, 0, {}, std::move(root));
 }
 
