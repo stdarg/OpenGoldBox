@@ -768,6 +768,29 @@ bool curse_walk_census(bool route)
         const auto &end = session.snapshot();
         std::cout << "Route ends on map " << end.area_id << " at " << end.pose.x << ","
                   << end.pose.y << ", phase " << static_cast<int>(end.phase) << "\n";
+        // OPENGOLD_CURSE_SURVEY walks the map the route ended on, printing each
+        // square's event, to plan the route's next beats by.
+        if (std::getenv("OPENGOLD_CURSE_SURVEY") && end.phase != TourPhase::defeated)
+        {
+            const auto map = end.area_id;
+            for (unsigned y = 0; y < 16 && session.snapshot().area_id == map; ++y)
+            {
+                for (unsigned x = 0; x < 16 && session.snapshot().area_id == map; ++x)
+                {
+                    if (!session.can_leave())
+                    {
+                        break;
+                    }
+                    opengold::test::TourAccess::place(session,
+                                                      {x, y, opengold::por::MapDirection::north});
+                    if (session.explore(opengold::por::ExplorationCommand::look))
+                    {
+                        play("survey " + std::to_string(map) + " " + std::to_string(x) + "," +
+                             std::to_string(y));
+                    }
+                }
+            }
+        }
         return needs.empty() && end.phase != TourPhase::defeated;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
