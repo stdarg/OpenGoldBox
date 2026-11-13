@@ -11,6 +11,11 @@
 #include "opengold/ecl_address.h"
 #include "opengold/ecl_machine.h"
 #include "opengold/formats.h"
+#include "opengold/coin_purse.h"
+#include "opengold/original_combat.h"
+#include "opengold/original.h"
+#include "opengold/character_creator.h"
+#include "opengold/combat_demo.h"
 #include "tour_access.h"
 #include <map>
 #include "opengold/game_census.h"
@@ -398,10 +403,93 @@ void curse_walk_census()
         return;
     }
     auto session = opengold::load_campaign(folder, GoldBoxGame::curse_of_the_azure_bonds);
+    // A party under the original rules, fighting Curse's own creatures.
+    opengold::original::Content content;
+    const auto catalog =
+        opengold::por::CreatureCatalog::load(folder, GoldBoxGame::curse_of_the_azure_bonds);
+    for (const auto &[id, creature] : catalog.all())
+    {
+        std::vector<opengold::original::CarriedItem> carried;
+        for (const auto &item : creature.equipment)
+        {
+            carried.push_back({item.stored, item.base});
+        }
+        std::vector<opengold::por::EffectRecord> effects;
+        for (const auto &effect : creature.effects)
+        {
+            effects.push_back(effect.stored);
+        }
+        content.bestiary.emplace(
+            id.key(), opengold::original::combatant_from_record(creature.stored, carried, effects));
+    }
+    std::ifstream items(folder / "ITEMS", std::ios::binary);
+    const std::vector<std::uint8_t> item_bytes{std::istreambuf_iterator<char>(items), {}};
+    content.item_types = *opengold::por::decode_item_templates(item_bytes);
+    std::shared_ptr<const opengold::rules::CharacterRules> creation =
+        opengold::original::character_rules();
+    std::shared_ptr<opengold::CampaignParty> party;
+    const auto new_party = [&]
+    {
+        party = std::make_shared<opengold::CampaignParty>(opengold::original::rules_module(content),
+                                                          creation);
+        for (unsigned n = 0; n < 6; ++n)
+        {
+            opengold::CharacterCreator creator(creation, 90 + n);
+            creator.select(opengold::rules::CreationField::race, "human");
+            creator.select(opengold::rules::CreationField::character_class, "fighter");
+            creator.name("Fighter " + std::to_string(n + 1));
+            for (const bool roll : {false, false, false, true, false, false})
+            {
+                if (roll)
+                {
+                    creator.roll();
+                }
+                creator.next();
+            }
+            (void)party->add_pc(creator.create_character());
+        }
+        party->add_coins(opengold::Coin::gold, 5000);
+    };
+    new_party();
+    session.campaign_party(party);
     std::map<std::string, std::vector<std::string>> needs;
     std::map<std::string, unsigned> phases;
+    // A fight, every side played by the original's AI.
+    const auto fight = [&]
+    {
+        opengold::CombatDemo combat(opengold::original::rules_module(content));
+        combat.campaign_party(party);
+        combat.encounter(*session.pending_encounter(), 7);
+        for (int command = 0; command < 3000 && combat.combat().snapshot().outcome ==
+                                                    opengold::rules::Outcome::ongoing;
+             ++command)
+        {
+            const auto legal = combat.combat().legal_commands();
+            const auto quick =
+                std::ranges::find(legal, std::string("quick"), &opengold::rules::Command::verb);
+            if (quick == legal.end() || !combat.submit(*quick))
+            {
+                break;
+            }
+        }
+        const auto result = combat.combat().snapshot();
+        ++phases[result.outcome == opengold::rules::Outcome::victory ? "fights won"
+                                                                     : "fights not won"];
+        return session.resolve_combat(result);
+    };
+    std::size_t diagnosed = 0;
     const auto play = [&](const std::string &where)
     {
+        const auto attribute = [&]
+        {
+            const auto &found = session.script_diagnostics();
+            for (; diagnosed < found.size(); ++diagnosed)
+            {
+                needs[found[diagnosed]].push_back(where);
+            }
+        };
+        // A menu that comes back (a temple's services) is left by its last choice.
+        std::map<std::string, unsigned> shown;
         for (int step = 0; step < 400; ++step)
         {
             const auto &s = session.snapshot();
@@ -415,10 +503,13 @@ void curse_walk_census()
                 session.advance(1.0);
                 continue;
             case TourPhase::awaiting_continue:
-                if (!session.choose(s.continue_ticket, 0) &&
+                if (!session.choose(s.continue_ticket, ++shown[s.dialogue] > 2 && !s.choices.empty()
+                                                           ? s.choices.size() - 1
+                                                           : 0) &&
                     !session.continue_dialogue(s.continue_ticket))
                 {
                     ++phases["stuck at a choice"];
+                    attribute();
                     return;
                 }
                 continue;
@@ -431,36 +522,99 @@ void curse_walk_census()
             case TourPhase::treasure:
                 (void)session.leave_treasure(s.continue_ticket);
                 continue;
+            case TourPhase::combat:
+                if (session.monster_picture())
+                {
+                    (void)session.start_encounter();
+                    continue;
+                }
+                if (!session.pending_encounter() || !fight())
+                {
+                    ++phases["fight not resolved"];
+                    attribute();
+                    return;
+                }
+                continue;
             default:
                 ++phases[std::to_string(static_cast<int>(s.phase))];
+                attribute();
                 return;
             }
         }
+        const auto &s = session.snapshot();
+        std::cout << "Too long at " << where << ", phase " << static_cast<int>(s.phase) << ": "
+                  << s.dialogue << "\n";
+        attribute();
         ++phases["too long"];
     };
-    play("opening");
-    const auto area = session.snapshot().area_id;
-    for (unsigned y = 0; y < 16; ++y)
+    // A new game with a new party, standing on `map` as its script's entry has it.
+    const auto restart = [&](unsigned map)
     {
-        for (unsigned x = 0; x < 16; ++x)
+        session = opengold::load_campaign(folder, GoldBoxGame::curse_of_the_azure_bonds);
+        new_party();
+        session.campaign_party(party);
+        diagnosed = 0;
+        play("opening");
+        if (session.snapshot().area_id == map)
         {
-            if (session.snapshot().area_id != area || !session.can_leave())
+            return true;
+        }
+        const auto where = "map " + std::to_string(map) + " entry";
+        try
+        {
+            opengold::test::TourAccess::enter(session, map,
+                                              {8, 8, opengold::por::MapDirection::north});
+            play(where);
+        }
+        catch (const std::exception &error)
+        {
+            needs[error.what()].push_back(where);
+            return false;
+        }
+        return session.snapshot().area_id == map && session.can_leave();
+    };
+    // Every square of the map, its event run where it has one; an event that
+    // ends the game or takes the party away is played from a new game.
+    const auto walk = [&](unsigned area)
+    {
+        for (unsigned y = 0; y < 16; ++y)
+        {
+            for (unsigned x = 0; x < 16; ++x)
             {
-                std::cout << "Left area " << area << " at " << x << "," << y << "\n";
-                break;
-            }
-            opengold::test::TourAccess::place(session, {x, y, opengold::por::MapDirection::north});
-            if (session.explore(opengold::por::ExplorationCommand::look))
-            {
-                play(std::to_string(x) + "," + std::to_string(y));
+                const auto where = "map " + std::to_string(area) + " " + std::to_string(x) + "," +
+                                   std::to_string(y);
+                if ((session.snapshot().area_id != area || !session.can_leave()) && !restart(area))
+                {
+                    ++phases["map not reentered"];
+                    return;
+                }
+                opengold::test::TourAccess::place(session,
+                                                  {x, y, opengold::por::MapDirection::north});
+                try
+                {
+                    if (session.explore(opengold::por::ExplorationCommand::look))
+                    {
+                        play(where);
+                    }
+                }
+                catch (const std::exception &error)
+                {
+                    needs[error.what()].push_back(where);
+                    return;
+                }
             }
         }
-    }
-    for (const auto &message : session.script_diagnostics())
+    };
+    play("opening");
+    walk(session.snapshot().area_id);
+    for (const auto &[map, script] : opengold::test::TourAccess::area_scripts(session))
     {
-        needs[message].push_back("script");
+        if (restart(map))
+        {
+            walk(map);
+        }
     }
-    std::cout << "Curse walk of area " << area << ":\n";
+    std::cout << "Curse walk:\n";
     for (const auto &[message, places] : needs)
     {
         std::cout << "  " << places.size() << "x " << message << " (first at " << places.front()

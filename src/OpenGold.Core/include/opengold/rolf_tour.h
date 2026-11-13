@@ -927,6 +927,8 @@ class RolfTourSession
     std::optional<TeleportArrival> teleport_arrival_;
     // Puts the party on a Teleport's spot on its map.
     void arrive(const TeleportArrival &arrival);
+    // Another script takes over at `arrival`, and its entry runs.
+    void enter_script(unsigned script, const TeleportArrival &arrival);
     // The script's shop request the party is shopping for; 0 at a shop
     // OpenGoldBox opens itself (SECRET-1).
     std::uint64_t shop_request_{};

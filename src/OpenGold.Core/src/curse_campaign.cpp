@@ -1,6 +1,7 @@
 #include "opengold/campaign_session.h"
 
 #include "area_loading.h"
+#include "opengold/creature_catalog.h"
 #include "opengold/ecl_machine.h"
 #include "opengold/map_catalog.h"
 #include "opengold/por_sound.h"
@@ -88,10 +89,29 @@ por::RolfTourSession load_curse_campaign(const std::filesystem::path &folder)
     }
     const por::detail::AreaFiles files(folder, *templates, std::move(*words));
     const auto maps = por::MapCatalog::load(folder);
+    const auto creatures =
+        std::make_shared<const por::CreatureCatalog>(por::CreatureCatalog::load(folder, game));
+    // Every creature record of a disk, which its scripts' LOAD MONSTER and ADD
+    // NPC name by number; Curse fights them as their records (the original
+    // rules), with no conversions.
+    const auto disk_creatures = [&creatures](unsigned disk)
+    {
+        std::map<unsigned, por::Creature> found;
+        for (const auto &[id, creature] : creatures->all())
+        {
+            if (id.bank == disk)
+            {
+                found.emplace(id.record, creature);
+            }
+        }
+        return found;
+    };
     auto root = std::make_shared<por::PhlanResources>();
+    root->creatures = creatures;
     root->item_templates = *templates;
     root->bank = curse_opening_disk;
     root->opening_script = curse_opening_script;
+    root->encounter_creatures = disk_creatures(curse_opening_disk);
     const auto loads = script_loads(catalog);
     for (const auto &[id, program] : catalog.all())
     {
@@ -137,8 +157,9 @@ por::RolfTourSession load_curse_campaign(const std::filesystem::path &folder)
         const por::detail::AreaSource area{scripts.front(), map_disk, {}};
         const por::detail::DistrictMap geo{
             map_id.record, walls, {scripts.begin() + 1, scripts.end()}};
-        root->districts.emplace(map_id.record,
-                                por::detail::load_district(files, maps, area, geo, {}, {}));
+        auto district = por::detail::load_district(files, maps, area, geo, {}, {});
+        district->encounter_creatures = disk_creatures(map_disk);
+        root->districts.emplace(map_id.record, std::move(district));
     }
     return por::RolfTourSession(por::GeoMap{}, opening, {}, 0, {}, std::move(root));
 }

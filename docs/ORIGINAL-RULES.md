@@ -212,6 +212,9 @@ lines in all:
      THAC0) tops the member's stored Armor Class (`AttackRollNoAttacker`), a
      saving throw of the script's category and modifier avoids the damage
      (`RollSavingThrow`), and a member falls at 0 and dies at −10.
+   - **Encounters fight whole:** every monster a script loads fights, as in
+     the original; the SRD's fitting of a fight to the party's levels is the
+     SRD's alone.
 7. **The monsters' tactics and the original rules' difficulty levels.** The
    original rules become the default once they play from start to end.
 

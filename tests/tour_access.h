@@ -4,6 +4,7 @@
 #include "opengold/overland.h"
 #include "opengold/rolf_tour.h"
 #include <cstdint>
+#include <map>
 #include <string_view>
 #include <vector>
 
@@ -97,6 +98,23 @@ struct TourAccess
     static void place(por::RolfTourSession &town, por::PartyPose pose)
     {
         town.bind_pose(pose);
+    }
+
+    // The maps of the session's areas, by the script that loads each first.
+    static std::map<unsigned, unsigned> area_scripts(const por::RolfTourSession &town)
+    {
+        std::map<unsigned, unsigned> scripts;
+        for (const auto &[map, district] : town.town_->districts)
+        {
+            scripts.emplace(map, district->script);
+        }
+        return scripts;
+    }
+
+    // The party walks into `map` at `pose` as its script's entry has it.
+    static void enter(por::RolfTourSession &town, unsigned map, por::PartyPose pose)
+    {
+        town.enter_script(town.town_->districts.at(map)->script, {map, pose});
     }
 
     // Reseeds the script's dice, so a test can try an event on several rolls.

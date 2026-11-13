@@ -244,7 +244,8 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_original_combat_tests COMMAND opengold_original_combat_tests)
 
     add_executable(opengold_gold_box_games_tests tests/gold_box_games_tests.cpp)
-    target_link_libraries(opengold_gold_box_games_tests PRIVATE opengold_core opengold_rules_srd5)
+    target_link_libraries(opengold_gold_box_games_tests PRIVATE opengold_core opengold_rules_srd5
+        opengold_rules_original)
     target_compile_definitions(opengold_gold_box_games_tests PRIVATE
         OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_gold_box_games_tests COMMAND opengold_gold_box_games_tests)

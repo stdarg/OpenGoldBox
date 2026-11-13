@@ -978,6 +978,11 @@ void RolfTourSession::teleport(opengold::MemberId caster, const std::string &act
         update_travel_mode();
         return;
     }
+    enter_script(script, arrival);
+}
+
+void RolfTourSession::enter_script(unsigned script, const TeleportArrival &arrival)
+{
     // Another script's map: its script takes over and its entry runs, as when
     // the party walks in, and then the party stands on the spot.
     const auto program = town_->programs.find(script);
@@ -2347,14 +2352,19 @@ std::vector<unsigned> RolfTourSession::living_member_levels() const
 // Shrinks the staged original encounter to the party's SRD XP budget at the
 // encounter challenge and to one creature per living character, the size the
 // party can face without being swarmed. Each LOAD MONSTER group keeps its first.
+// Under the original rules the whole encounter fights, as in the original.
 void RolfTourSession::fit_staged_encounter()
 {
-    const auto levels = living_member_levels();
-    const auto groups = staged_groups(staged_records_, area_resources().conversions);
-    const auto counts =
-        fit_encounter_to_difficulty(groups, levels, encounter_challenge_, difficulty_);
     staged_band_.clear();
-    for (std::size_t n = 0; n < staged_records_.size(); ++n)
+    std::vector<unsigned> counts(staged_records_.size(),
+                                 static_cast<unsigned>(staged_records_.size()));
+    if (!plays_original_records())
+    {
+        const auto groups = staged_groups(staged_records_, area_resources().conversions);
+        counts = fit_encounter_to_difficulty(groups, living_member_levels(), encounter_challenge_,
+                                             difficulty_);
+    }
+    for (std::size_t n = 0; n < staged_records_.size() && !plays_original_records(); ++n)
     {
         const auto record = staged_records_[n];
         const auto &creature = area_resources().encounter_creatures.at(record);
