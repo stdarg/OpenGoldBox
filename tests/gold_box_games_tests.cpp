@@ -817,6 +817,45 @@ const std::vector<RouteBeat> &curse_route()
         // every other time the party passes (cell 0x4C1B), so it passes twice.
         {32, 2, 3, D::north, {}},
         {32, 2, 3, D::north, {"YES"}},
+        // Dexam the Beholder and his minions, for the Amulet of Lathander
+        // (map 33's events 15 and 16; the "beholder" at 2,1 is a gas spore).
+        // His lair meets the party only while cell 0x4C03 is 0, which the
+        // hooded woman set to 1 (ECL4.DAX 33 0x8832) and nothing on the way
+        // clears; until it is known what clears it in the original, the test
+        // does.
+        {33,
+         2,
+         11,
+         D::north,
+         {},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         true,
+         false,
+         false,
+         {{0x4C03, 0}},
+         true},
+        // Out of the caves, stepping off the map south of 11,15 (event 19 and
+        // LEAVE_MAP), where Olive takes Dimswart away, back to the wilderness.
+        {33,
+         11,
+         15,
+         D::south,
+         {"stop:JOURNEY"},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         true,
+         true},
     };
     return beats;
 }
@@ -1751,14 +1790,15 @@ bool curse_walk_census(bool route)
             std::cout << "Survey ends on map " << session.snapshot().area_id << ", phase "
                       << static_cast<int>(session.snapshot().phase) << "\n";
         }
-        // The route's last beat leaves the party in the Caves of the Beholder
-        // (map 33), freed of Fzoul's bond, nobody dead.
+        // The route's last beat leaves the party at the edge of Zhentil Keep
+        // with the Amulet of Lathander, nobody dead.
         const bool all_alive = std::ranges::none_of(party->state().slots,
                                                     [&](opengold::MemberId id)
                                                     {
                                                         return id && party->member(id).vitals.dead;
                                                     });
-        return needs.empty() && end.phase != TourPhase::defeated && end.area_id == 33 && all_alive;
+        return needs.empty() && end.phase != TourPhase::defeated &&
+               end.dialogue.find("EDGE OF ZHENTIL KEEP") != std::string::npos && all_alive;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");

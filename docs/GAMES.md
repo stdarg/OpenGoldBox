@@ -281,8 +281,14 @@ In small steps, each with its check:
    where Olive Ruskettle leads it by a secret way into the Shrine of Bane.
    It takes Dimswart the sage from his cell and follows the hooded woman
    (who shows herself every other time it passes) to Dexam the Beholder,
-   who slays Fzoul and so frees it of his bond, and it stands in the Caves
-   of the Beholder. Next: Dexam, for the Amulet of Lathander.
+   who slays Fzoul and so frees it of his bond, and into the Caves of the
+   Beholder. It beats Dexam and his minions there for the Amulet of
+   Lathander (his lair meets the party only while cell 0x4C03 is 0, which
+   the hooded woman set to 1 and nothing on the way clears; until it is
+   known what clears it in the original, the test does), and leaves by
+   stepping off the map south of 11,15 (LEAVE_MAP), where Olive takes
+   Dimswart away, to Zhentil Keep's edge. Next: Myth Drannor
+   (Tyranthraxus).
 
 ### 4 to 7. The other campaigns
 
