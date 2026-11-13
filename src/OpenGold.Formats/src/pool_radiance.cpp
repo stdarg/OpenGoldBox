@@ -335,4 +335,57 @@ std::string item_name(const ItemRecord &item, std::span<const std::string> words
 
     return name;
 }
+
+namespace
+{
+constexpr std::string_view item_key_prefix = "original:";
+constexpr std::string_view hex_digits = "0123456789abcdef";
+} // namespace
+
+std::string original_item_key(const ItemRecord &item)
+{
+    // Whether it is readied and how many there are, the inventory keeps.
+    auto raw = item.raw;
+    constexpr std::size_t readied_byte = 52, stack_byte = 57;
+    raw[readied_byte] = 0;
+    raw[stack_byte] = 0;
+    std::string key(item_key_prefix);
+    for (const auto byte : raw)
+    {
+        key += hex_digits[byte >> 4];
+        key += hex_digits[byte & 0xF];
+    }
+    return key;
+}
+
+std::optional<ItemRecord> item_of_original_key(std::string_view key)
+{
+    if (!key.starts_with(item_key_prefix))
+    {
+        return std::nullopt;
+    }
+    key.remove_prefix(item_key_prefix.size());
+    key = key.substr(0, key.find(':'));
+    std::array<std::uint8_t, 63> bytes{};
+    if (key.size() != bytes.size() * 2)
+    {
+        return std::nullopt;
+    }
+    for (std::size_t n = 0; n < bytes.size(); ++n)
+    {
+        const auto high = hex_digits.find(key[2 * n]), low = hex_digits.find(key[2 * n + 1]);
+        if (high == std::string_view::npos || low == std::string_view::npos)
+        {
+            return std::nullopt;
+        }
+        bytes[n] = static_cast<std::uint8_t>(high * 16 + low);
+    }
+    const auto items = decode_items(bytes);
+    if (!items || items->size() != 1)
+    {
+        return std::nullopt;
+    }
+    return items->front();
+}
+
 } // namespace opengold::por

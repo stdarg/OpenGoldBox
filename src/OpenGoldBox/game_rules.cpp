@@ -1,11 +1,55 @@
 #include "game_rules.h"
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
+#include "opengold/creature_catalog.h"
 #include "opengold/srd5.h"
+#include <fstream>
+#include <iterator>
+#include <map>
+#include <mutex>
 #include <stdexcept>
 
 namespace
 {
+// The original rules' monsters and item types from the game's folder, read
+// once: they do not change while the game runs.
+const opengold::original::Content &original_content(const std::filesystem::path &game)
+{
+    static std::mutex guard;
+    static std::map<std::filesystem::path, opengold::original::Content> loaded;
+    const std::scoped_lock lock(guard);
+    if (const auto found = loaded.find(game); found != loaded.end())
+    {
+        return found->second;
+    }
+    opengold::original::Content content;
+    const auto catalog = opengold::por::CreatureCatalog::load(game);
+    for (const auto &[id, creature] : catalog.all())
+    {
+        std::vector<opengold::original::CarriedItem> carried;
+        for (const auto &item : creature.equipment)
+        {
+            carried.push_back({item.stored, item.base});
+        }
+        std::vector<opengold::por::EffectRecord> effects;
+        for (const auto &effect : creature.effects)
+        {
+            effects.push_back(effect.stored);
+        }
+        content.bestiary.emplace(
+            id.key(), opengold::original::combatant_from_record(creature.stored, carried, effects));
+    }
+    std::ifstream items(game / "ITEMS", std::ios::binary);
+    const std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(items), {}};
+    auto types = opengold::por::decode_item_templates(bytes);
+    if (!types)
+    {
+        throw std::runtime_error("The game's ITEMS file cannot be read");
+    }
+    content.item_types = std::move(*types);
+    return loaded.emplace(game, std::move(content)).first->second;
+}
+
 std::shared_ptr<const opengold::rules::CharacterRules> character_rules(const GameRules &rules)
 {
     if (rules.set == GameRules::Set::original)
@@ -16,20 +60,20 @@ std::shared_ptr<const opengold::rules::CharacterRules> character_rules(const Gam
 }
 } // namespace
 
-std::unique_ptr<opengold::rules::RulesModule>
-make_rules_module(const GameRules &rules, const std::filesystem::path &srd_pack)
+std::unique_ptr<opengold::rules::RulesModule> make_rules_module(const GameRules &rules,
+                                                                const RulesFiles &files)
 {
     if (rules.set == GameRules::Set::original)
     {
-        return opengold::original::rules_module();
+        return opengold::original::rules_module(original_content(files.original_game));
     }
-    return opengold::srd5::load(srd_pack);
+    return opengold::srd5::load(files.srd_pack);
 }
 
 std::shared_ptr<opengold::CampaignParty> new_campaign_party(const GameRules &rules,
-                                                            const std::filesystem::path &srd_pack)
+                                                            const RulesFiles &files)
 {
-    return std::make_shared<opengold::CampaignParty>(make_rules_module(rules, srd_pack),
+    return std::make_shared<opengold::CampaignParty>(make_rules_module(rules, files),
                                                      character_rules(rules));
 }
 
@@ -55,12 +99,12 @@ GameRules game_rules_of(const opengold::CampaignParty &party)
 }
 
 LoadedCampaign
-load_campaign_under_its_rules(std::string_view bytes, const std::filesystem::path &srd_pack,
+load_campaign_under_its_rules(std::string_view bytes, const RulesFiles &files,
                               std::string_view assets,
                               const std::function<opengold::por::RolfTourSession()> &make_town)
 {
     const auto rules = game_rules_of(opengold::saved_campaign_rules(bytes));
-    auto module = make_rules_module(rules, srd_pack);
+    auto module = make_rules_module(rules, files);
     auto creation = character_rules(rules);
     auto saved = opengold::decode_campaign(bytes, *creation, *module, assets, make_town);
     return {std::make_shared<opengold::CampaignParty>(std::move(module), std::move(creation)),

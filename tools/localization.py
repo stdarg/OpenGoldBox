@@ -73,6 +73,17 @@ def extract():
         line = content.count("\n", 0, match.start()) + 1
         add(ast.literal_eval(match[1]), original_choices, line)
         add("".join(ast.literal_eval(part) for part in re.findall(LITERAL, match[2])), original_choices, line)
+    # The original rules' messages, spells and refusals: their sentences, and
+    # every spell name in the spell table.
+    for name in ("combat_session.cpp", "rules_module.cpp", "spells.cpp"):
+        source = ROOT / "src/OpenGold.Rules.Original/src" / name
+        content = source.read_text(encoding="utf-8-sig")
+        for match in re.finditer(LITERAL, content):
+            text = ast.literal_eval(match[0])
+            if re.match(r"[A-Z{]", text) and " " in text and not text.startswith("OGORIGINAL"):
+                add(text, source, content.count("\n", 0, match.start()) + 1)
+        for match in re.finditer(rf'\{{\s*({LITERAL}),\s*SpellClass::', content):
+            add(ast.literal_eval(match[1]), source, content.count("\n", 0, match.start()) + 1)
     # Status effects' names and descriptions, by EffectKind.
     labels = ROOT / "src/OpenGold.Rules.Srd5/src/effect_labels.h"
     content = labels.read_text(encoding="utf-8")

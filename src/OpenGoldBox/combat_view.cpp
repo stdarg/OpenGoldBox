@@ -500,7 +500,7 @@ namespace
 // the difficulty switch off (MONSTER-2).
 std::unique_ptr<rules::RulesModule> fight_rules(const GameRules &rules)
 {
-    auto module = make_rules_module(rules, presentation::path_from_godot(game_rules_file()));
+    auto module = make_rules_module(rules, game_rules_files());
     module->switch_off_abilities(settings::monster_abilities_off());
     return module;
 }

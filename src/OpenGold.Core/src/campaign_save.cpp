@@ -1015,7 +1015,7 @@ void validate_saved_member(const PartyMember &member, const rules::RulesModule &
     for (const auto &[id, source] : member.item_sources)
     {
         const auto item = member.character.inventory().find(id);
-        require(item.has_value() && item->get().definition_id == equipment_conversion(source) &&
+        require(item.has_value() && item->get().definition_id == item_definition(module, source) &&
                     item->get().original_type == source.stored.type,
                 "Saved item provenance mismatch");
     }

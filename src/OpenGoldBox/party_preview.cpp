@@ -87,8 +87,7 @@ GameRules starting_rules()
 void CharacterCreationView::setup_party()
 {
     body_catalog_ = game_combat_looks();
-    campaign_ =
-        new_campaign_party(starting_rules(), presentation::path_from_godot(game_rules_file()));
+    campaign_ = new_campaign_party(starting_rules(), game_rules_files());
     auto panel = presentation::instantiate_scene("res://scenes/party_panel.tscn");
     i18n::prepare_ui(*panel);
     presentation::attach_child(*this, std::move(panel));

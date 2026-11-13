@@ -1122,6 +1122,14 @@ class RulesModule
                        std::span<const std::string> gear, Ability ability, std::string_view skill,
                        RandomState &random_state) const = 0;
 
+    // Whether the rules key items by their original records
+    // (por::original_item_key), as the original rules do, rather than by their
+    // own catalog's names.
+    [[nodiscard]] virtual bool keys_original_items() const
+    {
+        return false;
+    }
+
     // Whether a character with this much experience may gain a level now: by
     // default when it has the next level's experience (experience_for_level).
     [[nodiscard]] virtual bool ready_to_advance(const CharacterSheet &sheet,

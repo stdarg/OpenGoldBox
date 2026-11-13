@@ -6,6 +6,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "opengold/gold_box_game.h"
@@ -170,6 +171,14 @@ struct EffectRecord
 decode_items(std::span<const std::uint8_t> bytes);
 [[nodiscard]] std::optional<std::vector<EffectRecord>>
 decode_effects(std::span<const std::uint8_t> bytes);
+// An item as rules that keep the original's items key it (the original
+// rules): its record whole, so they read its type, magic and powers as the
+// original does ("original:" and the record's bytes in hex), less whether it
+// is readied and its count, which the inventory keeps. The campaign may add
+// ":unidentified".
+[[nodiscard]] std::string original_item_key(const ItemRecord &item);
+// The record such a key holds, or nothing for any other key.
+[[nodiscard]] std::optional<ItemRecord> item_of_original_key(std::string_view key);
 // DOS ITEMS: two uninterpreted header bytes followed by 16-byte templates, indexed by item type.
 [[nodiscard]] std::optional<std::vector<ItemTemplate>>
 decode_item_templates(std::span<const std::uint8_t> bytes);

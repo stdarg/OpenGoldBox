@@ -747,6 +747,12 @@ bool identify_item(PartyMember &member, std::uint64_t item)
     return true;
 }
 
+std::string item_definition(const rules::RulesModule &rules, const por::Equipment &item)
+{
+    return rules.keys_original_items() ? por::original_item_key(item.stored)
+                                       : equipment_conversion(item);
+}
+
 std::string equipment_conversion(const por::Equipment &item)
 {
     const auto &raw = item.stored;
@@ -1819,7 +1825,7 @@ void CampaignParty::take_item(MemberId id, const por::Equipment &item)
 {
     editable();
     const auto weight =
-        entry_weight(*rules_, equipment_conversion(item), carried_quantity(item), &item);
+        entry_weight(*rules_, item_definition(*rules_, item), carried_quantity(item), &item);
     if (carried_weight(id) + weight > carrying_capacity(id) * 100u)
     {
         throw std::runtime_error("Too heavy to carry");
@@ -1827,11 +1833,10 @@ void CampaignParty::take_item(MemberId id, const por::Equipment &item)
     auto &m = edit(id);
     auto inventory = m.character.inventory();
     auto sources = m.item_sources;
-    const auto key =
-        inventory.add({.definition_id = equipment_conversion(item),
-                       .name = item.label(),
-                       .quantity = carried_quantity(item),
-                       .original_type = item.stored.type});
+    const auto key = inventory.add({.definition_id = item_definition(*rules_, item),
+                                    .name = item.label(),
+                                    .quantity = carried_quantity(item),
+                                    .original_type = item.stored.type});
     sources.emplace(key, item);
     m.character.replace_inventory(std::move(inventory));
     m.item_sources = std::move(sources);
@@ -1858,14 +1863,14 @@ unsigned CampaignParty::carrying_capacity(MemberId id) const
 bool CampaignParty::can_use(MemberId id, const por::Equipment &item) const
 {
     return rules_->can_use_item(member(id).character.sheet(),
-                                rules_key(equipment_conversion(item), item));
+                                rules_key(item_definition(*rules_, item), item));
 }
 
 CampaignParty::GearInPlace CampaignParty::gear_in_place(const PartyMember &m,
                                                         const por::Equipment &item) const
 {
     using rules::EquipmentSlot;
-    GearInPlace result{.key = rules_key(equipment_conversion(item), item)};
+    GearInPlace result{.key = rules_key(item_definition(*rules_, item), item)};
     if (const auto parsed = rules::parse_item_key(result.key); parsed.unidentified)
     {
         result.key = std::string(parsed.base);
@@ -1907,7 +1912,7 @@ bool CampaignParty::adds_no_armor_class(MemberId id, const por::Equipment &item)
 
 rules::EquipmentSlot CampaignParty::equipment_slot(const por::Equipment &item) const
 {
-    return rules_->equipment_info(equipment_conversion(item)).slot;
+    return rules_->equipment_info(item_definition(*rules_, item)).slot;
 }
 
 ItemPreview CampaignParty::preview(MemberId id, const por::Equipment &item) const
@@ -1915,7 +1920,7 @@ ItemPreview CampaignParty::preview(MemberId id, const por::Equipment &item) cons
     const auto &m = member(id);
     const auto in_place = gear_in_place(m, item);
     ItemPreview result{.armor_class_now = known_gear_rating(m).armor_class,
-                       .weight_hundredths = entry_weight(*rules_, equipment_conversion(item),
+                       .weight_hundredths = entry_weight(*rules_, item_definition(*rules_, item),
                                                          carried_quantity(item), &item)};
     const auto &sheet = m.character.sheet();
     if (in_place.slot == rules::EquipmentSlot::weapon)
@@ -2126,11 +2131,10 @@ bool CampaignParty::award_loot(const std::array<unsigned, 7> &wealth,
                               });
         auto &m = next.roster[recipient];
         // Encounter rewards are retained even beyond the shop's purchase cap.
-        const auto id = m.character.add_item(
-            {.definition_id = equipment_conversion(item),
-             .name = item.label(),
-             .quantity = carried_quantity(item),
-             .original_type = item.stored.type});
+        const auto id = m.character.add_item({.definition_id = item_definition(*rules_, item),
+                                              .name = item.label(),
+                                              .quantity = carried_quantity(item),
+                                              .original_type = item.stored.type});
         m.item_sources.emplace(id, item);
     }
     next.claimed_rewards.push_back(std::move(reward_id));

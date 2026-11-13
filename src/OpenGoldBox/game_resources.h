@@ -2,6 +2,8 @@
 #define OPENGOLDBOX_GAME_RESOURCES_H
 
 #include "application_settings.h"
+#include "game_rules.h"
+#include "godot_path.h"
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 
@@ -63,6 +65,14 @@ inline godot::String new_art_path(const char *relative)
 {
     const auto folder = settings::new_art_directory();
     return folder.is_empty() ? godot::String() : folder.path_join(relative);
+}
+
+// What each set of rules plays with: the SRD's content pack and Pool of
+// Radiance's folder.
+inline RulesFiles game_rules_files()
+{
+    return {presentation::path_from_godot(game_rules_file()),
+            presentation::path_from_godot(settings::game_path())};
 }
 
 // A file or folder the game ships beside its executable, such as data/shops.

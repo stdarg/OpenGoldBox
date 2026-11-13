@@ -3,7 +3,10 @@
 #include "opengold/original_combat.h"
 #include "opengold/original.h"
 #include "test_support.h"
+#include <cstdlib>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 
 using namespace opengold;
 using opengold::test::check;
@@ -158,6 +161,105 @@ void a_fighter_trains_and_keeps_the_level()
           "Training takes one level and keeps just short of the next but one");
 }
 
+// An item of a type, as a shop sells it: no name of its own, with its weight.
+por::Equipment original_item(const std::vector<por::ItemTemplate> &types, std::uint8_t type,
+                             std::uint16_t weight)
+{
+    std::array<std::uint8_t, 63> raw{};
+    raw[46] = type;
+    raw[55] = static_cast<std::uint8_t>(weight & 0xFF);
+    raw[56] = static_cast<std::uint8_t>(weight >> 8);
+    por::Equipment item;
+    item.stored = por::decode_items(raw)->front();
+    item.base = types.at(type);
+    return item;
+}
+
+MemberId member_with(CampaignParty &party,
+                     const std::shared_ptr<const rules::CharacterRules> &rules,
+                     std::string profession, std::string name)
+{
+    CharacterCreator creator(rules, 30);
+    creator.select(CreationField::race, "human");
+    creator.select(CreationField::character_class, profession);
+    creator.name(std::move(name));
+    for (int page = 0; page < 3; ++page)
+    {
+        creator.next();
+    }
+    creator.roll();
+    for (int page = 0; page < 3; ++page)
+    {
+        creator.next();
+    }
+    return party.add_pc(creator.create_character());
+}
+
+std::uint64_t carried(CampaignParty &party, MemberId id, const por::Equipment &item)
+{
+    party.take_item(id, item);
+    return party.member(id).character.inventory().items().back().id;
+}
+
+// Readying the original's items as the original allows, and fighting with
+// them: their dice, armor and the class that may use them.
+void characters_ready_original_gear()
+{
+    const char *game = std::getenv("OPENGOLD_GAME_DIR");
+    if (!game)
+    {
+        std::cout << "Pool of Radiance's files are not here; its items are not checked.\n";
+        return;
+    }
+    std::ifstream file(std::filesystem::path(game) / "ITEMS", std::ios::binary);
+    const std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(file), {}};
+    const auto types = *por::decode_item_templates(bytes);
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module({{}, types}), creation);
+    party.add_coins(Coin::gold, 1000);
+    constexpr std::uint8_t long_sword = 36, two_handed_sword = 38, leather = 50, shield = 59;
+    const auto fighter = member_with(party, creation, "fighter", "Gareth");
+    const auto unarmed = party.profile(fighter);
+    const auto sword = carried(party, fighter, original_item(types, long_sword, 60));
+    const auto armor = carried(party, fighter, original_item(types, leather, 150));
+    check(party.member(fighter).character.inventory().items().front().definition_id.starts_with(
+              "original:"),
+          "An item under the original rules is keyed by its original record");
+    party.equip(fighter, sword, rules::EquipmentOperation::equip);
+    party.equip(fighter, armor, rules::EquipmentOperation::equip);
+    const auto armed = party.profile(fighter);
+    const auto numbers = *original::Combatant::decode(armed.data);
+    check(numbers.attacks[0].dice == 1 && numbers.attacks[0].sides == 8,
+          "A long sword strikes for 1d8");
+    check(armed.armor_class == unarmed.armor_class - 2, "Leather armor is 2 better than none");
+    const auto big = carried(party, fighter, original_item(types, two_handed_sword, 150));
+    const auto held = carried(party, fighter, original_item(types, shield, 100));
+    check(throws(
+              [&]
+              {
+                  party.equip(fighter, big, rules::EquipmentOperation::equip);
+              }),
+          "Only one weapon is readied at a time");
+    party.unequip(fighter, sword);
+    party.equip(fighter, big, rules::EquipmentOperation::equip);
+    check(throws(
+              [&]
+              {
+                  party.equip(fighter, held, rules::EquipmentOperation::equip);
+              }),
+          "A two-handed sword leaves no hand for a shield");
+
+    const auto mage = member_with(party, creation, "magic_user", "Mira");
+    const auto blade = carried(party, mage, original_item(types, long_sword, 60));
+    check(!party.can_use(mage, original_item(types, long_sword, 60)) &&
+              throws(
+                  [&]
+                  {
+                      party.equip(mage, blade, rules::EquipmentOperation::equip);
+                  }),
+          "A magic-user cannot ready a long sword");
+}
+
 } // namespace
 
 int main()
@@ -166,6 +268,7 @@ int main()
     {
         the_original_pages_in_their_order();
         a_fighter_trains_and_keeps_the_level();
+        characters_ready_original_gear();
         std::cout << "Original creation tests passed\n";
         return 0;
     }

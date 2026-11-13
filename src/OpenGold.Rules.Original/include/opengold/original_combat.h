@@ -207,10 +207,12 @@ struct CarriedItem
                                               std::span<const por::EffectRecord> effects = {});
 
 // What the original rules' module knows of a game: its monsters, by the key a
-// fight's participant names them with (por::CreatureId::key(), "MON2CHA.DAX:0").
+// fight's participant names them with (por::CreatureId::key(), "MON2CHA.DAX:0"),
+// and its item types (ITEMS), by type.
 struct Content
 {
     std::map<std::string, Combatant, std::less<>> bestiary;
+    std::vector<por::ItemTemplate> item_types;
 };
 
 // The original rules as the module the game's fights and party run through.

@@ -445,8 +445,7 @@ void RolfTourView::restart()
         if (!campaign_ || !embedded_party_)
         {
             // The town on its own plays an SRD fighter.
-            campaign_ =
-                new_campaign_party(GameRules{}, presentation::path_from_godot(game_rules_file()));
+            campaign_ = new_campaign_party(GameRules{}, game_rules_files());
             opengold::rules::CharacterDraft d;
             d.race = "human";
             d.gender = "female";

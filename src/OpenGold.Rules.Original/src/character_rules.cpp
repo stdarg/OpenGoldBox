@@ -378,6 +378,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         original.gold = rolled.gold;
         original.race = static_cast<int>(chosen.race);
         original.profession = static_cast<int>(chosen.profession);
+        original.alignment = static_cast<int>(alignment);
         original.thief_skills = thief_skills(chosen.race, level_in(levels, ClassSlot::thief),
                                              ability[Ability::dexterity]);
         original.cleric_slots = spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric),

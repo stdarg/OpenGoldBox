@@ -132,7 +132,7 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
     const auto monsters = game_monsters();
     // The save's own rules, which may not be the current game's.
     auto [replacement, saved] = load_campaign_under_its_rules(
-        bytes, presentation::path_from_godot(game_rules_file()), campaign_asset_identity(directory),
+        bytes, game_rules_files(), campaign_asset_identity(directory),
         [&]
         {
             return por::RolfTourSession::load(directory, game_encounters(), new_wall_art, monsters);

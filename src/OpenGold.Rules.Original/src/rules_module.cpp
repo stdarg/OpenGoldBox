@@ -19,6 +19,13 @@ namespace
 
 using namespace rules;
 
+// Where an item type is readied (ITEMS byte 0, C_Equip): a weapon, a
+// shield, armor, gauntlets to boots in their own places, rings two at most;
+// anything else (arrows, quarrels, wands, scrolls) only takes its hands.
+constexpr std::uint8_t weapon_place = 0, shield_place = 1, armor_place = 2, boots_place = 8,
+                       ring_place = 9;
+constexpr std::uint8_t arrows_type = 73, quarrels_type = 28;
+
 std::runtime_error unavailable(std::string_view what)
 {
     return std::runtime_error(std::string(what) + " is not available under the original rules yet");
@@ -92,47 +99,72 @@ void recount_levels(CharacterSheet &sheet)
                     sheet.scores[Ability::wisdom]);
 }
 
-// A character's numbers from its sheet. Unarmed, as the original's characters
-// start: one attack a round (three in two rounds for a fighter above level 6)
-// of 1d2, with Strength's bonuses (charhlp.pas, RecalcStats).
-Combatant character_combatant(const CharacterSheet &sheet)
+// A character's record as the original keeps one, from its sheet: what
+// RecalcStats starts from before the items (chargen.pas sets these at
+// creation). Its coins are the party's, which OpenGoldBox shares, so they
+// weigh nothing here (docs/DEVIATIONS.md).
+por::CharacterRecord character_record(const CharacterSheet &sheet)
 {
-    if (!sheet.original)
+    const auto &original = original_numbers(sheet);
+    const auto score = [&sheet](Ability ability)
     {
-        throw std::runtime_error("This character was not made under the original rules");
-    }
-    const auto &original = *sheet.original;
-    const auto strength = sheet.scores[Ability::strength];
-    const auto dexterity = sheet.scores[Ability::dexterity];
-    Combatant c;
-    c.thac0 = original.thac0 - strength_to_hit_bonus(strength, original.exceptional_strength);
-    c.armor_class = 10 - dexterity_armor_class_bonus(dexterity);
-    // Without Dexterity, and 2 worse, as the original keeps it (cbtacts.pas).
-    c.rear_armor_class = 12;
-    c.max_hit_points = c.hit_points = std::max(sheet.hit_points, 1);
-    c.movement = 12;
-    const auto fighter = original.class_levels[static_cast<std::size_t>(ClassSlot::fighter)];
-    c.attacks[0] = {fighter > 6 ? 3 : 2, 1, 2,
-                    strength_damage_bonus(strength, original.exceptional_strength)};
-    c.saving_throws = original.saving_throws;
-    c.level = *std::max_element(original.class_levels.begin(), original.class_levels.end());
-    c.class_levels = original.class_levels;
-    c.attack_level = fighter > 0 ? fighter : 1;
-    c.initiative_bonus = dexterity_missile_bonus(dexterity);
-    c.intelligence = sheet.scores[Ability::intelligence];
-    c.strength = strength;
-    // The original's race numbers, 1 (dwarf) to 7 (human).
-    constexpr std::array<std::string_view, 7> races{"dwarf",    "elf",      "gnome", "half_elf",
-                                                    "halfling", "half_orc", "human"};
-    const auto race = std::find(races.begin(), races.end(), sheet.race);
-    c.race = race == races.end() ? 7 : static_cast<int>(race - races.begin()) + 1;
-    c.constitution = sheet.scores[Ability::constitution];
-    // The innate effects each race gets at creation (chargen.pas): the
-    // Constitution saves against poison (90) and against spells and wands
-    // (97), and the elf's and half-elf's resistance to sleep and charm (107, 124).
-    constexpr int dwarf = 1, elf = 2, gnome = 3, half_elf = 4, halfling = 5;
-    // A dwarf's and a gnome's bonus against their foes (26, 18), their
+        return static_cast<std::uint8_t>(std::clamp(sheet.scores[ability], 0, 255));
+    };
+    por::CharacterRecord record;
+    record.name = sheet.name;
+    record.current_abilities = {score(Ability::strength),
+                                score(Ability::intelligence),
+                                score(Ability::wisdom),
+                                score(Ability::dexterity),
+                                score(Ability::constitution),
+                                score(Ability::charisma),
+                                static_cast<std::uint8_t>(original.exceptional_strength)};
+    record.abilities = record.current_abilities;
+    // Characters' blows take Strength; a fighter above level 6 strikes three
+    // times in two rounds (chargen.pas, ClassCal).
+    record.strength_bonus_flag_raw = 1;
+    const auto &l = original.class_levels;
+    const auto fighter = level_in(l, ClassSlot::fighter);
+    record.base_attacks[0] = {static_cast<std::uint8_t>(fighter > 6 ? 3 : 2), {1, 2, 0}};
+    record.base_thac0 = original.thac0;
+    record.base_armor_class = 10;
+    record.max_hit_points = static_cast<std::uint8_t>(std::clamp(sheet.hit_points, 1, 255));
+    record.base_movement = 12;
+    const auto &t = original.saving_throws;
+    record.saves = {static_cast<std::uint8_t>(t[0]), static_cast<std::uint8_t>(t[1]),
+                    static_cast<std::uint8_t>(t[2]), static_cast<std::uint8_t>(t[3]),
+                    static_cast<std::uint8_t>(t[4])};
+    const auto level = [&l](ClassSlot slot)
+    {
+        return static_cast<std::uint8_t>(level_in(l, slot));
+    };
+    record.levels = {level(ClassSlot::cleric),  level(ClassSlot::druid),
+                     level(ClassSlot::fighter), level(ClassSlot::paladin),
+                     level(ClassSlot::ranger),  level(ClassSlot::magic_user),
+                     level(ClassSlot::thief),   level(ClassSlot::monk)};
+    record.highest_level_raw = *std::max_element(l.begin(), l.end());
+    // The original's race numbers run from 1 (dwarf) to 7 (human).
+    record.race = static_cast<std::uint8_t>(original.race + 1);
+    record.alignment = static_cast<std::uint8_t>(original.alignment);
+    // Dwarves, gnomes and halflings stand one square short (chargen.pas).
+    const auto race = static_cast<Race>(original.race);
+    const bool short_folk = race == Race::dwarf || race == Race::gnome || race == Race::halfling;
+    record.icon_size_raw = short_folk ? 1 : 2;
+    return record;
+}
+
+// A character's numbers with its readied items, as the original works them
+// out at the start of every fight and turn (charhlp.pas, RecalcStats), and
+// the innate effects each race gets at creation (chargen.pas).
+Combatant character_combatant(const CharacterSheet &sheet,
+                              std::span<const CarriedItem> carried = {})
+{
+    auto c = combatant_from_record(character_record(sheet), carried);
+    // The Constitution saves against poison (90) and against spells and wands
+    // (97), and the elf's and half-elf's resistance to sleep and charm (107,
+    // 124). A dwarf's and a gnome's bonus against their foes (26, 18), their
     // defense against giants (47), and a gnome's against bugbears (48).
+    constexpr int dwarf = 1, elf = 2, gnome = 3, half_elf = 4, halfling = 5;
     constexpr int dwarf_attack = 26, gnome_attack = 18, giant_defense = 47, bugbear_defense = 48;
     const auto innate = [&c](int code)
     {
@@ -167,9 +199,6 @@ Combatant character_combatant(const CharacterSheet &sheet)
     {
         innate(124);
     }
-    c.thief_level = original.class_levels[static_cast<std::size_t>(ClassSlot::thief)];
-    // Unarmed and unarmored, a thief can backstab.
-    c.backstabs = c.thief_level > 0;
     return c;
 }
 
@@ -244,6 +273,11 @@ class OriginalModule final : public RulesModule
                            const AdvancementChoice &) const override;
     [[nodiscard]] bool ready_to_advance(const CharacterSheet &sheet,
                                         unsigned experience) const override;
+
+    [[nodiscard]] bool keys_original_items() const override
+    {
+        return true;
+    }
     void roll_advancement(const CharacterSheet &sheet, unsigned experience,
                           AdvancementChoice &choice, RandomState &random_state) const override;
     [[nodiscard]] unsigned experience_after_advance(const CharacterSheet &before,
@@ -304,6 +338,11 @@ class OriginalModule final : public RulesModule
                                 std::string_view spell) const override;
 
   private:
+    // An item of this game, by its key: its record and its type.
+    [[nodiscard]] CarriedItem item_for(std::string_view key) const;
+    // The gear, every item readied.
+    [[nodiscard]] std::vector<CarriedItem> readied(std::span<const std::string> gear) const;
+
     Content content_;
 };
 
@@ -327,16 +366,24 @@ std::unique_ptr<CombatSession> OriginalModule::restore(std::string_view checkpoi
 CharacterProfile OriginalModule::character_profile(const CharacterSheet &sheet,
                                                    std::span<const std::string> gear) const
 {
-    if (!gear.empty())
-    {
-        throw unavailable("Gear");
-    }
-    const auto combatant = character_combatant(sheet);
+    const auto carried = readied(gear);
+    const auto combatant = character_combatant(sheet, carried);
     CharacterProfile profile;
     profile.data = combatant.encode();
     profile.hit_points = combatant.max_hit_points;
     profile.armor_class = combatant.armor_class;
     profile.movement_feet = combatant.movement * 5;
+    profile.item_save_bonus = combatant.save_bonus;
+    for (const auto &item : carried)
+    {
+        const auto place = item.type.worn_location;
+        profile.equipment_positions.push_back({place == weapon_place   ? "Weapon"
+                                               : place == shield_place ? "Shield"
+                                               : place == armor_place  ? "Armor"
+                                                                       : "Readied",
+                                               {}});
+        profile.weapon_hands += place == weapon_place ? item.type.hands : 0U;
+    }
     return profile;
 }
 
@@ -416,50 +463,217 @@ void OriginalModule::elapse(std::span<Participant>, std::chrono::milliseconds, R
     // No lasting effects run under the original rules yet.
 }
 
-EquipmentInfo OriginalModule::equipment_info(std::string_view) const
+CarriedItem OriginalModule::item_for(std::string_view key) const
 {
-    throw unavailable("equipment_info");
+    const auto record = por::item_of_original_key(key);
+    if (!record || record->type >= content_.item_types.size())
+    {
+        throw std::runtime_error("Not an item of the original rules");
+    }
+    return {*record, content_.item_types[record->type]};
 }
 
-unsigned OriginalModule::carrying_capacity_pounds(const CharacterSheet &) const
+std::vector<CarriedItem> OriginalModule::readied(std::span<const std::string> gear) const
 {
-    throw unavailable("carrying_capacity_pounds");
+    std::vector<CarriedItem> carried;
+    for (const auto &key : gear)
+    {
+        auto item = item_for(key);
+        item.item.readied_raw = 1;
+        carried.push_back(std::move(item));
+    }
+    return carried;
 }
 
-bool OriginalModule::can_use_item(const CharacterSheet &, std::string_view) const
+namespace
 {
-    throw unavailable("can_use_item");
+// The usability bit of each class slot (gdconsts.pas, usabilityBit).
+constexpr std::array<std::uint8_t, class_slot_count> usability_bits{1 << 1, 1 << 4, 1 << 3, 1 << 6,
+                                                                    1 << 7, 1 << 0, 1 << 2, 1 << 5};
+
+std::uint8_t usability(const CharacterSheet &sheet)
+{
+    std::uint8_t bits = 0;
+    const auto &levels = original_numbers(sheet).class_levels;
+    for (std::size_t at = 0; at < class_slot_count; ++at)
+    {
+        if (levels[at] > 0)
+        {
+            bits |= usability_bits[at];
+        }
+    }
+    return bits;
 }
 
+// A d20 hit's chance against THAC0 and an Armor Class: a 1 misses, a 20 hits.
+double hit_chance(int thac0, int armor_class)
+{
+    const int needed = std::clamp(thac0 - armor_class, 2, 20);
+    return (21 - needed) / 20.0;
+}
+} // namespace
+
+// Ten coins' weight is a pound.
+EquipmentInfo OriginalModule::equipment_info(std::string_view key) const
+{
+    const auto item = item_for(key);
+    EquipmentInfo info;
+    switch (item.type.worn_location)
+    {
+    case weapon_place:
+        info.slot = EquipmentSlot::weapon;
+        break;
+    case shield_place:
+        info.slot = EquipmentSlot::shield;
+        break;
+    case armor_place:
+        info.slot = EquipmentSlot::armor;
+        break;
+    default:
+        info.slot = EquipmentSlot::worn;
+    }
+    info.hands = item.type.hands;
+    info.weight_hundredths = item.item.weight * 10U;
+    info.ranged = item.type.range > 1;
+    return info;
+}
+
+// What the character may carry before it can take no more: its allowance and
+// 1,500 coins' weight more (viewchar.pas, CannotCarryItem).
+unsigned OriginalModule::carrying_capacity_pounds(const CharacterSheet &sheet) const
+{
+    const auto &numbers = original_numbers(sheet);
+    const int coins =
+        weight_allowance(sheet.scores[Ability::strength], numbers.exceptional_strength) + 1500;
+    return static_cast<unsigned>(std::max(coins, 0) / 10);
+}
+
+bool OriginalModule::can_use_item(const CharacterSheet &sheet, std::string_view key) const
+{
+    return (item_for(key).type.class_restrictions & usability(sheet)) != 0;
+}
+
+// The original readies an item or refuses; it never chooses a hand.
 std::vector<EquipmentChoice> OriginalModule::equipment_choices(const CharacterSheet &,
                                                                std::span<const std::string>,
                                                                unsigned) const
 {
-    throw unavailable("equipment_choices");
+    return {};
 }
 
-EquipmentChange OriginalModule::equipment_change(const CharacterSheet &,
-                                                 std::span<const std::string>, unsigned,
-                                                 EquipmentOperation) const
+// Readying as the original allows it (viewchar.pas, ToggleReadyItem): not a
+// class's wrong item, no more than two hands' worth, one item in each place
+// but two rings, one stack of arrows and one of quarrels; and a cursed item
+// is never put away.
+EquipmentChange OriginalModule::equipment_change(const CharacterSheet &sheet,
+                                                 std::span<const std::string> candidates,
+                                                 unsigned selected,
+                                                 EquipmentOperation operation) const
 {
-    throw unavailable("equipment_change");
+    if (selected >= candidates.size())
+    {
+        throw std::runtime_error("Unknown equipment candidate");
+    }
+    const auto chosen = item_for(candidates[selected]);
+    EquipmentChange change;
+    if (operation == EquipmentOperation::unequip)
+    {
+        if (chosen.item.cursed_raw != 0)
+        {
+            throw std::runtime_error("It's cursed");
+        }
+        for (unsigned n = 0; n < candidates.size(); ++n)
+        {
+            if (n != selected)
+            {
+                change.indices.push_back(n);
+            }
+        }
+        return change;
+    }
+    if ((chosen.type.class_restrictions & usability(sheet)) == 0)
+    {
+        throw std::runtime_error("Wrong class");
+    }
+    unsigned hands = chosen.type.hands, rings = 0;
+    const auto place = chosen.type.worn_location;
+    for (unsigned n = 0; n < candidates.size(); ++n)
+    {
+        if (n == selected)
+        {
+            continue;
+        }
+        const auto other = item_for(candidates[n]);
+        hands += other.type.hands;
+        const auto other_place = other.type.worn_location;
+        rings += other_place == ring_place ? 1 : 0;
+        const bool same_place = place <= boots_place && other_place == place;
+        const bool same_stack =
+            (chosen.item.type == arrows_type || chosen.item.type == quarrels_type) &&
+            other.item.type == chosen.item.type;
+        if (same_place || same_stack)
+        {
+            throw std::runtime_error("Already using another item there");
+        }
+        change.indices.push_back(n);
+    }
+    if (place == ring_place && rings >= 2)
+    {
+        throw std::runtime_error("Already using another item there");
+    }
+    if (hands > 2)
+    {
+        throw std::runtime_error("Your hands are full!");
+    }
+    change.indices.push_back(selected);
+    return change;
 }
 
-GearRating OriginalModule::gear_rating(const CharacterSheet &, std::span<const std::string>,
-                                       int) const
+// The gear's rating for auto-equip, more being better: its Armor Class
+// counted up from 20 (so the original's descending Armor Class compares as
+// the SRD's does), and the damage its first attack is expected to deal in a
+// round against that Armor Class, counted the same way.
+GearRating OriginalModule::gear_rating(const CharacterSheet &sheet,
+                                       std::span<const std::string> gear,
+                                       int target_armor_class) const
 {
-    throw unavailable("gear_rating");
+    const auto c = character_combatant(sheet, readied(gear));
+    const auto &attack = c.attacks[0];
+    const double average = attack.dice * (attack.sides + 1) / 2.0 + attack.modifier;
+    GearRating rating;
+    rating.armor_class = 20 - c.armor_class;
+    rating.round_damage = attack.rate_per_two_rounds / 2.0 *
+                          hit_chance(c.thac0, 20 - target_armor_class) * std::max(average, 0.0);
+    return rating;
 }
 
-std::optional<WeaponAttackView> OriginalModule::weapon_attack(const CharacterSheet &,
-                                                              std::span<const std::string>) const
+// The weapon's attack as a shop's hover shows it: what the character's
+// THAC0 is better than 20 by, and the dice.
+std::optional<WeaponAttackView>
+OriginalModule::weapon_attack(const CharacterSheet &sheet, std::span<const std::string> gear) const
 {
-    throw unavailable("weapon_attack");
+    const auto carried = readied(gear);
+    if (std::ranges::none_of(carried,
+                             [](const CarriedItem &item)
+                             {
+                                 return item.type.worn_location == weapon_place;
+                             }))
+    {
+        return std::nullopt;
+    }
+    const auto c = character_combatant(sheet, carried);
+    WeaponAttackView view;
+    view.attack_bonus = 20 - c.thac0;
+    view.dice = c.attacks[0].dice;
+    view.sides = c.attacks[0].sides;
+    view.damage_bonus = c.attacks[0].modifier;
+    view.trained = true;
+    return view;
 }
 
-bool OriginalModule::suits(const CharacterSheet &, std::string_view) const
+bool OriginalModule::suits(const CharacterSheet &sheet, std::string_view key) const
 {
-    throw unavailable("suits");
+    return can_use_item(sheet, key);
 }
 
 SpellAccess OriginalModule::spell_access(const CharacterSheet &) const

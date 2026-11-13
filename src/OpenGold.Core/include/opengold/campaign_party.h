@@ -645,6 +645,10 @@ class CampaignParty
 };
 
 [[nodiscard]] std::string equipment_conversion(const por::Equipment &item);
+// The item's definition under these rules: its conversion to the SRD's
+// catalog, or its original record for rules that keep the original's items.
+[[nodiscard]] std::string item_definition(const rules::RulesModule &rules,
+                                          const por::Equipment &item);
 // How many an original item counts for in an inventory: a stack's items, or a
 // charged item's charges or doses (MAGIC-3), otherwise one.
 [[nodiscard]] unsigned carried_quantity(const por::Equipment &item);

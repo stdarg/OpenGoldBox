@@ -142,9 +142,9 @@ struct CharacterSheet
         // breath weapon, spell.
         std::array<int, 5> saving_throws{};
         int exceptional_strength{}, age{}, gold{};
-        // The race and class by the original's numbers (original::Race and
-        // original::Profession), which its training reads.
-        int race{}, profession{};
+        // The race, class and alignment by the original's numbers
+        // (original::Race, original::Profession and original::Alignment).
+        int race{}, profession{}, alignment{};
         // Percent chances, empty for a character without thief levels.
         std::array<int, 8> thief_skills{};
         // Spell slots of levels 1 to 3.

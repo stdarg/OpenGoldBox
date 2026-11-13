@@ -22,7 +22,7 @@ void RolfTourView::check_mastery_rest_controls()
             auto draft = campaign_->member(campaign_->selected()).character.creation_data();
             // The SRD's classes and their training.
             campaign_ = new_campaign_party(
-                GameRules{}, std::filesystem::path(rest_rules_path().utf8().get_data()));
+                GameRules{}, {std::filesystem::path(rest_rules_path().utf8().get_data()), {}});
             const auto &rules = campaign_->character_rules();
             unsigned index = 0;
             for (const std::string klass :

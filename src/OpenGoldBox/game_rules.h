@@ -25,18 +25,25 @@ struct GameRules
     bool operator==(const GameRules &) const = default;
 };
 
+// Where each set of rules finds what it plays with: the SRD's content pack
+// (game_rules_file()), and Pool of Radiance's folder, whose monster records
+// and item types the original rules read.
+struct RulesFiles
+{
+    std::filesystem::path srd_pack, original_game;
+};
+
 // What a new game plays by. The new game's question stays hidden, with the
 // SRD rules in effect, until the original rules can play a fight.
 inline constexpr GameRules new_game_rules{};
 
-// The rules module of a game under these rules. The SRD rules come from their
-// content pack (game_rules_file()).
+// The rules module of a game under these rules.
 [[nodiscard]] std::unique_ptr<opengold::rules::RulesModule>
-make_rules_module(const GameRules &rules, const std::filesystem::path &srd_pack);
+make_rules_module(const GameRules &rules, const RulesFiles &files);
 
 // A new game's party under these rules.
-[[nodiscard]] std::shared_ptr<opengold::CampaignParty>
-new_campaign_party(const GameRules &rules, const std::filesystem::path &srd_pack);
+[[nodiscard]] std::shared_ptr<opengold::CampaignParty> new_campaign_party(const GameRules &rules,
+                                                                          const RulesFiles &files);
 
 // The rules a save was made under (opengold::saved_campaign_rules), or a
 // game's party plays by. Throws for rules this build does not play.
@@ -52,7 +59,7 @@ struct LoadedCampaign
 };
 
 [[nodiscard]] LoadedCampaign
-load_campaign_under_its_rules(std::string_view bytes, const std::filesystem::path &srd_pack,
+load_campaign_under_its_rules(std::string_view bytes, const RulesFiles &files,
                               std::string_view assets,
                               const std::function<opengold::por::RolfTourSession()> &make_town);
 
