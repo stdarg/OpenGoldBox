@@ -21,6 +21,16 @@ func require(condition: bool, message: String) -> void:
 func settle() -> void:
 	for frame in range(6): await process_frame
 
+# The new game's first question (docs/ORIGINAL-RULES.md): the rules it plays
+# by, the SRD's offered first for now; Begin starts the game with them.
+func answer_rules() -> void:
+	await settle()
+	var dialog: Window = current_scene.get_node_or_null("RulesDialog") if current_scene else null
+	if dialog and dialog.visible:
+		dialog.get_node("Rows/Begin").pressed.emit()
+		await settle()
+		await settle()
+
 func key(viewport: Viewport, code: Key, ctrl := false) -> void:
 	var event := InputEventKey.new()
 	event.keycode = code
@@ -56,6 +66,7 @@ func run_checks() -> void:
 		change_scene_to_file("res://scenes/startup.tscn")
 		await settle()
 		await pick_game()
+		await answer_rules()
 		require(current_scene.name == "CharacterCreation", "No-flag startup should skip the language dialog and splashes")
 		require(current_scene.get_node("PageTitle").text == "Nombre, raza y género", "Restored language did not reach character creation")
 		print("Language restore passed across process restart.")
@@ -128,6 +139,7 @@ func run_checks() -> void:
 			await RenderingServer.frame_post_draw
 			require(root.get_texture().get_image().get_data() == pixels, "Spanish splash backgrounds are not pixel-identical")
 		await key(root, KEY_SPACE)
+	await answer_rules()
 	require(current_scene.name == "CharacterCreation" and current_scene.get_node("PageTitle").text == "Nombre, raza y género", "Selection did not reach Spanish character creation")
 	# Reopen the actual startup dialog, select English using the controls, and use
 	# its button path. Keep Spanish saved for the separate restart check.

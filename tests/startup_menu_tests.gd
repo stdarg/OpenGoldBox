@@ -22,6 +22,16 @@ func require(condition: bool, message: String) -> void:
 func settle() -> void:
 	for frame in range(8): await process_frame
 
+# The new game's first question (docs/ORIGINAL-RULES.md): the rules it plays
+# by, the SRD's offered first for now; Begin starts the game with them.
+func answer_rules() -> void:
+	await settle()
+	var dialog: Window = current_scene.get_node_or_null("RulesDialog") if current_scene else null
+	if dialog and dialog.visible:
+		dialog.get_node("Rows/Begin").pressed.emit()
+		await settle()
+		await settle()
+
 func capture(name: String) -> void:
 	if captures.is_empty(): return
 	DirAccess.make_dir_recursive_absolute(captures)
@@ -72,7 +82,7 @@ func run_checks() -> void:
 		return
 	menu.get_node("Buttons/Games/CURSE").pressed.emit()
 	await settle()
-	await settle()
+	await answer_rules()
 	require(current_scene != null and current_scene.name == "CharacterCreation", "Curse's button must lead on to the party")
 	# The exploration screen plays the chosen game's campaign: Curse's opening.
 	change_scene_to_file("res://scenes/rolf_tour.tscn")

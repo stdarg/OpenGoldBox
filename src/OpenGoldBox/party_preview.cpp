@@ -72,15 +72,16 @@ Character check_fighter()
     return Character(*rules, std::move(draft), {});
 }
 
-// The rules a new game plays by. Until the new game's question is shown,
-// checks start one under the original rules with --original-rules.
+// The rules a new game plays by: the startup's question chose them; a check
+// that opens this scene by itself starts under the original rules with
+// --original-rules.
 GameRules starting_rules()
 {
     if (settings::flag("--original-rules"))
     {
         return {GameRules::Set::original, original::default_aging};
     }
-    return new_game_rules;
+    return settings::chosen_rules();
 }
 } // namespace
 

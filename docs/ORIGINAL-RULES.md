@@ -105,8 +105,12 @@ lines in all:
      character to its rules.
    - The difficulty settings split per set of rules.
 
-   Done (2026-11-13) but for the question itself, which stays hidden as
-   decided until the original rules can play a fight (combat step 7):
+   Done (2026-11-13). The question shows since the original rules play
+   fights on screen (combat step 7): after a game is chosen, a "New game"
+   window asks the rules, the SRD's offered first until the original rules
+   play from start to end and become the default (step 7), and under the
+   original rules the aging, the original's first. Closing it returns to the
+   games; `--rules=srd` or `--rules=original` answers it for a check.
    - **The game's rules** (`src/OpenGoldBox/game_rules.h`): `GameRules`, the
      rules a game plays by and its aging, makes a game's party, its rules
      module and character rules; `new_game_rules` is what a new game plays by

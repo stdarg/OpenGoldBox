@@ -33,8 +33,8 @@ struct RulesFiles
     std::filesystem::path srd_pack, original_game;
 };
 
-// What a new game plays by. The new game's question stays hidden, with the
-// SRD rules in effect, until the original rules can play a fight.
+// What the new game's question offers first: the SRD rules, until the
+// original rules play from start to end and become the default.
 inline constexpr GameRules new_game_rules{};
 
 // The rules module of a game under these rules.

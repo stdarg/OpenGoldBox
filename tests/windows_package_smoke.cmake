@@ -92,9 +92,9 @@ endif()
 file(WRITE "${user_data}/settings.cfg"
     "[game]\npath=\"${game_files}\"\n\n[interface]\nlanguage=\"en\"\n")
 run_game("Godot party check passed"
-    -- --game=POOLRAD --party-check --save-check-write)
+    -- --game=POOLRAD --rules=srd --party-check --save-check-write)
 run_game("Godot campaign restart check passed"
-    -- --game=POOLRAD --save-check-read)
+    -- --game=POOLRAD --rules=srd --save-check-read)
 
 if(failure STREQUAL "")
     file(GLOB saves "${user_data}/checks/save-check/*.ogs")

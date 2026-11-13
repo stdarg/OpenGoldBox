@@ -37,6 +37,13 @@ class StartupView : public godot::Control
     void show_screen();
     void finish();
     void open_character_creation();
+    // The new game's first question: its rules, then under the original rules
+    // its aging (docs/ORIGINAL-RULES.md). --rules=srd or --rules=original
+    // answers it for a check.
+    void ask_rules();
+    void show_rules_notes(std::int64_t);
+    void begin_game();
+    void cancel_new_game();
     void begin_startup();
     void accept_language();
     void activate_language(std::int64_t index);

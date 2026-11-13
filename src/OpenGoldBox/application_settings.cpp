@@ -23,6 +23,7 @@ namespace
 {
 std::optional<String> confirmed_path, confirmed_language;
 opengold::GoldBoxGame current_game = opengold::GoldBoxGame::pool_of_radiance;
+GameRules current_rules = new_game_rules;
 std::map<opengold::GoldBoxGame, String> confirmed_folders;
 
 String read(const char *section, const char *key)
@@ -471,6 +472,16 @@ opengold::GoldBoxGame chosen_game()
 void choose_game(opengold::GoldBoxGame game)
 {
     current_game = game;
+}
+
+GameRules chosen_rules()
+{
+    return current_rules;
+}
+
+void choose_rules(GameRules rules)
+{
+    current_rules = rules;
 }
 
 String game_folder(opengold::GoldBoxGame game)

@@ -18,6 +18,16 @@ func settle() -> void:
 	for frame in range(6):
 		await process_frame
 
+# The new game's first question (docs/ORIGINAL-RULES.md): the rules it plays
+# by, the SRD's offered first for now; Begin starts the game with them.
+func answer_rules() -> void:
+	await settle()
+	var dialog: Window = current_scene.get_node_or_null("RulesDialog") if current_scene else null
+	if dialog and dialog.visible:
+		dialog.get_node("Rows/Begin").pressed.emit()
+		await settle()
+		await settle()
+
 func restart_startup() -> void:
 	change_scene_to_file("res://scenes/startup.tscn")
 	await settle()
@@ -105,6 +115,18 @@ func run_checks() -> void:
 	await restart_startup()
 	var enabled := OS.get_cmdline_args().has("--splash") or OS.get_cmdline_user_args().has("--splash")
 	if not enabled:
+		var dialog: Window = current_scene.get_node("RulesDialog")
+		var rules: OptionButton = dialog.get_node("Rows/Rules")
+		if not require(dialog.visible and rules.item_count == 2 and rules.selected == 1 and not dialog.get_node("Rows/Aging").visible, "A new game asks its rules first, the SRD's offered first"):
+			return
+		rules.select(0)
+		rules.item_selected.emit(0)
+		await settle()
+		if not require(dialog.get_node("Rows/Aging").visible and dialog.get_node("Rows/Aging").selected == 0, "Under the original rules the question asks the aging, the original's first"):
+			return
+		rules.select(1)
+		rules.item_selected.emit(1)
+		await answer_rules()
 		if not require(current_scene != null and current_scene.name == "CharacterCreation", "Without --splash, character creation must open"):
 			return
 		print("Startup check passed: no flag skips both splashes")
@@ -130,14 +152,17 @@ func run_checks() -> void:
 	await key(KEY_SPACE, false)
 	if not is_splash(1): return
 	await key(KEY_ENTER)
+	await answer_rules()
 	if not require(current_scene.name == "CharacterCreation", "Second key must open character creation"): return
 	await restart_startup()
 	await key(KEY_ESCAPE)
+	await answer_rules()
 	if not require(current_scene.name == "CharacterCreation", "Escape must skip first splash"): return
 	await restart_startup()
 	await key(KEY_A)
 	if not is_splash(1): return
 	await key(KEY_ESCAPE)
+	await answer_rules()
 	if not require(current_scene.name == "CharacterCreation", "Escape must skip second splash"): return
 	print("Startup check passed: two 0.6s text fades, key progression, ignored release/repeat/mouse, Escape during either fade")
 	quit(0)

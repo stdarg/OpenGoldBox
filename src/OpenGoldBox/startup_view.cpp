@@ -13,6 +13,7 @@
 #include <godot_cpp/classes/item_list.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/window.hpp>
+#include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/translation_server.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
@@ -549,6 +550,113 @@ void StartupView::finish()
     }
     finishing_ = true;
     required_node<TextureRect>(*this, "ImageFit/Image/Text").call("cancel");
+    ask_rules();
+}
+
+namespace
+{
+// The rules the question offers, in its order, and what each is.
+constexpr std::array<std::pair<const char *, const char *>, 2> rules_choices{
+    {{N_("The original rules (Pool of Radiance)"),
+      N_("Characters, fights and magic as the original game had them: AD&D 1st edition.")},
+     {N_("SRD 5.2.1"),
+      N_("The fifth edition's System Reference Document, with the original's adventures.")}}};
+// The original rules' aging settings, in the question's order: the original's
+// first, as it is the default.
+constexpr std::array<std::pair<opengold::original::Aging, const char *>, 3> aging_choices{
+    {{opengold::original::Aging::original,
+      N_("As the original: the starting age changes the scores once.")},
+     {opengold::original::Aging::off, N_("Off: age never changes the scores.")},
+     {opengold::original::Aging::add,
+      N_("AD&D: the scores change again as characters grow older.")}}};
+constexpr std::array<const char *, 3> aging_names{N_("As the original"), N_("Off"), N_("AD&D")};
+} // namespace
+
+void StartupView::ask_rules()
+{
+    for (const auto &[flag, rules] :
+         {std::pair{"--rules=srd", GameRules{}},
+          std::pair{"--rules=original",
+                    GameRules{GameRules::Set::original, opengold::original::default_aging}}})
+    {
+        if (settings::flag(flag))
+        {
+            settings::choose_rules(rules);
+            begin_game();
+            return;
+        }
+    }
+    if (settings::flag("--combat-demo"))
+    {
+        begin_game();
+        return;
+    }
+    auto *dialog = &required_node<Window>(*this, "RulesDialog"); // scene-owned
+    auto &rules = required_node<OptionButton>(*dialog, "Rows/Rules");
+    if (rules.get_item_count() == 0)
+    {
+        i18n::prepare_ui(*dialog);
+        for (const auto &[name, note] : rules_choices)
+        {
+            rules.add_item(i18n::text(name));
+        }
+        rules.select(new_game_rules.set == GameRules::Set::original ? 0 : 1);
+        rules.connect("item_selected", presentation::guarded(this, &StartupView::show_rules_notes));
+        auto &aging = required_node<OptionButton>(*dialog, "Rows/Aging");
+        for (const auto *name : aging_names)
+        {
+            aging.add_item(i18n::text(name));
+        }
+        aging.select(0);
+        aging.connect("item_selected", presentation::guarded(this, &StartupView::show_rules_notes));
+        required_node<Button>(*dialog, "Rows/Begin")
+            .connect("pressed", presentation::guarded(this, &StartupView::begin_game));
+        dialog->connect("close_requested",
+                        presentation::guarded(this, &StartupView::cancel_new_game));
+    }
+    show_rules_notes(0);
+    dialog->popup_centered();
+    required_node<Button>(*dialog, "Rows/Begin").grab_focus();
+}
+
+void StartupView::show_rules_notes(std::int64_t)
+{
+    auto &dialog = required_node<Window>(*this, "RulesDialog");
+    const auto rules = required_node<OptionButton>(dialog, "Rows/Rules").get_selected();
+    const auto aging = required_node<OptionButton>(dialog, "Rows/Aging").get_selected();
+    required_node<Label>(dialog, "Rows/RulesNote")
+        .set_text(i18n::text(rules_choices.at(static_cast<std::size_t>(rules)).second));
+    const bool original = rules == 0;
+    for (const char *name : {"Rows/AgingLabel", "Rows/Aging", "Rows/AgingNote"})
+    {
+        required_node<Control>(dialog, name).set_visible(original);
+    }
+    required_node<Label>(dialog, "Rows/AgingNote")
+        .set_text(i18n::text(aging_choices.at(static_cast<std::size_t>(aging)).second));
+}
+
+// Closing the question returns to the games.
+void StartupView::cancel_new_game()
+{
+    required_node<Window>(*this, "RulesDialog").hide();
+    finishing_ = false;
+    show_game_menu();
+}
+
+void StartupView::begin_game()
+{
+    // The question's answer, when it was asked rather than answered by a flag.
+    if (auto *dialog = Object::cast_to<Window>(get_node_or_null("RulesDialog"));
+        dialog && dialog->is_visible())
+    {
+        const auto rules = required_node<OptionButton>(*dialog, "Rows/Rules").get_selected();
+        const auto aging = required_node<OptionButton>(*dialog, "Rows/Aging").get_selected();
+        settings::choose_rules(
+            rules == 0 ? GameRules{GameRules::Set::original,
+                                   aging_choices.at(static_cast<std::size_t>(aging)).first}
+                       : GameRules{});
+        dialog->hide();
+    }
     // Scene changes must occur after ready/input dispatch has completed.
     call_deferred("open_character_creation");
 }

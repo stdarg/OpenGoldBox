@@ -1,5 +1,6 @@
 #ifndef OPENGOLDBOX_APPLICATION_SETTINGS_H
 #define OPENGOLDBOX_APPLICATION_SETTINGS_H
+#include "game_rules.h"
 #include "opengold/difficulty.h"
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/packed_string_array.hpp>
@@ -78,6 +79,10 @@ Validation validate_game_path(const godot::String &directory);
 // The game chosen on the startup menu: Pool of Radiance until another is chosen.
 [[nodiscard]] opengold::GoldBoxGame chosen_game();
 void choose_game(opengold::GoldBoxGame game);
+// The rules the new game's question chose (docs/ORIGINAL-RULES.md): what a new
+// game plays by until it is asked.
+[[nodiscard]] GameRules chosen_rules();
+void choose_rules(GameRules rules);
 // A game's folder. Pool of Radiance's is game_path(); another's is kept under
 // [games] by its folder name, or found in OPENGOLD_GOLDBOX_DIR.
 [[nodiscard]] godot::String game_folder(opengold::GoldBoxGame game);
