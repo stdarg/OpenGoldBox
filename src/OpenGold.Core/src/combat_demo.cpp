@@ -1107,7 +1107,7 @@ void CombatDemo::finish_combat()
     unsigned defeated = 0;
     for (const auto &unit : state.combatants)
     {
-        if (unit.side == Side::opposition && unit.hit_points == 0)
+        if (unit.side == Side::opposition && (unit.hit_points <= 0 || unit.surrendered))
         {
             ++defeated;
         }

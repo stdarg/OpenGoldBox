@@ -217,12 +217,15 @@ struct StagedCreature
 
 // The area's creature `record`, drawn with combat icon `icon`, as fighter `id`
 // named `name` on `side`. `exported` is the creature's Combat Sprite Catalog
-// export, or null. Throws when the area converts no such record or lacks the
+// export, or null. Under rules that play the original's records
+// (`original_record`) it fights as its record; otherwise as the area's
+// conversion of it. Throws when the area converts no such record or lacks the
 // icon.
 [[nodiscard]] StagedCreature stage_area_creature(const PhlanResources &area, unsigned record,
                                                  unsigned icon, const ExportedMonster *exported,
                                                  rules::EntityId id, std::string name,
-                                                 rules::Side side, Difficulty difficulty);
+                                                 rules::Side side, Difficulty difficulty,
+                                                 bool original_record);
 
 struct TourSnapshot
 {
@@ -602,6 +605,19 @@ class RolfTourSession
     std::shared_ptr<const PhlanResources> town_;
     TownParty party_;
     std::shared_ptr<opengold::CampaignParty> campaign_;
+    // The experience a creature record of the area awards: its conversion's,
+    // or under rules that play the original's records, the record's own.
+    [[nodiscard]] unsigned record_experience(unsigned record) const;
+    // Each member's share of a fight's experience: under rules that play the
+    // original's records, the total divided among the party, as the original
+    // does; otherwise the total, each member earning it.
+    [[nodiscard]] unsigned experience_share(unsigned total) const;
+
+    // Whether the party's rules fight the original's records as they are.
+    [[nodiscard]] bool plays_original_records() const
+    {
+        return campaign_ && campaign_->rule_module().plays_original_records();
+    }
     std::uint64_t who_request_{};
     // A DAMAGE volley waits here until its results are acknowledged.
     std::uint64_t damage_request_{};

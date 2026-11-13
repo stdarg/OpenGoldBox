@@ -1,4 +1,6 @@
 #include "ai_scenario.h"
+#include "game_rules.h"
+#include "opengold/original_combat.h"
 #include "opengold/authored_items.h"
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
@@ -424,6 +426,20 @@ std::unique_ptr<rules::RulesModule> module()
 {
     return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                       "data/rules/srd-5.2.1/combat.rules");
+}
+
+// What each set of rules plays with, as the game finds it.
+RulesFiles rules_files()
+{
+    const char *game = std::getenv("OPENGOLD_GAME_DIR");
+    return {std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules",
+            game ? std::filesystem::path(game) : std::filesystem::path{}};
+}
+
+// The rules a fight of the party's game is fought under.
+std::unique_ptr<rules::RulesModule> fight_module(const CampaignParty &party)
+{
+    return make_rules_module(game_rules_of(party), rules_files());
 }
 
 // A player's character (a fighter unless asked): best rolls to Strength,
@@ -1370,7 +1386,9 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     // replay costs a whole fight.
     static unsigned fights_met = 0;
     std::optional<AiFightResult> lab_result;
-    if (fights_met++ % 20 == 0)
+    // The AI lab plays the SRD's fights.
+    const bool original_rules = party->rule_module().plays_original_records();
+    if (!original_rules && fights_met++ % 20 == 0)
     {
         const auto saved =
             decode_campaign(encode_campaign(*party, nullptr, ai_scenario_assets),
@@ -1389,7 +1407,7 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     for (unsigned attempt = 0; attempt < tries; ++attempt)
     {
         party->restore(before_fight);
-        CombatDemo combat(module());
+        CombatDemo combat(fight_module(*party));
         combat.campaign_party(party);
         combat.encounter(*town.pending_encounter(), 42 + fight_seed_offset() + attempt);
         if (attempt == 0)
@@ -1954,6 +1972,62 @@ void defeat_four_orcs(Expedition &trip)
           "The east edge of the Slums returns to New Phlan's west gate, facing east");
     check(area_context(town) == in_town,
           "Back in town: its map, wall art, script, bank and map memory as they were");
+}
+
+// Under the original rules, six human fighters armed with long swords walk into
+// the Slums and beat the four orcs there with the original's own records,
+// earning the original's experience for them.
+void original_rules_orcs(const std::filesystem::path &directory)
+{
+    auto party =
+        new_campaign_party({GameRules::Set::original, original::default_aging}, rules_files());
+    std::ifstream file(directory / "ITEMS", std::ios::binary);
+    const std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(file), {}};
+    const auto types = *por::decode_item_templates(bytes);
+    constexpr std::uint8_t long_sword = 36;
+    std::uint64_t seed = 11;
+    for (const auto *name : {"Arden", "Bryn", "Cora", "Darin", "Elin", "Fenn"})
+    {
+        CharacterCreator creator(party->character_rules(), seed++);
+        creator.select(rules::CreationField::race, "human");
+        creator.select(rules::CreationField::character_class, "fighter");
+        creator.name(name);
+        for (int page = 0; page < 3; ++page)
+        {
+            creator.next();
+        }
+        creator.roll();
+        for (int page = 0; page < 3; ++page)
+        {
+            creator.next();
+        }
+        const auto id = party->add_pc(creator.create_character());
+        std::array<std::uint8_t, 63> raw{};
+        raw[46] = long_sword;
+        raw[55] = 60;
+        por::Equipment sword;
+        sword.stored = por::decode_items(raw)->front();
+        sword.base = types.at(long_sword);
+        party->take_item(id, sword);
+        party->equip(id, party->member(id).character.inventory().items().back().id,
+                     rules::EquipmentOperation::equip);
+    }
+    auto town = por::RolfTourSession::load(directory, repository_encounters(), {}, game_monsters());
+    town.campaign_party(party);
+    settle(town, party);
+    walk_to(town, party, 0, 4);
+    step(town, party, 3);
+    const auto before = enemies_fought.size();
+    walk_to(town, party, 12, 1);
+    check(town.script_variable(por::ecl_slums_orc_victory) == 255,
+          "Under the original rules the party beats the four orcs");
+    check(enemies_fought.size() > before && enemies_fought.back().starts_with("MON2CHA.DAX:"),
+          "The orcs fight as the original's records");
+    for (const auto &member : party->state().roster)
+    {
+        check(member.experience > 0 && member.experience < 300,
+              "Each fighter earns its share of the orcs' original experience");
+    }
 }
 
 // Accepts the inn's quote ("YES") or declines it, and names the payer.
@@ -8153,6 +8227,17 @@ int main(int argc, char **argv)
     {
         const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
         replays_part_of_the_route = argc > 1;
+        if (argc == 2 && std::string_view(argv[1]) == "--original-rules")
+        {
+            if (!directory)
+            {
+                std::cout << "Pool of Radiance's files are not here; skipped.\n";
+                return 0;
+            }
+            original_rules_orcs(directory);
+            std::cout << "Original-rules campaign tests passed\n";
+            return 0;
+        }
         if (argc == 3 && std::string_view(argv[1]) == "--revisit")
         {
             reload_and_revisit(argv[2], directory);

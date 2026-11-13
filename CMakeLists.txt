@@ -772,13 +772,18 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_party_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_party_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_party_tests COMMAND opengold_party_tests)
-    add_executable(opengold_expedition_tests tests/expedition_tests.cpp)
-    target_include_directories(opengold_expedition_tests PRIVATE src/OpenGold.Rules.Srd5/src)
-    target_link_libraries(opengold_expedition_tests PRIVATE opengold_ai_scenario opengold_rules_srd5)
+    add_executable(opengold_expedition_tests tests/expedition_tests.cpp
+        src/OpenGoldBox/game_rules.cpp)
+    target_include_directories(opengold_expedition_tests PRIVATE src/OpenGold.Rules.Srd5/src
+        src/OpenGoldBox)
+    target_link_libraries(opengold_expedition_tests PRIVATE opengold_ai_scenario opengold_rules_srd5
+        opengold_rules_original)
     target_compile_definitions(opengold_expedition_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_expedition_tests COMMAND opengold_expedition_tests)
     add_test(NAME opengold_encounter_override_tests
         COMMAND opengold_expedition_tests --encounter-overrides)
+    # A party made under the original rules fights the Slums' orcs.
+    add_test(NAME opengold_original_campaign_tests COMMAND opengold_expedition_tests --original-rules)
     set_tests_properties(opengold_encounter_override_tests PROPERTIES SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_executable(opengold_save_tests tests/save_tests.cpp)
     target_link_libraries(opengold_save_tests PRIVATE opengold_core opengold_rules_srd5

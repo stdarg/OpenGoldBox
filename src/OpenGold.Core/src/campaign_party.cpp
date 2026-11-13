@@ -749,8 +749,8 @@ bool identify_item(PartyMember &member, std::uint64_t item)
 
 std::string item_definition(const rules::RulesModule &rules, const por::Equipment &item)
 {
-    return rules.keys_original_items() ? por::original_item_key(item.stored)
-                                       : equipment_conversion(item);
+    return rules.plays_original_records() ? por::original_item_key(item.stored)
+                                          : equipment_conversion(item);
 }
 
 std::string equipment_conversion(const por::Equipment &item)

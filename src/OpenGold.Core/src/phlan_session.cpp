@@ -1237,13 +1237,43 @@ void RolfTourSession::stage_mirror()
     staged_records_.push_back(mirror_record);
 }
 
+unsigned RolfTourSession::record_experience(unsigned record) const
+{
+    if (!plays_original_records())
+    {
+        return area_resources().conversions.at(record).award_xp;
+    }
+    // The original's award: the record's own and so much for each of its Hit
+    // Points (postcbt.pas, DetermineLootExp).
+    const auto &stored = area_resources().encounter_creatures.at(record).stored;
+    return stored.base_xp_award + unsigned{stored.xp_per_hit_point} * stored.rolled_hit_points;
+}
+
+unsigned RolfTourSession::experience_share(unsigned total) const
+{
+    if (!plays_original_records())
+    {
+        return total;
+    }
+    // The original divides a fight's experience among the party's members
+    // (postcbt.pas, DetermineLootExp); the rules then share each member's
+    // among its classes.
+    const auto members = std::ranges::count_if(campaign_->state().slots,
+                                               [](MemberId id)
+                                               {
+                                                   return id != MemberId{};
+                                               });
+    return members ? total / static_cast<unsigned>(members) : total;
+}
+
 RolfTourSession::TurncoatLoot RolfTourSession::part_with_turncoats(const rules::Snapshot &result)
 {
     TurncoatLoot loot;
     for (const auto id : encounter_->turncoats)
     {
         const auto unit = std::ranges::find(result.combatants, id, &rules::CombatantView::id);
-        const bool beaten = unit != result.combatants.end() && unit->hit_points == 0;
+        // Under the original rules a creature down may be below 0.
+        const bool beaten = unit != result.combatants.end() && unit->hit_points <= 0;
         const auto &member = campaign_->member(id);
         if (beaten && result.outcome == rules::Outcome::victory)
         {
@@ -1263,10 +1293,9 @@ RolfTourSession::TurncoatLoot RolfTourSession::part_with_turncoats(const rules::
             if (source.starts_with(prefix))
             {
                 const auto record = static_cast<unsigned>(std::stoul(source.substr(prefix.size())));
-                if (const auto found = area_resources().conversions.find(record);
-                    found != area_resources().conversions.end())
+                if (plays_original_records() || area_resources().conversions.contains(record))
                 {
-                    loot.experience += found->second.award_xp;
+                    loot.experience += record_experience(record);
                 }
             }
         }
@@ -1340,7 +1369,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             std::ranges::find(turned, unit.id) != turned.end())
         {
             if (!turncoats_seen.insert(unit.id).second ||
-                (result.outcome == rules::Outcome::victory && unit.hit_points && !unit.fled))
+                (result.outcome == rules::Outcome::victory && unit.hit_points > 0 && !unit.fled))
             {
                 return false;
             }
@@ -1359,7 +1388,10 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             {
                 return false;
             }
-            if (unit.hit_points == 0)
+            // A monster that surrendered is beaten, and pays as the dead do
+            // (postcbt.pas, DetermineLootExp); under the original rules one
+            // down may be below 0 Hit Points.
+            if (unit.hit_points <= 0 || unit.surrendered)
             {
                 ++defeated;
             }
@@ -1442,17 +1474,15 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             unsigned experience = 0;
             for (const auto &unit : result.combatants)
             {
-                if (unit.side == rules::Side::opposition && unit.hit_points == 0 &&
+                if (unit.side == rules::Side::opposition && unit.hit_points <= 0 &&
                     staged_records_.at(unit.id - 1000) != mirror_record)
                 {
-                    experience += area_resources()
-                                      .conversions.at(staged_records_.at(unit.id - 1000))
-                                      .award_xp;
+                    experience += record_experience(staged_records_.at(unit.id - 1000));
                 }
             }
             if (experience)
             {
-                campaign_->award_experience(experience, reward);
+                campaign_->award_experience(experience_share(experience), reward);
             }
         }
         else if (duel_lost)
@@ -1504,9 +1534,10 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                 unsigned experience = 0;
                 for (auto record : paying)
                 {
-                    experience += area_resources().conversions.at(record).award_xp;
+                    experience += record_experience(record);
                 }
-                campaign_->award_experience(experience, reward, champion);
+                campaign_->award_experience(champion ? experience : experience_share(experience),
+                                            reward, champion);
                 pending_loot_.push_back(encounter_loot(
                     current_area_, std::move(paying), reward + ":loot",
                     machine_.variable(game_cell(EclAddress{0x6DE3})) != 1, std::move(spent)));
@@ -2419,7 +2450,7 @@ bool RolfTourSession::choose_encounter(std::size_t choice)
         {
             // Conversion boundary: original movement 12 corresponds to a modern
             // ordinary 30-foot creature. Unconscious members cannot escape on foot.
-            const int movement = campaign_->member(id).vitals.hit_points == 0
+            const int movement = campaign_->member(id).vitals.hit_points <= 0
                                      ? 0
                                      : campaign_->profile(id).movement_feet * 2 / 5;
             slowest = std::min(slowest, movement);
@@ -3024,7 +3055,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         const unsigned icon = change && change->icon ? *change->icon : arg(2);
         const auto count = static_cast<unsigned>(std::min<std::size_t>(
             loaded, monster_limit - std::min(monster_limit, staged_enemies_.size())));
-        if (!area_resources().conversions.contains(record))
+        if (!plays_original_records() && !area_resources().conversions.contains(record))
         {
             throw EclError("Encounter needs an explicit supported creature conversion: record " +
                            std::to_string(record) + ", count " + std::to_string(count) + ", icon " +
@@ -3038,8 +3069,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             const auto id =
                 static_cast<rules::EntityId>(opengold::first_ally_id + staged_allies_.size());
-            auto staged = stage_area_creature(area, record, icon, exported, id, name,
-                                              rules::Side::party, difficulty_);
+            auto staged =
+                stage_area_creature(area, record, icon, exported, id, name, rules::Side::party,
+                                    difficulty_, plays_original_records());
             staged_allies_.push_back(std::move(staged.fighter));
             staged_ally_art_.push_back(std::move(staged.art));
         }
@@ -3049,7 +3081,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             auto staged =
                 stage_area_creature(area, record, icon, exported, id,
                                     name + " " + std::to_string(staged_enemies_.size() + 1),
-                                    rules::Side::opposition, difficulty_);
+                                    rules::Side::opposition, difficulty_, plays_original_records());
             staged_enemies_.push_back(std::move(staged.fighter));
             staged_art_.push_back(std::move(staged.art));
             staged_records_.push_back(record);
@@ -4544,18 +4576,21 @@ std::string creature_name(const PhlanResources &area, unsigned record,
 
 StagedCreature stage_area_creature(const PhlanResources &area, unsigned record, unsigned icon,
                                    const ExportedMonster *exported, rules::EntityId id,
-                                   std::string name, rules::Side side, Difficulty difficulty)
+                                   std::string name, rules::Side side, Difficulty difficulty,
+                                   bool original_record)
 {
     const auto conversion = area.conversions.find(record);
     const auto creature = area.encounter_creatures.find(record);
-    if (conversion == area.conversions.end() || creature == area.encounter_creatures.end())
+    if (creature == area.encounter_creatures.end() ||
+        (!original_record && conversion == area.conversions.end()))
     {
         throw EclError("Encounter needs an explicit supported creature conversion: record " +
                        std::to_string(record));
     }
+    // Rules that play the original's records fight the record itself.
+    auto definition = original_record ? creature->second.id.key() : conversion->second.definition;
     // A leader readies a bow only when its art shows one: of the Slums combat
     // icons, only the orc leader's icon 5 does.
-    auto definition = conversion->second.definition;
     if (definition == "slums-orc-leader" && icon == 5)
     {
         definition = "slums-orc-leader-archer";

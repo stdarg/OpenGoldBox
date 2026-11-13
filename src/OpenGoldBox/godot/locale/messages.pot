@@ -859,7 +859,7 @@ msgstr ""
 msgid "Already added. Use Rejoin party for a reserved member."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:616 src/OpenGold.Rules.Original/src/rules_module.cpp:622
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:617 src/OpenGold.Rules.Original/src/rules_module.cpp:623
 msgid "Already using another item there"
 msgstr ""
 
@@ -5270,7 +5270,7 @@ msgstr ""
 msgid "Hit Point maximum lowered by {value} until a Long Rest."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:436 src/OpenGold.Rules.Original/src/rules_module.cpp:451
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:437 src/OpenGold.Rules.Original/src/rules_module.cpp:452
 msgid "Hit Points outside the character's range"
 msgstr ""
 
@@ -5630,7 +5630,7 @@ msgstr ""
 msgid "Invalid original-rules combat checkpoint"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:409
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:410
 msgid "Invalid original-rules profile"
 msgstr ""
 
@@ -5691,7 +5691,7 @@ msgstr ""
 msgid "It takes a bottle of Magic Ink of the spell's level or higher"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:583
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:584
 msgid "It's cursed"
 msgstr ""
 
@@ -7201,7 +7201,7 @@ msgstr ""
 msgid "No one in the party needs {spell}."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4842 src/OpenGold.Rules.Original/src/rules_module.cpp:420
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4842 src/OpenGold.Rules.Original/src/rules_module.cpp:421
 msgid "No original-rules record for "
 msgstr ""
 
@@ -7217,7 +7217,7 @@ msgstr ""
 msgid "No spell choices for this class"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:396
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:397
 msgid "No such level under the original rules"
 msgstr ""
 
@@ -7257,7 +7257,7 @@ msgstr ""
 msgid "North"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:471
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:472
 msgid "Not an item of the original rules"
 msgstr ""
 
@@ -10736,7 +10736,7 @@ msgstr ""
 msgid "The cantrip reaches 30 feet farther per Warlock level."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:825
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:882
 msgid "The character has no levels in a class it trained in"
 msgstr ""
 
@@ -11064,11 +11064,11 @@ msgstr ""
 msgid "This armor imposes Disadvantage on Dexterity (Stealth) checks."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:799
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:856
 msgid "This character is not ready to train"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:40
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:41
 msgid "This character was not made under the original rules"
 msgstr ""
 
@@ -11505,7 +11505,7 @@ msgstr ""
 msgid "Unfilled cantrip choices remain pending. More choices will become available as spell support expands."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:575
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:576
 msgid "Unknown equipment candidate"
 msgstr ""
 
@@ -11513,7 +11513,7 @@ msgstr ""
 msgid "Unknown training choice"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:80
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:81
 msgid "Unreadable original-rules training"
 msgstr ""
 
@@ -12179,7 +12179,7 @@ msgstr ""
 msgid "Write a scroll of {spell} (Magic Ink of level {level} or higher, {hours} hours)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:596
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:597
 msgid "Wrong class"
 msgstr ""
 
@@ -12281,7 +12281,7 @@ msgstr ""
 msgid "Your character: {race} / {gender} / {class}"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:626
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:627
 msgid "Your hands are full!"
 msgstr ""
 

@@ -859,7 +859,7 @@ msgstr "Aliado"
 msgid "Already added. Use Rejoin party for a reserved member."
 msgstr "Ya se ha añadido. Usa Volver al grupo para un miembro en reserva."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:616 src/OpenGold.Rules.Original/src/rules_module.cpp:622
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:617 src/OpenGold.Rules.Original/src/rules_module.cpp:623
 msgid "Already using another item there"
 msgstr "Ya usa otro objeto ahí"
 
@@ -5270,7 +5270,7 @@ msgstr "Máximo de puntos de golpe reducido en {value} hasta un Restablecimiento
 msgid "Hit Point maximum lowered by {value} until a Long Rest."
 msgstr "Máximo de puntos de golpe reducido en {value} hasta un descanso largo."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:436 src/OpenGold.Rules.Original/src/rules_module.cpp:451
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:437 src/OpenGold.Rules.Original/src/rules_module.cpp:452
 msgid "Hit Points outside the character's range"
 msgstr "Puntos de golpe fuera del rango del personaje"
 
@@ -5630,7 +5630,7 @@ msgstr "Selección de formación de nivel no válida"
 msgid "Invalid original-rules combat checkpoint"
 msgstr "Punto de control de combate de las reglas originales no válido"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:409
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:410
 msgid "Invalid original-rules profile"
 msgstr "Perfil de las reglas originales no válido"
 
@@ -5691,7 +5691,7 @@ msgstr "No es el turno de {name}."
 msgid "It takes a bottle of Magic Ink of the spell's level or higher"
 msgstr "Hace falta un frasco de tinta mágica del nivel del conjuro o superior"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:583
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:584
 msgid "It's cursed"
 msgstr "Está maldito"
 
@@ -7201,7 +7201,7 @@ msgstr "Nadie más puede escapar. Tu grupo sigue luchando."
 msgid "No one in the party needs {spell}."
 msgstr "Nadie del grupo necesita {spell}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:4842 src/OpenGold.Rules.Original/src/rules_module.cpp:420
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:4842 src/OpenGold.Rules.Original/src/rules_module.cpp:421
 msgid "No original-rules record for "
 msgstr "No hay registro de las reglas originales para "
 
@@ -7217,7 +7217,7 @@ msgstr "No hay ningún santuario preparado: lanza primero Palabra de regreso en 
 msgid "No spell choices for this class"
 msgstr "Esta clase no tiene conjuros que elegir"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:396
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:397
 msgid "No such level under the original rules"
 msgstr "Ese nivel no existe en las reglas originales"
 
@@ -7257,7 +7257,7 @@ msgstr "Norris el Gris"
 msgid "North"
 msgstr "norte"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:471
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:472
 msgid "Not an item of the original rules"
 msgstr "No es un objeto de las reglas originales"
 
@@ -10736,7 +10736,7 @@ msgstr "El rayo se desvía hacia {target}."
 msgid "The cantrip reaches 30 feet farther per Warlock level."
 msgstr "El truco alcanza 30 pies más por nivel de brujo."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:825
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:882
 msgid "The character has no levels in a class it trained in"
 msgstr "El personaje no tiene niveles en una clase en la que se entrenó"
 
@@ -11064,11 +11064,11 @@ msgstr "El ataque adicional de Hoja sedienta se vuelve dos: ataca tres veces con
 msgid "This armor imposes Disadvantage on Dexterity (Stealth) checks."
 msgstr "Esta armadura impone desventaja en las pruebas de Destreza (Sigilo)."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:799
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:856
 msgid "This character is not ready to train"
 msgstr "Este personaje no está listo para entrenar"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:40
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:41
 msgid "This character was not made under the original rules"
 msgstr "Este personaje no se creó con las reglas originales"
 
@@ -11505,7 +11505,7 @@ msgstr "Desequipar selección"
 msgid "Unfilled cantrip choices remain pending. More choices will become available as spell support expands."
 msgstr "Las elecciones de trucos sin completar quedan pendientes. Habrá más opciones a medida que se amplíe la lista de conjuros disponibles."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:575
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:576
 msgid "Unknown equipment candidate"
 msgstr "Candidato de equipo desconocido"
 
@@ -11513,7 +11513,7 @@ msgstr "Candidato de equipo desconocido"
 msgid "Unknown training choice"
 msgstr "Opción de entrenamiento desconocida"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:80
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:81
 msgid "Unreadable original-rules training"
 msgstr "Entrenamiento de las reglas originales ilegible"
 
@@ -12179,7 +12179,7 @@ msgstr "Llevado: el fuego normal no causa daño; el fuego mágico causa 2 menos 
 msgid "Write a scroll of {spell} (Magic Ink of level {level} or higher, {hours} hours)"
 msgstr "Escribir un pergamino de {spell} (tinta mágica de nivel {level} o superior, {hours} horas)"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:596
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:597
 msgid "Wrong class"
 msgstr "Clase equivocada"
 
@@ -12281,7 +12281,7 @@ msgstr "¡Atacan tu campamento!"
 msgid "Your character: {race} / {gender} / {class}"
 msgstr "Tu personaje: {race} / {gender} / {class}"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:626
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:627
 msgid "Your hands are full!"
 msgstr "¡Tienes las manos ocupadas!"
 
