@@ -656,6 +656,44 @@ const std::vector<RouteBeat> &curse_route()
         {0, 0, 0, D::north, {"JOURNEY", "HILLSFAR", "stop:JOURNEY"}, false, false, true},
         {0, 0, 0, D::north, {"stop:JOURNEY"}, true, false, true},
         {0, 0, 0, D::north, {"JOURNEY", "YULASH", "TRAIL", "stop:JOURNEY"}, false, false, true},
+        // Into Yulash, asking the Red Plumes' leave (sneaking in earns their
+        // commander's disapproval, as the cluebook says).
+        {0, 0, 0, D::north, {"ENTER CITY", "ASK PERMISSION", "PARLAY"}, true, false, true},
+        // In the commander's waiting room, a step east brings out Zhentil Keep
+        // spies; the commander thinks well of a party that fights them.
+        {16,
+         0,
+         3,
+         D::east,
+         {"FIGHT", "HAUGHTY"},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         false,
+         true},
+        // Into the Pit of Moander.
+        {16,
+         11,
+         0,
+         D::north,
+         {},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         true,
+         true},
+        // Alias and Dragonbait, who join a party that tells its story.
+        {17, 1, 4, D::north, {"PARLAY", "NICE", "TELL HER YOUR STORY", "YES"}},
+        // Down the stairs to the Pit's second level.
+        {17, 15, 11, D::north, {"YES"}},
     };
     return beats;
 }
@@ -899,6 +937,15 @@ bool curse_walk_census(bool route)
         {
             party->restore(before);
             result = fight_once(best_seed);
+        }
+        // OPENGOLD_FIGHT_LOG prints the kept play's log, to see why a fight goes
+        // as it does.
+        if (std::getenv("OPENGOLD_FIGHT_LOG"))
+        {
+            for (const auto &entry : result.log_entries)
+            {
+                std::cout << "    | " << entry.english << '\n';
+            }
         }
         ++phases["fights ended " + std::to_string(static_cast<int>(result.outcome))];
         return session.resolve_combat(result);
@@ -1309,12 +1356,22 @@ bool curse_walk_census(bool route)
                     {
                         break;
                     }
+                    // A square that holds the party (a menu it loops in) is
+                    // undone, and the survey goes on.
+                    auto before_square = session.detached_copy();
+                    const auto party_before = party->state();
                     opengold::test::TourAccess::place(session,
                                                       {x, y, opengold::por::MapDirection::north});
                     if (session.explore(opengold::por::ExplorationCommand::look))
                     {
                         play("survey " + std::to_string(map) + " " + std::to_string(x) + "," +
                              std::to_string(y));
+                    }
+                    if (!session.can_leave() || session.snapshot().area_id != map)
+                    {
+                        session = std::move(before_square);
+                        party->restore(party_before);
+                        session.attach_restored_party(party);
                     }
                     // A planning aid, so the party rests outside the map, where
                     // no patrol interrupts it.
@@ -1327,15 +1384,20 @@ bool curse_walk_census(bool route)
             std::cout << "Survey ends on map " << session.snapshot().area_id << ", phase "
                       << static_cast<int>(session.snapshot().phase) << "\n";
         }
-        // The route's last beat leaves the party at the edge of Yulash, nobody
-        // dead.
+        // The route's last beat leaves the party on the Pit of Moander's second
+        // level with Alias and Dragonbait, nobody dead.
         const bool all_alive = std::ranges::none_of(party->state().slots,
                                                     [&](opengold::MemberId id)
                                                     {
                                                         return id && party->member(id).vitals.dead;
                                                     });
-        return needs.empty() && end.phase != TourPhase::defeated &&
-               end.dialogue.find("EDGE OF YULASH") != std::string::npos && all_alive;
+        const auto members = std::ranges::count_if(party->state().slots,
+                                                   [](opengold::MemberId id)
+                                                   {
+                                                       return id != opengold::MemberId{};
+                                                   });
+        return needs.empty() && end.phase != TourPhase::defeated && end.script_id == 18 &&
+               members == 8 && all_alive;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");

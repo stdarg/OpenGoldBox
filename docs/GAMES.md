@@ -259,7 +259,14 @@ In small steps, each with its check:
    the tower by its secret passage to Hap and has its dead raised at the
    Temple of Sune; it leaves Hap, beats Crimdrac on the road, passes the
    bridge's old man and the Standing Stones and the Fire Knives' ambush, and
-   reaches Yulash by Hillsfar. Next: Yulash (Moander).
+   reaches Yulash by Hillsfar. In Yulash it asks the Red Plumes' leave, is
+   taken to their commander, fights the Zhentil spies from his waiting room
+   and pleases him, enters the Pit of Moander, takes Alias and Dragonbait
+   into the party, and goes down to the Pit's second level. Next: Mogion and
+   Moander's pseudopods, which a party played wholly by the original's AI
+   does not beat (its casters pick spells at random, and Hold Person on
+   shambling mounds); the shambling mounds that guard the Wand of
+   Defoliation are skipped for the same reason.
 
 ### 4 to 7. The other campaigns
 
