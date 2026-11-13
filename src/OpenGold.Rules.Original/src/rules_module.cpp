@@ -281,6 +281,16 @@ Combatant character_combatant(const CharacterSheet &sheet,
     {
         innate(124);
     }
+    // Curse's paladin is protected from evil, and its ranger strikes giants
+    // harder (createPlayer in its reconstruction).
+    if (c.class_levels[static_cast<std::size_t>(ClassSlot::paladin)] > 0)
+    {
+        innate(8);
+    }
+    if (c.class_levels[static_cast<std::size_t>(ClassSlot::ranger)] > 0)
+    {
+        innate(334);
+    }
     return c;
 }
 
@@ -1387,6 +1397,10 @@ constexpr int cure_light_wounds = 3, cure_serious_wounds = 158, cure_critical_wo
 constexpr std::array<int, 4> camp_spells{cure_light_wounds, cure_serious_wounds,
                                          cure_critical_wounds, raise_dead};
 constexpr std::string_view cast_prefix = "cast:";
+// A paladin's laying on of hands, once between a day's rests; the member's
+// state keeps that it was used (as the paladinDailyHealCast effect).
+constexpr std::string_view lay_on_hands = "paladin:lay_on_hands";
+constexpr int laid_on_hands = 340;
 
 // The spells a member has memorized and not cast: its last fight's, or after
 // a day's rest its sheet's.
@@ -1425,6 +1439,16 @@ std::vector<CampAction> OriginalModule::camp_actions(const CharacterSheet &sheet
     }
     const auto left = spells_left(sheet, state);
     std::vector<CampAction> actions;
+    const auto last = Combatant::decode(state.resources);
+    const bool laid = last && std::ranges::any_of(last->effects,
+                                                  [](const Effect &e)
+                                                  {
+                                                      return e.code == laid_on_hands;
+                                                  });
+    if (level_in(sheet.original->class_levels, ClassSlot::paladin) > 0 && !laid)
+    {
+        actions.push_back({std::string(lay_on_hands), {"Lay on hands", {}}, false});
+    }
     for (const int number : camp_spells)
     {
         if (std::ranges::find(left, number) != left.end())
@@ -1442,6 +1466,29 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
                                      const CharacterSheet &target, VitalState &target_state,
                                      std::string_view action, RandomState &random_state) const
 {
+    if (action == lay_on_hands)
+    {
+        // Two Hit Points a paladin level (PaladinHeal in Curse's reconstruction).
+        const auto offered = camp_actions(user, user_state);
+        if (user_state.dead || target_state.dead ||
+            std::ranges::none_of(offered,
+                                 [](const CampAction &a)
+                                 {
+                                     return a.id == lay_on_hands;
+                                 }))
+        {
+            throw std::runtime_error("That cannot be done now");
+        }
+        auto numbers = Combatant::decode(user_state.resources).value_or(character_combatant(user));
+        numbers.spells = spells_left(user, user_state);
+        numbers.effects.push_back({laid_on_hands, 1440, 0, false});
+        user_state.resources = numbers.encode();
+        target_state.hit_points =
+            std::min(target_state.hit_points +
+                         2 * level_in(original_numbers(user).class_levels, ClassSlot::paladin),
+                     target.hit_points);
+        return;
+    }
     const auto number = action.starts_with(cast_prefix)
                             ? spell_number(action.substr(cast_prefix.size()))
                             : std::nullopt;

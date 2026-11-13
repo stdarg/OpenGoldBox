@@ -125,6 +125,11 @@ and a save each know which tables they use.
   can choose); Dimension Door moves the caster out of any hold; Curse's blink
   hides one once it has acted; an animal cannot single out one invisible to
   animals.
+- **Paladins and rangers:** a paladin is protected from evil and lays on
+  hands once between a day's rests for 2 Hit Points a paladin level; a
+  ranger adds its level to its blows against giants. Still to come: a
+  paladin's cure of disease (with the conditions outside fights) and both
+  classes' spells from levels 8 and 9.
 - **From *Pool of Radiance*:** a character brought across keeps its scores
   (held within *Curse*'s limits for its race and gender), levels, Hit Points,
   age, experience and drained levels, its magic-user spell book but Animate

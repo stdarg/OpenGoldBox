@@ -4713,6 +4713,11 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
     {
         damage = std::min(damage, 1);
     }
+    // A ranger adds its level against giants (Curse, AffectRangerVsGiant).
+    if (attacker.has(334) && (defender.numbers.kin & kin::giant) && damage > 0)
+    {
+        damage += attacker.numbers.class_levels[static_cast<std::size_t>(ClassSlot::ranger)];
+    }
     // A salamander's heat adds 1d6 unless the target resists fire (303).
     if (attacker.has(303) && damage > 0 && !defender.has(effect::resist_fire) &&
         !defender.has(254) && !defender.has(61))
@@ -5725,6 +5730,14 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
                 if (const auto last = Combatant::decode(p.state->resources))
                 {
                     f.numbers.spells = last->spells;
+                    // And a paladin's laying on of hands spent today (Curse).
+                    for (const auto &kept : last->effects)
+                    {
+                        if (kept.code == 340)
+                        {
+                            f.numbers.effects.push_back(kept);
+                        }
+                    }
                 }
             }
         }

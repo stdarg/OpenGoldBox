@@ -568,6 +568,54 @@ void a_pool_character_comes_to_curse()
           "It brings 300 platinum and none of its gold");
 }
 
+// Curse's paladin is protected from evil and lays on hands once a day for 2
+// Hit Points a level; its ranger strikes giants harder (createPlayer,
+// PaladinHeal, AffectRangerVsGiant in its reconstruction).
+void curse_paladins_and_rangers()
+{
+    const auto module = original::rules_module();
+    const auto creation =
+        original::character_rules(original::default_aging, GoldBoxGame::curse_of_the_azure_bonds);
+    RandomState random{23};
+    const auto made = [&](std::string profession, std::string alignment)
+    {
+        rules::CharacterDraft draft;
+        draft.race = "human";
+        draft.gender = "male";
+        draft.character_class = std::move(profession);
+        draft.alignment = std::move(alignment);
+        draft.name = "Valen";
+        creation->roll_in_place(draft, random);
+        return creation->evaluate(draft, rules::NameRequirement::required);
+    };
+    const auto paladin = made("paladin", "lawful_good");
+    const auto ranger = made("ranger", "neutral_good");
+    const auto has = [&](const rules::CharacterSheet &sheet, int code)
+    {
+        const auto numbers =
+            *original::Combatant::decode(module->character_profile(sheet, {}).data);
+        return std::ranges::any_of(numbers.effects,
+                                   [code](const original::Effect &e)
+                                   {
+                                       return e.code == code;
+                                   });
+    };
+    check(has(paladin, 8) && has(ranger, 334),
+          "A paladin is protected from evil; a ranger strikes giants harder");
+    rules::VitalState own{paladin.hit_points, false, {}, {}};
+    rules::VitalState hurt{1, false, {}, {}};
+    const int level = paladin.original->class_levels[3];
+    module->use_camp_action(paladin, own, paladin, hurt, "paladin:lay_on_hands", random);
+    check(hurt.hit_points == std::min(1 + 2 * level, paladin.hit_points),
+          "Laying on hands heals 2 Hit Points a paladin level");
+    check(std::ranges::none_of(module->camp_actions(paladin, own),
+                               [](const rules::CampAction &a)
+                               {
+                                   return a.id == "paladin:lay_on_hands";
+                               }),
+          "Once a day");
+}
+
 // The original's temple: Cure Light Wounds heals 1d8 a wounded member, and
 // Raise Dead brings the dead back with 1 Hit Point.
 void the_temple_heals_and_raises()
@@ -764,6 +812,7 @@ int main()
         a_drain_lasts_beyond_the_fight();
         curse_clerics_heal_and_raise_in_camp();
         a_pool_character_comes_to_curse();
+        curse_paladins_and_rangers();
         std::cout << "Original creation tests passed\n";
         return 0;
     }
