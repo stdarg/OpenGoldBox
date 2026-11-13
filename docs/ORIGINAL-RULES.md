@@ -112,7 +112,21 @@ and a save each know which tables they use.
   an hour; a beholder fires a disintegrating ray at 2 squares, a petrifying
   one at 3, death at 4 and a 2d8+1 wound at 5, then Fear, Slow and Sleep; an
   alias starts each fight invisible.
-- Still to come: the rakshasa's death by a blessed crossbow bolt, *Curse*'s
+- **Conditions:** Fear sends those on a path 6 squares long and 3 wide
+  running; Confusion takes at most 2d8 and has each roll what it does (run,
+  stand confused, go berserk against the nearest creature, or act) before
+  trying to shake it off; Fumble leaves one helpless, or slowed on a save;
+  Feeblemind (a cleric saving 1 better, a magic-user 4 worse, any other 2
+  worse) stops its casting; Sticks to Snakes keeps one under 6 Hit Dice busy;
+  Entangle holds one still; Dispel Evil keeps the evil 7 worse off and sends
+  away one it strikes that fails to save (whether a creature is evil is read
+  from its alignment); Fire Shield, hot or cold, doubles what it is made of
+  and saves 2 better against the other (picked at random until the player
+  can choose); Dimension Door moves the caster out of any hold; Curse's blink
+  hides one once it has acted; an animal cannot single out one invisible to
+  animals.
+- Still to come: Cloudkill, the player's choice of Fire Shield, the
+  rakshasa's death by a blessed crossbow bolt, *Curse*'s
   other new
   spells in fights and camp, and the paladin's and ranger's own abilities
   (GAMES.md, phase 3 step 5).
@@ -681,3 +695,6 @@ tuned with the AI lab once the original rules play.
 | *Curse:* a shambling mound struck by electricity rolls 1d8, throws the roll away and gains 8 Hit Points (`ovr013`, its absorbing of lightning) | It gains the 1d8 |
 | *Curse:* an owlbear's hug pins its victim, but the squeeze that should follow is in no list of the effects the fight calls, so it never hurts (`ovr014`, `AffectOwlbearHugRoundAttack`) | It squeezes for 2d8 each turn |
 | *Curse:* a giant slug's acid sets no damage type, so it takes the last attack's (`ovr023`, `AffectSpitAcid`) | Acid |
+| *Curse:* Faerie Fire improves its target's Armor Class by 2, and sets any of 2 or better to 0, instead of making it easier to hit (`ovr013`, `FaerieFire`) | 2 worse |
+| *Curse:* Charm Monsters, like Hold Monster, takes only what Charm Person can (`ovr023`, `MultiTargetedSpell`) | Any creature |
+| *Curse:* the dracolich's shield against fear, enfeeblement and feeblemind is looked at only once those have landed, so it does almost nothing (`ovr013`, `AffectDracolichA`) | It is immune to them |

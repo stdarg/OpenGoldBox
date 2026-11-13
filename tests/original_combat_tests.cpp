@@ -2819,6 +2819,62 @@ void curse_monsters_breathe()
           "At 4 squares a beholder fires its death ray");
 }
 
+// Curse's conditions (ovr023, ovr013): Fear sends those on its path running;
+// Fumble leaves one that fails its save helpless; Dimension Door moves the
+// caster to the square aimed at; an animal cannot single out one invisible to
+// animals.
+void curse_conditions_take_hold()
+{
+    using original::ClassSlot;
+    auto fight = arrange(
+        {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 9, {184, 186, 183})},
+         {"First", rules::Side::opposition, {2, 3}, victim(100)},
+         {"Second", rules::Side::opposition, {3, 3}, victim(100)}},
+        231);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 184,
+             [&]
+             {
+                 return aim_at_cell(session, {2, 3});
+             });
+    check(logged(session, "{name} is affected by {spell}.") >= 2, "Fear takes both on its path");
+
+    auto fumble =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 9, {186})},
+                 {"Orc", rules::Side::opposition, {2, 3}, victim(100)}},
+                233);
+    cast_now(*fumble.session, "Mage", 186,
+             [&]
+             {
+                 return aim_at(*fumble.session, "Orc");
+             });
+    check(view_of(fumble.session->snapshot(), "Orc").status == "helpless",
+          "Fumble leaves one that fails its save helpless");
+
+    auto door =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 9, {183})},
+                 {"Orc", rules::Side::opposition, {7, 7}, victim(100)}},
+                235);
+    cast_now(*door.session, "Mage", 183,
+             [&]
+             {
+                 return aim_at_cell(*door.session, {3, 5});
+             });
+    check(view_of(door.session->snapshot(), "Mage").cell == rules::Cell{3, 5},
+          "Dimension Door moves the caster to the square aimed at");
+
+    auto wolf = creature(20);
+    wolf.creature_type = 19;
+    auto hidden = victim(100);
+    hidden.effects.push_back({269, 0, 0, false});
+    auto animals = arrange({{"Wolf", rules::Side::party, {2, 3}, wolf},
+                            {"Ranger", rules::Side::opposition, {3, 3}, hidden}},
+                           237);
+    until_turn_of(*animals.session, "Wolf");
+    check(!offered(*animals.session, "melee", "Ranger"),
+          "An animal cannot single out one invisible to animals");
+}
+
 } // namespace
 
 int main()
@@ -2878,6 +2934,7 @@ int main()
         curse_defenses_hold();
         curse_touches_and_engulfs();
         curse_monsters_breathe();
+        curse_conditions_take_hold();
         a_cloud_sickens();
         dispel_magic_strips();
         the_dead_rise();

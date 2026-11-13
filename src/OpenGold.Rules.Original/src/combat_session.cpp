@@ -87,9 +87,9 @@ constexpr int displaced = 0x10;
 // What a hit carries, by the attacker's effects, in the original's order: a
 // primary attack's hit and a secondary one's (effhndlr.pas, HIT_PHASE_1 and
 // HIT_PHASE_2).
-constexpr std::array<int, 13> primary_hit_effects{85, 86, 87, 68, 79, 80, 76, 73, 77,
+constexpr std::array<int, 14> primary_hit_effects{85, 86, 87, 68, 79, 80, 76, 73, 77,
                                                   // Curse's (canonical_effect).
-                                                  257, 296, 322, 323};
+                                                  257, 296, 322, 323, 345};
 constexpr std::array<int, 11> secondary_hit_effects{64, 65, 66, 67, 68, 69, 70, 79, 85, 86, 87};
 
 struct Fighter
@@ -509,8 +509,9 @@ bool spell_built(int number)
                                7, 8, 9, 10, 11, 15, 16, 17, 19, 20, 21, 23, 24, 25, 29, 30, 32, 33,
                                37, 38, 40, 42, 34, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55,
                                // Curse's (spells.cpp, curse_spells).
-                               158, 166, 168, 169, 171, 172, 174, 176, 187, 192, 194, 198, 199,
-                               200};
+                               158, 166, 168, 169, 170, 171, 172, 173, 174, 176, 177, 179, 180, 181,
+                               182, 183, 184, 185, 186, 187, 188, 192, 193, 194, 195, 196, 197, 198,
+                               199, 200};
     return std::find(built.begin(), built.end(), number) != built.end();
 }
 
@@ -660,6 +661,7 @@ class Session final : public rules::CombatSession
     void drain_levels(Fighter &victim, int levels);
     void rake(Fighter &attacker, Fighter &victim);
     void attached_turn(Fighter &f);
+    void curse_turn_start(Fighter &f);
     void turn_undead(Fighter &cleric);
     void begin_cast(Fighter &caster, int spell_number);
     void start_aiming(Fighter &caster, int spell_number);
@@ -854,6 +856,7 @@ void Session::next_actor()
             // A holding bite or a drinking stirge spends its turn on its victim
             // (effhndlr.pas, ACTION_START).
             attached_turn(*best);
+            curse_turn_start(*best);
             if (best->initiative <= 0 || !best->able() || check_morale(*best))
             {
                 continue;
@@ -969,7 +972,8 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
     // Blindness leaves both Armor Classes 4 worse (effhndlr.pas, EffBlind);
     // coughing leaves the rear one 2 worse, no worse than 10, and the front as
     // bad (EffCoughing).
-    const int blind = defender.has(effect::blind) ? 4 : 0;
+    // Faerie Fire leaves both 2 worse (Curse made them better, docs/ORIGINAL-RULES.md, Bugs).
+    const int blind = (defender.has(effect::blind) ? 4 : 0) + (defender.has(207) ? 2 : 0);
     const bool coughs = defender.has(effect::coughing);
     const int rear = coughs ? std::max(std::min(defender.numbers.rear_armor_class + 2, 10),
                                        defender.numbers.rear_armor_class)
@@ -1079,6 +1083,8 @@ int attack_modifier(const Fighter &attacker, const Fighter &defender)
     {
         modifier -= 2;
     }
+    // Dispel Evil keeps the evil 7 worse off at its bearer (Curse, DispelEvil).
+    modifier -= evil && defender.has(204) ? 7 : 0;
     return modifier;
 }
 
@@ -1459,6 +1465,30 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
                 rake(attacker, defender);
             }
             break;
+        case 345:
+        {
+            // Dispel Evil: an evil creature it strikes that fails its save is
+            // sent away, and the spell ends (Curse, sp_dispel_evil).
+            const int alignment = defender.numbers.alignment;
+            if (alignment != 2 && alignment != 5 && alignment != 8)
+            {
+                break;
+            }
+            if (saving_throw(defender, 4, 0, &attacker))
+            {
+                log({"{name} resists dispel evil.", {{"name", defender.name}}});
+                break;
+            }
+            log({"{name} is dispelled.", {{"name", defender.name}}});
+            defender.condition = Condition::gone;
+            defender.hit_points = 0;
+            defender.initiative = 0;
+            end_effects_at_zero(defender);
+            went_down(defender);
+            attacker.remove(204);
+            attacker.remove(345);
+            break;
+        }
         case 322:
             // A dracolich's touch paralyzes for the fight (Curse, ovr013).
             paralyze(defender, 0, 0);
@@ -2103,6 +2133,117 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         }
         break;
     }
+    case 181:
+        // Charm Monsters: Charm Person on any creature (Curse let it charm
+        // only what Charm Person can, as it does Hold Monster).
+        cast_generic(caster, number, level, targets, 0, 0);
+        break;
+    case 182:
+    {
+        // Confusion: at most 2d8 of those in its area.
+        auto confused = targets;
+        confused.resize(
+            std::min<std::size_t>(confused.size(), static_cast<std::size_t>(roll(8) + roll(8))));
+        cast_generic(caster, number, level, confused, 0, 0);
+        break;
+    }
+    case 184:
+        // Fear: those on a path 6 squares long and 3 wide that fail to save
+        // flee (Curse, SpellFear).
+        for (const auto id : path_area(caster, aim, 6, 3))
+        {
+            auto &f = *find(id);
+            if (!saving_throw(f, 4, 0, &caster) &&
+                add_with_message(f, {342, known.minutes_per_level * level, level, true}, false,
+                                 false, 0, level, &known))
+            {
+                f.fleeing = true;
+            }
+        }
+        break;
+    case 186:
+        // Fumble: a failed save leaves it helpless, a made one slowed
+        // (Curse, SpellFumble).
+        for (const auto id : targets)
+        {
+            auto &f = *find(id);
+            const int minutes = known.minutes_per_level * level;
+            const bool saved = saving_throw(f, 4, 0, &caster);
+            (void)add_with_message(f, {saved ? effect::slowed : 31, minutes, level, false}, false,
+                                   false, 0, level, &known);
+        }
+        break;
+    case 193:
+        // Feeblemind: a cleric saves 1 better, a magic-user 4 worse, any
+        // other 2 worse; one feebleminded casts nothing (Curse, AffectFeebleMind).
+        for (const auto id : targets)
+        {
+            auto &f = *find(id);
+            const auto &l = f.numbers.class_levels;
+            const int modifier = l[static_cast<std::size_t>(ClassSlot::cleric)] > 0       ? 1
+                                 : l[static_cast<std::size_t>(ClassSlot::magic_user)] > 0 ? -4
+                                                                                          : -2;
+            cast_generic(caster, number, level, {id}, 0, 0, modifier);
+            if (f.has(268))
+            {
+                f.numbers.spells.clear();
+                f.cast_allowed = false;
+            }
+        }
+        break;
+    case 170:
+        // Sticks to Snakes: those under 6 Hit Dice fight snakes for a while;
+        // stronger ones smash them flat (Curse, SpellSticksToSnakes).
+        for (const auto id : targets)
+        {
+            auto &f = *find(id);
+            if (f.numbers.level >= 6)
+            {
+                log({"{name} smashes them flat.", {{"name", f.name}}});
+                continue;
+            }
+            (void)add_with_message(f, {203, 0, level, false}, false, false, 0, level, &known);
+        }
+        break;
+    case 173:
+        // Dispel Evil: on the caster, whose blows send the evil away.
+        (void)add_with_message(caster, {204, known.minutes_fixed, level, false}, false, false, 0,
+                               level, &known);
+        caster.numbers.effects.push_back({345, known.minutes_fixed, level, false});
+        break;
+    case 185:
+    {
+        // Fire Shield, hot or cold (picked at random for now, as Curse's
+        // Quick does), with protection from electricity.
+        const int minutes = known.minutes_fixed + known.minutes_per_level * level;
+        (void)add_with_message(caster, {roll(10) > 5 ? 250 : 254, minutes, level, false}, false,
+                               false, 0, level, &known);
+        caster.numbers.effects.push_back({335, minutes, level, false});
+        break;
+    }
+    case 183:
+    {
+        // Dimension Door: to the square aimed at, free of any hold.
+        if (standing_at(aim) || !board_.contains(aim) || board_.at(aim) == rules::Terrain::obstacle)
+        {
+            break;
+        }
+        for (auto &other : fighters_)
+        {
+            for (const int hold : {effect::hugging, effect::engulfing, effect::bite_hold})
+            {
+                if (const auto *held = other.find_effect(hold);
+                    held && held->strength == static_cast<int>(caster.id))
+                {
+                    release(other, hold);
+                }
+            }
+        }
+        caster.remove(effect::immobile);
+        caster.cell = aim;
+        log({"{name} teleports.", {{"name", caster.name}}});
+        break;
+    }
     case 158:
     case 171:
     case 199:
@@ -2421,6 +2562,9 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
     // and electricity, theirs.
     const bool spell_effect = known && known->caster_class != SpellClass::item;
     immune = immune || (target.has(329) && known);
+    // A dracolich shrugs off fear, enfeeblement and feeblemind (Curse's 133,
+    // which it checked too late to work, docs/ORIGINAL-RULES.md, Bugs).
+    immune = immune || (target.has(333) && is({342, effect::enfeebled, 268}));
     immune = immune || (target.has(263) && spell_effect && known->level < 4);
     immune = immune || (target.has(310) && (element & 2));
     immune = immune || (target.has(335) && (element & 4));
@@ -2529,6 +2673,11 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     if (saved && save_result == 2)
     {
         damage /= 2;
+    }
+    // A fire shield doubles what it is made of, unless saved against.
+    if (!saved && (((element & 1) && target.has(250)) || ((element & 2) && target.has(254))))
+    {
+        damage *= 2;
     }
     if (damage <= 0)
     {
@@ -3974,6 +4123,85 @@ void Session::rake(Fighter &attacker, Fighter &victim)
     end_actions(attacker);
 }
 
+// Curse's conditions at a turn's start (its reconstruction's ovr013): one
+// entangled cannot move; a feebleminded one cannot cast; one fighting snakes
+// spends its turn on them until its attacks wear them out; a confused one
+// rolls what it does, then may shake it off.
+void Session::curse_turn_start(Fighter &f)
+{
+    if (!f.able())
+    {
+        return;
+    }
+    if (f.has(336))
+    {
+        f.half_moves = 0;
+    }
+    if (f.has(268))
+    {
+        f.cast_allowed = false;
+        f.item_use_allowed = false;
+    }
+    if (auto *snakes = f.find_effect(203))
+    {
+        log({"{name} is fighting with snakes.", {{"name", f.name}}});
+        snakes->strength -= f.attacks_left[0] + f.attacks_left[1];
+        if (snakes->strength <= 0)
+        {
+            f.remove(203);
+        }
+        end_actions(f);
+        return;
+    }
+    if (f.has(235))
+    {
+        const int roll_100 = roll(100);
+        if (roll_100 <= 10)
+        {
+            // It breaks and runs, afraid for 10 rounds.
+            f.remove(235);
+            f.fleeing = true;
+            f.numbers.effects.push_back({342, 10, 0, true});
+            log({"{name} flees.", {{"name", f.name}}});
+            return;
+        }
+        if (roll_100 <= 60)
+        {
+            log({"{name} is confused.", {{"name", f.name}}});
+            end_actions(f);
+        }
+        else if (roll_100 <= 80)
+        {
+            // Berserk for a round: against the nearest creature, of either side.
+            const Fighter *nearest = nullptr;
+            for (const auto &other : fighters_)
+            {
+                if (other.id != f.id && other.able() &&
+                    (!nearest || distance(f, other) < distance(f, *nearest)))
+                {
+                    nearest = &other;
+                }
+            }
+            if (nearest)
+            {
+                log({"{name} goes berserk.", {{"name", f.name}}});
+                f.own_side = f.has(effect::charm) ? f.own_side : f.side;
+                f.side = nearest->side == Side::party ? Side::opposition : Side::party;
+                f.lock = nearest->id;
+                f.numbers.effects.push_back({337, 1, 0, true});
+            }
+        }
+        else
+        {
+            log({"{name} is enraged.", {{"name", f.name}}});
+        }
+        if (saving_throw(f, 4, -2))
+        {
+            f.remove(235);
+        }
+    }
+}
+
 // At its turn's start a creature holding a victim bites it from behind with
 // 3d4, and a stirge drinks 1d4 from its victim; either spends its turn. A
 // stirge that has drunk its fill lets go and flies off (effhndlr.pas, 74 and 75).
@@ -4117,6 +4345,14 @@ void Session::expire(Fighter &f, const Effect &ended)
 {
     switch (ended.code)
     {
+    case 342:
+        // Fear ends: it stops fleeing and is the player's again (Curse, AffectFear).
+        f.fleeing = false;
+        break;
+    case 337:
+        // Berserk ends: it is back on its own side.
+        f.side = f.own_side;
+        break;
     case effect::regenerating_soon:
         f.numbers.effects.push_back({effect::regeneration, 0, 0, false});
         break;
@@ -4338,6 +4574,18 @@ bool Session::can_target(const Fighter &attacker, const Fighter &target) const
     {
         return false;
     }
+    // Curse's blink hides it once it has acted (AffectBlink in its reconstruction).
+    if (target.has(237) && target.initiative <= 0)
+    {
+        return false;
+    }
+    // Invisibility to animals: an animal that cannot see the invisible
+    // cannot single it out (Curse, AffectInvisToAnimals).
+    if (target.has(269) && attacker.numbers.creature_type == 19 &&
+        !attacker.has(effect::see_invisible))
+    {
+        return false;
+    }
     // Dust of Disappearance hides it even from one that sees the invisible
     // (effhndlr.pas, EffDustDisappear).
     if (target.has(effect::dust))
@@ -4354,7 +4602,8 @@ bool Session::can_target(const Fighter &attacker, const Fighter &target) const
 // fight; once a round here, as its own notes say (an obvious bug, fixed).
 bool Session::turned_aside(Fighter &defender)
 {
-    if (defender.has(effect::blink) && defender.initiative > 0)
+    if ((defender.has(effect::blink) && defender.initiative > 0) ||
+        (defender.has(237) && defender.initiative <= 0))
     {
         return true;
     }
@@ -4536,6 +4785,12 @@ bool Session::saving_throw(const Fighter &f, int save, int modifier, const Fight
         ((element & 1) && f.has(effect::resist_fire)))
     {
         modifier += 3;
+    }
+    // Curse's fire shields: the hot one saves 2 better against cold, the
+    // cold one against fire (HotFireShield, ColdFireShield).
+    if (((element & 2) && f.has(250)) || ((element & 1) && f.has(254)))
+    {
+        modifier += 2;
     }
     const int total = natural + f.numbers.save_bonus + modifier;
     return total >= 0 && total >= f.numbers.saving_throws[static_cast<std::size_t>(save)];
