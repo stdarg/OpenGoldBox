@@ -150,6 +150,12 @@ struct Fighter
     // its first turn) and the enemy it has locked onto (combatai.pas).
     int stance{};
     EntityId lock{};
+    // It has attacked this turn.
+    bool fought{};
+    // A creature the computer plays whose turn left it no way to fight or get
+    // away walks the shortest way to an enemy (route_to_enemy) until it
+    // fights again.
+    bool routing{};
     // What it was before Animate Dead raised it, which it is again as it collapses.
     std::optional<Combatant> before_animation;
 
@@ -733,7 +739,16 @@ class Session final : public rules::CombatSession
                                                        bool sight) const;
     bool ai_move_attack(Fighter &f);
     bool ai_step(Fighter &f, int &last_direction, int &stuck);
+    bool take_ai_step(Fighter &f, int direction, int &last_direction);
     bool can_step(const Fighter &f, int direction, bool &edge) const;
+
+    struct Route
+    {
+        int direction{};
+        EntityId target{};
+    };
+
+    [[nodiscard]] std::optional<Route> route_to_enemy(const Fighter &f) const;
     void finish_round(Fighter &f);
     [[nodiscard]] bool missile_in_hand(const Fighter &f) const;
     void put_out_of_play(Fighter &f, Condition condition);
@@ -3099,6 +3114,7 @@ void Session::revive(Fighter &f)
 // done. Morale is checked as every turn starts (next_actor).
 void Session::ai_turn(Fighter &f, bool magic)
 {
+    f.fought = false;
     // The pattern: kept 3 times in 4 while it is 1 to 4; rerolled 1 to 4,
     // or 5 to 6 one time in 8 (CombatAiControl).
     if (f.stance == 0 || f.stance > 4 || roll(4) == 1)
@@ -3310,6 +3326,8 @@ bool Session::ai_move_attack(Fighter &f)
             return true;
         }
         note_attack(f, *target);
+        f.fought = true;
+        f.routing = false;
         if (*verb == "melee")
         {
             if (!sweep(f, *target))
@@ -3696,10 +3714,65 @@ bool Session::can_step(const Fighter &f, int direction, bool &edge) const
     return breathes_freely || !in_cloud(moved);
 }
 
+// The first step of the shortest way, round walls and creatures, to a square
+// beside the nearest enemy it may single out, when that step can be taken. A
+// departure from the original, whose AI a wall could leave with no way to
+// fight or get away for good, so a fight no side could end went on forever
+// (docs/DEVIATIONS.md).
+std::optional<Session::Route> Session::route_to_enemy(const Fighter &f) const
+{
+    constexpr int unlimited = 1'000'000;
+    const auto reach = grid_for(f).reachable(unlimited);
+    std::optional<int> best_cost;
+    rules::Cell best{};
+    EntityId target{};
+    auto moved = f;
+    for (int y = 0; y < board_.height; ++y)
+    {
+        for (int x = 0; x < board_.width; ++x)
+        {
+            moved.cell = {x, y};
+            const auto cost = reach.cost_to(moved.cell);
+            if (!cost || (best_cost && *cost >= *best_cost))
+            {
+                continue;
+            }
+            for (const auto &o : fighters_)
+            {
+                if (o.side != f.side && o.able() && can_target(f, o) && distance(moved, o) <= 1)
+                {
+                    best_cost = cost;
+                    best = moved.cell;
+                    target = o.id;
+                    break;
+                }
+            }
+        }
+    }
+    if (!best_cost)
+    {
+        return std::nullopt;
+    }
+    const auto path = reach.path_to(best);
+    for (int direction = 0; direction < 8 && !path.empty(); ++direction)
+    {
+        const rules::Cell step{f.cell.x + step_x[static_cast<std::size_t>(direction)],
+                               f.cell.y + step_y[static_cast<std::size_t>(direction)]};
+        bool edge = false;
+        if (step == path.front() && can_step(f, direction, edge))
+        {
+            return Route{direction, target};
+        }
+    }
+    return std::nullopt;
+}
+
 // One step (combatai.pas, AiMoveStep): toward its lock, or away when
 // fleeing, trying the pattern's five directions; a fleeing creature that
 // finds the edge tries to get away. Stuck (no way, or turning back), it
-// changes pattern, then drops its lock, then stops. False when it cannot go on.
+// changes pattern, then drops its lock, then stops; a creature the computer
+// plays that has not fought this turn takes the shortest way to an enemy
+// instead of stopping (route_to_enemy). False when it cannot go on.
 bool Session::ai_step(Fighter &f, int &last_direction, int &stuck)
 {
     const bool lone_mage =
@@ -3714,6 +3787,16 @@ bool Session::ai_step(Fighter &f, int &last_direction, int &stuck)
         finish_round(f);
         return false;
     }
+    if (f.routing)
+    {
+        if (const auto route = route_to_enemy(f))
+        {
+            f.lock = route->target;
+            return take_ai_step(f, route->direction, last_direction);
+        }
+        f.routing = false;
+    }
+    const Fighter *locked = f.fleeing ? nullptr : find(f.lock);
     int base = 0;
     if (f.fleeing)
     {
@@ -3732,12 +3815,12 @@ bool Session::ai_step(Fighter &f, int &last_direction, int &stuck)
         }
         base = enemies ? direction_toward({x / enemies, y / enemies}, f.cell) : 0;
     }
-    else if (const auto *locked = find(f.lock))
+    else if (locked)
     {
         base = direction_toward(f.cell, locked->cell);
     }
-    const auto &pattern = approach[static_cast<std::size_t>(std::clamp(f.stance, 1, 6) - 1)];
     int chosen = -1;
+    const auto &pattern = approach[static_cast<std::size_t>(std::clamp(f.stance, 1, 6) - 1)];
     for (const int offset : pattern)
     {
         const int direction = (base + offset) % 8;
@@ -3764,6 +3847,16 @@ bool Session::ai_step(Fighter &f, int &last_direction, int &stuck)
             f.lock = 0;
             if (stuck > 2)
             {
+                // Its turn left it no way to fight or get away.
+                const auto route =
+                    f.numbers.morale >= non_player && !f.fought ? route_to_enemy(f) : std::nullopt;
+                if (route)
+                {
+                    f.routing = true;
+                    f.fleeing = false;
+                    f.lock = route->target;
+                    return take_ai_step(f, route->direction, last_direction);
+                }
                 f.half_moves = 0;
                 return false;
             }
@@ -3778,9 +3871,15 @@ bool Session::ai_step(Fighter &f, int &last_direction, int &stuck)
     {
         return true;
     }
-    last_direction = chosen;
-    step_to(f, {f.cell.x + step_x[static_cast<std::size_t>(chosen)],
-                f.cell.y + step_y[static_cast<std::size_t>(chosen)]});
+    return take_ai_step(f, chosen, last_direction);
+}
+
+// The step an AI chose; false when the step left it unable to go on.
+bool Session::take_ai_step(Fighter &f, int direction, int &last_direction)
+{
+    last_direction = direction;
+    step_to(f, {f.cell.x + step_x[static_cast<std::size_t>(direction)],
+                f.cell.y + step_y[static_cast<std::size_t>(direction)]});
     if (!f.able())
     {
         end_actions(f);

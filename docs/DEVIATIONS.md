@@ -205,6 +205,20 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   Constitution, a halfling −1 Strength and +1 Dexterity, a half-orc +1
   Strength, +1 Constitution and −2 Charisma. An elf can now have a Dexterity
   of 19, and a dwarf a Constitution of 19.
+- **The computer's way round walls** (the user, 2026-11-13, answers 2 and
+  3). The original's AI steps straight toward the enemy it has locked onto,
+  trying five directions in its approach pattern's order; when none is open,
+  or the only one turns it back, it changes pattern, then drops its lock,
+  then stops. A wall between the sides could stop it for good, so a fight
+  neither side could end went on forever. In OpenGoldBox a monster or NPC
+  whose turn leaves it that way, with no attack made and no way to fight or
+  get away, takes the shortest way round walls and creatures to a square
+  beside the nearest enemy it may single out instead of stopping, and keeps
+  to it until it fights again. Party members the player sets to Quick move
+  as the original moves them. With no way to any enemy it stops, as in the
+  original. Guards the original left behind walls now join the fight, so
+  some fights are harder than the original's: *Curse*'s fight with
+  Dracandros in his courtyard is one.
 - **Dexterity above 18** (the user, 2026-11-12). In the original, 19 and 20
   are worth no more in a fight than 18. OpenGoldBox starts each higher step two
   points sooner:

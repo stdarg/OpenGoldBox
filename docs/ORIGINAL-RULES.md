@@ -638,7 +638,9 @@ gear.
    enemy in sight, else one through walls; up to 20 passes of a step or an
    attack on an enemy in its weapon's reach; steps by the original's six
    approach patterns, changing pattern, dropping the lock and stopping when
-   stuck; a lone magic-user that is not fleeing never walks; with nothing
+   stuck, where a monster or NPC that has not fought this turn takes the
+   shortest way to an enemy instead (a departure,
+   [DEVIATIONS.md](DEVIATIONS.md#the-original-rules)); a lone magic-user that is not fleeing never walks; with nothing
    to do it guards (or ends, with a missile weapon). A fleeing creature runs
    first and tries to get away at the edge. The monsters' specials fire as
    it starts to move and attack: the petrifying gaze (stoned; a mirror turns

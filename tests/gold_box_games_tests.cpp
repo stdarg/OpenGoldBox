@@ -487,14 +487,19 @@ const std::vector<RouteBeat> &curse_route()
                                        // and led to the Thieves' Guild, rested.
         {1, 9, 3, D::north, {}, true}, // The guildmaster's news, rested; the Fire Knives burst in.
         {3, 0, 0, D::south, {}, true, true}, // Out through the guild's back to the sewers.
-        // The guild's secret training hall, six levels over (an award stops
-        // short of the level after next).
+        // The guild's secret training hall, eight levels over (an award stops
+        // short of the level after next), to levels 10 and 11: Dracandros's
+        // guards, whom the original's AI left behind his courtyard's walls,
+        // all reach the party (docs/DEVIATIONS.md, the computer's way round
+        // walls).
         {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
         {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
         {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
         {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
         {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
         {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
+        {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 400000, 9000},
+        {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 400000, 9000},
         {4, 0, 0, D::south, {}, true, true}, // Through the sewers to the Fire Knives' hideout.
         {4, 3, 13, D::north, {"stop:JOURNEY"}, true},             // The Fire Knives' leader and his
                                                                   // band; freed of the first bond,
@@ -617,8 +622,9 @@ const std::vector<RouteBeat> &curse_route()
          3,
          8,
          D::west,
-         {"YES", "Raise Dead", "ranger 3", "Pay", "Raise Dead", "cleric 5", "Pay", "Raise Dead",
-          "magic_user 6", "Pay", "Leave"},
+         {"YES", "Raise Dead", "paladin 1", "Pay", "Raise Dead", "ranger 3", "Pay", "Raise Dead",
+          "cleric 4", "Pay", "Raise Dead", "cleric 5", "Pay", "Raise Dead", "magic_user 6", "Pay",
+          "Leave"},
          false,
          false,
          false,

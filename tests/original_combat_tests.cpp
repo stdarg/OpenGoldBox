@@ -2683,6 +2683,42 @@ void the_ai_never_shares_a_square()
     check(logged(session, "{name} guards.") > 0, "The kobold behind waits its turn");
 }
 
+// A monster whose turn leaves it stuck with no way to fight takes the
+// shortest way round walls (a departure from the original,
+// docs/DEVIATIONS.md): a kobold in a cup that opens away from the fighter
+// walks out of it and reaches him.
+void the_ai_walks_around_walls()
+{
+    auto kobold = creature(30, 0);
+    kobold.morale = 0x80 + 50;
+    const std::vector<rules::Cell> cup{{3, 2}, {4, 2}, {5, 2}, {6, 2},
+                                       {3, 3}, {3, 4}, {6, 3}, {6, 4}};
+    auto fight = arrange({{"Fighter", rules::Side::party, {4, 0}, creature(200)},
+                          {"Kobold", rules::Side::opposition, {4, 3}, kobold}},
+                         197, cup);
+    auto &session = *fight.session;
+    const auto beside = [&]
+    {
+        const auto state = session.snapshot();
+        const auto fighter = view_of(state, "Fighter").cell;
+        const auto cell = view_of(state, "Kobold").cell;
+        return std::max(std::abs(cell.x - fighter.x), std::abs(cell.y - fighter.y)) <= 1;
+    };
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            const auto state = session.snapshot();
+            return order(session, state.actor == view_of(state, "Fighter").id ? "guard" : "quick");
+        },
+        [&]
+        {
+            return beside() || session.snapshot().round > 8;
+        },
+        2000);
+    check(beside(), "The kobold walks out of the cup to the fighter");
+}
+
 // A party member on Quick casts only with Quick magic on (Curse's reference
 // card: ALT M toggles magic for characters set to Quick).
 void quick_magic_lets_the_party_cast()
@@ -3017,6 +3053,7 @@ int main()
         a_monster_casts();
         quick_magic_lets_the_party_cast();
         the_ai_never_shares_a_square();
+        the_ai_walks_around_walls();
         a_routed_monster_runs();
         the_ai_turns_undead();
         a_gaze_stones();
