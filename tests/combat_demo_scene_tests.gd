@@ -235,6 +235,11 @@ func check_demo() -> void:
     root.push_input(blocked_key)
     require(combat.get_node("LogStack/Log").text.contains("That square is occupied."),
         "Blocked movement explains why the hero cannot enter an ally's square")
+    # The footstep is short: on a busy machine it can finish before the move is
+    # seen, so it counts as heard once it played or finished.
+    var effect_audio: AudioStreamPlayer = combat.get_node("EffectAudio")
+    var footstep := [false]
+    effect_audio.finished.connect(func(): footstep[0] = true)
     var active_key := InputEventKey.new()
     active_key.keycode = KEY_RIGHT
     active_key.pressed = true
@@ -242,12 +247,13 @@ func check_demo() -> void:
     require(combat.get_node("LogStack/LogHeader").text.contains("reaction"),
         "Arrow key starts the selected character's legal move and handles enemy reactions")
     for frame in range(180):
+        footstep[0] = footstep[0] or effect_audio.playing
         if combat.selected_character_cell() == Vector2i(8, 5):
             break
         await create_timer(0.02).timeout
     require(combat.selected_character_cell() == Vector2i(8, 5),
         "Arrow key moves the selected character on their turn")
-    require(combat.get_node("EffectAudio").playing,
+    require(footstep[0] or effect_audio.playing,
         "Moving to a new square plays the original footstep sound")
     require(is_equal_approx(combat.get_node("EffectAudio").volume_linear, 0.125),
         "Movement effects use one-eighth volume")
