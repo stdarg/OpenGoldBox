@@ -500,10 +500,12 @@ int doubled_distance(Cell a, Cell b)
 // The spells built so far; the rest are not offered yet.
 bool spell_built(int number)
 {
-    constexpr std::array built{26, 27, 36, 41, 46, 57, 58, 60, 61, 62, 63, 64, 65, 1,
-                               2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 15, 16, 17, 19,
-                               20, 21, 23, 24, 25, 29, 30, 32, 33, 37, 38, 40, 42, 34,
-                               43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55};
+    constexpr std::array built{26, 27, 36, 41, 46, 57, 58, 60, 61, 62, 63, 64, 65, 1, 2, 3, 4, 5, 6,
+                               7, 8, 9, 10, 11, 15, 16, 17, 19, 20, 21, 23, 24, 25, 29, 30, 32, 33,
+                               37, 38, 40, 42, 34, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55,
+                               // Curse's (spells.cpp, curse_spells).
+                               158, 166, 168, 169, 171, 172, 174, 176, 187, 192, 194, 198, 199,
+                               200};
     return std::find(built.begin(), built.end(), number) != built.end();
 }
 
@@ -675,6 +677,8 @@ class Session final : public rules::CombatSession
                           int caster_level, int spell_number, bool single_target);
     void charm(Fighter &target, Side charmer);
     void cast_sleep(int level, Cell aim);
+    [[nodiscard]] std::vector<EntityId> path_area(const Fighter &caster, Cell aim, int max_range,
+                                                  int width) const;
     void cast_stinking_cloud(Fighter &caster, int level, Cell aim);
     void remove_with_handler(Fighter &f, std::size_t node);
     void dispel(Fighter &target, int level);
@@ -1723,6 +1727,8 @@ void Session::lose_spell(Fighter &caster)
 
 // The spell goes off at its targets (magic.pas, CastSpell): the caster turns
 // to its aim and shows itself, the memorized copy is spent, and its actions end.
+bool magic_resists(const Fighter &target, int caster_level, int roll_100);
+
 void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell aim)
 {
     const int number = caster.aiming;
@@ -2048,6 +2054,96 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         }
         break;
     }
+    case 158:
+    case 171:
+    case 199:
+    {
+        // Curse's cures (ovr023): Cure Serious Wounds 2d8+1, Cure Critical
+        // Wounds 3d8+3, a healing power 2d4+2.
+        const int healed = number == 158   ? roll_dice(2, 8) + 1
+                           : number == 171 ? roll_dice(3, 8) + 3
+                                           : roll_dice(2, 4) + 2;
+        for (const auto id : targets)
+        {
+            auto &f = *find(id);
+            if (f.has(effect::rot) || !(f.able() || f.downed()))
+            {
+                continue;
+            }
+            f.hit_points = std::min(f.hit_points + healed, f.numbers.max_hit_points);
+            if (f.condition == Condition::dying)
+            {
+                f.condition = Condition::unconscious;
+                f.overkill = 0;
+            }
+            log({"{name} is healed.", {{"name", f.name}}});
+        }
+        break;
+    }
+    case 166:
+        cast_generic(caster, number, level, targets, roll_dice(2, 8) + 1, 8);
+        break;
+    case 172:
+        cast_generic(caster, number, level, targets, roll_dice(3, 8) + 3, 8);
+        break;
+    case 174:
+        // Flame Strike: 6d8 of fire.
+        cast_generic(caster, number, level, targets, roll_dice(6, 8), 9);
+        break;
+    case 187:
+        // Ice Storm: 3d10. Curse marks it acid (docs/ORIGINAL-RULES.md, Bugs).
+        cast_generic(caster, number, level, targets, roll_dice(3, 10), 2);
+        break;
+    case 192:
+    {
+        // Cone of Cold: the caster's level and as many d4, along a path two
+        // wide to half its level. Curse marks it acid (docs/ORIGINAL-RULES.md, Bugs).
+        cast_generic(caster, number, level, path_area(caster, aim, std::max((level + 1) / 2, 1), 2),
+                     level + roll_dice(level, 4), 2);
+        break;
+    }
+    case 198:
+        // A monster's blast: 6d6 along a path to 3 squares.
+        cast_generic(caster, number, level, path_area(caster, aim, 3, 1), roll_dice(6, 6), 8);
+        break;
+    case 194:
+    {
+        // Hold Monster: Hold Person's saves, on any creature (Curse let it
+        // hold only what Hold Person can, docs/ORIGINAL-RULES.md, Bugs).
+        const int count = static_cast<int>(targets.size());
+        const int modifier = count == 1 ? -3 : count == 2 ? -1 : 0;
+        for (auto id = targets.rbegin(); id != targets.rend(); ++id)
+        {
+            cast_generic(caster, number, level, {*id}, 0, 0, modifier);
+        }
+        break;
+    }
+    case 176:
+    {
+        // Slay Living: unless magic resistance turns it, a failed save
+        // kills; a saved one takes 2d8+1 (ovr023, SpellSlayLiving).
+        for (const auto id : targets)
+        {
+            auto &target = *find(id);
+            if (magic_resists(target, level, roll(100)))
+            {
+                log({"{name} is unaffected.", {{"name", target.name}}});
+                continue;
+            }
+            if (!saving_throw(target, 4, 0, &caster))
+            {
+                log({"{name} is slain.", {{"name", target.name}}});
+                kill(target);
+                continue;
+            }
+            nonweapon_damage(target, roll_dice(2, 8) + 1, 0, false, 8, level, number, true);
+        }
+        break;
+    }
+    case 168:
+        // Poison: the caster's touch carries poison (ovr023, SpellPoison).
+        add_with_message(caster, {64, 0, level, false}, false, false, 0, level, &known);
+        break;
     default:
         cast_generic(caster, number, level, targets, 0, 0);
         break;
@@ -2097,6 +2193,67 @@ void Session::spend_item(Fighter &user, int ordinal, int number)
     {
         items.erase(item);
     }
+}
+
+// The creatures on a path from a caster through its aim, as Curse's area
+// spells take them (ovr023, BuildAreaDamageTargets in its reconstruction): the
+// aim is carried on the caster's way to max_range squares, kept where the
+// caster can see, and every creature but the caster on the line back to it,
+// and on one or two lines beside it when the path is that wide, is taken.
+std::vector<EntityId> Session::path_area(const Fighter &caster, Cell aim, int max_range,
+                                         int width) const
+{
+    constexpr std::array<Cell, 8> beside{
+        {{1, 0}, {1, 0}, {0, 1}, {0, 1}, {-1, 0}, {-1, 0}, {0, -1}, {0, -1}}};
+    constexpr std::array<Cell, 8> other_side{
+        {{-1, 0}, {0, -1}, {0, -1}, {1, 0}, {1, 0}, {0, 1}, {0, 1}, {-1, 0}}};
+    Cell end = aim;
+    if (aim != caster.cell)
+    {
+        LineWalk out(caster.cell, {caster.cell.x + (aim.x - caster.cell.x) * max_range * 2,
+                                   caster.cell.y + (aim.y - caster.cell.y) * max_range * 2});
+        while (out.next() && board_.contains(out.at) &&
+               board_.at(out.at) != rules::Terrain::obstacle)
+        {
+            if (out.distance <= LineWalk(caster.cell, aim).distance)
+            {
+                continue;
+            }
+            if (out.distance > max_range * 2)
+            {
+                break;
+            }
+            end = out.at;
+        }
+    }
+    std::vector<EntityId> found;
+    const auto gather = [&](Cell from)
+    {
+        if (!board_.contains(from))
+        {
+            return;
+        }
+        LineWalk back(from, caster.cell);
+        do
+        {
+            if (const auto id = standing_at(back.at);
+                id && id != caster.id && std::ranges::find(found, id) == found.end())
+            {
+                found.push_back(id);
+            }
+        } while (back.next());
+    };
+    gather(end);
+    const auto toward_caster = static_cast<std::size_t>(direction_toward(end, caster.cell));
+    if (width > 1)
+    {
+        gather({end.x + beside[toward_caster].x, end.y + beside[toward_caster].y});
+    }
+    if (width > 2)
+    {
+        gather({end.x + other_side[toward_caster].x, end.y + other_side[toward_caster].y});
+    }
+    return found;
 }
 
 // The original's resolver (magic.pas, ResolveSpell): each target saves if the

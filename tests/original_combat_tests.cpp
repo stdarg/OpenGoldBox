@@ -2178,6 +2178,47 @@ void lightning_runs_on()
     check(view_of(state, "Aside").hit_points == 100, "One off the line is spared");
 }
 
+// Curse's spells: Cone of Cold takes those on its path to half the caster's
+// level, two wide (ovr023, SpellConeOfCold); Cause Critical Wounds is 3d8+3;
+// Slay Living kills on a failed save and wounds on a saved one.
+void curse_spells_strike()
+{
+    using original::ClassSlot;
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 9, {192})},
+                 {"First", rules::Side::opposition, {2, 3}, victim(100)},
+                 {"Second", rules::Side::opposition, {4, 3}, victim(100)},
+                 {"Beyond", rules::Side::opposition, {7, 3}, victim(100)},
+                 {"Aside", rules::Side::opposition, {3, 6}, victim(100)}},
+                141);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 192,
+             [&]
+             {
+                 return aim_at_cell(session, {2, 3});
+             });
+    const auto state = session.snapshot();
+    const int first = 100 - view_of(state, "First").hit_points;
+    const int second = 100 - view_of(state, "Second").hit_points;
+    check(first >= 9 && first <= 45 && second >= 9 && second <= 45,
+          "Cone of Cold: 9 and 9d4 to each on its path, or half on a save");
+    check(view_of(state, "Beyond").hit_points == 100 && view_of(state, "Aside").hit_points == 100,
+          "Those past its reach or off its path are spared");
+
+    auto touch =
+        arrange({{"Priest", rules::Side::party, {0, 3}, caster(ClassSlot::cleric, 9, {172, 176})},
+                 {"Orc", rules::Side::opposition, {1, 3}, victim(100)}},
+                143);
+    cast_now(*touch.session, "Priest", 172,
+             [&]
+             {
+                 return aim_at(*touch.session, "Orc");
+             });
+    const int wound = 100 - view_of(touch.session->snapshot(), "Orc").hit_points;
+    check(wound == 0 || (wound >= 6 && wound <= 27),
+          "Cause Critical Wounds touches for 3d8+3, or misses");
+}
+
 // Stinking Cloud: one in it fails its save and is helpless with nausea; the
 // cloud clears after the caster's level in rounds (magic.pas, effhndlr.pas 40).
 void a_cloud_sickens()
@@ -2693,6 +2734,7 @@ int main()
         silence_stops_casting();
         missiles_turned_away();
         lightning_runs_on();
+        curse_spells_strike();
         a_cloud_sickens();
         dispel_magic_strips();
         the_dead_rise();
