@@ -61,6 +61,46 @@ unsigned dominant(const Image &image, unsigned first_row, unsigned last_row, uns
 }
 } // namespace
 
+namespace
+{
+// A pool character under rules that roll in place (the original's): the
+// class's `variant`-th race among those it allows, its gender by turns, an
+// alignment it allows, rolled from its place in the pool, so the pool is the
+// same each time.
+rules::CharacterDraft rolled_pool_draft(const rules::CharacterRules &rules,
+                                        const std::string &klass, unsigned c, unsigned variant,
+                                        const std::string &name)
+{
+    using namespace rules;
+    CharacterDraft d;
+    d.character_class = klass;
+    d.gender = variant % 2 ? "female" : "male";
+    d.name = name;
+    std::vector<std::string> races;
+    for (const auto &race : rules.choices(CreationField::race))
+    {
+        d.race = race.id;
+        if (rules.allows(d, CreationField::character_class, klass))
+        {
+            races.push_back(race.id);
+        }
+    }
+    d.race = races.at(variant % races.size());
+    std::vector<std::string> alignments;
+    for (const auto &alignment : rules.choices(CreationField::alignment))
+    {
+        if (rules.allows(d, CreationField::alignment, alignment.id))
+        {
+            alignments.push_back(alignment.id);
+        }
+    }
+    d.alignment = alignments.at((c + variant * 2) % alignments.size());
+    RandomState random{1000 + c * 4 + variant};
+    rules.roll_in_place(d, random);
+    return d;
+}
+} // namespace
+
 std::vector<Character> character_pool(const rules::CharacterRules &rules,
                                       const por::CharacterArt &art)
 {
@@ -69,7 +109,20 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
     {
         throw std::runtime_error("Load character art before opening the pool");
     }
-    const auto classes = rules.choices(CreationField::character_class);
+    auto classes = rules.choices(CreationField::character_class);
+    // The original's tables hold a cleric/thief that no race may be.
+    std::erase_if(classes,
+                  [&](const CreationChoice &klass)
+                  {
+                      return std::ranges::none_of(
+                          rules.choices(CreationField::race),
+                          [&](const CreationChoice &race)
+                          {
+                              CharacterDraft d;
+                              d.race = race.id;
+                              return rules.allows(d, CreationField::character_class, klass.id);
+                          });
+                  });
     const auto alignments = rules.choices(CreationField::alignment);
     // Every pool member has a distinct given name and surname.
     const std::array<const char *, 48> first{
@@ -100,119 +153,128 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
         for (unsigned variant = 0; variant < 4; ++variant)
         {
             CharacterDraft d;
-            d.character_class = classes[c].id;
-            d.race = races[(c + variant) % races.size()];
-            d.gender = variant % 2 ? "female" : "male";
-            d.alignment = alignments[(c + variant * 2) % alignments.size()].id;
             const auto name_index = c * 4 + variant;
-            d.name = std::string(first.at(name_index)) + " " + surnames.at(name_index);
-            d.rolled = true;
-            const auto priority = rules.preset_ability_priority(d.character_class, variant);
-            const auto primary = priority[0], secondary = priority[1];
-            for (unsigned rank = 0; rank < 6; ++rank)
+            const auto name = std::string(first.at(name_index)) + " " + surnames.at(name_index);
+            if (rules.ability_generation() == AbilityGeneration::rolled_in_place)
             {
-                const int score = 18 - static_cast<int>(rank) - (variant == 3 && rank == 0 ? 1 : 0);
-                // Authored, valid 4d6-drop-lowest provenance for each strong score.
-                d.rolls[d.assignment[priority[rank]]] = {
-                    {6, score >= 17 ? 6 : 5, score - 6 - (score >= 17 ? 6 : 5), 1}, 3};
+                d = rolled_pool_draft(rules, classes[c].id, c, variant, name);
             }
-            d.background = primary == Ability::strength       ? "soldier"
-                           : primary == Ability::dexterity    ? "criminal"
-                           : primary == Ability::intelligence ? "sage"
-                                                              : "acolyte";
-            const auto bonuses = rules.adjustments(d.background);
-            for (unsigned a = 0; a < bonuses.size(); ++a)
+            else
             {
-                if (bonuses[a].bonuses[primary] == 2)
+                d.character_class = classes[c].id;
+                d.race = races[(c + variant) % races.size()];
+                d.gender = variant % 2 ? "female" : "male";
+                d.alignment = alignments[(c + variant * 2) % alignments.size()].id;
+                d.name = name;
+                d.rolled = true;
+                const auto priority = rules.preset_ability_priority(d.character_class, variant);
+                const auto primary = priority[0], secondary = priority[1];
+                for (unsigned rank = 0; rank < 6; ++rank)
                 {
-                    d.adjustment = a;
-                    if (bonuses[a].bonuses[secondary])
-                    {
-                        break;
-                    }
+                    const int score =
+                        18 - static_cast<int>(rank) - (variant == 3 && rank == 0 ? 1 : 0);
+                    // Authored, valid 4d6-drop-lowest provenance for each strong score.
+                    d.rolls[d.assignment[priority[rank]]] = {
+                        {6, score >= 17 ? 6 : 5, score - 6 - (score >= 17 ? 6 : 5), 1}, 3};
                 }
-            }
-            // Presets include deterministic authored choices. Refresh each group's
-            // options after its prerequisites, including skills before Expertise.
-            const auto groups = rules.training_options(d);
-            for (const auto &requested : groups)
-            {
-                const auto current = rules.training_options(d);
-                const auto group = std::find_if(current.begin(), current.end(),
-                                                [&](const auto &g)
-                                                {
-                                                    return g.id == requested.id;
-                                                });
-                if (group == current.end() || group->options.size() < group->count)
+                d.background = primary == Ability::strength       ? "soldier"
+                               : primary == Ability::dexterity    ? "criminal"
+                               : primary == Ability::intelligence ? "sage"
+                                                                  : "acolyte";
+                const auto bonuses = rules.adjustments(d.background);
+                for (unsigned a = 0; a < bonuses.size(); ++a)
                 {
-                    throw std::runtime_error("Incomplete preset training options");
-                }
-                for (unsigned n = 0; n < group->count; ++n)
-                {
-                    d.training[group->id].push_back(
-                        group->options[(name_index + n) % group->options.size()].id);
-                }
-            }
-            const auto cantrips = rules.cantrip_options(d);
-            if (cantrips.count)
-            {
-                d.cantrips.emplace();
-                for (const auto &option : cantrips.options)
-                {
-                    if (d.cantrips->size() == cantrips.count)
+                    if (bonuses[a].bonuses[primary] == 2)
                     {
-                        break;
-                    }
-                    d.cantrips->push_back(option.id);
-                }
-            }
-            const auto spell_options = rules.spell_choice_options(d);
-            if (spell_options.may_prepare || !spell_options.learning.empty())
-            {
-                d.spells = SpellChoices{};
-                // Two groups can offer the same spell (a Sage Wizard's spellbook
-                // and Magic Initiate), but a spell is learned only once.
-                const auto chosen = [&](const std::string &id)
-                {
-                    if (d.cantrips &&
-                        std::find(d.cantrips->begin(), d.cantrips->end(), id) != d.cantrips->end())
-                    {
-                        return true;
-                    }
-                    return std::any_of(d.spells->learning.begin(), d.spells->learning.end(),
-                                       [&](const auto &picks)
-                                       {
-                                           return std::find(picks.second.begin(),
-                                                            picks.second.end(),
-                                                            id) != picks.second.end();
-                                       });
-                };
-                for (const auto &group : spell_options.learning)
-                {
-                    for (const auto &option : group.options)
-                    {
-                        auto &values = d.spells->learning[group.id];
-                        if (values.size() == group.count)
+                        d.adjustment = a;
+                        if (bonuses[a].bonuses[secondary])
                         {
                             break;
                         }
-                        if (!chosen(option.id))
+                    }
+                }
+                // Presets include deterministic authored choices. Refresh each group's
+                // options after its prerequisites, including skills before Expertise.
+                const auto groups = rules.training_options(d);
+                for (const auto &requested : groups)
+                {
+                    const auto current = rules.training_options(d);
+                    const auto group = std::find_if(current.begin(), current.end(),
+                                                    [&](const auto &g)
+                                                    {
+                                                        return g.id == requested.id;
+                                                    });
+                    if (group == current.end() || group->options.size() < group->count)
+                    {
+                        throw std::runtime_error("Incomplete preset training options");
+                    }
+                    for (unsigned n = 0; n < group->count; ++n)
+                    {
+                        d.training[group->id].push_back(
+                            group->options[(name_index + n) % group->options.size()].id);
+                    }
+                }
+                const auto cantrips = rules.cantrip_options(d);
+                if (cantrips.count)
+                {
+                    d.cantrips.emplace();
+                    for (const auto &option : cantrips.options)
+                    {
+                        if (d.cantrips->size() == cantrips.count)
                         {
-                            values.push_back(option.id);
+                            break;
+                        }
+                        d.cantrips->push_back(option.id);
+                    }
+                }
+                const auto spell_options = rules.spell_choice_options(d);
+                if (spell_options.may_prepare || !spell_options.learning.empty())
+                {
+                    d.spells = SpellChoices{};
+                    // Two groups can offer the same spell (a Sage Wizard's spellbook
+                    // and Magic Initiate), but a spell is learned only once.
+                    const auto chosen = [&](const std::string &id)
+                    {
+                        if (d.cantrips && std::find(d.cantrips->begin(), d.cantrips->end(), id) !=
+                                              d.cantrips->end())
+                        {
+                            return true;
+                        }
+                        return std::any_of(d.spells->learning.begin(), d.spells->learning.end(),
+                                           [&](const auto &picks)
+                                           {
+                                               return std::find(picks.second.begin(),
+                                                                picks.second.end(),
+                                                                id) != picks.second.end();
+                                           });
+                    };
+                    for (const auto &group : spell_options.learning)
+                    {
+                        for (const auto &option : group.options)
+                        {
+                            auto &values = d.spells->learning[group.id];
+                            if (values.size() == group.count)
+                            {
+                                break;
+                            }
+                            if (!chosen(option.id))
+                            {
+                                values.push_back(option.id);
+                            }
                         }
                     }
                 }
-            }
-            if (spell_options.may_prepare)
-            {
-                d.spells->prepared.emplace();
-                for (const auto &option : rules.spell_choice_options(d).preparation)
+                if (spell_options.may_prepare)
                 {
-                    if (d.spells->prepared->size() == spell_options.prepared_count)
+                    d.spells->prepared.emplace();
+                    for (const auto &option : rules.spell_choice_options(d).preparation)
                     {
-                        break;
+                        if (d.spells->prepared->size() == spell_options.prepared_count)
+                        {
+                            break;
+                        }
+                        d.spells->prepared->push_back(option.id);
                     }
-                    d.spells->prepared->push_back(option.id);
                 }
             }
             por::CharacterAppearance appearance;
@@ -225,7 +287,11 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             appearance.portrait_body = bodies[(c * 3 + variant) % bodies.size()];
             appearance.combat_head = (c + variant * 3) % 14;
             appearance.combat_body = (c * 2 + variant * 5) % 32;
-            appearance.icon_size = d.race == "gnome"     ? por::IconSize::small
+            // The original's dwarves and halflings stand short too (chargen.pas).
+            const bool rolled = rules.ability_generation() == AbilityGeneration::rolled_in_place;
+            const bool short_folk =
+                d.race == "gnome" || (rolled && (d.race == "dwarf" || d.race == "halfling"));
+            appearance.icon_size = short_folk            ? por::IconSize::small
                                    : d.race == "goliath" ? por::IconSize::large
                                                          : por::IconSize::regular;
             const auto portrait = art.portrait(appearance);

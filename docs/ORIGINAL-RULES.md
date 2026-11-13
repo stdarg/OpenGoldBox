@@ -345,7 +345,39 @@ gear.
    Readying items mid-fight (the View menu) changes a creature's numbers as
    the original recomputes them (`RecalcStats`, `RecalcAttacksLeft`), so a
    fight needs each creature's items, not only the profile worked out at its
-   start.
+   start. *In part, 2026-11-13:*
+   - **Items stay the original's:** under the original rules an item's key is
+     its record (`por::original_item_key`, without its readied byte and
+     count, which the inventory keeps). The module reads the item types and
+     the monster records from the game's folder (`original::Content`).
+     Readying follows `ToggleReadyItem`: the class's items only, two hands at
+     most, one item in each place but two rings, one stack each of arrows and
+     quarrels, and a cursed item stays readied. A character's numbers are its
+     sheet made into an original record, run with its readied items through
+     `RecalcStats` as a monster's are. Its coins are the party's, so they
+     weigh nothing (docs/DEVIATIONS.md).
+   - **Town fights:** an area's monsters fight as their own records. Each is
+     worth its record's experience (its award, and so much a Hit Point) shared
+     among the party's members (`DetermineLootExp`), and then among each
+     member's classes. A monster below 0 Hit Points, or one that
+     surrendered, is beaten.
+   - **Checks outside fights** take the original's chances: picking a lock by
+     Open Locks, climbing by Climb Walls and forcing a door by Strength's
+     open-doors table (`BashDoor`). The original's own door menu comes with
+     step 6.
+   - **Rest:** the camp's long rest is a day, which heals each member 1 Hit
+     Point (`CheckRestingHeal`); the short rest heals nothing. The original's
+     rest of any length, and memorizing, come with magic (plan step 5).
+   - The Character Pool offers original-rules characters: four of each class
+     a race may be, rolled the same each time.
+   - `opengold_original_campaign_tests` and the game's
+     `opengold_godot_creation_expedition_original` play the Slums under the
+     original rules, the second on screen.
+   - Still to come: ammunition and charges spent in a fight leaving the
+     inventory, readying items mid-fight, the party's facing, the original's
+     terrain heights for sight, the fireball's outdoor radius, the encounter's
+     morale and PARTY_MOVE_MODIFIER, treasure's experience, and showing
+     descending Armor Class on the screens.
 8. Spells in combat. In parts:
    - 8a. *Done 2026-11-12:* the casting framework, with the first-level
      spells (`original_spells.h` holds the original's spell table). Cast
@@ -509,3 +541,4 @@ tuned with the AI lab once the original rules play.
 | A level drain divides by the victim's class levels, so a creature without any (a monster) divides by zero (`effhndlr.pas`, the level drain) | It loses its highest level's share |
 | A level drain keeps the drained class's level as the victim's highest level, so a fighter 5 / thief 6 drained in fighter counts as level 4 (`effhndlr.pas`, the level drain) | The highest of its classes |
 | Each hit of a holding bite's own bite starts another hold, stacking holds on the biter and immobility on the victim, which can outlast the fight (`effhndlr.pas`, `EffBiteHold`) | One hold at a time |
+| Strength 19 and above has no row in the open-doors table, so a member that strong never forces an ordinary door (`explore.pas`, `BashDoor`) | It forces one as 18/00 does, 5 in 6 |

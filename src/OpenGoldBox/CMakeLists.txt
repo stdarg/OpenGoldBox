@@ -476,6 +476,9 @@ if(OPENGOLD_BUILD_TESTS)
         -DCHECK_FLAG=--equipment-art-check)
     opengold_creation_check(defeat "Godot defeat check passed" -DCHECK_FLAG=--defeat-check)
     opengold_creation_check(expedition "Godot expedition passed" -DCHECK_FLAG=--expedition-check)
+    # The same expedition under the original rules, fought on screen.
+    opengold_creation_check(expedition_original "Godot expedition passed"
+        -DCHECK_FLAG=--expedition-check -DARGS=--original-rules)
     opengold_creation_check(reincarnate "Godot reincarnation passed" -DCHECK_FLAG=--reincarnate-check)
     opengold_creation_check(training "Training UI checks passed" -DSCRIPT=training_view_tests)
     # A character made under the original rules, page by page.

@@ -207,6 +207,7 @@ class CharacterCreationView : public godot::Control
     void restore_defeat_dialog();
     void defeat_check();
     void expedition_check();
+    void add_original_expedition_party();
     bool expedition_check_{}, expedition_started_{}, expedition_saved_{};
     unsigned expedition_frames_{};
     bool campaign_defeated_{}, defeat_check_{};

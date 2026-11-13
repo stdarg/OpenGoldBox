@@ -3150,11 +3150,11 @@ msgstr "Decrease battlefield zoom by 10 percentage points"
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr "Decrease battlefield zoom by 100 percentage points"
 
-#: src/OpenGoldBox/party_preview.cpp:1827
+#: src/OpenGoldBox/party_preview.cpp:1867
 msgid "Defeat"
 msgstr "Defeat"
 
-#: src/OpenGoldBox/party_preview.cpp:1911
+#: src/OpenGoldBox/party_preview.cpp:1951
 msgid "Defeat test"
 msgstr "Defeat test"
 
@@ -3955,7 +3955,7 @@ msgstr "Exhale (Dragon's Breath)"
 msgid "Exit"
 msgstr "Exit"
 
-#: src/OpenGoldBox/party_preview.cpp:1835
+#: src/OpenGoldBox/party_preview.cpp:1875
 msgid "Exit to OS"
 msgstr "Exit to OS"
 
@@ -6234,7 +6234,7 @@ msgstr "Load"
 msgid "Load Character"
 msgstr "Load Character"
 
-#: src/OpenGoldBox/party_preview.cpp:1831
+#: src/OpenGoldBox/party_preview.cpp:1871
 msgid "Load a saved game to continue."
 msgstr "Load a saved game to continue."
 
@@ -8675,7 +8675,7 @@ msgstr "Reliable Talent: {name}'s d20 of {roll} counts as 10."
 msgid "Religion"
 msgstr "Religion"
 
-#: src/OpenGoldBox/party_preview.cpp:1835
+#: src/OpenGoldBox/party_preview.cpp:1875
 msgid "Reload a Saved Game"
 msgstr "Reload a Saved Game"
 
@@ -10736,7 +10736,7 @@ msgstr "The beam turns to {target}."
 msgid "The cantrip reaches 30 feet farther per Warlock level."
 msgstr "The cantrip reaches 30 feet farther per Warlock level."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:882
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:884
 msgid "The character has no levels in a class it trained in"
 msgstr "The character has no levels in a class it trained in"
 
@@ -11064,7 +11064,7 @@ msgstr "Thirsting Blade's Extra Attack becomes two: attack three times with your
 msgid "This armor imposes Disadvantage on Dexterity (Stealth) checks."
 msgstr "This armor imposes Disadvantage on Dexterity (Stealth) checks."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:856
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:858
 msgid "This character is not ready to train"
 msgstr "This character is not ready to train"
 
@@ -12293,7 +12293,7 @@ msgstr "Your melee weapon is your pact weapon: proficiency, Charisma for its att
 msgid "Your party flees the battle."
 msgstr "Your party flees the battle."
 
-#: src/OpenGoldBox/party_preview.cpp:1829
+#: src/OpenGoldBox/party_preview.cpp:1869
 msgid "Your party has been defeated."
 msgstr "Your party has been defeated."
 

@@ -677,9 +677,10 @@ bool OriginalModule::suits(const CharacterSheet &sheet, std::string_view key) co
     return can_use_item(sheet, key);
 }
 
+// Spells known and memorized come with magic (plan step 5).
 SpellAccess OriginalModule::spell_access(const CharacterSheet &) const
 {
-    throw unavailable("spell_access");
+    return {};
 }
 
 SpellChoiceOptions OriginalModule::spell_choice_options(const CharacterSheet &,
@@ -777,10 +778,11 @@ AbilityCheckRoll OriginalModule::roll_ability_check(const CharacterSheet &sheet,
     return roll;
 }
 
+// The original has no training a rest replaces.
 std::vector<TrainingReplacementOptions>
 OriginalModule::rest_training_options(const CharacterSheet &, RestKind) const
 {
-    throw unavailable("rest_training_options");
+    return {};
 }
 
 TrainingChoices OriginalModule::replace_rest_training(CharacterSheet &,
@@ -791,7 +793,7 @@ TrainingChoices OriginalModule::replace_rest_training(CharacterSheet &,
 
 std::vector<TrainingChoiceGroup> OriginalModule::training_options(const CharacterSheet &) const
 {
-    throw unavailable("training_options");
+    return {};
 }
 
 TrainingChoiceGroup OriginalModule::hall_training_options(const CharacterSheet &,
@@ -911,14 +913,23 @@ unsigned OriginalModule::experience_share(const CharacterSheet &sheet, unsigned 
                                    sheet.scores, static_cast<int>(capped)));
 }
 
-void OriginalModule::recover(VitalState &, const CharacterSheet &) const
+// A day's rest heals each member not dead 1 Hit Point (gametime.pas,
+// CheckRestingHeal: one every 288 five-minute ticks).
+void OriginalModule::recover(VitalState &state, const CharacterSheet &sheet) const
 {
-    throw unavailable("recover");
+    if (!state.dead)
+    {
+        state.hit_points = std::min(state.hit_points + 1, sheet.hit_points);
+    }
 }
 
-RecoveryInfo OriginalModule::recovery_info(const CharacterSheet &, const VitalState &) const
+// The original has no Hit Dice or resources a rest restores; every living
+// member may rest.
+RecoveryInfo OriginalModule::recovery_info(const CharacterSheet &, const VitalState &state) const
 {
-    throw unavailable("recovery_info");
+    RecoveryInfo info;
+    info.can_rest = !state.dead;
+    return info;
 }
 
 void OriginalModule::grant_temporary_hit_points(VitalState &, const CharacterSheet &,
@@ -927,9 +938,9 @@ void OriginalModule::grant_temporary_hit_points(VitalState &, const CharacterShe
     throw unavailable("grant_temporary_hit_points");
 }
 
+// The original has no short rest: an hour's rest heals nothing.
 void OriginalModule::recover_short_rest(VitalState &, const CharacterSheet &) const
 {
-    throw unavailable("recover_short_rest");
 }
 
 Message OriginalModule::recover_rest_choice(VitalState &, const CharacterSheet &,
@@ -944,20 +955,25 @@ HitDieResult OriginalModule::spend_hit_die(VitalState &, const CharacterSheet &,
     throw unavailable("spend_hit_die");
 }
 
+// The camp's long rest is a day, the time the original heals 1 Hit Point in,
+// with no wait after it.
 RestPolicy OriginalModule::long_rest_policy() const
 {
-    throw unavailable("long_rest_policy");
+    constexpr unsigned day_minutes = 24 * 60;
+    return {day_minutes, 0};
 }
 
 RestPolicy OriginalModule::short_rest_policy() const
 {
-    throw unavailable("short_rest_policy");
+    constexpr unsigned hour_minutes = 60;
+    return {hour_minutes, 0};
 }
 
+// The temple comes with plan step 6.
 bool OriginalModule::temple_service_helps(const CharacterSheet &, const VitalState &,
                                           TempleService) const
 {
-    throw unavailable("temple_service_helps");
+    return false;
 }
 
 void OriginalModule::temple_service(VitalState &, const CharacterSheet &, TempleService,
@@ -973,10 +989,11 @@ HazardAttackResult OriginalModule::hazard_attack(VitalState &, const CharacterSh
     throw unavailable("hazard_attack");
 }
 
+// What a member can do in camp comes with magic (plan step 5).
 std::vector<CampAction> OriginalModule::camp_actions(const CharacterSheet &,
                                                      const VitalState &) const
 {
-    throw unavailable("camp_actions");
+    return {};
 }
 
 void OriginalModule::use_camp_action(const CharacterSheet &, VitalState &, const CharacterSheet &,
@@ -1001,7 +1018,7 @@ void OriginalModule::use_party_camp_action(const CharacterSheet &, VitalState &,
 std::vector<CampAction> OriginalModule::scroll_actions(const CharacterSheet &, const VitalState &,
                                                        std::string_view) const
 {
-    throw unavailable("scroll_actions");
+    return {};
 }
 
 bool OriginalModule::use_scroll(const CharacterSheet &, VitalState &, const CharacterSheet &,
@@ -1020,18 +1037,18 @@ bool OriginalModule::use_party_scroll(const CharacterSheet &, VitalState &, std:
 std::optional<unsigned> OriginalModule::copyable_spell_level(const CharacterSheet &,
                                                              std::string_view) const
 {
-    throw unavailable("copyable_spell_level");
+    return std::nullopt;
 }
 
 std::vector<ScrollWriting> OriginalModule::writable_spells(const CharacterSheet &) const
 {
-    throw unavailable("writable_spells");
+    return {};
 }
 
 bool OriginalModule::can_cast_exploration_spell(const CharacterSheet &, const VitalState &,
                                                 std::string_view) const
 {
-    throw unavailable("can_cast_exploration_spell");
+    return false;
 }
 
 void OriginalModule::cast_exploration_spell(const CharacterSheet &, VitalState &,

@@ -1731,11 +1731,51 @@ void CharacterCreationView::update_party_navigation()
                 : N_("Finish combat, dialogue or shopping before returning to the party.")));
 }
 
+// The expedition check's party under the original rules: six human fighters
+// made on the original's pages, each readying a long sword, chain mail and a
+// shield bought for nothing.
+void CharacterCreationView::add_original_expedition_party()
+{
+    constexpr std::array<std::uint8_t, 3> kit{36, 55, 59};
+    for (unsigned i = 0; i < 6; ++i)
+    {
+        CharacterCreator creator(campaign_->character_rules(), 40 + i);
+        creator.select(rules::CreationField::race, "human");
+        creator.select(rules::CreationField::character_class, "fighter");
+        creator.name("Check fighter " + std::to_string(i + 1));
+        for (const bool roll : {false, false, false, true, false, false})
+        {
+            if (roll)
+            {
+                creator.roll();
+            }
+            creator.next();
+        }
+        const auto id = campaign_->add_pc(creator.create_character());
+        for (const auto type : kit)
+        {
+            std::array<std::uint8_t, 63> raw{};
+            raw[46] = type;
+            por::Equipment gear;
+            gear.stored = por::decode_items(raw)->front();
+            campaign_->purchase(id, gear);
+            campaign_->equip(id, campaign_->member(id).character.inventory().items().back().id);
+        }
+    }
+}
+
 void CharacterCreationView::expedition_check()
 {
     if (++expedition_frames_ > 20000)
     {
         throw std::runtime_error("Expedition check timed out");
+    }
+    if (!expedition_started_ && game_rules_of(*campaign_).set == GameRules::Set::original)
+    {
+        add_original_expedition_party();
+        expedition_started_ = true;
+        party_action(PartyAction::explore);
+        return;
     }
     if (!expedition_started_)
     {

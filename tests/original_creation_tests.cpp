@@ -1,5 +1,6 @@
 #include "opengold/campaign_save.h"
 #include "opengold/character_creator.h"
+#include "opengold/character_pool.h"
 #include "opengold/original_combat.h"
 #include "opengold/original.h"
 #include "test_support.h"
@@ -260,6 +261,35 @@ void characters_ready_original_gear()
           "A magic-user cannot ready a long sword");
 }
 
+// The Character Pool under the original rules: four of each class a race may
+// be, each a
+// race and alignment the class allows, rolled the same each time.
+void the_pool_offers_original_characters()
+{
+    const char *game = std::getenv("OPENGOLD_GAME_DIR");
+    if (!game)
+    {
+        return;
+    }
+    const auto art = por::CharacterArt::load(game);
+    const auto rules = original::character_rules();
+    const auto pool = character_pool(*rules, art);
+    const auto again = character_pool(*rules, art);
+    check(pool.size() == 44,
+          "The pool has four characters of each class a race may be (not the cleric/thief)");
+    for (std::size_t n = 0; n < pool.size(); ++n)
+    {
+        const auto &draft = pool[n].creation_data();
+        check(pool[n].sheet().original && pool[n].sheet().identity == original::identity() &&
+                  rules->allows(draft, CreationField::character_class, draft.character_class) &&
+                  rules->allows(draft, CreationField::alignment, draft.alignment),
+              "A pool character is made under the original rules, its choices allowed");
+        check(again[n].creation_data().rules_data == draft.rules_data &&
+                  again[n].creation_data().race == draft.race,
+              "The pool is the same each time");
+    }
+}
+
 } // namespace
 
 int main()
@@ -269,6 +299,7 @@ int main()
         the_original_pages_in_their_order();
         a_fighter_trains_and_keeps_the_level();
         characters_ready_original_gear();
+        the_pool_offers_original_characters();
         std::cout << "Original creation tests passed\n";
         return 0;
     }

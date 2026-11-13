@@ -3150,11 +3150,11 @@ msgstr "Reducir el zoom del campo de batalla en 10 puntos porcentuales"
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr "Reducir el zoom del campo de batalla en 100 puntos porcentuales"
 
-#: src/OpenGoldBox/party_preview.cpp:1827
+#: src/OpenGoldBox/party_preview.cpp:1867
 msgid "Defeat"
 msgstr "Derrota"
 
-#: src/OpenGoldBox/party_preview.cpp:1911
+#: src/OpenGoldBox/party_preview.cpp:1951
 msgid "Defeat test"
 msgstr "Prueba de derrota"
 
@@ -3955,7 +3955,7 @@ msgstr "Exhalar (Aliento de dragón)"
 msgid "Exit"
 msgstr "Salir"
 
-#: src/OpenGoldBox/party_preview.cpp:1835
+#: src/OpenGoldBox/party_preview.cpp:1875
 msgid "Exit to OS"
 msgstr "Salir del juego"
 
@@ -6234,7 +6234,7 @@ msgstr "Cargar"
 msgid "Load Character"
 msgstr "Cargar personaje"
 
-#: src/OpenGoldBox/party_preview.cpp:1831
+#: src/OpenGoldBox/party_preview.cpp:1871
 msgid "Load a saved game to continue."
 msgstr "Carga una partida guardada para continuar."
 
@@ -8675,7 +8675,7 @@ msgstr "Talento fiable: el d20 de {roll} de {name} cuenta como 10."
 msgid "Religion"
 msgstr "Religión"
 
-#: src/OpenGoldBox/party_preview.cpp:1835
+#: src/OpenGoldBox/party_preview.cpp:1875
 msgid "Reload a Saved Game"
 msgstr "Cargar una partida"
 
@@ -10736,7 +10736,7 @@ msgstr "El rayo se desvía hacia {target}."
 msgid "The cantrip reaches 30 feet farther per Warlock level."
 msgstr "El truco alcanza 30 pies más por nivel de brujo."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:882
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:884
 msgid "The character has no levels in a class it trained in"
 msgstr "El personaje no tiene niveles en una clase en la que se entrenó"
 
@@ -11064,7 +11064,7 @@ msgstr "El ataque adicional de Hoja sedienta se vuelve dos: ataca tres veces con
 msgid "This armor imposes Disadvantage on Dexterity (Stealth) checks."
 msgstr "Esta armadura impone desventaja en las pruebas de Destreza (Sigilo)."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:856
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:858
 msgid "This character is not ready to train"
 msgstr "Este personaje no está listo para entrenar"
 
@@ -12293,7 +12293,7 @@ msgstr "Tu arma cuerpo a cuerpo es tu arma de pacto: competencia, Carisma para s
 msgid "Your party flees the battle."
 msgstr "Tu grupo huye de la batalla."
 
-#: src/OpenGoldBox/party_preview.cpp:1829
+#: src/OpenGoldBox/party_preview.cpp:1869
 msgid "Your party has been defeated."
 msgstr "Tu grupo ha sido derrotado."
 

@@ -3150,11 +3150,11 @@ msgstr ""
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1827
+#: src/OpenGoldBox/party_preview.cpp:1867
 msgid "Defeat"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1911
+#: src/OpenGoldBox/party_preview.cpp:1951
 msgid "Defeat test"
 msgstr ""
 
@@ -3955,7 +3955,7 @@ msgstr ""
 msgid "Exit"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1835
+#: src/OpenGoldBox/party_preview.cpp:1875
 msgid "Exit to OS"
 msgstr ""
 
@@ -6234,7 +6234,7 @@ msgstr ""
 msgid "Load Character"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1831
+#: src/OpenGoldBox/party_preview.cpp:1871
 msgid "Load a saved game to continue."
 msgstr ""
 
@@ -8675,7 +8675,7 @@ msgstr ""
 msgid "Religion"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1835
+#: src/OpenGoldBox/party_preview.cpp:1875
 msgid "Reload a Saved Game"
 msgstr ""
 
@@ -10736,7 +10736,7 @@ msgstr ""
 msgid "The cantrip reaches 30 feet farther per Warlock level."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:882
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:884
 msgid "The character has no levels in a class it trained in"
 msgstr ""
 
@@ -11064,7 +11064,7 @@ msgstr ""
 msgid "This armor imposes Disadvantage on Dexterity (Stealth) checks."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:856
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:858
 msgid "This character is not ready to train"
 msgstr ""
 
@@ -12293,7 +12293,7 @@ msgstr ""
 msgid "Your party flees the battle."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1829
+#: src/OpenGoldBox/party_preview.cpp:1869
 msgid "Your party has been defeated."
 msgstr ""
 
