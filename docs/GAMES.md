@@ -287,8 +287,11 @@ In small steps, each with its check:
    the hooded woman set to 1 and nothing on the way clears; until it is
    known what clears it in the original, the test does), and leaves by
    stepping off the map south of 11,15 (LEAVE_MAP), where Olive takes
-   Dimswart away, to Zhentil Keep's edge. Next: Myth Drannor
-   (Tyranthraxus).
+   Dimswart away, to Zhentil Keep's edge. With the three
+   artifacts it goes back by Yulash and Hillsfar to the Standing Stones,
+   where the grey man reveals himself as Tyranthraxus ("meet me at Myth
+   Drannor"), and journeys on to the Burial Glen (map 64). Next: the Glen,
+   the ruins of Myth Drannor and Tyranthraxus.
 
 ### 4 to 7. The other campaigns
 

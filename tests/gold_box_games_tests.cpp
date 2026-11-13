@@ -856,6 +856,20 @@ const std::vector<RouteBeat> &curse_route()
          std::nullopt,
          true,
          true},
+        // With the three artifacts, back by Yulash and Hillsfar to the
+        // Standing Stones, where the grey man reveals himself as Tyranthraxus
+        // and bids the party meet him at Myth Drannor, and on there.
+        {0, 0, 0, D::north, {"JOURNEY", "YULASH", "TRAIL", "stop:JOURNEY"}, false, false, true},
+        {0, 0, 0, D::north, {"JOURNEY", "HILLSFAR", "TRAIL", "stop:JOURNEY"}, false, false, true},
+        {0, 0, 0, D::north, {"JOURNEY", "STANDING", "TRAIL", "stop:JOURNEY"}, false, false, true},
+        {0,
+         0,
+         0,
+         D::north,
+         {"JOURNEY", "MYTH DRANNOR", "WILDERNESS", "ENTER CITY"},
+         false,
+         false,
+         true},
     };
     return beats;
 }
@@ -1561,10 +1575,10 @@ bool curse_walk_census(bool route)
                 {
                     break;
                 }
-                // A camp may be interrupted, or the map's script run at it.
-                play("camp");
-                // The next day's camp waits on each caster's spells.
+                // The spells are chosen as the rest ends, as the rest dialog
+                // has it, before a camp's interruption or the map's script.
                 memorize();
+                play("camp");
             }
         };
         // Days in camp from the wilderness's menu until every member is whole:
@@ -1591,9 +1605,11 @@ bool curse_walk_census(bool route)
                 {
                     break;
                 }
+                // The spells are chosen as the rest ends, before the camp is
+                // attacked or the menu returns, as the rest dialog has it.
+                memorize();
                 answers = {"stop:JOURNEY"};
                 play("wilderness camp");
-                memorize();
             }
         };
         play("opening");
@@ -1790,15 +1806,14 @@ bool curse_walk_census(bool route)
             std::cout << "Survey ends on map " << session.snapshot().area_id << ", phase "
                       << static_cast<int>(session.snapshot().phase) << "\n";
         }
-        // The route's last beat leaves the party at the edge of Zhentil Keep
-        // with the Amulet of Lathander, nobody dead.
+        // The route's last beat leaves the party in the ruins of Myth Drannor
+        // (map 64), nobody dead.
         const bool all_alive = std::ranges::none_of(party->state().slots,
                                                     [&](opengold::MemberId id)
                                                     {
                                                         return id && party->member(id).vitals.dead;
                                                     });
-        return needs.empty() && end.phase != TourPhase::defeated &&
-               end.dialogue.find("EDGE OF ZHENTIL KEEP") != std::string::npos && all_alive;
+        return needs.empty() && end.phase != TourPhase::defeated && end.area_id == 64 && all_alive;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");
