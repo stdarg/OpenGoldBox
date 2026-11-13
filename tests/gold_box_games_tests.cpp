@@ -805,6 +805,18 @@ const std::vector<RouteBeat> &curse_route()
          false,
          false,
          true},
+        // Into Zhentil Keep.
+        {0, 0, 0, D::north, {"ENTER CITY"}, false, false, true},
+        // Olive Ruskettle leads the party by a secret way into the Shrine of
+        // Bane.
+        {32, 10, 11, D::north, {"YES"}},
+        // Dimswart the sage, held in a cell, comes along.
+        {32, 1, 7, D::north, {"YES"}},
+        // The hooded woman (Dexam's medusa) takes the party to the Caves of
+        // the Beholder, the only way out of the shrine. She shows herself
+        // every other time the party passes (cell 0x4C1B), so it passes twice.
+        {32, 2, 3, D::north, {}},
+        {32, 2, 3, D::north, {"YES"}},
     };
     return beats;
 }
@@ -1739,15 +1751,14 @@ bool curse_walk_census(bool route)
             std::cout << "Survey ends on map " << session.snapshot().area_id << ", phase "
                       << static_cast<int>(session.snapshot().phase) << "\n";
         }
-        // The route's last beat leaves the party at the edge of Zhentil Keep,
-        // nobody dead.
+        // The route's last beat leaves the party in the Caves of the Beholder
+        // (map 33), freed of Fzoul's bond, nobody dead.
         const bool all_alive = std::ranges::none_of(party->state().slots,
                                                     [&](opengold::MemberId id)
                                                     {
                                                         return id && party->member(id).vitals.dead;
                                                     });
-        return needs.empty() && end.phase != TourPhase::defeated &&
-               end.dialogue.find("EDGE OF ZHENTIL KEEP") != std::string::npos && all_alive;
+        return needs.empty() && end.phase != TourPhase::defeated && end.area_id == 33 && all_alive;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");

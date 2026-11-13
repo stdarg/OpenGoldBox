@@ -277,8 +277,12 @@ In small steps, each with its check:
    cultists' last stand by the Pit's way out (a fight its player may lose is
    won by the test, a stand-in named in the route), leaves by the west door
    at 0,11, where Alias and Dragonbait leave the party (DUMP), raises its
-   dead at Voonlar's temple, camps at Yulash's edge and reaches the edge of
-   Zhentil Keep. Next: Zhentil Keep (Fzoul, Dexam).
+   dead at Voonlar's temple, camps at Yulash's edge and enters Zhentil Keep,
+   where Olive Ruskettle leads it by a secret way into the Shrine of Bane.
+   It takes Dimswart the sage from his cell and follows the hooded woman
+   (who shows herself every other time it passes) to Dexam the Beholder,
+   who slays Fzoul and so frees it of his bond, and it stands in the Caves
+   of the Beholder. Next: Dexam, for the Amulet of Lathander.
 
 ### 4 to 7. The other campaigns
 
