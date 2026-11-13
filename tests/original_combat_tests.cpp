@@ -2234,6 +2234,35 @@ void curse_defenses_hold()
           "The shambling mound grows on the bolt past its maximum");
 }
 
+// Curse's touches and holds (ovr013, ovr014): a dracolich's touch
+// paralyzes; a shambling mound whose two blows both hit engulfs its victim,
+// which suffocates within 2d4 of its turns.
+void curse_touches_and_engulfs()
+{
+    auto dracolich = creature(50);
+    dracolich.effects.push_back({322, 0, 0, false});
+    auto held = attack_until(dracolich, victim(500),
+                             [](const rules::CombatSession &session)
+                             {
+                                 return view_of(session.snapshot(), "Victim").status == "helpless";
+                             });
+    check(view_of(held.session->snapshot(), "Victim").status == "helpless",
+          "A dracolich's touch paralyzes");
+
+    auto mound = creature(50);
+    mound.attacks[0] = {4, 1, 2, 0};
+    mound.effects.push_back({257, 0, 0, false});
+    auto engulfed = attack_until(mound, victim(500),
+                                 [](const rules::CombatSession &session)
+                                 {
+                                     return logged(session, "{name} suffocates.") > 0;
+                                 });
+    check(logged(*engulfed.session, "{attacker} engulfs {name}.", "Monster") > 0 &&
+              logged(*engulfed.session, "{name} suffocates.") > 0 &&
+              view_of(engulfed.session->snapshot(), "Victim").dead,
+          "Engulfed, the victim suffocates");
+}
+
 // Curse's spells: Cone of Cold takes those on its path to half the caster's
 // level, two wide (ovr023, SpellConeOfCold); Cause Critical Wounds is 3d8+3;
 // Slay Living kills on a failed save and wounds on a saved one.
@@ -2793,6 +2822,7 @@ int main()
         curse_spells_strike();
         curse_effects_take_their_own_numbers();
         curse_defenses_hold();
+        curse_touches_and_engulfs();
         a_cloud_sickens();
         dispel_magic_strips();
         the_dead_rise();

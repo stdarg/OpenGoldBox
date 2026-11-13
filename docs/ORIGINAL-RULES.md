@@ -99,7 +99,12 @@ and a save each know which tables they use.
   weapons, half damage, piercing blows doing 1, protection from magic, cold,
   electricity and dragon breath, the Minor Globe, resisting fire and cold,
   the salamander's heat and the shambling mound's growing on lightning.
-- Still to come: *Curse*'s monsters' attacks and specials, its other new
+- **Touches and holds:** a dracolich's touch paralyzes for the fight and
+  its cold touch does 2d8; a shambling mound whose two blows both hit
+  engulfs its victim, which suffocates in 2d4 of its turns while the mound
+  crushes it with two blows of 2d8; an owlbear hugs on an attack roll of 18 or
+  more and squeezes for 2d8.
+- Still to come: *Curse*'s monsters' other specials, its other new
   spells in fights and camp, and the paladin's and ranger's own abilities
   (GAMES.md, phase 3 step 5).
 
@@ -665,3 +670,4 @@ tuned with the AI lab once the original rules play.
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |
 | *Curse:* a shambling mound struck by electricity rolls 1d8, throws the roll away and gains 8 Hit Points (`ovr013`, its absorbing of lightning) | It gains the 1d8 |
+| *Curse:* an owlbear's hug pins its victim, but the squeeze that should follow is in no list of the effects the fight calls, so it never hurts (`ovr014`, `AffectOwlbearHugRoundAttack`) | It squeezes for 2d8 each turn |

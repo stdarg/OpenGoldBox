@@ -241,7 +241,7 @@ void broken_records()
     };
     rejected(temple_record, "{\"kind\": \"shop\",", "A cut-off file is refused");
     rejected(
-        R"({"portrait": "", "offerings": [{"service_id": "heal", "price_gp": 1, "offered": true}]})",
+        R"({"portrait": "", "offerings": [{"service_id": "cure_everything", "price_gp": 1, "offered": true}]})",
         shop_record, "An unknown service is refused");
     auto outside = shop_record;
     outside.replace(outside.find("shops/"), 6, "../");

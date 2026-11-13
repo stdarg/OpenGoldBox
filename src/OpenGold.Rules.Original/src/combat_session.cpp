@@ -65,6 +65,9 @@ constexpr std::array<int, 16> effects_ending_at_zero{7,  11, 30, 31, 32, 51,  52
 // Effect codes the fight itself uses.
 namespace effect
 {
+// Curse's holds: a shambling mound's engulfing (339) and its victim's
+// suffocating (213), and an owlbear's hug (344).
+constexpr int engulfing = 339, suffocating = 213, hugging = 344;
 constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_rot = 57,
               paralysis = 52, immobile = 58, see_invisible = 24, invisible = 25, blink = 37,
               regenerating_soon = 59, camouflage = 72, mummy_fear = 82, displacement = 89,
@@ -84,7 +87,9 @@ constexpr int displaced = 0x10;
 // What a hit carries, by the attacker's effects, in the original's order: a
 // primary attack's hit and a secondary one's (effhndlr.pas, HIT_PHASE_1 and
 // HIT_PHASE_2).
-constexpr std::array<int, 9> primary_hit_effects{85, 86, 87, 68, 79, 80, 76, 73, 77};
+constexpr std::array<int, 13> primary_hit_effects{85, 86, 87, 68, 79, 80, 76, 73, 77,
+                                                  // Curse's (canonical_effect).
+                                                  257, 296, 322, 323};
 constexpr std::array<int, 11> secondary_hit_effects{64, 65, 66, 67, 68, 69, 70, 79, 85, 86, 87};
 
 struct Fighter
@@ -648,7 +653,7 @@ class Session final : public rules::CombatSession
     void slay_helpless(Fighter &attacker, Fighter &defender);
     void end_effects_at_zero(Fighter &f);
     void release(Fighter &holder, int code);
-    void on_hit(Fighter &attacker, Fighter &defender, int phase, int primary_hits);
+    void on_hit(Fighter &attacker, Fighter &defender, int phase, int primary_hits, int natural);
     void poison(Fighter &victim, int modifier);
     void paralyze(Fighter &victim, int minutes, int modifier);
     void kill(Fighter &victim);
@@ -1027,7 +1032,7 @@ void Session::make_attack(Fighter &attacker, Fighter &defender, bool from_behind
             inflict(defender, damage);
             if (defender.able())
             {
-                on_hit(attacker, defender, phase, primary_hits);
+                on_hit(attacker, defender, phase, primary_hits, natural);
             }
         }
     }
@@ -1338,6 +1343,8 @@ void Session::end_effects_at_zero(Fighter &f)
         if (code == effect::bite_hold || code == effect::blood_drain)
         {
             release(f, code);
+            release(f, effect::engulfing);
+            release(f, effect::hugging);
         }
         else if ((code == effect::charm || code == effect::animated) && f.has(code))
         {
@@ -1363,6 +1370,7 @@ void Session::release(Fighter &holder, int code)
     if (auto *victim = find(static_cast<EntityId>(hold->strength)))
     {
         victim->remove(effect::immobile);
+        victim->remove(effect::suffocating);
     }
     holder.remove(code);
 }
@@ -1370,7 +1378,7 @@ void Session::release(Fighter &holder, int code)
 // What a hit that leaves its target standing carries (cbtacts.pas, RollAttacks;
 // effhndlr.pas). The original stacked a new hold at each hit of a holding
 // bite; one hold at a time here (an obvious bug, fixed).
-void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primary_hits)
+void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primary_hits, int natural)
 {
     const auto effects = phase == 0 ? std::span<const int>(primary_hit_effects)
                                     : std::span<const int>(secondary_hit_effects);
@@ -1445,6 +1453,43 @@ void Session::on_hit(Fighter &attacker, Fighter &defender, int phase, int primar
             if (primary_hits == 2)
             {
                 rake(attacker, defender);
+            }
+            break;
+        case 322:
+            // A dracolich's touch paralyzes for the fight (Curse, ovr013).
+            paralyze(defender, 0, 0);
+            break;
+        case 323:
+            // A cold touch, 2d8 of magical cold (Curse, ovr013).
+            nonweapon_damage(defender, roll(8) + roll(8), 0, false, 10, 0, 0, false);
+            break;
+        case 296:
+            // An owlbear hugs on an attack roll of 18 or more and holds its
+            // victim (Curse, AffectOwlbearHugAttackCheck).
+            if (natural >= 18 && !attacker.has(effect::hugging))
+            {
+                attacker.numbers.effects.push_back(
+                    {effect::hugging, 0, static_cast<int>(defender.id), true});
+                defender.numbers.effects.push_back({effect::immobile, 0, 0, false});
+                defender.half_moves = 0;
+                log({"{attacker} hugs {name}.",
+                     {{"attacker", attacker.name}, {"name", defender.name}}});
+            }
+            break;
+        case 257:
+            // A shambling mound whose two blows both hit engulfs its victim,
+            // which suffocates in 2d4 of its turns (Curse, engulfs).
+            if (primary_hits == 2 && !defender.has(effect::immobile) &&
+                !defender.has(effect::suffocating) && !attacker.has(effect::engulfing))
+            {
+                attacker.numbers.effects.push_back(
+                    {effect::engulfing, 0, static_cast<int>(defender.id), true});
+                defender.numbers.effects.push_back({effect::immobile, 0, 0, false});
+                defender.numbers.effects.push_back(
+                    {effect::suffocating, 0, roll(4) + roll(4), false});
+                defender.half_moves = 0;
+                log({"{attacker} engulfs {name}.",
+                     {{"attacker", attacker.name}, {"name", defender.name}}});
             }
             break;
         case 77:
@@ -3714,6 +3759,45 @@ void Session::rake(Fighter &attacker, Fighter &victim)
 // stirge that has drunk its fill lets go and flies off (effhndlr.pas, 74 and 75).
 void Session::attached_turn(Fighter &f)
 {
+    // One engulfed suffocates when its count runs out (Curse, Suffocates).
+    if (auto *air = f.find_effect(effect::suffocating); air && f.able() && --air->strength <= 0)
+    {
+        log({"{name} suffocates.", {{"name", f.name}}});
+        f.remove(effect::suffocating);
+        kill(f);
+        return;
+    }
+    // A shambling mound crushes its engulfed victim with two blows of 2d8;
+    // an owlbear squeezes its hugged one with one (Curse; its owlbear's
+    // squeeze was never called, docs/ORIGINAL-RULES.md, Bugs).
+    for (const auto [code, blows] :
+         {std::pair{effect::engulfing, 2}, std::pair{effect::hugging, 1}})
+    {
+        const auto *hold = f.find_effect(code);
+        if (!hold)
+        {
+            continue;
+        }
+        auto *victim = find(static_cast<EntityId>(hold->strength));
+        if (!f.able() || !victim || !victim->able())
+        {
+            release(f, code);
+            continue;
+        }
+        auto &blow = f.numbers.attacks[0];
+        const auto own = blow;
+        blow = {own.rate_per_two_rounds, 2, 8, 0};
+        f.attacks_left = {blows, 0};
+        f.attack_phase = 0;
+        make_attack(f, *victim, false);
+        blow = own;
+        end_actions(f);
+        if (!victim->able())
+        {
+            release(f, code);
+        }
+        return;
+    }
     if (const auto *hold = f.find_effect(effect::bite_hold))
     {
         auto *victim = find(static_cast<EntityId>(hold->strength));
