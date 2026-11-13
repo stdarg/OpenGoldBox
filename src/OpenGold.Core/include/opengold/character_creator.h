@@ -106,11 +106,14 @@ class CharacterCreator
     // page asks for them.
     [[nodiscard]] bool species_complete() const;
     [[nodiscard]] bool has_species_choices() const;
-    // Rolls the six ability results and, with them, the starting gold.
+    // Rolls the six ability results and, with them, the starting gold. Rules
+    // that roll in place (the original's) roll the character whole: its
+    // scores, Hit Points, age and gold, replacing any earlier roll.
     void roll();
 
-    // Gold the character joins the party with: 3d6 x 10 gp, the original
-    // game's 30 to 180 gp for buying equipment. Zero until the first roll.
+    // Gold the character joins the party with: under the SRD 3d6 x 10 gp, the
+    // original game's 30 to 180 gp for buying equipment; under the original
+    // rules what its classes rolled. Zero until the first roll.
     [[nodiscard]] std::uint16_t starting_gold() const noexcept
     {
         return starting_gold_;
@@ -151,6 +154,13 @@ class CharacterCreator
     std::uint16_t starting_gold_{};
     void require_editable() const;
     void prune_training(rules::CharacterDraft &candidate) const;
+    // Rules that roll in place have their own pages (pages_in_place()).
+    [[nodiscard]] bool rolls_in_place() const;
+    // Each later choice the earlier ones no longer allow becomes the first one
+    // they do (the original limits classes by race, alignments by class).
+    void keep_allowed(rules::CharacterDraft &candidate) const;
+    void next_in_place();
+    void back_in_place();
 };
 } // namespace opengold
 #endif

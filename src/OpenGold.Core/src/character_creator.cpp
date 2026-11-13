@@ -2,6 +2,7 @@
 #include "opengold/diagnostic_log.h"
 #include "opengold/dice.h"
 #include <algorithm>
+#include <array>
 #include <stdexcept>
 
 namespace opengold
@@ -10,6 +11,14 @@ using namespace rules;
 
 namespace
 {
+// The pages of rules that roll in place, as the original's creation asks:
+// race and gender (with the name), class, alignment, then the roll, kept or
+// rolled again. They have no training or spell choices to make.
+constexpr std::array pages_in_place{CreationStep::race,        CreationStep::character_class,
+                                    CreationStep::alignment,   CreationStep::attributes,
+                                    CreationStep::combat_icon, CreationStep::portrait,
+                                    CreationStep::sheet};
+
 bool all_scores_assigned(const CharacterDraft &draft)
 {
     return draft.rolled && std::all_of(draft.assignment.begin(), draft.assignment.end(),
@@ -216,9 +225,51 @@ void CharacterCreator::restart()
         const auto options = rules_->choices(field);
         if (options.empty())
         {
+            // The original rules have no backgrounds.
+            if (field == CreationField::background)
+            {
+                continue;
+            }
             throw std::runtime_error("Rules module has no character choices");
         }
-        select(field, options.front().id);
+        // The first the choices before it allow: a dwarf's first class.
+        const auto allowed =
+            std::ranges::find_if(options,
+                                 [&](const auto &option)
+                                 {
+                                     return rules_->allows(draft_, field, option.id);
+                                 });
+        if (allowed == options.end())
+        {
+            throw std::runtime_error("Rules module allows no character choice");
+        }
+        select(field, allowed->id);
+    }
+}
+
+bool CharacterCreator::rolls_in_place() const
+{
+    return rules_->ability_generation() == AbilityGeneration::rolled_in_place;
+}
+
+void CharacterCreator::keep_allowed(CharacterDraft &candidate) const
+{
+    for (const auto field : {CreationField::character_class, CreationField::alignment})
+    {
+        auto &chosen = field == CreationField::character_class ? candidate.character_class
+                                                               : candidate.alignment;
+        if (rules_->allows(candidate, field, chosen))
+        {
+            continue;
+        }
+        for (const auto &option : rules_->choices(field))
+        {
+            if (rules_->allows(candidate, field, option.id))
+            {
+                chosen = option.id;
+                break;
+            }
+        }
     }
 }
 
@@ -369,6 +420,10 @@ void CharacterCreator::select(CreationField field, std::string_view id)
         throw std::runtime_error("This class requires " +
                                  rules_->class_requirements(id).description + ".");
     }
+    if (!rules_->allows(draft_, field, id))
+    {
+        throw std::runtime_error("The character's other choices do not allow this one.");
+    }
     auto candidate = draft_;
     switch (field)
     {
@@ -413,6 +468,16 @@ void CharacterCreator::select(CreationField field, std::string_view id)
                 candidate.training.erase(values);
             }
         }
+    }
+    keep_allowed(candidate);
+    // The original's roll follows from the race and class (the age, the
+    // limits, the Hit Dice and the gold), so another of either rolls again.
+    if (rolls_in_place() &&
+        (candidate.race != draft_.race || candidate.character_class != draft_.character_class))
+    {
+        candidate.rules_data.clear();
+        candidate.rolled = false;
+        starting_gold_ = 0;
     }
     if (!candidate.cantrips)
     {
@@ -854,6 +919,13 @@ void CharacterCreator::roll()
         throw std::runtime_error("A new body keeps the character's scores");
     }
     const RollPurpose purpose("ability scores and starting gold");
+    if (rolls_in_place())
+    {
+        rules_->roll_in_place(draft_, random_);
+        const auto rolled = rules_->evaluate(draft_, rules::NameRequirement::optional);
+        starting_gold_ = rolled.original ? static_cast<std::uint16_t>(rolled.original->gold) : 0;
+        return;
+    }
     draft_.rolls = rules_->roll(random_);
     draft_.rolled = true;
     draft_.assignment = {6, 6, 6, 6, 6, 6}; // Every rolled result starts unassigned.
@@ -866,7 +938,7 @@ void CharacterCreator::roll()
 
 bool CharacterCreator::scores_assigned() const
 {
-    return all_scores_assigned(draft_);
+    return rolls_in_place() ? draft_.rolled : all_scores_assigned(draft_);
 }
 
 void CharacterCreator::assign_roll(unsigned roll, rules::Ability ability)
@@ -983,6 +1055,11 @@ void CharacterCreator::next()
         step_ = static_cast<CreationStep>(static_cast<unsigned>(step_) + 1);
         return;
     }
+    if (rolls_in_place())
+    {
+        next_in_place();
+        return;
+    }
     if (step_ >= CreationStep::spell_choices && !spell_choices_complete())
     {
         throw std::runtime_error("Complete available spell choices.");
@@ -1028,6 +1105,11 @@ void CharacterCreator::back()
                     : CreationStep::race;
         return;
     }
+    if (rolls_in_place())
+    {
+        back_in_place();
+        return;
+    }
     if (step_ != CreationStep::race)
     {
         step_ = static_cast<CreationStep>(static_cast<unsigned>(step_) - 1);
@@ -1035,6 +1117,34 @@ void CharacterCreator::back()
     if (step_ == CreationStep::spell_choices && !has_spell_choices())
     {
         step_ = CreationStep::training;
+    }
+}
+
+void CharacterCreator::next_in_place()
+{
+    if (draft_.name.empty())
+    {
+        throw std::runtime_error("Enter a name for your character.");
+    }
+    const auto page = std::ranges::find(pages_in_place, step_);
+    // From the roll on, the character must be rolled and whole.
+    if (page >= std::ranges::find(pages_in_place, CreationStep::attributes))
+    {
+        if (!draft_.rolled)
+        {
+            throw std::runtime_error("Roll the character first.");
+        }
+        (void)rules_->evaluate(draft_, rules::NameRequirement::required);
+    }
+    step_ = *std::next(page);
+}
+
+void CharacterCreator::back_in_place()
+{
+    const auto page = std::ranges::find(pages_in_place, step_);
+    if (page != pages_in_place.begin())
+    {
+        step_ = *std::prev(page);
     }
 }
 } // namespace opengold
