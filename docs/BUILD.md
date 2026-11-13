@@ -76,6 +76,7 @@ runs tests only when asked:
 | *(none)* | Build the game and re-export it: `mac-package/OpenGoldBox.app` on macOS; `linux-package/` and [the package for players](#the-package-for-players-2) on Linux. No tests. |
 | `--test` | After building, run the native tests (everything except the Godot runtime checks). |
 | `--test-all` | After building, run every test, including the Godot runtime checks. |
+| `--test=NAME[,NAME...]` | After building, run only the named tests, to check a failing test without the whole suite: `./build.sh --test=town_services,localization_check`. A name may leave out its `opengold_` or `opengold_godot_` prefix; a name that matches no test stops the run before any test runs. The setup a test needs, such as the Godot project's import, runs with it. |
 | `--package` | macOS: also write [the disk image players download](#the-package-for-players-1). |
 | `default`, `debug`, `macos-universal`, `linux` | Build that preset instead of the platform default. |
 | `linux-release` | The Linux package for players, built against glibc 2.28. Run it through `tools/linux_release_build.sh`, which builds it in its container (see [the package for players](#the-package-for-players-2)). |

@@ -5,6 +5,10 @@
 #
 #   --test      after building, run the native test suite
 #   --test-all  after building, run every test, including the Godot checks
+#   --test=NAME[,NAME...]
+#               after building, run only the named tests, such as
+#               --test=town_services,localization_check; a name may leave out
+#               its opengold_ or opengold_godot_ prefix
 #   --package   macOS: also write the disk image players download
 #   <preset>    build another CMake preset: default (native core and tests,
 #               build/), debug (the same, unoptimized), macos-universal, linux
@@ -30,13 +34,18 @@ JOBS="${JOBS:-$( (command -v sysctl >/dev/null 2>&1 && sysctl -n hw.ncpu) \
 PRESET=
 TESTS=none
 PACKAGE=no
+NAMES=
 for arg in "$@"; do
     case "$arg" in
         --test) TESTS=native ;;
         --test-all) TESTS=all ;;
+        --test=*)
+            TESTS=named
+            NAMES="${arg#--test=}"
+            ;;
         --package) PACKAGE=yes ;;
         -*)
-            echo "Unknown option: $arg (use --test, --test-all, --package or a preset name)" >&2
+            echo "Unknown option: $arg (use --test, --test-all, --test=NAMES, --package or a preset name)" >&2
             exit 2
             ;;
         *) PRESET="$arg" ;;
@@ -70,5 +79,17 @@ case "$TESTS" in
         ;;
     all)
         ctest --preset "$PRESET" -j "$JOBS" --output-on-failure
+        ;;
+    named)
+        # A misspelt name stops the run rather than leaving its test out.
+        for name in $(echo "$NAMES" | tr ',' ' '); do
+            if ! ctest --preset "$PRESET" --show-only \
+                    --tests-regex "^(opengold_(godot_)?)?$name\$" | grep -q 'Total Tests: [1-9]'; then
+                echo "No test is named $name" >&2
+                exit 2
+            fi
+        done
+        ctest --preset "$PRESET" -j "$JOBS" --output-on-failure \
+            --tests-regex "^(opengold_(godot_)?)?($(echo "$NAMES" | tr ',' '|'))\$"
         ;;
 esac

@@ -3,7 +3,8 @@
 set(display_arguments --headless)
 set(virtual_display)
 if(GRAPHICAL)
-    set(display_arguments)
+    # A check that reads rendered pixels needs a window, but never the speakers.
+    set(display_arguments --audio-driver Dummy)
     include("${CMAKE_CURRENT_LIST_DIR}/virtual_display.cmake")
 endif()
 if(NOT DEFINED TEST_TIMEOUT)
