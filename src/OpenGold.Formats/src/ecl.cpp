@@ -134,12 +134,23 @@ std::vector<EclOpcode> treasures_opcodes()
     return opcodes;
 }
 
+// Gateway to the Savage Frontier keeps Secret's commands, but FIND ITEM and
+// DESTROY ITEMS name an item by its type and three name words (docs/games/gateway.md).
+std::vector<EclOpcode> gateway_opcodes()
+{
+    auto opcodes = secret_opcodes();
+    opcodes.at(0x32).operands = 4;
+    opcodes.at(0x40).operands = 4;
+    return opcodes;
+}
+
 std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
 {
     static const std::vector<EclOpcode> curse = curse_opcodes();
     static const std::vector<EclOpcode> secret = secret_opcodes();
     static const std::vector<EclOpcode> darkness = darkness_opcodes();
     static const std::vector<EclOpcode> treasures = treasures_opcodes();
+    static const std::vector<EclOpcode> gateway = gateway_opcodes();
     switch (game)
     {
     case GoldBoxGame::pool_of_radiance:
@@ -152,6 +163,8 @@ std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
         return darkness;
     case GoldBoxGame::treasures_of_the_savage_frontier:
         return treasures;
+    case GoldBoxGame::gateway_to_the_savage_frontier:
+        return gateway;
     default:
         throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");
     }
@@ -194,6 +207,11 @@ EclEngineRoutines ecl_engine_routines(GoldBoxGame game)
         // As Curse, matched less 7FFFh (ADCCh, 4019h, 401Fh, 3204h, E804h);
         // Secret has no duels.
         return {0x2DCB, 0xC018, 0xC01E, 0, 0, 0xB203, 0x6803};
+    case GoldBoxGame::gateway_to_the_savage_frontier:
+        // As Curse, matched less 7FFFh (AE11h, 401Bh, 401Fh, 2, 1, 3201h,
+        // E804h); 401Bh rereads the party's cell. Its new routines (880Ah,
+        // 880Dh, 8810h) are in docs/games/gateway.md.
+        return {0x2E10, 0xC01A, 0xC01E, 0x8001, 0x8000, 0xB200, 0x6803};
     default:
         throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");
     }
@@ -208,6 +226,7 @@ EclMemory ecl_memory(GoldBoxGame game)
     case GoldBoxGame::curse_of_the_azure_bonds:
     case GoldBoxGame::secret_of_the_silver_blades:
     case GoldBoxGame::pools_of_darkness:
+    case GoldBoxGame::gateway_to_the_savage_frontier:
         return {0x8000, 0x9E00};
     case GoldBoxGame::treasures_of_the_savage_frontier:
         return {0x8000, 0xB6B1};

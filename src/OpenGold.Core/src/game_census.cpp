@@ -5,6 +5,7 @@
 #include "opengold/curse_records.h"
 #include "opengold/ecl.h"
 #include "opengold/formats.h"
+#include "opengold/gateway_formats.h"
 #include "opengold/geo_map.h"
 #include "opengold/path_text.h"
 #include "opengold/pool_radiance.h"
@@ -165,8 +166,7 @@ void check_records(RowBuilder &row, const std::vector<GameFile> &files,
 
 void check_creature(GoldBoxGame game, const Bytes &bytes)
 {
-    if (game == GoldBoxGame::gateway_to_the_savage_frontier ||
-        game == GoldBoxGame::unlimited_adventures)
+    if (game == GoldBoxGame::unlimited_adventures)
     {
         throw std::runtime_error("this game's creature records are not decoded yet");
     }
@@ -199,6 +199,63 @@ void check_combat_icon(const GameFile &file, const DaxRecord &record)
 {
     const auto bytes = read_bytes(file.path);
     require(static_cast<bool>(decode_ega_combat_icon(bytes, record.id, 0)), "not a combat icon");
+}
+
+// Gateway to the Savage Frontier's pictures carry a color header
+// (docs/games/gateway.md); every frame is drawn to be sure its colors read.
+void check_color_header_picture(const Bytes &bytes)
+{
+    if (const auto picture = gateway::decode_picture(bytes))
+    {
+        for (std::size_t frame = 0; frame < picture->frames.size(); ++frame)
+        {
+            static_cast<void>(gateway::picture_image(*picture, frame));
+        }
+        return;
+    }
+    const auto animation = gateway::decode_animation(bytes);
+    require(animation.has_value(), "neither a picture nor an animation");
+    for (const auto &frame : *animation)
+    {
+        static_cast<void>(gateway::picture_image(frame.picture));
+    }
+}
+
+struct ColorHeaderFamily
+{
+    std::string_view name, description;
+    std::function<void(const GameFile &, const DaxRecord &)> decode;
+};
+
+// Gateway's decoders in place of the earlier games' for the families whose
+// format it changed: pictures and combat icons with a color header, and its
+// digitized sound effects.
+std::vector<ColorHeaderFamily> color_header_families()
+{
+    const auto picture = [](const GameFile &, const DaxRecord &record)
+    {
+        check_color_header_picture(record.bytes);
+    };
+    const auto combat_icon = [](const GameFile &, const DaxRecord &record)
+    {
+        require(gateway::decode_picture(record.bytes).has_value(), "not a combat icon");
+    };
+    std::vector<ColorHeaderFamily> families;
+    for (const auto *name : {"HEAD", "BODY", "PIC", "TITLE", "BIGPIC", "SKY"})
+    {
+        families.push_back({name, "pictures", picture});
+    }
+    for (const auto *name : {"CPIC", "COMSPR", "DUNGCOM", "RANDCOM", "WILDCOM"})
+    {
+        families.push_back({name, "combat icons", combat_icon});
+    }
+    families.push_back({"ZOUNDS", "sound effects", [](const GameFile &, const DaxRecord &record)
+                        {
+                            require(
+                                gateway::decode_sound_sample(record.id, record.bytes).has_value(),
+                                "not a sound effect");
+                        }});
+    return families;
 }
 
 void check_sprite(const GameFile &file, const DaxRecord &record)
@@ -381,6 +438,15 @@ family_decoders(GoldBoxGame game, const std::map<std::string, GameFile> &by_name
     {
         decoders.emplace(name, FamilyDecoder{"combat icons", check_combat_icon});
     }
+    if (game == GoldBoxGame::gateway_to_the_savage_frontier)
+    {
+        for (const auto &family : color_header_families())
+        {
+            decoders.insert_or_assign(std::string(family.name),
+                                      FamilyDecoder{family.description, family.decode});
+        }
+    }
+
     // Curse's copy protection draws its symbols from TILES.DAX, in the combat icons' format.
     decoders.emplace("TILES", FamilyDecoder{"copy-protection symbols", check_combat_icon});
     return decoders;
@@ -497,7 +563,8 @@ GameCensus take_census(const std::filesystem::path &folder, GoldBoxGame game)
         {
             families[name].push_back(file);
         }
-        else if (file.name == "ITEMS")
+        // Gateway to the Savage Frontier names the file ITEMS.1.
+        else if (file.name == "ITEMS" || file.name == "ITEMS.1")
         {
             RowBuilder row("ITEMS: item types");
             row.add_file(file.name);

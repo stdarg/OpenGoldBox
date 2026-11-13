@@ -1,4 +1,5 @@
 #include "opengold/wall_art.h"
+#include "opengold/gateway_formats.h"
 #include <algorithm>
 
 namespace opengold::por
@@ -16,6 +17,31 @@ WallViewSize wall_view_size(WallView view)
     return {columns.at(at) * 8, rows.at(at) * 8};
 }
 
+namespace
+{
+// Gateway to the Savage Frontier's tiles: a picture of 8 x 8 frames with a
+// color header, here in the 16 colors its EGA mode shows them in.
+std::optional<WallTiles> decode_color_header_tiles(std::span<const std::uint8_t> record)
+{
+    const auto picture = gateway::decode_picture(record);
+    if (!picture || picture->width != 8 || picture->height != 8)
+    {
+        return std::nullopt;
+    }
+    WallTiles result(picture->frames.size());
+    for (std::size_t frame = 0; frame < result.size(); ++frame)
+    {
+        std::transform(picture->frames[frame].begin(), picture->frames[frame].end(),
+                       result[frame].begin(),
+                       [&picture](std::uint8_t color)
+                       {
+                           return gateway::ega_color(picture->colors, color);
+                       });
+    }
+    return result;
+}
+} // namespace
+
 std::optional<WallTiles> decode_wall_tiles(std::span<const std::uint8_t> record)
 {
     // PoR 8X8D: one 17-byte image header, then count packed 8x8 frames.
@@ -23,7 +49,7 @@ std::optional<WallTiles> decode_wall_tiles(std::span<const std::uint8_t> record)
         record[3] != 0 || !record[8] ||
         record.size() != 17 + static_cast<std::size_t>(record[8]) * 32)
     {
-        return std::nullopt;
+        return decode_color_header_tiles(record);
     }
     WallTiles result(record[8]);
     for (std::size_t frame = 0; frame < result.size(); ++frame)

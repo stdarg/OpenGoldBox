@@ -1,0 +1,137 @@
+# Gateway to the Savage Frontier: how its files differ
+
+*Gateway to the Savage Frontier* (1991) runs on the engine *Secret of the
+Silver Blades* grew, rebuilt for VGA. This page records what its files change,
+as the census (`opengold_census`, [GAMES.md](../GAMES.md)) reads them. The
+facts come from the reconstructed source of the DOS release 1.2 and from the
+files themselves; the wording is our own.
+
+Since 2026-11-13 every file decodes but `MUSIC.DAX`, the music (below).
+
+## The files
+
+| Files | What they hold | Change from *Secret* |
+|---|---|---|
+| `GEO2`–`GEO6` | 30 maps | None |
+| `ECL2`–`ECL6` | 26 scripts | Two commands take more operands; new engine routines (below) |
+| `MON2CHA`–`MON6CHA` | 72 creatures | Back to *Curse*'s record of 422 bytes (below) |
+| `MON*ITM`, `ITEM2`–`ITEM6` | Creatures' items, item lists | None: 63 bytes an item, the name bytes scratch |
+| `MON*SPC` | Creatures' effects | None: 9 bytes an effect |
+| `ITEMS.1` | 128 item types | 24 bytes a type, not 16 (below) |
+| `HEAD`, `BODY`, `PIC`–`PIC6`, `BIGPIC`, `BIGPIC1`–`5`, `TITLE`, `SKY` | Pictures | A color header and 32 colors (below) |
+| `CHEAD`, `CBODY`, `CPIC2`–`CPIC6`, `COMSPR` | Combat icons | The pictures' format (below) |
+| `DUNGCOM`, `WILDCOM`, `RANDCOM` | Battlefield tiles | None |
+| `8X8D`, `8X8D1`–`8X8D6`, `WALLDEF`, `WALLDEF2`–`WALLDEF5` | Wall tiles, symbols and walls | Files without a disk number; large symbol sets (below) |
+| `8X8D1` | The font (201), the symbols of set 4 (202) and the shared tiles (203) | As in *Curse* |
+| `ZOUNDS` | Nine sound effects | New file: digitized sounds (below) |
+| `MUSIC` | The music: a driver program (0) and a song (1) | New file, not read yet (below) |
+
+There are no `SPRIT` files. The names of items and spells are in the
+program, not in a `START.EXE`; the census does not read them.
+
+## Pictures
+
+Every picture starts as before: its height in rows, its width in columns of
+8 pixels, its origin and its number of frames, nine bytes. Then comes a color
+header. When its first byte has none of the bits CCh set, it is the older
+header: eight bytes of a CGA color map, with the pixels packed two to a byte,
+as in the earlier games. Otherwise that byte is a set of flags, each adding a
+part:
+
+| Flag | Part |
+|---|---|
+| 01h | A CGA color map: 8 bytes, two bits a color |
+| 02h | An EGA color map: 16 bytes, four bits a color, the even color in the low nibble |
+| 04h | The pixels are five planes, not packed nibbles |
+| 08h | The picture's own colors: 24 bytes |
+
+With five planes, each row of a frame holds five runs of one bit a pixel,
+each run as long as the row is wide in bytes; the first run is a color's
+lowest bit. A pixel is then one of 32 colors. The EGA mode shows each through
+the EGA map. The VGA mode shows colors 0 to 15 as the EGA colors, 16 and 17 as
+two fixed oranges, and 18 to 31 from the picture's own colors: 4-bit levels of
+red, green and blue, the low nibbles of the 24 bytes for colors 16 to 23 and
+the high nibbles for 24 to 31. `gateway::picture_image` draws the VGA mode's
+colors.
+
+A picture with no rows or columns holds only its colors: `COMSPR` 254 and 255
+give the colors of the exploring view's and the combat screen's frames.
+
+`PIC` records stay animations: a frame count, then for each frame its delay
+(four bytes), the nine-byte header and color header, and one frame of pixels.
+Later frames hold their difference from the first, color by color. A later
+frame whose header is only the flag 04h takes the first frame's colors. The
+game keeps at most six frames.
+
+The combat icons (`CPIC`, `COMSPR`, `CHEAD`, `CBODY`) are pictures of this
+format; an icon's second frame is the record 128 above its first.
+
+## Walls
+
+Wall tiles and symbols are pictures of 8 by 8 frames in the new format.
+`8X8D.DAX` and `WALLDEF.DAX` have no disk number: the original first looks for
+a record there, then in the file named with the current disk's number. Each
+`WALLDEF` record is paired with the tiles of the same number, as before.
+
+A wall set's tiles number 70, or 210 for a large set. The walls of a set of 70
+name symbols in the shared space, shifted 70 for each slot past the first, as
+in *Secret*. A large set keeps its own numbers: its walls name the 45 shared
+symbols as 1 to 45 and its own 210 tiles as 46 to 255, in whatever slot it is
+loaded. `8X8D` 15 and 30, `8X8D2` 31 and 36, `8X8D3` 36 and `8X8D4` 31 are
+large. `8X8D6` holds 13 sets of 70 with no walls in any `WALLDEF`: on the
+overland the game loads a symbol set alone.
+
+`decode_wall_tiles` reads these tiles in the colors the EGA mode shows. The
+census pads each set to the three slots' symbol space, as for *Secret*.
+
+## Creatures
+
+The creature record is *Curse*'s again: 422 bytes, with the same fields at the
+same places ([curse.md](curse.md)); byte 331 holds the creature's type flags. `decode_character(bytes, game)` reads it with
+*Curse*'s decoder.
+
+## Items
+
+`ITEMS.1` holds two bytes, then 128 item types of 24 bytes: the 16 of the
+earlier games' `ITEMS`, then 8 the game never reads. The first 16 bytes match
+*Curse*'s for all but six types (9, 28, 67, 73, 88 and 89).
+
+## Scripts
+
+Scripts load and run as in *Secret*: at 8000h, to 9DFFh. A new game starts
+with script 1 on disk 2 (`ECL2.DAX`); the demonstration runs script 82. The
+commands are *Secret*'s, but two take more operands:
+
+| Code | Command | Operands |
+|---|---|---|
+| 32h | FIND ITEM | 4: the item type (0 for any), then its three name words from the last |
+| 40h | DESTROY ITEMS | 4: the same; it removes the first matching item in the party |
+
+CALL keeps *Curse*'s routines (less 7FFFh: AE11h redraws the view, 1 and 2
+the duels, 3201h the sound or music, 401Fh the step forward, E804h the next
+portrait frame). 401Bh rereads the wall and event of the party's cell, where
+*Curse* had 4019h. Three are new: 880Ah waits for Enter, 880Dh asks Yes or
+No and sets the comparison, and 8810h changes the current character's coins
+up into larger ones.
+
+## Sound effects
+
+`ZOUNDS.DAX` holds digitized sounds: unsigned 8-bit samples that a resident
+driver (`SBLASTER.EXE`, `IBMSND.EXE`, `TANSLTL.EXE` or `ADLIB.EXE`) plays. The
+game loads effects 2, 4, 5 and 7 to 12, each into a buffer of 9000 bytes, and
+plays 3 and 6 as 9. The rates are the program's, in samples a second:
+
+| Effect | 2 | 4 | 5 | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---|---|---|---|---|---|---|---|---|
+| Rate | 4000 | 7075 | 9000 | 8200 | 8000 | 8101 | 8107 | 7546 | 7075 |
+
+`gateway::decode_sound_sample` reads them.
+
+## The music
+
+`MUSIC.DAX` holds a music driver program (record 0) and the song it plays
+(record 1, which starts `GLBR`). The game loads both, runs the driver at a
+paragraph's start and calls it to start, poll and stop. The driver plays on
+AdLib, Innovation, Covox or the PC speaker and reads a song of "parts". No
+reconstructed source covers it; like *Secret*'s `SOUND.DAX`, it is a project
+of its own, so OpenGoldBox does not read it yet.

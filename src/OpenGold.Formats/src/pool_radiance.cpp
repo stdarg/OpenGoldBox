@@ -178,6 +178,16 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> by
     case GoldBoxGame::pools_of_darkness:
     case GoldBoxGame::treasures_of_the_savage_frontier:
         return late::decode_creature(bytes, game);
+    case GoldBoxGame::gateway_to_the_savage_frontier:
+    {
+        // Gateway keeps Curse's 422-byte layout (docs/games/gateway.md).
+        auto creature = curse::decode_creature(bytes);
+        if (creature)
+        {
+            creature->game = game;
+        }
+        return creature;
+    }
     default:
         return std::nullopt;
     }
@@ -266,18 +276,20 @@ std::optional<std::vector<ItemTemplate>> decode_item_templates(std::span<const s
 std::optional<std::vector<ItemTemplate>> decode_item_templates(std::span<const std::uint8_t> bytes,
                                                                GoldBoxGame game)
 {
-    // Pools of Darkness and Treasures read the types from the file's first byte.
+    // Pools of Darkness and Treasures read the types from the file's first byte;
+    // Gateway's ITEMS.1 follows each type's 16 bytes with 8 the game never reads.
     const std::size_t header = game == GoldBoxGame::pools_of_darkness ||
                                        game == GoldBoxGame::treasures_of_the_savage_frontier
                                    ? 0
                                    : 2;
-    if (bytes.size() < header + 16 || (bytes.size() - header) % 16 != 0 ||
-        (bytes.size() - header) / 16 > 256)
+    const std::size_t stride = game == GoldBoxGame::gateway_to_the_savage_frontier ? 24 : 16;
+    if (bytes.size() < header + stride || (bytes.size() - header) % stride != 0 ||
+        (bytes.size() - header) / stride > 256)
     {
         return std::nullopt;
     }
     std::vector<ItemTemplate> result;
-    for (std::size_t p = header; p < bytes.size(); p += 16)
+    for (std::size_t p = header; p < bytes.size(); p += stride)
     {
         const auto b = bytes.subspan(p, 16);
         ItemTemplate item;

@@ -134,6 +134,7 @@ target_link_libraries(opengold_rules_original PUBLIC opengold_rules opengold_for
 
 add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/formats.cpp
+    src/OpenGold.Formats/src/gateway_formats.cpp
     src/OpenGold.Formats/src/pool_radiance.cpp
     src/OpenGold.Formats/src/geo_map.cpp
     src/OpenGold.Formats/src/ecl.cpp
@@ -263,6 +264,10 @@ if(OPENGOLD_BUILD_TESTS)
         -P "${PROJECT_SOURCE_DIR}/tests/game_census.cmake")
     set_tests_properties(opengold_game_census PROPERTIES TIMEOUT 300
         SKIP_REGULAR_EXPRESSION "Skipped: ")
+    # What Gateway to the Savage Frontier's files changed (docs/games/gateway.md).
+    add_executable(opengold_gateway_census_tests tests/gateway_census_tests.cpp)
+    target_link_libraries(opengold_gateway_census_tests PRIVATE opengold_core)
+    add_test(NAME opengold_gateway_census_tests COMMAND opengold_gateway_census_tests)
 
     add_executable(opengold_concentration_tests tests/concentration_tests.cpp)
     target_include_directories(opengold_concentration_tests PRIVATE src/OpenGold.Rules.Srd5/src)
