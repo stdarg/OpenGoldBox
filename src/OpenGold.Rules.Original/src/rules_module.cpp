@@ -1125,17 +1125,62 @@ RestPolicy OriginalModule::short_rest_policy() const
     return {hour_minutes, 0};
 }
 
-// The temple comes with plan step 6.
-bool OriginalModule::temple_service_helps(const CharacterSheet &, const VitalState &,
-                                          TempleService) const
+// The original's temple (temple.pas): Cure Light, Serious and Critical
+// Wounds heal 1d8, 2d8+1 and 3d8+3, and Raise Dead brings the dead back with 1
+// Hit Point. Its cures of blindness, disease, poison, curses and stone come
+// with the conditions that last outside fights; it raises no one by
+// Resurrection.
+bool OriginalModule::temple_service_helps(const CharacterSheet &sheet, const VitalState &state,
+                                          TempleService service) const
 {
-    return false;
+    switch (service)
+    {
+    case TempleService::cure_light_wounds:
+    case TempleService::cure_serious_wounds:
+    case TempleService::cure_critical_wounds:
+        return !state.dead && state.hit_points < sheet.hit_points;
+    case TempleService::raise_dead:
+        return state.dead;
+    default:
+        return false;
+    }
 }
 
-void OriginalModule::temple_service(VitalState &, const CharacterSheet &, TempleService,
-                                    RandomState &) const
+void OriginalModule::temple_service(VitalState &state, const CharacterSheet &sheet,
+                                    TempleService service, RandomState &random_state) const
 {
-    throw unavailable("temple_service");
+    if (!temple_service_helps(sheet, state, service))
+    {
+        throw std::runtime_error("The temple cannot help with that");
+    }
+    const auto heal = [&](int dice, int bonus)
+    {
+        int healing = bonus;
+        for (int die = 0; die < dice; ++die)
+        {
+            healing += roll_die(random_state, 8);
+        }
+        state.hit_points = std::min(state.hit_points + healing, sheet.hit_points);
+    };
+    switch (service)
+    {
+    case TempleService::cure_light_wounds:
+        heal(1, 0);
+        break;
+    case TempleService::cure_serious_wounds:
+        heal(2, 1);
+        break;
+    case TempleService::cure_critical_wounds:
+        heal(3, 3);
+        break;
+    case TempleService::raise_dead:
+        state.dead = false;
+        state.hit_points = 1;
+        state.resources.clear();
+        break;
+    default:
+        break;
+    }
 }
 
 HazardAttackResult OriginalModule::hazard_attack(VitalState &, const CharacterSheet &,

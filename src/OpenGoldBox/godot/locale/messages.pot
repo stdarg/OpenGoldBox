@@ -1982,7 +1982,7 @@ msgstr ""
 msgid "Cast spell"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1192
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1237
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr ""
@@ -10645,7 +10645,7 @@ msgstr ""
 msgid "That potion works only in combat"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1207
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1252
 msgid "That spell cannot be cast now"
 msgstr ""
 
@@ -10810,7 +10810,7 @@ msgstr ""
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1211
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1256
 msgid "The dead cannot be healed"
 msgstr ""
 
@@ -10976,6 +10976,10 @@ msgstr ""
 #: src/OpenGoldBox/rolf_tour_view.cpp:926
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
+msgstr ""
+
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1154
+msgid "The temple cannot help with that"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:25377

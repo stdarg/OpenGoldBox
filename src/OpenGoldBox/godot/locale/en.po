@@ -1982,7 +1982,7 @@ msgstr "Cast a spell or use a feature outside combat."
 msgid "Cast spell"
 msgstr "Cast spell"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1192
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1237
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr "Cast {spell}"
@@ -10645,7 +10645,7 @@ msgstr "That is not a Manual of Bodily Health"
 msgid "That potion works only in combat"
 msgstr "That potion works only in combat"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1207
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1252
 msgid "That spell cannot be cast now"
 msgstr "That spell cannot be cast now"
 
@@ -10810,7 +10810,7 @@ msgstr "The cloud drifts."
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr "The creature that hit it this turn attacks it with Disadvantage."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1211
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1256
 msgid "The dead cannot be healed"
 msgstr "The dead cannot be healed"
 
@@ -10977,6 +10977,10 @@ msgstr "The sunlight ends the magical Darkness."
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 msgstr "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
+
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1154
+msgid "The temple cannot help with that"
+msgstr "The temple cannot help with that"
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:25377
 msgid "The tsunami subsides."

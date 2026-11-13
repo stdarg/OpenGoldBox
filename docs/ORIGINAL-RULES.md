@@ -190,6 +190,12 @@ lines in all:
      will become, and lets a magic-user choose its new spell.
    - **Thief skills:** a thief may pick locks, as the original offers Pick to
      a party with one; scripts read a half-elf's own race code.
+   - **The temple** heals as the original's (`temple.pas`): Cure Light,
+     Serious and Critical Wounds 1d8, 2d8+1 and 3d8+3, and Raise Dead brings
+     the dead back with 1 Hit Point. Still to come: Raise Dead's loss of a
+     point of Constitution and of Hit Points, and the cures of blindness,
+     disease, poison, curses and stone, with the conditions that last outside
+     fights.
 7. **The monsters' tactics and the original rules' difficulty levels.** The
    original rules become the default once they play from start to end.
 

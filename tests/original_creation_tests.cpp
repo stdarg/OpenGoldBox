@@ -488,6 +488,30 @@ void a_cleric_cures_in_camp()
     check(party.camp_actions(cleric).empty(), "The spell is spent");
 }
 
+// The original's temple: Cure Light Wounds heals 1d8 a wounded member, and
+// Raise Dead brings the dead back with 1 Hit Point.
+void the_temple_heals_and_raises()
+{
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module(), creation);
+    const auto id = member_with(party, creation, "fighter", "Gareth");
+    const auto &sheet = party.member(id).character.sheet();
+    const auto module = original::rules_module();
+    RandomState random{8};
+    rules::VitalState wounded{1, false, {}, {}};
+    check(module->temple_service_helps(sheet, wounded, rules::TempleService::cure_light_wounds) &&
+              !module->temple_service_helps(sheet, wounded, rules::TempleService::raise_dead),
+          "A wounded member can be cured, not raised");
+    module->temple_service(wounded, sheet, rules::TempleService::cure_light_wounds, random);
+    check(wounded.hit_points > 1 && wounded.hit_points <= std::min(9, sheet.hit_points),
+          "Cure Light Wounds heals 1d8");
+    rules::VitalState dead{0, true, {}, {}};
+    module->temple_service(dead, sheet, rules::TempleService::raise_dead, random);
+    check(!dead.dead && dead.hit_points == 1, "Raise Dead brings the dead back with 1 Hit Point");
+    check(!module->temple_service_helps(sheet, dead, rules::TempleService::resurrection),
+          "The original's temple has no Resurrection");
+}
+
 } // namespace
 
 int main()
@@ -501,6 +525,7 @@ int main()
         arrows_spent_leave_the_inventory();
         a_magic_user_memorizes_and_learns();
         a_cleric_cures_in_camp();
+        the_temple_heals_and_raises();
         std::cout << "Original creation tests passed\n";
         return 0;
     }
