@@ -3531,12 +3531,21 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             }
             read_character();
             // The shop data/shops places on this square sells its record's items.
+            bool stocked = false;
             for (std::size_t n = 0; n < shops_.size(); ++n)
             {
                 if (standing_at(shops_[n].archive, shops_[n].record, shops_[n].markers))
                 {
                     treasure_ = shop_stocks_[n];
+                    stocked = true;
                 }
+            }
+            // Curse's shop sells the list its script's TREASURE named just before
+            // (CMD_Treasure, then CityShop, in its reconstruction).
+            if (!stocked && staged_treasure_ && game() != GoldBoxGame::pool_of_radiance)
+            {
+                treasure_ = staged_treasure_->items;
+                staged_treasure_.reset();
             }
             shop_request_ = request.id;
             snapshot_.phase = TourPhase::shopping;

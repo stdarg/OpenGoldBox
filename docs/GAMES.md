@@ -225,7 +225,10 @@ In small steps, each with its check:
    (every class, its class mask), its pictures from every disk, DESTROY
    ITEMS, its NPCs as their records, CHECK PARTY on its own cells, and a
    COMBAT with no one loaded.
-6. Shops, temples, training and the higher level limits.
+6. Shops, temples, training and the higher level limits. *In progress
+   (2026-11-13):* a *Curse* shop sells the item list its script names with
+   TREASURE before it opens; its temple adds Heal; its halls train every
+   class; the level limits are *Curse*'s (ORIGINAL-RULES.md).
 7. A route test that plays from the start to the end, like the
    *Pool of Radiance* expedition checks.
 

@@ -527,6 +527,11 @@ bool curse_walk_census()
                 (void)session.input(s.continue_ticket, "0");
                 continue;
             case TourPhase::shopping:
+                if (session.shop_stock().empty())
+                {
+                    needs["A shop with nothing to sell"].push_back(where);
+                }
+                ++phases["shops with goods"];
                 (void)session.leave_shop(s.continue_ticket);
                 continue;
             case TourPhase::treasure:
