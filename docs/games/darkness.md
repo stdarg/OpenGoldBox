@@ -9,8 +9,9 @@ the files themselves; the wording is our own.
 ## Pictures and graphics
 
 Since 2026-11-13 every picture, icon, sprite, tile set and wall decodes
-(`src/OpenGold.Formats/src/vga_picture.cpp`); only the opening and closing
-films (below) are not read. *Treasures of the Savage Frontier* keeps the same
+(`src/OpenGold.Formats/src/vga_picture.cpp`), and so do the opening and closing
+films (below). The music and sound effects are laid out as in the other later
+games ([later-sound.md](later-sound.md)). *Treasures of the Savage Frontier* keeps the same
 layouts ([treasure.md](treasure.md)), and the same code reads both games.
 
 ### Colors

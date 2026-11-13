@@ -90,6 +90,13 @@ struct SoundSample
 [[nodiscard]] std::optional<SoundSample> decode_sound_sample(unsigned id,
                                                              std::span<const std::uint8_t> record);
 
+// Record id of Pools of Darkness' or Treasures of the Savage Frontier's
+// ZOUNDS.DAX: the games load records 1 to 11 (sound n plays record n - 1) and
+// play every one whole at 9000 samples a second (docs/games/later-sound.md).
+// nullopt for any other record or one too large for the sound buffer.
+[[nodiscard]] std::optional<SoundSample>
+decode_later_sound_sample(unsigned id, std::span<const std::uint8_t> record);
+
 } // namespace opengold::gateway
 
 #endif

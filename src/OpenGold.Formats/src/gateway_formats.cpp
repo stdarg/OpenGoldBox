@@ -334,4 +334,16 @@ std::optional<SoundSample> decode_sound_sample(unsigned id, std::span<const std:
     return SoundSample{id, sample_rates[id], {record.begin(), record.end()}};
 }
 
+std::optional<SoundSample> decode_later_sound_sample(unsigned id,
+                                                     std::span<const std::uint8_t> record)
+{
+    constexpr unsigned first_loaded = 1, last_loaded = 11, later_rate = 9000;
+    if (id < first_loaded || id > last_loaded || record.empty() ||
+        record.size() > sound_buffer_size)
+    {
+        return std::nullopt;
+    }
+    return SoundSample{id, later_rate, {record.begin(), record.end()}};
+}
+
 } // namespace opengold::gateway

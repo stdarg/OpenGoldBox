@@ -146,6 +146,7 @@ add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/vga_picture.cpp
     src/OpenGold.Formats/src/late_records.cpp
     src/OpenGold.Formats/src/vace_film.cpp
+    src/OpenGold.Formats/src/music_bank.cpp
     src/OpenGold.Formats/src/gold_box_game.cpp
 )
 
@@ -282,6 +283,10 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_gateway_census_tests tests/gateway_census_tests.cpp)
     target_link_libraries(opengold_gateway_census_tests PRIVATE opengold_core)
     add_test(NAME opengold_gateway_census_tests COMMAND opengold_gateway_census_tests)
+    # The later games' music and digitized sounds (docs/games/later-sound.md).
+    add_executable(opengold_late_sound_tests tests/late_sound_tests.cpp)
+    target_link_libraries(opengold_late_sound_tests PRIVATE opengold_core)
+    add_test(NAME opengold_late_sound_tests COMMAND opengold_late_sound_tests)
 
     add_executable(opengold_concentration_tests tests/concentration_tests.cpp)
     target_include_directories(opengold_concentration_tests PRIVATE src/OpenGold.Rules.Srd5/src)

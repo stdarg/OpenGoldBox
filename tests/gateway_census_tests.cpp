@@ -275,8 +275,7 @@ void the_real_files_decode()
     {
         check(row.complete(), row.kind + " decodes: " + row.first_failure);
     }
-    check(census.unread_files == std::vector<std::string>{"MUSIC.DAX"},
-          "Only the music is not read yet");
+    check(census.complete(), "Every file decodes, the music too");
 
     const auto titles = archive(folder / "TITLE.DAX");
     check(titles.has_value(), "TITLE.DAX is an archive");

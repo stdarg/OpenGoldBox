@@ -7,6 +7,7 @@
 #include "opengold/formats.h"
 #include "opengold/gateway_formats.h"
 #include "opengold/geo_map.h"
+#include "opengold/music_bank.h"
 #include "opengold/path_text.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/por_sound.h"
@@ -259,6 +260,17 @@ std::vector<ColorHeaderFamily> color_header_families()
                                 "not a sound effect");
                         }});
     return families;
+}
+
+// A record of the music driver's archive: the driver program, or one of its
+// parameter blocks of instruments and songs.
+void check_music(GoldBoxGame game, const Bytes &bytes)
+{
+    if (is_music_driver(bytes))
+    {
+        return;
+    }
+    require(decode_music_bank(bytes, game).has_value(), "neither the music driver nor its songs");
 }
 
 void check_sprite(const GameFile &file, const DaxRecord &record)
@@ -616,6 +628,26 @@ family_decoders(GoldBoxGame game, const std::map<std::string, GameFile> &by_name
         }
     }
 
+    const auto music = [game](const GameFile &, const DaxRecord &record)
+    {
+        check_music(game, record.bytes);
+    };
+    // Secret of the Silver Blades names the music driver's archive SOUND.DAX.
+    decoders.emplace("MUSIC", FamilyDecoder{"music", music});
+    decoders.emplace("SOUND", FamilyDecoder{"music", music});
+    if (game == GoldBoxGame::pools_of_darkness ||
+        game == GoldBoxGame::treasures_of_the_savage_frontier)
+    {
+        decoders.insert_or_assign(
+            "ZOUNDS",
+            FamilyDecoder{
+                "sound effects", [](const GameFile &, const DaxRecord &record)
+                {
+                    require(gateway::decode_later_sound_sample(record.id, record.bytes).has_value(),
+                            "not a sound effect");
+                }});
+    }
+
     // Curse's copy protection draws its symbols from TILES.DAX, in the combat icons' format.
     decoders.emplace("TILES", FamilyDecoder{"copy-protection symbols", check_combat_icon});
     if (uses_vga_pictures(game))
@@ -725,6 +757,8 @@ GameCensus take_census(const std::filesystem::path &folder, GoldBoxGame game)
     // The files of each family, in the order the decoders list them.
     std::map<std::string, std::vector<GameFile>> families;
     std::vector<GameFile> film_files;
+    // Pools of Darkness' introduction and finale play songs of their own.
+    RowBuilder song_files("SMS: the introduction's and finale's songs");
     for (const auto &file : files)
     {
         if (is_program_file(file))
@@ -772,12 +806,26 @@ GameCensus take_census(const std::filesystem::path &folder, GoldBoxGame game)
             }
             census.rows.push_back(std::move(row).take());
         }
+        else if (extension(file.name) == "SMS")
+        {
+            song_files.add_file(file.name);
+            song_files.check(file.name,
+                             [&file, game]
+                             {
+                                 require(decode_music_bank(read_bytes(file.path), game).has_value(),
+                                         "not the music driver's songs");
+                             });
+        }
         else
         {
             census.unread_files.push_back(file.name);
         }
     }
     add_film_row(census, by_name, film_files);
+    if (auto row = std::move(song_files).take(); row.pieces > 0)
+    {
+        census.rows.push_back(std::move(row));
+    }
     for (const auto &[name, members] : families)
     {
         const auto &decoder = decoders.find(name)->second;

@@ -6,7 +6,7 @@ as the census (`opengold_census`, [GAMES.md](../GAMES.md)) reads them. The
 facts come from the reconstructed source of the DOS release 1.2 and from the
 files themselves; the wording is our own.
 
-Since 2026-11-13 every file decodes but `MUSIC.DAX`, the music (below).
+Since 2026-11-13 every file decodes, the music in `MUSIC.DAX` too (below).
 
 ## The files
 
@@ -24,7 +24,7 @@ Since 2026-11-13 every file decodes but `MUSIC.DAX`, the music (below).
 | `8X8D`, `8X8D1`–`8X8D6`, `WALLDEF`, `WALLDEF2`–`WALLDEF5` | Wall tiles, symbols and walls | Files without a disk number; large symbol sets (below) |
 | `8X8D1` | The font (201), the symbols of set 4 (202) and the shared tiles (203) | As in *Curse* |
 | `ZOUNDS` | Nine sound effects | New file: digitized sounds (below) |
-| `MUSIC` | The music: a driver program (0) and a song (1) | New file, not read yet (below) |
+| `MUSIC` | The music: a driver program (0) and a bank of instruments and a song (1) | New file (below) |
 
 There are no `SPRIT` files. The names of items and spells are in the
 program, not in a `START.EXE`; the census does not read them.
@@ -129,9 +129,9 @@ plays 3 and 6 as 9. The rates are the program's, in samples a second:
 
 ## The music
 
-`MUSIC.DAX` holds a music driver program (record 0) and the song it plays
-(record 1, which starts `GLBR`). The game loads both, runs the driver at a
-paragraph's start and calls it to start, poll and stop. The driver plays on
-AdLib, Innovation, Covox or the PC speaker and reads a song of "parts". No
-reconstructed source covers it; like *Secret*'s `SOUND.DAX`, it is a project
-of its own, so OpenGoldBox does not read it yet.
+`MUSIC.DAX` holds the music driver (record 0) and the bank it plays (record 1),
+a library of instruments and one song. It is the driver of *Secret*'s title
+music, in a later build that divides the song's tempo by 84 to time its notes
+(the song's tempo 2D00h gives 137 units a tick; its tracks last 3973 ticks).
+The layout is in [later-sound.md](later-sound.md); `decode_music_bank`
+reads the bank.

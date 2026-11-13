@@ -27,8 +27,8 @@ The user decided these on 2026-11-12:
 |---|---|---|---|---|
 | 1 | *Pool of Radiance* | 1988 | `POOLRAD` | Playable |
 | 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Played to its end by the route test, with stand-ins ([curse.md](games/curse.md)) |
-| 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Every file decodes but the title music ([secret.md](games/secret.md)) |
-| 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Every file decodes but the music ([gateway.md](games/gateway.md)) |
+| 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Every file decodes ([secret.md](games/secret.md)) |
+| 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Every file decodes ([gateway.md](games/gateway.md)) |
 | 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Not started |
 | 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Not started |
 | 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | Not started |
@@ -65,10 +65,10 @@ The census (2026-11-12) puts every file through the decoders:
 |---|---|---|
 | *Pool of Radiance* | All | — |
 | *Curse* | All | — |
-| *Secret* | All but one (2026-11-13) | `SOUND.DAX`, the title music's own driver and song |
-| *Gateway* | All but one (2026-11-13) | `MUSIC.DAX`, the music's own driver and song |
-| *Pools of Darkness* | Maps, effects; scripts, creatures and items; every 256-color picture, icon, sprite, tile set and wall, and the opening and closing films that `VACE.EXE` plays (2026-11-13) | Music and sounds |
-| *Treasures* | Maps, effects; scripts, creatures and items; every 256-color picture, icon, sprite, tile set and wall, the `BORD` tables and the `LUCK` texts (2026-11-13) | Music and sounds |
+| *Secret* | All (2026-11-13) | — |
+| *Gateway* | All (2026-11-13) | — |
+| *Pools of Darkness* | All (2026-11-13) | — |
+| *Treasures* | All (2026-11-13) | — |
 | *Unlimited Adventures* | — | Everything: its data sits in `DISK1` to `DISK3` |
 
 The archives (DAX) and maps are shared by all six campaigns. Scripts,
@@ -108,10 +108,8 @@ the reconstructed sources and go into `docs/games/<game>.md`.
 
 Done for a game when its census decodes every file.
 
-**Status:** done for *Pool of Radiance* and *Curse* (2026-11-12); *Secret*
-decodes every file but its title music, and *Gateway* every file but its
-music (2026-11-13); *Pools of Darkness* and *Treasures* every file but their
-music and sounds (2026-11-13). Run it with
+**Status:** done for *Pool of Radiance* and *Curse* (2026-11-12), and for
+*Secret*, *Gateway*, *Pools of Darkness* and *Treasures* (2026-11-13). Run it with
 `opengold_census FOLDER...` (in `build/macos-universal` after `./build.sh`,
 or `build` in a native build), where a folder is one game's or one holding
 several (`/Users/edmond/GoldBox`). It prints a row for each kind of file: how
@@ -316,7 +314,7 @@ In small steps, each with its check:
 The steps of *Curse*'s phase 3, with *Secret*'s differences
 ([secret.md](games/secret.md)):
 
-1. The census: every file but the title music decodes (2026-11-13).
+1. The census: every file decodes (2026-11-13).
 2. The opening: `load_campaign` plays script 17's vision and reaches New
    Verdigris (map 16) with its walls drawn (`opengold_gold_box_games_tests`,
    2026-11-13). The walls of every game are now drawn as the original draws

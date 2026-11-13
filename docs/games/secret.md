@@ -6,7 +6,7 @@ Bonds* grew. This page records what its files change, as the census
 reconstructed source of the DOS release 1.3 and from the files themselves; the
 wording is our own.
 
-Since 2026-11-13 every file decodes but `SOUND.DAX`, the title music (below).
+Since 2026-11-13 every file decodes, the title music in `SOUND.DAX` too (below).
 
 ## The files
 
@@ -24,7 +24,7 @@ Since 2026-11-13 every file decodes but `SOUND.DAX`, the title music (below).
 | `8X8D1`–`8X8D3`, `WALLDEF1`–`WALLDEF3` | Each disk's wall tiles and walls | Walls use the tiles of the sets loaded beside them (below) |
 | `8X8D5` | The font (201), alone | The font moved from `8X8D1`; its bytes are *Curse*'s |
 | `START.EXE` | Item and spell names, and the sound effects | 123 item words; the effects' songs play notes (below) |
-| `SOUND.DAX` | The title music: a driver program (1) and its song (2) | New file |
+| `SOUND.DAX` | The title music: a driver program (1) and its bank of instruments and song (2) | New file (below) |
 
 ## Scripts
 
@@ -146,9 +146,16 @@ tempo fields, 0FAh to clear the selected voice, and the level envelopes a
 note's sustain runs out into. Song 12, a long tune of notes, is never played
 by the game.
 
-## The title music
+## Sound and music
 
-`SOUND.DAX` holds the music of the introduction: a driver program of its own
-(record 1) and the song it plays (record 2). No reconstructed source covers
-that driver, so OpenGoldBox does not read it yet; the introduction plays
-without music.
+`SOUND.DAX` holds the music of the introduction: the music driver (record 1)
+and the bank it plays (record 2), a library of instruments and one song of four
+tracks. The later games keep this driver and its banks; the layout is in
+[later-sound.md](later-sound.md). *Secret*'s build differs in three ways:
+
+- its library holds 31 instruments, the Covox's last one missing;
+- it finds the songs 1B2h bytes into the bank, where the library ends;
+- it ignores the song's tempo and counts 118 units of a note's length a tick,
+  so the title music's four tracks each last 6150 ticks, 84 seconds.
+
+`decode_music_bank` reads the bank. The introduction does not play it yet.
