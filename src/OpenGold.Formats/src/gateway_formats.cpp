@@ -2,6 +2,8 @@
 #include "little_endian.h"
 
 #include <algorithm>
+#include <string_view>
+#include <utility>
 
 namespace opengold::gateway
 {
@@ -334,6 +336,77 @@ std::optional<SoundSample> decode_sound_sample(unsigned id, std::span<const std:
     return SoundSample{id, sample_rates[id], {record.begin(), record.end()}};
 }
 
+namespace
+{
+
+// The records keep an Amiga sound file's bytes with each top bit flipped, so
+// its text reads with the bit flipped back.
+bool has_flipped_text(std::span<const std::uint8_t> bytes, std::size_t offset,
+                      std::string_view text)
+{
+    if (offset + text.size() > bytes.size())
+    {
+        return false;
+    }
+    return std::equal(text.begin(), text.end(), bytes.begin() + static_cast<std::ptrdiff_t>(offset),
+                      [](char letter, std::uint8_t stored)
+                      {
+                          return static_cast<std::uint8_t>(stored ^ 0x80) == letter;
+                      });
+}
+
+std::uint32_t flipped_big_endian(std::span<const std::uint8_t> bytes, std::size_t offset,
+                                 std::size_t size)
+{
+    std::uint32_t value = 0;
+    for (std::size_t index = 0; index < size; ++index)
+    {
+        value = value << 8 | static_cast<std::uint8_t>(bytes[offset + index] ^ 0x80);
+    }
+    return value;
+}
+
+// An 8SVX sound's rate (its VHDR) and samples (its BODY): the sound alone,
+// without the header the original played as a click. nullopt when the file is
+// cut short, packed, or lacks either chunk.
+std::optional<std::pair<unsigned, std::span<const std::uint8_t>>>
+amiga_sound(std::span<const std::uint8_t> file)
+{
+    constexpr std::size_t chunks_start = 12, chunk_header = 8;
+    constexpr std::size_t rate_offset = 12, packing_offset = 15, voice_header_size = 20;
+    std::optional<unsigned> rate;
+    std::optional<std::span<const std::uint8_t>> body;
+    for (std::size_t chunk = chunks_start; chunk + chunk_header <= file.size();)
+    {
+        const auto size = flipped_big_endian(file, chunk + 4, 4);
+        const auto data = chunk + chunk_header;
+        if (size > file.size() - data)
+        {
+            return std::nullopt;
+        }
+        if (has_flipped_text(file, chunk, "VHDR"))
+        {
+            if (size < voice_header_size || (file[data + packing_offset] ^ 0x80) != 0)
+            {
+                return std::nullopt;
+            }
+            rate = flipped_big_endian(file, data + rate_offset, 2);
+        }
+        else if (has_flipped_text(file, chunk, "BODY"))
+        {
+            body = file.subspan(data, size);
+        }
+        chunk = data + size + size % 2;
+    }
+    if (!rate || *rate == 0 || !body || body->empty())
+    {
+        return std::nullopt;
+    }
+    return std::pair{*rate, *body};
+}
+
+} // namespace
+
 std::optional<SoundSample> decode_later_sound_sample(unsigned id,
                                                      std::span<const std::uint8_t> record)
 {
@@ -342,6 +415,18 @@ std::optional<SoundSample> decode_later_sound_sample(unsigned id,
         record.size() > sound_buffer_size)
     {
         return std::nullopt;
+    }
+    // Fixed (docs/DEVIATIONS.md): the original played an Amiga sound file
+    // whole at 9000 a second, its header heard as a click.
+    if (has_flipped_text(record, 0, "FORM") && has_flipped_text(record, 8, "8SVX"))
+    {
+        const auto sound = amiga_sound(record);
+        if (!sound)
+        {
+            return std::nullopt;
+        }
+        const auto &[rate, samples] = *sound;
+        return SoundSample{id, rate, {samples.begin(), samples.end()}};
     }
     return SoundSample{id, later_rate, {record.begin(), record.end()}};
 }

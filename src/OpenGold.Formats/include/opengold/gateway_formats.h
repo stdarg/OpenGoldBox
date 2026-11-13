@@ -91,9 +91,11 @@ struct SoundSample
                                                              std::span<const std::uint8_t> record);
 
 // Record id of Pools of Darkness' or Treasures of the Savage Frontier's
-// ZOUNDS.DAX: the games load records 1 to 11 (sound n plays record n - 1) and
-// play every one whole at 9000 samples a second (docs/games/later-sound.md).
-// nullopt for any other record or one too large for the sound buffer.
+// ZOUNDS.DAX: the games load records 1 to 11 (sound n plays record n - 1). An
+// Amiga sound file's record gives its samples at the rate its header names;
+// any other plays whole at 9000 samples a second (docs/games/later-sound.md).
+// nullopt for any other record, one too large for the sound buffer, or a
+// sound file that does not parse.
 [[nodiscard]] std::optional<SoundSample>
 decode_later_sound_sample(unsigned id, std::span<const std::uint8_t> record);
 

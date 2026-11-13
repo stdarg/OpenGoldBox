@@ -426,6 +426,17 @@ in the game: answering YES at a hall lists its services in the dialogue
   [SECRET-1](SRD-DECISIONS.md#secret-1-2026-10-29-the-rogues-shop-and-its-secret-door),
   [#271](https://github.com/stdarg/OpenGoldBox/issues/271).
 
+## Sound
+
+- **The later games' sound effects play without a click** (2026-11-13, the
+  user's answer). *Pools of Darkness* and *Treasures of the Savage Frontier*
+  keep most effects as Amiga sound files, and the original played each whole
+  at 9000 samples a second, so its 104-byte header sounded as a click before
+  the sound and the file's own rate was ignored. OpenGoldBox plays the sound
+  alone at the rate its header names (1772 to 10,980 a second); effects that
+  are not sound files still play whole at 9000
+  ([later-sound.md](games/later-sound.md)).
+
 ## Interface and saves
 
 - **Shops name their keepers and tell what an item does** (2026-11-08). The

@@ -3,6 +3,7 @@
 // them, and Pools of Darkness' and Treasures of the Savage Frontier's sound
 // effects. The real files are read when OPENGOLD_GOLDBOX_DIR names the folder
 // holding SECRET, GATEWAY, DARKNESS and TREASURE.
+#include <string_view>
 #include "opengold/formats.h"
 #include "opengold/game_census.h"
 #include "opengold/gateway_formats.h"
@@ -173,12 +174,61 @@ void the_driver_is_recognized()
     check(!opengold::is_music_driver(bank(0x2A00, {{0xFF, 0xFF}})), "A bank is not the driver");
 }
 
+// An Amiga sound file as the games store it: every byte's top bit flipped.
+Bytes flipped_amiga_sound(std::uint16_t rate, const Bytes &body, std::uint8_t packing = 0)
+{
+    Bytes file;
+    const auto text = [&file](std::string_view letters)
+    {
+        file.insert(file.end(), letters.begin(), letters.end());
+    };
+    const auto big_endian = [&file](std::uint32_t value, int size)
+    {
+        for (int shift = (size - 1) * 8; shift >= 0; shift -= 8)
+        {
+            file.push_back(static_cast<std::uint8_t>(value >> shift));
+        }
+    };
+    text("FORM");
+    big_endian(static_cast<std::uint32_t>(4 + 8 + 20 + 8 + body.size()), 4);
+    text("8SVX");
+    text("VHDR");
+    big_endian(20, 4);
+    big_endian(static_cast<std::uint32_t>(body.size()), 4);
+    big_endian(0, 4);
+    big_endian(0, 4);
+    big_endian(rate, 2);
+    file.push_back(1);
+    file.push_back(packing);
+    big_endian(0x10000, 4);
+    text("BODY");
+    big_endian(static_cast<std::uint32_t>(body.size()), 4);
+    file.insert(file.end(), body.begin(), body.end());
+    for (auto &byte : file)
+    {
+        byte ^= 0x80;
+    }
+    return file;
+}
+
 void later_sound_effects_play_at_9000()
 {
     const Bytes samples(100, 0x80);
     const auto effect = opengold::gateway::decode_later_sound_sample(4, samples);
     check(effect.has_value() && effect->rate == 9000 && effect->samples == samples,
-          "An effect plays whole at 9000 samples a second");
+          "An effect that is not a sound file plays whole at 9000 samples a second");
+    const Bytes body{0x00, 0x7F, 0x80, 0xFF};
+    const auto amiga =
+        opengold::gateway::decode_later_sound_sample(2, flipped_amiga_sound(8363, body));
+    Bytes unsigned_body;
+    for (const auto sample : body)
+    {
+        unsigned_body.push_back(static_cast<std::uint8_t>(sample ^ 0x80));
+    }
+    check(amiga && amiga->rate == 8363 && amiga->samples == unsigned_body,
+          "A sound file plays its samples alone at its own rate, without its header's click");
+    check(!opengold::gateway::decode_later_sound_sample(2, flipped_amiga_sound(8363, body, 1)),
+          "A packed sound file is refused");
     check(!opengold::gateway::decode_later_sound_sample(0, samples), "Record 0 is never loaded");
     check(!opengold::gateway::decode_later_sound_sample(12, samples), "Nor is record 12");
     check(!opengold::gateway::decode_later_sound_sample(1, Bytes(9001, 0x80)),
@@ -264,11 +314,11 @@ void real_files_decode()
         const auto sounds = archive(root / "TREASURE" / "ZOUNDS.DAX");
         const auto click = opengold::gateway::decode_later_sound_sample(9, record(sounds, 9));
         check(click && click->samples.size() == 132, "Treasures' effect 9 is 132 samples");
-        // Most effects are Amiga sound files with every byte's top bit flipped,
-        // played header and all.
+        // Most effects are Amiga sound files with every byte's top bit flipped;
+        // the original played them header and all.
         const auto first = opengold::gateway::decode_later_sound_sample(1, record(sounds, 1));
-        check(first && first->samples.size() == 2468 && first->samples[0] == ('F' ^ 0x80),
-              "Effect 1 starts with the flipped FORM");
+        check(first && first->samples.size() == 2468 - 104 && first->rate == 9861,
+              "Effect 1 plays without its 104-byte header, at its own 9861 a second");
     }
     if (opengold::identify_game(root / "SECRET") == GoldBoxGame::secret_of_the_silver_blades)
     {

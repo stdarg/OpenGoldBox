@@ -118,5 +118,7 @@ Every record but 4 (and, in *Treasures*, 9) is an Amiga sound file (`FORM`,
 conversion to unsigned samples was applied to the whole file. The headers name
 rates from 1772 to 10,980 samples a second, which the games ignore, and the
 resident drivers do not read the header, so the original plays its 104 bytes
-as a short click before the sound.
-`gateway::decode_later_sound_sample` reads the records as the games play them.
+as a short click before the sound. OpenGoldBox fixes this
+([DEVIATIONS.md](../DEVIATIONS.md), Sound): `gateway::decode_later_sound_sample`
+gives a sound file's samples alone (its `BODY`) at the rate its header (`VHDR`)
+names, and any other record whole at 9000 a second.
