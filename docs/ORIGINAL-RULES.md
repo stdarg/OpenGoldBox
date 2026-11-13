@@ -703,6 +703,7 @@ tuned with the AI lab once the original rules play.
 | *Curse:* a half-elf magic-user's level limit is read from its Strength, not its Intelligence (`Limits.RaceClassLimit` in the reconstruction) | Intelligence, 6, 7 and 8 as an elf's follow it |
 | *Curse:* past a class's Hit Dice, training's fixed Hit Points (3 a fighter or paladin, 2 a cleric, ranger or thief, 1 a magic-user) replace the other classes' rolls instead of adding to them (`ovr018`, `sub_509E0`) | Added to them |
 | *Curse:* the paladin's saving throws, otherwise 2 better than a fighter's, are 1 worse against petrification at levels 5 and 6 and against death at level 8 than that (`ovr026`, `SaveThrowValues`) | 2 better throughout |
+| *Curse:* its starting-age table has no row for a half-elf ranger, which starts aged 0 (`Gbl.cs`, `halfelf_ages` in its reconstruction) | A half-elf fighter's age |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |
 | *Curse:* a shambling mound struck by electricity rolls 1d8, throws the roll away and gains 8 Hit Points (`ovr013`, its absorbing of lightning) | It gains the 1d8 |

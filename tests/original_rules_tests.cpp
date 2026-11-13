@@ -585,6 +585,31 @@ void curse_tables_and_creation()
           "Slots go on to fifth-level spells, a cleric of 18 Wisdom with one more at fourth");
     ClassLevels cleric9{};
     level_in(cleric9, ClassSlot::cleric) = 9;
+    // Every class Curse offers, of every race that may take it, rolls and is
+    // made (the Character Pool rolls each).
+    for (const auto &klass : rules->choices(CreationField::character_class))
+    {
+        for (const auto &race : rules->choices(CreationField::race))
+        {
+            auto every = draft(race.id, klass.id, "lawful_good");
+            if (!rules->allows(every, CreationField::character_class, klass.id))
+            {
+                continue;
+            }
+            for (const auto &alignment : rules->choices(CreationField::alignment))
+            {
+                if (rules->allows(every, CreationField::alignment, alignment.id))
+                {
+                    every.alignment = alignment.id;
+                    break;
+                }
+            }
+            rules->roll_in_place(every, random);
+            check(rules->evaluate(every, opengold::rules::NameRequirement::required).hit_points >=
+                      1,
+                  "A Curse " + race.id + " " + klass.id + " is made");
+        }
+    }
     const auto prayers = known_spells(cleric9, 12, {}, curse);
     const auto pool_prayers = known_spells(cleric9, 12, {}, pool);
     check(std::ranges::find(prayers, 174) != prayers.end() &&

@@ -773,7 +773,10 @@ int starting_age(Race race, Profession profession, RandomState &random)
         {
             throw std::invalid_argument("The original has no starting age for a monk");
         }
-        const auto dice = ages[index(classes.front())];
+        // Curse's table has no half-elf ranger, which it starts aged 0
+        // (docs/ORIGINAL-RULES.md, Bugs): a warrior's row stands in.
+        const auto &row = ages[index(classes.front())];
+        const auto dice = row.base > 0 ? row : ages[index(C::fighter)];
         return dice.base + roll_dice(random, {dice.count, dice.sides});
     }
     // A multi-class character is as old as one of its classes allows at most:
