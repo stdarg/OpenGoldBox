@@ -1,4 +1,5 @@
 #include "opengold/original.h"
+#include "opengold/curse_records.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/original_spells.h"
 #include <algorithm>
@@ -250,6 +251,12 @@ struct Choices
     return choices;
 }
 
+// A creature record of either game: Pool of Radiance's 285 bytes or Curse's 422.
+std::optional<por::CharacterRecord> decode_record(std::span<const std::uint8_t> bytes)
+{
+    return bytes.size() == 422 ? curse::decode_creature(bytes) : por::decode_character(bytes);
+}
+
 constexpr std::string_view record_prefix = "record:";
 constexpr std::string_view hex = "0123456789abcdef";
 
@@ -279,7 +286,7 @@ std::optional<por::CharacterRecord> record_of(const CharacterDraft &draft)
     {
         bytes.push_back(static_cast<std::uint8_t>(hex.find(data[n]) * 16 + hex.find(data[n + 1])));
     }
-    auto record = por::decode_character(bytes);
+    auto record = decode_record(bytes);
     if (!record)
     {
         throw std::invalid_argument("Unreadable original record");
@@ -357,7 +364,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
     // character is the record's scores, levels and Hit Points.
     std::optional<CharacterDraft> record_draft(std::span<const std::uint8_t> bytes) const override
     {
-        const auto record = por::decode_character(bytes);
+        const auto record = decode_record(bytes);
         if (!record)
         {
             throw std::invalid_argument("Unreadable original record");

@@ -86,6 +86,20 @@ void RolfTourSession::change_area(unsigned id)
     ++snapshot_.revision;
 }
 
+// The script commands the party answers; Curse adds DESTROY ITEMS (64).
+void RolfTourSession::enable_party_commands()
+{
+    for (const std::uint8_t op :
+         std::initializer_list<std::uint8_t>{11, 29, 30, 34, 35, 41, 46, 52, 54, 59})
+    {
+        machine_.enable_host(op);
+    }
+    if (game() != GoldBoxGame::pool_of_radiance)
+    {
+        machine_.enable_host(64);
+    }
+}
+
 void RolfTourSession::campaign_party(std::shared_ptr<opengold::CampaignParty> party)
 {
     campaign_ = std::move(party);
@@ -97,11 +111,7 @@ void RolfTourSession::attach_restored_party(std::shared_ptr<opengold::CampaignPa
     campaign_ = std::move(party);
     if (campaign_)
     {
-        for (const std::uint8_t op :
-             std::initializer_list<std::uint8_t>{11, 29, 30, 34, 35, 41, 46, 52, 54, 59})
-        {
-            machine_.enable_host(op);
-        }
+        enable_party_commands();
     }
 }
 
@@ -484,11 +494,7 @@ void RolfTourSession::configure_town()
     }
     if (campaign_)
     {
-        for (const std::uint8_t op :
-             std::initializer_list<std::uint8_t>{11, 29, 30, 34, 35, 41, 46, 52, 54, 59})
-        {
-            machine_.enable_host(op);
-        }
+        enable_party_commands();
     }
     synchronize_clock();
 }
@@ -3283,12 +3289,31 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         const auto joined =
             campaign_->recruit("por:MON" + std::to_string(bank) + "CHA:" + std::to_string(arg(0)),
                                std::move(*companion), arg(1));
-        // Under the original rules it brings its record's own gear.
+        // Under the original rules it brings its record's own gear, with what
+        // the record has readied in use.
+        std::vector<std::uint64_t> readied;
+        const auto held = [&]
+        {
+            std::vector<std::uint64_t> ids;
+            for (const auto &item : campaign_->member(joined).character.inventory().items())
+            {
+                ids.push_back(item.id);
+            }
+            return ids;
+        };
         if (original)
         {
             for (const auto &item : original->equipment)
             {
+                const auto before = held();
                 campaign_->take_item(joined, item);
+                for (const auto id : held())
+                {
+                    if (item.stored.readied() && std::ranges::find(before, id) == before.end())
+                    {
+                        readied.push_back(id);
+                    }
+                }
             }
         }
         // A companion arrives with its gear on (Dirten's mace and armor).
@@ -3297,7 +3322,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         for (const auto &item : member.character.inventory().items())
         {
             if (std::find(member.equipped.begin(), member.equipped.end(), item.id) ==
-                member.equipped.end())
+                    member.equipped.end() &&
+                (!original || std::ranges::find(readied, item.id) != readied.end()))
             {
                 unequipped.push_back(item.id);
             }
@@ -3666,6 +3692,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         break;
     }
+    case 64:
+        // DESTROY ITEMS (Curse): every item of the type in the party is gone.
+        campaign_->destroy_items(static_cast<std::uint8_t>(arg(0)));
+        break;
     case 60:
     {
         // PROTECTION: a line of rune glyphs at the operand's address, which the
@@ -3762,8 +3792,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         else
         {
+            // Only the SRD's resistances need a damage type.
             rules::HazardAttack harm{0, arg(1), arg(2), static_cast<int>(arg(3)),
-                                     script_damage_type(current_script_, address)};
+                                     plays_original_records()
+                                         ? std::string()
+                                         : script_damage_type(current_script_, address)};
             harm.automatic = true;
             if (whole_party)
             {

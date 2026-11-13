@@ -180,6 +180,22 @@ void put_down_cursed_items(PartyMember &member)
 // Takes a whole inventory entry from the member, taking it off first when it
 // is equipped, for the shop's Sell and for Drop (SELL-1). A cursed item, worn
 // or packed, stays.
+// The whole entry is gone, taken off first when equipped.
+void remove_item(PartyMember &member, std::uint64_t id)
+{
+    const auto carried = member.character.inventory().find(id);
+    if (!carried)
+    {
+        throw std::runtime_error("Unknown item");
+    }
+    const auto quantity = carried->get().quantity;
+    auto inventory = member.character.inventory();
+    inventory.remove(id, quantity);
+    std::erase(member.equipped, id);
+    member.item_sources.erase(id);
+    member.character.replace_inventory(std::move(inventory));
+}
+
 void give_up_item(PartyMember &member, std::uint64_t id)
 {
     const auto carried = member.character.inventory().find(id);
@@ -191,12 +207,7 @@ void give_up_item(PartyMember &member, std::uint64_t id)
     {
         throw std::runtime_error("This item is cursed. It cannot be sold or dropped.");
     }
-    const auto quantity = carried->get().quantity;
-    auto inventory = member.character.inventory();
-    inventory.remove(id, quantity);
-    std::erase(member.equipped, id);
-    member.item_sources.erase(id);
-    member.character.replace_inventory(std::move(inventory));
+    remove_item(member, id);
 }
 
 // Whether an original alignment-bound sword (#267) the member carries refuses
@@ -2077,6 +2088,32 @@ void CampaignParty::drop(MemberId id, std::uint64_t item)
     auto holder = member(id);
     give_up_item(holder, item);
     edit(id) = std::move(holder);
+}
+
+void CampaignParty::destroy_items(std::uint8_t type)
+{
+    editable();
+    for (const auto id : state_.slots)
+    {
+        if (!id)
+        {
+            continue;
+        }
+        auto holder = member(id);
+        std::vector<std::uint64_t> gone;
+        for (const auto &[item, source] : holder.item_sources)
+        {
+            if (source.stored.type == type)
+            {
+                gone.push_back(item);
+            }
+        }
+        for (const auto item : gone)
+        {
+            remove_item(holder, item);
+        }
+        edit(id) = std::move(holder);
+    }
 }
 
 void CampaignParty::set_wealth(Purse wealth)

@@ -369,6 +369,9 @@ class CampaignParty
     // Drop: the whole entry is gone for good, taken off first when equipped.
     // Throws, changing nothing, for a cursed item, worn or packed (SELL-1).
     void drop(MemberId id, std::uint64_t item);
+    // The original's DESTROY ITEMS (Curse's opcode 0x40): every item of this
+    // original type the party's members carry is gone, cursed or not.
+    void destroy_items(std::uint8_t type);
     void set_wealth(Purse wealth);
     // Money a joining character brings; throws if the party purse cannot hold it.
     void add_coins(Coin coin, std::uint32_t count);

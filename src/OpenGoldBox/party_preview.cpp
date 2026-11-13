@@ -1735,7 +1735,9 @@ void CharacterCreationView::update_party_navigation()
 
 // The expedition check's party under the original rules: six human fighters
 // made on the original's pages, each readying a long sword, chain mail and a
-// shield bought for nothing.
+// shield bought for nothing, and trained to level 3 at the fighters' hall, as
+// the SRD's party is raised to level 4: the route's fights come one after
+// another, each whole as the original's (ORIGINAL-RULES.md).
 void CharacterCreationView::add_original_expedition_party()
 {
     constexpr std::array<std::uint8_t, 3> kit{36, 55, 59};
@@ -1762,6 +1764,15 @@ void CharacterCreationView::add_original_expedition_party()
             gear.stored = por::decode_items(raw)->front();
             campaign_->purchase(id, gear);
             campaign_->equip(id, campaign_->member(id).character.inventory().items().back().id);
+        }
+        for (const unsigned experience : {2001U, 4001U})
+        {
+            campaign_->add_coins(Coin::gold, 1000);
+            campaign_->award_experience(experience - campaign_->member(id).experience,
+                                        "fixture:original-trained:" + std::to_string(i) + ":" +
+                                            std::to_string(experience),
+                                        id);
+            campaign_->train_at_hall_level(id, TrainingHall::fighters, {});
         }
     }
 }
