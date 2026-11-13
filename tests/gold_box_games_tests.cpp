@@ -17,6 +17,7 @@
 #include "opengold/original_combat.h"
 #include "opengold/original.h"
 #include "opengold/original_spells.h"
+#include "opengold/original_content.h"
 #include "opengold/character_creator.h"
 #include "opengold/combat_demo.h"
 #include "tour_access.h"
@@ -944,6 +945,31 @@ void secret_opening_reaches_the_first_map()
         return;
     }
     auto session = opengold::load_campaign(folder, GoldBoxGame::secret_of_the_silver_blades);
+    // Six fighters made under Secret's original rules.
+    std::shared_ptr<const opengold::rules::CharacterRules> creation =
+        opengold::original::character_rules(opengold::original::default_aging,
+                                            GoldBoxGame::secret_of_the_silver_blades);
+    auto party = std::make_shared<opengold::CampaignParty>(
+        opengold::original::rules_module(
+            opengold::load_original_content(folder, GoldBoxGame::secret_of_the_silver_blades)),
+        creation);
+    for (unsigned n = 0; n < 6; ++n)
+    {
+        opengold::CharacterCreator creator(creation, 40 + n);
+        creator.select(opengold::rules::CreationField::race, "human");
+        creator.select(opengold::rules::CreationField::character_class, "fighter");
+        creator.name("Fighter " + std::to_string(n + 1));
+        for (const bool roll : {false, false, false, true, false, false})
+        {
+            if (roll)
+            {
+                creator.roll();
+            }
+            creator.next();
+        }
+        static_cast<void>(party->add_pc(creator.create_character()));
+    }
+    session.campaign_party(party);
     const auto settle = [&session]
     {
         for (int step = 0; step < 50 && session.snapshot().phase == TourPhase::running; ++step)
@@ -967,9 +993,25 @@ void secret_opening_reaches_the_first_map()
         settle();
     }
     // New Verdigris's script puts the party at (3,3) facing south (SAVE 2 to
-    // C04Dh). Its next event gives treasure, which waits for a party made for
-    // Secret.
+    // C04Dh).
     const auto &snapshot = session.snapshot();
+    // Priam, the mayor, welcomes the party and gives it what the town could
+    // gather (TREASURE with item list 18), then tells it where to go.
+    check(snapshot.phase == TourPhase::treasure && session.treasure_pile().size() == 12,
+          "The mayor gives the party the town's equipment: " + diagnostics());
+    check(session.leave_treasure(snapshot.continue_ticket), "The party leaves the pile");
+    settle();
+    std::string told;
+    for (int screen = 0; screen < 8 && session.snapshot().phase == TourPhase::awaiting_continue;
+         ++screen)
+    {
+        told += session.snapshot().dialogue;
+        check(session.choose(session.snapshot().continue_ticket, 0), "The mayor goes on");
+        settle();
+    }
+    check(told.find("TELEPORTER TO THE WELL") != std::string::npos &&
+              session.snapshot().phase == TourPhase::completed,
+          "The mayor tells of the teleporter to the Well, and the party may go: " + diagnostics());
     check(snapshot.area_id == 16, "NEW ECL 16 loads map 16 of disk 1: " + diagnostics());
     check(snapshot.pose.x == 3 && snapshot.pose.y == 3 &&
               snapshot.pose.facing == opengold::por::MapDirection::south,
@@ -995,28 +1037,8 @@ bool curse_walk_census(bool route)
     }
     auto session = opengold::load_campaign(folder, GoldBoxGame::curse_of_the_azure_bonds);
     // A party under the original rules, fighting Curse's own creatures.
-    opengold::original::Content content;
-    content.game = GoldBoxGame::curse_of_the_azure_bonds;
-    const auto catalog =
-        opengold::por::CreatureCatalog::load(folder, GoldBoxGame::curse_of_the_azure_bonds);
-    for (const auto &[id, creature] : catalog.all())
-    {
-        std::vector<opengold::original::CarriedItem> carried;
-        for (const auto &item : creature.equipment)
-        {
-            carried.push_back({item.stored, item.base});
-        }
-        std::vector<opengold::por::EffectRecord> effects;
-        for (const auto &effect : creature.effects)
-        {
-            effects.push_back(effect.stored);
-        }
-        content.bestiary.emplace(
-            id.key(), opengold::original::combatant_from_record(creature.stored, carried, effects));
-    }
-    std::ifstream items(folder / "ITEMS", std::ios::binary);
-    const std::vector<std::uint8_t> item_bytes{std::istreambuf_iterator<char>(items), {}};
-    content.item_types = *opengold::por::decode_item_templates(item_bytes);
+    const auto content =
+        opengold::load_original_content(folder, GoldBoxGame::curse_of_the_azure_bonds);
     std::shared_ptr<const opengold::rules::CharacterRules> creation =
         opengold::original::character_rules(opengold::original::default_aging,
                                             GoldBoxGame::curse_of_the_azure_bonds);

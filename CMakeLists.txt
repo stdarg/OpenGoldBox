@@ -189,6 +189,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/ecl_address.cpp
     src/OpenGold.Core/src/area_loading.cpp
     src/OpenGold.Core/src/campaign_session.cpp
+    src/OpenGold.Core/src/original_content.cpp
     src/OpenGold.Core/src/ecl_machine.cpp
     src/OpenGold.Core/src/por_effects.cpp
     src/OpenGold.Core/src/rolf_tour.cpp
@@ -220,6 +221,7 @@ target_link_libraries(opengold_core
     PUBLIC
         opengold_formats
         opengold_rules
+        opengold_rules_original
         Threads::Threads
 )
 

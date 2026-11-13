@@ -2,6 +2,7 @@
 #include "opengold/creature_catalog.h"
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
+#include "opengold/original_content.h"
 #include "opengold/original_rules.h"
 #include "test_support.h"
 
@@ -303,26 +304,15 @@ void real_records_fight()
         return;
     }
     const auto catalog = por::CreatureCatalog::load(game);
-    original::Content content;
+    auto content = load_original_content(game, GoldBoxGame::pool_of_radiance);
     for (const auto &[id, creature] : catalog.all())
     {
-        std::vector<original::CarriedItem> carried;
-        for (const auto &item : creature.equipment)
-        {
-            carried.push_back({item.stored, item.base});
-        }
-        std::vector<por::EffectRecord> effects;
-        for (const auto &effect : creature.effects)
-        {
-            effects.push_back(effect.stored);
-        }
-        const auto numbers = original::combatant_from_record(creature.stored, carried, effects);
+        const auto &numbers = content.bestiary.at(id.key());
         check(original::Combatant::decode(numbers.encode()) == numbers,
               id.key() + " survives its profile's encoding");
         check(numbers.thac0 >= -20 && numbers.thac0 <= 25 && numbers.armor_class >= -20 &&
                   numbers.armor_class <= 20 && numbers.hit_points > 0 && numbers.movement >= 0,
               id.key() + " " + creature.stored.name + " fights with sensible numbers");
-        content.bestiary.emplace(id.key(), numbers);
     }
     check(content.bestiary.size() == catalog.all().size(), "Every record is in the bestiary");
     const auto module = original::rules_module(std::move(content));

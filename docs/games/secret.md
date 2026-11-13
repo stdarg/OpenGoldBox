@@ -128,6 +128,11 @@ set 21: New Verdigris, where the party lies at (3,3) facing south. Script
 numbers are unique across the disks, as in *Curse*, so a script's disk is the
 `ECLn.DAX` that holds it.
 
+There Priam, the mayor, welcomes the party, gives it what the town could
+gather (TREASURE: item list 18 of `ITEM1.DAX`, twelve items such as plate
+mail +1 and a Wand of Ice Storm, and 20 gems), and tells it of his house, the
+Black Circle and the teleporter to the Well of Knowledge.
+
 `load_campaign(folder, GoldBoxGame::secret_of_the_silver_blades)` plays it
 with *Curse*'s loader (`campaign_session.cpp`), which differs only in the
 opening, in having no wilderness, and in reading the one sprite, combat icon

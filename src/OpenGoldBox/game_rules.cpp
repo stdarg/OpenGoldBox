@@ -1,10 +1,8 @@
 #include "game_rules.h"
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
-#include "opengold/creature_catalog.h"
+#include "opengold/original_content.h"
 #include "opengold/srd5.h"
-#include <fstream>
-#include <iterator>
 #include <map>
 #include <mutex>
 #include <stdexcept>
@@ -23,33 +21,8 @@ const opengold::original::Content &original_content(const RulesFiles &files)
     {
         return found->second;
     }
-    opengold::original::Content content;
-    content.game = files.game;
-    const auto catalog = opengold::por::CreatureCatalog::load(folder, files.game);
-    for (const auto &[id, creature] : catalog.all())
-    {
-        std::vector<opengold::original::CarriedItem> carried;
-        for (const auto &item : creature.equipment)
-        {
-            carried.push_back({item.stored, item.base});
-        }
-        std::vector<opengold::por::EffectRecord> effects;
-        for (const auto &effect : creature.effects)
-        {
-            effects.push_back(effect.stored);
-        }
-        content.bestiary.emplace(
-            id.key(), opengold::original::combatant_from_record(creature.stored, carried, effects));
-    }
-    std::ifstream items(folder / "ITEMS", std::ios::binary);
-    const std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(items), {}};
-    auto types = opengold::por::decode_item_templates(bytes);
-    if (!types)
-    {
-        throw std::runtime_error("The game's ITEMS file cannot be read");
-    }
-    content.item_types = std::move(*types);
-    return loaded.emplace(folder, std::move(content)).first->second;
+    return loaded.emplace(folder, opengold::load_original_content(folder, files.game))
+        .first->second;
 }
 
 std::shared_ptr<const opengold::rules::CharacterRules> character_rules(const GameRules &rules,

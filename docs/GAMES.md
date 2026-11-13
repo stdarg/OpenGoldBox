@@ -317,8 +317,9 @@ The steps of *Curse*'s phase 3, with *Secret*'s differences
 
 1. The census: every file decodes (2026-11-13).
 2. The opening: `load_campaign` plays script 17's vision and reaches New
-   Verdigris (map 16) with its walls drawn (`opengold_gold_box_games_tests`,
-   2026-11-13). The walls of every game are now drawn as the original draws
+   Verdigris (map 16) with its walls drawn, where a party made under
+   *Secret*'s rules hears the mayor and is given the town's equipment
+   (`opengold_gold_box_games_tests`, 2026-11-13). The walls of every game are now drawn as the original draws
    them, from one space of symbols for the three slots.
 3. Making a party under *Secret*'s rules: 200,000 experience for a single
    class (100,000 dual, 66,667 triple) trained up at once, its classes,
