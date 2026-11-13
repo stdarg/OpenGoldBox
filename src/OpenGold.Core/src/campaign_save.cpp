@@ -21,7 +21,7 @@ constexpr std::size_t limit = 16 * 1024 * 1024;
 // format 45, the same fields saved before characters chose original portraits:
 // it still loads, and its members on head 1 and body 1 (the default, never
 // chosen) are listed for a random original portrait.
-constexpr unsigned campaign_format = 49;
+constexpr unsigned campaign_format = 50;
 constexpr unsigned unchosen_portraits_format = 45;
 // The first format with a creation draft's rules data (the original rules'
 // rolls); earlier saves are all SRD, whose drafts have none.
@@ -32,6 +32,9 @@ constexpr unsigned game_format = 48;
 // The first format that keeps the setting the game chose for its rules (the
 // original rules' aging); earlier saves are all SRD, which has none.
 constexpr unsigned rules_setting_format = 49;
+// The first format that keeps what a level-up rolled (the original rules' Hit
+// Points); earlier saves are all SRD, whose levels roll nothing.
+constexpr unsigned advancement_rules_data_format = 50;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -288,6 +291,10 @@ template <bool Reading> struct SaveCodec
         fields(v.character_class, v.feat, v.abilities, v.spells, v.training, v.spell_learning,
                v.fighting_style,
                v.cantrip_swap, v.spell_swap, v.option_swap, v.discovery_swap);
+        if (format >= advancement_rules_data_format)
+        {
+            field(v.rules_data);
+        }
     }
 
     void field(Visited<rules::LevelSwap> v)
@@ -917,6 +924,18 @@ std::string encode_campaign_in_format(const CampaignParty &party, const por::Rol
             "An older campaign format cannot record original-rules characters");
     require(format >= rules_setting_format || party.game_setting().empty(),
             "An older campaign format cannot record the rules' setting");
+    require(format >= advancement_rules_data_format ||
+                std::ranges::all_of(party.state().roster,
+                                    [](const auto &member)
+                                    {
+                                        return std::ranges::all_of(
+                                            member.character.advancements(),
+                                            [](const auto &level)
+                                            {
+                                                return level.rules_data.empty();
+                                            });
+                                    }),
+            "An older campaign format cannot record what a level rolled");
     require(!party.in_combat(), "Cannot save during combat");
     SaveWriter out;
     out.format = format;

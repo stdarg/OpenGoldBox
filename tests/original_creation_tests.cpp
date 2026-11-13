@@ -1,4 +1,6 @@
+#include "opengold/campaign_save.h"
 #include "opengold/character_creator.h"
+#include "opengold/original_combat.h"
 #include "opengold/original.h"
 #include "test_support.h"
 #include <iostream>
@@ -89,6 +91,73 @@ void the_original_pages_in_their_order()
     creator.back();
     check(creator.step() == CreationStep::portrait, "Back returns along the same pages");
 }
+
+// A human fighter made on the original's pages.
+Character made_fighter(std::shared_ptr<const rules::CharacterRules> rules)
+{
+    CharacterCreator creator(std::move(rules), 21);
+    creator.select(CreationField::race, "human");
+    creator.select(CreationField::character_class, "fighter");
+    creator.name("Gareth");
+    for (int page = 0; page < 3; ++page)
+    {
+        creator.next();
+    }
+    creator.roll();
+    for (int page = 0; page < 3; ++page)
+    {
+        creator.next();
+    }
+    return creator.create_character();
+}
+
+// Training under the original rules: the experience share, readiness by the
+// class's table, the level and its Hit Points rolled once and kept, and the
+// level made again the same from a save.
+void a_fighter_trains_and_keeps_the_level()
+{
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module(), creation);
+    const auto id = party.add_pc(made_fighter(creation));
+    const auto &sheet = party.member(id).character.sheet();
+    const bool strong = sheet.scores[rules::Ability::strength] > 15;
+    party.award_experience(1000, "test:first");
+    check(party.member(id).experience == (strong ? 1100U : 1000U),
+          "A fighter's share of experience follows its Strength");
+    check(!party.can_advance(id), "A fighter is not ready below 2001 experience");
+    party.award_experience(1001, "test:second");
+    check(party.can_advance(id), "A fighter is ready at 2001 experience");
+    const int before = party.member(id).character.sheet().hit_points;
+    party.advance(id, party.default_advancement(id));
+    const auto &trained = party.member(id).character.sheet();
+    check(trained.original->class_levels[2] == 2 && trained.level == 2 &&
+              trained.hit_points > before &&
+              party.member(id).vitals.hit_points == trained.hit_points,
+          "Training raises the fighter to level 2 with more Hit Points");
+    check(!party.member(id).character.advancements().front().rules_data.empty(),
+          "The level keeps what it rolled");
+    const auto saved = encode_campaign(party, nullptr, "training-check");
+    const auto module = original::rules_module();
+    const auto loaded = decode_campaign(saved, *creation, *module, "training-check", nullptr);
+    check(loaded.party.roster.front().character.sheet().hit_points == trained.hit_points &&
+              loaded.party.roster.front().character.sheet().original->class_levels ==
+                  trained.original->class_levels,
+          "A saved level is made again the same");
+    check(throws(
+              [&]
+              {
+                  (void)encode_campaign_in_format(party, nullptr, "training-check", 49);
+              }),
+          "An older format cannot keep what a level rolled");
+
+    // Experience for two levels trains one, and is cut short of the second.
+    party.award_experience(60000, "test:lots");
+    party.advance(id, party.default_advancement(id));
+    check(party.member(id).character.sheet().original->class_levels[2] == 3 &&
+              party.member(id).experience == 8000,
+          "Training takes one level and keeps just short of the next but one");
+}
+
 } // namespace
 
 int main()
@@ -96,6 +165,7 @@ int main()
     try
     {
         the_original_pages_in_their_order();
+        a_fighter_trains_and_keeps_the_level();
         std::cout << "Original creation tests passed\n";
         return 0;
     }

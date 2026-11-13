@@ -1032,7 +1032,7 @@ msgstr ""
 msgid "Armor of Shadows (Mage Armor)"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:85 src/OpenGoldBox/godot/scenes/character_creation.tscn:724
+#: src/OpenGoldBox/character_creation_view.cpp:88 src/OpenGoldBox/godot/scenes/character_creation.tscn:724
 msgid "Arms"
 msgstr ""
 
@@ -1157,7 +1157,7 @@ msgstr ""
 msgid "Automatically equip items better than currently equipped items"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:594 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:355 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:126 src/OpenGoldBox/level_up_dialog.cpp:99
+#: src/OpenGoldBox/character_creation_view.cpp:597 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:355 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:126 src/OpenGoldBox/level_up_dialog.cpp:99
 msgid "Back"
 msgstr ""
 
@@ -1364,7 +1364,7 @@ msgstr ""
 msgid "Bite"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:80 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_creation_view.cpp:83 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Black"
 msgstr ""
 
@@ -1485,7 +1485,7 @@ msgstr ""
 msgid "Bludgeoning"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:80 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_creation_view.cpp:83 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Blue"
 msgstr ""
 
@@ -1497,7 +1497,7 @@ msgstr ""
 msgid "Boar"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/scenes/character_creation.tscn:637
+#: src/OpenGoldBox/character_creation_view.cpp:87 src/OpenGoldBox/godot/scenes/character_creation.tscn:637
 msgid "Body"
 msgstr ""
 
@@ -1658,7 +1658,7 @@ msgstr ""
 msgid "Bronze"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:81
+#: src/OpenGoldBox/character_creation_view.cpp:84
 msgid "Brown"
 msgstr ""
 
@@ -1801,7 +1801,7 @@ msgstr ""
 msgid "Can target another creature as a Magic action."
 msgstr ""
 
-#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:913 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:90 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:467
+#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:917 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:90 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:467
 msgid "Cancel"
 msgstr ""
 
@@ -2075,7 +2075,7 @@ msgstr ""
 msgid "Character Sheet"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:296
+#: src/OpenGoldBox/character_creation_view.cpp:299
 msgid "Character art could not be loaded. Restart with --reset-game-path to choose your Pool of Radiance folder."
 msgstr ""
 
@@ -2209,7 +2209,7 @@ msgstr ""
 msgid "Choose a character and press Create Character."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:657
+#: src/OpenGoldBox/character_creation_view.cpp:660
 msgid "Choose a class. Classes in gray are not open to your race."
 msgstr ""
 
@@ -2230,11 +2230,11 @@ msgstr ""
 msgid "Choose a proficient skill"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:882
+#: src/OpenGoldBox/character_creation_view.cpp:886
 msgid "Choose a swatch to recolor this part in the combat preview."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:880
+#: src/OpenGoldBox/character_creation_view.cpp:884
 msgid "Choose a swatch to recolor this part when it is equipped in combat."
 msgstr ""
 
@@ -2242,7 +2242,7 @@ msgstr ""
 msgid "Choose an Additional Fighting Style other than the new Fighting Style"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:659
+#: src/OpenGoldBox/character_creation_view.cpp:662
 msgid "Choose an alignment. Alignments in gray are not open to your class."
 msgstr ""
 
@@ -2270,11 +2270,11 @@ msgstr ""
 msgid "Choose an option"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:817
+#: src/OpenGoldBox/character_creation_view.cpp:821
 msgid "Choose cantrips and prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:819
+#: src/OpenGoldBox/character_creation_view.cpp:823
 msgid "Choose cantrips, spellbook entries and prepared spells. Back preserves your choices."
 msgstr ""
 
@@ -2286,11 +2286,11 @@ msgstr ""
 msgid "Choose language"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:661
+#: src/OpenGoldBox/character_creation_view.cpp:664
 msgid "Choose one starting class. The classes you checked on the last page are future goals, not extra levels."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:813
+#: src/OpenGoldBox/character_creation_view.cpp:817
 msgid "Choose prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr ""
 
@@ -2310,15 +2310,15 @@ msgstr ""
 msgid "Choose the new class's training"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:796
+#: src/OpenGoldBox/character_creation_view.cpp:800
 msgid "Choose the required training options. Back preserves your selections."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:933
+#: src/OpenGoldBox/character_creation_view.cpp:937
 msgid "Choose the spells Magic Initiate teaches."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:821
+#: src/OpenGoldBox/character_creation_view.cpp:825
 msgid "Choose the spells Magic Initiate teaches. Unfilled choices remain pending; Back preserves your choices."
 msgstr ""
 
@@ -2348,7 +2348,7 @@ msgstr ""
 msgid "Choose who receives {spell}."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:822
+#: src/OpenGoldBox/character_creation_view.cpp:826
 msgid "Choose your available cantrips. Unfilled choices remain pending; Back preserves your selections."
 msgstr ""
 
@@ -2634,7 +2634,7 @@ msgstr ""
 msgid "Combat begins. Each square is 5 feet."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:586
+#: src/OpenGoldBox/character_creation_view.cpp:589
 msgid "Combat icon"
 msgstr ""
 
@@ -3001,7 +3001,7 @@ msgstr ""
 msgid "Cutting Words"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:80
+#: src/OpenGoldBox/character_creation_view.cpp:83
 msgid "Cyan"
 msgstr ""
 
@@ -3060,7 +3060,7 @@ msgstr ""
 msgid "Dark One's Own Luck: a failed save or ability check you could still pass gains 1d10, as many times as your Charisma modifier (at least once) per Long Rest."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:82
+#: src/OpenGoldBox/character_creation_view.cpp:85
 msgid "Dark gray"
 msgstr ""
 
@@ -3431,7 +3431,7 @@ msgstr ""
 msgid "Drag a character up or down to change the party's order. A fight puts the first half of the party in the front rank."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:194
+#: src/OpenGoldBox/character_creation_view.cpp:197
 msgid "Drag this rolled result onto an attribute to assign it."
 msgstr ""
 
@@ -3519,7 +3519,7 @@ msgstr ""
 msgid "Drop"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:210
+#: src/OpenGoldBox/character_creation_view.cpp:213
 msgid "Drop a roll here. Drag a filled box onto another ability to swap."
 msgstr ""
 
@@ -4205,7 +4205,7 @@ msgstr ""
 msgid "Fighting Style"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:728
+#: src/OpenGoldBox/character_creation_view.cpp:732
 msgid "Fill all six boxes to continue.\nAssigned scores include bonuses."
 msgstr ""
 
@@ -4674,11 +4674,11 @@ msgstr ""
 msgid "Gains {value} Temporary Hit Points at the start of each of its turns."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:494 src/OpenGoldBox/godot/scenes/character_creation.tscn:426
+#: src/OpenGoldBox/character_creation_view.cpp:497 src/OpenGoldBox/godot/scenes/character_creation.tscn:426
 msgid "Game art from the original, portraits from OpenGoldBox, rules from SRD 5.2.1"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:493
+#: src/OpenGoldBox/character_creation_view.cpp:496
 msgid "Game art from the original, portraits from OpenGoldBox, rules from the original game"
 msgstr ""
 
@@ -4887,7 +4887,7 @@ msgstr ""
 msgid "Greatsword"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:80 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_creation_view.cpp:83 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Green"
 msgstr ""
 
@@ -4964,7 +4964,7 @@ msgstr ""
 msgid "HP {current} / {maximum}"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/scenes/character_creation.tscn:666
+#: src/OpenGoldBox/character_creation_view.cpp:87 src/OpenGoldBox/godot/scenes/character_creation.tscn:666
 msgid "Hair / Face"
 msgstr ""
 
@@ -5238,9 +5238,9 @@ msgstr ""
 msgid "Hit Point maximum lowered by {value} until a Long Rest."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:987
+#: src/OpenGoldBox/character_creation_view.cpp:994
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
-msgid "Hit Points {hp}\nAge {age}\nGold {gold}"
+msgid "Hit Points {hp}   Age {age}   Gold {gold}"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:141
@@ -5898,7 +5898,7 @@ msgstr ""
 msgid "Legendary Resistance"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:85 src/OpenGoldBox/godot/scenes/character_creation.tscn:753
+#: src/OpenGoldBox/character_creation_view.cpp:88 src/OpenGoldBox/godot/scenes/character_creation.tscn:753
 msgid "Legs"
 msgstr ""
 
@@ -6087,7 +6087,7 @@ msgstr ""
 msgid "Light attack — {weapon} ({hand})"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:82
+#: src/OpenGoldBox/character_creation_view.cpp:85
 msgid "Light blue"
 msgstr ""
 
@@ -6095,7 +6095,7 @@ msgstr ""
 msgid "Light crossbow"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:82
+#: src/OpenGoldBox/character_creation_view.cpp:85
 msgid "Light cyan"
 msgstr ""
 
@@ -6103,11 +6103,11 @@ msgstr ""
 msgid "Light extra attack"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:81
+#: src/OpenGoldBox/character_creation_view.cpp:84
 msgid "Light gray"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:82
+#: src/OpenGoldBox/character_creation_view.cpp:85
 msgid "Light green"
 msgstr ""
 
@@ -6120,7 +6120,7 @@ msgstr ""
 msgid "Light ranged attack — {weapon} ({hand})"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:83
+#: src/OpenGoldBox/character_creation_view.cpp:86
 msgid "Light red"
 msgstr ""
 
@@ -6271,7 +6271,7 @@ msgstr ""
 msgid "Mage Armor (level 2 slot)"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:81
+#: src/OpenGoldBox/character_creation_view.cpp:84
 msgid "Magenta"
 msgstr ""
 
@@ -6950,7 +6950,7 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:663
+#: src/OpenGoldBox/character_creation_view.cpp:666
 msgid "Name your character (up to 40 characters), then choose a race and gender."
 msgstr ""
 
@@ -7052,7 +7052,7 @@ msgstr ""
 msgid "New art folder"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:602 src/OpenGoldBox/godot/scenes/character_creation.tscn:367 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:60 src/OpenGoldBox/level_up_dialog.cpp:453
+#: src/OpenGoldBox/character_creation_view.cpp:605 src/OpenGoldBox/godot/scenes/character_creation.tscn:367 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:60 src/OpenGoldBox/level_up_dialog.cpp:453
 msgid "Next"
 msgstr ""
 
@@ -7197,7 +7197,7 @@ msgstr ""
 msgid "Not enough gold"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:886
+#: src/OpenGoldBox/character_creation_view.cpp:890
 msgid "Not present"
 msgstr ""
 
@@ -7205,7 +7205,7 @@ msgstr ""
 msgid "Not trained: no training bonus to hit"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:702
+#: src/OpenGoldBox/character_creation_view.cpp:705
 msgid "Not yet qualified. You may still plan for this class."
 msgstr ""
 
@@ -7752,7 +7752,7 @@ msgstr ""
 msgid "Pike"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:83
+#: src/OpenGoldBox/character_creation_view.cpp:86
 msgid "Pink"
 msgstr ""
 
@@ -8492,7 +8492,7 @@ msgstr ""
 msgid "Recover slots"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:81 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Red"
 msgstr ""
 
@@ -8530,7 +8530,7 @@ msgstr ""
 msgid "Regeneration"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:914
+#: src/OpenGoldBox/character_creation_view.cpp:918
 msgid "Reincarnate"
 msgstr ""
 
@@ -8671,16 +8671,16 @@ msgstr ""
 msgid "Repulsion Breath"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:701
+#: src/OpenGoldBox/character_creation_view.cpp:704
 msgid "Requirements met."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:634
+#: src/OpenGoldBox/character_creation_view.cpp:637
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Requires {requirements}"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:725
+#: src/OpenGoldBox/character_creation_view.cpp:728
 msgid "Reroll all six"
 msgstr ""
 
@@ -8970,11 +8970,11 @@ msgstr ""
 msgid "Review character"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:938
+#: src/OpenGoldBox/character_creation_view.cpp:942
 msgid "Review the new body, then cast Reincarnate."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:893
+#: src/OpenGoldBox/character_creation_view.cpp:897
 msgid "Review your character before adding it to the party."
 msgstr ""
 
@@ -9054,7 +9054,7 @@ msgstr ""
 msgid "Rolf  /  Council guide"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:683
+#: src/OpenGoldBox/character_creation_view.cpp:686
 msgid "Roll"
 msgstr ""
 
@@ -9067,15 +9067,15 @@ msgstr ""
 msgid "Roll a d20 and add the saving throw bonus. Meet or exceed DC {dc} to save.\n\n"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:683
+#: src/OpenGoldBox/character_creation_view.cpp:686
 msgid "Roll again"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:725 src/OpenGoldBox/godot/scenes/character_creation.tscn:174
+#: src/OpenGoldBox/character_creation_view.cpp:728 src/OpenGoldBox/godot/scenes/character_creation.tscn:174
 msgid "Roll all six"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:685
+#: src/OpenGoldBox/character_creation_view.cpp:688
 msgid "Roll the character. Roll again until you have one to keep, then continue."
 msgstr ""
 
@@ -9360,7 +9360,7 @@ msgstr ""
 msgid "Select a character save. Previous versions are available for recovery."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:826
+#: src/OpenGoldBox/character_creation_view.cpp:830
 msgid "Select a part's Color-1 or Color-2, then a swatch. Watch both poses change. Absent parts are disabled."
 msgstr ""
 
@@ -9388,7 +9388,7 @@ msgstr ""
 msgid "Select an item first."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:664
+#: src/OpenGoldBox/character_creation_view.cpp:667
 msgid "Select an option, then continue."
 msgstr ""
 
@@ -9451,7 +9451,7 @@ msgstr ""
 msgid "Shatter"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/effect_labels.h:105 src/OpenGold.Rules.Srd5/src/srd5.cpp:31379 src/OpenGoldBox/character_creation_view.cpp:85 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:695
+#: src/OpenGold.Rules.Srd5/src/effect_labels.h:105 src/OpenGold.Rules.Srd5/src/srd5.cpp:31379 src/OpenGoldBox/character_creation_view.cpp:88 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:695
 msgid "Shield"
 msgstr ""
 
@@ -9528,7 +9528,7 @@ msgstr ""
 msgid "Shortsword"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:602
+#: src/OpenGoldBox/character_creation_view.cpp:605
 msgid "Show character sheet"
 msgstr ""
 
@@ -9564,15 +9564,15 @@ msgstr ""
 msgid "Size"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:840
+#: src/OpenGoldBox/character_creation_view.cpp:844
 msgid "Size: Large"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:840
+#: src/OpenGoldBox/character_creation_view.cpp:844
 msgid "Size: Regular"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:840
+#: src/OpenGoldBox/character_creation_view.cpp:844
 msgid "Size: Short"
 msgstr ""
 
@@ -10940,7 +10940,7 @@ msgstr ""
 msgid "This member did not complete the rest."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:883
+#: src/OpenGoldBox/character_creation_view.cpp:887
 msgid "This part is not present in either pose. Choose another head or body to use it."
 msgstr ""
 
@@ -11042,7 +11042,7 @@ msgstr ""
 msgid "To hit AC {ac}: roll {roll} or more ({bonus}), with Disadvantage"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:652
+#: src/OpenGoldBox/character_creation_view.cpp:655
 msgid "To start in a class, your scores must reach its minimums. Classes in gray do not qualify; go Back to change your scores or bonuses."
 msgstr ""
 
@@ -11727,7 +11727,7 @@ msgstr ""
 msgid "Warrior of the Open Hand"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:608 src/OpenGoldBox/godot/scenes/combat_demo.tscn:931
+#: src/OpenGoldBox/character_creation_view.cpp:87 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:608 src/OpenGoldBox/godot/scenes/combat_demo.tscn:931
 msgid "Weapon"
 msgstr ""
 
@@ -11776,7 +11776,7 @@ msgstr ""
 msgid "Whip"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:83 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/character_creation_view.cpp:86 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "White"
 msgstr ""
 
@@ -12015,7 +12015,7 @@ msgstr ""
 msgid "Yarash"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:83
+#: src/OpenGoldBox/character_creation_view.cpp:86
 msgid "Yellow"
 msgstr ""
 
@@ -12104,7 +12104,7 @@ msgstr ""
 msgid "Your camp is attacked!"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:955
+#: src/OpenGoldBox/character_creation_view.cpp:959
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Your character: {race} / {gender} / {class}"
 msgstr ""
@@ -14092,7 +14092,7 @@ msgstr ""
 msgid "{name} returns from the maze."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:927
+#: src/OpenGoldBox/character_creation_view.cpp:931
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} returns in a new body: {species}. Make the species' choices, then continue."
 msgstr ""
@@ -15122,12 +15122,12 @@ msgstr ""
 msgid "{name}: {type} damage {before} -> {after}."
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:832 src/OpenGoldBox/character_creation_view.cpp:835
+#: src/OpenGoldBox/character_creation_view.cpp:836 src/OpenGoldBox/character_creation_view.cpp:839
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{number} / {count}"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:865
+#: src/OpenGoldBox/character_creation_view.cpp:869
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{part} / Color-{bank}: choose a color"
 msgstr ""

@@ -61,6 +61,9 @@ constexpr std::array<const char *, 9> steps{N_("Name, Race & Gender"),
                                             N_("Portrait"),
                                             N_("Character sheet")};
 
+// Label autowrap modes (TextServer::AutowrapMode).
+constexpr int autowrap_off = 0, autowrap_words = 2;
+
 CreationField choice_field(CreationStep step)
 {
     switch (step)
@@ -723,6 +726,7 @@ void CharacterCreationView::refresh()
         bonus->select(d.adjustment);
         required_node<Button>(*this, "Roll")
             .set_text(i18n::text(d.rolled ? N_("Reroll all six") : N_("Roll all six")));
+        required_node<Label>(*this, "SwapHint").set("autowrap_mode", autowrap_words);
         required_node<Label>(*this, "SwapHint")
             .set_text(i18n::text(
                 N_("Fill all six boxes to continue.\nAssigned scores include bonuses.")));
@@ -983,8 +987,11 @@ void CharacterCreationView::show_rolled_character(const CharacterSheet *sheet)
         score.call("configure_score", false, 0);
     }
     const bool rolled = sheet && sheet->original;
+    // One line beside Roll; the SRD's hint wraps by words (refresh()). By name:
+    // the game's Godot class list leaves TextServer out.
+    required_node<Label>(*this, "SwapHint").set("autowrap_mode", autowrap_off);
     required_node<Label>(*this, "SwapHint")
-        .set_text(rolled ? i18n::format("Hit Points {hp}\nAge {age}\nGold {gold}",
+        .set_text(rolled ? i18n::format("Hit Points {hp}   Age {age}   Gold {gold}",
                                         {{"hp", sheet->hit_points},
                                          {"age", sheet->original->age},
                                          {"gold", sheet->original->gold}})

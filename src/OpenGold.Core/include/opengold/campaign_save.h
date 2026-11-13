@@ -37,7 +37,8 @@ template <bool Reading> struct SaveCodec;
 // The campaign in an earlier format this build still reads, from 45, for
 // checks that such saves load. Throws when the party holds what that format
 // cannot record: before 47, a character made under the original rules; before
-// 48, a game other than Pool of Radiance; before 49, a setting for its rules.
+// 48, a game other than Pool of Radiance; before 49, a setting for its rules;
+// before 50, what a level rolled.
 [[nodiscard]] std::string
 encode_campaign_in_format(const CampaignParty &, const por::RolfTourSession *,
                           std::string_view assets, unsigned format,

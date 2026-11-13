@@ -49,9 +49,9 @@ template <class F> std::string rejection_message(F f)
 
 // The campaign format this build writes. It also reads format 45, saved
 // before characters chose original portraits, 46, before drafts carried the
-// original rules' rolls, 47, before a save named its game, and 48, before it
-// kept its rules' setting.
-constexpr unsigned current_campaign_format = 49;
+// original rules' rolls, 47, before a save named its game, 48, before it kept
+// its rules' setting, and 49, before a level kept what it rolled.
+constexpr unsigned current_campaign_format = 50;
 constexpr unsigned unchosen_portraits_format = 45;
 constexpr unsigned draft_rules_data_format = 47;
 constexpr unsigned rules_setting_format = 49;

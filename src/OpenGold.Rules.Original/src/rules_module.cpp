@@ -3,6 +3,8 @@
 #include "opengold/original_combat.h"
 
 #include <algorithm>
+#include <limits>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -20,6 +22,74 @@ using namespace rules;
 std::runtime_error unavailable(std::string_view what)
 {
     return std::runtime_error(std::string(what) + " is not available under the original rules yet");
+}
+
+// A sheet's original numbers, which only a character made under the original
+// rules has.
+const CharacterSheet::Original &original_numbers(const CharacterSheet &sheet)
+{
+    if (!sheet.original)
+    {
+        throw std::invalid_argument("This character was not made under the original rules");
+    }
+    return *sheet.original;
+}
+
+// The classes the character would train in with this much experience.
+std::vector<ClassSlot> ready_classes(const CharacterSheet &sheet, unsigned experience)
+{
+    const auto &numbers = original_numbers(sheet);
+    const auto capped = std::min<unsigned>(experience, std::numeric_limits<int>::max());
+    return classes_ready_to_train(static_cast<Race>(numbers.race), numbers.class_levels,
+                                  sheet.scores[Ability::strength], static_cast<int>(capped));
+}
+
+// What a training rolled, as a level's rules data: a version, the trained
+// classes as bits by class slot, and the Hit Dice's total.
+struct Training
+{
+    unsigned classes{};
+    int rolled{};
+};
+
+constexpr int training_data_version = 1;
+
+std::string encode_training(const Training &training)
+{
+    return std::to_string(training_data_version) + ' ' + std::to_string(training.classes) + ' ' +
+           std::to_string(training.rolled);
+}
+
+Training decode_training(std::string_view data)
+{
+    std::istringstream in{std::string(data)};
+    int version{};
+    Training training;
+    std::string rest;
+    in >> version >> training.classes >> training.rolled;
+    if (!in || version != training_data_version || (in >> rest) || training.classes == 0 ||
+        training.classes >= (1U << class_slot_count) || training.rolled < 1)
+    {
+        throw std::invalid_argument("Unreadable original-rules training");
+    }
+    return training;
+}
+
+// The sheet's numbers that follow from its class levels, worked out again.
+void recount_levels(CharacterSheet &sheet)
+{
+    auto &numbers = *sheet.original;
+    const auto &levels = numbers.class_levels;
+    numbers.thac0 = thac0(levels);
+    numbers.saving_throws = saving_throws(levels);
+    numbers.thief_skills =
+        thief_skills(static_cast<Race>(numbers.race), level_in(levels, ClassSlot::thief),
+                     sheet.scores[Ability::dexterity]);
+    numbers.cleric_slots = spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric),
+                                       sheet.scores[Ability::wisdom]);
+    numbers.magic_user_slots =
+        spell_slots(ClassSlot::magic_user, level_in(levels, ClassSlot::magic_user),
+                    sheet.scores[Ability::wisdom]);
 }
 
 // A character's numbers from its sheet. Unarmed, as the original's characters
@@ -172,6 +242,14 @@ class OriginalModule final : public RulesModule
                                                     const AdvancementChoice &) const override;
     bool advance_character(CharacterSheet &sheet, VitalState &state,
                            const AdvancementChoice &) const override;
+    [[nodiscard]] bool ready_to_advance(const CharacterSheet &sheet,
+                                        unsigned experience) const override;
+    void roll_advancement(const CharacterSheet &sheet, unsigned experience,
+                          AdvancementChoice &choice, RandomState &random_state) const override;
+    [[nodiscard]] unsigned experience_after_advance(const CharacterSheet &before,
+                                                    unsigned experience) const override;
+    [[nodiscard]] unsigned experience_share(const CharacterSheet &sheet,
+                                            unsigned award) const override;
     void recover(VitalState &state, const CharacterSheet &sheet) const override;
     [[nodiscard]] RecoveryInfo recovery_info(const CharacterSheet &,
                                              const VitalState &) const override;
@@ -456,37 +534,110 @@ void OriginalModule::train_at_hall(CharacterSheet &, std::string_view) const
     throw unavailable("train_at_hall");
 }
 
-AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &) const
+// Training is the original's level-up: every class with the experience rises
+// at once, so a sheet's level counts its trainings, while its class levels
+// say what it is. Nothing is chosen; a magic-user's new spell comes with
+// magic (plan step 5).
+AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &sheet) const
 {
-    throw unavailable("advancement_options");
+    AdvancementOptions options;
+    if (!ready_classes(sheet, std::numeric_limits<unsigned>::max()).empty())
+    {
+        options.level = static_cast<unsigned>(sheet.level) + 1;
+        options.class_level = options.level;
+    }
+    return options;
 }
 
 std::vector<AdvancementOption> OriginalModule::advancement_classes(const CharacterSheet &) const
 {
-    throw unavailable("advancement_classes");
+    return {};
 }
 
-AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &,
+AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &sheet,
                                                        const AdvancementChoice &) const
 {
-    throw unavailable("advancement_options");
+    return advancement_options(sheet);
 }
 
 AdvancementChoice OriginalModule::default_advancement(const CharacterSheet &) const
 {
-    throw unavailable("default_advancement");
+    return {};
 }
 
-CharacterSheet OriginalModule::spell_choice_sheet(const CharacterSheet &,
+CharacterSheet OriginalModule::spell_choice_sheet(const CharacterSheet &sheet,
                                                   const AdvancementChoice &) const
 {
-    throw unavailable("spell_choice_sheet");
+    return sheet;
 }
 
-bool OriginalModule::advance_character(CharacterSheet &, VitalState &,
-                                       const AdvancementChoice &) const
+bool OriginalModule::ready_to_advance(const CharacterSheet &sheet, unsigned experience) const
 {
-    throw unavailable("advance_character");
+    return !ready_classes(sheet, experience).empty();
+}
+
+void OriginalModule::roll_advancement(const CharacterSheet &sheet, unsigned experience,
+                                      AdvancementChoice &choice, RandomState &random_state) const
+{
+    const auto trained = ready_classes(sheet, experience);
+    if (trained.empty())
+    {
+        throw std::runtime_error("This character is not ready to train");
+    }
+    Training training;
+    for (const auto slot : trained)
+    {
+        training.classes |= 1U << static_cast<unsigned>(slot);
+    }
+    training.rolled = roll_training_hit_dice(trained, random_state);
+    choice.rules_data = encode_training(training);
+}
+
+bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
+                                       const AdvancementChoice &choice) const
+{
+    const auto &numbers = original_numbers(sheet);
+    const auto training = decode_training(choice.rules_data);
+    auto next = sheet;
+    auto &levels = next.original->class_levels;
+    for (std::size_t at = 0; at < class_slot_count; ++at)
+    {
+        if ((training.classes & (1U << at)) == 0)
+        {
+            continue;
+        }
+        if (levels[at] == 0)
+        {
+            throw std::invalid_argument("The character has no levels in a class it trained in");
+        }
+        ++levels[at];
+        next.level_classes.emplace_back(class_slot_id(static_cast<ClassSlot>(at)));
+    }
+    recount_levels(next);
+    const int gain = training_hit_points(static_cast<Profession>(numbers.profession),
+                                         training.rolled, next.scores[Ability::constitution]);
+    next.hit_points += gain;
+    ++next.level;
+    sheet = std::move(next);
+    state.hit_points += gain;
+    return true;
+}
+
+unsigned OriginalModule::experience_after_advance(const CharacterSheet &before,
+                                                  unsigned experience) const
+{
+    const auto trained = ready_classes(before, experience);
+    const auto capped = std::min<unsigned>(experience, std::numeric_limits<int>::max());
+    return static_cast<unsigned>(experience_after_training(original_numbers(before).class_levels,
+                                                           trained, static_cast<int>(capped)));
+}
+
+unsigned OriginalModule::experience_share(const CharacterSheet &sheet, unsigned award) const
+{
+    const auto capped = std::min<unsigned>(award, std::numeric_limits<int>::max());
+    return static_cast<unsigned>(
+        original::experience_share(static_cast<Profession>(original_numbers(sheet).profession),
+                                   sheet.scores, static_cast<int>(capped)));
 }
 
 void OriginalModule::recover(VitalState &, const CharacterSheet &) const

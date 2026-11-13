@@ -214,13 +214,6 @@ struct Choices
     return choices;
 }
 
-[[nodiscard]] std::string_view slot_id(ClassSlot slot)
-{
-    constexpr std::array<std::string_view, class_slot_count> ids{
-        "cleric", "druid", "fighter", "paladin", "ranger", "magic_user", "thief", "monk"};
-    return ids[static_cast<std::size_t>(slot)];
-}
-
 class OriginalCharacterRules final : public rules::CharacterRules
 {
   public:
@@ -372,7 +365,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
             first_level_hit_points(chosen.profession, rolled, ability[Ability::constitution]);
         for (const auto slot : classes_of(chosen.profession))
         {
-            sheet.level_classes.emplace_back(slot_id(slot));
+            sheet.level_classes.emplace_back(class_slot_id(slot));
         }
         CharacterSheet::Original original;
         const auto levels = first_levels(chosen.profession);
@@ -383,6 +376,8 @@ class OriginalCharacterRules final : public rules::CharacterRules
             chosen.race, chosen.gender, chosen.profession, rolled, ability[Ability::strength]);
         original.age = rolled.starting_age;
         original.gold = rolled.gold;
+        original.race = static_cast<int>(chosen.race);
+        original.profession = static_cast<int>(chosen.profession);
         original.thief_skills = thief_skills(chosen.race, level_in(levels, ClassSlot::thief),
                                              ability[Ability::dexterity]);
         original.cleric_slots = spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric),

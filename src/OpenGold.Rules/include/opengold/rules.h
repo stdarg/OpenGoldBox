@@ -205,6 +205,11 @@ struct AdvancementChoice
     LevelSwap cantrip_swap, spell_swap, option_swap;
     // A Lore Bard's Magical Discoveries spell.
     LevelSwap discovery_swap;
+    // What the module rolled for the level (RulesModule::roll_advancement), in
+    // its own encoding, so the saved level is made again the same: the
+    // original rules keep the classes trained and the Hit Points rolled.
+    // Empty for the SRD.
+    std::string rules_data;
     bool operator==(const AdvancementChoice &) const = default;
 };
 
@@ -1116,6 +1121,44 @@ class RulesModule
     roll_ability_check(const CharacterSheet &, const VitalState &,
                        std::span<const std::string> gear, Ability ability, std::string_view skill,
                        RandomState &random_state) const = 0;
+
+    // Whether a character with this much experience may gain a level now: by
+    // default when it has the next level's experience (experience_for_level).
+    [[nodiscard]] virtual bool ready_to_advance(const CharacterSheet &sheet,
+                                                unsigned experience) const
+    {
+        const auto level = advancement_options(sheet).level;
+        return level && experience >= experience_for_level(level);
+    }
+
+    // Rolls what gaining a level leaves to chance into the choice's
+    // rules_data before advance_character() makes it. Nothing by default.
+    virtual void roll_advancement(const CharacterSheet &sheet, unsigned experience,
+                                  AdvancementChoice &choice, RandomState &random_state) const
+    {
+        (void)sheet;
+        (void)experience;
+        (void)choice;
+        (void)random_state;
+    }
+
+    // The experience a member keeps after gaining a level from `before`; all
+    // of it by default.
+    [[nodiscard]] virtual unsigned experience_after_advance(const CharacterSheet &before,
+                                                            unsigned experience) const
+    {
+        (void)before;
+        return experience;
+    }
+
+    // A member's share of an award of experience; all of it by default.
+    [[nodiscard]] virtual unsigned experience_share(const CharacterSheet &sheet,
+                                                    unsigned award) const
+    {
+        (void)sheet;
+        return award;
+    }
+
     [[nodiscard]] virtual unsigned experience_for_level(unsigned level) const = 0;
     // A monster participant's statistics, computed as a fight that fields it
     // computes them. Throws for a character or an unknown definition.

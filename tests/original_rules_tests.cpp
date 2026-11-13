@@ -3,6 +3,7 @@
 #include "test_support.h"
 #include <iostream>
 #include <string>
+#include <vector>
 
 using namespace opengold::original;
 using opengold::RandomState;
@@ -329,6 +330,53 @@ void experience_and_level_limits()
     check(!racial_level_limit(Race::human, ClassSlot::fighter, 3), "A human has no racial limit");
 }
 
+// Training: every class with the experience rises at once, a level at a
+// time, with the class dice and the Constitution bonus shared among them.
+void training()
+{
+    ClassLevels levels{};
+    level_in(levels, ClassSlot::fighter) = 1;
+    level_in(levels, ClassSlot::thief) = 1;
+    check(classes_ready_to_train(Race::human, levels, 12, 2000) ==
+              std::vector<ClassSlot>{ClassSlot::thief},
+          "A fighter/thief with 2000 experience trains only as a thief");
+    check(classes_ready_to_train(Race::human, levels, 12, 2001) ==
+              std::vector<ClassSlot>{ClassSlot::fighter, ClassSlot::thief},
+          "With 2001 both classes train at once");
+    level_in(levels, ClassSlot::fighter) = 5;
+    check(classes_ready_to_train(Race::elf, levels, 16, 1000000).size() == 1,
+          "An elf fighter of 16 Strength stops at level 5");
+    check(classes_ready_to_train(Race::human, levels, 12, 0).empty(), "No experience, no training");
+
+    ClassLevels fighter{};
+    level_in(fighter, ClassSlot::fighter) = 1;
+    const std::vector<ClassSlot> trained{ClassSlot::fighter};
+    check(experience_after_training(fighter, trained, 3000) == 3000,
+          "Experience short of the level after next is kept");
+    check(experience_after_training(fighter, trained, 50000) == 4000,
+          "Experience for two levels is cut to just short of the second");
+    RandomState random{4};
+    for (int n = 0; n < 50; ++n)
+    {
+        const int rolled = roll_training_hit_dice(trained, random);
+        check(rolled >= 1 && rolled <= 10, "A fighter trains with a d10");
+    }
+    check(training_hit_points(Profession::fighter, 6, 18) == 10,
+          "A fighter of 18 Constitution adds 4 to the roll");
+    check(training_hit_points(Profession::fighter_thief, 7, 15) == 4,
+          "A fighter/thief shares the roll and its two classes' bonus");
+    check(training_hit_points(Profession::magic_user, 1, 3) == 1, "Training adds at least 1");
+
+    opengold::rules::AbilityArray<int> scores{16, 10, 10, 10, 10, 10};
+    check(experience_share(Profession::fighter, scores, 100) == 110,
+          "A fighter of 16 Strength earns a tenth more");
+    check(experience_share(Profession::thief, scores, 100) == 100,
+          "A thief of 10 Dexterity earns the award");
+    check(experience_share(Profession::fighter_thief, scores, 100) == 50 &&
+              experience_share(Profession::fighter_magic_user_thief, scores, 100) == 33,
+          "A multi-class character shares the award among its classes");
+}
+
 void spell_slots_and_wisdom()
 {
     check(spell_slots(ClassSlot::cleric, 1, 12) == std::array<int, 3>{1, 0, 0},
@@ -551,6 +599,7 @@ int main()
         thac0_is_the_best_class();
         saving_throws_are_the_best_class();
         experience_and_level_limits();
+        training();
         spell_slots_and_wisdom();
         dexterity_bonuses();
         constitution_and_age();

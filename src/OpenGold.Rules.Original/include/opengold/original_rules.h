@@ -6,6 +6,7 @@
 #include <optional>
 #include <span>
 #include <string_view>
+#include <vector>
 
 // The original Pool of Radiance rules: AD&D 1st edition as the game applied
 // them (docs/ORIGINAL-RULES.md). The tables are the original's; the code is
@@ -106,6 +107,8 @@ using ClassLevels = std::array<int, class_slot_count>;
 
 // The classes a profession holds levels in.
 [[nodiscard]] std::span<const ClassSlot> classes_of(Profession profession);
+// A class's stable ID ("magic_user"), as sheets list the classes of their levels.
+[[nodiscard]] std::string_view class_slot_id(ClassSlot slot) noexcept;
 // A new character of the profession: level 1 in each of its classes.
 [[nodiscard]] ClassLevels first_levels(Profession profession);
 // The professions creation offers a race, in the original's menu order.
@@ -248,6 +251,29 @@ enum class ThiefSkill : unsigned
 // The highest level a race may reach in a class for its Strength, or nothing
 // when only the experience table limits it.
 [[nodiscard]] std::optional<int> racial_level_limit(Race race, ClassSlot slot, int strength);
+// Training (chargen.pas, TrainingMenu): the classes a character with this
+// much experience trains in at once, each whose next level's experience it
+// has and that its race's limit and the experience table let rise; in class
+// slot order, empty when none can.
+[[nodiscard]] std::vector<ClassSlot> classes_ready_to_train(Race race, const ClassLevels &levels,
+                                                            int strength, int experience);
+// The experience a character keeps after training from these levels: just
+// short of the level after next of a class it trained in, when it had that
+// much (the most such class allows). Training never takes two levels at once.
+[[nodiscard]] int experience_after_training(const ClassLevels &levels,
+                                            std::span<const ClassSlot> trained, int experience);
+// The trained classes' Hit Dice, rolled.
+[[nodiscard]] int roll_training_hit_dice(std::span<const ClassSlot> trained, RandomState &random);
+// What training adds to the Hit Points: the roll and the Constitution bonus
+// of all the profession's classes, divided among them, at least 1.
+[[nodiscard]] int training_hit_points(Profession profession, int rolled, int constitution);
+// A character's share of an award of experience (postcbt.pas,
+// AwardExperience): a single-class cleric, fighter, magic-user or thief
+// with its prime ability above 15 earns a tenth more; a two-class character
+// half and a three-class character a third.
+[[nodiscard]] int experience_share(Profession profession, const rules::AbilityArray<int> &scores,
+                                   int award);
+
 // Spell slots of levels 1 to 3 for a cleric or magic-user level, with the
 // cleric's Wisdom bonus; zeros for other classes.
 [[nodiscard]] std::array<int, 3> spell_slots(ClassSlot slot, int level, int wisdom);

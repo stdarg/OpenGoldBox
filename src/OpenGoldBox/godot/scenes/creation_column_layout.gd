@@ -35,6 +35,16 @@ func apply_layout() -> void:
         var swap_hint: Control = view.get_node("SwapHint")
         swap_hint.position.y = last_row.position.y + last_row.size.y
         swap_hint.size.y = bottom - swap_hint.position.y
+    elif view.get_node("Roll").visible:
+        # Under the original rules, which roll the scores in place, Roll sits
+        # under the scores with the Hit Points, age and gold it rolled beside it.
+        var roll: Control = view.get_node("Roll")
+        var last_score: Control = view.get_node("Score5")
+        roll.position = Vector2((view.get_node("Ability5") as Control).position.x,
+            last_score.position.y + last_score.size.y + 24)
+        var rolled: Control = view.get_node("SwapHint")
+        rolled.position = Vector2(roll.position.x + roll.size.x + 24, roll.position.y)
+        rolled.size = Vector2(page.position.x + page.size.x - rolled.position.x - 20, roll.size.y)
     var identity: Label = view.get_node("PortraitIdentity")
     if identity.visible:
         _place_portrait_rows(view, identity)

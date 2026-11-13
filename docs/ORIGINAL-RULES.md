@@ -129,6 +129,32 @@ lines in all:
      equipment notes, the companions' drafts and the check fixtures, which
      are SRD characters.
 3. **Character creation, the sheet and level-ups** under the original rules.
+
+   Done (2026-11-13):
+   - **Creation** follows the original's pages: name, race and gender; a class
+     the race allows; an alignment the class allows; the character rolled whole
+     (each score where it fell, with its Hit Points, age and gold), kept or
+     rolled again; the combat icon; the portrait; the sheet. Another race or
+     class rolls again. Classes and alignments not open are in gray.
+   - **The sheet** shows the levels of each class, age, Hit Points, THAC0, the
+     scores with Strength's percentile at 18, the five saving throws, a
+     thief's skills and a caster's spells a day.
+   - **Level-ups are the original's training** (`chargen.pas`, `TrainingMenu`):
+     every class whose next level's experience the character has, and that its
+     race's limit lets rise, gains a level at once; the trained classes' Hit
+     Dice are rolled and, with the Constitution bonus of all its classes,
+     divided among them (at least 1); experience beyond the level after next is
+     cut to just short of it. The roll is kept with the level (campaign format
+     50). A sheet's level counts its trainings; its class levels say what it is.
+   - **Experience** is shared as the original awards it (`postcbt.pas`,
+     `AwardExperience`): a tenth more for a single-class cleric, fighter,
+     magic-user or thief whose prime ability is above 15; half for two
+     classes, a third for three.
+   - Checks start a game under the original rules with `--original-rules`
+     until the new game's question is shown.
+   - Later: the training hall's fee and the classes each hall trains (step
+     6), and a magic-user's new spell at each level (step 5). The Character
+     Pool has no original-rules characters yet.
 4. **Combat** under the original rules, with the original monsters' own
    statistics.
 5. **Magic:** spells, memorizing, scribing and resting.

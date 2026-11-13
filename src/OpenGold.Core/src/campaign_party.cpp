@@ -2165,12 +2165,13 @@ void CampaignParty::award_experience(unsigned amount, std::string reward_id, Mem
             {
                 continue;
             }
-            if (amount > std::numeric_limits<unsigned>::max() - member.experience)
+            const auto share = rules_->experience_share(member.character.sheet(), amount);
+            if (share > std::numeric_limits<unsigned>::max() - member.experience)
             {
                 throw std::runtime_error("Experience overflow");
             }
             awarded = true;
-            member.experience += amount;
+            member.experience += share;
         }
     }
     if (!awarded)
@@ -2310,7 +2311,7 @@ bool CampaignParty::can_advance(MemberId id) const
     const auto level = next_level(m);
     // A simulacrum gains no levels.
     return !m.vitals.dead && level && !is_simulacrum(id) &&
-           m.experience >= rules_->experience_for_level(level);
+           rules_->ready_to_advance(m.character.sheet(), m.experience);
 }
 
 unsigned CampaignParty::next_level(const PartyMember &m) const
@@ -2372,10 +2373,19 @@ PartyMember CampaignParty::preview_advancement(MemberId id,
 void CampaignParty::advance(MemberId id, const rules::AdvancementChoice &choice)
 {
     editable();
-    auto member = preview_advancement(id, choice);
+    // What the level leaves to chance is rolled into the choice, so the saved
+    // level is made again the same.
+    const auto &before = member(id);
+    auto random = state_.random_state;
+    auto rolled = choice;
+    rules_->roll_advancement(before.character.sheet(), before.experience, rolled, random);
+    auto advanced = preview_advancement(id, rolled);
+    advanced.experience =
+        rules_->experience_after_advance(before.character.sheet(), before.experience);
     // The preview did everything that can throw; installing it cannot, so
     // the party is not copied to commit it (Effective C++ Item 29).
-    edit(id) = std::move(member);
+    edit(id) = std::move(advanced);
+    state_.random_state = random;
 }
 
 rules::SpellChoiceOptions CampaignParty::spell_choice_options(MemberId id) const

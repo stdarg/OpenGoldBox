@@ -21,7 +21,7 @@ of a campaign save; add completed characters to the party first.
 Until 1.0, every save kind has exactly one accepted format, and it always writes
 every field:
 
-- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 49` (`campaign_format` in
+- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 50` (`campaign_format` in
   `campaign_save.cpp`). Format 45 records the class each level was taken in
   (multiclassing, [MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)).
   Format 47 adds each creation draft's rules data, where the original rules
@@ -33,7 +33,10 @@ every field:
   the setting the game chose for its rules, the original rules' aging
   ([ORIGINAL-RULES.md](ORIGINAL-RULES.md#plan)); an SRD game has none, so a
   format 48 save loads as before. The game reads a save's rules and setting
-  first (`saved_campaign_rules`) and loads it under them.
+  first (`saved_campaign_rules`) and loads it under them. Format 50 keeps what
+  each level-up rolled (`AdvancementChoice::rules_data`: under the original
+  rules the classes trained and the Hit Dice's total), so a saved level is
+  made again the same; SRD levels roll nothing, so a format 49 save loads.
 - The internal training-combat checkpoint: `OGCOMBAT 77` (`checkpoint_format`
   in `srd5.cpp`); 76 keeps each class's resource counts apart, 77 records
   whether a member attacked its own side (Attack Ally).

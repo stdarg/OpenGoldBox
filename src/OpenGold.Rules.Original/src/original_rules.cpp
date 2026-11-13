@@ -355,6 +355,13 @@ constexpr std::array<std::array<int, 5>, 11> thief_dexterity_adjustments{{{-15, 
 }
 } // namespace
 
+std::string_view class_slot_id(ClassSlot slot) noexcept
+{
+    constexpr std::array<std::string_view, class_slot_count> ids{
+        "cleric", "druid", "fighter", "paladin", "ranger", "magic_user", "thief", "monk"};
+    return ids[index(slot)];
+}
+
 std::span<const ClassSlot> classes_of(Profession profession)
 {
     const auto at = index(profession);
@@ -711,6 +718,81 @@ std::optional<int> experience_for_level(ClassSlot slot, int level)
     }
     const int needed = experience_table[index(slot)][static_cast<std::size_t>(level - 2)];
     return needed == 0 ? std::nullopt : std::optional<int>{needed};
+}
+
+std::vector<ClassSlot> classes_ready_to_train(Race race, const ClassLevels &levels, int strength,
+                                              int experience)
+{
+    std::vector<ClassSlot> ready;
+    for (std::size_t at = 0; at < class_slot_count; ++at)
+    {
+        const auto slot = static_cast<ClassSlot>(at);
+        const int level = levels[at];
+        if (level == 0)
+        {
+            continue;
+        }
+        const auto limit = racial_level_limit(race, slot, strength);
+        const auto needed = experience_for_level(slot, level + 1);
+        if ((!limit || level < *limit) && needed && *needed <= experience)
+        {
+            ready.push_back(slot);
+        }
+    }
+    return ready;
+}
+
+int experience_after_training(const ClassLevels &levels, std::span<const ClassSlot> trained,
+                              int experience)
+{
+    // The original keeps the most of what the trained classes allow.
+    int cap = 0;
+    for (const auto slot : trained)
+    {
+        const auto after_next = experience_for_level(slot, level_in(levels, slot) + 2);
+        if (after_next && experience >= *after_next)
+        {
+            cap = std::max(cap, *after_next - 1);
+        }
+    }
+    return cap > 0 ? cap : experience;
+}
+
+int roll_training_hit_dice(std::span<const ClassSlot> trained, RandomState &random)
+{
+    int total = 0;
+    for (const auto slot : trained)
+    {
+        total += roll_dice(random, hit_dice[index(slot)]);
+    }
+    return total;
+}
+
+int training_hit_points(Profession profession, int rolled, int constitution)
+{
+    const int classes = static_cast<int>(classes_of(profession).size());
+    return std::max(1, (rolled + constitution_hit_point_bonus(profession, constitution)) / classes);
+}
+
+int experience_share(Profession profession, const AbilityArray<int> &scores, int award)
+{
+    const auto bonus_above_15 = [&](Ability prime)
+    {
+        return scores[prime] > 15 ? award + award / 10 : award;
+    };
+    switch (profession)
+    {
+    case P::cleric:
+        return bonus_above_15(Ability::wisdom);
+    case P::fighter:
+        return bonus_above_15(Ability::strength);
+    case P::magic_user:
+        return bonus_above_15(Ability::intelligence);
+    case P::thief:
+        return bonus_above_15(Ability::dexterity);
+    default:
+        return award / static_cast<int>(classes_of(profession).size());
+    }
 }
 
 std::optional<int> racial_level_limit(Race race, ClassSlot slot, int strength)
