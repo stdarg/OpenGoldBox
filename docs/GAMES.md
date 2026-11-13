@@ -269,8 +269,11 @@ In small steps, each with its check:
    the dead with Raise Dead after a rest, and each fight is tried with every
    member casting, with the magic-user alone casting, and with the wand and
    Hold Monster used at the right targets. Next: Mogion and Moander's
-   pseudopods, which it does not beat yet (five shambling mounds, Mogion and
-   six cultists at once).
+   pseudopods. Its player now aims Hold Person at people only and uses the
+   wand on the mounds, and so beats Mogion, her six cultists and five
+   shambling mounds (ECL3.DAX 18 loads them together, as the original does),
+   but the three pseudopods that follow at once, 140 Hit Points each and
+   engulfing, beat what is left of it, even healed.
 
 ### 4 to 7. The other campaigns
 

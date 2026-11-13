@@ -933,54 +933,61 @@ bool curse_walk_census(bool route)
     const bool trace = route || std::getenv("OPENGOLD_CURSE_TRACE");
     // One play of the pending fight with these dice; the party ends as it left it.
     // A player's own choice for a member's turn, where it has one, as the
-    // cluebook fights shambling mounds: the Wand of Defoliation (its power,
-    // Blast), then Hold Monster, each at the strongest enemy not yet
-    // helpless; Quick for the rest.
+    // cluebook fights the Pit of Moander: the Wand of Defoliation (its power,
+    // Blast) at the nearest enemy within its three squares, Hold Monster at
+    // the strongest enemy not yet helpless, Hold Person at the strongest
+    // person (not a shambling mound); Quick for the rest.
     const auto player_turn = [](const opengold::rules::CombatSession &session,
                                 std::vector<opengold::rules::EntityId> &picked)
         -> std::optional<opengold::rules::Command>
     {
-        constexpr unsigned blast = 198, hold_monster = 194;
+        constexpr unsigned blast = 198, hold_monster = 194, hold_person = 23, mage_hold_person = 49;
+        const auto spell_of = [](const opengold::rules::Command &command)
+        {
+            return command.verb == "use" ? command.item % 256 : command.item;
+        };
+        const auto holds_people = [](unsigned spell)
+        {
+            return spell == hold_person || spell == mage_hold_person;
+        };
+        const auto ours = [&](unsigned spell)
+        {
+            return spell == blast || spell == hold_monster || holds_people(spell);
+        };
         const auto state = session.snapshot();
-        const auto worth_aiming = [&](opengold::rules::EntityId id)
+        const auto unit_of = [&](opengold::rules::EntityId id)
         {
-            const auto unit =
-                std::ranges::find(state.combatants, id, &opengold::rules::CombatantView::id);
-            return unit != state.combatants.end() &&
-                   unit->side == opengold::rules::Side::opposition && unit->conscious &&
-                   unit->status.empty() && std::ranges::find(picked, id) == picked.end();
+            return std::ranges::find(state.combatants, id, &opengold::rules::CombatantView::id);
         };
-        const auto hit_points = [&](opengold::rules::EntityId id)
-        {
-            return std::ranges::find(state.combatants, id, &opengold::rules::CombatantView::id)
-                ->hit_points;
-        };
-        const auto commands = session.legal_commands();
-        const auto ours = [](unsigned item)
-        {
-            return item == blast || item == hold_monster || item % 256 == blast;
-        };
-        // Hold Monster at the strongest; the wand, which reaches three squares,
-        // at the nearest.
-        const auto actor =
-            std::ranges::find(state.combatants, state.actor, &opengold::rules::CombatantView::id);
+        const auto actor = unit_of(state.actor);
         const auto distance = [&](opengold::rules::Cell cell)
         {
             return actor == state.combatants.end() ? 99
                                                    : std::max(std::abs(cell.x - actor->cell.x),
                                                               std::abs(cell.y - actor->cell.y));
         };
+        const auto worth_aiming = [&](opengold::rules::EntityId id, unsigned spell)
+        {
+            const auto unit = unit_of(id);
+            return unit != state.combatants.end() &&
+                   unit->side == opengold::rules::Side::opposition && unit->conscious &&
+                   unit->status.empty() && std::ranges::find(picked, id) == picked.end() &&
+                   (!holds_people(spell) || !unit->name.starts_with("SHAMBLING")) &&
+                   (spell != blast || distance(unit->cell) <= 3);
+        };
         const auto better =
             [&](const opengold::rules::Command &a, const opengold::rules::Command &b)
         {
-            return a.item % 256 == blast ? distance(a.destination) < distance(b.destination)
-                                         : hit_points(a.target) > hit_points(b.target);
+            return spell_of(a) == blast
+                       ? distance(a.destination) < distance(b.destination)
+                       : unit_of(a.target)->hit_points > unit_of(b.target)->hit_points;
         };
+        const auto commands = session.legal_commands();
         const opengold::rules::Command *best = nullptr;
         for (const auto &command : commands)
         {
-            if (command.verb == "aim" && ours(command.item) && worth_aiming(command.target) &&
-                (!best || better(command, *best)))
+            if (command.verb == "aim" && ours(command.item) &&
+                worth_aiming(command.target, command.item) && (!best || better(command, *best)))
             {
                 best = &command;
             }
@@ -999,32 +1006,17 @@ bool curse_walk_census(bool route)
             }
         }
         picked.clear();
-        const bool any = std::ranges::any_of(state.combatants,
-                                             [&](const opengold::rules::CombatantView &unit)
-                                             {
-                                                 return worth_aiming(unit.id);
-                                             });
-        if (!any)
+        for (const unsigned wanted : {blast, hold_monster, hold_person, mage_hold_person})
         {
-            return std::nullopt;
-        }
-        // The wand reaches three squares (the cluebook).
-        const bool enemy_near =
-            actor != state.combatants.end() &&
-            std::ranges::any_of(state.combatants,
-                                [&](const opengold::rules::CombatantView &unit)
-                                {
-                                    return worth_aiming(unit.id) &&
-                                           std::max(std::abs(unit.cell.x - actor->cell.x),
-                                                    std::abs(unit.cell.y - actor->cell.y)) <= 3;
-                                });
-        for (const auto &[verb, number] :
-             {std::pair{"use", blast}, std::pair{"cast", hold_monster}})
-        {
+            const bool target = std::ranges::any_of(state.combatants,
+                                                    [&](const opengold::rules::CombatantView &unit)
+                                                    {
+                                                        return worth_aiming(unit.id, wanted);
+                                                    });
             for (const auto &command : commands)
             {
-                const auto spell = command.verb == "use" ? command.item % 256 : command.item;
-                if (command.verb == verb && spell == number && (number != blast || enemy_near))
+                if (target && (command.verb == "use" || command.verb == "cast") &&
+                    spell_of(command) == wanted)
                 {
                     return command;
                 }
