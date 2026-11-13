@@ -329,6 +329,15 @@ struct GearRating
 {
     int armor_class{};
     double round_damage{};
+    // Armor Class falls as it gets better, as the original rules count it.
+    bool descending_armor_class{};
+
+    // Whether this Armor Class is better than another's.
+    [[nodiscard]] bool better_armor_than(const GearRating &other) const noexcept
+    {
+        return descending_armor_class ? armor_class < other.armor_class
+                                      : armor_class > other.armor_class;
+    }
 };
 
 // The weapon attack a character makes with a set of gear, as a shop's hover

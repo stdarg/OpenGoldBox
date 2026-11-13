@@ -120,6 +120,8 @@ struct ItemPreview
     // Armor or a shield's Armor Class on the member, and the member's now.
     std::optional<int> armor_class;
     int armor_class_now{};
+    // Armor Class falls as it gets better (the original rules).
+    bool descending_armor_class{};
     unsigned weight_hundredths{};
 };
 

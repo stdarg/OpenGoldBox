@@ -276,8 +276,8 @@ bool better_gear(const rules::GearRating &a, const rules::GearRating &b, GearPre
     const bool more_damage = a.round_damage > b.round_damage + same;
     const bool equal_damage = !more_damage && a.round_damage + same >= b.round_damage;
     return preference == GearPreference::defense
-               ? a.armor_class > b.armor_class || (a.armor_class == b.armor_class && more_damage)
-               : more_damage || (equal_damage && a.armor_class > b.armor_class);
+               ? a.better_armor_than(b) || (a.armor_class == b.armor_class && more_damage)
+               : more_damage || (equal_damage && a.better_armor_than(b));
 }
 
 // The catalog key of an original weapon, ammunition, armor or shield type,
@@ -1922,7 +1922,13 @@ CampaignParty::GearInPlace CampaignParty::gear_in_place(const PartyMember &m,
 bool CampaignParty::adds_no_armor_class(MemberId id, const por::Equipment &item) const
 {
     const auto preview_item = preview(id, item);
-    return preview_item.armor_class && *preview_item.armor_class <= preview_item.armor_class_now;
+    if (!preview_item.armor_class)
+    {
+        return false;
+    }
+    return preview_item.descending_armor_class
+               ? *preview_item.armor_class >= preview_item.armor_class_now
+               : *preview_item.armor_class <= preview_item.armor_class_now;
 }
 
 rules::EquipmentSlot CampaignParty::equipment_slot(const por::Equipment &item) const
@@ -1934,7 +1940,9 @@ ItemPreview CampaignParty::preview(MemberId id, const por::Equipment &item) cons
 {
     const auto &m = member(id);
     const auto in_place = gear_in_place(m, item);
-    ItemPreview result{.armor_class_now = known_gear_rating(m).armor_class,
+    const auto now = known_gear_rating(m);
+    ItemPreview result{.armor_class_now = now.armor_class,
+                       .descending_armor_class = now.descending_armor_class,
                        .weight_hundredths = entry_weight(*rules_, item_definition(*rules_, item),
                                                          carried_quantity(*rules_, item), &item)};
     const auto &sheet = m.character.sheet();

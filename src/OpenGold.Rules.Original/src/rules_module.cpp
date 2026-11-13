@@ -630,10 +630,9 @@ EquipmentChange OriginalModule::equipment_change(const CharacterSheet &sheet,
     return change;
 }
 
-// The gear's rating for auto-equip, more being better: its Armor Class
-// counted up from 20 (so the original's descending Armor Class compares as
-// the SRD's does), and the damage its first attack is expected to deal in a
-// round against that Armor Class, counted the same way.
+// The gear's rating for auto-equip: its Armor Class, which falls as it gets
+// better, and the damage its first attack is expected to deal in a round
+// against the target's Armor Class, given as the SRD counts it (20 less ours).
 GearRating OriginalModule::gear_rating(const CharacterSheet &sheet,
                                        std::span<const std::string> gear,
                                        int target_armor_class) const
@@ -642,7 +641,8 @@ GearRating OriginalModule::gear_rating(const CharacterSheet &sheet,
     const auto &attack = c.attacks[0];
     const double average = attack.dice * (attack.sides + 1) / 2.0 + attack.modifier;
     GearRating rating;
-    rating.armor_class = 20 - c.armor_class;
+    rating.armor_class = c.armor_class;
+    rating.descending_armor_class = true;
     rating.round_damage = attack.rate_per_two_rounds / 2.0 *
                           hit_chance(c.thac0, 20 - target_armor_class) * std::max(average, 0.0);
     return rating;
