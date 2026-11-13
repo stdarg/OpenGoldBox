@@ -148,6 +148,8 @@ add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/vace_film.cpp
     src/OpenGold.Formats/src/music_bank.cpp
     src/OpenGold.Formats/src/gold_box_game.cpp
+    src/OpenGold.Formats/src/ua_formats.cpp
+    src/OpenGold.Formats/src/ua_media.cpp
 )
 
 target_include_directories(opengold_formats
@@ -183,6 +185,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/creature_factory.cpp
     src/OpenGold.Core/src/map_catalog.cpp
     src/OpenGold.Core/src/game_census.cpp
+    src/OpenGold.Core/src/ua_census.cpp
     src/OpenGold.Core/src/ecl_address.cpp
     src/OpenGold.Core/src/area_loading.cpp
     src/OpenGold.Core/src/campaign_session.cpp
@@ -287,6 +290,10 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_late_sound_tests tests/late_sound_tests.cpp)
     target_link_libraries(opengold_late_sound_tests PRIVATE opengold_core)
     add_test(NAME opengold_late_sound_tests COMMAND opengold_late_sound_tests)
+    # Unlimited Adventures' libraries, glyphs, records, sounds and music (docs/games/ua.md).
+    add_executable(opengold_ua_census_tests tests/ua_census_tests.cpp)
+    target_link_libraries(opengold_ua_census_tests PRIVATE opengold_core)
+    add_test(NAME opengold_ua_census_tests COMMAND opengold_ua_census_tests)
 
     add_executable(opengold_concentration_tests tests/concentration_tests.cpp)
     target_include_directories(opengold_concentration_tests PRIVATE src/OpenGold.Rules.Srd5/src)

@@ -29,9 +29,9 @@ The user decided these on 2026-11-12:
 | 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Played to its end by the route test, with stand-ins ([curse.md](games/curse.md)) |
 | 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Every file decodes ([secret.md](games/secret.md)) |
 | 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Every file decodes ([gateway.md](games/gateway.md)) |
-| 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Not started |
-| 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Not started |
-| 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | Not started |
+| 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Every file decodes ([darkness.md](games/darkness.md)) |
+| 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Every file decodes ([treasure.md](games/treasure.md)) |
+| 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | Every file decodes ([ua.md](games/ua.md)) |
 
 The developer's copies live in `/Users/edmond/GoldBox/<folder>`.
 
@@ -69,7 +69,7 @@ The census (2026-11-12) puts every file through the decoders:
 | *Gateway* | All (2026-11-13) | — |
 | *Pools of Darkness* | All (2026-11-13) | — |
 | *Treasures* | All (2026-11-13) | — |
-| *Unlimited Adventures* | — | Everything: its data sits in `DISK1` to `DISK3` |
+| *Unlimited Adventures* | All (2026-11-13): its libraries of glyphs and records, the font, items, sounds, music and art templates in `DISK1` to `DISK3` and `ART` | — |
 
 The archives (DAX) and maps are shared by all six campaigns. Scripts,
 creatures, items and pictures change from game to game.
@@ -109,7 +109,8 @@ the reconstructed sources and go into `docs/games/<game>.md`.
 Done for a game when its census decodes every file.
 
 **Status:** done for *Pool of Radiance* and *Curse* (2026-11-12), and for
-*Secret*, *Gateway*, *Pools of Darkness* and *Treasures* (2026-11-13). Run it with
+*Secret*, *Gateway*, *Pools of Darkness*, *Treasures* and *Unlimited
+Adventures* (2026-11-13): every game's census is complete. Run it with
 `opengold_census FOLDER...` (in `build/macos-universal` after `./build.sh`,
 or `build` in a native build), where a folder is one game's or one holding
 several (`/Users/edmond/GoldBox`). It prints a row for each kind of file: how

@@ -276,10 +276,12 @@ std::optional<std::vector<ItemTemplate>> decode_item_templates(std::span<const s
 std::optional<std::vector<ItemTemplate>> decode_item_templates(std::span<const std::uint8_t> bytes,
                                                                GoldBoxGame game)
 {
-    // Pools of Darkness and Treasures read the types from the file's first byte;
-    // Gateway's ITEMS.1 follows each type's 16 bytes with 8 the game never reads.
+    // Pools of Darkness, Treasures and Unlimited Adventures (ITEMS.DAT) read the
+    // types from the file's first byte; Gateway's ITEMS.1 follows each type's 16
+    // bytes with 8 the game never reads.
     const std::size_t header = game == GoldBoxGame::pools_of_darkness ||
-                                       game == GoldBoxGame::treasures_of_the_savage_frontier
+                                       game == GoldBoxGame::treasures_of_the_savage_frontier ||
+                                       game == GoldBoxGame::unlimited_adventures
                                    ? 0
                                    : 2;
     const std::size_t stride = game == GoldBoxGame::gateway_to_the_savage_frontier ? 24 : 16;

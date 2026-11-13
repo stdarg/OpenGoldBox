@@ -1,6 +1,8 @@
 #include "opengold/game_census.h"
 
 #include "archive_io.h"
+#include "census_rows.h"
+#include "ua_census.h"
 #include "opengold/character_art.h"
 #include "opengold/curse_records.h"
 #include "opengold/ecl.h"
@@ -78,50 +80,7 @@ std::vector<DaxRecord> archive_records(const GameFile &file)
     return std::move(archive.records);
 }
 
-class RowBuilder
-{
-  public:
-    explicit RowBuilder(std::string kind)
-    {
-        row_.kind = std::move(kind);
-    }
-
-    void add_file(const std::string &name)
-    {
-        row_.files.push_back(name);
-    }
-
-    // Counts one piece: decoded when the check returns without throwing.
-    void check(const std::string &where, const std::function<void()> &decode)
-    {
-        ++row_.pieces;
-        try
-        {
-            decode();
-            ++row_.decoded;
-        }
-        catch (const std::exception &error)
-        {
-            fail(where, error.what());
-        }
-    }
-
-    void fail(const std::string &where, const std::string &why)
-    {
-        if (row_.first_failure.empty())
-        {
-            row_.first_failure = where + ": " + why;
-        }
-    }
-
-    [[nodiscard]] CensusRow take() &&
-    {
-        return std::move(row_);
-    }
-
-  private:
-    CensusRow row_;
-};
+using census_detail::RowBuilder;
 
 std::string record_name(const GameFile &file, const DaxRecord &record)
 {
@@ -743,6 +702,11 @@ std::optional<GoldBoxGame> identify_game(const std::filesystem::path &folder)
 
 GameCensus take_census(const std::filesystem::path &folder, GoldBoxGame game)
 {
+    // Unlimited Adventures keeps its data in folders and files unlike the DAX games'.
+    if (game == GoldBoxGame::unlimited_adventures)
+    {
+        return take_ua_census(folder);
+    }
     GameCensus census;
     census.game = game;
     std::vector<std::string> directories;
