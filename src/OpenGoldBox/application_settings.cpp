@@ -289,6 +289,18 @@ bool save_original_portraits(bool original)
     return save("art", "portraits", original ? "original" : "new");
 }
 
+bool original_shops(opengold::GoldBoxGame game)
+{
+    const std::string folder(opengold::game_folder(game));
+    return read("original_shops", folder.c_str()).to_lower() != "off";
+}
+
+bool save_original_shops(opengold::GoldBoxGame game, bool original)
+{
+    const std::string folder(opengold::game_folder(game));
+    return save("original_shops", folder.c_str(), original ? "on" : "off");
+}
+
 bool save_original_wall_art(bool original)
 {
     return save("art", "walls", original ? "original" : "new");

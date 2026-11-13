@@ -624,7 +624,8 @@ void enchant(Equipment &item, const opengold::ShopOffering &offering)
     item.unidentified_name = offering.name;
 }
 
-Equipment original_offering(const PhlanResources &town, const opengold::ShopOffering &offering)
+Equipment original_offering(const PhlanResources &town, const opengold::ShopOffering &offering,
+                            opengold::ShopStock stock)
 {
     const std::map<unsigned, std::vector<Equipment>> *lists = nullptr;
     if (offering.archive == "ITEM3.DAX")
@@ -645,7 +646,10 @@ Equipment original_offering(const PhlanResources &town, const opengold::ShopOffe
             list->second[offering.index].stored.type == offering.item_type)
         {
             auto item = list->second[offering.index];
-            item.stored.value = static_cast<std::uint16_t>(offering.price_gp);
+            if (stock == opengold::ShopStock::modified)
+            {
+                item.stored.value = static_cast<std::uint16_t>(offering.price_gp);
+            }
             if (offering.magic_bonus)
             {
                 enchant(item, offering);
@@ -668,8 +672,17 @@ Equipment authored_offering(const opengold::ShopOffering &offering)
 }
 } // namespace
 
-void RolfTourSession::shops(std::vector<opengold::ShopSite> sites)
+void RolfTourSession::shops(std::vector<opengold::ShopSite> sites, opengold::ShopStock kept)
 {
+    const bool original = kept == opengold::ShopStock::original;
+    if (original)
+    {
+        std::erase_if(sites,
+                      [](const opengold::ShopSite &site)
+                      {
+                          return site.entrance.has_value();
+                      });
+    }
     std::vector<std::vector<Equipment>> stocks;
     for (const auto &site : sites)
     {
@@ -682,8 +695,13 @@ void RolfTourSession::shops(std::vector<opengold::ShopSite> sites)
             {
                 continue;
             }
+            // The original sold neither OpenGoldBox's gear nor enchanted items.
+            if (original && (offering.archive.empty() || offering.magic_bonus != 0))
+            {
+                continue;
+            }
             stock.push_back(offering.archive.empty() ? authored_offering(offering)
-                                                     : original_offering(*town_, offering));
+                                                     : original_offering(*town_, offering, kept));
             stock.back().index = stock.size() - 1;
             // A shop says what it sells: the Rogue's Shop's magic weapons and
             // dust are known by their full names (SECRET-1).

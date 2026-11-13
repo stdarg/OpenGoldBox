@@ -14,6 +14,9 @@ foreach(variable HOME APPDATA XDG_DATA_HOME)
     set(ENV{${variable}} "${WORK}/home")
 endforeach()
 set(ENV{OPENGOLD_SETTINGS_FILE} "${WORK}/home/settings.cfg")
+# The shops as their data/shops records describe them: Original shops off
+# (rogue_shop_tests checks the original's stock).
+file(WRITE "${WORK}/home/settings.cfg" "[original_shops]\nPOOLRAD=\"off\"\n")
 set(ENV{OPENGOLD_LANG} en)
 execute_process(
     COMMAND "${CMAKE_COMMAND}" "-DGODOT=${GODOT}" "-DPROJECT=${PROJECT}"

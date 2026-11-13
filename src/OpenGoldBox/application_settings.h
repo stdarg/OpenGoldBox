@@ -49,6 +49,11 @@ bool save_new_art_directory(const godot::String &directory);
 bool save_original_wall_art(bool original);
 bool save_original_combat_art(bool original);
 bool save_original_portraits(bool original);
+// [original_shops] by game folder: "off" lets the game's modified shops sell
+// (Pool of Radiance's New Phlan adds the Rogue's Shop and OpenGoldBox's gear);
+// otherwise its shops are as they were in the original, at its prices.
+bool original_shops(opengold::GoldBoxGame game);
+bool save_original_shops(opengold::GoldBoxGame game, bool original);
 // [gear] auto_equip: "off" leaves gained gear in the pack; otherwise a better
 // weapon, armor, shield or worn item goes on (EQUIP-1). unidentified_magic: "equip" lets
 // auto-equip put on an unidentified magic item; otherwise it stays packed.

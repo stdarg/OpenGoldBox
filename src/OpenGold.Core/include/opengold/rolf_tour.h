@@ -478,8 +478,12 @@ class RolfTourSession
 
     // The shops data/shops describes: each sells its record's items at its
     // prices. A shop it does not name sells the original's list. Throws when an
-    // item's source list is not in the loaded game.
-    void shops(std::vector<opengold::ShopSite> sites);
+    // item's source list is not in the loaded game. With the original's stock
+    // (the per-game Original Shops setting), a shop OpenGoldBox opens behind a
+    // door of its own (the Rogue's Shop) is left out, and the others sell only
+    // the original's items, at their records' values.
+    void shops(std::vector<opengold::ShopSite> sites,
+               opengold::ShopStock stock = opengold::ShopStock::modified);
 
     [[nodiscard]] const std::vector<opengold::ShopSite> &shops() const noexcept
     {

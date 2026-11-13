@@ -244,7 +244,7 @@ In small steps, each with its check:
    magic on): the shops, the sage, the king's carriage and jail, the
    Thieves' Guild, the sewers and the Fire Knives' hideout, to the leader's
    fight, the first bond's end and the exile to the wilderness; it trains to
-   levels 9 and 10 at the guild's secret hall on test experience, and carries
+   levels 10 and 11 at the guild's secret hall on test experience, and carries
    +2 weapons and +1 armor, as the Pool of Radiance expedition does, for a
    party as strong as one brought from Pool of Radiance; it camps in the wilderness and journeys by Shadow Gap's
    displacer beasts to Shadowdale, by boat to Ashabenford, past the Fire

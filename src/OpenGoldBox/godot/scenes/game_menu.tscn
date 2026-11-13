@@ -249,27 +249,50 @@ autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 text = "Off: when a fight ends, every character on Quick is back under your control."
 
+[node name="OriginalShopsLabel" type="Label" parent="Options/Gameplay"]
+offset_left = 20
+offset_top = 436
+offset_right = 280
+offset_bottom = 472
+text = "Original shops"
+
+[node name="OriginalShops" type="OptionButton" parent="Options/Gameplay"]
+offset_left = 290
+offset_top = 432
+offset_right = 510
+offset_bottom = 472
+
+[node name="OriginalShopsNote" type="Label" parent="Options/Gameplay"]
+anchor_right = 1
+offset_left = 540
+offset_right = -20
+offset_top = 428
+offset_bottom = 484
+autowrap_mode = 3
+theme_type_variation = &"LabelMuted"
+text = "On: Pool of Radiance's shops sell what the original sold, at its prices. Off: New Phlan also has the Rogue's Shop and OpenGoldBox's gear. From the next game started or loaded."
+
 [node name="AbilitiesHeader" type="Label" parent="Options/Gameplay"]
 offset_left = 20
-offset_top = 434
+offset_top = 498
 offset_right = 780
-offset_bottom = 474
+offset_bottom = 538
 theme_type_variation = &"LabelText20"
 text = "Monster abilities"
 
 [node name="AbilityColumn" type="Label" parent="Options/Gameplay"]
 offset_left = 20
-offset_top = 478
+offset_top = 542
 offset_right = 440
-offset_bottom = 508
+offset_bottom = 572
 theme_type_variation = &"LabelMuted"
 text = "Ability"
 
 [node name="MonstersColumn" type="Label" parent="Options/Gameplay"]
 offset_left = 460
-offset_top = 478
+offset_top = 542
 offset_right = 1060
-offset_bottom = 508
+offset_bottom = 572
 theme_type_variation = &"LabelMuted"
 text = "Monsters that have it"
 
@@ -278,8 +301,8 @@ anchor_left = 1
 anchor_right = 1
 offset_left = -312
 offset_right = -52
-offset_top = 478
-offset_bottom = 508
+offset_top = 542
+offset_bottom = 572
 theme_type_variation = &"LabelMuted"
 text = "On from"
 
@@ -288,7 +311,7 @@ anchor_right = 1
 anchor_bottom = 1
 offset_left = 20
 offset_right = -20
-offset_top = 512
+offset_top = 576
 offset_bottom = -80
 horizontal_scroll_mode = 0
 

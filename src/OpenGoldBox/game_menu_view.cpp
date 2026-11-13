@@ -184,6 +184,8 @@ void GameMenuView::open_options()
     show_unidentified_magic(settings::auto_equip());
     required_node<OptionButton>(*this, "Options/Gameplay/KeepQuick")
         .select(settings::keep_quick() ? 0 : 1);
+    required_node<OptionButton>(*this, "Options/Gameplay/OriginalShops")
+        .select(settings::original_shops(opengold::GoldBoxGame::pool_of_radiance) ? 0 : 1);
     const auto language = settings::language();
     const auto found = std::find_if(language_codes.begin(), language_codes.end(),
                                     [&](const char *code)
@@ -243,12 +245,13 @@ void GameMenuView::build_options()
                        presentation::guarded(this, &GameMenuView::difficulty_selected));
     required_node<Control>(*this, "Options/Gameplay/Challenge")
         .connect("value_changed", presentation::guarded(this, &GameMenuView::challenge_changed));
-    // Auto-equip (EQUIP-1) and Keep Quick: each On, then Off.
+    // Auto-equip (EQUIP-1), Keep Quick and Original Shops: each On, then Off.
     for (const auto &[path, selected] :
          {std::pair{"Options/Gameplay/AutoEquip", &GameMenuView::auto_equip_selected},
           std::pair{"Options/Gameplay/UnidentifiedMagic",
                     &GameMenuView::unidentified_magic_selected},
-          std::pair{"Options/Gameplay/KeepQuick", &GameMenuView::keep_quick_selected}})
+          std::pair{"Options/Gameplay/KeepQuick", &GameMenuView::keep_quick_selected},
+          std::pair{"Options/Gameplay/OriginalShops", &GameMenuView::original_shops_selected}})
     {
         auto &choice = required_node<OptionButton>(*this, path);
         choice.add_item(i18n::text(N_("On")));
@@ -443,6 +446,12 @@ void GameMenuView::unidentified_magic_selected(std::int64_t index)
 void GameMenuView::keep_quick_selected(std::int64_t index)
 {
     settings::save_keep_quick(index == 0);
+}
+
+// Only Pool of Radiance has modified shops so far.
+void GameMenuView::original_shops_selected(std::int64_t index)
+{
+    settings::save_original_shops(opengold::GoldBoxGame::pool_of_radiance, index == 0);
 }
 
 void GameMenuView::show_unidentified_magic(bool shown)

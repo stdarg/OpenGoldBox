@@ -27,6 +27,14 @@ struct ShopOffering
     bool operator==(const ShopOffering &) const = default;
 };
 
+// What a game's shops sell (the per-game Original Shops setting): OpenGoldBox's
+// modified stock, or only what the original sold, at its prices.
+enum class ShopStock
+{
+    modified,
+    original
+};
+
 // The way into a shop OpenGoldBox adds (SECRET-1): a secret, locked door on
 // one side of its square, drawn with the map's `door_wall` once found, and
 // walls closing the square's other open sides.

@@ -57,6 +57,8 @@ void log_head()
         ", auto-equip " + (settings::auto_equip() ? "on" : "off") + ", unidentified magic " +
         (settings::skip_unidentified_magic() ? "left packed" : "equipped") +
         ", keep Quick after a fight " + (settings::keep_quick() ? "on" : "off") +
+        ", original shops " +
+        (settings::original_shops(opengold::GoldBoxGame::pool_of_radiance) ? "on" : "off") +
         ", monster abilities off: " + (abilities.is_empty() ? "none" : abilities));
 }
 

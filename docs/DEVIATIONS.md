@@ -128,7 +128,7 @@ Add an entry whenever a new departure is decided.
   good-evil half counts: any Good member wields the Lawful Good sword, any Evil
   member the Lawful Evil ones. The damage is the original's, as Force.
   [MAGIC-7](SRD-DECISIONS.md#magic-7-2026-10-22-alignment-bound-swords).
-- **Fire and Acid** (2026-10-08). New Phlan's general store also sells Acid and
+- **Fire and Acid** (2026-10-08). With Original shops off, New Phlan's general store also sells Acid and
   Alchemist's Fire at SRD prices, and every starting kit has a Torch, so any
   party can keep a troll down.
   [GEAR-1](SRD-DECISIONS.md#gear-1-2026-10-08-fire-and-acid-for-every-party).
@@ -400,14 +400,17 @@ in the game: answering YES at a hall lists its services in the dialogue
   gone. A shot has the bow's own magic. Darts and javelins stay as thrown
   weapons, and a throw never spends them.
   [AMMO-UNLIMITED](SRD-DECISIONS.md#unlimited-ranged-ammunition--approved-exception).
-- **Shop stock and prices** (2026-10-23). Each New Phlan shop sells what its
+- **Shop stock and prices** (2026-10-23). With Original shops off (Options;
+  the user, 2026-11-13; on, the shops sell the original's items at their
+  records' values), each New Phlan shop sells what its
   `data/shops` record lists, at its prices, with its shopkeeper's portrait,
   all edited with the Shop & Temple Manager. The records start from the
   original's lists and values, plus the gear the game adds to general stores.
   Stock limits are not kept yet: every item a shop sells is unlimited, as in
   the original.
   [#275](https://github.com/stdarg/OpenGoldBox/issues/275).
-- **The Rogue's Shop** (2026-10-29). The original has no rogue's shop and no
+- **The Rogue's Shop** (2026-10-29). Only with Original shops off (Options;
+  the user, 2026-11-13). The original has no rogue's shop and no
   secret door in New Phlan. OpenGoldBox opens one at (4,13), the back half of
   the inn at (4,12): a wall now closes it from the inn, whose event no longer
   runs there, and its way in is a secret, locked door in the south wall, from

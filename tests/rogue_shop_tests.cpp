@@ -1,4 +1,5 @@
 #include "opengold/campaign_party.h"
+#include "opengold/authored_items.h"
 #include "opengold/campaign_save.h"
 #include "opengold/coin_purse.h"
 #include "opengold/character.h"
@@ -817,6 +818,67 @@ void script_door_table_checks(const char *directory)
 }
 
 // A party with no Rogue opens the door with Knock.
+// With Original shops on, New Phlan is as it was: no Rogue's Shop behind the
+// inn, which keeps its event on (4,13), and its shops sell only the original's
+// items, at their records' values.
+void original_shop_checks(const char *directory)
+{
+    auto plain = RolfTourSession::load(directory, repository_encounters());
+    plain.campaign_party(party_with({rogue()}));
+    settle(plain);
+    auto town = RolfTourSession::load(directory, repository_encounters());
+    const auto data = load_shop_data(root / "data/shops");
+    town.shops(data.shops, ShopStock::original);
+    town.campaign_party(party_with({rogue()}));
+    settle(town);
+    const auto same = [&](unsigned x, unsigned y)
+    {
+        const auto &a = town.map().at(x, y);
+        const auto &b = plain.map().at(x, y);
+        return a.walls == b.walls && a.doors == b.doors && a.event_raw == b.event_raw;
+    };
+    check(same(shop_x, shop_y) && same(shop_x, shop_y - 1) && same(shop_x, shop_y + 1),
+          "The inn's back half is the original's square, with its event");
+    check(std::ranges::none_of(town.shops(),
+                               [](const ShopSite &site)
+                               {
+                                   return site.entrance.has_value();
+                               }),
+          "There is no Rogue's Shop");
+    bool authored = false, misaligned = false;
+    for (std::size_t n = 0; n < town.shops().size(); ++n)
+    {
+        const auto &site = town.shops()[n];
+        const auto &stock = town.town_stock()[n];
+        std::size_t at = 0;
+        for (const auto &offering : site.offerings)
+        {
+            if (offering.archive.empty() ||
+                (offering.item_type < 128 && opengold::original_item::is_ammunition(
+                                                 static_cast<std::uint8_t>(offering.item_type))))
+            {
+                continue;
+            }
+            misaligned =
+                misaligned || at >= stock.size() || stock[at].stored.type != offering.item_type;
+            ++at;
+        }
+        authored = authored || std::ranges::any_of(stock,
+                                                   [](const Equipment &item)
+                                                   {
+                                                       return item.stored.type >= 200;
+                                                   });
+    }
+    check(!authored && !misaligned, "The shops sell only the original's items");
+    town.shops(data.shops);
+    check(std::ranges::any_of(town.shops(),
+                              [](const ShopSite &site)
+                              {
+                                  return site.entrance.has_value();
+                              }),
+          "With Original shops off, the Rogue's Shop is back");
+}
+
 void knock_checks(const char *directory)
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -843,6 +905,7 @@ int main()
         lock_pick_checks();
         stone_checks();
         rogue_checks(directory);
+        original_shop_checks(directory);
         knock_checks(directory);
         script_door_table_checks(directory);
         wand_in_town_checks(directory);

@@ -26,6 +26,9 @@ keep_quick="off"
 [monsters]
 legendary="hard"
 
+[original_shops]
+POOLRAD="on"
+
 [art]
 directory="/Users/you/OpenGoldBox-new-art"
 walls="new"
@@ -61,7 +64,7 @@ files receive the default. See
 
 The in-game menu's **Options** screen (Escape) sets these settings and writes
 them at once: under Gameplay `difficulty`, `encounter_challenge`, the
-`[gear]` section, `keep_quick` and the `[monsters]` section below; under Interface `language`, which takes effect the
+`[gear]` section, `keep_quick`, `[original_shops]` and the `[monsters]` section below; under Interface `language`, which takes effect the
 next time the game starts, `combat_zoom`, read when a fight opens, and the
 `[art]` section below, which takes effect at once.
 
@@ -100,6 +103,15 @@ default, also used for any other value, returns every character on Quick to
 the player when a fight ends, win, lose or flee; `on` keeps them on Quick for
 the next fight, as the original did. The combat screen reads it when a fight
 starts.
+
+`[original_shops]` is the Options screen's Original shops, one key per game,
+named by its folder (`POOLRAD`). `on`, the default, also used for any value
+but `off`, keeps the game's shops as they were in the original: the original's
+items at their records' values. `off` lets the game's modified shops sell:
+Pool of Radiance's New Phlan adds the Rogue's Shop, behind its secret door,
+and OpenGoldBox's gear (magic ink, the rogue's kits and poisons) at
+OpenGoldBox's prices. Only Pool of Radiance has modified shops so far. It is
+read when a game starts or loads.
 
 `[monsters]` switches monster abilities by difficulty. Each key names an
 ability (`legendary`, `parry`, `breath`; the
