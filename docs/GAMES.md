@@ -210,8 +210,17 @@ In small steps, each with its check:
    cells. Events that start a fight wait for step 5.
 3. The scripts' text and menus, and the commands *Curse* adds. The script
    coverage ([ECL-COVERAGE.md](ECL-COVERAGE.md)) is kept for each game.
-4. Making a party, and bringing a *Pool of Radiance* party across.
-5. Combat with *Curse*'s monsters, spells and items.
+4. Making a party, and bringing a *Pool of Radiance* party across. *In
+   progress (2026-11-13):* a party made for *Curse* under the original rules
+   follows *Curse*'s creation and tables (ORIGINAL-RULES.md, *Curse of the
+   Azure Bonds*): paladins and rangers, 25,000 experience trained up at once,
+   300 platinum. Still to come: *Curse*'s character records (its NPCs, and
+   bringing a party across).
+5. Combat with *Curse*'s monsters, spells and items. *In progress
+   (2026-11-13):* *Curse*'s scripts load its own creatures and fight them as
+   their records under the original rules; `opengold_gold_box_games_tests
+   --curse-walk` walks every map with an original-rules party and lists what
+   the scripts still need.
 6. Shops, temples, training and the higher level limits.
 7. A route test that plays from the start to the end, like the
    *Pool of Radiance* expedition checks.

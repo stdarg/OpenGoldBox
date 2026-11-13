@@ -213,6 +213,8 @@ struct Content
 {
     std::map<std::string, Combatant, std::less<>> bestiary;
     std::vector<por::ItemTemplate> item_types;
+    // The game whose original rules these are, its monsters and items.
+    GoldBoxGame game{GoldBoxGame::pool_of_radiance};
 };
 
 // The original rules as the module the game's fights and party run through.

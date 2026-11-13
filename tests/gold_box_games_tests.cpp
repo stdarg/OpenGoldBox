@@ -405,6 +405,7 @@ void curse_walk_census()
     auto session = opengold::load_campaign(folder, GoldBoxGame::curse_of_the_azure_bonds);
     // A party under the original rules, fighting Curse's own creatures.
     opengold::original::Content content;
+    content.game = GoldBoxGame::curse_of_the_azure_bonds;
     const auto catalog =
         opengold::por::CreatureCatalog::load(folder, GoldBoxGame::curse_of_the_azure_bonds);
     for (const auto &[id, creature] : catalog.all())
@@ -426,7 +427,8 @@ void curse_walk_census()
     const std::vector<std::uint8_t> item_bytes{std::istreambuf_iterator<char>(items), {}};
     content.item_types = *opengold::por::decode_item_templates(item_bytes);
     std::shared_ptr<const opengold::rules::CharacterRules> creation =
-        opengold::original::character_rules();
+        opengold::original::character_rules(opengold::original::default_aging,
+                                            GoldBoxGame::curse_of_the_azure_bonds);
     std::shared_ptr<opengold::CampaignParty> party;
     const auto new_party = [&]
     {

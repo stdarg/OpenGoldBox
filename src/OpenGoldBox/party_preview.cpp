@@ -1132,6 +1132,7 @@ void CharacterCreationView::party_action(PartyAction action)
             }
             (void)campaign_->add_pc(*completed_);
             campaign_->add_coins(Coin::gold, creator_->starting_gold());
+            campaign_->add_coins(Coin::platinum, creator_->starting_platinum());
             added_to_party_ = true;
             roster_index_ = campaign_->state().roster.size() - 1;
             refresh();

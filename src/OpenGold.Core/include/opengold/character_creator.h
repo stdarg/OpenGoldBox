@@ -125,6 +125,12 @@ class CharacterCreator
         return starting_gold_;
     }
 
+    // Platinum it joins with besides: Curse's 300 under the original rules.
+    [[nodiscard]] std::uint16_t starting_platinum() const noexcept
+    {
+        return starting_platinum_;
+    }
+
     void assign_roll(unsigned roll, rules::Ability ability);
     [[nodiscard]] bool scores_assigned() const;
     void swap_scores(rules::Ability first, rules::Ability second);
@@ -158,6 +164,7 @@ class CharacterCreator
     por::CharacterAppearance appearance_;
     CreationStep step_{CreationStep::race};
     std::uint16_t starting_gold_{};
+    std::uint16_t starting_platinum_{};
     void require_editable() const;
     void prune_training(rules::CharacterDraft &candidate) const;
     // Rules that roll in place have their own pages (pages_in_place()).

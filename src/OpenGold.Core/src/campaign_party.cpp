@@ -1050,7 +1050,11 @@ MemberId CampaignParty::add_pc(Character character)
     }
     const auto id = state_.next_id;
     const auto hp = character.sheet().hit_points;
+    // Curse's characters start with experience (the original rules' sheet says).
+    const auto &original = character.sheet().original;
+    const auto experience = original ? static_cast<unsigned>(original->experience) : 0U;
     state_.roster.push_back({id, std::move(character), {}, {hp, false, {}}});
+    state_.roster.back().experience = experience;
     ++state_.next_id;
     join(id, false);
     return id;

@@ -991,11 +991,16 @@ void CharacterCreationView::show_rolled_character(const CharacterSheet *sheet)
     // the game's Godot class list leaves TextServer out.
     required_node<Label>(*this, "SwapHint").set("autowrap_mode", autowrap_off);
     required_node<Label>(*this, "SwapHint")
-        .set_text(rolled ? i18n::format("Hit Points {hp}   Age {age}   Gold {gold}",
-                                        {{"hp", sheet->hit_points},
-                                         {"age", sheet->original->age},
-                                         {"gold", sheet->original->gold}})
-                         : String());
+        .set_text(!rolled ? String()
+                  : sheet->original->platinum > 0
+                      ? i18n::format("Hit Points {hp}   Age {age}   Platinum {pp}",
+                                     {{"hp", sheet->hit_points},
+                                      {"age", sheet->original->age},
+                                      {"pp", sheet->original->platinum}})
+                      : i18n::format("Hit Points {hp}   Age {age}   Gold {gold}",
+                                     {{"hp", sheet->hit_points},
+                                      {"age", sheet->original->age},
+                                      {"gold", sheet->original->gold}}));
 }
 
 void CharacterCreationView::_draw()

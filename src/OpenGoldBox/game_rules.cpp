@@ -13,17 +13,19 @@ namespace
 {
 // The original rules' monsters and item types from the game's folder, read
 // once: they do not change while the game runs.
-const opengold::original::Content &original_content(const std::filesystem::path &game)
+const opengold::original::Content &original_content(const RulesFiles &files)
 {
     static std::mutex guard;
     static std::map<std::filesystem::path, opengold::original::Content> loaded;
     const std::scoped_lock lock(guard);
-    if (const auto found = loaded.find(game); found != loaded.end())
+    const auto &folder = files.original_game;
+    if (const auto found = loaded.find(folder); found != loaded.end())
     {
         return found->second;
     }
     opengold::original::Content content;
-    const auto catalog = opengold::por::CreatureCatalog::load(game);
+    content.game = files.game;
+    const auto catalog = opengold::por::CreatureCatalog::load(folder, files.game);
     for (const auto &[id, creature] : catalog.all())
     {
         std::vector<opengold::original::CarriedItem> carried;
@@ -39,7 +41,7 @@ const opengold::original::Content &original_content(const std::filesystem::path 
         content.bestiary.emplace(
             id.key(), opengold::original::combatant_from_record(creature.stored, carried, effects));
     }
-    std::ifstream items(game / "ITEMS", std::ios::binary);
+    std::ifstream items(folder / "ITEMS", std::ios::binary);
     const std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(items), {}};
     auto types = opengold::por::decode_item_templates(bytes);
     if (!types)
@@ -47,14 +49,15 @@ const opengold::original::Content &original_content(const std::filesystem::path 
         throw std::runtime_error("The game's ITEMS file cannot be read");
     }
     content.item_types = std::move(*types);
-    return loaded.emplace(game, std::move(content)).first->second;
+    return loaded.emplace(folder, std::move(content)).first->second;
 }
 
-std::shared_ptr<const opengold::rules::CharacterRules> character_rules(const GameRules &rules)
+std::shared_ptr<const opengold::rules::CharacterRules> character_rules(const GameRules &rules,
+                                                                       const RulesFiles &files)
 {
     if (rules.set == GameRules::Set::original)
     {
-        return opengold::original::character_rules(rules.aging);
+        return opengold::original::character_rules(rules.aging, files.game);
     }
     return opengold::srd5::character_rules();
 }
@@ -65,7 +68,7 @@ std::unique_ptr<opengold::rules::RulesModule> make_rules_module(const GameRules 
 {
     if (rules.set == GameRules::Set::original)
     {
-        return opengold::original::rules_module(original_content(files.original_game));
+        return opengold::original::rules_module(original_content(files));
     }
     return opengold::srd5::load(files.srd_pack);
 }
@@ -74,7 +77,7 @@ std::shared_ptr<opengold::CampaignParty> new_campaign_party(const GameRules &rul
                                                             const RulesFiles &files)
 {
     return std::make_shared<opengold::CampaignParty>(make_rules_module(rules, files),
-                                                     character_rules(rules));
+                                                     character_rules(rules, files));
 }
 
 GameRules game_rules_of(const opengold::CampaignRules &saved)
@@ -105,7 +108,7 @@ load_campaign_under_its_rules(std::string_view bytes, const RulesFiles &files,
 {
     const auto rules = game_rules_of(opengold::saved_campaign_rules(bytes));
     auto module = make_rules_module(rules, files);
-    auto creation = character_rules(rules);
+    auto creation = character_rules(rules, files);
     auto saved = opengold::decode_campaign(bytes, *creation, *module, assets, make_town);
     return {std::make_shared<opengold::CampaignParty>(std::move(module), std::move(creation)),
             std::move(saved)};

@@ -38,8 +38,9 @@ rules::CharacterSheet fighter(int strength, int hit_points)
     sheet.hit_points = hit_points;
     rules::CharacterSheet::Original numbers;
     numbers.class_levels[static_cast<std::size_t>(original::ClassSlot::fighter)] = 1;
-    numbers.thac0 = original::thac0(numbers.class_levels);
-    numbers.saving_throws = original::saving_throws(numbers.class_levels);
+    numbers.thac0 = original::thac0(numbers.class_levels, opengold::GoldBoxGame::pool_of_radiance);
+    numbers.saving_throws =
+        original::saving_throws(numbers.class_levels, opengold::GoldBoxGame::pool_of_radiance);
     sheet.original = numbers;
     return sheet;
 }
@@ -1352,8 +1353,8 @@ void a_wight_drains_levels()
         auto c = victim(hit_points);
         c.class_levels = levels;
         c.level = *std::max_element(levels.begin(), levels.end());
-        c.thac0 = original::thac0(levels);
-        c.saving_throws = original::saving_throws(levels);
+        c.thac0 = original::thac0(levels, opengold::GoldBoxGame::pool_of_radiance);
+        c.saving_throws = original::saving_throws(levels, opengold::GoldBoxGame::pool_of_radiance);
         return c;
     };
     using original::ClassSlot;
@@ -1364,8 +1365,9 @@ void a_wight_drains_levels()
     fighter_2[static_cast<std::size_t>(ClassSlot::fighter)] = 2;
     const auto after = left_by_fight(*fight.session, "Victim");
     check(after.class_levels == fighter_2 && after.level == 2 && after.max_hit_points == 20 &&
-              after.thac0 == original::thac0(fighter_2) &&
-              after.saving_throws == original::saving_throws(fighter_2),
+              after.thac0 == original::thac0(fighter_2, opengold::GoldBoxGame::pool_of_radiance) &&
+              after.saving_throws ==
+                  original::saving_throws(fighter_2, opengold::GoldBoxGame::pool_of_radiance),
           "A level-3 fighter of 30 Hit Points is left a level-2 fighter of 20");
     check(view_of(fight.session->snapshot(), "Victim").hit_points == 30 - 1 - 10,
           "Its own Hit Points lose the level's 10 after the touch's 1");
@@ -1379,8 +1381,11 @@ void a_wight_drains_levels()
     std::array<int, 8> multi{};
     multi[static_cast<std::size_t>(ClassSlot::fighter)] = 2;
     multi[static_cast<std::size_t>(ClassSlot::thief)] = 3;
-    const bool thief_cost_more = original::experience_for_level(ClassSlot::thief, 3).value_or(0) >=
-                                 original::experience_for_level(ClassSlot::fighter, 2).value_or(0);
+    const bool thief_cost_more =
+        original::experience_for_level(ClassSlot::thief, 3, opengold::GoldBoxGame::pool_of_radiance)
+            .value_or(0) >= original::experience_for_level(ClassSlot::fighter, 2,
+                                                           opengold::GoldBoxGame::pool_of_radiance)
+                                .value_or(0);
     auto expected = multi;
     --expected[static_cast<std::size_t>(thief_cost_more ? ClassSlot::thief : ClassSlot::fighter)];
     auto split = attack_until(wight, character(multi, 30), drained);

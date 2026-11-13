@@ -49,7 +49,7 @@ constexpr std::array<Named<Gender>, 2> genders{{
     {Gender::female, "female", "Female", "A female's Strength may be lower than a male's."},
 }};
 
-constexpr std::array<Named<Profession>, 12> professions{{
+constexpr std::array<Named<Profession>, 15> professions{{
     {Profession::cleric, "cleric", "Cleric",
      "A priest who fights in armor and casts healing and protective spells. Hit Die: d8."},
     {Profession::fighter, "fighter", "Fighter",
@@ -60,12 +60,19 @@ constexpr std::array<Named<Profession>, 12> professions{{
      "Hit Die: d4."},
     {Profession::thief, "thief", "Thief",
      "A rogue who opens locks, finds traps and strikes from behind. Hit Die: d6."},
+    {Profession::paladin, "paladin", "Paladin",
+     "A lawful good warrior who heals by touch, cures disease and is shielded from evil. Hit Die: "
+     "d10."},
+    {Profession::ranger, "ranger", "Ranger",
+     "A warrior of the wilds who strikes giant kind hard. Hit Dice: 2d8 at first level, then d8."},
     {Profession::cleric_fighter, "cleric_fighter", "Cleric/Fighter",
      "A cleric and a fighter at once, sharing experience between the two."},
     {Profession::cleric_fighter_magic_user, "cleric_fighter_magic_user",
      "Cleric/Fighter/Magic-User",
      "A cleric, fighter and magic-user at once, sharing experience "
      "among the three."},
+    {Profession::cleric_ranger, "cleric_ranger", "Cleric/Ranger",
+     "A cleric and a ranger at once, sharing experience between the two."},
     {Profession::cleric_magic_user, "cleric_magic_user", "Cleric/Magic-User",
      "A cleric and a magic-user at once, sharing experience between the two."},
     {Profession::cleric_thief, "cleric_thief", "Cleric/Thief",
@@ -147,7 +154,8 @@ template <class Enum, std::size_t N>
 constexpr int rules_data_version = 1;
 
 // The draft's rules data: a version, the six rolls from Strength to Charisma,
-// the Strength percentile, the starting age, three Hit Dice and the gold.
+// the Strength percentile, the starting age, three Hit Dice and the gold, and
+// in Curse the count of the starting training's Hit Dice and the dice.
 [[nodiscard]] std::string encode(const RolledCharacter &rolled)
 {
     std::ostringstream out;
@@ -162,6 +170,14 @@ constexpr int rules_data_version = 1;
         out << ' ' << die;
     }
     out << ' ' << rolled.gold;
+    if (!rolled.training_hit_dice.empty())
+    {
+        out << ' ' << rolled.training_hit_dice.size();
+        for (const int die : rolled.training_hit_dice)
+        {
+            out << ' ' << die;
+        }
+    }
     return out.str();
 }
 
@@ -181,8 +197,25 @@ constexpr int rules_data_version = 1;
         in >> die;
     }
     in >> rolled.gold;
+    const bool read = !in.fail();
+    // Curse's starting training's dice, when the draft has them.
+    std::size_t training_dice = 0;
+    bool dice_read = true;
+    if (read && in >> training_dice && training_dice <= 64)
+    {
+        rolled.training_hit_dice.resize(training_dice);
+        for (int &die : rolled.training_hit_dice)
+        {
+            in >> die;
+        }
+        dice_read = !in.fail();
+    }
+    else
+    {
+        dice_read = in.eof() && training_dice == 0;
+    }
     std::string rest;
-    if (!in || version != rules_data_version || (in >> rest) ||
+    if (!read || !dice_read || version != rules_data_version || (in >> rest) ||
         std::ranges::any_of(rolled.rolls,
                             [](int roll)
                             {
@@ -204,12 +237,12 @@ struct Choices
     Profession profession;
 };
 
-[[nodiscard]] Choices read_choices(const CharacterDraft &draft)
+[[nodiscard]] Choices read_choices(const CharacterDraft &draft, GoldBoxGame game)
 {
     const Choices choices{require_id(races, draft.race, "race"),
                           require_id(genders, draft.gender, "gender"),
                           require_id(professions, draft.character_class, "class")};
-    const auto offered = professions_for(choices.race);
+    const auto offered = professions_for(choices.race, game);
     if (std::ranges::find(offered, choices.profession) == offered.end())
     {
         throw std::invalid_argument("The original rules do not offer this race that class");
@@ -306,13 +339,13 @@ std::string title_case(std::string_view name)
 class OriginalCharacterRules final : public rules::CharacterRules
 {
   public:
-    explicit OriginalCharacterRules(Aging aging) : aging_(aging)
+    OriginalCharacterRules(Aging aging, GoldBoxGame game) : aging_(aging), game_(game)
     {
     }
 
     rules::Identity identity() const override
     {
-        return original::identity();
+        return original::identity(game_);
     }
 
     std::string game_setting() const override
@@ -354,7 +387,23 @@ class OriginalCharacterRules final : public rules::CharacterRules
         case CreationField::gender:
             return listed(genders);
         case CreationField::character_class:
-            return listed(professions);
+        {
+            // The classes some race may take in this game.
+            auto offered = listed(professions);
+            std::erase_if(offered,
+                          [this](const CreationChoice &choice)
+                          {
+                              const auto profession = *find_id(professions, choice.id);
+                              return std::ranges::none_of(
+                                  races,
+                                  [&](const auto &race)
+                                  {
+                                      const auto list = professions_for(race.value, game_);
+                                      return std::ranges::find(list, profession) != list.end();
+                                  });
+                          });
+            return offered;
+        }
         case CreationField::alignment:
             return listed(alignments);
         case CreationField::background:
@@ -381,8 +430,8 @@ class OriginalCharacterRules final : public rules::CharacterRules
 
     void roll_in_place(CharacterDraft &draft, RandomState &random) const override
     {
-        const auto chosen = read_choices(draft);
-        draft.rules_data = encode(roll_character(chosen.race, chosen.profession, random));
+        const auto chosen = read_choices(draft, game_);
+        draft.rules_data = encode(roll_character(chosen.race, chosen.profession, game_, random));
         draft.rolled = true;
     }
 
@@ -403,7 +452,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
             {
                 return false;
             }
-            const auto offered = professions_for(*race);
+            const auto offered = professions_for(*race, game_);
             return std::ranges::find(offered, *profession) != offered.end();
         }
         case CreationField::alignment:
@@ -459,7 +508,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         {
             return record_sheet(draft, *record);
         }
-        const auto chosen = read_choices(draft);
+        const auto chosen = read_choices(draft, game_);
         const auto alignment = require_id(alignments, draft.alignment, "alignment");
         const auto open = alignments_for(chosen.profession);
         if (std::ranges::find(open, alignment) == open.end())
@@ -482,18 +531,24 @@ class OriginalCharacterRules final : public rules::CharacterRules
         sheet.alignment = std::string(named(alignments, alignment).label);
         sheet.base = ability;
         sheet.scores = ability;
-        sheet.level = 1;
+        // Curse's character starts trained to its starting experience.
+        const auto trained =
+            starting_training(chosen.race, chosen.profession, ability, rolled, game_);
+        const auto &levels = trained.levels;
+        sheet.level = *std::max_element(levels.begin(), levels.end());
         sheet.hit_points =
-            first_level_hit_points(chosen.profession, rolled, ability[Ability::constitution]);
+            first_level_hit_points(chosen.profession, rolled, ability[Ability::constitution]) +
+            trained.hit_points;
         for (const auto slot : classes_of(chosen.profession))
         {
             sheet.level_classes.emplace_back(class_slot_id(slot));
         }
         CharacterSheet::Original original;
-        const auto levels = first_levels(chosen.profession);
         original.class_levels = levels;
-        original.thac0 = thac0(levels);
-        original.saving_throws = saving_throws(levels);
+        original.thac0 = thac0(levels, game_);
+        original.saving_throws = saving_throws(levels, game_);
+        original.experience = starting_experience(chosen.profession, game_);
+        original.platinum = starting_platinum(game_);
         original.exceptional_strength = exceptional_strength(
             chosen.race, chosen.gender, chosen.profession, rolled, ability[Ability::strength]);
         original.age = rolled.starting_age;
@@ -508,7 +563,8 @@ class OriginalCharacterRules final : public rules::CharacterRules
         original.magic_user_slots =
             spell_slots(ClassSlot::magic_user, level_in(levels, ClassSlot::magic_user),
                         ability[Ability::wisdom]);
-        original.known_spells = known_spells(levels, ability[Ability::wisdom], {});
+        original.known_spells =
+            known_spells(levels, ability[Ability::wisdom], trained.learned_spells, game_);
         sheet.original = original;
         return sheet;
     }
@@ -568,8 +624,8 @@ class OriginalCharacterRules final : public rules::CharacterRules
         }
         CharacterSheet::Original numbers;
         numbers.class_levels = levels;
-        numbers.thac0 = thac0(levels);
-        numbers.saving_throws = saving_throws(levels);
+        numbers.thac0 = thac0(levels, game_);
+        numbers.saving_throws = saving_throws(levels, game_);
         numbers.exceptional_strength = record.current_abilities.exceptional_strength;
         numbers.age = record.age;
         numbers.race = static_cast<int>(race);
@@ -591,7 +647,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
                 learned.push_back(static_cast<int>(n) + 1);
             }
         }
-        numbers.known_spells = known_spells(levels, ability[Ability::wisdom], learned);
+        numbers.known_spells = known_spells(levels, ability[Ability::wisdom], learned, game_);
         sheet.original = numbers;
         for (const auto memorized : record.memorized_spells)
         {
@@ -608,23 +664,38 @@ class OriginalCharacterRules final : public rules::CharacterRules
 
     [[nodiscard]] rules::AbilityArray<int> scores(const CharacterDraft &draft) const
     {
-        const auto chosen = read_choices(draft);
+        const auto chosen = read_choices(draft, game_);
         const auto rolled = decode(draft.rules_data);
         return ability_scores(chosen.race, chosen.gender, chosen.profession, rolled, aging_,
                               rolled.starting_age);
     }
 
     Aging aging_;
+    GoldBoxGame game_;
 };
 } // namespace
 
-rules::Identity identity()
+namespace
 {
-    return {"opengold.original", "0.1.0", "pool-of-radiance-1.3"};
+constexpr std::string_view pool_edition = "pool-of-radiance-1.3";
+constexpr std::string_view curse_edition = "curse-of-the-azure-bonds";
+} // namespace
+
+rules::Identity identity(GoldBoxGame game)
+{
+    return {
+        "opengold.original", "0.1.0",
+        std::string(game == GoldBoxGame::curse_of_the_azure_bonds ? curse_edition : pool_edition)};
 }
 
-std::unique_ptr<rules::CharacterRules> character_rules(Aging aging)
+GoldBoxGame game_of(const rules::Identity &identity)
 {
-    return std::make_unique<OriginalCharacterRules>(aging);
+    return identity.content == curse_edition ? GoldBoxGame::curse_of_the_azure_bonds
+                                             : GoldBoxGame::pool_of_radiance;
+}
+
+std::unique_ptr<rules::CharacterRules> character_rules(Aging aging, GoldBoxGame game)
+{
+    return std::make_unique<OriginalCharacterRules>(aging, game);
 }
 } // namespace opengold::original

@@ -145,6 +145,9 @@ struct CharacterSheet
         // breath weapon, spell.
         std::array<int, 5> saving_throws{};
         int exceptional_strength{}, age{}, gold{};
+        // What a new character starts with besides its gold: Curse's 25,000
+        // experience and 300 platinum; none in Pool of Radiance.
+        int experience{}, platinum{};
         // The race, class and alignment by the original's numbers
         // (original::Race, original::Profession and original::Alignment).
         int race{}, profession{}, alignment{};

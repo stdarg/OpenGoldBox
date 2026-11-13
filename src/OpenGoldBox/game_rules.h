@@ -26,11 +26,12 @@ struct GameRules
 };
 
 // Where each set of rules finds what it plays with: the SRD's content pack
-// (game_rules_file()), and Pool of Radiance's folder, whose monster records
-// and item types the original rules read.
+// (game_rules_file()), and the folder of the game played, whose monster
+// records and item types its original rules read.
 struct RulesFiles
 {
     std::filesystem::path srd_pack, original_game;
+    opengold::GoldBoxGame game{opengold::GoldBoxGame::pool_of_radiance};
 };
 
 // What the new game's question offers first: the SRD rules, until the

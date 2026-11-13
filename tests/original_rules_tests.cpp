@@ -1,5 +1,6 @@
 // The original rules' tables and creation (docs/ORIGINAL-RULES.md).
 #include "opengold/original.h"
+#include "opengold/original_spells.h"
 #include "test_support.h"
 #include <iostream>
 #include <string>
@@ -13,6 +14,17 @@ namespace
 {
 using opengold::test::check;
 using opengold::test::rejects;
+
+constexpr auto pool = opengold::GoldBoxGame::pool_of_radiance;
+constexpr auto curse = opengold::GoldBoxGame::curse_of_the_azure_bonds;
+
+// Scores with this Strength and every other ability 12.
+opengold::rules::AbilityArray<int> strength(int value)
+{
+    opengold::rules::AbilityArray<int> scores{12, 12, 12, 12, 12, 12};
+    scores[Ability::strength] = value;
+    return scores;
+}
 
 constexpr std::array<Race, 7> every_race{Race::dwarf,    Race::elf,      Race::gnome,
                                          Race::half_elf, Race::halfling, Race::half_orc,
@@ -38,7 +50,7 @@ void every_offered_profession_fits_its_race()
         for (const auto gender : both_genders)
         {
             const auto limits = ability_limits(race, gender);
-            for (const auto profession : professions_for(race))
+            for (const auto profession : professions_for(race, pool))
             {
                 for (const auto ability : every_ability)
                 {
@@ -92,11 +104,11 @@ void rolled_characters_keep_the_limits()
         for (const auto gender : both_genders)
         {
             const auto limits = ability_limits(race, gender);
-            for (const auto profession : professions_for(race))
+            for (const auto profession : professions_for(race, pool))
             {
                 for (int n = 0; n < 300; ++n)
                 {
-                    const auto rolled = roll_character(race, profession, random);
+                    const auto rolled = roll_character(race, profession, pool, random);
                     const auto who = named(race, gender, profession);
                     check(rolled.gold >= 20 && rolled.gold <= 200,
                           "Starting gold leaves its range: " + who);
@@ -151,7 +163,7 @@ void racial_adjustments_apply()
     RandomState random{7};
     const auto score = [&random](Race race, Ability ability)
     {
-        const auto rolled = roll_character(race, Profession::fighter, random);
+        const auto rolled = roll_character(race, Profession::fighter, pool, random);
         return ability_scores(race, Gender::male, Profession::fighter, rolled, Aging::original,
                               rolled.starting_age)[ability];
     };
@@ -171,8 +183,8 @@ void rolls_repeat_from_the_same_state()
     RandomState first{99};
     RandomState second{99};
     const auto profession = Profession::cleric_fighter_magic_user;
-    const auto a = roll_character(Race::half_elf, profession, first);
-    const auto b = roll_character(Race::half_elf, profession, second);
+    const auto a = roll_character(Race::half_elf, profession, pool, first);
+    const auto b = roll_character(Race::half_elf, profession, pool, second);
     check(a.rolls == b.rolls && a.first_level_hit_dice == b.first_level_hit_dice &&
               a.gold == b.gold && a.starting_age == b.starting_age && first == second,
           "The same dice state rolls the same character");
@@ -267,67 +279,70 @@ void thief_skill_chances()
 void thac0_is_the_best_class()
 {
     ClassLevels levels{};
-    check(thac0(levels) == 20, "No levels hit AC 0 on a 20");
+    check(thac0(levels, pool) == 20, "No levels hit AC 0 on a 20");
     level_in(levels, ClassSlot::fighter) = 1;
-    check(thac0(levels) == 20, "A level 1 fighter has THAC0 20");
+    check(thac0(levels, pool) == 20, "A level 1 fighter has THAC0 20");
     level_in(levels, ClassSlot::fighter) = 2;
-    check(thac0(levels) == 19, "A level 2 fighter has THAC0 19");
+    check(thac0(levels, pool) == 19, "A level 2 fighter has THAC0 19");
     level_in(levels, ClassSlot::fighter) = 7;
-    check(thac0(levels) == 14, "A level 7 fighter has THAC0 14");
+    check(thac0(levels, pool) == 14, "A level 7 fighter has THAC0 14");
     ClassLevels cleric{};
     level_in(cleric, ClassSlot::cleric) = 4;
-    check(thac0(cleric) == 18, "A level 4 cleric has THAC0 18");
+    check(thac0(cleric, pool) == 18, "A level 4 cleric has THAC0 18");
     ClassLevels mage{};
     level_in(mage, ClassSlot::magic_user) = 6;
-    check(thac0(mage) == 19, "A level 6 magic-user has THAC0 19");
+    check(thac0(mage, pool) == 19, "A level 6 magic-user has THAC0 19");
     ClassLevels multi{};
     level_in(multi, ClassSlot::fighter) = 3;
     level_in(multi, ClassSlot::magic_user) = 2;
-    check(thac0(multi) == 18, "A fighter/magic-user uses the fighter's THAC0");
+    check(thac0(multi, pool) == 18, "A fighter/magic-user uses the fighter's THAC0");
 }
 
 void saving_throws_are_the_best_class()
 {
-    const auto fighter = saving_throws(first_levels(Profession::fighter));
+    const auto fighter = saving_throws(first_levels(Profession::fighter), pool);
     check(fighter == std::array<int, 5>{14, 15, 16, 17, 17}, "A level 1 fighter's saves");
-    check(saving_throws(first_levels(Profession::cleric_fighter)) ==
+    check(saving_throws(first_levels(Profession::cleric_fighter), pool) ==
               std::array<int, 5>{10, 13, 14, 16, 15},
           "A cleric/fighter saves as a cleric throughout");
-    check(saving_throws(first_levels(Profession::magic_user_thief)) ==
+    check(saving_throws(first_levels(Profession::magic_user_thief), pool) ==
               std::array<int, 5>{13, 12, 11, 15, 12},
           "A magic-user/thief takes each save from the better class");
     ClassLevels mage{};
     level_in(mage, ClassSlot::magic_user) = 6;
-    check(saving_throw(saving_throws(mage), Save::spell) == 10,
+    check(saving_throw(saving_throws(mage, pool), Save::spell) == 10,
           "A level 6 magic-user saves against spells on 10");
     ClassLevels fighter9{};
     level_in(fighter9, ClassSlot::fighter) = 9;
-    check(saving_throw(saving_throws(fighter9), Save::breath_weapon) == 9,
+    check(saving_throw(saving_throws(fighter9, pool), Save::breath_weapon) == 9,
           "A level 9 fighter saves against breath on 9");
-    check(saving_throws(ClassLevels{}) == std::array<int, 5>{20, 20, 20, 20, 20},
+    check(saving_throws(ClassLevels{}, pool) == std::array<int, 5>{20, 20, 20, 20, 20},
           "No class saves only on a 20");
 }
 
 void experience_and_level_limits()
 {
-    check(experience_for_level(ClassSlot::fighter, 1) == 0, "Level 1 needs no experience");
-    check(experience_for_level(ClassSlot::fighter, 2) == 2001, "A fighter reaches level 2 at 2001");
-    check(experience_for_level(ClassSlot::fighter, 8) == 125001,
+    check(experience_for_level(ClassSlot::fighter, 1, pool) == 0, "Level 1 needs no experience");
+    check(experience_for_level(ClassSlot::fighter, 2, pool) == 2001,
+          "A fighter reaches level 2 at 2001");
+    check(experience_for_level(ClassSlot::fighter, 8, pool) == 125001,
           "A fighter reaches level 8 at 125001");
-    check(!experience_for_level(ClassSlot::fighter, 9), "A fighter stops at level 8");
-    check(experience_for_level(ClassSlot::thief, 9) == 110001, "A thief reaches level 9");
-    check(!experience_for_level(ClassSlot::magic_user, 7), "A magic-user stops at level 6");
-    check(experience_for_level(ClassSlot::cleric, 6) == 27501, "A cleric reaches level 6 at 27501");
-    check(racial_level_limit(Race::elf, ClassSlot::fighter, 16) == 5 &&
-              racial_level_limit(Race::elf, ClassSlot::fighter, 17) == 6 &&
-              racial_level_limit(Race::elf, ClassSlot::fighter, 18) == 7,
+    check(!experience_for_level(ClassSlot::fighter, 9, pool), "A fighter stops at level 8");
+    check(experience_for_level(ClassSlot::thief, 9, pool) == 110001, "A thief reaches level 9");
+    check(!experience_for_level(ClassSlot::magic_user, 7, pool), "A magic-user stops at level 6");
+    check(experience_for_level(ClassSlot::cleric, 6, pool) == 27501,
+          "A cleric reaches level 6 at 27501");
+    check(racial_level_limit(Race::elf, ClassSlot::fighter, strength(16), pool) == 5 &&
+              racial_level_limit(Race::elf, ClassSlot::fighter, strength(17), pool) == 6 &&
+              racial_level_limit(Race::elf, ClassSlot::fighter, strength(18), pool) == 7,
           "An elf fighter's limit follows Strength");
-    check(!racial_level_limit(Race::dwarf, ClassSlot::fighter, 18) &&
-              racial_level_limit(Race::dwarf, ClassSlot::fighter, 17) == 8,
+    check(!racial_level_limit(Race::dwarf, ClassSlot::fighter, strength(18), pool) &&
+              racial_level_limit(Race::dwarf, ClassSlot::fighter, strength(17), pool) == 8,
           "A dwarf fighter of 18 Strength has no racial limit");
-    check(racial_level_limit(Race::half_elf, ClassSlot::cleric, 10) == 5,
+    check(racial_level_limit(Race::half_elf, ClassSlot::cleric, strength(10), pool) == 5,
           "A half-elf cleric stops at level 5");
-    check(!racial_level_limit(Race::human, ClassSlot::fighter, 3), "A human has no racial limit");
+    check(!racial_level_limit(Race::human, ClassSlot::fighter, strength(3), pool),
+          "A human has no racial limit");
 }
 
 // Training: every class with the experience rises at once, a level at a
@@ -337,28 +352,29 @@ void training()
     ClassLevels levels{};
     level_in(levels, ClassSlot::fighter) = 1;
     level_in(levels, ClassSlot::thief) = 1;
-    check(classes_ready_to_train(Race::human, levels, 12, 2000) ==
+    check(classes_ready_to_train(Race::human, levels, strength(12), 2000, pool) ==
               std::vector<ClassSlot>{ClassSlot::thief},
           "A fighter/thief with 2000 experience trains only as a thief");
-    check(classes_ready_to_train(Race::human, levels, 12, 2001) ==
+    check(classes_ready_to_train(Race::human, levels, strength(12), 2001, pool) ==
               std::vector<ClassSlot>{ClassSlot::fighter, ClassSlot::thief},
           "With 2001 both classes train at once");
     level_in(levels, ClassSlot::fighter) = 5;
-    check(classes_ready_to_train(Race::elf, levels, 16, 1000000).size() == 1,
+    check(classes_ready_to_train(Race::elf, levels, strength(16), 1000000, pool).size() == 1,
           "An elf fighter of 16 Strength stops at level 5");
-    check(classes_ready_to_train(Race::human, levels, 12, 0).empty(), "No experience, no training");
+    check(classes_ready_to_train(Race::human, levels, strength(12), 0, pool).empty(),
+          "No experience, no training");
 
     ClassLevels fighter{};
     level_in(fighter, ClassSlot::fighter) = 1;
     const std::vector<ClassSlot> trained{ClassSlot::fighter};
-    check(experience_after_training(fighter, trained, 3000) == 3000,
+    check(experience_after_training(fighter, trained, 3000, pool) == 3000,
           "Experience short of the level after next is kept");
-    check(experience_after_training(fighter, trained, 50000) == 4000,
+    check(experience_after_training(fighter, trained, 50000, pool) == 4000,
           "Experience for two levels is cut to just short of the second");
     RandomState random{4};
     for (int n = 0; n < 50; ++n)
     {
-        const int rolled = roll_training_hit_dice(trained, random);
+        const int rolled = roll_training_hit_dice(fighter, trained, pool, random);
         check(rolled >= 1 && rolled <= 10, "A fighter trains with a d10");
     }
     check(training_hit_points(Profession::fighter, 6, 18) == 10,
@@ -460,6 +476,98 @@ opengold::rules::CharacterDraft draft(std::string race, std::string profession,
     result.character_class = std::move(profession);
     result.alignment = std::move(alignment);
     return result;
+}
+
+// Curse of the Azure Bonds's own tables and creation (ovr018, Limits.cs in the
+// reconstruction): paladins and rangers, higher levels, a start at 25,000
+// experience trained up at once.
+void curse_tables_and_creation()
+{
+    using opengold::rules::CreationField;
+    const auto offered = [](Race race, Profession profession, opengold::GoldBoxGame game)
+    {
+        const auto list = professions_for(race, game);
+        return std::ranges::find(list, profession) != list.end();
+    };
+    check(offered(Race::human, Profession::paladin, curse) &&
+              offered(Race::human, Profession::ranger, curse) &&
+              offered(Race::half_elf, Profession::cleric_ranger, curse) &&
+              !offered(Race::human, Profession::paladin, pool) &&
+              !offered(Race::half_elf, Profession::ranger, pool),
+          "Curse opens the paladin and ranger; Pool of Radiance does not");
+    check(alignments_for(Profession::ranger).size() == 3, "A ranger is good");
+
+    ClassLevels fighter2{};
+    level_in(fighter2, ClassSlot::fighter) = 2;
+    ClassLevels mage5{};
+    level_in(mage5, ClassSlot::magic_user) = 5;
+    check(thac0(fighter2, curse) == 20 && thac0(fighter2, pool) == 19 &&
+              thac0(mage5, curse) == 21 && thac0(mage5, pool) == 20,
+          "Curse's THAC0 table: a level-2 fighter 20, a level-5 magic-user 21");
+    ClassLevels paladin1{};
+    level_in(paladin1, ClassSlot::paladin) = 1;
+    ClassLevels fighter11{};
+    level_in(fighter11, ClassSlot::fighter) = 11;
+    check(saving_throws(paladin1, curse) == std::array<int, 5>{12, 13, 14, 15, 15} &&
+              saving_throws(fighter11, curse) == std::array<int, 5>{7, 8, 9, 8, 10},
+          "Curse's paladin saves 2 better than a fighter; its saves reach level 12");
+    check(experience_for_level(ClassSlot::fighter, 12, curse) == 1000001 &&
+              experience_for_level(ClassSlot::paladin, 2, curse) == 2751 &&
+              !experience_for_level(ClassSlot::fighter, 9, pool),
+          "Curse's experience table goes on to level 12");
+
+    auto scores = strength(18);
+    check(racial_level_limit(Race::dwarf, ClassSlot::fighter, scores, curse) == 9 &&
+              !racial_level_limit(Race::dwarf, ClassSlot::fighter, scores, pool),
+          "Curse stops a dwarf fighter of 18 Strength at level 9");
+    scores[Ability::intelligence] = 17;
+    check(racial_level_limit(Race::elf, ClassSlot::magic_user, scores, curse) == 10 &&
+              racial_level_limit(Race::half_elf, ClassSlot::magic_user, scores, curse) == 7,
+          "Curse limits elf and half-elf magic-users by Intelligence");
+
+    check(starting_experience(Profession::fighter, curse) == 25000 &&
+              starting_experience(Profession::fighter_thief, curse) == 12500 &&
+              starting_experience(Profession::fighter_magic_user_thief, curse) == 8333 &&
+              starting_experience(Profession::fighter, pool) == 0,
+          "Curse's characters start with 25,000 experience, shared among their classes");
+
+    const auto rules = character_rules(default_aging, curse);
+    check(rules->identity() == identity(curse) && game_of(rules->identity()) == curse &&
+              game_of(identity()) == pool,
+          "Curse's rules carry their game in their identity");
+    RandomState random{21};
+    auto fighter = draft("human", "fighter", "lawful_good");
+    check(rules->allows(fighter, CreationField::character_class, "paladin"),
+          "Curse's creation offers a human the paladin");
+    rules->roll_in_place(fighter, random);
+    const auto sheet = rules->evaluate(fighter, opengold::rules::NameRequirement::required);
+    check(sheet.original && level_in(sheet.original->class_levels, ClassSlot::fighter) == 5 &&
+              sheet.level == 5 && sheet.original->experience == 25000 &&
+              sheet.original->platinum == 300 && sheet.original->gold == 0 &&
+              sheet.original->thac0 == 16,
+          "A Curse fighter starts at level 5 with 25,000 experience and 300 platinum");
+    check(sheet.hit_points >= 5, "Each level's training adds Hit Points");
+    check(rules->evaluate(fighter, opengold::rules::NameRequirement::required).hit_points ==
+              sheet.hit_points,
+          "The training's rolls are kept with the draft");
+
+    auto mage = draft("human", "magic_user", "neutral");
+    rules->roll_in_place(mage, random);
+    const auto wizard = rules->evaluate(mage, opengold::rules::NameRequirement::required);
+    std::vector<std::string_view> known;
+    for (const int number : wizard.original->known_spells)
+    {
+        known.push_back(spell(number)->name);
+    }
+    for (const std::string_view name :
+         {"Detect Magic", "Enlarge", "Read Magic", "Sleep", "Magic Missile", "Stinking Cloud",
+          "Protection from Evil", "Knock", "Fireball"})
+    {
+        check(std::ranges::find(known, name) != known.end(),
+              "A Curse magic-user starts knowing " + std::string(name));
+    }
+    check(std::ranges::find(known, std::string_view("Shield")) == known.end(),
+          "A Curse magic-user starts with Enlarge, not Shield");
 }
 
 void creation_behind_the_rules_interface()
@@ -604,6 +712,7 @@ int main()
         dexterity_bonuses();
         constitution_and_age();
         creation_behind_the_rules_interface();
+        curse_tables_and_creation();
         combat_tables();
         std::cout << "Original rules passed.\n";
     }

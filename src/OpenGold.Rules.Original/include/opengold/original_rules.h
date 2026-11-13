@@ -1,5 +1,6 @@
 #ifndef OPENGOLD_ORIGINAL_RULES_H
 #define OPENGOLD_ORIGINAL_RULES_H
+#include "opengold/gold_box_game.h"
 #include "opengold/random_state.h"
 #include "opengold/rules.h"
 #include <array>
@@ -8,9 +9,10 @@
 #include <string_view>
 #include <vector>
 
-// The original Pool of Radiance rules: AD&D 1st edition as the game applied
-// them (docs/ORIGINAL-RULES.md). The tables are the original's; the code is
-// OpenGoldBox's own.
+// The original Gold Box rules: AD&D 1st edition as Pool of Radiance applied
+// them, and Curse of the Azure Bonds after it with its own tables where the
+// two differ, each game named by the GoldBoxGame it is (docs/ORIGINAL-RULES.md).
+// The tables are the originals'; the code is OpenGoldBox's own.
 namespace opengold::original
 {
 // In the original's order, which its scripts read as race codes 1 to 7.
@@ -111,8 +113,9 @@ using ClassLevels = std::array<int, class_slot_count>;
 [[nodiscard]] std::string_view class_slot_id(ClassSlot slot) noexcept;
 // A new character of the profession: level 1 in each of its classes.
 [[nodiscard]] ClassLevels first_levels(Profession profession);
-// The professions creation offers a race, in the original's menu order.
-[[nodiscard]] std::span<const Profession> professions_for(Race race);
+// The professions creation offers a race in the game, in its menu order:
+// Curse adds the paladin and ranger.
+[[nodiscard]] std::span<const Profession> professions_for(Race race, GoldBoxGame game);
 [[nodiscard]] std::span<const Alignment> alignments_for(Profession profession);
 
 // The lowest and highest score a race may have. Strength, and the exceptional
@@ -172,16 +175,43 @@ struct RolledCharacter
     // The d100 that becomes exceptional Strength on a fighter's 18.
     int strength_percentile{};
     int starting_age{};
-    // Each class's first-level Hit Die, in classes_of order: at least two
-    // thirds of the die, as the original guarantees.
+    // Each class's first-level Hit Die, in classes_of order: in Pool of
+    // Radiance at least two thirds of the die, in Curse the better of two rolls.
     std::array<int, 3> first_level_hit_dice{};
     int gold{};
+    // Curse's character starts trained up to its starting experience: the
+    // Hit Die of each class (classes_of order) at each level from 2 to the
+    // highest that experience reaches (starting_reach), rolled at creation.
+    std::vector<int> training_hit_dice;
 };
 
-// Rolls a new character as the original's creation does, the racial
-// adjustments included: its abilities, its age, its first-level Hit Dice and
-// its starting gold.
-[[nodiscard]] RolledCharacter roll_character(Race race, Profession profession, RandomState &random);
+// Rolls a new character as the game's creation does, the racial adjustments
+// included: its abilities, its age, its Hit Dice and its starting gold.
+[[nodiscard]] RolledCharacter roll_character(Race race, Profession profession, GoldBoxGame game,
+                                             RandomState &random);
+
+// The experience a new character starts with: none in Pool of Radiance;
+// 25,000 in Curse, shared among a multi-class character's classes.
+[[nodiscard]] int starting_experience(Profession profession, GoldBoxGame game);
+// The highest level of a class the starting experience reaches by the table.
+[[nodiscard]] int starting_reach(ClassSlot slot, Profession profession, GoldBoxGame game);
+// The platinum a new character starts with besides its gold: Curse's 300.
+[[nodiscard]] int starting_platinum(GoldBoxGame game);
+
+// A new character trained to its starting experience at creation (Curse's
+// SilentTrainPlayer): every class that can rises, training after training,
+// each training's Hit Points rolled at creation, and a magic-user learns the
+// game's spell of each level it reaches.
+struct StartingTraining
+{
+    ClassLevels levels{};
+    int hit_points{};
+    std::vector<int> learned_spells;
+};
+
+[[nodiscard]] StartingTraining starting_training(Race race, Profession profession,
+                                                 const rules::AbilityArray<int> &scores,
+                                                 const RolledCharacter &rolled, GoldBoxGame game);
 
 // The character's scores at its current age. At its starting age each
 // ability is changed for age, kept within the race's limits and raised to the
@@ -235,10 +265,10 @@ enum class ThiefSkill : unsigned
     return skills[static_cast<std::size_t>(skill)];
 }
 
-// The best THAC0 of the character's classes at their levels.
-[[nodiscard]] int thac0(const ClassLevels &levels);
+// The best THAC0 of the character's classes at their levels in the game.
+[[nodiscard]] int thac0(const ClassLevels &levels, GoldBoxGame game);
 // The roll each saving throw needs: the best of the character's classes.
-[[nodiscard]] std::array<int, 5> saving_throws(const ClassLevels &levels);
+[[nodiscard]] std::array<int, 5> saving_throws(const ClassLevels &levels, GoldBoxGame game);
 
 [[nodiscard]] constexpr int saving_throw(const std::array<int, 5> &throws, Save save) noexcept
 {
@@ -247,23 +277,32 @@ enum class ThiefSkill : unsigned
 
 // The experience a class needs to reach a level, or nothing when the class
 // cannot reach it in this game.
-[[nodiscard]] std::optional<int> experience_for_level(ClassSlot slot, int level);
-// The highest level a race may reach in a class for its Strength, or nothing
-// when only the experience table limits it.
-[[nodiscard]] std::optional<int> racial_level_limit(Race race, ClassSlot slot, int strength);
+[[nodiscard]] std::optional<int> experience_for_level(ClassSlot slot, int level, GoldBoxGame game);
+// The highest level a race may reach in a class for its Strength (and in
+// Curse a magic-user's for its Intelligence), or nothing when only the
+// experience table limits it.
+[[nodiscard]] std::optional<int> racial_level_limit(Race race, ClassSlot slot,
+                                                    const rules::AbilityArray<int> &scores,
+                                                    GoldBoxGame game);
 // Training (chargen.pas, TrainingMenu): the classes a character with this
 // much experience trains in at once, each whose next level's experience it
 // has and that its race's limit and the experience table let rise; in class
 // slot order, empty when none can.
 [[nodiscard]] std::vector<ClassSlot> classes_ready_to_train(Race race, const ClassLevels &levels,
-                                                            int strength, int experience);
+                                                            const rules::AbilityArray<int> &scores,
+                                                            int experience, GoldBoxGame game);
 // The experience a character keeps after training from these levels: just
 // short of the level after next of a class it trained in, when it had that
 // much (the most such class allows). Training never takes two levels at once.
 [[nodiscard]] int experience_after_training(const ClassLevels &levels,
-                                            std::span<const ClassSlot> trained, int experience);
-// The trained classes' Hit Dice, rolled.
-[[nodiscard]] int roll_training_hit_dice(std::span<const ClassSlot> trained, RandomState &random);
+                                            std::span<const ClassSlot> trained, int experience,
+                                            GoldBoxGame game);
+// The trained classes' Hit Dice, rolled, for these levels after training: in
+// Pool of Radiance each class's dice; in Curse the better of two rolls of one
+// die, or a fixed amount at the levels past a class's Hit Dice.
+[[nodiscard]] int roll_training_hit_dice(const ClassLevels &trained_levels,
+                                         std::span<const ClassSlot> trained, GoldBoxGame game,
+                                         RandomState &random);
 // What training adds to the Hit Points: the roll and the Constitution bonus
 // of all the profession's classes, divided among them, at least 1.
 [[nodiscard]] int training_hit_points(Profession profession, int rolled, int constitution);
@@ -276,10 +315,11 @@ enum class ThiefSkill : unsigned
 
 // The spells a character knows (chargen.pas, CreateCharacterMenu): a cleric
 // every cleric spell of a level it has slots for; a magic-user the four it
-// starts with (Detect Magic, Read Magic, Shield and Sleep) and those it
-// learned since (`learned`), in the spell table's order.
+// starts with (Detect Magic, Read Magic, Sleep, and Shield in Pool of
+// Radiance or Enlarge in Curse) and those it learned since (`learned`), in
+// the spell table's order.
 [[nodiscard]] std::vector<int> known_spells(const ClassLevels &levels, int wisdom,
-                                            std::span<const int> learned);
+                                            std::span<const int> learned, GoldBoxGame game);
 
 // Spell slots of levels 1 to 3 for a cleric or magic-user level, with the
 // cleric's Wisdom bonus; zeros for other classes.

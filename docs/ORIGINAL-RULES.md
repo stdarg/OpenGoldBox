@@ -58,6 +58,32 @@ The user decided these on 2026-11-11 and 2026-11-12:
     class's minimum.
   - **No one dies of old age.**
 
+## Curse of the Azure Bonds
+
+*Curse* plays the same rules with its own tables (from its reconstruction,
+`coab`), chosen by the game: the rules' identity names it, so a sheet, a fight
+and a save each know which tables they use.
+
+- **Classes:** humans may be paladins and rangers, half-elves rangers and
+  cleric/rangers; a ranger is good, a paladin lawful good.
+- **Creation:** each ability is the best of six 3d6+1; each class's first Hit
+  Die is the better of two rolls. A character starts with 25,000 experience
+  (12,500 or 8,333 for each class of a multi-class one) and is trained at once
+  up to the levels it reaches, each training's Hit Die again the better of two
+  rolls (`SilentTrainPlayer`); a magic-user learns Magic Missile at level 2,
+  Stinking Cloud and Protection from Evil at 3, Knock at 4 and Fireball at 5.
+  It starts with Detect Magic, Read Magic, Enlarge and Sleep (Shield in *Pool
+  of Radiance*) and 300 platinum pieces instead of gold.
+- **Tables:** experience to level 12 or 13; THAC0 and saving throws to level
+  12 (a fighter's THAC0 first improves at level 3, a magic-user's is 21 to
+  level 5, a paladin saves 2 better than a fighter); a dwarf fighter of 18
+  Strength stops at level 9, an elf magic-user at 9 to 11 by Intelligence.
+- **Training** past a class's Hit Dice adds a fixed amount: 3 a fighter or
+  paladin, 2 a cleric, ranger or thief, 1 a magic-user.
+- Still *Pool of Radiance*'s: spells above level 3, the paladin's and
+  ranger's own abilities, and the higher spell slots, which come with *Curse*'s
+  magic (GAMES.md, phase 3 step 5).
+
 ## What the original rules cover
 
 These are the parts of the reconstructed source that hold rules, about 8,000
@@ -607,3 +633,6 @@ tuned with the AI lab once the original rules play.
 | A level drain keeps the drained class's level as the victim's highest level, so a fighter 5 / thief 6 drained in fighter counts as level 4 (`effhndlr.pas`, the level drain) | The highest of its classes |
 | Each hit of a holding bite's own bite starts another hold, stacking holds on the biter and immobility on the victim, which can outlast the fight (`effhndlr.pas`, `EffBiteHold`) | One hold at a time |
 | Strength 19 and above has no row in the open-doors table, so a member that strong never forces an ordinary door (`explore.pas`, `BashDoor`) | It forces one as 18/00 does, 5 in 6 |
+| *Curse:* a half-elf magic-user's level limit is read from its Strength, not its Intelligence (`Limits.RaceClassLimit` in the reconstruction) | Intelligence, 6, 7 and 8 as an elf's follow it |
+| *Curse:* past a class's Hit Dice, training's fixed Hit Points (3 a fighter or paladin, 2 a cleric, ranger or thief, 1 a magic-user) replace the other classes' rolls instead of adding to them (`ovr018`, `sub_509E0`) | Added to them |
+| *Curse:* the paladin's saving throws, otherwise 2 better than a fighter's, are 1 worse against petrification at levels 5 and 6 and against death at level 8 than that (`ovr026`, `SaveThrowValues`) | 2 better throughout |

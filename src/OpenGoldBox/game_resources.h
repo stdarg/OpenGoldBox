@@ -67,12 +67,13 @@ inline godot::String new_art_path(const char *relative)
     return folder.is_empty() ? godot::String() : folder.path_join(relative);
 }
 
-// What each set of rules plays with: the SRD's content pack and Pool of
-// Radiance's folder.
+// What each set of rules plays with: the SRD's content pack and the chosen
+// game's folder.
 inline RulesFiles game_rules_files()
 {
+    const auto game = settings::chosen_game();
     return {presentation::path_from_godot(game_rules_file()),
-            presentation::path_from_godot(settings::game_path())};
+            presentation::path_from_godot(settings::game_folder(game)), game};
 }
 
 // A file or folder the game ships beside its executable, such as data/shops.

@@ -2,6 +2,7 @@
 
 #include "opengold/dice.h"
 #include "opengold/movement_grid.h"
+#include "opengold/original.h"
 #include "opengold/original_rules.h"
 #include "opengold/original_spells.h"
 
@@ -1518,8 +1519,9 @@ void Session::drain_levels(Fighter &victim, int levels)
             {
                 continue;
             }
-            const int experience =
-                experience_for_level(static_cast<ClassSlot>(slot), classes[slot]).value_or(0);
+            const int experience = experience_for_level(static_cast<ClassSlot>(slot), classes[slot],
+                                                        game_of(identity_))
+                                       .value_or(0);
             if (experience >= most)
             {
                 most = experience;
@@ -1530,9 +1532,10 @@ void Session::drain_levels(Fighter &victim, int levels)
         {
             const auto before = classes;
             --classes[drained];
-            numbers.thac0 += thac0(classes) - thac0(before);
-            const auto saves_before = saving_throws(before);
-            const auto saves_after = saving_throws(classes);
+            const auto game = game_of(identity_);
+            numbers.thac0 += thac0(classes, game) - thac0(before, game);
+            const auto saves_before = saving_throws(before, game);
+            const auto saves_after = saving_throws(classes, game);
             for (std::size_t save = 0; save < numbers.saving_throws.size(); ++save)
             {
                 numbers.saving_throws[save] += saves_after[save] - saves_before[save];

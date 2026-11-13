@@ -51,7 +51,7 @@ std::vector<ClassSlot> ready_classes(const CharacterSheet &sheet, unsigned exper
     const auto &numbers = original_numbers(sheet);
     const auto capped = std::min<unsigned>(experience, std::numeric_limits<int>::max());
     return classes_ready_to_train(static_cast<Race>(numbers.race), numbers.class_levels,
-                                  sheet.scores[Ability::strength], static_cast<int>(capped));
+                                  sheet.scores, static_cast<int>(capped), game_of(sheet.identity));
 }
 
 // What a training rolled, as a level's rules data: a version, the trained
@@ -99,8 +99,9 @@ void recount_levels(CharacterSheet &sheet)
 {
     auto &numbers = *sheet.original;
     const auto &levels = numbers.class_levels;
-    numbers.thac0 = thac0(levels);
-    numbers.saving_throws = saving_throws(levels);
+    const auto game = game_of(sheet.identity);
+    numbers.thac0 = thac0(levels, game);
+    numbers.saving_throws = saving_throws(levels, game);
     numbers.thief_skills =
         thief_skills(static_cast<Race>(numbers.race), level_in(levels, ClassSlot::thief),
                      sheet.scores[Ability::dexterity]);
@@ -117,7 +118,7 @@ void recount_levels(CharacterSheet &sheet)
             learned.push_back(number);
         }
     }
-    numbers.known_spells = known_spells(levels, sheet.scores[Ability::wisdom], learned);
+    numbers.known_spells = known_spells(levels, sheet.scores[Ability::wisdom], learned, game);
 }
 
 // A character's record as the original keeps one, from its sheet: what
@@ -388,7 +389,7 @@ class OriginalModule final : public RulesModule
 
 Identity OriginalModule::identity() const
 {
-    return original::identity();
+    return original::identity(content_.game);
 }
 
 std::unique_ptr<CombatSession> OriginalModule::create(Encounter encounter, std::uint64_t seed) const
@@ -428,7 +429,8 @@ CharacterProfile OriginalModule::character_profile(const CharacterSheet &sheet,
 unsigned OriginalModule::experience_for_level(unsigned level) const
 {
     // The fighter's table, as the party screen shows a single figure.
-    const auto needed = original::experience_for_level(ClassSlot::fighter, static_cast<int>(level));
+    const auto needed =
+        original::experience_for_level(ClassSlot::fighter, static_cast<int>(level), content_.game);
     if (!needed)
     {
         throw std::runtime_error("No such level under the original rules");
@@ -990,11 +992,13 @@ void OriginalModule::roll_advancement(const CharacterSheet &sheet, unsigned expe
         throw std::runtime_error("This character is not ready to train");
     }
     Training training;
+    auto after = original_numbers(sheet).class_levels;
     for (const auto slot : trained)
     {
         training.classes |= 1U << static_cast<unsigned>(slot);
+        ++level_in(after, slot);
     }
-    training.rolled = roll_training_hit_dice(trained, random_state);
+    training.rolled = roll_training_hit_dice(after, trained, game_of(sheet.identity), random_state);
     choice.rules_data = encode_training(training);
 }
 
@@ -1057,7 +1061,8 @@ unsigned OriginalModule::experience_after_advance(const CharacterSheet &before,
     const auto trained = ready_classes(before, experience);
     const auto capped = std::min<unsigned>(experience, std::numeric_limits<int>::max());
     return static_cast<unsigned>(experience_after_training(original_numbers(before).class_levels,
-                                                           trained, static_cast<int>(capped)));
+                                                           trained, static_cast<int>(capped),
+                                                           game_of(before.identity)));
 }
 
 unsigned OriginalModule::experience_share(const CharacterSheet &sheet, unsigned award) const

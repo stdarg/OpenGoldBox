@@ -74,6 +74,22 @@ constexpr std::array<P, 11> half_elf_professions{P::cleric,
 constexpr std::array<P, 6> half_orc_professions{
     P::cleric, P::fighter, P::thief, P::cleric_fighter, P::cleric_thief, P::fighter_thief};
 constexpr std::array<P, 4> human_professions{P::cleric, P::fighter, P::magic_user, P::thief};
+// Curse opens the ranger to half-elves and the paladin and ranger to humans.
+constexpr std::array<P, 13> curse_half_elf_professions{P::cleric,
+                                                       P::fighter,
+                                                       P::magic_user,
+                                                       P::thief,
+                                                       P::ranger,
+                                                       P::cleric_fighter,
+                                                       P::cleric_ranger,
+                                                       P::cleric_fighter_magic_user,
+                                                       P::cleric_magic_user,
+                                                       P::fighter_magic_user,
+                                                       P::fighter_thief,
+                                                       P::fighter_magic_user_thief,
+                                                       P::magic_user_thief};
+constexpr std::array<P, 6> curse_human_professions{P::cleric, P::fighter, P::magic_user,
+                                                   P::thief,  P::paladin, P::ranger};
 
 using A = Alignment;
 constexpr std::array<A, 9> every_alignment{A::lawful_good,  A::lawful_neutral,  A::lawful_evil,
@@ -87,6 +103,7 @@ constexpr std::array<A, 7> thief_alignments{A::lawful_neutral, A::lawful_evil,  
 constexpr std::array<A, 5> druid_alignments{A::lawful_neutral, A::neutral_good, A::true_neutral,
                                             A::neutral_evil, A::chaotic_neutral};
 constexpr std::array<A, 1> paladin_alignments{A::lawful_good};
+constexpr std::array<A, 3> ranger_alignments{A::lawful_good, A::neutral_good, A::chaotic_good};
 
 struct RaceLimits
 {
@@ -163,6 +180,18 @@ constexpr std::array<Dice, class_slot_count> hit_dice{
 constexpr std::array<Dice, class_slot_count> starting_gold_dice{
     {{3, 6}, {3, 6}, {5, 4}, {5, 4}, {5, 4}, {2, 4}, {2, 6}, {5, 4}}};
 
+// Curse's: by level 0 to 12. A fighter, paladin or ranger first improves at
+// level 3, a magic-user's THAC0 is 21 to level 5.
+constexpr std::array<std::array<int, 13>, class_slot_count> curse_stored_thac0{
+    {{40, 40, 40, 40, 42, 42, 42, 44, 44, 44, 46, 46, 46},
+     {40, 40, 40, 40, 42, 42, 42, 44, 44, 44, 46, 46, 46},
+     {39, 40, 40, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51},
+     {40, 40, 40, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51},
+     {40, 40, 40, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51},
+     {39, 39, 39, 39, 39, 39, 41, 41, 41, 41, 41, 43, 43},
+     {40, 40, 40, 40, 40, 41, 41, 41, 41, 44, 44, 44, 44},
+     {40, 40, 40, 40, 42, 42, 42, 44, 44, 44, 46, 46, 46}}};
+
 // The original stores 60 minus THAC0, by class slot and level 0 to 10.
 constexpr std::array<std::array<int, 11>, class_slot_count> stored_thac0{
     {{40, 40, 40, 40, 42, 42, 42, 44, 44, 44, 46},
@@ -175,20 +204,23 @@ constexpr std::array<std::array<int, 11>, class_slot_count> stored_thac0{
      {40, 40, 40, 40, 42, 42, 42, 44, 44, 44, 46}}};
 
 using SaveRow = std::array<int, 5>;
-constexpr std::array<SaveRow, 3> cleric_saves{
-    {{10, 13, 14, 16, 15}, {9, 12, 13, 15, 14}, {7, 10, 11, 13, 12}}};
-constexpr std::array<SaveRow, 5> fighter_saves{{{14, 15, 16, 17, 17},
+// To level 12, the last rows Curse's alone.
+constexpr std::array<SaveRow, 4> cleric_saves{
+    {{10, 13, 14, 16, 15}, {9, 12, 13, 15, 14}, {7, 10, 11, 13, 12}, {6, 9, 10, 12, 11}}};
+constexpr std::array<SaveRow, 6> fighter_saves{{{14, 15, 16, 17, 17},
                                                 {13, 14, 15, 16, 16},
                                                 {11, 12, 13, 13, 14},
                                                 {10, 11, 12, 12, 13},
-                                                {8, 9, 10, 9, 11}}};
-constexpr std::array<SaveRow, 2> magic_user_saves{{{14, 13, 11, 15, 12}, {13, 11, 9, 13, 10}}};
+                                                {8, 9, 10, 9, 11},
+                                                {7, 8, 9, 8, 10}}};
+constexpr std::array<SaveRow, 3> magic_user_saves{
+    {{14, 13, 11, 15, 12}, {13, 11, 9, 13, 10}, {11, 9, 7, 11, 8}}};
 constexpr std::array<SaveRow, 3> thief_saves{
     {{13, 12, 14, 16, 15}, {12, 11, 12, 15, 13}, {11, 10, 10, 14, 11}}};
 
-// A class's saving throws at a level from 1 to 9: clerics, druids and monks
-// improve every three levels, fighters, paladins and rangers every two, and
-// magic-users at level 6.
+// A class's saving throws at a level from 1 to 12: clerics, druids and monks
+// improve every three levels, fighters, paladins and rangers every two,
+// magic-users at levels 6 and 11, thieves at 5 and 9.
 [[nodiscard]] SaveRow class_saves(ClassSlot slot, int level)
 {
     const auto at = static_cast<std::size_t>(level - 1);
@@ -212,7 +244,7 @@ constexpr std::array<SaveRow, 3> thief_saves{
 
 // Experience for levels 2 to 9 by class slot; 0 where the class cannot reach
 // the level in this game.
-constexpr std::array<std::array<int, 8>, class_slot_count> experience_table{
+constexpr std::array<std::array<int, 8>, class_slot_count> experience_table_pool{
     {{1501, 3001, 6001, 13001, 27501},
      {},
      {2001, 4001, 8001, 18001, 35001, 70001, 125001},
@@ -221,6 +253,22 @@ constexpr std::array<std::array<int, 8>, class_slot_count> experience_table{
      {2501, 5001, 10001, 22501, 40001},
      {1251, 2501, 5001, 10001, 20001, 42501, 70001, 110001},
      {}}};
+
+// Curse's, for levels 2 to 13: its paladins and rangers, and higher levels.
+constexpr std::array<std::array<int, 12>, class_slot_count> experience_table_curse{
+    {{1501, 3001, 6001, 13001, 27501, 55001, 110001, 225001, 450001},
+     {},
+     {2001, 4001, 8001, 18001, 35001, 70001, 125001, 250001, 500001, 750001, 1000001},
+     {2751, 5501, 12001, 24001, 45001, 95001, 175001, 350001, 700001, 1050001},
+     {2251, 4501, 10001, 20001, 40001, 90001, 150001, 225001, 325001, 650001},
+     {2501, 5001, 10001, 22501, 40001, 60001, 90001, 135001, 250001, 375001},
+     {1251, 2501, 5001, 10001, 20001, 42501, 70001, 110001, 160001, 220001, 440001},
+     {}}};
+
+// Curse rolls a class's Hit Die at each level below this one, and adds a
+// fixed amount from it on (curse_fixed_hit_points).
+constexpr std::array<int, class_slot_count> curse_hit_dice_levels{10, 15, 10, 10, 11, 12, 11, 13};
+constexpr std::array<int, class_slot_count> curse_fixed_hit_points{2, 0, 3, 3, 2, 1, 2, 0};
 
 using SlotRow = std::array<int, 3>;
 // Spell slots of levels 1 to 3, for class levels 2 to 6.
@@ -311,6 +359,13 @@ constexpr std::array<std::array<int, 5>, 11> thief_dexterity_adjustments{{{-15, 
     return profession >= P::cleric_fighter && profession <= P::cleric_thief;
 }
 
+// Curse's roll of a class's Hit Die (ovr018 sub_509E0): the better of two.
+[[nodiscard]] int better_of_two(Dice dice, RandomState &random)
+{
+    const int first = roll_dice(random, dice);
+    return std::max(first, roll_dice(random, dice));
+}
+
 [[nodiscard]] int best_of_six(int adjustment, RandomState &random)
 {
     int best = 0;
@@ -379,8 +434,9 @@ ClassLevels first_levels(Profession profession)
     return levels;
 }
 
-std::span<const Profession> professions_for(Race race)
+std::span<const Profession> professions_for(Race race, GoldBoxGame game)
 {
+    const bool curse = game == GoldBoxGame::curse_of_the_azure_bonds;
     switch (race)
     {
     case Race::dwarf:
@@ -390,11 +446,13 @@ std::span<const Profession> professions_for(Race race)
     case Race::elf:
         return elf_professions;
     case Race::half_elf:
-        return half_elf_professions;
+        return curse ? std::span<const Profession>(curse_half_elf_professions)
+                     : std::span<const Profession>(half_elf_professions);
     case Race::half_orc:
         return half_orc_professions;
     case Race::human:
-        return human_professions;
+        return curse ? std::span<const Profession>(curse_human_professions)
+                     : std::span<const Profession>(human_professions);
     }
     throw std::invalid_argument("Unknown race");
 }
@@ -407,6 +465,9 @@ std::span<const Alignment> alignments_for(Profession profession)
         return druid_alignments;
     case P::paladin:
         return paladin_alignments;
+    case P::ranger:
+    case P::cleric_ranger:
+        return ranger_alignments;
     case P::thief:
     case P::fighter_thief:
     case P::fighter_magic_user_thief:
@@ -507,23 +568,133 @@ AbilityArray<int> age_changes(Aging aging, Race race, int age)
     return changes;
 }
 
-RolledCharacter roll_character(Race race, Profession profession, RandomState &random)
+RolledCharacter roll_character(Race race, Profession profession, GoldBoxGame game,
+                               RandomState &random)
 {
+    const bool curse = game == GoldBoxGame::curse_of_the_azure_bonds;
     RolledCharacter rolled;
     rolled.starting_age = starting_age(race, profession, random);
     for (const auto ability : original_ability_order)
     {
-        rolled.rolls[ability] = best_of_six(racial_adjustments(race)[ability], random);
+        // Curse rolls each 3d6 one higher (ovr018, createPlayer).
+        rolled.rolls[ability] =
+            best_of_six(racial_adjustments(race)[ability] + (curse ? 1 : 0), random);
     }
     rolled.strength_percentile = roll_die(random, 100);
-    rolled.gold = starting_gold(profession, random);
+    // Curse's characters start with platinum (starting_platinum) instead.
+    rolled.gold = curse ? 0 : starting_gold(profession, random);
     const auto classes = classes_of(profession);
     for (std::size_t n = 0; n < classes.size(); ++n)
     {
         const auto dice = hit_dice[index(classes[n])];
-        rolled.first_level_hit_dice[n] = std::max(roll_dice(random, dice), dice.sides * 2 / 3);
+        rolled.first_level_hit_dice[n] =
+            curse ? better_of_two(dice, random)
+                  : std::max(roll_dice(random, dice), dice.sides * 2 / 3);
+    }
+    for (const auto slot : classes)
+    {
+        for (int level = 2; level <= starting_reach(slot, profession, game); ++level)
+        {
+            rolled.training_hit_dice.push_back(
+                better_of_two({1, hit_dice[index(slot)].sides}, random));
+        }
     }
     return rolled;
+}
+
+int starting_experience(Profession profession, GoldBoxGame game)
+{
+    if (game != GoldBoxGame::curse_of_the_azure_bonds)
+    {
+        return 0;
+    }
+    return 25000 / static_cast<int>(classes_of(profession).size());
+}
+
+int starting_reach(ClassSlot slot, Profession profession, GoldBoxGame game)
+{
+    const int experience = starting_experience(profession, game);
+    int level = 1;
+    while (true)
+    {
+        const auto needed = experience_for_level(slot, level + 1, game);
+        if (!needed || *needed > experience)
+        {
+            return level;
+        }
+        ++level;
+    }
+}
+
+int starting_platinum(GoldBoxGame game)
+{
+    return game == GoldBoxGame::curse_of_the_azure_bonds ? 300 : 0;
+}
+
+namespace
+{
+// The magic-user spells Curse's creation teaches at each level it trains to
+// (ovr018 train_player, silent training): Magic Missile at 2; Stinking Cloud
+// and Protection from Evil at 3; Knock at 4; Fireball at 5.
+[[nodiscard]] std::vector<int> curse_starting_spells(int magic_user_level)
+{
+    switch (magic_user_level)
+    {
+    case 2:
+        return {15};
+    case 3:
+        return {34, 16};
+    case 4:
+        return {31};
+    case 5:
+        return {47};
+    default:
+        return {};
+    }
+}
+} // namespace
+
+StartingTraining starting_training(Race race, Profession profession,
+                                   const AbilityArray<int> &scores, const RolledCharacter &rolled,
+                                   GoldBoxGame game)
+{
+    StartingTraining trained;
+    trained.levels = first_levels(profession);
+    const int experience = starting_experience(profession, game);
+    const auto classes = classes_of(profession);
+    // Where each class's dice start in rolled.training_hit_dice.
+    std::array<std::size_t, 3> first_die{};
+    for (std::size_t n = 1; n < classes.size(); ++n)
+    {
+        first_die[n] = first_die[n - 1] + static_cast<std::size_t>(
+                                              starting_reach(classes[n - 1], profession, game) - 1);
+    }
+    while (true)
+    {
+        const auto ready = classes_ready_to_train(race, trained.levels, scores, experience, game);
+        if (ready.empty())
+        {
+            return trained;
+        }
+        int rolled_dice = 0;
+        for (const auto slot : ready)
+        {
+            const int level = ++level_in(trained.levels, slot);
+            const auto n =
+                static_cast<std::size_t>(std::ranges::find(classes, slot) - classes.begin());
+            rolled_dice +=
+                rolled.training_hit_dice.at(first_die[n] + static_cast<std::size_t>(level - 2));
+            if (slot == C::magic_user)
+            {
+                for (const int spell : curse_starting_spells(level))
+                {
+                    trained.learned_spells.push_back(spell);
+                }
+            }
+        }
+        trained.hit_points +=
+            training_hit_points(profession, rolled_dice, scores[Ability::constitution]);
+    }
 }
 
 AbilityArray<int> ability_scores(Race race, Gender gender, Profession profession,
@@ -678,19 +849,29 @@ std::array<int, 8> thief_skills(Race race, int thief_level, int dexterity)
     return skills;
 }
 
-int thac0(const ClassLevels &levels)
+int thac0(const ClassLevels &levels, GoldBoxGame game)
 {
-    int best = 0;
+    const bool curse = game == GoldBoxGame::curse_of_the_azure_bonds;
+    // Only the classes held count; with none, 20.
+    int best = 40;
+    bool held = false;
     for (std::size_t slot = 0; slot < class_slot_count; ++slot)
     {
-        const auto level = static_cast<std::size_t>(std::clamp(levels[slot], 0, 10));
-        best = std::max(best, stored_thac0[slot][level]);
+        if (levels[slot] <= 0)
+        {
+            continue;
+        }
+        best = held ? best : 0;
+        held = true;
+        const auto level = static_cast<std::size_t>(std::min(levels[slot], curse ? 12 : 10));
+        best = std::max(best, curse ? curse_stored_thac0[slot][level] : stored_thac0[slot][level]);
     }
     return 60 - best;
 }
 
-std::array<int, 5> saving_throws(const ClassLevels &levels)
+std::array<int, 5> saving_throws(const ClassLevels &levels, GoldBoxGame game)
 {
+    const bool curse = game == GoldBoxGame::curse_of_the_azure_bonds;
     std::array<int, 5> best{20, 20, 20, 20, 20};
     for (std::size_t slot = 0; slot < class_slot_count; ++slot)
     {
@@ -698,34 +879,44 @@ std::array<int, 5> saving_throws(const ClassLevels &levels)
         {
             continue;
         }
-        const auto row = class_saves(static_cast<ClassSlot>(slot), std::min(levels[slot], 9));
+        const auto class_slot = static_cast<ClassSlot>(slot);
+        const auto row = class_saves(class_slot, std::min(levels[slot], curse ? 12 : 9));
+        // Curse's paladin saves 2 better than a fighter of its level.
+        const int paladin_bonus = curse && class_slot == C::paladin ? 2 : 0;
         for (std::size_t save = 0; save < best.size(); ++save)
         {
-            best[save] = std::min(best[save], row[save]);
+            best[save] = std::min(best[save], row[save] - paladin_bonus);
         }
     }
     return best;
 }
 
-std::optional<int> experience_for_level(ClassSlot slot, int level)
+std::optional<int> experience_for_level(ClassSlot slot, int level, GoldBoxGame game)
 {
     if (level == 1)
     {
         return 0;
     }
-    if (level < 2 || level > 9)
+    const bool curse = game == GoldBoxGame::curse_of_the_azure_bonds;
+    if (level < 2 || level > (curse ? 13 : 9))
     {
         return std::nullopt;
     }
-    const int needed = experience_table[index(slot)][static_cast<std::size_t>(level - 2)];
+    const auto at = static_cast<std::size_t>(level - 2);
+    const int needed =
+        curse ? experience_table_curse[index(slot)][at] : experience_table_pool[index(slot)][at];
     return needed == 0 ? std::nullopt : std::optional<int>{needed};
 }
 
-std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<const int> learned)
+std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<const int> learned,
+                              GoldBoxGame game)
 {
     const auto cleric_slots =
         spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric), wisdom);
-    constexpr std::array<int, 4> first_magic_user_spells{11, 18, 19, 21};
+    // Detect Magic, Read Magic, Sleep, and Shield (Pool of Radiance) or
+    // Enlarge (Curse).
+    const std::array<int, 4> first_magic_user_spells{
+        11, game == GoldBoxGame::curse_of_the_azure_bonds ? 12 : 19, 18, 21};
     const bool magic_user = level_in(levels, ClassSlot::magic_user) > 0;
     std::vector<int> known;
     for (int number = 1; number <= 56; ++number)
@@ -746,8 +937,9 @@ std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<c
     return known;
 }
 
-std::vector<ClassSlot> classes_ready_to_train(Race race, const ClassLevels &levels, int strength,
-                                              int experience)
+std::vector<ClassSlot> classes_ready_to_train(Race race, const ClassLevels &levels,
+                                              const AbilityArray<int> &scores, int experience,
+                                              GoldBoxGame game)
 {
     std::vector<ClassSlot> ready;
     for (std::size_t at = 0; at < class_slot_count; ++at)
@@ -758,8 +950,8 @@ std::vector<ClassSlot> classes_ready_to_train(Race race, const ClassLevels &leve
         {
             continue;
         }
-        const auto limit = racial_level_limit(race, slot, strength);
-        const auto needed = experience_for_level(slot, level + 1);
+        const auto limit = racial_level_limit(race, slot, scores, game);
+        const auto needed = experience_for_level(slot, level + 1, game);
         if ((!limit || level < *limit) && needed && *needed <= experience)
         {
             ready.push_back(slot);
@@ -769,13 +961,13 @@ std::vector<ClassSlot> classes_ready_to_train(Race race, const ClassLevels &leve
 }
 
 int experience_after_training(const ClassLevels &levels, std::span<const ClassSlot> trained,
-                              int experience)
+                              int experience, GoldBoxGame game)
 {
     // The original keeps the most of what the trained classes allow.
     int cap = 0;
     for (const auto slot : trained)
     {
-        const auto after_next = experience_for_level(slot, level_in(levels, slot) + 2);
+        const auto after_next = experience_for_level(slot, level_in(levels, slot) + 2, game);
         if (after_next && experience >= *after_next)
         {
             cap = std::max(cap, *after_next - 1);
@@ -784,12 +976,25 @@ int experience_after_training(const ClassLevels &levels, std::span<const ClassSl
     return cap > 0 ? cap : experience;
 }
 
-int roll_training_hit_dice(std::span<const ClassSlot> trained, RandomState &random)
+int roll_training_hit_dice(const ClassLevels &trained_levels, std::span<const ClassSlot> trained,
+                           GoldBoxGame game, RandomState &random)
 {
     int total = 0;
     for (const auto slot : trained)
     {
-        total += roll_dice(random, hit_dice[index(slot)]);
+        if (game != GoldBoxGame::curse_of_the_azure_bonds)
+        {
+            total += roll_dice(random, hit_dice[index(slot)]);
+            continue;
+        }
+        // Curse adds the fixed amount to the other classes' dice; its own code
+        // put it in place of them (docs/ORIGINAL-RULES.md, Bugs).
+        if (level_in(trained_levels, slot) >= curse_hit_dice_levels[index(slot)])
+        {
+            total += curse_fixed_hit_points[index(slot)];
+            continue;
+        }
+        total += better_of_two({1, hit_dice[index(slot)].sides}, random);
     }
     return total;
 }
@@ -821,15 +1026,41 @@ int experience_share(Profession profession, const AbilityArray<int> &scores, int
     }
 }
 
-std::optional<int> racial_level_limit(Race race, ClassSlot slot, int strength)
+std::optional<int> racial_level_limit(Race race, ClassSlot slot, const AbilityArray<int> &scores,
+                                      GoldBoxGame game)
 {
-    const auto by_strength = [strength](int below_17, int at_17, int above)
+    const int strength = scores[Ability::strength];
+    const auto by_score = [](int score, int below_17, int at_17, int above)
     {
-        return strength < 17 ? below_17 : strength == 17 ? at_17 : above;
+        return score < 17 ? below_17 : score == 17 ? at_17 : above;
     };
+    const auto by_strength = [&](int below_17, int at_17, int above)
+    {
+        return by_score(strength, below_17, at_17, above);
+    };
+    const bool curse = game == GoldBoxGame::curse_of_the_azure_bonds;
     if (race == Race::half_elf && slot == C::cleric)
     {
         return 5;
+    }
+    // Curse's magic-users: an elf's limit and a half-elf's follow
+    // Intelligence (Curse read a half-elf's Strength, docs/ORIGINAL-RULES.md, Bugs).
+    if (curse && slot == C::magic_user)
+    {
+        const int intelligence = scores[Ability::intelligence];
+        switch (race)
+        {
+        case Race::elf:
+            return by_score(intelligence, 9, 10, 11);
+        case Race::half_elf:
+            return by_score(intelligence, 6, 7, 8);
+        default:
+            return std::nullopt;
+        }
+    }
+    if (curse && race == Race::half_elf && slot == C::ranger)
+    {
+        return by_strength(6, 7, 8);
     }
     if (slot != C::fighter)
     {
@@ -838,10 +1069,13 @@ std::optional<int> racial_level_limit(Race race, ClassSlot slot, int strength)
     switch (race)
     {
     case Race::dwarf:
-        // A dwarf of 18 Strength is limited only by the experience table.
-        return strength < 17    ? std::optional<int>{7}
-               : strength == 17 ? std::optional<int>{8}
-                                : std::nullopt;
+        // In Pool of Radiance a dwarf of 18 Strength is limited only by the
+        // experience table; in Curse it reaches level 9.
+        if (strength >= 18)
+        {
+            return curse ? std::optional<int>{9} : std::nullopt;
+        }
+        return strength < 17 ? 7 : 8;
     case Race::elf:
         return by_strength(5, 6, 7);
     case Race::gnome:

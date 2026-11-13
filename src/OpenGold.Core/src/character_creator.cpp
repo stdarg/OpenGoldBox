@@ -219,6 +219,7 @@ void CharacterCreator::restart()
     appearance_ = {};
     step_ = CreationStep::race;
     starting_gold_ = 0;
+    starting_platinum_ = 0;
     for (auto field : {CreationField::race, CreationField::gender, CreationField::character_class,
                        CreationField::alignment, CreationField::background})
     {
@@ -499,6 +500,7 @@ void CharacterCreator::select(CreationField field, std::string_view id)
         candidate.rules_data.clear();
         candidate.rolled = false;
         starting_gold_ = 0;
+        starting_platinum_ = 0;
     }
     if (!candidate.cantrips)
     {
@@ -945,6 +947,8 @@ void CharacterCreator::roll()
         rules_->roll_in_place(draft_, random_);
         const auto rolled = rules_->evaluate(draft_, rules::NameRequirement::optional);
         starting_gold_ = rolled.original ? static_cast<std::uint16_t>(rolled.original->gold) : 0;
+        starting_platinum_ =
+            rolled.original ? static_cast<std::uint16_t>(rolled.original->platinum) : 0;
         return;
     }
     draft_.rolls = rules_->roll(random_);
