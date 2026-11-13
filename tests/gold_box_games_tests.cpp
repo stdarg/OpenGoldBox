@@ -870,6 +870,38 @@ const std::vector<RouteBeat> &curse_route()
          false,
          false,
          true},
+        // Through the Burial Glen, east off its map by the path to the ruins of
+        // Myth Drannor (ECL6.DAX 64, LEAVE_MAP facing east).
+        {64,
+         15,
+         3,
+         D::east,
+         {"PATH"},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         false,
+         true},
+        // In the ruins, the head Rakshasa, answered haughtily, helps against
+        // Tyranthraxus; a sewer grate leads into the ruined temple.
+        {66, 9, 6, D::north, {"Parley", "HAUGHTY"}},
+        {66,
+         5,
+         6,
+         D::north,
+         {"YES", "YES"},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         true},
     };
     return beats;
 }
@@ -1806,14 +1838,14 @@ bool curse_walk_census(bool route)
             std::cout << "Survey ends on map " << session.snapshot().area_id << ", phase "
                       << static_cast<int>(session.snapshot().phase) << "\n";
         }
-        // The route's last beat leaves the party in the ruins of Myth Drannor
-        // (map 64), nobody dead.
+        // The route's last beat leaves the party in the ruined temple of Myth
+        // Drannor, nobody dead.
         const bool all_alive = std::ranges::none_of(party->state().slots,
                                                     [&](opengold::MemberId id)
                                                     {
                                                         return id && party->member(id).vitals.dead;
                                                     });
-        return needs.empty() && end.phase != TourPhase::defeated && end.area_id == 64 && all_alive;
+        return needs.empty() && end.phase != TourPhase::defeated && end.area_id == 67 && all_alive;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");
