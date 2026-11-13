@@ -9,6 +9,9 @@
 #include "training_control.h"
 #include "opengold/srd5.h"
 #include <algorithm>
+#include <array>
+#include <span>
+#include <utility>
 #include <string>
 #include <vector>
 
@@ -24,12 +27,115 @@ using presentation::signed_number;
 // The party, when given, adds what it knows about the member: current HP,
 // gold, AC and where each item is held.
 
+// A table of labelled numbers, such as the saving throws.
+std::string number_table(std::span<const char *const> labels, std::span<const int> numbers,
+                         const char *suffix = "")
+{
+    std::string text = "[theme_table=abilities]";
+    for (std::size_t i = 0; i < labels.size(); ++i)
+    {
+        text += "[cell]" + i18n::utf8(labels[i]) + "[/cell][cell]" + std::to_string(numbers[i]) +
+                suffix + "[/cell][cell][/cell]";
+    }
+    return text + "[/theme_table]";
+}
+
+// What a sheet under the original rules shows beside the portrait: the
+// levels of each class, age, Hit Points and THAC0, the scores, the five
+// saving throws, and a thief's skills and a caster's spell slots.
+std::string original_identity_and_attributes(const Character &character, const PartyMember *member,
+                                             const CampaignParty *party)
+{
+    const auto &s = character.sheet();
+    const auto &original = *s.original;
+    std::string levels;
+    for (const int level : original.class_levels)
+    {
+        if (level > 0)
+        {
+            levels += (levels.empty() ? "" : "/") + std::to_string(level);
+        }
+    }
+    std::string text = i18n::formatted(
+        "[theme_font=sheet_title]{name}[/theme_font]\nLevel {levels} / {race} / {gender} / {class}\n{alignment} / Age {age}\n\n",
+        {{"name", gs(rich_text_literal(s.name))},
+         {"levels", gs(levels)},
+         {"race", i18n::text(s.race)},
+         {"gender", i18n::text(s.gender)},
+         {"class", i18n::text(s.character_class)},
+         {"alignment", i18n::text(s.alignment)},
+         {"age", original.age}});
+    text += "[theme_emphasis]" +
+            std::string(presentation::hp_text(member ? member->vitals.hit_points : s.hit_points,
+                                              s.hit_points, member && member->vitals.dead, {},
+                                              s.hp_messages)
+                            .utf8()
+                            .get_data()) +
+            "[/theme_emphasis]";
+    text += i18n::formatted("   THAC0 {thac0}", {{"thac0", original.thac0}});
+    if (member)
+    {
+        text += i18n::formatted(
+            "   Party gold {gold}   XP {xp}",
+            {{"gold", gold_value(party->state().wealth)}, {"xp", member->experience}});
+    }
+    if (member && member->vitals.dead)
+    {
+        text += "   " + i18n::utf8("Dead");
+    }
+    text += "\n\n[theme_title]" + i18n::utf8("Attributes") + "[/theme_title]";
+    text += "\n[theme_table=abilities]";
+    for (unsigned i = 0; i < 6; ++i)
+    {
+        text += "[cell]" + i18n::utf8(i18n::ability_names[i]) + "[/cell][cell]" +
+                std::string(
+                    i18n::original_score(s, opengold::rules::all_abilities[i]).utf8().get_data()) +
+                "[/cell][cell][/cell]";
+    }
+    text += "[/theme_table]";
+    static constexpr std::array<const char *, 5> saves{
+        N_("Paralysis, poison or death magic"), N_("Petrification or polymorph"),
+        N_("Rod, staff or wand"), N_("Breath weapon"), N_("Spell")};
+    text += "\n\n[theme_title]" + i18n::utf8("Saving throws") + "[/theme_title]\n" +
+            number_table(saves, original.saving_throws);
+    if (std::ranges::any_of(original.thief_skills,
+                            [](int chance)
+                            {
+                                return chance > 0;
+                            }))
+    {
+        static constexpr std::array<const char *, 8> skills{
+            N_("Pick pockets"),  N_("Open locks"),      N_("Find and remove traps"),
+            N_("Move silently"), N_("Hide in shadows"), N_("Hear noise"),
+            N_("Climb walls"),   N_("Read languages")};
+        text += "\n\n[theme_title]" + i18n::utf8("Thief skills") + "[/theme_title]\n" +
+                number_table(skills, original.thief_skills, "%");
+    }
+    static constexpr std::array<const char *, 3> spell_levels{N_("First level"), N_("Second level"),
+                                                              N_("Third level")};
+    for (const auto &[title, slots] :
+         {std::pair{N_("Cleric spells a day"), original.cleric_slots},
+          std::pair{N_("Magic-user spells a day"), original.magic_user_slots}})
+    {
+        if (slots[0] > 0)
+        {
+            text += "\n\n[theme_title]" + i18n::utf8(title) + "[/theme_title]\n" +
+                    number_table(spell_levels, slots);
+        }
+    }
+    return text;
+}
+
 // The name and identity, hit points and attributes: what the town's sheet
 // shows beside the portrait.
 std::string identity_and_attributes(const Character &character, const PartyMember *member,
                                     const CampaignParty *party)
 {
     const auto &s = character.sheet();
+    if (s.original)
+    {
+        return original_identity_and_attributes(character, member, party);
+    }
     std::string text = i18n::formatted(
         "[theme_font=sheet_title]{name}[/theme_font]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n",
         {{"name", gs(rich_text_literal(s.name))},
@@ -199,8 +305,10 @@ std::string details(const Character &character, const PartyMember *member,
                     "[/theme_font]";
         }
     }
-    // The species' and class's features and choices, feats, cantrips and spells.
-    const auto details = opengold::srd5::sheet_details(s, character.creation_data());
+    // The species' and class's features and choices, feats, cantrips and
+    // spells, which a character under the original rules does not have.
+    const auto details = s.original ? std::vector<opengold::srd5::SheetDetail>{}
+                                    : opengold::srd5::sheet_details(s, character.creation_data());
     if (!details.empty())
     {
         text += "\n\n[theme_title]" + i18n::utf8("Features and choices") + "[/theme_title]";

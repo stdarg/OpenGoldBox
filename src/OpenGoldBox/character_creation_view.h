@@ -64,6 +64,10 @@ class CharacterCreationView : public godot::Control
     std::string original_portrait_of_;
     void layout();
     void refresh();
+    // Whether the game's rules roll a character whole, scores in place (the
+    // original's), not assigned from six rolls.
+    [[nodiscard]] bool rolls_in_place() const;
+    void show_rolled_character(const opengold::rules::CharacterSheet *sheet);
     void refresh_art();
     void recommend_portrait();
     // The original portrait's head or body, `direction` places on.

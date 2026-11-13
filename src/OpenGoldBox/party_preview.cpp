@@ -72,13 +72,23 @@ Character check_fighter()
     return Character(*rules, std::move(draft), {});
 }
 
+// The rules a new game plays by. Until the new game's question is shown,
+// checks start one under the original rules with --original-rules.
+GameRules starting_rules()
+{
+    if (settings::flag("--original-rules"))
+    {
+        return {GameRules::Set::original, original::default_aging};
+    }
+    return new_game_rules;
+}
 } // namespace
 
 void CharacterCreationView::setup_party()
 {
     body_catalog_ = game_combat_looks();
     campaign_ =
-        new_campaign_party(new_game_rules, presentation::path_from_godot(game_rules_file()));
+        new_campaign_party(starting_rules(), presentation::path_from_godot(game_rules_file()));
     auto panel = presentation::instantiate_scene("res://scenes/party_panel.tscn");
     i18n::prepare_ui(*panel);
     presentation::attach_child(*this, std::move(panel));

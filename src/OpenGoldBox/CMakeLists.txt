@@ -478,6 +478,9 @@ if(OPENGOLD_BUILD_TESTS)
     opengold_creation_check(expedition "Godot expedition passed" -DCHECK_FLAG=--expedition-check)
     opengold_creation_check(reincarnate "Godot reincarnation passed" -DCHECK_FLAG=--reincarnate-check)
     opengold_creation_check(training "Training UI checks passed" -DSCRIPT=training_view_tests)
+    # A character made under the original rules, page by page.
+    opengold_creation_check(original "Original creation view passed"
+        -DSCRIPT=original_creation_view_tests -DARGS=--original-rules)
     # A sample of every Human the screen can make, one screen after another,
     # with both fill orders and changes of background, class and species, some
     # made again on a fresh screen; the script explores every species when

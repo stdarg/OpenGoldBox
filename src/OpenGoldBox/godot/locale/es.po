@@ -6,21 +6,26 @@ msgstr "Project-Id-Version: OpenGoldBox\nLanguage: es\nMIME-Version: 1.0\nConten
 msgid "\n\n[theme_emphasis]Items[/theme_emphasis]\nNo equipped item modifiers.\n\n[theme_emphasis]Spells[/theme_emphasis]\nNo active spell modifiers."
 msgstr "\n\n[theme_emphasis]Objetos[/theme_emphasis]\nNo hay modificadores de objetos equipados.\n\n[theme_emphasis]Conjuros[/theme_emphasis]\nNo hay modificadores de conjuros activos."
 
-#: src/OpenGoldBox/character_sheet_text.cpp:121
+#: src/OpenGoldBox/character_sheet_text.cpp:227
 msgid "\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]"
 msgstr "\n[theme_table=abilities][theme_header]Característica[/theme_header][theme_header]Puntuación[/theme_header][theme_header_last]Salvación[/theme_header_last]"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:83
+#: src/OpenGoldBox/character_sheet_text.cpp:189
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "   Hit Dice: {dice}"
 msgstr "   Dados de Golpe: {dice}"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:86
+#: src/OpenGoldBox/character_sheet_text.cpp:192 src/OpenGoldBox/character_sheet_text.cpp:78
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "   Party gold {gold}   XP {xp}"
 msgstr "   Oro del grupo {gold}   PX {xp}"
 
-#: src/OpenGoldBox/party_preview.cpp:558
+#: src/OpenGoldBox/character_sheet_text.cpp:75
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "   THAC0 {thac0}"
+msgstr "   GAC0 {thac0}"
+
+#: src/OpenGoldBox/party_preview.cpp:568
 msgid " (Reserve)"
 msgstr " (Reserva)"
 
@@ -52,15 +57,15 @@ msgstr " (versión anterior)"
 msgid " (two-handed)"
 msgstr " (a dos manos)"
 
-#: src/OpenGoldBox/character_text.h:22
+#: src/OpenGoldBox/character_text.h:36
 msgid " and "
 msgstr " y "
 
-#: src/OpenGoldBox/character_text.h:22
+#: src/OpenGoldBox/character_text.h:36
 msgid " or "
 msgstr " o "
 
-#: src/OpenGoldBox/character_sheet_text.cpp:150
+#: src/OpenGoldBox/character_sheet_text.cpp:256
 msgid "* Proficient saving throw"
 msgstr "* Salvación con competencia"
 
@@ -225,6 +230,22 @@ msgstr "Se cierra una caja de fuerza."
 msgid "A cage of force closes."
 msgstr "Se cierra una jaula de fuerza."
 
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:60
+msgid "A cleric and a fighter at once, sharing experience between the two."
+msgstr "Clérigo y guerrero a la vez, que reparte la experiencia entre ambos."
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:66
+msgid "A cleric and a magic-user at once, sharing experience between the two."
+msgstr "Clérigo y mago a la vez, que reparte la experiencia entre ambos."
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:68
+msgid "A cleric and a thief at once, sharing experience between the two."
+msgstr "Clérigo y ladrón a la vez, que reparte la experiencia entre ambos."
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:62
+msgid "A cleric, fighter and magic-user at once, sharing experience among the three."
+msgstr "Clérigo, guerrero y mago a la vez, que reparte la experiencia entre los tres."
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "A creature at 0 Hit Points within 15 feet becomes Stable."
 msgstr "Una criatura con 0 puntos de golpe a 15 pies o menos queda estable."
@@ -265,9 +286,25 @@ msgstr "Una dote o puntos de característica.\nUna invocación sobrenatural más
 msgid "A feat or ability points.\nWild Shape: the Tiger."
 msgstr "Una dote o puntos de característica.\nForma salvaje: el tigre."
 
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:45 src/OpenGold.Rules.Original/src/character_rules.cpp:46
+msgid "A female's Strength may be lower than a male's."
+msgstr "La Fuerza de una mujer puede ser menor que la de un hombre."
+
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:68
 msgid "A fierce warrior. Primary ability: Strength. Hit Die: d12."
 msgstr "Un combatiente feroz. Característica principal: Fuerza. Dado de golpe: d12."
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:70
+msgid "A fighter and a magic-user at once, sharing experience between the two."
+msgstr "Guerrero y mago a la vez, que reparte la experiencia entre ambos."
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:72
+msgid "A fighter and a thief at once, sharing experience between the two."
+msgstr "Guerrero y ladrón a la vez, que reparte la experiencia entre ambos."
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:74
+msgid "A fighter, magic-user and thief at once, sharing experience among the three."
+msgstr "Guerrero, mago y ladrón a la vez, que reparte la experiencia entre los tres."
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:19677
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -379,6 +416,10 @@ msgstr "Un espacio de conjuro de nivel 8 y conjuros de hechicero: Dominar monstr
 msgid "A level 8 spell slot and Wizard spells: Antimagic Field, Befuddlement, Dominate Monster, Incendiary Cloud, Maze, Mind Blank, Power Word Stun and Sunburst."
 msgstr "Un espacio de conjuro de nivel 8 y conjuros de mago: Campo antimagia, Embotamiento mental, Dominar monstruo, Nube incendiaria, Laberinto, Mente en blanco, Palabra de poder: aturdir y Estallido solar."
 
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:76
+msgid "A magic-user and a thief at once, sharing experience between the two."
+msgstr "Mago y ladrón a la vez, que reparte la experiencia entre ambos."
+
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:76
 msgid "A master of weapons. Primary ability: Strength or Dexterity. Hit Die: d10."
 msgstr "Un maestro de las armas. Característica principal: Fuerza o Destreza. Dado de golpe: d10."
@@ -398,6 +439,14 @@ msgstr "Aparece una manada de animales espirituales."
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:19932
 msgid "A phantom watchdog appears."
 msgstr "Aparece un perro guardián fantasmal."
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:50
+msgid "A priest who fights in armor and casts healing and protective spells. Hit Die: d8."
+msgstr "Un sacerdote que lucha con armadura y lanza conjuros de curación y protección. Dado de golpe: d8."
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:58
+msgid "A rogue who opens locks, finds traps and strikes from behind. Hit Die: d6."
+msgstr "Un pícaro que abre cerraduras, encuentra trampas y ataca por la espalda. Dado de golpe: d6."
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:90
 msgid "A scholar of arcane magic. Primary ability: Intelligence. Hit Die: d6."
@@ -440,6 +489,10 @@ msgstr "Crece un muro de espinas."
 msgid "A wall of water rises."
 msgstr "Se alza un muro de agua."
 
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:52
+msgid "A warrior who uses every weapon and armor and gains more attacks with experience. Hit Die: d10."
+msgstr "Un luchador que usa todas las armas y armaduras y gana más ataques con la experiencia. Dado de golpe: d10."
+
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:18155
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "A wave of lethargy washes over {name}."
@@ -449,12 +502,16 @@ msgstr "Una oleada de letargo invade a {name}."
 msgid "A wielder of divine magic. Primary ability: Wisdom. Hit Die: d8."
 msgstr "Un portador de magia divina. Característica principal: Sabiduría. Dado de golpe: d8."
 
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:55
+msgid "A wizard who learns powerful spells from a spellbook but fights poorly and wears no armor. Hit Die: d4."
+msgstr "Un hechicero que aprende conjuros poderosos de un libro, pero lucha mal y no lleva armadura. Dado de golpe: d4."
+
 #: src/OpenGoldBox/combat_view.cpp:2946 src/OpenGoldBox/combat_view.cpp:2979
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "AC {ac}"
 msgstr "CA {ac}"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:171
+#: src/OpenGoldBox/character_sheet_text.cpp:277
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "AC {ac}   Speed {speed} ft"
 msgstr "CA {ac}   Velocidad {speed} pies"
@@ -593,6 +650,10 @@ msgstr "Las condiciones activas se muestran en el estado del personaje."
 msgid "Acts destructively with little regard for rules or others."
 msgstr "Actúa de forma destructiva, sin apenas respetar las normas ni a los demás."
 
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:97
+msgid "Acts destructively, with little regard for rules or others."
+msgstr "Actúa de forma destructiva, sin apenas respeto por las normas ni por los demás."
+
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:31301
 msgid "Add 2 to one ability or 1 to two abilities; maximum 20."
 msgstr "Añade 2 a una característica o 1 a dos características; máximo 20."
@@ -605,7 +666,7 @@ msgstr "Añade primero un miembro al grupo"
 msgid "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 msgstr "Suma tu bonificador por competencia a Iniciativa; puedes intercambiarla con un aliado apto antes del primer turno."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1169 src/OpenGoldBox/godot/scenes/character_creation.tscn:1496 src/OpenGoldBox/party_preview.cpp:1080
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1169 src/OpenGoldBox/godot/scenes/character_creation.tscn:1496 src/OpenGoldBox/party_preview.cpp:1090
 msgid "Add to party"
 msgstr "Añadir al grupo"
 
@@ -1060,7 +1121,7 @@ msgstr "Bonificaciones: Inteligencia, Sabiduría y Carisma.\nHabilidades: Perspi
 msgid "Attribute bonuses: Strength, Dexterity, Constitution.\nSkills: Athletics, Intimidation.\nFeat: Savage Attacker."
 msgstr "Bonificaciones: Fuerza, Destreza y Constitución.\nHabilidades: Atletismo, Intimidación.\nDote: Atacante salvaje."
 
-#: src/OpenGoldBox/character_creation_view.cpp:56 src/OpenGoldBox/character_sheet_text.cpp:120
+#: src/OpenGoldBox/character_creation_view.cpp:56 src/OpenGoldBox/character_sheet_text.cpp:226 src/OpenGoldBox/character_sheet_text.cpp:86
 msgid "Attributes"
 msgstr "Características"
 
@@ -1096,7 +1157,7 @@ msgstr "Autoequipar"
 msgid "Automatically equip items better than currently equipped items"
 msgstr "Equipar automáticamente los objetos mejores que los equipados"
 
-#: src/OpenGoldBox/character_creation_view.cpp:595 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:355 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:126 src/OpenGoldBox/level_up_dialog.cpp:99
+#: src/OpenGoldBox/character_creation_view.cpp:594 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:355 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:126 src/OpenGoldBox/level_up_dialog.cpp:99
 msgid "Back"
 msgstr "Atrás"
 
@@ -1116,6 +1177,10 @@ msgstr "Las bonificaciones de trasfondo no pueden superar una puntuación de 20"
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:318
 msgid "Balances competing principles or acts according to circumstances."
 msgstr "Equilibra principios opuestos o actúa según las circunstancias."
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:89
+msgid "Balances competing principles, or acts as circumstances demand."
+msgstr "Equilibra principios opuestos o actúa según lo exijan las circunstancias."
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:71 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Bane"
@@ -1581,6 +1646,10 @@ msgstr "Arma de aliento (cono)"
 msgid "Breath Weapon (line)"
 msgstr "Arma de aliento (línea)"
 
+#: src/OpenGoldBox/character_sheet_text.cpp:98
+msgid "Breath weapon"
+msgstr "Arma de aliento"
+
 #: src/OpenGoldBox/monster_ability_options.h:20
 msgid "Breath weapons"
 msgstr "Armas de aliento"
@@ -1732,7 +1801,7 @@ msgstr "Puede volver a tirar un d20 una vez."
 msgid "Can target another creature as a Magic action."
 msgstr "Puede elegir como objetivo a otra criatura como acción mágica."
 
-#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:893 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:90 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:467
+#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:913 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:90 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:467
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -1978,15 +2047,15 @@ msgstr "Canalizar divinidad"
 msgid "Channel Divinity: two uses, one back on a Short Rest, for Divine Spark (heal or harm 1d8 + Wisdom within 30 feet) or Turn Undead."
 msgstr "Canalizar divinidad: dos usos, uno se recupera con un descanso corto, para Chispa divina (cura o daña 1d8 + Sabiduría a 30 pies o menos) o Expulsar muertos vivientes."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:324
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:97 src/OpenGold.Rules.Srd5/src/character_rules.cpp:324
 msgid "Chaotic Evil"
 msgstr "Caótico malvado"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:316
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:93 src/OpenGold.Rules.Srd5/src/character_rules.cpp:316
 msgid "Chaotic Good"
 msgstr "Caótico bueno"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:320
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:95 src/OpenGold.Rules.Srd5/src/character_rules.cpp:320
 msgid "Chaotic Neutral"
 msgstr "Caótico neutral"
 
@@ -2140,6 +2209,10 @@ msgstr "Elige un destino para Empujar, u omite el efecto."
 msgid "Choose a character and press Create Character."
 msgstr "Elige un personaje y pulsa Crear personaje."
 
+#: src/OpenGoldBox/character_creation_view.cpp:657
+msgid "Choose a class. Classes in gray are not open to your race."
+msgstr "Elige una clase. Las clases en gris no están abiertas a tu raza."
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Choose a lesson for {name}."
@@ -2157,17 +2230,21 @@ msgstr "Elige un arma de una mano"
 msgid "Choose a proficient skill"
 msgstr "Elige una habilidad en la que tengas competencia"
 
-#: src/OpenGoldBox/character_creation_view.cpp:862
+#: src/OpenGoldBox/character_creation_view.cpp:882
 msgid "Choose a swatch to recolor this part in the combat preview."
 msgstr "Elige una muestra para cambiar el color de esta parte en la vista de combate."
 
-#: src/OpenGoldBox/character_creation_view.cpp:860
+#: src/OpenGoldBox/character_creation_view.cpp:880
 msgid "Choose a swatch to recolor this part when it is equipped in combat."
 msgstr "Elige una muestra para cambiar el color de esta parte cuando esté equipada en combate."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Choose an Additional Fighting Style other than the new Fighting Style"
 msgstr "Elige un Estilo de combate adicional distinto del nuevo Estilo de combate"
+
+#: src/OpenGoldBox/character_creation_view.cpp:659
+msgid "Choose an alignment. Alignments in gray are not open to your class."
+msgstr "Elige un alineamiento. Los alineamientos en gris no están abiertos a tu clase."
 
 #: src/OpenGoldBox/initiative_controls.h:118
 msgid "Choose an ally"
@@ -2193,11 +2270,11 @@ msgstr "Elige una carpeta existente con el arte nuevo de OpenGoldBox."
 msgid "Choose an option"
 msgstr "Elige una opción"
 
-#: src/OpenGoldBox/character_creation_view.cpp:797
+#: src/OpenGoldBox/character_creation_view.cpp:817
 msgid "Choose cantrips and prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr "Elige trucos y conjuros preparados. Las elecciones sin completar quedan pendientes; Atrás conserva tus elecciones."
 
-#: src/OpenGoldBox/character_creation_view.cpp:799
+#: src/OpenGoldBox/character_creation_view.cpp:819
 msgid "Choose cantrips, spellbook entries and prepared spells. Back preserves your choices."
 msgstr "Elige trucos, entradas del libro de conjuros y conjuros preparados. Atrás conserva tus elecciones."
 
@@ -2209,11 +2286,11 @@ msgstr "Elige la carpeta del juego"
 msgid "Choose language"
 msgstr "Elige idioma"
 
-#: src/OpenGoldBox/character_creation_view.cpp:652
+#: src/OpenGoldBox/character_creation_view.cpp:661
 msgid "Choose one starting class. The classes you checked on the last page are future goals, not extra levels."
 msgstr "Elige una clase inicial. Las clases que marcaste en la página anterior son objetivos futuros, no niveles adicionales."
 
-#: src/OpenGoldBox/character_creation_view.cpp:793
+#: src/OpenGoldBox/character_creation_view.cpp:813
 msgid "Choose prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr "Elige conjuros preparados. Las elecciones sin completar quedan pendientes; Atrás conserva tus elecciones."
 
@@ -2233,15 +2310,15 @@ msgstr "Elige la carpeta del arte nuevo"
 msgid "Choose the new class's training"
 msgstr "Elige el entrenamiento de la clase nueva"
 
-#: src/OpenGoldBox/character_creation_view.cpp:776
+#: src/OpenGoldBox/character_creation_view.cpp:796
 msgid "Choose the required training options. Back preserves your selections."
 msgstr "Elige las opciones de entrenamiento requeridas. Atrás conserva tus selecciones."
 
-#: src/OpenGoldBox/character_creation_view.cpp:913
+#: src/OpenGoldBox/character_creation_view.cpp:933
 msgid "Choose the spells Magic Initiate teaches."
 msgstr "Elige los conjuros que enseña Iniciado en la magia."
 
-#: src/OpenGoldBox/character_creation_view.cpp:801
+#: src/OpenGoldBox/character_creation_view.cpp:821
 msgid "Choose the spells Magic Initiate teaches. Unfilled choices remain pending; Back preserves your choices."
 msgstr "Elige los conjuros que enseña Iniciado en la magia. Las elecciones sin completar quedan pendientes; Atrás conserva tus elecciones."
 
@@ -2271,7 +2348,7 @@ msgstr "Elige qué tomar."
 msgid "Choose who receives {spell}."
 msgstr "Elige quién recibe {spell}."
 
-#: src/OpenGoldBox/character_creation_view.cpp:802
+#: src/OpenGoldBox/character_creation_view.cpp:822
 msgid "Choose your available cantrips. Unfilled choices remain pending; Back preserves your selections."
 msgstr "Elige los trucos disponibles. Las elecciones sin completar quedan pendientes; Atrás conserva tus selecciones."
 
@@ -2416,7 +2493,7 @@ msgstr "Entrenamiento de clase: sin penalización por falta de entrenamiento. So
 msgid "Cleave"
 msgstr "Hender"
 
-#: src/OpenGold.Rules.Srd5/src/character_class.cpp:21
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:50 src/OpenGold.Rules.Srd5/src/character_class.cpp:21
 msgid "Cleric"
 msgstr "Clérigo"
 
@@ -2440,6 +2517,26 @@ msgstr "Rasgos de Clérigo"
 msgid "Cleric skills"
 msgstr "Habilidades de clérigo"
 
+#: src/OpenGoldBox/character_sheet_text.cpp:117
+msgid "Cleric spells a day"
+msgstr "Conjuros de clérigo al día"
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:60
+msgid "Cleric/Fighter"
+msgstr "Clérigo/Guerrero"
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:62
+msgid "Cleric/Fighter/Magic-User"
+msgstr "Clérigo/Guerrero/Mago"
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:66
+msgid "Cleric/Magic-User"
+msgstr "Clérigo/Mago"
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:68
+msgid "Cleric/Thief"
+msgstr "Clérigo/Ladrón"
+
 #: src/OpenGoldBox/combat_view.cpp:3644
 msgid "Click a foe: aim the next at it | Escape: cancel"
 msgstr "Clic en un enemigo: apunta el siguiente a él | Escape: cancelar"
@@ -2447,6 +2544,10 @@ msgstr "Clic en un enemigo: apunta el siguiente a él | Escape: cancelar"
 #: src/OpenGoldBox/combat_view.cpp:3654
 msgid "Click: choose or remove | Space or Cast spell: cast | Escape: cancel"
 msgstr "Clic: elegir o quitar | Espacio o Lanzar conjuro: lanzar | Escape: cancelar"
+
+#: src/OpenGoldBox/character_sheet_text.cpp:110
+msgid "Climb walls"
+msgstr "Escalar muros"
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:245
 msgid "Clings to a creature, draining it at the start of each of its turns; it cannot attack while attached."
@@ -2533,7 +2634,7 @@ msgstr "Arte de combate"
 msgid "Combat begins. Each square is 5 feet."
 msgstr "Comienza el combate. Cada casilla equivale a 5 pies."
 
-#: src/OpenGoldBox/character_creation_view.cpp:587
+#: src/OpenGoldBox/character_creation_view.cpp:586
 msgid "Combat icon"
 msgstr "Icono de combate"
 
@@ -2796,7 +2897,7 @@ msgstr "Crear muertos vivientes"
 msgid "Create a character before saving"
 msgstr "Crea un personaje antes de guardarlo"
 
-#: src/OpenGoldBox/party_preview.cpp:571
+#: src/OpenGoldBox/party_preview.cpp:581
 msgid "Create a character, finish its sheet, then Add to party.\n\nA party holds six characters, and up to two others may join it on the way. Removed members remain in the roster."
 msgstr "Crea un personaje, termina su hoja y pulsa Añadir al grupo.\n\nUn grupo admite seis personajes, y hasta otros dos pueden unirse por el camino. Los miembros retirados permanecen en la lista."
 
@@ -2989,7 +3090,7 @@ msgstr "Correr"
 msgid "Dazed"
 msgstr "Desorientado"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:92
+#: src/OpenGoldBox/character_sheet_text.cpp:198 src/OpenGoldBox/character_sheet_text.cpp:84
 msgid "Dead"
 msgstr "Muerto"
 
@@ -3021,11 +3122,11 @@ msgstr "Reducir el zoom del campo de batalla en 10 puntos porcentuales"
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr "Reducir el zoom del campo de batalla en 100 puntos porcentuales"
 
-#: src/OpenGoldBox/party_preview.cpp:1818
+#: src/OpenGoldBox/party_preview.cpp:1828
 msgid "Defeat"
 msgstr "Derrota"
 
-#: src/OpenGoldBox/party_preview.cpp:1902
+#: src/OpenGoldBox/party_preview.cpp:1912
 msgid "Defeat test"
 msgstr "Prueba de derrota"
 
@@ -3326,7 +3427,7 @@ msgstr "Conjuros dracónicos"
 msgid "Draconic Spirit"
 msgstr "Espíritu dracónico"
 
-#: src/OpenGoldBox/party_preview.cpp:103
+#: src/OpenGoldBox/party_preview.cpp:113
 msgid "Drag a character up or down to change the party's order. A fight puts the first half of the party in the front rank."
 msgstr "Arrastra un personaje hacia arriba o hacia abajo para cambiar el orden del grupo. En combate, la primera mitad del grupo va en la fila delantera."
 
@@ -3458,7 +3559,7 @@ msgstr "Trucos de guerrero druídico"
 msgid "Dust of Disappearance"
 msgstr "Polvo de desaparición"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:279
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:24 src/OpenGold.Rules.Srd5/src/character_rules.cpp:279
 msgid "Dwarf"
 msgstr "Enano"
 
@@ -3479,7 +3580,7 @@ msgstr "Dureza enana: +{hp} PG máximos."
 msgid "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage, and Advantage on saves against being Poisoned."
 msgstr "Los enanos son gente robusta y resistente, tan duradera como la piedra que trabajan.\n\nRasgos raciales:\n- Dureza enana: 1 punto de golpe más en cada nivel.\n- Resiliencia enana: resistencia al daño de veneno y ventaja en las salvaciones contra quedar envenenado."
 
-#: src/OpenGoldBox/party_preview.cpp:619
+#: src/OpenGoldBox/party_preview.cpp:629
 msgid "Each new character brings 3d6 × 10 gold pieces. Save game keeps this party to play on later."
 msgstr "Cada personaje nuevo trae 3d6 × 10 piezas de oro. Guardar partida conserva este grupo para seguir jugando más tarde."
 
@@ -3596,7 +3697,7 @@ msgstr "Espíritus elementales revolotean alrededor de {name}."
 msgid "Elementals"
 msgstr "Elementales"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:281
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:27 src/OpenGold.Rules.Srd5/src/character_rules.cpp:281
 msgid "Elf"
 msgstr "Elfo"
 
@@ -3636,7 +3737,7 @@ msgstr "Golpes potenciados"
 msgid "Empowered Strikes: Unarmed Strikes deal Force damage.\nOpen Hand: Wholeness of Body, a Bonus Action that heals the Martial Arts die + Wisdom, Wisdom modifier times per Long Rest.\nUnarmored Movement +15 feet."
 msgstr "Golpes potenciados: los ataques sin armas infligen daño de fuerza.\nMano abierta: Integridad corporal, una acción adicional que cura el dado de Artes marciales + Sabiduría, tantas veces por descanso largo como tu modificador de Sabiduría.\nMovimiento sin armadura +15 pies."
 
-#: src/OpenGoldBox/character_sheet_text.cpp:221
+#: src/OpenGoldBox/character_sheet_text.cpp:329
 msgid "Empty"
 msgstr "Vacío"
 
@@ -3750,7 +3851,7 @@ msgstr "Equipado"
 msgid "Equipped / "
 msgstr "Equipado / "
 
-#: src/OpenGoldBox/party_preview.cpp:1171 src/OpenGoldBox/rolf_tour_view.cpp:933
+#: src/OpenGoldBox/party_preview.cpp:1181 src/OpenGoldBox/rolf_tour_view.cpp:933
 msgid "Equipped."
 msgstr "Equipado."
 
@@ -3822,7 +3923,7 @@ msgstr "Exhalar (Aliento de dragón)"
 msgid "Exit"
 msgstr "Salir"
 
-#: src/OpenGoldBox/party_preview.cpp:1826
+#: src/OpenGoldBox/party_preview.cpp:1836
 msgid "Exit to OS"
 msgstr "Salir del juego"
 
@@ -4007,11 +4108,11 @@ msgstr "Dotes"
 msgid "Features"
 msgstr "Rasgos"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:206
+#: src/OpenGoldBox/character_sheet_text.cpp:314
 msgid "Features and choices"
 msgstr "Rasgos y elecciones"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:296
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:46 src/OpenGold.Rules.Srd5/src/character_rules.cpp:296
 msgid "Female"
 msgstr "Femenino"
 
@@ -4063,7 +4164,7 @@ msgstr "Vigor infernal (Falsa vida)"
 msgid "Fiends"
 msgstr "Infernales"
 
-#: src/OpenGold.Rules.Srd5/src/character_class.cpp:23
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:52 src/OpenGold.Rules.Srd5/src/character_class.cpp:23
 msgid "Fighter"
 msgstr "Guerrero"
 
@@ -4088,11 +4189,23 @@ msgstr "Rasgos de Guerrero"
 msgid "Fighter skills"
 msgstr "Habilidades de guerrero"
 
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:70
+msgid "Fighter/Magic-User"
+msgstr "Guerrero/Mago"
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:74
+msgid "Fighter/Magic-User/Thief"
+msgstr "Guerrero/Mago/Ladrón"
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:72
+msgid "Fighter/Thief"
+msgstr "Guerrero/Ladrón"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/level_up_dialog.cpp:844
 msgid "Fighting Style"
 msgstr "Estilo de combate"
 
-#: src/OpenGoldBox/character_creation_view.cpp:712
+#: src/OpenGoldBox/character_creation_view.cpp:728
 msgid "Fill all six boxes to continue.\nAssigned scores include bonuses."
 msgstr "Completa las seis casillas para continuar.\nLas puntuaciones incluyen bonificaciones."
 
@@ -4112,6 +4225,10 @@ msgstr "Puntuación final: {score}"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Find Traps"
 msgstr "Encontrar trampas"
+
+#: src/OpenGoldBox/character_sheet_text.cpp:108
+msgid "Find and remove traps"
+msgstr "Encontrar y desactivar trampas"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Finger of Death"
@@ -4133,7 +4250,7 @@ msgstr "Termina las elecciones de conjuros del descanso largo antes de modificar
 msgid "Finish Long Rest spell choices before combat"
 msgstr "Termina las elecciones de conjuros del descanso largo antes del combate"
 
-#: src/OpenGoldBox/party_preview.cpp:1722
+#: src/OpenGoldBox/party_preview.cpp:1732
 msgid "Finish combat, dialogue or shopping before returning to the party."
 msgstr "Termina el combate, el diálogo o las compras antes de volver al grupo."
 
@@ -4192,6 +4309,10 @@ msgstr "Quemadura del fuego"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Fireball"
 msgstr "Bola de fuego"
+
+#: src/OpenGoldBox/character_sheet_text.cpp:114
+msgid "First level"
+msgstr "Primer nivel"
 
 #: src/OpenGoldBox/training_control.h:308
 msgid "Fixed training"
@@ -4296,6 +4417,10 @@ msgstr "Nube de niebla"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Fog Cloud (Magic Initiate)"
 msgstr "Nube de niebla (Iniciado en la magia)"
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:33
+msgid "Folk of both human and elven blood, partly proof against sleep and charm magic, with the widest choice of classes."
+msgstr "Gente de sangre humana y élfica, en parte inmune a la magia de sueño y hechizo, con la mayor variedad de clases."
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:2564
 msgid "Following Rolf..."
@@ -4507,7 +4632,7 @@ msgstr "Escalofrío de la escarcha: Velocidad reducida en 10 pies."
 msgid "Full hit points."
 msgstr "Puntos de Golpe completos."
 
-#: src/OpenGoldBox/character_sheet_text.cpp:62
+#: src/OpenGoldBox/character_sheet_text.cpp:168
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Future class goals: {classes}\n\n"
 msgstr "Clases objetivo: {classes}\n\n"
@@ -4549,9 +4674,13 @@ msgstr "Obtienes la dote Diestro: entrenamiento en tres habilidades."
 msgid "Gains {value} Temporary Hit Points at the start of each of its turns."
 msgstr "Gana {value} puntos de golpe temporales al comienzo de cada uno de sus turnos."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:426
+#: src/OpenGoldBox/character_creation_view.cpp:494 src/OpenGoldBox/godot/scenes/character_creation.tscn:426
 msgid "Game art from the original, portraits from OpenGoldBox, rules from SRD 5.2.1"
 msgstr "Arte del juego original, retratos de OpenGoldBox, reglas de SRD 5.2.1"
+
+#: src/OpenGoldBox/character_creation_view.cpp:493
+msgid "Game art from the original, portraits from OpenGoldBox, rules from the original game"
+msgstr "Arte del juego original, retratos de OpenGoldBox, reglas del juego original"
 
 #: src/OpenGoldBox/godot/scenes/startup.tscn:190 src/OpenGoldBox/godot/scenes/startup.tscn:212
 msgid "Game file warning"
@@ -4645,7 +4774,7 @@ msgstr "Globo de invulnerabilidad"
 msgid "Gnoll Warrior"
 msgstr "Guerrero gnoll"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:283
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:30 src/OpenGold.Rules.Srd5/src/character_rules.cpp:283
 msgid "Gnome"
 msgstr "Gnomo"
 
@@ -4684,6 +4813,10 @@ msgstr "Cornada"
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:2114
 msgid "Grab"
 msgstr "Agarrar"
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:27
+msgid "Graceful, long-lived folk who shrug off sleep and charm magic and are deadly with bows and swords. An elf may combine fighter, magic-user and thief."
+msgstr "Gente elegante y longeva que resiste la magia de sueño y hechizo y es letal con arcos y espadas. Un elfo puede combinar guerrero, mago y ladrón."
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:2746
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -4778,9 +4911,17 @@ msgstr "Orientación divina: Atletismo"
 msgid "Guidance: Medicine"
 msgstr "Orientación divina: Medicina"
 
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:82
+msgid "Guided by compassion, duty and order."
+msgstr "Guiado por la compasión, el deber y el orden."
+
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:314
 msgid "Guided by compassion, duty, and order."
 msgstr "Se guía por la compasión, el deber y el orden."
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:83
+msgid "Guided by rules, tradition or a personal code."
+msgstr "Guiado por las normas, la tradición o un código personal."
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:317
 msgid "Guided by rules, tradition, or a personal code."
@@ -4839,7 +4980,7 @@ msgstr "Armadura de semiplacas"
 msgid "Half Speed, -2 to Armor Class and Dexterity saves, no Reactions, and only an action or a Bonus Action and one attack each turn. A Wisdom save at the end of each of its turns ends it."
 msgstr "Mitad de Velocidad, -2 a la Clase de Armadura y a las salvaciones de Destreza, sin reacciones, y solo una acción o una acción adicional y un ataque cada turno. Una salvación de Sabiduría al final de cada uno de sus turnos lo termina."
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:33 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Half-Elf"
 msgstr "Semielfo"
 
@@ -4847,7 +4988,7 @@ msgstr "Semielfo"
 msgid "Half-Orc"
 msgstr "Semiorco"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:287
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:36 src/OpenGold.Rules.Srd5/src/character_rules.cpp:287
 msgid "Halfling"
 msgstr "Mediano"
 
@@ -4937,6 +5078,10 @@ msgstr "La luz sanadora brilla sobre {name}."
 msgid "Healing requires a wounded living member"
 msgstr "Curar requiere un miembro vivo y herido"
 
+#: src/OpenGoldBox/character_sheet_text.cpp:109
+msgid "Hear noise"
+msgstr "Oír ruidos"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Heat Metal"
 msgstr "Calentar metal"
@@ -5025,6 +5170,10 @@ msgstr "Esconderse"
 msgid "Hide Armor"
 msgstr "Armadura de pieles"
 
+#: src/OpenGoldBox/character_sheet_text.cpp:109
+msgid "Hide in shadows"
+msgstr "Esconderse en las sombras"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Hideous Laughter"
 msgstr "Risa horrible"
@@ -5089,6 +5238,11 @@ msgstr "Máximo de puntos de golpe reducido en {value} hasta un Restablecimiento
 msgid "Hit Point maximum lowered by {value} until a Long Rest."
 msgstr "Máximo de puntos de golpe reducido en {value} hasta un descanso largo."
 
+#: src/OpenGoldBox/character_creation_view.cpp:987
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Hit Points {hp}\nAge {age}\nGold {gold}"
+msgstr "Puntos de golpe {hp}\nEdad {age}\nOro {gold}"
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:141
 msgid "Hits by the caster deal an extra 1d6 Necrotic damage."
 msgstr "Los impactos del lanzador infligen 1d6 de daño Necrótico adicional."
@@ -5129,7 +5283,7 @@ msgstr "Rompehordas"
 msgid "How large an original encounter may be: a share of the SRD's Moderate XP budget for the party. Bigger groups shrink; experience and treasure stay the original's."
 msgstr "Lo grande que puede ser un encuentro original: una parte del presupuesto de PX moderado del SRD para el grupo. Los grupos mayores se reducen; la experiencia y el tesoro siguen siendo los originales."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:289
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:39 src/OpenGold.Rules.Srd5/src/character_rules.cpp:289
 msgid "Human"
 msgstr "Humano"
 
@@ -5396,7 +5550,7 @@ msgstr "Plaga de insectos"
 msgid "Insight"
 msgstr "Perspicacia"
 
-#: src/OpenGoldBox/party_preview.cpp:1721
+#: src/OpenGoldBox/party_preview.cpp:1731
 msgid "Inspect your party and equipment."
 msgstr "Examina tu grupo y su equipo."
 
@@ -5436,7 +5590,7 @@ msgstr "Opciones u origen de Maestría con armas no válidos"
 msgid "Invalid advancement training choice"
 msgstr "Selección de formación de nivel no válida"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:218 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:384
+#: src/OpenGoldBox/character_sheet_text.cpp:326 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:384
 msgid "Inventory"
 msgstr "Inventario"
 
@@ -5656,15 +5810,15 @@ msgstr "Idioma"
 msgid "Lasts while its summoner keeps Concentration."
 msgstr "Dura mientras su invocador mantenga la concentración."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:321
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:85 src/OpenGold.Rules.Srd5/src/character_rules.cpp:321
 msgid "Lawful Evil"
 msgstr "Legal malvado"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:314
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:82 src/OpenGold.Rules.Srd5/src/character_rules.cpp:314
 msgid "Lawful Good"
 msgstr "Legal bueno"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:317
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:83 src/OpenGold.Rules.Srd5/src/character_rules.cpp:317
 msgid "Lawful Neutral"
 msgstr "Legal neutral"
 
@@ -6024,7 +6178,7 @@ msgstr "Cargar"
 msgid "Load Character"
 msgstr "Cargar personaje"
 
-#: src/OpenGoldBox/party_preview.cpp:1822
+#: src/OpenGoldBox/party_preview.cpp:1832
 msgid "Load a saved game to continue."
 msgstr "Carga una partida guardada para continuar."
 
@@ -6246,9 +6400,17 @@ msgstr "Arma mágica"
 msgid "Magic items are marked * for ten minutes."
 msgstr "Los objetos mágicos quedan marcados con * durante diez minutos."
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:55 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Magic-User"
 msgstr "Mago"
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:76
+msgid "Magic-User/Thief"
+msgstr "Mago/Ladrón"
+
+#: src/OpenGoldBox/character_sheet_text.cpp:118
+msgid "Magic-user spells a day"
+msgstr "Conjuros de mago al día"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Magical Cunning"
@@ -6291,7 +6453,7 @@ msgstr "Nombrar líder"
 msgid "Make the species' choices."
 msgstr "Haz las elecciones de la especie."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:298
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:45 src/OpenGold.Rules.Srd5/src/character_rules.cpp:298
 msgid "Male"
 msgstr "Masculino"
 
@@ -6711,6 +6873,10 @@ msgstr "Mover Rayo de luna"
 msgid "Move Nature's Sanctuary"
 msgstr "Mover el Santuario natural"
 
+#: src/OpenGoldBox/character_sheet_text.cpp:109
+msgid "Move silently"
+msgstr "Moverse en silencio"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Move spirit pack"
 msgstr "Mover la manada de espíritus"
@@ -6784,7 +6950,7 @@ msgstr "PNJ"
 msgid "Name"
 msgstr "Nombre"
 
-#: src/OpenGoldBox/character_creation_view.cpp:654
+#: src/OpenGoldBox/character_creation_view.cpp:663
 msgid "Name your character (up to 40 characters), then choose a race and gender."
 msgstr "Pon nombre a tu personaje (hasta 40 caracteres) y elige raza y género."
 
@@ -6858,11 +7024,11 @@ msgstr "Necrótico"
 msgid "Neutral"
 msgstr "Neutral"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:322
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:91 src/OpenGold.Rules.Srd5/src/character_rules.cpp:322
 msgid "Neutral Evil"
 msgstr "Neutral malvado"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:315
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:87 src/OpenGold.Rules.Srd5/src/character_rules.cpp:315
 msgid "Neutral Good"
 msgstr "Neutral bueno"
 
@@ -6886,7 +7052,7 @@ msgstr "Nueva Phlan"
 msgid "New art folder"
 msgstr "Carpeta del arte nuevo"
 
-#: src/OpenGoldBox/character_creation_view.cpp:603 src/OpenGoldBox/godot/scenes/character_creation.tscn:367 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:60 src/OpenGoldBox/level_up_dialog.cpp:453
+#: src/OpenGoldBox/character_creation_view.cpp:602 src/OpenGoldBox/godot/scenes/character_creation.tscn:367 src/OpenGoldBox/godot/scenes/portrait_dialog.tscn:60 src/OpenGoldBox/level_up_dialog.cpp:453
 msgid "Next"
 msgstr "Siguiente"
 
@@ -7011,7 +7177,7 @@ msgstr "No binario"
 msgid "Nonbinary"
 msgstr "No binario"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:189 src/OpenGoldBox/game_menu_view.cpp:385
+#: src/OpenGoldBox/character_sheet_text.cpp:295 src/OpenGoldBox/game_menu_view.cpp:385
 msgid "None"
 msgstr "Ninguno"
 
@@ -7031,7 +7197,7 @@ msgstr "norte"
 msgid "Not enough gold"
 msgstr "No hay suficiente oro"
 
-#: src/OpenGoldBox/character_creation_view.cpp:866
+#: src/OpenGoldBox/character_creation_view.cpp:886
 msgid "Not present"
 msgstr "Ausente"
 
@@ -7039,7 +7205,7 @@ msgstr "Ausente"
 msgid "Not trained: no training bonus to hit"
 msgstr "Sin entrenamiento: no suma el bonificador de entrenamiento al ataque"
 
-#: src/OpenGoldBox/character_creation_view.cpp:686
+#: src/OpenGoldBox/character_creation_view.cpp:702
 msgid "Not yet qualified. You may still plan for this class."
 msgstr "Aún no cumples los requisitos. Puedes mantener esta clase como objetivo."
 
@@ -7240,6 +7406,10 @@ msgstr "Mano abierta: Paso veloz. Tras otra acción adicional, también puedes u
 msgid "Open Level-Up"
 msgstr "Abrir subida de nivel"
 
+#: src/OpenGoldBox/character_sheet_text.cpp:108
+msgid "Open locks"
+msgstr "Abrir cerraduras"
+
 #: src/OpenGoldBox/godot/scenes/startup.tscn:245
 msgid "OpenGoldBox"
 msgstr "OpenGoldBox"
@@ -7423,6 +7593,10 @@ msgstr "Lanzamiento de conjuros de paladín: puntuación de Carisma {score}; con
 msgid "Paladin's Smite"
 msgstr "Castigo del paladín"
 
+#: src/OpenGoldBox/character_sheet_text.cpp:97
+msgid "Paralysis, poison or death magic"
+msgstr "Parálisis, veneno o magia de muerte"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Paralyzed"
 msgstr "Paralizado"
@@ -7538,6 +7712,10 @@ msgstr "Furia persistente: al tirar Iniciativa, recupera todos los usos de Furia
 msgid "Persuasion"
 msgstr "Persuasión"
 
+#: src/OpenGoldBox/character_sheet_text.cpp:97
+msgid "Petrification or polymorph"
+msgstr "Petrificación o polimorfia"
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:321 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Petrified"
 msgstr "Petrificado"
@@ -7553,6 +7731,10 @@ msgstr "Asesino fantasmal"
 #: src/OpenGoldBox/rolf_tour_view.cpp:2028
 msgid "Pick"
 msgstr "Abrir la cerradura"
+
+#: src/OpenGoldBox/character_sheet_text.cpp:108
+msgid "Pick pockets"
+msgstr "Robar bolsillos"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Pick up (Action)"
@@ -7767,7 +7949,7 @@ msgstr "Conjuros preparados, Imposición de manos y PG fijos; Estilo de combate 
 msgid "Prepared spells: select at least one"
 msgstr "Conjuros preparados: elige al menos uno"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:116
+#: src/OpenGoldBox/character_sheet_text.cpp:222
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Prepared spells: {spells}"
 msgstr "Conjuros preparados: {spells}"
@@ -7904,11 +8086,11 @@ msgstr "Psíquico"
 msgid "Pull off"
 msgstr "Arrancar"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:321
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:85 src/OpenGold.Rules.Srd5/src/character_rules.cpp:321
 msgid "Pursues selfish ends through structure and rules."
 msgstr "Persigue fines egoístas mediante las estructuras y las normas."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:322
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:91 src/OpenGold.Rules.Srd5/src/character_rules.cpp:322
 msgid "Pursues selfish ends without loyalty to order or freedom."
 msgstr "Persigue fines egoístas sin lealtad al orden ni a la libertad."
 
@@ -8270,6 +8452,10 @@ msgstr "Leer magia"
 msgid "Read it in camp: Constitution and its maximum rise by 2. Its magic is then spent."
 msgstr "Léelo en el campamento: la Constitución y su máximo suben 2. Después su magia se agota."
 
+#: src/OpenGoldBox/character_sheet_text.cpp:110
+msgid "Read languages"
+msgstr "Leer idiomas"
+
 #: src/OpenGoldBox/combat_view.cpp:3473
 msgid "Read the encounter text, then Continue."
 msgstr "Lee el texto del encuentro y pulsa Continuar."
@@ -8278,7 +8464,7 @@ msgstr "Lee el texto del encuentro y pulsa Continuar."
 msgid "Ready"
 msgstr "En guardia"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:96
+#: src/OpenGoldBox/character_sheet_text.cpp:202
 msgid "Ready to level up"
 msgstr "Listo para subir de nivel"
 
@@ -8344,7 +8530,7 @@ msgstr "Regenerar"
 msgid "Regeneration"
 msgstr "Regeneración"
 
-#: src/OpenGoldBox/character_creation_view.cpp:894
+#: src/OpenGoldBox/character_creation_view.cpp:914
 msgid "Reincarnate"
 msgstr "Reencarnación"
 
@@ -8389,7 +8575,7 @@ msgstr "Talento fiable: el d20 de {roll} de {name} cuenta como 10."
 msgid "Religion"
 msgstr "Religión"
 
-#: src/OpenGoldBox/party_preview.cpp:1826
+#: src/OpenGoldBox/party_preview.cpp:1836
 msgid "Reload a Saved Game"
 msgstr "Cargar una partida"
 
@@ -8485,16 +8671,16 @@ msgstr "Repetir recorrido"
 msgid "Repulsion Breath"
 msgstr "Aliento de repulsión"
 
-#: src/OpenGoldBox/character_creation_view.cpp:685
+#: src/OpenGoldBox/character_creation_view.cpp:701
 msgid "Requirements met."
 msgstr "Requisitos cumplidos."
 
-#: src/OpenGoldBox/character_creation_view.cpp:629
+#: src/OpenGoldBox/character_creation_view.cpp:634
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Requires {requirements}"
 msgstr "Requiere {requirements}"
 
-#: src/OpenGoldBox/character_creation_view.cpp:709
+#: src/OpenGoldBox/character_creation_view.cpp:725
 msgid "Reroll all six"
 msgstr "Volver a tirar"
 
@@ -8784,11 +8970,11 @@ msgstr "Invertir la gravedad"
 msgid "Review character"
 msgstr "Personaje de prueba"
 
-#: src/OpenGoldBox/character_creation_view.cpp:918
+#: src/OpenGoldBox/character_creation_view.cpp:938
 msgid "Review the new body, then cast Reincarnate."
 msgstr "Revisa el cuerpo nuevo y lanza Reencarnación."
 
-#: src/OpenGoldBox/character_creation_view.cpp:873
+#: src/OpenGoldBox/character_creation_view.cpp:893
 msgid "Review your character before adding it to the party."
 msgstr "Revisa a tu personaje antes de añadirlo al grupo."
 
@@ -8836,6 +9022,10 @@ msgstr "Se alza al comienzo del siguiente turno de quien lo mató."
 msgid "Rising as a Zombie"
 msgstr "Alzándose como zombi"
 
+#: src/OpenGoldBox/character_sheet_text.cpp:98
+msgid "Rod, staff or wand"
+msgstr "Vara, bastón o varita"
+
 #: src/OpenGold.Rules.Srd5/src/character_class.cpp:27
 msgid "Rogue"
 msgstr "Pícaro"
@@ -8864,6 +9054,10 @@ msgstr "Tienda del pícaro"
 msgid "Rolf  /  Council guide"
 msgstr "Rolf  /  Guía del consejo"
 
+#: src/OpenGoldBox/character_creation_view.cpp:683
+msgid "Roll"
+msgstr "Tirar"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Roll Flaming Sphere"
 msgstr "Rodar Esfera llameante"
@@ -8873,9 +9067,17 @@ msgstr "Rodar Esfera llameante"
 msgid "Roll a d20 and add the saving throw bonus. Meet or exceed DC {dc} to save.\n\n"
 msgstr "Tira un d20 y suma la bonificación de salvación. Iguala o supera la CD {dc} para tener éxito.\n\n"
 
-#: src/OpenGoldBox/character_creation_view.cpp:709 src/OpenGoldBox/godot/scenes/character_creation.tscn:174
+#: src/OpenGoldBox/character_creation_view.cpp:683
+msgid "Roll again"
+msgstr "Tirar de nuevo"
+
+#: src/OpenGoldBox/character_creation_view.cpp:725 src/OpenGoldBox/godot/scenes/character_creation.tscn:174
 msgid "Roll all six"
 msgstr "Tirar seis dados"
+
+#: src/OpenGoldBox/character_creation_view.cpp:685
+msgid "Roll the character. Roll again until you have one to keep, then continue."
+msgstr "Tira el personaje. Vuelve a tirar hasta tener uno que quieras conservar y continúa."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Roll your six attribute scores first."
@@ -9023,7 +9225,11 @@ msgstr "Se guardan al instante; se aplican desde el siguiente combate."
 msgid "Saving Throws"
 msgstr "Salvaciones"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:153
+#: src/OpenGoldBox/character_sheet_text.cpp:99
+msgid "Saving throws"
+msgstr "Tiradas de salvación"
+
+#: src/OpenGoldBox/character_sheet_text.cpp:259
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Saving throws include {bonus} from worn items."
 msgstr "Las salvaciones incluyen {bonus} por objetos llevados."
@@ -9114,6 +9320,10 @@ msgstr "Segundo aliento"
 msgid "Second Wind: {count}"
 msgstr "Segundo aliento: {count}"
 
+#: src/OpenGoldBox/character_sheet_text.cpp:114
+msgid "Second level"
+msgstr "Segundo nivel"
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:118 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "See Invisibility"
 msgstr "Ver invisibilidad"
@@ -9130,7 +9340,7 @@ msgstr "Conjuro buscador"
 msgid "Seeking Spell rerolls the missed attack."
 msgstr "Conjuro buscador repite el ataque fallido."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:315
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:87 src/OpenGold.Rules.Srd5/src/character_rules.cpp:315
 msgid "Seeks to help others, with flexibility about rules."
 msgstr "Busca ayudar a los demás y es flexible con las normas."
 
@@ -9150,7 +9360,7 @@ msgstr "Selecciona un personaje guardado para sobrescribirlo o escribe un nombre
 msgid "Select a character save. Previous versions are available for recovery."
 msgstr "Selecciona un personaje guardado. Hay versiones anteriores disponibles para recuperarlo."
 
-#: src/OpenGoldBox/character_creation_view.cpp:806
+#: src/OpenGoldBox/character_creation_view.cpp:826
 msgid "Select a part's Color-1 or Color-2, then a swatch. Watch both poses change. Absent parts are disabled."
 msgstr "Elige Color-1 o Color-2 de una parte y después una muestra. Cambiarán ambas poses. Las partes ausentes están desactivadas."
 
@@ -9178,7 +9388,7 @@ msgstr "Elige primero un objeto del inventario"
 msgid "Select an item first."
 msgstr "Primero elige un objeto."
 
-#: src/OpenGoldBox/character_creation_view.cpp:655
+#: src/OpenGoldBox/character_creation_view.cpp:664
 msgid "Select an option, then continue."
 msgstr "Elige una opción y continúa."
 
@@ -9318,7 +9528,7 @@ msgstr "Arco corto"
 msgid "Shortsword"
 msgstr "Espada corta"
 
-#: src/OpenGoldBox/character_creation_view.cpp:603
+#: src/OpenGoldBox/character_creation_view.cpp:602
 msgid "Show character sheet"
 msgstr "Ver hoja de personaje"
 
@@ -9354,15 +9564,15 @@ msgstr "Simulacro copia a un miembro vivo que no sea un simulacro"
 msgid "Size"
 msgstr "Tamaño"
 
-#: src/OpenGoldBox/character_creation_view.cpp:820
+#: src/OpenGoldBox/character_creation_view.cpp:840
 msgid "Size: Large"
 msgstr "Tamaño: grande"
 
-#: src/OpenGoldBox/character_creation_view.cpp:820
+#: src/OpenGoldBox/character_creation_view.cpp:840
 msgid "Size: Regular"
 msgstr "Tamaño: normal"
 
-#: src/OpenGoldBox/character_creation_view.cpp:820
+#: src/OpenGoldBox/character_creation_view.cpp:840
 msgid "Size: Short"
 msgstr "Tamaño: bajo"
 
@@ -9472,6 +9682,14 @@ msgstr "Evento 1 de los barrios bajos"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Small"
 msgstr "Pequeño"
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:30
+msgid "Small, clever folk who resist magic and fight kobolds and goblins well. A gnome may be a fighter, a thief or both."
+msgstr "Gente pequeña y astuta que resiste la magia y lucha bien contra kóbolds y trasgos. Un gnomo puede ser guerrero, ladrón o ambos."
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:36
+msgid "Small, nimble folk who resist poison and magic. A halfling may be a fighter, a thief or both."
+msgstr "Gente pequeña y ágil que resiste el veneno y la magia. Un mediano puede ser guerrero, ladrón o ambos."
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:196 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Smite of Protection"
@@ -9786,7 +10004,7 @@ msgstr "Velocidad reducida en 10 pies."
 msgid "Speed reduced by 15 feet."
 msgstr "Velocidad reducida en 15 pies."
 
-#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:145
+#: src/OpenGoldBox/character_sheet_text.cpp:98 src/OpenGoldBox/godot/scenes/combat_demo.tscn:145
 msgid "Spell"
 msgstr "Hechizo"
 
@@ -9886,7 +10104,7 @@ msgstr "Destello estelar"
 msgid "Start"
 msgstr "Empezar"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:377 src/OpenGoldBox/party_preview.cpp:1079
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:377 src/OpenGoldBox/party_preview.cpp:1089
 msgid "Start over"
 msgstr "Empezar de nuevo"
 
@@ -9898,7 +10116,7 @@ msgstr "Nivel inicial"
 msgid "Starts with 3d6 x 10 gp to buy its gear. Preview portraits and both combat poses before adding."
 msgstr "Empieza con 3d6 x 10 po para comprar su equipo. Previsualiza retratos y ambas poses de combate antes de añadirlo."
 
-#: src/OpenGoldBox/character_sheet_text.cpp:185
+#: src/OpenGoldBox/character_sheet_text.cpp:291
 msgid "Status Effects"
 msgstr "Efectos de estado"
 
@@ -9957,6 +10175,10 @@ msgstr "Detenido"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Storm's Thunder"
 msgstr "Trueno de la tormenta"
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:24
+msgid "Stout, hardy folk who resist poison and magic and fight giants and goblins well. A dwarf may be a fighter, a thief or both."
+msgstr "Gente robusta y resistente que resiste el veneno y la magia y lucha bien contra gigantes y trasgos. Un enano puede ser guerrero, ladrón o ambos."
 
 #: src/OpenGoldBox/character_text.h:9 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Strength"
@@ -10477,6 +10699,10 @@ msgstr "Los monstruos siguen su camino."
 msgid "The monsters' figures in a fight: the new art, or the original game's. Party members keep theirs."
 msgstr "Las figuras de los monstruos en combate: el arte nuevo o el del juego original. Los miembros del grupo conservan las suyas."
 
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:39
+msgid "The most common folk of the Realms, who may follow any one class with no limit on their levels."
+msgstr "La gente más común de los Reinos, que puede seguir cualquier clase sin límite de niveles."
+
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:37
 msgid "The next attack roll against it by the creature that caused this has Advantage."
 msgstr "La siguiente tirada de ataque contra él de la criatura que lo causó tiene ventaja."
@@ -10658,9 +10884,13 @@ msgstr "Estas elecciones chocan con lo que el personaje aprendió después. Elig
 msgid "These files do not match the supported Pool of Radiance PC 1.3 checksums. You can continue, but some game features may not work."
 msgstr "Estos archivos no coinciden con las sumas de comprobación de Pool of Radiance PC 1.3. Puedes continuar, pero algunas funciones del juego podrían fallar."
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:58 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Thief"
 msgstr "Ladrón"
+
+#: src/OpenGoldBox/character_sheet_text.cpp:111
+msgid "Thief skills"
+msgstr "Habilidades de ladrón"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Thief: Supreme Sneak. A hidden Rogue's Stealth Attack (a Cunning Strike) leaves it hidden.\nSneak Attack 5d6; Proficiency Bonus +4."
@@ -10673,6 +10903,10 @@ msgstr "Ladrón: Usar objeto mágico, un 6 en 1d6 para conservar una carga gasta
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Thieves' Tools"
 msgstr "Herramientas de ladrón"
+
+#: src/OpenGoldBox/character_sheet_text.cpp:115
+msgid "Third level"
+msgstr "Tercer nivel"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Thirsting Blade"
@@ -10706,7 +10940,7 @@ msgstr "Este objeto está maldito. No se puede desequipar hasta que se lance Qui
 msgid "This member did not complete the rest."
 msgstr "Este miembro no completó el descanso."
 
-#: src/OpenGoldBox/character_creation_view.cpp:863
+#: src/OpenGoldBox/character_creation_view.cpp:883
 msgid "This part is not present in either pose. Choose another head or body to use it."
 msgstr "Esta parte no aparece en ninguna pose. Elige otra cabeza o cuerpo para usarla."
 
@@ -10808,7 +11042,7 @@ msgstr "Para impactar a CA {ac}: saca {roll} o más ({bonus})"
 msgid "To hit AC {ac}: roll {roll} or more ({bonus}), with Disadvantage"
 msgstr "Para impactar a CA {ac}: saca {roll} o más ({bonus}), con desventaja"
 
-#: src/OpenGoldBox/character_creation_view.cpp:647
+#: src/OpenGoldBox/character_creation_view.cpp:652
 msgid "To start in a class, your scores must reach its minimums. Classes in gray do not qualify; go Back to change your scores or bonuses."
 msgstr "Para empezar en una clase, tus puntuaciones deben alcanzar sus mínimos. Las clases en gris no cumplen los requisitos; vuelve atrás para cambiar tus puntuaciones o bonificaciones."
 
@@ -10905,6 +11139,10 @@ msgstr "Trol"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Tropical Land"
 msgstr "Tierra tropical"
+
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:89
+msgid "True Neutral"
+msgstr "Neutral auténtico"
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:256 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "True Seeing"
@@ -11232,11 +11470,11 @@ msgstr "Castillo de Valjevo, el cuarto sureste"
 msgid "Valjevo Castle, the tower's upper level"
 msgstr "Castillo de Valjevo, el nivel superior de la torre"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:316
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:93 src/OpenGold.Rules.Srd5/src/character_rules.cpp:316
 msgid "Values kindness and individual freedom."
 msgstr "Valora la bondad y la libertad individual."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:320
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:95 src/OpenGold.Rules.Srd5/src/character_rules.cpp:320
 msgid "Values personal freedom and independence."
 msgstr "Valora la libertad personal y la independencia."
 
@@ -11866,7 +12104,7 @@ msgstr "Tu ataque impactó. Derriba al objetivo con Derribo de las colinas, o de
 msgid "Your camp is attacked!"
 msgstr "¡Atacan tu campamento!"
 
-#: src/OpenGoldBox/character_creation_view.cpp:935
+#: src/OpenGoldBox/character_creation_view.cpp:955
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Your character: {race} / {gender} / {class}"
 msgstr "Tu personaje: {race} / {gender} / {class}"
@@ -11879,7 +12117,7 @@ msgstr "Tu arma cuerpo a cuerpo es tu arma de pacto: competencia, Carisma para s
 msgid "Your party flees the battle."
 msgstr "Tu grupo huye de la batalla."
 
-#: src/OpenGoldBox/party_preview.cpp:1820
+#: src/OpenGoldBox/party_preview.cpp:1830
 msgid "Your party has been defeated."
 msgstr "Tu grupo ha sido derrotado."
 
@@ -11896,7 +12134,12 @@ msgstr "Puesto avanzado zhentil"
 msgid "[theme_emphasis]{ability} save: {bonus} | {target}[/theme_emphasis]\n{modifier} from {ability} score {score} (score minus 10, divided by 2, rounded down).\n"
 msgstr "[theme_emphasis]Salvación de {ability}: {bonus} | {target}[/theme_emphasis]\n{modifier} por {ability} {score} (puntuación menos 10, dividida entre 2, redondeando hacia abajo).\n"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:33
+#: src/OpenGoldBox/character_sheet_text.cpp:59
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "[theme_font=sheet_title]{name}[/theme_font]\nLevel {levels} / {race} / {gender} / {class}\n{alignment} / Age {age}\n\n"
+msgstr "[theme_font=sheet_title]{name}[/theme_font]\nNivel {levels} / {race} / {gender} / {class}\n{alignment} / Edad {age}\n\n"
+
+#: src/OpenGoldBox/character_sheet_text.cpp:139
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "[theme_font=sheet_title]{name}[/theme_font]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n"
 msgstr "[theme_font=sheet_title]{name}[/theme_font]\nNivel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n"
@@ -12201,12 +12444,12 @@ msgstr "amarillo"
 msgid "zombies, juju zombies"
 msgstr "zombis, zombis juju"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:624 src/OpenGoldBox/character_text.h:43
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:624 src/OpenGoldBox/character_text.h:57
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{ability} +{bonus}"
 msgstr "{ability} +{bonus}"
 
-#: src/OpenGoldBox/character_text.h:25
+#: src/OpenGoldBox/character_text.h:39
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{ability} {minimum}"
 msgstr "{ability} {minimum}"
@@ -12400,7 +12643,7 @@ msgstr "Archivos de {game}"
 msgid "{hand} — {weapon}"
 msgstr "{hand} — {weapon}"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:215
+#: src/OpenGoldBox/character_sheet_text.cpp:323
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{heading}: {names}"
 msgstr "{heading}: {names}"
@@ -13849,7 +14092,7 @@ msgstr "{name} vuelve de los Planos Inferiores."
 msgid "{name} returns from the maze."
 msgstr "{name} vuelve del laberinto."
 
-#: src/OpenGoldBox/character_creation_view.cpp:907
+#: src/OpenGoldBox/character_creation_view.cpp:927
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} returns in a new body: {species}. Make the species' choices, then continue."
 msgstr "{name} vuelve en un cuerpo nuevo: {species}. Haz las elecciones de la especie y continúa."
@@ -14879,12 +15122,12 @@ msgstr "{name}: lección de habilidad (ya aprendida en este nivel)"
 msgid "{name}: {type} damage {before} -> {after}."
 msgstr "{name}: daño de tipo {type}: {before} -> {after}."
 
-#: src/OpenGoldBox/character_creation_view.cpp:812 src/OpenGoldBox/character_creation_view.cpp:815
+#: src/OpenGoldBox/character_creation_view.cpp:832 src/OpenGoldBox/character_creation_view.cpp:835
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{number} / {count}"
 msgstr "{number} / {count}"
 
-#: src/OpenGoldBox/character_creation_view.cpp:845
+#: src/OpenGoldBox/character_creation_view.cpp:865
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{part} / Color-{bank}: choose a color"
 msgstr "{part} / Color-{bank}: elige un color"

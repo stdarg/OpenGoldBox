@@ -247,6 +247,27 @@ void CharacterCreator::restart()
     }
 }
 
+std::vector<CreationStep> CharacterCreator::pages() const
+{
+    if (rolls_in_place())
+    {
+        return {pages_in_place.begin(), pages_in_place.end()};
+    }
+    std::vector<CreationStep> result;
+    for (auto step = CreationStep::race; step <= CreationStep::sheet;
+         step = static_cast<CreationStep>(static_cast<unsigned>(step) + 1))
+    {
+        const bool kept_by_new_body =
+            former_ && step >= CreationStep::alignment && step <= CreationStep::training;
+        if (kept_by_new_body || (step == CreationStep::spell_choices && !has_spell_choices()))
+        {
+            continue;
+        }
+        result.push_back(step);
+    }
+    return result;
+}
+
 bool CharacterCreator::rolls_in_place() const
 {
     return rules_->ability_generation() == AbilityGeneration::rolled_in_place;
@@ -945,7 +966,7 @@ void CharacterCreator::assign_roll(unsigned roll, rules::Ability ability)
 {
     require_editable();
     // The game converts a box index from the UI, so an ability can still be out of range.
-    if (!draft_.rolled || roll >= 6 || rules::ability_index(ability) >= 6)
+    if (rolls_in_place() || !draft_.rolled || roll >= 6 || rules::ability_index(ability) >= 6)
     {
         throw std::runtime_error("Invalid roll assignment");
     }
@@ -964,7 +985,8 @@ void CharacterCreator::swap_scores(rules::Ability first, rules::Ability second)
 {
     require_editable();
     // As in assign_roll, an ability converted from a UI index may be out of range.
-    if (!draft_.rolled || rules::ability_index(first) >= 6 || rules::ability_index(second) >= 6)
+    if (rolls_in_place() || !draft_.rolled || rules::ability_index(first) >= 6 ||
+        rules::ability_index(second) >= 6)
     {
         throw std::runtime_error("Invalid score swap");
     }

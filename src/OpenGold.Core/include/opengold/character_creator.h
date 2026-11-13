@@ -91,6 +91,12 @@ class CharacterCreator
         return step_;
     }
 
+    // The pages in the order these rules ask them: under the SRD every step,
+    // less the spell choices when there are none; a new body's species, any
+    // spell choices, its look and its sheet; the original's race, class,
+    // alignment, roll, look and sheet.
+    [[nodiscard]] std::vector<CreationStep> pages() const;
+
     [[nodiscard]] rules::CharacterSheet sheet() const;
     [[nodiscard]] Character create_character() const;
     void select(rules::CreationField field, std::string_view id);

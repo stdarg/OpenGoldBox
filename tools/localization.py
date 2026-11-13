@@ -65,6 +65,14 @@ def extract():
                 source=ast.literal_eval(match[1])
                 if " " in source or "{" in source:
                     add(source, path, content.count("\n", 0, match.start()) + 1)
+    # The original rules' choices: {Enum::value, "id", "Label", "Description"},
+    # the description perhaps split over adjacent literals.
+    original_choices = ROOT / "src/OpenGold.Rules.Original/src/character_rules.cpp"
+    content = original_choices.read_text(encoding="utf-8-sig")
+    for match in re.finditer(rf'\{{\s*\w+::\w+,\s*{LITERAL},\s*({LITERAL}),\s*((?:{LITERAL}\s*)+)\}}', content):
+        line = content.count("\n", 0, match.start()) + 1
+        add(ast.literal_eval(match[1]), original_choices, line)
+        add("".join(ast.literal_eval(part) for part in re.findall(LITERAL, match[2])), original_choices, line)
     # Status effects' names and descriptions, by EffectKind.
     labels = ROOT / "src/OpenGold.Rules.Srd5/src/effect_labels.h"
     content = labels.read_text(encoding="utf-8")

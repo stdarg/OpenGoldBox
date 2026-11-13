@@ -12,6 +12,20 @@ inline constexpr std::array<const char *, 6> ability_names{N_("Strength"),     N
 inline constexpr std::array<const char *, 6> ability_short{N_("STR"), N_("DEX"), N_("CON"),
                                                            N_("INT"), N_("WIS"), N_("CHA")};
 
+// A score as the original rules write it: Strength 18 with its percentile,
+// such as 18/52, and 18/00 for the hundredth.
+inline godot::String original_score(const opengold::rules::CharacterSheet &sheet,
+                                    opengold::rules::Ability ability)
+{
+    const int score = sheet.scores[ability];
+    const int percentile = sheet.original ? sheet.original->exceptional_strength : 0;
+    if (ability != opengold::rules::Ability::strength || score != 18 || percentile == 0)
+    {
+        return godot::String::num_int64(score);
+    }
+    return godot::String("18/") + godot::String::num_int64(percentile % 100).pad_zeros(2);
+}
+
 inline godot::String requirements(const opengold::rules::ClassRequirements &requirement)
 {
     godot::String result;

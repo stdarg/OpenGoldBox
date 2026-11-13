@@ -30,7 +30,7 @@ using presentation::signed_number;
 Variant CharacterCreationView::drag_roll(Vector2, int index)
 {
     if (!creator_ || party_open_ || creator_->step() != CreationStep::attributes ||
-        !creator_->draft().rolled || index < 0 || index >= 12)
+        !creator_->draft().rolled || rolls_in_place() || index < 0 || index >= 12)
     {
         return {};
     }
@@ -61,7 +61,7 @@ Variant CharacterCreationView::drag_roll(Vector2, int index)
 bool CharacterCreationView::can_drop_roll(Vector2, const Variant &data, int index)
 {
     if (!creator_ || party_open_ || creator_->step() != CreationStep::attributes ||
-        !creator_->draft().rolled || index < 0 || index >= 6 ||
+        !creator_->draft().rolled || rolls_in_place() || index < 0 || index >= 6 ||
         data.get_type() != Variant::DICTIONARY)
     {
         return false;

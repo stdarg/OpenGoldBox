@@ -474,6 +474,9 @@ void CharacterCreationView::refresh()
                           step == CreationStep::character_class,
                stats = step == CreationStep::attributes, icon = step == CreationStep::combat_icon,
                portrait = step == CreationStep::portrait;
+    // The original rules roll the character whole, scores in place, with no
+    // background, bonuses or class goals.
+    const bool in_place = rolls_in_place();
     for (const auto *n : {"Choices"})
     {
         show(n, choosing);
@@ -481,20 +484,25 @@ void CharacterCreationView::refresh()
     show("GenderLabel", step == CreationStep::race);
     show("Gender", step == CreationStep::race);
     show("Description", choosing || step == CreationStep::sheet);
-    show("Modifiers", step == CreationStep::sheet);
-    show("SavingThrows", step == CreationStep::sheet);
+    // The SRD's modifiers and ability saves; the original's sheet shows its own.
+    show("Modifiers", step == CreationStep::sheet && !in_place);
+    show("SavingThrows", step == CreationStep::sheet && !in_place);
+    required_node<Label>(*this, "Footer")
+        .set_text(i18n::text(
+            in_place
+                ? N_("Game art from the original, portraits from OpenGoldBox, rules from the original game")
+                : N_("Game art from the original, portraits from OpenGoldBox, rules from SRD 5.2.1")));
     for (const auto *n :
-         {"BackgroundLabel", "Background", "BonusLabel", "Bonus", "Columns", "DiceHeader",
-          "BaseHeader", "BonusHeader", "TotalHeader", "Roll", "SwapHint"})
+         {"Columns", "BaseHeader", "BonusHeader", "TotalHeader", "Roll", "SwapHint"})
     {
         show(n, stats);
     }
-    show("DiceHint", stats);
-    show("Instructions", !stats);
-    for (const auto *n : {"TargetsTitle", "Targets", "TargetHint"})
+    for (const auto *n : {"BackgroundLabel", "Background", "BonusLabel", "Bonus", "DiceHeader",
+                          "DiceHint", "TargetsTitle", "Targets", "TargetHint"})
     {
-        show(n, stats);
+        show(n, stats && !in_place);
     }
+    show("Instructions", !stats || in_place);
     for (unsigned i = 0; i < 6; ++i)
     {
         show(gs("Warning" + std::to_string(i)),
@@ -550,7 +558,9 @@ void CharacterCreationView::refresh()
         for (const auto &stem : {std::string("Ability"), std::string("Dice"), std::string("Score"),
                                  std::string("BonusScore"), std::string("TotalScore")})
         {
-            required_node<Control>(*this, gs(stem + std::to_string(i))).set_visible(stats);
+            const bool srd_only = stem == "Dice" || stem == "BonusScore";
+            required_node<Control>(*this, gs(stem + std::to_string(i)))
+                .set_visible(stats && !(in_place && srd_only));
         }
         required_node<Control>(*this, gs("TotalScore" + std::to_string(i))).hide();
         required_node<Control>(*this, gs("Part" + std::to_string(i))).set_visible(icon);
@@ -569,23 +579,12 @@ void CharacterCreationView::refresh()
         .set_text(i18n::text(steps[static_cast<unsigned>(step)]));
     std::string progress;
     unsigned ordinal = 0;
-    for (unsigned i = 0; i < steps.size(); ++i)
+    for (const auto page : creator_->pages())
     {
-        if (i == static_cast<unsigned>(CreationStep::spell_choices) &&
-            !creator_->has_spell_choices())
-        {
-            continue;
-        }
-        // A new body keeps the alignment, scores, class and training.
-        if (creator_->reincarnating() && i >= static_cast<unsigned>(CreationStep::alignment) &&
-            i <= static_cast<unsigned>(CreationStep::training))
-        {
-            continue;
-        }
         progress +=
-            (i == static_cast<unsigned>(step) ? "> " : "  ") + std::to_string(++ordinal) + ". " +
-            i18n::utf8(i == static_cast<unsigned>(CreationStep::combat_icon) ? N_("Combat icon")
-                                                                             : steps[i]) +
+            (page == step ? "> " : "  ") + std::to_string(++ordinal) + ". " +
+            i18n::utf8(page == CreationStep::combat_icon ? N_("Combat icon")
+                                                         : steps[static_cast<unsigned>(page)]) +
             "\n\n";
     }
     required_node<Label>(*this, "Steps").set_text(gs(progress));
@@ -621,7 +620,13 @@ void CharacterCreationView::refresh()
         for (unsigned i = 0; i < choices.size(); ++i)
         {
             list->add_item(i18n::text(choices[i].label));
-            if (step == CreationStep::character_class)
+            // The original's race limits its classes, and its class the
+            // alignments.
+            if (in_place && step != CreationStep::race)
+            {
+                list->set_item_disabled(i, !creator_->rules().allows(d, field, choices[i].id));
+            }
+            else if (step == CreationStep::character_class)
             {
                 list->set_item_disabled(
                     i, !rules::class_eligible(creator_->rules(), d, choices[i].id));
@@ -639,7 +644,7 @@ void CharacterCreationView::refresh()
                     .set_text(i18n::text(choices[i].description));
             }
         }
-        if (step == CreationStep::character_class)
+        if (step == CreationStep::character_class && !in_place)
         {
             auto &description = required_node<RichTextLabel>(*this, "Description");
             description.append_text(
@@ -648,7 +653,11 @@ void CharacterCreationView::refresh()
                     "To start in a class, your scores must reach its minimums. Classes in gray do not qualify; go Back to change your scores or bonuses."));
         }
         instructions =
-            step == CreationStep::character_class
+            step == CreationStep::character_class && in_place
+                ? N_("Choose a class. Classes in gray are not open to your race.")
+            : step == CreationStep::alignment && in_place
+                ? N_("Choose an alignment. Alignments in gray are not open to your class.")
+            : step == CreationStep::character_class
                 ? N_("Choose one starting class. The classes you checked on the last page are future goals, not extra levels.")
             : step == CreationStep::race
                 ? N_("Name your character (up to 40 characters), then choose a race and gender.")
@@ -668,7 +677,14 @@ void CharacterCreationView::refresh()
             }
         }
     }
-    if (stats)
+    if (stats && in_place)
+    {
+        required_node<Button>(*this, "Roll")
+            .set_text(i18n::text(d.rolled ? N_("Roll again") : N_("Roll")));
+        instructions =
+            N_("Roll the character. Roll again until you have one to keep, then continue.");
+    }
+    if (stats && !in_place)
     {
         const auto targets = creator_->rules().choices(CreationField::character_class);
         for (unsigned i = 0; i < targets.size(); ++i)
@@ -722,7 +738,11 @@ void CharacterCreationView::refresh()
     {
         s = &drafted.emplace(creator_->sheet());
     }
-    if (stats)
+    if (stats && in_place)
+    {
+        show_rolled_character(s);
+    }
+    if (stats && !in_place)
     {
         for (unsigned i = 0; i < 6; ++i)
         {
@@ -941,6 +961,36 @@ void CharacterCreationView::refresh()
     queue_redraw();
 }
 
+bool CharacterCreationView::rolls_in_place() const
+{
+    return creator_ &&
+           creator_->rules().ability_generation() == rules::AbilityGeneration::rolled_in_place;
+}
+
+// The original rules' roll: each score where it fell, Strength's percentile
+// at 18, and the Hit Points, age and gold that came with it.
+void CharacterCreationView::show_rolled_character(const CharacterSheet *sheet)
+{
+    for (unsigned i = 0; i < 6; ++i)
+    {
+        const auto ability = rules::all_abilities[i];
+        auto &name = required_node<Button>(*this, gs("Ability" + std::to_string(i)));
+        name.set_text(i18n::text(i18n::ability_names[i]));
+        name.set_disabled(true);
+        auto &score = required_node<Button>(*this, gs("Score" + std::to_string(i)));
+        score.set_text(sheet ? i18n::original_score(*sheet, ability) : String());
+        score.set_tooltip_text(String());
+        score.call("configure_score", false, 0);
+    }
+    const bool rolled = sheet && sheet->original;
+    required_node<Label>(*this, "SwapHint")
+        .set_text(rolled ? i18n::format("Hit Points {hp}\nAge {age}\nGold {gold}",
+                                        {{"hp", sheet->hit_points},
+                                         {"age", sheet->original->age},
+                                         {"gold", sheet->original->gold}})
+                         : String());
+}
+
 void CharacterCreationView::_draw()
 {
     presentation::run_guarded(*this,
@@ -960,7 +1010,8 @@ void CharacterCreationView::draw_view()
 {
     const auto step = creator_ ? creator_->step() : CreationStep::race;
     required_node<Control>(*this, "CreationCanvas")
-        .call("set_images", images_[1], images_[2], creator_ && step == CreationStep::attributes,
+        .call("set_images", images_[1], images_[2],
+              creator_ && step == CreationStep::attributes && !rolls_in_place(),
               creator_ && step == CreationStep::combat_icon,
               creator_ && step == CreationStep::race ? race_portrait_ : Ref<ImageTexture>(),
               creator_ && creator_->appearance().icon_size == por::IconSize::large);
@@ -1197,6 +1248,11 @@ void CharacterCreationView::roll()
 
 void CharacterCreationView::score_selected(int index)
 {
+    // The original rules keep each roll in its place.
+    if (rolls_in_place())
+    {
+        return;
+    }
     perform(
         [&]
         {

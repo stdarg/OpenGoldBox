@@ -2,6 +2,7 @@
 #define OPENGOLDBOX_CLASS_TEXT_H
 #include "localization.h"
 #include "opengold/character_rules.h"
+#include "opengold/original.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <span>
@@ -15,8 +16,18 @@ namespace i18n
 // A class's label by its stable ID ("rogue"), translated.
 inline godot::String class_label(std::string_view id)
 {
-    static const auto choices =
-        opengold::srd5::character_rules()->choices(opengold::rules::CreationField::character_class);
+    // The SRD's classes, then the original rules' classes and multi-classes.
+    static const auto choices = []
+    {
+        auto all = opengold::srd5::character_rules()->choices(
+            opengold::rules::CreationField::character_class);
+        for (auto &choice : opengold::original::character_rules()->choices(
+                 opengold::rules::CreationField::character_class))
+        {
+            all.push_back(std::move(choice));
+        }
+        return all;
+    }();
     for (const auto &choice : choices)
     {
         if (choice.id == id)
