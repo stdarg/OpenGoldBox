@@ -92,9 +92,16 @@ and a save each know which tables they use.
   d4 along a path two wide to half its level), Hold Monster, Slay Living
   (death, or 2d8+1 on a save), Poison (the caster's touch poisons), Bestow
   Curse, and the monsters' blast and healing powers.
-- Still to come: *Curse*'s other new spells in fights and camp, its effect numbers
-  (which differ from *Pool of Radiance*'s from 3 on), and the paladin's and
-  ranger's own abilities (GAMES.md, phase 3 step 5).
+- **Effects** are read by the fight's numbers: *Curse*'s that work as *Pool
+  of Radiance*'s of the same number keep it, its fumbling is helplessness, and
+  the rest are 200 higher (`canonical_effect`). Its magic resistance lessens
+  with a higher caster's level, as AD&D's does. Its defenses: resisting normal
+  weapons, half damage, piercing blows doing 1, protection from magic, cold,
+  electricity and dragon breath, the Minor Globe, resisting fire and cold,
+  the salamander's heat and the shambling mound's growing on lightning.
+- Still to come: *Curse*'s monsters' attacks and specials, its other new
+  spells in fights and camp, and the paladin's and ranger's own abilities
+  (GAMES.md, phase 3 step 5).
 
 ## What the original rules cover
 
@@ -657,3 +664,4 @@ tuned with the AI lab once the original rules play.
 | *Curse:* the paladin's saving throws, otherwise 2 better than a fighter's, are 1 worse against petrification at levels 5 and 6 and against death at level 8 than that (`ovr026`, `SaveThrowValues`) | 2 better throughout |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |
+| *Curse:* a shambling mound struck by electricity rolls 1d8, throws the roll away and gains 8 Hit Points (`ovr013`, its absorbing of lightning) | It gains the 1d8 |

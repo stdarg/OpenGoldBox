@@ -2194,6 +2194,46 @@ void curse_effects_take_their_own_numbers()
           "Curse's effects keep Pool of Radiance's numbers only where they work alike");
 }
 
+// Curse's defenses (ovr013): a creature that resists normal weapons takes
+// nothing from a plain blow (260); protection from magic stops a spell's
+// damage (329); a shambling mound grows on lightning instead (284).
+void curse_defenses_hold()
+{
+    using original::ClassSlot;
+    auto hard = victim(500);
+    hard.effects.push_back({260, 0, 0, false});
+    auto blows = attack_until(creature(20), hard,
+                              [](const rules::CombatSession &session)
+                              {
+                                  return logged(session, "{attacker} hits {name} for {damage}.",
+                                                "Monster") > 0 ||
+                                         session.snapshot().round > 6;
+                              });
+    check(view_of(blows.session->snapshot(), "Victim").hit_points == 500,
+          "A plain weapon does nothing to one that resists normal weapons");
+
+    auto warded = victim(100);
+    warded.effects.push_back({329, 0, 0, false});
+    auto mound = victim(100);
+    mound.effects.push_back({284, 0, 0, false});
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 5, {51})},
+                 {"Warded", rules::Side::opposition, {2, 3}, warded},
+                 {"Mound", rules::Side::opposition, {5, 3}, mound}},
+                151);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 51,
+             [&]
+             {
+                 return aim_at_cell(session, {2, 3});
+             });
+    const auto state = session.snapshot();
+    check(view_of(state, "Warded").hit_points == 100,
+          "Protection from magic stops the bolt's damage");
+    check(view_of(state, "Mound").hit_points > 100,
+          "The shambling mound grows on the bolt past its maximum");
+}
+
 // Curse's spells: Cone of Cold takes those on its path to half the caster's
 // level, two wide (ovr023, SpellConeOfCold); Cause Critical Wounds is 3d8+3;
 // Slay Living kills on a failed save and wounds on a saved one.
@@ -2752,6 +2792,7 @@ int main()
         lightning_runs_on();
         curse_spells_strike();
         curse_effects_take_their_own_numbers();
+        curse_defenses_hold();
         a_cloud_sickens();
         dispel_magic_strips();
         the_dead_rise();

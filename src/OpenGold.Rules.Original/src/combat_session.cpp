@@ -2328,7 +2328,22 @@ bool magic_resists(const Fighter &target, int caster_level, int roll_100)
             return true;
         }
     }
+    // Curse's (305, 306) lessen with a higher caster's level, as AD&D's do
+    // (ResistMagicPercent in its reconstruction).
+    for (const auto [code, base] : {std::pair{305, 50}, std::pair{306, 15}})
+    {
+        if (target.has(code) && roll_100 <= base + (11 - caster_level) * 5)
+        {
+            return true;
+        }
+    }
     return false;
+}
+
+// Whether a creature resists magic, by Pool of Radiance's or Curse's numbers.
+bool resists_magic_at_all(const Fighter &target)
+{
+    return target.has(105) || target.has(106) || target.has(305) || target.has(306);
 }
 
 // An effect added as a spell adds it (fxengine.pas, AddEffectWithMessage): the
@@ -2342,8 +2357,7 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
     {
         return std::find(codes.begin(), codes.end(), code) != codes.end();
     };
-    bool immune =
-        (target.has(105) || target.has(106)) && magic_resists(target, caster_level, roll(100));
+    bool immune = resists_magic_at_all(target) && magic_resists(target, caster_level, roll(100));
     immune = immune || (target.has(107) && is({effect::sleep, effect::charm}) && roll(100) <= 90);
     immune = immune || (target.has(124) && is({effect::sleep, effect::charm}) && roll(100) <= 30);
     immune = immune || (target.has(108) && is({effect::charm, effect::sleep}));
@@ -2353,6 +2367,14 @@ bool Session::add_with_message(Fighter &target, Effect added, bool negates, bool
     immune = immune || (target.has(112) && (element & 1));
     immune = immune || (target.has(125) &&
                         is({effect::charm, effect::sleep, effect::paralysis, effect::poisoned}));
+    // Curse's protections (ovr013): from magic, every spell's effect; Minor
+    // Globe of Invulnerability, a spell's below the fourth level; from cold
+    // and electricity, theirs.
+    const bool spell_effect = known && known->caster_class != SpellClass::item;
+    immune = immune || (target.has(329) && known);
+    immune = immune || (target.has(263) && spell_effect && known->level < 4);
+    immune = immune || (target.has(310) && (element & 2));
+    immune = immune || (target.has(335) && (element & 4));
     if (immune || (negates && saved))
     {
         log({"{name} is unaffected.", {{"name", target.name}}});
@@ -2396,10 +2418,35 @@ void Session::nonweapon_damage(Fighter &target, int damage, int save_result, boo
     {
         damage /= 2;
     }
-    if ((element & 8) && (target.has(105) || target.has(106)) &&
+    if ((element & 8) && resists_magic_at_all(target) &&
         magic_resists(target, caster_level, roll(100)))
     {
         damage = 0;
+    }
+    // Curse's protections (ovr013): cold for one immune to it (310), dragon
+    // breath (273), magic (329), electricity (335), and a spell below the
+    // fourth level for a Minor Globe of Invulnerability (263).
+    const auto *cast = spell(spell_number);
+    if (((element & 2) && target.has(310)) || ((element & 0x20) && target.has(273)) ||
+        ((element & 8) && target.has(329)) || ((element & 4) && target.has(335)) ||
+        (target.has(263) && cast && cast->caster_class != SpellClass::item && cast->level < 4))
+    {
+        log({"{name} is unaffected.", {{"name", target.name}}});
+        damage = 0;
+    }
+    // A shambling mound takes in electricity and grows: 1d8 Hit Points, past
+    // its maximum (Curse's added 8 and threw its 1d8 away, docs/ORIGINAL-RULES.md, Bugs).
+    if ((element & 4) && target.has(284) && damage > 0)
+    {
+        damage = 0;
+        target.hit_points += roll(8);
+        log({"{name} grows.", {{"name", target.name}}});
+    }
+    // Resisting fire and cold (282): a save takes none of a spell that allows
+    // one, else half.
+    if ((element & 3) && target.has(282) && damage > 0)
+    {
+        damage = saving_throw(target, 4, 0) && save_result != 0 ? 0 : damage / 2;
     }
     if ((element & 1) && target.has(112))
     {
@@ -4093,6 +4140,26 @@ int Session::weapon_damage_defenses(const Fighter &attacker, Fighter &defender, 
     if (defender.has(94) && striker && (piercing || bludgeoning))
     {
         damage /= 2;
+    }
+    // Curse's defenses (ovr013): normal weapons do nothing and +1 or +2
+    // half (260); every blow does half (281); a piercing one 1 (285).
+    if (defender.has(260))
+    {
+        damage = plus == 0 ? 0 : plus < 3 ? damage / 2 : damage;
+    }
+    if (defender.has(281))
+    {
+        damage /= 2;
+    }
+    if (defender.has(285) && weapon_class == 1)
+    {
+        damage = std::min(damage, 1);
+    }
+    // A salamander's heat adds 1d6 unless the target resists fire (303).
+    if (attacker.has(303) && damage > 0 && !defender.has(effect::resist_fire) &&
+        !defender.has(254) && !defender.has(61))
+    {
+        damage += roll(6);
     }
     // A flask of oil burns a mummy for 3d8; holy water burns the undead for 1d6+1.
     if (defender.has(122) && attacker.numbers.weapon_type == 86)

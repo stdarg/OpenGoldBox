@@ -190,7 +190,8 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
     const auto effect_count = *next++;
     for (int n = 0; n < effect_count; ++n, next += 4)
     {
-        if (next[0] < 1 || next[0] > 255 || next[1] < 0 || next[2] < 0)
+        // Curse's own effects run past 255 (canonical_effect).
+        if (next[0] < 1 || next[0] > 255 + curse_effect_offset || next[1] < 0 || next[2] < 0)
         {
             return std::nullopt;
         }
