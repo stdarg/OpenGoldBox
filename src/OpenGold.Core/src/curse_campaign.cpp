@@ -130,6 +130,28 @@ por::RolfTourSession load_curse_campaign(const std::filesystem::path &folder)
             }
         }
     }
+    // Every disk's pictures and animations, for every map.
+    std::map<unsigned, Image> pictures;
+    std::map<unsigned, std::vector<AnimationFrame>> animations;
+    for (unsigned picture_disk = 1; picture_disk <= 6; ++picture_disk)
+    {
+        for (const auto *family : {"PIC", "BIGPIC"})
+        {
+            const auto name = family + std::to_string(picture_disk) + ".DAX";
+            if (!std::filesystem::exists(folder / name))
+            {
+                continue;
+            }
+            files.pictures(name, pictures);
+            for (const auto &record : files.archive(name).records)
+            {
+                if (auto animation = decode_ega_animation(record.bytes))
+                {
+                    animations.emplace(record.id, std::move(animation.frames));
+                }
+            }
+        }
+    }
     // Each map once, held by the scripts that load it; its walls until a
     // script's LOAD PIECES replaces them are the first such script's.
     for (const auto &[map_id, map] : maps.all())
@@ -159,6 +181,12 @@ por::RolfTourSession load_curse_campaign(const std::filesystem::path &folder)
             map_id.record, walls, {scripts.begin() + 1, scripts.end()}};
         auto district = por::detail::load_district(files, maps, area, geo, {}, {});
         district->encounter_creatures = disk_creatures(map_disk);
+        // Pictures are numbered across the disks, so a map's script shows
+        // other disks' too (map 21, on disk 3, shows disk 1's picture 80, and
+        // the big pictures 120 to 123 are on disks 1, 2 and 6). Its own disk's
+        // come first.
+        district->pictures.insert(pictures.begin(), pictures.end());
+        district->animations.insert(animations.begin(), animations.end());
         root->districts.emplace(map_id.record, std::move(district));
     }
     return por::RolfTourSession(por::GeoMap{}, opening, {}, 0, {}, std::move(root));

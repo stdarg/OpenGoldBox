@@ -1659,6 +1659,8 @@ std::vector<rules::Command> Session::aiming_commands(const Fighter &caster) cons
         }
     }
     commands.push_back(command("abort"));
+    // The AI aims a spell that comes due on its turn (combat.pas, ManualControl).
+    commands.push_back(command("quick"));
     return commands;
 }
 
@@ -2697,11 +2699,6 @@ void Session::ai_turn(Fighter &f)
     {
         f.stance = roll(8) == 8 ? roll(2) + 4 : roll(4);
     }
-    if (ai_use_item(f))
-    {
-        end_actions(f);
-        return;
-    }
     if (f.aiming)
     {
         if (!ai_aim(f))
@@ -2709,6 +2706,11 @@ void Session::ai_turn(Fighter &f)
             lose_spell(f);
             end_actions(f);
         }
+        return;
+    }
+    if (ai_use_item(f))
+    {
+        end_actions(f);
         return;
     }
     const auto undead_in_sight = std::any_of(fighters_.begin(), fighters_.end(),

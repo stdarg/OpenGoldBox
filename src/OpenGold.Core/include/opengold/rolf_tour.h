@@ -840,8 +840,6 @@ class RolfTourSession
     std::vector<PendingLoot> pending_loot_;
     // Money from a non-shop TREASURE, awarded by the COMBAT that follows it.
     std::optional<PendingLoot> staged_treasure_;
-    // The event's LOAD MONSTER asked for no one; its COMBAT does nothing.
-    bool nobody_met_{};
     // Doors forced open stay open until the district map is reloaded; the
     // event checkpoint keeps the map as the event found it.
     bool door_menu_{};

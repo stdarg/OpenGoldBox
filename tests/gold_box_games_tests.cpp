@@ -469,12 +469,18 @@ void curse_walk_census()
                 std::ranges::find(legal, std::string("quick"), &opengold::rules::Command::verb);
             if (quick == legal.end() || !combat.submit(*quick))
             {
+                std::string verbs;
+                for (const auto &c : legal)
+                {
+                    verbs += " " + c.verb;
+                }
+                ++phases["fight stopped, legal:" + verbs.substr(0, 60) +
+                         (quick == legal.end() ? "" : " (quick refused)")];
                 break;
             }
         }
         const auto result = combat.combat().snapshot();
-        ++phases[result.outcome == opengold::rules::Outcome::victory ? "fights won"
-                                                                     : "fights not won"];
+        ++phases["fights ended " + std::to_string(static_cast<int>(result.outcome))];
         return session.resolve_combat(result);
     };
     std::size_t diagnosed = 0;
@@ -605,11 +611,16 @@ void curse_walk_census()
             }
         }
     };
+    // OPENGOLD_CURSE_MAP walks that map alone.
+    const char *only = std::getenv("OPENGOLD_CURSE_MAP");
     play("opening");
-    walk(session.snapshot().area_id);
+    if (!only)
+    {
+        walk(session.snapshot().area_id);
+    }
     for (const auto &[map, script] : opengold::test::TourAccess::area_scripts(session))
     {
-        if (restart(map))
+        if ((!only || std::to_string(map) == only) && restart(map))
         {
             walk(map);
         }

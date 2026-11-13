@@ -3077,7 +3077,6 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // loads nothing, and its COMBAT then has nothing to fight.
         if (!arg(1))
         {
-            nobody_met_ = staged_enemies_.empty();
             break;
         }
         // An override (data/encounters/overrides.json) changes what this
@@ -3122,7 +3121,6 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     }
     case 28:
-        nobody_met_ = false;
         treasure_.clear();
         staged_treasure_.reset();
         staged_enemies_.clear();
@@ -3527,16 +3525,17 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             reply = character_reply(selected_character_);
             break;
         }
-        if (std::exchange(nobody_met_, false))
+        if (machine_.variable(game_cell(ecl_temple_service)) == 1)
         {
-            reply = character_reply(selected_character_);
-            reply.writes.push_back({game_cell(ecl_combat_result), 0});
-            reply.writes.push_back({game_cell(ecl_monsters_defeated), 0});
-            break;
+            throw EclError("Temple healing service");
         }
-        throw EclError(machine_.variable(game_cell(ecl_temple_service)) == 1
-                           ? "Temple healing service"
-                           : "This town combat encounter");
+        // With no one loaded, the original's COMBAT only ends the encounter
+        // (eclvm.pas, EclCombat): a roaming group sized to a weak party can
+        // be no one at all.
+        reply = character_reply(selected_character_);
+        reply.writes.push_back({game_cell(ecl_combat_result), 0});
+        reply.writes.push_back({game_cell(ecl_monsters_defeated), 0});
+        break;
     case 32:
     {
         const auto found = town_->programs.find(arg(0));
