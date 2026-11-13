@@ -3239,8 +3239,27 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         const unsigned bank = current_area_ ? area_resources().bank : 3;
         const auto &profiles = current_area_ ? area_resources().npc_profiles : town_->npc_profiles;
         std::optional<Character> companion;
-        if (const auto found = profiles.find(arg(0));
-            found != profiles.end() && !(bank == 3 && arg(0) == 24))
+        const Creature *original = nullptr;
+        if (plays_original_records() && town_->creatures)
+        {
+            if (const auto found = town_->creatures->find(
+                    {static_cast<std::uint8_t>(bank), static_cast<std::uint8_t>(arg(0))}))
+            {
+                original = &found->get();
+            }
+        }
+        if (original)
+        {
+            // Under rules that play the original's records the NPC joins as
+            // its record holds it.
+            const auto &creation = *campaign_->character_rules();
+            if (const auto draft = creation.record_draft(original->stored.raw))
+            {
+                companion = Character(creation, *draft, {});
+            }
+        }
+        else if (const auto found = profiles.find(arg(0));
+                 found != profiles.end() && !(bank == 3 && arg(0) == 24))
         {
             companion = found->second;
         }
@@ -3256,6 +3275,14 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         const auto joined =
             campaign_->recruit("por:MON" + std::to_string(bank) + "CHA:" + std::to_string(arg(0)),
                                std::move(*companion), arg(1));
+        // Under the original rules it brings its record's own gear.
+        if (original)
+        {
+            for (const auto &item : original->equipment)
+            {
+                campaign_->take_item(joined, item);
+            }
+        }
         // A companion arrives with its gear on (Dirten's mace and armor).
         const auto &member = campaign_->member(joined);
         std::vector<std::uint64_t> unequipped;

@@ -1,5 +1,8 @@
 #include "opengold/original.h"
+#include "opengold/pool_radiance.h"
+#include "opengold/original_spells.h"
 #include <algorithm>
+#include <cctype>
 #include <sstream>
 #include <stdexcept>
 
@@ -214,6 +217,92 @@ struct Choices
     return choices;
 }
 
+constexpr std::string_view record_prefix = "record:";
+constexpr std::string_view hex = "0123456789abcdef";
+
+// A record's bytes as a draft keeps them.
+std::string record_data(std::span<const std::uint8_t> bytes)
+{
+    std::string data(record_prefix);
+    for (const auto byte : bytes)
+    {
+        data += hex[byte >> 4];
+        data += hex[byte & 0xF];
+    }
+    return data;
+}
+
+// The record a draft holds, if it is an NPC's.
+std::optional<por::CharacterRecord> record_of(const CharacterDraft &draft)
+{
+    std::string_view data = draft.rules_data;
+    if (!data.starts_with(record_prefix))
+    {
+        return std::nullopt;
+    }
+    data.remove_prefix(record_prefix.size());
+    std::vector<std::uint8_t> bytes;
+    for (std::size_t n = 0; n + 1 < data.size(); n += 2)
+    {
+        bytes.push_back(static_cast<std::uint8_t>(hex.find(data[n]) * 16 + hex.find(data[n + 1])));
+    }
+    auto record = por::decode_character(bytes);
+    if (!record)
+    {
+        throw std::invalid_argument("Unreadable original record");
+    }
+    return record;
+}
+
+// "DIRTEN" as a sheet names it: "Dirten".
+std::string title_case(std::string_view name)
+{
+    std::string titled;
+    bool start = true;
+    for (const char c : name)
+    {
+        const auto byte = static_cast<unsigned char>(c);
+        titled += static_cast<char>(start ? std::toupper(byte) : std::tolower(byte));
+        start = c == ' ';
+    }
+    return titled;
+}
+
+[[nodiscard]] ClassLevels record_levels(const por::CharacterRecord &record)
+{
+    const auto &l = record.levels;
+    return {l.cleric, l.druid, l.fighter, l.paladin, l.ranger, l.mage, l.thief, l.monk};
+}
+
+// The profession whose classes are the record's: a fighter's for one with
+// none the original's professions name.
+[[nodiscard]] Profession record_profession(const por::CharacterRecord &record)
+{
+    const auto levels = record_levels(record);
+    for (const auto &entry : professions)
+    {
+        const auto classes = classes_of(entry.value);
+        bool same = true;
+        for (std::size_t at = 0; at < class_slot_count; ++at)
+        {
+            const bool held = levels[at] > 0;
+            same = same && held == (std::ranges::find(classes, static_cast<ClassSlot>(at)) !=
+                                    classes.end());
+        }
+        if (same)
+        {
+            return entry.value;
+        }
+    }
+    return Profession::fighter;
+}
+
+[[nodiscard]] rules::AbilityArray<int> record_scores(const por::CharacterRecord &record)
+{
+    const auto &a = record.current_abilities;
+    return {a.strength, a.dexterity, a.constitution, a.intelligence, a.wisdom, a.charisma};
+}
+
 class OriginalCharacterRules final : public rules::CharacterRules
 {
   public:
@@ -229,6 +318,31 @@ class OriginalCharacterRules final : public rules::CharacterRules
     std::string game_setting() const override
     {
         return std::string(aging_name(aging_));
+    }
+
+    // An NPC who joins: its record, whole, in the draft (record_data), so the
+    // character is the record's scores, levels and Hit Points.
+    std::optional<CharacterDraft> record_draft(std::span<const std::uint8_t> bytes) const override
+    {
+        const auto record = por::decode_character(bytes);
+        if (!record)
+        {
+            throw std::invalid_argument("Unreadable original record");
+        }
+        CharacterDraft draft;
+        draft.name = title_case(record->name);
+        draft.race =
+            std::string(named(races, record->race >= 1 && record->race <= 7 && record->race != 6
+                                         ? static_cast<Race>(record->race - 1)
+                                         : Race::human)
+                            .id);
+        draft.gender = record->gender ? "female" : "male";
+        draft.character_class = std::string(named(professions, record_profession(*record)).id);
+        draft.alignment = std::string(
+            named(alignments, static_cast<Alignment>(std::min<int>(record->alignment, 8))).id);
+        draft.rules_data = record_data(bytes);
+        draft.rolled = true;
+        return draft;
     }
 
     std::vector<CreationChoice> choices(CreationField field) const override
@@ -311,6 +425,10 @@ class OriginalCharacterRules final : public rules::CharacterRules
 
     std::optional<int> ability_score(const CharacterDraft &draft, Ability ability) const override
     {
+        if (const auto record = record_of(draft))
+        {
+            return record_scores(*record)[ability];
+        }
         if (!draft.rolled)
         {
             return std::nullopt;
@@ -336,6 +454,10 @@ class OriginalCharacterRules final : public rules::CharacterRules
         if (name == rules::NameRequirement::required && draft.name.empty())
         {
             throw std::invalid_argument("A character needs a name");
+        }
+        if (const auto record = record_of(draft))
+        {
+            return record_sheet(draft, *record);
         }
         const auto chosen = read_choices(draft);
         const auto alignment = require_id(alignments, draft.alignment, "alignment");
@@ -415,6 +537,75 @@ class OriginalCharacterRules final : public rules::CharacterRules
     }
 
   private:
+    // An NPC's sheet: its record's scores, levels, Hit Points, spells known
+    // and memorized, and its race, class and alignment.
+    [[nodiscard]] CharacterSheet record_sheet(const CharacterDraft &draft,
+                                              const por::CharacterRecord &record) const
+    {
+        const auto ability = record_scores(record);
+        const auto levels = record_levels(record);
+        const auto race = find_id(races, draft.race).value_or(Race::human);
+        const auto profession = record_profession(record);
+        const auto alignment =
+            find_id(alignments, draft.alignment).value_or(Alignment::true_neutral);
+        CharacterSheet sheet;
+        sheet.identity = identity();
+        sheet.name = draft.name;
+        sheet.race = std::string(named(races, race).label);
+        sheet.gender = draft.gender == "female" ? "Female" : "Male";
+        sheet.character_class = std::string(named(professions, profession).label);
+        sheet.alignment = std::string(named(alignments, alignment).label);
+        sheet.base = ability;
+        sheet.scores = ability;
+        sheet.level = std::max(1, *std::max_element(levels.begin(), levels.end()));
+        sheet.hit_points = std::max<int>(record.max_hit_points, 1);
+        for (std::size_t at = 0; at < class_slot_count; ++at)
+        {
+            if (levels[at] > 0)
+            {
+                sheet.level_classes.emplace_back(class_slot_id(static_cast<ClassSlot>(at)));
+            }
+        }
+        CharacterSheet::Original numbers;
+        numbers.class_levels = levels;
+        numbers.thac0 = thac0(levels);
+        numbers.saving_throws = saving_throws(levels);
+        numbers.exceptional_strength = record.current_abilities.exceptional_strength;
+        numbers.age = record.age;
+        numbers.race = static_cast<int>(race);
+        numbers.profession = static_cast<int>(profession);
+        numbers.alignment = static_cast<int>(alignment);
+        numbers.thief_skills =
+            thief_skills(race, level_in(levels, ClassSlot::thief), ability[Ability::dexterity]);
+        numbers.cleric_slots = spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric),
+                                           ability[Ability::wisdom]);
+        numbers.magic_user_slots =
+            spell_slots(ClassSlot::magic_user, level_in(levels, ClassSlot::magic_user),
+                        ability[Ability::wisdom]);
+        // A magic-user's book: the record's known-spell flags, by number.
+        std::vector<int> learned;
+        for (std::size_t n = 0; n < record.spell_book.size(); ++n)
+        {
+            if (record.spell_book[n] != 0)
+            {
+                learned.push_back(static_cast<int>(n) + 1);
+            }
+        }
+        numbers.known_spells = known_spells(levels, ability[Ability::wisdom], learned);
+        sheet.original = numbers;
+        for (const auto memorized : record.memorized_spells)
+        {
+            if (memorized != 0 && memorized < 0x80)
+            {
+                if (const auto id = spell_id(memorized); !id.empty())
+                {
+                    sheet.prepared_spells.push_back(id);
+                }
+            }
+        }
+        return sheet;
+    }
+
     [[nodiscard]] rules::AbilityArray<int> scores(const CharacterDraft &draft) const
     {
         const auto chosen = read_choices(draft);

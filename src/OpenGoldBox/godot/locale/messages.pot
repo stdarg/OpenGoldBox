@@ -230,19 +230,19 @@ msgstr ""
 msgid "A cage of force closes."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:60
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:63
 msgid "A cleric and a fighter at once, sharing experience between the two."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:66
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:69
 msgid "A cleric and a magic-user at once, sharing experience between the two."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:68
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:71
 msgid "A cleric and a thief at once, sharing experience between the two."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:62
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:65
 msgid "A cleric, fighter and magic-user at once, sharing experience among the three."
 msgstr ""
 
@@ -286,7 +286,7 @@ msgstr ""
 msgid "A feat or ability points.\nWild Shape: the Tiger."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:45 src/OpenGold.Rules.Original/src/character_rules.cpp:46
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:48 src/OpenGold.Rules.Original/src/character_rules.cpp:49
 msgid "A female's Strength may be lower than a male's."
 msgstr ""
 
@@ -294,15 +294,15 @@ msgstr ""
 msgid "A fierce warrior. Primary ability: Strength. Hit Die: d12."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:70
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:73
 msgid "A fighter and a magic-user at once, sharing experience between the two."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:72
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:75
 msgid "A fighter and a thief at once, sharing experience between the two."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:74
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:77
 msgid "A fighter, magic-user and thief at once, sharing experience among the three."
 msgstr ""
 
@@ -416,7 +416,7 @@ msgstr ""
 msgid "A level 8 spell slot and Wizard spells: Antimagic Field, Befuddlement, Dominate Monster, Incendiary Cloud, Maze, Mind Blank, Power Word Stun and Sunburst."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:76
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:79
 msgid "A magic-user and a thief at once, sharing experience between the two."
 msgstr ""
 
@@ -444,11 +444,11 @@ msgstr ""
 msgid "A phantom watchdog appears."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:50
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:53
 msgid "A priest who fights in armor and casts healing and protective spells. Hit Die: d8."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:58
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:61
 msgid "A rogue who opens locks, finds traps and strikes from behind. Hit Die: d6."
 msgstr ""
 
@@ -493,7 +493,7 @@ msgstr ""
 msgid "A wall of water rises."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:52
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:55
 msgid "A warrior who uses every weapon and armor and gains more attacks with experience. Hit Die: d10."
 msgstr ""
 
@@ -506,7 +506,7 @@ msgstr ""
 msgid "A wielder of divine magic. Primary ability: Wisdom. Hit Die: d8."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:55
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:58
 msgid "A wizard who learns powerful spells from a spellbook but fights poorly and wears no armor. Hit Die: d4."
 msgstr ""
 
@@ -577,7 +577,7 @@ msgstr ""
 msgid "Acid Spray"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:328
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:333
 msgid "Acolyte"
 msgstr ""
 
@@ -658,11 +658,11 @@ msgstr ""
 msgid "Active conditions are shown in the character status."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:324
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:329
 msgid "Acts destructively with little regard for rules or others."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:97
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:100
 msgid "Acts destructively, with little regard for rules or others."
 msgstr ""
 
@@ -1133,19 +1133,19 @@ msgstr ""
 msgid "Attribute"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:332
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:337
 msgid "Attribute bonuses: Constitution, Intelligence, Wisdom.\nSkills: Arcana, History.\nFeat: Magic Initiate (Wizard)."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:330
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:335
 msgid "Attribute bonuses: Dexterity, Constitution, Intelligence.\nSkills: Sleight of Hand, Stealth.\nFeat: Alert."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:328
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:333
 msgid "Attribute bonuses: Intelligence, Wisdom, Charisma.\nSkills: Insight, Religion.\nFeat: Magic Initiate (Cleric)."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:334
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:339
 msgid "Attribute bonuses: Strength, Dexterity, Constitution.\nSkills: Athletics, Intimidation.\nFeat: Savage Attacker."
 msgstr ""
 
@@ -1202,11 +1202,11 @@ msgstr ""
 msgid "Background bonuses cannot raise a score above 20"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:318
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:323
 msgid "Balances competing principles or acts according to circumstances."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:89
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:92
 msgid "Balances competing principles, or acts as circumstances demand."
 msgstr ""
 
@@ -2096,15 +2096,15 @@ msgstr ""
 msgid "Channel Divinity: two uses, one back on a Short Rest, for Divine Spark (heal or harm 1d8 + Wisdom within 30 feet) or Turn Undead."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:97 src/OpenGold.Rules.Srd5/src/character_rules.cpp:324
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:100 src/OpenGold.Rules.Srd5/src/character_rules.cpp:329
 msgid "Chaotic Evil"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:93 src/OpenGold.Rules.Srd5/src/character_rules.cpp:316
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:96 src/OpenGold.Rules.Srd5/src/character_rules.cpp:321
 msgid "Chaotic Good"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:95 src/OpenGold.Rules.Srd5/src/character_rules.cpp:320
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:98 src/OpenGold.Rules.Srd5/src/character_rules.cpp:325
 msgid "Chaotic Neutral"
 msgstr ""
 
@@ -2551,7 +2551,7 @@ msgstr ""
 msgid "Cleave"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:50 src/OpenGold.Rules.Srd5/src/character_class.cpp:21 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:53 src/OpenGold.Rules.Srd5/src/character_class.cpp:21 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Cleric"
 msgstr ""
 
@@ -2579,19 +2579,19 @@ msgstr ""
 msgid "Cleric spells a day"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:60
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:63
 msgid "Cleric/Fighter"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:62
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:65
 msgid "Cleric/Fighter/Magic-User"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:66
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:69
 msgid "Cleric/Magic-User"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:68
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:71
 msgid "Cleric/Thief"
 msgstr ""
 
@@ -2980,7 +2980,7 @@ msgstr ""
 msgid "Creatures of one kind cannot interrupt the party's rest."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:330
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:335
 msgid "Criminal"
 msgstr ""
 
@@ -3554,11 +3554,11 @@ msgstr ""
 msgid "Dragon's Breath: Poison"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:277
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:282
 msgid "Dragonborn"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:277
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:282
 msgid "Dragonborn trace their line to dragons, whose power shows in their scales and their breath.\n\nRacial traits:\n- Draconic Ancestry: a kind of dragon that sets your breath's damage and your resistance.\n- Breath Weapon: in place of an attack, a 15-foot cone or 30-foot line of 1d10 damage (2d10 from level 5, 3d10 from 11), Dexterity save for half, as many times as your Proficiency Bonus per Long Rest.\n- Damage Resistance to your ancestry's damage type."
 msgstr ""
 
@@ -3634,7 +3634,7 @@ msgstr ""
 msgid "Dust of Disappearance"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:24 src/OpenGold.Rules.Srd5/src/character_rules.cpp:279
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:27 src/OpenGold.Rules.Srd5/src/character_rules.cpp:284
 msgid "Dwarf"
 msgstr ""
 
@@ -3646,12 +3646,12 @@ msgstr ""
 msgid "Dwarven Toughness"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:591 src/OpenGold.Rules.Srd5/src/srd5.cpp:31934 src/OpenGold.Rules.Srd5/src/srd5.cpp:9187 src/OpenGoldBox/level_up_view.cpp:392
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:596 src/OpenGold.Rules.Srd5/src/srd5.cpp:31934 src/OpenGold.Rules.Srd5/src/srd5.cpp:9187 src/OpenGoldBox/level_up_view.cpp:392
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Dwarven Toughness: +{hp} maximum HP."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:279
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:284
 msgid "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage, and Advantage on saves against being Poisoned."
 msgstr ""
 
@@ -3772,7 +3772,7 @@ msgstr ""
 msgid "Elementals"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:27 src/OpenGold.Rules.Srd5/src/character_rules.cpp:281
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:30 src/OpenGold.Rules.Srd5/src/character_rules.cpp:286
 msgid "Elf"
 msgstr ""
 
@@ -3788,7 +3788,7 @@ msgstr ""
 msgid "Elven Lineage"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:281
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:286
 msgid "Elves are long-lived folk with the blood of the Feywild in their veins.\n\nRacial traits:\n- Trance: magic cannot put you to sleep.\n- Elven Lineage: High Elf or Wood Elf, each with its own magic.\n- Fey Ancestry: Advantage on saves against being Charmed.\n- Keen Senses: training in Insight, Perception or Survival."
 msgstr ""
 
@@ -4187,7 +4187,7 @@ msgstr ""
 msgid "Features and choices"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:46 src/OpenGold.Rules.Srd5/src/character_rules.cpp:296
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:49 src/OpenGold.Rules.Srd5/src/character_rules.cpp:301
 msgid "Female"
 msgstr ""
 
@@ -4239,7 +4239,7 @@ msgstr ""
 msgid "Fiends"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:52 src/OpenGold.Rules.Srd5/src/character_class.cpp:23 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:55 src/OpenGold.Rules.Srd5/src/character_class.cpp:23 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Fighter"
 msgstr ""
 
@@ -4264,15 +4264,15 @@ msgstr ""
 msgid "Fighter skills"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:70
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:73
 msgid "Fighter/Magic-User"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:74
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:77
 msgid "Fighter/Magic-User/Thief"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:72
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:75
 msgid "Fighter/Thief"
 msgstr ""
 
@@ -4493,7 +4493,7 @@ msgstr ""
 msgid "Fog Cloud (Magic Initiate)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:33
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:36
 msgid "Folk of both human and elven blood, partly proof against sleep and charm magic, with the widest choice of classes."
 msgstr ""
 
@@ -4777,7 +4777,7 @@ msgstr ""
 msgid "Gender"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:296 src/OpenGold.Rules.Srd5/src/character_rules.cpp:298 src/OpenGold.Rules.Srd5/src/character_rules.cpp:300
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:301 src/OpenGold.Rules.Srd5/src/character_rules.cpp:303 src/OpenGold.Rules.Srd5/src/character_rules.cpp:305
 msgid "Gender does not change attributes or restrict class or appearance choices."
 msgstr ""
 
@@ -4849,11 +4849,11 @@ msgstr ""
 msgid "Gnoll Warrior"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:30 src/OpenGold.Rules.Srd5/src/character_rules.cpp:283
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:33 src/OpenGold.Rules.Srd5/src/character_rules.cpp:288
 msgid "Gnome"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:283
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:288
 msgid "Gnomes are small, quick-witted folk with a knack for magic and invention.\n\nRacial traits:\n- Small.\n- Gnomish Cunning: Advantage on Intelligence, Wisdom and Charisma saves."
 msgstr ""
 
@@ -4861,11 +4861,11 @@ msgstr ""
 msgid "Gold"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:285
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:290
 msgid "Goliath"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:285
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:290
 msgid "Goliaths are towering folk descended from giants.\n\nRacial traits:\n- Speed of 35 feet.\n- Giant Ancestry: a boon from cloud, fire, frost, hill, stone or storm giants, used a few times between Long Rests."
 msgstr ""
 
@@ -4889,7 +4889,7 @@ msgstr ""
 msgid "Grab"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:27
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:30
 msgid "Graceful, long-lived folk who shrug off sleep and charm magic and are deadly with bows and swords. An elf may combine fighter, magic-user and thief."
 msgstr ""
 
@@ -4986,19 +4986,19 @@ msgstr ""
 msgid "Guidance: Medicine"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:82
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:85
 msgid "Guided by compassion, duty and order."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:314
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:319
 msgid "Guided by compassion, duty, and order."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:83
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:86
 msgid "Guided by rules, tradition or a personal code."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:317
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:322
 msgid "Guided by rules, tradition, or a personal code."
 msgstr ""
 
@@ -5055,7 +5055,7 @@ msgstr ""
 msgid "Half Speed, -2 to Armor Class and Dexterity saves, no Reactions, and only an action or a Bonus Action and one attack each turn. A Wisdom save at the end of each of its turns ends it."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:33 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:36 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Half-Elf"
 msgstr ""
 
@@ -5063,11 +5063,11 @@ msgstr ""
 msgid "Half-Orc"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:36 src/OpenGold.Rules.Srd5/src/character_rules.cpp:287
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:39 src/OpenGold.Rules.Srd5/src/character_rules.cpp:292
 msgid "Halfling"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:287
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:292
 msgid "Halflings are small, cheerful folk known for their courage and uncanny luck.\n\nRacial traits:\n- Luck: reroll a 1 on an attack roll, ability check or saving throw.\n- Brave: Advantage on saves against being Frightened.\n- Halfling Nimbleness: move through the space of larger creatures, without stopping there.\n- Naturally Stealthy: hide behind larger creatures."
 msgstr ""
 
@@ -5362,7 +5362,7 @@ msgstr ""
 msgid "How large an original encounter may be: a share of the SRD's Moderate XP budget for the party. Bigger groups shrink; experience and treasure stay the original's."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:39 src/OpenGold.Rules.Srd5/src/character_rules.cpp:289
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:42 src/OpenGold.Rules.Srd5/src/character_rules.cpp:294
 msgid "Human"
 msgstr ""
 
@@ -5370,7 +5370,7 @@ msgstr ""
 msgid "Human Skillful"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:289
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:294
 msgid "Humans are ambitious, adaptable folk found in every land.\n\nRacial traits:\n- Resourceful: Heroic Inspiration after every Long Rest, which rolls your first failed d20 again.\n- Skillful: training in one skill of your choice.\n- Versatile: an Origin feat of your choice."
 msgstr ""
 
@@ -5909,15 +5909,15 @@ msgstr ""
 msgid "Lasts while its summoner keeps Concentration."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:85 src/OpenGold.Rules.Srd5/src/character_rules.cpp:321
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:88 src/OpenGold.Rules.Srd5/src/character_rules.cpp:326
 msgid "Lawful Evil"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:82 src/OpenGold.Rules.Srd5/src/character_rules.cpp:314
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:85 src/OpenGold.Rules.Srd5/src/character_rules.cpp:319
 msgid "Lawful Good"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:83 src/OpenGold.Rules.Srd5/src/character_rules.cpp:317
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:86 src/OpenGold.Rules.Srd5/src/character_rules.cpp:322
 msgid "Lawful Neutral"
 msgstr ""
 
@@ -6499,11 +6499,11 @@ msgstr ""
 msgid "Magic items are marked * for ten minutes."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:55 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:58 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Magic-User"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:76
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:79
 msgid "Magic-User/Thief"
 msgstr ""
 
@@ -6552,7 +6552,7 @@ msgstr ""
 msgid "Make the species' choices."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:45 src/OpenGold.Rules.Srd5/src/character_rules.cpp:298
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:48 src/OpenGold.Rules.Srd5/src/character_rules.cpp:303
 msgid "Male"
 msgstr ""
 
@@ -7119,15 +7119,15 @@ msgstr ""
 msgid "Necrotic"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:318
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:323
 msgid "Neutral"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:91 src/OpenGold.Rules.Srd5/src/character_rules.cpp:322
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:94 src/OpenGold.Rules.Srd5/src/character_rules.cpp:327
 msgid "Neutral Evil"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:87 src/OpenGold.Rules.Srd5/src/character_rules.cpp:315
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:90 src/OpenGold.Rules.Srd5/src/character_rules.cpp:320
 msgid "Neutral Good"
 msgstr ""
 
@@ -7235,7 +7235,7 @@ msgstr ""
 msgid "No member can be healed by it now"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:606
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:611
 msgid "No numeric racial modifiers."
 msgstr ""
 
@@ -7284,7 +7284,7 @@ msgstr ""
 msgid "Non-binary"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:300
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:305
 msgid "Nonbinary"
 msgstr ""
 
@@ -7557,7 +7557,7 @@ msgstr ""
 msgid "Options"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:291
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:296
 msgid "Orc"
 msgstr ""
 
@@ -7565,11 +7565,11 @@ msgstr ""
 msgid "Orc / Adrenaline Rush"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:601
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:606
 msgid "Orc / Adrenaline Rush: Bonus Action Dash and Temporary HP equal to proficiency bonus. Uses equal to proficiency bonus; all recover on a Short or Long Rest."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:291
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:296
 msgid "Orcs are strong, tireless folk who press on where others falter.\n\nRacial traits:\n- Adrenaline Rush: Dash as a Bonus Action and gain Temporary Hit Points, a few times between rests.\n- Relentless Endurance: drop to 1 Hit Point instead of 0, once per Long Rest."
 msgstr ""
 
@@ -7590,7 +7590,7 @@ msgstr ""
 msgid "Other hand — {item}"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:617
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:622
 msgid "Other racial traits apply when the rules call for them."
 msgstr ""
 
@@ -8241,11 +8241,11 @@ msgstr ""
 msgid "Pull off"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:85 src/OpenGold.Rules.Srd5/src/character_rules.cpp:321
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:88 src/OpenGold.Rules.Srd5/src/character_rules.cpp:326
 msgid "Pursues selfish ends through structure and rules."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:91 src/OpenGold.Rules.Srd5/src/character_rules.cpp:322
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:94 src/OpenGold.Rules.Srd5/src/character_rules.cpp:327
 msgid "Pursues selfish ends without loyalty to order or freedom."
 msgstr ""
 
@@ -9331,7 +9331,7 @@ msgstr ""
 msgid "Sacred Weapon (Radiant)"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:332 src/OpenGoldBox/level_up_view.cpp:381 src/OpenGoldBox/level_up_view.cpp:386
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:337 src/OpenGoldBox/level_up_view.cpp:381 src/OpenGoldBox/level_up_view.cpp:386
 msgid "Sage"
 msgstr ""
 
@@ -9519,7 +9519,7 @@ msgstr ""
 msgid "Seeking Spell rerolls the missed attack."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:87 src/OpenGold.Rules.Srd5/src/character_rules.cpp:315
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:90 src/OpenGold.Rules.Srd5/src/character_rules.cpp:320
 msgid "Seeks to help others, with flexibility about rules."
 msgstr ""
 
@@ -9870,11 +9870,11 @@ msgstr ""
 msgid "Small"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:30
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:33
 msgid "Small, clever folk who resist magic and fight kobolds and goblins well. A gnome may be a fighter, a thief or both."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:36
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:39
 msgid "Small, nimble folk who resist poison and magic. A halfling may be a fighter, a thief or both."
 msgstr ""
 
@@ -9898,7 +9898,7 @@ msgstr ""
 msgid "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands uses a wand, potion or other magic item as a Bonus Action."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:586
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:591
 msgid "Sneak Attack: once per turn, extra weapon damage is added automatically to the first eligible hit; the combat log shows the dice."
 msgstr ""
 
@@ -9906,7 +9906,7 @@ msgstr ""
 msgid "Sokal Keep"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:334
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:339
 msgid "Soldier"
 msgstr ""
 
@@ -10006,7 +10006,7 @@ msgstr ""
 msgid "Source: Cure Wounds and Cleric spellcasting, Wisdom score {score}. Healing: 2d8 + Wisdom modifier ({modifier})."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:613
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:618
 msgid "Source: Dwarf / Dwarven Resilience. Resistance to Poison damage (half, rounded down)."
 msgstr ""
 
@@ -10015,7 +10015,7 @@ msgstr ""
 msgid "Source: Fire Bolt and Wizard spellcasting, Intelligence score {score}. Attack: Intelligence modifier +{bonus} proficiency = {attack}. Magic Missile has no ability modifier to damage."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:596
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:601
 msgid "Source: Goliath / Speed trait. Speed is 35 feet (5 feet above the default)."
 msgstr ""
 
@@ -10116,17 +10116,17 @@ msgstr ""
 msgid "Source: worn {item}. {note}"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:618
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:623
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Source: {background} background, selected ability increases."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:576
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:581
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Source: {class} Hit Die and Constitution score {score}. Starting HP: maximum d{die} + Constitution modifier ({modifier})."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:572
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:577
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Source: {class} class, level 1. Saving-throw training adds +2 proficiency to {first} and {second}."
 msgstr ""
@@ -10367,7 +10367,7 @@ msgstr ""
 msgid "Storm's Thunder"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:24
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:27
 msgid "Stout, hardy folk who resist poison and magic and fight giants and goblins well. A dwarf may be a fighter, a thief or both."
 msgstr ""
 
@@ -10798,7 +10798,7 @@ msgstr ""
 msgid "The attack passes through an illusory double."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:630
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:635
 msgid "The background also gives two skills and an Origin feat."
 msgstr ""
 
@@ -10922,7 +10922,7 @@ msgstr ""
 msgid "The monsters' figures in a fight: the new art, or the original game's. Party members keep theirs."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:39
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:42
 msgid "The most common folk of the Realms, who may follow any one class with no limit on their levels."
 msgstr ""
 
@@ -11127,7 +11127,7 @@ msgstr ""
 msgid "These files do not match the supported Pool of Radiance PC 1.3 checksums. You can continue, but some game features may not work."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:58 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:61 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Thief"
 msgstr ""
 
@@ -11255,11 +11255,11 @@ msgstr ""
 msgid "Thunderwave (level 2 slot)"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:293
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:298
 msgid "Tiefling"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:293
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:298
 msgid "Tieflings carry the mark of the Lower Planes in their blood and bearing.\n\nRacial traits:\n- Fiendish Legacy: Abyssal, Chthonic or Infernal, each with a resistance and its own magic."
 msgstr ""
 
@@ -11407,7 +11407,7 @@ msgstr ""
 msgid "Tropical Land"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:89
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:92
 msgid "True Neutral"
 msgstr ""
 
@@ -11749,11 +11749,11 @@ msgstr ""
 msgid "Valjevo Castle, the tower's upper level"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:93 src/OpenGold.Rules.Srd5/src/character_rules.cpp:316
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:96 src/OpenGold.Rules.Srd5/src/character_rules.cpp:321
 msgid "Values kindness and individual freedom."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/character_rules.cpp:95 src/OpenGold.Rules.Srd5/src/character_rules.cpp:320
+#: src/OpenGold.Rules.Original/src/character_rules.cpp:98 src/OpenGold.Rules.Srd5/src/character_rules.cpp:325
 msgid "Values personal freedom and independence."
 msgstr ""
 
@@ -12748,7 +12748,7 @@ msgstr ""
 msgid "zombies, juju zombies"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:624 src/OpenGoldBox/character_text.h:57
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:629 src/OpenGoldBox/character_text.h:57
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{ability} +{bonus}"
 msgstr ""
@@ -12838,7 +12838,7 @@ msgstr ""
 msgid "{attacker} sweeps."
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:524 src/OpenGoldBox/level_up_view.cpp:381 src/OpenGoldBox/level_up_view.cpp:386
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:529 src/OpenGoldBox/level_up_view.cpp:381 src/OpenGoldBox/level_up_view.cpp:386
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{background} background"
 msgstr ""
@@ -12947,7 +12947,7 @@ msgstr[1] ""
 msgid "{count} sp"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:632
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:637
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{die} (maximum d{die}) {modifier} (Constitution) + {racial} (racial bonus) = {hp} HP"
 msgstr ""

@@ -1,6 +1,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/character_creator.h"
 #include "opengold/character_pool.h"
+#include "opengold/creature_catalog.h"
 #include "opengold/coin_purse.h"
 #include "opengold/training_hall.h"
 #include "opengold/original_combat.h"
@@ -579,6 +580,40 @@ void a_potion_heals_outside_a_fight()
           "The Potion of Healing heals 2d4+2");
 }
 
+// An NPC who joins under the original rules is its record: its scores,
+// class levels and Hit Points.
+void an_npc_joins_as_its_record()
+{
+    const char *game = std::getenv("OPENGOLD_GAME_DIR");
+    if (!game)
+    {
+        return;
+    }
+    const auto catalog = por::CreatureCatalog::load(game);
+    const auto rules = original::character_rules();
+    unsigned made = 0;
+    for (const auto &[id, creature] : catalog.all())
+    {
+        const auto &record = creature.stored;
+        const auto &l = record.levels;
+        if (record.race < 1 || record.race > 7 || l.fighter + l.cleric + l.mage + l.thief == 0 ||
+            record.max_hit_points == 0)
+        {
+            continue;
+        }
+        const auto draft = rules->record_draft(record.raw);
+        check(draft.has_value(), "The original rules make a draft of a record");
+        const Character npc(*rules, *draft, {});
+        const auto &sheet = npc.sheet();
+        check(sheet.hit_points == record.max_hit_points && sheet.original &&
+                  sheet.original->class_levels[2] == l.fighter &&
+                  sheet.original->class_levels[5] == l.mage,
+              id.key() + " joins with its record's levels and Hit Points");
+        ++made;
+    }
+    check(made > 0, "Some records are characters who could join");
+}
+
 } // namespace
 
 int main()
@@ -595,6 +630,7 @@ int main()
         the_temple_heals_and_raises();
         scripts_harm_as_the_original();
         a_potion_heals_outside_a_fight();
+        an_npc_joins_as_its_record();
         std::cout << "Original creation tests passed\n";
         return 0;
     }

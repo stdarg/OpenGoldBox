@@ -115,6 +115,10 @@ struct PhlanResources
     std::optional<GeoMap> map;
     WallArtSet wall_art;
     std::map<unsigned, Creature> encounter_creatures;
+    // On the town only: every creature record of every MONnCHA bank, from
+    // which an NPC who joins under rules that play the original's records is
+    // made.
+    std::shared_ptr<const CreatureCatalog> creatures;
     std::map<unsigned, EncounterConversion> conversions;
     // A district's script, archive bank and LOAD PIECES wall banks; zero for the town.
     unsigned script{}, bank{};

@@ -3,6 +3,9 @@
 #include "opengold/rules.h"
 #include "opengold/message.h"
 #include <array>
+#include <optional>
+#include <cstdint>
+#include <span>
 #include <map>
 
 namespace opengold::rules
@@ -190,6 +193,11 @@ class CharacterRules
     // The setting a game chose for these rules when it began, which its saves
     // keep: the original rules' aging; empty for rules without one.
     [[nodiscard]] virtual std::string game_setting() const = 0;
+    // A character as an original record holds it (an NPC who joins the party),
+    // its bytes in its game's layout; none for rules that do not play the
+    // original's records.
+    [[nodiscard]] virtual std::optional<CharacterDraft>
+    record_draft(std::span<const std::uint8_t> record) const = 0;
     [[nodiscard]] virtual std::vector<CreationChoice> choices(CreationField field) const = 0;
     [[nodiscard]] virtual std::vector<ScoreAdjustment>
     adjustments(std::string_view background) const = 0;

@@ -200,6 +200,10 @@ lines in all:
      point of Constitution and of Hit Points, and the cures of blindness,
      disease, poison, curses and stone, with the conditions that last outside
      fights.
+   - **Companions:** an NPC who joins (ADD NPC) is its original record: its
+     scores, class levels, Hit Points, spells known and memorized, and its
+     own gear. The rules keep the record whole in its draft, so a save makes
+     it again the same.
    - **Items outside fights:** the Potion of Healing heals 2d4+2 and
      Keoghtum's Ointment 1d4+8, as in a fight; the rules say which items can
      be used out of one and give the inventory its notes.

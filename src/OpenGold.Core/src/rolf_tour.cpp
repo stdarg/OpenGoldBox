@@ -576,6 +576,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
             town->conversions.emplace(id, conversion);
         }
     }
+    town->creatures = std::make_shared<const CreatureCatalog>(creatures);
     town->script = town_script;
     town->bank = town_bank;
     town->combat_archive = read_archive(resolve_archive(directory, "CPIC3.DAX"));
