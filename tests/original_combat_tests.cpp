@@ -2131,6 +2131,60 @@ void missiles_turned_away()
           "The arrows do nothing");
 }
 
+// Lightning Bolt: one roll at the aim and along the bolt beyond it, away
+// from the caster (magic.pas, SpellLightningBolt and LightningPath).
+void lightning_runs_on()
+{
+    using original::ClassSlot;
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 5, {51})},
+                 {"First", rules::Side::opposition, {2, 3}, victim(100)},
+                 {"Second", rules::Side::opposition, {5, 3}, victim(100)},
+                 {"Aside", rules::Side::opposition, {5, 6}, victim(100)}},
+                127);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 51,
+             [&]
+             {
+                 return aim_at_cell(session, {2, 3});
+             });
+    const auto state = session.snapshot();
+    const int first = 100 - view_of(state, "First").hit_points;
+    const int second = 100 - view_of(state, "Second").hit_points;
+    check(first >= 5 && first <= 30 && first == second, "Both in line take the same 5d6");
+    check(view_of(state, "Aside").hit_points == 100, "One off the line is spared");
+}
+
+// Stinking Cloud: one in it fails its save and is helpless with nausea; the
+// cloud clears after the caster's level in rounds (magic.pas, effhndlr.pas 40).
+void a_cloud_sickens()
+{
+    using original::ClassSlot;
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 2, {34})},
+                 {"Kobold", rules::Side::opposition, {3, 3}, victim(20)}},
+                131);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 34,
+             [&]
+             {
+                 return aim_at_cell(session, {3, 3});
+             });
+    check(view_of(session.snapshot(), "Kobold").status == "helpless", "The kobold gags, helpless");
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return logged(session, "The air clears a little.") > 0 || session.snapshot().round > 6;
+        });
+    check(logged(session, "The air clears a little.") == 1 && session.snapshot().round <= 4,
+          "The cloud clears after 2 rounds");
+}
+
 } // namespace
 
 int main()
@@ -2184,6 +2238,8 @@ int main()
         mirror_images_take_blows();
         silence_stops_casting();
         missiles_turned_away();
+        lightning_runs_on();
+        a_cloud_sickens();
         real_records_fight();
         std::cout << "Original-rules combat passed.\n";
     }
