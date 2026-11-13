@@ -593,6 +593,10 @@ void RolfTourView::rest_finish()
         presentation::required_node<Window>(*this, "RestDialog").hide();
         rest_save_open_ = false;
         rest_result_ = String();
+        if (session_)
+        {
+            session_->decline_camp();
+        }
         refresh();
     }
     catch (const std::exception &e)

@@ -1779,6 +1779,20 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
     return loot;
 }
 
+void RolfTourSession::decline_camp()
+{
+    if (in_curse_wilderness() && snapshot_.phase == TourPhase::completed && snapshot_.camp_offered)
+    {
+        (void)explore(ExplorationCommand::look);
+    }
+}
+
+// Curse's root area is its wilderness, whose scripts (disk 1) have no map.
+bool RolfTourSession::in_curse_wilderness() const
+{
+    return game() != GoldBoxGame::pool_of_radiance && current_area_ == 0;
+}
+
 void RolfTourSession::finish_event()
 {
     read_character();
@@ -1825,12 +1839,17 @@ void RolfTourSession::finish_event()
             arrive(*std::exchange(teleport_arrival_, std::nullopt));
         }
         update_travel_mode();
-        event_stage_ = EventStage::search;
-        if (!machine_.start(1))
+        // Curse's wilderness offers its camp (PROGRAM 9) before its menu: the
+        // camp comes first, and the menu when it ends.
+        if (!(in_curse_wilderness() && snapshot_.camp_offered))
         {
-            throw EclError("Cannot search building entrance");
+            event_stage_ = EventStage::search;
+            if (!machine_.start(1))
+            {
+                throw EclError("Cannot search building entrance");
+            }
+            return;
         }
-        return;
     }
     if (event_stage_ == EventStage::pre_camp)
     {
@@ -1927,6 +1946,17 @@ void RolfTourSession::finish_event()
     if (std::exchange(step_out_after_shop_, false))
     {
         step_out_of_shop();
+    }
+    // After a camp in Curse's wilderness, its menu returns.
+    if (in_curse_wilderness() &&
+        (event_stage_ == EventStage::pre_camp || event_stage_ == EventStage::camp_interrupted))
+    {
+        event_stage_ = EventStage::search;
+        if (!machine_.start(1))
+        {
+            throw EclError("Cannot return to the wilderness");
+        }
+        return;
     }
     snapshot_.phase = TourPhase::completed;
     snapshot_.choices.clear();
@@ -3601,6 +3631,18 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             machine_.variable(game_cell(cadorna_payment)) == 0)
         {
             reply.writes.push_back({cadorna_payment, 254});
+        }
+        // Curse's wilderness keeps its back-from-camp flag in a cell Tilverton's
+        // sage and Kybor's library set for themselves: arriving with it set,
+        // the original skipped loading the roads from where the party stands,
+        // and the first journey went where stale cells said (ORIGINAL-RULES.md,
+        // Bugs). Coming from elsewhere, the party is not back from camp.
+        constexpr unsigned curse_wilderness_script = 80;
+        constexpr EclAddress curse_back_from_camp{0x4C13};
+        if (game() == GoldBoxGame::curse_of_the_azure_bonds && arg(0) == curse_wilderness_script &&
+            current_script_ != curse_wilderness_script)
+        {
+            reply.writes.push_back({curse_back_from_camp, 0});
         }
         current_script_ = arg(0);
         snapshot_.script_id = current_script_;

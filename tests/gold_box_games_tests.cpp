@@ -408,7 +408,24 @@ struct RouteBeat
     // Walk into the map, its script taking over, as its way in from the last
     // map does, instead of looking at a square of the map the party is on.
     bool enter_map = false;
+    // Answer the menu the last beat stopped at (the wilderness's), where the
+    // party stands, instead of going anywhere.
+    bool waiting = false;
+    // A script cell that must hold this value after the beat.
+    std::optional<std::pair<std::uint16_t, std::uint16_t>> expect_cell;
+    // Experience and gold the test gives each member before the beat, as the
+    // Pool of Radiance expedition does before its harder areas, for a party
+    // as strong as one brought from Pool of Radiance.
+    unsigned test_experience = 0, test_gold = 0;
 };
+
+// Answers that train each of the route's members a level at a hall: its
+// name, then the hall's own Train (the first choice).
+std::vector<std::string> train_everyone()
+{
+    return {"YES",      "paladin 1", "paladin 2",    "ranger 3",
+            "cleric 4", "cleric 5",  "magic_user 6", "Leave"};
+}
 
 // Curse's story, beat by beat, as its cluebook tells it (the route test, plan
 // step 7): Tilverton, until the party is exiled to the wilderness.
@@ -424,11 +441,29 @@ const std::vector<RouteBeat> &curse_route()
                                        // and led to the Thieves' Guild, rested.
         {1, 9, 3, D::north, {}, true}, // The guildmaster's news, rested; the Fire Knives burst in.
         {3, 0, 0, D::south, {}, true, true}, // Out through the guild's back to the sewers.
+        // The guild's secret training hall, three levels over (an award stops
+        // short of the level after next).
+        {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
+        {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
+        {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
         {4, 0, 0, D::south, {}, true, true}, // Through the sewers to the Fire Knives' hideout.
-        {4, 3, 13, D::north, {"stop:JOURNEY"}, true}, // The Fire Knives' leader and his
-                                                      // band; freed of the first bond,
-                                                      // the party is exiled to the
-                                                      // wilderness's menu.
+        {4, 3, 13, D::north, {"stop:JOURNEY"}, true},             // The Fire Knives' leader and his
+                                                                  // band; freed of the first bond,
+                                                                  // the party is exiled to the
+                                                                  // wilderness's menu.
+        {0, 0, 0, D::north, {"stop:JOURNEY"}, true, false, true}, // Rested in camp.
+        // Shadowdale is the journey's destination (cell 0x4C9C), though the
+        // sage's flag is still set from Tilverton.
+        {0,
+         0,
+         0,
+         D::north,
+         {"JOURNEY", "SHADOWDALE", "stop:TRAIL"},
+         false,
+         false,
+         true,
+         std::pair<std::uint16_t, std::uint16_t>{0x4C9C, 1}},
+        {0, 0, 0, D::north, {"TRAIL", "stop:JOURNEY"}, false, false, true},
     };
     return beats;
 }
@@ -885,17 +920,66 @@ bool curse_walk_census(bool route)
                 memorize();
             }
         };
+        // Days in camp from the wilderness's menu until every member is whole:
+        // CAMP opens the camp, and the menu returns after each night or fight.
+        const auto rest_in_wilderness = [&]
+        {
+            // Leaving the camp without resting brings the menu back.
+            answers = {"CAMP"};
+            play("wilderness camp");
+            session.decline_camp();
+            answers = {"stop:JOURNEY"};
+            play("wilderness camp");
+            if (session.snapshot().phase != TourPhase::awaiting_continue)
+            {
+                needs["The wilderness's menu does not return after a declined camp"].push_back(
+                    "wilderness camp");
+            }
+            for (int day = 0; day < 90 && !party_whole(); ++day)
+            {
+                answers = {"CAMP"};
+                play("wilderness camp");
+                if (!session.snapshot().camp_offered ||
+                    !session.camp(opengold::RestKind::long_rest))
+                {
+                    break;
+                }
+                answers = {"stop:JOURNEY"};
+                play("wilderness camp");
+                memorize();
+            }
+        };
         play("opening");
+        std::size_t beat_number = 0;
         for (const auto &beat : curse_route())
         {
+            ++beat_number;
             const auto where = "beat " + std::to_string(beat.map) + " " + std::to_string(beat.x) +
                                "," + std::to_string(beat.y);
             if (beat.rest_first)
             {
-                rest_until_healed();
+                beat.waiting ? rest_in_wilderness() : rest_until_healed();
+            }
+            if (beat.test_experience)
+            {
+                for (const auto id : party->state().slots)
+                {
+                    if (id)
+                    {
+                        party->award_experience(beat.test_experience,
+                                                "test:curse-route-" + std::to_string(beat_number) +
+                                                    "-" + std::to_string(id),
+                                                id);
+                    }
+                }
+                party->add_coins(opengold::Coin::gold, beat.test_gold);
             }
             answers = beat.answers;
-            if (beat.enter_map)
+            if (beat.waiting)
+            {
+                play(where);
+            }
+            else if (beat.enter_map)
             {
                 opengold::test::TourAccess::enter(session, beat.map, {beat.x, beat.y, beat.facing});
                 play(where);
@@ -912,6 +996,35 @@ bool curse_walk_census(bool route)
             {
                 rest_until_healed();
             }
+            if (beat.expect_cell)
+            {
+                const auto held = opengold::test::TourAccess::machine(session).variable(
+                    opengold::por::EclAddress{beat.expect_cell->first});
+                if (held != beat.expect_cell->second)
+                {
+                    needs["Cell " + std::to_string(beat.expect_cell->first) + " holds " +
+                          std::to_string(held) + ", not " +
+                          std::to_string(beat.expect_cell->second)]
+                        .push_back(where);
+                }
+            }
+            std::cout << "  party after " << where << ":";
+            for (const auto id : party->state().slots)
+            {
+                if (id)
+                {
+                    const auto &member = party->member(id);
+                    std::cout << " " << member.vitals.hit_points << "/"
+                              << member.character.sheet().hit_points
+                              << (member.vitals.dead ? " dead" : "");
+                    if (const auto &numbers = member.character.sheet().original)
+                    {
+                        std::cout << " (" << member.experience << " xp, level "
+                                  << std::ranges::max(numbers->class_levels) << ")";
+                    }
+                }
+            }
+            std::cout << (session.snapshot().camp_offered ? " (camp offered)" : "") << "\n";
             if (std::getenv("OPENGOLD_CURSE_CELL"))
             {
                 const auto cell =

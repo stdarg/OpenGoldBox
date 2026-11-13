@@ -243,9 +243,13 @@ In small steps, each with its check:
    paladins, a ranger, two clerics and a magic-user, on Quick with Quick
    magic on): the shops, the sage, the king's carriage and jail, the
    Thieves' Guild, the sewers and the Fire Knives' hideout, to the leader's
-   fight, the first bond's end and the exile to the wilderness. Each fight is
-   played with several dice and the best play kept, as a player reloads.
-   Next: the wilderness (resting on the road), Shadowdale and onwards.
+   fight, the first bond's end and the exile to the wilderness; it trains to
+   level 8 at the guild's secret hall on test experience, as the Pool of
+   Radiance expedition does, for a party as strong as one brought from Pool of
+   Radiance; it camps in the wilderness and takes the trail to Shadowdale,
+   through the displacer beasts at Shadow Gap. Each fight is played with
+   several dice and the best play kept, as a player reloads. Next:
+   Shadowdale, Essembra and Hap.
 
 ### 4 to 7. The other campaigns
 

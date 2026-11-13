@@ -433,6 +433,9 @@ class RolfTourSession
     }
     // Both kinds run the original pre-camp and interruption services.
     bool camp(RestKind kind);
+    // The party leaves a camp a script offered without resting. In Curse's
+    // wilderness its menu returns, as the original runs the script again.
+    void decline_camp();
     // New dice for the script, as a reload above Easy gives (reseed_after_load).
     void reseed_dice(std::uint32_t seed);
     // A percentage of the SRD's Moderate XP budget, 0-200. Original encounters
@@ -901,6 +904,7 @@ class RolfTourSession
     unsigned rest_checks_{};
     [[nodiscard]] std::optional<unsigned> rest_interruption(unsigned interval, unsigned chance);
     void announce_camp_attack();
+    [[nodiscard]] bool in_curse_wilderness() const;
     [[nodiscard]] bool camp_warded() const;
     bool transition_{}, message_only_{};
 

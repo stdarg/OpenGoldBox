@@ -721,3 +721,4 @@ tuned with the AI lab once the original rules play.
 | *Curse:* Faerie Fire improves its target's Armor Class by 2, and sets any of 2 or better to 0, instead of making it easier to hit (`ovr013`, `FaerieFire`) | 2 worse |
 | *Curse:* Charm Monsters, like Hold Monster, takes only what Charm Person can (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* the dracolich's shield against fear, enfeeblement and feeblemind is looked at only once those have landed, so it does almost nothing (`ovr013`, `AffectDracolichA`) | It is immune to them |
+| *Curse:* the wilderness script (ECL1 80) marks a camp with a cell Tilverton's sage and Kybor's library also set for themselves (0x4C13), so a party that paid the sage reaches the wilderness as if back from camp: it skips loading the roads from Tilverton, and the first journey goes where stale cells say | Arriving from another script, the party is not back from camp |
