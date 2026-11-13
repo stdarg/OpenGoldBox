@@ -26,8 +26,8 @@ The user decided these on 2026-11-12:
 | Order | Game | Released | Folder | Status |
 |---|---|---|---|---|
 | 1 | *Pool of Radiance* | 1988 | `POOLRAD` | Playable |
-| 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Every file decodes ([curse.md](games/curse.md)) |
-| 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Not started |
+| 2 | *Curse of the Azure Bonds* | 1989 | `CURSE` | Played to its end by the route test, with stand-ins ([curse.md](games/curse.md)) |
+| 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Every file decodes but the title music ([secret.md](games/secret.md)) |
 | 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Not started |
 | 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Not started |
 | 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Not started |
@@ -65,7 +65,7 @@ The census (2026-11-12) puts every file through the decoders:
 |---|---|---|
 | *Pool of Radiance* | All | — |
 | *Curse* | All | — |
-| *Secret* | Maps, pictures, combat icons, sprites, item lists, effects, item types | Scripts, creatures, some creatures' items, some walls, the font, the name tables and sounds, `SOUND.DAX` |
+| *Secret* | All but one (2026-11-13) | `SOUND.DAX`, the title music's own driver and song |
 | *Gateway* | Maps, combat heads and bodies, effects, some walls and items | Scripts, creatures, pictures, combat icons, `ITEMS.1`, music and sounds |
 | *Pools of Darkness* | Maps, effects | Nearly everything else: its pictures are 256-color VGA, and it adds new files |
 | *Treasures* | Maps, effects | As for *Pools of Darkness* |
@@ -108,7 +108,8 @@ the reconstructed sources and go into `docs/games/<game>.md`.
 
 Done for a game when its census decodes every file.
 
-**Status:** done for *Pool of Radiance* and *Curse* (2026-11-12). Run it with
+**Status:** done for *Pool of Radiance* and *Curse* (2026-11-12); *Secret*
+decodes every file but its title music (2026-11-13). Run it with
 `opengold_census FOLDER...` (in `build/macos-universal` after `./build.sh`,
 or `build` in a native build), where a folder is one game's or one holding
 several (`/Users/edmond/GoldBox`). It prints a row for each kind of file: how

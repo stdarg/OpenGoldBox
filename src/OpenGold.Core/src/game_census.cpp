@@ -165,7 +165,8 @@ void check_records(RowBuilder &row, const std::vector<GameFile> &files,
 
 void check_creature(GoldBoxGame game, const Bytes &bytes)
 {
-    if (game != GoldBoxGame::pool_of_radiance && game != GoldBoxGame::curse_of_the_azure_bonds)
+    if (game != GoldBoxGame::pool_of_radiance && game != GoldBoxGame::curse_of_the_azure_bonds &&
+        game != GoldBoxGame::secret_of_the_silver_blades)
     {
         throw std::runtime_error("this game's creature records are not decoded yet");
     }
@@ -258,6 +259,12 @@ void check_wall_art(const std::map<std::string, GameFile> &by_name, const GameFi
         require(block_tiles.has_value(), "its tiles do not decode");
         tiles.insert(tiles.end(), block_tiles->begin(), block_tiles->end());
     }
+    // The original draws every wall from one space of symbols: the shared ones,
+    // then the three slots' tiles, 70 a slot. Secret of the Silver Blades'
+    // walls also use the tiles of the sets loaded beside them (docs/games/secret.md),
+    // which this record alone cannot name, so the slots it leaves free are blank.
+    constexpr std::size_t symbol_space = 1 + 45 + 3 * 70;
+    tiles.resize(std::max(tiles.size(), symbol_space));
     const auto art = por::decode_wall_art(record.bytes, tiles);
     require(art.has_value() && art->appearances.size() == 5 * blocks, "not wall art");
 }
@@ -270,7 +277,7 @@ void check_names_and_sounds(RowBuilder &row, GoldBoxGame game, const GameFile &s
     row.check(start.name + " item names",
               [&]
               {
-                  require(por::decode_item_words(image).has_value(), "no item name table");
+                  require(por::decode_item_words(image, game).has_value(), "no item name table");
               });
     row.check(start.name + " spell names",
               [&]
@@ -309,9 +316,9 @@ family_decoders(GoldBoxGame game, const std::map<std::string, GameFile> &by_name
     {
         static_cast<void>(por::decode_character_icon(record.bytes));
     };
-    const auto items = [](const GameFile &, const DaxRecord &record)
+    const auto items = [game](const GameFile &, const DaxRecord &record)
     {
-        require(por::decode_items(record.bytes).has_value(), "not an item list");
+        require(por::decode_items(record.bytes, game).has_value(), "not an item list");
     };
     std::map<std::string, FamilyDecoder, std::less<>> decoders{
         {"GEO",
@@ -330,7 +337,8 @@ family_decoders(GoldBoxGame game, const std::map<std::string, GameFile> &by_name
          {"wall tiles and the font",
           [](const GameFile &file, const DaxRecord &record)
           {
-              if (file.name == "8X8D1.DAX" && record.id == 201)
+              // Secret of the Silver Blades keeps the font alone in 8X8D5.
+              if (record.id == 201 && (file.name == "8X8D1.DAX" || file.name == "8X8D5.DAX"))
               {
                   require(decode_game_font(record.bytes).has_value(), "not the font");
                   return;

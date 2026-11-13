@@ -169,6 +169,11 @@ struct EffectRecord
                                                               GoldBoxGame game);
 [[nodiscard]] std::optional<std::vector<ItemRecord>>
 decode_items(std::span<const std::uint8_t> bytes);
+// The games after Pool of Radiance build an item's name from its name words
+// each time it is shown and leave scratch in the record's name bytes, so their
+// lists are read with no stored names.
+[[nodiscard]] std::optional<std::vector<ItemRecord>>
+decode_items(std::span<const std::uint8_t> bytes, GoldBoxGame game);
 [[nodiscard]] std::optional<std::vector<EffectRecord>>
 decode_effects(std::span<const std::uint8_t> bytes);
 // An item as rules that keep the original's items key it (the original
@@ -187,6 +192,9 @@ decode_item_templates(std::span<const std::uint8_t> bytes);
 // indexed by spell number: 0 is empty, 1 is "Bless".
 [[nodiscard]] std::optional<std::vector<std::string>>
 decode_item_words(std::span<const std::uint8_t> image);
+// The game's own table: Secret of the Silver Blades has 123 words.
+[[nodiscard]] std::optional<std::vector<std::string>>
+decode_item_words(std::span<const std::uint8_t> image, GoldBoxGame game);
 [[nodiscard]] std::optional<std::vector<std::string>>
 decode_spell_names(std::span<const std::uint8_t> image);
 // The name shown: the components' words, last component first ("Ring Of Protection +1"),

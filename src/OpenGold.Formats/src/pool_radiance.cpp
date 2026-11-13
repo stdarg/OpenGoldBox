@@ -1,5 +1,6 @@
 #include "opengold/pool_radiance.h"
 #include "opengold/curse_records.h"
+#include "opengold/secret_records.h"
 #include "little_endian.h"
 
 #include <algorithm>
@@ -171,6 +172,8 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> by
         return decode_character(bytes);
     case GoldBoxGame::curse_of_the_azure_bonds:
         return curse::decode_creature(bytes);
+    case GoldBoxGame::secret_of_the_silver_blades:
+        return secret::decode_creature(bytes);
     default:
         return std::nullopt;
     }
@@ -207,6 +210,21 @@ std::optional<std::vector<ItemRecord>> decode_items(std::span<const std::uint8_t
         result.push_back(std::move(item));
     }
     return result;
+}
+
+std::optional<std::vector<ItemRecord>> decode_items(std::span<const std::uint8_t> bytes,
+                                                    GoldBoxGame game)
+{
+    if (game == GoldBoxGame::pool_of_radiance || bytes.size() % 63 != 0)
+    {
+        return decode_items(bytes);
+    }
+    std::vector<std::uint8_t> nameless(bytes.begin(), bytes.end());
+    for (std::size_t p = 0; p < nameless.size(); p += 63)
+    {
+        nameless[p] = 0;
+    }
+    return decode_items(nameless);
 }
 
 std::optional<std::vector<EffectRecord>> decode_effects(std::span<const std::uint8_t> bytes)
@@ -261,6 +279,13 @@ std::optional<std::vector<ItemTemplate>> decode_item_templates(std::span<const s
 
 std::optional<std::vector<std::string>> decode_item_words(std::span<const std::uint8_t> image)
 {
+    return decode_item_words(image, GoldBoxGame::pool_of_radiance);
+}
+
+std::optional<std::vector<std::string>> decode_item_words(std::span<const std::uint8_t> image,
+                                                          GoldBoxGame game)
+{
+    const std::size_t count = game == GoldBoxGame::secret_of_the_silver_blades ? 123 : 255;
     const auto table = find_string_table(image, "Battle Axe", "Hand Axe");
 
     if (!table)
@@ -270,7 +295,7 @@ std::optional<std::vector<std::string>> decode_item_words(std::span<const std::u
 
     std::vector<std::string> words{""};
 
-    for (std::size_t index = 0; index < 255; ++index)
+    for (std::size_t index = 0; index < count; ++index)
     {
         auto text = slot_text(image, *table, index);
 

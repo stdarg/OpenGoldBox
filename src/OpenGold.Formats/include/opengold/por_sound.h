@@ -31,10 +31,12 @@ struct SoundEffect
 
 // Data-only decompression. No relocation, execution, or filesystem writes.
 [[nodiscard]] std::vector<std::uint8_t> unpack_sound_executable(std::span<const std::uint8_t> file);
-// Bounded decoder for the PC bank's command subset; also accepts synthetic data.
+// Bounded decoder for the PC bank's streams; also accepts synthetic data. Note
+// events need the driver's twelve note dividers (an offset in the segment).
 [[nodiscard]] std::vector<SpeakerTick>
 decode_speaker_sequence(std::span<const std::uint8_t> segment,
-                        const std::array<std::uint16_t, 4> &entries);
+                        const std::array<std::uint16_t, 4> &entries,
+                        std::uint16_t note_dividers = 0);
 [[nodiscard]] std::vector<SoundEffect>
 load_sound_effects(const std::filesystem::path &game_directory);
 // The sound effects of Curse of the Azure Bonds' START.EXE, from its unpacked

@@ -13,7 +13,9 @@ namespace opengold::por
 namespace
 {
 constexpr std::size_t max_image = 1024 * 1024;
-constexpr unsigned max_ticks = 4096;
+// About 4.6 minutes at the drivers' 237 ticks a second; Secret of the Silver
+// Blades' title music is the longest song.
+constexpr unsigned max_ticks = 65536;
 
 [[noreturn]] void invalid(std::string_view reason)
 {
@@ -48,6 +50,12 @@ enum class Field : unsigned
     output = 8,
     gate = 10,
     gate_delta = 12,
+    tempo = 14,
+    transpose = 18,
+    sustain = 20,
+    envelope = 22,
+    envelope_step = 24,
+    envelope_ticks = 26,
     wave = 28,
     phase = 30,
     phase_step = 32,
@@ -75,16 +83,111 @@ struct Voice
     }
 };
 
+// The synthesis fields a voice selection or a clear resets; its step, stream,
+// tempo, sustain and loop counters remain.
+void clear_voice(Voice &voice)
+{
+    for (const unsigned field :
+         {4U, 6U, 8U, 10U, 12U, 16U, 18U, 22U, 24U, 26U, 28U, 30U, 32U, 34U, 36U})
+    {
+        voice.at_offset(field) = 0;
+    }
+}
+
+// Note events, three bytes each, up to the one that ends the step: the voice
+// (times 20h), the pitch in semitones (7Fh rests; bit 7 ends the step) and the
+// step's length, which the selected voice takes. Only voice 0 takes a pitch,
+// from the twelve dividers of the lowest octave, halved an octave up.
+std::size_t play_notes(std::span<const std::uint8_t> data, std::array<Voice, 4> &voices,
+                       Voice &selected, std::size_t p, std::uint16_t note_dividers)
+{
+    using enum Field;
+    constexpr unsigned rest = 0x7f;
+    for (unsigned budget = 0; budget < 4096; ++budget)
+    {
+        const auto voice = byte(data, p) >> 5;
+        const auto pitch = byte(data, p + 1);
+        const auto length = byte(data, p + 2);
+        p += 3;
+        const auto speed = static_cast<std::uint8_t>(selected[tempo]);
+        selected[delay] = static_cast<std::uint16_t>(speed > 1 ? speed * length : length);
+        if ((pitch & 0x7f) != rest && voice == 0)
+        {
+            if (!note_dividers)
+            {
+                invalid("a note in a driver without its note table");
+            }
+            auto &target = voices[0];
+            target[delay] = selected[delay];
+            target[sustain] = selected[delay];
+            target[envelope_step] = 0;
+            target[envelope_ticks] = 1;
+            const auto semitones = static_cast<std::uint16_t>((pitch & 0x7f) + target[transpose]);
+            const auto octave = semitones / 12U;
+            const auto divider =
+                octave < 16 ? word(data, note_dividers + 2U * (semitones % 12U)) >> octave : 0;
+            target[Field::pitch] = static_cast<std::uint16_t>(divider);
+            target[output] = static_cast<std::uint16_t>(divider);
+        }
+        if (pitch & 0x80)
+        {
+            return p;
+        }
+    }
+    invalid("sound note budget exceeded");
+}
+
+// A voice's envelope when its stage ends: level entries (ticks FFFFh) set the
+// level at once, and the next entry slides it for its ticks.
+void step_envelope(std::span<const std::uint8_t> data, Voice &voice)
+{
+    using enum Field;
+    for (unsigned budget = 0; budget < 256; ++budget)
+    {
+        const auto entry = static_cast<std::size_t>(voice[envelope]) + voice[envelope_step];
+        const auto value = word(data, entry);
+        const auto ticks = word(data, entry + 2);
+        voice[envelope_step] = static_cast<std::uint16_t>(voice[envelope_step] + 4);
+        if (ticks != 0xffff)
+        {
+            voice[gate_delta] = value;
+            voice[envelope_ticks] = ticks;
+            return;
+        }
+        voice[gate] = value;
+        if (value == 0)
+        {
+            voice[gate_delta] = 0;
+        }
+    }
+    invalid("sound envelope budget exceeded");
+}
+
 void commands(std::span<const std::uint8_t> data, std::array<Voice, 4> &voices, std::size_t source,
-              std::size_t &return_position)
+              std::size_t &return_position, std::uint16_t note_dividers)
 {
     using enum Field;
     auto p = static_cast<std::size_t>(voices[source][position]);
+    // A voice given a step but no stream, as a note's voice may be, reads nothing.
+    if (p == 0)
+    {
+        return;
+    }
     auto selected = source;
     for (unsigned budget = 0; budget < 4096; ++budget)
     {
         const auto op = byte(data, p++);
-        if (op == 0xff || op == 0xfe)
+        if (op < 0xfa)
+        {
+            p = play_notes(data, voices, voices[selected], p - 1, note_dividers);
+            voices[source][position] = voices[source][delay] ? static_cast<std::uint16_t>(p) : 0;
+            return;
+        }
+        if (op == 0xfa)
+        {
+            clear_voice(voices[selected]);
+        }
+        else if (op == 0xff || op == 0xfe)
         {
             const auto field = byte(data, p++);
             const auto value = word(data, p);
@@ -131,16 +234,7 @@ void commands(std::span<const std::uint8_t> data, std::array<Voice, 4> &voices, 
                 invalid("invalid voice selection");
             }
             selected = offset / 48;
-            // Synthesis fields reset; sequencing and loop counters remain intact.
-            for (const unsigned field :
-                 {4U, 6U, 8U, 10U, 12U, 16U, 18U, 22U, 24U, 26U, 28U, 30U, 32U, 34U, 36U})
-            {
-                voices[selected].at_offset(field) = 0;
-            }
-        }
-        else
-        {
-            invalid("unsupported PC sound sequence command");
+            clear_voice(voices[selected]);
         }
     }
     invalid("sound command budget exceeded");
@@ -239,7 +333,8 @@ std::vector<std::uint8_t> unpack_sound_executable(std::span<const std::uint8_t> 
 }
 
 std::vector<SpeakerTick> decode_speaker_sequence(std::span<const std::uint8_t> data,
-                                                 const std::array<std::uint16_t, 4> &entries)
+                                                 const std::array<std::uint16_t, 4> &entries,
+                                                 std::uint16_t note_dividers)
 {
     if (data.size() > 65536)
     {
@@ -295,9 +390,19 @@ std::vector<SpeakerTick> decode_speaker_sequence(std::span<const std::uint8_t> d
                         : -static_cast<int>((-static_cast<std::int64_t>(product) + 65535) / 65536);
             }
             v[output] = static_cast<std::uint16_t>(v[pitch] + modulation);
+            // A note's sustain runs out into the envelope's release, its fifth entry.
+            if (v[sustain] && --v[sustain] == 0)
+            {
+                v[envelope_step] = 16;
+                v[envelope_ticks] = 1;
+            }
             if (--v[delay] == 0)
             {
-                commands(data, voices, i, return_position);
+                commands(data, voices, i, return_position, note_dividers);
+            }
+            if (v[envelope_ticks] && --v[envelope_ticks] == 0)
+            {
+                step_envelope(data, v);
             }
             if (!chosen && v[delay] && v[gate])
             {
@@ -373,7 +478,13 @@ std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &directo
     return effects;
 }
 
-std::vector<SoundEffect> decode_curse_sound_effects(std::span<const std::uint8_t> image)
+namespace
+{
+
+// The sound effects of the driver Curse of the Azure Bonds and Secret of the
+// Silver Blades link into START.EXE; their song tables hold songs songs.
+std::vector<SoundEffect> decode_driver_sound_effects(std::span<const std::uint8_t> image,
+                                                     std::size_t songs)
 {
     // The driver opens with its tick divider (chain the BIOS handler every 13
     // ticks), the exit countdown and the coded error message.
@@ -383,14 +494,16 @@ std::vector<SoundEffect> decode_curse_sound_effects(std::span<const std::uint8_t
         std::search(image.begin(), image.end(), driver_start.begin(), driver_start.end());
     if (found == image.end())
     {
-        invalid("no Curse of the Azure Bonds sound driver in START.EXE");
+        invalid("no sound driver in START.EXE");
     }
     const auto driver = static_cast<std::size_t>(found - image.begin());
-    // Its voice blocks follow 56h bytes in, and its PC-speaker song table 332h
-    // bytes after them. Their addresses count from the start of the code segment
+    // Its eight PC-speaker voice blocks follow 56h bytes in, the twelve note
+    // dividers right after them, and its PC-speaker song table 332h bytes after
+    // the blocks. Their addresses count from the start of the code segment
     // the driver is linked into, which ProgramSpeakerVoices names:
     // mov di, voice blocks ... mov ax, [si + song table].
-    constexpr std::size_t voice_blocks_in_driver = 0x56, song_table_after_blocks = 0x332;
+    constexpr std::size_t voice_blocks_in_driver = 0x56, song_table_after_blocks = 0x332,
+                          note_dividers_after_blocks = 8 * 48;
     std::size_t voice_blocks = 0, song_table = 0;
     for (std::size_t p = driver; p + 3 < image.size() && p < driver + 0x4000 && !song_table; ++p)
     {
@@ -412,7 +525,7 @@ std::vector<SoundEffect> decode_curse_sound_effects(std::span<const std::uint8_t
     }
     if (!song_table || voice_blocks > driver + voice_blocks_in_driver)
     {
-        invalid("no song table in the Curse of the Azure Bonds sound driver");
+        invalid("no song table in the sound driver");
     }
     const auto segment = image.subspan(driver + voice_blocks_in_driver - voice_blocks);
     // InstallSoundTimer loads the timer's divisor: mov al,0B6h; out 43h,al; mov ax,divisor.
@@ -421,7 +534,7 @@ std::vector<SoundEffect> decode_curse_sound_effects(std::span<const std::uint8_t
         std::search(segment.begin(), segment.end(), set_timer.begin(), set_timer.end());
     if (timer_code == segment.end())
     {
-        invalid("no timer rate in the Curse of the Azure Bonds sound driver");
+        invalid("no timer rate in the sound driver");
     }
     const auto timer =
         word(segment, static_cast<std::size_t>(timer_code - segment.begin()) + set_timer.size());
@@ -435,8 +548,10 @@ std::vector<SoundEffect> decode_curse_sound_effects(std::span<const std::uint8_t
         "Title picture",    "Unused effect 14", "Unused effect 15",
         "Unused effect 16", "Unused effect 17", "Unused effect 18",
         "Unused effect 19", "Unused effect 20", "Instrument setup (silent)"};
+    const auto note_dividers =
+        static_cast<std::uint16_t>(voice_blocks + note_dividers_after_blocks);
     std::vector<SoundEffect> effects;
-    for (std::size_t i = 0; i < names.size(); ++i)
+    for (std::size_t i = 0; i < std::min(songs, names.size()); ++i)
     {
         std::array<std::uint16_t, 4> entries{};
         for (std::size_t voice = 0; voice < entries.size(); ++voice)
@@ -444,9 +559,16 @@ std::vector<SoundEffect> decode_curse_sound_effects(std::span<const std::uint8_t
             entries[voice] = word(segment, song_table + i * 8 + voice * 2);
         }
         effects.push_back({static_cast<unsigned>(i + 1), std::string(names[i]), i >= 13, timer,
-                           decode_speaker_sequence(segment, entries)});
+                           decode_speaker_sequence(segment, entries, note_dividers)});
     }
     return effects;
+}
+
+} // namespace
+
+std::vector<SoundEffect> decode_curse_sound_effects(std::span<const std::uint8_t> image)
+{
+    return decode_driver_sound_effects(image, 21);
 }
 
 std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &game_directory,
@@ -457,6 +579,9 @@ std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &game_di
     case GoldBoxGame::pool_of_radiance:
         return load_sound_effects(game_directory);
     case GoldBoxGame::curse_of_the_azure_bonds:
+    // Secret of the Silver Blades links the same driver, with the same sounds
+    // and no songs past the title's.
+    case GoldBoxGame::secret_of_the_silver_blades:
     {
         auto path = game_directory / "START.EXE";
         if (!std::filesystem::exists(path))
@@ -473,7 +598,9 @@ std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &game_di
         {
             invalid("invalid START.EXE size");
         }
-        return decode_curse_sound_effects(unpack_sound_executable(file));
+        return decode_driver_sound_effects(unpack_sound_executable(file),
+                                           game == GoldBoxGame::secret_of_the_silver_blades ? 13
+                                                                                            : 21);
     }
     default:
         invalid("the sounds of " + std::string(game_title(game)) + " are not decoded yet");

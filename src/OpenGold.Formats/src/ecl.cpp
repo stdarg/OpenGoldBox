@@ -88,15 +88,26 @@ std::vector<EclOpcode> curse_opcodes()
     return opcodes;
 }
 
+// Secret of the Silver Blades adds AWARD EXPERIENCE (docs/games/secret.md).
+std::vector<EclOpcode> secret_opcodes()
+{
+    auto opcodes = curse_opcodes();
+    opcodes.push_back({"AWARD EXPERIENCE", 2, false, true, true});
+    return opcodes;
+}
+
 std::span<const EclOpcode> game_opcodes(GoldBoxGame game)
 {
     static const std::vector<EclOpcode> curse = curse_opcodes();
+    static const std::vector<EclOpcode> secret = secret_opcodes();
     switch (game)
     {
     case GoldBoxGame::pool_of_radiance:
         return pool_of_radiance_opcodes;
     case GoldBoxGame::curse_of_the_azure_bonds:
         return curse;
+    case GoldBoxGame::secret_of_the_silver_blades:
+        return secret;
     default:
         throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");
     }
@@ -124,6 +135,10 @@ EclEngineRoutines ecl_engine_routines(GoldBoxGame game)
         // Curse matches the address less 7FFFh against its routines' numbers
         // (AE11h, 4019h, 401Fh, 2, 1, 3201h, E804h); these are the addresses.
         return {0x2E10, 0xC018, 0xC01E, 0x8001, 0x8000, 0xB200, 0x6803};
+    case GoldBoxGame::secret_of_the_silver_blades:
+        // As Curse, matched less 7FFFh (ADCCh, 4019h, 401Fh, 3204h, E804h);
+        // Secret has no duels.
+        return {0x2DCB, 0xC018, 0xC01E, 0, 0, 0xB203, 0x6803};
     default:
         throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");
     }
@@ -136,6 +151,7 @@ EclMemory ecl_memory(GoldBoxGame game)
     case GoldBoxGame::pool_of_radiance:
         return {EclProgram::origin, EclProgram::limit};
     case GoldBoxGame::curse_of_the_azure_bonds:
+    case GoldBoxGame::secret_of_the_silver_blades:
         return {0x8000, 0x9E00};
     default:
         throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");

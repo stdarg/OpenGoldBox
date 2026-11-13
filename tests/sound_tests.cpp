@@ -111,8 +111,9 @@ void sequences()
         {
             (void)decode_speaker_sequence(bad, {16, 0, 0, 0});
         });
+    // A note needs the driver's note dividers.
     bad = data;
-    bad[16] = 0xfa;
+    bad[16] = 0x00;
     rejects<std::runtime_error>(
         [&]
         {
@@ -154,6 +155,40 @@ void sequences()
     const auto modulation = decode_speaker_sequence(data, {16, 0, 0, 0});
     require(modulation[1].divisor == 744 && modulation[2].divisor == 1000,
             "Signed modulation/wrap");
+}
+
+// Secret of the Silver Blades' songs play notes: the twelve dividers of the
+// lowest octave, halved an octave up, with the level from the voice's envelope
+// until the note's sustain runs out into the release (its fifth entry).
+void notes_and_envelopes()
+{
+    Bytes data(48);
+    word(data, 2, 4000); // The dividers at 2: the first semitone's.
+    word(data, 28, 3);   // The envelope at 28: the level becomes 3 at once,
+    word(data, 30, 0xffff);
+    word(data, 44, 0); // and the release silences it.
+    word(data, 46, 0xffff);
+    command(data, 255, 22, 28);
+    data.insert(data.end(), {0x00, 12 | 0x80, 4});   // Voice 0, an octave up, 4 ticks.
+    data.insert(data.end(), {0x00, 0x7f | 0x80, 2}); // A rest of 2 ticks.
+    command(data, 255, 0, 0);
+    const auto ticks = decode_speaker_sequence(data, {48, 0, 0, 0}, 2);
+    require(ticks.size() == 7, "Note and rest duration");
+    for (std::size_t i = 0; i < 4; ++i)
+    {
+        require(ticks[i].enabled && ticks[i].divisor == 2000, "A note an octave up sounds");
+    }
+    require(!ticks[4].enabled && !ticks[6].enabled, "The release silences the note");
+
+    // 0FAh clears the selected voice's synthesis fields, its level among them.
+    data = Bytes(16);
+    command(data, 255, 10, 3);
+    command(data, 255, 4, 1000);
+    data.push_back(0xfa);
+    command(data, 255, 0, 2);
+    command(data, 255, 0, 0);
+    const auto cleared = decode_speaker_sequence(data, {16, 0, 0, 0});
+    require(!cleared.empty() && !cleared[0].enabled, "A clear silences the voice");
 }
 
 void rendering()
@@ -216,6 +251,7 @@ int main()
     {
         packing();
         sequences();
+        notes_and_envelopes();
         rendering();
         installed();
         std::cout << "Sound tests passed\n";
