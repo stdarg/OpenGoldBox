@@ -661,7 +661,9 @@ void the_temple_heals_and_raises()
     rules::VitalState dead{0, true, {}, {}};
     module->temple_service(dead, sheet, rules::TempleService::raise_dead, random);
     check(!dead.dead && dead.hit_points == 1, "Raise Dead brings the dead back with 1 Hit Point");
-    check(!module->temple_service_helps(sheet, dead, rules::TempleService::resurrection),
+    check(!module->temple_service_helps(sheet, dead, rules::TempleService::resurrection) &&
+              !module->offers_temple_service(rules::TempleService::resurrection) &&
+              module->offers_temple_service(rules::TempleService::raise_dead),
           "The original's temple has no Resurrection");
     rules::VitalState hurt{1, false, {}, {}};
     module->temple_service(hurt, sheet, rules::TempleService::heal, random);

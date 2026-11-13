@@ -439,6 +439,11 @@ class OriginalModule final : public RulesModule
     [[nodiscard]] RestPolicy long_rest_policy() const override;
     [[nodiscard]] RestPolicy short_rest_policy() const override;
     void set_hit_points(VitalState &, const CharacterSheet &, int) const override;
+
+    [[nodiscard]] bool offers_temple_service(TempleService service) const override
+    {
+        return service != TempleService::resurrection;
+    }
     [[nodiscard]] bool temple_service_helps(const CharacterSheet &sheet, const VitalState &state,
                                             TempleService service) const override;
     void temple_service(VitalState &state, const CharacterSheet &sheet, TempleService service,

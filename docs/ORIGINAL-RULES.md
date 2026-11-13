@@ -289,7 +289,8 @@ lines in all:
      a party with one; scripts read a half-elf's own race code.
    - **The temple** heals as the original's (`temple.pas`): Cure Light,
      Serious and Critical Wounds 1d8, 2d8+1 and 3d8+3, and Raise Dead brings
-     the dead back with 1 Hit Point (`RaiseDead`). The raised member loses a
+     the dead back with 1 Hit Point (`RaiseDead`); it offers no
+     Resurrection, which is OpenGoldBox's own. The raised member loses a
      point of Constitution while it has one, and Hit Points off its maximum
      reckoned with the Constitution it is left with, as the original reckons
      them: at Constitution 14 or more, what its maximum holds above the Hit

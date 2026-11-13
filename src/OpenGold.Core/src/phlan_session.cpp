@@ -4725,15 +4725,16 @@ void RolfTourSession::open_temple(std::uint64_t request)
             offerings = site.offerings;
         }
     }
-    // Resurrection is for Easy and Normal only.
-    if (difficulty_ > opengold::Difficulty::normal)
-    {
-        std::erase_if(offerings,
-                      [](const auto &offering)
-                      {
-                          return offering.service == opengold::rules::TempleService::resurrection;
-                      });
-    }
+    // Resurrection is for Easy and Normal only, and none under rules that
+    // have no such service (the original's).
+    const auto &rules = campaign_->rule_module();
+    std::erase_if(offerings,
+                  [&](const auto &offering)
+                  {
+                      return !rules.offers_temple_service(offering.service) ||
+                             (offering.service == opengold::rules::TempleService::resurrection &&
+                              difficulty_ > opengold::Difficulty::normal);
+                  });
     temple_visit_ = TempleVisit{request, std::move(offerings), {}, 0, {}};
     show_temple({});
 }

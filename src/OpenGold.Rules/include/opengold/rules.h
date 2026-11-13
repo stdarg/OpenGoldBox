@@ -1307,6 +1307,14 @@ class RulesModule
     [[nodiscard]] virtual bool temple_service_helps(const CharacterSheet &sheet,
                                                     const VitalState &state,
                                                     TempleService service) const = 0;
+
+    // Whether a temple under these rules offers the service at all; every one
+    // by default.
+    [[nodiscard]] virtual bool offers_temple_service(TempleService service) const
+    {
+        (void)service;
+        return true;
+    }
     // Casts the service on the member, as a temple's cleric with Wisdom +3;
     // throws when it would not help.
     virtual void temple_service(VitalState &state, const CharacterSheet &sheet,
