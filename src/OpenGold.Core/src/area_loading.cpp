@@ -24,9 +24,9 @@ std::vector<std::uint8_t> read_archive(const std::filesystem::path &path)
 }
 
 AreaFiles::AreaFiles(std::filesystem::path directory, std::vector<ItemTemplate> templates,
-                     std::vector<std::string> item_words, StoredNames stored_names)
+                     std::vector<std::string> item_words, GoldBoxGame game)
     : directory_(std::move(directory)), templates_(std::move(templates)),
-      item_words_(std::move(item_words)), stored_names_(stored_names)
+      item_words_(std::move(item_words)), game_(game)
 {
 }
 
@@ -42,6 +42,26 @@ const DaxDecodeResult &AreaFiles::archive(const std::string &name) const
         throw EclError("Invalid wall archive " + name);
     }
     return archives_.emplace(name, std::move(records)).first->second;
+}
+
+std::string AreaFiles::disk_archive(std::string_view family, unsigned disk) const
+{
+    const bool one_for_every_disk = game_ == GoldBoxGame::secret_of_the_silver_blades &&
+                                    (family == "SPRIT" || family == "CPIC");
+    return std::string(family) + std::to_string(one_for_every_disk ? 1 : disk) + ".DAX";
+}
+
+bool AreaFiles::has_archive(const std::string &name) const
+{
+    try
+    {
+        static_cast<void>(resolve_archive(directory_, name));
+        return true;
+    }
+    catch (const EclError &)
+    {
+        return false;
+    }
 }
 
 const std::vector<std::uint8_t> &AreaFiles::record(const std::string &archive_name,
@@ -62,7 +82,8 @@ std::map<unsigned, std::vector<Equipment>> AreaFiles::item_lists(const std::stri
     std::map<unsigned, std::vector<Equipment>> lists;
     for (const auto &record : archive(name).records)
     {
-        const auto items = decode_items(record.bytes);
+        // The later games' records carry no name text (decode_items).
+        const auto items = decode_items(record.bytes, game_);
         if (!items)
         {
             throw EclError("Invalid treasure record in " + name);
@@ -77,12 +98,6 @@ std::map<unsigned, std::vector<Equipment>> AreaFiles::item_lists(const std::stri
             Equipment equipment;
             equipment.index = stock.size();
             equipment.stored = item;
-            if (stored_names_ == StoredNames::dropped)
-            {
-                // Its length byte, so the record's bytes carry no name either.
-                equipment.stored.stored_name.clear();
-                equipment.stored.raw[0] = 0;
-            }
             equipment.base = templates_[item.type];
             equipment.bonuses = equipment_bonuses(item, equipment.base);
             // Fixed lists name their magic items as the original does ("Long
@@ -114,45 +129,57 @@ void AreaFiles::pictures(const std::string &name, std::map<unsigned, Image> &des
 namespace
 {
 
-// A LOAD PIECES bank's walls: the common tiles, then its own, decoded before
-// they are put together. A bank of several blocks fills that many slots, its
-// tiles those of each block in turn, block n's in record id * 10 + n (coab
-// LoadWalldef): Valhingen Graveyard's LOAD PIECES 21,22,20, whose script sets
-// the cells that keep the original from loading slot 2's own bank.
-WallArtSet wall_bank(const AreaFiles &files, const std::string &bank, unsigned id,
-                     const WallArtReplacements &new_wall_art, std::size_t &blocks)
+constexpr std::size_t wall_block_size = 780, slot_tiles = 70, common_tiles = 45;
+
+// A LOAD PIECES bank of several blocks fills that many slots, block n's tiles
+// in record id * 10 + n (the original's LoadWallSet): Valhingen Graveyard's
+// LOAD PIECES 21,22,20, whose script sets the cells that keep the original
+// from loading slot 2's own bank.
+std::size_t bank_blocks(const AreaFiles &files, const std::string &disk, unsigned id)
 {
-    const auto &definition = files.record("WALLDEF" + bank + ".DAX", id);
-    constexpr std::size_t block_size = 780;
-    blocks = definition.size() / block_size;
+    const auto blocks = files.record("WALLDEF" + disk + ".DAX", id).size() / wall_block_size;
     if (blocks == 0)
     {
         throw EclError("Invalid wall definition bank " + std::to_string(id));
     }
-    WallTiles walls(1);
-    auto common = decode_wall_tiles(files.record("8X8D1.DAX", 203));
-    if (!common || common->size() != 45)
+    return blocks;
+}
+
+WallTiles slot_tile_bank(const AreaFiles &files, const std::string &disk, unsigned id,
+                         std::size_t blocks, std::size_t block)
+{
+    const auto tile_record = blocks == 1 ? id : static_cast<unsigned>(id * 10 + block + 1);
+    auto tiles = decode_wall_tiles(files.record("8X8D" + disk + ".DAX", tile_record));
+    if (!tiles || tiles->size() != slot_tiles)
     {
-        throw EclError("Invalid common wall tiles");
+        throw EclError("Invalid wall tile bank " + std::to_string(tile_record));
     }
-    walls.insert(walls.end(), common->begin(), common->end());
-    for (std::size_t block = 0; block < blocks; ++block)
+    return std::move(*tiles);
+}
+
+// A bank's walls in the view's space of symbols: the original adds 70 for
+// each slot past the first to every symbol from the shared set's last (45)
+// up. One past the space is drawn blank.
+WallArtSet wall_bank(const AreaFiles &files, const std::string &disk, unsigned id, std::size_t slot,
+                     const WallTiles &symbols, const WallArtReplacements &new_wall_art)
+{
+    auto definition = files.record("WALLDEF" + disk + ".DAX", id);
+    const auto blocks = definition.size() / wall_block_size;
+    for (auto &symbol : definition)
     {
-        const auto tile_record = blocks == 1 ? id : static_cast<unsigned>(id * 10 + block + 1);
-        auto local_bank = decode_wall_tiles(files.record("8X8D" + bank + ".DAX", tile_record));
-        if (!local_bank || local_bank->size() != 70)
+        if (symbol >= common_tiles)
         {
-            throw EclError("Invalid wall tile bank " + std::to_string(tile_record));
+            const auto shifted = symbol + slot_tiles * slot;
+            symbol = shifted < symbols.size() ? static_cast<std::uint8_t>(shifted) : 0;
         }
-        walls.insert(walls.end(), local_bank->begin(), local_bank->end());
     }
-    auto decoded = decode_wall_art(definition, walls);
+    auto decoded = decode_wall_art(definition, symbols);
     if (!decoded || decoded->appearances.size() != 5 * blocks)
     {
         throw EclError("Invalid wall definition bank " + std::to_string(id));
     }
     return with_replacements(std::move(*decoded),
-                             wall_appearance_keys("WALLDEF" + bank + ".DAX", id, 5 * blocks),
+                             wall_appearance_keys("WALLDEF" + disk + ".DAX", id, 5 * blocks),
                              new_wall_art);
 }
 
@@ -163,31 +190,63 @@ WallArtSet load_wall_art(const AreaFiles &files, unsigned disk,
                          const WallArtReplacements &new_wall_art)
 {
     const auto bank = std::to_string(disk);
-    WallArtSet walls;
-    // Three five-appearance slots, each from its LOAD PIECES bank.
+    // The view draws every slot's walls from one space of symbols: blank, the
+    // shared 45, then each slot's 70. A slot left empty is blank, and a wall
+    // may draw on the slots beside its own (docs/games/secret.md).
+    WallTiles symbols(1 + common_tiles + slot_tiles * pieces.size());
+    auto common = decode_wall_tiles(files.record("8X8D1.DAX", 203));
+    if (!common || common->size() != common_tiles)
+    {
+        throw EclError("Invalid common wall tiles");
+    }
+    std::copy(common->begin(), common->end(), symbols.begin() + 1);
+    std::vector<std::pair<unsigned, std::size_t>> loaded; // Each bank and its first slot.
     for (std::size_t slot = 0; slot < pieces.size();)
     {
         const auto id = pieces[slot];
         if (id == no_wall_bank)
         {
-            walls.appearances.resize(walls.appearances.size() + 5);
-            walls.originals.resize(walls.appearances.size());
             ++slot;
             continue;
         }
-        std::size_t blocks{};
-        auto with_new_art = wall_bank(files, bank, id, new_wall_art, blocks);
+        const auto blocks = bank_blocks(files, bank, id);
         if (slot + blocks > pieces.size())
         {
             throw EclError("Invalid wall definition bank " + std::to_string(id));
         }
+        for (std::size_t block = 0; block < blocks; ++block)
+        {
+            const auto tiles = slot_tile_bank(files, bank, id, blocks, block);
+            std::copy(tiles.begin(), tiles.end(),
+                      symbols.begin() + static_cast<std::ptrdiff_t>(1 + common_tiles +
+                                                                    slot_tiles * (slot + block)));
+        }
+        loaded.emplace_back(id, slot);
+        slot += blocks;
+    }
+    WallArtSet walls;
+    // Three five-appearance slots, each from its LOAD PIECES bank.
+    std::size_t next_slot = 0;
+    for (const auto &[id, slot] : loaded)
+    {
+        for (; next_slot < slot; ++next_slot)
+        {
+            walls.appearances.resize(walls.appearances.size() + 5);
+            walls.originals.resize(walls.appearances.size());
+        }
+        auto with_new_art = wall_bank(files, bank, id, slot, symbols, new_wall_art);
         walls.scale = with_new_art.scale;
         walls.appearances.insert(walls.appearances.end(), with_new_art.appearances.begin(),
                                  with_new_art.appearances.end());
         with_new_art.originals.resize(with_new_art.appearances.size());
         walls.originals.insert(walls.originals.end(), with_new_art.originals.begin(),
                                with_new_art.originals.end());
-        slot += blocks;
+        next_slot = slot + with_new_art.appearances.size() / 5;
+    }
+    for (; next_slot < pieces.size(); ++next_slot)
+    {
+        walls.appearances.resize(walls.appearances.size() + 5);
+        walls.originals.resize(walls.appearances.size());
     }
     return walls;
 }
@@ -212,12 +271,19 @@ std::shared_ptr<PhlanResources> load_district(const AreaFiles &files, const MapC
     district->treasure = files.item_lists("ITEM" + bank + ".DAX");
     district->wall_art = load_wall_art(files, area.bank, geo.pieces, new_wall_art);
     district->sprite_archive =
-        read_archive(resolve_archive(files.directory(), "SPRIT" + bank + ".DAX"));
+        read_archive(resolve_archive(files.directory(), files.disk_archive("SPRIT", area.bank)));
     district->combat_archive =
-        read_archive(resolve_archive(files.directory(), "CPIC" + bank + ".DAX"));
+        read_archive(resolve_archive(files.directory(), files.disk_archive("CPIC", area.bank)));
     district->terrain_art = terrain_art;
-    files.pictures("HEAD" + bank + ".DAX", district->heads);
-    files.pictures("BODY" + bank + ".DAX", district->bodies);
+    // Secret of the Silver Blades has no portraits for its scripts.
+    for (auto [family, destination] :
+         {std::pair{"HEAD", &district->heads}, std::pair{"BODY", &district->bodies}})
+    {
+        if (const auto name = family + bank + ".DAX"; files.has_archive(name))
+        {
+            files.pictures(name, *destination);
+        }
+    }
     files.pictures("PIC" + bank + ".DAX", district->pictures);
     for (const auto &record : files.archive("PIC" + bank + ".DAX").records)
     {

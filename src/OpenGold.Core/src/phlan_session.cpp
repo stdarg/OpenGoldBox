@@ -1,4 +1,5 @@
 #include "opengold/rolf_tour.h"
+#include "area_loading.h"
 #include "opengold/diagnostic_log.h"
 #include "opengold/creature_art.h"
 #include "opengold/script_secrets.h"
@@ -3818,9 +3819,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         if (game() != GoldBoxGame::pool_of_radiance)
         {
             const auto disk = town_->script_banks.find(current_script_);
-            const auto walls = disk == town_->script_banks.end()
-                                   ? town_->wall_sets.end()
-                                   : town_->wall_sets.find({disk->second, banks});
+            const auto walls =
+                disk == town_->script_banks.end()
+                    ? town_->wall_sets.end()
+                    : town_->wall_sets.find({disk->second, detail::load_pieces_banks(banks)});
             if (walls == town_->wall_sets.end())
             {
                 throw EclError("Unknown wall banks for script " + std::to_string(current_script_));

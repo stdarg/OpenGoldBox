@@ -30,6 +30,21 @@ namespace opengold::por::detail
 // LOAD PIECES's bank 255 loads nothing: its five wall appearances stay blank.
 inline constexpr unsigned no_wall_bank = 255;
 
+// The banks a LOAD PIECES loads: Secret of the Silver Blades' original skips
+// a second or third slot of 127 as of 255 (its EclLoadFiles).
+[[nodiscard]] inline std::array<unsigned, 3> load_pieces_banks(std::array<unsigned, 3> operands)
+{
+    constexpr unsigned none_later = 127;
+    for (std::size_t slot = 1; slot < operands.size(); ++slot)
+    {
+        if (operands[slot] == none_later)
+        {
+            operands[slot] = no_wall_bank;
+        }
+    }
+    return operands;
+}
+
 // A map an area's script loads, with its three wall banks (LOAD PIECES).
 struct DistrictMap
 {
@@ -51,17 +66,12 @@ struct AreaSource
 class AreaFiles
 {
   public:
-    // Whether its item lists' records keep the name text they store: Curse's
-    // original never shows it (it names an item by its words), and its records
-    // hold names in Pool of Radiance's words.
-    enum class StoredNames
-    {
-        kept,
-        dropped
-    };
-
+    // The game's item lists are read its way: after Pool of Radiance, the
+    // original names an item only by its words, and the records' name bytes
+    // are scratch (decode_items).
     AreaFiles(std::filesystem::path directory, std::vector<ItemTemplate> templates,
-              std::vector<std::string> item_words, StoredNames stored_names = StoredNames::kept);
+              std::vector<std::string> item_words,
+              GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 
     [[nodiscard]] const std::filesystem::path &directory() const noexcept
     {
@@ -69,6 +79,11 @@ class AreaFiles
     }
 
     [[nodiscard]] const DaxDecodeResult &archive(const std::string &name) const;
+    // A family's file for a disk ("SPRIT", 2 is SPRIT2.DAX): Secret of the
+    // Silver Blades keeps one sprite and one combat icon file, numbered 1, for
+    // every disk.
+    [[nodiscard]] std::string disk_archive(std::string_view family, unsigned disk) const;
+    [[nodiscard]] bool has_archive(const std::string &name) const;
     // Throws EclError naming the archive when the record is missing.
     [[nodiscard]] const std::vector<std::uint8_t> &record(const std::string &archive_name,
                                                           unsigned id) const;
@@ -82,7 +97,7 @@ class AreaFiles
     std::filesystem::path directory_;
     std::vector<ItemTemplate> templates_;
     std::vector<std::string> item_words_;
-    StoredNames stored_names_{StoredNames::kept};
+    GoldBoxGame game_{GoldBoxGame::pool_of_radiance};
     mutable std::map<std::string, DaxDecodeResult> archives_;
 };
 

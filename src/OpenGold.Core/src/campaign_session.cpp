@@ -19,10 +19,34 @@ namespace
 
 using por::EclError;
 
-constexpr unsigned curse_opening_script = 1, curse_opening_disk = 2;
-// Disk 1 has no map: its scripts (80 to 82) are the wilderness.
-constexpr unsigned curse_wilderness_disk = 1;
 constexpr std::uint8_t load_files = 0x21, load_pieces = 0x37;
+
+// What sets the campaigns after Pool of Radiance apart (docs/games/curse.md,
+// docs/games/secret.md).
+struct LaterCampaign
+{
+    // A new game runs this script, on this disk.
+    unsigned opening_script{}, opening_disk{};
+    // The disk whose scripts play at the root, out of any map.
+    unsigned root_disk{};
+    // Curse's root disk 1 has no map: its scripts (80 to 82) are the
+    // wilderness, fought on its own battlefield. Secret has none.
+    bool wilderness{};
+};
+
+LaterCampaign later_campaign(GoldBoxGame game)
+{
+    switch (game)
+    {
+    case GoldBoxGame::curse_of_the_azure_bonds:
+        return {1, 2, 1, true};
+    case GoldBoxGame::secret_of_the_silver_blades:
+        // The opening's vision of the valley has no map.
+        return {17, 2, 2, false};
+    default:
+        throw std::invalid_argument(std::string(game_title(game)) + " cannot be played yet");
+    }
+}
 
 // What Curse's scripts load, read from the scripts themselves: a script's
 // number is the same on every disk, its disk is the ECLn.DAX that holds it,
@@ -60,7 +84,7 @@ std::map<unsigned, ScriptLoads> script_loads(const por::EclCatalog &catalog)
             }
             if (i.opcode == load_pieces && values[0] != 127)
             {
-                script.walls.push_back(values);
+                script.walls.push_back(por::detail::load_pieces_banks(values));
             }
         }
     }
@@ -117,71 +141,13 @@ std::vector<std::string> read_curse_ending(std::span<const std::uint8_t> overlay
     return screens;
 }
 
-por::RolfTourSession load_curse_campaign(const std::filesystem::path &folder)
+// Curse's fights out of doors (the script's 3D-area cell clear) are on open
+// ground drawn with WILDCOM's 34 tiles, then RANDCOM's 6.
+void add_curse_wilderness(const std::filesystem::path &folder,
+                          std::span<const std::uint8_t> start_image, por::PhlanResources &root)
 {
-    constexpr auto game = GoldBoxGame::curse_of_the_azure_bonds;
-    const auto catalog = por::EclCatalog::load(folder, game);
-    const auto disk = std::to_string(curse_opening_disk);
-    const auto opening = catalog.find({"ECL" + disk + ".DAX", curse_opening_script});
-    if (!opening)
-    {
-        throw EclError("Curse of the Azure Bonds needs ECL" + disk + ".DAX record " +
-                       std::to_string(curse_opening_script));
-    }
-    const auto templates = por::decode_item_templates(
-        por::detail::read_archive(por::detail::resolve_archive(folder, "ITEMS")));
-    if (!templates)
-    {
-        throw EclError("Invalid item templates");
-    }
-    const auto start_image = por::unpack_sound_executable(
-        por::detail::read_archive(por::detail::resolve_archive(folder, "START.EXE")));
-    auto words = por::decode_item_words(start_image);
-    if (!words)
-    {
-        throw EclError("START.EXE has no item name table");
-    }
-    const por::detail::AreaFiles files(folder, *templates, std::move(*words),
-                                       por::detail::AreaFiles::StoredNames::dropped);
-    const auto maps = por::MapCatalog::load(folder);
-    const auto creatures =
-        std::make_shared<const por::CreatureCatalog>(por::CreatureCatalog::load(folder, game));
-    // Every creature record of a disk, which its scripts' LOAD MONSTER and ADD
-    // NPC name by number; Curse fights them as their records (the original
-    // rules), with no conversions.
-    const auto disk_creatures = [&creatures](unsigned disk)
-    {
-        std::map<unsigned, por::Creature> found;
-        for (const auto &[id, creature] : creatures->all())
-        {
-            if (id.bank == disk)
-            {
-                found.emplace(id.record, creature);
-            }
-        }
-        return found;
-    };
-    // The root is the wilderness: its scripts play there, with their disk's
-    // creatures, encounter sprites, combat icons and treasure.
-    auto root = std::make_shared<por::PhlanResources>();
-    const auto wilderness = std::to_string(curse_wilderness_disk);
-    root->creatures = creatures;
-    root->item_templates = *templates;
-    root->bank = curse_wilderness_disk;
-    root->opening_script = curse_opening_script;
-    root->encounter_creatures = disk_creatures(curse_wilderness_disk);
-    root->map = por::GeoMap{};
-    root->treasure = files.item_lists("ITEM" + wilderness + ".DAX");
-    root->sprite_archive = por::detail::read_archive(
-        por::detail::resolve_archive(folder, "SPRIT" + wilderness + ".DAX"));
-    root->combat_archive = por::detail::read_archive(
-        por::detail::resolve_archive(folder, "CPIC" + wilderness + ".DAX"));
-    root->closing_story = read_curse_ending(
-        por::detail::read_archive(por::detail::resolve_archive(folder, "GAME.OVR")));
-    // Fights out of doors (the script's 3D-area cell clear) are on open
-    // ground drawn with WILDCOM's 34 tiles, then RANDCOM's 6.
-    root->curse_wilderness = por::curse_wilderness(start_image);
-    if (!root->curse_wilderness)
+    root.curse_wilderness = por::curse_wilderness(start_image);
+    if (!root.curse_wilderness)
     {
         throw EclError("Curse's START.EXE has no wilderness battlefield tables");
     }
@@ -195,8 +161,81 @@ por::RolfTourSession load_curse_campaign(const std::filesystem::path &folder)
             {
                 throw EclError(std::string("Invalid wilderness battlefield tile in ") + name);
             }
-            root->wilderness_art.push_back(std::move(art.image));
+            root.wilderness_art.push_back(std::move(art.image));
         }
+    }
+}
+
+por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, GoldBoxGame game)
+{
+    const auto campaign = later_campaign(game);
+    const auto catalog = por::EclCatalog::load(folder, game);
+    const auto disk = std::to_string(campaign.opening_disk);
+    const auto opening =
+        catalog.find({"ECL" + disk + ".DAX", static_cast<std::uint8_t>(campaign.opening_script)});
+    if (!opening)
+    {
+        throw EclError(std::string(game_title(game)) + " needs ECL" + disk + ".DAX record " +
+                       std::to_string(campaign.opening_script));
+    }
+    const auto templates = por::decode_item_templates(
+        por::detail::read_archive(por::detail::resolve_archive(folder, "ITEMS")));
+    if (!templates)
+    {
+        throw EclError("Invalid item templates");
+    }
+    const auto start_image = por::unpack_sound_executable(
+        por::detail::read_archive(por::detail::resolve_archive(folder, "START.EXE")));
+    auto words = por::decode_item_words(start_image, game);
+    if (!words)
+    {
+        throw EclError("START.EXE has no item name table");
+    }
+    const por::detail::AreaFiles files(folder, *templates, std::move(*words), game);
+    const auto maps = por::MapCatalog::load(folder);
+    const auto creatures =
+        std::make_shared<const por::CreatureCatalog>(por::CreatureCatalog::load(folder, game));
+    // Every creature record of a disk, which its scripts' LOAD MONSTER and ADD
+    // NPC name by number; these games fight them as their records (the
+    // original rules), with no conversions. Secret's one file serves them all.
+    const auto creature_disks = game_disks(game).monsters;
+    const auto disk_creatures = [&creatures, &creature_disks](unsigned disk)
+    {
+        const auto bank = creature_disks.size() == 1 ? creature_disks.front() : disk;
+        std::map<unsigned, por::Creature> found;
+        for (const auto &[id, creature] : creatures->all())
+        {
+            if (id.bank == bank)
+            {
+                found.emplace(id.record, creature);
+            }
+        }
+        return found;
+    };
+    // The root plays the scripts out of any map (Curse's wilderness, Secret's
+    // opening), with their disk's creatures, encounter sprites, combat icons
+    // and treasure.
+    auto root = std::make_shared<por::PhlanResources>();
+    const auto root_disk = std::to_string(campaign.root_disk);
+    root->creatures = creatures;
+    root->item_templates = *templates;
+    root->bank = campaign.root_disk;
+    root->opening_script = campaign.opening_script;
+    root->encounter_creatures = disk_creatures(campaign.root_disk);
+    root->map = por::GeoMap{};
+    root->treasure = files.item_lists("ITEM" + root_disk + ".DAX");
+    root->sprite_archive = por::detail::read_archive(
+        por::detail::resolve_archive(folder, files.disk_archive("SPRIT", campaign.root_disk)));
+    root->combat_archive = por::detail::read_archive(
+        por::detail::resolve_archive(folder, files.disk_archive("CPIC", campaign.root_disk)));
+    if (game == GoldBoxGame::curse_of_the_azure_bonds)
+    {
+        root->closing_story = read_curse_ending(
+            por::detail::read_archive(por::detail::resolve_archive(folder, "GAME.OVR")));
+    }
+    if (campaign.wilderness)
+    {
+        add_curse_wilderness(folder, start_image, *root);
     }
     const auto loads = script_loads(catalog);
     for (const auto &[id, program] : catalog.all())
@@ -296,7 +335,8 @@ por::RolfTourSession load_campaign(const std::filesystem::path &folder, GoldBoxG
             folder, *data.encounters,
             data.new_wall_art ? *data.new_wall_art : por::WallArtReplacements{}, data.monsters);
     case GoldBoxGame::curse_of_the_azure_bonds:
-        return load_curse_campaign(folder);
+    case GoldBoxGame::secret_of_the_silver_blades:
+        return load_later_campaign(folder, game);
     default:
         throw std::invalid_argument(std::string(game_title(game)) + " cannot be played yet");
     }

@@ -154,7 +154,7 @@ map as shown and no portrait up (cells 4BE6h and 7EE1h).
 `load_campaign(folder, GoldBoxGame::curse_of_the_azure_bonds)` plays it with
 the engine *Pool of Radiance* uses: the shared area loader reads the map, its
 walls, sprites and pictures, and the session binds the script memory where
-*Curse* keeps it. *Curse*'s areas are listed in `curse_campaign.cpp`; only the
+*Curse* keeps it. *Curse*'s areas are listed in `campaign_session.cpp`; only the
 opening room so far.
 
 ## Areas and walls
@@ -165,7 +165,7 @@ and 80 to 82 on disk 1. Map numbers are unique too. A script loads maps of its
 own disk with LOAD FILES, and the view's three wall slots with LOAD PIECES,
 whatever the map: the same map can show other walls for another script (map 1
 takes banks 1, 2 and 3 for script 1, and 1, 2 and 4 for script 2).
-`curse_campaign.cpp` reads every script's LOAD FILES and LOAD PIECES, loads
+`campaign_session.cpp` reads every script's LOAD FILES and LOAD PIECES, loads
 each map it names and every wall set, and LOAD PIECES switches between them.
 
 ## The ending

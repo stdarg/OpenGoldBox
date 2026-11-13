@@ -309,11 +309,27 @@ In small steps, each with its check:
    before Dexam) are where the route's player or OpenGoldBox still falls
    short.
 
-### 4 to 7. The other campaigns
+### 4. *Secret of the Silver Blades*
 
-*Secret of the Silver Blades*, *Gateway to the Savage Frontier*,
-*Pools of Darkness* and *Treasures of the Savage Frontier*, in that order. Each
-repeats steps 1 and 3 and adds only its own differences. *Pools of Darkness*
+The steps of *Curse*'s phase 3, with *Secret*'s differences
+([secret.md](games/secret.md)):
+
+1. The census: every file but the title music decodes (2026-11-13).
+2. The opening: `load_campaign` plays script 17's vision and reaches New
+   Verdigris (map 16) with its walls drawn (`opengold_gold_box_games_tests`,
+   2026-11-13). The walls of every game are now drawn as the original draws
+   them, from one space of symbols for the three slots.
+3. Making a party under *Secret*'s rules: 200,000 experience for a single
+   class (100,000 dual, 66,667 triple) trained up at once, its classes,
+   level limits and 117 spells; bringing a *Curse* party across.
+4. Walking every map and playing every event and fight (the walk), then
+   the cluebook's route to the end.
+
+### 5 to 7. The other campaigns
+
+*Gateway to the Savage Frontier*, *Pools of Darkness* and *Treasures of the
+Savage Frontier*, in that order. Each repeats steps 1 and 3 and adds only its
+own differences. *Pools of Darkness*
 and *Treasures* bring 256-color VGA pictures and music, so their census needs
 new decoders.
 

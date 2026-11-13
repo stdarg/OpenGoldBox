@@ -117,7 +117,7 @@ void add_lists(MagicItemCatalog &catalog, GoldBoxGame game, const std::string &a
 {
     for (const auto &[record, bytes] : records)
     {
-        const auto items = decode_items(bytes);
+        const auto items = decode_items(bytes, game);
 
         if (!items)
         {
@@ -169,7 +169,7 @@ MagicItemCatalog MagicItemCatalog::load(const std::filesystem::path &directory, 
 {
     MagicItemCatalog catalog;
     const auto image = unpack_sound_executable(read_game_file(directory, "START.EXE"));
-    auto words = decode_item_words(image);
+    auto words = decode_item_words(image, game);
     auto spells = decode_spell_names(image);
 
     if (!words || !spells)

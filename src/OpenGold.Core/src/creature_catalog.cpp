@@ -475,7 +475,7 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory, Go
         if (const auto start = files.find("START.EXE"); start != files.end())
         {
             const auto image = unpack_sound_executable(read_file(start->second));
-            auto decoded = decode_item_words(image);
+            auto decoded = decode_item_words(image, game);
             if (!decoded)
             {
                 throw CatalogError("START.EXE has no item name table");
@@ -528,7 +528,7 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory, Go
                 creature.abilities = ability_modifiers(creature.stored);
                 if (const auto entry = items.find(id); entry != items.end())
                 {
-                    auto decoded = decode_items(entry->second);
+                    auto decoded = decode_items(entry->second, game);
                     if (!decoded)
                     {
                         throw CatalogError("Invalid items " + prefix +

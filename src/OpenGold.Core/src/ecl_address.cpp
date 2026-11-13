@@ -27,6 +27,7 @@ ZoneStarts zone_starts(GoldBoxGame game)
     case GoldBoxGame::pool_of_radiance:
         return {0x4900, 0x6B00, 0x9700};
     case GoldBoxGame::curse_of_the_azure_bonds:
+    case GoldBoxGame::secret_of_the_silver_blades:
         return {0x4B00, 0x7C00, 0x7A00};
     default:
         throw EclError("The script memory of " + std::string(game_title(game)) +

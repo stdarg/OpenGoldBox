@@ -930,6 +930,59 @@ const std::vector<RouteBeat> &curse_route()
     return beats;
 }
 
+// Secret of the Silver Blades starts with script 17 of disk 2: a vision of
+// the valley over picture 119, then NEW ECL 16 on disk 1: New Verdigris
+// (docs/games/secret.md).
+void secret_opening_reaches_the_first_map()
+{
+    using opengold::por::TourPhase;
+    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    const auto folder = games ? std::filesystem::path(games) / "SECRET" : std::filesystem::path();
+    if (!games || opengold::identify_game(folder) != GoldBoxGame::secret_of_the_silver_blades)
+    {
+        std::cout << "Secret's files are not here; its opening is not played.\n";
+        return;
+    }
+    auto session = opengold::load_campaign(folder, GoldBoxGame::secret_of_the_silver_blades);
+    const auto settle = [&session]
+    {
+        for (int step = 0; step < 50 && session.snapshot().phase == TourPhase::running; ++step)
+        {
+            session.advance(1.0);
+        }
+    };
+    const auto diagnostics = [&session]
+    {
+        return session.snapshot().diagnostic +
+               (session.script_diagnostics().empty() ? "" : session.script_diagnostics().front());
+    };
+    settle();
+    check(session.snapshot().dialogue.find("GROWN BORED WITH PEACE") != std::string::npos,
+          "The vision begins: " + diagnostics());
+    check(session.picture().has_value(), "Picture 119 shows the valley: " + diagnostics());
+    for (int screen = 0; screen < 8 && session.snapshot().phase == TourPhase::awaiting_continue;
+         ++screen)
+    {
+        check(session.choose(session.snapshot().continue_ticket, 0), "The vision goes on");
+        settle();
+    }
+    // New Verdigris's script puts the party at (3,3) facing south (SAVE 2 to
+    // C04Dh). Its next event gives treasure, which waits for a party made for
+    // Secret.
+    const auto &snapshot = session.snapshot();
+    check(snapshot.area_id == 16, "NEW ECL 16 loads map 16 of disk 1: " + diagnostics());
+    check(snapshot.pose.x == 3 && snapshot.pose.y == 3 &&
+              snapshot.pose.facing == opengold::por::MapDirection::south,
+          "The party lies on square (3,3) facing south");
+    const auto view = session.observe_view();
+    std::set<std::uint32_t> colours;
+    for (std::size_t p = 0; p + 3 < view.rgba.size(); p += 4)
+    {
+        colours.insert(view.rgba[p] << 16 | view.rgba[p + 1] << 8 | view.rgba[p + 2]);
+    }
+    check(colours.size() > 2, "The town's walls are drawn");
+}
+
 bool curse_walk_census(bool route)
 {
     using opengold::por::TourPhase;
@@ -1974,6 +2027,7 @@ int main(int argc, char **argv)
         a_save_names_its_game();
         item_types_carry_their_properties();
         curse_opening_reaches_the_first_map();
+        secret_opening_reaches_the_first_map();
         the_font_has_eight_bytes_a_glyph();
         std::cout << "Gold Box games passed.\n";
     }

@@ -112,9 +112,27 @@ then 70 for each of the three wall slots. A slot's definitions name symbols in
 that space, shifted by 70 for each slot past the first. *Secret*'s walls also
 name the tiles of the slots loaded beside their own: map 32's LOAD PIECES 7
 and nothing else, for one, leaves slot 3 empty, yet set 7's second block draws
-some of its pieces from slot 3. The census decodes each set with the slots it
-does not fill left blank; to draw *Secret*'s walls as the original does, the
-loader must put the three slots' tiles together first.
+some of its pieces from slot 3. OpenGoldBox draws every game's walls this way
+(`load_wall_art`): the three slots' tiles go into one space, empty slots
+blank, and each slot's walls are read with its shift. The census decodes each
+set alone, with the slots it does not fill left blank. LOAD PIECES leaves a
+second or third slot of 127 empty, as of 255.
+
+## The opening
+
+A new game runs script 17 of disk 2, which has no map: over picture 119 (the
+valley, `BIGPIC2`) it tells the party's dream of the valley, the town, the
+mine, the glacier with its castle and the well, then sets the disk cell
+(7F12h) to 1 and runs NEW ECL 16. Script 16, on disk 1, loads map 16 with wall
+set 21: New Verdigris, where the party lies at (3,3) facing south. Script
+numbers are unique across the disks, as in *Curse*, so a script's disk is the
+`ECLn.DAX` that holds it.
+
+`load_campaign(folder, GoldBoxGame::secret_of_the_silver_blades)` plays it
+with *Curse*'s loader (`campaign_session.cpp`), which differs only in the
+opening, in having no wilderness, and in reading the one sprite, combat icon
+and creature file for every disk. *Secret* has no portrait files for its
+scripts.
 
 ## Sound effects
 
