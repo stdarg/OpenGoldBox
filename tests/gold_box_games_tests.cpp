@@ -417,6 +417,14 @@ struct RouteBeat
     // Pool of Radiance expedition does before its harder areas, for a party
     // as strong as one brought from Pool of Radiance.
     unsigned test_experience = 0, test_gold = 0;
+    // Play the beat again (up to 40 times), a square further east each time
+    // along the row, until this cell is at least the value: Hap's patrols
+    // meet the party as it goes about.
+    std::optional<std::pair<std::uint16_t, std::uint16_t>> repeat_until_at_least;
+    // Between those rounds the test heals the party outside the game's
+    // commands (rests where no patrol interrupts it), as the Pool of Radiance
+    // expedition does where the game allows no rest.
+    bool test_heal = false;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -441,8 +449,9 @@ const std::vector<RouteBeat> &curse_route()
                                        // and led to the Thieves' Guild, rested.
         {1, 9, 3, D::north, {}, true}, // The guildmaster's news, rested; the Fire Knives burst in.
         {3, 0, 0, D::south, {}, true, true}, // Out through the guild's back to the sewers.
-        // The guild's secret training hall, three levels over (an award stops
+        // The guild's secret training hall, four levels over (an award stops
         // short of the level after next).
+        {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
         {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
         {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
         {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
@@ -464,6 +473,42 @@ const std::vector<RouteBeat> &curse_route()
          true,
          std::pair<std::uint16_t, std::uint16_t>{0x4C9C, 1}},
         {0, 0, 0, D::north, {"TRAIL", "stop:JOURNEY"}, false, false, true},
+        {0, 0, 0, D::north, {"stop:JOURNEY"}, true, false, true},
+        // On to Hap, resting at each stop: by boat on the Ashaben (kept clear of
+        // pirates), then by the menu's first way.
+        {0,
+         0,
+         0,
+         D::north,
+         {"JOURNEY", "ASHABENFORD", "BY BOAT", "stop:JOURNEY"},
+         false,
+         false,
+         true},
+        {0, 0, 0, D::north, {"stop:JOURNEY"}, true, false, true},
+        {0, 0, 0, D::north, {"JOURNEY", "STANDING STONE", "stop:JOURNEY"}, false, false, true},
+        {0, 0, 0, D::north, {"stop:JOURNEY"}, true, false, true},
+        {0, 0, 0, D::north, {"JOURNEY", "ESSEMBRA", "stop:JOURNEY"}, false, false, true},
+        {0, 0, 0, D::north, {"stop:JOURNEY"}, true, false, true},
+        {0, 0, 0, D::north, {"JOURNEY", "HAP", "stop:JOURNEY"}, false, false, true},
+        {0, 0, 0, D::north, {"stop:JOURNEY"}, true, false, true},
+        {0, 0, 0, D::north, {"ENTER CITY"}, false, false, true}, // Hap.
+        // Hap's dark elf patrols: once four have fallen (cell 0x4C47 counts
+        // them) the barn holds two of each kind, not six. A camp in Hap draws
+        // them on the party, so it does not rest there.
+        {50,
+         0,
+         0,
+         D::north,
+         {"Fight"},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::pair<std::uint16_t, std::uint16_t>{0x4C47, 4},
+         true},
+        {50, 8, 4, D::north, {}}, // The efreeti and the dark elves in the barn.
     };
     return beats;
 }
@@ -684,7 +729,7 @@ bool curse_walk_census(bool route)
         std::uint64_t seed = 7, best_seed = seed;
         auto result = fight_once(seed);
         auto best = score(result);
-        while (route && best > 0 && ++seed < 23)
+        while (route && best > 0 && ++seed < 47)
         {
             party->restore(before);
             result = fight_once(seed);
@@ -951,90 +996,131 @@ bool curse_walk_census(bool route)
         };
         play("opening");
         std::size_t beat_number = 0;
-        for (const auto &beat : curse_route())
+        // A beat that throws ends the route, named with the beat it was in.
+        std::string current_beat = "the route's start";
+        try
         {
-            ++beat_number;
-            const auto where = "beat " + std::to_string(beat.map) + " " + std::to_string(beat.x) +
-                               "," + std::to_string(beat.y);
-            if (beat.rest_first)
+            for (const auto &beat : curse_route())
             {
-                beat.waiting ? rest_in_wilderness() : rest_until_healed();
-            }
-            if (beat.test_experience)
-            {
+                ++beat_number;
+                const auto where = "beat " + std::to_string(beat.map) + " " +
+                                   std::to_string(beat.x) + "," + std::to_string(beat.y);
+                current_beat = where + " (beat " + std::to_string(beat_number) + ")";
+                if (session.snapshot().phase == TourPhase::defeated)
+                {
+                    break;
+                }
+                if (beat.rest_first)
+                {
+                    beat.waiting ? rest_in_wilderness() : rest_until_healed();
+                }
+                if (session.snapshot().phase == TourPhase::defeated)
+                {
+                    break;
+                }
+                if (beat.test_experience)
+                {
+                    for (const auto id : party->state().slots)
+                    {
+                        if (id)
+                        {
+                            party->award_experience(beat.test_experience,
+                                                    "test:curse-route-" +
+                                                        std::to_string(beat_number) + "-" +
+                                                        std::to_string(id),
+                                                    id);
+                        }
+                    }
+                    party->add_coins(opengold::Coin::gold, beat.test_gold);
+                }
+                const auto cell = [&](std::uint16_t address)
+                {
+                    return opengold::test::TourAccess::machine(session).variable(
+                        opengold::por::EclAddress{address});
+                };
+                for (int round = 0; round < 40; ++round)
+                {
+                    answers = beat.answers;
+                    if (beat.waiting)
+                    {
+                        play(where);
+                    }
+                    else if (beat.enter_map)
+                    {
+                        opengold::test::TourAccess::enter(session, beat.map,
+                                                          {beat.x, beat.y, beat.facing});
+                        play(where);
+                    }
+                    else
+                    {
+                        const unsigned x = (beat.x + static_cast<unsigned>(round)) % 16;
+                        opengold::test::TourAccess::place(session, {x, beat.y, beat.facing});
+                        if (session.explore(opengold::por::ExplorationCommand::look))
+                        {
+                            play(where);
+                        }
+                    }
+                    const auto &until = beat.repeat_until_at_least;
+                    if (!until || cell(until->first) >= until->second ||
+                        session.snapshot().phase == TourPhase::defeated)
+                    {
+                        break;
+                    }
+                    for (int day = 0; beat.test_heal && day < 90 && !party_whole() && party->rest();
+                         ++day)
+                    {
+                        memorize();
+                    }
+                }
+                if (session.snapshot().camp_offered)
+                {
+                    rest_until_healed();
+                }
+                if (beat.expect_cell)
+                {
+                    const auto held = opengold::test::TourAccess::machine(session).variable(
+                        opengold::por::EclAddress{beat.expect_cell->first});
+                    if (held != beat.expect_cell->second)
+                    {
+                        needs["Cell " + std::to_string(beat.expect_cell->first) + " holds " +
+                              std::to_string(held) + ", not " +
+                              std::to_string(beat.expect_cell->second)]
+                            .push_back(where);
+                    }
+                }
+                std::cout << "  party after " << where << ":";
                 for (const auto id : party->state().slots)
                 {
                     if (id)
                     {
-                        party->award_experience(beat.test_experience,
-                                                "test:curse-route-" + std::to_string(beat_number) +
-                                                    "-" + std::to_string(id),
-                                                id);
+                        const auto &member = party->member(id);
+                        std::cout << " " << member.vitals.hit_points << "/"
+                                  << member.character.sheet().hit_points
+                                  << (member.vitals.dead ? " dead" : "");
+                        if (const auto &numbers = member.character.sheet().original)
+                        {
+                            std::cout << " (" << member.experience << " xp, level "
+                                      << std::ranges::max(numbers->class_levels) << ")";
+                        }
                     }
                 }
-                party->add_coins(opengold::Coin::gold, beat.test_gold);
-            }
-            answers = beat.answers;
-            if (beat.waiting)
-            {
-                play(where);
-            }
-            else if (beat.enter_map)
-            {
-                opengold::test::TourAccess::enter(session, beat.map, {beat.x, beat.y, beat.facing});
-                play(where);
-            }
-            else
-            {
-                opengold::test::TourAccess::place(session, {beat.x, beat.y, beat.facing});
-                if (session.explore(opengold::por::ExplorationCommand::look))
+                std::cout << (session.snapshot().camp_offered ? " (camp offered)" : "") << "\n";
+                if (std::getenv("OPENGOLD_CURSE_CELL"))
                 {
-                    play(where);
+                    const auto cell =
+                        static_cast<std::uint16_t>(std::stoul(std::getenv("OPENGOLD_CURSE_CELL")));
+                    std::cout << "  cell " << cell << " = "
+                              << opengold::test::TourAccess::machine(session).variable(
+                                     opengold::por::EclAddress{cell})
+                              << "\n";
                 }
-            }
-            if (session.snapshot().camp_offered)
-            {
-                rest_until_healed();
-            }
-            if (beat.expect_cell)
-            {
-                const auto held = opengold::test::TourAccess::machine(session).variable(
-                    opengold::por::EclAddress{beat.expect_cell->first});
-                if (held != beat.expect_cell->second)
-                {
-                    needs["Cell " + std::to_string(beat.expect_cell->first) + " holds " +
-                          std::to_string(held) + ", not " +
-                          std::to_string(beat.expect_cell->second)]
-                        .push_back(where);
-                }
-            }
-            std::cout << "  party after " << where << ":";
-            for (const auto id : party->state().slots)
-            {
-                if (id)
-                {
-                    const auto &member = party->member(id);
-                    std::cout << " " << member.vitals.hit_points << "/"
-                              << member.character.sheet().hit_points
-                              << (member.vitals.dead ? " dead" : "");
-                    if (const auto &numbers = member.character.sheet().original)
-                    {
-                        std::cout << " (" << member.experience << " xp, level "
-                                  << std::ranges::max(numbers->class_levels) << ")";
-                    }
-                }
-            }
-            std::cout << (session.snapshot().camp_offered ? " (camp offered)" : "") << "\n";
-            if (std::getenv("OPENGOLD_CURSE_CELL"))
-            {
-                const auto cell =
-                    static_cast<std::uint16_t>(std::stoul(std::getenv("OPENGOLD_CURSE_CELL")));
-                std::cout << "  cell " << cell << " = "
-                          << opengold::test::TourAccess::machine(session).variable(
-                                 opengold::por::EclAddress{cell})
-                          << "\n";
             }
         }
+        catch (const std::exception &error)
+        {
+            needs[error.what()].push_back(current_beat);
+        }
+
         for (const auto &[phase, count] : phases)
         {
             std::cout << "  ended " << count << "x in phase " << phase << "\n";
@@ -1079,10 +1165,10 @@ bool curse_walk_census(bool route)
             std::cout << "Survey ends on map " << session.snapshot().area_id << ", phase "
                       << static_cast<int>(session.snapshot().phase) << "\n";
         }
-        // The route's last beat leaves the party in the wilderness (script 80).
-        constexpr unsigned wilderness_script = 80;
-        return needs.empty() && end.phase != TourPhase::defeated &&
-               end.script_id == wilderness_script;
+        // The route's last beat leaves the party in Hap (script 49), the
+        // barn won.
+        constexpr unsigned hap_script = 49;
+        return needs.empty() && end.phase != TourPhase::defeated && end.script_id == hap_script;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");

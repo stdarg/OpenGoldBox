@@ -244,12 +244,15 @@ In small steps, each with its check:
    magic on): the shops, the sage, the king's carriage and jail, the
    Thieves' Guild, the sewers and the Fire Knives' hideout, to the leader's
    fight, the first bond's end and the exile to the wilderness; it trains to
-   level 8 at the guild's secret hall on test experience, as the Pool of
-   Radiance expedition does, for a party as strong as one brought from Pool of
-   Radiance; it camps in the wilderness and takes the trail to Shadowdale,
-   through the displacer beasts at Shadow Gap. Each fight is played with
-   several dice and the best play kept, as a player reloads. Next:
-   Shadowdale, Essembra and Hap.
+   levels 8 and 9 at the guild's secret hall on test experience, as the Pool
+   of Radiance expedition does, for a party as strong as one brought from Pool
+   of Radiance; it camps in the wilderness and journeys by Shadow Gap's
+   displacer beasts to Shadowdale, by boat to Ashabenford, past the Fire
+   Knives' ambush to the Standing Stones, to Essembra, and through three
+   black dragons to Hap, where it hunts four dark elf patrols (healed by the
+   test between them, as camps in Hap draw more) and wins the barn. Each
+   fight is played with up to 40 dice and the best play kept, as a player
+   reloads. Next: Hap's cave and the Wizard's Tower (Dracandros).
 
 ### 4 to 7. The other campaigns
 
