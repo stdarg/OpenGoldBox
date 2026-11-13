@@ -4925,6 +4925,15 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
             }
             f.numbers = *numbers;
             take_counts(f, p.inventory, content);
+            // A member's last fight left it the spells it had not cast, which
+            // it keeps until a day's rest memorizes them again.
+            if (p.state && !p.state->resources.empty())
+            {
+                if (const auto last = Combatant::decode(p.state->resources))
+                {
+                    f.numbers.spells = last->spells;
+                }
+            }
         }
         else if (const auto found = content.bestiary.find(p.definition);
                  found != content.bestiary.end())

@@ -1,4 +1,5 @@
 #include "opengold/original_rules.h"
+#include "opengold/original_spells.h"
 #include "opengold/dice.h"
 #include <algorithm>
 #include <stdexcept>
@@ -718,6 +719,31 @@ std::optional<int> experience_for_level(ClassSlot slot, int level)
     }
     const int needed = experience_table[index(slot)][static_cast<std::size_t>(level - 2)];
     return needed == 0 ? std::nullopt : std::optional<int>{needed};
+}
+
+std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<const int> learned)
+{
+    const auto cleric_slots =
+        spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric), wisdom);
+    constexpr std::array<int, 4> first_magic_user_spells{11, 18, 19, 21};
+    const bool magic_user = level_in(levels, ClassSlot::magic_user) > 0;
+    std::vector<int> known;
+    for (int number = 1; number <= 56; ++number)
+    {
+        const auto *known_spell = spell(number);
+        const bool cleric_spell =
+            known_spell->caster_class == SpellClass::cleric && known_spell->level <= 3 &&
+            cleric_slots[static_cast<std::size_t>(known_spell->level - 1)] > 0;
+        const bool magic_user_spell =
+            magic_user &&
+            (std::ranges::find(first_magic_user_spells, number) != first_magic_user_spells.end() ||
+             std::ranges::find(learned, number) != learned.end());
+        if (cleric_spell || magic_user_spell)
+        {
+            known.push_back(number);
+        }
+    }
+    return known;
 }
 
 std::vector<ClassSlot> classes_ready_to_train(Race race, const ClassLevels &levels, int strength,

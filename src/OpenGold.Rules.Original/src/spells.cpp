@@ -1,4 +1,5 @@
 #include "opengold/original_spells.h"
+#include <cctype>
 
 #include <array>
 
@@ -89,6 +90,47 @@ constexpr std::array<Spell, 67> spells{{
 }};
 
 } // namespace
+
+std::string spell_id(int number)
+{
+    const auto *known = spell(number);
+    if (!known || known->caster_class == SpellClass::item)
+    {
+        return {};
+    }
+    std::string id = known->caster_class == SpellClass::cleric ? "cleric:" : "magic_user:";
+    bool gap = false;
+    for (const char c : known->name)
+    {
+        if (std::isalnum(static_cast<unsigned char>(c)))
+        {
+            if (gap && id.back() != ':')
+            {
+                id += '_';
+            }
+            id += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            gap = false;
+        }
+        else
+        {
+            gap = gap || c == ' ' || c == ',';
+        }
+    }
+    return id;
+}
+
+std::optional<int> spell_number(std::string_view id)
+{
+    id = id.substr(0, id.find('#'));
+    for (int number = 1; number <= static_cast<int>(spells.size()); ++number)
+    {
+        if (!id.empty() && spell_id(number) == id)
+        {
+            return number;
+        }
+    }
+    return std::nullopt;
+}
 
 const Spell *spell(int number) noexcept
 {

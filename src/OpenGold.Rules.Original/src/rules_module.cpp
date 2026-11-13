@@ -1,10 +1,12 @@
 #include "combat_session.h"
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
+#include "opengold/original_spells.h"
 #include "opengold/dice.h"
 
 #include <algorithm>
 #include <limits>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -83,6 +85,15 @@ Training decode_training(std::string_view data)
     return training;
 }
 
+// The slots a character has for a spell's class and level.
+int slots_for(const CharacterSheet::Original &numbers, const Spell &known)
+{
+    const auto &slots =
+        known.caster_class == SpellClass::cleric ? numbers.cleric_slots : numbers.magic_user_slots;
+    return known.level >= 1 && known.level <= 3 ? slots[static_cast<std::size_t>(known.level - 1)]
+                                                : 0;
+}
+
 // The sheet's numbers that follow from its class levels, worked out again.
 void recount_levels(CharacterSheet &sheet)
 {
@@ -98,6 +109,15 @@ void recount_levels(CharacterSheet &sheet)
     numbers.magic_user_slots =
         spell_slots(ClassSlot::magic_user, level_in(levels, ClassSlot::magic_user),
                     sheet.scores[Ability::wisdom]);
+    std::vector<int> learned;
+    for (const int number : numbers.known_spells)
+    {
+        if (spell(number)->caster_class == SpellClass::magic_user)
+        {
+            learned.push_back(number);
+        }
+    }
+    numbers.known_spells = known_spells(levels, sheet.scores[Ability::wisdom], learned);
 }
 
 // A character's record as the original keeps one, from its sheet: what
@@ -151,6 +171,13 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
     const auto race = static_cast<Race>(original.race);
     const bool short_folk = race == Race::dwarf || race == Race::gnome || race == Race::halfling;
     record.icon_size_raw = short_folk ? 1 : 2;
+    for (const auto &id : sheet.prepared_spells)
+    {
+        if (const auto number = spell_number(id))
+        {
+            record.memorized_spells.push_back(static_cast<std::uint8_t>(*number));
+        }
+    }
     return record;
 }
 
@@ -683,16 +710,69 @@ SpellAccess OriginalModule::spell_access(const CharacterSheet &) const
     return {};
 }
 
-SpellChoiceOptions OriginalModule::spell_choice_options(const CharacterSheet &,
-                                                        SpellChoiceContext) const
+// Memorizing (camp.pas, CampMemorizeMenu): after a day's rest each slot takes
+// a known spell of its class and level, the same spell in several slots if
+// the player likes; a copy beyond the first is "#2", "#3". An hour's rest
+// memorizes nothing: the original's preparation takes hours.
+SpellChoiceOptions OriginalModule::spell_choice_options(const CharacterSheet &sheet,
+                                                        SpellChoiceContext context) const
 {
-    throw unavailable("spell_choice_options");
+    SpellChoiceOptions options;
+    if (context == SpellChoiceContext::short_rest || !sheet.original)
+    {
+        return options;
+    }
+    const auto &numbers = *sheet.original;
+    for (const int number : numbers.known_spells)
+    {
+        const auto *known = spell(number);
+        const int slots = slots_for(numbers, *known);
+        for (int copy = 1; copy <= slots; ++copy)
+        {
+            options.preparation.push_back(
+                {spell_id(number) + (copy > 1 ? "#" + std::to_string(copy) : std::string{}),
+                 std::string(known->name),
+                 {}});
+        }
+    }
+    for (const auto &slots : {numbers.cleric_slots, numbers.magic_user_slots})
+    {
+        for (const int count : slots)
+        {
+            options.prepared_count += static_cast<unsigned>(count);
+        }
+    }
+    options.may_prepare = options.prepared_count > 0;
+    return options;
 }
 
-void OriginalModule::apply_spell_choices(CharacterSheet &, const SpellChoices &, SpellChoiceContext,
-                                         ChoiceCompleteness) const
+void OriginalModule::apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
+                                         SpellChoiceContext context, ChoiceCompleteness) const
 {
-    throw unavailable("apply_spell_choices");
+    if (!choices.prepared)
+    {
+        return;
+    }
+    const auto offered = spell_choice_options(sheet, context).preparation;
+    std::map<std::pair<SpellClass, int>, int> taken;
+    for (const auto &id : *choices.prepared)
+    {
+        if (std::ranges::none_of(offered,
+                                 [&id](const CreationChoice &option)
+                                 {
+                                     return option.id == id;
+                                 }) ||
+            std::ranges::count(*choices.prepared, id) > 1)
+        {
+            throw std::runtime_error("That spell cannot be memorized");
+        }
+        const auto *chosen = spell(*spell_number(id));
+        if (++taken[{chosen->caster_class, chosen->level}] > slots_for(*sheet.original, *chosen))
+        {
+            throw std::runtime_error("Too many spells of that level");
+        }
+    }
+    sheet.prepared_spells = *choices.prepared;
 }
 
 // The original has no ability checks: its scripts and doors read thief
@@ -814,10 +894,30 @@ void OriginalModule::train_at_hall(CharacterSheet &, std::string_view) const
 AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &sheet) const
 {
     AdvancementOptions options;
-    if (!ready_classes(sheet, std::numeric_limits<unsigned>::max()).empty())
+    if (ready_classes(sheet, std::numeric_limits<unsigned>::max()).empty())
     {
-        options.level = static_cast<unsigned>(sheet.level) + 1;
-        options.class_level = options.level;
+        return options;
+    }
+    options.level = static_cast<unsigned>(sheet.level) + 1;
+    options.class_level = options.level;
+    // A magic-user learns a spell of a level its next level casts.
+    const auto &numbers = original_numbers(sheet);
+    const int magic_user = level_in(numbers.class_levels, ClassSlot::magic_user);
+    if (magic_user == 0)
+    {
+        return options;
+    }
+    const auto slots =
+        spell_slots(ClassSlot::magic_user, magic_user + 1, sheet.scores[Ability::wisdom]);
+    for (int number = 1; number <= 56; ++number)
+    {
+        const auto *offered = spell(number);
+        if (offered->caster_class == SpellClass::magic_user && offered->level <= 3 &&
+            slots[static_cast<std::size_t>(offered->level - 1)] > 0 &&
+            std::ranges::find(numbers.known_spells, number) == numbers.known_spells.end())
+        {
+            options.spells.push_back({spell_id(number), std::string(offered->name), {}, true});
+        }
     }
     return options;
 }
@@ -871,7 +971,30 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
 {
     const auto &numbers = original_numbers(sheet);
     const auto training = decode_training(choice.rules_data);
+    // The spell a magic-user learns, when the level is one of its own.
+    const bool magic_user_trained =
+        (training.classes & (1U << static_cast<unsigned>(ClassSlot::magic_user))) != 0;
+    if (choice.spells.size() > 1 || (!choice.spells.empty() && !magic_user_trained))
+    {
+        throw std::invalid_argument("Only a magic-user's training learns a spell");
+    }
+    const auto offered = advancement_options(sheet).spells;
+    for (const auto &id : choice.spells)
+    {
+        if (std::ranges::none_of(offered,
+                                 [&id](const AdvancementOption &option)
+                                 {
+                                     return option.id == id;
+                                 }))
+        {
+            throw std::invalid_argument("That spell cannot be learned");
+        }
+    }
     auto next = sheet;
+    for (const auto &id : choice.spells)
+    {
+        next.original->known_spells.push_back(*spell_number(id));
+    }
     auto &levels = next.original->class_levels;
     for (std::size_t at = 0; at < class_slot_count; ++at)
     {
@@ -921,6 +1044,9 @@ void OriginalModule::recover(VitalState &state, const CharacterSheet &sheet) con
     {
         state.hit_points = std::min(state.hit_points + 1, sheet.hit_points);
     }
+    // The day's rest memorizes again the spells cast: the next fight starts
+    // from the sheet's.
+    state.resources.clear();
 }
 
 // The original has no Hit Dice or resources a rest restores; every living

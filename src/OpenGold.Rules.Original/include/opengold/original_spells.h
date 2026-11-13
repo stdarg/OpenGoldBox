@@ -1,6 +1,8 @@
 #ifndef OPENGOLD_ORIGINAL_SPELLS_H
 #define OPENGOLD_ORIGINAL_SPELLS_H
 
+#include <optional>
+#include <string>
 #include <string_view>
 
 // The original rules' spells as Pool of Radiance casts them
@@ -52,6 +54,13 @@ struct Spell
 
 // The spell or item power of this number (1 to 67), or nothing.
 [[nodiscard]] const Spell *spell(int number) noexcept;
+
+// A spell's stable ID, its class and name ("magic_user:sleep"), as sheets
+// and saves keep it; empty for a number that is no cleric or magic-user spell.
+[[nodiscard]] std::string spell_id(int number);
+// The cleric or magic-user spell an ID names, or nothing; a copy's "#2" is
+// left out.
+[[nodiscard]] std::optional<int> spell_number(std::string_view id);
 
 } // namespace opengold::original
 #endif

@@ -386,6 +386,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         original.magic_user_slots =
             spell_slots(ClassSlot::magic_user, level_in(levels, ClassSlot::magic_user),
                         ability[Ability::wisdom]);
+        original.known_spells = known_spells(levels, ability[Ability::wisdom], {});
         sheet.original = original;
         return sheet;
     }

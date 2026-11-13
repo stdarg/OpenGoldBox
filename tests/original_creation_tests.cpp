@@ -372,6 +372,84 @@ void arrows_spent_leave_the_inventory()
           "The inventory keeps the arrows the fight left");
 }
 
+// A magic-user's magic under the original rules: it knows Detect Magic, Read
+// Magic, Shield and Sleep; after a day's rest it memorizes as many as its
+// slots hold, fights with them, keeps those it cast spent until the next
+// day's rest, and learns a spell at its next training.
+void a_magic_user_memorizes_and_learns()
+{
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module(), creation);
+    const auto mage = member_with(party, creation, "magic_user", "Mira");
+    const auto &known = party.member(mage).character.sheet().original->known_spells;
+    check(known == std::vector<int>{11, 18, 19, 21},
+          "A new magic-user knows Detect Magic, Read Magic, Shield and Sleep");
+    check(party.rest(), "The party rests a day");
+    const auto options = party.spell_choice_options(mage);
+    check(options.may_prepare && options.prepared_count == 1 && options.preparation.size() == 4,
+          "A level-1 magic-user memorizes one of its four spells");
+    check(throws(
+              [&]
+              {
+                  party.choose_spells(
+                      mage,
+                      {{}, std::vector<std::string>{"magic_user:sleep", "magic_user:shield"}});
+              }),
+          "No more spells than its slots");
+    party.choose_spells(mage, {{}, std::vector<std::string>{"magic_user:sleep"}});
+    const auto fighting = party.participants();
+    const auto numbers = original::Combatant::decode(fighting.front().character_profile);
+    check(numbers && numbers->spells == std::vector<int>{21}, "It fights with Sleep memorized");
+
+    // A fight's state that left no spell: the next fight starts without one,
+    // and a day's rest gives it back.
+    auto cast = *numbers;
+    cast.spells.clear();
+    auto state = party.member(mage).vitals;
+    state.resources = cast.encode();
+    rules::Encounter encounter;
+    encounter.battlefield = {6, 4, std::vector<rules::Terrain>(24, rules::Terrain::open)};
+    encounter.participants = fighting;
+    encounter.participants.front().state = state;
+    original::Content content;
+    por::CharacterRecord kobold;
+    kobold.name = "KOBOLD";
+    kobold.max_hit_points = 4;
+    kobold.base_thac0 = 20;
+    kobold.base_armor_class = 7;
+    content.bestiary.emplace("MON2CHA.DAX:0", original::combatant_from_record(kobold));
+    rules::Participant foe;
+    foe.id = 1000;
+    foe.definition = "MON2CHA.DAX:0";
+    foe.name = "Kobold";
+    foe.side = rules::Side::opposition;
+    foe.cell = {5, 3};
+    encounter.participants.push_back(foe);
+    const auto session = original::rules_module(content)->create(encounter, 3);
+    const auto started = session->snapshot();
+    const auto &view = *std::ranges::find(started.combatants, mage, &rules::CombatantView::id);
+    check(original::Combatant::decode(view.persistent.resources)->spells.empty(),
+          "A spell cast in an earlier fight is still spent");
+    auto rested = state;
+    original::rules_module()->recover(rested, party.member(mage).character.sheet());
+    check(rested.resources.empty(), "A day's rest memorizes the spent spells again");
+
+    party.award_experience(2501, "test:mage-level");
+    check(party.can_advance(mage), "A magic-user is ready at 2501 experience");
+    const auto learning = party.advancement_options(mage, party.default_advancement(mage));
+    check(std::ranges::any_of(learning.spells,
+                              [](const rules::AdvancementOption &option)
+                              {
+                                  return option.id == "magic_user:magic_missile";
+                              }),
+          "Training offers the magic-user a spell it does not know");
+    auto choice = party.default_advancement(mage);
+    choice.spells = {"magic_user:magic_missile"};
+    party.advance(mage, choice);
+    const auto &after = party.member(mage).character.sheet().original->known_spells;
+    check(std::ranges::find(after, 15) != after.end(), "It learns Magic Missile");
+}
+
 } // namespace
 
 int main()
@@ -383,6 +461,7 @@ int main()
         characters_ready_original_gear();
         the_pool_offers_original_characters();
         arrows_spent_leave_the_inventory();
+        a_magic_user_memorizes_and_learns();
         std::cout << "Original creation tests passed\n";
         return 0;
     }

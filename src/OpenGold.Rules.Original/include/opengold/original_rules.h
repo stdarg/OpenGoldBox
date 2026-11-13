@@ -274,6 +274,13 @@ enum class ThiefSkill : unsigned
 [[nodiscard]] int experience_share(Profession profession, const rules::AbilityArray<int> &scores,
                                    int award);
 
+// The spells a character knows (chargen.pas, CreateCharacterMenu): a cleric
+// every cleric spell of a level it has slots for; a magic-user the four it
+// starts with (Detect Magic, Read Magic, Shield and Sleep) and those it
+// learned since (`learned`), in the spell table's order.
+[[nodiscard]] std::vector<int> known_spells(const ClassLevels &levels, int wisdom,
+                                            std::span<const int> learned);
+
 // Spell slots of levels 1 to 3 for a cleric or magic-user level, with the
 // cleric's Wisdom bonus; zeros for other classes.
 [[nodiscard]] std::array<int, 3> spell_slots(ClassSlot slot, int level, int wisdom);
