@@ -196,6 +196,9 @@ lines in all:
      point of Constitution and of Hit Points, and the cures of blindness,
      disease, poison, curses and stone, with the conditions that last outside
      fights.
+   - **Items outside fights:** the Potion of Healing heals 2d4+2 and
+     Keoghtum's Ointment 1d4+8, as in a fight; the rules say which items can
+     be used out of one and give the inventory its notes.
    - **Scripts' harm** is the original's (`EclDamage`): an arrow hits when
      its d20 is above 1 and the roll with the script's figure (60 less a
      THAC0) tops the member's stored Armor Class (`AttackRollNoAttacker`), a

@@ -312,6 +312,8 @@ class OriginalModule final : public RulesModule
         return true;
     }
 
+    [[nodiscard]] bool usable_outside_combat(std::string_view item) const override;
+
     [[nodiscard]] std::vector<std::string> classes_to_train(const CharacterSheet &sheet,
                                                             unsigned experience) const override;
     void roll_advancement(const CharacterSheet &sheet, unsigned experience,
@@ -1309,10 +1311,45 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
         std::min(target_state.hit_points + roll_die(random_state, 8), target.hit_points);
 }
 
-void OriginalModule::drink_potion(const CharacterSheet &, VitalState &, std::string_view,
-                                  RandomState &) const
+namespace
 {
-    throw unavailable("drink_potion");
+constexpr int keoghtums_ointment = 58, potion_of_healing = 62;
+
+// The item power an item of the original's holds, by the spell table's
+// numbers (viewchar.pas, UseItem: a power above 56 is 23 less), or nothing.
+std::optional<int> item_power(std::string_view key)
+{
+    const auto record = por::item_of_original_key(key);
+    if (!record || record->effect_codes[1] == 0 || record->effect_codes[2] >= 0x80)
+    {
+        return std::nullopt;
+    }
+    const int code = record->effect_codes[1];
+    return code > 56 ? code - 23 : code;
+}
+} // namespace
+
+// Out of a fight the original's Potion of Healing heals 2d4+2 and Keoghtum's
+// Ointment 1d4+8, as in one (magic.pas); the other items' powers are a
+// fight's. The ointment's cure of poison and disease comes with the
+// conditions (plan step 6).
+bool OriginalModule::usable_outside_combat(std::string_view item) const
+{
+    const auto power = item_power(item);
+    return power == potion_of_healing || power == keoghtums_ointment;
+}
+
+void OriginalModule::drink_potion(const CharacterSheet &sheet, VitalState &state,
+                                  std::string_view item, RandomState &random_state) const
+{
+    if (!usable_outside_combat(item) || state.dead)
+    {
+        throw std::runtime_error("That cannot be used now");
+    }
+    const int healing = item_power(item) == potion_of_healing
+                            ? roll_die(random_state, 4) + roll_die(random_state, 4) + 2
+                            : roll_die(random_state, 4) + 8;
+    state.hit_points = std::min(state.hit_points + healing, sheet.hit_points);
 }
 
 void OriginalModule::use_party_camp_action(const CharacterSheet &, VitalState &,

@@ -33342,6 +33342,16 @@ class Module final : public RulesModule
         return writable;
     }
 
+    bool usable_outside_combat(std::string_view item) const override
+    {
+        return srd5::usable_outside_combat(item);
+    }
+
+    std::string equipment_note(const CharacterSheet &sheet, std::string_view item) const override
+    {
+        return srd5::equipment_note(sheet, item);
+    }
+
     void drink_potion(const CharacterSheet &sheet, VitalState &state, std::string_view item,
                       RandomState &random_state) const override
     {

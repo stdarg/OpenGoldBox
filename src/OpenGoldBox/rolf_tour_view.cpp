@@ -867,13 +867,13 @@ void RolfTourView::inventory_selected(std::int64_t index)
     const bool scroll = opengold::rules::parse_scroll_key(item.definition_id).has_value();
     required_node<Button>(*this, "InventoryPanel/%UseItem")
         .set_visible(
-            opengold::srd5::usable_outside_combat(item.definition_id) ||
+            campaign_->rule_module().usable_outside_combat(item.definition_id) ||
             (scroll && (!campaign_->scroll_actions(campaign_->selected(), item.id).empty() ||
                         !campaign_->copyable_spells(campaign_->selected(), item.id).empty())));
     try
     {
         required_node<Label>(*this, "InventoryPanel/%Status")
-            .set_text(i18n::text(opengold::srd5::equipment_note(
+            .set_text(i18n::text(campaign_->rule_module().equipment_note(
                 m.character.sheet(), opengold::rules_definition(m, items[index]))));
     }
     catch (const std::exception &e)
@@ -930,7 +930,7 @@ void RolfTourView::equip_item(bool equip)
         }
         required_node<Label>(*this, "InventoryPanel/%Status")
             .set_text(equip ? i18n::text("Equipped.") + " " +
-                                  i18n::text(opengold::srd5::equipment_note(
+                                  i18n::text(campaign_->rule_module().equipment_note(
                                       campaign_->member(id).character.sheet(), definition))
                             : i18n::text("Item unequipped."));
     }

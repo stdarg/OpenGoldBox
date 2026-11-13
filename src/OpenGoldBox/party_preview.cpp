@@ -1178,7 +1178,7 @@ void CharacterCreationView::party_action(PartyAction action)
                 }
                 campaign_->equip(id, selected);
                 equipment_notice = i18n::text("Equipped.") + " " +
-                                   i18n::text(srd5::equipment_note(
+                                   i18n::text(campaign_->rule_module().equipment_note(
                                        campaign_->member(id).character.sheet(), definition));
             }
             else

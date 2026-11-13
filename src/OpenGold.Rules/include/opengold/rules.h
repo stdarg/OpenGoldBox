@@ -1291,6 +1291,25 @@ class RulesModule
     virtual void use_camp_action(const CharacterSheet &user, VitalState &user_state,
                                  const CharacterSheet &target, VitalState &target_state,
                                  std::string_view action, RandomState &random_state) const = 0;
+
+    // A note on what an item does for the member, as the inventory shows it;
+    // empty when the rules have none.
+    [[nodiscard]] virtual std::string equipment_note(const CharacterSheet &sheet,
+                                                     std::string_view item) const
+    {
+        (void)sheet;
+        (void)item;
+        return {};
+    }
+
+    // Whether a member can use the item outside combat: a potion it drinks,
+    // the Manual it reads (MAGIC-3).
+    [[nodiscard]] virtual bool usable_outside_combat(std::string_view item) const
+    {
+        (void)item;
+        return false;
+    }
+
     // Drinks a potion the member carries, outside combat (MAGIC-3): a healing
     // potion restores its Hit Points and a Potion of Giant Strength starts its
     // hour. Throws for a potion that works only in combat, or that would do

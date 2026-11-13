@@ -552,6 +552,33 @@ void scripts_harm_as_the_original()
     check(saved > 0 && saved < 200, "Some save and some do not");
 }
 
+// The original's Potion of Healing outside a fight heals 2d4+2; an item of no
+// such power is not used out of one.
+void a_potion_heals_outside_a_fight()
+{
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module(), creation);
+    const auto id = member_with(party, creation, "fighter", "Gareth");
+    const auto &sheet = party.member(id).character.sheet();
+    std::array<std::uint8_t, 63> raw{};
+    raw[46] = 65;
+    raw[60] = 1;
+    raw[61] = 62 + 23;
+    const auto potion = por::original_item_key(por::decode_items(raw)->front());
+    std::array<std::uint8_t, 63> plain{};
+    plain[46] = 36;
+    const auto sword = por::original_item_key(por::decode_items(plain)->front());
+    const auto module = original::rules_module();
+    check(module->usable_outside_combat(potion) && !module->usable_outside_combat(sword),
+          "A Potion of Healing is drunk outside a fight; a sword is not used");
+    RandomState random{12};
+    rules::VitalState state{1, false, {}, {}};
+    module->drink_potion(sheet, state, potion, random);
+    check(state.hit_points >= std::min(5, sheet.hit_points) &&
+              state.hit_points <= std::min(11, sheet.hit_points),
+          "The Potion of Healing heals 2d4+2");
+}
+
 } // namespace
 
 int main()
@@ -567,6 +594,7 @@ int main()
         a_cleric_cures_in_camp();
         the_temple_heals_and_raises();
         scripts_harm_as_the_original();
+        a_potion_heals_outside_a_fight();
         std::cout << "Original creation tests passed\n";
         return 0;
     }
