@@ -2178,6 +2178,22 @@ void lightning_runs_on()
     check(view_of(state, "Aside").hit_points == 100, "One off the line is spared");
 }
 
+// Curse's effects by the fight's numbers: those that work as Pool of
+// Radiance's of the same number keep it, fumbling is helplessness, and the
+// rest move 200 up, so a dracolich's paralyzing touch (122) is not Pool of
+// Radiance's mummy fire.
+void curse_effects_take_their_own_numbers()
+{
+    const auto curse = opengold::GoldBoxGame::curse_of_the_azure_bonds;
+    const auto pool = opengold::GoldBoxGame::pool_of_radiance;
+    check(original::canonical_effect(122, curse) == 322 &&
+              original::canonical_effect(122, pool) == 122 &&
+              original::canonical_effect(64, curse) == 64 &&
+              original::canonical_effect(27, curse) == 31 &&
+              original::canonical_effect(105, curse) == 305,
+          "Curse's effects keep Pool of Radiance's numbers only where they work alike");
+}
+
 // Curse's spells: Cone of Cold takes those on its path to half the caster's
 // level, two wide (ovr023, SpellConeOfCold); Cause Critical Wounds is 3d8+3;
 // Slay Living kills on a failed save and wounds on a saved one.
@@ -2735,6 +2751,7 @@ int main()
         missiles_turned_away();
         lightning_runs_on();
         curse_spells_strike();
+        curse_effects_take_their_own_numbers();
         a_cloud_sickens();
         dispel_magic_strips();
         the_dead_rise();

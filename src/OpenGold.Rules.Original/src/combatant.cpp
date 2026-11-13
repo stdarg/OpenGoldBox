@@ -472,6 +472,32 @@ std::vector<UsableItem> usable_items(std::span<const CarriedItem> carried, GoldB
 
 } // namespace
 
+int canonical_effect(int code, GoldBoxGame game) noexcept
+{
+    if (game != GoldBoxGame::curse_of_the_azure_bonds || code == 0)
+    {
+        return code;
+    }
+    // Curse's codes that do what Pool of Radiance's of the same number do.
+    constexpr std::array<int, 74> same{
+        1,  2,  5,  6,  8,  9,  10, 11,  12,  13,  14,  15,  16,  17,  18,  19,  20, 21, 22,
+        23, 24, 25, 26, 28, 29, 30, 31,  32,  33,  34,  36,  38,  39,  40,  41,  42, 43, 44,
+        45, 46, 47, 48, 49, 51, 52, 53,  55,  56,  58,  59,  61,  64,  65,  66,  67, 70, 71,
+        72, 79, 80, 83, 88, 89, 98, 100, 101, 102, 104, 107, 108, 109, 112, 113, 119};
+    constexpr std::array<int, 7> also_same{121, 124, 125, 127, 114, 115, 116};
+    if (std::ranges::find(same, code) != same.end() ||
+        std::ranges::find(also_same, code) != also_same.end())
+    {
+        return code;
+    }
+    // Fumbling ends its bearer's actions as Pool of Radiance's helplessness does.
+    if (code == 27)
+    {
+        return 31;
+    }
+    return code + curse_effect_offset;
+}
+
 Combatant combatant_from_record(const por::CharacterRecord &record,
                                 std::span<const CarriedItem> carried,
                                 std::span<const por::EffectRecord> effects)
@@ -636,8 +662,8 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     {
         if (effect.code != 0)
         {
-            c.effects.push_back(
-                {effect.code, effect.duration_raw, effect.data, effect.table_flag != 0});
+            c.effects.push_back({canonical_effect(effect.code, record.game), effect.duration_raw,
+                                 effect.data, effect.table_flag != 0});
         }
     }
     return c;

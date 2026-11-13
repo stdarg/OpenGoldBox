@@ -182,6 +182,8 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
         return static_cast<std::uint8_t>(std::clamp(sheet.scores[ability], 0, 255));
     };
     por::CharacterRecord record;
+    // The record reads its spells and items by its game's numbers.
+    record.game = game_of(sheet.identity);
     record.name = sheet.name;
     record.current_abilities = {score(Ability::strength),
                                 score(Ability::intelligence),
@@ -225,7 +227,9 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
     {
         if (const auto number = spell_number(id))
         {
-            record.memorized_spells.push_back(static_cast<std::uint8_t>(*number));
+            // As the game's own record holds it (canonical_spell undone).
+            const int own = *number > curse_spell_offset ? *number - curse_spell_offset : *number;
+            record.memorized_spells.push_back(static_cast<std::uint8_t>(own));
         }
     }
     return record;
@@ -1453,8 +1457,9 @@ namespace
 constexpr int keoghtums_ointment = 58, potion_of_healing = 62;
 
 // The item power an item of the original's holds, by the spell table's
-// numbers (viewchar.pas, UseItem: a power above 56 is 23 less), or nothing.
-std::optional<int> item_power(std::string_view key)
+// numbers, or nothing: in Pool of Radiance a power above 56 is 23 less
+// (viewchar.pas, UseItem); Curse names the spell (canonical_spell).
+std::optional<int> item_power(std::string_view key, GoldBoxGame game)
 {
     const auto record = por::item_of_original_key(key);
     if (!record || record->effect_codes[1] == 0 || record->effect_codes[2] >= 0x80)
@@ -1462,6 +1467,10 @@ std::optional<int> item_power(std::string_view key)
         return std::nullopt;
     }
     const int code = record->effect_codes[1];
+    if (game == GoldBoxGame::curse_of_the_azure_bonds)
+    {
+        return canonical_spell(code & 0x7F, game);
+    }
     return code > 56 ? code - 23 : code;
 }
 } // namespace
@@ -1472,7 +1481,7 @@ std::optional<int> item_power(std::string_view key)
 // conditions (plan step 6).
 bool OriginalModule::usable_outside_combat(std::string_view item) const
 {
-    const auto power = item_power(item);
+    const auto power = item_power(item, content_.game);
     return power == potion_of_healing || power == keoghtums_ointment;
 }
 
@@ -1483,7 +1492,7 @@ void OriginalModule::drink_potion(const CharacterSheet &sheet, VitalState &state
     {
         throw std::runtime_error("That cannot be used now");
     }
-    const int healing = item_power(item) == potion_of_healing
+    const int healing = item_power(item, content_.game) == potion_of_healing
                             ? roll_die(random_state, 4) + roll_die(random_state, 4) + 2
                             : roll_die(random_state, 4) + 8;
     state.hit_points = std::min(state.hit_points + healing, sheet.hit_points);

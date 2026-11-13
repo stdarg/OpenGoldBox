@@ -73,6 +73,17 @@ struct StrikingItem
 // An effect on a creature (fxengine.pas): its code, the minutes left (0 for
 // one that lasts), the strength its handler keeps data in, and whether its
 // handler runs as it is removed.
+// Curse's effects that Pool of Radiance has under no number are numbered
+// this much higher than Curse's own (canonical_effect).
+inline constexpr int curse_effect_offset = 200;
+
+// The number the fight knows a game's own effect by (its records', items'
+// and spells'): Pool of Radiance's as they are; Curse's that work as Pool of
+// Radiance's of the same number as they are, its fumbling as Pool of
+// Radiance's helplessness (31), and the rest curse_effect_offset higher
+// (docs/ORIGINAL-RULES.md, Curse of the Azure Bonds).
+[[nodiscard]] int canonical_effect(int code, GoldBoxGame game) noexcept;
+
 struct Effect
 {
     int code{};
