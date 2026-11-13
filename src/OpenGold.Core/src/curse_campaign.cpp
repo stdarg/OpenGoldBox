@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <map>
+#include <span>
 #include <stdexcept>
 #include <string>
 
@@ -64,6 +65,56 @@ std::map<unsigned, ScriptLoads> script_loads(const por::EclCatalog &catalog)
         }
     }
     return loads;
+}
+
+// Curse's ending, told when Tyranthraxus falls (PROGRAM 8; its WinGame):
+// GAME.OVR's Pascal strings at a fixed place in the release this engine reads,
+// six screens of four lines, its "Press any key" prompt among them. It is read
+// from the player's copy, never stored here; another release yields none.
+std::vector<std::string> read_curse_ending(std::span<const std::uint8_t> overlay)
+{
+    constexpr std::size_t release_size = 272137, ending_offset = 0x265c6, strings = 25,
+                          lines_a_screen = 4;
+    if (overlay.size() != release_size)
+    {
+        return {};
+    }
+    std::vector<std::string> screens(1);
+    std::size_t lines = 0;
+    auto at = ending_offset;
+    for (std::size_t n = 0; n < strings; ++n)
+    {
+        const std::size_t length = overlay[at];
+        if (length == 0 || at + 1 + length > overlay.size())
+        {
+            return {};
+        }
+        const std::string line(overlay.begin() + static_cast<std::ptrdiff_t>(at) + 1,
+                               overlay.begin() + static_cast<std::ptrdiff_t>(at + 1 + length));
+        if (!std::all_of(line.begin(), line.end(),
+                         [](char c)
+                         {
+                             return c >= ' ' && c <= '~';
+                         }))
+        {
+            return {};
+        }
+        at += 1 + length;
+        if (line.starts_with("Press any key"))
+        {
+            continue;
+        }
+        if (lines == lines_a_screen)
+        {
+            screens.emplace_back();
+            lines = 0;
+        }
+        // Its lines end with the space that joins them.
+        screens.back() +=
+            (screens.back().empty() || screens.back().ends_with(' ') ? "" : " ") + line;
+        ++lines;
+    }
+    return screens;
 }
 
 por::RolfTourSession load_curse_campaign(const std::filesystem::path &folder)
@@ -125,6 +176,8 @@ por::RolfTourSession load_curse_campaign(const std::filesystem::path &folder)
         por::detail::resolve_archive(folder, "SPRIT" + wilderness + ".DAX"));
     root->combat_archive = por::detail::read_archive(
         por::detail::resolve_archive(folder, "CPIC" + wilderness + ".DAX"));
+    root->closing_story = read_curse_ending(
+        por::detail::read_archive(por::detail::resolve_archive(folder, "GAME.OVR")));
     // Fights out of doors (the script's 3D-area cell clear) are on open
     // ground drawn with WILDCOM's 34 tiles, then RANDCOM's 6.
     root->curse_wilderness = por::curse_wilderness(start_image);

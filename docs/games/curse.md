@@ -167,3 +167,11 @@ whatever the map: the same map can show other walls for another script (map 1
 takes banks 1, 2 and 3 for script 1, and 1, 2 and 4 for script 2).
 `curse_campaign.cpp` reads every script's LOAD FILES and LOAD PIECES, loads
 each map it names and every wall set, and LOAD PIECES switches between them.
+
+## The ending
+
+When Tyranthraxus falls the script runs PROGRAM 8. *Curse*'s WinGame tells
+its ending in six screens of four lines, Pascal strings in GAME.OVR (at
+265C6h in the release OpenGoldBox reads, 272,137 bytes); OpenGoldBox reads
+them from the player's copy and tells them, followed by "You have won.".
+Another release shows only that line.

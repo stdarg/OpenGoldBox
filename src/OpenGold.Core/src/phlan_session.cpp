@@ -3994,7 +3994,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             {
                 snapshot_.dialogue += page + "\n\n";
             }
-            snapshot_.dialogue += "Tyranthraxus is destroyed, and Phlan is free of him. You have won.";
+            // Curse's ending is its own (WinGame); Pool of Radiance's closing
+            // story is followed by OpenGoldBox's line.
+            snapshot_.dialogue +=
+                game() == GoldBoxGame::pool_of_radiance
+                    ? "Tyranthraxus is destroyed, and Phlan is free of him. You have won."
+                    : "You have won.";
             victory_ = true;
             damage_request_ = request.id;
             snapshot_.phase = TourPhase::awaiting_continue;

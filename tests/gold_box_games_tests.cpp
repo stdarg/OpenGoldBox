@@ -902,6 +902,30 @@ const std::vector<RouteBeat> &curse_route()
          0,
          std::nullopt,
          true},
+        // In the temple's chapel Tyranthraxus takes the bonded party, Nameless
+        // frees it and dies, and Tyranthraxus leaves his minions to it; then
+        // up the main hall's stairs to the second floor.
+        {67, 5, 11, D::north, {}, false, false, false, std::nullopt, 0, 0, std::nullopt, true},
+        {67, 10, 7, D::north, {"YES"}},
+        // Tyranthraxus, with high priests and margoyles, on the second floor:
+        // the final battle.
+        {67,
+         6,
+         1,
+         D::north,
+         {},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         true,
+         false,
+         false,
+         {},
+         true},
     };
     return beats;
 }
@@ -1838,14 +1862,15 @@ bool curse_walk_census(bool route)
             std::cout << "Survey ends on map " << session.snapshot().area_id << ", phase "
                       << static_cast<int>(session.snapshot().phase) << "\n";
         }
-        // The route's last beat leaves the party in the ruined temple of Myth
-        // Drannor, nobody dead.
+        // The route's last beat wins the game: Tyranthraxus falls, and the
+        // ending is told.
         const bool all_alive = std::ranges::none_of(party->state().slots,
                                                     [&](opengold::MemberId id)
                                                     {
                                                         return id && party->member(id).vitals.dead;
                                                     });
-        return needs.empty() && end.phase != TourPhase::defeated && end.area_id == 67 && all_alive;
+        return needs.empty() && end.phase != TourPhase::defeated &&
+               end.dialogue.find("You have won.") != std::string::npos && all_alive;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");

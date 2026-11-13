@@ -1996,6 +1996,7 @@ String rest_notice(const std::string &resource, const std::string &text)
          N_("The way to the eastern wilderness is not in the game yet."),
          N_("The river's stench drives you back."),
          N_("Tyranthraxus is destroyed, and Phlan is free of him. You have won."),
+         N_("You have won."),
          N_("The way to another area is not in the game yet.")})
     {
         result = result.replace(String::utf8(source), i18n::text(source));

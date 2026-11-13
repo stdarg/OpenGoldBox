@@ -295,8 +295,18 @@ In small steps, each with its check:
    Dimswart away, to Zhentil Keep's edge. With the three
    artifacts it goes back by Yulash and Hillsfar to the Standing Stones,
    where the grey man reveals himself as Tyranthraxus ("meet me at Myth
-   Drannor"), and journeys on to the Burial Glen (map 64). Next: the Glen,
-   the ruins of Myth Drannor and Tyranthraxus.
+   Drannor"), and journeys on to the Burial Glen (map 64). It leaves the
+   Glen east by the path to the ruins of Myth Drannor, wins the head
+   Rakshasa over with a haughty parley and goes by the sewer grate into the
+   ruined temple (map 67). There Tyranthraxus takes the bonded party,
+   Nameless frees it and dies, and the party climbs to the second floor and
+   fights the final battle (Tyranthraxus, high priests and margoyles, won by
+   the test for now); the game is won, and Curse's own ending is told, read
+   from the player's GAME.OVR as its WinGame shows it. The route plays Curse
+   from start to end; its stand-ins (test experience and gear, heals where
+   no rest is allowed, the pseudopods' and some fights' wins, the cell
+   before Dexam) are where the route's player or OpenGoldBox still falls
+   short.
 
 ### 4 to 7. The other campaigns
 
