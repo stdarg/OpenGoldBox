@@ -373,8 +373,14 @@ gear.
    - `opengold_original_campaign_tests` and the game's
      `opengold_godot_creation_expedition_original` play the Slums under the
      original rules, the second on screen.
-   - Still to come: ammunition and charges spent in a fight leaving the
-     inventory, readying items mid-fight, the party's facing, the original's
+   - **Counts:** a fight takes a member's readied stacks and charges from
+     its inventory (a charged item of the original's counts its charges) and
+     reports what is left, which the inventory keeps: the arrows, quarrels or
+     thrown weapons a missile spends, a potion drunk, a wand's charge. Arrows
+     and quarrels are found by their item type (73, 28), as `RecalcStats`
+     files them; step 4 had looked for them by their type's place, so no bow
+     found its arrows.
+   - Still to come: readying items mid-fight, the party's facing, the original's
      terrain heights for sight, the fireball's outdoor radius, the encounter's
      morale and PARTY_MOVE_MODIFIER, treasure's experience, and showing
      descending Armor Class on the screens.

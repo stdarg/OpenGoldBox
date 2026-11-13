@@ -31,7 +31,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 15";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 16";
 
 enum class Condition : unsigned
 {
@@ -90,6 +90,11 @@ struct Fighter
 {
     EntityId id{};
     std::string name, definition;
+    // A party member's items as its inventory knows them: each usable item's
+    // inventory ID by its place (UsableItem::ordinal), and the item its
+    // missile shoots, whose counts left the snapshot reports.
+    std::vector<std::pair<int, std::uint64_t>> item_ids;
+    std::uint64_t shot_item{};
     Side side{Side::party};
     Cell cell;
     rules::Footprint footprint;
@@ -4274,6 +4279,23 @@ rules::Snapshot Session::snapshot() const
         // drained, effects still running), for the game to keep.
         const bool keeps = f->condition == Condition::okay || f->condition == Condition::fled;
         view.persistent = {keeps ? f->hit_points : 0, view.dead, f->numbers.encode(), {}};
+        // What is left of a party member's items, for the game to trim its
+        // inventory to: an item gone is 0.
+        for (const auto &[ordinal, id] : f->item_ids)
+        {
+            const auto &items = f->numbers.items;
+            const auto usable = std::ranges::find(items, ordinal, &UsableItem::ordinal);
+            const int left = usable == items.end() ? 0
+                             : usable->charges > 0 ? usable->charges
+                                                   : std::max(usable->quantity, 1);
+            view.item_uses_left.emplace_back(id, static_cast<unsigned>(left));
+        }
+        if (f->shot_item)
+        {
+            const auto &missile = f->numbers.missile;
+            const int left = missile && missile->loaded ? std::max(missile->quantity, 1) : 0;
+            view.item_uses_left.emplace_back(f->shot_item, static_cast<unsigned>(left));
+        }
         state.combatants.push_back(std::move(view));
     }
     return state;
@@ -4638,6 +4660,11 @@ std::string Session::save() const
         {
             out(id);
         }
+        out(f.shot_item, f.item_ids.size());
+        for (const auto &[ordinal, id] : f.item_ids)
+        {
+            out(ordinal, id);
+        }
     }
     out(log_.size());
     for (const auto &entry : log_)
@@ -4775,6 +4802,17 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         {
             f.picked.push_back(in.as<EntityId>());
         }
+        f.shot_item = in.as<std::uint64_t>();
+        const auto counted = in.as<std::size_t>();
+        if (counted > 255)
+        {
+            throw std::runtime_error("Invalid original-rules combat checkpoint");
+        }
+        for (std::size_t n = 0; n < counted; ++n)
+        {
+            const auto ordinal = in.as<int>();
+            f.item_ids.emplace_back(ordinal, in.as<std::uint64_t>());
+        }
         if (f.condition > Condition::stoned || f.attack_phase < 0 || f.attack_phase > 1 ||
             f.direction < 0 || f.direction > 7)
         {
@@ -4807,6 +4845,61 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
 
 } // namespace
 
+namespace
+{
+// The counts a party member's inventory keeps, which its profile's items
+// leave out: its usable items' charges or stacks, and how many of what its
+// missile shoots it has.
+void take_counts(Fighter &f, const std::vector<rules::CarriedEquipment> &inventory,
+                 const Content &content)
+{
+    namespace bit = por::item_property;
+    constexpr std::uint8_t arrows_type = 73, quarrels_type = 28;
+    for (const auto &carried : inventory)
+    {
+        const auto record = por::item_of_original_key(carried.definition);
+        if (carried.equipment_index < 0 || !record)
+        {
+            continue;
+        }
+        const int count = static_cast<int>(carried.quantity);
+        for (auto &usable : f.numbers.items)
+        {
+            if (usable.ordinal != carried.equipment_index)
+            {
+                continue;
+            }
+            f.item_ids.emplace_back(usable.ordinal, carried.inventory_id);
+            if (usable.charges > 0)
+            {
+                usable.charges = count;
+            }
+            else
+            {
+                usable.quantity = count > 1 ? count : 0;
+            }
+        }
+        auto &missile = f.numbers.missile;
+        if (!missile || f.shot_item || f.numbers.weapon_type < 0 ||
+            static_cast<std::size_t>(f.numbers.weapon_type) >= content.item_types.size())
+        {
+            continue;
+        }
+        const auto &launcher = content.item_types[static_cast<std::size_t>(f.numbers.weapon_type)];
+        const bool shot =
+            missile->thrown
+                ? record->type == f.numbers.weapon_type
+                : (launcher.has(bit::fires_arrows) && record->type == arrows_type) ||
+                      (launcher.has(bit::fires_quarrels) && record->type == quarrels_type);
+        if (shot)
+        {
+            f.shot_item = carried.inventory_id;
+            missile->quantity = count > 1 ? count : 0;
+        }
+    }
+}
+} // namespace
+
 std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
                                                      rules::Encounter encounter, std::uint64_t seed,
                                                      const Content &content)
@@ -4831,6 +4924,7 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
                 throw std::runtime_error("A party member has no original-rules profile: " + f.name);
             }
             f.numbers = *numbers;
+            take_counts(f, p.inventory, content);
         }
         else if (const auto found = content.bestiary.find(p.definition);
                  found != content.bestiary.end())

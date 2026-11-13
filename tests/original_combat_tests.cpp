@@ -732,8 +732,10 @@ void readied_missiles_count()
     bow.type = 42;
     bow.readied_raw = 1;
     por::ItemTemplate arrow_type;
-    arrow_type.worn_location = 11;
+    // Arrows' type sits in place 10 with quarrels; arrows are item type 73.
+    arrow_type.worn_location = 10;
     por::ItemRecord arrows;
+    arrows.type = 73;
     arrows.readied_raw = 1;
     arrows.stack_size = 10;
     const std::vector<original::CarriedItem> archer{{bow, bow_type}, {arrows, arrow_type}};
@@ -1400,9 +1402,10 @@ void strikers_come_from_the_gear()
     bow.type = 42;
     bow.readied_raw = 1;
     por::ItemTemplate arrow_type;
-    arrow_type.worn_location = 11;
+    arrow_type.worn_location = 10;
     arrow_type.damage_type = 0x01;
     por::ItemRecord arrows;
+    arrows.type = 73;
     arrows.readied_raw = 1;
     arrows.magic_bonus = 1;
     arrows.name_components = {0, 0, 177};

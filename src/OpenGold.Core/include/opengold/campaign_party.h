@@ -652,6 +652,10 @@ class CampaignParty
 // How many an original item counts for in an inventory: a stack's items, or a
 // charged item's charges or doses (MAGIC-3), otherwise one.
 [[nodiscard]] unsigned carried_quantity(const por::Equipment &item);
+// The same under these rules: under rules that play the original's records,
+// every charged item of the original's counts its charges.
+[[nodiscard]] unsigned carried_quantity(const rules::RulesModule &rules,
+                                        const por::Equipment &item);
 // The original item as a fight left it: `left` of its stacked items, charges
 // or doses, or for a scroll the spells whose bits are set in `left` (MAGIC-6).
 // Nothing when none is left.

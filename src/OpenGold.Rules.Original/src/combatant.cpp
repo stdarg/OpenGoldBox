@@ -229,8 +229,10 @@ namespace
 {
 
 // The original's equipment slots (ItemTemplate::worn_location) and race codes.
-constexpr std::uint8_t weapon_slot = 0, shield_slot = 1, first_ring_slot = 9, arrow_slot = 11,
-                       bolt_slot = 12;
+constexpr std::uint8_t weapon_slot = 0, shield_slot = 1, first_ring_slot = 9;
+// Arrows and quarrels take their places by their item type, not their type's
+// slot (charhlp.pas, RecalcStats).
+constexpr std::uint8_t arrows_type = 73, quarrels_type = 28;
 constexpr std::uint8_t monster_race = 0, elf_race = 2;
 
 // The original keeps Armor Class as 60 minus it, so that better is more: its
@@ -246,6 +248,16 @@ const CarriedItem *readied_in(std::span<const CarriedItem> carried, std::uint8_t
                                     [slot](const CarriedItem &c)
                                     {
                                         return c.item.readied() && c.type.worn_location == slot;
+                                    });
+    return found == carried.end() ? nullptr : &*found;
+}
+
+const CarriedItem *readied_of_type(std::span<const CarriedItem> carried, std::uint8_t type)
+{
+    const auto found = std::find_if(carried.begin(), carried.end(),
+                                    [type](const CarriedItem &c)
+                                    {
+                                        return c.item.readied() && c.item.type == type;
                                     });
     return found == carried.end() ? nullptr : &*found;
 }
@@ -307,11 +319,11 @@ Missile missile_of(const por::CharacterRecord &record, std::span<const CarriedIt
     {
         if (type.has(bit::fires_arrows))
         {
-            shot = readied_in(carried, arrow_slot);
+            shot = readied_of_type(carried, arrows_type);
         }
         if (type.has(bit::fires_quarrels))
         {
-            shot = readied_in(carried, bolt_slot);
+            shot = readied_of_type(carried, quarrels_type);
         }
     }
     m.needs_no_ammunition =
@@ -350,9 +362,10 @@ std::optional<StrikingItem> striker_of(std::span<const CarriedItem> carried,
     const CarriedItem *strikes = weapon;
     if (!weapon->type.has(bit::thrown) && weapon->type.has(bit::fires_ammunition))
     {
-        const auto *shot = weapon->type.has(bit::fires_quarrels) ? readied_in(carried, bolt_slot)
-                           : weapon->type.has(bit::fires_arrows) ? readied_in(carried, arrow_slot)
-                                                                 : nullptr;
+        const auto *shot =
+            weapon->type.has(bit::fires_quarrels) ? readied_of_type(carried, quarrels_type)
+            : weapon->type.has(bit::fires_arrows) ? readied_of_type(carried, arrows_type)
+                                                  : nullptr;
         strikes = shot ? shot : weapon;
     }
     // Name word 177 is "Silver", in the item's third name part.
@@ -495,8 +508,8 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
             c.attacks[0].modifier += strength_damage_bonus(strength, exceptional);
         }
         int plus = weapon->item.magic_bonus;
-        const auto *bolts = readied_in(carried, bolt_slot);
-        const auto *arrows = readied_in(carried, arrow_slot);
+        const auto *bolts = readied_of_type(carried, quarrels_type);
+        const auto *arrows = readied_of_type(carried, arrows_type);
         if (type.has(bit::fires_quarrels) && bolts)
         {
             plus += bolts->item.magic_bonus;

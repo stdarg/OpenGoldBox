@@ -290,6 +290,88 @@ void the_pool_offers_original_characters()
     }
 }
 
+// An archer's arrows under the original rules: the fight takes their count
+// from the inventory, spends one a shot (two in a round), and the inventory
+// keeps what is left.
+void arrows_spent_leave_the_inventory()
+{
+    const char *game = std::getenv("OPENGOLD_GAME_DIR");
+    if (!game)
+    {
+        return;
+    }
+    std::ifstream file(std::filesystem::path(game) / "ITEMS", std::ios::binary);
+    const std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(file), {}};
+    const auto types = *por::decode_item_templates(bytes);
+    por::CharacterRecord kobold;
+    kobold.name = "KOBOLD";
+    kobold.base_thac0 = 20;
+    kobold.base_armor_class = 7;
+    kobold.max_hit_points = 40;
+    kobold.base_movement = 1;
+    kobold.base_attacks[0] = {2, {1, 4, 0}};
+    original::Content content{{}, types};
+    content.bestiary.emplace("MON2CHA.DAX:0", original::combatant_from_record(kobold));
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module(content), creation);
+    const auto archer = member_with(party, creation, "fighter", "Robin");
+    constexpr std::uint8_t long_bow = 41, arrows = 73;
+    const auto bow = carried(party, archer, original_item(types, long_bow, 30));
+    auto quiver = original_item(types, arrows, 1);
+    quiver.stored.stack_size = 5;
+    quiver.stored.raw[57] = 5;
+    const auto shafts = carried(party, archer, quiver);
+    check(party.member(archer).character.inventory().find(shafts)->get().quantity == 5,
+          "A stack of five arrows is five in the inventory");
+    party.equip(archer, bow, rules::EquipmentOperation::equip);
+    party.equip(archer, shafts, rules::EquipmentOperation::equip);
+
+    const auto module = original::rules_module(content);
+    rules::Encounter encounter;
+    encounter.battlefield = {12, 6, std::vector<rules::Terrain>(72, rules::Terrain::open)};
+    encounter.participants = party.participants();
+    rules::Participant target;
+    target.id = 1000;
+    target.definition = "MON2CHA.DAX:0";
+    target.name = "Kobold";
+    target.side = rules::Side::opposition;
+    target.cell = {10, 1};
+    encounter.participants.push_back(target);
+    party.begin_combat();
+    auto session = module->create(encounter, 5);
+    int shots = 0;
+    for (int step = 0;
+         step < 200 && session->snapshot().outcome == rules::Outcome::ongoing && shots < 1; ++step)
+    {
+        const auto commands = session->legal_commands();
+        const auto shoot = std::ranges::find_if(commands,
+                                                [&](const rules::Command &command)
+                                                {
+                                                    return command.actor == archer &&
+                                                           command.target == 1000 &&
+                                                           command.verb != "cast";
+                                                });
+        const auto end = std::ranges::find(commands, std::string("end"), &rules::Command::verb);
+        if (shoot != commands.end())
+        {
+            ++shots;
+        }
+        check(session->submit(shoot != commands.end() ? *shoot : *end), "The fight goes on");
+    }
+    const auto snapshot = session->snapshot();
+    const auto &view = *std::ranges::find(snapshot.combatants, archer, &rules::CombatantView::id);
+    const auto reported =
+        std::ranges::find(view.item_uses_left, shafts, &std::pair<std::uint64_t, unsigned>::first);
+    check(shots > 0 && reported != view.item_uses_left.end() && reported->second < 5 &&
+              reported->second > 0,
+          "The fight reports the arrows left after its shots");
+    party.apply_combat(snapshot);
+    party.end_combat();
+    check(party.member(archer).character.inventory().find(shafts)->get().quantity ==
+              reported->second,
+          "The inventory keeps the arrows the fight left");
+}
+
 } // namespace
 
 int main()
@@ -300,6 +382,7 @@ int main()
         a_fighter_trains_and_keeps_the_level();
         characters_ready_original_gear();
         the_pool_offers_original_characters();
+        arrows_spent_leave_the_inventory();
         std::cout << "Original creation tests passed\n";
         return 0;
     }

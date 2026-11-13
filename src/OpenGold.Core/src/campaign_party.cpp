@@ -668,6 +668,21 @@ unsigned carried_quantity(const por::Equipment &item)
                                                      : item.stored.effect_codes[0];
 }
 
+unsigned carried_quantity(const rules::RulesModule &rules, const por::Equipment &item)
+{
+    if (!rules.plays_original_records())
+    {
+        return carried_quantity(item);
+    }
+    // The original's charged items: an item, not a scroll, with a spell or
+    // power and its charges (viewchar.pas, UseItem); 0 charges never run out.
+    const auto &raw = item.stored;
+    const auto &codes = raw.effect_codes;
+    const bool scroll = item.base.worn_location > 10 && item.base.worn_location < 14;
+    const bool charged = !scroll && codes[1] > 0 && codes[2] < 0x80 && codes[0] > 0;
+    return raw.stack_size > 1 ? raw.stack_size : charged ? codes[0] : 1u;
+}
+
 std::optional<por::Equipment> item_after_uses(por::Equipment item, unsigned left)
 {
     auto &raw = item.stored;
@@ -1824,8 +1839,8 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
 void CampaignParty::take_item(MemberId id, const por::Equipment &item)
 {
     editable();
-    const auto weight =
-        entry_weight(*rules_, item_definition(*rules_, item), carried_quantity(item), &item);
+    const auto weight = entry_weight(*rules_, item_definition(*rules_, item),
+                                     carried_quantity(*rules_, item), &item);
     if (carried_weight(id) + weight > carrying_capacity(id) * 100u)
     {
         throw std::runtime_error("Too heavy to carry");
@@ -1835,7 +1850,7 @@ void CampaignParty::take_item(MemberId id, const por::Equipment &item)
     auto sources = m.item_sources;
     const auto key = inventory.add({.definition_id = item_definition(*rules_, item),
                                     .name = item.label(),
-                                    .quantity = carried_quantity(item),
+                                    .quantity = carried_quantity(*rules_, item),
                                     .original_type = item.stored.type});
     sources.emplace(key, item);
     m.character.replace_inventory(std::move(inventory));
@@ -1921,7 +1936,7 @@ ItemPreview CampaignParty::preview(MemberId id, const por::Equipment &item) cons
     const auto in_place = gear_in_place(m, item);
     ItemPreview result{.armor_class_now = known_gear_rating(m).armor_class,
                        .weight_hundredths = entry_weight(*rules_, item_definition(*rules_, item),
-                                                         carried_quantity(item), &item)};
+                                                         carried_quantity(*rules_, item), &item)};
     const auto &sheet = m.character.sheet();
     if (in_place.slot == rules::EquipmentSlot::weapon)
     {
@@ -2133,7 +2148,7 @@ bool CampaignParty::award_loot(const std::array<unsigned, 7> &wealth,
         // Encounter rewards are retained even beyond the shop's purchase cap.
         const auto id = m.character.add_item({.definition_id = item_definition(*rules_, item),
                                               .name = item.label(),
-                                              .quantity = carried_quantity(item),
+                                              .quantity = carried_quantity(*rules_, item),
                                               .original_type = item.stored.type});
         m.item_sources.emplace(id, item);
     }
