@@ -1,5 +1,6 @@
 #include "opengold/original.h"
 #include "opengold/curse_records.h"
+#include "opengold/secret_records.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/original_spells.h"
 #include <algorithm>
@@ -251,10 +252,19 @@ struct Choices
     return choices;
 }
 
-// A creature record of either game: Pool of Radiance's 285 bytes or Curse's 422.
+// A creature record of any game, told by its size: Pool of Radiance's 285
+// bytes, Curse's 422 or Secret's 439.
 std::optional<por::CharacterRecord> decode_record(std::span<const std::uint8_t> bytes)
 {
-    return bytes.size() == 422 ? curse::decode_creature(bytes) : por::decode_character(bytes);
+    switch (bytes.size())
+    {
+    case 422:
+        return curse::decode_creature(bytes);
+    case 439:
+        return secret::decode_creature(bytes);
+    default:
+        return por::decode_character(bytes);
+    }
 }
 
 constexpr std::string_view record_prefix = "record:";
@@ -890,19 +900,25 @@ namespace
 {
 constexpr std::string_view pool_edition = "pool-of-radiance-1.3";
 constexpr std::string_view curse_edition = "curse-of-the-azure-bonds";
+constexpr std::string_view secret_edition = "secret-of-the-silver-blades";
 } // namespace
 
 rules::Identity identity(GoldBoxGame game)
 {
-    return {
-        "opengold.original", "0.1.0",
-        std::string(game == GoldBoxGame::curse_of_the_azure_bonds ? curse_edition : pool_edition)};
+    const auto edition = game == GoldBoxGame::curse_of_the_azure_bonds      ? curse_edition
+                         : game == GoldBoxGame::secret_of_the_silver_blades ? secret_edition
+                                                                            : pool_edition;
+    return {"opengold.original", "0.1.0", std::string(edition)};
 }
 
 GoldBoxGame game_of(const rules::Identity &identity)
 {
-    return identity.content == curse_edition ? GoldBoxGame::curse_of_the_azure_bonds
-                                             : GoldBoxGame::pool_of_radiance;
+    if (identity.content == curse_edition)
+    {
+        return GoldBoxGame::curse_of_the_azure_bonds;
+    }
+    return identity.content == secret_edition ? GoldBoxGame::secret_of_the_silver_blades
+                                              : GoldBoxGame::pool_of_radiance;
 }
 
 std::unique_ptr<rules::CharacterRules> character_rules(Aging aging, GoldBoxGame game)

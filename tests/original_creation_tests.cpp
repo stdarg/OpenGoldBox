@@ -596,6 +596,44 @@ void a_pool_character_comes_to_curse()
 // Curse's paladin is protected from evil and lays on hands once a day for 2
 // Hit Points a level; its ranger strikes giants harder (createPlayer,
 // PaladinHeal, AffectRangerVsGiant in its reconstruction).
+// Secret of the Silver Blades makes its characters with 200,000 experience
+// a single class, trained up at once, and reads THAC0, saving throws and
+// experience from its own longer tables (docs/ORIGINAL-RULES.md).
+void secret_characters_start_trained()
+{
+    const auto creation = original::character_rules(original::default_aging,
+                                                    GoldBoxGame::secret_of_the_silver_blades);
+    RandomState random{31};
+    const auto made = [&](std::string profession)
+    {
+        rules::CharacterDraft draft;
+        draft.race = "human";
+        draft.gender = "male";
+        draft.character_class = std::move(profession);
+        draft.alignment = "neutral_good";
+        draft.name = "Tarn";
+        creation->roll_in_place(draft, random);
+        return creation->evaluate(draft, rules::NameRequirement::required);
+    };
+    const auto fighter = made("fighter");
+    const auto &warrior = *fighter.original;
+    check(warrior.experience == 200000 && warrior.class_levels[2] == 8 && warrior.gold == 0,
+          "A fighter starts with 200,000 experience at level 8 and no gold");
+    check(warrior.thac0 == 13, "A level 8 fighter's THAC0 is 13");
+    check(warrior.saving_throws == std::array<int, 5>{10, 11, 12, 12, 13},
+          "A level 8 fighter saves as Secret's table has it");
+    const auto magic_user = made("magic_user");
+    const auto &mage = *magic_user.original;
+    check(mage.class_levels[5] == 9 && mage.thac0 == 19 &&
+              mage.saving_throws == std::array<int, 5>{13, 11, 9, 13, 10},
+          "A magic-user reaches level 9, with THAC0 19 and a level 9 magic-user's saves");
+    check(original::experience_for_level(original::ClassSlot::thief, 18,
+                                         GoldBoxGame::secret_of_the_silver_blades) == 1760001 &&
+              !original::experience_for_level(original::ClassSlot::fighter, 16,
+                                              GoldBoxGame::secret_of_the_silver_blades),
+          "Thieves rise to level 18, fighters to 15");
+}
+
 void curse_paladins_and_rangers()
 {
     const auto module = original::rules_module();
@@ -904,6 +942,7 @@ int main()
         curse_clerics_heal_and_raise_in_camp();
         a_pool_character_comes_to_curse();
         curse_paladins_and_rangers();
+        secret_characters_start_trained();
         std::cout << "Original creation tests passed\n";
         return 0;
     }

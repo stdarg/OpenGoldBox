@@ -192,6 +192,18 @@ constexpr std::array<std::array<int, 13>, class_slot_count> curse_stored_thac0{
      {40, 40, 40, 40, 40, 41, 41, 41, 41, 44, 44, 44, 44},
      {40, 40, 40, 40, 42, 42, 42, 44, 44, 44, 46, 46, 46}}};
 
+// Secret of the Silver Blades' THAC0, level 0 to 18 (its baseToHitTbl):
+// Curse's, carried on. Secret has no monks; their row is a cleric's.
+constexpr std::array<std::array<int, 19>, class_slot_count> secret_stored_thac0{
+    {{40, 40, 40, 40, 42, 42, 42, 44, 44, 44, 46, 46, 46, 48, 48, 48, 50, 50, 50},
+     {40, 40, 40, 40, 42, 42, 42, 44, 44, 44, 46, 46, 46, 48, 48, 48, 50, 50, 50},
+     {39, 40, 40, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57},
+     {40, 40, 40, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57},
+     {40, 40, 40, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57},
+     {39, 39, 39, 39, 39, 39, 41, 41, 41, 41, 41, 43, 43, 43, 43, 43, 46, 46, 46},
+     {40, 40, 40, 40, 40, 41, 41, 41, 41, 44, 44, 44, 44, 46, 46, 46, 46, 48, 48},
+     {40, 40, 40, 40, 42, 42, 42, 44, 44, 44, 46, 46, 46, 48, 48, 48, 50, 50, 50}}};
+
 // The original stores 60 minus THAC0, by class slot and level 0 to 10.
 constexpr std::array<std::array<int, 11>, class_slot_count> stored_thac0{
     {{40, 40, 40, 40, 42, 42, 42, 44, 44, 44, 46},
@@ -217,6 +229,70 @@ constexpr std::array<SaveRow, 3> magic_user_saves{
     {{14, 13, 11, 15, 12}, {13, 11, 9, 13, 10}, {11, 9, 7, 11, 8}}};
 constexpr std::array<SaveRow, 3> thief_saves{
     {{13, 12, 14, 16, 15}, {12, 11, 12, 15, 13}, {11, 10, 10, 14, 11}}};
+
+// Secret of the Silver Blades keeps a table of saving throws for each class
+// and level 1 to 18 (its saveTbl). Its paladins' are their own, not a
+// fighter's less 2, and one is worse at level 8 than at 7, as the original
+// has it. Druids save as clerics and its absent monks as thieves.
+constexpr std::array<std::array<SaveRow, 18>, class_slot_count> secret_saves = []
+{
+    constexpr std::array<SaveRow, 6> cleric{{{10, 13, 14, 16, 15},
+                                             {9, 12, 13, 15, 14},
+                                             {7, 10, 11, 13, 12},
+                                             {6, 9, 10, 12, 11},
+                                             {5, 8, 9, 11, 10},
+                                             {4, 7, 8, 10, 9}}};
+    constexpr std::array<SaveRow, 9> fighter{{{14, 15, 16, 17, 17},
+                                              {13, 14, 15, 16, 16},
+                                              {11, 12, 13, 13, 14},
+                                              {10, 11, 12, 12, 13},
+                                              {8, 9, 10, 9, 11},
+                                              {7, 8, 9, 8, 10},
+                                              {5, 6, 7, 5, 8},
+                                              {4, 5, 6, 4, 7},
+                                              {3, 4, 5, 4, 6}}};
+    constexpr std::array<SaveRow, 18> paladin{{{12, 13, 14, 15, 15},
+                                               {12, 13, 14, 15, 15},
+                                               {11, 12, 13, 14, 14},
+                                               {11, 12, 13, 14, 14},
+                                               {9, 9, 11, 11, 12},
+                                               {9, 9, 11, 11, 12},
+                                               {8, 9, 10, 10, 11},
+                                               {9, 9, 10, 10, 11},
+                                               {6, 7, 8, 7, 9},
+                                               {6, 7, 8, 7, 9},
+                                               {5, 6, 7, 6, 8},
+                                               {5, 6, 7, 6, 8},
+                                               {3, 4, 5, 3, 6},
+                                               {3, 4, 5, 3, 6},
+                                               {2, 3, 4, 2, 5},
+                                               {2, 3, 4, 2, 5},
+                                               {1, 2, 3, 2, 4},
+                                               {1, 2, 3, 2, 4}}};
+    constexpr std::array<SaveRow, 4> magic_user{
+        {{14, 13, 11, 15, 12}, {13, 11, 9, 13, 10}, {11, 9, 7, 11, 8}, {10, 7, 5, 9, 6}}};
+    constexpr std::array<SaveRow, 5> thief{{{13, 12, 14, 16, 15},
+                                            {12, 11, 12, 15, 13},
+                                            {11, 10, 10, 14, 11},
+                                            {10, 9, 8, 13, 9},
+                                            {9, 8, 6, 12, 7}}};
+    std::array<std::array<SaveRow, 18>, class_slot_count> table{};
+    for (std::size_t at = 0; at < 18; ++at)
+    {
+        const auto clerical = cleric[at / 3];
+        const auto fighting = fighter[at / 2];
+        const auto thieving = thief[at / 4];
+        table[0][at] = clerical;
+        table[1][at] = clerical;
+        table[2][at] = fighting;
+        table[3][at] = paladin[at];
+        table[4][at] = fighting;
+        table[5][at] = magic_user[at / 5];
+        table[6][at] = thieving;
+        table[7][at] = thieving;
+    }
+    return table;
+}();
 
 // A class's saving throws at a level from 1 to 12: clerics, druids and monks
 // improve every three levels, fighters, paladins and rangers every two,
@@ -263,6 +339,23 @@ constexpr std::array<std::array<int, 12>, class_slot_count> experience_table_cur
      {2251, 4501, 10001, 20001, 40001, 90001, 150001, 225001, 325001, 650001},
      {2501, 5001, 10001, 22501, 40001, 60001, 90001, 135001, 250001, 375001},
      {1251, 2501, 5001, 10001, 20001, 42501, 70001, 110001, 160001, 220001, 440001},
+     {}}};
+
+// Secret's, for levels 2 to 18: Curse's, carried on to its higher levels.
+constexpr std::array<std::array<int, 17>, class_slot_count> experience_table_secret{
+    {{1501, 3001, 6001, 13001, 27501, 55001, 110001, 225001, 450001, 675001, 900001, 1125001,
+      1350001, 1575001},
+     {},
+     {2001, 4001, 8001, 18001, 35001, 70001, 125001, 250001, 500001, 750001, 1000001, 1250001,
+      1500001, 1750001},
+     {2751, 5501, 12001, 24001, 45001, 95001, 175001, 350001, 700001, 1050001, 1400001, 1750001,
+      2100001, 2460001},
+     {2251, 4501, 10001, 20001, 40001, 90001, 150001, 225001, 325001, 650001, 975001, 1300001,
+      1625001, 1950001},
+     {2501, 5001, 10001, 22501, 40001, 60001, 90001, 135001, 250001, 375001, 750001, 1125001,
+      1500001, 1875001},
+     {1251, 2501, 5001, 10001, 20001, 42501, 70001, 110001, 160001, 220001, 440001, 660001, 880001,
+      1100001, 1320001, 1540001, 1760001},
      {}}};
 
 // Curse rolls a class's Hit Die at each level below this one, and adds a
@@ -590,19 +683,29 @@ AbilityArray<int> age_changes(Aging aging, Race race, int age)
 RolledCharacter roll_character(Race race, Profession profession, GoldBoxGame game,
                                RandomState &random)
 {
-    const bool curse = game == GoldBoxGame::curse_of_the_azure_bonds;
+    // Curse and Secret roll each 3d6 one higher (ovr018, createPlayer), and a
+    // first level's Hit Dice the better of two.
+    const bool curse = game != GoldBoxGame::pool_of_radiance;
     RolledCharacter rolled;
     rolled.starting_age = starting_age(race, profession, random);
     for (const auto ability : original_ability_order)
     {
-        // Curse rolls each 3d6 one higher (ovr018, createPlayer).
         rolled.rolls[ability] =
             best_of_six(racial_adjustments(race)[ability] + (curse ? 1 : 0), random);
     }
     rolled.strength_percentile = roll_die(random, 100);
-    // Curse's characters start with platinum (starting_platinum) instead.
-    rolled.gold = curse ? 0 : starting_gold(profession, random);
     const auto classes = classes_of(profession);
+    // Curse's characters start with platinum (starting_platinum) instead; in
+    // Secret only a thief brings gold, 2d6.
+    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    {
+        rolled.gold =
+            std::ranges::find(classes, C::thief) != classes.end() ? roll_dice(random, {2, 6}) : 0;
+    }
+    else
+    {
+        rolled.gold = curse ? 0 : starting_gold(profession, random);
+    }
     for (std::size_t n = 0; n < classes.size(); ++n)
     {
         const auto dice = hit_dice[index(classes[n])];
@@ -623,11 +726,17 @@ RolledCharacter roll_character(Race race, Profession profession, GoldBoxGame gam
 
 int starting_experience(Profession profession, GoldBoxGame game)
 {
-    if (game != GoldBoxGame::curse_of_the_azure_bonds)
+    const auto classes = static_cast<int>(classes_of(profession).size());
+    switch (game)
     {
+    case GoldBoxGame::curse_of_the_azure_bonds:
+        return 25000 / classes;
+    case GoldBoxGame::secret_of_the_silver_blades:
+        // Its creation rounds a three-class character's share up.
+        return classes == 3 ? 66667 : 200000 / classes;
+    default:
         return 0;
     }
-    return 25000 / static_cast<int>(classes_of(profession).size());
 }
 
 int starting_reach(ClassSlot slot, Profession profession, GoldBoxGame game)
@@ -897,6 +1006,13 @@ int thac0(const ClassLevels &levels, GoldBoxGame game)
         }
         best = held ? best : 0;
         held = true;
+        if (game == GoldBoxGame::secret_of_the_silver_blades)
+        {
+            best = std::max(
+                best,
+                secret_stored_thac0[slot][static_cast<std::size_t>(std::min(levels[slot], 18))]);
+            continue;
+        }
         const auto level = static_cast<std::size_t>(std::min(levels[slot], curse ? 12 : 10));
         best = std::max(best, curse ? curse_stored_thac0[slot][level] : stored_thac0[slot][level]);
     }
@@ -911,6 +1027,16 @@ std::array<int, 5> saving_throws(const ClassLevels &levels, GoldBoxGame game)
     {
         if (levels[slot] <= 0)
         {
+            continue;
+        }
+        if (game == GoldBoxGame::secret_of_the_silver_blades)
+        {
+            const auto &row =
+                secret_saves[slot][static_cast<std::size_t>(std::min(levels[slot], 18) - 1)];
+            for (std::size_t save = 0; save < best.size(); ++save)
+            {
+                best[save] = std::min(best[save], row[save]);
+            }
             continue;
         }
         const auto class_slot = static_cast<ClassSlot>(slot);
@@ -930,6 +1056,16 @@ std::optional<int> experience_for_level(ClassSlot slot, int level, GoldBoxGame g
     if (level == 1)
     {
         return 0;
+    }
+    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    {
+        if (level < 2 || level > 18)
+        {
+            return std::nullopt;
+        }
+        const int needed =
+            experience_table_secret[index(slot)][static_cast<std::size_t>(level - 2)];
+        return needed == 0 ? std::nullopt : std::optional<int>{needed};
     }
     const bool curse = game == GoldBoxGame::curse_of_the_azure_bonds;
     if (level < 2 || level > (curse ? 13 : 9))
@@ -1016,13 +1152,13 @@ int roll_training_hit_dice(const ClassLevels &trained_levels, std::span<const Cl
     int total = 0;
     for (const auto slot : trained)
     {
-        if (game != GoldBoxGame::curse_of_the_azure_bonds)
+        if (game == GoldBoxGame::pool_of_radiance)
         {
             total += roll_dice(random, hit_dice[index(slot)]);
             continue;
         }
-        // Curse adds the fixed amount to the other classes' dice; its own code
-        // put it in place of them (docs/ORIGINAL-RULES.md, Bugs).
+        // Curse (and Secret, whose code is the same) adds the fixed amount to the other classes'
+        // dice; its own code put it in place of them (docs/ORIGINAL-RULES.md, Bugs).
         if (level_in(trained_levels, slot) >= curse_hit_dice_levels[index(slot)])
         {
             total += curse_fixed_hit_points[index(slot)];

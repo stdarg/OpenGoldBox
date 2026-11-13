@@ -160,6 +160,25 @@ and a save each know which tables they use.
   spells in fights and camp, and the paladin's and ranger's own abilities
   (GAMES.md, phase 3 step 5).
 
+## Secret of the Silver Blades
+
+*Secret* plays *Curse*'s rules with longer tables (from its reconstruction),
+chosen by the game as *Curse*'s are. In progress (2026-11-13):
+
+- **Creation:** abilities, first Hit Dice and training Hit Dice as in *Curse*.
+  A character starts with 200,000 experience a single class (100,000 a
+  dual-class, 66,667 a triple-class one, rounded up) and is trained at once;
+  only a thief brings gold (2d6), and no platinum.
+- **Tables:** experience to level 15 (thieves 18); THAC0 and saving throws to
+  level 18, the saves from a table of their own: a paladin's are not simply a
+  fighter's less 2, and at level 8 its paralysis save is a point worse than at
+  level 7, as the original stores it.
+- **Training** past a class's Hit Dice adds *Curse*'s fixed amounts, with the
+  same fault (the amount replaces the other classes' dice).
+- **Still to come:** level limits, races and classes, spells (117, to
+  seventh level), the creation spells a magic-user learns at levels 6 to 9,
+  and *Secret*'s combat.
+
 ## What the original rules cover
 
 These are the parts of the reconstructed source that hold rules, about 8,000
