@@ -107,6 +107,32 @@ std::string encode_drain(const Drain &drain)
     return data + ' ' + std::to_string(drain.hit_points);
 }
 
+// What being raised cost (temple.pas, RaiseDead; Curse's spell, cast_raise),
+// as a level history entry: "raised" and how, "temple" or "spell".
+constexpr std::string_view raised_word = "raised";
+
+std::string encode_raised(Revival by)
+{
+    return std::string(raised_word) + (by == Revival::temple ? " temple" : " spell");
+}
+
+std::optional<Revival> decode_raised(std::string_view data)
+{
+    if (data == encode_raised(Revival::temple))
+    {
+        return Revival::temple;
+    }
+    if (data == encode_raised(Revival::spell))
+    {
+        return Revival::spell;
+    }
+    if (data.starts_with(raised_word))
+    {
+        throw std::invalid_argument("Unreadable original-rules raising");
+    }
+    return std::nullopt;
+}
+
 std::optional<Drain> decode_drain(std::string_view data)
 {
     if (!data.starts_with(drain_word))
@@ -386,6 +412,8 @@ class OriginalModule final : public RulesModule
                                                     unsigned experience) const override;
     [[nodiscard]] std::vector<AdvancementChoice>
     lasting_changes(const CharacterSheet &sheet, const VitalState &after) const override;
+    [[nodiscard]] std::vector<AdvancementChoice> revival_changes(const CharacterSheet &sheet,
+                                                                 Revival by) const override;
 
     // The original's coins: 20 sp, 2 ep or 1/5 pp to the gold piece
     // (gdconsts.pas, coinValues).
@@ -394,6 +422,7 @@ class OriginalModule final : public RulesModule
         return {1, 10, 100, 200, 1000};
     }
     void drain_character(CharacterSheet &sheet, VitalState &state, const Drain &drain) const;
+    void raise_character(CharacterSheet &sheet, VitalState &state, Revival by) const;
     [[nodiscard]] unsigned experience_share(const CharacterSheet &sheet,
                                             unsigned award) const override;
     void recover(VitalState &state, const CharacterSheet &sheet) const override;
@@ -1084,6 +1113,11 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
         drain_character(sheet, state, *drain);
         return true;
     }
+    if (const auto raised = decode_raised(choice.rules_data))
+    {
+        raise_character(sheet, state, *raised);
+        return true;
+    }
     const auto training = decode_training(choice.rules_data);
     // The spell a magic-user learns, when the level is one of its own.
     const bool magic_user_trained =
@@ -1135,6 +1169,8 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
     const int gain = training_hit_points(static_cast<Profession>(numbers.profession),
                                          training.rolled, next.scores[Ability::constitution]);
     next.hit_points += gain;
+    next.original->rolled_hit_points +=
+        training_rolled_hit_points(static_cast<Profession>(numbers.profession), training.rolled);
     ++next.level;
     sheet = std::move(next);
     state.hit_points += gain;
@@ -1172,10 +1208,46 @@ void OriginalModule::drain_character(CharacterSheet &sheet, VitalState &state,
     recount_levels(next);
     next.level = std::max(1, next.level - total);
     next.hit_points = std::max(1, next.hit_points - drain.hit_points);
+    numbers.rolled_hit_points = std::max(0, numbers.rolled_hit_points - drain.hit_points);
     numbers.drained_levels += total;
     numbers.drained_hit_points += drain.hit_points;
     state.hit_points = std::min(state.hit_points, next.hit_points);
     sheet = std::move(next);
+}
+
+// A raised character loses a point of Constitution while it has one
+// (temple.pas, RaiseDead; Curse's cast_raise). A temple's raising also takes
+// Hit Points off its maximum (raised_hit_point_loss); the spell's does not.
+void OriginalModule::raise_character(CharacterSheet &sheet, VitalState &state, Revival by) const
+{
+    auto next = sheet;
+    auto &numbers = *next.original;
+    auto &constitution = next.scores[Ability::constitution];
+    if (constitution > 0)
+    {
+        --constitution;
+        next.base[Ability::constitution] = constitution;
+    }
+    if (by == Revival::temple)
+    {
+        const int loss = raised_hit_point_loss(numbers.class_levels, constitution, next.hit_points,
+                                               numbers.rolled_hit_points);
+        next.hit_points = std::max(1, next.hit_points - loss);
+    }
+    state.hit_points = std::min(state.hit_points, next.hit_points);
+    sheet = std::move(next);
+}
+
+std::vector<AdvancementChoice> OriginalModule::revival_changes(const CharacterSheet &sheet,
+                                                               Revival by) const
+{
+    if (!sheet.original)
+    {
+        return {};
+    }
+    AdvancementChoice change;
+    change.rules_data = encode_raised(by);
+    return {change};
 }
 
 std::vector<AdvancementChoice> OriginalModule::lasting_changes(const CharacterSheet &sheet,
@@ -1434,9 +1506,9 @@ std::vector<int> spells_left(const CharacterSheet &sheet, const VitalState &stat
 
 // Casting in camp (camp.pas, NoncombatCastMenu): Cure Light Wounds heals a
 // member 1d8, and Curse's Cure Serious and Cure Critical Wounds 2d8+1 and
-// 3d8+3; Curse's Raise Dead brings back a dead member who is no elf with 1
-// Hit Point. The spells whose effects last beyond a fight come with the
-// conditions (plan step 6).
+// 3d8+3; Curse's Raise Dead brings back a dead member who is no elf and has
+// Constitution left with 1 Hit Point (its cost is revival_changes'). The spells whose effects last
+// beyond a fight come with the conditions (plan step 6).
 std::vector<CampAction> OriginalModule::camp_actions(const CharacterSheet &sheet,
                                                      const VitalState &state) const
 {
@@ -1508,7 +1580,8 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
     }
     const bool raising = *number == raise_dead;
     constexpr int elf = static_cast<int>(Race::elf);
-    if (raising && (!target_state.dead || original_numbers(target).race == elf))
+    if (raising && (!target_state.dead || original_numbers(target).race == elf ||
+                    target.scores[Ability::constitution] <= 0))
     {
         throw std::runtime_error("Raise Dead cannot bring this member back");
     }

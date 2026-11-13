@@ -151,6 +151,9 @@ struct CharacterSheet
         // Levels and Hit Points drained and not yet given back by training or
         // Restoration (the original's drainedLevels and drainedHps).
         int drained_levels{}, drained_hit_points{};
+        // The Hit Points its dice gave, without its Constitution's bonus (the
+        // original's hpRolled), which Raise Dead's loss is reckoned from.
+        int rolled_hit_points{};
         // The race, class and alignment by the original's numbers
         // (original::Race, original::Profession and original::Alignment).
         int race{}, profession{}, alignment{};

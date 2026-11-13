@@ -205,7 +205,7 @@ struct RolledCharacter
 struct StartingTraining
 {
     ClassLevels levels{};
-    int hit_points{};
+    int hit_points{}, rolled_hit_points{};
     std::vector<int> learned_spells;
 };
 
@@ -230,6 +230,10 @@ struct StartingTraining
 // among a multi-class character's classes.
 [[nodiscard]] int first_level_hit_points(Profession profession, const RolledCharacter &rolled,
                                          int constitution);
+// What first level adds to the Hit Points rolled (the original's hpRolled):
+// the class dice divided among the classes, with no Constitution bonus.
+[[nodiscard]] int first_level_rolled_hit_points(Profession profession,
+                                                const RolledCharacter &rolled);
 
 [[nodiscard]] int starting_age(Race race, Profession profession, RandomState &random);
 // The Hit Points every level of every class adds for this Constitution, before
@@ -306,6 +310,16 @@ enum class ThiefSkill : unsigned
 // What training adds to the Hit Points: the roll and the Constitution bonus
 // of all the profession's classes, divided among them, at least 1.
 [[nodiscard]] int training_hit_points(Profession profession, int rolled, int constitution);
+// What training adds to the Hit Points rolled: the roll divided among the
+// classes, at least 1 (chargen.pas, TrainingMenu).
+[[nodiscard]] int training_rolled_hit_points(Profession profession, int rolled);
+// The maximum Hit Points a character a temple raised loses (temple.pas,
+// RaiseDead), reckoned with the Constitution it is left with: what its
+// maximum holds above its rolled Hit Points, divided by its Constitution's
+// bonus summed over its class levels when that is not 0; nothing below a
+// Constitution of 14, nor at 17 or more without fighter levels.
+[[nodiscard]] int raised_hit_point_loss(const ClassLevels &levels, int constitution, int hit_points,
+                                        int rolled_hit_points);
 // A character's share of an award of experience (postcbt.pas,
 // AwardExperience): a single-class cleric, fighter, magic-user or thief
 // with its prime ability above 15 earns a tenth more; a two-class character

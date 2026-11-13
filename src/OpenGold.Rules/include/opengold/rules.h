@@ -416,6 +416,13 @@ enum class TempleService : std::uint8_t
     heal
 };
 
+// What brought a dead member back: a temple's service or a spell cast in camp.
+enum class Revival : std::uint8_t
+{
+    temple,
+    spell
+};
+
 enum class RestKind
 {
     short_rest,
@@ -1208,6 +1215,18 @@ class RulesModule
     {
         (void)sheet;
         (void)after_fight;
+        return {};
+    }
+
+    // What being brought back from death left on a character for good (the
+    // original rules' Constitution and Hit Points lost to Raise Dead), as
+    // level history entries the character takes in order; none by default.
+    // `sheet` is the character's as it lay dead.
+    [[nodiscard]] virtual std::vector<AdvancementChoice>
+    revival_changes(const CharacterSheet &sheet, Revival by) const
+    {
+        (void)sheet;
+        (void)by;
         return {};
     }
 

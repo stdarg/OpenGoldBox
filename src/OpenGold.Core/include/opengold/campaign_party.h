@@ -677,6 +677,7 @@ class CampaignParty
                             RestTicket ticket, RestResult &result) const;
     PartyMember &edit(MemberId id);
     void join(MemberId id, bool npc);
+    void take_revival_changes(PartyMember &raised, rules::Revival by) const;
 };
 
 [[nodiscard]] std::string equipment_conversion(const por::Equipment &item);

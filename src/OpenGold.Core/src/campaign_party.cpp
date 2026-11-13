@@ -2963,6 +2963,18 @@ bool CampaignParty::temple_service_helps(MemberId target, rules::TempleService s
             holds_cursed_item(current));
 }
 
+// What coming back from death costs the member for good, in its level history.
+void CampaignParty::take_revival_changes(PartyMember &raised, rules::Revival by) const
+{
+    for (const auto &change : rules_->revival_changes(raised.character.sheet(), by))
+    {
+        if (!raised.character.advance(*rules_, raised.vitals, change))
+        {
+            throw std::runtime_error("The raised member cannot take its change");
+        }
+    }
+}
+
 void CampaignParty::temple_service(MemberId target, rules::TempleService service,
                                    std::uint32_t price_gp)
 {
@@ -2985,7 +2997,12 @@ void CampaignParty::temple_service(MemberId target, rules::TempleService service
     const auto &sheet = patient.character.sheet();
     if (rules_->temple_service_helps(sheet, patient.vitals, service))
     {
+        const bool was_dead = patient.vitals.dead;
         rules_->temple_service(patient.vitals, sheet, service, next.random_state);
+        if (was_dead && !patient.vitals.dead)
+        {
+            take_revival_changes(patient, rules::Revival::temple);
+        }
     }
     if (service == rules::TempleService::remove_curse)
     {
@@ -3439,8 +3456,13 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
         {
             throw std::runtime_error("The party purse cannot pay the offering");
         }
+        const bool was_dead = patient.vitals.dead;
         rules_->use_camp_action(caster.character.sheet(), caster.vitals, patient.character.sheet(),
                                 patient.vitals, action, next.random_state);
+        if (was_dead && !patient.vitals.dead)
+        {
+            take_revival_changes(patient, rules::Revival::spell);
+        }
         next.wealth = pay_gold(next.wealth, gold, coin_rates()).purse;
         if (action.starts_with("remove_curse"))
         {

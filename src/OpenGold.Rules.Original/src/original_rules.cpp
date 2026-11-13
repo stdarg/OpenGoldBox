@@ -713,6 +713,7 @@ StartingTraining starting_training(Race race, Profession profession,
         }
         trained.hit_points +=
             training_hit_points(profession, rolled_dice, scores[Ability::constitution]);
+        trained.rolled_hit_points += training_rolled_hit_points(profession, rolled_dice);
     }
 }
 
@@ -761,6 +762,17 @@ int first_level_hit_points(Profession profession, const RolledCharacter &rolled,
     }
     return divided_among_classes(total, constitution_hit_point_bonus(profession, constitution),
                                  static_cast<int>(class_count));
+}
+
+int first_level_rolled_hit_points(Profession profession, const RolledCharacter &rolled)
+{
+    const auto class_count = classes_of(profession).size();
+    int total = 0;
+    for (std::size_t n = 0; n < class_count; ++n)
+    {
+        total += rolled.first_level_hit_dice[n];
+    }
+    return total / static_cast<int>(class_count);
 }
 
 int starting_age(Race race, Profession profession, RandomState &random)
@@ -1025,6 +1037,47 @@ int training_hit_points(Profession profession, int rolled, int constitution)
 {
     const int classes = static_cast<int>(classes_of(profession).size());
     return std::max(1, (rolled + constitution_hit_point_bonus(profession, constitution)) / classes);
+}
+
+int training_rolled_hit_points(Profession profession, int rolled)
+{
+    return std::max(1, rolled / static_cast<int>(classes_of(profession).size()));
+}
+
+// The original sums a bonus a level that is not the one training adds: a
+// fighter's level counts the Constitution above 14, any other class's 1 at
+// 14 or 15 and 2 above; the division is kept as the original reckons it.
+int raised_hit_point_loss(const ClassLevels &levels, int constitution, int hit_points,
+                          int rolled_hit_points)
+{
+    if (constitution < 14)
+    {
+        return 0;
+    }
+    int loss = std::max(0, hit_points - rolled_hit_points);
+    int bonus = 0;
+    for (std::size_t at = 0; at < levels.size(); ++at)
+    {
+        const int level = levels[at];
+        if (level <= 0)
+        {
+            continue;
+        }
+        if (static_cast<ClassSlot>(at) == C::fighter)
+        {
+            bonus += (constitution - 14) * level;
+        }
+        else
+        {
+            bonus += (constitution > 15 ? 2 : 1) * level;
+        }
+    }
+    if (bonus > 0)
+    {
+        loss /= bonus;
+    }
+    const bool fighter = level_in(levels, C::fighter) > 0;
+    return constitution < 17 || fighter ? loss : 0;
 }
 
 int experience_share(Profession profession, const AbilityArray<int> &scores, int award)

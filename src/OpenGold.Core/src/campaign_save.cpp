@@ -478,8 +478,10 @@ template <bool Reading> struct SaveCodec
                 std::vector<TrainingChoiceEdit> training;
                 std::vector<HallTraining> hall;
                 fields(history, edits, training, hall);
-                require(std::cmp_equal(history.size(), level - 1),
-                        "Saved advancement history disagrees with level");
+                // A history entry may not be a level (the original rules'
+                // drain and raising), and a character may start above level 1
+                // (Curse's): the replayed level is checked below instead.
+                require(history.size() <= 1000, "Too long a saved advancement history");
                 unsigned prior_level = 1;
                 std::uint64_t prior_session = 0;
                 for (const auto &edit : training)
@@ -513,6 +515,8 @@ template <bool Reading> struct SaveCodec
                 // character is the expensive part (Effective C++ Item 26).
                 Character character(*creation, std::move(draft), std::move(appearance));
                 character.replay(*module, history, edits, training, hall);
+                require(character.sheet().level == level,
+                        "Saved advancement history disagrees with level");
                 Inventory inventory;
                 field(inventory);
                 character.replace_inventory(std::move(inventory));

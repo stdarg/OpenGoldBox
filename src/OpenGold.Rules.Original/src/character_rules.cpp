@@ -695,6 +695,8 @@ class OriginalCharacterRules final : public rules::CharacterRules
         original.platinum = starting_platinum(game_);
         original.exceptional_strength = exceptional_strength(
             chosen.race, chosen.gender, chosen.profession, rolled, ability[Ability::strength]);
+        original.rolled_hit_points =
+            first_level_rolled_hit_points(chosen.profession, rolled) + trained.rolled_hit_points;
         original.age = rolled.starting_age;
         original.gold = rolled.gold;
         original.race = static_cast<int>(chosen.race);
@@ -775,6 +777,11 @@ class OriginalCharacterRules final : public rules::CharacterRules
         numbers.platinum = starting_platinum(game_);
         numbers.drained_levels = from.drained_levels;
         numbers.drained_hit_points = from.drained_hit_points;
+        // Its Hit Points less a level's Constitution bonus, as Curse's
+        // ConvertPoolRadPlayer reckons them.
+        numbers.rolled_hit_points =
+            std::max(0, from.hit_points - constitution_hit_point_bonus(
+                                              profession, from.scores[Ability::constitution]));
         numbers.thief_skills = thief_skills(race, level_in(from.levels, ClassSlot::thief),
                                             from.scores[Ability::dexterity]);
         numbers.cleric_slots =
@@ -830,6 +837,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         numbers.thac0 = thac0(levels, game_);
         numbers.saving_throws = saving_throws(levels, game_);
         numbers.exceptional_strength = record.current_abilities.exceptional_strength;
+        numbers.rolled_hit_points = record.rolled_hit_points;
         numbers.age = record.age;
         numbers.race = static_cast<int>(race);
         numbers.profession = static_cast<int>(profession);

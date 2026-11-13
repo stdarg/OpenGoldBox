@@ -517,6 +517,13 @@ void curse_clerics_heal_and_raise_in_camp()
     rules::VitalState dead{0, true, {}, {}};
     module->use_camp_action(priest, own, priest, dead, "cast:cleric:raise_dead", random);
     check(!dead.dead && dead.hit_points == 1, "Raise Dead brings the dead back with 1 Hit Point");
+    const auto cost = module->revival_changes(priest, rules::Revival::spell);
+    auto raised = priest;
+    check(cost.size() == 1 && module->advance_character(raised, dead, cost.front()) &&
+              raised.scores[rules::Ability::constitution] ==
+                  priest.scores[rules::Ability::constitution] - 1 &&
+              raised.hit_points == priest.hit_points,
+          "The spell costs a point of Constitution and no Hit Points");
     check(module->camp_actions(priest, own).empty(), "Both spells are spent");
 }
 
@@ -660,6 +667,69 @@ void the_temple_heals_and_raises()
     module->temple_service(hurt, sheet, rules::TempleService::heal, random);
     check(hurt.hit_points >= std::max(1, sheet.hit_points - 4),
           "Curse's Heal restores all but 1d4 Hit Points");
+}
+
+// Raise Dead's cost (temple.pas, RaiseDead): a point of Constitution, and at
+// the temple the Hit Points its formula takes; the cost is in the member's
+// level history, so a saved game keeps it.
+void raise_dead_costs_constitution()
+{
+    using original::raised_hit_point_loss;
+    constexpr original::ClassLevels fighter_9{0, 0, 9, 0, 0, 0, 0, 0};
+    constexpr original::ClassLevels mage_5{0, 0, 0, 0, 0, 5, 0, 0};
+    constexpr original::ClassLevels cleric_4{4, 0, 0, 0, 0, 0, 0, 0};
+    check(raised_hit_point_loss(fighter_9, 16, 90, 63) == 1,
+          "A fighter's 27 bonus Hit Points over its 18 at Constitution 16 lose 1");
+    check(raised_hit_point_loss(cleric_4, 15, 30, 22) == 2,
+          "A cleric's 8 bonus Hit Points over its 4 at Constitution 15 lose 2");
+    check(raised_hit_point_loss(cleric_4, 13, 30, 22) == 0, "Below Constitution 14 none are lost");
+    check(raised_hit_point_loss(mage_5, 17, 30, 20) == 0,
+          "At 17 or more one without fighter levels loses none");
+
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module(), creation);
+    const auto id = party.add_pc(made_fighter(creation));
+    party.add_coins(Coin::gold, 20000);
+    party.award_experience(5000, "test:raised-training");
+    party.train_at_hall_level(id, TrainingHall::fighters, {});
+    const auto before = party.member(id).character.sheet();
+    check(before.original->rolled_hit_points > 0 &&
+              before.original->rolled_hit_points <= before.hit_points + 2,
+          "The sheet keeps the Hit Points its dice rolled");
+    auto state = party.state();
+    state.roster.front().vitals.dead = true;
+    state.roster.front().vitals.hit_points = 0;
+    party.restore(state);
+    party.temple_service(id, rules::TempleService::raise_dead, 5500);
+    const auto &raised = party.member(id);
+    const int constitution = before.scores[rules::Ability::constitution] - 1;
+    const int expected =
+        std::max(1, before.hit_points - raised_hit_point_loss(before.original->class_levels,
+                                                              constitution, before.hit_points,
+                                                              before.original->rolled_hit_points));
+    check(!raised.vitals.dead && raised.vitals.hit_points == 1 &&
+              raised.character.sheet().scores[rules::Ability::constitution] == constitution &&
+              raised.character.sheet().hit_points == expected,
+          "The temple raises it with 1 Hit Point, a point of Constitution and its formula's loss");
+    const auto module = original::rules_module();
+    const auto loaded = decode_campaign(encode_campaign(party, nullptr, "raised-check"), *creation,
+                                        *module, "raised-check", nullptr);
+    const auto &kept = loaded.party.roster.front().character.sheet();
+    check(kept.scores[rules::Ability::constitution] == constitution && kept.hit_points == expected,
+          "A saved game keeps the cost");
+
+    // Curse's characters start above level 1 with no history to replay.
+    std::shared_ptr<const rules::CharacterRules> curse =
+        original::character_rules(original::default_aging, GoldBoxGame::curse_of_the_azure_bonds);
+    original::Content curse_content;
+    curse_content.game = GoldBoxGame::curse_of_the_azure_bonds;
+    CampaignParty started(original::rules_module(curse_content), curse);
+    const auto &curse_module = started.rule_module();
+    const int level = started.member(started.add_pc(made_fighter(curse))).character.sheet().level;
+    const auto reloaded = decode_campaign(encode_campaign(started, nullptr, "curse-check"), *curse,
+                                          curse_module, "curse-check", nullptr);
+    check(level > 1 && reloaded.party.roster.front().character.sheet().level == level,
+          "A Curse character saved at its starting level loads");
 }
 
 // A script's harm under the original rules: an arrow of THAC0 20 hits an
@@ -824,6 +894,7 @@ int main()
         a_magic_user_memorizes_and_learns();
         a_cleric_cures_in_camp();
         the_temple_heals_and_raises();
+        raise_dead_costs_constitution();
         scripts_harm_as_the_original();
         a_potion_heals_outside_a_fight();
         an_npc_joins_as_its_record();

@@ -143,7 +143,8 @@ and a save each know which tables they use.
   `SetupWildernessFloor`).
 - **Camp:** a cleric casts Cure Serious and Cure Critical Wounds (2d8+1,
   3d8+3) in camp, and Raise Dead brings back a dead member who is no elf
-  with 1 Hit Point (its point of Constitution comes with the temple's).
+  and has Constitution left, with 1 Hit Point and a point of Constitution
+  lost, but no Hit Points off its maximum (`cast_raise`).
 - Still to come: Cloudkill, the player's choice of Fire Shield, the
   rakshasa's death by a blessed crossbow bolt, *Curse*'s
   other new
@@ -288,10 +289,21 @@ lines in all:
      a party with one; scripts read a half-elf's own race code.
    - **The temple** heals as the original's (`temple.pas`): Cure Light,
      Serious and Critical Wounds 1d8, 2d8+1 and 3d8+3, and Raise Dead brings
-     the dead back with 1 Hit Point. Still to come: Raise Dead's loss of a
-     point of Constitution and of Hit Points, and the cures of blindness,
-     disease, poison, curses and stone, with the conditions that last outside
-     fights.
+     the dead back with 1 Hit Point (`RaiseDead`). The raised member loses a
+     point of Constitution while it has one, and Hit Points off its maximum
+     reckoned with the Constitution it is left with, as the original reckons
+     them: at Constitution 14 or more, what its maximum holds above the Hit
+     Points its dice rolled (the original's hpRolled, which the sheet keeps
+     from creation, training and drains; a character brought from another
+     game counts its maximum less one level's Constitution bonus, as
+     *Curse*'s ConvertPoolRadPlayer does), divided by a bonus summed over its
+     class levels (a fighter's Constitution above 14 a level, any other
+     class's 1 a level at 14 or 15 and 2 above); none at 17 or more for a
+     character without fighter levels. The division takes far fewer Hit
+     Points than the Constitution bonus lost, but its intent is unclear, so
+     it is kept. The cost goes into the member's level history, so a save
+     keeps it. Still to come: the cures of blindness, disease, poison, curses
+     and stone, with the conditions that last outside fights.
    - **Companions:** an NPC who joins (ADD NPC) is its original record: its
      scores, class levels, Hit Points, spells known and memorized, and its
      own gear. The rules keep the record whole in its draft, so a save makes
