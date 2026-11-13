@@ -103,16 +103,118 @@ and three slots of 70; here a wall set has a tile set of its own, `8X8D1` record
 n for `WALLDEF1` record n, and symbol s is that set's frame s. The game never
 draws symbol 0. Every symbol of the six wall sets names one of their 256 tiles.
 
-### Not read: the opening and closing films
+## The opening and ending films
 
-`INTRO.ACF` and `INTRO.BMA` (the opening) and `FINAL.ACF` and `FINAL.BMA` (the
-ending, after the last battle) are played by `VACE.EXE`, a separate program that
-`CONTROL.EXE` starts before the game and again when the game ends won. The
-reconstructed source covers `GAME.EXE`, `CONTROL.EXE` and `STARTUP.EXE` but not
-`VACE.EXE`. An `.ACF` file looks like a script of commands, starting with color
-settings; a `.BMA` file holds 320x200 frames packed in a way of its own. Reading
-them means working out `VACE.EXE` from the program itself, a separate piece of
-work.
+*Pools of Darkness* plays its opening (`INTRO`) and its ending (`FINAL`) with a
+separate program, `VACE.EXE` ("Animation Control Engine", SSI 1991).
+`CONTROL.EXE` runs it before `GAME.EXE` with `INTRO` and again after a win with
+`FINAL`, passing the video mode from `POOL4.CFG`, `1` (keep the video mode) and
+whether sound is on. VACE loads a video driver (`VGA.DRV` for 256 colors) that
+draws the frames, and plays the music through `SOUND.COM`.
+
+Each film is two files: a control file (`.ACF`) that sets colors, paces the
+film and starts the music, and the frames (`.BMA`). The reconstructed source
+of the game does not include VACE; what follows was worked out from the files,
+`VACE.EXE` and `VGA.DRV`. Our decoder is `decode_vace_film`
+(`src/OpenGold.Formats/include/opengold/vace_film.h`); the census reads both
+films whole (the `FILM` row).
+
+| Film  | Frames | Blocks | Plays for    | Song          |
+|-------|-------:|-------:|--------------|---------------|
+| INTRO | 133    | 14     | about 82 s   | `P1.SMS`, 0   |
+| FINAL | 58     | 6      | about 33 s   | `P3.SMS`, 0   |
+
+Every frame is the whole 320 x 200 screen, one byte a pixel. INTRO opens with
+SSI's title card and tells the story in seven more scenes; FINAL has three
+scenes and no words on screen.
+
+### The control file
+
+A list of commands. Each begins with a byte giving the command's length in
+bytes (itself included, always even) and a byte giving its number; the rest
+are 16-bit little-endian words. VACE reads them in order:
+
+| Number | Words | What it does |
+|-------:|------:|--------------|
+| 0 | pace | Sets the pace: from now on each frame waits 261 / pace ticks of the timer (62 / pace with sound off; see below). The films use 1 (still pictures and pauses), 16 and 18. |
+| 1 | — | End of the film. |
+| 2 | color, red; green, blue | Sets one color: the high byte of the first word is the color's number, its low byte red; the second word's high byte is green, its low byte blue, each 0 to 63. VACE keeps all 256 colors in a table. |
+| 3 | — | Waits until the frame on screen has had its time, then draws the next frame of the `.BMA` over the screen. The very first frame does not wait. |
+| 5 | block, frames, size | Lists a block of the `.BMA`: its number (0, 1, ...), its frame count and the low 16 bits of its size. VACE loads the blocks by this list and skips the command while playing; the list follows the last frame. |
+| 8 | song; name (3 words) | Loads the music: the low byte of the first word is the song's number, the next three words its file name (each word's high byte, then its low byte; spaces end it), to which VACE adds `.SMS`. |
+| 9 | — | Starts the song (with sound on). |
+| 10 | — | Stops the song. |
+| 11 | — | Waits until the frame on screen has had its time, then clears the screen to color 0. The next color command first sends VACE's whole color table again. |
+| 12 | — | Does nothing. |
+| 13 | — | From now on a key press ends the film. |
+| 14 | — | From now on keys are ignored (the default). |
+
+Numbers 4 to 7 and above 14 are skipped.
+
+A film is a run of scenes, each the same shape: the scene's colors (a command
+2 for each), a first frame held at pace 1 (about 3.6 seconds), the moving
+frames at pace 16 or 18, then pace 1 again and an 11 that holds the last
+frame as long and clears the screen. The frames run on from
+one block of the `.BMA` to the next without any command naming them: the
+`n`th 3 of the file draws the `n`th frame of the `.BMA`, so a film has as many
+3s as frames. INTRO turns on key skipping (13) after the title card; FINAL
+never does.
+
+#### The pace
+
+VACE counts the ticks of the PC's timer and holds a frame until
+`ticks per frame` have passed since it was drawn, the value in force at the
+next 3 or 11. With sound on, `SOUND.COM` sets the timer to 1,193,182 / 16,384
+(about 72.8) ticks a second and VACE waits 261 / pace of them. With sound off
+the timer runs at the PC's usual 18.2 a second and VACE waits 62 / pace. Both
+make a frame at pace 1 last about 3.5 seconds; at pace 16 a frame lasts
+16 ticks (219 ms) with sound and 3 ticks (165 ms) without. The decoder gives
+each frame's time with sound on: 3583 ms at pace 1, 219 ms at pace 16 and
+192 ms at pace 18 (14 ticks).
+
+### The frames file
+
+The `.BMA` is a string of blocks, the units VACE loads while the frame on
+screen waits. Each block:
+
+| Offset | Size | Field |
+|-------:|-----:|-------|
+| 0 | 4 | The block's size in bytes, this header included |
+| 4 | 2 | Frame count |
+| 6 | 4 x count | Where each frame starts, from the block's start |
+
+The next block follows at the block's size. The low 16 bits of the size match
+the control file's list (command 5), and so do the frame counts.
+
+#### A frame
+
+Every frame starts with its width and height (2 bytes each, always 320 and
+200). Then come the rows it changes, top to bottom:
+
+- a byte: the row's number, or `0xFF` for the end of the frame;
+- one or more pieces of the row, each:
+  - 2 bytes: the first column; the top bit (`0x8000`) marks the row's last piece;
+  - a byte: how many pixels the piece draws (at most 255, so a full row takes
+    two pieces, for example 241 and 79 pixels);
+  - a byte: how many bytes of runs follow;
+  - the runs.
+
+A run starts with a code byte. Its count is `code / 2 + 1` pixels (1 to 128).
+When the code is odd, the next byte is a color to repeat count times; when it
+is even, the next count bytes are the pixels themselves.
+
+What a frame leaves out keeps the screen's pixels: the first frame of each
+scene draws all 64,000 pixels (the title card all but 2,877, which keep color
+0, black), the frames after it only what moves. A frame with no rows (5 bytes: the size and
+`0xFF`) changes nothing, which the films use to hold a picture.
+
+### How it was checked
+
+All 191 frames were drawn and looked at: the title card, Phlan and the story's
+scenes in INTRO, and the ending's scenes in FINAL come out whole, in their
+colors. `tests/vace_film_tests.cpp` checks the frame counts, pixels and colors
+of chosen frames, that INTRO's third frame changes exactly one pixel of the
+second, the frames' times, and that broken files are refused.
 
 ## Scripts, creatures and items
 

@@ -12,6 +12,7 @@
 #include "opengold/por_sound.h"
 #include "opengold/treasures_texts.h"
 #include "opengold/vga_picture.h"
+#include "opengold/vace_film.h"
 #include "opengold/wall_art.h"
 
 #include <algorithm>
@@ -412,6 +413,47 @@ void check_names_and_sounds(RowBuilder &row, GoldBoxGame game, const GameFile &s
               });
 }
 
+bool is_film_file(const GameFile &file)
+{
+    const auto kind = extension(file.name);
+    return kind == "ACF" || kind == "BMA";
+}
+
+// Pools of Darkness' opening and ending films: each a control file (.ACF) and
+// its frames (.BMA), played by VACE.EXE (docs/games/darkness.md, "The opening and ending films"). One
+// piece a film.
+void add_film_row(GameCensus &census, const std::map<std::string, GameFile> &by_name,
+                  const std::vector<GameFile> &film_files)
+{
+    if (film_files.empty())
+    {
+        return;
+    }
+    RowBuilder row("FILM: opening and ending films");
+    std::set<std::string> films;
+    for (const auto &file : film_files)
+    {
+        row.add_file(file.name);
+        films.insert(file.name.substr(0, file.name.rfind('.')));
+    }
+    for (const auto &film : films)
+    {
+        row.check(film + " film",
+                  [&]
+                  {
+                      const auto control = by_name.find(film + ".ACF");
+                      const auto frames = by_name.find(film + ".BMA");
+                      require(control != by_name.end() && frames != by_name.end(),
+                              "needs both its .ACF and its .BMA");
+                      require(decode_vace_film(read_bytes(control->second.path),
+                                               read_bytes(frames->second.path))
+                                  .has_value(),
+                              "not a film");
+                  });
+    }
+    census.rows.push_back(std::move(row).take());
+}
+
 using RecordDecoder = std::function<void(const GameFile &, const DaxRecord &)>;
 
 struct FamilyDecoder
@@ -682,6 +724,7 @@ GameCensus take_census(const std::filesystem::path &folder, GoldBoxGame game)
 
     // The files of each family, in the order the decoders list them.
     std::map<std::string, std::vector<GameFile>> families;
+    std::vector<GameFile> film_files;
     for (const auto &file : files)
     {
         if (is_program_file(file))
@@ -693,6 +736,10 @@ GameCensus take_census(const std::filesystem::path &folder, GoldBoxGame game)
         if (extension(file.name) == "DAX" && decoders.contains(name))
         {
             families[name].push_back(file);
+        }
+        else if (is_film_file(file))
+        {
+            film_files.push_back(file);
         }
         // Gateway to the Savage Frontier names the file ITEMS.1.
         else if (file.name == "ITEMS" || file.name == "ITEMS.1")
@@ -730,6 +777,7 @@ GameCensus take_census(const std::filesystem::path &folder, GoldBoxGame game)
             census.unread_files.push_back(file.name);
         }
     }
+    add_film_row(census, by_name, film_files);
     for (const auto &[name, members] : families)
     {
         const auto &decoder = decoders.find(name)->second;

@@ -145,6 +145,7 @@ add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/treasures_texts.cpp
     src/OpenGold.Formats/src/vga_picture.cpp
     src/OpenGold.Formats/src/late_records.cpp
+    src/OpenGold.Formats/src/vace_film.cpp
     src/OpenGold.Formats/src/gold_box_game.cpp
 )
 
@@ -267,6 +268,11 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_late_records_tests tests/late_records_tests.cpp)
     target_link_libraries(opengold_late_records_tests PRIVATE opengold_formats)
     add_test(NAME opengold_late_records_tests COMMAND opengold_late_records_tests)
+    # Pools of Darkness' opening and ending films, read from the game's files.
+    add_executable(opengold_vace_film_tests tests/vace_film_tests.cpp)
+    target_link_libraries(opengold_vace_film_tests PRIVATE opengold_formats)
+    add_test(NAME opengold_vace_film_tests COMMAND opengold_vace_film_tests)
+    set_tests_properties(opengold_vace_film_tests PROPERTIES SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_game_census COMMAND "${CMAKE_COMMAND}"
         "-DCENSUS=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/game_census.cmake")
