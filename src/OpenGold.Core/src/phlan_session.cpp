@@ -3929,7 +3929,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // Elsewhere PROGRAM 9 opens the camp menu and ends the script (coab
         // TryEncamp): the nomad camp's lodging, whose night the kobolds may
         // break (ECL7:17 0xA5EF).
-        if (machine_.variable(game_cell(ecl_rest_interruption_chance)) == 255 ||
+        // Curse's always opens the camp menu (TryEncamp in its reconstruction).
+        if (game() != GoldBoxGame::pool_of_radiance ||
+            machine_.variable(game_cell(ecl_rest_interruption_chance)) == 255 ||
             (machine_.variable(game_cell(ecl_rest_check_interval)) &&
              machine_.variable(game_cell(ecl_rest_interruption_chance))))
         {

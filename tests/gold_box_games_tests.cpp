@@ -394,7 +394,36 @@ void curse_opening_reaches_the_first_map()
 // the scripts still need. Run with --curse-walk.
 // True when every event it reached ran: no script needs a command or form
 // the session lacks.
-bool curse_walk_census()
+// A square of a story's route: stood on, facing, its event played with these
+// answers (a choice whose label holds the answer, or input to type), in turn.
+struct RouteBeat
+{
+    unsigned map, x, y;
+    opengold::por::MapDirection facing;
+    std::vector<std::string> answers;
+    // Rest until every member is whole first, as a player would before a
+    // known fight.
+    bool rest_first = false;
+};
+
+// Curse's story, beat by beat, as its cluebook tells it (the route test, plan
+// step 7): first Tilverton, until the king's carriage comes.
+const std::vector<RouteBeat> &curse_route()
+{
+    using D = opengold::por::MapDirection;
+    static const std::vector<RouteBeat> beats{
+        {1, 12, 7, D::north, {}},      // The armor shop.
+        {1, 6, 5, D::north, {}},       // Julynn the sage.
+        {1, 1, 0, D::north, {}},       // The guards turn the party back once,
+        {1, 1, 1, D::north, {}, true}, // twice, and the king's carriage comes:
+                                       // the party surrenders, is freed from jail
+                                       // and led to the Thieves' Guild, rested.
+        {1, 9, 3, D::north, {}},       // The guildmaster's news; the Fire Knives burst in.
+    };
+    return beats;
+}
+
+bool curse_walk_census(bool route)
 {
     using opengold::por::TourPhase;
     const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
@@ -468,12 +497,23 @@ bool curse_walk_census()
     session.campaign_party(party);
     std::map<std::string, std::vector<std::string>> needs;
     std::map<std::string, unsigned> phases;
+    const bool trace = route || std::getenv("OPENGOLD_CURSE_TRACE");
     // A fight, every side played by the original's AI.
     const auto fight = [&]
     {
         opengold::CombatDemo combat(opengold::original::rules_module(content));
         combat.campaign_party(party);
         combat.encounter(*session.pending_encounter(), 7);
+        if (trace)
+        {
+            std::cout << "  fight:";
+            for (const auto &unit : combat.combat().snapshot().combatants)
+            {
+                std::cout << " " << unit.name << " " << unit.hit_points << "/"
+                          << unit.max_hit_points;
+            }
+            std::cout << "\n";
+        }
         for (int command = 0; command < 3000 && combat.combat().snapshot().outcome ==
                                                     opengold::rules::Outcome::ongoing;
              ++command)
@@ -498,6 +538,7 @@ bool curse_walk_census()
         return session.resolve_combat(result);
     };
     std::size_t diagnosed = 0;
+    std::vector<std::string> answers;
     const auto play = [&](const std::string &where)
     {
         const auto attribute = [&]
@@ -523,9 +564,34 @@ bool curse_walk_census()
                 session.advance(1.0);
                 continue;
             case TourPhase::awaiting_continue:
-                if (!session.choose(s.continue_ticket, ++shown[s.dialogue] > 2 && !s.choices.empty()
-                                                           ? s.choices.size() - 1
-                                                           : 0) &&
+            {
+                // OPENGOLD_CURSE_TRACE prints each square's dialogue, to plan a route by.
+                if (trace && shown[s.dialogue] == 0)
+                {
+                    std::cout << where << ": " << s.dialogue.substr(0, 160) << " [";
+                    for (const auto &choice : s.choices)
+                    {
+                        std::cout << choice << "|";
+                    }
+                    std::cout << "]\n";
+                }
+                std::size_t pick =
+                    ++shown[s.dialogue] > 2 && !s.choices.empty() ? s.choices.size() - 1 : 0;
+                if (!answers.empty())
+                {
+                    const auto found = std::ranges::find_if(
+                        s.choices,
+                        [&](const std::string &choice)
+                        {
+                            return choice.find(answers.front()) != std::string::npos;
+                        });
+                    if (found != s.choices.end())
+                    {
+                        pick = static_cast<std::size_t>(found - s.choices.begin());
+                        answers.erase(answers.begin());
+                    }
+                }
+                if (!session.choose(s.continue_ticket, pick) &&
                     !session.continue_dialogue(s.continue_ticket))
                 {
                     ++phases["stuck at a choice"];
@@ -533,9 +599,23 @@ bool curse_walk_census()
                     return;
                 }
                 continue;
+            }
             case TourPhase::awaiting_input:
-                (void)session.input(s.continue_ticket, "0");
+            {
+                std::string typed = "0";
+                if (!answers.empty() && answers.front().starts_with("type:"))
+                {
+                    typed = answers.front().substr(5);
+                    answers.erase(answers.begin());
+                }
+                if (trace)
+                {
+                    std::cout << where << ": " << s.dialogue.substr(0, 160) << " <" << typed
+                              << ">\n";
+                }
+                (void)session.input(s.continue_ticket, typed);
                 continue;
+            }
             case TourPhase::shopping:
                 if (session.shop_stock().empty())
                 {
@@ -630,6 +710,66 @@ bool curse_walk_census()
             }
         }
     };
+    if (route)
+    {
+        // Days of rest in camp until every member is whole, as a player rests
+        // (or a script's PROGRAM 9 offers the camp).
+        const auto rest_until_healed = [&]
+        {
+            for (int day = 0; day < 90 && session.can_leave(); ++day)
+            {
+                const bool whole = std::ranges::all_of(
+                    party->state().slots,
+                    [&](opengold::MemberId id)
+                    {
+                        return !id || party->member(id).vitals.dead ||
+                               party->member(id).vitals.hit_points >=
+                                   party->member(id).character.sheet().hit_points;
+                    });
+                if (whole || !session.camp(opengold::RestKind::long_rest))
+                {
+                    break;
+                }
+            }
+        };
+        play("opening");
+        for (const auto &beat : curse_route())
+        {
+            const auto where = "beat " + std::to_string(beat.map) + " " + std::to_string(beat.x) +
+                               "," + std::to_string(beat.y);
+            if (beat.rest_first)
+            {
+                rest_until_healed();
+            }
+            opengold::test::TourAccess::place(session, {beat.x, beat.y, beat.facing});
+            answers = beat.answers;
+            if (session.explore(opengold::por::ExplorationCommand::look))
+            {
+                play(where);
+            }
+            if (session.snapshot().camp_offered)
+            {
+                rest_until_healed();
+            }
+            if (std::getenv("OPENGOLD_CURSE_CELL"))
+            {
+                const auto cell =
+                    static_cast<std::uint16_t>(std::stoul(std::getenv("OPENGOLD_CURSE_CELL")));
+                std::cout << "  cell " << cell << " = "
+                          << opengold::test::TourAccess::machine(session).variable(
+                                 opengold::por::EclAddress{cell})
+                          << "\n";
+            }
+        }
+        for (const auto &[phase, count] : phases)
+        {
+            std::cout << "  ended " << count << "x in phase " << phase << "\n";
+        }
+        const auto &end = session.snapshot();
+        std::cout << "Route ends on map " << end.area_id << " at " << end.pose.x << ","
+                  << end.pose.y << ", phase " << static_cast<int>(end.phase) << "\n";
+        return needs.empty() && end.phase != TourPhase::defeated;
+    }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");
     play("opening");
@@ -716,7 +856,11 @@ int main(int argc, char **argv)
     {
         if (argc == 2 && std::string_view(argv[1]) == "--curse-walk")
         {
-            return curse_walk_census() ? 0 : 1;
+            return curse_walk_census(false) ? 0 : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--curse-route")
+        {
+            return curse_walk_census(true) ? 0 : 1;
         }
         each_game_is_told_apart_by_its_files();
         curse_creatures_are_read_from_their_layout();

@@ -251,6 +251,8 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_gold_box_games_tests COMMAND opengold_gold_box_games_tests)
     # Every map of Curse walked with an original-rules party: each event runs.
     add_test(NAME opengold_curse_walk COMMAND opengold_gold_box_games_tests --curse-walk)
+    # Curse's story, beat by beat, with a party made for it (plan step 7).
+    add_test(NAME opengold_curse_route COMMAND opengold_gold_box_games_tests --curse-route)
     add_test(NAME opengold_game_census COMMAND "${CMAKE_COMMAND}"
         "-DCENSUS=$<TARGET_FILE:opengold_census>"
         -P "${PROJECT_SOURCE_DIR}/tests/game_census.cmake")
