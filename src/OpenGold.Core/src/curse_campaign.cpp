@@ -90,7 +90,8 @@ por::RolfTourSession load_curse_campaign(const std::filesystem::path &folder)
     {
         throw EclError("START.EXE has no item name table");
     }
-    const por::detail::AreaFiles files(folder, *templates, std::move(*words));
+    const por::detail::AreaFiles files(folder, *templates, std::move(*words),
+                                       por::detail::AreaFiles::StoredNames::dropped);
     const auto maps = por::MapCatalog::load(folder);
     const auto creatures =
         std::make_shared<const por::CreatureCatalog>(por::CreatureCatalog::load(folder, game));

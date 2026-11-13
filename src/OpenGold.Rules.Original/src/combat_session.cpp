@@ -2309,9 +2309,28 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         break;
     }
     case 198:
-        // A monster's blast: 6d6 along a path to 3 squares.
-        cast_generic(caster, number, level, path_area(caster, aim, 3, 1), roll_dice(6, 6), 8);
+    {
+        // A blast (Curse's Wand of Defoliation, a monster's): 6d6 along a path
+        // to 3 squares; a plant takes it whole, with no save (ovr023, sub_61727).
+        constexpr int plant = 18;
+        const int damage = roll_dice(6, 6);
+        std::vector<EntityId> others;
+        for (const auto id : path_area(caster, aim, 3, 1))
+        {
+            auto &target = *find(id);
+            if (target.numbers.creature_type == plant)
+            {
+                nonweapon_damage(target, damage, spell(number)->save_result, false, 8, level,
+                                 number, false);
+            }
+            else
+            {
+                others.push_back(id);
+            }
+        }
+        cast_generic(caster, number, level, others, damage, 8);
         break;
+    }
     case 194:
     {
         // Hold Monster: Hold Person's saves, on any creature (Curse let it

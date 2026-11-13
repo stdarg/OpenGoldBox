@@ -262,11 +262,15 @@ In small steps, each with its check:
    reaches Yulash by Hillsfar. In Yulash it asks the Red Plumes' leave, is
    taken to their commander, fights the Zhentil spies from his waiting room
    and pleases him, enters the Pit of Moander, takes Alias and Dragonbait
-   into the party, and goes down to the Pit's second level. Next: Mogion and
-   Moander's pseudopods, which a party played wholly by the original's AI
-   does not beat (its casters pick spells at random, and Hold Person on
-   shambling mounds); the shambling mounds that guard the Wand of
-   Defoliation are skipped for the same reason.
+   into the party, and goes down to the Pit's second level. It beats the shambling mounds over the dead
+   cleric for the Wand of Defoliation, which its magic-user takes and
+   readies. The route plays as a player would where the original's AI would
+   not: its magic-user learns the spells a player takes, its clerics raise
+   the dead with Raise Dead after a rest, and each fight is tried with every
+   member casting, with the magic-user alone casting, and with the wand and
+   Hold Monster used at the right targets. Next: Mogion and Moander's
+   pseudopods, which it does not beat yet (five shambling mounds, Mogion and
+   six cultists at once).
 
 ### 4 to 7. The other campaigns
 

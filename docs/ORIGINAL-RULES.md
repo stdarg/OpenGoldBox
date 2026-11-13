@@ -135,6 +135,15 @@ and a save each know which tables they use.
   age, experience and drained levels, its magic-user spell book but Animate
   Dead, and its items; it starts with 300 platinum and none of its money
   (`ConvertPoolRadPlayer`).
+- **Item names:** an item is named by its record's name words in *Curse*'s
+  own table, as its original names one each time it shows it
+  (`GenerateName`). Its item lists' records also store name text, which the
+  original never shows and which is sometimes in *Pool of Radiance*'s words
+  (ITEM3.DAX calls the Wand of Defoliation "Wand of Beaker"), so OpenGoldBox
+  drops it.
+- **Blast** (the Wand of Defoliation's power, and monsters'): 6d6 along a
+  path of three squares; a plant (creature type 18) takes it whole with no
+  save (`ovr023`, `sub_61727`).
 - **Fights out of doors** (a script's 3D-area cell clear: the wilderness, its
   roads and camps) are on open ground built as *Pool of Radiance*'s wilderness
   fields are, from *Curse*'s own battlefield tiles and the terrain flags of the

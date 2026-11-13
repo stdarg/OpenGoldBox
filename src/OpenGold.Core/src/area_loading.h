@@ -51,8 +51,17 @@ struct AreaSource
 class AreaFiles
 {
   public:
+    // Whether its item lists' records keep the name text they store: Curse's
+    // original never shows it (it names an item by its words), and its records
+    // hold names in Pool of Radiance's words.
+    enum class StoredNames
+    {
+        kept,
+        dropped
+    };
+
     AreaFiles(std::filesystem::path directory, std::vector<ItemTemplate> templates,
-              std::vector<std::string> item_words);
+              std::vector<std::string> item_words, StoredNames stored_names = StoredNames::kept);
 
     [[nodiscard]] const std::filesystem::path &directory() const noexcept
     {
@@ -73,6 +82,7 @@ class AreaFiles
     std::filesystem::path directory_;
     std::vector<ItemTemplate> templates_;
     std::vector<std::string> item_words_;
+    StoredNames stored_names_{StoredNames::kept};
     mutable std::map<std::string, DaxDecodeResult> archives_;
 };
 

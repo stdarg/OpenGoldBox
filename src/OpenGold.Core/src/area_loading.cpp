@@ -24,9 +24,9 @@ std::vector<std::uint8_t> read_archive(const std::filesystem::path &path)
 }
 
 AreaFiles::AreaFiles(std::filesystem::path directory, std::vector<ItemTemplate> templates,
-                     std::vector<std::string> item_words)
+                     std::vector<std::string> item_words, StoredNames stored_names)
     : directory_(std::move(directory)), templates_(std::move(templates)),
-      item_words_(std::move(item_words))
+      item_words_(std::move(item_words)), stored_names_(stored_names)
 {
 }
 
@@ -77,6 +77,12 @@ std::map<unsigned, std::vector<Equipment>> AreaFiles::item_lists(const std::stri
             Equipment equipment;
             equipment.index = stock.size();
             equipment.stored = item;
+            if (stored_names_ == StoredNames::dropped)
+            {
+                // Its length byte, so the record's bytes carry no name either.
+                equipment.stored.stored_name.clear();
+                equipment.stored.raw[0] = 0;
+            }
             equipment.base = templates_[item.type];
             equipment.bonuses = equipment_bonuses(item, equipment.base);
             // Fixed lists name their magic items as the original does ("Long

@@ -463,6 +463,8 @@ struct RouteBeat
     // Step forward from the square instead of looking at it: a map's ways
     // out run as the party steps (a script's entry 0).
     bool step = false;
+    // Take the first wand a treasure there holds, for the magic-user, readied.
+    bool take_wand = false;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -675,6 +677,23 @@ const std::vector<RouteBeat> &curse_route()
          std::nullopt,
          false,
          true},
+        // The shambling mounds over a dead cleric, who holds the Wand of
+        // Defoliation the Pit of Moander calls for.
+        {16,
+         11,
+         8,
+         D::north,
+         {"Fight"},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         true,
+         false,
+         true},
         // Into the Pit of Moander.
         {16,
          11,
@@ -750,8 +769,56 @@ bool curse_walk_census(bool route)
             "fireball",          "stinking_cloud", "magic_missile", "sleep",
             "lightning_bolt",    "flame_strike",   "hold_person",   "cure_serious_wounds",
             "cure_light_wounds", "prayer",         "bless"};
+        const auto dead = [&]
+        {
+            std::vector<opengold::MemberId> members;
+            for (const auto id : party->state().slots)
+            {
+                if (id && party->member(id).vitals.dead)
+                {
+                    members.push_back(id);
+                }
+            }
+            return members;
+        };
+        const bool anyone_dead = !dead().empty();
+        // A cleric with Raise Dead memorized raises the dead, as a player would
+        // in camp (Curse's Raise Dead; an elf cannot be raised).
+        const auto raise_the_dead = [&]
+        {
+            for (const auto lost : dead())
+            {
+                for (const auto cleric : party->state().slots)
+                {
+                    if (!cleric || party->member(cleric).vitals.dead)
+                    {
+                        continue;
+                    }
+                    const auto actions = party->camp_actions(cleric);
+                    const auto raise = std::ranges::find_if(
+                        actions,
+                        [](const opengold::rules::CampAction &action)
+                        {
+                            return action.id.find("raise_dead") != std::string::npos;
+                        });
+                    if (raise == actions.end())
+                    {
+                        continue;
+                    }
+                    try
+                    {
+                        party->use_camp_action(cleric, lost, raise->id);
+                        break;
+                    }
+                    catch (const std::exception &)
+                    {
+                    }
+                }
+            }
+        };
         if (!party->state().spell_rest)
         {
+            raise_the_dead();
             return;
         }
         // Those the last Long Rest left choosing; choose_spells takes each off.
@@ -783,6 +850,11 @@ bool curse_walk_census(bool route)
                     }
                     const auto rank = [&](const std::string &id)
                     {
+                        // With someone dead, a cleric takes Raise Dead first.
+                        if (anyone_dead && id.find("raise_dead") != std::string::npos)
+                        {
+                            return -1;
+                        }
                         const auto found =
                             std::ranges::find_if(favorites,
                                                  [&](std::string_view name)
@@ -802,6 +874,7 @@ bool curse_walk_census(bool route)
             }
             party->choose_spells(id, {{}, prepared});
         }
+        raise_the_dead();
     };
     const auto new_party = [&]
     {
@@ -859,7 +932,107 @@ bool curse_walk_census(bool route)
     std::map<std::string, unsigned> phases;
     const bool trace = route || std::getenv("OPENGOLD_CURSE_TRACE");
     // One play of the pending fight with these dice; the party ends as it left it.
-    const auto fight_once = [&](std::uint64_t seed)
+    // A player's own choice for a member's turn, where it has one, as the
+    // cluebook fights shambling mounds: the Wand of Defoliation (its power,
+    // Blast), then Hold Monster, each at the strongest enemy not yet
+    // helpless; Quick for the rest.
+    const auto player_turn = [](const opengold::rules::CombatSession &session,
+                                std::vector<opengold::rules::EntityId> &picked)
+        -> std::optional<opengold::rules::Command>
+    {
+        constexpr unsigned blast = 198, hold_monster = 194;
+        const auto state = session.snapshot();
+        const auto worth_aiming = [&](opengold::rules::EntityId id)
+        {
+            const auto unit =
+                std::ranges::find(state.combatants, id, &opengold::rules::CombatantView::id);
+            return unit != state.combatants.end() &&
+                   unit->side == opengold::rules::Side::opposition && unit->conscious &&
+                   unit->status.empty() && std::ranges::find(picked, id) == picked.end();
+        };
+        const auto hit_points = [&](opengold::rules::EntityId id)
+        {
+            return std::ranges::find(state.combatants, id, &opengold::rules::CombatantView::id)
+                ->hit_points;
+        };
+        const auto commands = session.legal_commands();
+        const auto ours = [](unsigned item)
+        {
+            return item == blast || item == hold_monster || item % 256 == blast;
+        };
+        // Hold Monster at the strongest; the wand, which reaches three squares,
+        // at the nearest.
+        const auto actor =
+            std::ranges::find(state.combatants, state.actor, &opengold::rules::CombatantView::id);
+        const auto distance = [&](opengold::rules::Cell cell)
+        {
+            return actor == state.combatants.end() ? 99
+                                                   : std::max(std::abs(cell.x - actor->cell.x),
+                                                              std::abs(cell.y - actor->cell.y));
+        };
+        const auto better =
+            [&](const opengold::rules::Command &a, const opengold::rules::Command &b)
+        {
+            return a.item % 256 == blast ? distance(a.destination) < distance(b.destination)
+                                         : hit_points(a.target) > hit_points(b.target);
+        };
+        const opengold::rules::Command *best = nullptr;
+        for (const auto &command : commands)
+        {
+            if (command.verb == "aim" && ours(command.item) && worth_aiming(command.target) &&
+                (!best || better(command, *best)))
+            {
+                best = &command;
+            }
+        }
+        if (best)
+        {
+            picked.push_back(best->target);
+            return *best;
+        }
+        for (const auto &command : commands)
+        {
+            if (command.verb == "aim_done" && ours(command.item))
+            {
+                picked.clear();
+                return command;
+            }
+        }
+        picked.clear();
+        const bool any = std::ranges::any_of(state.combatants,
+                                             [&](const opengold::rules::CombatantView &unit)
+                                             {
+                                                 return worth_aiming(unit.id);
+                                             });
+        if (!any)
+        {
+            return std::nullopt;
+        }
+        // The wand reaches three squares (the cluebook).
+        const bool enemy_near =
+            actor != state.combatants.end() &&
+            std::ranges::any_of(state.combatants,
+                                [&](const opengold::rules::CombatantView &unit)
+                                {
+                                    return worth_aiming(unit.id) &&
+                                           std::max(std::abs(unit.cell.x - actor->cell.x),
+                                                    std::abs(unit.cell.y - actor->cell.y)) <= 3;
+                                });
+        for (const auto &[verb, number] :
+             {std::pair{"use", blast}, std::pair{"cast", hold_monster}})
+        {
+            for (const auto &command : commands)
+            {
+                const auto spell = command.verb == "use" ? command.item % 256 : command.item;
+                if (command.verb == verb && spell == number && (number != blast || enemy_near))
+                {
+                    return command;
+                }
+            }
+        }
+        return std::nullopt;
+    };
+    const auto fight_once = [&](std::uint64_t seed, unsigned tactic)
     {
         opengold::CombatDemo combat(opengold::original::rules_module(content));
         combat.campaign_party(party);
@@ -875,7 +1048,9 @@ bool curse_walk_census(bool route)
             std::cout << "\n";
         }
         // Each turn chosen as the game's combat view chooses it: the party all
-        // on Quick with Quick magic on, everyone else at the default difficulty.
+        // on Quick with Quick magic on (or, as a player may set it, only the
+        // magic-user's), everyone else at the default difficulty.
+        std::vector<opengold::rules::EntityId> picked;
         for (int command = 0; command < 3000 && combat.combat().snapshot().outcome ==
                                                     opengold::rules::Outcome::ongoing;
              ++command)
@@ -887,11 +1062,14 @@ bool curse_walk_census(bool route)
             const bool member = actor != state.combatants.end() &&
                                 actor->side == opengold::rules::Side::party &&
                                 !opengold::is_ally(state.actor);
+            const auto held = member && tactic == 2 ? player_turn(session, picked) : std::nullopt;
             const auto chosen =
-                member
-                    ? opengold::choose_quick_command(session, true, opengold::Searching::everyone)
-                    : opengold::choose_demo_command(session, opengold::Searching::everyone,
-                                                    opengold::default_difficulty);
+                held     ? *held
+                : member ? opengold::choose_quick_command(
+                               session, tactic != 1 || actor->name.starts_with("magic_user"),
+                               opengold::Searching::everyone)
+                         : opengold::choose_demo_command(session, opengold::Searching::everyone,
+                                                         opengold::default_difficulty);
             if (!combat.submit(chosen))
             {
                 ++phases["fight stopped at " + chosen.verb];
@@ -901,7 +1079,8 @@ bool curse_walk_census(bool route)
         return combat.combat().snapshot();
     };
     // The pending fight. The route plays it with several dice from the party
-    // as it stood, as a player reloads a save, and keeps the best play: a win,
+    // as it stood, as a player reloads a save, each with three tactics, and
+    // keeps the best play: a win,
     // then the fewest dead, then the fewest Hit Points lost. The walk plays it
     // once.
     const auto fight = [&]
@@ -920,23 +1099,29 @@ bool curse_walk_census(bool route)
             }
             return lost;
         };
-        std::uint64_t seed = 7, best_seed = seed;
-        auto result = fight_once(seed);
+        // Try t plays seed 7 + t / 3 with tactic t % 3: everyone casting, the
+        // magic-user alone casting, or a player's own choices (player_turn).
+        const auto play_try = [&](unsigned t)
+        {
+            return fight_once(7 + t / 3, t % 3);
+        };
+        unsigned last = 0, best_try = 0;
+        auto result = play_try(0);
         auto best = score(result);
-        while (route && best > 0 && ++seed < 47)
+        while (route && best > 0 && ++last < 120)
         {
             party->restore(before);
-            result = fight_once(seed);
+            result = play_try(last);
             if (score(result) < best)
             {
                 best = score(result);
-                best_seed = seed;
+                best_try = last;
             }
         }
-        if (seed != best_seed && route)
+        if (last != best_try && route)
         {
             party->restore(before);
-            result = fight_once(best_seed);
+            result = play_try(best_try);
         }
         // OPENGOLD_FIGHT_LOG prints the kept play's log, to see why a fight goes
         // as it does.
@@ -955,6 +1140,8 @@ bool curse_walk_census(bool route)
     // The survey declines every offer (the last choice), so it does not walk
     // into a trap or surrender.
     bool declining = false;
+    // The beat being played takes the first wand a treasure holds (RouteBeat::take_wand).
+    bool taking_wand = false;
     const auto play = [&](const std::string &where)
     {
         const auto attribute = [&]
@@ -1006,6 +1193,23 @@ bool curse_walk_census(bool route)
                 std::size_t pick = (++shown[s.dialogue] > 2 || declining) && !s.choices.empty()
                                        ? s.choices.size() - 1
                                        : 0;
+                // A magic-user learns the spell a player would take.
+                if (s.dialogue.starts_with("Choose a spell for"))
+                {
+                    constexpr std::array<std::string_view, 12> learned{
+                        "Hold Monster",  "Cone of Cold", "Ice Storm",      "Fireball",
+                        "Haste",         "Slow",         "Lightning Bolt", "Stinking Cloud",
+                        "Magic Missile", "Sleep",        "Enlarge",        "Shield"};
+                    for (const auto name : learned)
+                    {
+                        const auto found = std::ranges::find(s.choices, name);
+                        if (found != s.choices.end())
+                        {
+                            pick = static_cast<std::size_t>(found - s.choices.begin());
+                            break;
+                        }
+                    }
+                }
                 if (!answers.empty())
                 {
                     const auto found = std::ranges::find_if(
@@ -1054,8 +1258,45 @@ bool curse_walk_census(bool route)
                 (void)session.leave_shop(s.continue_ticket);
                 continue;
             case TourPhase::treasure:
+            {
+                // The route takes a wand for its magic-user, readied for a fight
+                // (the original's AI uses only readied items), as a player would.
+                const auto &pile = session.treasure_pile();
+                const auto wand =
+                    std::ranges::find_if(pile,
+                                         [](const opengold::por::Equipment &item)
+                                         {
+                                             auto name = item.label();
+                                             std::ranges::transform(name, name.begin(), ::toupper);
+                                             return name.find("WAND") != std::string::npos;
+                                         });
+                const auto slots = party->state().slots;
+                const auto mage = std::ranges::find_if(
+                    slots,
+                    [&](opengold::MemberId id)
+                    {
+                        return id &&
+                               party->member(id).character.sheet().name.starts_with("magic_user");
+                    });
+                if (route && taking_wand && wand != pile.end() && mage != slots.end())
+                {
+                    const auto wand_name = wand->label();
+                    party->select(opengold::PartySlot{static_cast<unsigned>(mage - slots.begin())});
+                    const auto taken = session.take_treasure(
+                        s.continue_ticket, static_cast<std::size_t>(wand - pile.begin()));
+                    if (taken)
+                    {
+                        const auto &items = party->member(*mage).character.inventory().items();
+                        party->equip(*mage, items.back().id);
+                        std::cout << "  " << where << ": the magic-user takes and readies "
+                                  << wand_name << "\n";
+                        taking_wand = false;
+                        continue;
+                    }
+                }
                 (void)session.leave_treasure(s.continue_ticket);
                 continue;
+            }
             case TourPhase::combat:
                 if (session.monster_picture())
                 {
@@ -1249,6 +1490,7 @@ bool curse_walk_census(bool route)
                 for (int round = 0; round < 40; ++round)
                 {
                     answers = beat.answers;
+                    taking_wand = beat.take_wand;
                     if (beat.waiting)
                     {
                         play(where);
