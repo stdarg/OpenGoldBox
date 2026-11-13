@@ -421,10 +421,13 @@ struct RouteBeat
     // along the row, until this cell is at least the value: Hap's patrols
     // meet the party as it goes about.
     std::optional<std::pair<std::uint16_t, std::uint16_t>> repeat_until_at_least;
-    // Between those rounds the test heals the party outside the game's
-    // commands (rests where no patrol interrupts it), as the Pool of Radiance
-    // expedition does where the game allows no rest.
+    // Before the beat and between those rounds the test heals the party
+    // outside the game's commands (rests where no patrol interrupts it), as
+    // the Pool of Radiance expedition does where the game allows no rest.
     bool test_heal = false;
+    // Step forward from the square instead of looking at it: a map's ways
+    // out run as the party steps (a script's entry 0).
+    bool step = false;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -449,8 +452,10 @@ const std::vector<RouteBeat> &curse_route()
                                        // and led to the Thieves' Guild, rested.
         {1, 9, 3, D::north, {}, true}, // The guildmaster's news, rested; the Fire Knives burst in.
         {3, 0, 0, D::south, {}, true, true}, // Out through the guild's back to the sewers.
-        // The guild's secret training hall, four levels over (an award stops
+        // The guild's secret training hall, six levels over (an award stops
         // short of the level after next).
+        {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
+        {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
         {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
         {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
         {3, 14, 6, D::north, train_everyone(), false, false, false, std::nullopt, 60000, 7000},
@@ -509,6 +514,52 @@ const std::vector<RouteBeat> &curse_route()
          std::pair<std::uint16_t, std::uint16_t>{0x4C47, 4},
          true},
         {50, 8, 4, D::north, {}}, // The efreeti and the dark elves in the barn.
+        // Out through Hap's gate, following the efreeti's map to the caves.
+        {50,
+         3,
+         0,
+         D::north,
+         {"YES", "CAVES"},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         false,
+         true},
+        // Crimdrac the dracolich lets the party live and takes it up to the
+        // Wizard's Tower; on its roof the party, freed of the bond, parleys
+        // with the dragons and is nice to them, as the cluebook advises.
+        {50,
+         7,
+         12,
+         D::north,
+         {"PARLAY WITH THE DRAGONS", "NICE"},
+         false,
+         false,
+         false,
+         std::nullopt,
+         0,
+         0,
+         std::nullopt,
+         true},
+        // Dracandros in the tower's courtyard; among his treasures, the Helm
+        // of Dragons (cell 0x4C59): the second bond is gone.
+        {51,
+         4,
+         13,
+         D::north,
+         {},
+         false,
+         false,
+         false,
+         std::pair<std::uint16_t, std::uint16_t>{0x4C59, 1},
+         0,
+         0,
+         std::nullopt,
+         true},
     };
     return beats;
 }
@@ -560,9 +611,11 @@ bool curse_walk_census(bool route)
     // Each day's spells: the strongest a caster knows at each of its levels.
     const auto memorize = [&]
     {
-        constexpr std::array<std::string_view, 9> favorites{
-            "fireball",    "stinking_cloud",    "magic_missile", "sleep", "lightning_bolt",
-            "hold_person", "cure_light_wounds", "prayer",        "bless"};
+        constexpr std::array<std::string_view, 15> favorites{
+            "cone_of_cold",      "ice_storm",      "confusion",     "hold_monster",
+            "fireball",          "stinking_cloud", "magic_missile", "sleep",
+            "lightning_bolt",    "flame_strike",   "hold_person",   "cure_serious_wounds",
+            "cure_light_wounds", "prayer",         "bless"};
         if (!party->state().spell_rest)
         {
             return;
@@ -647,6 +700,13 @@ bool curse_walk_census(bool route)
             {
                 std::array<std::uint8_t, 63> raw{};
                 raw[46] = type;
+                // The route's party carries the magic arms of one brought from
+                // Pool of Radiance: weapons +2, armor and shields +1 (the
+                // record's magic bonus, byte 50).
+                if (route)
+                {
+                    raw[50] = type == 55 || type == 59 ? 1 : 2;
+                }
                 opengold::por::Equipment gear;
                 gear.stored = opengold::por::decode_items(raw)->front();
                 party->purchase(id, gear);
@@ -1018,6 +1078,11 @@ bool curse_walk_census(bool route)
                 {
                     break;
                 }
+                for (int day = 0; beat.test_heal && day < 90 && !party_whole() && party->rest();
+                     ++day)
+                {
+                    memorize();
+                }
                 if (beat.test_experience)
                 {
                     for (const auto id : party->state().slots)
@@ -1055,7 +1120,8 @@ bool curse_walk_census(bool route)
                     {
                         const unsigned x = (beat.x + static_cast<unsigned>(round)) % 16;
                         opengold::test::TourAccess::place(session, {x, beat.y, beat.facing});
-                        if (session.explore(opengold::por::ExplorationCommand::look))
+                        if (session.explore(beat.step ? opengold::por::ExplorationCommand::forward
+                                                      : opengold::por::ExplorationCommand::look))
                         {
                             play(where);
                         }
@@ -1165,10 +1231,11 @@ bool curse_walk_census(bool route)
             std::cout << "Survey ends on map " << session.snapshot().area_id << ", phase "
                       << static_cast<int>(session.snapshot().phase) << "\n";
         }
-        // The route's last beat leaves the party in Hap (script 49), the
-        // barn won.
-        constexpr unsigned hap_script = 49;
-        return needs.empty() && end.phase != TourPhase::defeated && end.script_id == hap_script;
+        // The route's last beat leaves the party in the Wizard's Tower
+        // (script 51), Dracandros dead.
+        constexpr unsigned wizards_tower_script = 51;
+        return needs.empty() && end.phase != TourPhase::defeated &&
+               end.script_id == wizards_tower_script;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");

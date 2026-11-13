@@ -244,15 +244,19 @@ In small steps, each with its check:
    magic on): the shops, the sage, the king's carriage and jail, the
    Thieves' Guild, the sewers and the Fire Knives' hideout, to the leader's
    fight, the first bond's end and the exile to the wilderness; it trains to
-   levels 8 and 9 at the guild's secret hall on test experience, as the Pool
-   of Radiance expedition does, for a party as strong as one brought from Pool
-   of Radiance; it camps in the wilderness and journeys by Shadow Gap's
+   levels 9 and 10 at the guild's secret hall on test experience, and carries
+   +2 weapons and +1 armor, as the Pool of Radiance expedition does, for a
+   party as strong as one brought from Pool of Radiance; it camps in the wilderness and journeys by Shadow Gap's
    displacer beasts to Shadowdale, by boat to Ashabenford, past the Fire
    Knives' ambush to the Standing Stones, to Essembra, and through three
    black dragons to Hap, where it hunts four dark elf patrols (healed by the
-   test between them, as camps in Hap draw more) and wins the barn. Each
-   fight is played with up to 40 dice and the best play kept, as a player
-   reloads. Next: Hap's cave and the Wizard's Tower (Dracandros).
+   test between them, as camps in Hap draw more) and wins the barn; it
+   follows the efreeti's map out of Hap's gate to the caves, beats their
+   guards, is taken up by Crimdrac the dracolich to the Wizard's Tower,
+   parleys with the dragons on its roof, and kills Dracandros in the
+   courtyard for the Helm of Dragons (the second bond). Each fight is played
+   with up to 40 dice and the best play kept, as a player reloads. Next: the
+   dead raised at Hap's temple, then Yulash (Moander).
 
 ### 4 to 7. The other campaigns
 
