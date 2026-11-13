@@ -566,6 +566,8 @@ void a_pool_character_comes_to_curse()
           "Its items come along, readied as they were");
     check(second.state().wealth[4] == 300 && second.state().wealth[3] == 0,
           "It brings 300 platinum and none of its gold");
+    check(second.purse_gold() == 1500 && gold_value(second.state().wealth, srd_coin_rates) == 3000,
+          "Under the original rules a platinum piece is worth 5 gold, under the SRD 10");
     // The Pool of Radiance save the game's check brings characters from
     // (opengold_godot_curse_from_pool): this fighter, a cleric and five
     // fighters, one of them out of the party: seven, one more than Curse's

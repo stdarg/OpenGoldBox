@@ -430,10 +430,10 @@ void CombatDemo::start_encounter(std::vector<Participant> enemies, std::string r
     participants.insert(participants.end(), std::make_move_iterator(enemies.begin()),
                         std::make_move_iterator(enemies.end()));
     const RollPurpose initiative("initiative");
-    auto next = module_->create({arena(), std::move(participants),
-                                 campaign_ ? campaign_->state().next_combat_scope : 1, 100,
-                                 campaign_ ? spendable_gold(campaign_->state().wealth) : 0},
-                                seed_);
+    auto next = module_->create(
+        {arena(), std::move(participants), campaign_ ? campaign_->state().next_combat_scope : 1,
+         100, campaign_ ? spendable_gold(campaign_->state().wealth, campaign_->coin_rates()) : 0},
+        seed_);
     install_combat(std::move(next), std::move(reward_id));
 }
 
@@ -662,8 +662,8 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     const RollPurpose initiative("initiative");
     auto next = module_->create({encounter.field.geometry, std::move(participants),
                                  campaign_->state().next_combat_scope, encounter.morale,
-                                 spendable_gold(campaign_->state().wealth), encounter.daylight,
-                                 encounter.spares_the_party},
+                                 spendable_gold(campaign_->state().wealth, campaign_->coin_rates()),
+                                 encounter.daylight, encounter.spares_the_party},
                                 seed);
     install_combat(std::move(next), {});
     seed_ = seed;

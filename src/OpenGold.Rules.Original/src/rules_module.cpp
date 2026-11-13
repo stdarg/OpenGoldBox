@@ -386,6 +386,13 @@ class OriginalModule final : public RulesModule
                                                     unsigned experience) const override;
     [[nodiscard]] std::vector<AdvancementChoice>
     lasting_changes(const CharacterSheet &sheet, const VitalState &after) const override;
+
+    // The original's coins: 20 sp, 2 ep or 1/5 pp to the gold piece
+    // (gdconsts.pas, coinValues).
+    [[nodiscard]] std::array<std::uint64_t, 5> coin_worth() const override
+    {
+        return {1, 10, 100, 200, 1000};
+    }
     void drain_character(CharacterSheet &sheet, VitalState &state, const Drain &drain) const;
     [[nodiscard]] unsigned experience_share(const CharacterSheet &sheet,
                                             unsigned award) const override;

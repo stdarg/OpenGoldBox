@@ -357,7 +357,7 @@ EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
         fields[0x100] = m.vitals.dead ? 0 : 1;
         fields[0x119] = static_cast<std::uint16_t>(m.vitals.hit_points);
         // Every member shows the party's money: the party owns it all.
-        const auto coins = script_coins(party.state().wealth);
+        const auto coins = script_coins(party.state().wealth, party.coin_rates());
         for (unsigned n = 0; n < 7; ++n)
         {
             fields[ecl_coin_addresses[n].location - ecl_character_record.location] =

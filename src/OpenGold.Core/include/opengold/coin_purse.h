@@ -55,28 +55,42 @@ struct SettledPurse
     std::optional<CoinExchange> exchange;
 };
 
-// What the purse's coins are worth in whole gold pieces at SRD rates (10 sp, 2
-// ep or 1/10 pp to the gold piece); gems and jewelry are not coins.
-[[nodiscard]] std::uint64_t gold_value(const Purse &purse);
+// What each coin, copper to platinum, is worth in 200ths of a gold piece:
+// the SRD's rates (10 sp, 2 ep or 1/10 pp to the gold piece), or the
+// original's (20 sp, 2 ep or 1/5 pp, gdconsts.pas coinValues), as the rules
+// played say (RulesModule::coin_worth).
+struct CoinRates
+{
+    std::array<std::uint64_t, 5> worth;
+};
+
+inline constexpr CoinRates srd_coin_rates{{2, 20, 100, 200, 2000}};
+
+// What the purse's coins are worth in whole gold pieces at these rates; gems
+// and jewelry are not coins.
+[[nodiscard]] std::uint64_t gold_value(const Purse &purse, const CoinRates &rates = srd_coin_rates);
 // gold_value, at most what a 32-bit count holds.
-[[nodiscard]] std::uint32_t spendable_gold(const Purse &purse);
+[[nodiscard]] std::uint32_t spendable_gold(const Purse &purse,
+                                           const CoinRates &rates = srd_coin_rates);
 
 // Pays a price of `gold` gold pieces with any coins: with gold when it
 // covers the price, otherwise with the largest coins that do not overpay and
 // then one larger coin, with change in gold, silver and copper. Throws if the
 // coins are worth less than the price.
-[[nodiscard]] SettledPurse pay_gold(const Purse &purse, std::uint64_t gold);
+[[nodiscard]] SettledPurse pay_gold(const Purse &purse, std::uint64_t gold,
+                                    const CoinRates &rates = srd_coin_rates);
 
 // Original New Phlan scripts check and take one particular denomination (the
 // inn asks for platinum). They see, in each denomination, what the whole coin
-// purse can afford at SRD rates. Gems and jewelry are not coins; they are shown
-// as held. A script variable shows at most script_coin_limit.
-[[nodiscard]] Purse script_coins(const Purse &purse);
+// purse can afford at its rates. Gems and jewelry are not coins; they are
+// shown as held. A script variable shows at most script_coin_limit.
+[[nodiscard]] Purse script_coins(const Purse &purse, const CoinRates &rates = srd_coin_rates);
 
 // Applies once what a script changed relative to script_coins(purse). Added
 // coins are added as given. Taken coins come from that denomination first; the
 // rest is paid from other coins with change. Throws if the script took more
 // than the purse is worth.
-[[nodiscard]] SettledPurse settle_script_coins(const Purse &purse, const Purse &after_script);
+[[nodiscard]] SettledPurse settle_script_coins(const Purse &purse, const Purse &after_script,
+                                               const CoinRates &rates = srd_coin_rates);
 } // namespace opengold
 #endif

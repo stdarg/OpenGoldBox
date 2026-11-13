@@ -1193,6 +1193,13 @@ class RulesModule
         return experience;
     }
 
+    // What each coin, copper to platinum, is worth in 200ths of a gold piece:
+    // the SRD's rates by default (10 sp, 2 ep or 1/10 pp to the gold piece).
+    [[nodiscard]] virtual std::array<std::uint64_t, 5> coin_worth() const
+    {
+        return {2, 20, 100, 200, 2000};
+    }
+
     // What a fight left on a character for good beyond its vital state (the
     // original rules' level drain), as level history entries the character
     // takes in order (advance_character); none by default.

@@ -4162,7 +4162,7 @@ bool RolfTourSession::choose_at_hall(std::size_t choice)
     {
         const auto fee = opengold::skill_training_fee(picked.grant);
         auto denial = campaign_->skill_training_denial(picked.member, visit.hall);
-        if (denial == TrainingDenial::none && gold_value(campaign_->state().wealth) < fee)
+        if (denial == TrainingDenial::none && campaign_->purse_gold() < fee)
         {
             denial = TrainingDenial::gold;
         }
@@ -4817,7 +4817,7 @@ bool RolfTourSession::choose_at_temple(std::size_t choice)
                       {{"name", name}}}});
         return true;
     case TempleChoice::Kind::member:
-        if (gold_value(campaign_->state().wealth) < picked.offering.price_gp)
+        if (campaign_->purse_gold() < picked.offering.price_gp)
         {
             show_temple({{"The party's gold cannot pay {fee} gp.",
                           {{"fee", amount(picked.offering.price_gp)}}}});

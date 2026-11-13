@@ -795,7 +795,7 @@ void RolfTourView::refresh_inventory()
         .set_text(i18n::format("{name} / {class} / party {gold} gp",
                                {{"name", String::utf8(m.character.sheet().name.c_str())},
                                 {"class", i18n::class_summary(m.character.sheet())},
-                                {"gold", gold_value(campaign_->state().wealth)}}));
+                                {"gold", campaign_->purse_gold()}}));
     // In a shop every line says what the shop pays for it (SELL-1).
     const bool shopping = session_ && session_->snapshot().phase == TourPhase::shopping;
     for (const auto &item : m.character.inventory().items())
@@ -2544,7 +2544,7 @@ void RolfTourView::refresh()
             .set_text(i18n::format(
                 "Shop / buying for {name}: party {gold} gp, carrying {carried}/{capacity} lb",
                 {{"name", String::utf8(buyer.character.sheet().name.c_str())},
-                 {"gold", gold_value(campaign_->state().wealth)},
+                 {"gold", campaign_->purse_gold()},
                  {"carried", carried_pounds(*campaign_, campaign_->selected())},
                  {"capacity", campaign_->carrying_capacity(campaign_->selected())}}));
     }
@@ -2696,7 +2696,7 @@ void RolfTourView::refresh()
         const auto chosen = campaign_->selected();
         const auto name = String::utf8(campaign_->member(chosen).character.sheet().name.c_str());
         const auto &listed = treasure ? session_->treasure_pile() : session_->shop_stock();
-        const auto purse = gold_value(campaign_->state().wealth);
+        const auto purse = campaign_->purse_gold();
         bool any_unusable = false, any_unaffordable = false, any_no_gain = false;
         for (int row = 0; row < choices->get_item_count() && row < static_cast<int>(listed.size());
              ++row)
@@ -2821,7 +2821,7 @@ void RolfTourView::refresh()
                 {{"name", String::utf8(m.character.sheet().name.c_str())},
                  {"current", m.vitals.hit_points},
                  {"maximum", campaign_->hit_point_maximum(campaign_->selected())},
-                 {"gold", gold_value(campaign_->state().wealth)},
+                 {"gold", campaign_->purse_gold()},
                  {"items",
                   i18n::plural("{count} item", "{count} items",
                                static_cast<int>(m.character.inventory().items().size()))}}));
@@ -3240,8 +3240,7 @@ void RolfTourView::check_town()
     };
     const auto gold = [&]
     {
-        return campaign_ ? gold_value(campaign_->state().wealth)
-                         : gold_value(session_->party().wealth);
+        return campaign_ ? campaign_->purse_gold() : gold_value(session_->party().wealth);
     };
     if (check_prompts_ != 8)
     {

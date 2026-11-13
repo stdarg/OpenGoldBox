@@ -298,6 +298,10 @@ lines in all:
      THAC0) tops the member's stored Armor Class (`AttackRollNoAttacker`), a
      saving throw of the script's category and modifier avoids the damage
      (`RollSavingThrow`), and a member falls at 0 and dies at −10.
+   - **Coins are worth what the original's are** (`gdconsts.pas`,
+     `coinValues`): 20 silver, 2 electrum or 1/5 platinum to the gold piece
+     (the SRD's 10, 2 and 1/10 under the SRD), in prices, fees and what a
+     script sees of the purse.
    - **Encounters fight whole:** every monster a script loads fights, as in
      the original; the SRD's fitting of a fight to the party's levels is the
      SRD's alone.

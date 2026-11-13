@@ -75,9 +75,8 @@ std::string original_identity_and_attributes(const Character &character, const P
     text += i18n::formatted("   THAC0 {thac0}", {{"thac0", original.thac0}});
     if (member)
     {
-        text += i18n::formatted(
-            "   Party gold {gold}   XP {xp}",
-            {{"gold", gold_value(party->state().wealth)}, {"xp", member->experience}});
+        text += i18n::formatted("   Party gold {gold}   XP {xp}",
+                                {{"gold", party->purse_gold()}, {"xp", member->experience}});
     }
     if (member && member->vitals.dead)
     {
@@ -194,9 +193,8 @@ std::string identity_and_attributes(const Character &character, const PartyMembe
     text += i18n::formatted("   Hit Dice: {dice}", {{"dice", gs(dice)}});
     if (member)
     {
-        text += i18n::formatted(
-            "   Party gold {gold}   XP {xp}",
-            {{"gold", gold_value(party->state().wealth)}, {"xp", member->experience}});
+        text += i18n::formatted("   Party gold {gold}   XP {xp}",
+                                {{"gold", party->purse_gold()}, {"xp", member->experience}});
     }
     if (member && member->vitals.dead)
     {
