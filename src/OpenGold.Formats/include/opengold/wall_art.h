@@ -2,6 +2,7 @@
 #define OPENGOLD_WALL_ART_H
 
 #include "opengold/formats.h"
+#include "opengold/vga_picture.h"
 #include <array>
 #include <optional>
 
@@ -47,5 +48,13 @@ struct WallViewSize
 [[nodiscard]] std::optional<WallTiles> decode_wall_tiles(std::span<const std::uint8_t> record);
 [[nodiscard]] std::optional<WallArtSet> decode_wall_art(std::span<const std::uint8_t> definitions,
                                                         std::span<const WallTile> tiles);
+
+// The 256-color games' walls (Pools of Darkness, Treasures): every appearance's
+// ten views drawn from one picture of 8x8 tiles, the 8X8D1.DAX record with the
+// WALLDEF record's id, whose frame n is symbol n. The original never draws
+// symbol 0; it comes out in color 13, the color those games draw tiles through.
+using VgaWallViews = std::array<VgaImage, 10>;
+[[nodiscard]] std::optional<std::vector<VgaWallViews>>
+decode_vga_wall_art(std::span<const std::uint8_t> definitions, const VgaPicture &tiles);
 } // namespace opengold::por
 #endif

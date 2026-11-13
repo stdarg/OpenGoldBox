@@ -9,6 +9,9 @@ namespace
 // Data-layout facts: each perspective's size in 8 x 8 tiles.
 constexpr std::array<unsigned, 10> columns{1, 1, 1, 3, 2, 2, 7, 2, 2, 1};
 constexpr std::array<unsigned, 10> rows{2, 4, 4, 4, 8, 8, 8, 11, 11, 2};
+// Data-layout fact: ten stored perspectives per 156-byte appearance.
+constexpr std::array<unsigned, 10> offsets{0, 2, 6, 10, 22, 38, 54, 110, 132, 154};
+constexpr unsigned slice_size = 156;
 } // namespace
 
 WallViewSize wall_view_size(WallView view)
@@ -66,7 +69,6 @@ std::optional<WallTiles> decode_wall_tiles(std::span<const std::uint8_t> record)
 std::optional<WallArtSet> decode_wall_art(std::span<const std::uint8_t> definitions,
                                           std::span<const WallTile> tiles)
 {
-    constexpr unsigned slice_size = 156;
     if (definitions.empty() || definitions.size() % slice_size ||
         definitions.size() > 15 * slice_size || tiles.empty() || tiles.size() > 256)
     {
@@ -92,8 +94,6 @@ std::optional<WallArtSet> decode_wall_art(std::span<const std::uint8_t> definiti
         return std::nullopt;
     }
 
-    // Data-layout fact: ten stored perspectives per 156-byte appearance.
-    constexpr std::array<unsigned, 10> offsets{0, 2, 6, 10, 22, 38, 54, 110, 132, 154};
     // Normal EGA palette. Wall index 8 is gray; black (0) is opaque.
     constexpr std::array<std::array<std::uint8_t, 3>, 16> palette{{{0, 0, 0},
                                                                    {0, 0, 170},
@@ -138,5 +138,56 @@ std::optional<WallArtSet> decode_wall_art(std::span<const std::uint8_t> definiti
         }
     }
     return result;
+}
+
+std::optional<std::vector<VgaWallViews>>
+decode_vga_wall_art(std::span<const std::uint8_t> definitions, const VgaPicture &tiles)
+{
+    // The original holds four wall definitions of five appearances.
+    constexpr std::size_t most_appearances = 4 * 5;
+    constexpr std::uint8_t see_through = 13;
+    if (definitions.empty() || definitions.size() % slice_size ||
+        definitions.size() > most_appearances * slice_size)
+    {
+        return std::nullopt;
+    }
+    const bool tiles_are_8x8 = std::all_of(tiles.frames.begin(), tiles.frames.end(),
+                                           [](const VgaImage &tile)
+                                           {
+                                               return tile.width == 8 && tile.height == 8;
+                                           });
+    const bool symbols_in_range = std::all_of(definitions.begin(), definitions.end(),
+                                              [&tiles](std::uint8_t symbol)
+                                              {
+                                                  return symbol < tiles.frames.size();
+                                              });
+    if (!tiles_are_8x8 || !symbols_in_range)
+    {
+        return std::nullopt;
+    }
+
+    std::vector<VgaWallViews> appearances(definitions.size() / slice_size);
+    for (std::size_t appearance = 0; appearance < appearances.size(); ++appearance)
+    {
+        for (unsigned view = 0; view < 10; ++view)
+        {
+            auto &image = appearances[appearance][view];
+            image.width = static_cast<std::uint16_t>(columns[view] * 8);
+            image.height = static_cast<std::uint16_t>(rows[view] * 8);
+            image.pixels.resize(std::size_t{image.width} * image.height);
+            for (unsigned y = 0; y < image.height; ++y)
+            {
+                for (unsigned x = 0; x < image.width; ++x)
+                {
+                    const auto symbol = definitions[appearance * slice_size + offsets[view] +
+                                                    (y / 8) * columns[view] + x / 8];
+                    image.pixels[y * image.width + x] =
+                        symbol == 0 ? see_through
+                                    : tiles.frames[symbol].pixels[(y % 8) * 8 + x % 8];
+                }
+            }
+        }
+    }
+    return appearances;
 }
 } // namespace opengold::por

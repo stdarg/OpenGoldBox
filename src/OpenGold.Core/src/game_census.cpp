@@ -10,6 +10,8 @@
 #include "opengold/path_text.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/por_sound.h"
+#include "opengold/treasures_texts.h"
+#include "opengold/vga_picture.h"
 #include "opengold/wall_art.h"
 
 #include <algorithm>
@@ -326,6 +328,62 @@ void check_wall_art(const std::map<std::string, GameFile> &by_name, const GameFi
     require(art.has_value() && art->appearances.size() == 5 * blocks, "not wall art");
 }
 
+// Pools of Darkness and Treasures draw in 256 colors: their pictures, tiles and
+// icons share one layout, their PIC and SPRIT animations another
+// (docs/games/darkness.md).
+bool uses_vga_pictures(GoldBoxGame game)
+{
+    return game == GoldBoxGame::pools_of_darkness ||
+           game == GoldBoxGame::treasures_of_the_savage_frontier;
+}
+
+void check_vga_picture(const Bytes &bytes)
+{
+    require(decode_vga_picture(bytes).has_value(), "not a 256-color picture");
+}
+
+void check_vga_tiles(const Bytes &bytes)
+{
+    const auto tiles = decode_vga_picture(bytes);
+    require(tiles && tiles->frames.front().width == 8 && tiles->frames.front().height == 8,
+            "not 8x8 tiles");
+}
+
+// A wall definition record is drawn with the 8X8D1.DAX record of its own id
+// (the original's LoadWallSet and Load8x8Set).
+void check_vga_wall_art(const std::map<std::string, GameFile> &by_name, const DaxRecord &record)
+{
+    const auto tile_file = by_name.find("8X8D1.DAX");
+    require(tile_file != by_name.end(), "8X8D1.DAX is missing");
+    const auto tile_records = archive_records(tile_file->second);
+    const auto *tile_record = find_record(tile_records, record.id);
+    require(tile_record != nullptr, "its tiles are missing");
+    const auto tiles = decode_vga_picture(*tile_record);
+    require(tiles.has_value(), "its tiles do not decode");
+    require(por::decode_vga_wall_art(record.bytes, *tiles).has_value(), "not wall art");
+}
+
+// Treasures' BORD.DAX: the frames' tiles and pictures, the font (record 8, a
+// picture of 64 glyphs), the frames' tile runs, and two name tables.
+void check_border_record(const DaxRecord &record)
+{
+    switch (record.id)
+    {
+    case 7:
+        require(treasures::decode_border_runs(record.bytes).has_value(),
+                "not runs of border tiles");
+        return;
+    case 9:
+        require(treasures::decode_name_table(record.bytes, 37).has_value(), "not the effect names");
+        return;
+    case 10:
+        require(treasures::decode_name_table(record.bytes, 20).has_value(), "not the item words");
+        return;
+    default:
+        check_vga_picture(record.bytes);
+    }
+}
+
 void check_names_and_sounds(RowBuilder &row, GoldBoxGame game, const GameFile &start,
                             const std::filesystem::path &folder)
 {
@@ -361,6 +419,75 @@ struct FamilyDecoder
     std::string_view description;
     RecordDecoder decode;
 };
+
+// The 256-color games' pictures in place of the EGA games' decoders, and the
+// files only those games have.
+void add_vga_decoders(std::map<std::string, FamilyDecoder, std::less<>> &decoders,
+                      const std::map<std::string, GameFile> &by_name)
+{
+    const auto picture = [](const GameFile &, const DaxRecord &record)
+    {
+        check_vga_picture(record.bytes);
+    };
+    const auto picture_or_animation = [](const GameFile &, const DaxRecord &record)
+    {
+        require(decode_vga_animation(record.bytes) || decode_vga_picture(record.bytes),
+                "neither a 256-color picture nor an animation");
+    };
+    const auto sprite = [](const GameFile &, const DaxRecord &record)
+    {
+        require(decode_vga_animation(record.bytes).has_value(), "not a 256-color sprite");
+    };
+    const auto tiles_and_font = [](const GameFile &file, const DaxRecord &record)
+    {
+        if (record.id == 201 && file.name == "8X8D0.DAX")
+        {
+            require(decode_game_font(record.bytes).has_value(), "not the font");
+            return;
+        }
+        check_vga_tiles(record.bytes);
+    };
+    const auto wall_art = [&by_name](const GameFile &, const DaxRecord &record)
+    {
+        check_vga_wall_art(by_name, record);
+    };
+    const auto border = [](const GameFile &, const DaxRecord &record)
+    {
+        check_border_record(record);
+    };
+    const auto luck_text = [](const GameFile &, const DaxRecord &record)
+    {
+        require(treasures::decode_luck_text(record.bytes).has_value(), "not a text");
+    };
+    const std::array<std::pair<std::string_view, FamilyDecoder>, 20> vga_families{{
+        {"TITLE", {"pictures", picture}},
+        {"BIGPIC", {"pictures", picture}},
+        // Treasures' PIC1A.DAX continues PIC1.DAX. Both also hold records that
+        // only set colors, in the still pictures' layout.
+        {"PIC", {"pictures", picture_or_animation}},
+        {"PIC1A", {"pictures", picture_or_animation}},
+        {"SPRIT", {"sprites", sprite}},
+        {"CHEAD", {"combat heads", picture}},
+        {"CBODY", {"combat bodies", picture}},
+        {"CPIC", {"combat icons", picture}},
+        {"COMSPR", {"combat icons", picture}},
+        {"DUNGCOM", {"combat icons", picture}},
+        {"WILDCOM", {"combat icons", picture}},
+        {"8X8D", {"wall tiles and the font", tiles_and_font}},
+        {"WALLDEF", {"wall art", wall_art}},
+        {"BACK", {"backdrops", picture}},
+        {"SKYGRND", {"skies", picture}},
+        {"BORDERS", {"border tiles", picture}},
+        {"CURSOR", {"the cursor", picture}},
+        {"OVER", {"overland maps", picture}},
+        {"BORD", {"frames, the font and name tables", border}},
+        {"LUCK", {"luck, lucky paper and romance texts", luck_text}},
+    }};
+    for (const auto &[name, decoder] : vga_families)
+    {
+        decoders.insert_or_assign(std::string(name), decoder);
+    }
+}
 
 std::map<std::string, FamilyDecoder, std::less<>>
 family_decoders(GoldBoxGame game, const std::map<std::string, GameFile> &by_name)
@@ -449,6 +576,10 @@ family_decoders(GoldBoxGame game, const std::map<std::string, GameFile> &by_name
 
     // Curse's copy protection draws its symbols from TILES.DAX, in the combat icons' format.
     decoders.emplace("TILES", FamilyDecoder{"copy-protection symbols", check_combat_icon});
+    if (uses_vga_pictures(game))
+    {
+        add_vga_decoders(decoders, by_name);
+    }
     return decoders;
 }
 

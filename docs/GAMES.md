@@ -67,8 +67,8 @@ The census (2026-11-12) puts every file through the decoders:
 | *Curse* | All | — |
 | *Secret* | All but one (2026-11-13) | `SOUND.DAX`, the title music's own driver and song |
 | *Gateway* | All but one (2026-11-13) | `MUSIC.DAX`, the music's own driver and song |
-| *Pools of Darkness* | Maps, effects; scripts, creatures and items (2026-11-13) | Nearly everything else: its pictures are 256-color VGA, and it adds new files |
-| *Treasures* | Maps, effects; scripts, creatures and items (2026-11-13) | As for *Pools of Darkness* |
+| *Pools of Darkness* | Maps, effects; scripts, creatures and items; every 256-color picture, icon, sprite, tile set and wall (2026-11-13) | Music and sounds; the opening and closing films (`INTRO` and `FINAL`, `.ACF` and `.BMA`), which `VACE.EXE` plays |
+| *Treasures* | Maps, effects; scripts, creatures and items; every 256-color picture, icon, sprite, tile set and wall, the `BORD` tables and the `LUCK` texts (2026-11-13) | Music and sounds |
 | *Unlimited Adventures* | — | Everything: its data sits in `DISK1` to `DISK3` |
 
 The archives (DAX) and maps are shared by all six campaigns. Scripts,
@@ -110,7 +110,9 @@ Done for a game when its census decodes every file.
 
 **Status:** done for *Pool of Radiance* and *Curse* (2026-11-12); *Secret*
 decodes every file but its title music, and *Gateway* every file but its
-music (2026-11-13). Run it with
+music (2026-11-13); *Pools of Darkness* and *Treasures* every file but their
+music and sounds, and *Pools of Darkness*' opening and closing films
+(2026-11-13). Run it with
 `opengold_census FOLDER...` (in `build/macos-universal` after `./build.sh`,
 or `build` in a native build), where a folder is one game's or one holding
 several (`/Users/edmond/GoldBox`). It prints a row for each kind of file: how

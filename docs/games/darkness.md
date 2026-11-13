@@ -1,10 +1,118 @@
 # Pools of Darkness: how its files differ
 
-*Pools of Darkness* (1991) is the last of the four *Pool of Radiance* games and
-runs on the engine *Secret of the Silver Blades* grew. This page records what
-its files change, as the census (`opengold_census`, [GAMES.md](../GAMES.md))
-reads them. The facts come from the reconstructed source of the DOS release
-and from the files themselves; the wording is our own.
+*Pools of Darkness* (1991) is the last *Pool of Radiance* game and the first
+of the Gold Box games to draw in 256 colors. This page records what its files
+change, as the census (`opengold_census`, [GAMES.md](../GAMES.md)) reads them.
+The facts come from the reconstructed source of the DOS release 1.1 and from
+the files themselves; the wording is our own.
+
+## Pictures and graphics
+
+Since 2026-11-13 every picture, icon, sprite, tile set and wall decodes
+(`src/OpenGold.Formats/src/vga_picture.cpp`); only the opening and closing
+films (below) are not read. *Treasures of the Savage Frontier* keeps the same
+layouts ([treasure.md](treasure.md)), and the same code reads both games.
+
+### Colors
+
+A pixel is one byte: an index into the VGA's table of 256 colors, each color
+red, green and blue from 0 to 63. A picture carries only the run of the table
+it needs, so what is on screen shares the table out:
+
+| Entries | Set by |
+|---|---|
+| 0–255 | A title picture (all of them) |
+| 0–15 | The cursor and the automap's symbols (`8X8D0` 202) |
+| 16–31 | The border tiles (`BORDERS`) |
+| 32–63 | The combat ground tiles (`DUNGCOM`, `WILDCOM`) |
+| 32–143 | A wall set's tiles (`8X8D1`) |
+| 64–95 | The party's combat icons (`COMSPR`) |
+| 96–143 | Combat heads and bodies (`CHEAD`, `CBODY`) |
+| 144–175 | A sky or a backdrop (`SKYGRND`, `BACK1`) |
+| 144–255 | A monster's combat icon (`CPIC1`) |
+| 32–255 | A picture (`PIC1`, `BIGPIC1`); a sprite carries the same run, but the game sets only 176–255 from it |
+
+Our decoders keep each picture's indices and its run of colors as they are
+(`VgaPicture`, `VgaAnimation`); turning them into screen colors comes later.
+
+### Still pictures
+
+`TITLE`, `BIGPIC1`, `BACK1`, `SKYGRND`, `BORDERS`, `CURSOR`, `8X8D0`,
+`8X8D1`, `CHEAD`, `CBODY`, `CPIC1`, `COMSPR`, `DUNGCOM` and `WILDCOM` share one
+record layout, the one the game's picture loader reads:
+
+| Offset | Bytes | Field |
+|---|---|---|
+| 0 | 1 | Height in rows |
+| 1 | 1 | Width in 8-pixel cells |
+| 2, 4 | 2 each | A position, 0 in every record |
+| 6 | 2 | Number of frames, all the same size |
+| 8 | 1 | First color set |
+| 9 | 1 | Number of colors set, less one |
+| 10 | 3 a color | The colors |
+| then | half the colors | An EGA color for each, two to a byte, for EGA cards |
+| then | 4 | Not used by the VGA picture; 32 bytes when the colors are 112 from entry 32 (the wall tiles) |
+| then | frames x height x width | The pixels, frame by frame, row by row |
+
+The frames of one record are, for instance, a wall set's 256 8x8 tiles (`8X8D1`
+record n for wall set n), the automap's 20 symbols (`8X8D0` 202), the 11 border
+tiles, or the 26 or 40 24x24 ground tiles of a combat map. A monster's combat
+icon is two records, n and n + 128, one frame each, from 24x24 to 72x48. The
+game draws each kind through a see-through color it names when loading:
+8 for combat icons, heads and bodies, 13 for tiles, borders and the cursor;
+titles and big pictures are drawn whole.
+
+The font is still `8X8D0` record 201: 177 glyphs of eight bytes, the EGA
+games' layout.
+
+### Animations: PIC and SPRIT
+
+`PIC1` (49 pictures) and `SPRIT1` (29 monsters seen in the 3-D view) have their
+own layout:
+
+| Offset | Bytes | Field |
+|---|---|---|
+| 0, 2 | 2 each | Height in rows, width in 8-pixel cells |
+| 4, 6 | 2 each | A position, 0 in every record |
+| 8 | 1 | Number of the last frame (at most 8) |
+| 9 | 1 | First color set |
+| 10 | 1 | Number of colors set |
+| 11 | 3 a color | The colors, then their EGA colors and 4 bytes, as in a still picture |
+| then | 1 | The key frame |
+| then | 1 | The frame the animation goes back to after the last |
+| then | 3 a frame | Each frame's packed size (2 bytes) and its delay (1 byte) |
+| then | | The frames, packed |
+
+Every frame is 88x88. A frame is packed in its own way, not the archives': a
+byte up to 7Fh copies that many bytes plus one; a larger byte n repeats the
+next byte 257 - n times (the archives repeat 256 - n). The key frame is stored
+whole; every other frame stores its difference from the key frame, which the
+game undoes with an exclusive or. A delay is in tenths of a second, and 99
+stops the animation on that frame.
+
+A sprite's three frames are the monster near, at middle distance and far; the
+far one is the key frame. After unpacking, the game swaps colors 0 and 13 in
+them and draws through 13, so a sprite's color 0 is see-through.
+
+### Walls
+
+`WALLDEF1` keeps the earlier games' layout: 780 bytes a wall set, five
+appearances of 156 symbols each for the ten views. What changed is where the
+symbols point. The EGA games drew every wall from one space of shared tiles
+and three slots of 70; here a wall set has a tile set of its own, `8X8D1` record
+n for `WALLDEF1` record n, and symbol s is that set's frame s. The game never
+draws symbol 0. Every symbol of the six wall sets names one of their 256 tiles.
+
+### Not read: the opening and closing films
+
+`INTRO.ACF` and `INTRO.BMA` (the opening) and `FINAL.ACF` and `FINAL.BMA` (the
+ending, after the last battle) are played by `VACE.EXE`, a separate program that
+`CONTROL.EXE` starts before the game and again when the game ends won. The
+reconstructed source covers `GAME.EXE`, `CONTROL.EXE` and `STARTUP.EXE` but not
+`VACE.EXE`. An `.ACF` file looks like a script of commands, starting with color
+settings; a `.BMA` file holds 320x200 frames packed in a way of its own. Reading
+them means working out `VACE.EXE` from the program itself, a separate piece of
+work.
 
 ## Scripts, creatures and items
 

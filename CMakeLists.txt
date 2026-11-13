@@ -142,6 +142,8 @@ add_library(opengold_formats STATIC
     src/OpenGold.Formats/src/por_sound.cpp
     src/OpenGold.Formats/src/curse_records.cpp
     src/OpenGold.Formats/src/secret_records.cpp
+    src/OpenGold.Formats/src/treasures_texts.cpp
+    src/OpenGold.Formats/src/vga_picture.cpp
     src/OpenGold.Formats/src/late_records.cpp
     src/OpenGold.Formats/src/gold_box_game.cpp
 )
@@ -256,6 +258,12 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_curse_walk COMMAND opengold_gold_box_games_tests --curse-walk)
     # Curse's story, beat by beat, with a party made for it (plan step 7).
     add_test(NAME opengold_curse_route COMMAND opengold_gold_box_games_tests --curse-route)
+    # Pools of Darkness' and Treasures' 256-color pictures, read from the games' files.
+    add_executable(opengold_vga_graphics_tests tests/vga_graphics_tests.cpp)
+    target_link_libraries(opengold_vga_graphics_tests PRIVATE opengold_formats)
+    add_test(NAME opengold_vga_graphics_tests COMMAND opengold_vga_graphics_tests)
+    set_tests_properties(opengold_vga_graphics_tests PROPERTIES SKIP_REGULAR_EXPRESSION "Skipped: ")
+    # Their scripts, creatures and items.
     add_executable(opengold_late_records_tests tests/late_records_tests.cpp)
     target_link_libraries(opengold_late_records_tests PRIVATE opengold_formats)
     add_test(NAME opengold_late_records_tests COMMAND opengold_late_records_tests)
