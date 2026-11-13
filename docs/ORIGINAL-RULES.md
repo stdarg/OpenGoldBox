@@ -80,6 +80,10 @@ and a save each know which tables they use.
   Strength stops at level 9, an elf magic-user at 9 to 11 by Intelligence.
 - **Training** past a class's Hit Dice adds a fixed amount: 3 a fighter or
   paladin, 2 a cleric, ranger or thief, 1 a magic-user.
+- **Hit Points:** a single-class fighter, paladin or ranger adds 1 more for
+  each level at Constitution 17, 2 at 18, 3 at 19 and 20, 4 at 21 to 23 and 5
+  at 24 and 25; a first-level ranger's bonus counts twice, for its two dice.
+- **Thief skills** go on to level 12.
 - **Spells:** *Curse* numbers its spells as *Pool of Radiance* does up to 56
   and keeps its item powers 57 and 59 to 65; its own (58 and 66 to 100: the
   fourth- and fifth-level spells, the druid's, and more powers) are numbered
@@ -165,19 +169,24 @@ and a save each know which tables they use.
 *Secret* plays *Curse*'s rules with longer tables (from its reconstruction),
 chosen by the game as *Curse*'s are. In progress (2026-11-13):
 
-- **Creation:** abilities, first Hit Dice and training Hit Dice as in *Curse*.
-  A character starts with 200,000 experience a single class (100,000 a
+- **Creation:** abilities and training Hit Dice as in *Curse*; a cleric's
+  first level rolls two dice, the better of two rolls, as a ranger's does. A
+  character starts with 200,000 experience a single class (100,000 a
   dual-class, 66,667 a triple-class one, rounded up) and is trained at once;
-  only a thief brings gold (2d6), and no platinum.
+  only a thief brings gold (2d6), and no platinum. Races, classes, alignments,
+  minimum scores, ability limits, ages and level limits are *Curse*'s.
+- **Hit Points:** each class adds its own Constitution bonus, a fighter's,
+  paladin's or ranger's with the extra from 17 up even in a multi-class
+  character, once for each of a level's dice; the roll and the bonus are
+  divided among the classes apart.
 - **Tables:** experience to level 15 (thieves 18); THAC0 and saving throws to
-  level 18, the saves from a table of their own: a paladin's are not simply a
-  fighter's less 2, and at level 8 its paralysis save is a point worse than at
-  level 7, as the original stores it.
-- **Training** past a class's Hit Dice adds *Curse*'s fixed amounts, with the
-  same fault (the amount replaces the other classes' dice).
-- **Still to come:** level limits, races and classes, spells (117, to
-  seventh level), the creation spells a magic-user learns at levels 6 to 9,
-  and *Secret*'s combat.
+  level 18 (`saveTbl`), with the paladin's faults fixed as *Curse*'s (Bugs);
+  thief skills to level 18, Read Languages 5 below *Curse*'s at 11 and 12.
+- **Training** past a class's Hit Dice adds *Curse*'s fixed amounts (Bugs).
+- **Still to come:** spells (117, to seventh level, and slots to class level
+  15), the creation spells a magic-user learns at levels 6 to 9, training
+  without a fee and of every ready class at once, attacks per round past
+  level 12, and *Secret*'s combat.
 
 ## What the original rules cover
 
@@ -758,10 +767,10 @@ tuned with the AI lab once the original rules play.
 | A level drain keeps the drained class's level as the victim's highest level, so a fighter 5 / thief 6 drained in fighter counts as level 4 (`effhndlr.pas`, the level drain) | The highest of its classes |
 | Each hit of a holding bite's own bite starts another hold, stacking holds on the biter and immobility on the victim, which can outlast the fight (`effhndlr.pas`, `EffBiteHold`) | One hold at a time |
 | Strength 19 and above has no row in the open-doors table, so a member that strong never forces an ordinary door (`explore.pas`, `BashDoor`) | It forces one as 18/00 does, 5 in 6 |
-| *Curse:* a half-elf magic-user's level limit is read from its Strength, not its Intelligence (`Limits.RaceClassLimit` in the reconstruction) | Intelligence, 6, 7 and 8 as an elf's follow it |
-| *Curse:* past a class's Hit Dice, training's fixed Hit Points (3 a fighter or paladin, 2 a cleric, ranger or thief, 1 a magic-user) replace the other classes' rolls instead of adding to them (`ovr018`, `sub_509E0`) | Added to them |
-| *Curse:* the paladin's saving throws, otherwise 2 better than a fighter's, are 1 worse against petrification at levels 5 and 6 and against death at level 8 than that (`ovr026`, `SaveThrowValues`) | 2 better throughout |
+| *Curse* and *Secret:* past a class's Hit Dice, training's fixed Hit Points (3 a fighter or paladin, 2 a cleric, ranger or thief, 1 a magic-user) replace the other classes' rolls instead of adding to them (`ovr018`, `sub_509E0`) | Added to them |
+| *Curse* and *Secret:* the paladin's saving throws, otherwise 2 better than a fighter's, are 1 worse against petrification at levels 5 and 6 and against death at level 8 than that (`ovr026`, `SaveThrowValues`) | 2 better throughout |
 | *Curse:* its starting-age table has no row for a half-elf ranger, which starts aged 0 (`Gbl.cs`, `halfelf_ages` in its reconstruction) | A half-elf fighter's age |
+| *Secret:* its thief skill adjustments give humans the half-orc's (−5 Pick Pockets, −10 Read Languages and the rest), so a human thief starts worse than in the earlier games (`raceAdj` in its reconstruction) | No adjustment for humans, as before |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |
 | *Curse:* a shambling mound struck by electricity rolls 1d8, throws the roll away and gains 8 Hit Points (`ovr013`, its absorbing of lightning) | It gains the 1d8 |

@@ -274,6 +274,19 @@ void thief_skill_chances()
           "A racial penalty above the chance leaves none");
     check(thief_skills(Race::human, 0, 18) == std::array<int, 8>{},
           "A character without thief levels has no chances");
+    // Curse's thieves rise to level 12 and Secret's to 18. Secret's table gives
+    // humans the half-orc's adjustments; OpenGoldBox gives them none
+    // (docs/ORIGINAL-RULES.md, Bugs).
+    const auto curse = opengold::GoldBoxGame::curse_of_the_azure_bonds;
+    const auto secret = opengold::GoldBoxGame::secret_of_the_silver_blades;
+    check(thief_skills(Race::human, 12, 13, curse) ==
+                  std::array<int, 8>{100, 77, 75, 94, 77, 35, 99, 65} &&
+              thief_skills(Race::human, 14, 13, curse) == thief_skills(Race::human, 12, 13, curse),
+          "A Curse thief rises to level 12's chances");
+    check(thief_skills(Race::human, 12, 13, secret)[7] == 60 &&
+              thief_skills(Race::human, 18, 13, secret) ==
+                  std::array<int, 8>{130, 99, 99, 99, 99, 55, 100, 85},
+          "A Secret thief reads languages 5 worse at 12 and rises to level 18");
 }
 
 void thac0_is_the_best_class()
@@ -382,6 +395,25 @@ void training()
     check(training_hit_points(Profession::fighter_thief, 7, 15) == 4,
           "A fighter/thief shares the roll and its two classes' bonus");
     check(training_hit_points(Profession::magic_user, 1, 3) == 1, "Training adds at least 1");
+
+    // Curse's and Secret's Constitution bonus (ConHpBonus): fighters,
+    // paladins and rangers gain more from 17 up; Curse gives it to a single
+    // class and doubles a first-level ranger's, Secret counts each class's own
+    // bonus once for each of its first level's dice.
+    const auto curse = opengold::GoldBoxGame::curse_of_the_azure_bonds;
+    const auto secret = opengold::GoldBoxGame::secret_of_the_silver_blades;
+    check(constitution_hit_point_bonus(Profession::paladin, 18, curse) == 4 &&
+              constitution_hit_point_bonus(Profession::fighter, 19, curse) == 5,
+          "A Curse paladin of 18 Constitution gains 4, a fighter of 19 gains 5");
+    check(constitution_hit_point_bonus(Profession::ranger, 18, curse, true) == 8,
+          "A Curse ranger's first two dice double its bonus");
+    check(constitution_hit_point_bonus(Profession::fighter_thief, 17, curse) == 4 &&
+              constitution_hit_point_bonus(Profession::fighter_thief, 17, secret) == 5,
+          "Only Secret gives a multi-class fighter the extra point");
+    check(constitution_hit_point_bonus(Profession::cleric, 16, secret, true) == 4,
+          "Secret's cleric counts its bonus for both first-level dice");
+    check(training_hit_points(Profession::fighter_thief, 7, 17, secret) == 5,
+          "Secret divides the roll and the bonus apart: 7/2 + 5/2");
 
     opengold::rules::AbilityArray<int> scores{16, 10, 10, 10, 10, 10};
     check(experience_share(Profession::fighter, scores, 100) == 110,

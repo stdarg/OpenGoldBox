@@ -179,7 +179,7 @@ void recount_levels(CharacterSheet &sheet)
     numbers.saving_throws = saving_throws(levels, game);
     numbers.thief_skills =
         thief_skills(static_cast<Race>(numbers.race), level_in(levels, ClassSlot::thief),
-                     sheet.scores[Ability::dexterity]);
+                     sheet.scores[Ability::dexterity], game);
     numbers.cleric_slots = spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric),
                                        sheet.scores[Ability::wisdom]);
     numbers.magic_user_slots =
@@ -1171,8 +1171,9 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
         }
     }
     recount_levels(next);
-    const int gain = training_hit_points(static_cast<Profession>(numbers.profession),
-                                         training.rolled, next.scores[Ability::constitution]);
+    const int gain =
+        training_hit_points(static_cast<Profession>(numbers.profession), training.rolled,
+                            next.scores[Ability::constitution], game_of(next.identity));
     next.hit_points += gain;
     next.original->rolled_hit_points +=
         training_rolled_hit_points(static_cast<Profession>(numbers.profession), training.rolled);

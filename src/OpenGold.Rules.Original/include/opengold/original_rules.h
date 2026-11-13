@@ -227,9 +227,10 @@ struct StartingTraining
 [[nodiscard]] int exceptional_strength(Race race, Gender gender, Profession profession,
                                        const RolledCharacter &rolled, int strength);
 // First-level Hit Points: the class dice with the Constitution bonus, divided
-// among a multi-class character's classes.
+// among a multi-class character's classes (Secret divides the two apart).
 [[nodiscard]] int first_level_hit_points(Profession profession, const RolledCharacter &rolled,
-                                         int constitution);
+                                         int constitution,
+                                         GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 // What first level adds to the Hit Points rolled (the original's hpRolled):
 // the class dice divided among the classes, with no Constitution bonus.
 [[nodiscard]] int first_level_rolled_hit_points(Profession profession,
@@ -237,8 +238,13 @@ struct StartingTraining
 
 [[nodiscard]] int starting_age(Race race, Profession profession, RandomState &random);
 // The Hit Points every level of every class adds for this Constitution, before
-// a multi-class character's total is divided among its classes.
-[[nodiscard]] int constitution_hit_point_bonus(Profession profession, int constitution);
+// a multi-class character's total is divided among its classes (ConHpBonus).
+// Curse and Secret give fighters, paladins and rangers more from 17 up;
+// Curse doubles a first-level ranger's, and Secret counts each class's first
+// level dice.
+[[nodiscard]] int constitution_hit_point_bonus(Profession profession, int constitution,
+                                               GoldBoxGame game = GoldBoxGame::pool_of_radiance,
+                                               bool first_level = false);
 
 // How many points better (or, below zero, worse) Dexterity makes Armor Class.
 // It is lost against an attack from behind.
@@ -261,7 +267,8 @@ enum class ThiefSkill : unsigned
 // A thief's chance in percent for each skill, by its thief level, race and
 // Dexterity. Dexterity below 9 counts as 9 and above 19 as 19, the ends of
 // the original's table; no chance falls below 0.
-[[nodiscard]] std::array<int, 8> thief_skills(Race race, int thief_level, int dexterity);
+[[nodiscard]] std::array<int, 8> thief_skills(Race race, int thief_level, int dexterity,
+                                              GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 
 [[nodiscard]] constexpr int skill_chance(const std::array<int, 8> &skills,
                                          ThiefSkill skill) noexcept
@@ -309,7 +316,8 @@ enum class ThiefSkill : unsigned
                                          RandomState &random);
 // What training adds to the Hit Points: the roll and the Constitution bonus
 // of all the profession's classes, divided among them, at least 1.
-[[nodiscard]] int training_hit_points(Profession profession, int rolled, int constitution);
+[[nodiscard]] int training_hit_points(Profession profession, int rolled, int constitution,
+                                      GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 // What training adds to the Hit Points rolled: the roll divided among the
 // classes, at least 1 (chargen.pas, TrainingMenu).
 [[nodiscard]] int training_rolled_hit_points(Profession profession, int rolled);

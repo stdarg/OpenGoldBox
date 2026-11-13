@@ -690,9 +690,9 @@ class OriginalCharacterRules final : public rules::CharacterRules
             starting_training(chosen.race, chosen.profession, ability, rolled, game_);
         const auto &levels = trained.levels;
         sheet.level = *std::max_element(levels.begin(), levels.end());
-        sheet.hit_points =
-            first_level_hit_points(chosen.profession, rolled, ability[Ability::constitution]) +
-            trained.hit_points;
+        sheet.hit_points = first_level_hit_points(chosen.profession, rolled,
+                                                  ability[Ability::constitution], game_) +
+                           trained.hit_points;
         for (const auto slot : classes_of(chosen.profession))
         {
             sheet.level_classes.emplace_back(class_slot_id(slot));
@@ -713,7 +713,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         original.profession = static_cast<int>(chosen.profession);
         original.alignment = static_cast<int>(alignment);
         original.thief_skills = thief_skills(chosen.race, level_in(levels, ClassSlot::thief),
-                                             ability[Ability::dexterity]);
+                                             ability[Ability::dexterity], game_);
         original.cleric_slots = spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric),
                                             ability[Ability::wisdom]);
         original.magic_user_slots =
@@ -793,7 +793,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
             std::max(0, from.hit_points - constitution_hit_point_bonus(
                                               profession, from.scores[Ability::constitution]));
         numbers.thief_skills = thief_skills(race, level_in(from.levels, ClassSlot::thief),
-                                            from.scores[Ability::dexterity]);
+                                            from.scores[Ability::dexterity], game_);
         numbers.cleric_slots =
             spell_slots(ClassSlot::cleric, level_in(from.levels, ClassSlot::cleric),
                         from.scores[Ability::wisdom]);
@@ -852,8 +852,8 @@ class OriginalCharacterRules final : public rules::CharacterRules
         numbers.race = static_cast<int>(race);
         numbers.profession = static_cast<int>(profession);
         numbers.alignment = static_cast<int>(alignment);
-        numbers.thief_skills =
-            thief_skills(race, level_in(levels, ClassSlot::thief), ability[Ability::dexterity]);
+        numbers.thief_skills = thief_skills(race, level_in(levels, ClassSlot::thief),
+                                            ability[Ability::dexterity], game_);
         numbers.cleric_slots = spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric),
                                            ability[Ability::wisdom]);
         numbers.magic_user_slots =

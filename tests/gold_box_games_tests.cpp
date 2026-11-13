@@ -1025,23 +1025,24 @@ void secret_opening_reaches_the_first_map()
     check(colours.size() > 2, "The town's walls are drawn");
 }
 
-bool curse_walk_census(bool route)
+bool walk_census(GoldBoxGame game, bool route)
 {
     using opengold::por::TourPhase;
     const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
-    const auto folder = games ? std::filesystem::path(games) / "CURSE" : std::filesystem::path();
-    if (!games || opengold::identify_game(folder) != GoldBoxGame::curse_of_the_azure_bonds)
+    const auto folder =
+        games ? std::filesystem::path(games) /
+                    (game == GoldBoxGame::secret_of_the_silver_blades ? "SECRET" : "CURSE")
+              : std::filesystem::path();
+    if (!games || opengold::identify_game(folder) != game)
     {
-        std::cout << "Curse's files are not here.\n";
+        std::cout << game_title(game) << "'s files are not here.\n";
         return true;
     }
-    auto session = opengold::load_campaign(folder, GoldBoxGame::curse_of_the_azure_bonds);
+    auto session = opengold::load_campaign(folder, game);
     // A party under the original rules, fighting Curse's own creatures.
-    const auto content =
-        opengold::load_original_content(folder, GoldBoxGame::curse_of_the_azure_bonds);
+    const auto content = opengold::load_original_content(folder, game);
     std::shared_ptr<const opengold::rules::CharacterRules> creation =
-        opengold::original::character_rules(opengold::original::default_aging,
-                                            GoldBoxGame::curse_of_the_azure_bonds);
+        opengold::original::character_rules(opengold::original::default_aging, game);
     std::shared_ptr<opengold::CampaignParty> party;
     // The walk's party is six fighters; the route's the cluebook's: two
     // paladins, a ranger, two clerics and a magic-user.
@@ -1628,7 +1629,7 @@ bool curse_walk_census(bool route)
     // A new game with a new party, standing on `map` as its script's entry has it.
     const auto restart = [&](unsigned map)
     {
-        session = opengold::load_campaign(folder, GoldBoxGame::curse_of_the_azure_bonds);
+        session = opengold::load_campaign(folder, game);
         new_party();
         session.campaign_party(party);
         diagnosed = 0;
@@ -1961,7 +1962,7 @@ bool curse_walk_census(bool route)
             walk(map);
         }
     }
-    std::cout << "Curse walk:\n";
+    std::cout << game_title(game) << " walk:\n";
     for (const auto &[message, places] : needs)
     {
         std::cout << "  " << places.size() << "x " << message << " (first at " << places.front()
@@ -2033,11 +2034,15 @@ int main(int argc, char **argv)
     {
         if (argc == 2 && std::string_view(argv[1]) == "--curse-walk")
         {
-            return curse_walk_census(false) ? 0 : 1;
+            return walk_census(GoldBoxGame::curse_of_the_azure_bonds, false) ? 0 : 1;
         }
         if (argc == 2 && std::string_view(argv[1]) == "--curse-route")
         {
-            return curse_walk_census(true) ? 0 : 1;
+            return walk_census(GoldBoxGame::curse_of_the_azure_bonds, true) ? 0 : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--secret-walk")
+        {
+            return walk_census(GoldBoxGame::secret_of_the_silver_blades, false) ? 0 : 1;
         }
         each_game_is_told_apart_by_its_files();
         curse_creatures_are_read_from_their_layout();
