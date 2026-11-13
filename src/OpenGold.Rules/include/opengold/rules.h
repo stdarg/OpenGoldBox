@@ -435,6 +435,11 @@ struct HazardAttack
     // original script's saving throw); none when `save_dc` is 0.
     Ability save_ability{Ability::dexterity};
     int save_dc{};
+    // The script's own terms, which rules that play the original's records
+    // roll by (eclvm.pas, EclDamage): its saving throw's category (0 to 4) and
+    // modifier, and for an attack the figure it hits with, 60 less a THAC0;
+    // -1 when the script gave none.
+    int original_save{-1}, original_save_modifier{}, original_attack{-1};
 };
 
 struct HazardAttackResult

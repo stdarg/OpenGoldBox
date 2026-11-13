@@ -1982,7 +1982,7 @@ msgstr "Lanza un conjuro o usa un rasgo fuera de combate."
 msgid "Cast spell"
 msgstr "Lanzar conjuro"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1237
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1283
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr "Lanzar {spell}"
@@ -10645,7 +10645,7 @@ msgstr "Eso no es un Manual de salud corporal"
 msgid "That potion works only in combat"
 msgstr "Esa poción solo funciona en combate"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1252
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1298
 msgid "That spell cannot be cast now"
 msgstr "Ese conjuro no se puede lanzar ahora"
 
@@ -10810,7 +10810,7 @@ msgstr "La nube se desplaza."
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr "La criatura que lo impactó este turno lo ataca con desventaja."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1256
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1302
 msgid "The dead cannot be healed"
 msgstr "Los muertos no se pueden curar"
 

@@ -512,6 +512,46 @@ void the_temple_heals_and_raises()
           "The original's temple has no Resurrection");
 }
 
+// A script's harm under the original rules: an arrow of THAC0 20 hits an
+// unarmored fighter on 11 and up; a save of the script's category avoids
+// the damage; a member falls at 0 and dies at -10.
+void scripts_harm_as_the_original()
+{
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module(), creation);
+    const auto id = member_with(party, creation, "fighter", "Gareth");
+    const auto &sheet = party.member(id).character.sheet();
+    const auto module = original::rules_module();
+    const auto armor_class = original::Combatant::decode(party.profile(id).data)->armor_class;
+    RandomState random{9};
+    int hits = 0;
+    for (int n = 0; n < 400; ++n)
+    {
+        rules::VitalState state{100, false, {}, {}};
+        rules::HazardAttack arrow{0, 1, 6, 0, "piercing"};
+        arrow.original_attack = 40;
+        const auto result = module->hazard_attack(state, sheet, {}, arrow, random);
+        check(result.hit == (result.natural == 20 ||
+                             (result.natural > 1 && result.natural + 40 > 60 - armor_class)),
+              "An arrow hits by the original's roll");
+        hits += result.hit ? 1 : 0;
+    }
+    check(hits > 0 && hits < 400, "Some arrows hit and some miss");
+    rules::HazardAttack gas{0, 30, 1, 0, "poison"};
+    gas.automatic = true;
+    gas.original_save = 0;
+    int saved = 0;
+    for (int n = 0; n < 200; ++n)
+    {
+        rules::VitalState state{5, false, {}, {}};
+        const auto result = module->hazard_attack(state, sheet, {}, gas, random);
+        saved += result.saved ? 1 : 0;
+        check(result.saved ? state.hit_points == 5 : state.dead && state.hit_points == 0,
+              "A save avoids the damage; 30 damage kills a member of 5 Hit Points");
+    }
+    check(saved > 0 && saved < 200, "Some save and some do not");
+}
+
 } // namespace
 
 int main()
@@ -526,6 +566,7 @@ int main()
         a_magic_user_memorizes_and_learns();
         a_cleric_cures_in_camp();
         the_temple_heals_and_raises();
+        scripts_harm_as_the_original();
         std::cout << "Original creation tests passed\n";
         return 0;
     }

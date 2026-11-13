@@ -3719,10 +3719,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             // sling bullets, the lizard men's javelins).
             const auto damage =
                 listed_damage(current_script_, address).value_or(ScriptDamage{0, 0, "piercing"});
-            snapshot_.dialogue +=
-                shoot_arrows(arg(0), damage.missile,
-                             {hidden_archer_attack_bonus, arg(1), arg(2), static_cast<int>(arg(3)),
-                              std::string(damage.type)});
+            rules::HazardAttack volley_attack{hidden_archer_attack_bonus, arg(1), arg(2),
+                                              static_cast<int>(arg(3)), std::string(damage.type)};
+            volley_attack.original_attack = static_cast<int>(arg(4));
+            snapshot_.dialogue += shoot_arrows(arg(0), damage.missile, volley_attack);
         }
         else
         {
@@ -3735,6 +3735,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 {
                     harm.save_ability = original_save_abilities[arg(4) & 7];
                     harm.save_dc = original_save_dc - static_cast<int>(arg(0) & 0x1F);
+                    harm.original_save = static_cast<int>(arg(4) & 7);
+                    harm.original_save_modifier = static_cast<int>(arg(0) & 0x1F);
                 }
                 for (const auto id : campaign_->state().slots)
                 {
@@ -3751,6 +3753,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             {
                 harm.save_ability = original_save_abilities[arg(4) & 7];
                 harm.save_dc = original_save_dc - static_cast<int>(arg(0) & 0x1F);
+                harm.original_save = static_cast<int>(arg(4) & 7);
+                harm.original_save_modifier = static_cast<int>(arg(0) & 0x1F);
                 snapshot_.dialogue +=
                     hurt(campaign_->hazard_attack(harm), harm.save_dc, harm.sides);
             }

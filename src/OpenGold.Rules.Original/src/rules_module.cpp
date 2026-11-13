@@ -1183,11 +1183,57 @@ void OriginalModule::temple_service(VitalState &state, const CharacterSheet &she
     }
 }
 
-HazardAttackResult OriginalModule::hazard_attack(VitalState &, const CharacterSheet &,
-                                                 std::span<const std::string>, const HazardAttack &,
-                                                 RandomState &) const
+// A script's harm as the original deals it (eclvm.pas, EclDamage): an attack
+// hits when its d20 is above 1 and the roll with the script's figure tops the
+// target's stored Armor Class (fxengine.pas, AttackRollNoAttacker); a saving
+// throw of the script's category and modifier avoids the damage
+// (RollSavingThrow); the damage takes a member down at 0 and kills it at -10.
+HazardAttackResult OriginalModule::hazard_attack(VitalState &state, const CharacterSheet &sheet,
+                                                 std::span<const std::string> gear,
+                                                 const HazardAttack &attack,
+                                                 RandomState &random_state) const
 {
-    throw unavailable("hazard_attack");
+    const auto c = character_combatant(sheet, readied(gear));
+    HazardAttackResult result;
+    result.armor_class = c.armor_class;
+    result.hit = true;
+    if (!attack.automatic && attack.original_attack >= 0)
+    {
+        result.natural = roll_die(random_state, 20);
+        result.total = result.natural + attack.original_attack;
+        result.hit =
+            result.natural == 20 || (result.natural > 1 && result.total > 60 - c.armor_class);
+    }
+    if (!result.hit)
+    {
+        return result;
+    }
+    if (attack.original_save >= 0 && attack.original_save < 5)
+    {
+        const int roll = roll_die(random_state, 20);
+        result.save_total = roll + c.save_bonus + attack.original_save_modifier;
+        result.saved =
+            roll == 20 ||
+            (roll > 1 &&
+             result.save_total >= c.saving_throws[static_cast<std::size_t>(attack.original_save)]);
+        if (result.saved)
+        {
+            return result;
+        }
+    }
+    int damage = attack.damage_bonus;
+    for (unsigned die = 0; die < attack.dice; ++die)
+    {
+        const int rolled = roll_die(random_state, static_cast<int>(attack.sides));
+        result.damage_dice.push_back(rolled);
+        damage += rolled;
+    }
+    result.damage_rolled = damage;
+    result.damage = std::max(damage, 0);
+    const int left = state.hit_points - result.damage;
+    state.dead = state.dead || left <= -10;
+    state.hit_points = std::max(left, 0);
+    return result;
 }
 
 namespace

@@ -196,6 +196,11 @@ lines in all:
      point of Constitution and of Hit Points, and the cures of blindness,
      disease, poison, curses and stone, with the conditions that last outside
      fights.
+   - **Scripts' harm** is the original's (`EclDamage`): an arrow hits when
+     its d20 is above 1 and the roll with the script's figure (60 less a
+     THAC0) tops the member's stored Armor Class (`AttackRollNoAttacker`), a
+     saving throw of the script's category and modifier avoids the damage
+     (`RollSavingThrow`), and a member falls at 0 and dies at −10.
 7. **The monsters' tactics and the original rules' difficulty levels.** The
    original rules become the default once they play from start to end.
 

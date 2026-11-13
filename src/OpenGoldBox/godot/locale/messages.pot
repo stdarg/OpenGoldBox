@@ -1982,7 +1982,7 @@ msgstr ""
 msgid "Cast spell"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1237
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1283
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr ""
@@ -10645,7 +10645,7 @@ msgstr ""
 msgid "That potion works only in combat"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1252
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1298
 msgid "That spell cannot be cast now"
 msgstr ""
 
@@ -10810,7 +10810,7 @@ msgstr ""
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1256
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1302
 msgid "The dead cannot be healed"
 msgstr ""
 
