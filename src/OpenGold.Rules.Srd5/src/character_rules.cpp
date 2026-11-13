@@ -130,6 +130,11 @@ class CreatorRules final : public CharacterRules
         return {"srd5", "5.2.1", "character-creation.1"};
     }
 
+    std::string game_setting() const override
+    {
+        return {};
+    }
+
     std::vector<CreationChoice> choices(CreationField field) const override;
     std::vector<ScoreAdjustment> adjustments(std::string_view background) const override;
     std::array<AbilityRoll, 6> roll(RandomState &state) const override;

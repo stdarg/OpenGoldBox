@@ -14,7 +14,7 @@
 #include "combat_view.h"
 #include "save_slots.h"
 #include "opengold/campaign_save.h"
-#include "opengold/srd5.h"
+#include "game_rules.h"
 #include "godot_path.h"
 #include "guarded_handlers.h"
 #include "scoped_flag.h"
@@ -42,11 +42,6 @@ std::filesystem::path game_directory()
 {
     const auto dir = settings::game_path();
     return presentation::path_from_godot(dir);
-}
-
-auto rules_module()
-{
-    return srd5::load(presentation::path_from_godot(game_rules_file()));
 }
 } // namespace
 
@@ -133,17 +128,15 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
         throw std::runtime_error("Finish the current event before loading");
     }
     const auto directory = game_directory();
-    auto module = rules_module();
     const auto &new_wall_art = game_wall_art();
     const auto monsters = game_monsters();
-    auto saved = decode_campaign(bytes, *srd5::character_rules(), *module,
-                                 campaign_asset_identity(directory),
-                                 std::function<por::RolfTourSession()>(
-                                     [&]
-                                     {
-                                         return por::RolfTourSession::load(
-                                             directory, game_encounters(), new_wall_art, monsters);
-                                     }));
+    // The save's own rules, which may not be the current game's.
+    auto [replacement, saved] = load_campaign_under_its_rules(
+        bytes, presentation::path_from_godot(game_rules_file()), campaign_asset_identity(directory),
+        [&]
+        {
+            return por::RolfTourSession::load(directory, game_encounters(), new_wall_art, monsters);
+        });
     // The restart check compares what it loads with the file, dice and all.
     if (!save_read_check_)
     {
@@ -152,7 +145,6 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
         reseed_after_load(saved, settings::difficulty(),
                           static_cast<std::uint64_t>(microseconds.count()));
     }
-    auto replacement = std::make_shared<CampaignParty>(std::move(module));
     replacement->restore(std::move(saved.party));
     // Characters saved before they chose original portraits get a random one,
     // which players may change at any time.
@@ -198,6 +190,14 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
     }
     // All decoding, resource loading and character validation completed above.
     end_reincarnation();
+    // A game under other rules makes its characters under them.
+    if (game_rules_of(*replacement) != game_rules_of(*campaign_))
+    {
+        creator_ = std::make_unique<CharacterCreator>(
+            replacement->character_rules(),
+            static_cast<std::uint64_t>(
+                std::chrono::high_resolution_clock::now().time_since_epoch().count()));
+    }
     campaign_ = std::move(replacement);
     campaign_defeated_ = false;
     required_node<Window>(*this, "Defeat").hide();
@@ -251,7 +251,7 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
     session_->difficulty(settings::difficulty());
     session_->set_auto_equip(auto_equip_setting());
     use_shop_data(*session_);
-    session_->companion_rules(srd5::character_rules(), game_companions());
+    session_->companion_rules(campaign_->character_rules(), game_companions());
     shown_revision_ = 0;
     rendered_pose_.reset();
     rendered_sprite_id_ = 999;

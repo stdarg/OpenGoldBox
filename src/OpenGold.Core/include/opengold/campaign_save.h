@@ -17,6 +17,18 @@ struct SavedCampaign
     // The game the campaign belongs to; saves before format 48 are Pool of Radiance's.
     GoldBoxGame game{GoldBoxGame::pool_of_radiance};
 };
+
+// The rules a save was made under: their module and the setting the game chose
+// for them (CharacterRules::game_setting), which the game must load it with.
+struct CampaignRules
+{
+    rules::Identity identity;
+    std::string setting;
+};
+
+// Reads only the save's header and rules; throws as decode_campaign does on a
+// save that is not a campaign or is too old.
+[[nodiscard]] CampaignRules saved_campaign_rules(std::string_view);
 template <bool Reading> struct SaveCodec;
 [[nodiscard]] std::string campaign_asset_identity(const std::filesystem::path &directory);
 [[nodiscard]] std::string encode_campaign(const CampaignParty &, const por::RolfTourSession *,
@@ -25,7 +37,7 @@ template <bool Reading> struct SaveCodec;
 // The campaign in an earlier format this build still reads, from 45, for
 // checks that such saves load. Throws when the party holds what that format
 // cannot record: before 47, a character made under the original rules; before
-// 48, a game other than Pool of Radiance.
+// 48, a game other than Pool of Radiance; before 49, a setting for its rules.
 [[nodiscard]] std::string
 encode_campaign_in_format(const CampaignParty &, const por::RolfTourSession *,
                           std::string_view assets, unsigned format,

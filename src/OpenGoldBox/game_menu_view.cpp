@@ -106,6 +106,7 @@ void GameMenuView::open(Allowed allowed)
     required_node<Button>(*this, "Menu/Load").set_disabled(!allowed.load);
     required_node<Button>(*this, "Menu/MainMenu").set_disabled(!allowed.main_menu);
     may_change_art_folder_ = allowed.load;
+    srd_rules_ = allowed.srd_rules;
     required_node<Control>(*this, "Options").hide();
     required_node<Control>(*this, "Menu").show();
     show();
@@ -116,6 +117,8 @@ void GameMenuView::open_options_alone()
 {
     options_alone_ = true;
     may_change_art_folder_ = true;
+    // Before a game, the settings are there for the SRD games to come.
+    srd_rules_ = true;
     required_node<Control>(*this, "Menu").hide();
     show();
     open_options();
@@ -201,6 +204,7 @@ void GameMenuView::open_options()
                         ? static_cast<int>(i18n::ability_from_names.size()) - 1
                         : static_cast<int>(*opengold::parse_difficulty(value.utf8().get_data())));
     }
+    show_srd_balance();
     show_section(0);
     required_node<Control>(*this, "Menu").hide();
     required_node<Control>(*this, "Options").show();
@@ -317,6 +321,27 @@ void GameMenuView::ability_selected(std::int64_t index, std::int64_t row)
                        : String(opengold::difficulty_names[static_cast<std::size_t>(index)].data());
     settings::save_monster_ability(
         i18n::monster_ability_options[static_cast<std::size_t>(row)].ability, from);
+}
+
+// The encounter challenge and the monster abilities balance the SRD rules
+// only: under the original rules every difficulty plays the original's fights
+// as they were (docs/ORIGINAL-RULES.md).
+void GameMenuView::show_srd_balance()
+{
+    auto &gameplay = required_node<Control>(*this, "Options/Gameplay");
+    for (const char *name :
+         {"ChallengeLabel", "Challenge", "ChallengeNote", "AbilitiesHeader", "AbilityColumn",
+          "MonstersColumn", "FromColumn", "Abilities", "Defaults"})
+    {
+        required_node<Control>(gameplay, name).set_visible(srd_rules_);
+    }
+    required_node<Label>(gameplay, "DifficultyNote")
+        .set_text(
+            srd_rules_
+                ? i18n::text(N_(
+                      "From Hard: monsters use their potions, wands and scrolls, and temples cast no Resurrection. Each monster ability below has its own lowest difficulty."))
+                : i18n::text(N_(
+                      "Under the original rules, every difficulty plays as the original game did.")));
 }
 
 void GameMenuView::restore_ability_defaults()

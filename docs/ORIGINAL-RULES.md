@@ -104,6 +104,30 @@ lines in all:
    - Each save keeping its rules, and the Character Pool keeping each
      character to its rules.
    - The difficulty settings split per set of rules.
+
+   Done (2026-11-13) but for the question itself, which stays hidden as
+   decided until the original rules can play a fight (combat step 7):
+   - **The game's rules** (`src/OpenGoldBox/game_rules.h`): `GameRules`, the
+     rules a game plays by and its aging, makes a game's party, its rules
+     module and character rules; `new_game_rules` is what a new game plays by
+     (the SRD for now).
+   - **The party carries its rules:** a game's `CampaignParty` holds its
+     character rules beside its module, and the game's screens, fights,
+     creator, reincarnation, companions and reloads use them, not the SRD's.
+   - **Saves keep their rules:** campaign format 49 keeps the rules' setting
+     (`CharacterRules::game_setting`, the aging's name); a load reads the
+     save's rules first and loads it under them, so a save made under the
+     original rules loads under them in a game of either.
+   - **The Character Pool** is made under the campaign's rules, again when a
+     loaded game brings other rules. Its characters are the SRD's; the
+     original rules' come with step 3.
+   - **Difficulty:** in a game under the original rules, the Options screen
+     hides the encounter challenge and the monster abilities, and says every
+     difficulty plays as the original did.
+   - Still the SRD's, for step 3 (the sheet and creation) and step 5 (magic):
+     the sheet's details, hit dice and save rolls, spell and charge labels,
+     equipment notes, the companions' drafts and the check fixtures, which
+     are SRD characters.
 3. **Character creation, the sheet and level-ups** under the original rules.
 4. **Combat** under the original rules, with the original monsters' own
    statistics.

@@ -226,6 +226,18 @@ void aging()
           "Age never takes a score below 3");
 }
 
+void a_game_keeps_its_aging()
+{
+    for (const auto aging : every_aging)
+    {
+        check(aging_named(aging_name(aging)) == aging &&
+                  opengold::original::character_rules(aging)->game_setting() == aging_name(aging),
+              "A game's aging rule is saved by its name and read back");
+    }
+    check(aging_name(Aging::add) == "add" && !aging_named("AD&D").has_value(),
+          "Only the saved names stand for an aging rule");
+}
+
 void thief_skill_chances()
 {
     const auto human = [](int level, int dexterity)
@@ -534,6 +546,7 @@ int main()
         racial_adjustments_apply();
         rolls_repeat_from_the_same_state();
         aging();
+        a_game_keeps_its_aging();
         thief_skill_chances();
         thac0_is_the_best_class();
         saving_throws_are_the_best_class();

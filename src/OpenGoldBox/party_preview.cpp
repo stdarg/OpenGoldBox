@@ -9,6 +9,7 @@
 #include "localization.h"
 #include "game_resources.h"
 #include "game_combat_looks.h"
+#include "game_rules.h"
 #include "character_creation_view.h"
 #include "character_pool_dialog.h"
 #include "town_sheet_dialog.h"
@@ -76,8 +77,8 @@ Character check_fighter()
 void CharacterCreationView::setup_party()
 {
     body_catalog_ = game_combat_looks();
-    const auto pack = presentation::path_from_godot(game_rules_file());
-    campaign_ = std::make_shared<CampaignParty>(srd5::load(pack));
+    campaign_ =
+        new_campaign_party(new_game_rules, presentation::path_from_godot(game_rules_file()));
     auto panel = presentation::instantiate_scene("res://scenes/party_panel.tscn");
     i18n::prepare_ui(*panel);
     presentation::attach_child(*this, std::move(panel));
@@ -122,7 +123,7 @@ void CharacterCreationView::setup_party()
         .connect("pressed", presentation::guarded(this, &CharacterCreationView::show_pool));
     required_node<CharacterPoolDialog>(*this, "PoolModal")
         .connect_host(
-            srd5::character_rules(), *art_, *portraits_,
+            *art_, *portraits_,
             [this]() -> CampaignParty &
             {
                 return *campaign_;
@@ -205,7 +206,7 @@ void CharacterCreationView::reincarnate_check()
         }
         druid.training = {{"class:druid", {"nature", "medicine"}},
                           {"class:druid:primal_order", {"warden"}}};
-        const auto caster = campaign_->add_pc(Character(*srd5::character_rules(), druid, {}));
+        const auto caster = campaign_->add_pc(Character(*campaign_->character_rules(), druid, {}));
         campaign_->award_experience(48000, "fixture:reincarnate-druid");
         while (campaign_->can_advance(caster))
         {
@@ -739,7 +740,7 @@ void CharacterCreationView::equipment_art_check()
             a.combat_body = 24;
             a.icon_size = member == 0 ? por::IconSize::regular : por::IconSize::small;
             a.portrait = portraits_->recommended(draft);
-            Character character(*srd5::character_rules(), draft, a);
+            Character character(*campaign_->character_rules(), draft, a);
             const auto id = member
                                 ? campaign_->recruit("check:equipment-guard", std::move(character))
                                 : campaign_->add_pc(std::move(character));
@@ -1012,7 +1013,7 @@ void CharacterCreationView::begin_reincarnation(Reincarnation spell, const std::
     waiting_creation_.emplace(CreationInProgress{std::move(creator_), std::move(completed_),
                                                  added_to_party_, portrait_chosen_});
     creator_ =
-        std::make_unique<CharacterCreator>(srd5::character_rules(), campaign_->rule_module(),
+        std::make_unique<CharacterCreator>(campaign_->character_rules(), campaign_->rule_module(),
                                            campaign_->member(spell.target).character, species);
     reincarnation_ = std::move(spell);
     completed_.reset();
@@ -1036,9 +1037,9 @@ void CharacterCreationView::finish_reincarnation()
     {
         return;
     }
-    campaign_->reincarnate(*srd5::character_rules(), reincarnation_->caster, reincarnation_->target,
-                           reincarnation_->action, creator_->reincarnation_choices(),
-                           creator_->appearance());
+    campaign_->reincarnate(*campaign_->character_rules(), reincarnation_->caster,
+                           reincarnation_->target, reincarnation_->action,
+                           creator_->reincarnation_choices(), creator_->appearance());
     leave_reincarnation();
 }
 
@@ -1778,10 +1779,8 @@ void CharacterCreationView::expedition_check()
     if (const auto *state = town->saved_session();
         state && state->can_leave() && state->snapshot().area_id == 20 && !expedition_saved_)
     {
-        const auto pack = presentation::path_from_godot(game_rules_file());
         const auto saved = encode_campaign(*campaign_, state, "expedition-fixture");
-        auto loaded = decode_campaign(saved, *srd5::character_rules(), *srd5::load(pack),
-                                      "expedition-fixture", state);
+        auto loaded = decode_under_party_rules(saved, *campaign_, "expedition-fixture", state);
         loaded.town->attach_restored_party(campaign_);
         if (encode_campaign(*campaign_, &*loaded.town, "expedition-fixture") != saved)
         {

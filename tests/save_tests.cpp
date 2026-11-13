@@ -2,6 +2,8 @@
 #include "opengold/save_file.h"
 #include "opengold/srd5.h"
 #include "opengold/combat_demo.h"
+#include "opengold/original.h"
+#include "opengold/original_combat.h"
 #include "test_support.h"
 #include <iostream>
 #include <chrono>
@@ -47,10 +49,12 @@ template <class F> std::string rejection_message(F f)
 
 // The campaign format this build writes. It also reads format 45, saved
 // before characters chose original portraits, 46, before drafts carried the
-// original rules' rolls, and 47, before a save named its game.
-constexpr unsigned current_campaign_format = 48;
+// original rules' rolls, 47, before a save named its game, and 48, before it
+// kept its rules' setting.
+constexpr unsigned current_campaign_format = 49;
 constexpr unsigned unchosen_portraits_format = 45;
 constexpr unsigned draft_rules_data_format = 47;
+constexpr unsigned rules_setting_format = 49;
 
 // The checksum line covers only the body, so rewriting the header number
 // changes nothing but the claimed format.
@@ -362,6 +366,12 @@ void check_campaign_format_cutoff(const CampaignParty &party, const por::RolfTou
     check(before_rules_data.party.roster.size() == current.party.roster.size() &&
               before_rules_data.unchosen_portraits.empty(),
           "A save from before drafts carried rules data loads");
+    const auto before_setting =
+        encode_campaign_in_format(party, &town, "fixture-v1", rules_setting_format - 1);
+    check(decode_error(before_setting).empty() &&
+              saved_campaign_rules(before_setting).identity == rules.identity() &&
+              saved_campaign_rules(before_setting).setting.empty(),
+          "A save from before it kept its rules' setting loads under the SRD rules");
     std::vector<MemberId> defaults;
     for (const auto &m : before_portraits.party.roster)
     {
@@ -691,10 +701,53 @@ void level_four_roundtrip(const std::filesystem::path &directory)
     }
 }
 
+// A game under the original rules keeps their aging setting in its saves, and
+// loads only with the character rules for it.
+void original_rules_saves_keep_their_aging()
+{
+    using original::Aging;
+    auto party = std::make_shared<CampaignParty>(
+        original::rules_module(), std::shared_ptr(original::character_rules(Aging::add)));
+    rules::CharacterDraft draft;
+    draft.name = "Tester";
+    draft.race = "dwarf";
+    draft.gender = "male";
+    draft.character_class = "fighter";
+    draft.alignment = "lawful_good";
+    RandomState random{7};
+    party->character_rules()->roll_in_place(draft, random);
+    (void)party->add_pc(Character(*party->character_rules(), draft, {}));
+    const auto saved = encode_campaign(*party, nullptr, "fixture-v1");
+    const auto saved_rules = saved_campaign_rules(saved);
+    check(saved_rules.identity == original::identity() && saved_rules.setting == "add",
+          "An original-rules save names its rules and their aging");
+    const auto module = original::rules_module();
+    const auto loaded = decode_campaign(saved, *original::character_rules(Aging::add), *module,
+                                        "fixture-v1", nullptr);
+    check(loaded.party.roster.size() == 1 &&
+              loaded.party.roster.front().character.creation_data().rules_data == draft.rules_data,
+          "An original-rules save loads under the same rules and aging");
+    check(rejection_message(
+              [&]
+              {
+                  (void)decode_campaign(saved, *original::character_rules(Aging::original), *module,
+                                        "fixture-v1", nullptr);
+              }) == "Campaign rules setting mismatch",
+          "An original-rules save is refused under another aging");
+    check(rejection_message(
+              [&]
+              {
+                  (void)encode_campaign_in_format(*party, nullptr, "fixture-v1",
+                                                  rules_setting_format - 1);
+              }) == "An older campaign format cannot record the rules' setting",
+          "An older format cannot record the rules' aging");
+}
+
 int main()
 {
     try
     {
+        original_rules_saves_keep_their_aging();
         TestDirectory directory;
         roundtrip(directory.path);
         level_four_roundtrip(directory.path);

@@ -283,8 +283,8 @@ void CharacterCreationView::_ready()
                 ? 42ULL
                 : static_cast<std::uint64_t>(
                       std::chrono::high_resolution_clock::now().time_since_epoch().count());
-        creator_ = std::make_unique<CharacterCreator>(srd5::character_rules(), seed);
         setup_party();
+        creator_ = std::make_unique<CharacterCreator>(campaign_->character_rules(), seed);
         recommend_portrait();
         refresh();
     }

@@ -652,8 +652,8 @@ void RolfTourView::check_rest_controls()
             }
             auto draft = campaign_->member(id).character.creation_data();
             draft.name = "Fallen companion";
-            const auto companion = campaign_->add_pc(
-                opengold::Character(*opengold::srd5::character_rules(), draft, {}));
+            const auto companion =
+                campaign_->add_pc(opengold::Character(*campaign_->character_rules(), draft, {}));
             auto state = campaign_->checkpoint();
             state.roster.front().vitals.hit_points = 1;
             for (auto &m : state.roster)
@@ -725,13 +725,9 @@ void RolfTourView::check_rest_controls()
                   "Healing stops only at full HP or with no dice left");
             check(presentation::required_node<Button>(*w, "Heal").is_disabled(),
                   "Nothing is left to heal after one action");
-            auto rules = opengold::srd5::character_rules();
             const auto saved = opengold::encode_campaign(*campaign_, nullptr, "rest-ui");
             // Decode through the same campaign codec used by the save dialog.
-            auto module =
-                opengold::srd5::load(std::filesystem::path(rest_rules_path().utf8().get_data()));
-            campaign_->restore(
-                opengold::decode_campaign(saved, *rules, *module, "rest-ui", nullptr).party);
+            campaign_->restore(decode_under_party_rules(saved, *campaign_, "rest-ui").party);
             refresh_rest();
             check(campaign_->state().short_rest.has_value(),
                   "Reload retains the completed Short Rest");
@@ -775,8 +771,8 @@ void RolfTourView::check_rest_controls()
             {
                 roll = {{6, 5, 4, 1}, 3};
             }
-            rest_member_ = campaign_->add_pc(
-                opengold::Character(*opengold::srd5::character_rules(), draft, {}));
+            rest_member_ =
+                campaign_->add_pc(opengold::Character(*campaign_->character_rules(), draft, {}));
             campaign_->award_experience(2700, "arcane-ui");
             for (unsigned n = 0; n < 2; ++n)
             {
@@ -821,11 +817,7 @@ void RolfTourView::check_rest_controls()
                       !presentation::required_node<Button>(*w, "Recover").is_disabled(),
                   "Completed Short Rest offers exactly the three legal Wizard allocations");
             const auto saved = opengold::encode_campaign(*campaign_, nullptr, "arcane-ui");
-            auto rules =
-                opengold::srd5::load(std::filesystem::path(rest_rules_path().utf8().get_data()));
-            campaign_->restore(opengold::decode_campaign(saved, *opengold::srd5::character_rules(),
-                                                         *rules, "arcane-ui", nullptr)
-                                   .party);
+            campaign_->restore(decode_under_party_rules(saved, *campaign_, "arcane-ui").party);
             refresh_rest();
             check(
                 presentation::required_node<OptionButton>(*w, "RecoveryChoice").get_item_count() ==
@@ -924,11 +916,7 @@ void RolfTourView::check_rest_controls()
                       !presentation::required_node<Label>(*w, "Result").get_text().is_empty(),
                   "Used recovery disables controls and displays the result");
             const auto saved = opengold::encode_campaign(*campaign_, nullptr, "arcane-ui");
-            auto rules =
-                opengold::srd5::load(std::filesystem::path(rest_rules_path().utf8().get_data()));
-            campaign_->restore(opengold::decode_campaign(saved, *opengold::srd5::character_rules(),
-                                                         *rules, "arcane-ui", nullptr)
-                                   .party);
+            campaign_->restore(decode_under_party_rules(saved, *campaign_, "arcane-ui").party);
             refresh_rest();
             presentation::required_node<Button>(*w, "Recover").emit_signal("pressed");
             check(opengold::encode_campaign(*campaign_, nullptr, "arcane-ui") == saved,
@@ -964,7 +952,7 @@ void RolfTourView::check_rest_controls()
                 }
             }
             draft.name = "Second Wizard";
-            campaign_->add_pc(opengold::Character(*opengold::srd5::character_rules(), draft, {}));
+            campaign_->add_pc(opengold::Character(*campaign_->character_rules(), draft, {}));
             camp();
             presentation::required_node<OptionButton>(*w, "Kind").select(1);
             presentation::required_node<OptionButton>(*w, "Kind").emit_signal("item_selected", 1);
@@ -974,11 +962,7 @@ void RolfTourView::check_rest_controls()
                       campaign_->state().spell_rest->members.size() == 2,
                   "Completed Long Rest presents each eligible Wizard");
             const auto bytes = opengold::encode_campaign(*campaign_, nullptr, "spell-rest-ui");
-            auto rules =
-                opengold::srd5::load(std::filesystem::path(rest_rules_path().utf8().get_data()));
-            campaign_->restore(opengold::decode_campaign(bytes, *opengold::srd5::character_rules(),
-                                                         *rules, "spell-rest-ui", nullptr)
-                                   .party);
+            campaign_->restore(decode_under_party_rules(bytes, *campaign_, "spell-rest-ui").party);
             refresh_rest();
             auto *replace = &presentation::required_node<OptionButton>(*spell, "Replace");
             replace->select(1);
@@ -1048,8 +1032,8 @@ void RolfTourView::check_rest_controls()
                                          "shield_of_faith"},
                 {},
                 {}};
-            const auto id = campaign_->add_pc(
-                opengold::Character(*opengold::srd5::character_rules(), draft, {}));
+            const auto id =
+                campaign_->add_pc(opengold::Character(*campaign_->character_rules(), draft, {}));
             camp();
             presentation::required_node<OptionButton>(*w, "Kind").select(1);
             presentation::required_node<OptionButton>(*w, "Kind").emit_signal("item_selected", 1);

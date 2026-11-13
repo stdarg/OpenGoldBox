@@ -2,6 +2,7 @@
 #include "opengold/dice.h"
 #include <algorithm>
 #include <stdexcept>
+#include <string_view>
 
 namespace opengold::original
 {
@@ -456,6 +457,26 @@ AgeCategory age_category(Race race, int age)
                                                  return age > oldest;
                                              });
     return static_cast<AgeCategory>(older);
+}
+
+namespace
+{
+constexpr std::array<std::string_view, 3> aging_names{"off", "original", "add"};
+} // namespace
+
+std::string_view aging_name(Aging aging) noexcept
+{
+    return aging_names[static_cast<std::size_t>(aging)];
+}
+
+std::optional<Aging> aging_named(std::string_view name) noexcept
+{
+    const auto found = std::ranges::find(aging_names, name);
+    if (found == aging_names.end())
+    {
+        return std::nullopt;
+    }
+    return static_cast<Aging>(found - aging_names.begin());
 }
 
 AbilityArray<int> age_changes(Aging aging, Race race, int age)

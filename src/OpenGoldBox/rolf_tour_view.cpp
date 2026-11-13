@@ -1,4 +1,5 @@
 #include "godot_images.h"
+#include "game_rules.h"
 #include "class_text.h"
 #include "godot_nodes.h"
 #include "application_settings.h"
@@ -443,9 +444,9 @@ void RolfTourView::restart()
         error_ = "";
         if (!campaign_ || !embedded_party_)
         {
-            const auto pack = game_rules_file();
-            campaign_ = std::make_shared<opengold::CampaignParty>(
-                opengold::srd5::load(presentation::path_from_godot(pack)));
+            // The town on its own plays an SRD fighter.
+            campaign_ =
+                new_campaign_party(GameRules{}, presentation::path_from_godot(game_rules_file()));
             opengold::rules::CharacterDraft d;
             d.race = "human";
             d.gender = "female";
@@ -458,7 +459,7 @@ void RolfTourView::restart()
             {
                 roll = {{6, 5, 4, 1}, 3};
             }
-            (void)campaign_->add_pc(opengold::Character(*opengold::srd5::character_rules(), d, {}));
+            (void)campaign_->add_pc(opengold::Character(*campaign_->character_rules(), d, {}));
             campaign_->add_coins(Coin::gold, 9999);
         }
         if (session_)
@@ -489,7 +490,7 @@ void RolfTourView::restart()
             if (pool_of_radiance)
             {
                 use_shop_data(*session_);
-                session_->companion_rules(opengold::srd5::character_rules(), game_companions());
+                session_->companion_rules(campaign_->character_rules(), game_companions());
             }
             if (campaign_)
             {
@@ -1080,7 +1081,7 @@ void RolfTourView::check_identification_spells()
             {},
             {}};
         auto inventory = caster.character.inventory();
-        caster.character = opengold::Character(*opengold::srd5::character_rules(), draft,
+        caster.character = opengold::Character(*campaign_->character_rules(), draft,
                                                caster.character.appearance());
         opengold::por::Equipment sword;
         sword.stored.type = 36;
@@ -3388,7 +3389,7 @@ void RolfTourView::check_town()
         draft.training.erase(
             "class:fighter:fighting_style"); // This untrained-shield fixture changes class.
         draft.training.erase("class:fighter:weapon_mastery");
-        member.character = opengold::Character(*opengold::srd5::character_rules(), draft,
+        member.character = opengold::Character(*campaign_->character_rules(), draft,
                                                member.character.appearance());
         member.character.replace_inventory(std::move(inventory));
         member.equipped.clear();

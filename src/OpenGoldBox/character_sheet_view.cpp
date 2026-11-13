@@ -135,9 +135,8 @@ void CharacterCreationView::show_modifiers()
         "[/theme_emphasis]\n" + i18n::render(s.background_messages).utf8().get_data();
     try
     {
-        const auto pack = presentation::path_from_godot(game_rules_file());
-        const auto profile =
-            member ? campaign_->profile(member->id) : srd5::load(pack)->character_profile(s, {});
+        const auto profile = member ? campaign_->profile(member->id)
+                                    : campaign_->rule_module().character_profile(s, {});
         text += "\n\n[theme_emphasis]" + i18n::utf8("Items") + "[/theme_emphasis]\n" +
                 i18n::render(profile.item_messages).utf8().get_data();
         text += "\n\n[theme_emphasis]" + i18n::utf8("Spells") + "[/theme_emphasis]\n" +

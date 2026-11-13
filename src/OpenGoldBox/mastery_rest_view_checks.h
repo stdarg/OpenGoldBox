@@ -19,10 +19,11 @@ void RolfTourView::check_mastery_rest_controls()
         auto *w = &presentation::required_node<Window>(*this, "RestTraining");
         if (rest_check_stage_ == 0)
         {
-            auto rules = opengold::srd5::character_rules();
             auto draft = campaign_->member(campaign_->selected()).character.creation_data();
-            campaign_ = std::make_shared<opengold::CampaignParty>(
-                opengold::srd5::load(std::filesystem::path(rest_rules_path().utf8().get_data())));
+            // The SRD's classes and their training.
+            campaign_ = new_campaign_party(
+                GameRules{}, std::filesystem::path(rest_rules_path().utf8().get_data()));
+            const auto &rules = campaign_->character_rules();
             unsigned index = 0;
             for (const std::string klass :
                  {"fighter", "barbarian", "rogue", "paladin", "ranger", "wizard"})
@@ -154,9 +155,7 @@ void RolfTourView::check_mastery_rest_controls()
                 const auto bytes =
                     opengold::encode_campaign(*campaign_, nullptr, "mastery-rest-ui");
                 campaign_->restore(
-                    opengold::decode_campaign(bytes, *opengold::srd5::character_rules(),
-                                              campaign_->rule_module(), "mastery-rest-ui", nullptr)
-                        .party);
+                    decode_under_party_rules(bytes, *campaign_, "mastery-rest-ui").party);
                 rest_training_member_ = 0;
                 refresh_rest();
                 check(w->is_visible() &&

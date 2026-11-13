@@ -21,7 +21,7 @@ constexpr std::size_t limit = 16 * 1024 * 1024;
 // format 45, the same fields saved before characters chose original portraits:
 // it still loads, and its members on head 1 and body 1 (the default, never
 // chosen) are listed for a random original portrait.
-constexpr unsigned campaign_format = 48;
+constexpr unsigned campaign_format = 49;
 constexpr unsigned unchosen_portraits_format = 45;
 // The first format with a creation draft's rules data (the original rules'
 // rolls); earlier saves are all SRD, whose drafts have none.
@@ -29,6 +29,9 @@ constexpr unsigned draft_rules_data_format = 47;
 // The first format that names the campaign's game; earlier saves are all Pool
 // of Radiance's (docs/GAMES.md).
 constexpr unsigned game_format = 48;
+// The first format that keeps the setting the game chose for its rules (the
+// original rules' aging); earlier saves are all SRD, which has none.
+constexpr unsigned rules_setting_format = 49;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -912,6 +915,8 @@ std::string encode_campaign_in_format(const CampaignParty &party, const por::Rol
                                         return member.character.creation_data().rules_data.empty();
                                     }),
             "An older campaign format cannot record original-rules characters");
+    require(format >= rules_setting_format || party.game_setting().empty(),
+            "An older campaign format cannot record the rules' setting");
     require(!party.in_combat(), "Cannot save during combat");
     SaveWriter out;
     out.format = format;
@@ -923,6 +928,11 @@ std::string encode_campaign_in_format(const CampaignParty &party, const por::Rol
     {
         auto game_number = static_cast<unsigned>(game);
         out.field(game_number);
+    }
+    if (format >= rules_setting_format)
+    {
+        auto setting = party.game_setting();
+        out.field(setting);
     }
     out.field(state);
     bool has_town = town != nullptr;
@@ -949,6 +959,35 @@ unsigned saved_format(std::string_view digits)
     unsigned format{};
     (void)std::from_chars(digits.data(), digits.data() + digits.size(), format);
     return format;
+}
+
+struct CheckedSave
+{
+    unsigned format{};
+    std::string_view body;
+};
+
+// The save's format and its body, once the header and checksum hold.
+CheckedSave checked_save(std::string_view bytes)
+{
+    require(bytes.size() <= limit, "Campaign save too large");
+    const auto header_end = bytes.find('\n');
+    require(bytes.starts_with(campaign_magic) && header_end != bytes.npos,
+            "Unsupported campaign save version");
+    const auto version =
+        saved_format(bytes.substr(campaign_magic.size(), header_end - campaign_magic.size()));
+    if (version < unchosen_portraits_format)
+    {
+        throw std::runtime_error(rules::older_save_message);
+    }
+    require(version >= unchosen_portraits_format && version <= campaign_format,
+            "Unsupported campaign save version");
+    const auto end = bytes.find('\n', header_end + 1);
+    require(end != bytes.npos, "Truncated campaign save");
+    const auto body = bytes.substr(end + 1);
+    require(bytes.substr(header_end + 1, end - header_end - 1) == std::to_string(fingerprint(body)),
+            "Campaign save checksum mismatch");
+    return {version, body};
 }
 
 void validate_saved_member(const PartyMember &member, const rules::RulesModule &module)
@@ -1001,23 +1040,7 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
                               const rules::RulesModule &module, std::string_view assets,
                               const std::function<por::RolfTourSession()> &make_town_template)
 {
-    require(bytes.size() <= limit, "Campaign save too large");
-    const auto header_end = bytes.find('\n');
-    require(bytes.starts_with(campaign_magic) && header_end != bytes.npos,
-            "Unsupported campaign save version");
-    const auto version =
-        saved_format(bytes.substr(campaign_magic.size(), header_end - campaign_magic.size()));
-    if (version < unchosen_portraits_format)
-    {
-        throw std::runtime_error(rules::older_save_message);
-    }
-    require(version >= unchosen_portraits_format && version <= campaign_format,
-            "Unsupported campaign save version");
-    const auto end = bytes.find('\n', header_end + 1);
-    require(end != bytes.npos, "Truncated campaign save");
-    const auto body = bytes.substr(end + 1);
-    require(bytes.substr(header_end + 1, end - header_end - 1) == std::to_string(fingerprint(body)),
-            "Campaign save checksum mismatch");
+    const auto [version, body] = checked_save(bytes);
     SaveReader in(body);
     in.format = version;
     in.creation = &creation;
@@ -1038,6 +1061,12 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
         require(game_number < gold_box_games.size(), "Unknown campaign game");
         result.game = gold_box_games[game_number];
     }
+    std::string setting;
+    if (version >= rules_setting_format)
+    {
+        in.field(setting);
+    }
+    require(setting == creation.game_setting(), "Campaign rules setting mismatch");
     in.field(result.party);
     CampaignParty::validate(result.party);
     for (const auto &m : result.party.roster)
@@ -1064,6 +1093,26 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     in.stream >> std::ws;
     require(in.stream.eof(), "Trailing campaign save data");
     return result;
+}
+
+CampaignRules saved_campaign_rules(std::string_view bytes)
+{
+    const auto [version, body] = checked_save(bytes);
+    SaveReader in(body);
+    in.format = version;
+    CampaignRules saved;
+    std::string asset;
+    in.fields(saved.identity, asset);
+    if (version >= game_format)
+    {
+        unsigned game_number{};
+        in.field(game_number);
+    }
+    if (version >= rules_setting_format)
+    {
+        in.field(saved.setting);
+    }
+    return saved;
 }
 
 void reseed_after_load(SavedCampaign &saved, Difficulty difficulty, std::uint64_t fresh)

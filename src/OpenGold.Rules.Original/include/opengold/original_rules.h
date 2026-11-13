@@ -5,6 +5,7 @@
 #include <array>
 #include <optional>
 #include <span>
+#include <string_view>
 
 // The original Pool of Radiance rules: AD&D 1st edition as the game applied
 // them (docs/ORIGINAL-RULES.md). The tables are the original's; the code is
@@ -138,6 +139,11 @@ enum class Aging : unsigned
 };
 
 inline constexpr Aging default_aging = Aging::original;
+
+// The aging rule's name as saves keep it ("off", "original" or "add"), and the
+// rule a name stands for.
+[[nodiscard]] std::string_view aging_name(Aging aging) noexcept;
+[[nodiscard]] std::optional<Aging> aging_named(std::string_view name) noexcept;
 
 enum class AgeCategory : unsigned
 {

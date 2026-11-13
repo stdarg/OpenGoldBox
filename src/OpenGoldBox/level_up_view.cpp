@@ -1,4 +1,5 @@
 #include "godot_text.h"
+#include "game_rules.h"
 #include "godot_nodes.h"
 #include "localization.h"
 #include "game_resources.h"
@@ -199,8 +200,8 @@ void CharacterCreationView::advancement_check()
             {
                 roll = {{6, 5, 4, 1}, 3};
             }
-            const auto member = campaign_->add_pc(
-                opengold::Character(*opengold::srd5::character_rules(), draft, {}));
+            const auto member =
+                campaign_->add_pc(opengold::Character(*campaign_->character_rules(), draft, {}));
             campaign_->award_experience(2700, "fixture:champion-review");
             campaign_->advance(member, campaign_->default_advancement(member));
             party_action(PartyAction::open);
@@ -229,7 +230,7 @@ void CharacterCreationView::advancement_check()
             {
                 roll = {{6, 5, 4, 1}, 3};
             }
-            campaign_->add_pc(opengold::Character(*opengold::srd5::character_rules(), draft, {}));
+            campaign_->add_pc(opengold::Character(*campaign_->character_rules(), draft, {}));
         }
         campaign_->award_experience(2700, "fixture:level-up-review");
         const auto slots = campaign_->state().slots;
@@ -394,10 +395,7 @@ void CharacterCreationView::advancement_check()
                     "Racial section must show the attained Dwarven Toughness contribution");
             }
             const auto saved = opengold::encode_campaign(*campaign_, nullptr, "bonus-ui-check");
-            const auto module =
-                opengold::srd5::load(presentation::path_from_godot(game_rules_file()));
-            auto restored = opengold::decode_campaign(saved, *opengold::srd5::character_rules(),
-                                                      *module, "bonus-ui-check", nullptr);
+            auto restored = decode_under_party_rules(saved, *campaign_, "bonus-ui-check");
             campaign_->restore(std::move(restored.party));
             show_modifiers();
             if (required_node<RichTextLabel>(*this, "ModifiersModal/Text").get_text() != text)
@@ -492,9 +490,7 @@ void CharacterCreationView::advancement_check()
                 "Cleric selection must grant Savage Attacker with its source and chosen spells");
         }
         const auto saved = opengold::encode_campaign(*campaign_, nullptr, "feat-ui-check");
-        const auto module = opengold::srd5::load(presentation::path_from_godot(game_rules_file()));
-        auto restored = opengold::decode_campaign(saved, *opengold::srd5::character_rules(),
-                                                  *module, "feat-ui-check", nullptr);
+        auto restored = decode_under_party_rules(saved, *campaign_, "feat-ui-check");
         campaign_->restore(std::move(restored.party));
         if (!has_feat() || opengold::encode_campaign(*campaign_, nullptr, "feat-ui-check") != saved)
         {
@@ -541,9 +537,7 @@ void CharacterCreationView::advancement_check()
             throw std::runtime_error("Sheet must display translated Archery");
         }
         const auto bytes = opengold::encode_campaign(*campaign_, nullptr, "archery-ui-check");
-        const auto module = opengold::srd5::load(presentation::path_from_godot(game_rules_file()));
-        auto restored = opengold::decode_campaign(bytes, *opengold::srd5::character_rules(),
-                                                  *module, "archery-ui-check", nullptr);
+        auto restored = decode_under_party_rules(bytes, *campaign_, "archery-ui-check");
         campaign_->restore(std::move(restored.party));
         if (opengold::encode_campaign(*campaign_, nullptr, "archery-ui-check") != bytes)
         {

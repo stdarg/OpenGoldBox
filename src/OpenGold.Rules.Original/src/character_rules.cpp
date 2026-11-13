@@ -233,6 +233,11 @@ class OriginalCharacterRules final : public rules::CharacterRules
         return original::identity();
     }
 
+    std::string game_setting() const override
+    {
+        return std::string(aging_name(aging_));
+    }
+
     std::vector<CreationChoice> choices(CreationField field) const override
     {
         switch (field)

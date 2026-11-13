@@ -71,8 +71,8 @@ configure_file("${export_config}" "${game_project}/export_presets.cfg" @ONLY)
 
 add_library(opengoldbox_game SHARED rolf_tour_view.cpp combat_view.cpp character_creation_view.cpp
     portrait_picker.cpp portrait_catalog.cpp party_preview.cpp equipment_choice_dialog.cpp level_up_view.cpp level_up_dialog.cpp level_up_lab_view.cpp campaign_save_view.cpp save_slots.cpp
-    character_pool_dialog.cpp town_sheet_dialog.cpp portrait_dialog.cpp original_portrait_parts.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp game_classes.cpp campaign_combat.cpp startup_view.cpp game_lifecycle.cpp crash_reports.cpp game_log.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp)
-target_link_libraries(opengoldbox_game PRIVATE opengold_core opengold_rules_srd5 godot-cpp)
+    character_pool_dialog.cpp town_sheet_dialog.cpp portrait_dialog.cpp original_portrait_parts.cpp character_sheet_view.cpp character_sheet_text.cpp godot_sound_output.cpp register_types.cpp game_classes.cpp campaign_combat.cpp startup_view.cpp game_lifecycle.cpp crash_reports.cpp game_log.cpp game_menu_view.cpp game_menu_host.cpp screenshot_service.cpp localization.cpp application_settings.cpp game_rules.cpp)
+target_link_libraries(opengoldbox_game PRIVATE opengold_core opengold_rules_srd5 opengold_rules_original godot-cpp)
 # The commit being built, for the head of the game's log; checked on every build.
 add_custom_target(opengoldbox_commit
     COMMAND "${CMAKE_COMMAND}" "-DSOURCE=${PROJECT_SOURCE_DIR}"
@@ -180,6 +180,13 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_guarded_handler_tests "${PROJECT_SOURCE_DIR}/tests/guarded_handler_tests.cpp")
     target_compile_definitions(opengold_guarded_handler_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_guarded_handler_tests COMMAND opengold_guarded_handler_tests)
+    add_executable(opengold_game_rules_tests "${PROJECT_SOURCE_DIR}/tests/game_rules_tests.cpp"
+        game_rules.cpp)
+    target_include_directories(opengold_game_rules_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_link_libraries(opengold_game_rules_tests PRIVATE opengold_core opengold_rules_srd5
+        opengold_rules_original)
+    target_compile_definitions(opengold_game_rules_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_game_rules_tests COMMAND opengold_game_rules_tests)
     add_executable(opengold_cached_combat_tests "${PROJECT_SOURCE_DIR}/tests/cached_combat_tests.cpp")
     target_link_libraries(opengold_cached_combat_tests PRIVATE opengold_rules_srd5 opengold_core)
     target_compile_definitions(opengold_cached_combat_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

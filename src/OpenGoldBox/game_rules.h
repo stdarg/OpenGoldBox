@@ -1,0 +1,66 @@
+#ifndef OPENGOLDBOX_GAME_RULES_H
+#define OPENGOLDBOX_GAME_RULES_H
+
+#include "opengold/campaign_party.h"
+#include "opengold/campaign_save.h"
+#include "opengold/original_rules.h"
+#include <filesystem>
+#include <functional>
+#include <memory>
+
+// The rules a game plays by (docs/ORIGINAL-RULES.md, plan step 2): chosen when
+// it begins and kept in its saves, with the setting chosen for them.
+struct GameRules
+{
+    enum class Set
+    {
+        srd,
+        original
+    };
+
+    Set set{Set::srd};
+    // Under the original rules, how age changes ability scores.
+    opengold::original::Aging aging{opengold::original::default_aging};
+
+    bool operator==(const GameRules &) const = default;
+};
+
+// What a new game plays by. The new game's question stays hidden, with the
+// SRD rules in effect, until the original rules can play a fight.
+inline constexpr GameRules new_game_rules{};
+
+// The rules module of a game under these rules. The SRD rules come from their
+// content pack (game_rules_file()).
+[[nodiscard]] std::unique_ptr<opengold::rules::RulesModule>
+make_rules_module(const GameRules &rules, const std::filesystem::path &srd_pack);
+
+// A new game's party under these rules.
+[[nodiscard]] std::shared_ptr<opengold::CampaignParty>
+new_campaign_party(const GameRules &rules, const std::filesystem::path &srd_pack);
+
+// The rules a save was made under (opengold::saved_campaign_rules), or a
+// game's party plays by. Throws for rules this build does not play.
+[[nodiscard]] GameRules game_rules_of(const opengold::CampaignRules &saved);
+[[nodiscard]] GameRules game_rules_of(const opengold::CampaignParty &party);
+
+// A save's party under the rules it was made with, its town built only when it
+// has one, as the save dialog loads it.
+struct LoadedCampaign
+{
+    std::shared_ptr<opengold::CampaignParty> party;
+    opengold::SavedCampaign saved;
+};
+
+[[nodiscard]] LoadedCampaign
+load_campaign_under_its_rules(std::string_view bytes, const std::filesystem::path &srd_pack,
+                              std::string_view assets,
+                              const std::function<opengold::por::RolfTourSession()> &make_town);
+
+// Decodes a save of this party's game under the party's own rules, as a
+// reload into the same game does.
+[[nodiscard]] opengold::SavedCampaign
+decode_under_party_rules(std::string_view bytes, const opengold::CampaignParty &party,
+                         std::string_view assets,
+                         const opengold::por::RolfTourSession *town_template = nullptr);
+
+#endif

@@ -822,6 +822,26 @@ CampaignParty::CampaignParty(std::unique_ptr<rules::RulesModule> rules) : rules_
     }
 }
 
+CampaignParty::CampaignParty(std::unique_ptr<rules::RulesModule> rules,
+                             std::shared_ptr<const rules::CharacterRules> creation)
+    : CampaignParty(std::move(rules))
+{
+    if (!creation)
+    {
+        throw std::runtime_error("Party requires character rules");
+    }
+    creation_ = std::move(creation);
+}
+
+const std::shared_ptr<const rules::CharacterRules> &CampaignParty::character_rules() const
+{
+    if (!creation_)
+    {
+        throw std::logic_error("This party has no character rules");
+    }
+    return creation_;
+}
+
 void CampaignParty::outside_combat() const
 {
     if (combat_)

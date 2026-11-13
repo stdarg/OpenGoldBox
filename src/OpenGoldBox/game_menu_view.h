@@ -17,6 +17,9 @@ class GameMenuView : public godot::Control
     struct Allowed
     {
         bool save{}, load{}, main_menu{};
+        // The game plays by the SRD rules, whose balance settings (the
+        // encounter challenge and the monster abilities) the Options show.
+        bool srd_rules{true};
     };
 
     void _ready() override;
@@ -38,7 +41,9 @@ class GameMenuView : public godot::Control
     void exit_to_main_menu();
     void exit_to_desktop();
     void open_options();
+    void show_srd_balance();
     bool options_alone_{};
+    bool srd_rules_{true};
     void close_options();
     void show_section(std::int64_t section);
     void build_options();

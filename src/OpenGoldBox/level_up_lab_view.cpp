@@ -210,7 +210,9 @@ void LevelUpLabView::report_failure(const std::exception &failure)
 
 void LevelUpLabView::create_character()
 {
-    auto rules = opengold::srd5::character_rules();
+    // The lab's characters are made under the SRD rules.
+    std::shared_ptr<const opengold::rules::CharacterRules> rules =
+        opengold::srd5::character_rules();
     opengold::rules::CharacterDraft draft;
     draft.character_class = selected_id(required_node<OptionButton>(*this, "Class"), classes_);
     draft.race = selected_id(required_node<OptionButton>(*this, "Race"), races_);
@@ -233,7 +235,7 @@ void LevelUpLabView::create_character()
     }
     fill_choices(*rules, draft);
     auto next = std::make_unique<opengold::CampaignParty>(
-        opengold::srd5::load(presentation::path_from_godot(game_rules_file())));
+        opengold::srd5::load(presentation::path_from_godot(game_rules_file())), rules);
     const auto id = next->add_pc(opengold::Character(*rules, std::move(draft), {}));
     next->award_experience(2700, "level-up-lab");
     const int target = required_node<OptionButton>(*this, "CurrentLevel").get_selected() + 1;
@@ -281,16 +283,19 @@ void LevelUpLabView::save_character(const std::filesystem::path &path)
 
 void LevelUpLabView::load_character(const std::filesystem::path &path)
 {
+    // The lab's characters are made under the SRD rules.
+    std::shared_ptr<const opengold::rules::CharacterRules> rules =
+        opengold::srd5::character_rules();
     auto module = opengold::srd5::load(presentation::path_from_godot(game_rules_file()));
     auto saved = opengold::decode_campaign(
-        opengold::read_campaign_file(path), *opengold::srd5::character_rules(), *module,
-        lab_asset_identity, static_cast<const opengold::por::RolfTourSession *>(nullptr));
+        opengold::read_campaign_file(path), *rules, *module, lab_asset_identity,
+        static_cast<const opengold::por::RolfTourSession *>(nullptr));
     if (saved.town || saved.party.roster.size() != 1 ||
         saved.party.slots[0] != saved.party.roster.front().id)
     {
         throw std::runtime_error(N_("This is not a single-character level-up demo save"));
     }
-    auto next = std::make_unique<opengold::CampaignParty>(std::move(module));
+    auto next = std::make_unique<opengold::CampaignParty>(std::move(module), std::move(rules));
     next->restore(std::move(saved.party));
     const auto id = next->state().roster.front().id;
     (void)next->profile(id);

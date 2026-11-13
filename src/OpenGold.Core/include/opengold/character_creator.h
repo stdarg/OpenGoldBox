@@ -45,14 +45,14 @@ struct ReincarnationChoices
 class CharacterCreator
 {
   public:
-    CharacterCreator(std::unique_ptr<rules::CharacterRules> rules, std::uint64_t seed);
+    CharacterCreator(std::shared_ptr<const rules::CharacterRules> rules, std::uint64_t seed);
     // Reincarnate's pages (LEVELS-5): `former`'s new body of `species`. Only
     // the species' choices, a Human's Versatile Magic Initiate spells and the
     // look change: the species page, those spells, the combat icon and the
     // portrait, then the sheet. `rules` replays the character's levels and
     // must outlive the creator: the game view ends the pages before it
     // replaces the campaign that owns it.
-    CharacterCreator(std::unique_ptr<rules::CharacterRules> creation,
+    CharacterCreator(std::shared_ptr<const rules::CharacterRules> creation,
                      const rules::RulesModule &rules, const Character &former,
                      std::string_view species);
 
@@ -126,7 +126,7 @@ class CharacterCreator
     void restart();
 
   private:
-    std::unique_ptr<rules::CharacterRules> rules_;
+    std::shared_ptr<const rules::CharacterRules> rules_;
     // While reincarnating: the character, its rules module (borrowed) and
     // the grants it has from anything but its species.
     std::optional<Character> former_;

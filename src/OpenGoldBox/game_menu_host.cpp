@@ -1,6 +1,7 @@
 // The creation scene's in-game menu: Escape that nothing else used opens it
 // over the party screen, the exploration screen or a fight.
 #include "character_creation_view.h"
+#include "game_rules.h"
 #include "application_settings.h"
 #include "combat_view.h"
 #include "game_menu_view.h"
@@ -78,7 +79,8 @@ void CharacterCreationView::open_game_menu()
     const bool party = campaign_ && campaign_->selected();
     menu.open({.save = party && !fighting && idle && !campaign_defeated_,
                .load = !fighting && (idle || campaign_defeated_),
-               .main_menu = exploring && !fighting && idle});
+               .main_menu = exploring && !fighting && idle,
+               .srd_rules = !campaign_ || game_rules_of(*campaign_).set == GameRules::Set::srd});
     // Nothing beneath moves or hears keys while the menu is open.
     paused_.clear();
     for (const char *name : {"CampaignTown", "CampaignCombat"})

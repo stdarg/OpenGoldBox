@@ -66,7 +66,7 @@ CharacterDraft reincarnation_draft(const Character &former, std::string_view spe
     return draft;
 }
 
-CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, std::uint64_t seed)
+CharacterCreator::CharacterCreator(std::shared_ptr<const CharacterRules> rules, std::uint64_t seed)
     : rules_(std::move(rules)), random_{seed}, gold_random_{~seed}
 {
     if (!rules_)
@@ -76,7 +76,7 @@ CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, std::u
     restart();
 }
 
-CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> creation,
+CharacterCreator::CharacterCreator(std::shared_ptr<const CharacterRules> creation,
                                    const RulesModule &rules, const Character &former,
                                    std::string_view species)
     : rules_(std::move(creation)), former_(former), module_(&rules), random_{0}, gold_random_{0}

@@ -224,6 +224,10 @@ class CampaignParty
 {
   public:
     explicit CampaignParty(std::unique_ptr<rules::RulesModule> rules);
+    // A game's party: its rules module and the character rules it makes and
+    // keeps its characters by, both under the rules the game chose.
+    CampaignParty(std::unique_ptr<rules::RulesModule> rules,
+                  std::shared_ptr<const rules::CharacterRules> creation);
 
     [[nodiscard]] const PartyState &state() const noexcept
     {
@@ -559,6 +563,16 @@ class CampaignParty
         return rules_->identity();
     }
 
+    // The game's character rules; only a game's party has them.
+    [[nodiscard]] const std::shared_ptr<const rules::CharacterRules> &character_rules() const;
+
+    // The setting the game chose for its rules (CharacterRules::game_setting),
+    // empty for a party without character rules.
+    [[nodiscard]] std::string game_setting() const
+    {
+        return creation_ ? creation_->game_setting() : std::string{};
+    }
+
   private:
     // The member's next level, or 0 at its rules cap or the Training Hall's
     // limit (LEVELS-2).
@@ -588,6 +602,7 @@ class CampaignParty
     [[nodiscard]] GearInPlace gear_in_place(const PartyMember &m, const por::Equipment &item) const;
     std::optional<rules::HazardAttackResult> refuse_bound_weapon(MemberId id, std::uint64_t item);
     std::unique_ptr<rules::RulesModule> rules_;
+    std::shared_ptr<const rules::CharacterRules> creation_;
     PartyState state_;
     NpcPositions npc_positions_{NpcPositions::npcs_only};
     bool combat_{};

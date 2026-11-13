@@ -21,15 +21,15 @@ class CharacterPoolDialog : public godot::Window
     using FailureReport = std::function<void(const std::exception &)>;
 
     void _ready() override;
-    // The rules the pool is made from, which the window keeps; the art and
-    // portraits it is shown with, which outlive this window; the host's
-    // campaign, read at each use because loading a save replaces it; what
-    // follows an added member; and where a failed handler is shown.
-    void connect_host(std::unique_ptr<const opengold::rules::CharacterRules> rules,
-                      const opengold::por::CharacterArt &art, PortraitCatalog &portraits,
+    // The art and portraits the pool is shown with, which outlive this window;
+    // the host's campaign, read at each use because loading a save replaces it
+    // (the pool is made under its rules); what follows an added member; and
+    // where a failed handler is shown.
+    void connect_host(const opengold::por::CharacterArt &art, PortraitCatalog &portraits,
                       CampaignAccess campaign, std::function<void()> member_added,
                       FailureReport report);
-    // Builds the pool on first use and shows it; throws if it cannot be built.
+    // Builds the pool under the campaign's rules on first use, or once they
+    // change, and shows it; throws if it cannot be built.
     void open();
     // Sizes the window and its controls to the campaign view.
     void fit(godot::Vector2 view_size);
@@ -55,9 +55,8 @@ class CharacterPoolDialog : public godot::Window
 
   private:
     void connect_controls();
-    // Its own: the creation rules the view holds are replaced while a
-    // Reincarnate's pages are open.
-    std::unique_ptr<const opengold::rules::CharacterRules> rules_;
+    // The character rules the pool was made under.
+    std::shared_ptr<const opengold::rules::CharacterRules> pool_rules_;
     // Borrowed from the campaign view, which owns them for longer than this
     // window exists.
     const opengold::por::CharacterArt *art_{};

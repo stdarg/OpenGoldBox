@@ -182,6 +182,9 @@ class CharacterRules
   public:
     virtual ~CharacterRules() = default;
     [[nodiscard]] virtual Identity identity() const = 0;
+    // The setting a game chose for these rules when it began, which its saves
+    // keep: the original rules' aging; empty for rules without one.
+    [[nodiscard]] virtual std::string game_setting() const = 0;
     [[nodiscard]] virtual std::vector<CreationChoice> choices(CreationField field) const = 0;
     [[nodiscard]] virtual std::vector<ScoreAdjustment>
     adjustments(std::string_view background) const = 0;

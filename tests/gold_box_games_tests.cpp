@@ -416,7 +416,7 @@ void a_save_names_its_game()
     const auto &creation = *creation_rules;
     const auto curse_save =
         opengold::encode_campaign(party, nullptr, "files", GoldBoxGame::curse_of_the_azure_bonds);
-    check(curse_save.starts_with("OPENGOLD-CAMPAIGN 48\n"), "Saves are format 48");
+    check(curse_save.starts_with("OPENGOLD-CAMPAIGN 49\n"), "Saves are format 49");
     check(opengold::decode_campaign(curse_save, creation, *module, "files", nullptr).game ==
               GoldBoxGame::curse_of_the_azure_bonds,
           "The save keeps its game");
