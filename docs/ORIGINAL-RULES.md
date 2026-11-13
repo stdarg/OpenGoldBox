@@ -80,9 +80,15 @@ and a save each know which tables they use.
   Strength stops at level 9, an elf magic-user at 9 to 11 by Intelligence.
 - **Training** past a class's Hit Dice adds a fixed amount: 3 a fighter or
   paladin, 2 a cleric, ranger or thief, 1 a magic-user.
-- Still *Pool of Radiance*'s: spells above level 3, the paladin's and
-  ranger's own abilities, and the higher spell slots, which come with *Curse*'s
-  magic (GAMES.md, phase 3 step 5).
+- **Spells:** *Curse* numbers its spells as *Pool of Radiance* does up to 56
+  and keeps its item powers 57 and 59 to 65; its own (58 and 66 to 100: the
+  fourth- and fifth-level spells, the druid's, and more powers) are numbered
+  100 higher in the rules, so one table holds both, and a record's, item's or
+  scroll's spell is read by its game. Slots go on to fifth-level spells and
+  class level 12, with a cleric's 18 Wisdom adding one at fourth level.
+- Still to come: *Curse*'s new spells in fights and camp, its effect numbers
+  (which differ from *Pool of Radiance*'s from 3 on), and the paladin's and
+  ranger's own abilities (GAMES.md, phase 3 step 5).
 
 ## What the original rules cover
 

@@ -270,12 +270,31 @@ constexpr std::array<std::array<int, 12>, class_slot_count> experience_table_cur
 constexpr std::array<int, class_slot_count> curse_hit_dice_levels{10, 15, 10, 10, 11, 12, 11, 13};
 constexpr std::array<int, class_slot_count> curse_fixed_hit_points{2, 0, 3, 3, 2, 1, 2, 0};
 
-using SlotRow = std::array<int, 3>;
-// Spell slots of levels 1 to 3, for class levels 2 to 6.
-constexpr std::array<SlotRow, 5> cleric_slots{
-    {{2, 0, 0}, {2, 1, 0}, {3, 2, 0}, {3, 3, 1}, {3, 3, 2}}};
-constexpr std::array<SlotRow, 5> magic_user_slots{
-    {{2, 0, 0}, {2, 1, 0}, {3, 2, 0}, {4, 2, 1}, {4, 2, 2}}};
+using SlotRow = std::array<int, 5>;
+// Spell slots of levels 1 to 5, for class levels 2 to 12 (Pool of Radiance's
+// stop at level 6, where its clerics and magic-users do).
+constexpr std::array<SlotRow, 11> cleric_slots{{{2, 0, 0, 0, 0},
+                                                {2, 1, 0, 0, 0},
+                                                {3, 2, 0, 0, 0},
+                                                {3, 3, 1, 0, 0},
+                                                {3, 3, 2, 0, 0},
+                                                {3, 3, 2, 1, 0},
+                                                {3, 3, 3, 2, 0},
+                                                {4, 4, 3, 2, 1},
+                                                {4, 4, 3, 3, 2},
+                                                {5, 4, 4, 3, 2},
+                                                {6, 5, 5, 3, 2}}};
+constexpr std::array<SlotRow, 11> magic_user_slots{{{2, 0, 0, 0, 0},
+                                                    {2, 1, 0, 0, 0},
+                                                    {3, 2, 0, 0, 0},
+                                                    {4, 2, 1, 0, 0},
+                                                    {4, 2, 2, 0, 0},
+                                                    {4, 3, 2, 1, 0},
+                                                    {4, 3, 3, 2, 0},
+                                                    {4, 3, 3, 2, 1},
+                                                    {4, 4, 3, 2, 2},
+                                                    {4, 4, 4, 3, 3},
+                                                    {4, 4, 4, 4, 4}}};
 
 using SkillRow = std::array<int, 8>;
 // A thief's chances by thief level 1 to 9.
@@ -919,11 +938,11 @@ std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<c
         11, game == GoldBoxGame::curse_of_the_azure_bonds ? 12 : 19, 18, 21};
     const bool magic_user = level_in(levels, ClassSlot::magic_user) > 0;
     std::vector<int> known;
-    for (int number = 1; number <= 56; ++number)
+    for (const int number : castable_spells(game))
     {
         const auto *known_spell = spell(number);
         const bool cleric_spell =
-            known_spell->caster_class == SpellClass::cleric && known_spell->level <= 3 &&
+            known_spell->caster_class == SpellClass::cleric && known_spell->level <= 5 &&
             cleric_slots[static_cast<std::size_t>(known_spell->level - 1)] > 0;
         const bool magic_user_spell =
             magic_user &&
@@ -1091,15 +1110,15 @@ std::optional<int> racial_level_limit(Race race, ClassSlot slot, const AbilityAr
     return std::nullopt;
 }
 
-std::array<int, 3> spell_slots(ClassSlot slot, int level, int wisdom)
+std::array<int, 5> spell_slots(ClassSlot slot, int level, int wisdom)
 {
     if ((slot != C::cleric && slot != C::magic_user) || level < 1)
     {
         return {};
     }
     const auto &table = slot == C::cleric ? cleric_slots : magic_user_slots;
-    SlotRow slots =
-        level == 1 ? SlotRow{1, 0, 0} : table[static_cast<std::size_t>(std::min(level, 6) - 2)];
+    SlotRow slots = level == 1 ? SlotRow{1, 0, 0, 0, 0}
+                               : table[static_cast<std::size_t>(std::min(level, 12) - 2)];
     if (slot == C::cleric)
     {
         // The original's Wisdom bonus adds a slot only at a spell level the
@@ -1116,6 +1135,7 @@ std::array<int, 3> spell_slots(ClassSlot slot, int level, int wisdom)
         add(1, wisdom > 14);
         add(1, wisdom > 15);
         add(2, wisdom > 16);
+        add(3, wisdom > 17);
     }
     return slots;
 }

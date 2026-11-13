@@ -651,7 +651,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         {
             if (record.spell_book[n] != 0)
             {
-                learned.push_back(static_cast<int>(n) + 1);
+                learned.push_back(canonical_spell(static_cast<int>(n) + 1, record.game));
             }
         }
         numbers.known_spells = known_spells(levels, ability[Ability::wisdom], learned, game_);
@@ -660,7 +660,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         {
             if (memorized != 0 && memorized < 0x80)
             {
-                if (const auto id = spell_id(memorized); !id.empty())
+                if (const auto id = spell_id(canonical_spell(memorized, record.game)); !id.empty())
                 {
                     sheet.prepared_spells.push_back(id);
                 }

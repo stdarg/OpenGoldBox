@@ -321,9 +321,9 @@ enum class ThiefSkill : unsigned
 [[nodiscard]] std::vector<int> known_spells(const ClassLevels &levels, int wisdom,
                                             std::span<const int> learned, GoldBoxGame game);
 
-// Spell slots of levels 1 to 3 for a cleric or magic-user level, with the
+// Spell slots of levels 1 to 5 for a cleric or magic-user level, with the
 // cleric's Wisdom bonus; zeros for other classes.
-[[nodiscard]] std::array<int, 3> spell_slots(ClassSlot slot, int level, int wisdom);
+[[nodiscard]] std::array<int, 5> spell_slots(ClassSlot slot, int level, int wisdom);
 
 // Combat (docs/ORIGINAL-RULES.md, plan step 4).
 

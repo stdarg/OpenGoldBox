@@ -89,7 +89,103 @@ constexpr std::array<Spell, 67> spells{{
     {"Manual of Bodily Health", SpellClass::item, 6, 0, 0, 0, 0, 0, 1, 0, 4, 4, 0, 0, 0, false, 0},
 }};
 
+// Curse of the Azure Bonds's spells beyond Pool of Radiance's (its spell
+// table, spells 58 and 66 to 100, in its reconstruction), by the numbers the
+// rules give them: 100 more than Curse's own (curse_spell_offset). Curse keeps
+// Pool of Radiance's item powers 57 and 59 to 65.
+struct NumberedSpell
+{
+    int number;
+    Spell spell;
+};
+
+constexpr std::array<NumberedSpell, 36> curse_spells{{
+    {158,
+     {"Cure Serious Wounds", SpellClass::cleric, 4, 0, 0, 0, 0, 4, 2, 0, 4, 0, 2, 7, 1, false, 0}},
+    {166,
+     {"Cause Serious Wounds", SpellClass::cleric, 4, 0, 0, 0, 0, 4, 0, 0, 4, 0, 1, 7, 5, true, 0}},
+    {167,
+     {"Neutralize Poison", SpellClass::cleric, 4, 0, 0, 0, 0, 0, 2, 0, 4, 0, 0, 7, 0, false, 0}},
+    {168, {"Poison", SpellClass::cleric, 4, 0, 0, 0, 0, 4, 0, 1, 0, 0, 1, 7, 6, true, 0}},
+    {169,
+     {"Protection from Evil, 10' Radius", SpellClass::cleric, 4, 3, 0, 0, 10, 4, 2, 0, 4, 45, 2, 7,
+      2, false, 0}},
+    {170, {"Sticks to Snakes", SpellClass::cleric, 4, 3, 0, 0, 2, 4, 0, 0, 4, 3, 1, 7, 4, true, 0}},
+    {171,
+     {"Cure Critical Wounds", SpellClass::cleric, 5, 0, 0, 0, 0, 4, 2, 0, 4, 0, 2, 8, 2, false, 0}},
+    {172,
+     {"Cause Critical Wounds", SpellClass::cleric, 5, 255, 0, 0, 0, 4, 0, 1, 4, 0, 1, 8, 6, true,
+      0}},
+    {173, {"Dispel Evil", SpellClass::cleric, 5, 0, 0, 0, 1, 0, 0, 0, 4, 145, 1, 8, 3, false, 0}},
+    {174, {"Flame Strike", SpellClass::cleric, 5, 6, 0, 0, 0, 4, 0, 2, 4, 0, 1, 8, 6, true, 0}},
+    {175, {"Raise Dead", SpellClass::cleric, 5, 0, 0, 0, 0, 0, 2, 0, 4, 0, 0, 10, 1, false, 0}},
+    {176, {"Slay Living", SpellClass::cleric, 5, 3, 0, 0, 0, 4, 0, 1, 4, 0, 1, 10, 7, true, 0}},
+    {177, {"Detect Magic", SpellClass::druid, 1, 3, 0, 12, 0, 0, 1, 0, 4, 5, 2, 3, 1, false, 0}},
+    {178, {"Entangle", SpellClass::druid, 1, 8, 0, 10, 0, 11, 0, 1, 4, 136, 1, 3, 3, true, 0}},
+    {179, {"Faerie Fire", SpellClass::druid, 1, 8, 0, 0, 4, 5, 0, 1, 4, 7, 1, 3, 4, true, 0}},
+    {180,
+     {"Invisibility to Animals", SpellClass::druid, 1, 255, 0, 10, 1, 4, 2, 0, 4, 69, 2, 4, 1, true,
+      0}},
+    {181,
+     {"Charm Monsters", SpellClass::magic_user, 4, 6, 0, 0, 0, 5, 0, 1, 4, 11, 1, 4, 6, true, 0}},
+    {182, {"Confusion", SpellClass::magic_user, 4, 12, 0, 2, 1, 11, 0, 1, 4, 35, 1, 4, 7, true, 0}},
+    {183,
+     {"Dimension Door", SpellClass::magic_user, 4, 0, 3, 0, 0, 8, 0, 0, 4, 0, 1, 1, 0, true, 0}},
+    {184, {"Fear", SpellClass::magic_user, 4, 6, 0, 0, 1, 8, 0, 1, 4, 142, 1, 4, 6, true, 0}},
+    {185, {"Fire Shield", SpellClass::magic_user, 4, 0, 0, 2, 1, 0, 1, 0, 4, 0, 2, 4, 8, false, 0}},
+    {186, {"Fumble", SpellClass::magic_user, 4, 0, 1, 0, 1, 4, 0, 1, 4, 27, 1, 4, 4, true, 0}},
+    {187, {"Ice Storm", SpellClass::magic_user, 4, 0, 1, 0, 0, 10, 0, 0, 4, 0, 1, 4, 7, true, 0}},
+    {188,
+     {"Minor Globe of Invulnerability", SpellClass::magic_user, 4, 0, 1, 0, 1, 0, 1, 0, 4, 63, 2, 4,
+      5, false, 0}},
+    {189,
+     {"Remove Curse", SpellClass::magic_user, 4, 0, 0, 0, 0, 4, 2, 0, 4, 0, 2, 4, 0, false, 0}},
+    {190, {"Animate Dead", SpellClass::item, 5, 1, 0, 0, 0, 240, 4, 0, 4, 32, 2, 5, 0, false, 0}},
+    {191, {"Cloudkill", SpellClass::magic_user, 5, 2, 0, 0, 1, 9, 0, 0, 4, 0, 2, 5, 5, true, 0}},
+    {192, {"Cone of Cold", SpellClass::magic_user, 5, 6, 0, 0, 0, 8, 0, 2, 4, 0, 1, 5, 6, true, 0}},
+    {193, {"Feeblemind", SpellClass::magic_user, 5, 16, 0, 0, 0, 4, 0, 1, 4, 68, 1, 5, 6, true, 0}},
+    {194,
+     {"Hold Monster", SpellClass::magic_user, 5, 0, 1, 0, 1, 7, 0, 1, 4, 52, 1, 5, 7, true, 0}},
+    {195,
+     {"Protection from Dragon Breath", SpellClass::item, 6, 0, 0, 0, 0, 0, 1, 0, 4, 73, 2, 10, 1,
+      false, 0}},
+    {196,
+     {"Resist Paralysis", SpellClass::item, 6, 0, 0, 0, 0, 0, 1, 0, 4, 109, 2, 10, 1, false, 0}},
+    {197, {"Invisibility", SpellClass::item, 6, 0, 0, 0, 0, 0, 1, 0, 4, 25, 2, 0, 1, false, 0}},
+    {198, {"Blast", SpellClass::item, 6, 3, 0, 0, 0, 11, 0, 1, 4, 0, 1, 0, 1, true, 0}},
+    {199, {"Healing", SpellClass::item, 6, 0, 0, 0, 0, 0, 1, 0, 4, 0, 2, 0, 1, false, 0}},
+    {200,
+     {"Bestow Curse", SpellClass::magic_user, 4, 0, 0, 0, 10, 4, 0, 1, 4, 36, 1, 4, 4, true, 0}},
+}};
+
+// Curse's spells that its characters can know, in its table's order: Pool of
+// Radiance's 56, then its own.
+constexpr std::array<int, 30> curse_castable{158, 166, 167, 168, 169, 170, 171, 172, 173, 174,
+                                             175, 176, 177, 178, 179, 180, 181, 182, 183, 184,
+                                             185, 186, 187, 188, 189, 191, 192, 193, 194, 200};
+
 } // namespace
+
+int canonical_spell(int number, GoldBoxGame game) noexcept
+{
+    const bool curse_only = number == 58 || number >= 66;
+    return game == GoldBoxGame::curse_of_the_azure_bonds && curse_only ? number + curse_spell_offset
+                                                                       : number;
+}
+
+std::vector<int> castable_spells(GoldBoxGame game)
+{
+    std::vector<int> numbers;
+    for (int number = 1; number <= 56; ++number)
+    {
+        numbers.push_back(number);
+    }
+    if (game == GoldBoxGame::curse_of_the_azure_bonds)
+    {
+        numbers.insert(numbers.end(), curse_castable.begin(), curse_castable.end());
+    }
+    return numbers;
+}
 
 std::string spell_id(int number)
 {
@@ -98,7 +194,9 @@ std::string spell_id(int number)
     {
         return {};
     }
-    std::string id = known->caster_class == SpellClass::cleric ? "cleric:" : "magic_user:";
+    std::string id = known->caster_class == SpellClass::cleric  ? "cleric:"
+                     : known->caster_class == SpellClass::druid ? "druid:"
+                                                                : "magic_user:";
     bool gap = false;
     for (const char c : known->name)
     {
@@ -122,11 +220,22 @@ std::string spell_id(int number)
 std::optional<int> spell_number(std::string_view id)
 {
     id = id.substr(0, id.find('#'));
+    if (id.empty())
+    {
+        return std::nullopt;
+    }
     for (int number = 1; number <= static_cast<int>(spells.size()); ++number)
     {
-        if (!id.empty() && spell_id(number) == id)
+        if (spell_id(number) == id)
         {
             return number;
+        }
+    }
+    for (const auto &entry : curse_spells)
+    {
+        if (spell_id(entry.number) == id)
+        {
+            return entry.number;
         }
     }
     return std::nullopt;
@@ -134,11 +243,18 @@ std::optional<int> spell_number(std::string_view id)
 
 const Spell *spell(int number) noexcept
 {
-    if (number < 1 || number > static_cast<int>(spells.size()))
+    if (number >= 1 && number <= static_cast<int>(spells.size()))
     {
-        return nullptr;
+        return &spells[static_cast<std::size_t>(number - 1)];
     }
-    return &spells[static_cast<std::size_t>(number - 1)];
+    for (const auto &entry : curse_spells)
+    {
+        if (entry.number == number)
+        {
+            return &entry.spell;
+        }
+    }
+    return nullptr;
 }
 
 } // namespace opengold::original

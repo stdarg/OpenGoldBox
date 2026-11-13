@@ -1,12 +1,14 @@
 #ifndef OPENGOLD_ORIGINAL_SPELLS_H
 #define OPENGOLD_ORIGINAL_SPELLS_H
 
+#include "opengold/gold_box_game.h"
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
-// The original rules' spells as Pool of Radiance casts them
-// (docs/ORIGINAL-RULES.md, "Combat", step 8).
+// The original rules' spells as Pool of Radiance casts them, and Curse of the
+// Azure Bonds's besides (docs/ORIGINAL-RULES.md, "Combat", step 8).
 namespace opengold::original
 {
 
@@ -14,8 +16,10 @@ enum class SpellClass
 {
     cleric,
     magic_user,
-    // An item's own power, cast at level 12.
-    item
+    // An item's own power, cast at level 12, or a monster's.
+    item,
+    // Curse's: a ranger's from level 8.
+    druid
 };
 
 // A spell's facts by its number in the original's spell table.
@@ -52,8 +56,19 @@ struct Spell
     int ai_radius{};
 };
 
-// The spell or item power of this number (1 to 67), or nothing.
+// Curse's spells beyond Pool of Radiance's are numbered this much higher than
+// in Curse's own table, so one table holds both games' (canonical_spell).
+inline constexpr int curse_spell_offset = 100;
+
+// The spell or item power of this number (1 to 67, and Curse's 158 and 166
+// to 200), or nothing.
 [[nodiscard]] const Spell *spell(int number) noexcept;
+// The number spell() knows for a game's own (its records', items' and
+// scripts'): Curse's spells beyond Pool of Radiance's, 58 and 66 up, are
+// curse_spell_offset higher.
+[[nodiscard]] int canonical_spell(int number, GoldBoxGame game) noexcept;
+// The spells a game's characters may know, in its table's order.
+[[nodiscard]] std::vector<int> castable_spells(GoldBoxGame game);
 
 // A spell's stable ID, its class and name ("magic_user:sleep"), as sheets
 // and saves keep it; empty for a number that is no cleric or magic-user spell.

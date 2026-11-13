@@ -139,7 +139,7 @@ int slots_for(const CharacterSheet::Original &numbers, const Spell &known)
 {
     const auto &slots =
         known.caster_class == SpellClass::cleric ? numbers.cleric_slots : numbers.magic_user_slots;
-    return known.level >= 1 && known.level <= 3 ? slots[static_cast<std::size_t>(known.level - 1)]
+    return known.level >= 1 && known.level <= 5 ? slots[static_cast<std::size_t>(known.level - 1)]
                                                 : 0;
 }
 
@@ -973,10 +973,10 @@ AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &she
     }
     const auto slots =
         spell_slots(ClassSlot::magic_user, magic_user + 1, sheet.scores[Ability::wisdom]);
-    for (int number = 1; number <= 56; ++number)
+    for (const int number : castable_spells(game_of(sheet.identity)))
     {
         const auto *offered = spell(number);
-        if (offered->caster_class == SpellClass::magic_user && offered->level <= 3 &&
+        if (offered->caster_class == SpellClass::magic_user && offered->level <= 5 &&
             slots[static_cast<std::size_t>(offered->level - 1)] > 0 &&
             std::ranges::find(numbers.known_spells, number) == numbers.known_spells.end())
         {

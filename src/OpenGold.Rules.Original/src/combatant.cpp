@@ -1,5 +1,6 @@
 #include "opengold/original_combat.h"
 #include "opengold/original_rules.h"
+#include "opengold/original_spells.h"
 
 #include <algorithm>
 #include <charconv>
@@ -421,11 +422,13 @@ int kin_of(const por::CharacterRecord &record)
 }
 
 // The items a creature can use: a scroll (an item whose type sits in slots
-// 11 to 13) with a spell, or another item with a spell or power, numbers
-// above 56 being item powers 23 down (viewchar.pas, UseItem; magic.pas,
-// ItemReadable).
-std::vector<UsableItem> usable_items(std::span<const CarriedItem> carried)
+// 11 to 13) with a spell, or another item with a spell or power. In Pool of
+// Radiance numbers above 56 are item powers 23 down (viewchar.pas, UseItem;
+// magic.pas, ItemReadable); Curse names the spell itself (ovr020,
+// UseMagicItem).
+std::vector<UsableItem> usable_items(std::span<const CarriedItem> carried, GoldBoxGame game)
 {
+    const bool curse = game == GoldBoxGame::curse_of_the_azure_bonds;
     std::vector<UsableItem> items;
     for (std::size_t n = 0; n < carried.size(); ++n)
     {
@@ -442,8 +445,9 @@ std::vector<UsableItem> usable_items(std::span<const CarriedItem> carried)
             usable.scroll = true;
             for (std::size_t s = 0; s < bytes.size(); ++s)
             {
-                const int number = bytes[s] & 0x7F;
-                usable.spells[s] = number >= 1 && number <= 56 ? number : 0;
+                const int number = canonical_spell(bytes[s] & 0x7F, game);
+                const auto *known = spell(number);
+                usable.spells[s] = known && known->caster_class != SpellClass::item ? number : 0;
             }
             if (usable.spells == std::array<int, 3>{})
             {
@@ -452,7 +456,9 @@ std::vector<UsableItem> usable_items(std::span<const CarriedItem> carried)
         }
         else if (bytes[1] > 0 && bytes[2] < 0x80)
         {
-            usable.spells[0] = bytes[1] > 56 ? bytes[1] - 23 : bytes[1];
+            usable.spells[0] = curse           ? canonical_spell(bytes[1] & 0x7F, game)
+                               : bytes[1] > 56 ? bytes[1] - 23
+                                               : bytes[1];
             usable.charges = bytes[0];
         }
         else
@@ -601,13 +607,13 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     c.alignment = record.alignment;
     c.creature_type = record.type;
     c.kin = kin_of(record);
-    c.items = usable_items(carried);
+    c.items = usable_items(carried, record.game);
     // Memorized spells; those still being learned (bit 0x80) are not ready.
-    for (const auto spell : record.memorized_spells)
+    for (const auto memorized : record.memorized_spells)
     {
-        if (spell != 0 && spell < 0x80)
+        if (memorized != 0 && memorized < 0x80)
         {
-            c.spells.push_back(spell);
+            c.spells.push_back(canonical_spell(memorized, record.game));
         }
     }
     c.race = record.race;
