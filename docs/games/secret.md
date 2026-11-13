@@ -139,6 +139,27 @@ opening, in having no wilderness, and in reading the one sprite, combat icon
 and creature file for every disk. *Secret* has no portrait files for its
 scripts.
 
+## The script host
+
+What *Secret*'s scripts need beyond *Curse*'s (found by walking every map):
+
+- **AWARD EXPERIENCE** (41h): its second operand to every member in play, or
+  with a first operand of 0 to the selected character alone; each member's
+  share is divided among its classes, with no bonus for its prime scores.
+- **ADD NPC** names a record of the one creature file, whatever the disk; a
+  party already eight strong takes no one, as the original's
+  AddCreatureToParty adds no one.
+- **DAMAGE**: bit 10h of the first operand hurts a member who saves as much
+  as one who fails (the whole party's D0h form).
+- **CHECK PARTY** asks whether a race is in the party (by *Secret*'s race
+  numbers: elf 1, half-elf 2, dwarf 3, gnome 4, halfling 5, human 6), and for
+  Charisma and class levels (the lowest and highest of those at least the
+  second operand, and the average of all).
+- **SPELL** asks who has a cleric's (41) or a magic-user's (46) Dispel Magic
+  memorized; that member casts it.
+- The colour-selector cells C059h and C05Fh (and C05Ah, which the original
+  ignores) are stored with no effect yet.
+
 ## Sound effects
 
 The PC speaker's driver is *Curse*'s, found the same way, with 13 songs. Its

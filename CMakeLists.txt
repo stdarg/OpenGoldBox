@@ -263,6 +263,8 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_gold_box_games_tests COMMAND opengold_gold_box_games_tests)
     # Every map of Curse walked with an original-rules party: each event runs.
     add_test(NAME opengold_curse_walk COMMAND opengold_gold_box_games_tests --curse-walk)
+    # Every map of Secret of the Silver Blades walked the same way.
+    add_test(NAME opengold_secret_walk COMMAND opengold_gold_box_games_tests --secret-walk)
     # Curse's story, beat by beat, with a party made for it (plan step 7).
     add_test(NAME opengold_curse_route COMMAND opengold_gold_box_games_tests --curse-route)
     # Pools of Darkness' and Treasures' 256-color pictures, read from the games' files.

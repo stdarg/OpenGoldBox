@@ -391,6 +391,9 @@ class CampaignParty
     // member, or only `only`, gains `amount` divided among its own classes,
     // with no bonus for its prime scores.
     void grant_script_experience(unsigned amount, MemberId only = {});
+    // The first member who can cast this spell out of a fight casts it (a
+    // script's SPELL); none when no one can.
+    [[nodiscard]] std::optional<MemberId> cast_exploration_spell(std::string_view spell);
     // A training hall's experience session: half the experience between the
     // member's level and the next, once per level, paid in the party's gold.
     [[nodiscard]] ExperienceOffer experience_offer(MemberId id, TrainingHall hall) const;

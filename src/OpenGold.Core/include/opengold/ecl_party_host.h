@@ -24,9 +24,11 @@ inline constexpr std::array<EclAddress, 7> ecl_coin_addresses{
 [[nodiscard]] unsigned party_strength(const CampaignParty &party);
 // CHECK PARTY: the lowest, highest and average of a party attribute (movement
 // or a thief skill), or, for attribute 0, whether a spell effect is on the
-// party in the fourth value (coab CMD_CheckParty).
+// party in the fourth value (coab CMD_CheckParty). Secret also asks whether a
+// race is in the party, and for Charisma and class levels.
 [[nodiscard]] std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attribute,
-                                                  unsigned effect);
+                                                  unsigned effect,
+                                                  GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 // The reaction score (0x6DCF) the scripts add to a parley's reaction roll,
 // from the speaker's Charisma, as the original's table gives it.
 [[nodiscard]] unsigned reaction_score(int charisma);

@@ -1,6 +1,7 @@
 #include "opengold/ecl_party_host.h"
 #include "opengold/item_key.h"
 #include "opengold/coin_purse.h"
+#include "opengold/original_rules.h"
 #include <algorithm>
 #include <limits>
 #include <array>
@@ -268,8 +269,111 @@ unsigned member_movement(const CampaignParty &party, MemberId id)
 }
 } // namespace
 
+namespace
+{
+
+// A member's race by Secret's numbers (elf 1, half-elf 2, dwarf 3, gnome 4,
+// halfling 5, human 6); 0 for one not made under the original rules.
+unsigned secret_race(const rules::CharacterSheet &sheet)
+{
+    if (!sheet.original)
+    {
+        return 0;
+    }
+    switch (static_cast<original::Race>(sheet.original->race))
+    {
+    case original::Race::elf:
+        return 1;
+    case original::Race::half_elf:
+        return 2;
+    case original::Race::dwarf:
+        return 3;
+    case original::Race::gnome:
+        return 4;
+    case original::Race::halfling:
+        return 5;
+    case original::Race::human:
+        return 6;
+    default:
+        return 0;
+    }
+}
+
+// Secret's class level fields (EclCheckParty): magic-user, cleric, thief,
+// fighter, then paladin and ranger; 0xCD and 0xCE name none.
+std::optional<original::ClassSlot> secret_level_class(unsigned field)
+{
+    using original::ClassSlot;
+    switch (field)
+    {
+    case 0xC9:
+        return ClassSlot::magic_user;
+    case 0xCA:
+        return ClassSlot::cleric;
+    case 0xCB:
+        return ClassSlot::thief;
+    case 0xCC:
+        return ClassSlot::fighter;
+    case 0xCF:
+        return ClassSlot::paladin;
+    case 0xD0:
+        return ClassSlot::ranger;
+    default:
+        return std::nullopt;
+    }
+}
+
+// Secret's own CHECK PARTY fields over every member: whether one is of a
+// race; Charisma's lowest, highest and average; a class's lowest and highest
+// level of those at least `effect`, and its average over all.
+std::optional<std::array<unsigned, 4>> secret_check_party(const CampaignParty &party,
+                                                          unsigned field, unsigned effect)
+{
+    constexpr unsigned race_field = 0x72, charisma_field = 0x19;
+    const auto level_class = secret_level_class(field);
+    if (field != race_field && field != charisma_field && !level_class)
+    {
+        return std::nullopt;
+    }
+    unsigned count = 0, low = 255, high = 0, total = 0, found = 0;
+    for (const auto id : party.state().slots)
+    {
+        if (!id)
+        {
+            continue;
+        }
+        const auto &sheet = party.member(id).character.sheet();
+        ++count;
+        if (field == race_field)
+        {
+            found = found || secret_race(sheet) == effect;
+            continue;
+        }
+        const unsigned value =
+            field == charisma_field
+                ? static_cast<unsigned>(sheet.scores[rules::Ability::charisma])
+                : static_cast<unsigned>(sheet.original ? sheet.original->class_levels.at(
+                                                             static_cast<std::size_t>(*level_class))
+                                                       : 0);
+        total += value;
+        if (level_class && value < effect)
+        {
+            continue;
+        }
+        low = std::min(low, value);
+        high = std::max(high, value);
+    }
+    if (field == race_field)
+    {
+        return std::array<unsigned, 4>{255, 0, 0, found};
+    }
+    return std::array<unsigned, 4>{low, high, count ? total / count : 0, 0};
+}
+
+} // namespace
+
 std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attribute,
-                                    unsigned effect)
+                                    unsigned effect, GoldBoxGame game)
 {
     // The original's effect 19 is Find Traps, which Kovel Mansion's traps ask
     // about (ECL3:14 0xB3B4).
@@ -283,6 +387,13 @@ std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attri
         return {0, 0, 0, party.finding_traps() ? 1U : 0U};
     }
     const auto field = attribute.location - ecl_character_record.location;
+    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    {
+        if (const auto values = secret_check_party(party, static_cast<unsigned>(field), effect))
+        {
+            return *values;
+        }
+    }
     const bool movement = attribute == EclAddress{0x6C1B};
     if (effect || (!movement && (field < 0xA5 || field > 0xAC)))
     {

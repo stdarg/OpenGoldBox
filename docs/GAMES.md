@@ -325,7 +325,14 @@ The steps of *Curse*'s phase 3, with *Secret*'s differences
    class (100,000 dual, 66,667 triple) trained up at once, its classes,
    level limits and 117 spells; bringing a *Curse* party across.
 4. Walking every map and playing every event and fight (the walk), then
-   the cluebook's route to the end.
+   the cluebook's route to the end. *The walk passes (2026-11-13):*
+   `opengold_secret_walk` walks every square of every map with six fighters
+   made under *Secret*'s rules and runs each event and fight. Its script
+   host answers AWARD EXPERIENCE, *Secret*'s ADD NPC (one creature file, no
+   one added to a full party), DAMAGE's "hurt even on a save", CHECK PARTY's
+   race, Charisma and class levels, and SPELL's Dispel Magic. The fights
+   still use *Curse*'s combat rules; *Secret*'s effects, creature flags,
+   spells and combat changes come next.
 
 ### 5 to 7. The other campaigns
 

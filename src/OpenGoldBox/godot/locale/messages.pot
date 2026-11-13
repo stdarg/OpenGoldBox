@@ -10838,7 +10838,7 @@ msgstr ""
 msgid "That potion works only in combat"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1585
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1585 src/OpenGold.Rules.Original/src/rules_module.cpp:1733
 msgid "That spell cannot be cast now"
 msgstr ""
 

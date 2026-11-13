@@ -1,5 +1,6 @@
 #include "opengold/rolf_tour.h"
 #include "area_loading.h"
+#include "opengold/original_spells.h"
 #include "opengold/diagnostic_log.h"
 #include "opengold/creature_art.h"
 #include "opengold/script_secrets.h"
@@ -3234,8 +3235,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         read_character();
         reply = character_reply(selected_character_);
-        auto values =
-            check_party(*campaign_, pool_of_radiance_address(address_arg(0), game()), arg(1));
+        auto values = check_party(*campaign_, pool_of_radiance_address(address_arg(0), game()),
+                                  arg(1), game());
         // A trap the Wand of Secrets pointed out is seen as Find Traps sees it.
         constexpr unsigned find_traps_effect = 19;
         if (address_arg(0) == EclAddress{0} && arg(1) == find_traps_effect && on_wand_trap())
@@ -3273,14 +3274,31 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // looked only at the first member's spells, by a slip in its code;
         // every member is asked here (KOVEL-1).
         constexpr unsigned knock = 31;
-        if (arg(0) != knock)
+        // Secret's Hall of the Dead asks for a cleric's or a magic-user's
+        // Dispel Magic (ECL1:34 0x8E6D); whoever has it memorized casts it,
+        // and the script's own clearing of the spell's cell does nothing more.
+        constexpr unsigned cleric_dispel = 41, magic_user_dispel = 46;
+        const bool dispel = game() == GoldBoxGame::secret_of_the_silver_blades &&
+                            (arg(0) == cleric_dispel || arg(0) == magic_user_dispel);
+        if (arg(0) != knock && !dispel)
         {
             throw EclError("Unsupported SPELL " + std::to_string(arg(0)));
         }
         read_character();
         reply = character_reply(selected_character_);
         std::uint16_t place = 255, slot = 0;
-        if (campaign_->can_try_door(DoorMethod::knock))
+        if (dispel)
+        {
+            if (const auto caster =
+                    campaign_->cast_exploration_spell(original::spell_id(static_cast<int>(arg(0)))))
+            {
+                const auto &slots = campaign_->state().slots;
+                place = 0;
+                slot = static_cast<std::uint16_t>(std::find(slots.begin(), slots.end(), *caster) -
+                                                  slots.begin());
+            }
+        }
+        else if (campaign_->can_try_door(DoorMethod::knock))
         {
             const auto caster = campaign_->try_door(DoorMethod::knock, 0).front().member;
             const auto &slots = campaign_->state().slots;
@@ -3295,9 +3313,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     case 54:
     {
         // ADD NPC names a record of the area's MONnCHA archive: New Phlan's is
-        // MON3CHA, whose record 24 has no conversion.
+        // MON3CHA, whose record 24 has no conversion. Secret keeps one
+        // creature file for every disk.
         read_character();
-        const unsigned bank = current_area_ ? area_resources().bank : 3;
+        const auto creature_disks = game_disks(game()).monsters;
+        const unsigned bank = creature_disks.size() == 1 ? creature_disks.front()
+                              : current_area_            ? area_resources().bank
+                                                         : 3;
         const auto &profiles = current_area_ ? area_resources().npc_profiles : town_->npc_profiles;
         std::optional<Character> companion;
         const Creature *original = nullptr;
@@ -3332,6 +3354,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         if (!companion)
         {
             throw EclError("NPC needs an explicit supported conversion/allegiance profile");
+        }
+        // The later games' original adds no one to a full party
+        // (AddCreatureToParty: eight members at most).
+        const auto &slots = campaign_->state().slots;
+        if (game() != GoldBoxGame::pool_of_radiance && slots[6] && slots[7])
+        {
+            break;
         }
         const auto joined =
             campaign_->recruit("por:MON" + std::to_string(bank) + "CHA:" + std::to_string(arg(0)),
@@ -3899,8 +3928,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         const bool random_member =
             (arg(0) & 0xD0) == 0x80 && !(arg(4) & 0x80) && (arg(4) & 7) < original_save_abilities.size();
         // Every member, each saving unless arg(0) has 0x20 (Kovel Mansion's gas).
-        const bool whole_party =
-            (arg(0) & 0xD0) == 0xC0 && (arg(4) & 7) < original_save_abilities.size();
+        // In Secret 0x10 hurts a member who saves as much as one who fails
+        // (eclvm EclDamage), so no save is rolled.
+        const bool hurt_anyway =
+            game() == GoldBoxGame::secret_of_the_silver_blades && (arg(0) & 0x10) != 0;
+        const bool whole_party = (arg(0) & 0xC0) == 0xC0 && (!(arg(0) & 0x10) || hurt_anyway) &&
+                                 (arg(4) & 7) < original_save_abilities.size();
         if (!campaign_ || (!volley && !chosen_member && !random_member && !whole_party))
         {
             throw EclError("Unsupported DAMAGE form");
@@ -3927,7 +3960,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             harm.automatic = true;
             if (whole_party)
             {
-                if (!(arg(0) & 0x20))
+                if (!(arg(0) & 0x20) && !hurt_anyway)
                 {
                     harm.save_ability = original_save_abilities[arg(4) & 7];
                     harm.save_dc = original_save_dc - static_cast<int>(arg(0) & 0x1F);

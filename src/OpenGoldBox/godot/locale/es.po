@@ -10838,7 +10838,7 @@ msgstr "Eso no es un Manual de salud corporal"
 msgid "That potion works only in combat"
 msgstr "Esa poción solo funciona en combate"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1585
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1585 src/OpenGold.Rules.Original/src/rules_module.cpp:1733
 msgid "That spell cannot be cast now"
 msgstr "Ese conjuro no se puede lanzar ahora"
 

@@ -2948,6 +2948,27 @@ std::vector<SecretDoorRoll> CampaignParty::search_for_secret_door(bool searching
     return rolls;
 }
 
+std::optional<MemberId> CampaignParty::cast_exploration_spell(std::string_view spell)
+{
+    editable();
+    auto next = state_;
+    for (const auto id : next.slots)
+    {
+        if (!id)
+        {
+            continue;
+        }
+        auto &caster = member_in(next, id);
+        if (rules_->can_cast_exploration_spell(caster.character.sheet(), caster.vitals, spell))
+        {
+            rules_->cast_exploration_spell(caster.character.sheet(), caster.vitals, spell);
+            state_ = std::move(next);
+            return id;
+        }
+    }
+    return std::nullopt;
+}
+
 std::vector<DoorAttempt> CampaignParty::cast_knock(int difficulty)
 {
     // The first active member able to cast it does; the lock always opens.

@@ -1703,16 +1703,40 @@ std::vector<ScrollWriting> OriginalModule::writable_spells(const CharacterSheet 
     return {};
 }
 
-bool OriginalModule::can_cast_exploration_spell(const CharacterSheet &, const VitalState &,
-                                                std::string_view) const
+namespace
 {
-    return false;
+// An exploration spell by its id ("cleric:dispel_magic"), or Knock by the
+// name every rules module answers to.
+std::optional<int> exploration_spell(std::string_view spell)
+{
+    constexpr int knock = 31;
+    return spell == "knock" ? std::optional<int>{knock} : spell_number(spell);
+}
+} // namespace
+
+// A spell cast out of a fight, as a script asks for one (SPELL): one the
+// member has memorized and not cast.
+bool OriginalModule::can_cast_exploration_spell(const CharacterSheet &sheet,
+                                                const VitalState &state,
+                                                std::string_view spell) const
+{
+    const auto number = exploration_spell(spell);
+    const auto left = spells_left(sheet, state);
+    return number && !state.dead && std::ranges::find(left, *number) != left.end();
 }
 
-void OriginalModule::cast_exploration_spell(const CharacterSheet &, VitalState &,
-                                            std::string_view) const
+void OriginalModule::cast_exploration_spell(const CharacterSheet &caster, VitalState &state,
+                                            std::string_view spell) const
 {
-    throw unavailable("cast_exploration_spell");
+    if (!can_cast_exploration_spell(caster, state, spell))
+    {
+        throw std::runtime_error("That spell cannot be cast now");
+    }
+    auto left = spells_left(caster, state);
+    left.erase(std::ranges::find(left, *exploration_spell(spell)));
+    auto numbers = Combatant::decode(state.resources).value_or(character_combatant(caster));
+    numbers.spells = std::move(left);
+    state.resources = numbers.encode();
 }
 
 std::unique_ptr<RulesModule> rules_module(Content content)
