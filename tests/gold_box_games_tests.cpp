@@ -450,7 +450,17 @@ bool curse_walk_census()
                 }
                 creator.next();
             }
-            (void)party->add_pc(creator.create_character());
+            const auto id = party->add_pc(creator.create_character());
+            // A long sword, plate mail and a shield, of Curse's own item types.
+            for (const std::uint8_t type : {36, 55, 59})
+            {
+                std::array<std::uint8_t, 63> raw{};
+                raw[46] = type;
+                opengold::por::Equipment gear;
+                gear.stored = opengold::por::decode_items(raw)->front();
+                party->purchase(id, gear);
+                party->equip(id, party->member(id).character.inventory().items().back().id);
+            }
         }
         party->add_coins(opengold::Coin::gold, 5000);
     };
