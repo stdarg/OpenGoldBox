@@ -335,9 +335,18 @@ gear.
      Good 10' Radius (an aura of a square) and Protection from Normal
      Missiles. Two things wait for step 7: a fireball outdoors reaches 2 and
      not 3, and the year Haste ages a creature.
-   - 8b-2. Stinking Cloud's clouds on the field, Lightning Bolt's path and
-     bounce, Dispel Magic, Animate Dead, Slow Poison, Snake Charm, Enlarge,
-     Reduce and Strength, and Spiritual Hammer's hammer.
+   - 8b-2. *Done 2026-11-13:* Lightning Bolt (one roll at the aim and along
+     8 squares beyond it, away from the caster, turned back by a wall, its
+     length counted as the original counts it), Stinking Cloud (a cloud of up
+     to four squares for the caster's level in rounds; those in it save
+     against paralysis or are helpless with nausea, and cough, unable to
+     cast and easier to hit, when they save), Dispel Magic (each effect below
+     strength 255 on a d100 by the caster's level against the effect's),
+     Animate Dead (the human dead rise whole for the caster, and collapse at
+     0), Slow Poison (one killed by poison stands with 1 Hit Point, and dies
+     if the poison outlasts the spell) and Snake Charm. Enlarge, Reduce and
+     Strength, with the original's rules for stacking Strength, come with
+     magic (plan step 5); Spiritual Hammer's hammer, an item, with step 7.
    - 8c. *Done 2026-11-12:* turning undead, once a fight for one with cleric
      levels: one d20 for the whole attempt against up to 1d12 undead enemies
      in sight, the lowest kinds first and the nearest of those, by the
@@ -408,6 +417,7 @@ tuned with the AI lab once the original rules play.
 | Protection from Evil or Good takes 2 from an evil or good attacker's roll before that roll is made, which overwrites it (`effhndlr.pas`, `EffProtEvil`) | The 2 counts |
 | A dwarf's or gnome's defense against giants judges the defender's own target instead of the attacker, and reads eight names from its list of five (`effhndlr.pas`, `EffDwarfGiantDefense`) | The attacker, among the five giants |
 | Mirror Image takes only a spell aimed at its caster, never a blow, where the manual says the images take attacks (`effhndlr.pas`, `EffMirrorImage`) | The images take blows too |
+| Dispel Magic works on the first creature in its area, once for each creature there (`magic.pas`, the dispel) | Each creature in the area once |
 | A level drain divides by the victim's class levels, so a creature without any (a monster) divides by zero (`effhndlr.pas`, the level drain) | It loses its highest level's share |
 | A level drain keeps the drained class's level as the victim's highest level, so a fighter 5 / thief 6 drained in fighter counts as level 4 (`effhndlr.pas`, the level drain) | The highest of its classes |
 | Each hit of a holding bite's own bite starts another hold, stacking holds on the biter and immobility on the victim, which can outlast the fight (`effhndlr.pas`, `EffBiteHold`) | One hold at a time |

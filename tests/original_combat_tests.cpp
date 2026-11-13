@@ -2185,6 +2185,143 @@ void a_cloud_sickens()
           "The cloud clears after 2 rounds");
 }
 
+// Dispel Magic: an effect of level 0 goes for a level-10 caster; one of
+// strength 255 (a race's own) never does (magic.pas, the dispel).
+void dispel_magic_strips()
+{
+    using original::ClassSlot;
+    auto hasted = creature(30, 0);
+    hasted.effects = {{39, 5, 0, false}, {90, 0, 255, false}};
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 10, {46})},
+                 {"Foe", rules::Side::opposition, {5, 3}, hasted}},
+                137);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 46,
+             [&]
+             {
+                 return aim_at_cell(session, {5, 3});
+             });
+    const auto left = left_by_fight(session, "Foe").effects;
+    check(left == std::vector<original::Effect>{{90, 0, 255, false}},
+          "Haste is dispelled, the race's own save bonus is not");
+}
+
+// Animate Dead raises a slain human for the cleric, whole (magic.pas).
+void the_dead_rise()
+{
+    using original::ClassSlot;
+    auto killer = monster({2, 1, 1, 50}, {0, 0, 0, 0}, {});
+    auto bandit = creature(10, 0);
+    bandit.creature_type = 0;
+    auto fight =
+        arrange({{"Killer", rules::Side::party, {2, 3}, killer},
+                 {"Cleric", rules::Side::party, {0, 3}, caster(ClassSlot::cleric, 5, {36})},
+                 {"Bandit", rules::Side::opposition, {3, 3}, bandit},
+                 {"Ogre", rules::Side::opposition, {7, 7}, creature(1000, 0)}},
+                139);
+    auto &session = *fight.session;
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            if (actor == "Killer")
+            {
+                if (const auto melee = offered(session, "melee", "Bandit"))
+                {
+                    return *melee;
+                }
+            }
+            return order(session, "end");
+        },
+        [&]
+        {
+            return view_of(session.snapshot(), "Bandit").dead;
+        });
+    until_turn_of(session, "Cleric");
+    session.submit(*cast_command(session, 36));
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return logged(session, "{name} is animated.") > 0 || session.snapshot().round > 4;
+        });
+    const auto &risen = view_of(session.snapshot(), "Bandit");
+    check(risen.side == rules::Side::party && !risen.dead && risen.hit_points == 10,
+          "The slain bandit rises whole for the cleric");
+}
+
+// Slow Poison stands one killed by poison back up with 1 Hit Point
+// (magic.pas, the slow poison; effhndlr.pas, EffDelayedRevival).
+void slow_poison_raises()
+{
+    using original::ClassSlot;
+    auto spider = monster({0, 0, 0, 0}, {2, 1, 1, 0}, {{64, 0, 0, false}});
+    auto fight =
+        arrange({{"Victim", rules::Side::party, {3, 3}, victim()},
+                 {"Cleric", rules::Side::party, {2, 3}, caster(ClassSlot::cleric, 3, {26})},
+                 {"Spider", rules::Side::opposition, {4, 3}, spider}},
+                149);
+    auto &session = *fight.session;
+    play_until(
+        session,
+        [&](const std::string &actor)
+        {
+            if (actor == "Spider")
+            {
+                if (const auto melee = offered(session, "melee", "Victim"))
+                {
+                    return *melee;
+                }
+            }
+            return order(session, "end");
+        },
+        [&]
+        {
+            return view_of(session.snapshot(), "Victim").dead;
+        });
+    cast_now(session, "Cleric", 26,
+             [&]
+             {
+                 return aim_at(session, "Victim");
+             });
+    const auto &raised = view_of(session.snapshot(), "Victim");
+    check(!raised.dead && raised.conscious && raised.hit_points == 1,
+          "The poisoned dead stand again with 1 Hit Point");
+}
+
+// Snake Charm takes the snakes the caster's Hit Points can pay for
+// (magic.pas, the snake charm).
+void snakes_are_charmed()
+{
+    using original::ClassSlot;
+    auto snake = creature(10, 0);
+    snake.creature_type = 14;
+    auto fight =
+        arrange({{"Cleric", rules::Side::party, {0, 3}, caster(ClassSlot::cleric, 3, {27})},
+                 {"Snake", rules::Side::opposition, {5, 3}, snake}},
+                151);
+    auto &session = *fight.session;
+    until_turn_of(session, "Cleric");
+    session.submit(*cast_command(session, 27));
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return view_of(session.snapshot(), "Snake").status == "helpless" ||
+                   session.snapshot().round > 3;
+        });
+    check(view_of(session.snapshot(), "Snake").status == "helpless", "The snake is charmed");
+}
+
 } // namespace
 
 int main()
@@ -2240,6 +2377,10 @@ int main()
         missiles_turned_away();
         lightning_runs_on();
         a_cloud_sickens();
+        dispel_magic_strips();
+        the_dead_rise();
+        slow_poison_raises();
+        snakes_are_charmed();
         real_records_fight();
         std::cout << "Original-rules combat passed.\n";
     }

@@ -31,7 +31,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 11";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 12";
 
 enum class Condition : unsigned
 {
@@ -71,7 +71,8 @@ constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_r
               shield = 17, resist_fire = 20, sleep = 53, silence = 21, mirror_image = 28,
               enfeebled = 29, blind = 33, bestow_curse = 36, hasted = 39, missile_protection = 41,
               slowed = 42, protection_from_evil_aura = 45, protection_from_good_aura = 46,
-              prayer = 49, coughing = 30, nausea = 31, stinking_cloud = 40, animated = 32;
+              prayer = 49, coughing = 30, nausea = 31, stinking_cloud = 40, animated = 32,
+              snake_charm = 51, slow_poison_tick = 15, slow_poison = 22, revival = 78;
 // Displacement keeps whether it has turned an attack aside in this bit of its strength.
 constexpr int displaced = 0x10;
 } // namespace effect
@@ -127,6 +128,8 @@ struct Fighter
     std::vector<EntityId> picked;
     // Its side before a charm took it over.
     Side own_side{Side::party};
+    // What it was before Animate Dead raised it, which it is again as it collapses.
+    std::optional<Combatant> before_animation;
 
     [[nodiscard]] bool able() const noexcept
     {
@@ -474,9 +477,9 @@ int doubled_distance(Cell a, Cell b)
 // The spells built so far; the rest are not offered yet.
 bool spell_built(int number)
 {
-    constexpr std::array<int, 41> built{1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 15, 16, 17,
-                                        19, 20, 21, 23, 24, 25, 29, 30, 32, 33, 37, 38, 40, 42,
-                                        34, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55};
+    constexpr std::array built{26, 27, 36, 41, 46, 1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
+                               15, 16, 17, 19, 20, 21, 23, 24, 25, 29, 30, 32, 33, 37, 38, 40,
+                               42, 34, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55};
     return std::find(built.begin(), built.end(), number) != built.end();
 }
 
@@ -648,6 +651,11 @@ class Session final : public rules::CombatSession
     void charm(Fighter &target, Side charmer);
     void cast_sleep(int level, Cell aim);
     void cast_stinking_cloud(Fighter &caster, int level, Cell aim);
+    void remove_with_handler(Fighter &f, std::size_t node);
+    void dispel(Fighter &target, int level);
+    void animate_dead(Fighter &caster, int level);
+    void slow_poison(Fighter &target, int level);
+    void revive(Fighter &f);
     [[nodiscard]] bool in_cloud(const Fighter &f) const;
     void breathe_cloud(Fighter &f);
     bool lightning_at(Cell cell, int damage, int level);
@@ -1252,8 +1260,11 @@ void Session::inflict(Fighter &target, int damage)
         {
             return;
         }
-        target.condition = Condition::unconscious;
-        log({"{name} falls unconscious.", {{"name", target.name}}});
+        // The animated dead die at exactly 0 (charhlp.pas, InflictDamage).
+        target.condition = target.has(effect::animated) ? Condition::dead : Condition::unconscious;
+        log({target.condition == Condition::dead ? "{name} is killed."
+                                                 : "{name} falls unconscious.",
+             {{"name", target.name}}});
     }
     else
     {
@@ -1278,10 +1289,10 @@ void Session::end_effects_at_zero(Fighter &f)
         {
             release(f, code);
         }
-        else if (code == effect::charm && f.has(effect::charm))
+        else if ((code == effect::charm || code == effect::animated) && f.has(code))
         {
-            f.side = f.own_side;
-            f.remove(code);
+            const auto *node = f.find_effect(code);
+            remove_with_handler(f, static_cast<std::size_t>(node - f.numbers.effects.data()));
         }
         else
         {
@@ -1437,7 +1448,7 @@ void Session::drain_levels(Fighter &victim, int levels)
         const int per_level = numbers.max_hit_points / std::max({total, numbers.level, 1});
         numbers.max_hit_points = std::max(numbers.max_hit_points - per_level, 1);
         victim.hit_points = std::max(victim.hit_points - per_level, 0);
-        if (numbers.level < 2)
+        if (numbers.level < 2 || victim.has(effect::animated))
         {
             victim.condition = Condition::gone;
             victim.hit_points = 0;
@@ -1529,7 +1540,9 @@ bool Session::reachable_by_spell(const Fighter &caster, const Fighter &target) c
 {
     const auto &known = *spell(caster.aiming);
     const bool heals = caster.aiming == 3;
-    if (!(target.able() || (heals && target.downed())) ||
+    const bool slows_poison =
+        caster.aiming == 26 && target.has(effect::poisoned) && target.condition == Condition::dead;
+    if (!(target.able() || (heals && target.downed()) || slows_poison) ||
         std::find(caster.picked.begin(), caster.picked.end(), target.id) != caster.picked.end())
     {
         return false;
@@ -1829,6 +1842,41 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     case 34:
         cast_stinking_cloud(caster, level, aim);
         break;
+    case 26:
+        for (const auto id : targets)
+        {
+            slow_poison(*find(id), level);
+        }
+        break;
+    case 27:
+    {
+        // Snake Charm: every snake on the field, either side, whose Hit Points
+        // the caster's own can pay for (magic.pas, the snake charm).
+        int pool = caster.hit_points;
+        for (auto &f : fighters_)
+        {
+            if (!f.able() || f.numbers.creature_type != 14 || f.hit_points > pool)
+            {
+                continue;
+            }
+            pool -= f.hit_points;
+            add_with_message(f, {effect::snake_charm, 0, level, false}, false, false, 0, level,
+                             &known);
+        }
+        break;
+    }
+    case 36:
+        animate_dead(caster, level);
+        break;
+    case 41:
+    case 46:
+        // Dispel Magic on everyone within a square of the aim. The original
+        // dispelled the first of them once for each (an obvious bug, fixed).
+        for (const auto id : targets)
+        {
+            dispel(*find(id), level);
+        }
+        break;
     case 51:
     {
         // Lightning Bolt: the caster's level in d6, one roll, at the aim and
@@ -2073,7 +2121,8 @@ void Session::charm(Fighter &target, Side charmer)
 // Sleep (magic.pas, the sleep): 4d4 levels' worth around the aim, the nearest
 // first, allies too; a creature costs 1 up to level 1, 2 at 2, 4 at 3, 6 at 4,
 // 10 at 5 for a monster and 20 otherwise, 20 from 6 up, spent before its
-// immunities are tried. Those already asleep are passed over.
+// immunities are tried. Those already asleep and the animated dead are
+// passed over.
 void Session::cast_sleep(int level, Cell aim)
 {
     int pool = roll(4) + roll(4) + roll(4) + roll(4);
@@ -2081,7 +2130,7 @@ void Session::cast_sleep(int level, Cell aim)
     for (const auto id : within(aim, known.area & 7))
     {
         auto &f = *find(id);
-        if (f.has(effect::sleep))
+        if (f.has(effect::sleep) || f.has(effect::animated))
         {
             continue;
         }
@@ -2340,6 +2389,133 @@ void Session::breathe_cloud(Fighter &f)
     add_with_message(f, {effect::nausea, roll(4) + 1, 255, false}, false, false, 0, 0, &known);
 }
 
+// An effect ends before its time, its handler running as it goes: a charm
+// lets go, the animated collapse, and the rest end as when their time runs out.
+void Session::remove_with_handler(Fighter &f, std::size_t node)
+{
+    const auto ended = f.numbers.effects[node];
+    f.numbers.effects.erase(f.numbers.effects.begin() + static_cast<std::ptrdiff_t>(node));
+    if (ended.code == effect::charm)
+    {
+        f.side = f.own_side;
+        return;
+    }
+    if (ended.code == effect::animated)
+    {
+        // It collapses, dead again, what it was before (effhndlr.pas, EffAnimateDead).
+        if (f.before_animation)
+        {
+            auto numbers = *f.before_animation;
+            numbers.spells.clear();
+            numbers.effects = f.numbers.effects;
+            f.numbers = numbers;
+            f.before_animation.reset();
+        }
+        f.side = f.own_side;
+        f.condition = Condition::dead;
+        f.hit_points = 0;
+        f.initiative = 0;
+        log({"{name} collapses.", {{"name", f.name}}});
+        return;
+    }
+    if (ended.on_remove)
+    {
+        expire(f, ended);
+    }
+}
+
+// Dispel Magic (magic.pas, the dispel): each effect of a strength below 255
+// has its level in the strength's low 4 bits, and goes on a d100 within 50%,
+// 5% more for each level the caster has above it or 2% less for each below.
+void Session::dispel(Fighter &target, int level)
+{
+    bool any = false;
+    for (std::size_t node = 0; node < target.numbers.effects.size();)
+    {
+        const auto &e = target.numbers.effects[node];
+        const int effect_level = e.strength & 0x0F;
+        const int chance = level >= effect_level ? 50 + 5 * (level - effect_level)
+                                                 : 50 - 2 * (effect_level - level);
+        if (e.strength < 255 && roll(100) <= chance)
+        {
+            remove_with_handler(target, node);
+            any = true;
+            continue;
+        }
+        ++node;
+    }
+    if (any)
+    {
+        log({"{name} is dispelled.", {{"name", target.name}}});
+    }
+}
+
+// Animate Dead (magic.pas, the animation): up to the caster's level of the
+// dead of creature type 0, either side, whose squares are free, rise whole
+// for the caster as undead (level 2) moving 6, sweeping no one, their spells
+// forgotten; the animated die at exactly 0 Hit Points.
+void Session::animate_dead(Fighter &caster, int level)
+{
+    int left = level;
+    for (auto &f : fighters_)
+    {
+        if (left <= 0 || f.condition != Condition::dead || f.numbers.creature_type != 0 ||
+            f.has(effect::animated) || !cell_free(f))
+        {
+            continue;
+        }
+        --left;
+        f.before_animation = f.numbers;
+        f.own_side = f.side;
+        f.side = caster.side;
+        f.numbers.undead_level = 2;
+        f.numbers.movement = 6;
+        f.numbers.attack_level = 0;
+        f.numbers.spells.clear();
+        f.numbers.creature_type = 4;
+        f.condition = Condition::okay;
+        f.hit_points = f.numbers.max_hit_points;
+        f.overkill = 0;
+        f.initiative = 0;
+        f.numbers.effects.push_back(
+            {effect::animated, 0, (f.own_side == Side::opposition ? 16 : 0) + level, true});
+        log({"{name} is animated.", {{"name", f.name}}});
+    }
+}
+
+// Slow Poison (magic.pas, the slow poison): one poisoned, even killed by it,
+// stands again with at least 1 Hit Point while the spell lasts, losing a point
+// every 10 minutes but never the last; when it wears off still poisoned, it dies.
+void Session::slow_poison(Fighter &target, int level)
+{
+    if (!target.has(effect::poisoned) || target.has(effect::animated))
+    {
+        return;
+    }
+    target.hit_points = std::max(target.hit_points, 1);
+    target.numbers.effects.push_back({effect::slow_poison, 60 * level, 255, true});
+    log({"{name} is affected by {spell}.",
+         {{"name", target.name}, {"spell", std::string(spell(26)->name), true}}});
+    revive(target);
+    target.numbers.effects.push_back({effect::slow_poison_tick, 10, 255, true});
+}
+
+// The poisoned dead stand when their square is free, or try again a minute
+// later (effhndlr.pas, EffDelayedRevival).
+void Session::revive(Fighter &f)
+{
+    if (f.condition == Condition::okay)
+    {
+        return;
+    }
+    if (cell_free(f))
+    {
+        stand_up(f, std::max(f.hit_points, 1), "{name} gets back up.");
+        return;
+    }
+    f.numbers.effects.push_back({effect::revival, 1, 255, true});
+}
+
 // The roll a cleric needs to turn undead, by the undead's level (1 skeleton to
 // 10 vampire) and the cleric's level (1 to 8, 9 to 13, 14 up): above 0 it
 // turns, 0 destroys, below 0 destroys on that much or more, 99 never
@@ -2569,6 +2745,27 @@ void Session::expire(Fighter &f, const Effect &ended)
             f.initiative = 0;
             log({"{name} falls dead.", {{"name", f.name}}});
         }
+        break;
+    case effect::slow_poison_tick:
+        // Slow Poison costs a point every 10 minutes, never the last
+        // (effhndlr.pas, EffSlowPoisonHit).
+        if (f.hit_points > 1)
+        {
+            --f.hit_points;
+        }
+        f.numbers.effects.push_back({effect::slow_poison_tick, 10, 255, true});
+        break;
+    case effect::slow_poison:
+        // Still poisoned when it wears off, it dies (EffSlowPoisonEnd).
+        f.remove(effect::slow_poison_tick);
+        if (f.has(effect::poisoned) && f.condition != Condition::dead)
+        {
+            log({"{name} dies from poison.", {{"name", f.name}}});
+            kill(f);
+        }
+        break;
+    case effect::revival:
+        revive(f);
         break;
     case effect::stinking_cloud:
     {
@@ -3502,7 +3699,8 @@ std::string Session::save() const
             f.attacks_left[0], f.attacks_left[1], f.surprised, f.attack_phase, f.sweep_budget,
             f.direction, f.flank_count, f.flank_spread, f.guarding, f.fleeing, f.turned,
             f.tried_turning, f.cast_allowed, f.pending_spell, f.aiming, f.picks_left,
-            static_cast<unsigned>(f.own_side), f.picked.size());
+            static_cast<unsigned>(f.own_side),
+            f.before_animation ? f.before_animation->encode() : std::string(), f.picked.size());
         for (const auto id : f.picked)
         {
             out(id);
@@ -3622,6 +3820,14 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         f.aiming = in.as<int>();
         f.picks_left = in.as<int>();
         f.own_side = in.as<Side>();
+        if (const auto before = in.text(); !before.empty())
+        {
+            f.before_animation = Combatant::decode(before);
+            if (!f.before_animation)
+            {
+                throw std::runtime_error("Invalid original-rules combat checkpoint");
+            }
+        }
         const auto picked = in.as<std::size_t>();
         if (picked > 8 || (f.pending_spell && !spell(f.pending_spell)) ||
             (f.aiming && !spell(f.aiming)))
