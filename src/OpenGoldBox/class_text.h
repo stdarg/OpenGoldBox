@@ -16,13 +16,16 @@ namespace i18n
 // A class's label by its stable ID ("rogue"), translated.
 inline godot::String class_label(std::string_view id)
 {
-    // The SRD's classes, then the original rules' classes and multi-classes.
+    // The SRD's classes, then the original rules' classes and multi-classes,
+    // Curse's (which add the paladin and ranger) holding all of them.
     static const auto choices = []
     {
         auto all = opengold::srd5::character_rules()->choices(
             opengold::rules::CreationField::character_class);
-        for (auto &choice : opengold::original::character_rules()->choices(
-                 opengold::rules::CreationField::character_class))
+        for (auto &choice :
+             opengold::original::character_rules(opengold::original::default_aging,
+                                                 opengold::GoldBoxGame::curse_of_the_azure_bonds)
+                 ->choices(opengold::rules::CreationField::character_class))
         {
             all.push_back(std::move(choice));
         }

@@ -24,13 +24,34 @@ func settle() -> void:
 
 # The new game's first question (docs/ORIGINAL-RULES.md): the rules it plays
 # by, the SRD's offered first for now; Begin starts the game with them.
-func answer_rules() -> void:
+func answer_rules(original := false) -> void:
 	await settle()
 	var dialog: Window = current_scene.get_node_or_null("RulesDialog") if current_scene else null
 	if dialog and dialog.visible:
+		if original:
+			var rules: OptionButton = dialog.get_node("Rows/Rules")
+			rules.select(0)
+			rules.item_selected.emit(0)
 		dialog.get_node("Rows/Begin").pressed.emit()
 		await settle()
 		await settle()
+
+func choose(text: String) -> void:
+	var list: ItemList = current_scene.get_node("Choices")
+	for i in range(list.item_count):
+		if list.get_item_text(i) == text:
+			require(not list.is_item_disabled(i), "Unavailable choice: " + text)
+			list.select(i)
+			list.item_selected.emit(i)
+			await settle()
+			return
+	require(false, "Missing choice: " + text)
+
+func press(path: String) -> void:
+	var button: Button = current_scene.get_node(path)
+	require(button.visible and not button.disabled, "Unavailable control: " + path)
+	button.pressed.emit()
+	await settle()
 
 func capture(name: String) -> void:
 	if captures.is_empty(): return
@@ -82,8 +103,24 @@ func run_checks() -> void:
 		return
 	menu.get_node("Buttons/Games/CURSE").pressed.emit()
 	await settle()
-	await answer_rules()
+	await answer_rules(true)
 	require(current_scene != null and current_scene.name == "CharacterCreation", "Curse's button must lead on to the party")
+	# Curse's own creation under the original rules: a human may be a paladin
+	# or ranger, and starts trained up from 25,000 experience with 300 platinum.
+	var name: LineEdit = current_scene.get_node("Name")
+	name.text = "Taliesin"
+	name.text_changed.emit(name.text)
+	await settle()
+	await choose("Human")
+	await press("Next")
+	await choose("Paladin")
+	await choose("Ranger")
+	await press("Next")
+	await choose("Neutral Good")
+	await press("Next")
+	await press("Roll")
+	var rolled: String = current_scene.get_node("SwapHint").text
+	require(rolled.contains("Platinum 300"), "A Curse character starts with 300 platinum: " + rolled)
 	# The exploration screen plays the chosen game's campaign: Curse's opening.
 	change_scene_to_file("res://scenes/rolf_tour.tscn")
 	var dialogue := ""
