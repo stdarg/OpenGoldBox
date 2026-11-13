@@ -285,7 +285,12 @@ In small steps, each with its check:
    Beholder. It beats Dexam and his minions there for the Amulet of
    Lathander (his lair meets the party only while cell 0x4C03 is 0, which
    the hooded woman set to 1 and nothing on the way clears; until it is
-   known what clears it in the original, the test does), and leaves by
+   known what clears it in the original, the test does: Curse's
+   reconstruction in ~/src/Unsafe reads COMPARE and IF as OpenGoldBox does,
+   its engine never writes the cell and clears zone 0 only when a game
+   starts, no script writes it but the woman's SAVE, and only Dexam's fight
+   sets the Amulet's cell 0x4C5A, so this copy's ECL4.DAX would leave the
+   Amulet out of reach), and leaves by
    stepping off the map south of 11,15 (LEAVE_MAP), where Olive takes
    Dimswart away, to Zhentil Keep's edge. With the three
    artifacts it goes back by Yulash and Hillsfar to the Standing Stones,
