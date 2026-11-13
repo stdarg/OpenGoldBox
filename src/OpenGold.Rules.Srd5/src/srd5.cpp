@@ -32676,6 +32676,10 @@ class Module final : public RulesModule
             }
             break;
         }
+        case TempleService::heal:
+            // Curse's Heal helps no one under the SRD until its SRD version
+            // (docs/GAMES.md, phase 9), so the check above has refused it.
+            break;
         }
         state = vitals(patient);
         random_state.value = rng;

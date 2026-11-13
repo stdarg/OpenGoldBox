@@ -511,6 +511,10 @@ void the_temple_heals_and_raises()
     check(!dead.dead && dead.hit_points == 1, "Raise Dead brings the dead back with 1 Hit Point");
     check(!module->temple_service_helps(sheet, dead, rules::TempleService::resurrection),
           "The original's temple has no Resurrection");
+    rules::VitalState hurt{1, false, {}, {}};
+    module->temple_service(hurt, sheet, rules::TempleService::heal, random);
+    check(hurt.hit_points >= std::max(1, sheet.hit_points - 4),
+          "Curse's Heal restores all but 1d4 Hit Points");
 }
 
 // A script's harm under the original rules: an arrow of THAC0 20 hits an

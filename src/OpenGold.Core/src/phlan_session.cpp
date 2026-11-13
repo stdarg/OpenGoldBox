@@ -4639,7 +4639,7 @@ void RolfTourSession::choose_shopper()
 void RolfTourSession::open_temple(std::uint64_t request)
 {
     // The temple data/shops places on this square, else the original's list.
-    auto offerings = opengold::original_temple_offerings();
+    auto offerings = opengold::original_temple_offerings(game() != GoldBoxGame::pool_of_radiance);
     for (const auto &site : temples_)
     {
         if (standing_at(site.archive, site.record, site.markers))

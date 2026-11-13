@@ -39,8 +39,9 @@ struct TempleServiceInfo
 };
 
 // Every service, in the original's order, with the original's prices, which
-// were the same at every temple; Resurrection is OpenGoldBox's.
-inline constexpr std::array<TempleServiceInfo, 10> temple_services{{
+// were the same at every temple; Resurrection is OpenGoldBox's, and Heal
+// Curse's (offered after Cure Critical Wounds).
+inline constexpr std::array<TempleServiceInfo, 11> temple_services{{
     {rules::TempleService::cure_blindness, "cure_blindness", "Cure Blindness", 1000},
     {rules::TempleService::cure_disease, "cure_disease", "Cure Disease", 1000},
     {rules::TempleService::cure_light_wounds, "cure_light_wounds", "Cure Light Wounds", 100},
@@ -52,6 +53,7 @@ inline constexpr std::array<TempleServiceInfo, 10> temple_services{{
     {rules::TempleService::remove_curse, "remove_curse", "Remove Curse", 3500},
     {rules::TempleService::stone_to_flesh, "stone_to_flesh", "Stone to Flesh", 2000},
     {rules::TempleService::resurrection, "resurrection", "Resurrection", 11000},
+    {rules::TempleService::heal, "heal", "Heal", 5000},
 }};
 
 [[nodiscard]] constexpr const TempleServiceInfo &temple_service_info(rules::TempleService service)
@@ -72,13 +74,24 @@ temple_service_named(std::string_view id)
     return std::nullopt;
 }
 
-// A temple the data does not name offers every service at the original's price.
-[[nodiscard]] inline std::vector<TempleOffering> original_temple_offerings()
+// A temple the data does not name offers every service of the game at the
+// original's price: Curse's adds Heal after Cure Critical Wounds (ovr005,
+// temple_heal in its reconstruction).
+[[nodiscard]] inline std::vector<TempleOffering> original_temple_offerings(bool offers_heal = false)
 {
     std::vector<TempleOffering> offerings;
     for (const auto &info : temple_services)
     {
+        if (info.service == rules::TempleService::heal)
+        {
+            continue;
+        }
         offerings.push_back({info.service, info.original_price_gp});
+        if (offers_heal && info.service == rules::TempleService::cure_critical_wounds)
+        {
+            const auto &heal = temple_service_info(rules::TempleService::heal);
+            offerings.push_back({heal.service, heal.original_price_gp});
+        }
     }
     return offerings;
 }

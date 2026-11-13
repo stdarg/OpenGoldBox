@@ -267,8 +267,13 @@ void catalog_checks()
               offerings[9].service == TempleService::resurrection && offerings[9].price_gp == 11000,
           "The original's nine services and prices, and Resurrection's");
     check(temple_service_named("stone_to_flesh") == TempleService::stone_to_flesh &&
-              !temple_service_named("heal"),
+              temple_service_named("heal") == TempleService::heal &&
+              !temple_service_named("cure_everything"),
           "Services are named by the data's ids");
+    const auto curse = original_temple_offerings(true);
+    check(curse.size() == 11 && curse[5].service == TempleService::heal &&
+              curse[5].price_gp == 5000,
+          "Curse's temple offers Heal for 5,000 gp after Cure Critical Wounds");
 }
 } // namespace
 

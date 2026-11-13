@@ -411,7 +411,9 @@ enum class TempleService : std::uint8_t
     raise_dead,
     remove_curse,
     stone_to_flesh,
-    resurrection
+    resurrection,
+    // Curse's Heal: every Hit Point but 1d4.
+    heal
 };
 
 enum class RestKind

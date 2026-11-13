@@ -1272,6 +1272,7 @@ bool OriginalModule::temple_service_helps(const CharacterSheet &sheet, const Vit
     case TempleService::cure_light_wounds:
     case TempleService::cure_serious_wounds:
     case TempleService::cure_critical_wounds:
+    case TempleService::heal:
         return !state.dead && state.hit_points < sheet.hit_points;
     case TempleService::raise_dead:
         return state.dead;
@@ -1306,6 +1307,10 @@ void OriginalModule::temple_service(VitalState &state, const CharacterSheet &she
         break;
     case TempleService::cure_critical_wounds:
         heal(3, 3);
+        break;
+    case TempleService::heal:
+        // Curse's Heal: all but 1d4 Hit Points (ovr005, temple_heal).
+        state.hit_points = std::max(state.hit_points, sheet.hit_points - roll_die(random_state, 4));
         break;
     case TempleService::raise_dead:
         state.dead = false;
