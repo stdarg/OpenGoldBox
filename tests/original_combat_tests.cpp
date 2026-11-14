@@ -3786,6 +3786,7 @@ void secret_spells_stun_hide_and_burn()
     cast_now(*burn.session, "Mage", 315,
              [&]
              {
+                 burn.session->submit(order(*burn.session, "blast_delay"));
                  return aim_at_cell(*burn.session, {5, 3});
              });
     const int burned = 200 - view_of(burn.session->snapshot(), "Near").hit_points;
@@ -3993,6 +3994,52 @@ void a_quarrel_banishes_the_rakshasa()
     check(logged(*plain.session, "{name} is banished.") == 0, "Another blow only wounds it");
 }
 
+// Secret's Delayed Blast Fireball waits the rounds its caster chooses on its
+// square, then catches all within 3 (SpellDelayedBlastFireball, effect 100);
+// a checkpoint keeps it waiting.
+void a_blast_waits()
+{
+    using original::ClassSlot;
+    auto fight = arrange_secret(
+        {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 14, {315})},
+         {"Near", rules::Side::opposition, {5, 3}, victim(200)}},
+        359);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 315,
+             [&]
+             {
+                 const auto legal = session.legal_commands();
+                 const auto two =
+                     std::ranges::find_if(legal,
+                                          [](const rules::Command &c)
+                                          {
+                                              return c.verb == "blast_delay" && c.item == 2;
+                                          });
+                 check(two != legal.end(), "The caster chooses the delay");
+                 session.submit(*two);
+                 return aim_at_cell(session, {5, 3});
+             });
+    check(logged(session, "{name} sets a delayed blast fireball.") == 1 &&
+              view_of(session.snapshot(), "Near").hit_points == 200,
+          "The blast waits");
+    const auto saved = session.save();
+    check(fight.module->restore(saved)->save() == saved, "A checkpoint keeps the blast");
+    play_until(
+        session,
+        [&](const std::string &)
+        {
+            return order(session, "end");
+        },
+        [&]
+        {
+            return logged(session, "Delayed Blast Fireball goes off.") > 0 ||
+                   session.snapshot().round > 6;
+        });
+    check(logged(session, "Delayed Blast Fireball goes off.") == 1 &&
+              view_of(session.snapshot(), "Near").hit_points < 200,
+          "It goes off on its square when its rounds are up");
+}
+
 } // namespace
 
 int main()
@@ -4041,6 +4088,7 @@ int main()
         strength_spells_strengthen();
         out_of_doors();
         a_quarrel_banishes_the_rakshasa();
+        a_blast_waits();
         sleep_takes_the_weak();
         charm_person_turns_a_foe();
         cure_light_wounds_stops_bleeding();

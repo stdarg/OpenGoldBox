@@ -79,8 +79,8 @@ constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_r
               slowed = 42, protection_from_evil_aura = 45, protection_from_good_aura = 46,
               prayer = 49, coughing = 30, nausea = 31, stinking_cloud = 40, cloudkill = 291,
               enlarged = 12, strengthened = 38, strength_wasted = original::strength_wasted,
-              animated = 32, snake_charm = 51, slow_poison_tick = 15, slow_poison = 22,
-              revival = 78, read_magic = 16, dust = 71;
+              delayed_blast = 500, animated = 32, snake_charm = 51, slow_poison_tick = 15,
+              slow_poison = 22, revival = 78, read_magic = 16, dust = 71;
 // Displacement keeps whether it has turned an attack aside in this bit of its strength.
 constexpr int displaced = 0x10;
 // A ring of invisibility's renewal (Pool of Radiance's 56, Secret's too), a
@@ -157,6 +157,9 @@ struct Fighter
     // and the picks it has left.
     bool cast_allowed{true};
     int pending_spell{}, aiming{}, picks_left{};
+    // The rounds a Delayed Blast Fireball it is aiming waits before it goes
+    // off, -1 before the caster has chosen (Secret's SpellDelayedBlastFireball).
+    int blast_delay{-1};
     std::vector<EntityId> picked;
     // Its side before a charm took it over.
     Side own_side{Side::party};
@@ -565,7 +568,7 @@ int doubled_distance(Cell a, Cell b)
 
 // Curse's Fire Shield, whose caster chooses its flames as it goes off, and
 // the choice: the AI's (and Quick's) at random (SpellFireShield).
-constexpr int fire_shield = 185;
+constexpr int fire_shield = 185, delayed_blast_spell = 315;
 enum class Flames : unsigned
 {
     random,
@@ -721,6 +724,18 @@ class Session final : public rules::CombatSession
     // Out of doors (rules::Encounter::outdoors).
     bool outdoors_{};
     std::vector<Cloud> clouds_;
+
+    // Delayed Blast Fireballs set and not yet gone off: the caster's, its
+    // number among the caster's, the square, and the caster's level.
+    struct DelayedBlast
+    {
+        EntityId caster{};
+        int index{};
+        Cell cell;
+        int level{};
+    };
+
+    std::vector<DelayedBlast> blasts_;
     // The opposition's Hit Points left of its whole, in steps of 5, as of the
     // round's start (cbtacts.pas, UpdateHostileHpPercent).
     int hostile_hit_points_percent_{100};
@@ -823,8 +838,11 @@ class Session final : public rules::CombatSession
     [[nodiscard]] Fighter *secret_target(Fighter &f, int range, bool skip_helpless);
     void turn_to_stone(Fighter &victim);
     void cast_secret_spell(Fighter &caster, int number, int level,
-                           const std::vector<EntityId> &targets);
+                           const std::vector<EntityId> &targets, Cell aim);
     void heal_all_but_1d4(Fighter &target);
+    void cast_delayed_blast(Fighter &caster, int level, const std::vector<EntityId> &targets,
+                            Cell aim);
+    void delayed_blast_goes_off(Fighter &caster, int index);
     [[nodiscard]] std::vector<EntityId> fireball_reach(const std::vector<EntityId> &targets,
                                                        Cell aim) const;
     void recount_strength(Fighter &f);
@@ -1962,6 +1980,7 @@ void Session::start_aiming(Fighter &caster, int spell_number)
     const int area = known.area & 0x0F;
     caster.aiming = spell_number;
     caster.picked.clear();
+    caster.blast_delay = -1;
     // Fire Shield waits for its flames to be chosen (SpellFireShield).
     if (spell_number == fire_shield)
     {
@@ -2012,7 +2031,21 @@ std::vector<rules::Command> Session::aiming_commands(const Fighter &caster) cons
         c.item = static_cast<unsigned>(caster.aiming);
         return c;
     };
-    if (caster.aiming == fire_shield)
+    if (caster.aiming == delayed_blast_spell && caster.blast_delay < 0)
+    {
+        // How many rounds it waits (the original's 1 to 50 segments, in tens).
+        constexpr std::array<const char *, 6> delays{"No delay",       "Delay 1 round",
+                                                     "Delay 2 rounds", "Delay 3 rounds",
+                                                     "Delay 4 rounds", "Delay 5 rounds"};
+        for (std::size_t rounds = 0; rounds < delays.size(); ++rounds)
+        {
+            auto choice = command("blast_delay");
+            choice.label = delays[rounds];
+            choice.item = static_cast<unsigned>(rounds);
+            commands.push_back(choice);
+        }
+    }
+    else if (caster.aiming == fire_shield)
     {
         // The flames, hot or cold (SpellFireShield's menu).
         for (const auto flames : {Flames::hot, Flames::cold})
@@ -2735,7 +2768,7 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     case 315:
     case 316:
     case 317:
-        cast_secret_spell(caster, number, level, targets);
+        cast_secret_spell(caster, number, level, targets, aim);
         break;
     default:
         cast_generic(caster, number, level, targets, 0, 0);
@@ -2976,12 +3009,12 @@ bool resists_magic_at_all(const Fighter &target)
 // Secret of the Silver Blades' own spells (magic.pas, in its reconstruction),
 // by the rules' numbers (canonical_spell).
 void Session::cast_secret_spell(Fighter &caster, int number, int level,
-                                const std::vector<EntityId> &targets)
+                                const std::vector<EntityId> &targets, Cell aim)
 {
     constexpr int heal = 236, harm = 256, barkskin = 290, death_spell = 310, disintegrate = 311,
                   stone_to_flesh = 313, flesh_to_stone = 314, delayed_blast_fireball = 315,
                   mass_invisibility = 316, power_word_stun = 317;
-    constexpr int diseased = 34, fire = 9;
+    constexpr int diseased = 34;
     const auto &known = *game_spell(number);
     const auto roll_dice = [this](int count, int sides)
     {
@@ -3050,9 +3083,7 @@ void Session::cast_secret_spell(Fighter &caster, int number, int level,
         }
         break;
     case delayed_blast_fireball:
-        // Cast with no delay it bursts at once: the caster's level and as
-        // many d6 of fire on all within 3 of the aim.
-        cast_generic(caster, number, level, targets, level + roll_dice(level, 6), fire);
+        cast_delayed_blast(caster, level, targets, aim);
         break;
     case mass_invisibility:
     {
@@ -3188,6 +3219,64 @@ void Session::recount_strength(Fighter &f)
 std::vector<EntityId> Session::fireball_reach(const std::vector<EntityId> &targets, Cell aim) const
 {
     return outdoors_ ? within(aim, 2) : targets;
+}
+
+// Secret's Delayed Blast Fireball (SpellDelayedBlastFireball): with no delay
+// it bursts at once, the caster's level and as many d6 of fire on all within
+// 3 of the aim; with one it waits on its square for those rounds (effect 100,
+// EffDelayedBlastFireball). The AI never delays it: the original asked anyone
+// casting it, the computer's creatures too, for the delay.
+void Session::cast_delayed_blast(Fighter &caster, int level, const std::vector<EntityId> &targets,
+                                 Cell aim)
+{
+    constexpr int fire = 9, delayed_blast_fireball = 315;
+    const int delay = std::max(caster.blast_delay, 0);
+    caster.blast_delay = -1;
+    if (delay == 0)
+    {
+        int total = level;
+        for (int die = 0; die < level; ++die)
+        {
+            total += roll(6);
+        }
+        cast_generic(caster, delayed_blast_fireball, level, targets, total, fire);
+        return;
+    }
+    const int index =
+        static_cast<int>(std::ranges::count(blasts_, caster.id, &DelayedBlast::caster));
+    blasts_.push_back({caster.id, index, aim, level});
+    caster.numbers.effects.push_back({effect::delayed_blast, delay, index, true});
+    log({"{name} sets a delayed blast fireball.", {{"name", caster.name}}});
+}
+
+// The blast goes off on its square: everyone within 3 takes the caster's
+// level and as many d6 of fire, half on a save against spells.
+void Session::delayed_blast_goes_off(Fighter &caster, int index)
+{
+    constexpr int fire = 9, delayed_blast_fireball = 315;
+    const auto blast = std::ranges::find_if(blasts_,
+                                            [&](const DelayedBlast &b)
+                                            {
+                                                return b.caster == caster.id && b.index == index;
+                                            });
+    if (blast == blasts_.end())
+    {
+        return;
+    }
+    const auto set = *blast;
+    blasts_.erase(blast);
+    log({"Delayed Blast Fireball goes off.", {}});
+    int total = set.level;
+    for (int die = 0; die < set.level; ++die)
+    {
+        total += roll(6);
+    }
+    for (const auto id : within(set.cell, 3))
+    {
+        auto &target = *find(id);
+        const bool saved = saving_throw(target, 4, 0, &caster);
+        nonweapon_damage(target, total, 2, saved, fire, set.level, delayed_blast_fireball, false);
+    }
 }
 
 // Heal (SpellHeal): disease, blindness and feeblemind cured, then every Hit
@@ -5440,6 +5529,9 @@ void Session::expire(Fighter &f, const Effect &ended)
 {
     switch (ended.code)
     {
+    case effect::delayed_blast:
+        delayed_blast_goes_off(f, ended.strength);
+        break;
     case effect::enlarged:
     case effect::strengthened:
         recount_strength(f);
@@ -6508,6 +6600,10 @@ bool Session::submit(const rules::Command &command)
             }
         }
     }
+    else if (command.verb == "blast_delay")
+    {
+        actor.blast_delay = static_cast<int>(command.item);
+    }
     else if (command.verb == "flames")
     {
         resolve_spell(actor, {actor.id}, actor.cell, static_cast<Flames>(command.item));
@@ -6616,6 +6712,11 @@ std::string Session::save() const
             out(covers);
         }
     }
+    out(blasts_.size());
+    for (const auto &blast : blasts_)
+    {
+        out(blast.caster, blast.index, blast.cell.x, blast.cell.y, blast.level);
+    }
     out(turn_order_.size());
     for (const auto id : turn_order_)
     {
@@ -6629,7 +6730,7 @@ std::string Session::save() const
             static_cast<unsigned>(f.condition), f.overkill, f.initiative, f.half_moves,
             f.attacks_left[0], f.attacks_left[1], f.surprised, f.attack_phase, f.sweep_budget,
             f.direction, f.flank_count, f.flank_spread, f.guarding, f.fleeing, f.turned,
-            f.tried_turning, f.cast_allowed, f.pending_spell, f.aiming, f.picks_left,
+            f.tried_turning, f.cast_allowed, f.pending_spell, f.aiming, f.picks_left, f.blast_delay,
             static_cast<unsigned>(f.own_side), f.item_use_allowed, f.using_item, f.stance, f.lock,
             f.before_animation ? f.before_animation->encode() : std::string(), f.picked.size());
         for (const auto id : f.picked)
@@ -6716,6 +6817,20 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         }
         session->clouds_.push_back(cloud);
     }
+    const auto blasts = in.as<std::size_t>();
+    if (blasts > 64)
+    {
+        throw std::runtime_error("Invalid original-rules combat checkpoint");
+    }
+    for (std::size_t n = 0; n < blasts; ++n)
+    {
+        DelayedBlast blast;
+        blast.caster = in.as<EntityId>();
+        blast.index = in.as<int>();
+        blast.cell = {in.as<int>(), in.as<int>()};
+        blast.level = in.as<int>();
+        session->blasts_.push_back(blast);
+    }
     const auto ordered = in.as<std::size_t>();
     if (ordered > 256)
     {
@@ -6771,6 +6886,7 @@ std::unique_ptr<Session> Session::restored(rules::Identity identity, std::string
         f.pending_spell = in.as<int>();
         f.aiming = in.as<int>();
         f.picks_left = in.as<int>();
+        f.blast_delay = in.as<int>();
         f.own_side = in.as<Side>();
         f.item_use_allowed = in.as<bool>();
         f.using_item = in.as<int>();
@@ -6851,7 +6967,7 @@ void take_counts(Fighter &f, const std::vector<rules::CarriedEquipment> &invento
                  const Content &content)
 {
     namespace bit = por::item_property;
-    constexpr std::uint8_t arrows_type = 73, quarrels_type = 28;
+    const auto [arrows_type, quarrels_type] = ammunition_types(content.game);
     for (const auto &carried : inventory)
     {
         const auto record = por::item_of_original_key(carried.definition);

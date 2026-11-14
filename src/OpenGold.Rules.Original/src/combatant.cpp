@@ -261,7 +261,6 @@ namespace
 constexpr std::uint8_t weapon_slot = 0, shield_slot = 1, first_ring_slot = 9;
 // Arrows and quarrels take their places by their item type, not their type's
 // slot (charhlp.pas, RecalcStats).
-constexpr std::uint8_t arrows_type = 73, quarrels_type = 28;
 constexpr std::uint8_t monster_race = 0, elf_race = 2;
 
 // The original keeps Armor Class as 60 minus it, so that better is more: its
@@ -323,12 +322,6 @@ int load_of(const por::CharacterRecord &record, std::span<const CarriedItem> car
     return load;
 }
 
-// An elf's +1 to hit with a bow or a sword: item types 36, 37 and 41 to 44.
-bool elf_weapon(std::uint8_t type) noexcept
-{
-    return type == 36 || type == 37 || (type > 40 && type < 45);
-}
-
 // The readied missile weapon (cbtacts.pas, RecalcAttacksLeft and CombatAimMenu;
 // charhlp.pas, FindDamagingRangedWeapon). A thrown weapon is its own
 // ammunition; a launcher shoots the arrows or quarrels readied, and one whose
@@ -344,15 +337,16 @@ Missile missile_of(const por::CharacterRecord &record, std::span<const CarriedIt
     m.thrown = type.has(bit::thrown);
     m.throwable = m.thrown && type.has(bit::strength_bonus);
     const CarriedItem *shot = m.thrown ? &weapon : nullptr;
+    const auto ammunition = ammunition_types(record.game);
     if (type.has(bit::fires_ammunition))
     {
         if (type.has(bit::fires_arrows))
         {
-            shot = readied_of_type(carried, arrows_type);
+            shot = readied_of_type(carried, ammunition.arrows);
         }
         if (type.has(bit::fires_quarrels))
         {
-            shot = readied_of_type(carried, quarrels_type);
+            shot = readied_of_type(carried, ammunition.quarrels);
         }
     }
     m.needs_no_ammunition =
@@ -381,8 +375,9 @@ Missile missile_of(const por::CharacterRecord &record, std::span<const CarriedIt
 // or quarrels a launcher fires, else the readied weapon (charhlp.pas,
 // FindDamagingRangedWeapon); none without a weapon.
 std::optional<StrikingItem> striker_of(std::span<const CarriedItem> carried,
-                                       const CarriedItem *weapon)
+                                       const CarriedItem *weapon, GoldBoxGame game)
 {
+    const auto ammunition = ammunition_types(game);
     if (!weapon)
     {
         return std::nullopt;
@@ -392,8 +387,8 @@ std::optional<StrikingItem> striker_of(std::span<const CarriedItem> carried,
     if (!weapon->type.has(bit::thrown) && weapon->type.has(bit::fires_ammunition))
     {
         const auto *shot =
-            weapon->type.has(bit::fires_quarrels) ? readied_of_type(carried, quarrels_type)
-            : weapon->type.has(bit::fires_arrows) ? readied_of_type(carried, arrows_type)
+            weapon->type.has(bit::fires_quarrels) ? readied_of_type(carried, ammunition.quarrels)
+            : weapon->type.has(bit::fires_arrows) ? readied_of_type(carried, ammunition.arrows)
                                                   : nullptr;
         strikes = shot ? shot : weapon;
     }
@@ -401,7 +396,7 @@ std::optional<StrikingItem> striker_of(std::span<const CarriedItem> carried,
     // with word 135 there banishes a rakshasa.
     const auto &words = strikes->item.name_components;
     return StrikingItem{strikes->item.magic_bonus, words[2] == 177, strikes->type.damage_type,
-                        strikes->item.type == quarrels_type && words[2] == 135};
+                        strikes->item.type == ammunition.quarrels && words[2] == 135};
 }
 
 // A mirror (name word 118 in any part) or the wooden holy symbol (word 152
@@ -657,8 +652,9 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
             c.attacks[0].modifier += strength_damage_bonus(strength, exceptional);
         }
         int plus = weapon->item.magic_bonus;
-        const auto *bolts = readied_of_type(carried, quarrels_type);
-        const auto *arrows = readied_of_type(carried, arrows_type);
+        const auto ammunition = ammunition_types(record.game);
+        const auto *bolts = readied_of_type(carried, ammunition.quarrels);
+        const auto *arrows = readied_of_type(carried, ammunition.arrows);
         if (type.has(bit::fires_quarrels) && bolts)
         {
             plus += bolts->item.magic_bonus;
@@ -673,7 +669,7 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
         c.large_attack = AttackForm{
             c.attacks[0].rate_per_two_rounds, type.large_damage.count, type.large_damage.sides,
             c.attacks[0].modifier - type.small_medium_damage.modifier + type.large_damage.modifier};
-        if (record.race == elf_race && elf_weapon(weapon->item.type))
+        if (record.race == elf_race && elf_weapon(weapon->item.type, record.game))
         {
             ++plus;
         }
@@ -771,7 +767,7 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     }
     c.race = record.race;
     c.weapon_type = weapon ? weapon->item.type : -1;
-    c.striker = striker_of(carried, weapon);
+    c.striker = striker_of(carried, weapon, record.game);
     c.wards_gaze = std::any_of(carried.begin(), carried.end(),
                                [](const CarriedItem &item)
                                {
@@ -803,6 +799,21 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
         }
     }
     return c;
+}
+
+AmmunitionTypes ammunition_types(GoldBoxGame game) noexcept
+{
+    return game == GoldBoxGame::secret_of_the_silver_blades ? AmmunitionTypes{30, 12}
+                                                            : AmmunitionTypes{73, 28};
+}
+
+bool elf_weapon(std::uint8_t type, GoldBoxGame game) noexcept
+{
+    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    {
+        return type == 18 || type == 19 || (type >= 22 && type <= 26);
+    }
+    return type == 36 || type == 37 || (type > 40 && type < 45);
 }
 
 bool lasting_condition(const Effect &effect, GoldBoxGame game) noexcept

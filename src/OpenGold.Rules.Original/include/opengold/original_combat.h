@@ -259,6 +259,19 @@ struct CarriedItem
                                               std::span<const CarriedItem> carried = {},
                                               std::span<const por::EffectRecord> effects = {});
 
+// The item types of a game's arrows and quarrels (charhlp.pas, RecalcStats):
+// 73 and 28 in Pool of Radiance and Curse, 30 and 12 in Secret.
+struct AmmunitionTypes
+{
+    std::uint8_t arrows{}, quarrels{};
+};
+
+[[nodiscard]] AmmunitionTypes ammunition_types(GoldBoxGame game) noexcept;
+// Whether an elf strikes 1 better with an item of this type, a bow or a
+// sword: 36, 37 and 41 to 44, and in Secret 18, 19 and 22 to 26
+// (charhlp.pas, WeaponAdjust).
+[[nodiscard]] bool elf_weapon(std::uint8_t type, GoldBoxGame game) noexcept;
+
 // The conditions that outlast a fight and a day's rest until they are cured
 // or run out, by the fight's numbers: blindness (33), disease (34, 43, 44,
 // and Pool of Radiance's rot, 50 and 57), the helplessness a disease brings

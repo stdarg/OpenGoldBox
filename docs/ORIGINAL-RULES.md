@@ -262,11 +262,17 @@ chosen by the game as *Curse*'s are. In progress (2026-11-13):
   Delayed Blast Fireball bursts at once for the level and as many d6 of
   fire within 3 squares. A magic-user may learn sixth- and seventh-level
   spells as it trains.
-- **Still to come:** the Delayed Blast Fireball's delay (the original asks
-  for 1 to 50 segments and sets the blast on its square), Youth (an item
-  power that makes its user 1d4+1 years younger). Its paladins and rangers
-  cast as *Curse*'s do (*Curse*, Paladins and rangers), a paladin at its
-  full level.
+- **The Delayed Blast Fireball's delay** (`SpellDelayedBlastFireball`,
+  effect 100): its caster chooses none or 1 to 5 rounds (the original's 1 to
+  50 segments, in tens) before it aims (the `blast_delay` command); a delayed
+  blast waits on its square and then catches all within 3 for the caster's
+  level and as many d6 of fire, half on a save. The computer's casters burst
+  it at once (Bugs).
+- Its paladins and rangers cast as *Curse*'s do (*Curse*, Paladins and
+  rangers), a paladin at its full level.
+- **Still to come:** Youth (an item power that makes its user 1d4+1 years
+  younger), with the years Haste adds, as a character's age changing after
+  creation.
 
 ### *Secret*'s combat
 
@@ -330,12 +336,13 @@ chosen by the game as *Curse*'s are. In progress (2026-11-13):
   and 17 to 19) in any armor, against its Armor Class from behind less 4, for
   (level − 1) div 4 + 2 times the damage, multiplied after the blow's other
   effects.
-- **Still to come:** *Secret*'s item numbers for arrows, quarrels and an
-  elf's weapons; the AI's caution near clouds; a giant-bane weapon (effect 75);
-  the races' innate effects as *Secret* gives them (a gnome lacks the defense
-  against giants, and none saves better against poison); and the hit points
-  LOAD MONSTER scales by difficulty (the original rules have no difficulty
-  yet, Difficulty).
+- **Items and races:** its arrows and quarrels are item types 30 and 12,
+  and an elf's bows and swords 18, 19 and 22 to 26 (`WeaponAdjust`); its
+  races' innate effects are its own (`chargen.pas`): a gnome has no defense
+  against giants, and no race saves better against poison.
+- **Still to come:** the AI's caution near clouds; a giant-bane weapon
+  (effect 75); and the hit points LOAD MONSTER scales by difficulty (the
+  original rules have no difficulty yet, Difficulty).
 
 ## Gateway to the Savage Frontier
 
@@ -1057,6 +1064,8 @@ tuned with the AI lab once the original rules play.
 | Enlarge cast above level 6 in *Pool of Radiance*, or above 11 in *Curse*, gives whatever Strength the last Enlarge left, as no table row sets it (`magic.pas`, `SpellEnlarge`) | The most the table gives |
 | *Pool of Radiance:* Strength cast on a creature of no class it names, and in *Curse* on a paladin or ranger, adds a die never rolled (`magic.pas`, `SpellStrength`) | A d4, and a warrior's d8 |
 | *Curse:* Entangle's hold lasts as long as the spell table's row past its end says, an unset value (`magic.pas`, `SpellEntangle`, its duration taken for spell 136) | Entangle's own 10 rounds |
+| *Secret:* the Delayed Blast Fireball asks for its delay at the keyboard whoever casts it, the computer's creatures too (`magic.pas`, `SpellDelayedBlastFireball`) | The computer bursts it at once |
+| *Secret:* its +1 to hit with long and short swords and bows goes to every race (`charhlp.pas`, `WeaponAdjust`), where the earlier games give it to elves | Elves only |
 | *Curse* and *Gateway:* training picks the class whose next level needs the most experience, but reads every class at the level of the last one it looked at (TrainingMenu) | Each class at its own level |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |

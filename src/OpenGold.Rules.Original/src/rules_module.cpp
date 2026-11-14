@@ -29,7 +29,6 @@ using namespace rules;
 // anything else (arrows, quarrels, wands, scrolls) only takes its hands.
 constexpr std::uint8_t weapon_place = 0, shield_place = 1, armor_place = 2, boots_place = 8,
                        ring_place = 9;
-constexpr std::uint8_t arrows_type = 73, quarrels_type = 28;
 
 std::runtime_error unavailable(std::string_view what)
 {
@@ -311,13 +310,16 @@ Combatant character_combatant(const CharacterSheet &sheet,
     // (97), and the elf's and half-elf's resistance to sleep and charm (107,
     // 124). A dwarf's and a gnome's bonus against their foes (26, 18), their
     // defense against giants (47), and a gnome's against bugbears (48).
+    // Secret gives no one the save against poison and a gnome no defense
+    // against giants (its chargen.pas).
     constexpr int dwarf = 1, elf = 2, gnome = 3, half_elf = 4, halfling = 5;
     constexpr int dwarf_attack = 26, gnome_attack = 18, giant_defense = 47, bugbear_defense = 48;
     const auto innate = [&c](int code)
     {
         c.effects.push_back({code, 0, 255, false});
     };
-    if (c.race == dwarf || c.race == halfling)
+    const bool secret = game_of(sheet.identity) == GoldBoxGame::secret_of_the_silver_blades;
+    if (!secret && (c.race == dwarf || c.race == halfling))
     {
         innate(90);
     }
@@ -334,7 +336,7 @@ Combatant character_combatant(const CharacterSheet &sheet,
         innate(gnome_attack);
         innate(bugbear_defense);
     }
-    if (c.race == dwarf || c.race == gnome)
+    if (c.race == dwarf || (c.race == gnome && !secret))
     {
         innate(giant_defense);
     }
@@ -802,8 +804,9 @@ EquipmentChange OriginalModule::equipment_change(const CharacterSheet &sheet,
         const auto other_place = other.type.worn_location;
         rings += other_place == ring_place ? 1 : 0;
         const bool same_place = place <= boots_place && other_place == place;
+        const auto ammunition = ammunition_types(game_of(sheet.identity));
         const bool same_stack =
-            (chosen.item.type == arrows_type || chosen.item.type == quarrels_type) &&
+            (chosen.item.type == ammunition.arrows || chosen.item.type == ammunition.quarrels) &&
             other.item.type == chosen.item.type;
         if (same_place || same_stack)
         {

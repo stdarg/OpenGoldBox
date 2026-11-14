@@ -1255,6 +1255,54 @@ void camp_spells_last_and_diseases_waste()
     check(dead.dead, "The poison kills again when the spell runs out");
 }
 
+// The races' innate effects as each game gives them (chargen.pas): Secret's
+// gnome has no defense against giants (47) and no race the Constitution save
+// against poison (90); its arrows and quarrels are item types 30 and 12, and
+// an elf's bows and swords 18, 19 and 22 to 26.
+void secret_races_and_items()
+{
+    const auto module = original::rules_module();
+    const auto effects_of = [&](GoldBoxGame game, std::string race)
+    {
+        const auto creation = original::character_rules(original::default_aging, game);
+        RandomState random{97};
+        rules::CharacterDraft draft;
+        draft.race = std::move(race);
+        draft.gender = "male";
+        draft.character_class = "fighter";
+        draft.alignment = "neutral_good";
+        draft.name = "Bolo";
+        creation->roll_in_place(draft, random);
+        const auto sheet = creation->evaluate(draft, rules::NameRequirement::required);
+        std::vector<int> codes;
+        const auto numbers =
+            *original::Combatant::decode(module->character_profile(sheet, {}).data);
+        for (const auto &e : numbers.effects)
+        {
+            codes.push_back(e.code);
+        }
+        return codes;
+    };
+    const auto has = [](const std::vector<int> &codes, int code)
+    {
+        return std::ranges::find(codes, code) != codes.end();
+    };
+    const auto curse_gnome = effects_of(GoldBoxGame::curse_of_the_azure_bonds, "gnome");
+    const auto secret_gnome = effects_of(GoldBoxGame::secret_of_the_silver_blades, "gnome");
+    const auto secret_dwarf = effects_of(GoldBoxGame::secret_of_the_silver_blades, "dwarf");
+    check(has(curse_gnome, 47) && !has(secret_gnome, 47) && has(secret_gnome, 48) &&
+              has(secret_dwarf, 47) && !has(secret_dwarf, 90) && has(secret_dwarf, 97),
+          "Secret's gnome has no defense against giants, and no race the poison save");
+    const auto secret = original::ammunition_types(GoldBoxGame::secret_of_the_silver_blades);
+    const auto pool = original::ammunition_types(GoldBoxGame::pool_of_radiance);
+    check(secret.arrows == 30 && secret.quarrels == 12 && pool.arrows == 73 &&
+              pool.quarrels == 28 &&
+              original::elf_weapon(22, GoldBoxGame::secret_of_the_silver_blades) &&
+              !original::elf_weapon(22, GoldBoxGame::pool_of_radiance) &&
+              original::elf_weapon(41, GoldBoxGame::curse_of_the_azure_bonds),
+          "Secret numbers its arrows, quarrels and an elf's weapons its own way");
+}
+
 // Raise Dead's cost (temple.pas, RaiseDead): a point of Constitution, and at
 // the temple the Hit Points its formula takes; the cost is in the member's
 // level history, so a saved game keeps it.
@@ -1485,6 +1533,7 @@ int main()
         a_paladin_cures_disease();
         a_fight_starts_with_lasting_conditions();
         camp_spells_last_and_diseases_waste();
+        secret_races_and_items();
         raise_dead_costs_constitution();
         scripts_harm_as_the_original();
         a_potion_heals_outside_a_fight();
