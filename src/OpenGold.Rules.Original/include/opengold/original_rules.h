@@ -130,7 +130,9 @@ struct AbilityLimits
 // What the race adds to each 3d6 roll. The original's creation never applied
 // these (a bug, docs/ORIGINAL-RULES.md); OpenGoldBox does.
 [[nodiscard]] rules::AbilityArray<int> racial_adjustments(Race race);
-[[nodiscard]] rules::AbilityArray<int> class_minimums(Profession profession);
+// Pools of Darkness asks a Charisma of 6 of every class besides.
+[[nodiscard]] rules::AbilityArray<int>
+class_minimums(Profession profession, GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 
 // How age changes a character's ability scores, chosen for each game.
 enum class Aging : unsigned
@@ -218,14 +220,15 @@ struct StartingTraining
 // class's minimums, as the original's creation does. Under AD&D aging, the
 // changes of each older age group follow, keeping the score between 3 and the
 // race's maximum.
-[[nodiscard]] rules::AbilityArray<int> ability_scores(Race race, Gender gender,
-                                                      Profession profession,
-                                                      const RolledCharacter &rolled, Aging aging,
-                                                      int current_age);
+[[nodiscard]] rules::AbilityArray<int>
+ability_scores(Race race, Gender gender, Profession profession, const RolledCharacter &rolled,
+               Aging aging, int current_age, GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 // 1 to 100 (18/00) for a character with fighter levels and a Strength of 18,
-// up to the race's limit; otherwise 0.
+// up to the race's limit; otherwise 0. In Pools of Darkness a paladin or a
+// ranger rolls it too.
 [[nodiscard]] int exceptional_strength(Race race, Gender gender, Profession profession,
-                                       const RolledCharacter &rolled, int strength);
+                                       const RolledCharacter &rolled, int strength,
+                                       GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 // First-level Hit Points: the class dice with the Constitution bonus, divided
 // among a multi-class character's classes (Secret divides the two apart).
 [[nodiscard]] int first_level_hit_points(Profession profession, const RolledCharacter &rolled,

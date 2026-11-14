@@ -819,6 +819,21 @@ void darkness_characters_start_high()
                   8000001 &&
               !original::experience_for_level(original::ClassSlot::fighter, 41, darkness),
           "Levels rise to 40, a paladin's twelfth at 1,400,000");
+    // Every class needs a Charisma of 6 at least; a paladin keeps its 17.
+    using original::Profession;
+    check(original::class_minimums(Profession::fighter, darkness)[rules::Ability::charisma] == 6 &&
+              original::class_minimums(Profession::paladin, darkness)[rules::Ability::charisma] ==
+                  17 &&
+              original::class_minimums(Profession::fighter)[rules::Ability::charisma] == 0,
+          "Darkness asks a Charisma of 6 of every class");
+    // A paladin or a ranger of Strength 18 rolls Exceptional Strength.
+    original::RolledCharacter strong;
+    strong.strength_percentile = 50;
+    check(original::exceptional_strength(original::Race::human, original::Gender::male,
+                                         Profession::paladin, strong, 18, darkness) == 50 &&
+              original::exceptional_strength(original::Race::human, original::Gender::male,
+                                             Profession::paladin, strong, 18) == 0,
+          "A Darkness paladin rolls Exceptional Strength");
 
     // Its training takes no money.
     original::Content content;

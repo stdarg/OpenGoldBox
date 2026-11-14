@@ -698,7 +698,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         }
         const auto rolled = decode(draft.rules_data);
         const auto ability = ability_scores(chosen.race, chosen.gender, chosen.profession, rolled,
-                                            aging_, rolled.starting_age);
+                                            aging_, rolled.starting_age, game_);
         CharacterSheet sheet;
         sheet.identity = identity();
         sheet.name = draft.name;
@@ -726,8 +726,9 @@ class OriginalCharacterRules final : public rules::CharacterRules
         original.saving_throws = saving_throws(levels, game_);
         original.experience = starting_experience(chosen.profession, game_);
         original.platinum = starting_platinum(game_);
-        original.exceptional_strength = exceptional_strength(
-            chosen.race, chosen.gender, chosen.profession, rolled, ability[Ability::strength]);
+        original.exceptional_strength =
+            exceptional_strength(chosen.race, chosen.gender, chosen.profession, rolled,
+                                 ability[Ability::strength], game_);
         original.rolled_hit_points =
             first_level_rolled_hit_points(chosen.profession, rolled) + trained.rolled_hit_points;
         original.age = rolled.starting_age;
@@ -910,7 +911,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         const auto chosen = read_choices(draft, game_);
         const auto rolled = decode(draft.rules_data);
         return ability_scores(chosen.race, chosen.gender, chosen.profession, rolled, aging_,
-                              rolled.starting_age);
+                              rolled.starting_age, game_);
     }
 
     Aging aging_;

@@ -589,12 +589,13 @@ constexpr std::array<std::array<int, 5>, 11> thief_dexterity_adjustments{{{-15, 
 
 // The score at the starting age, as the original's creation leaves it.
 [[nodiscard]] int starting_score(Race race, Gender gender, Profession profession,
-                                 const RolledCharacter &rolled, Aging aging, Ability ability)
+                                 const RolledCharacter &rolled, Aging aging, Ability ability,
+                                 GoldBoxGame game)
 {
     const auto limits = ability_limits(race, gender);
     const int aged = rolled.rolls[ability] + age_changes(aging, race, rolled.starting_age)[ability];
     int score = std::clamp(aged, limits.minimum[ability], limits.maximum[ability]);
-    score = std::max(score, class_minimums(profession)[ability]);
+    score = std::max(score, class_minimums(profession, game)[ability]);
     if (ability == Ability::wisdom && is_cleric_multi_class(profession))
     {
         score = std::max(score, 13);
@@ -737,10 +738,15 @@ AbilityArray<int> racial_adjustments(Race race)
     throw std::invalid_argument("Unknown race");
 }
 
-AbilityArray<int> class_minimums(Profession profession)
+AbilityArray<int> class_minimums(Profession profession, GoldBoxGame game)
 {
     const auto &m = profession_minimums[index(profession)];
-    return in_original_order(m[0], m[1], m[2], m[3], m[4], m[5]);
+    // Pools of Darkness raises every class's Charisma to 6 at least (its
+    // class minimums); a druid's 15 and a paladin's 17 stay.
+    constexpr int darkness_charisma = 6;
+    const int charisma =
+        game == GoldBoxGame::pools_of_darkness ? std::max(m[5], darkness_charisma) : m[5];
+    return in_original_order(m[0], m[1], m[2], m[3], m[4], charisma);
 }
 
 AgeCategory age_category(Race race, int age)
@@ -1029,7 +1035,8 @@ StartingTraining starting_training(Race race, Profession profession,
 }
 
 AbilityArray<int> ability_scores(Race race, Gender gender, Profession profession,
-                                 const RolledCharacter &rolled, Aging aging, int current_age)
+                                 const RolledCharacter &rolled, Aging aging, int current_age,
+                                 GoldBoxGame game)
 {
     AbilityArray<int> scores;
     const auto since_start = [&](Ability ability)
@@ -1044,7 +1051,7 @@ AbilityArray<int> ability_scores(Race race, Gender gender, Profession profession
     const auto limits = ability_limits(race, gender);
     for (const auto ability : original_ability_order)
     {
-        const int start = starting_score(race, gender, profession, rolled, aging, ability);
+        const int start = starting_score(race, gender, profession, rolled, aging, ability, game);
         const int change = since_start(ability);
         scores[ability] =
             change == 0 ? start : std::clamp(start + change, 3, limits.maximum[ability]);
@@ -1053,9 +1060,12 @@ AbilityArray<int> ability_scores(Race race, Gender gender, Profession profession
 }
 
 int exceptional_strength(Race race, Gender gender, Profession profession,
-                         const RolledCharacter &rolled, int strength)
+                         const RolledCharacter &rolled, int strength, GoldBoxGame game)
 {
-    if (strength != 18 || !has_class(profession, C::fighter))
+    const bool warrior = has_class(profession, C::fighter) ||
+                         (game == GoldBoxGame::pools_of_darkness &&
+                          (has_class(profession, C::paladin) || has_class(profession, C::ranger)));
+    if (strength != 18 || !warrior)
     {
         return 0;
     }
