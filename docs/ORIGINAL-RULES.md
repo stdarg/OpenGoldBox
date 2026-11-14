@@ -432,14 +432,20 @@ Journal), chosen by the game as the others' are (2026-11-14):
 - **Charisma and Strength:** every class needs a Charisma of 6 at least (a
   druid's 15 and a paladin's 17 stay), and a paladin or ranger of Strength 18
   rolls Exceptional Strength as a fighter does.
+- **Starting equipment:** a new character gets up to six of `ITEM0`'s
+  definitions by its class family (its `CreateStartingItems`), known for what
+  they are. A fighter, paladin or ranger: a long sword +3, plate mail +3, a
+  shield +2, a composite long bow +2 and 50 arrows +2; else a thief: bracers
+  AC 4, a ring of protection +2, a long sword +3 and a sling +2; else a
+  cleric: a mace +3, plate mail +3, a shield +2, a staff sling +2 and two
+  cleric scrolls; anyone else: the thief's bracers and ring, a quarterstaff
+  +3 and 50 darts +2. It readies each but the fourth, as the rules allow (a
+  class that may not use an item, or full hands, leaves it in the pack), and
+  counts what it carries (Bugs) (2026-11-14).
 - **Still to come:** spell levels 8 and 9 (its magic-users' slots from level
   16 and its spells 120 to 126), its other new spells (Blade Barrier,
   Restoration, Energy Drain, Destruction, Resurrection, the ranger's druid
-  spells 106 to 109, Fire Touch and Iron Skin), its starting equipment (up
-  to six of `ITEM0`'s definitions by class family, fighter types, thieves,
-  clerics and the rest, each readied but the fourth, a fighter's fifth and
-  a magic-user's fourth 50 strong; the original then counts three items
-  whatever it gave, a bug to fix), and
+  spells 106 to 109, Fire Touch and Iron Skin), and
   bringing a *Secret* party across (its LoadChar), which the original
   offers.
 
@@ -1250,5 +1256,6 @@ tuned with the AI lab once the original rules play.
 | *Curse:* Faerie Fire improves its target's Armor Class by 2, and sets any of 2 or better to 0, instead of making it easier to hit (`ovr013`, `FaerieFire`) | 2 worse |
 | *Curse:* Charm Monsters, like Hold Monster, takes only what Charm Person can (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* the dracolich's shield against fear, enfeeblement and feeblemind is looked at only once those have landed, so it does almost nothing (`ovr013`, `AffectDracolichA`) | It is immune to them |
+| *Pools of Darkness:* a new character's count of items is set to three whatever its starting equipment gave, so a fighter's five items and a cleric's six count as three (`chargen.pas`, `CreateStartingItems`) | Counts what it carries |
 | *Pools of Darkness:* its saving-throw table gives a cleric and a thief at level 19 the row of levels 16 to 18 and 13 to 16, though the rows on either side follow the classes' steps of three and four levels (`saveTbl` in its reconstruction) | Level 20's row from 19 |
 | *Curse:* the wilderness script (ECL1 80) marks a camp with a cell Tilverton's sage and Kybor's library also set for themselves (0x4C13), so a party that paid the sage reaches the wilderness as if back from camp: it skips loading the roads from Tilverton, and the first journey goes where stale cells say | Arriving from another script, the party is not back from camp |

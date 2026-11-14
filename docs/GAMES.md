@@ -555,9 +555,10 @@ new decoders.
 3. Making a party under *Pools of Darkness*'s rules (ORIGINAL-RULES.md,
    *Pools of Darkness*): 1,500,001 experience a single class (750,000 dual,
    500,000 triple) trained up at once, 200 platinum, its tables to level 40
-   and its creation spells (2026-11-14, `opengold_original_creation_tests`).
-   Bringing a *Secret* party across, which the original offers, is still to
-   come.
+   and its creation spells (2026-11-14, `opengold_original_creation_tests`),
+   and its starting equipment from `ITEM0`, which the creation screen gives a
+   new character (2026-11-14, `opengold_game_rules_tests`). Bringing a
+   *Secret* party across, which the original offers, is still to come.
 4. Walking every map and playing every event and fight (the walk). *The walk
    passes (2026-11-14):* `opengold_darkness_walk` walks every square of every
    map a script loads with six fighters made under its rules. Its script
