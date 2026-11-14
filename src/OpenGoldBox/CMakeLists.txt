@@ -161,8 +161,10 @@ set(wall_art_project_commands
 set(game_data_commands
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${game_project}/data/rules/srd-5.2.1"
     COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_project}/data/encounters" "${game_project}/data/companions"
+        "${game_project}/data/default_parties"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${game_project}/data/encounters"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${game_project}/data/companions"
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/default_parties" "${game_project}/data/default_parties"
     ${wall_art_project_commands})
 add_custom_target(opengoldbox_game_data ${game_data_commands} VERBATIM)
 # Imports the editor's edits into data/ (opengold_import_edits), then copies
@@ -211,6 +213,7 @@ if(OPENGOLD_BUILD_TESTS)
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${game_project}/data/shops"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${game_project}/data/encounters"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${game_project}/data/companions"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/default_parties" "${game_project}/data/default_parties"
         ${wall_art_project_commands}
         COMMAND "${OPENGOLDBOX_GODOT}" --headless --editor --path "${game_project}" --import --quit
         DEPENDS opengoldbox_game opengoldbox_assets VERBATIM)
@@ -632,21 +635,27 @@ if(OPENGOLD_BUILD_TESTS)
     # Each game's save and load screens list its own saves, and a save of
     # another game starts that game. Skipped without Curse's files.
     opengold_settings_check(saves_by_game saves_by_game_tests "Saves by game passed")
-    # Play with Default Party: each game begun with its saved game A explores
-    # with six members and plays its opening; Curse's game is then saved and
-    # continued from the save (--load-save, as Continue starts it). Skipped
-    # without a game's files.
-    opengold_settings_check(default_party_pool default_party_tests
-        "Default party passed: POOLRAD began"
-        "-DARGS=--game=POOLRAD\;--rules=original\;--default-party\;--opening=PHLAN")
-    opengold_settings_check(default_party_curse default_party_tests
+    # Play with Default Party: each game begun with its default party, under
+    # the original rules and under the SRD, explores with its six members and
+    # plays its opening; Curse's game under the original rules is then saved
+    # and continued from the save (--load-save, as Continue starts it).
+    # Skipped without a game's files.
+    foreach(rules original srd)
+        opengold_settings_check(default_party_pool_${rules} default_party_tests
+            "Default party passed: POOLRAD began"
+            "-DARGS=--game=POOLRAD\;--rules=${rules}\;--default-party\;--opening=PHLAN")
+        opengold_settings_check(default_party_secret_${rules} default_party_tests
+            "Default party passed: SECRET began"
+            "-DARGS=--game=SECRET\;--rules=${rules}\;--default-party\;--opening=GLACIER")
+    endforeach()
+    opengold_settings_check(default_party_curse_original default_party_tests
         "Default party passed: CURSE began"
         "-DARGS=--game=CURSE\;--rules=original\;--default-party\;--opening=AWAKEN\;--save-as=Tilverton"
         "-DRESTART_ARGS=--game=CURSE\;--rules=original\;--load-save=user://saves/CURSE/54696c766572746f6e.ogs"
         "-DRESTART_EXPECTED=Default party passed: CURSE continued")
-    opengold_settings_check(default_party_secret default_party_tests
-        "Default party passed: SECRET began"
-        "-DARGS=--game=SECRET\;--rules=original\;--default-party\;--opening=GLACIER")
+    opengold_settings_check(default_party_curse_srd default_party_tests
+        "Default party passed: CURSE began"
+        "-DARGS=--game=CURSE\;--rules=srd\;--default-party\;--opening=AWAKEN")
     # Curse's party screen brings characters from a Pool of Radiance save;
     # Pool of Radiance's does not offer it. Skipped without Curse's files.
     foreach(case curse pool)
@@ -703,6 +712,7 @@ if(WIN32)
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${game_output}/data/shops"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${game_output}/data/encounters"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${game_output}/data/companions"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/default_parties" "${game_output}/data/default_parties"
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/walls"
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/missiles"
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/closeups"
@@ -726,6 +736,7 @@ elseif(APPLE)
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${export_path}/Contents/Resources/data/shops"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${export_path}/Contents/Resources/data/encounters"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${export_path}/Contents/Resources/data/companions"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/default_parties" "${export_path}/Contents/Resources/data/default_parties"
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${export_path}/Contents/Resources/data/art/walls"
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${export_path}/Contents/Resources/data/art/missiles"
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${export_path}/Contents/Resources/data/art/closeups"
@@ -746,6 +757,7 @@ else()
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${game_output}/data/shops"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${game_output}/data/encounters"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${game_output}/data/companions"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/default_parties" "${game_output}/data/default_parties"
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/walls"
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/missiles"
         COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_output}/data/art/closeups"
@@ -807,6 +819,7 @@ add_custom_target(OpenGoldBox ALL
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${game_project}/data/shops"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/encounters" "${game_project}/data/encounters"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/companions" "${game_project}/data/companions"
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/default_parties" "${game_project}/data/default_parties"
     ${wall_art_project_commands}
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_output}"
     COMMAND "${OPENGOLDBOX_GODOT}" --headless --editor --path "${game_project}" --import --quit

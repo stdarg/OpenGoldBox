@@ -1801,20 +1801,16 @@ void CharacterCreationView::begin_chosen_start()
 
 void CharacterCreationView::play_with_default_party()
 {
-    if (game_rules_of(*campaign_).set != GameRules::Set::original)
-    {
-        error_ = i18n::text(N_("The default party plays only under the original rules."));
-        required_node<Label>(*this, "Status").set_text(error_);
-        return;
-    }
-    const auto files = game_rules_files();
+    const auto game = settings::chosen_game();
+    const auto file = presentation::path_from_godot(game_data_path("data/default_parties"))
+                          .append(std::string(opengold::game_folder(game)) + ".json");
     try
     {
-        add_default_party(*campaign_, files.game, files.original_game);
+        add_default_party(*campaign_, load_default_party(file));
     }
     catch (const std::exception &failure)
     {
-        error_ = i18n::format(N_("The game's saved game A could not be read: {problem}"),
+        error_ = i18n::format(N_("The default party could not be made: {problem}"),
                               {{"problem", String::utf8(failure.what())}});
         required_node<Label>(*this, "Status").set_text(error_);
         return;

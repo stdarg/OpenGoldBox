@@ -3285,11 +3285,11 @@ msgstr "Reducir el zoom del campo de batalla en 10 puntos porcentuales"
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr "Reducir el zoom del campo de batalla en 100 puntos porcentuales"
 
-#: src/OpenGoldBox/party_preview.cpp:1978
+#: src/OpenGoldBox/party_preview.cpp:1974
 msgid "Defeat"
 msgstr "Derrota"
 
-#: src/OpenGoldBox/party_preview.cpp:2062
+#: src/OpenGoldBox/party_preview.cpp:2058
 msgid "Defeat test"
 msgstr "Prueba de derrota"
 
@@ -4122,7 +4122,7 @@ msgstr "Exhalar (Aliento de dragón)"
 msgid "Exit"
 msgstr "Salir"
 
-#: src/OpenGoldBox/party_preview.cpp:1986
+#: src/OpenGoldBox/party_preview.cpp:1982
 msgid "Exit to OS"
 msgstr "Salir del juego"
 
@@ -6450,7 +6450,7 @@ msgstr "Cargar"
 msgid "Load Character"
 msgstr "Cargar personaje"
 
-#: src/OpenGoldBox/party_preview.cpp:1982
+#: src/OpenGoldBox/party_preview.cpp:1978
 msgid "Load a saved game to continue."
 msgstr "Carga una partida guardada para continuar."
 
@@ -8975,7 +8975,7 @@ msgstr "Talento fiable: el d20 de {roll} de {name} cuenta como 10."
 msgid "Religion"
 msgstr "Religión"
 
-#: src/OpenGoldBox/party_preview.cpp:1986
+#: src/OpenGoldBox/party_preview.cpp:1982
 msgid "Reload a Saved Game"
 msgstr "Cargar una partida"
 
@@ -11175,9 +11175,10 @@ msgstr "Los muertos no pueden leer"
 msgid "The dead rise when the minute of casting ends."
 msgstr "Los muertos se alzan cuando termina el minuto de lanzamiento."
 
-#: src/OpenGoldBox/party_preview.cpp:1806
-msgid "The default party plays only under the original rules."
-msgstr "El grupo predeterminado solo se juega con las reglas originales."
+#: src/OpenGoldBox/party_preview.cpp:1813
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "The default party could not be made: {problem}"
+msgstr "No se pudo crear el grupo predeterminado: {problem}"
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:2490
 msgid "The door opens."
@@ -11194,11 +11195,6 @@ msgstr "El System Reference Document de la quinta edición, con las aventuras de
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:367
 msgid "The free Circle spell returns with a Long Rest."
 msgstr "El conjuro de círculo gratuito vuelve con un Descanso largo."
-
-#: src/OpenGoldBox/party_preview.cpp:1817
-#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
-msgid "The game's saved game A could not be read: {problem}"
-msgstr "No se pudo leer la partida guardada A del juego: {problem}"
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:16341
 msgid "The ground shakes."
@@ -12783,7 +12779,7 @@ msgstr "Tu arma cuerpo a cuerpo es tu arma de pacto: competencia, Carisma para s
 msgid "Your party flees the battle."
 msgstr "Tu grupo huye de la batalla."
 
-#: src/OpenGoldBox/party_preview.cpp:1980
+#: src/OpenGoldBox/party_preview.cpp:1976
 msgid "Your party has been defeated."
 msgstr "Tu grupo ha sido derrotado."
 

@@ -268,6 +268,12 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   a player created. OpenGoldBox adds a Character Pool of ready-made
   characters, who start with gold and no equipment like any new character.
   [START-1](SRD-DECISIONS.md#start-1-2026-10-11-starting-gold-as-the-original-game-gave-it).
+- **Default parties** (2026-11-14). Each original game shipped a pre-rolled
+  party as its saved game A. OpenGoldBox's Play with Default Party starts
+  with its own six per game, under the original rules or the SRD, made by the
+  game's creation rules with their items given readied, and never reads the
+  player's saved games (the user, 2026-11-14).
+  [DEFAULT-PARTIES.md](DEFAULT-PARTIES.md).
 
 ## Money
 

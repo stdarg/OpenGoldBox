@@ -581,6 +581,14 @@ class OriginalCharacterRules final : public rules::CharacterRules
         draft.rolled = true;
     }
 
+    void set_rolled_scores(CharacterDraft &draft,
+                           const rules::AbilityArray<int> &rolls) const override
+    {
+        auto rolled = decode(draft.rules_data);
+        rolled.rolls = rolls;
+        draft.rules_data = encode(rolled);
+    }
+
     bool allows(const CharacterDraft &draft, CreationField field,
                 std::string_view id) const override
     {

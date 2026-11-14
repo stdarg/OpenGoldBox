@@ -1,0 +1,240 @@
+{
+  "format": "opengold-default-party-v1",
+  "members": [
+    {
+      "name": "Brannoc Stoutmere",
+      "gender": "male",
+      "portrait": {"head": 57, "body": 5},
+      "combat_icon": {
+        "head": 3,
+        "body": 10,
+        "colors": [
+          [7, 4, 6, 6, 4, 8],
+          [15, 12, 14, 14, 12, 8]
+        ]
+      },
+      "original": {
+        "race": "dwarf",
+        "class": "fighter",
+        "alignment": "lawful_good",
+        "scores": [18, 13, 17, 9, 11, 8],
+        "items": [
+          {"name": "Long Sword", "type": 36, "readied": true},
+          {"name": "Chain Mail", "type": 55, "readied": true},
+          {"name": "Shield", "type": 59, "readied": true}
+        ],
+        "spells": []
+      },
+      "srd": {
+        "race": "dwarf",
+        "class": "fighter",
+        "alignment": "lawful_good",
+        "background": "soldier",
+        "rolled": [15, 13, 15, 9, 11, 8],
+        "background_increase": {"plus_two": "strength", "plus_one": "constitution"},
+        "items": [
+          {"name": "Longsword", "key": "longsword", "readied": true},
+          {"name": "Chain Mail", "key": "chain_mail", "readied": true},
+          {"name": "Shield", "key": "shield", "readied": true}
+        ],
+        "spells": []
+      }
+    },
+    {
+      "name": "Hilde Varrow",
+      "gender": "female",
+      "portrait": {"head": 45, "body": 26},
+      "combat_icon": {
+        "head": 7,
+        "body": 12,
+        "colors": [
+          [7, 1, 6, 6, 1, 6],
+          [15, 9, 14, 14, 9, 1]
+        ]
+      },
+      "original": {
+        "race": "human",
+        "class": "fighter",
+        "alignment": "lawful_neutral",
+        "scores": [17, 15, 16, 10, 12, 11],
+        "items": [
+          {"name": "Long Sword", "type": 36, "readied": true},
+          {"name": "Chain Mail", "type": 55, "readied": true},
+          {"name": "Shield", "type": 59, "readied": true},
+          {"name": "Long Bow", "type": 43, "readied": false},
+          {"name": "Arrows", "type": 73, "quantity": 40, "readied": false}
+        ],
+        "spells": []
+      },
+      "srd": {
+        "race": "human",
+        "class": "fighter",
+        "alignment": "lawful_neutral",
+        "background": "soldier",
+        "rolled": [15, 15, 14, 10, 12, 11],
+        "background_increase": {"plus_two": "strength", "plus_one": "constitution"},
+        "items": [
+          {"name": "Longsword", "key": "longsword", "readied": true},
+          {"name": "Chain Mail", "key": "chain_mail", "readied": true},
+          {"name": "Shield", "key": "shield", "readied": true},
+          {"name": "Longbow", "key": "longbow", "readied": false}
+        ],
+        "spells": []
+      }
+    },
+    {
+      "name": "Aveline Harrow",
+      "gender": "female",
+      "portrait": {"head": 11, "body": 4},
+      "combat_icon": {
+        "head": 4,
+        "body": 20,
+        "colors": [
+          [7, 15, 6, 15, 15, 15],
+          [15, 14, 14, 7, 14, 14]
+        ]
+      },
+      "original": {
+        "race": "human",
+        "class": "cleric",
+        "alignment": "lawful_good",
+        "scores": [14, 10, 14, 11, 17, 13],
+        "items": [
+          {"name": "Mace", "type": 23, "readied": true},
+          {"name": "Chain Mail", "type": 55, "readied": true},
+          {"name": "Shield", "type": 59, "readied": true}
+        ],
+        "spells": ["cleric:bless", "cleric:cure_light_wounds", "cleric:cure_light_wounds"]
+      },
+      "srd": {
+        "race": "human",
+        "class": "cleric",
+        "alignment": "lawful_good",
+        "background": "acolyte",
+        "rolled": [14, 10, 14, 11, 15, 12],
+        "background_increase": {"plus_two": "wisdom", "plus_one": "charisma"},
+        "items": [
+          {"name": "Mace", "key": "mace", "readied": true},
+          {"name": "Scale Mail", "key": "scale_mail", "readied": true},
+          {"name": "Shield", "key": "shield", "readied": true}
+        ],
+        "spells": ["guidance", "sacred_flame", "resistance", "bless", "cure_wounds", "guiding_bolt", "shield_of_faith"]
+      }
+    },
+    {
+      "name": "Corvin Mallory",
+      "gender": "male",
+      "portrait": {"head": 34, "body": 2},
+      "combat_icon": {
+        "head": 1,
+        "body": 21,
+        "colors": [
+          [7, 5, 6, 5, 5, 5],
+          [15, 13, 14, 13, 13, 13]
+        ]
+      },
+      "original": {
+        "race": "human",
+        "class": "magic_user",
+        "alignment": "neutral_good",
+        "scores": [9, 14, 13, 17, 12, 11],
+        "items": [
+          {"name": "Quarterstaff", "type": 33, "readied": true},
+          {"name": "Dagger", "type": 8, "readied": false}
+        ],
+        "spells": ["magic_user:sleep"]
+      },
+      "srd": {
+        "race": "human",
+        "class": "wizard",
+        "alignment": "neutral_good",
+        "background": "sage",
+        "rolled": [8, 14, 13, 15, 12, 11],
+        "background_increase": {"plus_two": "intelligence", "plus_one": "constitution"},
+        "items": [
+          {"name": "Quarterstaff", "key": "quarterstaff", "readied": true},
+          {"name": "Dagger", "key": "dagger", "readied": false}
+        ],
+        "spells": ["fire_bolt", "ray_of_frost", "shocking_grasp", "magic_missile", "shield", "sleep", "mage_armor", "burning_hands", "detect_magic"]
+      }
+    },
+    {
+      "name": "Tamsin Burrows",
+      "gender": "male",
+      "portrait": {"head": 14, "body": 8},
+      "combat_icon": {
+        "head": 9,
+        "body": 7,
+        "colors": [
+          [7, 2, 6, 6, 2, 6],
+          [15, 10, 14, 14, 10, 8]
+        ]
+      },
+      "original": {
+        "race": "halfling",
+        "class": "thief",
+        "alignment": "neutral",
+        "scores": [11, 18, 14, 12, 10, 10],
+        "items": [
+          {"name": "Short Sword", "type": 37, "readied": true},
+          {"name": "Leather Armor", "type": 50, "readied": true},
+          {"name": "Sling", "type": 47, "readied": false}
+        ],
+        "spells": []
+      },
+      "srd": {
+        "race": "halfling",
+        "class": "rogue",
+        "alignment": "neutral",
+        "background": "criminal",
+        "rolled": [10, 15, 13, 12, 10, 10],
+        "background_increase": {"plus_two": "dexterity", "plus_one": "constitution"},
+        "items": [
+          {"name": "Shortsword", "key": "shortsword", "readied": true},
+          {"name": "Leather Armor", "key": "leather", "readied": true},
+          {"name": "Sling", "key": "sling", "readied": false}
+        ],
+        "spells": []
+      }
+    },
+    {
+      "name": "Sylvaine Ashgrove",
+      "gender": "female",
+      "portrait": {"head": 18, "body": 37},
+      "combat_icon": {
+        "head": 12,
+        "body": 24,
+        "colors": [
+          [7, 3, 6, 3, 3, 3],
+          [15, 11, 14, 11, 11, 11]
+        ]
+      },
+      "original": {
+        "race": "elf",
+        "class": "fighter_magic_user",
+        "alignment": "chaotic_good",
+        "scores": [16, 17, 13, 16, 10, 12],
+        "items": [
+          {"name": "Long Sword", "type": 36, "readied": true},
+          {"name": "Short Bow", "type": 44, "readied": false},
+          {"name": "Arrows", "type": 73, "quantity": 40, "readied": false}
+        ],
+        "spells": ["magic_user:sleep"]
+      },
+      "srd": {
+        "race": "elf",
+        "class": "fighter",
+        "alignment": "chaotic_good",
+        "background": "soldier",
+        "rolled": [14, 15, 13, 13, 10, 12],
+        "background_increase": {"plus_two": "dexterity", "plus_one": "strength"},
+        "items": [
+          {"name": "Longsword", "key": "longsword", "readied": true},
+          {"name": "Studded Leather Armor", "key": "studded_leather", "readied": true},
+          {"name": "Shortbow", "key": "shortbow", "readied": false}
+        ],
+        "spells": []
+      }
+    }
+  ]
+}

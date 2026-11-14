@@ -44,6 +44,74 @@ void choose_training(const rules::CharacterRules &creation, rules::CharacterDraf
     }
 }
 
+// The listed spells each of the draft's spell choices offers, in the list's
+// order: its cantrips, what each group teaches (a feat's too) and the spells
+// it prepares; a choice the list leaves short takes its first other options,
+// as the character pool's do. A spell is learned once, though two groups may
+// offer it.
+void choose_spells(const rules::CharacterRules &creation, rules::CharacterDraft &draft,
+                   const std::vector<std::string> &spells)
+{
+    std::set<std::string> learned;
+    const auto picks = [&](const rules::TrainingChoiceGroup &group, bool learning)
+    {
+        std::vector<std::string> picked;
+        const auto open = [&](const std::string &id)
+        {
+            return std::ranges::find(picked, id) == picked.end() &&
+                   (!learning || !learned.contains(id));
+        };
+        const auto offered = [&](const std::string &id)
+        {
+            return std::ranges::any_of(group.options,
+                                       [&](const auto &option)
+                                       {
+                                           return option.id == id;
+                                       });
+        };
+        for (const auto &spell : spells)
+        {
+            if (offered(spell) && open(spell) && picked.size() < group.count)
+            {
+                picked.push_back(spell);
+            }
+        }
+        for (const auto &option : group.options)
+        {
+            if (picked.size() < group.count && open(option.id))
+            {
+                picked.push_back(option.id);
+            }
+        }
+        if (learning)
+        {
+            learned.insert(picked.begin(), picked.end());
+        }
+        return picked;
+    };
+    if (const auto cantrips = creation.cantrip_options(draft); cantrips.count)
+    {
+        draft.cantrips = picks(cantrips, true);
+    }
+    const auto options = creation.spell_choice_options(draft);
+    if (options.learning.empty() && !options.may_prepare)
+    {
+        return;
+    }
+    draft.spells = rules::SpellChoices{};
+    for (const auto &group : options.learning)
+    {
+        draft.spells->learning[group.id] = picks(group, true);
+    }
+    if (options.may_prepare)
+    {
+        // What it learned is offered now.
+        const auto prepared = creation.spell_choice_options(draft);
+        draft.spells->prepared = picks(
+            {"prepared", "prepared spells", prepared.prepared_count, prepared.preparation}, false);
+    }
+}
+
 // The background's adjustment of +2 to `raised` and +1 to `lifted`, by its index.
 unsigned adjustment(const rules::CharacterRules &creation, const std::string &background,
                     rules::Ability raised, rules::Ability lifted)
@@ -254,6 +322,10 @@ Character build_companion(const CompanionDefinition &definition,
     draft.adjustment =
         adjustment(creation, draft.background, definition.plus_two, definition.plus_one);
     choose_training(creation, draft);
+    if (!definition.spells.empty())
+    {
+        choose_spells(creation, draft, definition.spells);
+    }
     auto companion = advanced(creation, rules, draft, definition.level);
     for (const auto &item : definition.items)
     {

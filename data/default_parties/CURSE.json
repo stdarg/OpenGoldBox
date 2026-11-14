@@ -1,0 +1,238 @@
+{
+  "format": "opengold-default-party-v1",
+  "members": [
+    {
+      "name": "Roderic Vance",
+      "gender": "male",
+      "portrait": {"head": 0, "body": 1},
+      "combat_icon": {
+        "head": 0,
+        "body": 10,
+        "colors": [
+          [7, 9, 6, 15, 9, 9],
+          [15, 1, 14, 9, 1, 1]
+        ]
+      },
+      "original": {
+        "race": "human",
+        "class": "paladin",
+        "alignment": "lawful_good",
+        "scores": [17, 12, 15, 10, 14, 17],
+        "items": [
+          {"name": "Long Sword", "type": 36, "readied": true},
+          {"name": "Plate Mail", "type": 58, "readied": true},
+          {"name": "Shield", "type": 59, "readied": true}
+        ],
+        "spells": []
+      },
+      "srd": {
+        "race": "human",
+        "class": "paladin",
+        "alignment": "lawful_good",
+        "background": "soldier",
+        "rolled": [15, 12, 14, 10, 12, 15],
+        "background_increase": {"plus_two": "strength", "plus_one": "constitution"},
+        "items": [
+          {"name": "Longsword", "key": "longsword", "readied": true},
+          {"name": "Chain Mail", "key": "chain_mail", "readied": true},
+          {"name": "Shield", "key": "shield", "readied": true}
+        ],
+        "spells": ["bless", "cure_wounds"]
+      }
+    },
+    {
+      "name": "Wren Falconer",
+      "gender": "female",
+      "portrait": {"head": 63, "body": 7},
+      "combat_icon": {
+        "head": 6,
+        "body": 14,
+        "colors": [
+          [7, 2, 6, 2, 2, 6],
+          [15, 10, 14, 10, 10, 2]
+        ]
+      },
+      "original": {
+        "race": "human",
+        "class": "ranger",
+        "alignment": "chaotic_good",
+        "scores": [16, 16, 15, 13, 14, 10],
+        "items": [
+          {"name": "Long Sword", "type": 36, "readied": true},
+          {"name": "Scale Mail", "type": 54, "readied": true},
+          {"name": "Long Bow", "type": 43, "readied": false},
+          {"name": "Arrows", "type": 73, "quantity": 40, "readied": false}
+        ],
+        "spells": []
+      },
+      "srd": {
+        "race": "human",
+        "class": "ranger",
+        "alignment": "chaotic_good",
+        "background": "soldier",
+        "rolled": [13, 15, 14, 12, 14, 10],
+        "background_increase": {"plus_two": "dexterity", "plus_one": "constitution"},
+        "items": [
+          {"name": "Longsword", "key": "longsword", "readied": true},
+          {"name": "Scale Mail", "key": "scale_mail", "readied": true},
+          {"name": "Longbow", "key": "longbow", "readied": false}
+        ],
+        "spells": ["cure_wounds", "longstrider"]
+      }
+    },
+    {
+      "name": "Durgan Flintcairn",
+      "gender": "male",
+      "portrait": {"head": 12, "body": 18},
+      "combat_icon": {
+        "head": 2,
+        "body": 11,
+        "colors": [
+          [7, 6, 6, 6, 6, 8],
+          [15, 14, 14, 14, 14, 8]
+        ]
+      },
+      "original": {
+        "race": "dwarf",
+        "class": "fighter",
+        "alignment": "neutral_good",
+        "scores": [18, 12, 18, 8, 10, 7],
+        "items": [
+          {"name": "Battle Axe", "type": 1, "readied": true},
+          {"name": "Banded Mail", "type": 57, "readied": true},
+          {"name": "Shield", "type": 59, "readied": true}
+        ],
+        "spells": []
+      },
+      "srd": {
+        "race": "dwarf",
+        "class": "fighter",
+        "alignment": "neutral_good",
+        "background": "soldier",
+        "rolled": [15, 12, 15, 8, 10, 7],
+        "background_increase": {"plus_two": "strength", "plus_one": "constitution"},
+        "items": [
+          {"name": "Battleaxe", "key": "battleaxe", "readied": true},
+          {"name": "Chain Mail", "key": "chain_mail", "readied": true},
+          {"name": "Shield", "key": "shield", "readied": true}
+        ],
+        "spells": []
+      }
+    },
+    {
+      "name": "Mirela Sunward",
+      "gender": "female",
+      "portrait": {"head": 68, "body": 4},
+      "combat_icon": {
+        "head": 8,
+        "body": 20,
+        "colors": [
+          [7, 14, 6, 14, 14, 14],
+          [15, 15, 14, 6, 15, 15]
+        ]
+      },
+      "original": {
+        "race": "human",
+        "class": "cleric",
+        "alignment": "neutral_good",
+        "scores": [13, 11, 15, 12, 18, 14],
+        "items": [
+          {"name": "Mace", "type": 23, "readied": true},
+          {"name": "Chain Mail", "type": 55, "readied": true},
+          {"name": "Shield", "type": 59, "readied": true}
+        ],
+        "spells": ["cleric:bless", "cleric:cure_light_wounds", "cleric:cure_light_wounds", "cleric:cure_light_wounds", "cleric:protection_from_evil", "cleric:hold_person", "cleric:hold_person", "cleric:hold_person", "cleric:silence_15_radius", "cleric:spiritual_hammer", "cleric:prayer", "cleric:dispel_magic"]
+      },
+      "srd": {
+        "race": "human",
+        "class": "cleric",
+        "alignment": "neutral_good",
+        "background": "acolyte",
+        "rolled": [13, 11, 14, 12, 15, 13],
+        "background_increase": {"plus_two": "wisdom", "plus_one": "charisma"},
+        "items": [
+          {"name": "Mace", "key": "mace", "readied": true},
+          {"name": "Scale Mail", "key": "scale_mail", "readied": true},
+          {"name": "Shield", "key": "shield", "readied": true}
+        ],
+        "spells": ["guidance", "sacred_flame", "resistance", "bless", "cure_wounds", "guiding_bolt", "shield_of_faith"]
+      }
+    },
+    {
+      "name": "Thalion Vey",
+      "gender": "male",
+      "portrait": {"head": 59, "body": 2},
+      "combat_icon": {
+        "head": 11,
+        "body": 21,
+        "colors": [
+          [7, 1, 6, 1, 1, 1],
+          [15, 9, 14, 9, 9, 9]
+        ]
+      },
+      "original": {
+        "race": "elf",
+        "class": "magic_user",
+        "alignment": "chaotic_good",
+        "scores": [9, 17, 12, 18, 12, 13],
+        "items": [
+          {"name": "Quarterstaff", "type": 33, "readied": true},
+          {"name": "Dagger", "type": 8, "readied": false}
+        ],
+        "spells": ["magic_user:magic_missile", "magic_user:magic_missile", "magic_user:sleep", "magic_user:sleep", "magic_user:stinking_cloud", "magic_user:stinking_cloud", "magic_user:fireball"]
+      },
+      "srd": {
+        "race": "elf",
+        "class": "wizard",
+        "alignment": "chaotic_good",
+        "background": "sage",
+        "rolled": [8, 15, 12, 15, 12, 13],
+        "background_increase": {"plus_two": "intelligence", "plus_one": "constitution"},
+        "items": [
+          {"name": "Quarterstaff", "key": "quarterstaff", "readied": true},
+          {"name": "Dagger", "key": "dagger", "readied": false}
+        ],
+        "spells": ["fire_bolt", "ray_of_frost", "shocking_grasp", "magic_missile", "shield", "sleep", "mage_armor", "burning_hands", "detect_magic"]
+      }
+    },
+    {
+      "name": "Nim Quickfinger",
+      "gender": "male",
+      "portrait": {"head": 52, "body": 6},
+      "combat_icon": {
+        "head": 13,
+        "body": 7,
+        "colors": [
+          [7, 8, 6, 6, 8, 6],
+          [15, 7, 14, 14, 7, 0]
+        ]
+      },
+      "original": {
+        "race": "gnome",
+        "class": "thief",
+        "alignment": "neutral",
+        "scores": [12, 18, 15, 13, 10, 9],
+        "items": [
+          {"name": "Short Sword", "type": 37, "readied": true},
+          {"name": "Leather Armor", "type": 50, "readied": true},
+          {"name": "Sling", "type": 47, "readied": false}
+        ],
+        "spells": []
+      },
+      "srd": {
+        "race": "gnome",
+        "class": "rogue",
+        "alignment": "neutral",
+        "background": "criminal",
+        "rolled": [10, 15, 13, 13, 10, 9],
+        "background_increase": {"plus_two": "dexterity", "plus_one": "intelligence"},
+        "items": [
+          {"name": "Shortsword", "key": "shortsword", "readied": true},
+          {"name": "Leather Armor", "key": "leather", "readied": true},
+          {"name": "Sling", "key": "sling", "readied": false}
+        ],
+        "spells": []
+      }
+    }
+  ]
+}

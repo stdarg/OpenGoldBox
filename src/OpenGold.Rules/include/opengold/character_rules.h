@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <span>
 #include <map>
+#include <stdexcept>
 
 namespace opengold::rules
 {
@@ -228,6 +229,18 @@ class CharacterRules
     // must be chosen first, since they set the limits. Assigned-total rules
     // roll with roll() instead.
     virtual void roll_in_place(CharacterDraft &draft, RandomState &random_state) const = 0;
+
+    // A rolled_in_place draft's six rolls, Strength first, made `rolls`: a
+    // hand-made character's fixed scores (data/default_parties), after the
+    // race's adjustment and before age and the race's and class's limits.
+    // Rules that assign totals take a hand-made character's in the draft's
+    // rolls instead.
+    virtual void set_rolled_scores(CharacterDraft &draft, const AbilityArray<int> &rolls) const
+    {
+        (void)draft;
+        (void)rolls;
+        throw std::logic_error("These rules assign rolled totals; set the draft's rolls");
+    }
     // Whether the draft's earlier choices allow this one: the original limits
     // classes by race and alignments by class. The SRD allows every choice.
     [[nodiscard]] virtual bool allows(const CharacterDraft &draft, CreationField field,

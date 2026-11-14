@@ -106,7 +106,7 @@ void choose_game(opengold::GoldBoxGame game);
 void choose_rules(GameRules rules);
 
 // How the game screen begins: a new party made on the creation screens, the
-// game's own pre-rolled party (its saved game A), or a save loaded.
+// game's default party (data/default_parties), or a save loaded.
 struct GameStart
 {
     enum class Kind

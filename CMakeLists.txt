@@ -265,14 +265,13 @@ if(OPENGOLD_BUILD_TESTS)
     target_compile_definitions(opengold_gold_box_games_tests PRIVATE
         OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_gold_box_games_tests COMMAND opengold_gold_box_games_tests)
-    # Play with Default Party: each game's saved game A, read from the real files.
+    # Play with Default Party: each game's default parties, under both rule sets.
     add_executable(opengold_default_party_tests tests/default_party_tests.cpp)
     target_link_libraries(opengold_default_party_tests PRIVATE opengold_core opengold_rules_srd5
         opengold_rules_original)
     target_compile_definitions(opengold_default_party_tests PRIVATE
         OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_default_party_tests COMMAND opengold_default_party_tests)
-    set_tests_properties(opengold_default_party_tests PROPERTIES SKIP_REGULAR_EXPRESSION "Skipped: ")
     # Gateway to the Savage Frontier's campaign, played on the real files.
     add_executable(opengold_gateway_tests tests/gateway_tests.cpp)
     target_link_libraries(opengold_gateway_tests PRIVATE opengold_core opengold_rules_srd5

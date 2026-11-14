@@ -26,6 +26,9 @@ struct CompanionDefinition
     // Reached from level 1 with the rules' default choice at each level.
     int level{1};
     std::vector<NewItem> items; // added in order after advancing
+    // The cantrips and spells it learns and prepares at level 1, by id; empty
+    // for one that casts none (a default party member's, data/default_parties).
+    std::vector<std::string> spells;
 };
 
 // Reads data/companions. Throws std::runtime_error, naming the file, the

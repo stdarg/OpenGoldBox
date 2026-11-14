@@ -3285,11 +3285,11 @@ msgstr ""
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1978
+#: src/OpenGoldBox/party_preview.cpp:1974
 msgid "Defeat"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:2062
+#: src/OpenGoldBox/party_preview.cpp:2058
 msgid "Defeat test"
 msgstr ""
 
@@ -4122,7 +4122,7 @@ msgstr ""
 msgid "Exit"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1986
+#: src/OpenGoldBox/party_preview.cpp:1982
 msgid "Exit to OS"
 msgstr ""
 
@@ -6450,7 +6450,7 @@ msgstr ""
 msgid "Load Character"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1982
+#: src/OpenGoldBox/party_preview.cpp:1978
 msgid "Load a saved game to continue."
 msgstr ""
 
@@ -8975,7 +8975,7 @@ msgstr ""
 msgid "Religion"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1986
+#: src/OpenGoldBox/party_preview.cpp:1982
 msgid "Reload a Saved Game"
 msgstr ""
 
@@ -11175,8 +11175,9 @@ msgstr ""
 msgid "The dead rise when the minute of casting ends."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1806
-msgid "The default party plays only under the original rules."
+#: src/OpenGoldBox/party_preview.cpp:1813
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "The default party could not be made: {problem}"
 msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:2490
@@ -11193,11 +11194,6 @@ msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:367
 msgid "The free Circle spell returns with a Long Rest."
-msgstr ""
-
-#: src/OpenGoldBox/party_preview.cpp:1817
-#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
-msgid "The game's saved game A could not be read: {problem}"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:16341
@@ -12783,7 +12779,7 @@ msgstr ""
 msgid "Your party flees the battle."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1980
+#: src/OpenGoldBox/party_preview.cpp:1976
 msgid "Your party has been defeated."
 msgstr ""
 

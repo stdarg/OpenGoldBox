@@ -169,9 +169,9 @@ class CharacterCreationView : public godot::Control
     // once so a later return here makes a new party; for the checks,
     // --default-party chooses the default party and --load-save=PATH a save.
     void begin_chosen_start();
-    // Play with Default Party: the game's saved game A, then Begin
-    // Adventuring; a party that cannot be read leaves the creation screen
-    // with the reason.
+    // Play with Default Party: the game's default party under the game's rules
+    // (data/default_parties), then Begin Adventuring; a party that cannot be
+    // made leaves the creation screen with the reason.
     void play_with_default_party();
     // Continue or Load Game: the save, then exploring where it was made.
     void load_saved_start();

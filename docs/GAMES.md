@@ -39,14 +39,12 @@ The original let a party travel on: *Curse* imports a *Pool of Radiance*
 party, *Secret* a *Curse* party and *Pools of Darkness* a *Secret* party.
 *Treasures* imports a *Gateway* party. OpenGoldBox follows the original.
 
-Each game also shipped a pre-rolled party as its saved game A (`SAVE/SAVGAMA.DAT`
-and the `CHRDATA1` to `6` files it names), for beginning to play at once. The
-startup menu's Play with Default Party reads it from the player's game folder
-(`opengold::add_default_party`): each character's record, its items (*Pool of
-Radiance*'s `.ITM`; *Curse*'s and *Secret*'s saved game A have none) and its
-money, then begins the game's opening as Begin Adventuring does. Their
-effects files are not read. It plays under the original rules only: no
-conversion of an original character to the SRD rules exists yet.
+Each game also shipped a pre-rolled party, for beginning to play at once.
+OpenGoldBox's startup menu offers Play with Default Party instead with its own
+parties, one per game under the original rules and under the SRD 5.2.1 rules
+(`data/default_parties`, listed in [DEFAULT-PARTIES.md](DEFAULT-PARTIES.md)),
+made by the game's own creation rules; it never reads the player's `SAVE`
+folder, whose saved games may have been played on.
 
 ## What the games share
 
@@ -224,8 +222,8 @@ In small steps, each with its check:
       Exit to desktop). Picking a game shows its title (*Pool of Radiance*
       keeps its new title, 5 seconds; the others their own pictures, without
       the credits screens), then the game's menu: Continue (its newest save),
-      Load game, Options, Play with default party (the game's pre-rolled
-      party, its saved game A), Create new party (the new game's question,
+      Load game, Options, Play with default party (the game's default
+      party, [DEFAULT-PARTIES.md](DEFAULT-PARTIES.md)), Create new party (the new game's question,
       then the creation screens), Main menu and Exit to desktop. On a title
       any key or click passes it; Escape goes back, from a title or the
       game's menu to the games, from the games to the main menu

@@ -1,12 +1,13 @@
 extends SceneTree
 
-# Play with Default Party: a game begun with its own pre-rolled party, the
-# saved game A in its SAVE folder, goes straight to exploring with six
-# members, and the game's opening plays (Curse's awakening, Secret's vision).
-# Run by tests/settings_check.cmake with --game=<folder>, --rules=original and
-# --default-party; --opening=TEXT is what the opening shows. --save-as=NAME
-# then saves the game, and a second run with --load-save=<that save>, as
-# Continue starts it, must reach exploring with the same six.
+# Play with Default Party: a game begun with its default party
+# (data/default_parties) under either rule set goes straight to exploring
+# with the file's six members, and the game's opening plays (Curse's
+# awakening, Secret's vision). Run by tests/settings_check.cmake with
+# --game=<folder>, --rules=original or --rules=srd and --default-party;
+# --opening=TEXT is what the opening shows. --save-as=NAME then saves the
+# game, and a second run with --load-save=<that save>, as Continue starts it,
+# must reach exploring with the same six.
 
 var folder := ""
 var opening := ""
@@ -42,7 +43,14 @@ func party_names() -> Array:
 func game_files_here() -> bool:
 	if folder == "POOLRAD": return true
 	var games := OS.get_environment("OPENGOLD_GOLDBOX_DIR")
-	return not games.is_empty() and FileAccess.file_exists(games.path_join(folder).path_join("SAVE/SAVGAMA.DAT"))
+	return not games.is_empty() and FileAccess.file_exists(games.path_join(folder).path_join("ITEMS"))
+
+# The names the game's default party file gives its six.
+func file_names() -> Array:
+	var text := FileAccess.get_file_as_string("res://data/default_parties/" + folder + ".json")
+	var names := []
+	for member in JSON.parse_string(text)["members"]: names.append(member["name"])
+	return names
 
 # Waits for the exploration screen the game began on.
 func reach_exploring() -> void:
@@ -94,7 +102,7 @@ func run_checks() -> void:
 	await settle()
 	await reach_exploring()
 	var names := party_names()
-	require(names.size() == 6 and not names.has(""), folder + ": the default party's six members explore: " + str(names))
+	require(names == file_names(), folder + ": the default party's six members explore: " + str(names))
 	if loading:
 		print("Default party passed: " + folder + " continued from its save with " + str(names) + ".")
 		quit(0)
