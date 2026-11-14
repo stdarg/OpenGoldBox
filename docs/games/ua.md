@@ -531,8 +531,9 @@ playing each event and fight; it fails on any event the session cannot play.
 ### What remains
 
 - The services' smaller parts (DEVIATIONS.md, Unlimited Adventures'
-  services): Pool, Share and Take, Appraise, vault items, a temple's Restoration and Fix; drinks as more than a count; the encounter's monster
-  picture at its range.
+  services): Pool, Share and Take, Appraise, vault items, a temple's
+  Restoration and Fix; drinks as more than a count; the encounter's
+  monster picture at its range.
 - Fights:
   - The differences of the near matches (Monsters' effects, below).
   - Monsters' spells (+C6h) and an item's special effect when readied.
@@ -543,8 +544,18 @@ playing each event and fight; it fails on any event the session cannot play.
   - Byte 12h's top bits (the turning level +0, 2, 10 or 41 over the
     area's) and an icon over two squares a side, which stands as two.
 - The kit's difficulty levels (A party under the kit's rules): a question
-  for the user.
+  for the user, whether a design's Difficulty plays the kit's five levels
+  (the party's to-hit +2, +1, 0, -1 or -2 and the monsters' Hit Points
+  scaled by Level x (Level + 1) / 4) or stays at Normal as every game does
+  under the original rules.
+- A question for the user: a party member's racial effects are *Curse*'s
+  (dwarves 26, 47 and 97; gnomes 18, 47 and 48), where the kit gives gnomes
+  48 and 7 but not 47 or 18.
 - A critical hit's vorpal beheading, with items' special effects.
+
+Next, in this order: the two questions above once answered; then monsters'
+spells (+C6h) and items' special effects when readied (which bring the
+vorpal beheading); then the services' smaller parts.
 
 ### Monsters' effects, "no magic" fights and step events
 
