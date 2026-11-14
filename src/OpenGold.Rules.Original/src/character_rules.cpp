@@ -5,6 +5,7 @@
 #include "opengold/pool_radiance.h"
 #include "opengold/original_spells.h"
 #include <algorithm>
+#include <span>
 #include <cctype>
 #include <optional>
 #include <sstream>
@@ -433,6 +434,52 @@ std::string title_case(std::string_view name)
     return {a.strength, a.dexterity, a.constitution, a.intelligence, a.wisdom, a.charisma};
 }
 
+// Treasures' creation: the magic-user's chosen spells of levels 1 to 3, in
+// training choice groups named by this prefix and the level.
+constexpr int chosen_spell_levels = 3;
+constexpr std::string_view spell_group_prefix = "treasures_spells:";
+constexpr std::string_view read_magic_id = "magic_user:read_magic";
+
+// The spells a character starts with: those its training taught, but where
+// Treasures' creation offers a choice (`groups`), Read Magic and the spells
+// chosen in each group in place of the taught spells of levels 1 to 3. Until
+// the choice is made (a sheet shown before its page) only Read Magic.
+[[nodiscard]] std::vector<int> chosen_spells(const CharacterDraft &draft, std::vector<int> taught,
+                                             std::span<const rules::TrainingChoiceGroup> groups)
+{
+    if (groups.empty())
+    {
+        return taught;
+    }
+    std::erase_if(taught,
+                  [](int number)
+                  {
+                      const auto *known = spell(number);
+                      return known && known->caster_class == SpellClass::magic_user &&
+                             known->level <= chosen_spell_levels;
+                  });
+    taught.push_back(*spell_number(read_magic_id));
+    for (const auto &group : groups)
+    {
+        const auto found = draft.training.find(group.id);
+        if (found == draft.training.end())
+        {
+            continue;
+        }
+        for (std::size_t n = 0; n < found->second.size() && n < group.count; ++n)
+        {
+            const auto &id = found->second[n];
+            const bool offered =
+                std::ranges::find(group.options, id, &CreationChoice::id) != group.options.end();
+            if (const auto number = spell_number(id); offered && number)
+            {
+                taught.push_back(*number);
+            }
+        }
+    }
+    return taught;
+}
+
 class OriginalCharacterRules final : public rules::CharacterRules
 {
   public:
@@ -750,17 +797,64 @@ class OriginalCharacterRules final : public rules::CharacterRules
         original.cleric_slots = slots.cleric;
         original.druid_slots = slots.druid;
         original.magic_user_slots = slots.magic_user;
-        original.known_spells =
-            known_spells(levels, ability[Ability::wisdom], trained.learned_spells, game_);
+        original.known_spells = known_spells(
+            levels, ability[Ability::wisdom],
+            chosen_spells(draft, trained.learned_spells, training_options(draft)), game_);
         sheet.original = original;
         return sheet;
     }
 
-    // The original has no skills, cantrips or spell choices at creation: a
-    // cleric knows every first-level spell and a magic-user starts with four.
-    std::vector<rules::TrainingChoiceGroup> training_options(const CharacterDraft &) const override
+    // The original has no skills or cantrips at creation, and most games no
+    // spell choices: a cleric knows every first-level spell, and a
+    // magic-user starts with the spells its game teaches. Treasures' magic-
+    // user chooses its first- to third-level spells, a third more of each
+    // level than its slots (its chargen.pas), and knows Read Magic besides.
+    std::vector<rules::TrainingChoiceGroup>
+    training_options(const CharacterDraft &draft) const override
     {
-        return {};
+        std::vector<rules::TrainingChoiceGroup> groups;
+        if (game_ != GoldBoxGame::treasures_of_the_savage_frontier || !draft.rolled)
+        {
+            return groups;
+        }
+        const auto chosen = read_choices(draft, game_);
+        const auto classes = classes_of(chosen.profession);
+        if (std::ranges::find(classes, ClassSlot::magic_user) == classes.end())
+        {
+            return groups;
+        }
+        const auto rolled = decode(draft.rules_data);
+        const auto ability = ability_scores(chosen.race, chosen.gender, chosen.profession, rolled,
+                                            aging_, rolled.starting_age, game_);
+        const auto trained =
+            starting_training(chosen.race, chosen.profession, ability, rolled, game_);
+        const auto slots =
+            spell_slots(ClassSlot::magic_user, level_in(trained.levels, ClassSlot::magic_user),
+                        ability[Ability::wisdom], ability[Ability::intelligence], game_);
+        for (int level = 1; level <= chosen_spell_levels; ++level)
+        {
+            const int slot_count = slots[static_cast<std::size_t>(level - 1)];
+            if (slot_count <= 0)
+            {
+                continue;
+            }
+            rules::TrainingChoiceGroup group;
+            group.id = std::string(spell_group_prefix) + std::to_string(level);
+            group.label = "Magic-user spells of level " + std::to_string(level);
+            for (const int number : castable_spells(game_))
+            {
+                const auto *known = spell(number);
+                if (known->caster_class == SpellClass::magic_user && known->level == level &&
+                    spell_id(number) != read_magic_id)
+                {
+                    group.options.push_back({spell_id(number), std::string(known->name), {}});
+                }
+            }
+            group.count = std::min(static_cast<unsigned>(slot_count * 4 / 3),
+                                   static_cast<unsigned>(group.options.size()));
+            groups.push_back(std::move(group));
+        }
+        return groups;
     }
 
     rules::SpellChoiceOptions spell_choice_options(const CharacterDraft &) const override

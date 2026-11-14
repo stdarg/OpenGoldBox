@@ -55,6 +55,11 @@ bool save_original_portraits(bool original);
 // otherwise its shops are as they were in the original, at its prices.
 bool original_shops(opengold::GoldBoxGame game);
 bool save_original_shops(opengold::GoldBoxGame game, bool original);
+// [gateway_money] TREASURE: "on" lets a character brought from Gateway into
+// Treasures keep its own platinum, gems and jewelry, as the original does;
+// otherwise it starts with Treasures' 200 platinum.
+bool gateway_money_kept();
+bool save_gateway_money_kept(bool kept);
 // [gear] auto_equip: "off" leaves gained gear in the pack; otherwise a better
 // weapon, armor, shield or worn item goes on (EQUIP-1). unidentified_magic: "equip" lets
 // auto-equip put on an unidentified magic item; otherwise it stays packed.

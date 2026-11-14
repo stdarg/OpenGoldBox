@@ -199,6 +199,8 @@ void GameMenuView::open_options()
         .select(settings::keep_quick() ? 0 : 1);
     required_node<OptionButton>(*this, "Options/Gameplay/OriginalShops")
         .select(settings::original_shops(opengold::GoldBoxGame::pool_of_radiance) ? 0 : 1);
+    required_node<OptionButton>(*this, "Options/Gameplay/TreasuresMoney")
+        .select(settings::gateway_money_kept() ? 0 : 1);
     const auto language = settings::language();
     const auto found = std::find_if(language_codes.begin(), language_codes.end(),
                                     [&](const char *code)
@@ -264,7 +266,8 @@ void GameMenuView::build_options()
           std::pair{"Options/Gameplay/UnidentifiedMagic",
                     &GameMenuView::unidentified_magic_selected},
           std::pair{"Options/Gameplay/KeepQuick", &GameMenuView::keep_quick_selected},
-          std::pair{"Options/Gameplay/OriginalShops", &GameMenuView::original_shops_selected}})
+          std::pair{"Options/Gameplay/OriginalShops", &GameMenuView::original_shops_selected},
+          std::pair{"Options/Gameplay/TreasuresMoney", &GameMenuView::treasures_money_selected}})
     {
         auto &choice = required_node<OptionButton>(*this, path);
         choice.add_item(i18n::text(N_("On")));
@@ -490,6 +493,11 @@ void GameMenuView::keep_quick_selected(std::int64_t index)
 void GameMenuView::original_shops_selected(std::int64_t index)
 {
     settings::save_original_shops(opengold::GoldBoxGame::pool_of_radiance, index == 0);
+}
+
+void GameMenuView::treasures_money_selected(std::int64_t index)
+{
+    settings::save_gateway_money_kept(index == 0);
 }
 
 void GameMenuView::show_unidentified_magic(bool shown)

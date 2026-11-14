@@ -27,6 +27,7 @@
 #include "opengold/pool_radiance.h"
 #include "opengold/sound_bank.h"
 #include "opengold/srd5.h"
+#include "original_creation_support.h"
 #include "test_support.h"
 
 #include <cstdio>
@@ -43,6 +44,11 @@
 
 namespace
 {
+// The spells a player picks first where creation offers a choice
+// (Treasures' magic-user's first three levels).
+constexpr std::array<std::string_view, 10> learned_first{
+    "magic_missile", "sleep",     "shield", "stinking_cloud", "invisibility",
+    "fireball",      "lightning", "haste",  "hold_person",    "slow"};
 using opengold::GoldBoxGame;
 using opengold::test::check;
 using opengold::test::rejects;
@@ -3924,14 +3930,7 @@ void secret_opening_reaches_the_first_map()
         creator.select(opengold::rules::CreationField::race, "human");
         creator.select(opengold::rules::CreationField::character_class, "fighter");
         creator.name("Fighter " + std::to_string(n + 1));
-        for (const bool roll : {false, false, false, true, false, false})
-        {
-            if (roll)
-            {
-                creator.roll();
-            }
-            creator.next();
-        }
+        opengold::test::walk_original_creation(creator, learned_first);
         static_cast<void>(party->add_pc(creator.create_character()));
     }
     session.campaign_party(party);
@@ -4214,14 +4213,7 @@ bool walk_census(GoldBoxGame game, bool route)
             creator.select(opengold::rules::CreationField::race, "human");
             creator.select(opengold::rules::CreationField::character_class, klass);
             creator.name(klass + " " + std::to_string(n + 1));
-            for (const bool roll : {false, false, false, true, false, false})
-            {
-                if (roll)
-                {
-                    creator.roll();
-                }
-                creator.next();
-            }
+            opengold::test::walk_original_creation(creator, learned_first);
             const auto id = party->add_pc(creator.create_character());
             // Pools of Darkness's route party carries the game's own starting
             // equipment, as a party made in the original does.

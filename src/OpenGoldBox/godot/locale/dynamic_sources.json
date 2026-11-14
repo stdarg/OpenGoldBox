@@ -1839,5 +1839,8 @@
   "Fight",
   "Wait",
   "Talk",
-  "Drink"
+  "Drink",
+  "Magic-user spells of level 1",
+  "Magic-user spells of level 2",
+  "Magic-user spells of level 3"
 ]

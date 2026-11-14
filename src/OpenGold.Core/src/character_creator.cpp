@@ -252,7 +252,7 @@ std::vector<CreationStep> CharacterCreator::pages() const
 {
     if (rolls_in_place())
     {
-        return {pages_in_place.begin(), pages_in_place.end()};
+        return in_place_pages();
     }
     std::vector<CreationStep> result;
     for (auto step = CreationStep::race; step <= CreationStep::sheet;
@@ -1146,15 +1146,29 @@ void CharacterCreator::back()
     }
 }
 
+std::vector<CreationStep> CharacterCreator::in_place_pages() const
+{
+    std::vector<CreationStep> pages(pages_in_place.begin(), pages_in_place.end());
+    // A rolled character's choices (Treasures' magic-user's spells) follow
+    // the roll.
+    if (!training_options().empty())
+    {
+        pages.insert(std::ranges::find(pages, CreationStep::attributes) + 1,
+                     CreationStep::training);
+    }
+    return pages;
+}
+
 void CharacterCreator::next_in_place()
 {
     if (draft_.name.empty())
     {
         throw std::runtime_error("Enter a name for your character.");
     }
-    const auto page = std::ranges::find(pages_in_place, step_);
+    const auto pages = in_place_pages();
+    const auto page = std::ranges::find(pages, step_);
     // From the roll on, the character must be rolled and whole.
-    if (page >= std::ranges::find(pages_in_place, CreationStep::attributes))
+    if (page >= std::ranges::find(pages, CreationStep::attributes))
     {
         if (!draft_.rolled)
         {
@@ -1162,13 +1176,18 @@ void CharacterCreator::next_in_place()
         }
         (void)rules_->evaluate(draft_, rules::NameRequirement::required);
     }
+    if (step_ == CreationStep::training && !training_complete())
+    {
+        throw std::runtime_error("Complete available spell choices.");
+    }
     step_ = *std::next(page);
 }
 
 void CharacterCreator::back_in_place()
 {
-    const auto page = std::ranges::find(pages_in_place, step_);
-    if (page != pages_in_place.begin())
+    const auto pages = in_place_pages();
+    const auto page = std::ranges::find(pages, step_);
+    if (page != pages.begin())
     {
         step_ = *std::prev(page);
     }

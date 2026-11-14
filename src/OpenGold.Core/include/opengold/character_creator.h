@@ -172,6 +172,9 @@ class CharacterCreator
     // Each later choice the earlier ones no longer allow becomes the first one
     // they do (the original limits classes by race, alignments by class).
     void keep_allowed(rules::CharacterDraft &candidate) const;
+    // The pages of a creation rolled in place: those of the original rules,
+    // with a page for the choices a rolled character offers.
+    [[nodiscard]] std::vector<CreationStep> in_place_pages() const;
     void next_in_place();
     void back_in_place();
 };

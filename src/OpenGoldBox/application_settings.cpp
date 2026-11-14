@@ -314,6 +314,20 @@ bool save_original_shops(opengold::GoldBoxGame game, bool original)
     return save("original_shops", folder.c_str(), original ? "on" : "off");
 }
 
+bool gateway_money_kept()
+{
+    const std::string folder(
+        opengold::game_folder(opengold::GoldBoxGame::treasures_of_the_savage_frontier));
+    return read("gateway_money", folder.c_str()).to_lower() == "on";
+}
+
+bool save_gateway_money_kept(bool kept)
+{
+    const std::string folder(
+        opengold::game_folder(opengold::GoldBoxGame::treasures_of_the_savage_frontier));
+    return save("gateway_money", folder.c_str(), kept ? "on" : "off");
+}
+
 bool save_original_wall_art(bool original)
 {
     return save("art", "walls", original ? "original" : "new");

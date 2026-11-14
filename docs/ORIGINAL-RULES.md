@@ -71,6 +71,14 @@ The user decided these on 2026-11-11 and 2026-11-12:
     keeping them between 3 and the race's maximum; they may fall below the
     class's minimum.
   - **No one dies of old age.**
+- **Treasures' creation spells** (2026-11-14): a *Treasures* magic-user
+  chooses its first- to third-level spells at creation, slots x 4 / 3 of each
+  level, and knows Read Magic besides, as the original does: a page of
+  choices after the roll on the creation screen.
+- **Treasures' Gateway's money option** (2026-11-14): a *Treasures*-only game
+  option, *Gateway's money* in Options. On, a character brought from
+  *Gateway* keeps its own platinum, gems and jewelry; off, it starts with
+  *Treasures*' 200 platinum.
 
 ## Curse of the Azure Bonds
 
@@ -468,10 +476,10 @@ Its differences (2026-11-14):
 - **Spells:** its spell table is *Pools of Darkness*'s, entry for entry (its
   127th entry is unused), so its spells are numbered and cast as that game's.
   At creation a magic-user learns its engine's sets for the fourth level and
-  up. For levels 1 to 3 *Treasures* knows Read Magic and lets the player
-  choose a third more spells than the level's slots; OpenGoldBox teaches every
-  spell of those levels for now, as *Pools of Darkness* does, until creation
-  offers the choice.
+  up. For levels 1 to 3 it knows Read Magic and chooses a third more spells
+  than the level's slots (slots x 4 / 3), on a page of choices after the
+  roll (Decisions); it knows no other spells of those levels, not the four a
+  *Pool of Radiance* magic-user starts with.
 - **Detect Magic** may be cast outside combat, as in the originals, spent
   with nothing more to lay: *Treasures*' scripts may wait for a spell
   (Cortarra, [treasure.md](games/treasure.md), What the route needed).
@@ -481,11 +489,12 @@ Its differences (2026-11-14):
   each name word found again among *Treasures*' own by its letters and its
   type renumbered by the program's table (`legacyTypeMap`), unreadied; an
   item whose word or type *Treasures* lacks, or of effect 98, is left behind.
-  The original keeps the character's own platinum, gems and jewelry;
-  OpenGoldBox keeps a party's money in one purse, so the character arrives
-  with *Treasures*' 200 platinum, as a *Pool of Radiance* character arrives
-  in *Curse* with its 300. The party screen's choice of *Gateway* saves is
-  still to come.
+  The original keeps the character's own platinum, gems and jewelry: with
+  the *Gateway's money* option on (Decisions), the money given to
+  `bring_across` comes into the purse; off, the default, the character
+  arrives with *Treasures*' 200 platinum, as a *Pool of Radiance* character
+  arrives in *Curse* with its 300. The party screen's choice of *Gateway*
+  saves, which will pass the character's money, is still to come.
 
 ## Unlimited Adventures
 

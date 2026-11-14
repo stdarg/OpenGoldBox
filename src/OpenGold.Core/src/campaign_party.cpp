@@ -1143,7 +1143,8 @@ MemberId CampaignParty::add_pc(Character character)
     return id;
 }
 
-MemberId CampaignParty::bring_across(const PartyMember &from, const ItemConversion &convert_item)
+MemberId CampaignParty::bring_across(const PartyMember &from, const ItemConversion &convert_item,
+                                     std::optional<BroughtMoney> own_money)
 {
     const auto draft = character_rules()->imported_draft(from.character.sheet(), from.experience);
     if (!draft)
@@ -1171,6 +1172,13 @@ MemberId CampaignParty::bring_across(const PartyMember &from, const ItemConversi
         {
             (void)equip(id, now.back().id);
         }
+    }
+    if (own_money)
+    {
+        add_coins(Coin::platinum, own_money->platinum);
+        add_coins(Coin::gems, own_money->gems);
+        add_coins(Coin::jewelry, own_money->jewelry);
+        return id;
     }
     add_coins(Coin::platinum,
               static_cast<std::uint32_t>(member(id).character.sheet().original

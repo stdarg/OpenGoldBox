@@ -10,6 +10,7 @@
 #include "opengold/original_content.h"
 #include "opengold/pool_radiance.h"
 #include "opengold/treasures_import.h"
+#include "original_creation_support.h"
 #include "test_support.h"
 #include "tour_access.h"
 
@@ -54,14 +55,7 @@ std::shared_ptr<opengold::CampaignParty> treasures_party(const std::filesystem::
         creator.select(opengold::rules::CreationField::race, "human");
         creator.select(opengold::rules::CreationField::character_class, klass);
         creator.name(klass);
-        for (const bool roll : {false, false, false, true, false, false})
-        {
-            if (roll)
-            {
-                creator.roll();
-            }
-            creator.next();
-        }
+        opengold::test::walk_original_creation(creator);
         static_cast<void>(party->add_pc(creator.create_character()));
     }
     return party;
@@ -238,14 +232,7 @@ void a_gateway_character_comes_across()
     creator.select(opengold::rules::CreationField::race, "human");
     creator.select(opengold::rules::CreationField::character_class, "fighter");
     creator.name("Veteran");
-    for (const bool roll : {false, false, false, true, false, false})
-    {
-        if (roll)
-        {
-            creator.roll();
-        }
-        creator.next();
-    }
+    opengold::test::walk_original_creation(creator);
     const auto id = first.add_pc(creator.create_character());
     const auto item = [&](std::uint8_t type)
     {
@@ -280,6 +267,21 @@ void a_gateway_character_comes_across()
     const auto &axe = member.item_sources.at(items.front().id);
     check(axe.stored.type == battle_axe && axe.stored.name_components[0] == battle_axe,
           "The axe keeps its type and its word, as Treasures numbers them");
+    check(second.state().wealth[static_cast<std::size_t>(opengold::Coin::platinum)] == 200,
+          "With the option off it starts with Treasures' 200 platinum");
+
+    // With the Gateway's-money option on, it keeps its own platinum, gems and
+    // jewelry instead.
+    opengold::CampaignParty third(opengold::original::rules_module(
+                                      opengold::load_original_content(treasures, treasures_game)),
+                                  creation);
+    (void)third.bring_across(veteran, opengold::gateway_items_for_treasures(treasures),
+                             opengold::CampaignParty::BroughtMoney{1234, 5, 2});
+    const auto &wealth = third.state().wealth;
+    check(wealth[static_cast<std::size_t>(opengold::Coin::platinum)] == 1234 &&
+              wealth[static_cast<std::size_t>(opengold::Coin::gems)] == 5 &&
+              wealth[static_cast<std::size_t>(opengold::Coin::jewelry)] == 2,
+          "With the option on it keeps its own platinum, gems and jewelry");
 }
 
 } // namespace

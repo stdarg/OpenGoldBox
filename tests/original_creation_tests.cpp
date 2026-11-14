@@ -7,6 +7,7 @@
 #include "opengold/original_combat.h"
 #include "opengold/original.h"
 #include "opengold/original_content.h"
+#include "opengold/original_spells.h"
 #include "test_support.h"
 #include <cstdlib>
 #include <fstream>
@@ -1149,6 +1150,83 @@ void treasures_characters_start_with_their_experience()
           "A Treasures fighter stops at level 11");
 }
 
+// Treasures' magic-user chooses its spells of levels 1 to 3 at creation, a
+// third more of each level than its slots (slots x 4 / 3), and knows Read
+// Magic besides; the higher levels keep its engine's sets. The choice is a
+// page of its own after the roll.
+void treasures_magic_users_choose_their_spells()
+{
+    const auto treasures = GoldBoxGame::treasures_of_the_savage_frontier;
+    std::shared_ptr<const rules::CharacterRules> creation =
+        original::character_rules(original::default_aging, treasures);
+    CharacterCreator creator(creation, 57);
+    creator.select(rules::CreationField::race, "human");
+    creator.select(rules::CreationField::character_class, "magic_user");
+    creator.name("Ilsa");
+    check(creator.training_options().empty(), "Nothing is offered before the roll");
+    while (creator.step() != CreationStep::attributes)
+    {
+        creator.next();
+    }
+    creator.roll();
+    const auto groups = creator.training_options();
+    const auto preview = creator.sheet();
+    const auto &numbers = *preview.original;
+    check(!groups.empty() && groups.size() <= 3, "The roll offers the first levels' spells");
+    for (const auto &group : groups)
+    {
+        const auto level = static_cast<std::size_t>(group.id.back() - '1');
+        check(group.count == static_cast<unsigned>(numbers.magic_user_slots[level] * 4 / 3),
+              group.id + " offers slots x 4 / 3 spells");
+        check(std::ranges::none_of(group.options,
+                                   [](const rules::CreationChoice &option)
+                                   {
+                                       return option.id == "magic_user:read_magic";
+                                   }),
+              "Read Magic is known, not chosen");
+    }
+    creator.next();
+    check(creator.step() == CreationStep::training, "The spells' page follows the roll");
+    opengold::test::rejects(
+        [&]
+        {
+            creator.next();
+        },
+        "The page wants every choice");
+    std::vector<int> chosen;
+    for (const auto &group : groups)
+    {
+        for (std::size_t n = 0; n < group.count; ++n)
+        {
+            creator.training_choice({group.id, group.options[n].id, true});
+            chosen.push_back(*original::spell_number(group.options[n].id));
+        }
+    }
+    while (creator.step() != CreationStep::sheet)
+    {
+        creator.next();
+    }
+    const auto sheet = creator.create_character().sheet();
+    const auto &known = sheet.original->known_spells;
+    const auto knows = [&](int number)
+    {
+        return std::ranges::find(known, number) != known.end();
+    };
+    check(knows(*original::spell_number("magic_user:read_magic")), "Read Magic is known");
+    check(std::ranges::all_of(chosen, knows), "Every chosen spell is known");
+    const auto low_magic_user =
+        std::ranges::count_if(known,
+                              [](int number)
+                              {
+                                  const auto *spell = original::spell(number);
+                                  return spell &&
+                                         spell->caster_class == original::SpellClass::magic_user &&
+                                         spell->level <= 3;
+                              });
+    check(low_magic_user == static_cast<long>(chosen.size()) + 1,
+          "No other spell of levels 1 to 3: " + std::to_string(low_magic_user));
+}
+
 void curse_paladins_and_rangers()
 {
     const auto module = original::rules_module();
@@ -2247,6 +2325,7 @@ int main()
         darkness_characters_start_high();
         darkness_characters_start_equipped();
         treasures_characters_start_with_their_experience();
+        treasures_magic_users_choose_their_spells();
         std::cout << "Original creation tests passed\n";
         return 0;
     }

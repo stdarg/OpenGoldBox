@@ -1525,6 +1525,9 @@ std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<c
     // Pools of Darkness's too knows Enlarge.
     const bool enlarge = curse_tables(game) || vga_engine(game);
     const std::array<int, 4> first_magic_user_spells{11, enlarge ? 12 : 19, 18, 21};
+    // Treasures' magic-user knows only what it learned: its creation's choice
+    // and Read Magic.
+    const bool preset = game != GoldBoxGame::treasures_of_the_savage_frontier;
     const bool magic_user = level_in(levels, ClassSlot::magic_user) > 0;
     std::vector<int> known;
     for (const int number : castable_spells(game))
@@ -1540,8 +1543,9 @@ std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<c
         // learned in training past level 8).
         const bool magic_user_spell =
             known_spell->caster_class == SpellClass::magic_user &&
-            ((magic_user && std::ranges::find(first_magic_user_spells, number) !=
-                                first_magic_user_spells.end()) ||
+            ((magic_user && preset &&
+              std::ranges::find(first_magic_user_spells, number) !=
+                  first_magic_user_spells.end()) ||
              std::ranges::find(learned, number) != learned.end() ||
              (secret && known_spell->level <= 7 && ranger_slots.magic_user[at] > 0));
         if (cleric_spell || druid_spell || magic_user_spell)

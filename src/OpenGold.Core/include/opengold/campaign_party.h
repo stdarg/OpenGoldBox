@@ -274,8 +274,18 @@ class CampaignParty
     // money stays behind. Throws when the rules take in no one. A game that
     // renumbers the items it takes in (Treasures from Gateway) converts each
     // one, nothing for an item it cannot use, and takes them unreadied.
+    // `own_money`, when given, is the money the member keeps from its game in
+    // place of the platinum it would start with (Treasures' option: a
+    // Gateway character's own platinum, gems and jewelry).
     using ItemConversion = std::function<std::optional<por::Equipment>(const por::Equipment &)>;
-    MemberId bring_across(const PartyMember &from, const ItemConversion &convert_item = {});
+
+    struct BroughtMoney
+    {
+        std::uint32_t platinum{}, gems{}, jewelry{};
+    };
+
+    MemberId bring_across(const PartyMember &from, const ItemConversion &convert_item = {},
+                          std::optional<BroughtMoney> own_money = std::nullopt);
 
     // Developer tools only (dev_tools/party_tester): player characters may
     // also take the two NPC positions, so up to eight of them fight. A game
