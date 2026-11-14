@@ -529,3 +529,27 @@ playing each event and fight; it fails on any event the session cannot play.
 - The kit's rules' remaining differences (above).
 - Saving and loading a game (Save, Load and Continue are not offered for a
   design yet), a default party, camping, and the overhead map.
+
+### Next: saving and loading a game (phase 8 step 1, part 4)
+
+The coordinator's next step, not started. A UA save is OpenGoldBox's own
+campaign save (`campaign_save.h`, `save_file.cpp`; each game's saves in its
+own folder, `saves/UA`), not the kit's `SavGamA..J.csv`:
+
+1. What it holds: the design's folder (as the kit's `start.dat` names its
+   design) and the area number; the party (the `CampaignParty` state, as the
+   DAX saves keep it); and `UaSession`'s own state: pose, quest flags (256
+   bytes), done bits (area * 100 + event - 1), the step-back square, the
+   tavern tales, a vault's money, the clock, and an event in progress where
+   the kit resumes one (a small town's or a training hall's or inn's event
+   number, the kit's cursor_obj 85h and 31h). A fight is never saved
+   mid-way, as in the DAX games.
+2. The format: a new section in the campaign save for a design, which raises
+   the campaign format (claim it on the session board first); an old save
+   still loads as before.
+3. The view: Save and Load in the game menu and Continue and Load on the
+   startup menu for UA (now disabled through `dax()` being null), loading a
+   save of a design whose folder is gone failing with a clear message.
+4. Checks: a session test that saves mid-design and loads into a session
+   that plays on identically (quest flags, done events, pose, party), and
+   the startup check (`--ua`) saving, returning to the menu and continuing.
