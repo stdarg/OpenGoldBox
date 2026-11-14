@@ -85,6 +85,8 @@ and a save each know which tables they use.
   each level at Constitution 17, 2 at 18, 3 at 19 and 20, 4 at 21 to 23 and 5
   at 24 and 25; a first-level ranger's bonus counts twice, for its two dice.
 - **Thief skills** go on to level 12.
+- **Training** at a hall takes one class a visit: of those ready, the one
+  whose next level needs the most experience (creation trains them all).
 - **Paladins and rangers** strike three times in two rounds above levels 6
   and 7 as fighters do above 6, and gain experience's tenth more when all
   their prime scores are above 15 (Strength and Wisdom; Strength,
@@ -292,8 +294,8 @@ reconstruction), with these differences (2026-11-14):
   and monks 8 (its levelCaps). So no paladin or ranger casts spells.
 - **Still to come:** its spell table's four changed rows (Strength in fights,
   Prayer for the caster's side, Blink out of fights, Invisibility 10' Radius's
-  reach), its temple's poison rules, a half-elf ranger's starting age, and
-  training one class at a visit (as in *Curse*).
+  reach), its temple's poison rules, and a half-elf ranger's starting age.
+  Training takes one class a visit, as in *Curse*.
 
 ## What the original rules cover
 
@@ -884,6 +886,7 @@ tuned with the AI lab once the original rules play.
 | *Secret:* a giant slug with no enemy in reach still spits and misses, at whichever creature was aimed at last (`effhndlr.pas`, `EffSpitAtTarget`) | It does not spit |
 | *Secret:* its thief skill adjustments give humans the half-orc's (−5 Pick Pockets, −10 Read Languages and the rest), so a human thief starts worse than in the earlier games (`raceAdj` in its reconstruction) | No adjustment for humans, as before |
 | *Secret:* the spells a magic-user learns while trained at creation include, at level 6, Cure Light Wounds, a cleric's spell (`chargen.pas`, TrainingMenu) | Left out |
+| *Curse* and *Gateway:* training picks the class whose next level needs the most experience, but reads every class at the level of the last one it looked at (TrainingMenu) | Each class at its own level |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |
 | *Curse:* a shambling mound struck by electricity rolls 1d8, throws the roll away and gains 8 Hit Points (`ovr013`, its absorbing of lightning) | It gains the 1d8 |

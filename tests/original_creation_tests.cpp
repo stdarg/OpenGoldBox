@@ -716,6 +716,29 @@ void gateway_characters_start_low_and_stop_at_caps()
     }
     check(party.member(id).character.sheet().original->class_levels[2] == 8,
           "A Gateway fighter stops at level 8");
+
+    // Curse and Gateway train one class a visit: the one whose next level
+    // needs the most experience (here the thief's level 3, 2,501, before the
+    // fighter's level 2, 2,001).
+    const auto pair = [&]
+    {
+        rules::CharacterDraft draft;
+        draft.race = "halfling";
+        draft.gender = "male";
+        draft.character_class = "fighter_thief";
+        draft.alignment = "neutral_good";
+        draft.name = "Pip";
+        RandomState random{5};
+        creation->roll_in_place(draft, random);
+        return Character(*creation, draft, {});
+    }();
+    const auto both = party.add_pc(pair);
+    party.award_experience(30000, "test:gateway-pair");
+    const auto before = party.member(both).character.sheet().original->class_levels;
+    party.train_at_hall_level(both, TrainingHall::every_class, {});
+    const auto after = party.member(both).character.sheet().original->class_levels;
+    check(after[6] == before[6] + 1 && after[2] == before[2],
+          "A fighter/thief trains only one class on one visit");
 }
 
 void curse_paladins_and_rangers()

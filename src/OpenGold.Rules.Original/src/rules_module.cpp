@@ -46,13 +46,29 @@ const CharacterSheet::Original &original_numbers(const CharacterSheet &sheet)
     return *sheet.original;
 }
 
-// The classes the character would train in with this much experience.
+// The classes the character would train in at a hall with this much
+// experience. Curse and Gateway train one a visit: the ready class whose next
+// level needs the most experience (their TrainingMenu, which read every class
+// at the last one's level; each is read at its own here, docs/ORIGINAL-RULES.md, Bugs).
 std::vector<ClassSlot> ready_classes(const CharacterSheet &sheet, unsigned experience)
 {
     const auto &numbers = original_numbers(sheet);
     const auto capped = std::min<unsigned>(experience, std::numeric_limits<int>::max());
-    return classes_ready_to_train(static_cast<Race>(numbers.race), numbers.class_levels,
-                                  sheet.scores, static_cast<int>(capped), game_of(sheet.identity));
+    const auto game = game_of(sheet.identity);
+    auto ready = classes_ready_to_train(static_cast<Race>(numbers.race), numbers.class_levels,
+                                        sheet.scores, static_cast<int>(capped), game);
+    if (ready.size() > 1 && (game == GoldBoxGame::curse_of_the_azure_bonds ||
+                             game == GoldBoxGame::gateway_to_the_savage_frontier))
+    {
+        const auto needed = [&](ClassSlot slot)
+        {
+            return experience_for_level(slot, level_in(numbers.class_levels, slot) + 1, game)
+                .value_or(0);
+        };
+        const auto most = *std::ranges::max_element(ready, {}, needed);
+        ready = {most};
+    }
+    return ready;
 }
 
 // What a training rolled, as a level's rules data: a version, the trained
