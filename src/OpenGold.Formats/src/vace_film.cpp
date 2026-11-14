@@ -3,6 +3,7 @@
 #include "little_endian.h"
 
 #include <algorithm>
+#include <utility>
 
 namespace opengold
 {
@@ -13,9 +14,9 @@ using format::read_u16;
 using format::read_u32;
 using Bytes = std::span<const std::uint8_t>;
 
-// The control file's commands that shape the picture (docs/games/darkness.md, "The opening and ending films",
-// "The control file"). The others start and stop the music or allow a key to
-// skip the film.
+// The control file's commands that shape the picture, start the song and let a
+// key end the film (docs/games/darkness.md, "The opening and ending films",
+// "The control file"). The others stop the music or do nothing.
 enum class Command : std::uint8_t
 {
     set_pace = 0x00,
@@ -23,7 +24,11 @@ enum class Command : std::uint8_t
     set_color = 0x02,
     draw_next_frame = 0x03,
     list_block = 0x05,
+    load_song = 0x08,
+    start_song = 0x09,
     clear_screen = 0x0b,
+    keys_end_film = 0x0d,
+    keys_ignored = 0x0e,
 };
 
 // One command: its number and the 16-bit words after it.
@@ -244,6 +249,25 @@ std::uint32_t hold_milliseconds(std::uint16_t pace)
     return static_cast<std::uint32_t>(std::uint64_t{ticks} * 16'384 * 1'000 / 1'193'182);
 }
 
+// The load-song command's words: the song's number in the first word's low
+// byte, then the file's name two letters a word, high byte first, up to a
+// space; VACE adds ".SMS". nullopt when the command is short.
+std::optional<VaceSong> song_to_load(const std::vector<std::uint16_t> &arguments)
+{
+    if (arguments.size() < 4)
+    {
+        return std::nullopt;
+    }
+    std::string name;
+    for (std::size_t word = 1; word < 4; ++word)
+    {
+        name.push_back(static_cast<char>(arguments[word] >> 8));
+        name.push_back(static_cast<char>(arguments[word] & 0xFF));
+    }
+    name.resize(std::min(name.find(' '), name.size()));
+    return VaceSong{name + ".SMS", static_cast<std::uint8_t>(arguments[0] & 0xFF)};
+}
+
 } // namespace
 
 std::optional<std::vector<VaceFilmFrame>> decode_vace_film(std::span<const std::uint8_t> control,
@@ -259,6 +283,10 @@ std::optional<std::vector<VaceFilmFrame>> decode_vace_film(std::span<const std::
     std::vector<VaceFilmFrame> film;
     VaceFilmFrame screen{std::vector<std::uint8_t>(vace_film_width * vace_film_height), {}, 0};
     std::uint16_t pace = 0;
+    bool keys_end_film = false;
+    std::optional<VaceSong> loaded_song;
+    // The song started since the last frame was drawn.
+    std::optional<VaceSong> started_song;
     // The frame on screen whose time runs out at the next draw or clear.
     std::optional<std::size_t> showing;
     const auto end_showing = [&]
@@ -311,8 +339,26 @@ std::optional<std::vector<VaceFilmFrame>> decode_vace_film(std::span<const std::
             }
             showing = film.size();
             film.push_back(screen);
+            film.back().key_ends_film = keys_end_film;
+            film.back().starts_song = std::exchange(started_song, std::nullopt);
             break;
         }
+        case Command::load_song:
+            loaded_song = song_to_load(arguments);
+            if (!loaded_song)
+            {
+                return std::nullopt;
+            }
+            break;
+        case Command::start_song:
+            started_song = loaded_song;
+            break;
+        case Command::keys_end_film:
+            keys_end_film = true;
+            break;
+        case Command::keys_ignored:
+            keys_end_film = false;
+            break;
         case Command::clear_screen:
             if (!end_showing())
             {

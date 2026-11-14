@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <optional>
 #include <span>
+#include <string>
 #include <vector>
 
 // The opening and ending films of Pools of Darkness, INTRO and FINAL, which
@@ -18,6 +19,14 @@ namespace opengold
 inline constexpr std::uint16_t vace_film_width = 320;
 inline constexpr std::uint16_t vace_film_height = 200;
 
+// A song a film plays: a song file of the game's folder (P1.SMS) and the
+// song's number in it.
+struct VaceSong
+{
+    std::string file;
+    std::uint8_t number{};
+};
+
 // One step of the film: the whole screen as it stands after the step's frame
 // is drawn over the screen before it.
 struct VaceFilmFrame
@@ -28,6 +37,10 @@ struct VaceFilmFrame
     // How long the frame stays before the next one, or before the screen
     // clears for the next scene, at the pace VACE keeps while music plays.
     std::uint32_t hold_milliseconds{};
+    // A key while the frame shows ends the film.
+    bool key_ends_film{};
+    // The song the film starts as the frame is drawn.
+    std::optional<VaceSong> starts_song;
 };
 
 // A film's control file and frames, every step of it whole. nullopt when the

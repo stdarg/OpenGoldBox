@@ -4,6 +4,7 @@
 #include "opengold/vace_film.h"
 #include "test_support.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -95,6 +96,30 @@ void frames_keep_their_pace(const std::filesystem::path &darkness)
           "FINAL's last frame keeps its indices and colors");
 }
 
+// INTRO starts its song, P1.SMS's song 0, with the title card, which a key
+// cannot pass; a key ends the film from the next frame on. FINAL never lets a
+// key end it.
+void films_start_their_song_and_keys_end_the_opening(const std::filesystem::path &darkness)
+{
+    const auto opening = film_of(darkness, "INTRO");
+    check(opening[0].starts_song && opening[0].starts_song->file == "P1.SMS" &&
+              opening[0].starts_song->number == 0,
+          "INTRO starts P1.SMS's song 0 with its first frame");
+    check(std::ranges::none_of(opening.begin() + 1, opening.end(),
+                               [](const VaceFilmFrame &frame)
+                               {
+                                   return frame.starts_song.has_value();
+                               }),
+          "INTRO starts its song once");
+    check(!opening[0].key_ends_film, "A key does not pass INTRO's title card");
+    check(std::ranges::all_of(opening.begin() + 1, opening.end(), &VaceFilmFrame::key_ends_film),
+          "A key ends INTRO after its title card");
+    const auto ending = film_of(darkness, "FINAL");
+    check(ending[0].starts_song && ending[0].starts_song->file == "P3.SMS",
+          "FINAL starts P3.SMS's song");
+    check(std::ranges::none_of(ending, &VaceFilmFrame::key_ends_film), "No key ends FINAL");
+}
+
 void broken_films_are_refused(const std::filesystem::path &darkness)
 {
     const auto control = file_bytes(darkness / "INTRO.ACF");
@@ -125,6 +150,7 @@ int main()
         the_opening_starts_with_the_title_card(darkness);
         frames_draw_over_the_frame_before(darkness);
         frames_keep_their_pace(darkness);
+        films_start_their_song_and_keys_end_the_opening(darkness);
         broken_films_are_refused(darkness);
         std::cout << "VACE films passed.\n";
     }
