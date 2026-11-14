@@ -407,6 +407,8 @@ void StartupView::load_game()
     {
         auto owned = presentation::make_node<SaveSlots>();
         owned->set_name("SaveSlots");
+        // A window shows when added; this one waits for open().
+        owned->hide();
         owned->connect_host(
             [](const std::filesystem::path &)
             {
@@ -430,7 +432,8 @@ void StartupView::saves_closed()
     const auto &slots = required_node<SaveSlots>(*this, "SaveSlots");
     if (!slots.is_visible() && !starting_)
     {
-        show_game_menu();
+        // Once the closing window is no longer the exclusive one.
+        presentation::guarded(this, &StartupView::show_game_menu).call_deferred();
     }
 }
 

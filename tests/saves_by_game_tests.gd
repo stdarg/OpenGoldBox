@@ -147,5 +147,38 @@ func run_checks() -> void:
 			opening = true
 			break
 	require(opening, "After a Curse save loads, exploring plays Curse's opening")
-	print("Saves by game passed: each game's own folder and list, and a moved Curse save starting Curse.")
+	await check_startup_saves()
+	print("Saves by game passed: each game's own folder and list, a moved Curse save starting Curse, and startup's Continue and Load game.")
 	quit(0)
+
+# Startup's menus offer the saves (the user's design, 2026-11-14): the main
+# menu's Continue, and a game's Continue and Load game, which lists its own.
+func check_startup_saves() -> void:
+	change_scene_to_file("res://scenes/startup.tscn")
+	await settle()
+	await pass_title()
+	var main: Window = current_scene.get_node("MainMenu")
+	require(main.visible and not main.get_node("Buttons/Continue").disabled, "The main menu's Continue offers the newest save")
+	main.get_node("Buttons/PickGame").pressed.emit()
+	await settle()
+	current_scene.get_node("GamePicker/Buttons/Games/CURSE").pressed.emit()
+	await settle()
+	await pass_title()
+	var game_menu: Window = current_scene.get_node("GameMenu")
+	require(game_menu.visible and not game_menu.get_node("Buttons/Continue").disabled and not game_menu.get_node("Buttons/Load").disabled, "Curse's menu offers its saves")
+	game_menu.get_node("Buttons/Load").pressed.emit()
+	await settle()
+	var slots: Window = current_scene.get_node("SaveSlots")
+	require(slots.visible and listed(slots) == ["Tilverton party"], "Curse's Load game lists Curse's saves: " + str(listed(slots)))
+	slots.get_node("Cancel").pressed.emit()
+	await settle()
+	require(game_menu.visible, "Closing the saves returns to the game's menu")
+	game_menu.get_node("Buttons/Continue").pressed.emit()
+	for wait in range(4): await settle()
+	require(current_scene != null and current_scene.name == "CharacterCreation", "Continue opens the game")
+	var loaded := false
+	for label in current_scene.find_children("*", "Label", true, false):
+		if label.visible and label.text == "Campaign loaded.": loaded = true
+	require(loaded, "Continue loads the save")
+	var dialog := await open_saves(false)
+	require(listed(dialog) == ["Tilverton party"], "Continue plays the save's game, Curse: " + str(listed(dialog)))
