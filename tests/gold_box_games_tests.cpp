@@ -1019,9 +1019,9 @@ void walk_overland(
 }
 
 // Secret's route plays to the game's end once this is true; until then it
-// stops on this map, the castle's dungeon (docs/GAMES.md, phase 4 step 4).
+// stops on this map, the Castle Entrance (docs/GAMES.md, phase 4 step 4).
 constexpr bool secret_route_ends_the_game = false;
-constexpr unsigned secret_route_stops_on_map = 64;
+constexpr unsigned secret_route_stops_on_map = 96;
 
 // Secret's story, beat by beat, as its cluebook tells it (plan phase 4, step
 // 4): from New Verdigris on.
@@ -2926,8 +2926,11 @@ bool walk_census(GoldBoxGame game, bool route)
     bool holding_foes = false;
     // A planning aid (OPENGOLD_SECRET_FIND) wins every fight at once.
     bool planning = false;
+    // Fights played so far (a camp counts the ones that interrupt it).
+    unsigned fights_fought = 0;
     const auto fight = [&]
     {
+        ++fights_fought;
         const auto before = party->state();
         const auto score = [&](const opengold::rules::Snapshot &result)
         {
@@ -3538,8 +3541,14 @@ bool walk_census(GoldBoxGame game, bool route)
                                        party->member(id).character.sheet().hit_points));
                 });
         };
+        // The map where Secret's party last gave up resting.
+        unsigned restless_map = 0xFFFF;
         const auto rest_until_healed = [&]
         {
+            // Secret's party gives up resting where monsters break its camp
+            // three times (its castle's guards come every night), and on that
+            // map rests no more while it only passes by.
+            unsigned interrupted = 0;
             for (int day = 0; day < 90 && session.can_leave(); ++day)
             {
                 if (party_whole() || !session.camp(opengold::RestKind::long_rest))
@@ -3549,7 +3558,14 @@ bool walk_census(GoldBoxGame game, bool route)
                 // The spells are chosen as the rest ends, as the rest dialog
                 // has it, before a camp's interruption or the map's script.
                 memorize();
+                const auto fights_before = fights_fought;
                 play("camp");
+                if (fights_fought != fights_before &&
+                    game == GoldBoxGame::secret_of_the_silver_blades && ++interrupted >= 3)
+                {
+                    restless_map = session.snapshot().area_id;
+                    break;
+                }
             }
         };
         // Days in camp from the wilderness's menu until every member is whole:
@@ -3601,7 +3617,8 @@ bool walk_census(GoldBoxGame game, bool route)
                 }
                 // A camp before the beat fights as the beat does.
                 test_winning = beat.test_wins;
-                if (beat.rest_first || (beat.passing && party_hurt()))
+                if (beat.rest_first ||
+                    (beat.passing && party_hurt() && session.snapshot().area_id != restless_map))
                 {
                     beat.waiting ? rest_in_wilderness() : rest_until_healed();
                 }
