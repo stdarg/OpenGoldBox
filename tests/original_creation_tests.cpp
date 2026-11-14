@@ -632,6 +632,21 @@ void secret_characters_start_trained()
               !original::experience_for_level(original::ClassSlot::fighter, 16,
                                               GoldBoxGame::secret_of_the_silver_blades),
           "Thieves rise to level 18, fighters to 15");
+
+    // Secret's training takes no money (its TrainingMenu charges nothing).
+    std::shared_ptr<const rules::CharacterRules> secret_creation = original::character_rules(
+        original::default_aging, GoldBoxGame::secret_of_the_silver_blades);
+    original::Content secret_content;
+    secret_content.game = GoldBoxGame::secret_of_the_silver_blades;
+    CampaignParty party(original::rules_module(secret_content), secret_creation);
+    const auto id = party.add_pc(made_fighter(secret_creation));
+    party.award_experience(50000, "test:secret");
+    const auto hall = party.hall_training(id, TrainingHall::fighters);
+    check(hall.denial == TrainingDenial::none, "A Secret hall trains a party with no gold");
+    party.train_at_hall_level(id, TrainingHall::fighters, {});
+    check(party.member(id).character.sheet().original->class_levels[2] == 9 &&
+              gold_value(party.state().wealth) == 0,
+          "and the training costs nothing");
 }
 
 void curse_paladins_and_rangers()

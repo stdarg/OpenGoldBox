@@ -1,5 +1,7 @@
 #ifndef OPENGOLD_TRAINING_HALL_H
 #define OPENGOLD_TRAINING_HALL_H
+#include "opengold/gold_box_game.h"
+
 #include <cstdint>
 #include <optional>
 #include <span>
@@ -61,8 +63,13 @@ enum class TrainingDenial
 // fighters, paladins and rangers, the clerics' clerics and druids.
 [[nodiscard]] std::vector<std::string_view> original_hall_classes(TrainingHall hall);
 
-// What the original's training costs (chargen.pas, TrainingMenu).
-constexpr std::uint32_t original_training_fee = 1000;
+// What the original's training costs (chargen.pas, TrainingMenu): 1,000
+// gold, and nothing in Secret of the Silver Blades, whose TrainingMenu takes
+// no money.
+[[nodiscard]] constexpr std::uint32_t original_training_fee(GoldBoxGame game) noexcept
+{
+    return game == GoldBoxGame::secret_of_the_silver_blades ? 0 : 1000;
+}
 
 // One member's experience session: its fee, the experience it grants and
 // whether the hall can sell it now.

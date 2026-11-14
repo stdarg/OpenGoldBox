@@ -1,4 +1,5 @@
 #include "opengold/campaign_party.h"
+#include "opengold/original.h"
 #include "opengold/diagnostic_log.h"
 #include "opengold/campaign_encounter.h"
 #include "opengold/authored_items.h"
@@ -2345,7 +2346,8 @@ CampaignParty::HallTraining CampaignParty::hall_training(MemberId id, TrainingHa
     {
         offer.denial = TrainingDenial::other_hall;
     }
-    else if (gold_value(state_.wealth, coin_rates()) < original_training_fee)
+    else if (gold_value(state_.wealth, coin_rates()) <
+             original_training_fee(original::game_of(rules_->identity())))
     {
         offer.denial = TrainingDenial::gold;
     }
@@ -2380,7 +2382,10 @@ void CampaignParty::train_at_hall_level(MemberId id, TrainingHall hall,
         choice.training["hall"].emplace_back(klass);
     }
     choice.spells = std::move(spells);
-    const auto purse = pay_gold(state_.wealth, original_training_fee, coin_rates()).purse;
+    const auto purse =
+        pay_gold(state_.wealth, original_training_fee(original::game_of(rules_->identity())),
+                 coin_rates())
+            .purse;
     advance(id, choice);
     state_.wealth = purse;
 }
