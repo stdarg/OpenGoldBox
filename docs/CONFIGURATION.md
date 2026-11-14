@@ -38,6 +38,10 @@ portraits="new"
 [gear]
 auto_equip="on"
 unidentified_magic="skip"
+
+[sound]
+effects=100
+music=100
 ```
 
 Use the actual folder containing `START.EXE`, `ITEMS`, and the original `.DAX`
@@ -66,8 +70,16 @@ files receive the default. See
 The in-game menu's **Options** screen (Escape) sets these settings and writes
 them at once: under Gameplay `difficulty`, `encounter_challenge`, the
 `[gear]` section, `keep_quick`, `[original_shops]` and the `[monsters]` section below; under Interface `language`, which takes effect the
-next time the game starts, `combat_zoom`, read when a fight opens, and the
-`[art]` section below, which takes effect at once.
+next time the game starts, `combat_zoom`, read when a fight opens, the
+`[art]` section below, which takes effect at once, and `[sound]`.
+
+`[sound]` holds the Options screen's two volume sliders (Interface), the same
+for every game: `effects` for the games' sound effects (a fight's sounds, the
+storm's thunder, footsteps, a title's sound) and `music` for a title's music.
+Each is a percentage, 0 (silent) to 100, the default, which is the loudness
+the games always played at. A change applies at once to the sounds of the
+exploration screen and a fight; the startup menu's title sounds and music take
+it the next time they start.
 
 `[art]` chooses between the new art and the original game's (#274): `walls`
 for the walls and animated close-ups of the 3D view, `combat` for the creatures in a fight (monsters

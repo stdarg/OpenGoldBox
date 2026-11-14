@@ -27,6 +27,15 @@ opengold::GoldBoxGame current_game = opengold::GoldBoxGame::pool_of_radiance;
 GameRules current_rules = new_game_rules;
 settings::GameStart current_start;
 std::map<opengold::GoldBoxGame, String> confirmed_folders;
+// The loudness the games' samples and music played at before the volume
+// settings, and still play at with a volume slider at its top.
+constexpr double full_sound_volume = 0.125;
+constexpr int full_volume_percent = 100;
+
+const char *volume_key(settings::SoundKind kind)
+{
+    return kind == settings::SoundKind::effects ? "effects" : "music";
+}
 
 String read(const char *section, const char *key)
 {
@@ -357,6 +366,35 @@ bool save_encounter_challenge(unsigned challenge)
 bool save_monster_ability(const std::string &ability, const String &from)
 {
     return save("monsters", ability.c_str(), from);
+}
+
+int volume_percent(SoundKind kind)
+{
+    Ref<ConfigFile> config;
+    config.instantiate();
+    if (config->load(path()) != OK)
+    {
+        return full_volume_percent;
+    }
+    const Variant value = config->get_value("sound", volume_key(kind), full_volume_percent);
+    return value.get_type() == Variant::INT
+               ? std::clamp(static_cast<int>(value), 0, full_volume_percent)
+               : full_volume_percent;
+}
+
+bool save_volume_percent(SoundKind kind, int percent)
+{
+    return save("sound", volume_key(kind), std::clamp(percent, 0, full_volume_percent));
+}
+
+double volume_share(SoundKind kind)
+{
+    return static_cast<double>(volume_percent(kind)) / full_volume_percent;
+}
+
+double sound_volume(SoundKind kind)
+{
+    return full_sound_volume * volume_share(kind);
 }
 
 bool restore_monster_abilities()

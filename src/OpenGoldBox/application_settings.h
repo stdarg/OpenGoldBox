@@ -66,6 +66,21 @@ bool save_skip_unidentified_magic(bool skip);
 // otherwise a fight's end returns every member to the player.
 bool keep_quick();
 bool save_keep_quick(bool keep);
+// [sound] effects and music: each a percentage, 0-100, of the games' full
+// loudness, the same for every game. Effects are the games' samples (a fight,
+// thunder, a title's sound, footsteps); music is a title's music.
+enum class SoundKind
+{
+    effects,
+    music
+};
+[[nodiscard]] int volume_percent(SoundKind kind);
+bool save_volume_percent(SoundKind kind, int percent);
+// The volume percentage as a share of full loudness, 0-1.
+[[nodiscard]] double volume_share(SoundKind kind);
+// The volume a SoundPlayer of `kind` plays at: its percentage of the loudness
+// the games' sounds have always played at.
+[[nodiscard]] double sound_volume(SoundKind kind);
 // Every monster ability back to its default.
 bool restore_monster_abilities();
 bool valid_language(const godot::String &locale);

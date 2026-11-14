@@ -498,6 +498,41 @@ offset_bottom = 504
 autowrap_mode = 3
 theme_type_variation = &"LabelMuted"
 
+[node name="Volume" type="GridContainer" parent="Options/Interface"]
+anchor_right = 1
+offset_left = 20
+offset_right = -20
+offset_top = 520
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 24
+columns = 3
+
+[node name="SoundEffectsLabel" type="Label" parent="Options/Interface/Volume"]
+custom_minimum_size = Vector2(260, 0)
+text = "Sound effects"
+
+[node name="SoundEffects" type="HSlider" parent="Options/Interface/Volume"]
+custom_minimum_size = Vector2(220, 40)
+size_flags_vertical = 4
+step = 5.0
+value = 100.0
+
+[node name="SoundEffectsPercent" type="Label" parent="Options/Interface/Volume"]
+theme_type_variation = &"LabelMuted"
+
+[node name="MusicLabel" type="Label" parent="Options/Interface/Volume"]
+custom_minimum_size = Vector2(260, 0)
+text = "Music"
+
+[node name="Music" type="HSlider" parent="Options/Interface/Volume"]
+custom_minimum_size = Vector2(220, 40)
+size_flags_vertical = 4
+step = 5.0
+value = 100.0
+
+[node name="MusicPercent" type="Label" parent="Options/Interface/Volume"]
+theme_type_variation = &"LabelMuted"
+
 [node name="NewArtDialog" type="FileDialog" parent="Options/Interface"]
 title = "Choose the new art folder"
 size = Vector2i(900, 600)

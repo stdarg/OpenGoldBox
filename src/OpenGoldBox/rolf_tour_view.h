@@ -85,6 +85,8 @@ class RolfTourView : public godot::Control
     // Reads the difficulty, encounter challenge and auto-equip settings
     // again, as the Options screen changed them.
     void apply_settings();
+    // The Sound effects volume, to the thunder and the footsteps, playing or not.
+    void apply_sound_volume();
 
     // The party check's save-and-reload hook; only that check sets one.
     void enable_save_check(std::function<void(const std::string &)> check)
@@ -156,6 +158,8 @@ class RolfTourView : public godot::Control
     // The wilderness square and direction last drawn: x, y, direction.
     std::array<unsigned, 3> rendered_overland_{};
     godot::Ref<godot::AudioStreamWAV> footstep_;
+    // The footstep's loudness with Sound effects at the top: the scene's.
+    float footstep_full_volume_{};
     godot::String error_;
     std::uint64_t shown_revision_{}, checked_ticket_{};
     unsigned played_footsteps_{}, played_thunder_{}, check_frames_{}, check_prompts_{};

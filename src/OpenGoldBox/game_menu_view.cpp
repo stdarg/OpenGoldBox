@@ -8,6 +8,7 @@
 #include "opengold/difficulty.h"
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/h_box_container.hpp>
+#include <godot_cpp/classes/h_slider.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/file_dialog.hpp>
@@ -25,6 +26,12 @@ namespace
 {
 // The Options screen's languages, as settings.cfg names them.
 constexpr std::array<const char *, 2> language_codes{"en", "es"};
+
+// Each volume's slider, by settings::SoundKind.
+constexpr std::array<const char *, 2> volume_sliders{"Options/Interface/Volume/SoundEffects",
+                                                     "Options/Interface/Volume/Music"};
+constexpr std::array<settings::SoundKind, 2> volume_kinds{settings::SoundKind::effects,
+                                                          settings::SoundKind::music};
 } // namespace
 
 void GameMenuView::_bind_methods()
@@ -36,6 +43,8 @@ void GameMenuView::_bind_methods()
     ADD_SIGNAL(MethodInfo("art_changed"));
     // Another new art folder was chosen and kept.
     ADD_SIGNAL(MethodInfo("new_art_changed"));
+    // The sound effects or music volume changed.
+    ADD_SIGNAL(MethodInfo("volume_changed"));
 }
 
 void GameMenuView::_ready()
@@ -170,6 +179,10 @@ void GameMenuView::open_options()
         .call("set_value_no_signal", settings::encounter_challenge());
     required_node<Control>(*this, "Options/Interface/Zoom")
         .call("set_value_no_signal", settings::combat_zoom_percent());
+    for (std::int64_t kind : {0, 1})
+    {
+        show_volume(kind);
+    }
     required_node<OptionButton>(*this, "Options/Interface/WallArt")
         .select(settings::original_wall_art() ? 1 : 0);
     required_node<OptionButton>(*this, "Options/Interface/CombatArt")
@@ -293,6 +306,12 @@ void GameMenuView::build_options()
                      presentation::guarded(this, &GameMenuView::language_selected));
     required_node<Control>(*this, "Options/Interface/Zoom")
         .connect("value_changed", presentation::guarded(this, &GameMenuView::zoom_changed));
+    for (std::int64_t kind : {0, 1})
+    {
+        required_node<HSlider>(*this, volume_sliders.at(static_cast<std::size_t>(kind)))
+            .connect("value_changed",
+                     presentation::guarded(this, &GameMenuView::volume_changed).bind(kind));
+    }
     // The new art or the original game's (#274).
     for (const auto &[path, selected] :
          {std::pair{"Options/Interface/WallArt", &GameMenuView::wall_art_selected},
@@ -361,6 +380,25 @@ void GameMenuView::language_selected(std::int64_t index)
 void GameMenuView::zoom_changed(double value)
 {
     settings::save_combat_zoom(static_cast<int>(value));
+}
+
+void GameMenuView::volume_changed(double value, std::int64_t kind)
+{
+    settings::save_volume_percent(volume_kinds.at(static_cast<std::size_t>(kind)),
+                                  static_cast<int>(value));
+    show_volume(kind);
+    emit_signal("volume_changed");
+}
+
+// The slider and, beside it, its percentage.
+void GameMenuView::show_volume(std::int64_t kind)
+{
+    const auto index = static_cast<std::size_t>(kind);
+    const auto percent = settings::volume_percent(volume_kinds.at(index));
+    auto &slider = required_node<HSlider>(*this, volume_sliders.at(index));
+    slider.set_value_no_signal(percent);
+    required_node<Label>(*this, NodePath(String(volume_sliders.at(index)) + "Percent"))
+        .set_text(String::num_int64(percent) + "%");
 }
 
 void GameMenuView::wall_art_selected(std::int64_t index)

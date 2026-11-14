@@ -274,6 +274,8 @@ class CharacterCreationView : public godot::Control
     // The town's walls and a fight's creatures take the new art setting.
     void art_changed();
     void new_art_changed();
+    // The exploration screen's and a fight's sounds take the new volume.
+    void volume_changed();
     // Reads the portraits again, from another new art folder.
     void reload_portraits();
 

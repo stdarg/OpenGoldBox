@@ -768,9 +768,7 @@ void CombatView::_ready()
                 por::SoundBank::load(directory),
                 std::make_unique<GodotSoundOutput>(
                     required_node<AudioStreamPlayer>(*this, "DeathAudio")));
-            attack_sound_->set_volume(0.125);
-            effect_sound_->set_volume(0.125);
-            death_sound_->set_volume(0.125);
+            apply_sound_volume();
         }
         required_node<Label>(*this, "Help")
             .set_text(i18n::text(N_(
@@ -942,6 +940,18 @@ void CombatView::revisit()
     {
         error_ = e.what();
         refresh();
+    }
+}
+
+void CombatView::apply_sound_volume()
+{
+    const auto volume = settings::sound_volume(settings::SoundKind::effects);
+    for (const auto *sound : {&attack_sound_, &effect_sound_, &death_sound_})
+    {
+        if (*sound)
+        {
+            (*sound)->set_volume(volume);
+        }
     }
 }
 

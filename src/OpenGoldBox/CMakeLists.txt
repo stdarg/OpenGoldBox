@@ -501,6 +501,9 @@ if(OPENGOLD_BUILD_TESTS)
     opengold_creation_check(portrait_fallback "Portrait fallback checks passed"
         -DSCRIPT=portrait_fallback_tests)
     opengold_creation_check(handoff "Combat handoff checks passed" -DSCRIPT=combat_handoff_tests)
+    # The Options screen's Sound effects and Music volumes.
+    opengold_original_check(volume_options "Volume options passed"
+        -DSCRIPT=volume_options_tests)
     opengold_creation_check(roster_layout "Roster layout checks passed"
         -DSCRIPT=roster_layout_tests)
     # Reads rendered pixels, so it needs a real window rather than --headless.

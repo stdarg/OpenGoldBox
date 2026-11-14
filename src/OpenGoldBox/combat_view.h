@@ -54,6 +54,8 @@ class CombatView : public godot::Control
     void prepare_combat();
     // The Combat art setting changed: the creatures follow it at once (#274).
     void refresh_art();
+    // The Sound effects volume, to the fight's sounds, playing or not.
+    void apply_sound_volume();
 
     void campaign_party(std::shared_ptr<opengold::CampaignParty> party,
                         std::vector<opengold::CombatArt> art)

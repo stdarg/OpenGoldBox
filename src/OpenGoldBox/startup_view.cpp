@@ -930,7 +930,7 @@ void StartupView::play_title_music(opengold::GoldBoxGame game)
         return;
     }
     // The level the game's other sounds play at.
-    title_sound_->set_volume(0.125);
+    title_sound_->set_volume(settings::sound_volume(settings::SoundKind::music));
     title_sound_->play(*piece);
 }
 
@@ -967,7 +967,7 @@ void StartupView::play_title_sound(unsigned sound)
             return;
         }
         // The level the exploration screen plays the original's sounds at.
-        title_sound_->set_volume(0.125);
+        title_sound_->set_volume(settings::sound_volume(settings::SoundKind::effects));
     }
     title_sound_->play(sound);
 }

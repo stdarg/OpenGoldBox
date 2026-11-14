@@ -502,7 +502,9 @@ void RolfTourView::prepare_view()
         samples.set(i * 2 + 1, static_cast<std::uint16_t>(sample) >> 8);
     }
     footstep_->set_data(samples);
-    required_node<AudioStreamPlayer>(*this, "Footstep").set_stream(footstep_);
+    auto &footstep = required_node<AudioStreamPlayer>(*this, "Footstep");
+    footstep.set_stream(footstep_);
+    footstep_full_volume_ = footstep.get_volume_linear();
     // The storm's thunder is the original's own sample, from the player's
     // game; a game without the sound bank leaves it silent.
     const auto game = presentation::path_from_godot(settings::game_path());
@@ -514,13 +516,13 @@ void RolfTourView::prepare_view()
                 SoundBank::load(game),
                 std::make_unique<GodotSoundOutput>(
                     required_node<AudioStreamPlayer>(*this, "OriginalSound")));
-            original_sound_->set_volume(0.125);
         }
         catch (const std::runtime_error &)
         {
             original_sound_.reset();
         }
     }
+    apply_sound_volume();
     setup_rest();
     restart();
     if (embedded_party_)
@@ -815,6 +817,17 @@ void RolfTourView::apply_settings()
         session_->encounter_challenge(settings::encounter_challenge());
         session_->set_auto_equip(auto_equip_setting());
     }
+}
+
+void RolfTourView::apply_sound_volume()
+{
+    if (original_sound_)
+    {
+        original_sound_->set_volume(settings::sound_volume(settings::SoundKind::effects));
+    }
+    const auto share = static_cast<float>(settings::volume_share(settings::SoundKind::effects));
+    required_node<AudioStreamPlayer>(*this, "Footstep")
+        .set_volume_linear(footstep_full_volume_ * share);
 }
 
 void RolfTourView::look()

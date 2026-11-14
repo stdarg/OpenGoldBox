@@ -35,6 +35,8 @@ void CharacterCreationView::attach_game_menu()
     menu->connect("art_changed", presentation::guarded(this, &CharacterCreationView::art_changed));
     menu->connect("new_art_changed",
                   presentation::guarded(this, &CharacterCreationView::new_art_changed));
+    menu->connect("volume_changed",
+                  presentation::guarded(this, &CharacterCreationView::volume_changed));
     presentation::attach_child(*this, std::move(owned));
 }
 
@@ -132,6 +134,18 @@ void CharacterCreationView::new_art_changed()
         }
     }
     art_changed();
+}
+
+void CharacterCreationView::volume_changed()
+{
+    if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown")))
+    {
+        town->apply_sound_volume();
+    }
+    if (auto *combat = Object::cast_to<CombatView>(get_node_or_null("CampaignCombat")))
+    {
+        combat->apply_sound_volume();
+    }
 }
 
 void CharacterCreationView::game_menu_closed()

@@ -9,7 +9,8 @@
 // Options, Exit to main menu, Exit to desktop) and its Options screen. The
 // host decides what the menu allows, pauses the game beneath it and answers
 // its signals: save_requested(saving), main_menu_requested, closed,
-// art_changed and new_art_changed (another new art folder was chosen).
+// art_changed, new_art_changed (another new art folder was chosen) and
+// volume_changed.
 class GameMenuView : public godot::Control
 {
     GDCLASS(GameMenuView, godot::Control)
@@ -53,6 +54,10 @@ class GameMenuView : public godot::Control
     void restore_ability_defaults();
     void language_selected(std::int64_t index);
     void zoom_changed(double value);
+    // `kind` is a settings::SoundKind. A volume applies at once, to the
+    // sounds playing too.
+    void volume_changed(double value, std::int64_t kind);
+    void show_volume(std::int64_t kind);
     void wall_art_selected(std::int64_t index);
     void combat_art_selected(std::int64_t index);
     void portrait_art_selected(std::int64_t index);
