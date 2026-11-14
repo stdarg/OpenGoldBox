@@ -324,6 +324,8 @@ class UaSession final : public ExplorationSession
     void show_texts(const EventRecord &event, unsigned from);
     void treasure_event(const EventRecord &event, bool now);
     void hand_over_treasure();
+    void take_loot(const rules::Snapshot &outcome);
+    void award_fight_experience(const rules::Snapshot &outcome);
     [[nodiscard]] std::optional<por::Equipment> random_scroll();
     void damage_event(const EventRecord &event);
     void damage_round(const EventRecord &event);
@@ -431,8 +433,12 @@ class UaSession final : public ExplorationSession
     std::vector<unsigned> event_stack_;
     Pending pending_;
     std::optional<CampaignEncounter> encounter_;
-    // The monsters of the pending fight, for its experience.
-    unsigned encounter_experience_{};
+    // The pending fight's monsters by id, their MONST numbers, for its loot and
+    // experience; and whether they keep their treasure (byte 0Ch's bit 80h).
+    std::map<rules::EntityId, unsigned> fielded_monsters_;
+    bool monsters_keep_treasure_{};
+    // The items the monsters left, for the treasure.
+    std::vector<por::Equipment> loot_;
     // The fight's loss ends the adventure (an event may say it does not).
     bool party_can_lose_{true};
     // What a treasure event put in the pile: money (the Purse's places) and

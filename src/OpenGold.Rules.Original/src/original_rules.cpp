@@ -1596,8 +1596,10 @@ int experience_share(Profession profession, const AbilityArray<int> &scores, int
     switch (profession)
     {
     case P::cleric:
-        // Secret's and Pools of Darkness's cleric gains it from Wisdom 15.
-        return (game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game)) &&
+        // Secret's, Pools of Darkness's and Unlimited Adventures' cleric
+        // gains it from Wisdom 15 (postcmbt.c, exp_award).
+        return (game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game) ||
+                game == GoldBoxGame::unlimited_adventures) &&
                        scores[Ability::wisdom] == 15
                    ? award + award / 10
                    : bonus_above_15(Ability::wisdom);

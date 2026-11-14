@@ -268,6 +268,10 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
     // 18: two kobolds against the party and, as group 4, a goblin on its
     // side (byte 0Ah's bit 20h); two squares away (byte 0Eh's bits 60h).
     hall.event(18, {1, 0, 0, 0, 0, 0, 0, 100, 2, 1, 0x20, 0, 0, 0, 0x41, 2}, {{3, 14}});
+    // 19: a thug (MONST 84) with his items; 20: one who keeps them (byte
+    // 0Ch's bit 80h) where the party cannot die (40h).
+    hall.event(19, {1, 0, 0, 0, 0, 0, 0, 100, 1, 84}, {{11, 5}});
+    hall.event(20, {1, 0, 0, 0, 0, 0, 0, 100, 1, 84, 0, 0, 0xC0}, {{11, 7}});
     // A wall a square west of it, which cuts the distance short that way.
     hall.wall(2, 14, MapDirection::west, 0xE1);
     write(folder / "GEO005.DAT", hall.finish());
@@ -920,6 +924,101 @@ void the_kits_fights_look_as_the_kit_draws_them(const std::filesystem::path &kit
     check(armed > 20, "Many of the kit's monsters fight with their weapons");
 }
 
+std::size_t items_carried(const opengold::CampaignParty &party)
+{
+    std::size_t count = 0;
+    for (const auto id : party.state().slots)
+    {
+        count += id ? party.member(id).character.inventory().items().size() : 0;
+    }
+    return count;
+}
+
+unsigned record_word(const ua::Monster &monster, std::size_t at)
+{
+    return monster.raw[at] | monster.raw[at + 1] << 8;
+}
+
+void the_kits_fights_end_as_the_kit_ends_them(const std::filesystem::path &kit)
+{
+    const auto design = build_test_design(kit, temporary_design("opengold_ua_spoils.dsn"));
+    const ua::DesignFiles files(kit, design);
+    const auto content = ua::load_design_content(files);
+    auto session = ua::UaSession::start(files);
+    auto party = new_party(content);
+    session.campaign_party(party);
+    Player player{session, party, content};
+    player.play();
+
+    // The kobolds' experience and their money's worth (2 a platinum, 250 a
+    // gem, 2,200 a jewel), shared among the members standing; a fighter of
+    // Strength 16 or more gains 10% more.
+    const auto kobold = *ua::decode_monster(*files.data("MONST", 1));
+    const unsigned worth = 3 * (record_word(kobold, 0x54) + record_word(kobold, 0x4C) * 2 +
+                                record_word(kobold, 0x4E) * 250 + record_word(kobold, 0x50) * 2200);
+    const auto first = party->state().slots[0];
+    const auto before = party->member(first).experience;
+    session.place(5, 8, 2, MapDirection::east);
+    session.look();
+    player.play();
+    check(player.victories == 1, "The party beats the kobolds");
+    const auto standing = static_cast<unsigned>(
+        std::ranges::count_if(party->state().slots,
+                              [&](opengold::MemberId id)
+                              {
+                                  return id && party->member(id).vitals.hit_points > 0;
+                              }));
+    const unsigned share = worth / standing;
+    const auto strength =
+        party->member(first).character.sheet().scores[opengold::rules::Ability::strength];
+    check(party->member(first).experience - before == (strength > 15 ? share + share / 10 : share),
+          "Each member standing gains its share of the kobolds' worth, as the kit gives it");
+
+    // The thug's items go to the party; the second thug keeps his.
+    const auto thug = *ua::decode_monster(*files.data("MONST", 84));
+    const auto his_items =
+        static_cast<std::size_t>(std::ranges::count_if(std::span(thug.raw).subspan(0x18E, 16),
+                                                       [](std::uint8_t number)
+                                                       {
+                                                           return number != 0;
+                                                       }));
+    check(his_items > 0, "The kit's thug carries items");
+    auto carried = items_carried(*party);
+    session.place(5, 11, 5, MapDirection::east);
+    session.look();
+    player.play();
+    check(player.victories == 2 && items_carried(*party) == carried + his_items,
+          "The thug's items go to the party");
+    carried = items_carried(*party);
+    session.place(5, 11, 7, MapDirection::east);
+    session.look();
+    player.play();
+    check(player.victories == 3 && items_carried(*party) == carried,
+          "A monster that keeps its treasure leaves none");
+
+    // Where the party cannot die, a lost fight leaves the fallen with 1 Hit
+    // Point and the adventure goes on.
+    session.place(5, 11, 7, MapDirection::east);
+    session.look();
+    while (session.snapshot().phase == TourPhase::awaiting_continue)
+    {
+        check(session.choose(session.snapshot().continue_ticket, 0), "The words are read");
+    }
+    check(session.pending_encounter().has_value(), "The second thug attacks again");
+    opengold::rules::HazardAttack blow;
+    blow.automatic = true;
+    blow.damage_bonus = party->member(first).vitals.hit_points;
+    (void)party->hazard_attack(first, blow);
+    check(party->member(first).vitals.hit_points <= 0 && !party->member(first).vitals.dead,
+          "A member is down");
+    opengold::rules::Snapshot lost;
+    lost.outcome = opengold::rules::Outcome::defeat;
+    check(session.resolve_combat(lost), "The lost fight's result is taken");
+    check(party->member(first).vitals.hit_points == 1 &&
+              session.snapshot().phase != TourPhase::defeated,
+          "The fallen get up with 1 Hit Point and the adventure goes on");
+}
+
 void the_town_serves_the_party(const std::filesystem::path &kit)
 {
     const ua::DesignFiles files(kit,
@@ -1153,6 +1252,7 @@ int main(int argc, char **argv)
         a_character_starts_as_the_design_says(*kit);
         the_design_loads_and_plays(*kit);
         the_kits_fights_look_as_the_kit_draws_them(*kit);
+        the_kits_fights_end_as_the_kit_ends_them(*kit);
         the_town_serves_the_party(*kit);
         the_view_plays_it_through_the_seam(*kit);
         // The game's startup check plays the test design from the menu (a

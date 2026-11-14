@@ -2362,6 +2362,24 @@ void CampaignParty::grant_script_experience(unsigned amount, MemberId only)
     state_ = std::move(next);
 }
 
+void CampaignParty::grant_experience_share(unsigned amount, MemberId id)
+{
+    editable();
+    auto next = state_;
+    auto &member = member_in(next, id);
+    if (member.vitals.dead)
+    {
+        return;
+    }
+    const auto share = rules_->experience_share(member.character.sheet(), amount);
+    if (share > std::numeric_limits<unsigned>::max() - member.experience)
+    {
+        throw std::runtime_error("Experience overflow");
+    }
+    member.experience += share;
+    state_ = std::move(next);
+}
+
 CampaignParty::HallTraining CampaignParty::hall_training(MemberId id, TrainingHall hall) const
 {
     const auto &m = member(id);

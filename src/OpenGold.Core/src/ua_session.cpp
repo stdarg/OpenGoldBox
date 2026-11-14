@@ -819,30 +819,38 @@ void UaSession::hand_over_treasure()
             party_->add_coins(coin, count);
         }
     }
-    for (const auto number : treasure_items_)
+    // The first member with room takes an item; with no room it stays behind.
+    const auto give = [this](const por::Equipment &item)
     {
-        auto item =
-            number == 0xFF ? random_scroll() : design_item(items_, number, treasure_identified_);
-        if (!item)
-        {
-            continue;
-        }
-        // The first member with room takes it; with no room it stays behind.
         for (const auto id : active_members())
         {
             try
             {
-                party_->take_item(id, *item);
-                break;
+                party_->take_item(id, item);
+                return;
             }
             catch (const std::runtime_error &)
             {
                 // Too heavy for this member: the next one tries.
             }
         }
+    };
+    for (const auto number : treasure_items_)
+    {
+        if (const auto item = number == scroll_number
+                                  ? random_scroll()
+                                  : design_item(items_, number, treasure_identified_))
+        {
+            give(*item);
+        }
+    }
+    for (const auto &item : loot_)
+    {
+        give(item);
     }
     treasure_wealth_ = {};
     treasure_items_.clear();
+    loot_.clear();
 }
 
 // Item FFh of a treasure: a scroll of three magic-user spells picked at
@@ -926,7 +934,7 @@ void UaSession::begin_combat(const EventRecord &event, bool pick_one)
     encounter.distance = fight_distance(event);
     encounter.morale = std::min(100U, event[7] & 0x7FU);
     rules::EntityId next_enemy = first_monster_id, next_ally = first_ally_id;
-    encounter_experience_ = 0;
+    fielded_monsters_.clear();
     // The kit fields at most 50 monsters.
     constexpr unsigned most_monsters = 50;
     unsigned fielded = 0;
@@ -959,10 +967,11 @@ void UaSession::begin_combat(const EventRecord &event, bool pick_one)
                 continue;
             }
             encounter.enemies.push_back(std::move(fighter));
-            encounter_experience_ += word_at(monster.raw, 0x54);
+            fielded_monsters_.emplace(id, group.number);
         }
     }
     party_can_lose_ = (event[12] & 0x40) == 0;
+    monsters_keep_treasure_ = (event[12] & 0x80) != 0;
     encounter_ = std::move(encounter);
     pending_.wait = Wait::combat;
     snapshot_.phase = TourPhase::combat;
@@ -1035,6 +1044,21 @@ bool UaSession::reject_combat(std::string diagnostic)
     return true;
 }
 
+namespace
+{
+// A monster the party killed or brought down; one that fled is not.
+[[nodiscard]] bool brought_down(const rules::CombatantView &unit)
+{
+    return !unit.fled && (unit.dead || !unit.conscious || unit.hit_points <= 0);
+}
+
+// What a magic item is worth in experience: 400 a plus (postcmbt.c, loot_exp).
+[[nodiscard]] unsigned plus_experience(const por::Equipment &item)
+{
+    return item.stored.magic_bonus > 0 ? static_cast<unsigned>(item.stored.magic_bonus) * 400 : 0;
+}
+} // namespace
+
 bool UaSession::resolve_combat(const rules::Snapshot &outcome)
 {
     if (pending_.wait != Wait::combat || !encounter_ || !party_ ||
@@ -1047,24 +1071,112 @@ bool UaSession::resolve_combat(const rules::Snapshot &outcome)
     snapshot_.phase = TourPhase::running;
     if (outcome.outcome == rules::Outcome::victory)
     {
-        // Each member still standing shares the monsters' experience.
-        const auto standing = active_members();
-        if (!standing.empty())
+        if (!monsters_keep_treasure_)
         {
-            const auto share = encounter_experience_ / static_cast<unsigned>(standing.size());
-            for (const auto id : standing)
-            {
-                party_->grant_script_experience(share, id);
-            }
+            take_loot(outcome);
         }
+        award_fight_experience(outcome);
         hand_over_treasure();
     }
-    else if (outcome.outcome == rules::Outcome::defeat && party_can_lose_)
+    if (!party_can_lose_)
+    {
+        // Where the party cannot die, a member down but not dead gets up with
+        // 1 Hit Point (postcmbt.c, combat_results).
+        for (const auto id : party_members())
+        {
+            const auto &vitals = party_->member(id).vitals;
+            if (!vitals.dead && vitals.hit_points <= 0)
+            {
+                party_->recover_duelist(id);
+            }
+        }
+    }
+    // Even there, a party with no one left alive is lost.
+    if (outcome.outcome == rules::Outcome::defeat && (party_can_lose_ || active_members().empty()))
     {
         party_lost_ = true;
     }
     pump();
     return true;
+}
+
+// The monsters the party brought down hand their coins and items over to the
+// treasure (postcmbt.c, loot_exp); a monster whose first item is of type 69h
+// keeps its items.
+void UaSession::take_loot(const rules::Snapshot &outcome)
+{
+    constexpr std::uint8_t keeps_its_items = 0x69;
+    for (const auto &unit : outcome.combatants)
+    {
+        const auto fielded = fielded_monsters_.find(unit.id);
+        if (fielded == fielded_monsters_.end() || !brought_down(unit))
+        {
+            continue;
+        }
+        const auto monster = read_monster(files_, fielded->second);
+        for (std::size_t coin = 0; coin < 3; ++coin)
+        {
+            treasure_wealth_[static_cast<std::size_t>(Coin::platinum) + coin] +=
+                word_at(monster.raw, 0x4C + 2 * coin);
+        }
+        auto gear = monster_items(monster, items_);
+        if (!gear.empty() && gear.front().stored.type == keeps_its_items)
+        {
+            continue;
+        }
+        for (auto &item : gear)
+        {
+            item.stored.readied_raw = 0;
+            loot_.push_back(std::move(item));
+        }
+        // Its scrolls are made as a treasure's are.
+        const auto tail = std::span(monster.raw).subspan(tail_items, tail_item_count);
+        treasure_items_.insert(treasure_items_.end(),
+                               static_cast<std::size_t>(std::ranges::count(tail, scroll_number)),
+                               scroll_number);
+    }
+}
+
+// The fight's experience (postcmbt.c, loot_exp and exp_award): the monsters
+// brought down, and the treasure's platinum (2 each), gems (250), jewelry
+// (2,200) and magic items (400 a plus), shared among the members standing,
+// each share as the rules give it (single classes' bonus for their prime
+// scores, divided among a member's classes).
+void UaSession::award_fight_experience(const rules::Snapshot &outcome)
+{
+    unsigned total = 0;
+    for (const auto &unit : outcome.combatants)
+    {
+        const auto fielded = fielded_monsters_.find(unit.id);
+        if (fielded != fielded_monsters_.end() && brought_down(unit))
+        {
+            total += word_at(read_monster(files_, fielded->second).raw, 0x54);
+        }
+    }
+    total += treasure_wealth_[static_cast<std::size_t>(Coin::platinum)] * 2 +
+             treasure_wealth_[static_cast<std::size_t>(Coin::gems)] * 250 +
+             treasure_wealth_[static_cast<std::size_t>(Coin::jewelry)] * 2200;
+    for (const auto number : treasure_items_)
+    {
+        // A scroll is a +1 item (shop.c, scroll_make).
+        const auto item =
+            number == scroll_number ? std::nullopt : design_item(items_, number, true);
+        total += number == scroll_number ? 400 : item ? plus_experience(*item) : 0;
+    }
+    for (const auto &item : loot_)
+    {
+        total += plus_experience(item);
+    }
+    const auto standing = active_members();
+    if (standing.empty())
+    {
+        return;
+    }
+    const auto share = total / static_cast<unsigned>(standing.size());
+    for (const auto id : standing)
+    {
+        party_->grant_experience_share(share, id);
+    }
 }
 
 void UaSession::refresh_snapshot()

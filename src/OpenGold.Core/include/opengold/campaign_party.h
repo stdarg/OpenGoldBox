@@ -400,6 +400,10 @@ class CampaignParty
     // member, or only `only`, gains `amount` divided among its own classes,
     // with no bonus for its prime scores.
     void grant_script_experience(unsigned amount, MemberId only = {});
+    // A member's share of a fight's experience as its rules give it (the
+    // original's bonus for prime scores, divided among its classes);
+    // nothing for a dead member.
+    void grant_experience_share(unsigned amount, MemberId id);
     // The first member who can cast this spell out of a fight casts it (a
     // script's SPELL); none when no one can.
     [[nodiscard]] std::optional<MemberId> cast_exploration_spell(std::string_view spell);
