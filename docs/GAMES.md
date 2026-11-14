@@ -471,7 +471,15 @@ new decoders.
    out TREASURE from `ITEM0`'s definitions, opens the stores its `GAME.EXE`
    lists, and answers FIND NPC, SPELL and its DAMAGE forms; its sprites and
    combat icons are drawn in their own colors (darkness.md, The walk). Still
-   to come: the area map outside dungeons, the startup menu and the route.
+   to come: drawing the area map, and the startup menu. A fight that ends
+   without a result fails any game's walk (2026-11-14).
+5. The route from the opening to the win (`opengold_darkness_route`). *Begun
+   (2026-11-14):* the route plays the prologue: Rolf's tour, Sasha's escort
+   duty at West Phlan's gate, the storm that takes Phlan, Elminster in Limbo,
+   and a step on the area map, where the party moves on a 38 by 15 grid
+   (darkness.md, The area map). The win is PROGRAM 1 after Gothmenes falls
+   (darkness.md, The win and the route). No stand-ins yet; until the route
+   reaches the win it passes when it plays every beat to the area map.
 
 ### 8. *Unlimited Adventures*
 

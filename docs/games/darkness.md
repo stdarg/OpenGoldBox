@@ -366,11 +366,47 @@ in `GEO1` but no script loads it, so no one walks it. What the walk needed:
 - A training hall's classes are cell 30h's mask (127 every class).
 - An NPC's record (510 bytes) joins the party as its record holds it.
 
-Still to come: the area map outside dungeons (in-dungeon cell 22h at 0, with
-`BACK1` and the tile set of cell 3Ah) is not drawn; the evening and other
-skies; the combat ground tiles (`DUNGCOM`, `WILDCOM`); sound effects other
-than the footstep, and the music PLAY SOUND starts; the opening and closing
-films in the game; the startup menu's button; the route.
+A fight that ends without a result fails the walk. A monster still charmed
+onto the party's side as a fight ends leaves as one that ran, worth neither
+experience nor treasure, as the original's CombatDoneCleanup marks it.
+
+Still to come: the area map is not drawn (the party walks on it, below);
+the evening and other skies; the combat ground tiles (`DUNGCOM`,
+`WILDCOM`); sound effects other than the footstep, and the music PLAY SOUND
+starts; the opening and closing films in the game; the startup menu's
+button.
+
+## The area map
+
+Outside a dungeon (cell 22h at 0, cell 24h at 1) the party is on the area
+map: big picture 240, a grid of 38 columns by 15 rows, the party's square in
+cells 25h and 26h. A step goes one square in any of eight directions (north
+and on clockwise, as the original's MovePartyWilderness), kept on the grid,
+the square left in cells 17h and 18h; it takes half a day. Script 17 reads
+the square after the step and names the site there: Phlan's crater at (9,4),
+Zhentil Keep's gates at (0,4), Mulmaster at (31,11), Myth Drannor's ruins at
+(0,13) and the rest (`OPENGOLD_DARKNESS_SITES` lists them all from where the
+route ends). OpenGoldBox moves the party there; it does not draw the map
+yet.
+
+## The win and the route
+
+The game is won when Gothmenes falls and Bane's crystal is turned to dust
+(script 75): its PROGRAM 1 saves the party and leaves the game, and the
+original's `CONTROL.EXE` then plays the closing film (`FINAL`). OpenGoldBox
+tells the win ("Gothmenes has fallen, and Bane's crystal is dust. You have
+won.", `game_won`) and goes on.
+
+`opengold_darkness_route` (`opengold_gold_box_games_tests --darkness-route`)
+plays the story with the cluebook's party (two paladins, a ranger, two
+clerics and a magic-user, made under Darkness's rules) in the cluebook's
+order. It takes Rolf's tour, walks off the docks' map into West Phlan (cell
+21h, set as a step leaves the map's edge), takes Sasha's escort duty at the
+west gate, sees the storm take Phlan, meets Elminster in Limbo and comes back
+on the area map at (26,6), where it takes a step west. It has no stand-ins
+yet. Until it reaches the win it passes when it plays every beat to the area
+map; the next beats are the cluebook's Limbo, the overland's mini
+adventures and the Lands of Thar.
 
 ### Creatures
 

@@ -395,13 +395,15 @@ Journal), chosen by the game as the others' are (2026-11-14):
   126, are numbered 200 higher too.
 - **Training** costs nothing; attacks, thief skills and the experience
   bonuses are *Secret*'s.
+- **Charisma and Strength:** every class needs a Charisma of 6 at least (a
+  druid's 15 and a paladin's 17 stay), and a paladin or ranger of Strength 18
+  rolls Exceptional Strength as a fighter does.
 - **Still to come:** spell levels 8 and 9 (its magic-users' slots from level
   16 and its spells 120 to 126), its other new spells (Blade Barrier,
   Restoration, Energy Drain, Destruction, Resurrection, the ranger's druid
-  spells 106 to 109, Fire Touch and Iron Skin), a Charisma of at least 6 for
-  every class, Exceptional Strength for paladins and rangers, its starting
-  equipment, and bringing a *Secret* party across (its LoadChar), which the
-  original offers.
+  spells 106 to 109, Fire Touch and Iron Skin), its starting equipment, and
+  bringing a *Secret* party across (its LoadChar), which the original
+  offers.
 
 ## Unlimited Adventures
 
