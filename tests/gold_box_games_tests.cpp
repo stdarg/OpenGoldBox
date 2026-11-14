@@ -3180,6 +3180,25 @@ const std::vector<RouteBeat> &gateway_route()
             // shambling mounds.
             route.push_back(step_beat(26, 2, 3, D::north, {"HELP BIRD", "YES"}));
         }
+        // Ceptienne's aerie: through the maze of one-way doors and the secret
+        // door to her chamber, where she falls with the statuette of the South
+        // (bit 4 of cell 4C27).
+        walk_passages(route, 18,
+                      {{15, 2, D::west},  {14, 2, D::west},  {13, 2, D::west},  {12, 2, D::north},
+                       {12, 1, D::west},  {11, 1, D::north}, {11, 0, D::west},  {10, 0, D::west},
+                       {9, 0, D::west},   {8, 0, D::west},   {7, 0, D::west},   {6, 0, D::south},
+                       {6, 1, D::west},   {5, 1, D::south},  {5, 2, D::west},   {4, 2, D::south},
+                       {4, 3, D::east},   {5, 3, D::east},   {6, 3, D::east},   {7, 3, D::east},
+                       {8, 3, D::east},   {9, 3, D::south},  {9, 4, D::south},  {9, 5, D::south},
+                       {9, 6, D::east},   {10, 6, D::north}, {10, 5, D::north}, {10, 4, D::east},
+                       {11, 4, D::east},  {12, 4, D::south}, {12, 5, D::south}, {12, 6, D::south},
+                       {12, 7, D::west},  {11, 7, D::west},  {10, 7, D::west},  {9, 7, D::west},
+                       {8, 7, D::west},   {7, 7, D::south},  {7, 8, D::south},  {7, 9, D::south},
+                       {7, 10, D::south}, {7, 11, D::west},  {6, 11, D::north}, {6, 10, D::north},
+                       {6, 9, D::north},  {6, 8, D::west},   {5, 8, D::south},  {5, 9, D::south},
+                       {5, 10, D::west},  {4, 10, D::north}, {4, 9, D::north},  {4, 8, D::west}},
+                      true);
+        route.back().expect_cell = {{0x4C27, 15}};
         return route;
     }();
     return beats;
