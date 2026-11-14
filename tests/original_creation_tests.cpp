@@ -1175,6 +1175,86 @@ void a_fight_starts_with_lasting_conditions()
           "The fighter starts its fight still blind");
 }
 
+// The first combatant of the party a fight starts from this state.
+original::Combatant fought_from(const rules::RulesModule &module,
+                                const rules::CharacterSheet &sheet, const rules::VitalState &state,
+                                GoldBoxGame game)
+{
+    rules::Encounter encounter;
+    encounter.battlefield = {8, 8, std::vector<rules::Terrain>(64, rules::Terrain::open)};
+    rules::Participant member;
+    member.id = 1;
+    member.name = "Aldo";
+    member.definition = "member";
+    member.side = rules::Side::party;
+    member.cell = {1, 1};
+    member.character_profile = module.character_profile(sheet, {}).data;
+    member.state = state;
+    original::Combatant kobold;
+    rules::Participant foe;
+    foe.id = 2;
+    foe.name = "Kobold";
+    foe.definition = "monster";
+    foe.side = rules::Side::opposition;
+    foe.cell = {6, 6};
+    foe.character_profile = kobold.encode();
+    encounter.participants = {member, foe};
+    const auto session = original::rules_module({{}, {}, game})->create(std::move(encounter), 71);
+    const auto snapshot = session->snapshot();
+    const auto &aldo =
+        *std::ranges::find(snapshot.combatants, std::string("Aldo"), &rules::CombatantView::name);
+    return *original::Combatant::decode(aldo.persistent.resources);
+}
+
+// The Strength spells cast in camp last into the next fight (magic.pas);
+// a disease that has taken hold wastes Strength and Hit Points through a
+// day's rest and leaves its member helpless (effhndlr.pas, 43 and 44), until
+// its cure gives the Strength back; Slow Poison stands one poison killed up
+// for a while, and the poison kills again when it runs out.
+void camp_spells_last_and_diseases_waste()
+{
+    const auto module = original::rules_module();
+    const auto curse = GoldBoxGame::curse_of_the_azure_bonds;
+    auto mage = original_character(curse, "magic_user", "neutral_good", 73);
+    mage.prepared_spells = {"magic_user:enlarge"};
+    const auto fighter = original_character(curse, "fighter", "neutral_good", 79);
+    RandomState random{83};
+    rules::VitalState own{mage.hit_points, false, {}, {}};
+    rules::VitalState fresh{fighter.hit_points, false, {}, {}};
+    module->use_camp_action(mage, own, fighter, fresh, "cast:magic_user:enlarge", random);
+    const auto enlarged = fought_from(*module, fighter, fresh, curse);
+    const auto own_strength = fighter.scores[rules::Ability::strength];
+    const auto [base, exceptional] =
+        original::enlarged_strength(mage.original->class_levels[5], curse);
+    const bool gains = original::stronger_than(base, exceptional, own_strength,
+                                               fighter.original->exceptional_strength);
+    check(carries(fighter, fresh, 12) &&
+              (gains ? enlarged.strength == base && enlarged.exceptional_strength == exceptional
+                     : enlarged.strength == own_strength),
+          "Enlarge cast in camp makes the next fight's Strength");
+
+    auto sick = left_with(fighter, {{43, 0, 1, false}, {44, 0, 1, false}});
+    module->recover(sick, fighter);
+    check(sick.hit_points == 1 && carries(fighter, sick, 31) &&
+              carries(fighter, sick, original::strength_wasted),
+          "A day's disease wastes Hit Points and Strength and leaves one helpless");
+    const auto weak = fought_from(*module, fighter, sick, curse);
+    check(weak.strength == std::max(3, own_strength - 24), "The next fight starts weak");
+    module->temple_service(sick, fighter, rules::TempleService::cure_disease, random);
+    check(sick.resources.empty() &&
+              fought_from(*module, fighter, sick, curse).strength == own_strength,
+          "Cured, the Strength comes back");
+
+    auto priest = original_character(curse, "cleric", "lawful_good", 89);
+    priest.prepared_spells = {"cleric:slow_poison"};
+    rules::VitalState priest_state{priest.hit_points, false, {}, {}};
+    auto dead = left_with(fighter, {{55, 0, 0, false}}, true);
+    module->use_camp_action(priest, priest_state, fighter, dead, "cast:cleric:slow_poison", random);
+    check(!dead.dead && dead.hit_points >= 1, "Slow Poison stands the poisoned up for a while");
+    module->recover(dead, fighter);
+    check(dead.dead, "The poison kills again when the spell runs out");
+}
+
 // Raise Dead's cost (temple.pas, RaiseDead): a point of Constitution, and at
 // the temple the Hit Points its formula takes; the cost is in the member's
 // level history, so a saved game keeps it.
@@ -1404,6 +1484,7 @@ int main()
         later_temples_stand_up_the_poisoned();
         a_paladin_cures_disease();
         a_fight_starts_with_lasting_conditions();
+        camp_spells_last_and_diseases_waste();
         raise_dead_costs_constitution();
         scripts_harm_as_the_original();
         a_potion_heals_outside_a_fight();

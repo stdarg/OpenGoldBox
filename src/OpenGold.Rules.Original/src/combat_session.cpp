@@ -32,7 +32,7 @@ using rules::Side;
 
 // The original counts movement in half-moves: 2 a straight step, 3 a diagonal one.
 constexpr rules::StepCosts half_moves{2, 3, 2, 4, 0};
-constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 18";
+constexpr std::string_view checkpoint_format = "OGORIGINALCOMBAT 19";
 
 enum class Condition : unsigned
 {
@@ -78,6 +78,7 @@ constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_r
               enfeebled = 29, blind = 33, bestow_curse = 36, hasted = 39, missile_protection = 41,
               slowed = 42, protection_from_evil_aura = 45, protection_from_good_aura = 46,
               prayer = 49, coughing = 30, nausea = 31, stinking_cloud = 40, cloudkill = 291,
+              enlarged = 12, strengthened = 38, strength_wasted = original::strength_wasted,
               animated = 32, snake_charm = 51, slow_poison_tick = 15, slow_poison = 22,
               revival = 78, read_magic = 16, dust = 71;
 // Displacement keeps whether it has turned an attack aside in this bit of its strength.
@@ -575,15 +576,15 @@ enum class Flames : unsigned
 // The spells built so far; the rest are not offered yet.
 bool spell_built(int number)
 {
-    constexpr std::array built{26, 27, 36, 41, 46, 57, 58, 60, 61, 62, 63, 64, 65, 1, 2, 3, 4, 5, 6,
-                               7, 8, 9, 10, 11, 15, 16, 17, 19, 20, 21, 23, 24, 25, 29, 30, 32, 33,
-                               37, 38, 40, 42, 34, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55,
-                               // Curse's (spells.cpp, curse_spells).
-                               158, 166, 168, 169, 170, 171, 172, 173, 174, 176, 177, 179, 180, 181,
-                               182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195,
-                               196, 197, 198, 199, 200,
-                               // Secret's (spells.cpp, secret_spells).
-                               236, 256, 290, 296, 298, 310, 311, 312, 313, 314, 315, 316, 317};
+    constexpr std::array built{
+        26, 27, 36, 41, 46, 57, 58, 59, 60, 61, 62, 63, 64, 65, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+        12, 13, 15, 16, 17, 19, 20, 21, 23, 24, 25, 29, 30, 32, 33, 35, 37, 38, 40, 42, 34, 43, 44,
+        45, 47, 48, 49, 50, 51, 52, 53, 54, 55,
+        // Curse's (spells.cpp, curse_spells).
+        158, 166, 168, 169, 170, 171, 172, 173, 174, 176, 177, 179, 180, 181, 182, 183, 184, 185,
+        186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200,
+        // Secret's (spells.cpp, secret_spells).
+        236, 256, 290, 296, 298, 310, 311, 312, 313, 314, 315, 316, 317};
     return std::find(built.begin(), built.end(), number) != built.end();
 }
 
@@ -822,6 +823,9 @@ class Session final : public rules::CombatSession
     void cast_secret_spell(Fighter &caster, int number, int level,
                            const std::vector<EntityId> &targets);
     void heal_all_but_1d4(Fighter &target);
+    void recount_strength(Fighter &f);
+    void cast_strength_spell(Fighter &caster, int number, int level,
+                             const std::vector<EntityId> &targets);
     void cast_death_spell(const std::vector<EntityId> &targets);
     [[nodiscard]] bool turns_aside_slaying(Fighter &target);
     void secret_poison(Fighter &victim, int modifier);
@@ -2694,6 +2698,12 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         // Poison: the caster's touch carries poison (ovr023, SpellPoison).
         add_with_message(caster, {64, 0, level, false}, false, false, 0, level, &known);
         break;
+    case 12:
+    case 13:
+    case 35:
+    case 59:
+        cast_strength_spell(caster, number, level, targets);
+        break;
     case 236:
     case 256:
     case 290:
@@ -3061,6 +3071,95 @@ void Session::cast_secret_spell(Fighter &caster, int number, int level,
     default:
         break;
     }
+}
+
+// The Strength spells (magic.pas, SpellEnlarge, SpellReduce, SpellStrength,
+// SpellGiantStrength): each effect keeps the Strength it gives in its
+// strength, by the original's encoding (strength_code).
+void Session::cast_strength_spell(Fighter &caster, int number, int level,
+                                  const std::vector<EntityId> &targets)
+{
+    constexpr int enlarge = 12, reduce = 13, giant_strength = 59;
+    const auto &known = *game_spell(number);
+    const int minutes = known.minutes_fixed + known.minutes_per_level * level;
+    const auto game = game_of(identity_);
+    for (const auto id : targets)
+    {
+        auto &target = *find(id);
+        const auto &n = target.numbers;
+        if (number == reduce)
+        {
+            if (!target.has(effect::enlarged) || saving_throw(target, 4, 0, &caster))
+            {
+                log({"{name} is unaffected.", {{"name", target.name}}});
+                continue;
+            }
+            target.remove(effect::enlarged);
+            log({"{name} has been reduced.", {{"name", target.name}}});
+            recount_strength(target);
+            continue;
+        }
+        const auto [base, exceptional] =
+            number == enlarge ? enlarged_strength(level, game)
+            : number == giant_strength
+                ? std::pair{21, 0}
+                : strengthened(n.strength, n.exceptional_strength, n.class_levels, game,
+                               roll(strength_spell_die(n.class_levels, game)));
+        const int code = number == enlarge ? effect::enlarged : effect::strengthened;
+        const bool stronger = stronger_than(base, exceptional, n.strength, n.exceptional_strength);
+        // A Potion of Giant Strength lasts the fight (its table's no time).
+        const int lasting = number == giant_strength ? 0 : minutes;
+        if (add_with_message(target, {code, lasting, strength_code(base, exceptional), false},
+                             false, false, 0, level, &known))
+        {
+            recount_strength(target);
+            if (stronger)
+            {
+                log({"{name} is stronger.", {{"name", target.name}}});
+            }
+        }
+    }
+}
+
+// A creature's Strength again (fxengine.pas, RecalcAbility): its own, less
+// what a disease has wasted, or the best its Enlarge and Strength effects
+// give; a change moves its blows' to-hit and damage when they take Strength.
+void Session::recount_strength(Fighter &f)
+{
+    auto &n = f.numbers;
+    int base = n.natural_strength, exceptional = n.natural_exceptional_strength;
+    if (const auto *wasted = f.find_effect(effect::strength_wasted); wasted && wasted->strength > 0)
+    {
+        base = std::max(3, base - wasted->strength);
+        exceptional = 0;
+    }
+    for (const auto &e : n.effects)
+    {
+        if (e.code != effect::enlarged && e.code != effect::strengthened)
+        {
+            continue;
+        }
+        const auto [given, given_exceptional] = strength_of_code(e.strength);
+        if (stronger_than(given, given_exceptional, base, exceptional))
+        {
+            base = given;
+            exceptional = given_exceptional;
+        }
+    }
+    if (n.strength_counts)
+    {
+        n.thac0 += strength_to_hit_bonus(n.strength, n.exceptional_strength) -
+                   strength_to_hit_bonus(base, exceptional);
+        const int more_damage = strength_damage_bonus(base, exceptional) -
+                                strength_damage_bonus(n.strength, n.exceptional_strength);
+        n.attacks[0].modifier += more_damage;
+        if (n.large_attack)
+        {
+            n.large_attack->modifier += more_damage;
+        }
+    }
+    n.strength = base;
+    n.exceptional_strength = exceptional;
 }
 
 // Heal (SpellHeal): disease, blindness and feeblemind cured, then every Hit
@@ -3684,6 +3783,10 @@ void Session::remove_with_handler(Fighter &f, std::size_t node)
         f.initiative = 0;
         log({"{name} collapses.", {{"name", f.name}}});
         return;
+    }
+    if (ended.code == effect::enlarged || ended.code == effect::strengthened)
+    {
+        recount_strength(f);
     }
     if (ended.on_remove)
     {
@@ -5309,6 +5412,10 @@ void Session::expire(Fighter &f, const Effect &ended)
 {
     switch (ended.code)
     {
+    case effect::enlarged:
+    case effect::strengthened:
+        recount_strength(f);
+        break;
     case 342:
         // Fear ends: it stops fleeing and is the player's again (Curse, AffectFear).
         f.fleeing = false;
@@ -5396,6 +5503,13 @@ void Session::combat_start()
     bool feared = false;
     for (auto &f : fighters_)
     {
+        // What its lasting effects make of its Strength (a Strength spell cast
+        // in camp, a disease's wasting).
+        if (f.has(effect::enlarged) || f.has(effect::strengthened) ||
+            f.has(effect::strength_wasted))
+        {
+            recount_strength(f);
+        }
         // Curse's alias starts every fight invisible (add_affect_19).
         if (f.has(338) && !f.has(effect::invisible))
         {

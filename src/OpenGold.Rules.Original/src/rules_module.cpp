@@ -1162,11 +1162,13 @@ namespace
 constexpr int cure_light_wounds = 3, cure_serious_wounds = 158, cure_critical_wounds = 171,
               raise_dead = 175, heal = 236, barkskin = 290, druid_cure_light_wounds = 298,
               cure_blindness = 37, cure_disease = 39, remove_curse = 43,
-              magic_user_remove_curse = 189, neutralize_poison = 167;
+              magic_user_remove_curse = 189, neutralize_poison = 167, enlarge = 12, reduce = 13,
+              strength_spell = 35, slow_poison = 26;
 // The spells a member may cast in camp: the cures, Curse's Raise Dead and
-// Neutralize Poison, and Secret's Heal and Barkskin, which its table casts
-// as Heal.
-constexpr std::array<int, 12> camp_spells{cure_light_wounds,
+// Neutralize Poison, Secret's Heal and Barkskin, which its table casts as
+// Heal, Slow Poison, and the Strength spells, whose effects last into the
+// next fight.
+constexpr std::array<int, 16> camp_spells{cure_light_wounds,
                                           cure_serious_wounds,
                                           cure_critical_wounds,
                                           raise_dead,
@@ -1177,7 +1179,11 @@ constexpr std::array<int, 12> camp_spells{cure_light_wounds,
                                           cure_disease,
                                           remove_curse,
                                           magic_user_remove_curse,
-                                          neutralize_poison};
+                                          neutralize_poison,
+                                          enlarge,
+                                          reduce,
+                                          strength_spell,
+                                          slow_poison};
 constexpr std::string_view cast_prefix = "cast:";
 // A paladin's laying on of hands, once between a day's rests; the member's
 // state keeps that it was used (as the paladinDailyHealCast effect).
@@ -1203,7 +1209,9 @@ constexpr int revived_from_poison = 600;
 // and in Pool of Radiance rot and mummy rot.
 std::vector<int> disease_codes(GoldBoxGame game)
 {
-    std::vector<int> codes{31, 34, 43, 44};
+    // And the Strength it wasted, which comes back (Secret's
+    // RemoveDiseaseEffects, recounting Strength).
+    std::vector<int> codes{31, 34, 43, 44, strength_wasted};
     if (game == GoldBoxGame::pool_of_radiance)
     {
         codes.insert(codes.end(), {50, 57});
@@ -1252,6 +1260,44 @@ bool has_any(const CharacterSheet &sheet, const VitalState &state, std::span<con
                                });
 }
 
+// A day of a disease that has taken hold (effhndlr.pas, EffDiseaseStrength
+// and EffDiseaseHitPoints): a point of Strength an hour down to 3, and a Hit
+// Point every ten minutes down to 1, and then the member is helpless until
+// it is cured.
+void waste_away(const CharacterSheet &sheet, VitalState &state, std::vector<Effect> &conditions)
+{
+    constexpr int wasting_strength = 43, wasting_hit_points = 44, helpless = 31, hours = 24,
+                  ten_minutes = 6 * 24;
+    bool done_in = false;
+    if (condition(conditions, wasting_strength))
+    {
+        const int own = sheet.scores[Ability::strength];
+        auto wasted = std::ranges::find(conditions, strength_wasted, &Effect::code);
+        if (wasted == conditions.end())
+        {
+            conditions.push_back({strength_wasted, 0, 0, false});
+            wasted = std::prev(conditions.end());
+        }
+        wasted->strength = std::min(wasted->strength + hours, std::max(own - 3, 0));
+        done_in = own - wasted->strength <= 3;
+    }
+    if (condition(conditions, wasting_hit_points) && !state.dead)
+    {
+        state.hit_points = std::max(std::min(state.hit_points, 1), state.hit_points - ten_minutes);
+        done_in = done_in || state.hit_points <= 1;
+    }
+    const bool helpless_already =
+        std::ranges::any_of(conditions,
+                            [](const Effect &e)
+                            {
+                                return e.code == helpless && e.minutes == 0;
+                            });
+    if (done_in && !helpless_already)
+    {
+        conditions.push_back({helpless, 0, 255, false});
+    }
+}
+
 // The member's state with its conditions changed: its last fight's numbers
 // keep the change, or after a rest only its conditions do.
 void change_conditions(const CharacterSheet &sheet, VitalState &state,
@@ -1295,6 +1341,89 @@ void stand_unpoisoned(const CharacterSheet &sheet, VitalState &state)
                       [](std::vector<Effect> &effects)
                       {
                           effects.push_back({revived_from_poison, 0, 0, false});
+                      });
+}
+
+// A camp caster's level for a spell (charhlp.pas, GetCasterLevel): its cleric
+// or magic-user level, or a paladin's or ranger's less 8.
+int camp_caster_level(const CharacterSheet &caster, const Spell &known)
+{
+    const auto &levels = original_numbers(caster).class_levels;
+    if (known.caster_class == SpellClass::cleric)
+    {
+        return std::max(level_in(levels, ClassSlot::cleric),
+                        level_in(levels, ClassSlot::paladin) - 8);
+    }
+    return std::max(level_in(levels, ClassSlot::magic_user),
+                    level_in(levels, ClassSlot::ranger) - 8);
+}
+
+// Slow Poison in camp (magic.pas, SpellSlowPoison): one poison killed stands
+// with 1 Hit Point for an hour a caster level, and dies again if the poison
+// outlasts it (recover).
+void hold_poison_back(const CharacterSheet &caster, const CharacterSheet &target, VitalState &state)
+{
+    constexpr int slow_poison_number = 26;
+    if (!has_any(target, state, std::array{poisoned}))
+    {
+        return;
+    }
+    const int hour_a_level = 60 * camp_caster_level(caster, *spell(slow_poison_number));
+    if (state.dead)
+    {
+        stand_unpoisoned(target, state);
+    }
+    change_conditions(target, state,
+                      [hour_a_level](std::vector<Effect> &effects)
+                      {
+                          std::erase_if(effects,
+                                        [](const Effect &e)
+                                        {
+                                            return e.code == slow_poison_end;
+                                        });
+                          effects.push_back({slow_poison_end, hour_a_level, 255, true});
+                      });
+}
+
+// Enlarge, Reduce and Strength cast in camp (magic.pas): their effects last
+// into the next fight, which works out the Strength they give.
+void strengthen_in_camp(const CharacterSheet &caster, const CharacterSheet &target,
+                        VitalState &state, int number, RandomState &random_state)
+{
+    constexpr int enlarge_number = 12, reduce_number = 13, enlarged = 12, strength_effect = 38;
+    const auto &known = *spell(number);
+    const auto game = game_of(target.identity);
+    const int level = camp_caster_level(caster, known);
+    const int minutes = known.minutes_fixed + known.minutes_per_level * level;
+    const auto &numbers = original_numbers(target);
+    if (number == reduce_number)
+    {
+        // A failed save against spells loses the Enlarge (SpellReduce).
+        const int save = numbers.saving_throws[4];
+        if (roll_die(random_state, 20) < save)
+        {
+            (void)cure(target, state, std::array{enlarged});
+        }
+        return;
+    }
+    const int own = target.scores[Ability::strength];
+    const int own_exceptional = numbers.exceptional_strength;
+    const auto [base, exceptional] =
+        number == enlarge_number
+            ? enlarged_strength(level, game)
+            : strengthened(own, own_exceptional, numbers.class_levels, game,
+                           roll_die(random_state, strength_spell_die(numbers.class_levels, game)));
+    const int code = number == enlarge_number ? enlarged : strength_effect;
+    change_conditions(target, state,
+                      [&](std::vector<Effect> &effects)
+                      {
+                          std::erase_if(effects,
+                                        [code](const Effect &e)
+                                        {
+                                            return e.code == code;
+                                        });
+                          effects.push_back(
+                              {code, minutes, strength_code(base, exceptional), false});
                       });
 }
 
@@ -1547,8 +1676,9 @@ void OriginalModule::recover(VitalState &state, const CharacterSheet &sheet) con
                   wasting_hit_points = 44;
     auto conditions = conditions_of(sheet, state);
     std::vector<Effect> taking_hold;
+    bool slow_poison_ended = false;
     std::erase_if(conditions,
-                  [&taking_hold](Effect &e)
+                  [&](Effect &e)
                   {
                       if (e.minutes == 0)
                       {
@@ -1564,8 +1694,16 @@ void OriginalModule::recover(VitalState &state, const CharacterSheet &sheet) con
                           taking_hold.push_back({wasting_strength, 0, e.strength, false});
                           taking_hold.push_back({wasting_hit_points, 0, e.strength, false});
                       }
+                      slow_poison_ended = slow_poison_ended || e.code == slow_poison_end;
                       return true;
                   });
+    waste_away(sheet, state, conditions);
+    // Slow Poison only held the poison back (effhndlr.pas, EffSlowPoison).
+    if (slow_poison_ended && condition(conditions, poisoned))
+    {
+        state.dead = true;
+        state.hit_points = 0;
+    }
     for (const auto &e : taking_hold)
     {
         if (!condition(conditions, e.code))
@@ -1899,8 +2037,9 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
     {
         throw std::runtime_error("Raise Dead cannot bring this member back");
     }
+    const bool slowing = *number == slow_poison;
     if (!raising && target_state.dead &&
-        !(unpoisoning && has_any(target, target_state, poison_codes)))
+        !((unpoisoning || slowing) && has_any(target, target_state, poison_codes)))
     {
         throw std::runtime_error("The dead cannot be healed");
     }
@@ -1931,6 +2070,14 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
         return;
     case cure_blindness:
         (void)cure(target, target_state, std::array{blind});
+        return;
+    case slow_poison:
+        hold_poison_back(user, target, target_state);
+        return;
+    case enlarge:
+    case reduce:
+    case strength_spell:
+        strengthen_in_camp(user, target, target_state, *number, random_state);
         return;
     case cure_disease:
         (void)cure(target, target_state, disease_codes(game));

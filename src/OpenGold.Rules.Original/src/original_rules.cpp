@@ -1778,6 +1778,71 @@ int strength_scale(int strength, int exceptional_strength) noexcept
     return exceptional_strength <= 99 ? 22 : 23;
 }
 
+int strength_code(int strength, int exceptional_strength) noexcept
+{
+    return strength == 18 ? exceptional_strength + 1 : strength + 100;
+}
+
+std::pair<int, int> strength_of_code(int code) noexcept
+{
+    const int kept = code & 0x7F;
+    return kept <= 101 ? std::pair{18, std::max(kept - 1, 0)} : std::pair{kept - 100, 0};
+}
+
+bool stronger_than(int strength, int exceptional_strength, int other_strength,
+                   int other_exceptional_strength) noexcept
+{
+    const auto rank = [](int score, int exceptional)
+    {
+        return score * 101 + (score == 18 ? exceptional : 0);
+    };
+    return rank(strength, exceptional_strength) > rank(other_strength, other_exceptional_strength);
+}
+
+std::pair<int, int> enlarged_strength(int caster_level, GoldBoxGame game) noexcept
+{
+    // Pool of Radiance leaves a caster above level 6, and Curse one above 11,
+    // whatever Strength the last Enlarge left: they give the most below them.
+    constexpr std::array<int, 6> exceptional{0, 1, 51, 76, 91, 100};
+    const int level = std::max(caster_level, 1);
+    if (level <= 6 || game == GoldBoxGame::pool_of_radiance)
+    {
+        return {18, exceptional[static_cast<std::size_t>(std::min(level, 6) - 1)]};
+    }
+    return {std::min(level + 12, 22), 0};
+}
+
+int strength_spell_die(const ClassLevels &levels, GoldBoxGame game) noexcept
+{
+    const bool warrior = level_in(levels, C::fighter) > 0 ||
+                         (game != GoldBoxGame::pool_of_radiance &&
+                          (level_in(levels, C::paladin) > 0 || level_in(levels, C::ranger) > 0));
+    if (warrior)
+    {
+        return 8;
+    }
+    return level_in(levels, C::cleric) > 0 || level_in(levels, C::thief) > 0 ? 6 : 4;
+}
+
+std::pair<int, int> strengthened(int strength, int exceptional_strength, const ClassLevels &levels,
+                                 GoldBoxGame game, int rolled) noexcept
+{
+    const int raised = strength + rolled;
+    if (raised <= 18)
+    {
+        return {raised, 0};
+    }
+    const bool warrior = level_in(levels, C::fighter) > 0 ||
+                         (game != GoldBoxGame::pool_of_radiance &&
+                          (level_in(levels, C::paladin) > 0 || level_in(levels, C::ranger) > 0));
+    if (!warrior)
+    {
+        return {18, 0};
+    }
+    const int from = strength == 18 ? exceptional_strength : 0;
+    return {18, std::min(from + (raised - 18) * 10, 100)};
+}
+
 int strength_to_hit_bonus(int strength, int exceptional_strength) noexcept
 {
     const auto scale = strength_scale(strength, exceptional_strength);

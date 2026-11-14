@@ -352,9 +352,10 @@ reconstruction), with these differences (2026-11-14):
 - **Its temple's poison rules** (its temple.pas): Raise Dead brings back
   one that poison killed with no loss, and Neutralize Poison stands one up,
   as *Secret*'s does.
-- **Still to come:** Strength's effect, cast in a fight or out of one, comes
-  with the Strength spells (plan step 5), as does Blink's cast in camp with
-  the camp's spells whose effects are a fight's.
+- **Strength** cast in a fight goes on its caster, as its row has it (the
+  Strength spells, plan step 5).
+- **Still to come:** Blink's cast in camp, with the camp's spells whose
+  effects are a fight's.
 
 ## Pools of Darkness
 
@@ -545,8 +546,23 @@ lines in all:
    - Still to come: the camp spells whose effects are a fight's (Bless,
      Prayer and the like, cast before one); scribing a scroll's spell into a
      magic-user's book (`CampScribeMenu`); the original's rest of any length
-     and its preparation time (`CampSpellPrepTime`); and the Strength spells
-     (Enlarge, Reduce, Strength, the Potion of Giant Strength).
+     and its preparation time (`CampSpellPrepTime`).
+   - **The Strength spells** (2026-11-14; `magic.pas`, `SpellEnlarge`,
+     `SpellReduce`, `SpellStrength`, `SpellGiantStrength`; `fxengine.pas`,
+     `RecalcAbility`): Enlarge gives 18/00, 18/01, 18/51, 18/76, 18/91 and
+     18/00 at caster levels 1 to 6, and from *Curse* on 19, 20, 21 and 22 at
+     7 to 10; Reduce takes an Enlarge away unless saved against; Strength
+     adds a d8 for a fighter (and from *Curse* on a paladin or ranger), a d6
+     for a cleric or thief and a d4 for anyone else, a warrior's points past
+     18 turning into 10 of exceptional Strength each, to 18/00, anyone
+     else's stopping at 18; the Potion of Giant Strength gives 21 for the
+     fight. A creature's Strength is the best its own and its effects give,
+     worked out again as each comes and goes, and moves the to-hit and
+     damage of blows that take Strength. Cast in camp, Enlarge and Strength
+     last into the next fight (the time between is not counted) and through
+     a day's rest by their minutes. The earlier games' effects keep the
+     Strength to go back to, *Curse*'s and *Secret*'s the Strength they give;
+     OpenGoldBox keeps the Strength they give in all.
 6. **Training, the temple, thief skills, turning undead and conditions,** and
    the original scripts reading the original values.
 
@@ -587,9 +603,13 @@ lines in all:
      temple Heal cures blindness, disease and feeblemind too, and *Secret*'s
      and *Gateway*'s Neutralize Poison stand up one poison killed, at no cost.
      Keoghtum's Ointment takes poison, else disease, away outside a fight as
-     in one. Still to come: the wasting itself (the original takes a point of
-     Strength an hour and a Hit Point every ten minutes, a state OpenGoldBox
-     does not keep), Slow Poison out of fights, and the temple's cure of
+     in one. A disease that has taken hold wastes its member through each
+     day's rest, a point of Strength an hour to 3 and a Hit Point every ten
+     minutes to 1, and leaves it helpless until it is cured, which gives the
+     Strength back (`EffDiseaseStrength`, `EffDiseaseHitPoints`); the time
+     spent walking is not counted. Slow Poison in camp stands one poison
+     killed up for an hour a caster level, and the poison kills it again as
+     the spell runs out over a rest. Still to come: the temple's cure of
      stone, which *Secret*'s route brings.
    - **Companions:** an NPC who joins (ADD NPC) is its original record: its
      scores, class levels, Hit Points, spells known and memorized, and its
@@ -860,7 +880,7 @@ gear.
      Wounds, Cause Light Wounds, Protection from Evil and Good, Resist Cold,
      Burning Hands, Charm Person, Magic Missile, Shield, Shocking Grasp and
      Sleep work; Detect Magic changes nothing in a fight; Enlarge and Reduce
-     come with Strength in 8b. A character has its race's innate effects:
+     came with the Strength spells (plan step 5). A character has its race's innate effects:
      the Constitution saves of dwarves, gnomes and halflings and the elf's
      and half-elf's resistance to sleep and charm. A dwarf strikes orcs,
      goblins and hobgoblins (and GAGOOL and MACE) 1 better and a gnome
@@ -894,8 +914,8 @@ gear.
      Animate Dead (the human dead rise whole for the caster, and collapse at
      0), Slow Poison (one killed by poison stands with 1 Hit Point, and dies
      if the poison outlasts the spell) and Snake Charm. Enlarge, Reduce and
-     Strength, with the original's rules for stacking Strength, come with
-     magic (plan step 5); Spiritual Hammer's hammer, an item, with step 7.
+     Strength came with magic (plan step 5); Spiritual Hammer's hammer, an
+     item, comes with step 7.
    - 8c. *Done 2026-11-12:* turning undead, once a fight for one with cleric
      levels: one d20 for the whole attempt against up to 1d12 undead enemies
      in sight, the lowest kinds first and the nearest of those, by the
@@ -915,7 +935,7 @@ gear.
      of Lightning, the Wands of Paralyzation and of Magic Missiles (which
      Shield does not stop), the Potion of Healing, Dust of Disappearance
      (never singled out, 4 harder to hit) and the Necklace of Missiles; the
-     Potion of Giant Strength comes with Strength (plan step 5).
+     Potion of Giant Strength came with Strength (plan step 5).
 9. The original's AI. *Done 2026-11-13:* the command `quick` plays a
    creature's turn as the original's AI does (`CombatAiControl`): its
    approach pattern, then an item, a spell begun earlier, turning undead, a
@@ -1028,6 +1048,8 @@ tuned with the AI lab once the original rules play.
 | *Secret:* a paladin with no cleric or magic-user levels casts its spells at level 6 whatever its own, as its check for a caster leaves the paladin out where *Curse*'s has it (`charhlp.pas`, `GetCasterLevel`) | At its paladin level, as *Secret* reckons a paladin's spells otherwise |
 | *Secret:* the spells a magic-user learns while trained at creation include, at level 6, Cure Light Wounds, a cleric's spell (`chargen.pas`, TrainingMenu) | Left out |
 | *Gateway:* Neutralize Poison at the temple stands up any member at 0 Hit Points or dead, poisoned or not, once the player pays for it anyway (`temple.pas`, `NeutralizePoison`) | Only one that is poisoned |
+| Enlarge cast above level 6 in *Pool of Radiance*, or above 11 in *Curse*, gives whatever Strength the last Enlarge left, as no table row sets it (`magic.pas`, `SpellEnlarge`) | The most the table gives |
+| *Pool of Radiance:* Strength cast on a creature of no class it names, and in *Curse* on a paladin or ranger, adds a die never rolled (`magic.pas`, `SpellStrength`) | A d4, and a warrior's d8 |
 | *Curse* and *Gateway:* training picks the class whose next level needs the most experience, but reads every class at the level of the last one it looked at (TrainingMenu) | Each class at its own level |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |

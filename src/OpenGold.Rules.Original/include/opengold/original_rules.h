@@ -7,6 +7,7 @@
 #include <optional>
 #include <span>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 // The original Gold Box rules: AD&D 1st edition as Pool of Radiance applied
@@ -379,6 +380,27 @@ struct CasterSlots
 // 18 by its exceptional percentage as 18 (none) to 23 (18/00), and 19 to 25
 // as 24 to 30.
 [[nodiscard]] int strength_scale(int strength, int exceptional_strength) noexcept;
+
+// Strength as an effect keeps it (fxengine.pas, StrengthModifier): 18 with its
+// exceptional Strength as 1 to 101, any other Strength as 100 more; and back.
+[[nodiscard]] int strength_code(int strength, int exceptional_strength) noexcept;
+// Whether one Strength is greater than another, 18/01 to 18/00 between 18 and 19.
+[[nodiscard]] bool stronger_than(int strength, int exceptional_strength, int other_strength,
+                                 int other_exceptional_strength) noexcept;
+[[nodiscard]] std::pair<int, int> strength_of_code(int code) noexcept;
+// What Enlarge gives at a caster level (magic.pas, SpellEnlarge): 18/00,
+// 18/01, 18/51, 18/76, 18/91 and 18/00 at levels 1 to 6; Curse and the games
+// after it go on to 19, 20, 21 and 22 at levels 7 to 10.
+[[nodiscard]] std::pair<int, int> enlarged_strength(int caster_level, GoldBoxGame game) noexcept;
+// The die the Strength spell adds (SpellStrength): a d8 for a fighter (and,
+// from Curse on, a paladin or ranger), a d6 for a cleric or thief, else a d4.
+[[nodiscard]] int strength_spell_die(const ClassLevels &levels, GoldBoxGame game) noexcept;
+// The Strength the Strength spell gives for the roll: above 18 a warrior's
+// turns into 10 points of exceptional Strength a point, to 18/00, and anyone
+// else's stops at 18.
+[[nodiscard]] std::pair<int, int> strengthened(int strength, int exceptional_strength,
+                                               const ClassLevels &levels, GoldBoxGame game,
+                                               int rolled) noexcept;
 // What Strength adds to a weapon's to-hit roll and damage, for a weapon that
 // takes Strength.
 [[nodiscard]] int strength_to_hit_bonus(int strength, int exceptional_strength) noexcept;

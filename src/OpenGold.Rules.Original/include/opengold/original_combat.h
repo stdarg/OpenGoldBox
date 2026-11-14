@@ -157,8 +157,14 @@ struct Combatant
     std::optional<Missile> missile;
     // What its readied protective items add to its saving throws.
     int save_bonus{};
-    // Its Strength score, which a holding bite cannot hold from 19 up.
-    int strength{10};
+    // Its Strength score, which a holding bite cannot hold from 19 up, with
+    // its exceptional Strength at 18; its own, which the Strength spells and
+    // potions raise for a while; and whether its blows take Strength (a
+    // creature that strikes with Strength unarmed, or with a weapon that
+    // takes it), so that a change of Strength changes their to-hit and damage.
+    int strength{10}, exceptional_strength{};
+    int natural_strength{10}, natural_exceptional_strength{};
+    bool strength_counts{};
     // Its undead level for turning (1 skeleton to 10 vampire), 0 for the living.
     int undead_level{};
     // Its Constitution, for the racial saving throw bonuses; its alignment
@@ -252,11 +258,16 @@ struct CarriedItem
 
 // The conditions that outlast a fight and a day's rest until they are cured
 // or run out, by the fight's numbers: blindness (33), disease (34, 43, 44,
-// and Pool of Radiance's rot, 50 and 57), poison (55, and Slow Poison's 15
-// and 22), Bestow Curse (36) and feeblemind (268); and what a paladin has
-// spent, the day's laying on of hands (340) and the week's cures of disease
-// (341, its strength the cures spent).
-[[nodiscard]] bool lasting_condition(int code, GoldBoxGame game) noexcept;
+// and Pool of Radiance's rot, 50 and 57), the helplessness a disease brings
+// for good (31 with no end), poison (55, and Slow Poison's 15 and 22), Bestow
+// Curse (36), feeblemind (268), Enlarge (12) and Strength (38), cast in camp
+// or left from a fight; what a paladin has spent, the day's laying on of
+// hands (340) and the week's cures of disease (341, its strength the cures
+// spent); and the Strength a disease has wasted (601, OpenGoldBox's own, its
+// strength the points).
+[[nodiscard]] bool lasting_condition(const Effect &effect, GoldBoxGame game) noexcept;
+// The marker of the Strength a disease has wasted outside fights.
+inline constexpr int strength_wasted = 601;
 
 // What a party member's state carries between fights
 // (rules::VitalState::resources): the numbers its last fight left it, its

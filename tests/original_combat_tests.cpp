@@ -3859,6 +3859,70 @@ void gateway_rows_change()
           "Invisibility 10' Radius reaches 6 squares around its square");
 }
 
+// The Strength spells in a fight (magic.pas): Enlarge gives a level's
+// Strength (18/76 at level 4), which moves the blows' to-hit and damage;
+// Reduce takes it away on a failed save; Gateway's Strength, cast in a fight
+// on its caster, adds a d4 for a magic-user.
+void strength_spells_strengthen()
+{
+    using original::ClassSlot;
+    auto fighter = creature(30, 4);
+    fighter.class_levels[static_cast<std::size_t>(ClassSlot::fighter)] = 4;
+    fighter.strength = fighter.natural_strength = 16;
+    fighter.strength_counts = true;
+    fighter.saving_throws = {21, 21, 21, 21, 21};
+    auto fight = arrange(
+        {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 4, {12})},
+         {"Fighter", rules::Side::party, {1, 3}, fighter},
+         {"Witch", rules::Side::opposition, {4, 3}, caster(ClassSlot::magic_user, 4, {13})}},
+        331);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 12,
+             [&]
+             {
+                 return aim_at(session, "Fighter");
+             });
+    const auto enlarged = left_by_fight(session, "Fighter");
+    namespace o = original;
+    check(enlarged.strength == 18 && enlarged.exceptional_strength == 76 &&
+              enlarged.thac0 == fighter.thac0 - o::strength_to_hit_bonus(18, 76) +
+                                    o::strength_to_hit_bonus(16, 0) &&
+              enlarged.attacks[0].modifier == fighter.attacks[0].modifier +
+                                                  o::strength_damage_bonus(18, 76) -
+                                                  o::strength_damage_bonus(16, 0),
+          "Enlarge gives 18/76 at level 4, and its to-hit and damage");
+    cast_now(session, "Witch", 13,
+             [&]
+             {
+                 return aim_at(session, "Fighter");
+             });
+    const auto reduced = left_by_fight(session, "Fighter");
+    check(reduced.strength == 16 && reduced.thac0 == fighter.thac0 &&
+              reduced.attacks[0].modifier == fighter.attacks[0].modifier,
+          "Reduce takes the Enlarge away");
+
+    // Gateway's Strength, cast in a fight on the caster: a magic-user's 1d4.
+    auto strong =
+        arrange({{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 4, {35})},
+                 {"Kobold", rules::Side::opposition, {7, 7}, creature(20, 0)}},
+                337, {}, 100, GoldBoxGame::gateway_to_the_savage_frontier);
+    until_turn_of(*strong.session, "Mage");
+    check(strong.session->submit(*cast_command(*strong.session, 35)), "Strength is cast");
+    play_until(
+        *strong.session,
+        [&](const std::string &)
+        {
+            return order(*strong.session, "end");
+        },
+        [&]
+        {
+            return logged(*strong.session, "{name} casts {spell}.") > 0;
+        });
+    const auto raised = left_by_fight(*strong.session, "Mage");
+    check(raised.strength >= 11 && raised.strength <= 14,
+          "Gateway's Strength adds a magic-user's 1d4");
+}
+
 } // namespace
 
 int main()
@@ -3904,6 +3968,7 @@ int main()
         magic_missiles();
         curse_caster_levels();
         gateway_rows_change();
+        strength_spells_strengthen();
         sleep_takes_the_weak();
         charm_person_turns_a_foe();
         cure_light_wounds_stops_bleeding();

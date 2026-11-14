@@ -16,7 +16,7 @@ namespace opengold::original
 namespace
 {
 
-constexpr std::string_view profile_format = "combatant13";
+constexpr std::string_view profile_format = "combatant14";
 
 std::vector<int> numbers_of(const Combatant &c)
 {
@@ -42,12 +42,28 @@ std::vector<int> numbers_of(const Combatant &c)
                     missile.empty_handed_thac0, after.rate_per_two_rounds, after.dice, after.sides,
                     after.modifier, missile.empty_handed_backstabs ? 1 : 0});
     numbers.insert(numbers.end(), c.class_levels.begin(), c.class_levels.end());
-    numbers.insert(numbers.end(),
-                   {c.strength, c.undead_level, c.constitution, c.alignment, c.creature_type, c.kin,
-                    c.traits, c.magic_resistance, c.race, c.striker ? 1 : 0,
-                    c.striker ? c.striker->plus : 0, c.striker && c.striker->silver ? 1 : 0,
-                    c.striker ? c.striker->weapon_class : 0, c.weapon_type, c.wards_gaze ? 1 : 0,
-                    c.mirror ? 1 : 0, c.save_bonus, static_cast<int>(c.effects.size())});
+    numbers.insert(numbers.end(), {c.strength,
+                                   c.exceptional_strength,
+                                   c.natural_strength,
+                                   c.natural_exceptional_strength,
+                                   c.strength_counts ? 1 : 0,
+                                   c.undead_level,
+                                   c.constitution,
+                                   c.alignment,
+                                   c.creature_type,
+                                   c.kin,
+                                   c.traits,
+                                   c.magic_resistance,
+                                   c.race,
+                                   c.striker ? 1 : 0,
+                                   c.striker ? c.striker->plus : 0,
+                                   c.striker && c.striker->silver ? 1 : 0,
+                                   c.striker ? c.striker->weapon_class : 0,
+                                   c.weapon_type,
+                                   c.wards_gaze ? 1 : 0,
+                                   c.mirror ? 1 : 0,
+                                   c.save_bonus,
+                                   static_cast<int>(c.effects.size())});
     for (const auto &effect : c.effects)
     {
         numbers.insert(numbers.end(),
@@ -176,6 +192,10 @@ std::optional<Combatant> Combatant::decode(std::string_view data)
         }
     }
     c.strength = *next++;
+    c.exceptional_strength = *next++;
+    c.natural_strength = *next++;
+    c.natural_exceptional_strength = *next++;
+    c.strength_counts = *next++ != 0;
     c.undead_level = *next++;
     c.constitution = *next++;
     c.alignment = *next++;
@@ -726,7 +746,10 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     {
         c.missile = missile_of(record, carried, *weapon);
     }
-    c.strength = strength;
+    c.strength = c.natural_strength = strength;
+    c.exceptional_strength = c.natural_exceptional_strength = exceptional;
+    c.strength_counts =
+        uses_strength && (!weapon || weapon->type.has(por::item_property::strength_bonus));
     c.undead_level = record.undead_level;
     c.constitution = record.current_abilities.constitution;
     c.alignment = record.alignment;
@@ -779,13 +802,16 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
     return c;
 }
 
-bool lasting_condition(int code, GoldBoxGame game) noexcept
+bool lasting_condition(const Effect &effect, GoldBoxGame game) noexcept
 {
-    constexpr std::array<int, 11> lasting{33, 34, 43, 44, 55, 15, 22, 36, 268, 340, 341};
-    constexpr int rot = 50, mummy_rot = 57;
+    constexpr std::array<int, 14> lasting{33, 34,  43,  44,  55, 15, 22,
+                                          36, 268, 340, 341, 12, 38, strength_wasted};
+    constexpr int rot = 50, mummy_rot = 57, helpless = 31;
+    const int code = effect.code;
     const bool pool_rot =
         game == GoldBoxGame::pool_of_radiance && (code == rot || code == mummy_rot);
-    return pool_rot || std::ranges::find(lasting, code) != lasting.end();
+    const bool helpless_for_good = code == helpless && effect.minutes == 0;
+    return pool_rot || helpless_for_good || std::ranges::find(lasting, code) != lasting.end();
 }
 
 namespace
@@ -814,7 +840,7 @@ CarriedState carried_state(std::string_view resources, GoldBoxGame game)
         std::ranges::copy_if(carried.last_fight->effects, std::back_inserter(carried.conditions),
                              [game](const Effect &e)
                              {
-                                 return lasting_condition(e.code, game);
+                                 return lasting_condition(e, game);
                              });
     }
     return carried;
