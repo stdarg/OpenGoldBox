@@ -1077,7 +1077,7 @@ AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &she
     for (const int number : castable_spells(game_of(sheet.identity)))
     {
         const auto *offered = spell(number);
-        if (offered->caster_class == SpellClass::magic_user && offered->level <= 5 &&
+        if (offered->caster_class == SpellClass::magic_user && offered->level <= 7 &&
             slots[static_cast<std::size_t>(offered->level - 1)] > 0 &&
             std::ranges::find(numbers.known_spells, number) == numbers.known_spells.end())
         {
@@ -1523,10 +1523,12 @@ HazardAttackResult OriginalModule::hazard_attack(VitalState &state, const Charac
 namespace
 {
 constexpr int cure_light_wounds = 3, cure_serious_wounds = 158, cure_critical_wounds = 171,
-              raise_dead = 175;
-// The spells a member may cast in camp: the cures, and Curse's Raise Dead.
-constexpr std::array<int, 4> camp_spells{cure_light_wounds, cure_serious_wounds,
-                                         cure_critical_wounds, raise_dead};
+              raise_dead = 175, heal = 236, barkskin = 290, druid_cure_light_wounds = 298;
+// The spells a member may cast in camp: the cures, Curse's Raise Dead, and
+// Secret's Heal and Barkskin, which its table casts as Heal.
+constexpr std::array<int, 7> camp_spells{
+    cure_light_wounds, cure_serious_wounds,    cure_critical_wounds, raise_dead, heal,
+    barkskin,          druid_cure_light_wounds};
 constexpr std::string_view cast_prefix = "cast:";
 // A paladin's laying on of hands, once between a day's rests; the member's
 // state keeps that it was used (as the paladinDailyHealCast effect).
@@ -1559,8 +1561,10 @@ std::vector<int> spells_left(const CharacterSheet &sheet, const VitalState &stat
 // Casting in camp (camp.pas, NoncombatCastMenu): Cure Light Wounds heals a
 // member 1d8, and Curse's Cure Serious and Cure Critical Wounds 2d8+1 and
 // 3d8+3; Curse's Raise Dead brings back a dead member who is no elf and has
-// Constitution left with 1 Hit Point (its cost is revival_changes'). The spells whose effects last
-// beyond a fight come with the conditions (plan step 6).
+// Constitution left with 1 Hit Point (its cost is revival_changes'); Secret's
+// Heal (and Barkskin) heals every Hit Point but 1d4, and its druid's Cure
+// Light Wounds 1d8. The spells whose effects last beyond a fight come with
+// the conditions (plan step 6).
 std::vector<CampAction> OriginalModule::camp_actions(const CharacterSheet &sheet,
                                                      const VitalState &state) const
 {
@@ -1660,7 +1664,17 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
         }
         return total;
     };
-    const int healed = *number == cure_light_wounds     ? roll_8s(1)
+    if (*number == heal || *number == barkskin)
+    {
+        const int short_of = roll_die(random_state, 4);
+        if (target_state.hit_points + short_of <= target.hit_points)
+        {
+            target_state.hit_points = target.hit_points - short_of;
+        }
+        return;
+    }
+    const bool one_die = *number == cure_light_wounds || *number == druid_cure_light_wounds;
+    const int healed = one_die                          ? roll_8s(1)
                        : *number == cure_serious_wounds ? roll_8s(2) + 1
                                                         : roll_8s(3) + 3;
     target_state.hit_points = std::min(target_state.hit_points + healed, target.hit_points);

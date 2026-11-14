@@ -547,7 +547,9 @@ bool spell_built(int number)
                                // Curse's (spells.cpp, curse_spells).
                                158, 166, 168, 169, 170, 171, 172, 173, 174, 176, 177, 179, 180, 181,
                                182, 183, 184, 185, 186, 187, 188, 192, 193, 194, 195, 196, 197, 198,
-                               199, 200};
+                               199, 200,
+                               // Secret's (spells.cpp, secret_spells).
+                               236, 256, 290, 296, 298, 310, 311, 312, 313, 314, 315, 316, 317};
     return std::find(built.begin(), built.end(), number) != built.end();
 }
 
@@ -703,7 +705,7 @@ class Session final : public rules::CombatSession
     void on_hit(Fighter &attacker, Fighter &defender, int phase, int primary_hits, int natural);
     void poison(Fighter &victim, int modifier);
     void paralyze(Fighter &victim, int minutes, int modifier);
-    void kill(Fighter &victim);
+    void kill(Fighter &victim, std::string_view message = "{name} is killed.");
     void drain_levels(Fighter &victim, int levels);
     void rake(Fighter &attacker, Fighter &victim);
     void attached_turn(Fighter &f);
@@ -750,6 +752,11 @@ class Session final : public rules::CombatSession
     bool secret_breath(Fighter &dragon, int code, int length, int element);
     [[nodiscard]] Fighter *secret_target(Fighter &f, int range, bool skip_helpless);
     void turn_to_stone(Fighter &victim);
+    void cast_secret_spell(Fighter &caster, int number, int level,
+                           const std::vector<EntityId> &targets);
+    void heal_all_but_1d4(Fighter &target);
+    void cast_death_spell(const std::vector<EntityId> &targets);
+    [[nodiscard]] bool turns_aside_slaying(Fighter &target);
     void secret_poison(Fighter &victim, int modifier);
     void swallow_whole(Fighter &swallower, Fighter &victim);
     void iron_golem_absorbs(Fighter &golem, int damage, int element);
@@ -1890,14 +1897,16 @@ void Session::start_aiming(Fighter &caster, int spell_number)
 
 // Whether the caster can single out a creature for its spell: within range,
 // in sight, and no veto (cbtacts.pas, AimTargetMenu). Healing reaches the
-// downed but not the dead.
+// downed but not the dead, Secret's Stone to Flesh a statue.
 bool Session::reachable_by_spell(const Fighter &caster, const Fighter &target) const
 {
+    constexpr int heal = 236, druid_cure = 298, stone_to_flesh = 313;
     const auto &known = *spell(caster.aiming);
-    const bool heals = caster.aiming == 3;
+    const bool heals = caster.aiming == 3 || caster.aiming == heal || caster.aiming == druid_cure;
     const bool slows_poison =
         caster.aiming == 26 && target.has(effect::poisoned) && target.condition == Condition::dead;
-    if (!(target.able() || (heals && target.downed()) || slows_poison) ||
+    const bool unstones = caster.aiming == stone_to_flesh && target.condition == Condition::stoned;
+    if (!(target.able() || (heals && target.downed()) || slows_poison || unstones) ||
         std::find(caster.picked.begin(), caster.picked.end(), target.id) != caster.picked.end())
     {
         return false;
@@ -2101,8 +2110,9 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         cast_generic(caster, number, level, kept, 0, 0);
         break;
     case 3:
-        // Cure Light Wounds: 1d8, not through rot; the dying stop bleeding but
-        // stay down (magic.pas, the cure).
+    case 298:
+        // Cure Light Wounds (the cleric's, and Secret's druid's): 1d8, not
+        // through rot; the dying stop bleeding but stay down (magic.pas, the cure).
         for (const auto id : targets)
         {
             auto &f = *find(id);
@@ -2589,6 +2599,18 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
         // Poison: the caster's touch carries poison (ovr023, SpellPoison).
         add_with_message(caster, {64, 0, level, false}, false, false, 0, level, &known);
         break;
+    case 236:
+    case 256:
+    case 290:
+    case 310:
+    case 311:
+    case 313:
+    case 314:
+    case 315:
+    case 316:
+    case 317:
+        cast_secret_spell(caster, number, level, targets);
+        break;
     default:
         cast_generic(caster, number, level, targets, 0, 0);
         break;
@@ -2823,6 +2845,212 @@ bool resists_magic_at_all(const Fighter &target)
 {
     return target.has(105) || target.has(106) || target.has(305) || target.has(306) ||
            target.numbers.magic_resistance > 0;
+}
+
+// Secret of the Silver Blades' own spells (magic.pas, in its reconstruction),
+// by the rules' numbers (canonical_spell).
+void Session::cast_secret_spell(Fighter &caster, int number, int level,
+                                const std::vector<EntityId> &targets)
+{
+    constexpr int heal = 236, harm = 256, barkskin = 290, death_spell = 310, disintegrate = 311,
+                  stone_to_flesh = 313, flesh_to_stone = 314, delayed_blast_fireball = 315,
+                  mass_invisibility = 316, power_word_stun = 317;
+    constexpr int diseased = 34, fire = 9;
+    const auto &known = *spell(number);
+    const auto roll_dice = [this](int count, int sides)
+    {
+        int total = 0;
+        for (int n = 0; n < count; ++n)
+        {
+            total += roll(sides);
+        }
+        return total;
+    };
+    switch (number)
+    {
+    case heal:
+    case barkskin:
+        // Secret's table casts Barkskin as Heal (spellFns[90]).
+        for (const auto id : targets)
+        {
+            heal_all_but_1d4(*find(id));
+        }
+        break;
+    case harm:
+        // Harm diseases its target and leaves it 1d4 Hit Points.
+        for (const auto id : targets)
+        {
+            auto &target = *find(id);
+            (void)add_with_message(target, {diseased, 0, level, false}, false, false, 8, level,
+                                   &known);
+            nonweapon_damage(target, target.hit_points - roll(4), 0, false, 8, level, number,
+                             false);
+        }
+        break;
+    case death_spell:
+        cast_death_spell(targets);
+        break;
+    case disintegrate:
+    case flesh_to_stone:
+        // A failed save against spells slays outright, or turns to stone.
+        for (const auto id : targets)
+        {
+            auto &target = *find(id);
+            if (turns_aside_slaying(target) || saving_throw(target, 4, 0, &caster))
+            {
+                continue;
+            }
+            if (number == disintegrate)
+            {
+                kill(target, "{name} disintegrates.");
+            }
+            else
+            {
+                turn_to_stone(target);
+            }
+        }
+        break;
+    case stone_to_flesh:
+        // A statue lives again with 1 Hit Point, where it stood.
+        for (const auto id : targets)
+        {
+            auto &target = *find(id);
+            if (target.condition != Condition::stoned || !cell_free(target))
+            {
+                log({"{name} is unaffected.", {{"name", target.name}}});
+                continue;
+            }
+            stand_up(target, 1, "{name} is no longer a statue.");
+        }
+        break;
+    case delayed_blast_fireball:
+        // Cast with no delay it bursts at once: the caster's level and as
+        // many d6 of fire on all within 3 of the aim.
+        cast_generic(caster, number, level, targets, level + roll_dice(level, 6), fire);
+        break;
+    case mass_invisibility:
+    {
+        // The caster's side, but not one with an enemy next to it.
+        std::vector<EntityId> hidden;
+        for (const auto id : targets)
+        {
+            const auto &target = *find(id);
+            if (target.side == caster.side && !enemy_next_to(target))
+            {
+                hidden.push_back(id);
+            }
+        }
+        cast_generic(caster, number, level, hidden, 0, 0);
+        break;
+    }
+    case power_word_stun:
+        // Stunned for 4d4 rounds at up to 30 Hit Points, 2d4 to 60 and 1d4
+        // to 90; above that it is unaffected.
+        for (const auto id : targets)
+        {
+            auto &target = *find(id);
+            const int hit_points = target.hit_points;
+            const int rounds = hit_points <= 30   ? roll_dice(4, 4)
+                               : hit_points <= 60 ? roll_dice(2, 4)
+                               : hit_points <= 90 ? roll(4)
+                                                  : 0;
+            if (rounds == 0)
+            {
+                log({"{name} is unaffected.", {{"name", target.name}}});
+                continue;
+            }
+            (void)add_with_message(target, {effect::stunned, rounds, level, false}, false, false, 0,
+                                   level, &known);
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+// Heal (SpellHeal): disease, blindness and feeblemind cured, then every Hit
+// Point but 1d4; one already that close to its maximum gains none.
+void Session::heal_all_but_1d4(Fighter &target)
+{
+    constexpr int feebleminded = 268;
+    bool cured = false;
+    for (const int disease : {31, 34, 43, 44})
+    {
+        while (target.has(disease))
+        {
+            target.remove(disease);
+            cured = true;
+        }
+    }
+    if (cured)
+    {
+        log({"{name} is cured.", {{"name", target.name}}});
+    }
+    if (target.has(effect::blind))
+    {
+        target.remove(effect::blind);
+        log({"{name} can see.", {{"name", target.name}}});
+    }
+    if (target.has(feebleminded))
+    {
+        target.remove(feebleminded);
+        log({"{name} regains intellect.", {{"name", target.name}}});
+    }
+    const int short_of = roll(4);
+    const int maximum = target.numbers.max_hit_points;
+    if (target.hit_points + short_of <= maximum)
+    {
+        target.hit_points = maximum - short_of;
+    }
+    if (target.condition == Condition::dying)
+    {
+        target.condition = Condition::unconscious;
+        target.overkill = 0;
+    }
+    log({"{name} is healed.", {{"name", target.name}}});
+}
+
+// Death Spell (SpellDeathSpell): 4d20 x 2 to spend on those in its area in
+// turn, each costing by its level (1 at level 0, 2 at 1, 8 at 2 and 3, 16 at
+// 4 and 5, 16 or 20 at 6 by whether its most Hit Points pass 51, 20 at 7 and
+// 8, 162 above); each paid for drops dead. The unliving refuse it
+// (refuses_spell).
+void Session::cast_death_spell(const std::vector<EntityId> &targets)
+{
+    int budget = (roll(20) + roll(20) + roll(20) + roll(20)) * 2;
+    for (const auto id : targets)
+    {
+        auto &target = *find(id);
+        const int level = target.numbers.level;
+        const int cost = level == 0   ? 1
+                         : level == 1 ? 2
+                         : level <= 3 ? 8
+                         : level <= 5 ? 16
+                         : level == 6 ? (target.numbers.max_hit_points <= 51 ? 16 : 20)
+                         : level <= 8 ? 20
+                                      : 162;
+        if (budget < cost)
+        {
+            continue;
+        }
+        budget -= cost;
+        kill(target, "{name} drops dead.");
+    }
+}
+
+// Whether a spell that slays or petrifies outright is turned aside before
+// its save (Secret's condition 9): an iron golem takes no spell, and an
+// image takes it for its caster. Magic resistance does not turn it, as the
+// original weighs resistance only against an effect or magical damage
+// (CheckSpellResistance).
+bool Session::turns_aside_slaying(Fighter &target)
+{
+    if (target.has(effect::iron_golem))
+    {
+        log({"{name} is unaffected.", {{"name", target.name}}});
+        return true;
+    }
+    return mirror_absorbs(target);
 }
 
 // An effect added as a spell adds it (fxengine.pas, AddEffectWithMessage): the
@@ -4706,12 +4934,12 @@ void Session::turn_undead(Fighter &cleric)
 }
 
 // Killed outright, whatever its Hit Points.
-void Session::kill(Fighter &victim)
+void Session::kill(Fighter &victim, std::string_view message)
 {
     victim.condition = Condition::dead;
     victim.hit_points = 0;
     victim.initiative = 0;
-    log({"{name} is killed.", {{"name", victim.name}}});
+    log({std::string(message), {{"name", victim.name}}});
     end_effects_at_zero(victim);
     went_down(victim);
 }

@@ -162,6 +162,40 @@ constexpr std::array<NumberedSpell, 36> curse_spells{{
      {"Bestow Curse", SpellClass::magic_user, 4, 0, 0, 0, 10, 4, 0, 1, 4, 36, 1, 4, 4, true, 0}},
 }};
 
+// Secret of the Silver Blades' own spells (its spell table, in its
+// reconstruction's gdconsts.pas), by the numbers the rules give them: 200
+// more than Secret's own (secret_spell_offset), with their effects by the
+// fight's numbers (canonical_effect) and the party as camp target 4, as Pool
+// of Radiance's table has it. Its numbers 101 to 109 cast nothing and are
+// left out, as is Youth (63), a power that changes only an age.
+constexpr std::array<NumberedSpell, 13> secret_spells{{
+    {236, {"Heal", SpellClass::cleric, 6, 5, 0, 0, 0, 4, 2, 0, 4, 0, 2, 0, 2, false, 0}},
+    {256, {"Harm", SpellClass::cleric, 6, 0, 0, 0, 0, 4, 0, 0, 4, 0, 1, 10, 0, true, 0}},
+    {290, {"Barkskin", SpellClass::druid, 2, 1, 0, 0, 0, 240, 4, 0, 4, 413, 2, 3, 0, false, 0}},
+    {296,
+     {"Charm Person or Mammal", SpellClass::druid, 2, 8, 0, 60, 60, 4, 0, 1, 4, 11, 1, 4, 5, true,
+      0}},
+    {298,
+     {"Cure Light Wounds", SpellClass::druid, 2, 255, 0, 0, 0, 4, 2, 0, 4, 0, 2, 4, 2, false, 0}},
+    {310, {"Death Spell", SpellClass::magic_user, 6, 0, 4, 0, 0, 9, 0, 0, 4, 0, 1, 6, 3, true, 0}},
+    {311, {"Disintegrate", SpellClass::magic_user, 6, 0, 2, 0, 0, 4, 0, 1, 4, 0, 1, 6, 8, true, 0}},
+    {312,
+     {"Globe of Invulnerability", SpellClass::magic_user, 6, 0, 0, 0, 1, 4, 1, 0, 4, 457, 2, 1, 3,
+      false, 0}},
+    {313,
+     {"Stone to Flesh", SpellClass::magic_user, 6, 0, 4, 0, 0, 4, 2, 0, 4, 0, 2, 6, 2, false, 0}},
+    {314,
+     {"Flesh to Stone", SpellClass::magic_user, 6, 0, 4, 0, 0, 4, 0, 1, 4, 465, 1, 6, 7, true, 0}},
+    {315,
+     {"Delayed Blast Fireball", SpellClass::magic_user, 7, 10, 4, 0, 0, 11, 0, 2, 4, 0, 1, 1, 9,
+      true, 0}},
+    {316,
+     {"Mass Invisibility", SpellClass::magic_user, 7, 0, 4, 0, 0, 10, 4, 0, 4, 25, 2, 7, 3, false,
+      0}},
+    {317,
+     {"Power Word Stun", SpellClass::magic_user, 7, 0, 2, 0, 0, 4, 0, 0, 4, 506, 1, 1, 3, true, 0}},
+}};
+
 // Curse's spells that its characters can know, in its table's order: Pool of
 // Radiance's 56, then its own.
 constexpr std::array<int, 30> curse_castable{158, 166, 167, 168, 169, 170, 171, 172, 173, 174,
@@ -191,11 +225,27 @@ int canonical_spell(int number, GoldBoxGame game) noexcept
 std::vector<int> castable_spells(GoldBoxGame game)
 {
     std::vector<int> numbers;
+    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    {
+        // Secret's table in its order: Curse's spells, with its own where
+        // they took their numbers (Heal for Animate Dead, Harm for
+        // Restoration) and after them.
+        constexpr int secret_table_size = 117;
+        for (int number = 1; number <= secret_table_size; ++number)
+        {
+            const int canonical = canonical_spell(number, game);
+            const auto *known = spell(canonical);
+            if (known && known->caster_class != SpellClass::item)
+            {
+                numbers.push_back(canonical);
+            }
+        }
+        return numbers;
+    }
     for (int number = 1; number <= 56; ++number)
     {
         numbers.push_back(number);
     }
-    // Secret keeps Curse's; its own come with their table entries.
     if (game != GoldBoxGame::pool_of_radiance)
     {
         numbers.insert(numbers.end(), curse_castable.begin(), curse_castable.end());
@@ -254,6 +304,13 @@ std::optional<int> spell_number(std::string_view id)
             return entry.number;
         }
     }
+    for (const auto &entry : secret_spells)
+    {
+        if (spell_id(entry.number) == id)
+        {
+            return entry.number;
+        }
+    }
     return std::nullopt;
 }
 
@@ -264,6 +321,13 @@ const Spell *spell(int number) noexcept
         return &spells[static_cast<std::size_t>(number - 1)];
     }
     for (const auto &entry : curse_spells)
+    {
+        if (entry.number == number)
+        {
+            return &entry.spell;
+        }
+    }
+    for (const auto &entry : secret_spells)
     {
         if (entry.number == number)
         {

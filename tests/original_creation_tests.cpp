@@ -527,6 +527,35 @@ void curse_clerics_heal_and_raise_in_camp()
     check(module->camp_actions(priest, own).empty(), "Both spells are spent");
 }
 
+// Secret's Heal in camp (its reconstruction's SpellHeal): every Hit Point but
+// 1d4, and nothing for one already that close.
+void secret_clerics_heal_in_camp()
+{
+    const auto module = original::rules_module();
+    const auto creation = original::character_rules(original::default_aging,
+                                                    GoldBoxGame::secret_of_the_silver_blades);
+    RandomState random{23};
+    auto draft = rules::CharacterDraft{};
+    draft.race = "human";
+    draft.gender = "female";
+    draft.character_class = "cleric";
+    draft.alignment = "lawful_good";
+    draft.name = "Mira";
+    creation->roll_in_place(draft, random);
+    auto priest = creation->evaluate(draft, rules::NameRequirement::required);
+    priest.prepared_spells = {"cleric:heal", "cleric:heal#2"};
+    rules::VitalState own{priest.hit_points, false, {}, {}};
+    check(module->camp_actions(priest, own).size() == 1, "The priest can cast Heal in camp");
+    rules::VitalState hurt{1, false, {}, {}};
+    module->use_camp_action(priest, own, priest, hurt, "cast:cleric:heal", random);
+    check(hurt.hit_points >= priest.hit_points - 4 && hurt.hit_points <= priest.hit_points - 1,
+          "Heal leaves 1d4 short of the most");
+    rules::VitalState scratched{priest.hit_points, false, {}, {}};
+    module->use_camp_action(priest, own, priest, scratched, "cast:cleric:heal", random);
+    check(scratched.hit_points == priest.hit_points, "One already that close gains nothing");
+    check(module->camp_actions(priest, own).empty(), "Both are spent");
+}
+
 // A Pool of Radiance character brought into Curse (its ConvertPoolRadPlayer):
 // its levels, Hit Points, experience and items come along, with 300
 // platinum; its money stays behind.
@@ -1107,6 +1136,7 @@ int main()
         an_npc_joins_as_its_record();
         a_drain_lasts_beyond_the_fight();
         curse_clerics_heal_and_raise_in_camp();
+        secret_clerics_heal_in_camp();
         a_pool_character_comes_to_curse();
         curse_paladins_and_rangers();
         secret_characters_start_trained();

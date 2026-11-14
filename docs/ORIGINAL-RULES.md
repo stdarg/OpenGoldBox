@@ -209,9 +209,28 @@ chosen by the game as *Curse*'s are. In progress (2026-11-13):
   magic-user. The character sheet shows up to seven levels of slots.
 - **Attacks:** a fighter or paladin strikes three times in two rounds above
   level 6 and four above 12; a ranger three above 7 and four above 14.
-- **Still to come:** *Secret*'s own spells (Heal, Harm, Death Spell,
-  Disintegrate and the rest), and the paladin's and ranger's spells (in
-  *Curse* too).
+- **Its own spells** (2026-11-14, its `magic.pas`), known and memorized in
+  its table's order, Heal and Harm where Animate Dead and Restoration were:
+  Heal cures disease, blindness and feeblemind and heals every Hit Point but
+  1d4 (none for one already that close), in fights and in camp; Harm
+  diseases and leaves 1d4; the druid's Cure Light Wounds heals 1d8 and
+  Charm Person or Mammal charms a mammal; Barkskin casts as Heal, as
+  *Secret*'s table has it (`spellFns[90]`); Death Spell spends 4d20 × 2 on
+  those within a square of its aim, each costing by its level (1 at level 0
+  up to 20 at 7 and 8, 162 above), none of the unliving; Disintegrate and
+  Flesh to Stone slay or petrify on a failed save against spells, but not an
+  iron golem nor through an image, and magic resistance does not turn them;
+  Stone to Flesh brings a statue back with 1 Hit Point; the Globe of
+  Invulnerability; Mass Invisibility hides the caster's side within 2 of the
+  aim but those with an enemy next to them; Power Word Stun stuns for 4d4
+  rounds up to 30 Hit Points, 2d4 to 60, 1d4 to 90, and not above; the
+  Delayed Blast Fireball bursts at once for the level and as many d6 of
+  fire within 3 squares. A magic-user may learn sixth- and seventh-level
+  spells as it trains.
+- **Still to come:** the Delayed Blast Fireball's delay (the original asks
+  for 1 to 50 segments and sets the blast on its square), Youth (an item
+  power that makes its user 1d4+1 years younger), and the paladin's and
+  ranger's spells (in *Curse* too).
 
 ### *Secret*'s combat
 

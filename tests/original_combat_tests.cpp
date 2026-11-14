@@ -4,6 +4,7 @@
 #include "opengold/original_combat.h"
 #include "opengold/original_content.h"
 #include "opengold/original_rules.h"
+#include "opengold/original_spells.h"
 #include "test_support.h"
 
 #include <algorithm>
@@ -3480,6 +3481,210 @@ void secret_rounds()
     check(view_of(feared.session->snapshot(), "Squire").panicked, "The squire runs");
 }
 
+// Secret's spell numbers: its own 200 up (canonical_spell), its characters'
+// table in its order with Heal and Harm where Animate Dead and Restoration
+// were.
+void secret_spells_take_their_own_numbers()
+{
+    check(original::canonical_spell(36, secret_game) == 236 &&
+              original::canonical_spell(110, secret_game) == 310 &&
+              original::canonical_spell(58, secret_game) == 158 &&
+              original::canonical_spell(100, secret_game) == 200,
+          "Secret's own spells are 200 up, Curse's 100 up");
+    const auto castable = original::castable_spells(secret_game);
+    const auto at = [&castable](int number)
+    {
+        return std::ranges::find(castable, number) - castable.begin();
+    };
+    check(at(236) == 35 && at(256) == 55 && at(36) == std::ssize(castable) &&
+              at(56) == std::ssize(castable),
+          "Heal and Harm take Animate Dead's and Restoration's places");
+    check(at(310) < at(317) && at(317) == std::ssize(castable) - 1 &&
+              original::spell(316)->name == "Mass Invisibility" &&
+              original::spell_number("magic_user:death_spell") == 310 &&
+              original::spell_number("druid:charm_person_or_mammal") == 296,
+          "Its new spells close its table");
+}
+
+// Secret's cleric spells (magic.pas, SpellHeal and SpellHarm): Heal cures
+// disease and blindness and leaves 1d4 Hit Points short; Harm diseases and
+// leaves 1d4.
+void secret_heal_and_harm()
+{
+    using original::ClassSlot;
+    auto wounded = creature(30);
+    wounded.hit_points = 5;
+    wounded.effects = {{33, 0, 0, false}, {34, 0, 0, false}};
+    auto fight = arrange_secret(
+        {{"Priest", rules::Side::party, {1, 3}, caster(ClassSlot::cleric, 12, {236, 256})},
+         {"Wounded", rules::Side::party, {2, 4}, wounded},
+         {"Ogre", rules::Side::opposition, {2, 3}, victim(100)}},
+        271);
+    auto &session = *fight.session;
+    cast_now(session, "Priest", 236,
+             [&]
+             {
+                 return aim_at(session, "Wounded");
+             });
+    const int healed = view_of(session.snapshot(), "Wounded").hit_points;
+    check(healed >= 26 && healed <= 29, "Heal leaves 1d4 short of the most");
+    check(logged(session, "{name} can see.") == 1 && logged(session, "{name} is cured.") == 1,
+          "Heal cures blindness and disease");
+    cast_now(session, "Priest", 256,
+             [&]
+             {
+                 return aim_at(session, "Ogre");
+             });
+    const int left = view_of(session.snapshot(), "Ogre").hit_points;
+    check(left >= 1 && left <= 4, "Harm leaves 1d4 Hit Points");
+}
+
+// Secret's slaying spells (SpellDeathSpell, SpellDisintegrate,
+// SpellFleshToStone, SpellStoneToFlesh): Death Spell drops the weak its
+// budget pays for, never the mighty or the unliving; Disintegrate and Flesh
+// to Stone slay on a failed save but not an iron golem; Stone to Flesh brings
+// a statue back with 1 Hit Point.
+void secret_spells_slay()
+{
+    using original::ClassSlot;
+    auto mighty = victim(100);
+    mighty.level = 9;
+    auto unliving = victim(100);
+    unliving.level = 0;
+    unliving.traits = original::trait::unliving;
+    auto fight = arrange_secret(
+        {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 12, {310})},
+         {"Kobold", rules::Side::opposition, {5, 3}, victim(5)},
+         {"Goblin", rules::Side::opposition, {5, 4}, victim(5)},
+         {"Giant", rules::Side::opposition, {6, 3}, mighty},
+         {"Golem", rules::Side::opposition, {6, 4}, unliving}},
+        273);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 310,
+             [&]
+             {
+                 return aim_at_cell(session, {5, 3});
+             });
+    check(logged(session, "{name} drops dead.") == 2 &&
+              view_of(session.snapshot(), "Giant").hit_points == 100 &&
+              view_of(session.snapshot(), "Golem").hit_points == 100,
+          "Death Spell drops the weak, not the mighty or the unliving");
+
+    auto iron = victim(100);
+    iron.effects = {{479, 0, 0, false}};
+    auto blast = arrange_secret(
+        {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 12, {311, 311})},
+         {"Orc", rules::Side::opposition, {3, 3}, victim(100)},
+         {"Iron", rules::Side::opposition, {3, 5}, iron}},
+        277);
+    cast_now(*blast.session, "Mage", 311,
+             [&]
+             {
+                 return aim_at(*blast.session, "Orc");
+             });
+    check(logged(*blast.session, "{name} disintegrates.") == 1, "A failed save disintegrates");
+    cast_now(*blast.session, "Mage", 311,
+             [&]
+             {
+                 return aim_at(*blast.session, "Iron");
+             });
+    check(logged(*blast.session, "{name} disintegrates.") == 1 &&
+              view_of(blast.session->snapshot(), "Iron").hit_points == 100,
+          "An iron golem takes no spell");
+
+    auto statue = arrange_secret(
+        {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 12, {314, 313})},
+         {"Orc", rules::Side::opposition, {3, 3}, victim(100)},
+         {"Far", rules::Side::opposition, {7, 7}, victim(100)}},
+        282);
+    cast_now(*statue.session, "Mage", 314,
+             [&]
+             {
+                 return aim_at(*statue.session, "Orc");
+             });
+    check(logged(*statue.session, "{name} is stoned.") == 1, "Flesh to Stone turns it to stone");
+    cast_now(*statue.session, "Mage", 313,
+             [&]
+             {
+                 return aim_at(*statue.session, "Orc");
+             });
+    check(logged(*statue.session, "{name} is no longer a statue.") == 1 &&
+              view_of(statue.session->snapshot(), "Orc").hit_points == 1,
+          "Stone to Flesh brings the statue back with 1 Hit Point");
+}
+
+// Secret's other new spells: Power Word Stun by the Hit Points left, Mass
+// Invisibility on the caster's side away from enemies, the Delayed Blast
+// Fireball bursting at once, Charm Person or Mammal on a mammal only.
+void secret_spells_stun_hide_and_burn()
+{
+    using original::ClassSlot;
+    auto fight = arrange_secret(
+        {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 14, {317, 317, 316})},
+         {"Ally", rules::Side::party, {1, 4}, creature(30)},
+         {"Engaged", rules::Side::party, {2, 1}, creature(30)},
+         {"Weak", rules::Side::opposition, {3, 1}, victim(20)},
+         {"Strong", rules::Side::opposition, {4, 6}, victim(120)}},
+        283);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 317,
+             [&]
+             {
+                 return aim_at(session, "Weak");
+             });
+    cast_now(session, "Mage", 317,
+             [&]
+             {
+                 return aim_at(session, "Strong");
+             });
+    check(logged(session, "{name} is affected by {spell}.") == 1 &&
+              logged(session, "{name} is unaffected.") == 1,
+          "Power Word Stun stuns the weak, not one above 90 Hit Points");
+    cast_now(session, "Mage", 316,
+             [&]
+             {
+                 return aim_at_cell(session, {1, 3});
+             });
+    check(logged(session, "{name} is affected by {spell}.") == 3,
+          "Mass Invisibility hides the caster and its ally");
+
+    auto burn = arrange_secret(
+        {{"Mage", rules::Side::party, {0, 3}, caster(ClassSlot::magic_user, 14, {315})},
+         {"Near", rules::Side::opposition, {5, 3}, victim(200)},
+         {"Past", rules::Side::opposition, {5, 7}, victim(200)}},
+        287);
+    cast_now(*burn.session, "Mage", 315,
+             [&]
+             {
+                 return aim_at_cell(*burn.session, {5, 3});
+             });
+    const int burned = 200 - view_of(burn.session->snapshot(), "Near").hit_points;
+    check(burned >= 28 && burned <= 98 &&
+              view_of(burn.session->snapshot(), "Past").hit_points == 200,
+          "The fireball bursts at once for the level and as many d6 within 3 squares");
+
+    auto mammal = victim(30);
+    mammal.traits = original::trait::mammal;
+    auto charm = arrange_secret(
+        {{"Ranger", rules::Side::party, {0, 3}, caster(ClassSlot::ranger, 12, {296, 296})},
+         {"Bear", rules::Side::opposition, {3, 3}, mammal},
+         {"Snake", rules::Side::opposition, {3, 5}, victim(30)}},
+        289);
+    cast_now(*charm.session, "Ranger", 296,
+             [&]
+             {
+                 return aim_at(*charm.session, "Snake");
+             });
+    cast_now(*charm.session, "Ranger", 296,
+             [&]
+             {
+                 return aim_at(*charm.session, "Bear");
+             });
+    check(logged(*charm.session, "{name} is unaffected.") == 1 &&
+              view_of(charm.session->snapshot(), "Bear").side == rules::Side::party,
+          "Charm Person or Mammal charms a mammal and no other monster");
+}
+
 } // namespace
 
 int main()
@@ -3567,6 +3772,10 @@ int main()
         secret_monsters_breathe();
         secret_flags_decide();
         secret_rounds();
+        secret_spells_take_their_own_numbers();
+        secret_heal_and_harm();
+        secret_spells_slay();
+        secret_spells_stun_hide_and_burn();
         std::cout << "Original-rules combat passed.\n";
     }
     catch (const std::exception &error)
