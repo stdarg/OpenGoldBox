@@ -1612,6 +1612,38 @@ void enclosed_square_does_not_stop_a_fight()
     }
 }
 
+// The original leaves out a creature it has no room for: an ally too large
+// for any free space stays out of the fight, which goes on without it.
+void ally_without_room_is_left_out()
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    party->add_pc(character("fighter"));
+    CampaignEncounter encounter;
+    // One open row: no two-by-two space anywhere.
+    encounter.field.geometry = {4, 2, std::vector<Terrain>(8, Terrain::obstacle)};
+    for (int x = 0; x < 4; ++x)
+    {
+        encounter.field.geometry.terrain[x] = Terrain::open;
+    }
+    encounter.field.tiles.resize(8, 7);
+    encounter.enemies = {{1000, "bandit", "Enemy", Side::opposition, {}}};
+    encounter.positions = {{0, 0}, {3, 0}};
+    Participant ally{1100, "bandit", "Large ally", Side::party, {}};
+    ally.footprint = {2, 2};
+    encounter.allies = {ally};
+    auto observed = std::make_shared<EncounterObservation>();
+    CombatDemo fight(std::make_unique<ObservedModule>(observed));
+    fight.campaign_party(party);
+    fight.encounter(encounter, 1234);
+    const auto &handed = observed->encounter;
+    check(handed.participants.size() == 2 && std::ranges::none_of(handed.participants,
+                                                                  [](const auto &p)
+                                                                  {
+                                                                      return p.id == 1100;
+                                                                  }),
+          "An ally with no room is left out and the fight begins");
+}
+
 void allied_campaign_movement()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -3612,6 +3644,7 @@ int main()
         camp_ambush_encounter();
         crowded_band_leaves_monsters_out();
         enclosed_square_does_not_stop_a_fight();
+        ally_without_room_is_left_out();
         allied_campaign_movement();
         standalone_checkpoints();
         combat_ownership();

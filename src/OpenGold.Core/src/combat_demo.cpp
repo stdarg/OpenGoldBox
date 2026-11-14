@@ -142,9 +142,9 @@ bool sees(const Battlefield &board, const CombatantView &viewer, const Combatant
     return false;
 }
 
-// Stands `participant` on the square of `free` nearest `target` whose
-// footprint's squares are all free, and takes them from `free`.
-void stand_nearest(std::vector<Cell> &free, Participant &participant, Cell target)
+// The square of `free` nearest `target` whose footprint's squares are all
+// free, if there is one.
+std::optional<Cell> nearest_room(const std::vector<Cell> &free, Footprint footprint, Cell target)
 {
     const auto distance = [&](Cell cell)
     {
@@ -152,7 +152,7 @@ void stand_nearest(std::vector<Cell> &free, Participant &participant, Cell targe
     };
     const auto fits = [&](Cell start)
     {
-        const auto squares = squares_of(start, participant.footprint);
+        const auto squares = squares_of(start, footprint);
         return std::all_of(squares.begin(), squares.end(),
                            [&](Cell square)
                            {
@@ -167,18 +167,31 @@ void stand_nearest(std::vector<Cell> &free, Participant &participant, Cell targe
             nearest = cell;
         }
     }
-    if (!nearest)
-    {
-        throw std::runtime_error("Original battlefield cannot fit the complete encounter");
-    }
-    participant.cell = *nearest;
-    for (const auto square : squares_of(*nearest, participant.footprint))
+    return nearest;
+}
+
+// Stands `participant` on `cell` and takes its footprint's squares from `free`.
+void stand_on(std::vector<Cell> &free, Participant &participant, Cell cell)
+{
+    participant.cell = cell;
+    for (const auto square : squares_of(cell, participant.footprint))
     {
         std::erase(free, square);
     }
 }
 
-// Stands the party and the enemies where the original engine did (PLACE-1).
+// Stands `participant` on the square of `free` nearest `target` whose
+// footprint's squares are all free, and takes them from `free`.
+void stand_nearest(std::vector<Cell> &free, Participant &participant, Cell target)
+{
+    const auto nearest = nearest_room(free, participant.footprint, target);
+    if (!nearest)
+    {
+        throw std::runtime_error("Original battlefield cannot fit the complete encounter");
+    }
+    stand_on(free, participant, *nearest);
+}
+
 // A monster it had no room for is left out of the fight, as there. A party
 // member without room takes the free square of `reachable` nearest the side's
 // first member (or `centre`); taken squares leave `reachable`.
@@ -628,11 +641,13 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
                                                  return covered(e, cell);
                                              });
                       });
-        if (cells.empty())
+        // A creature the original has no room for is left out of the fight.
+        const auto room = nearest_room(cells, ally.footprint, participants.front().cell);
+        if (!room)
         {
-            break;
+            continue;
         }
-        stand_nearest(cells, ally, participants.front().cell);
+        stand_on(cells, ally, *room);
         ally.side = Side::party;
         participants.push_back(std::move(ally));
     }
