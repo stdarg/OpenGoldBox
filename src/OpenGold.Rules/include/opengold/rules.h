@@ -1335,6 +1335,18 @@ class RulesModule
     // A duration, not a bare count, so minutes or the dice state cannot be
     // passed where milliseconds belong (Effective C++ Item 18).
     virtual void elapse(std::span<Participant>, std::chrono::milliseconds, RandomState &) const = 0;
+
+    // Time passes for a member outside a fight, the campaign's clock going
+    // from minute `from` to `to` (the original rules' conditions running down
+    // and diseases wasting as the original counts time); nothing by default.
+    virtual void pass_time(VitalState &state, const CharacterSheet &sheet, std::uint64_t from,
+                           std::uint64_t to) const
+    {
+        (void)state;
+        (void)sheet;
+        (void)from;
+        (void)to;
+    }
     virtual void validate_character_state(const CharacterSheet &, const VitalState &) const = 0;
     [[nodiscard]] virtual RestPolicy long_rest_policy() const = 0;
     [[nodiscard]] virtual RestPolicy short_rest_policy() const = 0;

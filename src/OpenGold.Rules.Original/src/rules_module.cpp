@@ -498,6 +498,8 @@ class OriginalModule final : public RulesModule
     [[nodiscard]] unsigned experience_share(const CharacterSheet &sheet,
                                             unsigned award) const override;
     void recover(VitalState &state, const CharacterSheet &sheet) const override;
+    void pass_time(VitalState &state, const CharacterSheet &sheet, std::uint64_t from,
+                   std::uint64_t to) const override;
     [[nodiscard]] RecoveryInfo recovery_info(const CharacterSheet &,
                                              const VitalState &) const override;
     void grant_temporary_hit_points(VitalState &, const CharacterSheet &,
@@ -1279,14 +1281,14 @@ bool has_any(const CharacterSheet &sheet, const VitalState &state, std::span<con
                                });
 }
 
-// A day of a disease that has taken hold (effhndlr.pas, EffDiseaseStrength
-// and EffDiseaseHitPoints): a point of Strength an hour down to 3, and a Hit
-// Point every ten minutes down to 1, and then the member is helpless until
-// it is cured.
-void waste_away(const CharacterSheet &sheet, VitalState &state, std::vector<Effect> &conditions)
+// A disease that has taken hold, as hours and ten minutes pass
+// (effhndlr.pas, EffDiseaseStrength and EffDiseaseHitPoints): a point of
+// Strength an hour down to 3, and a Hit Point every ten minutes down to 1,
+// and then the member is helpless until it is cured.
+void waste_away(const CharacterSheet &sheet, VitalState &state, std::vector<Effect> &conditions,
+                int hours, int ten_minutes)
 {
-    constexpr int wasting_strength = 43, wasting_hit_points = 44, helpless = 31, hours = 24,
-                  ten_minutes = 6 * 24;
+    constexpr int wasting_strength = 43, wasting_hit_points = 44, helpless = 31;
     bool done_in = false;
     if (condition(conditions, wasting_strength))
     {
@@ -1766,7 +1768,8 @@ unsigned OriginalModule::experience_share(const CharacterSheet &sheet, unsigned 
 }
 
 // A day's rest heals each member not dead 1 Hit Point (gametime.pas,
-// CheckRestingHeal: one every 288 five-minute ticks).
+// CheckRestingHeal: one every 288 five-minute ticks), but one a disease
+// wastes, which takes the point back within ten minutes (EffDiseaseHitPoints).
 void OriginalModule::recover(VitalState &state, const CharacterSheet &sheet) const
 {
     // A statue heals nothing until Stone to Flesh (CheckRestingHeal heals
@@ -1775,54 +1778,81 @@ void OriginalModule::recover(VitalState &state, const CharacterSheet &sheet) con
     {
         return;
     }
-    if (!state.dead)
+    constexpr int wasting_hit_points = 44;
+    if (!state.dead && !condition(conditions_of(sheet, state), wasting_hit_points))
     {
         state.hit_points = std::min(state.hit_points + 1, sheet.hit_points);
     }
     // The day's rest memorizes again the spells cast: the next fight starts
-    // from the sheet's. The lasting conditions stay, a day nearer their end.
-    // A disease whose time comes takes hold, as Strength and Hit Points
-    // wasting away (effhndlr.pas, EffDiseased).
-    constexpr int day_minutes = 24 * 60, diseased = 34, wasting_strength = 43,
-                  wasting_hit_points = 44;
-    auto conditions = conditions_of(sheet, state);
-    std::vector<Effect> taking_hold;
+    // from the sheet's. The lasting conditions stay, the day's time having
+    // passed for them (pass_time).
+    state.resources = rested_state(conditions_of(sheet, state));
+}
+
+// Time passing for a member outside a fight, as the original's clock counts
+// it (gametime.pas): its lasting conditions run down, camp spells, Slow
+// Poison and the paladin's day and week among them; a disease whose time
+// comes takes hold, as Strength and Hit Points wasting away (effhndlr.pas,
+// EffDiseased), which then waste a point of Strength each hour and a Hit
+// Point each ten minutes the clock passes; Slow Poison running out lets its
+// poison kill (EffSlowPoison).
+void OriginalModule::pass_time(VitalState &state, const CharacterSheet &sheet, std::uint64_t from,
+                               std::uint64_t to) const
+{
+    if (state.dead || to <= from || state.resources.empty() || !sheet.original)
+    {
+        return;
+    }
+    constexpr int diseased = 34, wasting_strength = 43, wasting_hit_points = 44;
+    const auto passed = static_cast<int>(std::min<std::uint64_t>(to - from, 1U << 30));
+    const auto boundaries = [from, to](std::uint64_t every)
+    {
+        return static_cast<int>(std::min<std::uint64_t>(to / every - from / every, 1U << 30));
+    };
+    const auto game = game_of(sheet.identity);
     bool slow_poison_ended = false;
-    std::erase_if(conditions,
-                  [&](Effect &e)
-                  {
-                      if (e.minutes == 0)
-                      {
-                          return false;
-                      }
-                      e.minutes -= day_minutes;
-                      if (e.minutes > 0)
-                      {
-                          return false;
-                      }
-                      if (e.code == diseased)
-                      {
-                          taking_hold.push_back({wasting_strength, 0, e.strength, false});
-                          taking_hold.push_back({wasting_hit_points, 0, e.strength, false});
-                      }
-                      slow_poison_ended = slow_poison_ended || e.code == slow_poison_end;
-                      return true;
-                  });
-    waste_away(sheet, state, conditions);
-    // Slow Poison only held the poison back (effhndlr.pas, EffSlowPoison).
-    if (slow_poison_ended && condition(conditions, poisoned))
-    {
-        state.dead = true;
-        state.hit_points = 0;
-    }
-    for (const auto &e : taking_hold)
-    {
-        if (!condition(conditions, e.code))
+    change_conditions(
+        sheet, state,
+        [&](std::vector<Effect> &effects)
         {
-            conditions.push_back(e);
-        }
-    }
-    state.resources = rested_state(conditions);
+            // What wasted through this time: only a disease that
+            // had taken hold already.
+            waste_away(sheet, state, effects, boundaries(60), boundaries(10));
+            std::vector<Effect> taking_hold;
+            std::erase_if(effects,
+                          [&](Effect &e)
+                          {
+                              if (e.minutes == 0 || !lasting_condition(e, game))
+                              {
+                                  return false;
+                              }
+                              e.minutes -= passed;
+                              if (e.minutes > 0)
+                              {
+                                  return false;
+                              }
+                              if (e.code == diseased)
+                              {
+                                  taking_hold.push_back({wasting_strength, 0, e.strength, false});
+                                  taking_hold.push_back({wasting_hit_points, 0, e.strength, false});
+                              }
+                              slow_poison_ended = slow_poison_ended || e.code == slow_poison_end;
+                              return true;
+                          });
+            for (const auto &e : taking_hold)
+            {
+                if (!condition(effects, e.code))
+                {
+                    effects.push_back(e);
+                }
+            }
+            // Slow Poison only held the poison back.
+            if (slow_poison_ended && condition(effects, poisoned))
+            {
+                state.dead = true;
+                state.hit_points = 0;
+            }
+        });
 }
 
 // The original has no Hit Dice or resources a rest restores; every living

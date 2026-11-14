@@ -2918,7 +2918,10 @@ CampaignParty::Elapsed CampaignParty::elapsed(const PartyState &state,
     rules_->elapse(participants, elapsed, result.random);
     for (auto &participant : participants)
     {
-        result.vitals.emplace_back(participant.id, std::move(*participant.state));
+        auto &vitals = *participant.state;
+        const auto &sheet = member_in(state, participant.id).character.sheet();
+        rules_->pass_time(vitals, sheet, state.time_minutes, result.time_minutes);
+        result.vitals.emplace_back(participant.id, std::move(vitals));
     }
     return result;
 }

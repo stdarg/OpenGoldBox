@@ -1177,6 +1177,15 @@ void the_temple_heals_and_raises()
 }
 
 // A character of a game's original rules, by its class and alignment.
+// A day's rest as the campaign gives it: the day's time passes, then the
+// rest's own benefits.
+void rest_a_day(const rules::RulesModule &module, rules::VitalState &state,
+                const rules::CharacterSheet &sheet)
+{
+    module.pass_time(state, sheet, 0, 24 * 60);
+    module.recover(state, sheet);
+}
+
 rules::CharacterSheet original_character(GoldBoxGame game, std::string profession,
                                          std::string alignment, std::uint64_t seed)
 {
@@ -1223,7 +1232,7 @@ void conditions_outlast_fights()
     const auto sheet = original_character(curse, "cleric", "lawful_good", 31);
     RandomState random{37};
     auto blinded = left_with(sheet, {{33, 0, 4, false}, {1, 6, 4, false}, {34, 30, 4, false}});
-    module->recover(blinded, sheet);
+    rest_a_day(*module, blinded, sheet);
     check(carries(sheet, blinded, 33) && !carries(sheet, blinded, 1) &&
               !carries(sheet, blinded, 34) && carries(sheet, blinded, 43) &&
               carries(sheet, blinded, 44),
@@ -1333,10 +1342,10 @@ void a_paladin_cures_disease()
           "It cures, once this week");
     for (int day = 0; day < 6; ++day)
     {
-        module->recover(own, paladin);
+        rest_a_day(*module, own, paladin);
     }
     check(!offers_cure(own), "Not again within the week");
-    module->recover(own, paladin);
+    rest_a_day(*module, own, paladin);
     check(offers_cure(own), "Again the next week");
 }
 
@@ -1348,7 +1357,7 @@ void a_fight_starts_with_lasting_conditions()
     const auto curse = GoldBoxGame::curse_of_the_azure_bonds;
     const auto sheet = original_character(curse, "fighter", "lawful_good", 61);
     auto state = left_with(sheet, {{33, 0, 4, false}});
-    module->recover(state, sheet);
+    rest_a_day(*module, state, sheet);
     rules::Encounter encounter;
     encounter.battlefield = {8, 8, std::vector<rules::Terrain>(64, rules::Terrain::open)};
     rules::Participant member;
@@ -1436,7 +1445,7 @@ void camp_spells_last_and_diseases_waste()
           "Enlarge cast in camp makes the next fight's Strength");
 
     auto sick = left_with(fighter, {{43, 0, 1, false}, {44, 0, 1, false}});
-    module->recover(sick, fighter);
+    rest_a_day(*module, sick, fighter);
     check(sick.hit_points == 1 && carries(fighter, sick, 31) &&
               carries(fighter, sick, original::strength_wasted),
           "A day's disease wastes Hit Points and Strength and leaves one helpless");
@@ -1453,7 +1462,7 @@ void camp_spells_last_and_diseases_waste()
     auto dead = left_with(fighter, {{55, 0, 0, false}}, true);
     module->use_camp_action(priest, priest_state, fighter, dead, "cast:cleric:slow_poison", random);
     check(!dead.dead && dead.hit_points >= 1, "Slow Poison stands the poisoned up for a while");
-    module->recover(dead, fighter);
+    rest_a_day(*module, dead, fighter);
     check(dead.dead, "The poison kills again when the spell runs out");
 }
 
@@ -1914,6 +1923,59 @@ std::optional<rules::Command> offered_for(const rules::CombatSession &session,
     return std::nullopt;
 }
 
+// Time between rests (gametime.pas): the clock's walking time runs a member's
+// conditions down as a rest's does. A camp Bless ends as the party walks; a
+// disease that has taken hold wastes a point of Strength each hour and a Hit
+// Point each ten minutes the clock passes; Slow Poison running out lets its
+// poison kill.
+void time_passes_between_rests()
+{
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module(), creation);
+    const auto priest = member_with(party, creation, "cleric", "Kirin");
+    check(party.rest(), "The party rests a day");
+    party.choose_spells(priest, {{}, std::vector<std::string>{"cleric:bless"}});
+    party.use_camp_action(priest, priest, "cast:cleric:bless");
+    const auto &sheet = party.member(priest).character.sheet();
+    check(carries(sheet, party.member(priest).vitals, 1), "Bless is on the cleric");
+    for (int step = 0; step < 30; ++step)
+    {
+        party.advance_time(std::chrono::seconds{6});
+    }
+    check(carries(sheet, party.member(priest).vitals, 1), "Three minutes' walk later it lasts");
+    for (int step = 0; step < 100; ++step)
+    {
+        party.advance_time(std::chrono::seconds{6});
+    }
+    check(!carries(sheet, party.member(priest).vitals, 1), "Ten minutes' more walk end it");
+
+    const auto module = original::rules_module();
+    const auto curse = GoldBoxGame::curse_of_the_azure_bonds;
+    const auto fighter = original_character(curse, "fighter", "lawful_good", 83);
+    auto sick = left_with(fighter, {{43, 0, 1, false}, {44, 0, 1, false}});
+    const int hit_points = sick.hit_points;
+    module->pass_time(sick, fighter, 50, 175);
+    const auto carried = original::carried_state(sick.resources, curse);
+    const auto wasted =
+        std::ranges::find(carried.conditions, original::strength_wasted, &original::Effect::code);
+    check(wasted != carried.conditions.end() && wasted->strength == 2 &&
+              sick.hit_points == std::max(std::min(hit_points, 1), hit_points - 12),
+          "Two hours and twelve ten minutes struck: 2 Strength and 12 Hit Points wasted");
+
+    auto priest_sheet = original_character(curse, "cleric", "lawful_good", 89);
+    priest_sheet.prepared_spells = {"cleric:slow_poison"};
+    rules::VitalState priest_state{priest_sheet.hit_points, false, {}, {}};
+    auto dead = left_with(fighter, {{55, 0, 0, false}}, true);
+    RandomState random{91};
+    module->use_camp_action(priest_sheet, priest_state, fighter, dead, "cast:cleric:slow_poison",
+                            random);
+    check(!dead.dead, "Slow Poison stands the poisoned up");
+    module->pass_time(dead, fighter, 0, 30);
+    check(!dead.dead, "Half an hour later it still holds the poison back");
+    module->pass_time(dead, fighter, 30, 24 * 60);
+    check(dead.dead, "The poison kills as the spell runs out on the road");
+}
+
 // Readying mid-fight (viewchar.pas, ToggleReadyItem; charhlp.pas,
 // RecalcStats): a party member puts its sword away and readies its bow,
 // which its hands did not leave room for, and shoots; the fight keeps it
@@ -2073,6 +2135,7 @@ int main()
         a_drain_lasts_beyond_the_fight();
         ages_change_after_creation();
         items_are_readied_mid_fight();
+        time_passes_between_rests();
         curse_clerics_heal_and_raise_in_camp();
         secret_clerics_heal_in_camp();
         a_pool_character_comes_to_curse();

@@ -494,11 +494,7 @@ whole list):
 
 The work asked for next (2026-11-14), in order, with what each needs:
 
-1. **Time between rests:** the walking time the campaign's clock counts, so
-   a disease wastes (a point of Strength an hour, a Hit Point every ten
-   minutes) and camp spells, Slow Poison and the paladin's week run down as
-   the original counts time; today they change only at a day's rest.
-2. The other "Still to come" items above that are no one game's campaign or
+1. The other "Still to come" items above that are no one game's campaign or
    route work, in their order in this file: the AI's caution near clouds and
    a giant-bane weapon (effect 75) in *Secret*; the party's facing, the
    terrain heights for sight and PARTY_MOVE_MODIFIER (step 7); Spiritual
@@ -642,8 +638,8 @@ lines in all:
      Invisibility and its 10' Radius, Mirror Image, Prayer, Haste (on as many
      as the caster's level) and Protection from Normal Missiles, and Blink
      where the game's table allows (Gateway's), cast in camp, carry their
-     effects into the next fight by their minutes, and through a day's rest
-     as their minutes allow; the time between is not counted.
+     effects into the next fight by their minutes, running down as the
+     campaign's clock passes (Time between rests, plan step 6).
    - **Scribing** (2026-11-14; `CampScribeMenu`, `CheckScribeDone`): a
      member awake and alive scribes a spell from a scroll it carries and can
      read (known, or by Read Magic, or a cleric's scroll for a cleric) into
@@ -670,8 +666,7 @@ lines in all:
      fight. A creature's Strength is the best its own and its effects give,
      worked out again as each comes and goes, and moves the to-hit and
      damage of blows that take Strength. Cast in camp, Enlarge and Strength
-     last into the next fight (the time between is not counted) and through
-     a day's rest by their minutes. The earlier games' effects keep the
+     last into the next fight and through the clock's time by their minutes. The earlier games' effects keep the
      Strength to go back to, *Curse*'s and *Secret*'s the Strength they give;
      OpenGoldBox keeps the Strength they give in all.
 6. **Training, the temple, thief skills, turning undead and conditions,** and
@@ -714,13 +709,12 @@ lines in all:
      temple Heal cures blindness, disease and feeblemind too, and *Secret*'s
      and *Gateway*'s Neutralize Poison stand up one poison killed, at no cost.
      Keoghtum's Ointment takes poison, else disease, away outside a fight as
-     in one. A disease that has taken hold wastes its member through each
-     day's rest, a point of Strength an hour to 3 and a Hit Point every ten
+     in one. A disease that has taken hold wastes its member as the clock
+     passes, a point of Strength each hour to 3 and a Hit Point each ten
      minutes to 1, and leaves it helpless until it is cured, which gives the
-     Strength back (`EffDiseaseStrength`, `EffDiseaseHitPoints`); the time
-     spent walking is not counted. Slow Poison in camp stands one poison
-     killed up for an hour a caster level, and the poison kills it again as
-     the spell runs out over a rest.
+     Strength back (`EffDiseaseStrength`, `EffDiseaseHitPoints`). Slow Poison
+     in camp stands one poison killed up for an hour a caster level, and the
+     poison kills it again as the spell runs out.
    - **Stone** (2026-11-14): a member a fight turns to stone stays a statue
      after it (the original's status PETRIFIED; its state's description
      says "Turned to stone."): it starts every later fight out of it, heals
@@ -728,6 +722,16 @@ lines in all:
      wounds or Raise Dead helps it ("can only be healed by a stonemason");
      the temple's Stone to Flesh brings it back okay at 1 Hit Point
      (`StoneToFlesh`).
+   - **Time between rests** (2026-11-14; `gametime.pas`): the time the
+     campaign's clock passes outside fights (walking, scripts' waits, camp
+     work and rests alike; `RulesModule::pass_time`) runs every member's
+     lasting conditions down as the original counts it: camp spells, Bless
+     ending after its 6 minutes of walking, Slow Poison, Bestow Curse, a
+     disease's time to take hold, and the paladin's day of laying on hands
+     and week of cures. A disease that has taken hold wastes by the hours and
+     ten minutes the clock crosses. A day's rest is the day's time passing
+     and then its 1 Hit Point and memorizing; an hour's rest only passes the
+     hour.
    - **Companions:** an NPC who joins (ADD NPC) is its original record: its
      scores, class levels, Hit Points, spells known and memorized, and its
      own gear. The rules keep the record whole in its draft, so a save makes
