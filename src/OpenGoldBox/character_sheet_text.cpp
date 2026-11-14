@@ -115,6 +115,7 @@ std::string original_identity_and_attributes(const Character &character, const P
         N_("Fifth level"), N_("Sixth level"),  N_("Seventh level")};
     for (const auto &[title, slots] :
          {std::pair{N_("Cleric spells a day"), original.cleric_slots},
+          std::pair{N_("Druid spells a day"), original.druid_slots},
           std::pair{N_("Magic-user spells a day"), original.magic_user_slots}})
     {
         if (slots[0] > 0)

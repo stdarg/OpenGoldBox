@@ -456,6 +456,59 @@ void spell_slots_and_wisdom()
           "Curse's casters stop at level 12 and fifth-level spells");
 }
 
+// Paladins and rangers cast (classcal.pas, RecalcSpellSlots): a paladin's
+// cleric slots from level 9, a ranger's druid and magic-user slots from 8,
+// on to Secret's level 15; Gateway stops them short of any.
+void paladins_and_rangers_cast()
+{
+    const auto curse = opengold::GoldBoxGame::curse_of_the_azure_bonds;
+    const auto secret = opengold::GoldBoxGame::secret_of_the_silver_blades;
+    const auto only = [](ClassSlot slot, int level)
+    {
+        ClassLevels levels{};
+        levels[static_cast<std::size_t>(slot)] = level;
+        return levels;
+    };
+    check(caster_slots(only(ClassSlot::paladin, 8), 18, 9, curse).cleric == SpellSlots{} &&
+              caster_slots(only(ClassSlot::paladin, 9), 18, 9, curse).cleric ==
+                  SpellSlots{1, 0, 0, 0, 0, 0, 0} &&
+              caster_slots(only(ClassSlot::paladin, 12), 18, 9, curse).cleric ==
+                  SpellSlots{2, 2, 0, 0, 0, 0, 0} &&
+              caster_slots(only(ClassSlot::paladin, 15), 18, 9, secret).cleric ==
+                  SpellSlots{3, 2, 1, 1, 0, 0, 0},
+          "A paladin casts cleric spells from level 9");
+    const auto ranger = caster_slots(only(ClassSlot::ranger, 12), 18, 9, curse);
+    check(caster_slots(only(ClassSlot::ranger, 7), 18, 9, curse).druid == SpellSlots{} &&
+              ranger.druid == SpellSlots{2, 1, 0, 0, 0, 0, 0} &&
+              ranger.magic_user == SpellSlots{2, 0, 0, 0, 0, 0, 0} &&
+              caster_slots(only(ClassSlot::ranger, 15), 18, 9, secret).magic_user ==
+                  SpellSlots{2, 2, 0, 0, 0, 0, 0},
+          "A ranger casts druid spells from level 8 and magic-user spells from 9");
+
+    const auto knows = [](const std::vector<int> &known, int number)
+    {
+        return std::ranges::find(known, number) != known.end();
+    };
+    const auto paladin = known_spells(only(ClassSlot::paladin, 9), 18, {}, curse);
+    check(knows(paladin, 1) && knows(paladin, 3) && !knows(paladin, 23),
+          "A paladin of level 9 knows the first-level cleric spells");
+    const auto curse_ranger = known_spells(only(ClassSlot::ranger, 9), 18, {}, curse);
+    check(knows(curse_ranger, 178) && knows(curse_ranger, 180) && !knows(curse_ranger, 15),
+          "Curse's ranger knows the druid's spells, and no magic-user spell unscribed");
+    const auto secret_ranger = known_spells(only(ClassSlot::ranger, 9), 18, {}, secret);
+    check(knows(secret_ranger, 178) && !knows(secret_ranger, 296) && knows(secret_ranger, 15) &&
+              !knows(secret_ranger, 29),
+          "Secret's ranger knows every spell of the levels it has slots for");
+    const auto gateway = opengold::GoldBoxGame::gateway_to_the_savage_frontier;
+    ClassLevels capped{};
+    capped[static_cast<std::size_t>(ClassSlot::paladin)] = 8;
+    capped[static_cast<std::size_t>(ClassSlot::ranger)] = 7;
+    const auto none = caster_slots(capped, 18, 18, gateway);
+    check(none.cleric == SpellSlots{} && none.druid == SpellSlots{} &&
+              none.magic_user == SpellSlots{},
+          "Gateway's paladins and rangers stop before their spells");
+}
+
 void dexterity_bonuses()
 {
     struct Expected
@@ -803,6 +856,7 @@ int main()
         experience_and_level_limits();
         training();
         spell_slots_and_wisdom();
+        paladins_and_rangers_cast();
         dexterity_bonuses();
         constitution_and_age();
         creation_behind_the_rules_interface();

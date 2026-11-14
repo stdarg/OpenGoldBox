@@ -1369,8 +1369,12 @@ std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<c
                               GoldBoxGame game)
 {
     // Seventh-level slots need Wisdom 18 whatever the Intelligence.
-    const auto cleric_slots =
-        spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric), wisdom, 9, game);
+    const auto slots = caster_slots(levels, wisdom, 9, game);
+    // A ranger's own slots, which Secret's ranger knows every spell of.
+    ClassLevels ranger_alone{};
+    ranger_alone[static_cast<std::size_t>(ClassSlot::ranger)] = level_in(levels, ClassSlot::ranger);
+    const auto ranger_slots = caster_slots(ranger_alone, wisdom, 9, game);
+    const bool secret = game == GoldBoxGame::secret_of_the_silver_blades;
     // Detect Magic, Read Magic, Sleep, and Shield (Pool of Radiance) or
     // Enlarge (Curse).
     // Pools of Darkness's too knows Enlarge.
@@ -1381,14 +1385,18 @@ std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<c
     for (const int number : castable_spells(game))
     {
         const auto *known_spell = spell(number);
-        const bool cleric_spell =
-            known_spell->caster_class == SpellClass::cleric && known_spell->level <= 7 &&
-            cleric_slots[static_cast<std::size_t>(known_spell->level - 1)] > 0;
+        const auto at = static_cast<std::size_t>(std::clamp(known_spell->level, 1, 7) - 1);
+        const bool cleric_spell = known_spell->caster_class == SpellClass::cleric &&
+                                  known_spell->level <= 7 && slots.cleric[at] > 0;
+        const bool druid_spell = known_spell->caster_class == SpellClass::druid &&
+                                 known_spell->level <= 7 && slots.druid[at] > 0;
         const bool magic_user_spell =
-            magic_user &&
-            (std::ranges::find(first_magic_user_spells, number) != first_magic_user_spells.end() ||
-             std::ranges::find(learned, number) != learned.end());
-        if (cleric_spell || magic_user_spell)
+            known_spell->caster_class == SpellClass::magic_user &&
+            ((magic_user && (std::ranges::find(first_magic_user_spells, number) !=
+                                 first_magic_user_spells.end() ||
+                             std::ranges::find(learned, number) != learned.end())) ||
+             (secret && known_spell->level <= 7 && ranger_slots.magic_user[at] > 0));
+        if (cleric_spell || druid_spell || magic_user_spell)
         {
             known.push_back(number);
         }
@@ -1666,6 +1674,58 @@ SpellSlots spell_slots(ClassSlot slot, int level, int wisdom, int intelligence, 
         add(1, wisdom > 15);
         add(2, wisdom > 16);
         add(3, wisdom > 17);
+    }
+    return slots;
+}
+
+namespace
+{
+// The cleric slots a paladin gains at levels 9 to 15, of spell levels 1 to 4
+// (Secret's classProgression; Curse's classExperience to level 12).
+constexpr std::array<std::array<int, 4>, 7> paladin_slot_gains{{{1, 0, 0, 0},
+                                                                {1, 0, 0, 0},
+                                                                {0, 1, 0, 0},
+                                                                {0, 1, 0, 0},
+                                                                {0, 0, 1, 0},
+                                                                {1, 0, 0, 0},
+                                                                {0, 0, 0, 1}}};
+// The slots a ranger gains at levels 8 to 15: druid spell levels 1 to 3,
+// then magic-user spell levels 1 and 2.
+constexpr std::array<std::array<int, 5>, 8> ranger_slot_gains{{{1, 0, 0, 0, 0},
+                                                               {0, 0, 0, 1, 0},
+                                                               {1, 0, 0, 0, 0},
+                                                               {0, 0, 0, 1, 0},
+                                                               {0, 1, 0, 0, 0},
+                                                               {0, 0, 0, 0, 1},
+                                                               {0, 1, 0, 0, 0},
+                                                               {0, 0, 0, 0, 1}}};
+} // namespace
+
+CasterSlots caster_slots(const ClassLevels &levels, int wisdom, int intelligence, GoldBoxGame game)
+{
+    CasterSlots slots;
+    slots.cleric = spell_slots(C::cleric, level_in(levels, C::cleric), wisdom, intelligence, game);
+    slots.magic_user =
+        spell_slots(C::magic_user, level_in(levels, C::magic_user), wisdom, intelligence, game);
+    // Their tables end with the game's levels: Curse's at 12, Secret's at 15.
+    const int top = game == GoldBoxGame::secret_of_the_silver_blades ? 15 : 12;
+    for (int level = 9; level <= std::min(level_in(levels, C::paladin), top); ++level)
+    {
+        const auto &gains = paladin_slot_gains[static_cast<std::size_t>(level - 9)];
+        for (std::size_t at = 0; at < gains.size(); ++at)
+        {
+            slots.cleric[at] += gains[at];
+        }
+    }
+    for (int level = 8; level <= std::min(level_in(levels, C::ranger), top); ++level)
+    {
+        const auto &gains = ranger_slot_gains[static_cast<std::size_t>(level - 8)];
+        for (std::size_t at = 0; at < 3; ++at)
+        {
+            slots.druid[at] += gains[at];
+        }
+        slots.magic_user[0] += gains[3];
+        slots.magic_user[1] += gains[4];
     }
     return slots;
 }

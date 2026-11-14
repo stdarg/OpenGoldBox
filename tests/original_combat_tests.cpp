@@ -1868,6 +1868,35 @@ void magic_missiles()
     check(missile(shielded) == 0, "Shield stops it");
 }
 
+// Curse's caster levels (charhlp.pas, GetCasterLevel): a ranger casts a
+// magic-user's spell at its level less 8, and one with no caster's levels
+// at level 6.
+void curse_caster_levels()
+{
+    using original::ClassSlot;
+    const auto missile = [](const original::Combatant &mage, std::uint64_t seed)
+    {
+        auto fight = arrange({{"Mage", rules::Side::party, {1, 3}, mage},
+                              {"Target", rules::Side::opposition, {6, 3}, creature(50, 0)}},
+                             seed, {}, 100, GoldBoxGame::curse_of_the_azure_bonds);
+        auto &session = *fight.session;
+        until_turn_of(session, "Mage");
+        session.submit(*cast_command(session, 15));
+        session.submit(*aim_at(session, "Target"));
+        return 50 - view_of(session.snapshot(), "Target").hit_points;
+    };
+    int ranger_most = 0, unlevelled_least = 100;
+    for (std::uint64_t seed = 301; seed < 311; ++seed)
+    {
+        ranger_most = std::max(ranger_most, missile(caster(ClassSlot::ranger, 12, {15}), seed));
+        auto monster = creature(30, 4);
+        monster.spells = {15};
+        unlevelled_least = std::min(unlevelled_least, missile(monster, seed));
+    }
+    check(ranger_most >= 4 && ranger_most <= 10, "A ranger of level 12 throws two missiles");
+    check(unlevelled_least >= 6, "One without a caster's levels throws three");
+}
+
 // Sleep: 4d4 levels' worth within 1 of the aim, the nearest first; anything
 // of level 6 or more never sleeps (magic.pas, the sleep).
 void sleep_takes_the_weak()
@@ -3728,6 +3757,7 @@ int main()
         bless_waits_for_its_turn();
         damage_loses_a_spell();
         magic_missiles();
+        curse_caster_levels();
         sleep_takes_the_weak();
         charm_person_turns_a_foe();
         cure_light_wounds_stops_bleeding();

@@ -499,8 +499,12 @@ int movement_of(const Fighter &f)
 }
 
 // A caster's level for a spell: its cleric or magic-user level, 12 for an
-// item's own power (magic.pas, GetCasterLevel).
-int caster_level(const Fighter &caster, const Spell &spell)
+// item's own power (magic.pas, GetCasterLevel). Curse and the games after it
+// count a paladin's cleric spells at its level less 8 (Secret at its level),
+// a ranger's druid spells at its level less 7 and its magic-user spells at
+// its level less 8, and cast at level 6 for one with no cleric or magic-user
+// levels that is no paladin above 8 nor ranger above 7.
+int caster_level(const Fighter &caster, const Spell &spell, GoldBoxGame game)
 {
     // From an item a spell is cast at level 6, an item's own power at 12
     // (magic.pas, GetCasterLevel).
@@ -508,14 +512,34 @@ int caster_level(const Fighter &caster, const Spell &spell)
     {
         return spell.caster_class == SpellClass::item ? 12 : 6;
     }
+    const auto level = [&caster](ClassSlot slot)
+    {
+        return caster.numbers.class_levels[static_cast<std::size_t>(slot)];
+    };
+    if (spell.caster_class == SpellClass::item)
+    {
+        return 12;
+    }
+    if (game == GoldBoxGame::pool_of_radiance)
+    {
+        return level(spell.caster_class == SpellClass::cleric ? ClassSlot::cleric
+                                                              : ClassSlot::magic_user);
+    }
+    const int paladin = level(ClassSlot::paladin), ranger = level(ClassSlot::ranger);
+    if (level(ClassSlot::cleric) == 0 && level(ClassSlot::magic_user) == 0 && paladin < 9 &&
+        ranger < 8)
+    {
+        return 6;
+    }
+    const int paladin_less = game == GoldBoxGame::secret_of_the_silver_blades ? 0 : 8;
     switch (spell.caster_class)
     {
     case SpellClass::cleric:
-        return caster.numbers.class_levels[static_cast<std::size_t>(ClassSlot::cleric)];
-    case SpellClass::magic_user:
-        return caster.numbers.class_levels[static_cast<std::size_t>(ClassSlot::magic_user)];
+        return std::max(level(ClassSlot::cleric), paladin - paladin_less);
+    case SpellClass::druid:
+        return std::max(ranger - 7, 0);
     default:
-        return 12;
+        return std::max(level(ClassSlot::magic_user), ranger - 8);
     }
 }
 
@@ -1911,7 +1935,8 @@ bool Session::reachable_by_spell(const Fighter &caster, const Fighter &target) c
     {
         return false;
     }
-    return distance(caster, target) <= spell_range(known, caster_level(caster, known)) &&
+    return distance(caster, target) <=
+               spell_range(known, caster_level(caster, known, game_of(identity_))) &&
            sees(board_, caster, target) && can_target(caster, target);
 }
 
@@ -1933,7 +1958,7 @@ std::vector<rules::Command> Session::aiming_commands(const Fighter &caster) cons
     if (area >= 8 && area <= 14)
     {
         // A square in range and in sight, open ground (cbtacts.pas, ManualAimCursor).
-        const int range = spell_range(known, caster_level(caster, known));
+        const int range = spell_range(known, caster_level(caster, known, game_of(identity_)));
         for (int y = 0; y < board_.height; ++y)
         {
             for (int x = 0; x < board_.width; ++x)
@@ -2037,7 +2062,7 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
 {
     const int number = caster.aiming;
     const auto &known = *spell(number);
-    const int level = caster_level(caster, known);
+    const int level = caster_level(caster, known, game_of(identity_));
     caster.aiming = caster.picks_left = 0;
     caster.picked.clear();
     if (aim != caster.cell)
@@ -4723,7 +4748,7 @@ bool Session::ai_decides(const Fighter &f, int number, int least_priority) const
     {
         return true;
     }
-    const int range = spell_range(known, caster_level(f, known));
+    const int range = spell_range(known, caster_level(f, known, game_of(identity_)));
     const auto targets = enemies_within(f, range, true);
     if (targets.empty())
     {
@@ -4804,7 +4829,7 @@ bool Session::ai_aim(Fighter &f)
             f.cell);
         return true;
     }
-    const int range = spell_range(known, caster_level(f, known));
+    const int range = spell_range(known, caster_level(f, known, game_of(identity_)));
     const bool makes_helpless = std::find(helpless_effects.begin(), helpless_effects.end(),
                                           known.effect) != helpless_effects.end();
     std::vector<EntityId> picked;

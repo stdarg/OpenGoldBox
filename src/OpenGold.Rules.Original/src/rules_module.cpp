@@ -179,8 +179,9 @@ std::optional<Drain> decode_drain(std::string_view data)
 // The slots a character has for a spell's class and level.
 int slots_for(const CharacterSheet::Original &numbers, const Spell &known)
 {
-    const auto &slots =
-        known.caster_class == SpellClass::cleric ? numbers.cleric_slots : numbers.magic_user_slots;
+    const auto &slots = known.caster_class == SpellClass::cleric  ? numbers.cleric_slots
+                        : known.caster_class == SpellClass::druid ? numbers.druid_slots
+                                                                  : numbers.magic_user_slots;
     return known.level >= 1 && known.level <= 7 ? slots[static_cast<std::size_t>(known.level - 1)]
                                                 : 0;
 }
@@ -196,12 +197,11 @@ void recount_levels(CharacterSheet &sheet)
     numbers.thief_skills =
         thief_skills(static_cast<Race>(numbers.race), level_in(levels, ClassSlot::thief),
                      sheet.scores[Ability::dexterity], game);
-    numbers.cleric_slots =
-        spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric),
-                    sheet.scores[Ability::wisdom], sheet.scores[Ability::intelligence], game);
-    numbers.magic_user_slots =
-        spell_slots(ClassSlot::magic_user, level_in(levels, ClassSlot::magic_user),
-                    sheet.scores[Ability::wisdom], sheet.scores[Ability::intelligence], game);
+    const auto slots = caster_slots(levels, sheet.scores[Ability::wisdom],
+                                    sheet.scores[Ability::intelligence], game);
+    numbers.cleric_slots = slots.cleric;
+    numbers.druid_slots = slots.druid;
+    numbers.magic_user_slots = slots.magic_user;
     std::vector<int> learned;
     for (const int number : numbers.known_spells)
     {
@@ -899,7 +899,7 @@ SpellChoiceOptions OriginalModule::spell_choice_options(const CharacterSheet &sh
                  {}});
         }
     }
-    for (const auto &slots : {numbers.cleric_slots, numbers.magic_user_slots})
+    for (const auto &slots : {numbers.cleric_slots, numbers.druid_slots, numbers.magic_user_slots})
     {
         for (const int count : slots)
         {

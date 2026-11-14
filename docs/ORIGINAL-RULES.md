@@ -138,9 +138,22 @@ and a save each know which tables they use.
   animals.
 - **Paladins and rangers:** a paladin is protected from evil and lays on
   hands once between a day's rests for 2 Hit Points a paladin level; a
-  ranger adds its level to its blows against giants. Still to come: a
-  paladin's cure of disease (with the conditions outside fights) and both
-  classes' spells from levels 8 and 9.
+  ranger adds its level to its blows against giants. Both cast spells
+  (`RecalcSpellSlots`, `GetCasterLevel`): a paladin gains cleric slots from
+  level 9 (one first-level at 9 and 10, a second-level at 11 and 12; in
+  *Secret* a third-level at 13, a first at 14 and a fourth at 15) and knows
+  every cleric spell of a level it has slots for, cast at its level less 8;
+  a ranger gains druid slots from level 8 (first-level at 8 and 10,
+  second-level at 12 and 14 in *Secret*) and magic-user slots from 9
+  (first-level at 9 and 11, second-level at 13 and 15), knows every druid
+  spell of a level it has slots for and casts them at its level less 7, and
+  its magic-user spells at its level less 8. *Curse*'s ranger knows no
+  magic-user spell but those it scribes (scribing is still to come);
+  *Secret*'s knows every one of the levels it has slots for. A character
+  with no cleric or magic-user levels that is no paladin above 8 nor ranger
+  above 7 casts at level 6, as a monster does. The sheet shows the druid's
+  slots. Still to come: a paladin's cure of disease (with the conditions
+  outside fights).
 - **From *Pool of Radiance*:** a character brought across keeps its scores
   (held within *Curse*'s limits for its race and gender), levels, Hit Points,
   age, experience and drained levels, its magic-user spell book but Animate
@@ -229,8 +242,9 @@ chosen by the game as *Curse*'s are. In progress (2026-11-13):
   spells as it trains.
 - **Still to come:** the Delayed Blast Fireball's delay (the original asks
   for 1 to 50 segments and sets the blast on its square), Youth (an item
-  power that makes its user 1d4+1 years younger), and the paladin's and
-  ranger's spells (in *Curse* too).
+  power that makes its user 1d4+1 years younger). Its paladins and rangers
+  cast as *Curse*'s do (*Curse*, Paladins and rangers), a paladin at its
+  full level.
 
 ### *Secret*'s combat
 
@@ -969,6 +983,7 @@ tuned with the AI lab once the original rules play.
 | *Secret:* the Constitution bonus to saves adds an unset value at Constitution 3 and from 21 up (`effhndlr.pas`, `EffConPsnSave`, `EffConSpellSave`) | No bonus there |
 | *Secret:* a giant slug with no enemy in reach still spits and misses, at whichever creature was aimed at last (`effhndlr.pas`, `EffSpitAtTarget`) | It does not spit |
 | *Secret:* its thief skill adjustments give humans the half-orc's (−5 Pick Pockets, −10 Read Languages and the rest), so a human thief starts worse than in the earlier games (`raceAdj` in its reconstruction) | No adjustment for humans, as before |
+| *Secret:* a paladin with no cleric or magic-user levels casts its spells at level 6 whatever its own, as its check for a caster leaves the paladin out where *Curse*'s has it (`charhlp.pas`, `GetCasterLevel`) | At its paladin level, as *Secret* reckons a paladin's spells otherwise |
 | *Secret:* the spells a magic-user learns while trained at creation include, at level 6, Cure Light Wounds, a cleric's spell (`chargen.pas`, TrainingMenu) | Left out |
 | *Curse* and *Gateway:* training picks the class whose next level needs the most experience, but reads every class at the level of the last one it looked at (TrainingMenu) | Each class at its own level |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |

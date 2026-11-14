@@ -875,6 +875,41 @@ void curse_paladins_and_rangers()
           "Once a day");
 }
 
+// Secret's rangers start trained to level 8, so they memorize druid spells
+// in the slots their level gives (classcal.pas,
+// RecalcSpellLists).
+void secret_rangers_memorize_their_spells()
+{
+    const auto module = original::rules_module();
+    const auto creation = original::character_rules(original::default_aging,
+                                                    GoldBoxGame::secret_of_the_silver_blades);
+    RandomState random{29};
+    rules::CharacterDraft draft;
+    draft.race = "human";
+    draft.gender = "female";
+    draft.character_class = "ranger";
+    draft.alignment = "neutral_good";
+    draft.name = "Tamsin";
+    creation->roll_in_place(draft, random);
+    const auto ranger = creation->evaluate(draft, rules::NameRequirement::required);
+    const auto &numbers = *ranger.original;
+    check(numbers.class_levels[4] == 8 && numbers.druid_slots[0] > 0 &&
+              numbers.magic_user_slots[0] == 0,
+          "A Secret ranger starts at level 8, with a druid slot and no magic-user one yet");
+    const auto options =
+        module->spell_choice_options(ranger, rules::SpellChoiceContext::long_rest).preparation;
+    const auto offered = [&options](std::string_view id)
+    {
+        return std::ranges::any_of(options,
+                                   [id](const rules::CreationChoice &c)
+                                   {
+                                       return c.id == id;
+                                   });
+    };
+    check(offered("druid:entangle") && !offered("magic_user:magic_missile"),
+          "It may memorize the druid's spells");
+}
+
 // The original's temple: Cure Light Wounds heals 1d8 a wounded member, and
 // Raise Dead brings the dead back with 1 Hit Point.
 void the_temple_heals_and_raises()
@@ -1139,6 +1174,7 @@ int main()
         secret_clerics_heal_in_camp();
         a_pool_character_comes_to_curse();
         curse_paladins_and_rangers();
+        secret_rangers_memorize_their_spells();
         secret_characters_start_trained();
         gateway_characters_start_low_and_stop_at_caps();
         darkness_characters_start_high();

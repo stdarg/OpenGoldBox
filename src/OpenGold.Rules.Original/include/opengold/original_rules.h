@@ -337,10 +337,12 @@ enum class ThiefSkill : unsigned
                                    int award, GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 
 // The spells a character knows (chargen.pas, CreateCharacterMenu): a cleric
-// every cleric spell of a level it has slots for; a magic-user the four it
-// starts with (Detect Magic, Read Magic, Sleep, and Shield in Pool of
-// Radiance or Enlarge in Curse) and those it learned since (`learned`), in
-// the spell table's order.
+// every cleric spell of a level it has slots for, and so a paladin from level
+// 9; a ranger from level 8 every druid spell of a level it has slots for, and
+// in Secret every magic-user spell too (Curse's ranger learns those only from
+// scrolls); a magic-user the four it starts with (Detect Magic, Read Magic,
+// Sleep, and Shield in Pool of Radiance or Enlarge in Curse) and those it
+// learned since (`learned`), in the spell table's order.
 [[nodiscard]] std::vector<int> known_spells(const ClassLevels &levels, int wisdom,
                                             std::span<const int> learned, GoldBoxGame game);
 
@@ -351,6 +353,18 @@ using SpellSlots = std::array<int, 7>;
 // and seventh-level spells, and only with the Wisdom or Intelligence for them.
 [[nodiscard]] SpellSlots spell_slots(ClassSlot slot, int level, int wisdom, int intelligence = 9,
                                      GoldBoxGame game = GoldBoxGame::pool_of_radiance);
+
+// A character's slots by the list its spells come from (classcal.pas,
+// RecalcSpellSlots): a cleric's and a magic-user's, with a paladin's cleric
+// slots from level 9 and a ranger's druid slots (spell levels 1 to 3) and
+// magic-user slots (1 and 2) from level 8, in Curse and Secret.
+struct CasterSlots
+{
+    SpellSlots cleric{}, druid{}, magic_user{};
+};
+
+[[nodiscard]] CasterSlots caster_slots(const ClassLevels &levels, int wisdom, int intelligence,
+                                       GoldBoxGame game);
 
 // Combat (docs/ORIGINAL-RULES.md, plan step 4).
 
