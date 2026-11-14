@@ -970,27 +970,19 @@ void UaSession::inn_event(const EventRecord &event, bool in_town, ServiceEnd end
     {
         say_kit({"The party enters a local Inn.", {}});
     }
-    ask_kit({{"Rest", {}}, {"Exit", {}}},
-            [this, end](std::size_t choice)
-            {
-                if (choice == 0 && party_)
-                {
-                    (void)party_->rest();
-                    // The kit's rest memorizes the spells each caster had.
-                    while (party_->state().spell_rest)
-                    {
-                        party_->keep_rest_spells(party_->state().spell_rest->members.front());
-                    }
-                    say_kit({"The party rests.", {}});
-                    wait_for_return(
-                        [end]
-                        {
-                            end(0);
-                        });
-                    return;
-                }
-                end(0);
-            });
+    if (!party_)
+    {
+        end(0);
+        return;
+    }
+    // The kit's camp menu, safe from rest encounters, back to the event after.
+    camp_end_ = [end]
+    {
+        end(0);
+    };
+    rest_minutes_ = 24 * 60;
+    rest_unit_ = RestUnit::hours;
+    kit_camp_menu();
 }
 
 // Kind 22: a small town's services, each built from the town's own bytes

@@ -376,6 +376,7 @@ class UaSession final : public ExplorationSession
     // A rest of `minutes`, which a rest encounter may break; true when it
     // was not broken.
     bool rest_for(unsigned minutes);
+    void rest_in_service();
     void alter_menu();
     void order_menu();
     void drop_member();
@@ -574,6 +575,9 @@ class UaSession final : public ExplorationSession
         minutes,
     };
     bool camp_open_{};
+    // An inn's camp menu: what its Exit goes back to; no rest encounter
+    // breaks a rest meanwhile.
+    std::function<void()> camp_end_;
     unsigned rest_minutes_{24 * 60};
     RestUnit rest_unit_{RestUnit::hours};
     // A tavern's drinks this visit and the next tale it tells in order.

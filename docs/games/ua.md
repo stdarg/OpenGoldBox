@@ -340,7 +340,9 @@ kit's twenty rates (`ua::rated_price`, temple.c's `rate_price`):
   (level 1, 20) to Resurrection (7, 2,000), at byte 5's rate; Donate (byte
   7, bit 8) counts toward a tithe (bytes 8 to 11) that runs event 0Ch.
 - **Vault** (24): the party's money left and taken back, kept for the game.
-- **Inn** (29): the party rests.
+- **Inn** (29): the kit's camp menu (Camping, below), where no rest
+  encounter breaks a rest and the menu comes back after one; Exit goes on
+  with the event.
 - **Small town** (22): Temple, Hall, Shop, Inn, Pub and Vault by byte 7's
   bits, each made from the town's bytes as the kit does, back to the town
   after each.
@@ -529,8 +531,7 @@ playing each event and fight; it fails on any event the session cannot play.
 ### What remains
 
 - The services' smaller parts (DEVIATIONS.md, Unlimited Adventures'
-  services): Pool, Share and Take, Appraise, vault items, the camp menu at
-  an inn, a temple's Restoration and Fix; drinks as more than a count; the encounter's monster
+  services): Pool, Share and Take, Appraise, vault items, a temple's Restoration and Fix; drinks as more than a count; the encounter's monster
   picture at its range.
 - Fights:
   - The 14 monster effects no game's effect plays yet (Monsters' effects,

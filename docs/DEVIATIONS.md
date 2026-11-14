@@ -268,8 +268,7 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   valued one by one). A temple cures one member a service: a member who
   does not need it is turned away rather than asked whether to pay anyway,
   and Restoration and the free Fix of a high temple wait for the rules to
-  have them. A vault keeps the party's money, not items. An inn rests the
-  party with a Rest button, not the kit's camp menu. An item's name
+  have them. A vault keeps the party's money, not items. An item's name
   leaves out the count the kit puts before a stack's name, and its plural:
   the inventory shows the quantity. A design's NPC who is a monster (race 6)
   joins as a human.

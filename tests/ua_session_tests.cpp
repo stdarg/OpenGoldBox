@@ -1698,8 +1698,9 @@ void the_town_serves_the_party(const std::filesystem::path &kit)
     check(party->state().wealth[4] == 0 && party->state().wealth[5] == 0, "The vault keeps money");
     visit(5, 1, {"Take", "Exit"});
     check(party->state().wealth == purse, "The vault gives it back");
-    visit(6, 1, {"Rest"});
-    check(player.heard("The party rests."), "The inn lets the party rest");
+    visit(6, 1, {"Rest", "Rest"});
+    check(player.heard("The party makes camp.") && player.heard("The party rests."),
+          "The inn opens the kit's camp menu, where the party rests");
     visit(7, 1, {"Pub", "Talk", "Leave", "Leave"});
     check(player.heard("THE TOWN SQUARE.") && player.heard("The party enters a tavern.") &&
               player.heard("THEY SAY THE MAYOR HIDES GOLD."),

@@ -1443,6 +1443,11 @@ unsigned UaSession::party_zone() const
 // with no minutes between rolls divided by zero in the kit; it never rolls.
 std::optional<unsigned> UaSession::rest_encounter()
 {
+    // A service's rest is safe (rest.c, camp_rest while a service event runs).
+    if (camp_end_)
+    {
+        return std::nullopt;
+    }
     constexpr std::size_t header_rest_encounters = 0x2E;
     const std::size_t at = header_rest_encounters + 4 * std::size_t{party_zone()};
     const auto &header = area_.area.header;

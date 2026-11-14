@@ -110,6 +110,11 @@ void UaSession::kit_camp_menu()
                     return;
                 default:
                     camp_open_ = false;
+                    if (camp_end_)
+                    {
+                        auto end = std::exchange(camp_end_, {});
+                        end();
+                    }
                     return;
                 }
             });
@@ -143,6 +148,11 @@ void UaSession::rest_time_menu()
                 switch (choice)
                 {
                 case 0:
+                    if (camp_end_)
+                    {
+                        rest_in_service();
+                        return;
+                    }
                     camp_open_ = false;
                     (void)rest_for(rest_minutes_);
                     return;
@@ -207,6 +217,30 @@ bool UaSession::rest_for(unsigned minutes)
     say_kit({"The party rests.", {}});
     refresh_snapshot();
     return true;
+}
+
+// At an inn the rest is safe, and the camp menu comes back after it (camp.c,
+// camp_menu while a service event runs); the casters keep their spells.
+void UaSession::rest_in_service()
+{
+    advance_minutes(rest_minutes_ % day_minutes);
+    for (unsigned day = 0; day < rest_minutes_ / day_minutes; ++day)
+    {
+        if (!party_->rest(RestKind::long_rest))
+        {
+            break;
+        }
+        while (party_->state().spell_rest)
+        {
+            party_->keep_rest_spells(party_->state().spell_rest->members.front());
+        }
+    }
+    say_kit({"The party rests.", {}});
+    wait_for_return(
+        [this]
+        {
+            kit_camp_menu();
+        });
 }
 
 // The Alter menu (camp.c, alter_menu): the party's order and dropping a
