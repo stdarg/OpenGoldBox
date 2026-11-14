@@ -1434,9 +1434,10 @@ bool RolfTourSession::explore(ExplorationCommand command)
         }
         else if (command == ExplorationCommand::look)
         {
-            // Gateway's Look takes ten minutes (its map menu's L): a party
-            // waits so for the Kraken's Pearl Chest, as its cluebook bids.
-            if (campaign_ && game() == GoldBoxGame::gateway_to_the_savage_frontier)
+            // Look takes ten minutes, as every game's map menu L does
+            // (AdvanceTime(1, 2)): Gateway's party waits so for the Kraken's
+            // Pearl Chest, as its cluebook bids.
+            if (campaign_)
             {
                 pass_time(std::chrono::minutes{10});
             }

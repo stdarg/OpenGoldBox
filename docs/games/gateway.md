@@ -187,7 +187,8 @@ host, each as Gateway's engine has it:
   headquarters' landing (ECL4:13 0x8092) moves the party after loading the
   map, and the square it left (a guard patrol's, event 2) sounded the alarm
   where the original meets no one.
-- Look takes ten minutes, as the map menu's L does (AdvanceTime(1, 2)): the
+- Look takes ten minutes, as the map menu's L does (AdvanceTime(1, 2)), in
+  every game since (ORIGINAL-RULES.md, Decisions): the
   cluebook has the party look about in the Pearl Chest's room (event 125)
   until its guards come 30 minutes after the landing. A step takes six
   seconds, ten minutes more in search mode, so the route races there out of

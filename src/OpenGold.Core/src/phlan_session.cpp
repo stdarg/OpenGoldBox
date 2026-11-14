@@ -1964,9 +1964,12 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
 
 void RolfTourSession::decline_camp()
 {
+    // The wilderness's menu comes back as its search entry runs again, which
+    // takes no time: the player only left the camp, and did not Look.
     if (in_curse_wilderness() && snapshot_.phase == TourPhase::completed && snapshot_.camp_offered)
     {
-        (void)explore(ExplorationCommand::look);
+        begin_event(EventTrigger::look);
+        advance(0);
     }
 }
 
