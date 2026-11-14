@@ -442,6 +442,7 @@ class OriginalModule final : public RulesModule
     }
 
     [[nodiscard]] bool usable_outside_combat(std::string_view item) const override;
+    [[nodiscard]] bool cursed_item(std::string_view item) const override;
 
     [[nodiscard]] std::vector<std::string> classes_to_train(const CharacterSheet &sheet,
                                                             unsigned experience) const override;
@@ -1983,6 +1984,13 @@ std::optional<int> item_power(std::string_view key, GoldBoxGame game)
     return code > 56 ? code - 23 : code;
 }
 } // namespace
+
+// An item of the original's is cursed by its record's flag (ITEMS).
+bool OriginalModule::cursed_item(std::string_view item) const
+{
+    const auto record = por::item_of_original_key(item);
+    return record && record->cursed_raw != 0;
+}
 
 // Out of a fight the original's Potion of Healing heals 2d4+2, and Keoghtum's
 // Ointment takes poison away, else disease, else heals 1d4+8, as in one

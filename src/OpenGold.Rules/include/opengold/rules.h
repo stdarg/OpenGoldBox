@@ -1360,6 +1360,11 @@ class RulesModule
         return false;
     }
 
+    // Whether the item is cursed, so that once worn it stays on until Remove
+    // Curse lets its wearer put it down (MAGIC-1): by its key's power, or the
+    // original's record's flag.
+    [[nodiscard]] virtual bool cursed_item(std::string_view item) const;
+
     // Drinks a potion the member carries, outside combat (MAGIC-3): a healing
     // potion restores its Hit Points and a Potion of Giant Strength starts its
     // hour. Throws for a potion that works only in combat, or that would do

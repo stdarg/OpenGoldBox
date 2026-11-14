@@ -1,4 +1,5 @@
 #include "opengold/rules.h"
+#include "opengold/item_key.h"
 #include <cstdlib>
 
 namespace opengold::rules
@@ -67,6 +68,11 @@ bool has_line_of_sight(const Battlefield &board, Cell from, Cell to)
         }
     }
     return true;
+}
+
+bool RulesModule::cursed_item(std::string_view item) const
+{
+    return parse_item_key(item).power == ItemPower::cursed;
 }
 
 } // namespace opengold::rules

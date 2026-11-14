@@ -272,6 +272,25 @@ void characters_ready_original_gear()
                       party.equip(mage, blade, rules::EquipmentOperation::equip);
                   }),
           "A magic-user cannot ready a long sword");
+
+    // A cursed item, once readied, stays on until Remove Curse lets its
+    // wearer put it down (temple.pas, RemoveCurse).
+    auto cursed_sword = original_item(types, long_sword, 60);
+    std::array<std::uint8_t, 63> raw{};
+    raw[46] = long_sword;
+    raw[54] = 1;
+    cursed_sword.stored = por::decode_items(raw)->front();
+    const auto warrior = member_with(party, creation, "fighter", "Brand");
+    const auto stuck = carried(party, warrior, cursed_sword);
+    party.equip(warrior, stuck, rules::EquipmentOperation::equip);
+    check(throws(
+              [&]
+              {
+                  party.unequip(warrior, stuck);
+              }),
+          "A cursed sword cannot be put away");
+    party.temple_service(warrior, rules::TempleService::remove_curse, 0);
+    check(party.member(warrior).equipped.empty(), "Remove Curse lets its wearer put it down");
 }
 
 // The Character Pool under the original rules: four of each class a race may

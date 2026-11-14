@@ -160,14 +160,14 @@ void keep_item_uses(PartyMember &member, std::uint64_t id, unsigned left)
 
 // Remove Curse lets a member put down its cursed items, which are then lost:
 // the original's Remove Curse let a character drop a cursed object (MAGIC-1).
-void put_down_cursed_items(PartyMember &member)
+void put_down_cursed_items(const rules::RulesModule &rules, PartyMember &member)
 {
     auto inventory = member.character.inventory();
     std::erase_if(member.equipped,
                   [&](std::uint64_t worn)
                   {
                       const auto &definition = inventory.find(worn)->get().definition_id;
-                      if (rules::parse_item_key(definition).power != rules::ItemPower::cursed)
+                      if (!rules.cursed_item(definition))
                       {
                           return false;
                       }
@@ -227,15 +227,14 @@ bool refuses_wielder(const PartyMember &member, std::uint64_t item)
 }
 
 // Whether the member holds a cursed item it cannot put down.
-bool holds_cursed_item(const PartyMember &member)
+bool holds_cursed_item(const rules::RulesModule &rules, const PartyMember &member)
 {
     const auto &inventory = member.character.inventory();
     return std::any_of(member.equipped.begin(), member.equipped.end(),
                        [&](std::uint64_t worn)
                        {
                            const auto &definition = inventory.find(worn)->get().definition_id;
-                           return rules::parse_item_key(definition).power ==
-                                  rules::ItemPower::cursed;
+                           return rules.cursed_item(definition);
                        });
 }
 
@@ -3018,7 +3017,7 @@ bool CampaignParty::temple_service_helps(MemberId target, rules::TempleService s
     const auto &current = member(target);
     return rules_->temple_service_helps(current.character.sheet(), current.vitals, service) ||
            (service == rules::TempleService::remove_curse && !current.vitals.dead &&
-            holds_cursed_item(current));
+            holds_cursed_item(*rules_, current));
 }
 
 // What coming back from death costs the member for good, in its level history.
@@ -3064,7 +3063,7 @@ void CampaignParty::temple_service(MemberId target, rules::TempleService service
     }
     if (service == rules::TempleService::remove_curse)
     {
-        put_down_cursed_items(patient);
+        put_down_cursed_items(*rules_, patient);
     }
     state_ = std::move(next);
 }
@@ -3237,8 +3236,8 @@ namespace
 // What a spell cast outside combat leaves to the campaign, for the spells
 // Detect Magic, Friends, Read Magic, Find Traps and Remove Curse (MAGIC-2,
 // MAGIC-6).
-void keep_camp_spell(PartyState &state, PartyMember &caster, PartyMember &patient,
-                     std::string_view verb)
+void keep_camp_spell(const rules::RulesModule &rules, PartyState &state, PartyMember &caster,
+                     PartyMember &patient, std::string_view verb)
 {
     if (verb.starts_with("detect_magic"))
     {
@@ -3273,7 +3272,7 @@ void keep_camp_spell(PartyState &state, PartyMember &caster, PartyMember &patien
     }
     if (verb.starts_with("remove_curse"))
     {
-        put_down_cursed_items(patient);
+        put_down_cursed_items(rules, patient);
     }
 }
 } // namespace
@@ -3327,7 +3326,7 @@ bool CampaignParty::read_scroll(MemberId user, std::uint64_t item, MemberId targ
     }
     if (cast)
     {
-        keep_camp_spell(next, reader, patient, action.substr(2));
+        keep_camp_spell(*rules_, next, reader, patient, action.substr(2));
     }
     // The action's id begins with the spell's place on the scroll.
     const auto spells = rules::parse_scroll_key(key)->spells.size();
@@ -3522,9 +3521,9 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
             take_revival_changes(patient, rules::Revival::spell);
         }
         next.wealth = pay_gold(next.wealth, gold, coin_rates()).purse;
-        if (action.starts_with("remove_curse"))
+        if (action.starts_with("remove_curse") || action.ends_with(":remove_curse"))
         {
-            put_down_cursed_items(patient);
+            put_down_cursed_items(*rules_, patient);
         }
     }
     state_ = std::move(next);
@@ -4011,7 +4010,7 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
                 }
                 if (actor.curse_lifted)
                 {
-                    put_down_cursed_items(member);
+                    put_down_cursed_items(*rules_, member);
                 }
                 thrown.push_back(std::move(member));
             }
