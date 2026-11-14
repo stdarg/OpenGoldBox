@@ -477,7 +477,9 @@ template <bool Reading> struct SaveCodec
                 fields(draft, appearance, level);
                 // The rules module bounds each class's level; this bounds the format:
                 // Pools of Darkness's tables run to level 40.
-                require(level >= 1 && level <= 40, "Unsupported saved character level");
+                constexpr unsigned highest_level = 40;
+                require(level >= 1 && level <= static_cast<int>(highest_level),
+                        "Unsupported saved character level");
                 std::vector<rules::AdvancementChoice> history;
                 std::vector<SpellChoiceEdit> edits;
                 std::vector<TrainingChoiceEdit> training;
@@ -487,33 +489,29 @@ template <bool Reading> struct SaveCodec
                 // drain and raising), and a character may start above level 1
                 // (Curse's): the replayed level is checked below instead.
                 require(history.size() <= 1000, "Too long a saved advancement history");
-                unsigned prior_level = 1;
+                // Entries keep the order they were made in, not of their levels:
+                // a level drain (the original rules') may bring a character back
+                // to a level it has left (Character::replay).
+                const auto valid_level = [](unsigned entry_level)
+                {
+                    return entry_level >= 1 && entry_level <= highest_level;
+                };
                 std::uint64_t prior_session = 0;
                 for (const auto &edit : training)
                 {
-                    require(edit.level >= prior_level &&
-                                edit.level <= static_cast<unsigned>(level) &&
-                                edit.rest_session > prior_session,
+                    require(valid_level(edit.level) && edit.rest_session > prior_session,
                             "Invalid training replacement history");
-                    prior_level = edit.level;
                     prior_session = edit.rest_session;
                 }
-                unsigned hall_level = 0;
                 for (const auto &trained : hall)
                 {
-                    require(trained.level > hall_level &&
-                                trained.level <= static_cast<unsigned>(level),
-                            "Invalid training hall history");
-                    hall_level = trained.level;
+                    require(valid_level(trained.level), "Invalid training hall history");
                 }
-                unsigned previous = 1;
                 std::uint64_t rest = 0;
                 for (const auto &edit : edits)
                 {
-                    require(edit.level >= previous && edit.level <= static_cast<unsigned>(level),
-                            "Invalid spell-choice history level");
+                    require(valid_level(edit.level), "Invalid spell-choice history level");
                     require(edit.rest_session > rest, "Repeated spell-choice rest");
-                    previous = edit.level;
                     rest = edit.rest_session;
                 }
                 // Built once the history is known to be sound: evaluating the

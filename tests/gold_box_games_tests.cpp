@@ -514,6 +514,9 @@ struct RouteBeat
     // Play the beat again (up to 40 times) until this cell holds these bits:
     // the Fire Giant Cave's endless corridor until its spell is broken.
     std::optional<std::pair<std::uint16_t, std::uint16_t>> repeat_until_bits;
+    // Answer the waiting menu with this choice, night after night, until the
+    // party is whole, its spells chosen after each: Elminster's REST in Limbo.
+    std::optional<std::string> rest_choice;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -2006,7 +2009,7 @@ const std::vector<RouteBeat> &secret_route()
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
-constexpr unsigned darkness_route_stops_on_map = 32;
+constexpr unsigned darkness_route_stops_on_map = 33;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
 // Phlan's docks, where Rolf has walked the party out.
@@ -2624,6 +2627,112 @@ const std::vector<RouteBeat> &darkness_route()
         auto follow_dragons = step_beat(32, 0, 1, D::west, {"YES"});
         follow_dragons.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x25, 7};
         route.push_back(follow_dragons);
+        // North-west, a dragon flies into an opening in the mountains: the
+        // party enters the Dragons' Aerie.
+        RouteBeat to_aerie{17, 0, 0, D::north, {"YES"}};
+        to_aerie.area_steps = {C::northwest};
+        route.push_back(to_aerie);
+        // In the Aerie (map 33) the party beats the white and green dragons at
+        // its doors, and takes the four keys to the dimensional gate from the
+        // dragons' nests, in the order the planning aid finds them.
+        walk_passages(route, 33, {{8, 15, D::north},  {8, 14, D::north},  {8, 13, D::north},
+                                  {8, 12, D::north},  {8, 11, D::north},  {8, 10, D::north},
+                                  {8, 9, D::north},   {8, 8, D::east},    {9, 8, D::east},
+                                  {10, 8, D::east},   {11, 8, D::east},   {12, 8, D::south},
+                                  {12, 9, D::south},  {12, 10, D::east},  {13, 10, D::south},
+                                  {13, 11, D::east},  {14, 11, D::east},  {15, 11, D::south},
+                                  {15, 12, D::south}, {15, 13, D::south}, {15, 14, D::south},
+                                  {15, 15, D::west},  {14, 15, D::west},  {13, 15, D::west}});
+        // The green dragons give Modthryth the blood for another dracolich; beaten, they leave the
+        // copper key (cell 144h bit 3).
+        auto copper_key = step_beat(33, 12, 15, D::west);
+        copper_key.rest_first = true;
+        copper_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 8};
+        route.push_back(copper_key);
+        walk_passages(
+            route, 33,
+            {{11, 15, D::north}, {11, 14, D::north}, {11, 13, D::east},  {12, 13, D::east},
+             {13, 13, D::east},  {14, 13, D::east},  {15, 13, D::north}, {15, 12, D::north},
+             {15, 11, D::west},  {14, 11, D::west},  {13, 11, D::north}, {13, 10, D::west},
+             {12, 10, D::north}, {12, 9, D::north},  {12, 8, D::west},   {11, 8, D::west},
+             {10, 8, D::west},   {9, 8, D::north},   {9, 7, D::east},    {10, 7, D::east},
+             {11, 7, D::east},   {12, 7, D::east},   {13, 7, D::east},   {14, 7, D::east},
+             {15, 7, D::north},  {15, 6, D::north},  {15, 5, D::north},  {15, 4, D::west},
+             {14, 4, D::north},  {14, 3, D::north},  {14, 2, D::north},  {14, 1, D::north},
+             {14, 0, D::west},   {13, 0, D::south},  {13, 1, D::west}});
+        // The black dragons pay homage to the duel's victor: the party attacks, and finds the iron
+        // key in their treasure (bit 2).
+        auto iron_key = step_beat(33, 12, 1, D::west, {"YES"});
+        iron_key.rest_first = true;
+        iron_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 12};
+        route.push_back(iron_key);
+        walk_passages(route, 33,
+                      {{11, 1, D::east},  {12, 1, D::north}, {12, 0, D::east},  {13, 0, D::east},
+                       {14, 0, D::south}, {14, 1, D::south}, {14, 2, D::south}, {14, 3, D::south},
+                       {14, 4, D::east},  {15, 4, D::south}, {15, 5, D::south}, {15, 6, D::south},
+                       {15, 7, D::west},  {14, 7, D::west},  {13, 7, D::west},  {12, 7, D::west},
+                       {11, 7, D::west},  {10, 7, D::west},  {9, 7, D::west},   {8, 7, D::west},
+                       {7, 7, D::west},   {6, 7, D::west},   {5, 7, D::west},   {4, 7, D::west},
+                       {3, 7, D::west},   {2, 7, D::west},   {1, 7, D::north},  {1, 6, D::north},
+                       {1, 5, D::west},   {0, 5, D::north},  {0, 4, D::north},  {0, 3, D::north},
+                       {0, 2, D::north},  {0, 1, D::east},   {1, 1, D::east},   {2, 1, D::east}});
+        // The Modthryth's followers recruit the white dragons for the next dracolich; one wears the
+        // silver key (bit 0).
+        auto silver_key = step_beat(33, 3, 1, D::east);
+        silver_key.rest_first = true;
+        silver_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 13};
+        route.push_back(silver_key);
+        walk_passages(route, 33,
+                      {{4, 1, D::south},  {4, 2, D::west},   {3, 2, D::south},  {3, 3, D::south},
+                       {3, 4, D::south},  {3, 5, D::west},   {2, 5, D::south},  {2, 6, D::south},
+                       {2, 7, D::east},   {3, 7, D::east},   {4, 7, D::east},   {5, 7, D::east},
+                       {6, 7, D::south},  {6, 8, D::west},   {5, 8, D::west},   {4, 8, D::west},
+                       {3, 8, D::south},  {3, 9, D::west},   {2, 9, D::south},  {2, 10, D::south},
+                       {2, 11, D::west},  {1, 11, D::west},  {0, 11, D::south}, {0, 12, D::south},
+                       {0, 13, D::south}, {0, 14, D::south}, {0, 15, D::east},  {1, 15, D::north},
+                       {1, 14, D::east},  {2, 14, D::east}});
+        // The the blue dragons' nest, the steel key hidden behind a rock (bit 1).
+        auto steel_key = step_beat(33, 3, 14, D::east);
+        steel_key.rest_first = true;
+        steel_key.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 15};
+        route.push_back(steel_key);
+        // Back west and north to the doors before the dimensional gate (7,2):
+        // the four keys unlock them (cell 144h FFh).
+        walk_passages(route, 33,
+                      {{4, 14, D::west},  {3, 14, D::south}, {3, 15, D::west},  {2, 15, D::west},
+                       {1, 15, D::west},  {0, 15, D::north}, {0, 14, D::north}, {0, 13, D::north},
+                       {0, 12, D::north}, {0, 11, D::north}, {0, 10, D::north}, {0, 9, D::north},
+                       {0, 8, D::east},   {1, 8, D::east},   {2, 8, D::east},   {3, 8, D::east},
+                       {4, 8, D::east},   {5, 8, D::east},   {6, 8, D::north},  {6, 7, D::north},
+                       {6, 6, D::east},   {7, 6, D::north},  {7, 5, D::north},  {7, 4, D::west},
+                       {6, 4, D::west},   {5, 4, D::north},  {5, 3, D::east},   {6, 3, D::east},
+                       {7, 3, D::north}});
+        auto locks = step_beat(33, 7, 2, D::north, {"USE KEYS"});
+        locks.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x144, 255};
+        route.push_back(locks);
+        // Through them Modthryth stands beside his dracoliches, which the
+        // party beats (cell 141h FFh), rested first.
+        auto dracolich = step_beat(33, 7, 2, D::north);
+        dracolich.rest_first = true;
+        dracolich.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x141, 255};
+        route.push_back(dracolich);
+        // Round to the dimensional gate (7,0), entered facing west: the party
+        // steps through to Thorne's cave.
+        walk_passages(route, 33, {{7, 1, D::east}, {8, 1, D::north}});
+        // It comes out in Limbo, where Elminster offers his help: the party
+        // rests, trains, and moves on to Thorne's cave.
+        route.push_back(step_beat(33, 8, 0, D::west, {"YES", "stop:REST"}));
+        RouteBeat limbo_rest{18, 0, 0, D::north, {}};
+        limbo_rest.rest_choice = "REST";
+        route.push_back(limbo_rest);
+        RouteBeat limbo{18,
+                        0,
+                        0,
+                        D::north,
+                        {"TRAIN", "paladin 1", "paladin 2", "ranger 3", "cleric 4", "cleric 5",
+                         "magic_user 6", "Leave", "MOVE ON", "THORNE"}};
+        limbo.waiting = true;
+        route.push_back(limbo);
         return route;
     }();
     return beats;
@@ -4922,7 +5031,10 @@ bool walk_census(GoldBoxGame game, bool route)
                     return opengold::test::TourAccess::machine(session).variable(
                         opengold::por::EclAddress{address});
                 };
-                for (int round = 0; round < 40; ++round)
+                // A night's rest heals little under the original rules: a
+                // resting beat may take months.
+                const int rounds = beat.rest_choice ? 120 : 40;
+                for (int round = 0; round < rounds; ++round)
                 {
                     answers = beat.answers;
                     taking_wand = beat.take_wand;
@@ -4936,7 +5048,20 @@ bool walk_census(GoldBoxGame game, bool route)
                     test_winning = beat.test_wins;
                     holding_foes = beat.holding_foes;
                     maze_exits.assign(beat.maze_exits.begin(), beat.maze_exits.end());
-                    if (beat.waiting)
+                    if (beat.rest_choice)
+                    {
+                        if (party->state().spell_rest)
+                        {
+                            memorize();
+                        }
+                        answers = {*beat.rest_choice, "stop:" + *beat.rest_choice};
+                        play(where);
+                        if (party->state().spell_rest)
+                        {
+                            memorize();
+                        }
+                    }
+                    else if (beat.waiting)
                     {
                         play(where);
                     }
@@ -4971,6 +5096,7 @@ bool walk_census(GoldBoxGame game, bool route)
                     const auto &until = beat.repeat_until_at_least;
                     const auto &bits = beat.repeat_until_bits;
                     const bool repeating =
+                        (beat.rest_choice && !party_whole()) ||
                         (until && cell(until->first) < until->second) ||
                         (bits && (cell(bits->first) & bits->second) != bits->second);
                     if (!repeating || session.snapshot().phase == TourPhase::defeated)

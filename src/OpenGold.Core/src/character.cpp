@@ -48,31 +48,32 @@ void Character::replay(const rules::RulesModule &rules,
                        std::span<const HallTraining> hall_training)
 {
     rules::VitalState scratch;
+    // Each list is in the order its entries were made, and an entry is
+    // replayed once its turn comes and the character is at its level: a
+    // level drain may bring a character back to a level it has left, so
+    // the same level can hold entries made before and after the drain.
+    std::size_t next_spells = 0, next_training = 0, next_hall = 0;
     const auto at_level = [&]
     {
         const auto level = static_cast<unsigned>(sheet_.level);
-        for (const auto &edit : spell_edits)
+        for (; next_spells < spell_edits.size() && spell_edits[next_spells].level == level;
+             ++next_spells)
         {
-            if (edit.level == level)
-            {
-                choose_spells(rules, edit.choices, edit.rest_session,
-                              rules::SpellChoiceContext::long_rest,
-                              rules::ChoiceCompleteness::partial);
-            }
+            const auto &edit = spell_edits[next_spells];
+            choose_spells(rules, edit.choices, edit.rest_session,
+                          rules::SpellChoiceContext::long_rest, rules::ChoiceCompleteness::partial);
         }
-        for (const auto &edit : training_edits)
+        for (;
+             next_training < training_edits.size() && training_edits[next_training].level == level;
+             ++next_training)
         {
-            if (edit.level == level)
-            {
-                replace_rest_training(rules, edit.selections, edit.rest_session);
-            }
+            const auto &edit = training_edits[next_training];
+            replace_rest_training(rules, edit.selections, edit.rest_session);
         }
-        for (const auto &trained : hall_training)
+        for (; next_hall < hall_training.size() && hall_training[next_hall].level == level;
+             ++next_hall)
         {
-            if (trained.level == level)
-            {
-                train_at_hall(rules, trained.grant);
-            }
+            train_at_hall(rules, hall_training[next_hall].grant);
         }
     };
     at_level();

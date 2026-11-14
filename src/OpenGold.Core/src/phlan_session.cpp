@@ -4519,6 +4519,23 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         // The original inn invokes its pre-camp subroutine before PROGRAM 9.
         read_character();
+        // Pools of Darkness's PROGRAM 9 camps and then goes on with the
+        // script, ending it only on the area map (eclvm.pas, EclProgram):
+        // Elminster's rest in Limbo. Here the party rests a night, as at
+        // Pool of Radiance's inn, and chooses its spells after it.
+        if (game() == GoldBoxGame::pools_of_darkness && !vga_area_map())
+        {
+            if (!campaign_->rest())
+            {
+                campaign_->advance_time(std::chrono::hours{8});
+            }
+            reply = character_reply(selected_character_);
+            for (const auto &w : clock_reply().writes)
+            {
+                reply.writes.push_back(w);
+            }
+            break;
+        }
         // Elsewhere PROGRAM 9 opens the camp menu and ends the script (coab
         // TryEncamp): the nomad camp's lodging, whose night the kobolds may
         // break (ECL7:17 0xA5EF).
@@ -4847,6 +4864,12 @@ void RolfTourSession::show_original_hall(std::vector<Message> notice)
     }
     else
     {
+        // Pools of Darkness trains for nothing, and its hall names no price
+        // (chargen.pas, TrainingMenu).
+        if (dialogue.empty() && game() == GoldBoxGame::pools_of_darkness)
+        {
+            dialogue.push_back({"Who will train?", {}});
+        }
         if (dialogue.empty())
         {
             dialogue.push_back({"Training costs 1000 gp. Who will train?", {}});
