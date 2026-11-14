@@ -2054,7 +2054,7 @@ msgstr "Lanza un conjuro o usa un rasgo fuera de combate."
 msgid "Cast spell"
 msgstr "Lanzar conjuro"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2003 src/OpenGold.Rules.Original/src/rules_module.cpp:2017
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2003 src/OpenGold.Rules.Original/src/rules_module.cpp:2016
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr "Lanzar {spell}"
@@ -8666,7 +8666,7 @@ msgstr "Revivir a los muertos puede devolverlo a la vida en los diez días sigui
 msgid "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 msgstr "Revivir a los muertos no puede traer de vuelta a {name}, que lleva demasiado tiempo muerto o es polvo."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2100
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2099
 msgid "Raise Dead cannot bring this member back"
 msgstr "Alzar a los muertos no puede devolver a este miembro"
 
@@ -11046,11 +11046,11 @@ msgstr "PG temporales:"
 msgid "Teshwave Ruins"
 msgstr "Ruinas de Teshwave"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2035
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2034
 msgid "That cannot be done now"
 msgstr "Eso no se puede hacer ahora"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2218
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2217
 msgid "That cannot be used now"
 msgstr "Eso no se puede usar ahora"
 
@@ -11062,7 +11062,7 @@ msgstr "Eso no es un Manual de salud corporal"
 msgid "That potion works only in combat"
 msgstr "Esa poción solo funciona en combate"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2080 src/OpenGold.Rules.Original/src/rules_module.cpp:2092 src/OpenGold.Rules.Original/src/rules_module.cpp:2247 src/OpenGold.Rules.Original/src/rules_module.cpp:2319
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2079 src/OpenGold.Rules.Original/src/rules_module.cpp:2091 src/OpenGold.Rules.Original/src/rules_module.cpp:2246 src/OpenGold.Rules.Original/src/rules_module.cpp:2318
 msgid "That spell cannot be cast now"
 msgstr "Ese conjuro no se puede lanzar ahora"
 
@@ -11227,7 +11227,7 @@ msgstr "La nube se desplaza."
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr "La criatura que lo impactó este turno lo ataca con desventaja."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2106
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2105
 msgid "The dead cannot be healed"
 msgstr "Los muertos no se pueden curar"
 

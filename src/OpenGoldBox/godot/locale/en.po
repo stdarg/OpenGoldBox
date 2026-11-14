@@ -2054,7 +2054,7 @@ msgstr "Cast a spell or use a feature outside combat."
 msgid "Cast spell"
 msgstr "Cast spell"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2003 src/OpenGold.Rules.Original/src/rules_module.cpp:2017
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2003 src/OpenGold.Rules.Original/src/rules_module.cpp:2016
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr "Cast {spell}"
@@ -8666,7 +8666,7 @@ msgstr "Raise Dead can bring it back within ten days of its death."
 msgid "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 msgstr "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2100
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2099
 msgid "Raise Dead cannot bring this member back"
 msgstr "Raise Dead cannot bring this member back"
 
@@ -11046,11 +11046,11 @@ msgstr "Temporary HP:"
 msgid "Teshwave Ruins"
 msgstr "Teshwave Ruins"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2035
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2034
 msgid "That cannot be done now"
 msgstr "That cannot be done now"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2218
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2217
 msgid "That cannot be used now"
 msgstr "That cannot be used now"
 
@@ -11062,7 +11062,7 @@ msgstr "That is not a Manual of Bodily Health"
 msgid "That potion works only in combat"
 msgstr "That potion works only in combat"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2080 src/OpenGold.Rules.Original/src/rules_module.cpp:2092 src/OpenGold.Rules.Original/src/rules_module.cpp:2247 src/OpenGold.Rules.Original/src/rules_module.cpp:2319
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2079 src/OpenGold.Rules.Original/src/rules_module.cpp:2091 src/OpenGold.Rules.Original/src/rules_module.cpp:2246 src/OpenGold.Rules.Original/src/rules_module.cpp:2318
 msgid "That spell cannot be cast now"
 msgstr "That spell cannot be cast now"
 
@@ -11227,7 +11227,7 @@ msgstr "The cloud drifts."
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr "The creature that hit it this turn attacks it with Disadvantage."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2106
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2105
 msgid "The dead cannot be healed"
 msgstr "The dead cannot be healed"
 
