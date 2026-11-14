@@ -1808,6 +1808,15 @@ void CharacterCreationView::play_with_default_party()
     try
     {
         add_default_party(*campaign_, load_default_party(file));
+        // Each member starts as the game's new characters do besides: a
+        // design's members with its gems, jewelry and equipment.
+        for (const auto id : campaign_->state().slots)
+        {
+            if (id)
+            {
+                outfit_for_game(*campaign_, id, game_rules_files());
+            }
+        }
     }
     catch (const std::exception &failure)
     {

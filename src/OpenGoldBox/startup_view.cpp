@@ -397,9 +397,6 @@ void StartupView::show_game_menu()
     const bool saved = newest_campaign_save(game).has_value();
     required_node<Button>(*menu, "Buttons/Continue").set_disabled(!saved);
     required_node<Button>(*menu, "Buttons/Load").set_disabled(!saved);
-    // No default party is made for a design yet (docs/games/ua.md).
-    required_node<Button>(*menu, "Buttons/DefaultParty")
-        .set_disabled(game == opengold::GoldBoxGame::unlimited_adventures);
     menu->popup_centered();
     focus_first_enabled(required_node<Node>(*menu, "Buttons"));
 }

@@ -1,9 +1,9 @@
 // Play with Default Party: each game's own default party
 // (data/default_parties, docs/DEFAULT-PARTIES.md), made by the game's creation
 // rules under the original rules and under the SRD. The original rules read
-// the game's files: Pool of Radiance's from OPENGOLD_GAME_DIR, Curse's and
-// Secret's from OPENGOLD_GOLDBOX_DIR; a game whose files are not here is
-// skipped. The SRD parties need no game files.
+// the game's files: Pool of Radiance's from OPENGOLD_GAME_DIR, Curse's,
+// Secret's and Unlimited Adventures' kit from OPENGOLD_GOLDBOX_DIR; a game
+// whose files are not here is skipped. The SRD parties need no game files.
 #include "opengold/campaign_party.h"
 #include "opengold/character_art.h"
 #include "opengold/default_party.h"
@@ -12,6 +12,8 @@
 #include "opengold/original_combat.h"
 #include "opengold/original_content.h"
 #include "opengold/srd5.h"
+#include "opengold/ua_design.h"
+#include "opengold/ua_session.h"
 #include "test_support.h"
 #include <algorithm>
 #include <cstdlib>
@@ -140,6 +142,41 @@ void original_party(GoldBoxGame game, const opengold::por::CharacterArt *art)
     }
 }
 
+// Unlimited Adventures' party plays a design, here the kit's own templates:
+// made under the kit's rules with the design's start, then given its gems,
+// jewelry and set of equipment as every new character of the design is
+// (ua::outfit_new_character), its casters' first-level spells memorized.
+void ua_original_party(const opengold::por::CharacterArt *art)
+{
+    const auto folder = developer_folder(GoldBoxGame::unlimited_adventures);
+    if (folder.empty() || !opengold::ua::is_kit_folder(folder))
+    {
+        std::cout << "Unlimited Adventures' kit is not here; its original party is not made.\n";
+        return;
+    }
+    const opengold::ua::DesignFiles files(folder, {});
+    const auto file = party_of(GoldBoxGame::unlimited_adventures);
+    opengold::CampaignParty party(
+        opengold::original::rules_module(opengold::ua::load_design_content(files)),
+        opengold::original::character_rules(opengold::original::default_aging,
+                                            GoldBoxGame::unlimited_adventures));
+    opengold::add_default_party(party, file);
+    const std::string what = "Unlimited Adventures' original party";
+    check_party(party, file, what, art);
+    for (std::size_t n = 0; n < file.size(); ++n)
+    {
+        const auto id = members_of(party)[n];
+        const auto &sheet = party.member(id).character.sheet();
+        check(sheet.original && sheet.level >= 4,
+              what + ": " + sheet.name + " starts at the design's level");
+        check(sheet.prepared_spells.size() == file[n].original.spells.size(),
+              what + ": " + sheet.name + " has its spells memorized");
+        opengold::ua::outfit_new_character(party, id, files);
+    }
+    check(!party.member(members_of(party)[1]).character.inventory().items().empty(),
+          what + ": the design's equipment arms its fighter");
+}
+
 // Under the SRD the same six people are level-1 characters of the nearest
 // species and class.
 void srd_party(GoldBoxGame game, const opengold::por::CharacterArt *art)
@@ -223,6 +260,8 @@ int main()
             srd_party(game, art ? &*art : nullptr);
             original_party(game, art ? &*art : nullptr);
         }
+        srd_party(GoldBoxGame::unlimited_adventures, art ? &*art : nullptr);
+        ua_original_party(art ? &*art : nullptr);
         a_refused_member_adds_no_one();
         an_unusable_file_is_refused();
         std::cout << "Default party tests passed\n";

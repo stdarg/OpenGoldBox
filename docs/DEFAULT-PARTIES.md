@@ -4,7 +4,7 @@ The startup menu's **Play with Default Party** starts a new game with a
 ready-made party of six, so the player can begin adventuring at once, as each
 original game's pre-rolled party allowed. OpenGoldBox ships its own parties in
 `data/default_parties/`, one file per game folder (`POOLRAD.json`,
-`CURSE.json`, `SECRET.json`). They are OpenGoldBox's own characters: none of
+`CURSE.json`, `SECRET.json`, `UA.json`). They are OpenGoldBox's own characters: none of
 their names, scores or items comes from the games' shipped saves, and the
 player's `SAVE` folder is never read.
 
@@ -75,6 +75,25 @@ Each member is made by the game's own creation rules for the chosen rule set
 | Anselm Brightwater (male) | Human Cleric, Lawful Good; Str 14 Dex 10 Con 15 Int 12 Wis 18 Cha 13; Mace, Chain Mail, Shield; memorizes bless, cure light wounds, cure light wounds, cure light wounds, protection from evil, hold person, hold person, hold person, silence 15 radius, spiritual hammer, prayer, dispel magic, cure disease, remove curse, cure serious wounds, cure serious wounds, neutralize poison | Human Cleric, Lawful Good, Acolyte; rolled Str 14 Dex 10 Con 14 Int 12 Wis 15 Cha 12 (+2 Wisdom, +1 Charisma); Mace, Scale Mail, Shield; spells guidance, sacred flame, resistance, bless, cure wounds, guiding bolt, shield of faith |
 | Liriel Moonbrook (female) | Elf Magic-User, Neutral Good; Str 8 Dex 17 Con 12 Int 18 Wis 13 Cha 12; Quarterstaff, Dagger (packed); memorizes magic missile, magic missile, sleep, shield, stinking cloud, mirror image, invisibility, fireball, lightning bolt, haste, confusion, minor globe of invulnerability, hold monster | Elf Wizard, Neutral Good, Sage; rolled Str 8 Dex 15 Con 12 Int 15 Wis 13 Cha 12 (+2 Intelligence, +1 Constitution); Quarterstaff, Dagger (packed); spells fire bolt, ray of frost, shocking grasp, magic missile, shield, sleep, mage armor, burning hands, detect magic |
 | Fenn Applewood (male) | Halfling Thief, Neutral; Str 11 Dex 18 Con 15 Int 12 Wis 10 Cha 10; Short Sword, Leather Armor, Sling (packed) | Halfling Rogue, Neutral, Criminal; rolled Str 10 Dex 15 Con 13 Int 12 Wis 10 Cha 10 (+2 Dexterity, +1 Constitution); Shortsword, Leather Armor, Sling (packed) |
+
+## Unlimited Adventures (`UA.json`)
+
+A design's party is made under the kit's rules with the design's own start
+(its game record's experience, platinum, gems, jewelry and set of
+equipment, as each new character of the design gets them,
+`ua::outfit_new_character`), so the file lists no items: the design arms
+them. Its casters memorize only first-level spells, which a design starting
+its characters at level 1 still lets them. A design plays by the original
+rules only; the SRD characters are there as in every file.
+
+| Name | Original rules | SRD 5.2.1 |
+|---|---|---|
+| Garrick Thornwall (male) | Human Paladin, Lawful Good; Str 17 Dex 12 Con 16 Int 10 Wis 14 Cha 17 | Human Paladin, Lawful Good, Soldier; rolled Str 15 Dex 12 Con 14 Int 10 Wis 13 Cha 15 (+2 Strength, +1 Constitution); spells bless, cure wounds |
+| Dagna Ironvein (female) | Dwarf Fighter, Lawful Neutral; Str 18 Dex 13 Con 17 Int 9 Wis 11 Cha 9 | Dwarf Fighter, Lawful Neutral, Soldier; rolled Str 15 Dex 13 Con 15 Int 9 Wis 11 Cha 9 (+2 Strength, +1 Constitution) |
+| Bertram Ashby (male) | Human Cleric, Neutral Good; Str 14 Dex 10 Con 15 Int 11 Wis 17 Cha 13; memorizes cure light wounds | Human Cleric, Neutral Good, Acolyte; rolled Str 14 Dex 10 Con 14 Int 11 Wis 15 Cha 12 (+2 Wisdom, +1 Charisma); spells guidance, sacred flame, resistance, bless, cure wounds, guiding bolt, shield of faith |
+| Maelis Starfall (female) | Elf Fighter/Magic-User, Chaotic Good; Str 16 Dex 17 Con 13 Int 16 Wis 10 Cha 12; memorizes sleep | Elf Fighter, Chaotic Good, Soldier; rolled Str 14 Dex 15 Con 13 Int 13 Wis 10 Cha 12 (+2 Dexterity, +1 Strength) |
+| Pell Quickfoot (male) | Halfling Thief, Neutral; Str 11 Dex 18 Con 14 Int 12 Wis 10 Cha 10 | Halfling Rogue, Neutral, Criminal; rolled Str 10 Dex 15 Con 13 Int 12 Wis 10 Cha 10 (+2 Dexterity, +1 Constitution) |
+| Ilsabet Vane (female) | Human Magic-User, Neutral Good; Str 9 Dex 15 Con 13 Int 17 Wis 12 Cha 11; memorizes sleep | Human Wizard, Neutral Good, Sage; rolled Str 8 Dex 14 Con 13 Int 15 Wis 12 Cha 11 (+2 Intelligence, +1 Constitution); spells fire bolt, ray of frost, shocking grasp, magic missile, shield, sleep, mage armor, burning hands, detect magic |
 
 ## Open choices
 
