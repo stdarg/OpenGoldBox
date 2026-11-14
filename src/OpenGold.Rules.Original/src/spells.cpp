@@ -238,13 +238,14 @@ int canonical_spell(int number, GoldBoxGame game) noexcept
 std::vector<int> castable_spells(GoldBoxGame game)
 {
     std::vector<int> numbers;
-    if (game == GoldBoxGame::secret_of_the_silver_blades)
+    if (game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game))
     {
         // Secret's table in its order: Curse's spells, with its own where
         // they took their numbers (Heal for Animate Dead, Harm for
-        // Restoration) and after them.
-        constexpr int secret_table_size = 117;
-        for (int number = 1; number <= secret_table_size; ++number)
+        // Restoration) and after them; the 256-color engine's (Pools of
+        // Darkness's and Treasures', the same table) goes on to 126.
+        const int table_size = vga_engine(game) ? 126 : 117;
+        for (int number = 1; number <= table_size; ++number)
         {
             const int canonical = canonical_spell(number, game);
             const auto *known = spell(canonical);

@@ -894,6 +894,29 @@ void treasures_characters_start_with_their_experience()
     check(pair.original->experience == 11300 && pair.original->class_levels[2] == 4 &&
               pair.original->class_levels[6] == 5,
           "A fighter/thief has 11,300 for each class: fighter 4, thief 5");
+
+    // A fighter stops at level 11 (its trainingLimits), and each visit costs
+    // 200 platinum (1,000 gold's worth).
+    original::Content content;
+    content.game = treasures;
+    CampaignParty party(original::rules_module(content), creation);
+    const auto id = party.add_pc(made_fighter(creation));
+    party.add_coins(Coin::platinum, 20000);
+    const auto platinum_before = party.state().wealth[4];
+    party.award_experience(30'000, "test:treasures-first");
+    party.train_at_hall_level(id, TrainingHall::fighters, {});
+    check(party.state().wealth[4] == platinum_before - 200,
+          "Training costs 200 platinum: " + std::to_string(party.state().wealth[4]));
+    for (int round = 0; round < 20; ++round)
+    {
+        party.award_experience(400'000, "test:treasures-" + std::to_string(round));
+        if (party.hall_training(id, TrainingHall::fighters).denial == TrainingDenial::none)
+        {
+            party.train_at_hall_level(id, TrainingHall::fighters, {});
+        }
+    }
+    check(party.member(id).character.sheet().original->class_levels[2] == 11,
+          "A Treasures fighter stops at level 11");
 }
 
 void curse_paladins_and_rangers()

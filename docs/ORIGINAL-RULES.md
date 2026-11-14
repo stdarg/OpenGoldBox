@@ -439,9 +439,15 @@ Its differences (2026-11-14):
 - **Level caps:** besides its races' limits, every class stops at its own
   level (its `trainingLimits`): clerics 10, druids 12, the rest 11.
 - **Training** takes one class a visit, as in *Curse* and *Gateway*: the ready
-  class whose next level needs the most experience (Bugs).
-- **Still to come:** its spells, training's cost, and bringing a *Gateway*
-  party across.
+  class whose next level needs the most experience (Bugs), for 200 platinum.
+- **Spells:** its spell table is *Pools of Darkness*'s, entry for entry (its
+  127th entry is unused), so its spells are numbered and cast as that game's.
+  At creation a magic-user learns its engine's sets for the fourth level and
+  up. For levels 1 to 3 *Treasures* knows Read Magic and lets the player
+  choose a third more spells than the level's slots; OpenGoldBox teaches every
+  spell of those levels for now, as *Pools of Darkness* does, until creation
+  offers the choice.
+- **Still to come:** bringing a *Gateway* party across.
 
 ## Unlimited Adventures
 

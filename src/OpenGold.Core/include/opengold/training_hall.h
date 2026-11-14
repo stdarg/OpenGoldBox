@@ -65,7 +65,8 @@ enum class TrainingDenial
 
 // What the original's training costs (chargen.pas, TrainingMenu): 1,000
 // gold, and nothing in Secret of the Silver Blades and Pools of Darkness,
-// whose TrainingMenu takes no money.
+// whose TrainingMenu takes no money. Treasures of the Savage Frontier asks
+// 200 platinum for each class trained, one a visit: 1,000 gold's worth.
 [[nodiscard]] constexpr std::uint32_t original_training_fee(GoldBoxGame game) noexcept
 {
     return game == GoldBoxGame::secret_of_the_silver_blades ||

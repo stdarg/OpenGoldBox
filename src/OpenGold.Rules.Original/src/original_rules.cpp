@@ -950,11 +950,11 @@ namespace
     }
 }
 
-// The magic-user spells Pools of Darkness's creation teaches once trained
+// The magic-user spells the 256-color engine's creation teaches once trained
 // (its InitKnownSpells), by its own numbers: every spell of levels 1 to 3,
 // then a set for each higher level the magic-user has slots of, and every
 // spell with ninth-level slots, which OpenGoldBox does not keep yet.
-[[nodiscard]] std::vector<int> darkness_starting_spells(const SlotRow &slots)
+[[nodiscard]] std::vector<int> vga_starting_spells(const SlotRow &slots)
 {
     std::vector<int> learned;
     for (const int number : castable_spells(GoldBoxGame::pools_of_darkness))
@@ -1021,9 +1021,9 @@ StartingTraining starting_training(Race race, Profession profession,
         const auto ready = classes_ready_to_train(race, trained.levels, scores, experience, game);
         if (ready.empty())
         {
-            if (game == GoldBoxGame::pools_of_darkness && level_in(trained.levels, C::magic_user))
+            if (vga_engine(game) && level_in(trained.levels, C::magic_user))
             {
-                trained.learned_spells = darkness_starting_spells(
+                trained.learned_spells = vga_starting_spells(
                     spell_slots(C::magic_user, level_in(trained.levels, C::magic_user),
                                 scores[Ability::wisdom], scores[Ability::intelligence], game));
             }
