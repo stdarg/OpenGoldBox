@@ -764,6 +764,47 @@ void a_character_follows_the_kits_rules()
     check(sheet.level > 1, "It is trained to the levels its experience reaches");
 }
 
+// The kit's tables (docs/games/ua.md, A party under the kit's rules): its
+// THAC0 and saving throws are Pools of Darkness's, to level 21, with the
+// thief's saves where the kit left them empty; its level caps by race are
+// Curse's, by Strength or Intelligence.
+void the_kits_tables_rule_its_characters()
+{
+    namespace original = opengold::original;
+    using original::ClassSlot;
+    using original::Race;
+    constexpr auto kit = GoldBoxGame::unlimited_adventures;
+    const auto levels = [](ClassSlot slot, int level)
+    {
+        original::ClassLevels at{};
+        at[static_cast<std::size_t>(slot)] = level;
+        return at;
+    };
+    check(original::thac0(levels(ClassSlot::magic_user, 3), kit) == 20 &&
+              original::thac0(levels(ClassSlot::magic_user, 3),
+                              GoldBoxGame::curse_of_the_azure_bonds) == 21,
+          "A magic-user's THAC0 is 20 at level 3 (Curse's 21)");
+    check(original::thac0(levels(ClassSlot::fighter, 13), kit) == 8 &&
+              original::thac0(levels(ClassSlot::fighter, 30), kit) == 4,
+          "A fighter's THAC0 goes on past level 12, to 4 from level 17");
+    check(original::saving_throws(levels(ClassSlot::thief, 5), kit) ==
+              std::array<int, 5>{12, 11, 12, 15, 13},
+          "A thief saves by the thief's row, which the kit left empty");
+    check(original::saving_throws(levels(ClassSlot::cleric, 19), kit) ==
+              std::array<int, 5>{2, 5, 6, 8, 7},
+          "A cleric of level 19 saves as at 20, as in Pools of Darkness");
+    opengold::rules::AbilityArray<int> scores{};
+    scores[opengold::rules::Ability::strength] = 18;
+    scores[opengold::rules::Ability::intelligence] = 17;
+    check(original::racial_level_limit(Race::elf, ClassSlot::fighter, scores, kit) == 7 &&
+              original::racial_level_limit(Race::elf, ClassSlot::magic_user, scores, kit) == 10 &&
+              original::racial_level_limit(Race::half_elf, ClassSlot::cleric, scores, kit) == 5 &&
+              original::racial_level_limit(Race::dwarf, ClassSlot::fighter, scores, kit) == 9 &&
+              original::racial_level_limit(Race::halfling, ClassSlot::fighter, scores, kit) == 6 &&
+              !original::racial_level_limit(Race::human, ClassSlot::fighter, scores, kit),
+          "The kit's level caps by race follow Strength and Intelligence");
+}
+
 // Unlimited Adventures' experience carries every class on past level 9 (the
 // kit's own table), and a ranger past level 8 learns a magic-user spell as
 // its ranger level rises, and only then: the kit's training gave one to a
@@ -2300,6 +2341,7 @@ int main(int argc, char **argv)
     {
         a_character_follows_the_kits_rules();
         a_ranger_learns_spells_as_a_ranger();
+        the_kits_tables_rule_its_characters();
         const auto kit = kit_folder();
         if (!kit)
         {

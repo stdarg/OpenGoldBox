@@ -433,6 +433,14 @@ constexpr int kit_highest_level = 40;
     return kit_experience_table[at][9] + (level - 11) * kit_experience_step[at];
 }
 
+// Unlimited Adventures' THAC0 and saving throws are Pools of Darkness's, as
+// its kit is built on the same engine (docs/games/ua.md, A party under the
+// kit's rules).
+[[nodiscard]] constexpr bool darkness_tables(GoldBoxGame game) noexcept
+{
+    return vga_engine(game) || game == GoldBoxGame::unlimited_adventures;
+}
+
 [[nodiscard]] constexpr bool curse_tables(GoldBoxGame game) noexcept
 {
     return game == GoldBoxGame::curse_of_the_azure_bonds ||
@@ -1414,7 +1422,7 @@ int thac0(const ClassLevels &levels, GoldBoxGame game)
                 secret_stored_thac0[slot][static_cast<std::size_t>(std::min(levels[slot], 18))]);
             continue;
         }
-        if (vga_engine(game))
+        if (darkness_tables(game))
         {
             best = std::max(
                 best,
@@ -1437,7 +1445,7 @@ std::array<int, 5> saving_throws(const ClassLevels &levels, GoldBoxGame game)
         {
             continue;
         }
-        if (vga_engine(game) && levels[slot] > 18)
+        if (darkness_tables(game) && levels[slot] > 18)
         {
             const auto &row =
                 darkness_high_saves[slot]
@@ -1448,7 +1456,7 @@ std::array<int, 5> saving_throws(const ClassLevels &levels, GoldBoxGame game)
             }
             continue;
         }
-        if (game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game))
+        if (game == GoldBoxGame::secret_of_the_silver_blades || darkness_tables(game))
         {
             const auto &row =
                 secret_saves[slot][static_cast<std::size_t>(std::min(levels[slot], 18) - 1)];

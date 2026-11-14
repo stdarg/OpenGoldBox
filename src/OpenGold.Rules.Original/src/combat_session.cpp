@@ -791,6 +791,13 @@ class Session final : public rules::CombatSession
         return game_of(identity_) == GoldBoxGame::secret_of_the_silver_blades;
     }
 
+    // Secret and Unlimited Adventures order each round once as it begins,
+    // ties broken by a d2 (the kit's combat.c and cbaction.c, as Secret's).
+    [[nodiscard]] bool ordered_rounds() const
+    {
+        return secret() || game_of(identity_) == GoldBoxGame::unlimited_adventures;
+    }
+
     // A spell as this fight's game has it (Gateway changes four rows).
     [[nodiscard]] const Spell *game_spell(int number) const
     {
@@ -1038,7 +1045,7 @@ void Session::begin_round()
         }
     }
     age_the_hasted();
-    if (secret())
+    if (ordered_rounds())
     {
         order_turns();
     }
@@ -1094,7 +1101,7 @@ void Session::next_actor()
     {
         Fighter *best = nullptr;
         int best_tiebreak = 0;
-        while (secret() && !best && !turn_order_.empty())
+        while (ordered_rounds() && !best && !turn_order_.empty())
         {
             auto *first = find(turn_order_.front());
             turn_order_.erase(turn_order_.begin());
@@ -1105,8 +1112,8 @@ void Session::next_actor()
         }
         for (auto &f : fighters_)
         {
-            // Secret's order has picked already.
-            if (secret() || !f.able() || f.initiative <= 0)
+            // Secret's and the kit's order has picked already.
+            if (ordered_rounds() || !f.able() || f.initiative <= 0)
             {
                 continue;
             }
@@ -2027,7 +2034,7 @@ void Session::begin_cast(Fighter &caster, int spell_number)
          {{"name", caster.name}, {"spell", std::string(known.name), true}}});
     caster.pending_spell = spell_number;
     caster.initiative = std::max(caster.initiative - delay, 1);
-    if (secret())
+    if (ordered_rounds())
     {
         reorder_after_cast(caster);
     }
@@ -7331,7 +7338,7 @@ bool Session::submit(const rules::Command &command)
         // It acts again later this round, at initiative 1; in Secret, last of
         // all (combat.pas, ManualControl, in its reconstruction).
         actor.initiative = 1;
-        if (secret())
+        if (ordered_rounds())
         {
             turn_order_.push_back(actor.id);
         }

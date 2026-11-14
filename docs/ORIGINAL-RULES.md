@@ -523,9 +523,13 @@ whole list):
   it learns one of a level its new ranger level casts, and only then: the
   kit gave one to a ranger past 8 whichever class rose (the user,
   2026-11-14; Bugs).
-- **Still to come:** its own level caps by race, THAC0 and saving throw
-  tables, initiative ties, its critical hits on a natural 17 or more, its
-  difficulty levels and its experience bonus for single classes.
+- **Its level caps by race are *Curse*'s,** to level 40 (2026-11-14).
+- **Its THAC0 and saving throws are *Pools of Darkness*'s,** to level 21
+  (2026-11-14), the kit's own empty thief row fixed (Bugs).
+- **Its fights order each round once,** ties on a d2, as *Secret*'s do
+  (2026-11-14).
+- **Still to come:** its critical hits on a natural 17 or more, which only a
+  vorpal weapon uses; its difficulty levels (a question for the user).
 
 ## Next
 
@@ -1207,6 +1211,8 @@ tuned with the AI lab once the original rules play.
 | *Unlimited Adventures:* a troll (effect 216) tests a blow's element against 0, so acid never keeps it down | Fire and acid keep it down, as the fight's 100 |
 | *Unlimited Adventures:* bashing a door judges the wizard lock's harder table by wall kinds 5 and 6 (a secret wizard lock and the first key's door), so a plain wizard lock (4) bashes as an ordinary lock (`move.c`, `door_bash`) | Kinds 4 and 5, the two wizard locks |
 | *Unlimited Adventures:* dead and unconscious members bash doors and cast Knock (`move.c`, `door_bash`, `spell_caster`) | Only members who can act |
+| *Unlimited Adventures:* the thief's row of the saving throw table is empty, the thief's numbers sitting in the unused knight's row, so a thief makes every saving throw (`chartab.c`, `save_table`; `herostat.c`) | A thief saves by the thief's numbers, Pools of Darkness's |
+| *Unlimited Adventures:* its saving throws at level 19 repeat level 18's for clerics and thieves, as Pools of Darkness's do | Level 20's, as there (the user's answer for Pools of Darkness) |
 | *Unlimited Adventures:* a rest encounter with a chance but no minutes between rolls divides by zero (`rest.c`, `encounter_roll`) | It never rolls |
 | *Unlimited Adventures:* a price rate above 19 reads past the kit's rate tables (`temple.c`, `rate_price`) | Taken as rate 19, a hundred times the price |
 | *Unlimited Adventures:* a wrong password says "wrong, try agin." (`evcmds.c`, the password event) | Spelt "Wrong, try again." |
@@ -1243,7 +1249,7 @@ tuned with the AI lab once the original rules play.
 | Each hit of a holding bite's own bite starts another hold, stacking holds on the biter and immobility on the victim, which can outlast the fight (`effhndlr.pas`, `EffBiteHold`) | One hold at a time |
 | Strength 19 and above has no row in the open-doors table, so a member that strong never forces an ordinary door (`explore.pas`, `BashDoor`) | It forces one as 18/00 does, 5 in 6 |
 | *Curse* and *Secret:* past a class's Hit Dice, training's fixed Hit Points (3 a fighter or paladin, 2 a cleric, ranger or thief, 1 a magic-user) replace the other classes' rolls instead of adding to them (`ovr018`, `sub_509E0`) | Added to them |
-| *Curse* and *Secret:* the paladin's saving throws, otherwise 2 better than a fighter's, are 1 worse against petrification at levels 5 and 6 and against death at level 8 than that (`ovr026`, `SaveThrowValues`) | 2 better throughout |
+| *Curse*, *Secret* and *Unlimited Adventures:* the paladin's saving throws, otherwise 2 better than a fighter's, are 1 worse against petrification at levels 5 and 6 and against death at level 8 than that (`ovr026`, `SaveThrowValues`) | 2 better throughout |
 | *Curse* and *Secret:* their starting-age tables have no row for a half-elf ranger, which starts aged 0 (`Gbl.cs`, `halfelf_ages` in its reconstruction) | A half-elf fighter's age |
 | *Secret:* poison rides only a creature's second attack, so the centipede, the giant snake and spider, the medusa and the Sargatha, which attack only with their first, never poison (`fxengine.pas`, its conditions 2 and 3) | A creature with no second attack poisons with its first |
 | *Secret* and *Curse:* magic resistance's chance is kept in a byte, so a caster above level 11 plus a fifth of the resistance wraps it and is always resisted: the drider is proof against casters of level 15 and up (`fxengine.pas`, `CheckSpellResistance`) | The chance only lessens with the caster's level |

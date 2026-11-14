@@ -457,12 +457,23 @@ Its differences from the Pool family ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md))
   learned. *Done* (2026-11-14), with the kit's bug fixed (ORIGINAL-RULES.md).
 - Level caps by race: elves fighters 7 and magic-users 11; half-elves
   clerics 5 and fighters, rangers and magic-users 8; dwarves fighters 9;
-  gnomes and halflings fighters 6; humans and thieves without limit. *Still
-  to come.*
-- THAC0: a magic-user's is 20 at levels 1 to 5 (*Curse*'s 21). Initiative is
-  1d6 and the Dexterity bonus, ties broken by a d2. A roll of 17 or more that
-  hits is a critical hit. Saving throws take the best of a character's
-  classes. *Still to come.*
+  gnomes and halflings fighters 6; humans and thieves without limit; below
+  Strength 18 (Intelligence for a magic-user) a level or two less, as in
+  *Curse* (`train.c`, `train_hero`). *Done*: they are *Curse*'s
+  (`racial_level_limit`), and every class stops at level 40.
+- THAC0 and saving throws: *Pools of Darkness*'s tables to level 21 (the
+  kit's engine is the same; `combtab.c`, `chartab.c`), so a magic-user's
+  THAC0 is 20 at levels 1 to 5 (*Curse*'s 21), a fighter's 4 from level 17,
+  and saves take the best of a character's classes. *Done* (2026-11-14,
+  `thac0`, `saving_throws`), with the kit's empty thief row fixed
+  ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md), Bugs).
+- Initiative is 1d6 and the Dexterity bonus, and the round's order is made
+  once as it begins, a tie going first on a d2 (`combat.c`), as *Secret*'s
+  is; a spell's casting time and Delay move a creature back in it. *Done*
+  (2026-11-14, the fight's `ordered_rounds`).
+- A roll of 17 or more that hits is a critical hit, which only lets a
+  vorpal weapon behead (`fxcombat.c`, `fx_vorpal`); it waits for items'
+  special effects when readied (What remains).
 - Difficulty (five levels, Normal the third) changes the party's to-hit and
   the monsters' Hit Points; the original rules play at Normal, where
   neither changes (Fights). Experience from a fight gives single classes
@@ -533,7 +544,9 @@ playing each event and fight; it fails on any event the session cannot play.
     wandering monsters, its step events and rest encounters, play.)
   - Byte 12h's top bits (the turning level +0, 2, 10 or 41 over the
     area's) and an icon over two squares a side, which stands as two.
-- The kit's rules' remaining differences (above).
+- The kit's difficulty levels (A party under the kit's rules): a question
+  for the user.
+- A critical hit's vorpal beheading, with items' special effects.
 
 ### Monsters' effects, "no magic" fights and step events
 
