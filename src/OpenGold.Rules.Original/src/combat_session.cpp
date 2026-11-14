@@ -4281,7 +4281,11 @@ void Session::monster_specials(Fighter &f)
         }
     }
     lock = find(f.lock);
-    if (f.has(84) && lock && lock->able() && can_target(f, *lock) && sees(board_, f, *lock))
+    // Effect 84 is the charming gaze in Pool of Radiance only: Curse's and
+    // Gateway's shambling mounds carry it as their absorbing of electricity
+    // (their effhndlr.pas), which charms nothing.
+    if (f.has(84) && game_of(identity_) == GoldBoxGame::pool_of_radiance && lock && lock->able() &&
+        can_target(f, *lock) && sees(board_, f, *lock))
     {
         // The charming gaze: saved against at -2. The original's reach was an
         // unset value; it reaches what the gazer sees here (an obvious bug, fixed).

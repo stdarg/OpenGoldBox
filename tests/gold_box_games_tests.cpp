@@ -2544,7 +2544,7 @@ std::vector<std::string> train_gateway_party()
 // Gateway's route plays to the game's end once this is true; until then it
 // stops on this map (docs/GAMES.md, phase 5 step 4).
 constexpr bool gateway_route_ends_the_game = false;
-constexpr unsigned gateway_route_stops_on_map = 17;
+constexpr unsigned gateway_route_stops_on_map = 18;
 
 // Gateway's story, beat by beat, as its cluebook tells it (plan phase 5, step
 // 4): from the inn of Yartar on.
@@ -3109,6 +3109,76 @@ const std::vector<RouteBeat> &gateway_route()
             cell.repeat_until_at_least = {{0x4C06, 2}};
             cell.repeat_in_place = true;
             route.push_back(cell);
+        }
+        // Out of the cells and through the barracks to the Zhentil commander's
+        // room, where the statuette of the North and the others taken wait, and up
+        // to Llorkh.
+        walk_passages(route, 17,
+                      {{11, 3, D::west},
+                       {10, 3, D::west},
+                       {9, 3, D::north},
+                       {9, 2, D::west},
+                       {8, 2, D::north},
+                       {8, 1, D::west},
+                       {7, 1, D::north},
+                       {7, 0, D::west},
+                       {6, 0, D::west},
+                       {5, 0, D::west},
+                       {4, 0, D::south},
+                       {4, 1, D::west},
+                       {3, 1, D::north},
+                       {3, 0, D::west},
+                       {2, 0, D::south},
+                       {2, 1, D::south},
+                       {2, 2, D::west}},
+                      true);
+        // The statuette of the North (bit 3 of cell 4C27) joins the other two.
+        route.back().expect_cell = {{0x4C27, 7}};
+        // Out of Llorkh and overland west to the foot of the Star Mounts, where
+        // the aarakocra fly the party up to Ceptienne's aerie.
+        {
+            // Rested in Llorkh, whose inns and houses are safe again.
+            auto rested = step_beat(16, 4, 6, D::south);
+            rested.passing = true;
+            rested.searching = true;
+            rested.rest_first = true;
+            route.push_back(rested);
+        }
+        walk_passages(route, 16,
+                      {{4, 7, D::east},
+                       {5, 7, D::east},
+                       {6, 7, D::east},
+                       {7, 7, D::south},
+                       {7, 8, D::south},
+                       {7, 9, D::south},
+                       {7, 10, D::west},
+                       {6, 10, D::west},
+                       {5, 10, D::west},
+                       {4, 10, D::west},
+                       {3, 10, D::west},
+                       {2, 10, D::west},
+                       {1, 10, D::west},
+                       {0, 10, D::west}},
+                      true);
+        walk_overland(route, 26,
+                      {{13, 11, D::north},
+                       {13, 9, D::west},
+                       {12, 8, D::west},
+                       {11, 6, D::north},
+                       {11, 3, D::west},
+                       {10, 2, D::west},
+                       {9, 1, D::west},
+                       {8, 0, D::west},
+                       {7, 15, D::north},
+                       {7, 12, D::west},
+                       {6, 10, D::west},
+                       {5, 9, D::west},
+                       {4, 7, D::west},
+                       {3, 5, D::west}});
+        {
+            // The party helps the aarakocra beset by giant snakes and
+            // shambling mounds.
+            route.push_back(step_beat(26, 2, 3, D::north, {"HELP BIRD", "YES"}));
         }
         return route;
     }();
@@ -4524,6 +4594,8 @@ bool walk_census(GoldBoxGame game, bool route)
                 if (beat.rest_first ||
                     (beat.passing && party_hurt() && session.snapshot().area_id != restless_map))
                 {
+                    // A camp attacked fights: the last beat's flight is over.
+                    fleeing = false;
                     beat.waiting ? rest_in_wilderness() : rest_until_healed();
                 }
                 if (session.snapshot().phase == TourPhase::defeated)
