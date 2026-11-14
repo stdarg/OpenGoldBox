@@ -152,8 +152,8 @@ and a save each know which tables they use.
   *Secret*'s knows every one of the levels it has slots for. A character
   with no cleric or magic-user levels that is no paladin above 8 nor ranger
   above 7 casts at level 6, as a monster does. The sheet shows the druid's
-  slots. Still to come: a paladin's cure of disease (with the conditions
-  outside fights).
+  slots. A paladin cures disease out of fights once a week, and once more
+  for each five levels past the first (`PaladinCureDisease`).
 - **From *Pool of Radiance*:** a character brought across keeps its scores
   (held within *Curse*'s limits for its race and gender), levels, Hit Points,
   age, experience and drained levels, its magic-user spell book but Animate
@@ -187,11 +187,13 @@ and a save each know which tables they use.
   `flames` command); the AI, and Quick, pick at random.
 - The magic-user's Remove Curse and the item power that animates the dead
   work in fights as the cleric's spells do.
+- **Camp:** Cure Blindness, Cure Disease, both Remove Curses and Neutralize
+  Poison take their conditions away (Conditions outside fights, plan step
+  6); Neutralize Poison stands up one poison killed, at no cost.
 - Still to come: Entangle (it works only out of doors, which a fight does
-  not yet know), the rakshasa's death by a blessed crossbow bolt, the camp's
-  spells whose effects last beyond a fight (Neutralize Poison, Remove Curse,
-  and the like, with the conditions outside fights), and the paladin's cure
-  of disease (GAMES.md, phase 3 step 5).
+  not yet know), the rakshasa's death by a blessed crossbow bolt, and a camp
+  Remove Curse's putting down of cursed items, which the temple's does
+  (GAMES.md, phase 3 step 5).
 
 ## Secret of the Silver Blades
 
@@ -341,11 +343,12 @@ reconstruction), with these differences (2026-11-14):
   them (`original::spell(number, game)`).
 - **A half-elf ranger** starts aged 26+3d8, from its own row.
 - Training takes one class a visit, as in *Curse*.
-- **Still to come:** its temple's poison rules (Raise Dead brings back one
-  that poison killed with no loss, Neutralize Poison stands it up), with the
-  conditions that last outside fights; Strength's effect, cast in a fight or
-  out of one, comes with the Strength spells (plan step 5), as does Blink's
-  cast in camp with the camp's other lasting spells.
+- **Its temple's poison rules** (its temple.pas): Raise Dead brings back
+  one that poison killed with no loss, and Neutralize Poison stands one up,
+  as *Secret*'s does.
+- **Still to come:** Strength's effect, cast in a fight or out of one, comes
+  with the Strength spells (plan step 5), as does Blink's cast in camp with
+  the camp's spells whose effects are a fight's.
 
 ## Pools of Darkness
 
@@ -530,8 +533,9 @@ lines in all:
      member's state keeps what its last fight left).
    - **Camp:** a cleric casts Cure Light Wounds in camp, healing a member 1d8
      (`NoncombatCastMenu`).
-   - Still to come: the other camp spells, whose effects last beyond a fight
-     (with the conditions, step 6); scribing a scroll's spell into a
+   - The camp's cures of conditions (Conditions outside fights, step 6).
+   - Still to come: the camp spells whose effects are a fight's (Bless,
+     Prayer and the like, cast before one); scribing a scroll's spell into a
      magic-user's book (`CampScribeMenu`); the original's rest of any length
      and its preparation time (`CampSpellPrepTime`); and the Strength spells
      (Enlarge, Reduce, Strength, the Potion of Giant Strength).
@@ -564,8 +568,21 @@ lines in all:
      character without fighter levels. The division takes far fewer Hit
      Points than the Constitution bonus lost, but its intent is unclear, so
      it is kept. The cost goes into the member's level history, so a save
-     keeps it. Still to come: the cures of blindness, disease, poison, curses
-     and stone, with the conditions that last outside fights.
+     keeps it.
+   - **Conditions outside fights** (2026-11-14): blindness, disease, poison,
+     Bestow Curse and feeblemind stay on a member after its fight and through
+     a day's rest (a Bestow Curse running out with its time), and its next
+     fight starts with them; a disease whose time comes takes hold as the
+     wasting of Strength and Hit Points (`EffDiseased`). The temple's Cure
+     Blindness, Cure Disease, Neutralize Poison and Remove Curse take them
+     away, and Raise Dead the poison its dead member died of; *Secret*'s
+     temple Heal cures blindness, disease and feeblemind too, and *Secret*'s
+     and *Gateway*'s Neutralize Poison stand up one poison killed, at no cost.
+     Keoghtum's Ointment takes poison, else disease, away outside a fight as
+     in one. Still to come: the wasting itself (the original takes a point of
+     Strength an hour and a Hit Point every ten minutes, a state OpenGoldBox
+     does not keep), Slow Poison out of fights, and the temple's cure of
+     stone, which *Secret*'s route brings.
    - **Companions:** an NPC who joins (ADD NPC) is its original record: its
      scores, class levels, Hit Points, spells known and memorized, and its
      own gear. The rules keep the record whole in its draft, so a save makes
@@ -1002,6 +1019,7 @@ tuned with the AI lab once the original rules play.
 | *Secret:* its thief skill adjustments give humans the half-orc's (−5 Pick Pockets, −10 Read Languages and the rest), so a human thief starts worse than in the earlier games (`raceAdj` in its reconstruction) | No adjustment for humans, as before |
 | *Secret:* a paladin with no cleric or magic-user levels casts its spells at level 6 whatever its own, as its check for a caster leaves the paladin out where *Curse*'s has it (`charhlp.pas`, `GetCasterLevel`) | At its paladin level, as *Secret* reckons a paladin's spells otherwise |
 | *Secret:* the spells a magic-user learns while trained at creation include, at level 6, Cure Light Wounds, a cleric's spell (`chargen.pas`, TrainingMenu) | Left out |
+| *Gateway:* Neutralize Poison at the temple stands up any member at 0 Hit Points or dead, poisoned or not, once the player pays for it anyway (`temple.pas`, `NeutralizePoison`) | Only one that is poisoned |
 | *Curse* and *Gateway:* training picks the class whose next level needs the most experience, but reads every class at the level of the last one it looked at (TrainingMenu) | Each class at its own level |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |

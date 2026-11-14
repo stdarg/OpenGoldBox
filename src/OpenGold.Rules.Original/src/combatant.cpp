@@ -4,7 +4,10 @@
 #include "opengold/secret_records.h"
 
 #include <algorithm>
+#include <array>
 #include <charconv>
+#include <iterator>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -774,6 +777,62 @@ Combatant combatant_from_record(const por::CharacterRecord &record,
         }
     }
     return c;
+}
+
+bool lasting_condition(int code, GoldBoxGame game) noexcept
+{
+    constexpr std::array<int, 11> lasting{33, 34, 43, 44, 55, 15, 22, 36, 268, 340, 341};
+    constexpr int rot = 50, mummy_rot = 57;
+    const bool pool_rot =
+        game == GoldBoxGame::pool_of_radiance && (code == rot || code == mummy_rot);
+    return pool_rot || std::ranges::find(lasting, code) != lasting.end();
+}
+
+namespace
+{
+constexpr std::string_view rested_format = "rested";
+} // namespace
+
+CarriedState carried_state(std::string_view resources, GoldBoxGame game)
+{
+    CarriedState carried;
+    if (resources.starts_with(rested_format))
+    {
+        std::istringstream in{std::string(resources.substr(rested_format.size()))};
+        Effect effect;
+        int on_remove{};
+        while (in >> effect.code >> effect.minutes >> effect.strength >> on_remove)
+        {
+            effect.on_remove = on_remove != 0;
+            carried.conditions.push_back(effect);
+        }
+        return carried;
+    }
+    carried.last_fight = Combatant::decode(resources);
+    if (carried.last_fight)
+    {
+        std::ranges::copy_if(carried.last_fight->effects, std::back_inserter(carried.conditions),
+                             [game](const Effect &e)
+                             {
+                                 return lasting_condition(e.code, game);
+                             });
+    }
+    return carried;
+}
+
+std::string rested_state(std::span<const Effect> conditions)
+{
+    if (conditions.empty())
+    {
+        return {};
+    }
+    std::string text(rested_format);
+    for (const auto &e : conditions)
+    {
+        text += ' ' + std::to_string(e.code) + ' ' + std::to_string(e.minutes) + ' ' +
+                std::to_string(e.strength) + ' ' + (e.on_remove ? '1' : '0');
+    }
+    return text;
 }
 
 } // namespace opengold::original

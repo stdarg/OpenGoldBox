@@ -940,6 +940,207 @@ void the_temple_heals_and_raises()
           "Curse's Heal restores all but 1d4 Hit Points");
 }
 
+// A character of a game's original rules, by its class and alignment.
+rules::CharacterSheet original_character(GoldBoxGame game, std::string profession,
+                                         std::string alignment, std::uint64_t seed)
+{
+    const auto creation = original::character_rules(original::default_aging, game);
+    RandomState random{seed};
+    rules::CharacterDraft draft;
+    draft.race = "human";
+    draft.gender = "male";
+    draft.character_class = std::move(profession);
+    draft.alignment = std::move(alignment);
+    draft.name = "Aldo";
+    creation->roll_in_place(draft, random);
+    return creation->evaluate(draft, rules::NameRequirement::required);
+}
+
+// A member's state as a fight left it, with these effects.
+rules::VitalState left_with(const rules::CharacterSheet &sheet,
+                            std::vector<original::Effect> effects, bool dead = false)
+{
+    original::Combatant numbers;
+    numbers.effects = std::move(effects);
+    return {dead ? 0 : sheet.hit_points, dead, numbers.encode(), {}};
+}
+
+bool carries(const rules::CharacterSheet &sheet, const rules::VitalState &state, int code)
+{
+    const auto carried =
+        original::carried_state(state.resources, original::game_of(sheet.identity));
+    return std::ranges::any_of(carried.conditions,
+                               [code](const original::Effect &e)
+                               {
+                                   return e.code == code;
+                               });
+}
+
+// The conditions that outlast a fight (effhndlr.pas; temple.pas): blindness,
+// disease, poison and a curse stay through a day's rest, a disease taking
+// hold as its time comes, while a fight's other effects end; the temple and
+// the camp's spells cure them.
+void conditions_outlast_fights()
+{
+    const auto module = original::rules_module();
+    const auto curse = GoldBoxGame::curse_of_the_azure_bonds;
+    const auto sheet = original_character(curse, "cleric", "lawful_good", 31);
+    RandomState random{37};
+    auto blinded = left_with(sheet, {{33, 0, 4, false}, {1, 6, 4, false}, {34, 30, 4, false}});
+    module->recover(blinded, sheet);
+    check(carries(sheet, blinded, 33) && !carries(sheet, blinded, 1) &&
+              !carries(sheet, blinded, 34) && carries(sheet, blinded, 43) &&
+              carries(sheet, blinded, 44),
+          "Blindness lasts the night, Bless ends, and the disease takes hold");
+    for (const auto service :
+         {rules::TempleService::cure_blindness, rules::TempleService::cure_disease})
+    {
+        check(module->temple_service_helps(sheet, blinded, service),
+              "The temple can cure what the member has");
+        module->temple_service(blinded, sheet, service, random);
+    }
+    check(blinded.resources.empty() &&
+              !module->temple_service_helps(sheet, blinded, rules::TempleService::cure_blindness),
+          "Cured, it carries nothing");
+
+    auto cursed = left_with(sheet, {{36, 0, 4, false}});
+    check(module->temple_service_helps(sheet, cursed, rules::TempleService::remove_curse),
+          "Remove Curse lifts a curse");
+    module->temple_service(cursed, sheet, rules::TempleService::remove_curse, random);
+    check(!carries(sheet, cursed, 36), "The curse is lifted");
+
+    // Curse's temple neutralizes the poison of the living only; the poison
+    // a member died of goes with its raising, which costs as ever.
+    auto poisoned_dead = left_with(sheet, {{55, 0, 0, false}}, true);
+    check(!module->temple_service_helps(sheet, poisoned_dead,
+                                        rules::TempleService::neutralize_poison),
+          "Curse's temple does not stand up the poisoned dead");
+    module->temple_service(poisoned_dead, sheet, rules::TempleService::raise_dead, random);
+    check(!poisoned_dead.dead && !carries(sheet, poisoned_dead, 55) &&
+              module->revival_changes(sheet, rules::Revival::temple).size() == 1,
+          "Raise Dead takes the poison away");
+
+    // Camp: Cure Blindness and Neutralize Poison (Curse's camp spells), the
+    // second standing the poisoned dead up at no cost.
+    auto priest = sheet;
+    priest.prepared_spells = {"cleric:cure_blindness", "cleric:neutralize_poison"};
+    rules::VitalState own{priest.hit_points, false, {}, {}};
+    auto blind = left_with(sheet, {{33, 0, 4, false}});
+    module->use_camp_action(priest, own, sheet, blind, "cast:cleric:cure_blindness", random);
+    check(!carries(sheet, blind, 33), "Cure Blindness in camp");
+    auto dead = left_with(sheet, {{55, 0, 0, false}}, true);
+    module->use_camp_action(priest, own, sheet, dead, "cast:cleric:neutralize_poison", random);
+    auto raised = sheet;
+    const auto cost = module->revival_changes(raised, rules::Revival::spell);
+    check(!dead.dead && dead.hit_points >= 1 && cost.size() == 1 &&
+              module->advance_character(raised, dead, cost.front()) &&
+              raised.scores[rules::Ability::constitution] ==
+                  sheet.scores[rules::Ability::constitution],
+          "Neutralize Poison stands the poisoned dead up, at no cost");
+}
+
+// Secret's and Gateway's temples stand up one poison killed (their
+// NeutralizePoison), and Gateway's Raise Dead raises one at no cost.
+void later_temples_stand_up_the_poisoned()
+{
+    const auto module = original::rules_module();
+    RandomState random{41};
+    for (const auto game :
+         {GoldBoxGame::secret_of_the_silver_blades, GoldBoxGame::gateway_to_the_savage_frontier})
+    {
+        const auto sheet = original_character(game, "fighter", "neutral_good", 43);
+        auto dead = left_with(sheet, {{55, 0, 0, false}}, true);
+        check(module->temple_service_helps(sheet, dead, rules::TempleService::neutralize_poison),
+              "The temple can stand up the poisoned dead");
+        module->temple_service(dead, sheet, rules::TempleService::neutralize_poison, random);
+        auto raised = sheet;
+        const auto cost = module->revival_changes(raised, rules::Revival::temple);
+        check(!dead.dead && module->advance_character(raised, dead, cost.front()) &&
+                  raised.scores[rules::Ability::constitution] ==
+                      sheet.scores[rules::Ability::constitution] &&
+                  raised.hit_points == sheet.hit_points,
+              "Neutralize Poison stands it up, at no cost");
+    }
+    const auto gateway = GoldBoxGame::gateway_to_the_savage_frontier;
+    const auto sheet = original_character(gateway, "fighter", "neutral_good", 47);
+    auto dead = left_with(sheet, {{55, 0, 0, false}}, true);
+    module->temple_service(dead, sheet, rules::TempleService::raise_dead, random);
+    auto raised = sheet;
+    const auto cost = module->revival_changes(raised, rules::Revival::temple);
+    check(module->advance_character(raised, dead, cost.front()) &&
+              raised.scores[rules::Ability::constitution] ==
+                  sheet.scores[rules::Ability::constitution],
+          "Gateway raises one poison killed at no cost");
+}
+
+// A paladin cures disease once a week, and once more for each five levels
+// past the first (Curse's PaladinCureDisease and its week-long effect 141).
+void a_paladin_cures_disease()
+{
+    const auto module = original::rules_module();
+    const auto curse = GoldBoxGame::curse_of_the_azure_bonds;
+    const auto paladin = original_character(curse, "paladin", "lawful_good", 53);
+    const auto offers_cure = [&](const rules::VitalState &state)
+    {
+        return std::ranges::any_of(module->camp_actions(paladin, state),
+                                   [](const rules::CampAction &a)
+                                   {
+                                       return a.id == "paladin:cure_disease";
+                                   });
+    };
+    RandomState random{59};
+    rules::VitalState own{paladin.hit_points, false, {}, {}};
+    check(paladin.original->class_levels[3] <= 5 && offers_cure(own), "A paladin may cure disease");
+    auto sick = left_with(paladin, {{43, 0, 1, false}, {44, 0, 1, false}});
+    module->use_camp_action(paladin, own, paladin, sick, "paladin:cure_disease", random);
+    check(!carries(paladin, sick, 43) && !carries(paladin, sick, 44) && !offers_cure(own),
+          "It cures, once this week");
+    for (int day = 0; day < 6; ++day)
+    {
+        module->recover(own, paladin);
+    }
+    check(!offers_cure(own), "Not again within the week");
+    module->recover(own, paladin);
+    check(offers_cure(own), "Again the next week");
+}
+
+// A fight starts with the conditions its members carry (the original's
+// effects stay on a character between fights).
+void a_fight_starts_with_lasting_conditions()
+{
+    const auto module = original::rules_module();
+    const auto curse = GoldBoxGame::curse_of_the_azure_bonds;
+    const auto sheet = original_character(curse, "fighter", "lawful_good", 61);
+    auto state = left_with(sheet, {{33, 0, 4, false}});
+    module->recover(state, sheet);
+    rules::Encounter encounter;
+    encounter.battlefield = {8, 8, std::vector<rules::Terrain>(64, rules::Terrain::open)};
+    rules::Participant member;
+    member.id = 1;
+    member.name = "Aldo";
+    member.definition = "member";
+    member.side = rules::Side::party;
+    member.cell = {1, 1};
+    member.character_profile = module->character_profile(sheet, {}).data;
+    member.state = state;
+    original::Combatant kobold;
+    kobold.hit_points = kobold.max_hit_points = 5;
+    rules::Participant foe;
+    foe.id = 2;
+    foe.name = "Kobold";
+    foe.definition = "monster";
+    foe.side = rules::Side::opposition;
+    foe.cell = {6, 6};
+    foe.character_profile = kobold.encode();
+    encounter.participants = {member, foe};
+    const auto session = original::rules_module({{}, {}, curse})->create(std::move(encounter), 67);
+    const auto snapshot = session->snapshot();
+    const auto &aldo =
+        *std::ranges::find(snapshot.combatants, std::string("Aldo"), &rules::CombatantView::name);
+    check(original::carried_state(aldo.persistent.resources, curse).conditions.size() == 1,
+          "The fighter starts its fight still blind");
+}
+
 // Raise Dead's cost (temple.pas, RaiseDead): a point of Constitution, and at
 // the temple the Hit Points its formula takes; the cost is in the member's
 // level history, so a saved game keeps it.
@@ -1165,6 +1366,10 @@ int main()
         a_magic_user_memorizes_and_learns();
         a_cleric_cures_in_camp();
         the_temple_heals_and_raises();
+        conditions_outlast_fights();
+        later_temples_stand_up_the_poisoned();
+        a_paladin_cures_disease();
+        a_fight_starts_with_lasting_conditions();
         raise_dead_costs_constitution();
         scripts_harm_as_the_original();
         a_potion_heals_outside_a_fight();

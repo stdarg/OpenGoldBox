@@ -250,6 +250,28 @@ struct CarriedItem
                                               std::span<const CarriedItem> carried = {},
                                               std::span<const por::EffectRecord> effects = {});
 
+// The conditions that outlast a fight and a day's rest until they are cured
+// or run out, by the fight's numbers: blindness (33), disease (34, 43, 44,
+// and Pool of Radiance's rot, 50 and 57), poison (55, and Slow Poison's 15
+// and 22), Bestow Curse (36) and feeblemind (268); and what a paladin has
+// spent, the day's laying on of hands (340) and the week's cures of disease
+// (341, its strength the cures spent).
+[[nodiscard]] bool lasting_condition(int code, GoldBoxGame game) noexcept;
+
+// What a party member's state carries between fights
+// (rules::VitalState::resources): the numbers its last fight left it, its
+// unspent spells among them, or after a day's rest only its lasting
+// conditions, its spells memorized again.
+struct CarriedState
+{
+    std::optional<Combatant> last_fight;
+    std::vector<Effect> conditions;
+};
+
+[[nodiscard]] CarriedState carried_state(std::string_view resources, GoldBoxGame game);
+// A rested member's state: its lasting conditions, or empty for none.
+[[nodiscard]] std::string rested_state(std::span<const Effect> conditions);
+
 // What the original rules' module knows of a game: its monsters, by the key a
 // fight's participant names them with (por::CreatureId::key(), "MON2CHA.DAX:0"),
 // and its item types (ITEMS), by type.

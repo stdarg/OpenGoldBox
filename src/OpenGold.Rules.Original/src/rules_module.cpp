@@ -5,6 +5,7 @@
 #include "opengold/dice.h"
 
 #include <algorithm>
+#include <functional>
 #include <limits>
 #include <map>
 #include <ranges>
@@ -1155,6 +1156,184 @@ void OriginalModule::roll_advancement(const CharacterSheet &sheet, unsigned expe
     choice.rules_data = encode_training(training);
 }
 
+namespace
+{
+constexpr int cure_light_wounds = 3, cure_serious_wounds = 158, cure_critical_wounds = 171,
+              raise_dead = 175, heal = 236, barkskin = 290, druid_cure_light_wounds = 298,
+              cure_blindness = 37, cure_disease = 39, remove_curse = 43,
+              magic_user_remove_curse = 189, neutralize_poison = 167;
+// The spells a member may cast in camp: the cures, Curse's Raise Dead and
+// Neutralize Poison, and Secret's Heal and Barkskin, which its table casts
+// as Heal.
+constexpr std::array<int, 12> camp_spells{cure_light_wounds,
+                                          cure_serious_wounds,
+                                          cure_critical_wounds,
+                                          raise_dead,
+                                          heal,
+                                          barkskin,
+                                          druid_cure_light_wounds,
+                                          cure_blindness,
+                                          cure_disease,
+                                          remove_curse,
+                                          magic_user_remove_curse,
+                                          neutralize_poison};
+constexpr std::string_view cast_prefix = "cast:";
+// A paladin's laying on of hands, once between a day's rests; the member's
+// state keeps that it was used (as the paladinDailyHealCast effect).
+constexpr std::string_view lay_on_hands = "paladin:lay_on_hands";
+constexpr int laid_on_hands = 340;
+// A paladin's cure of disease, once a week and once more for each five
+// levels past the first (Curse's viewchar.pas, PaladinCureDisease); the
+// week's cures are counted in the strength of a week-long effect.
+constexpr std::string_view cure_disease_action = "paladin:cure_disease";
+constexpr int cured_this_week = 341, week_minutes = 7 * 24 * 60;
+
+// The conditions, by the fight's numbers (lasting_condition).
+constexpr int blind = 33, bestow_curse = 36, poisoned = 55, slow_poison_hit = 15,
+              slow_poison_end = 22, feebleminded = 268;
+constexpr std::array<int, 3> poison_codes{poisoned, slow_poison_hit, slow_poison_end};
+// A revival from poison, which costs nothing (Secret's and Gateway's temples,
+// Curse's Neutralize Poison): the state keeps it until the raising's cost
+// is waived (raise_character). No game's effect has its number.
+constexpr int revived_from_poison = 600;
+
+// Disease as its cures take it away (temple.pas, cureDiseaseEffects): the
+// helplessness it brings, disease and its losses of Strength and Hit Points,
+// and in Pool of Radiance rot and mummy rot.
+std::vector<int> disease_codes(GoldBoxGame game)
+{
+    std::vector<int> codes{31, 34, 43, 44};
+    if (game == GoldBoxGame::pool_of_radiance)
+    {
+        codes.insert(codes.end(), {50, 57});
+    }
+    return codes;
+}
+
+// The spells a member has memorized and not cast: its last fight's, or after
+// a day's rest its sheet's.
+std::vector<int> spells_left(const CharacterSheet &sheet, const VitalState &state)
+{
+    if (const auto last = Combatant::decode(state.resources))
+    {
+        return last->spells;
+    }
+    std::vector<int> memorized;
+    for (const auto &id : sheet.prepared_spells)
+    {
+        if (const auto number = spell_number(id))
+        {
+            memorized.push_back(*number);
+        }
+    }
+    return memorized;
+}
+
+// The conditions a member carries out of its fights (lasting_condition).
+std::vector<Effect> conditions_of(const CharacterSheet &sheet, const VitalState &state)
+{
+    return carried_state(state.resources, game_of(sheet.identity)).conditions;
+}
+
+const Effect *condition(const std::vector<Effect> &conditions, int code)
+{
+    const auto found = std::ranges::find(conditions, code, &Effect::code);
+    return found == conditions.end() ? nullptr : &*found;
+}
+
+bool has_any(const CharacterSheet &sheet, const VitalState &state, std::span<const int> codes)
+{
+    const auto conditions = conditions_of(sheet, state);
+    return std::ranges::any_of(codes,
+                               [&conditions](int code)
+                               {
+                                   return condition(conditions, code) != nullptr;
+                               });
+}
+
+// The member's state with its conditions changed: its last fight's numbers
+// keep the change, or after a rest only its conditions do.
+void change_conditions(const CharacterSheet &sheet, VitalState &state,
+                       const std::function<void(std::vector<Effect> &)> &change)
+{
+    auto carried = carried_state(state.resources, game_of(sheet.identity));
+    if (carried.last_fight)
+    {
+        change(carried.last_fight->effects);
+        state.resources = carried.last_fight->encode();
+        return;
+    }
+    change(carried.conditions);
+    state.resources = rested_state(carried.conditions);
+}
+
+// Takes the conditions of these codes away; true when one was there.
+bool cure(const CharacterSheet &sheet, VitalState &state, std::span<const int> codes)
+{
+    bool cured = false;
+    change_conditions(sheet, state,
+                      [&](std::vector<Effect> &effects)
+                      {
+                          cured = std::erase_if(effects,
+                                                [codes](const Effect &e)
+                                                {
+                                                    return std::ranges::find(codes, e.code) !=
+                                                           codes.end();
+                                                }) > 0;
+                      });
+    return cured;
+}
+
+// The poisoned dead stand again with at least 1 Hit Point, their raising
+// costing nothing (temple.pas, NeutralizePoison; Curse's SpellNeutralizePoison).
+void stand_unpoisoned(const CharacterSheet &sheet, VitalState &state)
+{
+    state.dead = false;
+    state.hit_points = std::max(state.hit_points, 1);
+    change_conditions(sheet, state,
+                      [](std::vector<Effect> &effects)
+                      {
+                          effects.push_back({revived_from_poison, 0, 0, false});
+                      });
+}
+
+// What a paladin may still do: lay on hands today, and cure disease this week.
+bool may_lay_on_hands(const CharacterSheet &sheet, const VitalState &state)
+{
+    return level_in(original_numbers(sheet).class_levels, ClassSlot::paladin) > 0 &&
+           !condition(conditions_of(sheet, state), laid_on_hands);
+}
+
+int cures_left(const CharacterSheet &sheet, const VitalState &state)
+{
+    const int paladin = level_in(original_numbers(sheet).class_levels, ClassSlot::paladin);
+    if (paladin == 0)
+    {
+        return 0;
+    }
+    const auto conditions = conditions_of(sheet, state);
+    const auto *spent = condition(conditions, cured_this_week);
+    return (paladin - 1) / 5 + 1 - (spent ? spent->strength : 0);
+}
+
+// What casting a camp spell, or a paladin's gift, spends from the member's
+// state: the spell's memorized copy, or the day's or week's use.
+void spend_spell(const CharacterSheet &user, VitalState &state, int number)
+{
+    auto left = spells_left(user, state);
+    left.erase(std::ranges::find(left, number));
+    auto carried = carried_state(state.resources, game_of(user.identity));
+    auto numbers = carried.last_fight.value_or(character_combatant(user));
+    if (!carried.last_fight)
+    {
+        numbers.effects.insert(numbers.effects.end(), carried.conditions.begin(),
+                               carried.conditions.end());
+    }
+    numbers.spells = std::move(left);
+    state.resources = numbers.encode();
+}
+} // namespace
+
 bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
                                        const AdvancementChoice &choice) const
 {
@@ -1272,6 +1451,12 @@ void OriginalModule::drain_character(CharacterSheet &sheet, VitalState &state,
 // Hit Points off its maximum (raised_hit_point_loss); the spell's does not.
 void OriginalModule::raise_character(CharacterSheet &sheet, VitalState &state, Revival by) const
 {
+    // One that poison killed and Neutralize Poison (or Gateway's Raise Dead)
+    // stood up again loses nothing (temple.pas, NeutralizePoison and RaiseDead).
+    if (cure(sheet, state, std::array{revived_from_poison}))
+    {
+        return;
+    }
     auto next = sheet;
     auto &numbers = *next.original;
     auto &constitution = next.scores[Ability::constitution];
@@ -1354,8 +1539,40 @@ void OriginalModule::recover(VitalState &state, const CharacterSheet &sheet) con
         state.hit_points = std::min(state.hit_points + 1, sheet.hit_points);
     }
     // The day's rest memorizes again the spells cast: the next fight starts
-    // from the sheet's.
-    state.resources.clear();
+    // from the sheet's. The lasting conditions stay, a day nearer their end.
+    // A disease whose time comes takes hold, as Strength and Hit Points
+    // wasting away (effhndlr.pas, EffDiseased).
+    constexpr int day_minutes = 24 * 60, diseased = 34, wasting_strength = 43,
+                  wasting_hit_points = 44;
+    auto conditions = conditions_of(sheet, state);
+    std::vector<Effect> taking_hold;
+    std::erase_if(conditions,
+                  [&taking_hold](Effect &e)
+                  {
+                      if (e.minutes == 0)
+                      {
+                          return false;
+                      }
+                      e.minutes -= day_minutes;
+                      if (e.minutes > 0)
+                      {
+                          return false;
+                      }
+                      if (e.code == diseased)
+                      {
+                          taking_hold.push_back({wasting_strength, 0, e.strength, false});
+                          taking_hold.push_back({wasting_hit_points, 0, e.strength, false});
+                      }
+                      return true;
+                  });
+    for (const auto &e : taking_hold)
+    {
+        if (!condition(conditions, e.code))
+        {
+            conditions.push_back(e);
+        }
+    }
+    state.resources = rested_state(conditions);
 }
 
 // The original has no Hit Dice or resources a rest restores; every living
@@ -1406,21 +1623,41 @@ RestPolicy OriginalModule::short_rest_policy() const
 
 // The original's temple (temple.pas): Cure Light, Serious and Critical
 // Wounds heal 1d8, 2d8+1 and 3d8+3, and Raise Dead brings the dead back with 1
-// Hit Point. Its cures of blindness, disease, poison, curses and stone come
-// with the conditions that last outside fights; it raises no one by
-// Resurrection.
+// Hit Point, its poison gone. Cure Blindness, Cure Disease, Neutralize Poison
+// and Remove Curse take their conditions away; in Secret and Gateway
+// Neutralize Poison stands one poison killed up again, and Secret's Heal
+// cures blindness, disease and feeblemind too. It raises no one by
+// Resurrection; its cure of stone is Secret's route's.
 bool OriginalModule::temple_service_helps(const CharacterSheet &sheet, const VitalState &state,
                                           TempleService service) const
 {
+    const auto game = game_of(sheet.identity);
+    const bool reviving_poison = game == GoldBoxGame::secret_of_the_silver_blades ||
+                                 game == GoldBoxGame::gateway_to_the_savage_frontier;
     switch (service)
     {
     case TempleService::cure_light_wounds:
     case TempleService::cure_serious_wounds:
     case TempleService::cure_critical_wounds:
-    case TempleService::heal:
         return !state.dead && state.hit_points < sheet.hit_points;
+    case TempleService::heal:
+    {
+        auto cured = disease_codes(game);
+        cured.insert(cured.end(), {blind, feebleminded});
+        const bool cures =
+            game == GoldBoxGame::secret_of_the_silver_blades && has_any(sheet, state, cured);
+        return !state.dead && (state.hit_points < sheet.hit_points || cures);
+    }
     case TempleService::raise_dead:
         return state.dead;
+    case TempleService::cure_blindness:
+        return !state.dead && has_any(sheet, state, std::array{blind});
+    case TempleService::cure_disease:
+        return !state.dead && has_any(sheet, state, disease_codes(game));
+    case TempleService::neutralize_poison:
+        return (!state.dead || reviving_poison) && has_any(sheet, state, poison_codes);
+    case TempleService::remove_curse:
+        return !state.dead && has_any(sheet, state, std::array{bestow_curse});
     default:
         return false;
     }
@@ -1433,6 +1670,7 @@ void OriginalModule::temple_service(VitalState &state, const CharacterSheet &she
     {
         throw std::runtime_error("The temple cannot help with that");
     }
+    const auto game = game_of(sheet.identity);
     const auto heal = [&](int dice, int bonus)
     {
         int healing = bonus;
@@ -1454,13 +1692,51 @@ void OriginalModule::temple_service(VitalState &state, const CharacterSheet &she
         heal(3, 3);
         break;
     case TempleService::heal:
-        // Curse's Heal: all but 1d4 Hit Points (ovr005, temple_heal).
+        // Curse's Heal: all but 1d4 Hit Points (ovr005, temple_heal); Secret's
+        // cures blindness, disease and feeblemind too (temple.pas, CureWounds).
+        if (game == GoldBoxGame::secret_of_the_silver_blades)
+        {
+            auto cured = disease_codes(game);
+            cured.insert(cured.end(), {blind, feebleminded});
+            (void)cure(sheet, state, cured);
+        }
         state.hit_points = std::max(state.hit_points, sheet.hit_points - roll_die(random_state, 4));
         break;
     case TempleService::raise_dead:
+    {
+        // Its poison and its last fight's spells are gone; Gateway raises one
+        // poison killed at no cost (its RaiseDead).
+        const bool poisoned_dead = has_any(sheet, state, poison_codes);
+        auto conditions = conditions_of(sheet, state);
+        std::erase_if(conditions,
+                      [](const Effect &e)
+                      {
+                          return std::ranges::find(poison_codes, e.code) != poison_codes.end();
+                      });
+        state.resources = rested_state(conditions);
         state.dead = false;
         state.hit_points = 1;
-        state.resources.clear();
+        if (poisoned_dead && game == GoldBoxGame::gateway_to_the_savage_frontier)
+        {
+            stand_unpoisoned(sheet, state);
+        }
+        break;
+    }
+    case TempleService::cure_blindness:
+        (void)cure(sheet, state, std::array{blind});
+        break;
+    case TempleService::cure_disease:
+        (void)cure(sheet, state, disease_codes(game));
+        break;
+    case TempleService::neutralize_poison:
+        (void)cure(sheet, state, poison_codes);
+        if (state.dead)
+        {
+            stand_unpoisoned(sheet, state);
+        }
+        break;
+    case TempleService::remove_curse:
+        (void)cure(sheet, state, std::array{bestow_curse});
         break;
     default:
         break;
@@ -1520,51 +1796,15 @@ HazardAttackResult OriginalModule::hazard_attack(VitalState &state, const Charac
     return result;
 }
 
-namespace
-{
-constexpr int cure_light_wounds = 3, cure_serious_wounds = 158, cure_critical_wounds = 171,
-              raise_dead = 175, heal = 236, barkskin = 290, druid_cure_light_wounds = 298;
-// The spells a member may cast in camp: the cures, Curse's Raise Dead, and
-// Secret's Heal and Barkskin, which its table casts as Heal.
-constexpr std::array<int, 7> camp_spells{
-    cure_light_wounds, cure_serious_wounds,    cure_critical_wounds, raise_dead, heal,
-    barkskin,          druid_cure_light_wounds};
-constexpr std::string_view cast_prefix = "cast:";
-// A paladin's laying on of hands, once between a day's rests; the member's
-// state keeps that it was used (as the paladinDailyHealCast effect).
-constexpr std::string_view lay_on_hands = "paladin:lay_on_hands";
-constexpr int laid_on_hands = 340;
-
-// The spells a member has memorized and not cast: its last fight's, or after
-// a day's rest its sheet's.
-std::vector<int> spells_left(const CharacterSheet &sheet, const VitalState &state)
-{
-    if (!state.resources.empty())
-    {
-        if (const auto last = Combatant::decode(state.resources))
-        {
-            return last->spells;
-        }
-    }
-    std::vector<int> memorized;
-    for (const auto &id : sheet.prepared_spells)
-    {
-        if (const auto number = spell_number(id))
-        {
-            memorized.push_back(*number);
-        }
-    }
-    return memorized;
-}
-} // namespace
-
 // Casting in camp (camp.pas, NoncombatCastMenu): Cure Light Wounds heals a
 // member 1d8, and Curse's Cure Serious and Cure Critical Wounds 2d8+1 and
 // 3d8+3; Curse's Raise Dead brings back a dead member who is no elf and has
 // Constitution left with 1 Hit Point (its cost is revival_changes'); Secret's
 // Heal (and Barkskin) heals every Hit Point but 1d4, and its druid's Cure
-// Light Wounds 1d8. The spells whose effects last beyond a fight come with
-// the conditions (plan step 6).
+// Light Wounds 1d8. Cure Blindness, Cure Disease and Remove Curse take their
+// conditions away, Heal blindness, disease and feeblemind besides, and
+// Curse's Neutralize Poison stands a member poison killed up again. A
+// paladin lays on hands and cures disease.
 std::vector<CampAction> OriginalModule::camp_actions(const CharacterSheet &sheet,
                                                      const VitalState &state) const
 {
@@ -1574,15 +1814,13 @@ std::vector<CampAction> OriginalModule::camp_actions(const CharacterSheet &sheet
     }
     const auto left = spells_left(sheet, state);
     std::vector<CampAction> actions;
-    const auto last = Combatant::decode(state.resources);
-    const bool laid = last && std::ranges::any_of(last->effects,
-                                                  [](const Effect &e)
-                                                  {
-                                                      return e.code == laid_on_hands;
-                                                  });
-    if (level_in(sheet.original->class_levels, ClassSlot::paladin) > 0 && !laid)
+    if (may_lay_on_hands(sheet, state))
     {
         actions.push_back({std::string(lay_on_hands), {"Lay on hands", {}}, false});
+    }
+    if (cures_left(sheet, state) > 0)
+    {
+        actions.push_back({std::string(cure_disease_action), {"Cure disease", {}}, false});
     }
     for (const int number : camp_spells)
     {
@@ -1601,60 +1839,71 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
                                      const CharacterSheet &target, VitalState &target_state,
                                      std::string_view action, RandomState &random_state) const
 {
-    if (action == lay_on_hands)
+    const auto game = game_of(user.identity);
+    if (action == lay_on_hands || action == cure_disease_action)
     {
-        // Two Hit Points a paladin level (PaladinHeal in Curse's reconstruction).
-        const auto offered = camp_actions(user, user_state);
+        const bool laying = action == lay_on_hands;
         if (user_state.dead || target_state.dead ||
-            std::ranges::none_of(offered,
-                                 [](const CampAction &a)
-                                 {
-                                     return a.id == lay_on_hands;
-                                 }))
+            (laying ? !may_lay_on_hands(user, user_state) : cures_left(user, user_state) <= 0))
         {
             throw std::runtime_error("That cannot be done now");
         }
-        auto numbers = Combatant::decode(user_state.resources).value_or(character_combatant(user));
-        numbers.spells = spells_left(user, user_state);
-        numbers.effects.push_back({laid_on_hands, 1440, 0, false});
-        user_state.resources = numbers.encode();
-        target_state.hit_points =
-            std::min(target_state.hit_points +
-                         2 * level_in(original_numbers(user).class_levels, ClassSlot::paladin),
-                     target.hit_points);
+        change_conditions(user, user_state,
+                          [laying](std::vector<Effect> &effects)
+                          {
+                              if (laying)
+                              {
+                                  effects.push_back({laid_on_hands, 1440, 0, false});
+                                  return;
+                              }
+                              const auto spent =
+                                  std::ranges::find(effects, cured_this_week, &Effect::code);
+                              if (spent == effects.end())
+                              {
+                                  effects.push_back({cured_this_week, week_minutes, 1, false});
+                              }
+                              else
+                              {
+                                  ++spent->strength;
+                              }
+                          });
+        if (laying)
+        {
+            // Two Hit Points a paladin level (PaladinHeal in Curse's reconstruction).
+            target_state.hit_points =
+                std::min(target_state.hit_points +
+                             2 * level_in(original_numbers(user).class_levels, ClassSlot::paladin),
+                         target.hit_points);
+        }
+        else
+        {
+            (void)cure(target, target_state, disease_codes(game));
+        }
         return;
     }
     const auto number = action.starts_with(cast_prefix)
                             ? spell_number(action.substr(cast_prefix.size()))
                             : std::nullopt;
-    auto left = spells_left(user, user_state);
-    const auto copy = number ? std::ranges::find(left, *number) : left.end();
+    const auto left = spells_left(user, user_state);
     if (!number || std::ranges::find(camp_spells, *number) == camp_spells.end() ||
-        copy == left.end() || user_state.dead)
+        std::ranges::find(left, *number) == left.end() || user_state.dead)
     {
         throw std::runtime_error("That spell cannot be cast now");
     }
     const bool raising = *number == raise_dead;
+    const bool unpoisoning = *number == neutralize_poison;
     constexpr int elf = static_cast<int>(Race::elf);
     if (raising && (!target_state.dead || original_numbers(target).race == elf ||
                     target.scores[Ability::constitution] <= 0))
     {
         throw std::runtime_error("Raise Dead cannot bring this member back");
     }
-    if (!raising && target_state.dead)
+    if (!raising && target_state.dead &&
+        !(unpoisoning && has_any(target, target_state, poison_codes)))
     {
         throw std::runtime_error("The dead cannot be healed");
     }
-    left.erase(copy);
-    auto numbers = Combatant::decode(user_state.resources).value_or(character_combatant(user));
-    numbers.spells = std::move(left);
-    user_state.resources = numbers.encode();
-    if (raising)
-    {
-        target_state.dead = false;
-        target_state.hit_points = 1;
-        return;
-    }
+    spend_spell(user, user_state, *number);
     const auto roll_8s = [&](int dice)
     {
         int total = 0;
@@ -1664,14 +1913,46 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
         }
         return total;
     };
-    if (*number == heal || *number == barkskin)
+    switch (*number)
     {
+    case raise_dead:
+        // Raised with poison and the animation of the dead taken away
+        // (Curse's SpellRaiseDead).
+        target_state.dead = false;
+        target_state.hit_points = 1;
+        (void)cure(target, target_state, poison_codes);
+        return;
+    case neutralize_poison:
+        if (cure(target, target_state, poison_codes) && target_state.dead)
+        {
+            stand_unpoisoned(target, target_state);
+        }
+        return;
+    case cure_blindness:
+        (void)cure(target, target_state, std::array{blind});
+        return;
+    case cure_disease:
+        (void)cure(target, target_state, disease_codes(game));
+        return;
+    case remove_curse:
+    case magic_user_remove_curse:
+        (void)cure(target, target_state, std::array{bestow_curse});
+        return;
+    case heal:
+    case barkskin:
+    {
+        auto cured = disease_codes(game);
+        cured.insert(cured.end(), {blind, feebleminded});
+        (void)cure(target, target_state, cured);
         const int short_of = roll_die(random_state, 4);
         if (target_state.hit_points + short_of <= target.hit_points)
         {
             target_state.hit_points = target.hit_points - short_of;
         }
         return;
+    }
+    default:
+        break;
     }
     const bool one_die = *number == cure_light_wounds || *number == druid_cure_light_wounds;
     const int healed = one_die                          ? roll_8s(1)
@@ -1703,10 +1984,9 @@ std::optional<int> item_power(std::string_view key, GoldBoxGame game)
 }
 } // namespace
 
-// Out of a fight the original's Potion of Healing heals 2d4+2 and Keoghtum's
-// Ointment 1d4+8, as in one (magic.pas); the other items' powers are a
-// fight's. The ointment's cure of poison and disease comes with the
-// conditions (plan step 6).
+// Out of a fight the original's Potion of Healing heals 2d4+2, and Keoghtum's
+// Ointment takes poison away, else disease, else heals 1d4+8, as in one
+// (magic.pas); the other items' powers are a fight's.
 bool OriginalModule::usable_outside_combat(std::string_view item) const
 {
     const auto power = item_power(item, content_.game);
@@ -1720,9 +2000,14 @@ void OriginalModule::drink_potion(const CharacterSheet &sheet, VitalState &state
     {
         throw std::runtime_error("That cannot be used now");
     }
-    const int healing = item_power(item, content_.game) == potion_of_healing
-                            ? roll_die(random_state, 4) + roll_die(random_state, 4) + 2
-                            : roll_die(random_state, 4) + 8;
+    const bool ointment = item_power(item, content_.game) == keoghtums_ointment;
+    if (ointment && (cure(sheet, state, poison_codes) ||
+                     cure(sheet, state, disease_codes(game_of(sheet.identity)))))
+    {
+        return;
+    }
+    const int healing = ointment ? roll_die(random_state, 4) + 8
+                                 : roll_die(random_state, 4) + roll_die(random_state, 4) + 2;
     state.hit_points = std::min(state.hit_points + healing, sheet.hit_points);
 }
 

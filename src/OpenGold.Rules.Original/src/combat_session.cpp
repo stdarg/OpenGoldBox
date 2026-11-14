@@ -6771,19 +6771,20 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
             f.numbers = *numbers;
             take_counts(f, p.inventory, content);
             // A member's last fight left it the spells it had not cast, which
-            // it keeps until a day's rest memorizes them again.
+            // it keeps until a day's rest memorizes them again, and the
+            // conditions that outlast fights and rests (lasting_condition).
             if (p.state && !p.state->resources.empty())
             {
-                if (const auto last = Combatant::decode(p.state->resources))
+                const auto carried = carried_state(p.state->resources, content.game);
+                if (carried.last_fight)
                 {
-                    f.numbers.spells = last->spells;
-                    // And a paladin's laying on of hands spent today (Curse).
-                    for (const auto &kept : last->effects)
+                    f.numbers.spells = carried.last_fight->spells;
+                }
+                for (const auto &kept : carried.conditions)
+                {
+                    if (!f.has(kept.code))
                     {
-                        if (kept.code == 340)
-                        {
-                            f.numbers.effects.push_back(kept);
-                        }
+                        f.numbers.effects.push_back(kept);
                     }
                 }
             }
