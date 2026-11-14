@@ -98,9 +98,6 @@ struct DesignArea
 // cannot be read.
 [[nodiscard]] original::Content load_design_content(const DesignFiles &files);
 
-// The numbers a MONST record fights with under the original rules.
-[[nodiscard]] original::Combatant monster_combatant(const Monster &monster);
-
 // The design's items (ITEM.DAT, numbered from 1) and their types (ITEMS.DAT),
 // the design's own files or the kit's. Throws when either cannot be read.
 struct DesignItems
@@ -116,6 +113,19 @@ struct DesignItems
 // name word.
 [[nodiscard]] std::optional<por::Equipment> design_item(const DesignItems &items, unsigned number,
                                                         bool identified);
+
+// The items a MONST record carries (its tail) as the kit loads them
+// (saveload.c, mon_load): unidentified, with their charges, each readied in
+// turn where the creature may ready it. A scroll (FFh) is made where it is
+// handed over, not here.
+[[nodiscard]] std::vector<por::Equipment> monster_items(const Monster &monster,
+                                                        const DesignItems &items);
+
+// The numbers a MONST record fights with under the original rules: its
+// record and readied items as the original rules recalculate a creature
+// (original::combatant_from_record), its size its combat icon's.
+[[nodiscard]] original::Combatant
+monster_combatant(const Monster &monster, const DesignItems &items, rules::Footprint icon);
 
 // The kit's price of `price` at one of its rates, 0 to 19 (temple.c,
 // rate_price): what shops, temples and training halls ask, in platinum.
@@ -390,6 +400,7 @@ class UaSession final : public ExplorationSession
     DesignFiles files_;
     GameSettings game_;
     DesignItems items_;
+    CombatIcons icons_;
     DesignArea area_;
     ViewArt view_art_;
     std::shared_ptr<CampaignParty> party_;

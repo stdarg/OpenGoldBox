@@ -79,22 +79,120 @@ constexpr rules::EntityId first_monster_id = 1000;
     return std::move(*monster);
 }
 
-// A character record's levels (one by class, the kit's class order: cleric,
-// knight, fighter, paladin, ranger, magic-user, thief) by the original rules'
-// class slots (ClassSlot: cleric, druid, fighter, paladin, ranger,
-// magic-user, thief, monk).
-[[nodiscard]] std::array<int, 8> class_slots(const Monster &monster)
+// A MONST record's tail: its 16 items (ITEM.DAT numbers, FFh a scroll), the
+// charges they come with, by number into the kit's table.
+constexpr std::size_t tail_items = 0x18E, tail_charges = 0x19E, tail_item_count = 16;
+constexpr std::array<std::uint8_t, 16> charge_table{0,  1,  2,  4,  6,  8,  10, 12,
+                                                    15, 20, 25, 30, 40, 50, 75, 100};
+constexpr std::uint8_t scroll_number = 0xFF;
+
+// The class bits an item's class byte must share for a creature to ready it
+// (the kit's class order: cleric, knight, fighter, paladin, ranger,
+// magic-user, thief).
+constexpr std::array<std::uint8_t, 7> class_bits{0x02, 0x10, 0x08, 0x40, 0x40, 0x01, 0x04};
+
+// The kit's races (0 elf, 1 half-elf, 2 dwarf, 3 gnome, 4 halfling, 5 human,
+// 6 a monster) by the original rules' numbers.
+constexpr std::array<std::uint8_t, 7> original_races{2, 4, 1, 3, 5, 7, 0};
+
+// A MONST record as the original rules read a creature's record.
+[[nodiscard]] por::CharacterRecord monster_record(const Monster &monster, rules::Footprint icon)
 {
-    std::array<int, 8> slots{};
-    const auto &levels = monster.levels;
-    slots[0] = levels[0];
-    for (std::size_t n = 2; n < 7; ++n)
+    const auto &raw = monster.raw;
+    por::CharacterRecord record;
+    record.game = GoldBoxGame::unlimited_adventures;
+    record.raw.assign(raw.begin(), raw.begin() + tail_items);
+    record.name = monster.name;
+    // The six abilities from +70h, a base and a current score each
+    // (Strength, Intelligence, Wisdom, Dexterity, Constitution, Charisma),
+    // then exceptional Strength.
+    const auto scores = [&raw](std::size_t at)
     {
-        slots[n] = levels[n];
+        por::AbilityScores scores;
+        scores.strength = raw[at];
+        scores.intelligence = raw[at + 2];
+        scores.wisdom = raw[at + 4];
+        scores.dexterity = raw[at + 6];
+        scores.constitution = raw[at + 8];
+        scores.charisma = raw[at + 10];
+        scores.exceptional_strength = raw[0x7C];
+        return scores;
+    };
+    record.abilities = scores(0x70);
+    record.current_abilities = scores(0x71);
+    // The kit keeps THAC0 and Armor Class as 60 less the value.
+    record.base_thac0 = 60 - raw[0x7F];
+    record.base_armor_class = 60 - raw[0xB3];
+    record.max_hit_points = std::max<std::uint8_t>(raw[0x81], 1);
+    record.current.hit_points_raw = raw[0x18B];
+    record.base_movement = raw[0x88];
+    for (std::size_t hand = 0; hand < 2; ++hand)
+    {
+        record.base_attacks[hand] = {
+            raw[0xAB + hand],
+            {raw[0xAD + hand], raw[0xAF + hand], static_cast<std::int8_t>(raw[0xB1 + hand])}};
     }
+    record.saves = {raw[0x83], raw[0x84], raw[0x85], raw[0x86], raw[0x87]};
     // The kit's knight (Krynn's) fights as a fighter.
-    slots[2] = std::max<int>(slots[2], levels[1]);
-    return slots;
+    const auto &levels = monster.levels;
+    record.levels = {levels[0], 0, std::max(levels[2], levels[1]), levels[3], levels[4], levels[5],
+                     levels[6], 0};
+    record.highest_level_raw = raw[0x89];
+    record.npc_flag = raw[0x93];
+    record.race = original_races[std::min<std::size_t>(raw[0x58], 6)];
+    record.alignment = raw[0x5D];
+    record.undead_level = raw[0x5A];
+    record.magic_resistance = raw[0xC4];
+    // The kit sizes a creature by its icon, keeping the record's top bit
+    // (evcmds.c, monster_add).
+    record.icon_size_raw = static_cast<std::uint8_t>((raw[0x82] & 0x80) | icon_size_code(icon));
+    // The kit adds Strength's bonuses to every creature's blows (hero.c,
+    // recalc_stats).
+    record.strength_bonus_flag_raw = 1;
+    // Platinum, gems and jewelry, which its load counts.
+    for (std::size_t coin = 0; coin < 3; ++coin)
+    {
+        record.wealth[4 + coin] = word_at(raw, 0x4C + 2 * coin);
+    }
+    return record;
+}
+
+// What readying an item would take: the creature's hands and the places it
+// wears things (saveload.c's mon_load asks ready_check of each in turn).
+struct ReadySlots
+{
+    unsigned hands{};
+    std::array<bool, 13> taken{};
+};
+
+// The kit's ready_check: both hands at most, one item a place (two rings),
+// arrows and quarrels apart, and only an item of one of the creature's
+// classes. Takes the place when it may.
+bool ready(ReadySlots &slots, const por::ItemTemplate &type, std::uint8_t item_type,
+           std::uint8_t creature_classes)
+{
+    constexpr std::size_t ring = 9, second_ring = 10, arrows_place = 11, quarrels_place = 12;
+    std::size_t place = type.worn_location;
+    if (place == ring && slots.taken[ring])
+    {
+        place = second_ring;
+    }
+    if (item_type == 0x1E)
+    {
+        place = arrows_place;
+    }
+    else if (item_type == 0x0C || item_type == 0x4A)
+    {
+        place = quarrels_place;
+    }
+    if (slots.hands + type.hands > 2 || place >= slots.taken.size() || slots.taken[place] ||
+        (type.class_restrictions & creature_classes) == 0)
+    {
+        return false;
+    }
+    slots.taken[place] = true;
+    slots.hands += type.hands;
+    return true;
 }
 
 } // namespace
@@ -104,58 +202,73 @@ std::string monster_key(unsigned number)
     return "UA:MONST:" + std::to_string(number);
 }
 
-original::Combatant monster_combatant(const Monster &monster)
+std::vector<por::Equipment> monster_items(const Monster &monster, const DesignItems &items)
 {
     const auto &raw = monster.raw;
-    original::Combatant fighter;
-    // The kit keeps THAC0 and Armor Class as 60 less the value.
-    fighter.thac0 = 60 - raw[0x7F];
-    fighter.armor_class = 60 - raw[0xB3];
-    fighter.rear_armor_class = fighter.armor_class;
-    fighter.max_hit_points = std::max<int>(raw[0x81], 1);
-    fighter.hit_points = fighter.max_hit_points;
-    fighter.movement = raw[0x88];
-    for (std::size_t hand = 0; hand < 2; ++hand)
+    std::uint8_t classes = 0;
+    for (std::size_t slot = 0; slot < class_bits.size(); ++slot)
     {
-        fighter.attacks[hand] = {raw[0xAB + hand], raw[0xAD + hand], raw[0xAF + hand],
-                                 static_cast<std::int8_t>(raw[0xB1 + hand])};
+        classes |= monster.levels[slot] > 0 ? class_bits[slot] : 0;
     }
-    for (std::size_t save = 0; save < 5; ++save)
+    ReadySlots slots;
+    std::vector<por::Equipment> carried;
+    for (std::size_t n = 0; n < tail_item_count; ++n)
     {
-        fighter.saving_throws[save] = raw[0x83 + save];
+        const unsigned number = raw[tail_items + n];
+        auto item = number == scroll_number ? std::nullopt : design_item(items, number, false);
+        if (!item)
+        {
+            continue;
+        }
+        auto &stored = item->stored;
+        if (const unsigned charge = raw[tail_charges + n] & 0xF; charge != 0)
+        {
+            // A stack takes the charges as its count; else a magic item with
+            // two effects and no special one as its first effect's charges.
+            if (stored.stack_size != 0)
+            {
+                stored.stack_size = charge_table[charge];
+            }
+            else if (stored.effect_codes[2] < 0x80 && stored.effect_codes[1] != 0 &&
+                     stored.effect_codes[0] != 0)
+            {
+                stored.effect_codes[0] = charge_table[charge];
+            }
+        }
+        stored.readied_raw = ready(slots, item->base, stored.type, classes) ? 1 : 0;
+        carried.push_back(std::move(*item));
     }
-    fighter.class_levels = class_slots(monster);
-    fighter.level =
-        std::max(raw[0x89], *std::max_element(monster.levels.begin(), monster.levels.end()));
-    fighter.attack_level = std::max(fighter.level, 1);
-    fighter.morale = raw[0x93];
-    fighter.intelligence = raw[0x72];
-    fighter.strength = raw[0x70];
-    fighter.constitution = raw[0x78];
-    fighter.alignment = raw[0x5D];
-    fighter.undead_level = raw[0x5A];
-    fighter.magic_resistance = raw[0xC4];
-    // Size: the low three bits of the icon's dimensions; above 1 is large.
-    fighter.large = (raw[0x82] & 7) > 1;
-    // The kit's monsters are race 6; the original rules know them as 0.
-    fighter.race = raw[0x58] == 6 ? 0 : 7;
-    return fighter;
+    return carried;
+}
+
+original::Combatant monster_combatant(const Monster &monster, const DesignItems &items,
+                                      rules::Footprint icon)
+{
+    std::vector<original::CarriedItem> carried;
+    for (const auto &item : monster_items(monster, items))
+    {
+        carried.push_back({item.stored, item.base});
+    }
+    return original::combatant_from_record(monster_record(monster, icon), carried);
 }
 
 original::Content load_design_content(const DesignFiles &files)
 {
     original::Content content;
     content.game = GoldBoxGame::unlimited_adventures;
+    auto items = load_design_items(files);
+    const CombatIcons icons(files);
     if (const auto monsters = files.library("MONST.GLB"))
     {
         const auto index = decode_index(*monsters);
         for (const auto &entry : index ? *index : std::vector<IndexEntry>{})
         {
             content.bestiary.emplace(monster_key(entry.number),
-                                     monster_combatant(read_monster(files, entry.number)));
+                                     monster_combatant(read_monster(files, entry.number), items,
+                                                       icons.footprint(entry.number)));
         }
     }
-    content.item_types = read_item_types(files);
+    content.item_types = std::move(items.types);
     return content;
 }
 
@@ -302,7 +415,8 @@ UaSession UaSession::start(DesignFiles files)
 }
 
 UaSession::UaSession(DesignFiles files, GameSettings game)
-    : files_(std::move(files)), game_(std::move(game)), items_(load_design_items(files_))
+    : files_(std::move(files)), game_(std::move(game)), items_(load_design_items(files_)),
+      icons_(files_)
 {
     load_area(game_.start_area);
     // The kit's entry points are 1-based in the game record.
@@ -822,7 +936,7 @@ void UaSession::begin_combat(const EventRecord &event, bool pick_one)
         // 80h say so (evcmds.c, monsters_place).
         const bool ally = group.slot >= 3 && (event[0xA] & (0x20U << (group.slot - 3))) != 0;
         const auto monster = read_monster(files_, group.number);
-        const auto icon = combat_icon(files_, group.number, field.palette);
+        const auto icon = icons_.icon(group.number, field.palette);
         for (unsigned n = 0; n < group.count && fielded < most_monsters; ++n, ++fielded)
         {
             const auto id = ally ? next_ally++ : next_enemy++;

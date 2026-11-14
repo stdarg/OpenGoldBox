@@ -46,10 +46,36 @@ struct CombatIcon
     rules::Footprint footprint;
 };
 
-// nullopt when CPIC.TLB has no icon of that number. Throws when it does not
-// decode.
-[[nodiscard]] std::optional<CombatIcon> combat_icon(const DesignFiles &files, unsigned number,
-                                                    const std::array<VgaColor, 256> &palette);
+// The kit's combat icons (CPIC.TLB, read once) and a design's own
+// (CPIC1nnn.TLB in its folder, which take their place).
+class CombatIcons
+{
+  public:
+    // Throws when CPIC.TLB does not decode.
+    explicit CombatIcons(DesignFiles files);
+
+    // Icon `number`; nullopt when there is none. Throws when a design's own
+    // does not decode.
+    [[nodiscard]] std::optional<CombatIcon> icon(unsigned number,
+                                                 const std::array<VgaColor, 256> &palette) const;
+    // The squares icon `number` fills; one when there is none.
+    [[nodiscard]] rules::Footprint footprint(unsigned number) const;
+
+  private:
+    struct Poses
+    {
+        Glyph ready, action;
+    };
+
+    [[nodiscard]] std::optional<Poses> poses(unsigned number) const;
+
+    DesignFiles files_;
+    std::optional<TileLibrary> kit_;
+};
+
+// The kit's code for an icon's squares (its record's +82h): 1 one square,
+// 2 tall, 3 wide, 4 two by two.
+[[nodiscard]] std::uint8_t icon_size_code(rules::Footprint footprint) noexcept;
 
 } // namespace opengold::ua
 

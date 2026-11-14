@@ -873,16 +873,51 @@ void the_kits_fights_look_as_the_kit_draws_them(const std::filesystem::path &kit
     // Every monster of the kit has its icon, a square or more.
     const auto colors =
         ua::dungeon_field(files, *ua::decode_area(*files.data("GEO", 5)), 2, 2).palette;
-    for (const auto &[key, monster] : content.bestiary)
+    const ua::CombatIcons icons(files);
+    const auto items = ua::load_design_items(files);
+    unsigned armed = 0;
+    for (const auto &[key, fighter] : content.bestiary)
     {
         const auto number = static_cast<unsigned>(std::stoul(key.substr(key.rfind(':') + 1)));
-        const auto icon = ua::combat_icon(files, number, colors);
+        const auto name = "Monster " + std::to_string(number);
+        const auto icon = icons.icon(number, colors);
         check(icon && icon->ready.width >= 24 && icon->ready.height >= 24 &&
                   opaque(icon->ready) > 0 && opaque(icon->action) > 0,
-              "Monster " + std::to_string(number) + " has its combat icon");
-        check(monster.large == (icon->footprint.width * icon->footprint.height > 1),
-              "Monster " + std::to_string(number) + "'s size is its icon's");
+              name + " has its combat icon");
+        // Large by its icon, or by its record's top size bit, which the kit keeps.
+        const auto monster = *ua::decode_monster(*files.data("MONST", number));
+        check(fighter.large == ((monster.raw[0x82] & 0x80) != 0 ||
+                                icon->footprint.width * icon->footprint.height > 1),
+              name + "'s size is its icon's");
+        // Its items, readied as the kit readies them: two hands at most, and
+        // only by a creature of a class that may use them.
+        const auto carried = ua::monster_items(monster, items);
+        const bool classless = std::ranges::all_of(monster.levels,
+                                                   [](std::uint8_t level)
+                                                   {
+                                                       return level == 0;
+                                                   });
+        unsigned hands = 0;
+        for (const auto &item : carried)
+        {
+            if (!item.stored.readied())
+            {
+                continue;
+            }
+            check(!classless, name + " has no class to ready an item with");
+            hands += item.base.hands;
+            // A readied weapon's dice are its blows'.
+            if (item.base.worn_location == 0 && item.base.small_medium_damage.count != 0)
+            {
+                ++armed;
+                check(fighter.attacks[0].dice == item.base.small_medium_damage.count &&
+                          fighter.attacks[0].sides == item.base.small_medium_damage.sides,
+                      name + " strikes with its readied weapon's dice");
+            }
+        }
+        check(hands <= 2, name + " readies what two hands hold");
     }
+    check(armed > 20, "Many of the kit's monsters fight with their weapons");
 }
 
 void the_town_serves_the_party(const std::filesystem::path &kit)

@@ -250,13 +250,23 @@ FightField wilderness_field(const DesignFiles &files, unsigned set,
                           std::move(field), wild_tiles);
 }
 
-std::optional<CombatIcon> combat_icon(const DesignFiles &files, unsigned number,
-                                      const std::array<VgaColor, 256> &palette)
+CombatIcons::CombatIcons(DesignFiles files) : files_(std::move(files))
 {
-    std::optional<Glyph> ready, action;
+    if (const auto library = files_.library("CPIC.TLB"))
+    {
+        kit_ = decode_tile_library(*library);
+        if (!kit_)
+        {
+            throw std::runtime_error("CPIC.TLB: its glyphs do not decode");
+        }
+    }
+}
+
+std::optional<CombatIcons::Poses> CombatIcons::poses(unsigned number) const
+{
     char loose_name[16];
     std::snprintf(loose_name, sizeof loose_name, "CPIC1%03u.TLB", number % 1000);
-    if (const auto loose = files.library(loose_name))
+    if (const auto loose = files_.library(loose_name))
     {
         // A design's own icon: its two poses in turn.
         const auto tiles = decode_tile_library(*loose);
@@ -272,29 +282,47 @@ std::optional<CombatIcon> combat_icon(const DesignFiles &files, unsigned number,
                 images.push_back(*glyph);
             }
         }
-        if (!images.empty())
+        if (images.empty())
         {
-            ready = images.front();
-            action = images.size() > 1 ? images[1] : images.front();
+            return std::nullopt;
         }
+        return Poses{images.front(), images.size() > 1 ? images[1] : images.front()};
     }
-    else if (const auto library = files.library("CPIC.TLB"))
+    if (!kit_)
     {
-        const auto tiles = decode_tile_library(*library);
-        if (!tiles)
-        {
-            throw std::runtime_error("CPIC.TLB: its glyphs do not decode");
-        }
-        ready = icon_glyph(*tiles, number);
-        action = icon_glyph(*tiles, number + action_pose);
+        return std::nullopt;
     }
+    const auto ready = icon_glyph(*kit_, number);
     if (!ready)
     {
         return std::nullopt;
     }
-    CombatIcon icon{glyph_image(*ready, palette), glyph_image(action ? *action : *ready, palette),
-                    icon_footprint(*ready)};
-    return icon;
+    const auto action = icon_glyph(*kit_, number + action_pose);
+    return Poses{*ready, action ? *action : *ready};
+}
+
+std::optional<CombatIcon> CombatIcons::icon(unsigned number,
+                                            const std::array<VgaColor, 256> &palette) const
+{
+    const auto found = poses(number);
+    if (!found)
+    {
+        return std::nullopt;
+    }
+    return CombatIcon{glyph_image(found->ready, palette), glyph_image(found->action, palette),
+                      icon_footprint(found->ready)};
+}
+
+rules::Footprint CombatIcons::footprint(unsigned number) const
+{
+    const auto found = poses(number);
+    return found ? icon_footprint(found->ready) : rules::Footprint{};
+}
+
+std::uint8_t icon_size_code(rules::Footprint footprint) noexcept
+{
+    // The kit's columns * 2 + rows - 2 (evcmds.c, monster_add).
+    return static_cast<std::uint8_t>(footprint.width * 2 + footprint.height - 2);
 }
 
 } // namespace opengold::ua
