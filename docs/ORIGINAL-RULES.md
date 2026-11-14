@@ -495,7 +495,16 @@ whole list):
   (2026-11-14).
 - **Prices are platinum,** at one of twenty rates an event sets (a
   hundredth to a hundred times the list price): training 1,000, a temple's
-  cures 20 to 2,000, a shop's items their value, identifying 20.
+  cures 20 to 2,000, a shop's items their value, identifying 20. The party
+  pays them from its one purse at 1 platinum to 10 gold, as the user
+  confirmed (2026-11-14).
+- **Its own experience table:** *Curse*'s to level 11 for every class (the
+  paladin's and ranger's eleventh 1,050,000 and 650,000), then a fixed
+  amount a level to level 40 (2026-11-14).
+- **A ranger's magic-user spells:** each time its ranger level rises past 8
+  it learns one of a level its new ranger level casts, and only then: the
+  kit gave one to a ranger past 8 whichever class rose (the user,
+  2026-11-14; Bugs).
 - **Still to come:** its own level caps by race, THAC0 and saving throw
   tables, initiative ties, its critical hits on a natural 17 or more, its
   difficulty levels and its experience bonus for single classes.
@@ -1173,6 +1182,7 @@ tuned with the AI lab once the original rules play.
 | Bug | Direction |
 |---|---|
 | Creation never applies racial ability adjustments: a leftover variable makes every character human (`chargen.pas`, the ability roll) | Fixed (the user, 2026-11-11) |
+| *Unlimited Adventures:* a ranger above level 8 learns a magic-user spell at every training, its ranger level risen or not (`train.c`, `train_hero`) | Only when its ranger level rises (the user, 2026-11-14) |
 | *Unlimited Adventures:* a price rate above 19 reads past the kit's rate tables (`temple.c`, `rate_price`) | Taken as rate 19, a hundred times the price |
 | *Unlimited Adventures:* a wrong password says "wrong, try agin." (`evcmds.c`, the password event) | Spelt "Wrong, try again." |
 | *Unlimited Adventures:* an NPC refused by a full party still has its Hit Points set, on whichever member was current (`evcmds.c`, the NPC event) | A full party changes no one |

@@ -315,7 +315,9 @@ void StartupView::choose_folders(opengold::GoldBoxGame game, AfterFolders after)
 {
     after_folders_ = after;
     folders_needed_ = {game};
-    design_needed_ = game == opengold::GoldBoxGame::unlimited_adventures;
+    // A design's save names its design, so only a new game asks for one.
+    design_needed_ =
+        game == opengold::GoldBoxGame::unlimited_adventures && after != AfterFolders::saved_game;
     if (game != opengold::GoldBoxGame::pool_of_radiance &&
         !settings::validate_game_path(settings::game_path()).usable)
     {

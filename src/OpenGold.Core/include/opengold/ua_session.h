@@ -19,6 +19,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 // Playing an adventure made with Unlimited Adventures' construction kit
@@ -151,6 +152,18 @@ class UaSession final : public ExplorationSession
     // The design's start: the game record's area and entry point. Throws
     // when the design has no game record or its start area.
     [[nodiscard]] static UaSession start(DesignFiles files);
+
+    // The design where a saved game left it (ua_save.cpp): `state` is what
+    // saved_state wrote. campaign_party then names the loaded party, and no
+    // start event runs again. Throws on a state this build cannot read or one
+    // that does not fit the design.
+    [[nodiscard]] static UaSession resume(DesignFiles files, std::string_view state);
+
+    // What a saved game keeps of the design's play: the area and pose, the
+    // quest flags, the events done, the clock, the vault and the tithe. A game
+    // is saved only while nothing waits for the player (can_leave), so no
+    // event is ever saved half-run; throws otherwise.
+    [[nodiscard]] std::string saved_state() const;
 
     // The party plays the design; its members' fights run through `party`'s
     // rules. The start square's event runs once the party is there.

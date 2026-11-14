@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_ROLF_TOUR_VIEW_H
 #define OPENGOLD_ROLF_TOUR_VIEW_H
 
+#include "opengold/campaign_save.h"
 #include "opengold/exploration_session.h"
 #include "opengold/rolf_tour.h"
 #include "portrait_catalog.h"
@@ -49,11 +50,15 @@ class RolfTourView : public godot::Control
         refresh();
     }
 
-    // The DAX campaign a save keeps; null for a design, which is not saved yet.
+    // The DAX campaign a save keeps; null for a design.
     [[nodiscard]] const opengold::por::RolfTourSession *saved_session() const
     {
         return dax();
     }
+
+    // A design's play as a save keeps it (docs/games/ua.md, Saving and loading
+    // a game); nullopt for a DAX campaign.
+    [[nodiscard]] std::optional<opengold::DesignSave> saved_design() const;
 
     [[nodiscard]] const std::optional<opengold::CampaignEncounter> &pending_encounter() const
     {
@@ -83,6 +88,10 @@ class RolfTourView : public godot::Control
 
     void restore_campaign(std::shared_ptr<opengold::CampaignParty> party,
                           opengold::por::RolfTourSession session);
+    // The design a save left (ua::UaSession::resume), played on by the
+    // loaded party.
+    void restore_design(std::shared_ptr<opengold::CampaignParty> party,
+                        std::unique_ptr<opengold::ExplorationSession> design);
     void request_save(bool saving);
     // Reads the difficulty, encounter challenge and auto-equip settings
     // again, as the Options screen changed them.

@@ -656,10 +656,14 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    the party in the area's DUNGCOM set, or WILDCOM's ground out of doors),
    its monsters' CPIC icons and sizes, their items readied, allies, the
    enemies' starting quarters, the distance a wall ahead cuts short, and
-   the kit's experience and loot after a won fight. Still to come:
-   overland maps, locked doors, monsters' effects, "no magic" fights, the
-   treasure menu, the rest of its rules, the camp menu, the overhead map, a
-   default party, and saves.
+   the kit's experience and loot after a won fight. Since 2026-11-14 a
+   design's game saves and loads (campaign format 51: the design's folder
+   and its session's state) from the in-game menu, and Continue and Load
+   on the startup menus offer it; its characters rise by the kit's own
+   experience table, and a ranger past level 8 learns magic-user spells.
+   Still to come: overland maps, locked doors, monsters' effects, "no
+   magic" fights, the treasure menu, the rest of its rules, the camp menu,
+   the overhead map and a default party.
 2. An updated construction kit for making new ones.
 
 ### 9. The SRD rules for the new games

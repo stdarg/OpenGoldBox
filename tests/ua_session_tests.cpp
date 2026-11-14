@@ -6,6 +6,7 @@
 // session plays. The kit is read from OPENGOLD_GOLDBOX_DIR/UA. Run with
 // --ua-walk to walk every square of every area and play every event and fight.
 #include "opengold/campaign_party.h"
+#include "opengold/campaign_save.h"
 #include "opengold/character_creator.h"
 #include "opengold/coin_purse.h"
 #include "opengold/combat_demo.h"
@@ -626,6 +627,83 @@ void a_character_follows_the_kits_rules()
     check(sheet.level > 1, "It is trained to the levels its experience reaches");
 }
 
+// Unlimited Adventures' experience carries every class on past level 9 (the
+// kit's own table), and a ranger past level 8 learns a magic-user spell as
+// its ranger level rises, and only then: the kit's training gave one to a
+// ranger past 8 whichever class rose (docs/ORIGINAL-RULES.md, Bugs).
+void a_ranger_learns_spells_as_a_ranger()
+{
+    std::shared_ptr<const opengold::rules::CharacterRules> creation =
+        opengold::original::character_rules(opengold::original::default_aging,
+                                            GoldBoxGame::unlimited_adventures);
+    opengold::CampaignParty party(opengold::original::rules_module({}), creation);
+    opengold::CharacterCreator creator(creation, 11);
+    creator.select(opengold::rules::CreationField::race, "human");
+    creator.select(opengold::rules::CreationField::character_class, "ranger");
+    creator.name("RANGER");
+    for (const bool roll : {false, false, false, true, false, false})
+    {
+        if (roll)
+        {
+            creator.roll();
+        }
+        creator.next();
+    }
+    const auto id = party.add_pc(creator.create_character());
+    constexpr std::size_t ranger_slot = 4;
+    const auto ranger_level = [&party, id]
+    {
+        return party.member(id).character.sheet().original->class_levels[ranger_slot];
+    };
+    check(ranger_level() == 6, "The kit's 40,001 experience makes a ranger of level 6");
+    const auto known_spells = [&party, id]
+    {
+        return party.member(id).character.sheet().original->known_spells.size();
+    };
+    // Experience a level at a time, as the rules cap a gain short of two.
+    unsigned awards = 0;
+    const auto earn = [&party, id, &awards]
+    {
+        party.award_experience(400000, "ranger-check-" + std::to_string(++awards), id);
+    };
+    const auto ranger_hall = [&party, id]
+    {
+        auto choice = party.default_advancement(id);
+        choice.training["hall"] = {"ranger"};
+        return choice;
+    };
+    const auto train = [&party, id, &ranger_hall](std::vector<std::string> spells)
+    {
+        auto choice = ranger_hall();
+        choice.spells = std::move(spells);
+        party.advance(id, choice);
+    };
+    const auto offered = [&party, id, &ranger_hall]
+    {
+        return party.advancement_options(id, ranger_hall()).spells;
+    };
+    while (ranger_level() < 8)
+    {
+        earn();
+        check(offered().empty(), "A ranger rising to 8 or below learns no magic-user spell");
+        train({});
+    }
+    earn();
+    const auto spells = offered();
+    check(!spells.empty(), "A ranger rising to 9 learns a first-level magic-user spell");
+    const auto known = known_spells();
+    train({spells.front().id});
+    check(ranger_level() == 9 && known_spells() == known + 1,
+          "The ranger's training learns its spell");
+    for (int level = 10; level <= 12; ++level)
+    {
+        earn();
+        train({offered().front().id});
+    }
+    check(ranger_level() == 12 && known_spells() == known + 4,
+          "Each ranger level past 8 learns one, and levels go on past 11");
+}
+
 // A character made for the design starts as its game record says: its
 // experience, money and equipment, not the kit's defaults.
 void a_character_starts_as_the_design_says(const std::filesystem::path &kit)
@@ -1185,6 +1263,133 @@ void the_view_plays_it_through_the_seam(const std::filesystem::path &kit)
     check(!session.view_picture(), "An overland area shows no 3D view yet");
 }
 
+// Saving and loading (docs/games/ua.md, Saving and loading a game): a game
+// saved mid-design loads into a session that plays on as the first does.
+void a_game_saves_and_loads(const std::filesystem::path &kit)
+{
+    const auto design = build_test_design(kit, temporary_design("opengold_ua_save.dsn"));
+    const ua::DesignFiles files(kit, design);
+    const auto content = ua::load_design_content(files);
+    auto first = ua::UaSession::start(files);
+    auto party = new_party(content);
+    first.campaign_party(party);
+    Player player{first, party, content};
+    player.play();
+    // The kobolds beaten, once only, and the mayor's quest taken.
+    first.place(5, 8, 2, MapDirection::east);
+    first.look();
+    player.play();
+    first.place(5, 8, 5, MapDirection::north);
+    player.answers = {"Yes"};
+    first.look();
+    player.play();
+    // Nothing is saved while an event waits: the chest asks.
+    first.place(5, 4, 2, MapDirection::east);
+    check(first.explore(ExplorationCommand::forward) &&
+              first.snapshot().phase == TourPhase::awaiting_continue,
+          "The chest asks");
+    bool refused = false;
+    try
+    {
+        (void)first.saved_state();
+    }
+    catch (const std::logic_error &)
+    {
+        refused = true;
+    }
+    check(refused, "A design is not saved while an event waits");
+    player.answers = {"Yes"};
+    player.play();
+    first.place(5, 4, 9, MapDirection::north);
+    check(first.explore(ExplorationCommand::turn_right), "The party turns");
+    const opengold::DesignSave saved_design{design.string(), first.saved_state()};
+    // A save names the kit's items it was made with, as a DAX save its archives.
+    const auto assets = opengold::campaign_asset_identity(kit);
+    check(assets.starts_with("UA:ITEMS.DAT:"), "The kit's items identify its saves: " + assets);
+    const auto bytes = opengold::encode_campaign(*party, nullptr, assets,
+                                                 GoldBoxGame::unlimited_adventures, &saved_design);
+    check(opengold::saved_campaign_rules(bytes).design_folder == design.string(),
+          "The save's header names its design's folder");
+    bool older = false;
+    try
+    {
+        (void)opengold::encode_campaign_in_format(*party, nullptr, assets, 50,
+                                                  GoldBoxGame::unlimited_adventures, &saved_design);
+    }
+    catch (const std::runtime_error &)
+    {
+        older = true;
+    }
+    check(older, "An older campaign format cannot record a design");
+    auto loaded = opengold::decode_campaign(bytes, *party->character_rules(), party->rule_module(),
+                                            assets, nullptr);
+    check(loaded.game == GoldBoxGame::unlimited_adventures && loaded.design && !loaded.town &&
+              loaded.design->folder == design.string(),
+          "The save loads as the design's");
+    auto second_party = std::make_shared<opengold::CampaignParty>(
+        opengold::original::rules_module(content), party->character_rules());
+    second_party->restore(std::move(loaded.party));
+    auto second = ua::UaSession::resume(files, loaded.design->state);
+    second.campaign_party(second_party);
+    check(second.saved_state() == first.saved_state(), "The loaded design is the saved one");
+    check(second.snapshot().pose == first.snapshot().pose && second.area().number == 5 &&
+              second.snapshot().phase == TourPhase::completed && second.snapshot().dialogue.empty(),
+          "The party stands where it was saved, and no event runs again");
+    for (unsigned flag = 0; flag < 256; ++flag)
+    {
+        check(second.quest_flag(flag) == first.quest_flag(flag), "The quest flags are kept");
+    }
+    check(second_party->state().time_minutes == party->state().time_minutes &&
+              second_party->state().wealth == party->state().wealth,
+          "The party's clock and money are kept");
+    // Both play on alike: the kobolds stay beaten, the mayor thanks the party,
+    // and the same steps meet the same events.
+    Player again{second, second_party, content};
+    for (auto *session : {&first, &second})
+    {
+        session->place(5, 8, 2, MapDirection::east);
+        session->look();
+    }
+    player.play();
+    again.play();
+    check(player.fights == 1 && again.fights == 0,
+          "A once-only fight done before the save stays done");
+    const std::vector<ExplorationCommand> walk{
+        ExplorationCommand::turn_left,  ExplorationCommand::forward, ExplorationCommand::forward,
+        ExplorationCommand::turn_right, ExplorationCommand::forward, ExplorationCommand::look};
+    for (auto *session : {&first, &second})
+    {
+        session->place(5, 4, 10, MapDirection::north);
+        session->look();
+    }
+    player.said.clear();
+    player.play();
+    again.play();
+    check(again.heard("THE MAYOR THANKS YOU.") && player.said == again.said,
+          "The mayor thanks the loaded party for the quest taken before the save");
+    for (const auto command : walk)
+    {
+        player.said.clear();
+        again.said.clear();
+        check(first.explore(command) == second.explore(command), "A step goes alike");
+        player.play();
+        again.play();
+        check(first.snapshot().pose == second.snapshot().pose && player.said == again.said,
+              "The loaded design plays on as the saved one");
+    }
+    // A state this build cannot read is refused, not half-loaded.
+    bool unreadable = false;
+    try
+    {
+        (void)ua::UaSession::resume(files, "UA-STATE 1\n99 0 0 0\n");
+    }
+    catch (const std::runtime_error &)
+    {
+        unreadable = true;
+    }
+    check(unreadable, "A saved state of an area the design lacks is refused");
+}
+
 // The walk (plan phase 8, step 1): every square of every area of the design,
 // stood on facing each way, its view drawn, its event played, and every
 // open step from it taken.
@@ -1264,6 +1469,7 @@ int main(int argc, char **argv)
     try
     {
         a_character_follows_the_kits_rules();
+        a_ranger_learns_spells_as_a_ranger();
         const auto kit = kit_folder();
         if (!kit)
         {
@@ -1280,6 +1486,7 @@ int main(int argc, char **argv)
         the_kits_fights_end_as_the_kit_ends_them(*kit);
         the_town_serves_the_party(*kit);
         the_view_plays_it_through_the_seam(*kit);
+        a_game_saves_and_loads(*kit);
         // The game's startup check plays the test design from the menu (a
         // CTest fixture): it is written where the check looks for it.
         if (const char *fixture = std::getenv("OPENGOLD_UA_DESIGN_FIXTURE"))

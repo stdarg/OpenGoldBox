@@ -15,6 +15,7 @@
 #include "save_slots.h"
 #include "opengold/campaign_save.h"
 #include "opengold/campaign_session.h"
+#include "opengold/ua_session.h"
 #include "game_rules.h"
 #include "godot_path.h"
 #include "guarded_handlers.h"
@@ -49,8 +50,20 @@ std::filesystem::path game_directory(GoldBoxGame game)
 std::string encoded_campaign(const CampaignParty &party, const RolfTourView *town)
 {
     const auto game = settings::chosen_game();
+    auto design = town ? town->saved_design() : std::nullopt;
+    // A party made for a design and not yet exploring is saved at its start.
+    if (!design && game == GoldBoxGame::unlimited_adventures)
+    {
+        const auto folder = settings::design_folder();
+        design = DesignSave{folder.utf8().get_data(),
+                            opengold::ua::UaSession::start(
+                                opengold::ua::DesignFiles(game_directory(game),
+                                                          presentation::path_from_godot(folder)))
+                                .saved_state()};
+    }
     return encode_campaign(party, town ? town->saved_session() : nullptr,
-                           campaign_asset_identity(game_directory(game)), game);
+                           campaign_asset_identity(game_directory(game)), game,
+                           design ? &*design : nullptr);
 }
 
 // Plays a save's game while the save loads: a load that fails goes back to the
@@ -63,6 +76,17 @@ class SavedGameChoice
         settings::choose_game(game);
     }
 
+    // A design's save plays its own design: its folder is chosen too, and
+    // goes back with the game on a failed load.
+    SavedGameChoice(GoldBoxGame game, const String &design) : SavedGameChoice(game)
+    {
+        if (!design.is_empty() && design != settings::design_folder())
+        {
+            design_ = settings::design_folder();
+            settings::save_design_folder(design);
+        }
+    }
+
     SavedGameChoice(const SavedGameChoice &) = delete;
     SavedGameChoice &operator=(const SavedGameChoice &) = delete;
 
@@ -71,6 +95,10 @@ class SavedGameChoice
         if (!kept_)
         {
             settings::choose_game(playing_);
+            if (design_)
+            {
+                settings::save_design_folder(*design_);
+            }
         }
     }
 
@@ -81,6 +109,7 @@ class SavedGameChoice
 
   private:
     GoldBoxGame playing_;
+    std::optional<String> design_;
     bool kept_{};
 };
 } // namespace
@@ -165,7 +194,8 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
         throw std::runtime_error("Finish the current event before loading");
     }
     // A save starts its own game, whichever game is being played.
-    const auto game = saved_campaign_rules(bytes).game;
+    const auto rules = saved_campaign_rules(bytes);
+    const auto game = rules.game;
     const bool other_game = game != settings::chosen_game();
     if (other_game && !settings::validate_game_folder(settings::game_folder(game), game).usable)
     {
@@ -175,8 +205,18 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
                 .utf8()
                 .get_data());
     }
+    // A design's save needs its design's folder, which may be gone.
+    const auto design_folder = String::utf8(rules.design_folder.c_str());
+    if (game == GoldBoxGame::unlimited_adventures &&
+        !settings::validate_design_folder(design_folder).usable)
+    {
+        throw std::runtime_error(i18n::format(N_("This save's design is no longer at {folder}."),
+                                              {{"folder", design_folder}})
+                                     .utf8()
+                                     .get_data());
+    }
     const auto directory = game_directory(game);
-    SavedGameChoice choice(game);
+    SavedGameChoice choice(game, design_folder);
     const auto &new_wall_art = game_wall_art();
     const auto monsters = game_monsters();
     // The save's own rules, which may not be the current game's.
@@ -190,6 +230,14 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
                     ? CampaignData{&game_encounters(), &new_wall_art, monsters}
                     : CampaignData{});
         });
+    // The design where the save left it, built before anything changes.
+    std::unique_ptr<ExplorationSession> design;
+    if (saved.design)
+    {
+        design = std::make_unique<opengold::ua::UaSession>(opengold::ua::UaSession::resume(
+            opengold::ua::DesignFiles(directory, presentation::path_from_godot(design_folder)),
+            saved.design->state));
+    }
     // The restart check compares what it loads with the file, dice and all.
     if (!save_read_check_)
     {
@@ -224,7 +272,7 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
         town = nullptr;
     }
     presentation::NodeOwner<Node> owned;
-    if (saved.town && !town)
+    if ((saved.town || design) && !town)
     {
         owned = presentation::instantiate_scene("res://scenes/rolf_tour.tscn");
         town = Object::cast_to<RolfTourView>(owned.get());
@@ -270,6 +318,13 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
     if (saved.town)
     {
         town->restore_campaign(campaign_, std::move(*saved.town));
+        town->hide();
+        town->set_process(false);
+        town->set_process_input(false);
+    }
+    else if (design)
+    {
+        town->restore_design(campaign_, std::move(design));
         town->hide();
         town->set_process(false);
         town->set_process_input(false);
@@ -329,10 +384,39 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
     refresh();
 }
 
+std::optional<DesignSave> RolfTourView::saved_design() const
+{
+    const auto *design = dynamic_cast<const opengold::ua::UaSession *>(session_.get());
+    if (!design)
+    {
+        return std::nullopt;
+    }
+    return DesignSave{design->files().design().string(), design->saved_state()};
+}
+
+void RolfTourView::restore_design(std::shared_ptr<CampaignParty> party,
+                                  std::unique_ptr<ExplorationSession> design)
+{
+    rest_result_ = String();
+    rest_member_ = 0;
+    const presentation::ScopedFlag restoring(rest_save_open_);
+    required_node<Window>(*this, "RestDialog").hide();
+    design->campaign_party(party);
+    campaign_ = std::move(party);
+    session_ = std::move(design);
+    forget_monster_picture();
+    shown_revision_ = 0;
+    rendered_pose_.reset();
+    rendered_sprite_id_ = 999;
+    rendered_picture_revision_ = 0;
+    played_footsteps_ = session_->snapshot().footsteps;
+    played_thunder_ = session_->snapshot().thunder;
+    refresh();
+}
+
 void RolfTourView::request_save(bool saving)
 {
-    // A design is not saved yet (docs/games/ua.md, What remains).
-    if (embedded_party_ && dax() && session_->can_leave())
+    if (embedded_party_ && session_ && session_->can_leave())
     {
         emit_signal("save_requested", saving);
     }

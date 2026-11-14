@@ -6,6 +6,16 @@
 
 namespace opengold
 {
+// What a save keeps of a design played with Unlimited Adventures' kit
+// (docs/games/ua.md, Saving and loading a game): the design's folder, which
+// must still be there to load it, and the session's own state
+// (ua::UaSession::saved_state).
+struct DesignSave
+{
+    std::string folder;
+    std::string state;
+};
+
 // A fully staged replacement. Loading never mutates the current campaign.
 struct SavedCampaign
 {
@@ -16,6 +26,8 @@ struct SavedCampaign
     std::vector<MemberId> unchosen_portraits;
     // The game the campaign belongs to; saves before format 48 are Pool of Radiance's.
     GoldBoxGame game{GoldBoxGame::pool_of_radiance};
+    // A design's play, in an Unlimited Adventures save (format 51 on).
+    std::optional<DesignSave> design;
 };
 
 // The rules a save was made under: their module and the setting the game chose
@@ -27,6 +39,9 @@ struct CampaignRules
     rules::Identity identity;
     std::string setting;
     GoldBoxGame game{GoldBoxGame::pool_of_radiance};
+    // An Unlimited Adventures save's design folder, whose monsters its rules
+    // need; empty for the other games.
+    std::string design_folder;
 };
 
 // Reads only the save's header, its rules and game; throws as decode_campaign
@@ -34,18 +49,20 @@ struct CampaignRules
 [[nodiscard]] CampaignRules saved_campaign_rules(std::string_view);
 template <bool Reading> struct SaveCodec;
 [[nodiscard]] std::string campaign_asset_identity(const std::filesystem::path &directory);
+// An Unlimited Adventures campaign has no DAX town but a design (required for
+// that game, refused for the others).
 [[nodiscard]] std::string encode_campaign(const CampaignParty &, const por::RolfTourSession *,
                                           std::string_view assets,
-                                          GoldBoxGame game = GoldBoxGame::pool_of_radiance);
+                                          GoldBoxGame game = GoldBoxGame::pool_of_radiance,
+                                          const DesignSave *design = nullptr);
 // The campaign in an earlier format this build still reads, from 45, for
 // checks that such saves load. Throws when the party holds what that format
 // cannot record: before 47, a character made under the original rules; before
 // 48, a game other than Pool of Radiance; before 49, a setting for its rules;
-// before 50, what a level rolled.
-[[nodiscard]] std::string
-encode_campaign_in_format(const CampaignParty &, const por::RolfTourSession *,
-                          std::string_view assets, unsigned format,
-                          GoldBoxGame game = GoldBoxGame::pool_of_radiance);
+// before 50, what a level rolled; before 51, a design.
+[[nodiscard]] std::string encode_campaign_in_format(
+    const CampaignParty &, const por::RolfTourSession *, std::string_view assets, unsigned format,
+    GoldBoxGame game = GoldBoxGame::pool_of_radiance, const DesignSave *design = nullptr);
 [[nodiscard]] SavedCampaign decode_campaign(std::string_view, const rules::CharacterRules &,
                                             const rules::RulesModule &, std::string_view assets,
                                             const por::RolfTourSession *town_template);

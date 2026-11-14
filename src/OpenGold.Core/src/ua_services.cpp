@@ -402,7 +402,14 @@ void UaSession::train_member(const EventRecord &event, ServiceEnd end, unsigned 
     {
         auto choice = party_->default_advancement(id);
         choice.training["hall"] = taught;
-        const auto spells = std::ranges::find(rising, "magic_user") != rising.end()
+        // A magic-user's level picks a spell, and so does a ranger's past 8
+        // (the rules offer it then); the kit's ranger past 8 picked one
+        // whichever class rose (docs/ORIGINAL-RULES.md, Bugs).
+        const auto rises = [&rising](std::string_view klass)
+        {
+            return std::ranges::find(rising, klass) != rising.end();
+        };
+        const auto spells = rises("magic_user") || rises("ranger")
                                 ? party_->advancement_options(id, choice).spells
                                 : std::vector<rules::AdvancementOption>{};
         if (!spells.empty())

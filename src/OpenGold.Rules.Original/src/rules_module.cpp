@@ -1093,13 +1093,25 @@ AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &she
     // A magic-user learns a spell of a level its next level casts.
     const auto &numbers = original_numbers(sheet);
     const int magic_user = level_in(numbers.class_levels, ClassSlot::magic_user);
-    if (magic_user == 0)
+    const auto game = game_of(sheet.identity);
+    const int ranger = level_in(numbers.class_levels, ClassSlot::ranger);
+    // Unlimited Adventures' ranger learns one too as its ranger level rises
+    // past 8, of a level its next ranger level casts (train.c); its training
+    // offers the spell only when the ranger level rises (docs/ORIGINAL-RULES.md,
+    // Bugs).
+    const bool kit_ranger =
+        magic_user == 0 && game == GoldBoxGame::unlimited_adventures && ranger >= 8;
+    if (magic_user == 0 && !kit_ranger)
     {
         return options;
     }
+    ClassLevels next_ranger{};
+    level_in(next_ranger, ClassSlot::ranger) = ranger + 1;
     const auto slots =
-        spell_slots(ClassSlot::magic_user, magic_user + 1, sheet.scores[Ability::wisdom],
-                    sheet.scores[Ability::intelligence], game_of(sheet.identity));
+        kit_ranger
+            ? caster_slots(next_ranger, sheet.scores[Ability::wisdom], 9, game).magic_user
+            : spell_slots(ClassSlot::magic_user, magic_user + 1, sheet.scores[Ability::wisdom],
+                          sheet.scores[Ability::intelligence], game);
     for (const int number : castable_spells(game_of(sheet.identity)))
     {
         const auto *offered = spell(number);
@@ -1538,9 +1550,17 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
         return true;
     }
     const auto training = decode_training(choice.rules_data);
-    // The spell a magic-user learns, when the level is one of its own.
+    // The spell a magic-user learns, when the level is one of its own; and
+    // Unlimited Adventures' ranger past level 8, when its ranger level rises.
+    const auto trains = [&training](ClassSlot slot)
+    {
+        return (training.classes & (1U << static_cast<unsigned>(slot))) != 0;
+    };
     const bool magic_user_trained =
-        (training.classes & (1U << static_cast<unsigned>(ClassSlot::magic_user))) != 0;
+        trains(ClassSlot::magic_user) ||
+        (game_of(sheet.identity) == GoldBoxGame::unlimited_adventures &&
+         trains(ClassSlot::ranger) &&
+         level_in(original_numbers(sheet).class_levels, ClassSlot::ranger) >= 8);
     if (choice.spells.size() > 1 || (!choice.spells.empty() && !magic_user_trained))
     {
         throw std::invalid_argument("Only a magic-user's training learns a spell");

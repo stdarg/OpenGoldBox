@@ -199,10 +199,11 @@ draw yet) and the area's own name. `UaSession` implements it;
 session itself is unchanged. What only a DAX campaign has (shops and
 treasure piles, its script's variables, the overhead map, sprites and NPC
 portraits, temples, teleports and Word of Recall, close-ups, camping, the
-ending film, the difficulty and auto-equip settings, saving) the view
-reaches through `dax()`, which is null for a design, so the view leaves
-those out instead of drawing them wrong: Camp and Save are not offered, the
-map stays empty, and an overland area shows no 3D view.
+ending film, the difficulty and auto-equip settings) the view reaches
+through `dax()`, which is null for a design, so the view leaves those out
+instead of drawing them wrong: Camp is not offered, the map stays empty, and
+an overland area shows no 3D view. A design saves its own way (Saving and
+loading a game, below).
 
 The code: `ua_design` (the files), `ua_view` (the 3D view), `ua_session`
 (start, movement, fights) and `ua_events` (the event loop and its kinds), in
@@ -217,8 +218,8 @@ folders are. Then the design is asked each time the game is chosen, the last
 one offered (`[games] UA_DESIGN`), since a player may have several: a folder
 whose name ends in `.DSN` ([CONFIGURATION.md](../CONFIGURATION.md)). The kit
 has no title pictures, so its menu follows at once. Play with default party
-is not offered (no default party is made for a design yet), nor Continue and
-Load (a design is not saved yet). The rules question offers only the
+is not offered (no default party is made for a design yet); Continue and
+Load offer the design's saves. The rules question offers only the
 original rules, as the SRD has none of a design's monsters; Create new party
 makes characters under the kit's rules
 (`original::character_rules(aging, GoldBoxGame::unlimited_adventures)`), and
@@ -227,8 +228,8 @@ their fights run under the original rules with the design's Content
 folder). Explore plays the design from its start: its welcome, the 3D view
 and the area's name over it; a fight opens the combat screen with the
 design's monsters, and a fight that cannot be set up stops the adventure
-with its reason (`reject_combat`). In the in-game menu Save and Load are
-disabled for a design.
+with its reason (`reject_combat`). The in-game menu saves and loads a
+design's game as it does any other's.
 
 `opengold_godot_startup_menu_ua` (`tests/startup_menu_tests.gd --ua`) clicks
 through it all on the test design, which `opengold_ua_session_tests` writes
@@ -444,6 +445,14 @@ Its differences from the Pool family ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md))
   names. *Done* (`original::design_character_rules`, chosen in
   `game_rules.cpp` by the design; `ua::outfit_new_character` when the
   character joins).
+- Experience for a level: *Curse*'s numbers, carried on to level 11 for
+  every class (the paladin's and ranger's eleventh 1,050,000 and 650,000),
+  then a fixed amount a level to level 40 (chartab.c). *Done* (2026-11-14,
+  `experience_for_level`): before it the kit's characters followed *Pool of
+  Radiance*'s table, which has no paladins or rangers, so they never rose.
+- A ranger learns a magic-user spell each time its ranger level rises past
+  8, of a level its new ranger level casts, and knows the spells it
+  learned. *Done* (2026-11-14), with the kit's bug fixed (ORIGINAL-RULES.md).
 - Level caps by race: elves fighters 7 and magic-users 11; half-elves
   clerics 5 and fighters, rangers and magic-users 8; dwarves fighters 9;
   gnomes and halflings fighters 6; humans and thieves without limit. *Still
@@ -503,8 +512,7 @@ playing each event and fight; it fails on any event the session cannot play.
 
 - The services' smaller parts (DEVIATIONS.md, Unlimited Adventures'
   services): Pool, Share and Take, Appraise, vault items, the camp menu at
-  an inn, a temple's Restoration and Fix; a ranger's magic-user spells
-  from level 9; drinks as more than a count; the encounter's monster
+  an inn, a temple's Restoration and Fix; drinks as more than a count; the encounter's monster
   picture at its range.
 - Overland areas: their map and big picture (steps already move the party
   there); zone texts, step events and rest encounters.
@@ -527,29 +535,34 @@ playing each event and fight; it fails on any event the session cannot play.
 - The treasure menu, and items' names (the kit's words are in CKIT.EXE,
   which is not read; an item shows its type's name).
 - The kit's rules' remaining differences (above).
-- Saving and loading a game (Save, Load and Continue are not offered for a
-  design yet), a default party, camping, and the overhead map.
+- A default party, camping, and the overhead map.
 
-### Next: saving and loading a game (phase 8 step 1, part 4)
+### Saving and loading a game
 
-The coordinator's next step, not started. A UA save is OpenGoldBox's own
-campaign save (`campaign_save.h`, `save_file.cpp`; each game's saves in its
-own folder, `saves/UA`), not the kit's `SavGamA..J.csv`:
+Since 2026-11-14 a design's game saves and loads (phase 8 step 1). A save is
+OpenGoldBox's own campaign save, in the game's own folder (`saves/UA`), not
+the kit's `SavGamA..J.csv`:
 
-1. What it holds: the design's folder (as the kit's `start.dat` names its
-   design) and the area number; the party (the `CampaignParty` state, as the
-   DAX saves keep it); and `UaSession`'s own state: pose, quest flags (256
-   bytes), done bits (area * 100 + event - 1), the step-back square, the
-   tavern tales, a vault's money, the clock, and an event in progress where
-   the kit resumes one (a small town's or a training hall's or inn's event
-   number, the kit's cursor_obj 85h and 31h). A fight is never saved
-   mid-way, as in the DAX games.
-2. The format: a new section in the campaign save for a design, which raises
-   the campaign format (claim it on the session board first); an old save
-   still loads as before.
-3. The view: Save and Load in the game menu and Continue and Load on the
-   startup menu for UA (now disabled through `dax()` being null), loading a
-   save of a design whose folder is gone failing with a clear message.
-4. Checks: a session test that saves mid-design and loads into a session
-   that plays on identically (quest flags, done events, pose, party), and
-   the startup check (`--ua`) saving, returning to the menu and continuing.
+- **What it keeps:** the party, as every save keeps it; the design's folder,
+  in the save's header beside its rules (`CampaignRules::design_folder`), so
+  loading picks the design's monsters before the party; and the session's
+  own state (`ua::UaSession::saved_state`, `ua_save.cpp`): the area, the
+  party's square and facing, the square a step back returns to, the quest
+  flags, every area's events done, the squares seen, Search mode, the clock
+  while no party plays, the session's dice, the tithe given, the vault, the
+  tavern's next tale and drink, and the tavern tales heard on this square.
+  Campaign format 51 (`DesignSave`); older saves load as before.
+- **When:** only while nothing waits for the player (`can_leave`), as in the
+  DAX games, so no event and no fight is ever saved half-run; a party made
+  and not yet exploring is saved at the design's start.
+- **Loading** (`UaSession::resume`) puts the party back where it was, its
+  events done staying done, and runs no event; a save whose design folder
+  is gone fails with "This save's design is no longer at …", and a save of
+  another design plays that design (`[games] UA_DESIGN` follows it).
+
+`opengold_ua_session_tests` saves mid-design (the kobolds beaten, the
+mayor's quest taken), refuses to save while the chest asks, loads into a new
+session that plays on identically (its flags, done events, pose, clock and
+the same steps meeting the same events), and refuses an older format and an
+unreadable state. `opengold_godot_startup_menu_ua` saves from the in-game
+menu, goes back to the startup menu, continues and plays on to the kobolds.

@@ -278,7 +278,7 @@ msgstr "A disciplined martial artist. Primary abilities: Dexterity and Wisdom. H
 msgid "A divine scroll: a Cleric, Druid, Paladin or Ranger reads its spells. A level-13 Thief reads any scroll."
 msgstr "A divine scroll: a Cleric, Druid, Paladin or Ranger reads its spells. A level-13 Thief reads any scroll."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1614
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1634
 msgid "A drain takes more levels than the character has"
 msgstr "A drain takes more levels than the character has"
 
@@ -545,11 +545,11 @@ msgstr "AC {ac}   Speed {speed} ft"
 msgid "AC {ac} / HP {current}/{maximum}"
 msgstr "AC {ac} / HP {current}/{maximum}"
 
-#: src/OpenGoldBox/startup_view.cpp:1073
+#: src/OpenGoldBox/startup_view.cpp:1075
 msgid "AD&D"
 msgstr "AD&D"
 
-#: src/OpenGoldBox/startup_view.cpp:1072
+#: src/OpenGoldBox/startup_view.cpp:1074
 msgid "AD&D: the scores change again as characters grow older."
 msgstr "AD&D: the scores change again as characters grow older."
 
@@ -1116,11 +1116,11 @@ msgstr "Arrows/Numpad: move | Shift+arrow: diagonal | A: action | Space: use | Z
 msgid "Arrows: choose | Space: use | Escape: skip"
 msgstr "Arrows: choose | Space: use | Escape: skip"
 
-#: src/OpenGoldBox/startup_view.cpp:1073
+#: src/OpenGoldBox/startup_view.cpp:1075
 msgid "As the original"
 msgstr "As the original"
 
-#: src/OpenGoldBox/startup_view.cpp:1069
+#: src/OpenGoldBox/startup_view.cpp:1071
 msgid "As the original: the starting age changes the scores once."
 msgstr "As the original: the starting age changes the scores once."
 
@@ -1867,11 +1867,11 @@ msgstr "Camp [C]"
 msgid "Camp actions are for active members"
 msgstr "Camp actions are for active members"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:294
+#: src/OpenGoldBox/campaign_save_view.cpp:349
 msgid "Campaign loaded."
 msgstr "Campaign loaded."
 
-#: src/OpenGoldBox/campaign_save_view.cpp:139
+#: src/OpenGoldBox/campaign_save_view.cpp:168
 msgid "Campaign saved."
 msgstr "Campaign saved."
 
@@ -1905,7 +1905,7 @@ msgstr "Can roll a d20 again once."
 msgid "Can target another creature as a Magic action."
 msgstr "Can target another creature as a Magic action."
 
-#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:918 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:133 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:808
+#: src/OpenGoldBox/ally_attack_controls.h:32 src/OpenGoldBox/character_creation_view.cpp:918 src/OpenGoldBox/equipment_choice_dialog.cpp:76 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:318 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:146 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:246 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/save_slots.cpp:133 src/OpenGoldBox/spell_choice_controls.h:249 src/OpenGoldBox/startup_view.cpp:810
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -1981,7 +1981,7 @@ msgstr "Cannot read the bundled game-file checksum manifest."
 msgid "Cannot regain Hit Points."
 msgstr "Cannot regain Hit Points."
 
-#: src/OpenGoldBox/startup_view.cpp:810
+#: src/OpenGoldBox/startup_view.cpp:812
 msgid "Cannot save language."
 msgstr "Cannot save language."
 
@@ -1990,7 +1990,7 @@ msgstr "Cannot save language."
 msgid "Cannot save screenshot: {path}"
 msgstr "Cannot save screenshot: {path}"
 
-#: src/OpenGoldBox/startup_view.cpp:720
+#: src/OpenGoldBox/startup_view.cpp:722
 msgid "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."
 msgstr "Cannot save settings. Check that settings.cfg in the game's user data folder can be written and is valid."
 
@@ -2078,7 +2078,7 @@ msgstr "Cast a spell or use a feature outside combat."
 msgid "Cast spell"
 msgstr "Cast spell"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2128 src/OpenGold.Rules.Original/src/rules_module.cpp:2141 src/OpenGoldBox/combat_view.cpp:102
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2148 src/OpenGold.Rules.Original/src/rules_module.cpp:2161 src/OpenGoldBox/combat_view.cpp:102
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr "Cast {spell}"
@@ -2248,7 +2248,7 @@ msgstr "Character sheet"
 msgid "Characters"
 msgstr "Characters"
 
-#: src/OpenGoldBox/startup_view.cpp:1062
+#: src/OpenGoldBox/startup_view.cpp:1064
 msgid "Characters, fights and magic as the original game had them: AD&D 1st edition."
 msgstr "Characters, fights and magic as the original game had them: AD&D 1st edition."
 
@@ -2456,7 +2456,7 @@ msgstr "Choose cantrips, spellbook entries and prepared spells. Back preserves y
 msgid "Choose game folder"
 msgstr "Choose game folder"
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:806
+#: src/OpenGoldBox/godot/scenes/startup.tscn:65 src/OpenGoldBox/startup_view.cpp:808
 msgid "Choose language"
 msgstr "Choose language"
 
@@ -2468,11 +2468,11 @@ msgstr "Choose one starting class. The classes you checked on the last page are 
 msgid "Choose prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr "Choose prepared spells. Unfilled choices remain pending; Back preserves your choices."
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:138 src/OpenGoldBox/startup_view.cpp:534
+#: src/OpenGoldBox/godot/scenes/startup.tscn:138 src/OpenGoldBox/startup_view.cpp:536
 msgid "Choose the folder containing START.EXE and the original DAX game files."
 msgstr "Choose the folder containing START.EXE and the original DAX game files."
 
-#: src/OpenGoldBox/startup_view.cpp:568
+#: src/OpenGoldBox/startup_view.cpp:570
 msgid "Choose the folder of the design to play, which the construction kit names NAME.DSN."
 msgstr "Choose the folder of the design to play, which the construction kit names NAME.DSN."
 
@@ -3039,7 +3039,7 @@ msgstr "Contingency: {spell} ({trigger})"
 msgid "Contingency: {spell} takes effect on {name}."
 msgstr "Contingency: {spell} takes effect on {name}."
 
-#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:280 src/OpenGoldBox/godot/scenes/startup.tscn:375 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:807
+#: src/OpenGoldBox/godot/scenes/combat_demo.tscn:334 src/OpenGoldBox/godot/scenes/startup.tscn:177 src/OpenGoldBox/godot/scenes/startup.tscn:242 src/OpenGoldBox/godot/scenes/startup.tscn:280 src/OpenGoldBox/godot/scenes/startup.tscn:375 src/OpenGoldBox/godot/scenes/startup.tscn:88 src/OpenGoldBox/startup_view.cpp:809
 msgid "Continue"
 msgstr "Continue"
 
@@ -3180,7 +3180,7 @@ msgstr "Cure Wounds (Magic Initiate)"
 msgid "Cure Wounds (level 2 slot)"
 msgstr "Cure Wounds (level 2 slot)"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2120
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2140
 msgid "Cure disease"
 msgstr "Cure disease"
 
@@ -6222,7 +6222,7 @@ msgstr "Lance"
 msgid "Land's Aid"
 msgstr "Land's Aid"
 
-#: src/OpenGoldBox/godot/scenes/game_menu.tscn:353 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:805
+#: src/OpenGoldBox/godot/scenes/game_menu.tscn:353 src/OpenGoldBox/godot/scenes/startup.tscn:43 src/OpenGoldBox/startup_view.cpp:807
 msgid "Language"
 msgstr "Language"
 
@@ -6262,7 +6262,7 @@ msgstr "Lay On Hands: cure Poisoned"
 msgid "Lay On Hands: cure Poisoned (5)"
 msgstr "Lay On Hands: cure Poisoned (5)"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2116
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2136
 msgid "Lay on hands"
 msgstr "Lay on hands"
 
@@ -6618,7 +6618,7 @@ msgstr "Load character"
 msgid "Load combat"
 msgstr "Load combat"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:106 src/OpenGoldBox/godot/scenes/game_menu.tscn:68 src/OpenGoldBox/godot/scenes/party_panel.tscn:257 src/OpenGoldBox/godot/scenes/startup.tscn:380 src/OpenGoldBox/save_slots.cpp:176
+#: src/OpenGoldBox/campaign_save_view.cpp:135 src/OpenGoldBox/godot/scenes/game_menu.tscn:68 src/OpenGoldBox/godot/scenes/party_panel.tscn:257 src/OpenGoldBox/godot/scenes/startup.tscn:380 src/OpenGoldBox/save_slots.cpp:176
 msgid "Load game"
 msgstr "Load game"
 
@@ -7261,7 +7261,7 @@ msgstr "Missiles without magic from more than 5 feet away miss it."
 msgid "Missing HP: {amount}. Damage and other HP losses are not individually recorded."
 msgstr "Missing HP: {amount}. Damage and other HP losses are not individually recorded."
 
-#: src/OpenGoldBox/startup_view.cpp:686
+#: src/OpenGoldBox/startup_view.cpp:688
 msgid "Missing or unreadable game files:"
 msgstr "Missing or unreadable game files:"
 
@@ -7758,11 +7758,11 @@ msgstr "Oath of Devotion: Aura of Devotion. You and allies in your Aura of Prote
 msgid "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot."
 msgstr "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot."
 
-#: src/OpenGoldBox/game_menu_view.cpp:271 src/OpenGoldBox/startup_view.cpp:1073
+#: src/OpenGoldBox/game_menu_view.cpp:271 src/OpenGoldBox/startup_view.cpp:1075
 msgid "Off"
 msgstr "Off"
 
-#: src/OpenGoldBox/startup_view.cpp:1070
+#: src/OpenGoldBox/startup_view.cpp:1072
 msgid "Off: age never changes the scores."
 msgstr "Off: age never changes the scores."
 
@@ -7894,7 +7894,7 @@ msgstr "Only a conscious member can use the wand."
 msgid "Only a damaged simulacrum can be repaired"
 msgstr "Only a damaged simulacrum can be repaired"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1546
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1566
 msgid "Only a magic-user's training learns a spell"
 msgstr "Only a magic-user's training learns a spell"
 
@@ -8404,7 +8404,7 @@ msgstr "Polymorphed"
 msgid "Pool of Radiance"
 msgstr "Pool of Radiance"
 
-#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:528
+#: src/OpenGoldBox/godot/scenes/startup.tscn:109 src/OpenGoldBox/godot/scenes/startup.tscn:131 src/OpenGoldBox/startup_view.cpp:530
 msgid "Pool of Radiance game files"
 msgstr "Pool of Radiance game files"
 
@@ -8811,7 +8811,7 @@ msgstr "Raise Dead can bring it back within ten days of its death."
 msgid "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 msgstr "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2224
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2244
 msgid "Raise Dead cannot bring this member back"
 msgstr "Raise Dead cannot bring this member back"
 
@@ -9496,7 +9496,7 @@ msgstr "Rest type"
 msgid "Restart"
 msgstr "Restart"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:351
+#: src/OpenGoldBox/campaign_save_view.cpp:435
 msgid "Restart test"
 msgstr "Restart test"
 
@@ -9782,7 +9782,7 @@ msgstr "Rules"
 msgid "Run the area's pre-camp check and attempt an eight-hour long rest."
 msgstr "Run the area's pre-camp check and attempt an eight-hour long rest."
 
-#: src/OpenGoldBox/startup_view.cpp:1063
+#: src/OpenGoldBox/startup_view.cpp:1065
 msgid "SRD 5.2.1"
 msgstr "SRD 5.2.1"
 
@@ -9859,7 +9859,7 @@ msgstr "Save character"
 msgid "Save combat"
 msgstr "Save combat"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:106 src/OpenGoldBox/godot/scenes/game_menu.tscn:57 src/OpenGoldBox/godot/scenes/party_panel.tscn:247 src/OpenGoldBox/rest_dialog_impl.h:31 src/OpenGoldBox/rest_dialog_impl.h:65 src/OpenGoldBox/save_slots.cpp:176
+#: src/OpenGoldBox/campaign_save_view.cpp:135 src/OpenGoldBox/godot/scenes/game_menu.tscn:57 src/OpenGoldBox/godot/scenes/party_panel.tscn:247 src/OpenGoldBox/rest_dialog_impl.h:31 src/OpenGoldBox/rest_dialog_impl.h:65 src/OpenGoldBox/save_slots.cpp:176
 msgid "Save game"
 msgstr "Save game"
 
@@ -11250,11 +11250,11 @@ msgstr "Thank you for your generous donation."
 msgid "That attempt did not succeed."
 msgstr "That attempt did not succeed."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2159
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2179
 msgid "That cannot be done now"
 msgstr "That cannot be done now"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2362
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2382
 msgid "That cannot be used now"
 msgstr "That cannot be used now"
 
@@ -11266,7 +11266,7 @@ msgstr "That is not a Manual of Bodily Health"
 msgid "That potion works only in combat"
 msgstr "That potion works only in combat"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2204 src/OpenGold.Rules.Original/src/rules_module.cpp:2216 src/OpenGold.Rules.Original/src/rules_module.cpp:2396 src/OpenGold.Rules.Original/src/rules_module.cpp:2588
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2224 src/OpenGold.Rules.Original/src/rules_module.cpp:2236 src/OpenGold.Rules.Original/src/rules_module.cpp:2416 src/OpenGold.Rules.Original/src/rules_module.cpp:2608
 msgid "That spell cannot be cast now"
 msgstr "That spell cannot be cast now"
 
@@ -11274,7 +11274,7 @@ msgstr "That spell cannot be cast now"
 msgid "That spell cannot be copied into the spellbook"
 msgstr "That spell cannot be copied into the spellbook"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1557
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1577
 msgid "That spell cannot be learned"
 msgstr "That spell cannot be learned"
 
@@ -11420,7 +11420,7 @@ msgstr "The beam turns to {target}."
 msgid "The cantrip reaches 30 feet farther per Warlock level."
 msgstr "The cantrip reaches 30 feet farther per Warlock level."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1574
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1594
 msgid "The character has no levels in a class it trained in"
 msgstr "The character has no levels in a class it trained in"
 
@@ -11459,7 +11459,7 @@ msgstr "The cloud drifts."
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr "The creature that hit it this turn attacks it with Disadvantage."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2230
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2250
 msgid "The dead cannot be healed"
 msgstr "The dead cannot be healed"
 
@@ -11492,7 +11492,7 @@ msgstr "The door stays locked."
 msgid "The entire party is killed!"
 msgstr "The entire party is killed!"
 
-#: src/OpenGoldBox/startup_view.cpp:1064
+#: src/OpenGoldBox/startup_view.cpp:1066
 msgid "The fifth edition's System Reference Document, with the original's adventures."
 msgstr "The fifth edition's System Reference Document, with the original's adventures."
 
@@ -11565,7 +11565,7 @@ msgstr "The oil on {name} burns for 5 more damage."
 msgid "The original game's art shows until you choose the folder of the OpenGoldBox new art download."
 msgstr "The original game's art shows until you choose the folder of the OpenGoldBox new art download."
 
-#: src/OpenGoldBox/startup_view.cpp:1061
+#: src/OpenGoldBox/startup_view.cpp:1063
 msgid "The original rules (Pool of Radiance)"
 msgstr "The original rules (Pool of Radiance)"
 
@@ -11684,7 +11684,7 @@ msgstr "The sunlight ends the magical Darkness."
 msgid "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 msgstr "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1962
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1982
 msgid "The temple cannot help with that"
 msgstr "The temple cannot help with that"
 
@@ -11818,7 +11818,7 @@ msgstr "Thirsting Blade's Extra Attack becomes two: attack three times with your
 msgid "This armor imposes Disadvantage on Dexterity (Stealth) checks."
 msgstr "This armor imposes Disadvantage on Dexterity (Stealth) checks."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1171
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1183
 msgid "This character is not ready to train"
 msgstr "This character is not ready to train"
 
@@ -11850,7 +11850,7 @@ msgstr "This member did not complete the rest."
 msgid "This part is not present in either pose. Choose another head or body to use it."
 msgstr "This part is not present in either pose. Choose another head or body to use it."
 
-#: src/OpenGoldBox/campaign_save_view.cpp:173
+#: src/OpenGoldBox/campaign_save_view.cpp:203
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "This save belongs to {game}, whose game files are not set."
 msgstr "This save belongs to {game}, whose game files are not set."
@@ -11862,6 +11862,11 @@ msgstr "This save holds no player characters."
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "This save was made by an older pre-release version of OpenGoldBox and can't be loaded."
 msgstr "This save was made by an older pre-release version of OpenGoldBox and can't be loaded."
+
+#: src/OpenGoldBox/campaign_save_view.cpp:213
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "This save's design is no longer at {folder}."
+msgstr "This save's design is no longer at {folder}."
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:2237
 msgid "This temple is now the party's sanctuary for Word of Recall."
@@ -12318,7 +12323,7 @@ msgstr "Unknown training choice"
 msgid "Unlimited Adventures"
 msgstr "Unlimited Adventures"
 
-#: src/OpenGoldBox/startup_view.cpp:564
+#: src/OpenGoldBox/startup_view.cpp:566
 msgid "Unlimited Adventures design"
 msgstr "Unlimited Adventures design"
 
@@ -13770,7 +13775,7 @@ msgstr "{feat}: {spell}; spell attack bonus {attack}."
 msgid "{finder} finds {name}."
 msgstr "{finder} finds {name}."
 
-#: src/OpenGoldBox/startup_view.cpp:529
+#: src/OpenGoldBox/startup_view.cpp:531
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{game} game files"
 msgstr "{game} game files"

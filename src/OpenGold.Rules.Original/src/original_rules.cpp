@@ -402,6 +402,37 @@ constexpr std::array<int, class_slot_count> curse_hit_dice_levels{10, 15, 10, 10
 constexpr std::array<int, class_slot_count> curse_fixed_hit_points{2, 0, 3, 3, 2, 1, 2, 0};
 
 // Gateway to the Savage Frontier keeps Curse's tables, number for number.
+// Unlimited Adventures' experience for levels 2 to 11 (its chartab.c), by
+// class slot: Curse's numbers, carried on to level 11 for every class, and
+// past 11 a fixed amount a level up to 40 (docs/ORIGINAL-RULES.md, Unlimited
+// Adventures). The kit has no druids or monks.
+constexpr std::array<std::array<int, 10>, class_slot_count> kit_experience_table{
+    {{1501, 3001, 6001, 13001, 27501, 55001, 110001, 225001, 450001, 675001},
+     {},
+     {2001, 4001, 8001, 18001, 35001, 70001, 125001, 250001, 500001, 750001},
+     {2751, 5501, 12001, 24001, 45001, 95001, 175001, 350001, 700001, 1050000},
+     {2251, 4501, 10001, 20001, 40001, 90001, 150001, 225001, 325001, 650000},
+     {2501, 5001, 10001, 22501, 40001, 60001, 90001, 135001, 250001, 375001},
+     {1251, 2501, 5001, 10001, 20001, 42501, 70001, 110001, 160001, 220001},
+     {}}};
+constexpr std::array<int, class_slot_count> kit_experience_step{225000, 0,      250000, 350000,
+                                                                325000, 375000, 220000, 0};
+constexpr int kit_highest_level = 40;
+
+[[nodiscard]] std::optional<int> kit_experience_for_level(ClassSlot slot, int level)
+{
+    const auto at = static_cast<std::size_t>(slot);
+    if (level < 2 || level > kit_highest_level || kit_experience_table[at][0] == 0)
+    {
+        return std::nullopt;
+    }
+    if (level <= 11)
+    {
+        return kit_experience_table[at][static_cast<std::size_t>(level - 2)];
+    }
+    return kit_experience_table[at][9] + (level - 11) * kit_experience_step[at];
+}
+
 [[nodiscard]] constexpr bool curse_tables(GoldBoxGame game) noexcept
 {
     return game == GoldBoxGame::curse_of_the_azure_bonds ||
@@ -1390,6 +1421,10 @@ std::optional<int> experience_for_level(ClassSlot slot, int level, GoldBoxGame g
     {
         return 0;
     }
+    if (game == GoldBoxGame::unlimited_adventures)
+    {
+        return kit_experience_for_level(slot, level);
+    }
     if (vga_engine(game) && level >= 11)
     {
         const auto at = index(slot);
@@ -1446,7 +1481,8 @@ std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<c
         const bool druid_spell = known_spell->caster_class == SpellClass::druid &&
                                  known_spell->level <= 7 && slots.druid[at] > 0;
         // A spell learned or scribed stays known, a ranger's too (Curse's
-        // ranger knows only those it scribes).
+        // ranger knows only those it scribes; Unlimited Adventures' those it
+        // learned in training past level 8).
         const bool magic_user_spell =
             known_spell->caster_class == SpellClass::magic_user &&
             ((magic_user && std::ranges::find(first_magic_user_spells, number) !=

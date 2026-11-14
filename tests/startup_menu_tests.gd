@@ -405,7 +405,7 @@ func check_ua() -> void:
 	var game_menu: Window = current_scene.get_node("GameMenu")
 	require(game_menu.visible and game_menu.title == "Unlimited Adventures", "Unlimited Adventures' menu follows, with no title")
 	require(game_menu.get_node("Buttons/DefaultParty").disabled, "A design has no default party yet")
-	require(game_menu.get_node("Buttons/Load").disabled, "A design has no saves yet")
+	require(game_menu.get_node("Buttons/Load").disabled, "Load game waits for a save of the design")
 	game_menu.get_node("Buttons/NewParty").pressed.emit()
 	await settle()
 	var rules: OptionButton = current_scene.get_node("RulesDialog/Rows/Rules")
@@ -447,6 +447,30 @@ func check_ua() -> void:
 		RenderingServer.force_draw(false)
 		await process_frame
 		root.get_texture().get_image().save_png(captures.path_join("ua-exploration.png"))
+	# Saved here, back on the startup menu, and continued: the design goes on
+	# where it was saved (docs/games/ua.md, Saving and loading a game).
+	var north_view: PackedByteArray = (town.tour_visuals()["wall_image"] as Image).get_data()
+	await press("CampaignTown/%Menu")
+	await press("GameMenu/Menu/Save")
+	var slots: Window = current_scene.get_node("SaveSlots")
+	require(slots.visible, "Save game opens the save slots for a design")
+	slots.get_node("Name").text = "Test hall"
+	await press("SaveSlots/Action")
+	require(not slots.visible, "The design's game is saved: " + slots.get_node("Status").text)
+	require(FileAccess.file_exists(ProjectSettings.globalize_path("user://saves/UA").path_join("Test hall".to_utf8_buffer().hex_encode() + ".ogs")),
+		"A design's saves go to its game's own folder")
+	var main_menu := await open_main_menu()
+	require(not main_menu.get_node("Buttons/Continue").disabled, "The main menu's Continue offers the design's save")
+	main_menu.get_node("Buttons/Continue").pressed.emit()
+	for wait in range(4): await settle()
+	require(current_scene != null and current_scene.name == "CharacterCreation", "Continue opens the design's game")
+	await press("PartyPanel/ActionRow2/Explore")
+	town = current_scene.get_node("CampaignTown")
+	require(town.get_node("%Coordinates").text.begins_with("Party (3, 2)"),
+		"The loaded party stands where it was saved: " + town.get_node("%Coordinates").text)
+	require(not town.get_node("%Continue").visible, "No event runs again on loading")
+	require((town.tour_visuals()["wall_image"] as Image).get_data() == north_view, "It faces as it did")
+	forward = town.get_node("%Forward")
 	# East again, past the chest (left shut), to the kobolds at (8, 2): their
 	# fight opens on the combat screen with the design's monsters.
 	town.get_node("%Right").pressed.emit()
@@ -481,7 +505,7 @@ func check_ua() -> void:
 		RenderingServer.force_draw(false)
 		await process_frame
 		root.get_texture().get_image().save_png(captures.path_join("ua-combat.png"))
-	print("Startup menu passed: Unlimited Adventures' kit and design, a party made under the kit's rules, the design's welcome, its 3D view, a step and its kobolds' fight on the kit's field with their icons.")
+	print("Startup menu passed: Unlimited Adventures' kit and design, a party made under the kit's rules, the design's welcome, its 3D view, a step, a save continued from the main menu, and its kobolds' fight on the kit's field with their icons.")
 	quit(0)
 
 # Goes on from what the exploration screen waits for: Return to words, and

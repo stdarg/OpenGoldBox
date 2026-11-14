@@ -51,7 +51,7 @@ template <class F> std::string rejection_message(F f)
 // before characters chose original portraits, 46, before drafts carried the
 // original rules' rolls, 47, before a save named its game, 48, before it kept
 // its rules' setting, and 49, before a level kept what it rolled.
-constexpr unsigned current_campaign_format = 50;
+constexpr unsigned current_campaign_format = 51;
 constexpr unsigned unchosen_portraits_format = 45;
 constexpr unsigned draft_rules_data_format = 47;
 constexpr unsigned rules_setting_format = 49;

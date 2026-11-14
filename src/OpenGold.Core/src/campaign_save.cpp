@@ -2,6 +2,7 @@
 #include "opengold/diagnostic_log.h"
 #include "opengold/path_text.h"
 #include "opengold/save_file.h"
+#include "opengold/ua_design.h"
 #include <algorithm>
 #include <charconv>
 #include <iomanip>
@@ -21,7 +22,7 @@ constexpr std::size_t limit = 16 * 1024 * 1024;
 // format 45, the same fields saved before characters chose original portraits:
 // it still loads, and its members on head 1 and body 1 (the default, never
 // chosen) are listed for a random original portrait.
-constexpr unsigned campaign_format = 50;
+constexpr unsigned campaign_format = 51;
 constexpr unsigned unchosen_portraits_format = 45;
 // The first format with a creation draft's rules data (the original rules'
 // rolls); earlier saves are all SRD, whose drafts have none.
@@ -35,6 +36,9 @@ constexpr unsigned rules_setting_format = 49;
 // The first format that keeps what a level-up rolled (the original rules' Hit
 // Points); earlier saves are all SRD, whose levels roll nothing.
 constexpr unsigned advancement_rules_data_format = 50;
+// The first format that keeps an Unlimited Adventures design's play (its
+// folder and its session's state); earlier saves have no design.
+constexpr unsigned design_format = 51;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -907,14 +911,20 @@ static_assert(!encodes_const_campaign<SaveReader>, "Only the writer may visit co
 } // namespace
 
 std::string encode_campaign(const CampaignParty &party, const por::RolfTourSession *town,
-                            std::string_view assets, GoldBoxGame game)
+                            std::string_view assets, GoldBoxGame game, const DesignSave *design)
 {
-    return encode_campaign_in_format(party, town, assets, campaign_format, game);
+    return encode_campaign_in_format(party, town, assets, campaign_format, game, design);
 }
 
 std::string encode_campaign_in_format(const CampaignParty &party, const por::RolfTourSession *town,
-                                      std::string_view assets, unsigned format, GoldBoxGame game)
+                                      std::string_view assets, unsigned format, GoldBoxGame game,
+                                      const DesignSave *design)
 {
+    const bool design_game = game == GoldBoxGame::unlimited_adventures;
+    require(format >= design_format || !design_game,
+            "An older campaign format cannot record a design");
+    require(design_game == (design != nullptr) && !(design && town),
+            "Only an Unlimited Adventures campaign records a design, and no town with it");
     require(format >= game_format || game == GoldBoxGame::pool_of_radiance,
             "An older campaign format cannot record another game");
     require(format >= unchosen_portraits_format && format <= campaign_format,
@@ -957,12 +967,20 @@ std::string encode_campaign_in_format(const CampaignParty &party, const por::Rol
         auto setting = party.game_setting();
         out.field(setting);
     }
+    if (design)
+    {
+        out.field(design->folder);
+    }
     out.field(state);
     bool has_town = town != nullptr;
     out.field(has_town);
     if (town)
     {
         out.town(*town);
+    }
+    if (design)
+    {
+        out.field(design->state);
     }
     out.rest(state);
     auto body = out.stream.str();
@@ -1090,6 +1108,13 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
         in.field(setting);
     }
     require(setting == creation.game_setting(), "Campaign rules setting mismatch");
+    const bool design = result.game == GoldBoxGame::unlimited_adventures;
+    if (design)
+    {
+        require(version >= design_format, "Unsupported campaign save version");
+        result.design.emplace();
+        in.field(result.design->folder);
+    }
     in.field(result.party);
     CampaignParty::validate(result.party);
     for (const auto &m : result.party.roster)
@@ -1109,6 +1134,11 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
         require(static_cast<bool>(make_town_template), "This save requires town resources");
         result.town = make_town_template();
         in.town(*result.town);
+    }
+    if (design)
+    {
+        require(!has_town, "A design's save has no town");
+        in.field(result.design->state);
     }
     in.rest(result.party);
     CampaignParty::validate(result.party);
@@ -1137,6 +1167,10 @@ CampaignRules saved_campaign_rules(std::string_view bytes)
     {
         in.field(saved.setting);
     }
+    if (version >= design_format && saved.game == GoldBoxGame::unlimited_adventures)
+    {
+        in.field(saved.design_folder);
+    }
     return saved;
 }
 
@@ -1164,6 +1198,18 @@ std::string read_campaign_file(const std::filesystem::path &path)
 
 std::string campaign_asset_identity(const std::filesystem::path &directory)
 {
+    // Unlimited Adventures' kit has no DAX archives: its saves hold the
+    // kit's item types and items (docs/games/ua.md, Saving and loading a game).
+    if (ua::is_kit_folder(directory))
+    {
+        std::ostringstream out;
+        for (const char *name : {"ITEMS.DAT", "ITEM.DAT"})
+        {
+            out << "UA:" << name << ':'
+                << fingerprint(read_campaign_file(directory / "DISK1" / name)) << ';';
+        }
+        return out.str();
+    }
     std::map<std::string, std::uint64_t> files;
     for (const auto &entry : std::filesystem::directory_iterator(directory))
     {
