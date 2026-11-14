@@ -83,6 +83,8 @@ void UaSession::run_events(unsigned n)
     loop_step_ = static_cast<std::uint8_t>(LoopStep::outer);
     snapshot_.dialogue.clear();
     snapshot_.choices.clear();
+    snapshot_.host_dialogue.clear();
+    snapshot_.host_choices.clear();
     ++snapshot_.event_runs;
     pump();
 }
@@ -286,7 +288,53 @@ void UaSession::run_kind(unsigned n, const EventRecord &event)
         text_event(event);
         return;
     case EventKind::npc_says:
-        // Only with the NPC in the party: none joins a party yet.
+        // Words, as text's, only with the NPC (byte 5; 0 any) in the party.
+        if (party_ && npc_member(event[5]))
+        {
+            text_event(event);
+        }
+        return;
+    case EventKind::training_hall:
+        training_event(event, false, service_end(event));
+        return;
+    case EventKind::tavern:
+        tavern_event(event, false, service_end(event));
+        return;
+    case EventKind::shop:
+        shop_event(event, false, service_end(event));
+        return;
+    case EventKind::temple:
+        temple_event(event, false, service_end(event));
+        return;
+    case EventKind::vault:
+        vault_event(event, false, service_end(event));
+        return;
+    case EventKind::camp:
+        inn_event(event, false, service_end(event));
+        return;
+    case EventKind::small_town:
+        town_event(event);
+        return;
+    case EventKind::guided_tour:
+        tour_event(event);
+        return;
+    case EventKind::add_npc:
+        add_npc_event(event);
+        return;
+    case EventKind::remove_npc:
+        remove_npc_event(event);
+        return;
+    case EventKind::encounter:
+        encounter_event(event);
+        return;
+    case EventKind::who_tries:
+        who_tries_event(event);
+        return;
+    case EventKind::who_pays:
+        who_pays_event(event);
+        return;
+    case EventKind::password:
+        password_event(event);
         return;
     case EventKind::give_treasure:
         treasure_event(event, true);
@@ -355,6 +403,11 @@ void UaSession::say(std::string words)
     {
         return;
     }
+    // With the kit's words shown, the designer's join them as they are.
+    if (!snapshot_.host_dialogue.empty())
+    {
+        snapshot_.host_dialogue.push_back({"{text}", {{"text", words}}});
+    }
     if (!snapshot_.dialogue.empty())
     {
         snapshot_.dialogue += '\n';
@@ -415,7 +468,9 @@ bool UaSession::answer(std::uint64_t ticket, Wait wait, std::size_t choice, std:
     snapshot_.phase = TourPhase::running;
     snapshot_.dialogue.clear();
     snapshot_.choices.clear();
+    snapshot_.host_dialogue.clear();
     snapshot_.host_choices.clear();
+    snapshot_.number_input = false;
     resume(choice, typed);
     pump();
     return true;
@@ -522,8 +577,7 @@ void UaSession::damage_event(const EventRecord &event)
                         }
                         if (party_lost_)
                         {
-                            snapshot_.host_dialogue = {{"The entire party is killed!", {}}};
-                            say("The entire party is killed!");
+                            say_kit({"The entire party is killed!", {}});
                         }
                     });
 }

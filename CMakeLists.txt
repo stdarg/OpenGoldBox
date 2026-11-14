@@ -191,6 +191,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/ua_view.cpp
     src/OpenGold.Core/src/ua_session.cpp
     src/OpenGold.Core/src/ua_events.cpp
+    src/OpenGold.Core/src/ua_services.cpp
     src/OpenGold.Core/src/ecl_address.cpp
     src/OpenGold.Core/src/area_loading.cpp
     src/OpenGold.Core/src/campaign_session.cpp

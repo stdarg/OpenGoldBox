@@ -798,7 +798,10 @@ void UaSession::begin_combat(const EventRecord &event, bool pick_one)
                          rules::Terrain::open);
     encounter.field.tiles.assign(board.terrain.size(), 0);
     encounter.facing = snapshot_.pose.facing;
-    encounter.surprise = Surprise{static_cast<std::uint8_t>((event[8] & 0xC0) >> 6)};
+    // An encounter's choice decides the surprise; else the fight's own bits.
+    encounter.surprise =
+        encounter_surprise_.value_or(Surprise{static_cast<std::uint8_t>((event[8] & 0xC0) >> 6)});
+    encounter_surprise_.reset();
     encounter.distance = std::min(2U, static_cast<unsigned>((event[14] & 0x60) >> 5));
     encounter.morale = std::min(100U, event[7] & 0x7FU);
     rules::EntityId next = first_monster_id;

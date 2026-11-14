@@ -285,6 +285,91 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
     cellar.event(5, {26, 0, 0, 0, 0, 0, 0, 4, 100});
     write(folder / "GEO006.DAT", cellar.finish());
 
+    // Area 7, the town: a square of each service and test along row 1.
+    AreaBuilder town(*blank);
+    town.name("THE TEST TOWN");
+    town.entry(1, 1, 3, 2);
+    const auto hall_words = town.text("THE TRAINING HALL.");
+    const auto tale = town.text("THEY SAY THE MAYOR HIDES GOLD.");
+    const auto drinks = town.text("^ALE ^WINE ^SPIRITS");
+    const auto blessing = town.text("THE PRIESTS BLESS YOU.");
+    const auto market = town.text("THE TOWN SQUARE.");
+    const auto guide = town.text("THE GUIDE LEADS YOU.");
+    const auto arrived = town.text("HERE YOU ARE.");
+    const auto joins = town.text("A WARRIOR JOINS YOU.");
+    const auto speaks = town.text("THE WARRIOR NODS.");
+    const auto leaves = town.text("THE WARRIOR LEAVES.");
+    const auto strangers = town.text("STRANGERS APPROACH.");
+    const auto greet = town.text("THE STRANGERS GREET YOU.");
+    const auto door = town.text("A STUCK DOOR.");
+    const auto gives = town.text("THE DOOR GIVES WAY.");
+    const auto toll = town.text("A TOLL OF 5 PLATINUM.");
+    const auto paid = town.text("THE TOLL IS PAID.");
+    const auto ask = town.text("THE PASSWORD?");
+    const auto answer = town.text("SWORDFISH");
+    const auto pass = town.text("PASS, FRIEND.");
+    const auto wrong = town.text("BEGONE.");
+    // 1: a hall training fighters (bit 08h) at rate 10, 1,000 platinum.
+    town.event(1, {6, 0, 0, 0, low(hall_words), high(hall_words), 0, 0, 0x08, 10}, {{1, 1}});
+    // 2: a tavern with drinks (20h) and a brawl (10h), one tale, the brawl
+    // event 3: a kobold.
+    town.event(2, {7, 0, 0, 0, 0, 0, 0,           0x30,         low(tale), high(tale),
+                   0, 0, 0, 0, 0, 0, low(drinks), high(drinks), 3,         0},
+               {{2, 1}});
+    town.event(3, {1, 0, 0, 0, 0, 0, 0, 100, 1, 1});
+    // 4: a shop at rate 10 selling ITEM.DAT 1 to 3 (row 0, bits 0 to 2).
+    town.event(4, {8, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0x07}, {{3, 1}});
+    // 5: a temple of level 7 at rate 10 taking donations (08h); a tithe of
+    // 100 platinum runs 6.
+    town.event(5, {9, 0, 0, 0, 7, 10, 0, 8, 100, 0, 0, 0, 6}, {{4, 1}});
+    town.event(6, {2, 0, 0, 0, 0, 0, 0, 0, low(blessing), high(blessing)});
+    // 7: a vault; 8: an inn.
+    town.event(7, {24}, {{5, 1}});
+    town.event(8, {29}, {{6, 1}});
+    // 9: a small town with every service: temple level 7 (byte 9's top bits)
+    // at rate 10 (byte 0Ch), the hall's fighters, the shop at rate 10 selling
+    // item 1 (its last mask), a tale for the pub.
+    town.event(9, {22,   0,    0,         0,         low(market), high(market), 0,
+                   0x3F, 0x08, 0xE0 | 10, low(tale), high(tale),  10,           0,
+                   0,    0,    0,         0,         0,           0x01},
+               {{7, 1}});
+    // 10: a guided tour from (8, 3) facing east (bit 10h, facing 2 in bits 2
+    // and 3): forward, turn right, forward; words at steps 0 and 3.
+    town.event(10, {12, 0, 0, 0, 3, 8, 3,          0x14,        0x3B,         0,
+                    0,  0, 0, 0, 0, 3, low(guide), high(guide), low(arrived), high(arrived)},
+               {{8, 1}});
+    // 11: the kit's NPC 70h joins at half its Hit Points; 12: its words; 13:
+    // it leaves.
+    town.event(11, {13, 0, 0, 0, low(joins), high(joins), 0, 0, 0x70, 50}, {{9, 1}});
+    town.event(12, {14, 0, 0, 0, 0, 0x70, 0, 0, low(speaks), high(speaks)}, {{10, 1}});
+    town.event(13, {32, 0, 0, 0, low(leaves), high(leaves), 0, 0, 0x70}, {{11, 1}});
+    // 14: strangers two squares off: Approach closes in, Retreat flees, Fight
+    // (3) and Talk (15) only when near; at range 0 they talk.
+    town.event(
+        14,
+        {15, 0, 0,  0, low(strangers), high(strangers), 0, 1, 6, 0x08, 0x0D, 0x1B, 0, 0x1C, 4, 0,
+         0,  3, 15, 0},
+        {{12, 1}});
+    town.event(15, {2, 0, 0, 0, 0, 0, 0, 0, low(greet), high(greet)});
+    // 16: who tries Strength (test 2) against 3 (40h), once; success chains
+    // to 17, 10 experience.
+    town.event(16,
+               {18, 0, 0, 0, low(door), high(door), 0, 0x48, 3, 1, 4, 0, 0, low(gives), high(gives),
+                0, 17},
+               {{13, 1}});
+    town.event(17, {26, 0, 0, 0, 0, 0, 0, 0, 10});
+    // 18: who pays 5 platinum (currency 3).
+    town.event(18,
+               {19, 0, 0, 0, low(toll), high(toll), 0, 0x0C, 5, 0, 0, 0, 0, low(paid), high(paid)},
+               {{14, 1}});
+    // 19: a password, two tries.
+    town.event(19, {20,        0,          0,           0,           low(ask),
+                    high(ask), 0,          0,           low(answer), high(answer),
+                    0,         low(wrong), high(wrong), low(pass),   high(pass),
+                    0,         0,          0,           0,           2},
+               {{1, 3}});
+    write(folder / "GEO007.DAT", town.finish());
+
     const auto settings = templates.data("GAME", 1);
     check(settings && settings->size() == 388, "The kit has its game record");
     auto game = *settings;
@@ -359,6 +444,16 @@ std::shared_ptr<opengold::CampaignParty> new_party(const opengold::original::Con
     return party;
 }
 
+// A long rest, every caster keeping the spells it had.
+void rest(opengold::CampaignParty &party)
+{
+    (void)party.rest();
+    while (party.state().spell_rest)
+    {
+        party.keep_rest_spells(party.state().spell_rest->members.front());
+    }
+}
+
 // The pending fight played to its end, every turn the computer's.
 opengold::rules::Snapshot fight(const ua::UaSession &session,
                                 const std::shared_ptr<opengold::CampaignParty> &party,
@@ -397,6 +492,8 @@ struct Player
     std::shared_ptr<opengold::CampaignParty> party;
     const opengold::original::Content &content;
     std::vector<std::string> answers;
+    // What is typed where an event asks; "0" once they run out.
+    std::vector<std::string> typed;
     std::vector<std::string> said;
     unsigned fights{}, victories{};
 
@@ -429,8 +526,15 @@ struct Player
                 continue;
             }
             case TourPhase::awaiting_input:
-                check(session.input(s.continue_ticket, "0"), "The typed answer is taken");
+            {
+                const auto words = typed.empty() ? std::string("0") : typed.front();
+                if (!typed.empty())
+                {
+                    typed.erase(typed.begin());
+                }
+                check(session.input(s.continue_ticket, words), "The typed answer is taken");
                 continue;
+            }
             case TourPhase::combat:
             {
                 ++fights;
@@ -667,6 +771,94 @@ void the_design_loads_and_plays(const std::filesystem::path &kit)
     check(session.diagnostics().empty(), "Every event of the test design is played");
 }
 
+// The town's services and tests, each played as the test design sets them.
+void the_town_serves_the_party(const std::filesystem::path &kit)
+{
+    const ua::DesignFiles files(kit,
+                                build_test_design(kit, temporary_design("opengold_ua_town.dsn")));
+    const auto content = ua::load_design_content(files);
+    auto session = ua::UaSession::start(files);
+    auto party = new_party(content);
+    session.campaign_party(party);
+    Player player{session, party, content};
+    player.play();
+    const auto first = party->state().slots[0];
+    const auto visit = [&](unsigned x, unsigned y, std::vector<std::string> answers,
+                           std::vector<std::string> typed = {})
+    {
+        session.place(7, x, y, MapDirection::north);
+        player.answers = std::move(answers);
+        player.typed = std::move(typed);
+        player.said.clear();
+        session.look();
+        player.play();
+    };
+    // The hall trains a fighter with the experience for a level, for 1,000
+    // platinum.
+    party->grant_script_experience(300000, first);
+    party->add_coins(opengold::Coin::platinum, 2000);
+    const auto level = party->member(first).character.sheet().level;
+    const auto money = opengold::gold_value(party->state().wealth, party->coin_rates());
+    visit(1, 1, {"Yes", "FIGHTER 1"});
+    check(player.heard("Congratulations... FIGHTER 1 has trained.") &&
+              party->member(first).character.sheet().level == level + 1,
+          "The hall trains a level");
+    check(opengold::gold_value(party->state().wealth, party->coin_rates()) ==
+              money - 1000 * party->coin_rates().worth[4] / party->coin_rates().worth[3],
+          "Training costs 1,000 platinum");
+    visit(2, 1, {"Talk"});
+    check(player.heard("THEY SAY THE MAYOR HIDES GOLD."), "The tavern tells its tale");
+    visit(2, 1, {"Fight"});
+    check(player.fights == 1, "The brawl is the tavern's fight");
+    const auto carried = party->member(first).character.inventory().items().size();
+    visit(3, 1, {"Buy"});
+    check(party->member(first).character.inventory().items().size() == carried + 1 &&
+              player.heard("FIGHTER 1 buys"),
+          "The shop sells an item");
+    visit(4, 1, {"Donate"}, {"100"});
+    check(player.heard("Thank you for your generous donation.") &&
+              player.heard("THE PRIESTS BLESS YOU."),
+          "A tithe of 100 platinum runs the temple's event");
+    const auto purse = party->state().wealth;
+    visit(5, 1, {"Money", "Exit"});
+    check(party->state().wealth[4] == 0 && party->state().wealth[5] == 0, "The vault keeps money");
+    visit(5, 1, {"Take", "Exit"});
+    check(party->state().wealth == purse, "The vault gives it back");
+    visit(6, 1, {"Rest"});
+    check(player.heard("The party rests."), "The inn lets the party rest");
+    visit(7, 1, {"Pub", "Talk", "Leave", "Leave"});
+    check(player.heard("THE TOWN SQUARE.") && player.heard("The party enters a tavern.") &&
+              player.heard("THEY SAY THE MAYOR HIDES GOLD."),
+          "The small town has a pub");
+    visit(8, 1, {});
+    check(session.snapshot().pose.x == 9 && session.snapshot().pose.y == 4 &&
+              session.snapshot().pose.facing == MapDirection::south &&
+              player.heard("THE GUIDE LEADS YOU.") && player.heard("HERE YOU ARE."),
+          "The guide leads the party along its path");
+    visit(9, 1, {});
+    check(player.heard("A WARRIOR JOINS YOU.") && party->state().slots[6], "An NPC joins");
+    visit(10, 1, {});
+    check(player.heard("THE WARRIOR NODS."), "The NPC's words are heard with it in the party");
+    visit(11, 1, {});
+    check(player.heard("THE WARRIOR LEAVES.") && !party->state().slots[6], "The NPC leaves");
+    visit(10, 1, {});
+    check(!player.heard("THE WARRIOR NODS."), "Its words are not heard without it");
+    visit(12, 1, {"Approach", "Talk"});
+    check(player.heard("THE STRANGERS GREET YOU."), "Approached, the strangers talk");
+    const auto experience = party->member(first).experience;
+    visit(13, 1, {"FIGHTER 1"});
+    check(player.heard("THE DOOR GIVES WAY.") && party->member(first).experience > experience,
+          "A strong member opens the door, and its success chains on");
+    const auto toll = party->state().wealth;
+    visit(14, 1, {"FIGHTER 1"});
+    check(player.heard("THE TOLL IS PAID.") && party->state().wealth != toll, "The toll is paid");
+    visit(1, 3, {}, {"swordfish"});
+    check(player.heard("PASS, FRIEND."), "The password is taken in any case");
+    visit(1, 3, {}, {"FISH", "TUNA"});
+    check(player.heard("Wrong, try again.") && player.heard("BEGONE."), "Two wrong answers fail");
+    check(session.diagnostics().empty(), "Every event of the town is played");
+}
+
 // The game's exploration view plays a design through ExplorationSession, as
 // it plays a DAX campaign (docs/games/ua.md, The seam).
 void the_view_plays_it_through_the_seam(const std::filesystem::path &kit)
@@ -778,7 +970,7 @@ bool walk_every_square(const std::filesystem::path &kit)
                                   << '\n';
                         return false;
                     }
-                    (void)party->rest();
+                    rest(*party);
                 }
             }
         }
@@ -812,6 +1004,7 @@ int main(int argc, char **argv)
         }
         a_character_starts_as_the_design_says(*kit);
         the_design_loads_and_plays(*kit);
+        the_town_serves_the_party(*kit);
         the_view_plays_it_through_the_seam(*kit);
         // The game's startup check plays the test design from the menu (a
         // CTest fixture): it is written where the check looks for it.
