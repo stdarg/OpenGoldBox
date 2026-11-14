@@ -660,12 +660,16 @@ template <bool Reading> struct SaveCodec
         {
             require(v.town_ && (area == 0 || v.town_->districts.contains(area)),
                     "Unsupported saved district");
-            require(area == 0 ? !std::any_of(v.town_->districts.begin(), v.town_->districts.end(),
-                                             [&](const auto &d)
-                                             {
-                                                 return d.second->loaded_by(v.current_script_);
-                                             })
-                              : v.town_->districts.at(area)->loaded_by(v.current_script_),
+            // Pools of Darkness's area map runs its own script (17) over the
+            // map the party left, which that script does not load.
+            const bool darkness = v.game() == GoldBoxGame::pools_of_darkness;
+            require(area == 0
+                        ? !std::any_of(v.town_->districts.begin(), v.town_->districts.end(),
+                                       [&](const auto &d)
+                                       {
+                                           return d.second->loaded_by(v.current_script_);
+                                       })
+                        : darkness || v.town_->districts.at(area)->loaded_by(v.current_script_),
                     "Saved district and script disagree");
             v.current_area_ = 0;
             v.snapshot_.area_id = 0;
