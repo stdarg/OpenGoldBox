@@ -5,6 +5,7 @@
 #include "opengold/ecl_machine.h"
 #include "opengold/map_catalog.h"
 #include "opengold/por_sound.h"
+#include "opengold/treasures_texts.h"
 #include "opengold/vga_picture.h"
 
 #include <algorithm>
@@ -408,6 +409,13 @@ void add_treasures_overland(const por::detail::AreaFiles &files, por::PhlanResou
     {
         root.overland_arrows[facing] =
             vga_rgba(symbols->frames[first_arrow + facing], symbol_colors, see_through);
+    }
+    for (const auto &record : files.archive("LUCK.DAX").records)
+    {
+        if (auto text = treasures::decode_luck_text(record.bytes))
+        {
+            root.luck_texts.emplace(record.id, std::move(*text));
+        }
     }
 }
 

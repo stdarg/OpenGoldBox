@@ -559,6 +559,97 @@ void RolfTourSession::cast_outside_combat(MemberId caster, MemberId patient,
     advance(0);
 }
 
+void RolfTourSession::treasures_program(const EclRequest &request, unsigned number)
+{
+    constexpr unsigned luck_reading = 3;
+    if (number == luck_reading)
+    {
+        snapshot_.dialogue = next_luck_reading();
+    }
+    else
+    {
+        repair_party();
+    }
+    damage_request_ = request.id;
+    snapshot_.phase = TourPhase::awaiting_continue;
+    snapshot_.choices = {"Continue"};
+    snapshot_.continue_ticket = ++next_ticket_;
+    ++snapshot_.revision;
+}
+
+std::string RolfTourSession::next_luck_reading()
+{
+    // The crown's last reading comes once its work is done (the luck state at
+    // 1, which Freezefire's fall sets), and then the state is 2; with the
+    // fallback cell at FFh the reading is 12; otherwise it tells the first
+    // Lucky Paper mission not yet done (cells 127h to 130h at 1 when done),
+    // or 11 when all are.
+    constexpr EclAddress luck_state{0x25C}, luck_fallback{0x1F8};
+    constexpr std::uint16_t first_mission_cell = 0x127, missions = 10;
+    unsigned record = 0;
+    if (machine_.variable(luck_state) == 1)
+    {
+        damage_writes_.push_back({luck_state, 2});
+    }
+    else if (machine_.variable(luck_fallback) == 0xFF)
+    {
+        record = 12;
+    }
+    else
+    {
+        record = 1;
+        while (record <= missions && machine_.variable(EclAddress{static_cast<std::uint16_t>(
+                                         first_mission_cell + record - 1)}) == 1)
+        {
+            ++record;
+        }
+    }
+    const auto found = town_->luck_texts.find(record);
+    if (found == town_->luck_texts.end())
+    {
+        throw EclError("No luck reading " + std::to_string(record));
+    }
+    // Its pages, each waiting for a key in the original, in capitals.
+    std::string reading;
+    for (const char letter : found->second)
+    {
+        constexpr char page_end = 12;
+        if (letter == page_end)
+        {
+            reading += "\n\n";
+        }
+        else if (letter != '\r' && letter != '\n')
+        {
+            reading += static_cast<char>(std::toupper(static_cast<unsigned char>(letter)));
+        }
+    }
+    return reading;
+}
+
+void RolfTourSession::repair_party()
+{
+    // Every member's blindness, disease and poison cured, the dead but elves
+    // raised and the stoned made flesh, and every Hit Point back.
+    using rules::TempleService;
+    for (const auto id : campaign_->state().slots)
+    {
+        if (!id)
+        {
+            continue;
+        }
+        for (const auto service : {TempleService::cure_blindness, TempleService::cure_disease,
+                                   TempleService::neutralize_poison, TempleService::raise_dead,
+                                   TempleService::stone_to_flesh})
+        {
+            if (campaign_->temple_service_helps(id, service))
+            {
+                campaign_->temple_service(id, service, 0);
+            }
+        }
+    }
+    (void)campaign_->heal_living_members();
+}
+
 void RolfTourSession::vga_play_sound(unsigned sound)
 {
     // The footstep plays as the other games' does; the other sound effects

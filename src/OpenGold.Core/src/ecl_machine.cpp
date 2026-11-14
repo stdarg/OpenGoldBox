@@ -570,7 +570,11 @@ void EclMachine::execute(const EclInstruction &i)
         // Gateway's PROGRAM 12h heals the party.
         const bool gateway_heal =
             id == 0x12 && program_->game() == GoldBoxGame::gateway_to_the_savage_frontier;
-        if (id != 0 && id != 8 && id != 9 && !darkness_won && !gateway_heal)
+        // Treasures' PROGRAM 3 reads the luck, 5 makes the party whole.
+        const bool treasures_program =
+            (id == 3 || id == 5) &&
+            program_->game() == GoldBoxGame::treasures_of_the_savage_frontier;
+        if (id != 0 && id != 8 && id != 9 && !darkness_won && !gateway_heal && !treasures_program)
         {
             pc_ = i.next;
             return;

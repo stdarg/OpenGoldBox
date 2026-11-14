@@ -2822,6 +2822,10 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
             snapshot_.game_won = false;
             reply.writes.push_back({game_cell(EclAddress{0x4AFD}), 255});
         }
+        for (const auto &write : std::exchange(damage_writes_, {}))
+        {
+            reply.writes.push_back(write);
+        }
         if (!machine_.resume_host(damage_request_, reply))
         {
             return false;
@@ -4513,6 +4517,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             snapshot_.choices = {"Continue"};
             snapshot_.continue_ticket = ++next_ticket_;
             ++snapshot_.revision;
+            return true;
+        }
+        if (game() == GoldBoxGame::treasures_of_the_savage_frontier &&
+            (arg(0) == 3 || arg(0) == 5) && campaign_)
+        {
+            read_character();
+            treasures_program(request, arg(0));
             return true;
         }
         if (arg(0) != 9 || !campaign_)

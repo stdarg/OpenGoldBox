@@ -3745,6 +3745,10 @@ const std::vector<RouteBeat> &treasure_route()
         RouteBeat geildarr{17, 15, 4, D::north, {}};
         geildarr.rest_first = true;
         route.push_back(geildarr);
+        // Back up the stairs (11,10 west) to Llorkh, free now, and down the
+        // river by the boat rentals (3,15), open once Geildarr is dead.
+        route.push_back(step_beat(17, 11, 10, D::west));
+        route.push_back({16, 3, 15, D::north, {"YES"}});
         return route;
     }();
     return beats;

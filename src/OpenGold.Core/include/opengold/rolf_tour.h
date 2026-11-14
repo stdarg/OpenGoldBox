@@ -119,6 +119,9 @@ struct PhlanResources
     // Pools of Darkness's marker of the party's square on its area map
     // (CURSOR record 1, drawn through color 13).
     std::optional<Image> area_map_marker;
+    // Treasures' LUCK texts by record: the luck readings (0 to 14), the lucky
+    // papers' words and the romances' scenes.
+    std::map<unsigned, std::string> luck_texts;
     // ITEMS templates, indexed by original item type, for generated treasure.
     std::vector<ItemTemplate> item_templates;
     std::vector<std::uint8_t> sprite_archive;
@@ -675,6 +678,9 @@ class RolfTourSession
     std::uint64_t who_request_{};
     // A DAMAGE volley waits here until its results are acknowledged.
     std::uint64_t damage_request_{};
+    // What the script hears as those words are acknowledged (Treasures' luck
+    // reading after the crown's last).
+    std::vector<EclMemoryWrite> damage_writes_;
     // Tyranthraxus defeated: the game's won cell is written as the closing
     // words are acknowledged (PROGRAM 8).
     bool victory_{};
@@ -1046,6 +1052,13 @@ class RolfTourSession
                      std::chrono::minutes takes = {});
     void finish_event();
     bool handle_town_host(const EclRequest &request);
+    // Treasures' PROGRAM 3, Amanitas's word through his crown: the luck
+    // reading of the next Lucky Paper mission (its ShowNextLuckText); and
+    // PROGRAM 5, the party made whole (its RepairParty). Each waits for the
+    // player to go on. vga_host.cpp.
+    void treasures_program(const EclRequest &request, unsigned number);
+    [[nodiscard]] std::string next_luck_reading();
+    void repair_party();
     // The 256-color engine's LOAD FILES: a map (below 7Fh, indoors only) and a
     // wall set (255 keeps the current one); vga_host.cpp.
     [[nodiscard]] EclHostReply vga_load_files(unsigned map, unsigned walls);
