@@ -968,13 +968,14 @@ void walk_ruins(
 void walk_passages(
     std::vector<RouteBeat> &beats, unsigned map,
     std::initializer_list<std::tuple<unsigned, unsigned, opengold::por::MapDirection>> passages,
-    bool searching = false)
+    bool searching = false, bool test_wins = false)
 {
     for (const auto &[x, y, facing] : passages)
     {
         auto beat = step_beat(map, x, y, facing);
         beat.passing = true;
         beat.searching = searching;
+        beat.test_wins = test_wins;
         beats.push_back(beat);
     }
 }
@@ -1434,7 +1435,40 @@ const std::vector<RouteBeat> &secret_route()
         route[level_9].rest_first = true;
         // To the lift, and down to level 10.
         walk_passages(route, 49, {{3, 0, D::south}, {3, 1, D::south}, {3, 2, D::south}}, true);
-        route.push_back({49, 3, 3, D::north, {"YES", "B"}, true});
+        // Up to the temple level, where the Temple of Tyr is safe to rest in
+        // (the lift is not: its rests are interrupted), and down to level 10.
+        route.push_back({49, 3, 3, D::north, {"YES", "TEMPLE"}});
+        route.push_back(step_beat(49, 3, 6, D::south));
+        route.push_back(step_beat(49, 5, 15, D::south, {"ENTER"}));
+        route.push_back({50, 8, 0, D::north, {}, true});
+        route.push_back(step_beat(50, 8, 0, D::north));
+        route.push_back(step_beat(49, 5, 12, D::north));
+        route.push_back({49, 3, 3, D::north, {"YES", "B"}});
+        // Level 10: through the hole the miners broke into the castle's dungeon
+        // (script 64). Its patrols of cockatrices, medusae and basilisks turn the
+        // party to stone with every dice the route tries: there the test wins a
+        // fight its player loses (a stand-in).
+        walk_passages(route, 49,
+                      {{3, 3, D::east},   {4, 3, D::east},   {5, 3, D::east},    {6, 3, D::east},
+                       {11, 0, D::east},  {12, 0, D::east},  {13, 0, D::east},   {14, 0, D::east},
+                       {15, 0, D::east},  {11, 0, D::east},  {12, 0, D::east},   {13, 0, D::east},
+                       {14, 0, D::east},  {15, 0, D::east},  {7, 2, D::east},    {8, 2, D::east},
+                       {9, 2, D::east},   {10, 2, D::east},  {11, 2, D::east},   {12, 2, D::east},
+                       {13, 2, D::east},  {9, 1, D::east},   {10, 1, D::east},   {11, 1, D::east},
+                       {12, 1, D::east},  {13, 1, D::east},  {3, 11, D::east},   {4, 11, D::east},
+                       {5, 11, D::east},  {6, 11, D::east},  {7, 11, D::south},  {7, 12, D::south},
+                       {0, 11, D::south}, {0, 12, D::south}, {0, 13, D::south},  {0, 14, D::south},
+                       {0, 15, D::south}, {1, 5, D::south},  {1, 6, D::south},   {1, 7, D::south},
+                       {1, 8, D::east},   {2, 8, D::east},   {3, 8, D::east},    {4, 8, D::east},
+                       {5, 8, D::south},  {5, 9, D::south},  {1, 5, D::south},   {1, 6, D::south},
+                       {1, 7, D::south},  {1, 8, D::east},   {2, 8, D::east},    {3, 8, D::east},
+                       {4, 8, D::east},   {5, 8, D::south},  {5, 9, D::south},   {0, 11, D::south},
+                       {0, 12, D::south}, {0, 13, D::south}, {0, 14, D::south},  {0, 15, D::south},
+                       {6, 12, D::south}, {6, 13, D::east},  {7, 13, D::south},  {7, 14, D::east},
+                       {8, 14, D::south}, {8, 15, D::east},  {9, 15, D::east},   {10, 15, D::east},
+                       {11, 15, D::east}, {12, 15, D::east}, {13, 15, D::north}, {13, 14, D::east},
+                       {14, 14, D::east}, {15, 14, D::east}},
+                      true, true);
         return route;
     }();
     return beats;
@@ -1900,8 +1934,9 @@ bool walk_census(GoldBoxGame game, bool route)
             {
                 if (unit.side == opengold::rules::Side::party)
                 {
-                    lost +=
-                        (unit.dead ? 1000 : 0) + unit.max_hit_points - std::max(unit.hit_points, 0);
+                    // A member turned to stone is as lost as a dead one.
+                    lost += (unit.dead || unit.status == "stoned" ? 1000 : 0) +
+                            unit.max_hit_points - std::max(unit.hit_points, 0);
                 }
             }
             return lost;
@@ -2100,6 +2135,25 @@ bool walk_census(GoldBoxGame game, bool route)
             case TourPhase::awaiting_input:
             {
                 std::string typed = "0";
+                // Secret's dungeon spirit's riddles and the secret word, as
+                // its cluebook answers them.
+                constexpr std::array<std::pair<std::string_view, std::string_view>, 9> riddles{
+                    {{"YOU FEEL IT, YOU NEVER SAW IT", "YOUR HEART"},
+                     {"YOU MUST KEEP IT AFTER GIVING IT", "YOUR WORD"},
+                     {"LIGHT AS A FEATHER", "YOUR BREATH"},
+                     {"HAS A MOUTH BUT DOES NOT SPEAK", "RIVER"},
+                     {"RUNS SMOOTHER THAN ANY RHYME", "WATER"},
+                     {"YOU BREAK IT IF YOU EVEN NAME IT", "SILENCE"},
+                     {"PASSES BEFORE THE SUN", "WIND"},
+                     {"YOU FEED IT, IT LIVES", "FIRE"},
+                     {"WHAT IS THE SECRET WORD?", "NACACIA"}}};
+                for (const auto &[riddle, answer] : riddles)
+                {
+                    if (s.dialogue.find(riddle) != std::string::npos)
+                    {
+                        typed = answer;
+                    }
+                }
                 if (!answers.empty() && answers.front().starts_with("type:"))
                 {
                     typed = answers.front().substr(5);
