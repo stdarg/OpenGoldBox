@@ -538,8 +538,13 @@ void EclMachine::execute(const EclInstruction &i)
     }
     if (i.opcode == 56)
     {
+        // Pools of Darkness's PROGRAM 1 saves the party and leaves the game for
+        // its closing film: its win (exitdos.pas).
+        constexpr unsigned darkness_win = 1;
         const auto id = value(a[0]) & 255;
-        if (id != 0 && id != 8 && id != 9)
+        const bool darkness_won =
+            program_->game() == GoldBoxGame::pools_of_darkness && id == darkness_win;
+        if (id != 0 && id != 8 && id != 9 && !darkness_won)
         {
             pc_ = i.next;
             return;

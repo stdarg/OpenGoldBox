@@ -45,7 +45,7 @@ ZoneStarts zone_starts(GoldBoxGame game)
 // here.
 using CellPair = std::pair<std::uint16_t, std::uint16_t>;
 constexpr std::uint16_t darkness_record = 0x401;
-constexpr std::array<CellPair, 32> darkness_cells{{
+constexpr std::array<CellPair, 33> darkness_cells{{
     {0x49C5, 0x0013}, // The map LOAD FILES loaded.
     // The clock: minute ones and tens, hour, day, month and year.
     {0x49C7, 0x0006},
@@ -73,6 +73,7 @@ constexpr std::array<CellPair, 32> darkness_cells{{
     {0x6DCB, 0x002E}, // Surprise: 1 the party, 2 the monsters.
     {0x6DD2, 0x002B}, // Camp's rest period and its chance of an interruption.
     {0x6DD3, 0x002C},
+    {0x6DD5, 0x0021}, // 1 when the step goes off the map's edge.
     {0x6DE2, 0x0014}, // The temple opens at the next COMBAT.
     {0x6E33, 0x0036}, // A member attacked its own side.
     {0x6E3E, 0x0020}, // The party's size.

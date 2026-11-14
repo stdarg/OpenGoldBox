@@ -1040,6 +1040,11 @@ class RolfTourSession
     // in the member's list (0, or FFh for no one) into `place`, the member's
     // into `member`.
     [[nodiscard]] EclHostReply darkness_spell(unsigned spell, EclAddress place, EclAddress member);
+    // Its area map: outside a dungeon (cell 22h at 0) the party steps on a
+    // map of 38 by 15 squares, in eight directions, its square in cells 25h
+    // and 26h; a step takes half a day.
+    [[nodiscard]] bool darkness_area_map() const;
+    void darkness_area_step();
     // Its DAMAGE's forms, told in the dialogue.
     void darkness_damage(const EclRequest &request);
     // Its encounter sprite's view at a distance (0 near, 2 far), in the

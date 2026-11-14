@@ -481,6 +481,9 @@ struct RouteBeat
     // Search mode on or off from this beat on, as a player's (S)earch, so
     // a hidden trap is noticed on the way.
     std::optional<bool> searching;
+    // Steps on Pools of Darkness's area map, each in one of the eight
+    // directions, instead of looking at or stepping from a square of a map.
+    std::vector<opengold::por::ExplorationCommand> area_steps;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -1479,9 +1482,49 @@ const std::vector<RouteBeat> &secret_route()
     return beats;
 }
 
+// Pools of Darkness's route plays to the game's end once this is true; until
+// then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
+constexpr bool darkness_route_ends_the_game = false;
+constexpr unsigned darkness_route_stops_on_map = 17;
+
+// Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
+// Phlan's docks, where Rolf has walked the party out.
+const std::vector<RouteBeat> &darkness_route()
+{
+    static const std::vector<RouteBeat> beats = []
+    {
+        using D = opengold::por::MapDirection;
+        std::vector<RouteBeat> route;
+        // Rolf's tour ends in the park; the party walks west off the docks'
+        // map into West Phlan (map 17), which the script loads as the party
+        // leaves the edge (cell 21h).
+        route.push_back(step_beat(16, 0, 4, D::west));
+        // Sasha waits at the west gate (17: 0,4): the party takes her escort
+        // duty, and on the hill outside the storm takes Phlan; Elminster
+        // meets the party in Limbo and sends it back through the portal.
+        route.push_back(step_beat(17, 1, 4, D::west, {"YES"}));
+        // Back from Limbo the party stands on the area map at (26,6), outside
+        // any dungeon: a step west.
+        RouteBeat west{17, 0, 0, D::north, {}};
+        west.area_steps = {opengold::por::ExplorationCommand::west};
+        west.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x25, 25};
+        route.push_back(west);
+        return route;
+    }();
+    return beats;
+}
+
 const std::vector<RouteBeat> &route_for(GoldBoxGame game)
 {
-    return game == GoldBoxGame::secret_of_the_silver_blades ? secret_route() : curse_route();
+    switch (game)
+    {
+    case GoldBoxGame::secret_of_the_silver_blades:
+        return secret_route();
+    case GoldBoxGame::pools_of_darkness:
+        return darkness_route();
+    default:
+        return curse_route();
+    }
 }
 
 // Secret of the Silver Blades starts with script 17 of disk 2: a vision of
@@ -2581,6 +2624,16 @@ bool walk_census(GoldBoxGame game, bool route)
                     {
                         play(where);
                     }
+                    else if (!beat.area_steps.empty())
+                    {
+                        for (const auto step : beat.area_steps)
+                        {
+                            if (session.explore(step))
+                            {
+                                play(where);
+                            }
+                        }
+                    }
                     else if (beat.enter_map)
                     {
                         opengold::test::TourAccess::enter(session, beat.map,
@@ -2670,6 +2723,38 @@ bool walk_census(GoldBoxGame game, bool route)
         std::cout << "Route ends on map " << end.area_id << " (script " << end.script_id << ") at "
                   << end.pose.x << "," << end.pose.y << ", phase " << static_cast<int>(end.phase)
                   << "\n";
+        // OPENGOLD_DARKNESS_SITES looks at every square of Pools of Darkness's
+        // area map (cells 25h and 26h), each from where the route ended, and
+        // prints what is there, to plan the route's journeys by.
+        if (std::getenv("OPENGOLD_DARKNESS_SITES"))
+        {
+            constexpr std::uint16_t columns = 38, rows = 15;
+            const auto base = session.detached_copy();
+            const auto base_party = party->state();
+            for (std::uint16_t row = 0; row < rows; ++row)
+            {
+                for (std::uint16_t column = 0; column < columns; ++column)
+                {
+                    session = base.detached_copy();
+                    party->restore(base_party);
+                    session.attach_restored_party(party);
+                    opengold::test::TourAccess::set_variable(
+                        session, opengold::por::EclAddress{0x25}, column);
+                    opengold::test::TourAccess::set_variable(session,
+                                                             opengold::por::EclAddress{0x26}, row);
+                    if (!session.explore(opengold::por::ExplorationCommand::look))
+                    {
+                        continue;
+                    }
+                    for (int n = 0; n < 50 && session.snapshot().phase == TourPhase::running; ++n)
+                    {
+                        session.advance(1.0);
+                    }
+                    std::cout << "site " << column << "," << row << ": "
+                              << session.snapshot().dialogue.substr(0, 90) << "\n";
+                }
+            }
+        }
         // OPENGOLD_CURSE_SURVEY walks the map the route ended on, printing each
         // square's event, to plan the route's next beats by.
         if (std::getenv("OPENGOLD_CURSE_SURVEY") && end.phase != TourPhase::defeated)
@@ -2936,6 +3021,12 @@ bool walk_census(GoldBoxGame game, bool route)
                       << ", short of the game's end (docs/GAMES.md, phase 4 step 4).\n";
             return played && end.area_id == secret_route_stops_on_map;
         }
+        if (game == GoldBoxGame::pools_of_darkness && !darkness_route_ends_the_game)
+        {
+            std::cout << "Pools of Darkness's route stops on map " << end.area_id
+                      << ", short of the game's end (docs/GAMES.md, Pools of Darkness).\n";
+            return played && end.area_id == darkness_route_stops_on_map;
+        }
         return played && end.dialogue.find("You have won.") != std::string::npos &&
                game_won_shown && all_alive;
     }
@@ -3046,6 +3137,10 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--secret-route")
         {
             return walk_census(GoldBoxGame::secret_of_the_silver_blades, true) ? 0 : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--darkness-route")
+        {
+            return walk_census(GoldBoxGame::pools_of_darkness, true) ? 0 : 1;
         }
         each_game_is_told_apart_by_its_files();
         curse_creatures_are_read_from_their_layout();

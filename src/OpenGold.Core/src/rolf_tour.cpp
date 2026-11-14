@@ -1387,7 +1387,9 @@ bool RolfTourSession::explore(ExplorationCommand command)
         // On the wilderness map the party steps in eight directions; in a 3D
         // area it walks forward and turns.
         const bool step = command >= ExplorationCommand::north;
-        if (step != overland() && command != ExplorationCommand::look)
+        // So does Pools of Darkness's party on its area map.
+        const bool stepping_map = overland() || darkness_area_map();
+        if (step != stepping_map && command != ExplorationCommand::look)
         {
             return false;
         }

@@ -1934,6 +1934,12 @@ void RolfTourSession::finish_event()
         search_destination();
         return;
     }
+    if (event_stage_ == EventStage::step && darkness_area_map())
+    {
+        darkness_area_step();
+        search_destination();
+        return;
+    }
     if (event_stage_ == EventStage::step)
     {
         if (!move_party(*pending_movement_))
@@ -4272,9 +4278,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         // Tyranthraxus defeated (PROGRAM 8): the game is won (area byte 0x3FA,
         // the cell 0x4AFD). The original pauses on its closing words, healing
-        // no one; then the script goes on, back to the civilized city.
-        if (arg(0) == 8 && campaign_)
+        // no one; then the script goes on, back to the civilized city. Pools
+        // of Darkness's is PROGRAM 1, after Gothmenes falls and Bane's crystal
+        // is dust (ECL1:75 0x966C), where its original leaves for the closing
+        // film; here the win is told and the game goes on.
+        if ((arg(0) == 8 || (game() == GoldBoxGame::pools_of_darkness && arg(0) == 1)) && campaign_)
         {
+            const bool darkness_won = game() == GoldBoxGame::pools_of_darkness;
             read_character();
             snapshot_.dialogue.clear();
             for (const auto &page : town_->closing_story)
@@ -4286,7 +4296,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             snapshot_.dialogue +=
                 game() == GoldBoxGame::pool_of_radiance
                     ? "Tyranthraxus is destroyed, and Phlan is free of him. You have won."
-                    : "You have won.";
+                : darkness_won ? "Gothmenes has fallen, and Bane's crystal is dust. You have won."
+                               : "You have won.";
             victory_ = true;
             snapshot_.game_won = true;
             damage_request_ = request.id;
