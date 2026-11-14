@@ -2317,6 +2317,96 @@ const std::vector<RouteBeat> &darkness_route()
                        {1, 13, D::south}, {1, 14, D::east},  {2, 14, D::east},  {3, 14, D::east},
                        {4, 14, D::east},  {5, 14, D::east},  {6, 14, D::east},  {7, 14, D::north}});
         route.push_back(step_beat(50, 7, 13, D::west, {"YES"}));
+        // West across the worship area to the stairs up (1,5), climbed to the
+        // temple's upper floor (8,5).
+        walk_passages(
+            route, 50,
+            {{6, 5, D::west}, {5, 5, D::west}, {4, 5, D::west}, {3, 5, D::west}, {2, 5, D::west}});
+        route.push_back(step_beat(50, 1, 5, D::west, {"YES"}));
+        // The four braziers in the corner towers, each lit from the Lamp of
+        // Vigilance (cell 17Dh gets a bit each). The north-west tower (8,0):
+        walk_passages(route, 50,
+                      {{8, 6, D::east},
+                       {9, 6, D::east},
+                       {10, 6, D::north},
+                       {10, 5, D::north},
+                       {10, 4, D::north},
+                       {10, 3, D::north},
+                       {10, 2, D::north},
+                       {10, 1, D::west},
+                       {9, 1, D::north}});
+        auto first_brazier = step_beat(50, 9, 0, D::west, {"LIGHT BRAZIER"});
+        first_brazier.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17D, 77};
+        route.push_back(first_brazier);
+        // The north-east tower (15,0).
+        walk_passages(route, 50,
+                      {{8, 0, D::east},
+                       {9, 0, D::south},
+                       {9, 1, D::east},
+                       {10, 1, D::south},
+                       {10, 2, D::east},
+                       {11, 2, D::east},
+                       {12, 2, D::east},
+                       {13, 2, D::north},
+                       {13, 1, D::east},
+                       {14, 1, D::north}});
+        auto second_brazier = step_beat(50, 14, 0, D::east, {"LIGHT BRAZIER"});
+        second_brazier.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17D, 205};
+        route.push_back(second_brazier);
+        // The south-east tower (15,7).
+        walk_passages(route, 50,
+                      {{15, 0, D::south},
+                       {15, 1, D::south},
+                       {15, 2, D::south},
+                       {15, 3, D::south},
+                       {15, 4, D::south},
+                       {15, 5, D::south}});
+        auto third_brazier = step_beat(50, 15, 6, D::south, {"LIGHT BRAZIER"});
+        third_brazier.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17D, 237};
+        route.push_back(third_brazier);
+        // The south-west tower (8,7): the darkness is swept from the temple.
+        walk_passages(route, 50,
+                      {{15, 7, D::north},
+                       {15, 6, D::west},
+                       {14, 6, D::west},
+                       {13, 6, D::north},
+                       {13, 5, D::west},
+                       {12, 5, D::west},
+                       {11, 5, D::west},
+                       {10, 5, D::south},
+                       {10, 6, D::west},
+                       {9, 6, D::south}});
+        auto fourth_brazier = step_beat(50, 9, 7, D::west, {"LIGHT BRAZIER"});
+        fourth_brazier.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x17D, 253};
+        route.push_back(fourth_brazier);
+        // The bell tower (12,3): with every brazier lit the bells ring clear,
+        // and the shades of Laurellin and Brimwulf, neither slain, are reunited
+        // (journal entry 74's lovers; cell 17Eh bit 1).
+        walk_passages(route, 50,
+                      {{8, 7, D::east},
+                       {9, 7, D::north},
+                       {9, 6, D::east},
+                       {10, 6, D::north},
+                       {10, 5, D::north},
+                       {10, 4, D::north},
+                       {10, 3, D::east}});
+        auto bells = step_beat(50, 11, 3, D::east, {"PULL ROPES", "STEP AWAY"});
+        bells.expect_cell = std::pair<std::uint16_t, std::uint16_t>{0x181, 1};
+        route.push_back(bells);
+        // Back down the stairs (8,5) to the ground floor.
+        walk_passages(route, 50,
+                      {{11, 3, D::west},
+                       {10, 3, D::south},
+                       {10, 4, D::south},
+                       {10, 5, D::south},
+                       {10, 6, D::west},
+                       {9, 6, D::west},
+                       {8, 6, D::north}});
+        route.push_back(step_beat(50, 8, 5, D::east, {"YES"}));
+        // Out through the meeting room and the entrance hall, leaving the
+        // plunder alone, and out of the temple: Priam stays with his army.
+        walk_passages(route, 50, {{2, 5, D::east}, {3, 5, D::south}, {3, 6, D::south}});
+        route.push_back(step_beat(50, 3, 7, D::south, {"YES", "NO"}));
         return route;
     }();
     return beats;
