@@ -1564,6 +1564,92 @@ const std::vector<RouteBeat> &secret_route()
              {14, 13, D::south}, {14, 14, D::south}, {14, 15, D::west},  {13, 15, D::north},
              {13, 14, D::west},  {12, 14, D::south}},
             true);
+        // Up to levels 6 to 3 (script 65): the pyro-hydras guard the Silver Key (cell 4CDF).
+        walk_passages(
+            route, 64,
+            {{12, 15, D::north}, {12, 14, D::east},  {13, 14, D::south}, {13, 15, D::east},
+             {14, 15, D::north}, {14, 14, D::north}, {14, 13, D::north}, {14, 12, D::north},
+             {14, 11, D::north}, {14, 10, D::north}, {14, 9, D::north},  {14, 8, D::west},
+             {13, 8, D::north},  {13, 7, D::north},  {13, 6, D::east},   {14, 6, D::east},
+             {15, 6, D::north},  {15, 5, D::north},  {15, 4, D::north},  {15, 3, D::north},
+             {15, 2, D::west},   {14, 2, D::north},  {14, 1, D::north},  {14, 0, D::west},
+             {13, 0, D::south},  {13, 1, D::south},  {13, 2, D::south},  {13, 3, D::south},
+             {13, 4, D::south},  {13, 5, D::west},   {12, 5, D::north},  {12, 4, D::north},
+             {12, 3, D::north},  {12, 2, D::north},  {12, 1, D::north},  {12, 0, D::north}},
+            true);
+        walk_passages(
+            route, 65,
+            {{1, 10, D::west},   {0, 10, D::south},  {0, 11, D::south}, {0, 12, D::south},
+             {0, 13, D::south},  {0, 14, D::south},  {0, 15, D::east},  {1, 15, D::north},
+             {1, 14, D::east},   {2, 14, D::south},  {2, 15, D::east},  {3, 15, D::north},
+             {3, 14, D::north},  {3, 13, D::east},   {4, 13, D::east},  {5, 13, D::north},
+             {5, 12, D::north},  {5, 11, D::north},  {5, 10, D::east},  {6, 10, D::east},
+             {7, 10, D::east},   {15, 10, D::south}, {15, 11, D::west}, {14, 11, D::north},
+             {14, 10, D::west},  {13, 10, D::south}, {13, 11, D::west}, {12, 11, D::south},
+             {12, 12, D::south}, {12, 13, D::west},  {11, 13, D::west}, {10, 13, D::west},
+             {9, 13, D::west},   {8, 13, D::south},  {8, 14, D::south}, {8, 15, D::south},
+             {4, 4, D::west},    {3, 4, D::north},   {3, 3, D::east},   {4, 3, D::east},
+             {5, 3, D::south},   {5, 4, D::east},    {6, 4, D::east},   {7, 4, D::north},
+             {7, 3, D::north},   {7, 2, D::north},   {7, 1, D::north},  {7, 0, D::west},
+             {6, 0, D::west},    {5, 0, D::west},    {4, 0, D::west},   {3, 0, D::west},
+             {2, 0, D::south},   {2, 1, D::south},   {2, 2, D::west},   {1, 2, D::west},
+             {0, 2, D::south},   {0, 3, D::south},   {0, 4, D::south},  {0, 5, D::east},
+             {1, 5, D::east},    {2, 5, D::south},   {2, 6, D::south},  {2, 7, D::south},
+             {2, 8, D::west}},
+            true);
+        // Up to levels 2 and 1 (script 66): the purple worms guard the Gold Key (cell 4CE0).
+        walk_passages(route, 65,
+                      {{1, 8, D::east},   {2, 8, D::south},  {2, 9, D::east},   {3, 9, D::east},
+                       {5, 6, D::south},  {5, 7, D::west},   {4, 7, D::north},  {4, 6, D::north},
+                       {4, 5, D::east},   {5, 5, D::east},   {6, 5, D::east},   {7, 5, D::south},
+                       {7, 6, D::east},   {8, 6, D::east},   {9, 6, D::east},   {10, 6, D::north},
+                       {10, 5, D::north}, {10, 4, D::north}, {10, 3, D::east},  {11, 3, D::north},
+                       {11, 2, D::north}, {11, 1, D::west},  {10, 1, D::north}, {10, 0, D::east},
+                       {11, 0, D::east},  {12, 0, D::east},  {13, 0, D::south}, {13, 1, D::south},
+                       {13, 2, D::south}, {13, 3, D::east},  {14, 3, D::north}, {14, 2, D::north},
+                       {14, 1, D::east},  {15, 1, D::south}, {15, 2, D::south}, {15, 3, D::south},
+                       {15, 4, D::south}, {15, 5, D::south}, {15, 6, D::south}, {15, 7, D::south},
+                       {15, 8, D::west},  {14, 8, D::south}, {14, 9, D::west},  {13, 9, D::west}},
+                      true);
+        walk_passages(route, 66,
+                      {{0, 7, D::north},   {0, 6, D::east},   {1, 6, D::north},  {1, 5, D::west},
+                       {0, 5, D::north},   {0, 4, D::east},   {1, 4, D::east},   {2, 4, D::east},
+                       {3, 4, D::east},    {4, 4, D::north},  {4, 3, D::east},   {5, 3, D::east},
+                       {6, 3, D::south},   {6, 4, D::east},   {7, 4, D::east},   {8, 4, D::east},
+                       {9, 4, D::east},    {10, 4, D::east},  {11, 4, D::east},  {12, 4, D::east},
+                       {13, 4, D::east},   {14, 4, D::south}, {14, 5, D::south}, {14, 6, D::south},
+                       {14, 7, D::east},   {15, 7, D::north}, {15, 6, D::north}, {15, 5, D::north},
+                       {15, 4, D::north},  {15, 3, D::north}, {15, 2, D::north}, {15, 1, D::north},
+                       {15, 0, D::north},  {15, 8, D::west},  {14, 8, D::south}, {14, 9, D::west},
+                       {13, 9, D::west},   {12, 9, D::west},  {11, 9, D::west},  {10, 9, D::south},
+                       {10, 10, D::south}, {10, 11, D::west}, {9, 11, D::west},  {8, 11, D::west},
+                       {7, 11, D::south},  {7, 12, D::south}, {7, 13, D::west},  {6, 13, D::west},
+                       {5, 13, D::west},   {4, 13, D::south}, {4, 14, D::south}, {4, 15, D::west},
+                       {3, 15, D::north},  {3, 14, D::north}, {3, 13, D::west},  {2, 13, D::west},
+                       {1, 13, D::north},  {1, 12, D::north}, {1, 11, D::north}, {1, 10, D::north},
+                       {1, 9, D::north},   {1, 8, D::east},   {2, 8, D::east},   {3, 8, D::south},
+                       {3, 9, D::south},   {3, 10, D::west},  {2, 10, D::south}},
+                      true);
+        // Out of the Dungeon's top into the Western Crevasses (script 80).
+        walk_passages(route, 66,
+                      {{2, 11, D::north},
+                       {2, 10, D::north},
+                       {2, 9, D::east},
+                       {3, 9, D::north},
+                       {3, 8, D::west},
+                       {2, 8, D::west},
+                       {1, 8, D::west},
+                       {0, 8, D::south},
+                       {0, 9, D::south},
+                       {0, 10, D::south},
+                       {0, 11, D::south},
+                       {0, 12, D::south},
+                       {0, 13, D::south},
+                       {0, 14, D::east},
+                       {1, 14, D::east},
+                       {2, 14, D::south},
+                       {2, 15, D::south}},
+                      true);
         return route;
     }();
     return beats;
@@ -3172,30 +3258,48 @@ bool walk_census(GoldBoxGame game, bool route)
     {
         // Days of rest in camp until every member is whole, as a player rests
         // (or a script's PROGRAM 9 offers the camp).
+        // A cleric of Secret's party who could raise the dead after a rest.
+        const auto cleric_standing = [&]
+        {
+            return game == GoldBoxGame::secret_of_the_silver_blades &&
+                   std::ranges::any_of(
+                       party->state().slots,
+                       [&](opengold::MemberId id)
+                       {
+                           return id && !party->member(id).vitals.dead &&
+                                  party->member(id).vitals.description != "Turned to stone." &&
+                                  party->member(id).character.sheet().name.starts_with("cleric");
+                       });
+        };
+        // Every member whole: no one hurt, and in Secret's route no one dead
+        // a standing cleric could raise.
         const auto party_whole = [&]
         {
+            const bool raising = cleric_standing();
             return std::ranges::all_of(
                 party->state().slots,
                 [&](opengold::MemberId id)
                 {
-                    return !id || party->member(id).vitals.dead ||
+                    return !id || (party->member(id).vitals.dead && !raising) ||
                            party->member(id).vitals.description == "Turned to stone." ||
-                           party->member(id).vitals.hit_points >=
-                               party->member(id).character.sheet().hit_points;
+                           (!party->member(id).vitals.dead &&
+                            party->member(id).vitals.hit_points >=
+                                party->member(id).character.sheet().hit_points);
                 });
         };
-        // A member below half its Hit Points (and not dead or a statue): a
-        // player passing through rests first.
+        // A member below half its Hit Points (not a statue), or one dead a
+        // standing cleric could raise: a player passing through rests first.
         const auto party_hurt = [&]
         {
             return std::ranges::any_of(
                 party->state().slots,
                 [&](opengold::MemberId id)
                 {
-                    return id && !party->member(id).vitals.dead &&
-                           party->member(id).vitals.description != "Turned to stone." &&
-                           party->member(id).vitals.hit_points * 2 <
-                               party->member(id).character.sheet().hit_points;
+                    return id && ((party->member(id).vitals.dead && cleric_standing()) ||
+                                  (!party->member(id).vitals.dead &&
+                                   party->member(id).vitals.description != "Turned to stone." &&
+                                   party->member(id).vitals.hit_points * 2 <
+                                       party->member(id).character.sheet().hit_points));
                 });
         };
         const auto rest_until_healed = [&]
