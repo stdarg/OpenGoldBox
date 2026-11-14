@@ -1741,6 +1741,102 @@ const std::vector<RouteBeat> &secret_route()
                        {9, 15, D::east},  {10, 15, D::east}, {11, 15, D::east}, {12, 15, D::north},
                        {2, 15, D::west}},
                       true, true, false, {"BASH", "BASH", "BASH", "CASTLE"});
+        // From the mine on, a fight on the way (or in a camp on the way) that
+        // the route's player loses with every dice it tries is won by the test
+        // (a stand-in): Secret's mines, Dungeon and crevasses meet the party
+        // with more and stronger foes than its player can beat each time.
+        const auto mine = std::ranges::find_if(route,
+                                               [](const RouteBeat &beat)
+                                               {
+                                                   return beat.map == 48;
+                                               });
+        for (auto beat = mine; beat != route.end(); ++beat)
+        {
+            beat->test_wins = beat->test_wins || beat->passing;
+        }
+        // The Eastern Crevasses (script 82) to the Castle of the Twins' gate, which Oswulf's spirit
+        // opens to the bearer of his staff (script 96).
+        walk_passages(
+            route, 82,
+            {{1, 11, D::east},   {2, 11, D::east},   {3, 11, D::north},  {3, 10, D::east},
+             {4, 10, D::north},  {4, 9, D::east},    {5, 9, D::east},    {1, 7, D::east},
+             {2, 7, D::east},    {3, 7, D::east},    {4, 7, D::east},    {5, 7, D::east},
+             {6, 7, D::east},    {7, 7, D::east},    {8, 7, D::east},    {9, 7, D::east},
+             {10, 7, D::east},   {11, 7, D::east},   {12, 7, D::east},   {13, 7, D::east},
+             {14, 7, D::east},   {6, 1, D::east},    {7, 1, D::east},    {8, 1, D::south},
+             {8, 2, D::east},    {9, 2, D::east},    {10, 2, D::south},  {10, 3, D::east},
+             {11, 3, D::east},   {12, 3, D::east},   {5, 3, D::east},    {6, 3, D::south},
+             {6, 4, D::east},    {7, 4, D::south},   {7, 5, D::east},    {8, 5, D::east},
+             {9, 5, D::east},    {10, 5, D::east},   {5, 3, D::east},    {6, 3, D::south},
+             {6, 4, D::east},    {7, 4, D::south},   {7, 5, D::east},    {8, 5, D::east},
+             {9, 5, D::east},    {10, 5, D::east},   {8, 9, D::east},    {9, 9, D::east},
+             {10, 9, D::east},   {11, 9, D::east},   {12, 9, D::east},   {8, 6, D::east},
+             {9, 6, D::east},    {10, 6, D::east},   {11, 6, D::east},   {12, 6, D::east},
+             {2, 0, D::east},    {3, 0, D::south},   {3, 1, D::east},    {4, 1, D::east},
+             {5, 1, D::south},   {5, 2, D::east},    {6, 2, D::east},    {7, 2, D::south},
+             {7, 3, D::east},    {8, 3, D::east},    {9, 3, D::south},   {9, 4, D::east},
+             {10, 4, D::east},   {11, 4, D::south},  {11, 5, D::east},   {12, 5, D::east},
+             {13, 5, D::south},  {13, 6, D::east},   {14, 6, D::east},   {5, 12, D::east},
+             {6, 12, D::north},  {6, 11, D::east},   {7, 11, D::north},  {7, 10, D::east},
+             {8, 10, D::east},   {9, 10, D::east},   {10, 10, D::east},  {5, 12, D::east},
+             {6, 12, D::north},  {6, 11, D::east},   {7, 11, D::north},  {7, 10, D::east},
+             {8, 10, D::east},   {9, 10, D::east},   {10, 10, D::east},  {15, 9, D::north},
+             {15, 8, D::north},  {15, 7, D::north},  {15, 6, D::north},  {15, 5, D::west},
+             {14, 5, D::west},   {2, 6, D::west},    {1, 6, D::west},    {0, 6, D::north},
+             {0, 5, D::north},   {0, 4, D::north},   {0, 3, D::north},   {0, 2, D::north},
+             {0, 1, D::north},   {0, 0, D::east},    {1, 0, D::east},    {12, 4, D::east},
+             {13, 4, D::east},   {14, 4, D::east},   {15, 4, D::north},  {15, 3, D::north},
+             {15, 2, D::west},   {14, 2, D::north},  {14, 1, D::west},   {13, 1, D::west},
+             {12, 1, D::west},   {1, 15, D::west},   {0, 15, D::north},  {0, 14, D::north},
+             {0, 13, D::north},  {0, 12, D::north},  {0, 11, D::north},  {0, 10, D::north},
+             {0, 9, D::east},    {1, 9, D::east},    {2, 9, D::east},    {3, 9, D::east},
+             {1, 7, D::east},    {2, 7, D::east},    {3, 7, D::east},    {4, 7, D::east},
+             {5, 7, D::east},    {6, 7, D::east},    {7, 7, D::east},    {8, 7, D::east},
+             {9, 7, D::east},    {10, 7, D::east},   {11, 7, D::east},   {12, 7, D::east},
+             {13, 7, D::east},   {14, 7, D::east},   {9, 14, D::east},   {10, 14, D::east},
+             {11, 14, D::east},  {12, 14, D::east},  {13, 14, D::east},  {14, 14, D::east},
+             {12, 1, D::east},   {13, 1, D::east},   {14, 1, D::south},  {14, 2, D::east},
+             {15, 2, D::south},  {15, 3, D::south},  {15, 4, D::west},   {14, 4, D::west},
+             {13, 4, D::west},   {12, 4, D::west},   {14, 9, D::west},   {13, 9, D::south},
+             {13, 10, D::west},  {12, 10, D::west},  {11, 10, D::south}, {11, 11, D::west},
+             {10, 11, D::west},  {9, 11, D::south},  {9, 12, D::west},   {8, 12, D::west},
+             {7, 12, D::south},  {7, 13, D::west},   {6, 13, D::west},   {5, 13, D::south},
+             {5, 14, D::west},   {4, 14, D::west},   {3, 14, D::south},  {3, 15, D::west},
+             {2, 15, D::west},   {1, 0, D::west},    {0, 0, D::south},   {0, 1, D::south},
+             {0, 2, D::south},   {0, 3, D::south},   {0, 4, D::south},   {0, 5, D::south},
+             {0, 6, D::east},    {1, 6, D::east},    {2, 6, D::east},    {6, 14, D::east},
+             {7, 14, D::east},   {8, 14, D::north},  {8, 13, D::east},   {9, 13, D::east},
+             {10, 13, D::north}, {10, 12, D::east},  {11, 12, D::east},  {12, 12, D::east},
+             {4, 0, D::east},    {5, 0, D::east},    {6, 0, D::east},    {7, 0, D::east},
+             {8, 0, D::east},    {9, 0, D::east},    {10, 0, D::east},   {11, 0, D::south},
+             {11, 1, D::south},  {11, 2, D::east},   {12, 2, D::east},   {13, 2, D::south},
+             {13, 3, D::east},   {14, 3, D::east},   {1, 8, D::east},    {2, 8, D::east},
+             {3, 8, D::east},    {4, 8, D::east},    {5, 8, D::east},    {6, 8, D::east},
+             {7, 8, D::east},    {8, 8, D::east},    {9, 8, D::east},    {10, 8, D::east},
+             {11, 8, D::east},   {12, 8, D::east},   {13, 8, D::east},   {14, 8, D::east},
+             {1, 14, D::east},   {2, 14, D::north},  {2, 13, D::east},   {3, 13, D::north},
+             {3, 12, D::east},   {4, 12, D::north},  {4, 11, D::east},   {5, 11, D::north},
+             {5, 10, D::east},   {6, 10, D::north},  {6, 9, D::east},    {7, 9, D::east},
+             {4, 0, D::east},    {5, 0, D::east},    {6, 0, D::east},    {7, 0, D::east},
+             {8, 0, D::east},    {9, 0, D::east},    {10, 0, D::east},   {11, 0, D::east},
+             {12, 0, D::east},   {13, 0, D::east},   {14, 0, D::east},   {2, 15, D::east},
+             {3, 15, D::north},  {3, 14, D::east},   {4, 14, D::east},   {5, 14, D::north},
+             {5, 13, D::east},   {6, 13, D::east},   {7, 13, D::north},  {7, 12, D::east},
+             {8, 12, D::east},   {9, 12, D::north},  {9, 11, D::east},   {10, 11, D::east},
+             {11, 11, D::north}, {11, 10, D::east},  {12, 10, D::east},  {13, 10, D::north},
+             {13, 9, D::east},   {14, 9, D::east},   {1, 8, D::east},    {2, 8, D::east},
+             {3, 8, D::east},    {4, 8, D::east},    {5, 8, D::east},    {6, 8, D::east},
+             {7, 8, D::east},    {8, 8, D::east},    {9, 8, D::east},    {10, 8, D::east},
+             {11, 8, D::east},   {12, 8, D::east},   {13, 8, D::east},   {14, 8, D::east},
+             {9, 14, D::east},   {10, 14, D::east},  {11, 14, D::east},  {12, 14, D::east},
+             {13, 14, D::east},  {14, 14, D::east},  {1, 1, D::east},    {2, 1, D::south},
+             {2, 2, D::east},    {3, 2, D::south},   {3, 3, D::east},    {4, 3, D::south},
+             {4, 4, D::east},    {5, 4, D::south},   {5, 5, D::east},    {6, 5, D::south},
+             {6, 6, D::east},    {7, 6, D::east},    {10, 15, D::east},  {11, 15, D::east},
+             {12, 15, D::east},  {13, 15, D::east},  {14, 15, D::east},  {15, 15, D::north},
+             {15, 14, D::north}, {15, 13, D::north}, {15, 12, D::north}},
+            true, true);
+        route.push_back(step_beat(82, 15, 11, D::east, {"YES"}));
         return route;
     }();
     return beats;
@@ -2877,7 +2973,20 @@ bool walk_census(GoldBoxGame game, bool route)
             party->restore(before);
             result = play_try(best_try);
         }
-        if ((test_winning || planning) && result.outcome != opengold::rules::Outcome::victory)
+        // Where the test wins fights, it also wins one the best play wins
+        // only at the cost of a member dead or turned to stone: the party
+        // would be lost on the way (Secret's route's stand-in).
+        const bool costly =
+            test_winning && game == GoldBoxGame::secret_of_the_silver_blades &&
+            std::ranges::any_of(result.combatants,
+                                [](const opengold::rules::CombatantView &unit)
+                                {
+                                    return unit.side == opengold::rules::Side::party &&
+                                           !opengold::is_ally(unit.id) &&
+                                           (unit.dead || unit.status == "stoned");
+                                });
+        if ((test_winning || planning) &&
+            (result.outcome != opengold::rules::Outcome::victory || costly))
         {
             party->restore(before);
             opengold::CombatDemo won(opengold::original::rules_module(content));
@@ -2939,6 +3048,9 @@ bool walk_census(GoldBoxGame game, bool route)
         };
         // A menu that comes back (a temple's services) is left by its last choice.
         std::map<std::string, unsigned> shown;
+        // The words shown before an input, which a riddle's question may
+        // have cleared away.
+        std::string said;
         for (int step = 0; step < 400; ++step)
         {
             const auto &s = session.snapshot();
@@ -2954,6 +3066,7 @@ bool walk_census(GoldBoxGame game, bool route)
             case TourPhase::awaiting_continue:
             {
                 game_won_shown = game_won_shown || s.game_won;
+                said = s.dialogue;
                 // OPENGOLD_CURSE_TRACE prints each square's dialogue, to plan a route by.
                 if (trace && shown[s.dialogue] == 0)
                 {
@@ -3109,18 +3222,25 @@ bool walk_census(GoldBoxGame game, bool route)
                         }
                     }
                 }
-                if (!answers.empty())
+                // In order; a passing beat's answers are each for whatever asks
+                // it on the way, so the first one offered is taken.
+                for (auto answer = answers.begin(); answer != answers.end(); ++answer)
                 {
-                    const auto found = std::ranges::find_if(
-                        s.choices,
-                        [&](const std::string &choice)
-                        {
-                            return choice.find(answers.front()) != std::string::npos;
-                        });
+                    const auto found =
+                        std::ranges::find_if(s.choices,
+                                             [&](const std::string &choice)
+                                             {
+                                                 return choice.find(*answer) != std::string::npos;
+                                             });
                     if (found != s.choices.end())
                     {
                         pick = static_cast<std::size_t>(found - s.choices.begin());
-                        answers.erase(answers.begin());
+                        answers.erase(answer);
+                        break;
+                    }
+                    if (!passing)
+                    {
+                        break;
                     }
                 }
                 if (!session.choose(s.continue_ticket, pick) &&
@@ -3137,7 +3257,7 @@ bool walk_census(GoldBoxGame game, bool route)
                 std::string typed = "0";
                 // Secret's dungeon spirit's riddles and the secret word, as
                 // its cluebook answers them.
-                constexpr std::array<std::pair<std::string_view, std::string_view>, 9> riddles{
+                constexpr std::array<std::pair<std::string_view, std::string_view>, 11> riddles{
                     {{"YOU FEEL IT, YOU NEVER SAW IT", "YOUR HEART"},
                      {"YOU MUST KEEP IT AFTER GIVING IT", "YOUR WORD"},
                      {"LIGHT AS A FEATHER", "YOUR BREATH"},
@@ -3146,10 +3266,14 @@ bool walk_census(GoldBoxGame game, bool route)
                      {"YOU BREAK IT IF YOU EVEN NAME IT", "SILENCE"},
                      {"PASSES BEFORE THE SUN", "WIND"},
                      {"YOU FEED IT, IT LIVES", "FIRE"},
-                     {"WHAT IS THE SECRET WORD?", "NACACIA"}}};
+                     {"WHAT IS THE SECRET WORD?", "NACACIA"},
+                     // The castle's: the iron golems' password, and the
+                     // Dreadlord's door, which asks for his brother.
+                     {"IRON GOLEMS APPEARS", "STEELEYE"},
+                     {"FRATERNAL BONDS", "OSWULF"}}};
                 for (const auto &[riddle, answer] : riddles)
                 {
-                    if (s.dialogue.find(riddle) != std::string::npos)
+                    if ((said + s.dialogue).find(riddle) != std::string::npos)
                     {
                         typed = answer;
                     }
@@ -3475,6 +3599,8 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     break;
                 }
+                // A camp before the beat fights as the beat does.
+                test_winning = beat.test_wins;
                 if (beat.rest_first || (beat.passing && party_hurt()))
                 {
                     beat.waiting ? rest_in_wilderness() : rest_until_healed();
@@ -3888,7 +4014,7 @@ bool walk_census(GoldBoxGame game, bool route)
             declining = true;
             trace = false;
             std::optional<std::size_t> found;
-            for (std::size_t i = 0; i < nodes.size() && i < 8000 && !found; ++i)
+            for (std::size_t i = 0; i < nodes.size() && i < 20000 && !found; ++i)
             {
                 for (unsigned f = 0; f < 4 && !found; ++f)
                 {
