@@ -351,31 +351,38 @@ constexpr std::array<std::array<int, 17>, class_slot_count> experience_table_sec
 constexpr std::array<int, class_slot_count> curse_hit_dice_levels{10, 15, 10, 10, 11, 12, 11, 13};
 constexpr std::array<int, class_slot_count> curse_fixed_hit_points{2, 0, 3, 3, 2, 1, 2, 0};
 
-using SlotRow = std::array<int, 5>;
-// Spell slots of levels 1 to 5, for class levels 2 to 12 (Pool of Radiance's
-// stop at level 6, where its clerics and magic-users do).
-constexpr std::array<SlotRow, 11> cleric_slots{{{2, 0, 0, 0, 0},
-                                                {2, 1, 0, 0, 0},
-                                                {3, 2, 0, 0, 0},
-                                                {3, 3, 1, 0, 0},
-                                                {3, 3, 2, 0, 0},
-                                                {3, 3, 2, 1, 0},
-                                                {3, 3, 3, 2, 0},
-                                                {4, 4, 3, 2, 1},
-                                                {4, 4, 3, 3, 2},
-                                                {5, 4, 4, 3, 2},
-                                                {6, 5, 5, 3, 2}}};
-constexpr std::array<SlotRow, 11> magic_user_slots{{{2, 0, 0, 0, 0},
-                                                    {2, 1, 0, 0, 0},
-                                                    {3, 2, 0, 0, 0},
-                                                    {4, 2, 1, 0, 0},
-                                                    {4, 2, 2, 0, 0},
-                                                    {4, 3, 2, 1, 0},
-                                                    {4, 3, 3, 2, 0},
-                                                    {4, 3, 3, 2, 1},
-                                                    {4, 4, 3, 2, 2},
-                                                    {4, 4, 4, 3, 3},
-                                                    {4, 4, 4, 4, 4}}};
+using SlotRow = std::array<int, 7>;
+// Spell slots of levels 1 to 7, for class levels 2 to 15 (Secret's, its
+// classProgression summed). Pool of Radiance's and Curse's are the same to
+// level 12 at spell levels 1 to 5, and stop there (spell_slots).
+constexpr std::array<SlotRow, 14> cleric_slots{{{2, 0, 0, 0, 0, 0, 0},
+                                                {2, 1, 0, 0, 0, 0, 0},
+                                                {3, 2, 0, 0, 0, 0, 0},
+                                                {3, 3, 1, 0, 0, 0, 0},
+                                                {3, 3, 2, 0, 0, 0, 0},
+                                                {3, 3, 2, 1, 0, 0, 0},
+                                                {3, 3, 3, 2, 0, 0, 0},
+                                                {4, 4, 3, 2, 1, 0, 0},
+                                                {4, 4, 3, 3, 2, 0, 0},
+                                                {5, 4, 4, 3, 2, 1, 0},
+                                                {6, 5, 5, 3, 2, 2, 0},
+                                                {6, 6, 6, 4, 2, 2, 0},
+                                                {6, 6, 6, 5, 3, 2, 0},
+                                                {7, 7, 7, 5, 4, 2, 0}}};
+constexpr std::array<SlotRow, 14> magic_user_slots{{{2, 0, 0, 0, 0, 0, 0},
+                                                    {2, 1, 0, 0, 0, 0, 0},
+                                                    {3, 2, 0, 0, 0, 0, 0},
+                                                    {4, 2, 1, 0, 0, 0, 0},
+                                                    {4, 2, 2, 0, 0, 0, 0},
+                                                    {4, 3, 2, 1, 0, 0, 0},
+                                                    {4, 3, 3, 2, 0, 0, 0},
+                                                    {4, 3, 3, 2, 1, 0, 0},
+                                                    {4, 4, 3, 2, 2, 0, 0},
+                                                    {4, 4, 4, 3, 3, 0, 0},
+                                                    {4, 4, 4, 4, 4, 1, 0},
+                                                    {5, 5, 5, 4, 4, 2, 0},
+                                                    {5, 5, 5, 4, 4, 2, 1},
+                                                    {5, 5, 5, 5, 5, 2, 1}}};
 
 using SkillRow = std::array<int, 8>;
 // A thief's chances by thief level 1 to 9.
@@ -1158,8 +1165,9 @@ std::optional<int> experience_for_level(ClassSlot slot, int level, GoldBoxGame g
 std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<const int> learned,
                               GoldBoxGame game)
 {
+    // Seventh-level slots need Wisdom 18 whatever the Intelligence.
     const auto cleric_slots =
-        spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric), wisdom);
+        spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric), wisdom, 9, game);
     // Detect Magic, Read Magic, Sleep, and Shield (Pool of Radiance) or
     // Enlarge (Curse).
     const std::array<int, 4> first_magic_user_spells{
@@ -1170,7 +1178,7 @@ std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<c
     {
         const auto *known_spell = spell(number);
         const bool cleric_spell =
-            known_spell->caster_class == SpellClass::cleric && known_spell->level <= 5 &&
+            known_spell->caster_class == SpellClass::cleric && known_spell->level <= 7 &&
             cleric_slots[static_cast<std::size_t>(known_spell->level - 1)] > 0;
         const bool magic_user_spell =
             magic_user &&
@@ -1385,15 +1393,31 @@ std::optional<int> racial_level_limit(Race race, ClassSlot slot, const AbilityAr
     return std::nullopt;
 }
 
-std::array<int, 5> spell_slots(ClassSlot slot, int level, int wisdom)
+SpellSlots spell_slots(ClassSlot slot, int level, int wisdom, int intelligence, GoldBoxGame game)
 {
     if ((slot != C::cleric && slot != C::magic_user) || level < 1)
     {
         return {};
     }
+    const bool secret = game == GoldBoxGame::secret_of_the_silver_blades;
     const auto &table = slot == C::cleric ? cleric_slots : magic_user_slots;
-    SlotRow slots = level == 1 ? SlotRow{1, 0, 0, 0, 0}
-                               : table[static_cast<std::size_t>(std::min(level, 12) - 2)];
+    SlotRow slots = level == 1
+                        ? SlotRow{1, 0, 0, 0, 0, 0, 0}
+                        : table[static_cast<std::size_t>(std::min(level, secret ? 15 : 12) - 2)];
+    if (!secret)
+    {
+        slots[5] = slots[6] = 0;
+    }
+    else
+    {
+        // Sixth- and seventh-level slots need the wit for them: Wisdom 17
+        // and 18 a cleric, Intelligence 12 and 14 a magic-user (classcal.pas).
+        const auto [sixth, seventh] = slot == C::cleric
+                                          ? std::pair{wisdom >= 17, wisdom >= 18}
+                                          : std::pair{intelligence >= 12, intelligence >= 14};
+        slots[5] = sixth ? slots[5] : 0;
+        slots[6] = seventh ? slots[6] : 0;
+    }
     if (slot == C::cleric)
     {
         // The original's Wisdom bonus adds a slot only at a spell level the

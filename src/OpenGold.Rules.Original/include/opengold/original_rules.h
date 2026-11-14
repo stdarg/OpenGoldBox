@@ -343,9 +343,13 @@ enum class ThiefSkill : unsigned
 [[nodiscard]] std::vector<int> known_spells(const ClassLevels &levels, int wisdom,
                                             std::span<const int> learned, GoldBoxGame game);
 
-// Spell slots of levels 1 to 5 for a cleric or magic-user level, with the
-// cleric's Wisdom bonus; zeros for other classes.
-[[nodiscard]] std::array<int, 5> spell_slots(ClassSlot slot, int level, int wisdom);
+using SpellSlots = std::array<int, 7>;
+
+// Spell slots of levels 1 to 7 for a cleric or magic-user level, with the
+// cleric's Wisdom bonus; zeros for other classes. Only Secret reaches sixth-
+// and seventh-level spells, and only with the Wisdom or Intelligence for them.
+[[nodiscard]] SpellSlots spell_slots(ClassSlot slot, int level, int wisdom, int intelligence = 9,
+                                     GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 
 // Combat (docs/ORIGINAL-RULES.md, plan step 4).
 

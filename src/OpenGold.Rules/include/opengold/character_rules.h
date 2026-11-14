@@ -159,8 +159,8 @@ struct CharacterSheet
         int race{}, profession{}, alignment{};
         // Percent chances, empty for a character without thief levels.
         std::array<int, 8> thief_skills{};
-        // Spell slots of levels 1 to 5.
-        std::array<int, 5> cleric_slots{}, magic_user_slots{};
+        // Spell slots of levels 1 to 7.
+        std::array<int, 7> cleric_slots{}, magic_user_slots{};
         // The spells it knows, by the original's numbers (original::spell).
         std::vector<int> known_spells;
     };

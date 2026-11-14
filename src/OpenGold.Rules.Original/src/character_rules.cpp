@@ -714,11 +714,12 @@ class OriginalCharacterRules final : public rules::CharacterRules
         original.alignment = static_cast<int>(alignment);
         original.thief_skills = thief_skills(chosen.race, level_in(levels, ClassSlot::thief),
                                              ability[Ability::dexterity], game_);
-        original.cleric_slots = spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric),
-                                            ability[Ability::wisdom]);
+        original.cleric_slots =
+            spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric),
+                        ability[Ability::wisdom], ability[Ability::intelligence], game_);
         original.magic_user_slots =
             spell_slots(ClassSlot::magic_user, level_in(levels, ClassSlot::magic_user),
-                        ability[Ability::wisdom]);
+                        ability[Ability::wisdom], ability[Ability::intelligence], game_);
         original.known_spells =
             known_spells(levels, ability[Ability::wisdom], trained.learned_spells, game_);
         sheet.original = original;
@@ -796,10 +797,10 @@ class OriginalCharacterRules final : public rules::CharacterRules
                                             from.scores[Ability::dexterity], game_);
         numbers.cleric_slots =
             spell_slots(ClassSlot::cleric, level_in(from.levels, ClassSlot::cleric),
-                        from.scores[Ability::wisdom]);
+                        from.scores[Ability::wisdom], from.scores[Ability::intelligence], game_);
         numbers.magic_user_slots =
             spell_slots(ClassSlot::magic_user, level_in(from.levels, ClassSlot::magic_user),
-                        from.scores[Ability::wisdom]);
+                        from.scores[Ability::wisdom], from.scores[Ability::intelligence], game_);
         // Its spell book as it was: no starting spells of this game's it lacked.
         numbers.known_spells =
             known_spells(from.levels, from.scores[Ability::wisdom], from.learned, game_);
@@ -854,11 +855,12 @@ class OriginalCharacterRules final : public rules::CharacterRules
         numbers.alignment = static_cast<int>(alignment);
         numbers.thief_skills = thief_skills(race, level_in(levels, ClassSlot::thief),
                                             ability[Ability::dexterity], game_);
-        numbers.cleric_slots = spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric),
-                                           ability[Ability::wisdom]);
+        numbers.cleric_slots =
+            spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric),
+                        ability[Ability::wisdom], ability[Ability::intelligence], game_);
         numbers.magic_user_slots =
             spell_slots(ClassSlot::magic_user, level_in(levels, ClassSlot::magic_user),
-                        ability[Ability::wisdom]);
+                        ability[Ability::wisdom], ability[Ability::intelligence], game_);
         // A magic-user's book: the record's known-spell flags, by number.
         std::vector<int> learned;
         for (std::size_t n = 0; n < record.spell_book.size(); ++n)

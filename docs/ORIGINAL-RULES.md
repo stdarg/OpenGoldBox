@@ -195,8 +195,14 @@ chosen by the game as *Curse*'s are. In progress (2026-11-13):
 - **Spell numbers:** *Secret* keeps *Curse*'s, but its own spells (Heal 36,
   Harm 56, Youth 63, Barkskin 90, Charm Person or Mammal 96, the druid's Cure
   Light Wounds 98, and 101 to 117) are numbered 200 higher in the rules.
-- **Still to come:** *Secret*'s own spells and slots to seventh-level spells
-  and class level 15, attacks per round past level 12, and *Secret*'s combat.
+- **Spell slots** go on to class level 15 and seventh-level spells (its
+  classProgression, level by level): a cleric's sixth-level slots from level
+  11, a magic-user's from 12 and its seventh from 14. The sixth and seventh
+  need Wisdom 17 and 18 for a cleric, Intelligence 12 and 14 for a
+  magic-user. The character sheet shows up to seven levels of slots.
+- **Still to come:** *Secret*'s own spells (Heal, Harm, Death Spell,
+  Disintegrate and the rest), the paladin's and ranger's spells (in *Curse*
+  too), attacks per round past level 12, and *Secret*'s combat.
 
 ## What the original rules cover
 

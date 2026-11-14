@@ -165,7 +165,7 @@ int slots_for(const CharacterSheet::Original &numbers, const Spell &known)
 {
     const auto &slots =
         known.caster_class == SpellClass::cleric ? numbers.cleric_slots : numbers.magic_user_slots;
-    return known.level >= 1 && known.level <= 5 ? slots[static_cast<std::size_t>(known.level - 1)]
+    return known.level >= 1 && known.level <= 7 ? slots[static_cast<std::size_t>(known.level - 1)]
                                                 : 0;
 }
 
@@ -180,11 +180,12 @@ void recount_levels(CharacterSheet &sheet)
     numbers.thief_skills =
         thief_skills(static_cast<Race>(numbers.race), level_in(levels, ClassSlot::thief),
                      sheet.scores[Ability::dexterity], game);
-    numbers.cleric_slots = spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric),
-                                       sheet.scores[Ability::wisdom]);
+    numbers.cleric_slots =
+        spell_slots(ClassSlot::cleric, level_in(levels, ClassSlot::cleric),
+                    sheet.scores[Ability::wisdom], sheet.scores[Ability::intelligence], game);
     numbers.magic_user_slots =
         spell_slots(ClassSlot::magic_user, level_in(levels, ClassSlot::magic_user),
-                    sheet.scores[Ability::wisdom]);
+                    sheet.scores[Ability::wisdom], sheet.scores[Ability::intelligence], game);
     std::vector<int> learned;
     for (const int number : numbers.known_spells)
     {
@@ -1029,7 +1030,8 @@ AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &she
         return options;
     }
     const auto slots =
-        spell_slots(ClassSlot::magic_user, magic_user + 1, sheet.scores[Ability::wisdom]);
+        spell_slots(ClassSlot::magic_user, magic_user + 1, sheet.scores[Ability::wisdom],
+                    sheet.scores[Ability::intelligence], game_of(sheet.identity));
     for (const int number : castable_spells(game_of(sheet.identity)))
     {
         const auto *offered = spell(number);

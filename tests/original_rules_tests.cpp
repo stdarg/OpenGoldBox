@@ -427,18 +427,33 @@ void training()
 
 void spell_slots_and_wisdom()
 {
-    check(spell_slots(ClassSlot::cleric, 1, 12) == std::array<int, 5>{1, 0, 0, 0, 0},
+    check(spell_slots(ClassSlot::cleric, 1, 12) == SpellSlots{1, 0, 0, 0, 0, 0, 0},
           "A level 1 cleric has one slot");
-    check(spell_slots(ClassSlot::cleric, 1, 14) == std::array<int, 5>{3, 0, 0, 0, 0},
+    check(spell_slots(ClassSlot::cleric, 1, 14) == SpellSlots{3, 0, 0, 0, 0, 0, 0},
           "Wisdom 14 adds two first-level slots");
-    check(spell_slots(ClassSlot::cleric, 3, 15) == std::array<int, 5>{4, 2, 0, 0, 0},
+    check(spell_slots(ClassSlot::cleric, 3, 15) == SpellSlots{4, 2, 0, 0, 0, 0, 0},
           "Wisdom 15 adds a second-level slot at level 3");
-    check(spell_slots(ClassSlot::cleric, 5, 17) == std::array<int, 5>{5, 5, 2, 0, 0},
+    check(spell_slots(ClassSlot::cleric, 5, 17) == SpellSlots{5, 5, 2, 0, 0, 0, 0},
           "Wisdom 17 adds slots at each level a level 5 cleric casts");
-    check(spell_slots(ClassSlot::magic_user, 4, 18) == std::array<int, 5>{3, 2, 0, 0, 0},
+    check(spell_slots(ClassSlot::magic_user, 4, 18) == SpellSlots{3, 2, 0, 0, 0, 0, 0},
           "Wisdom does nothing for a magic-user");
-    check(spell_slots(ClassSlot::fighter, 5, 18) == std::array<int, 5>{},
-          "A fighter has no spell slots");
+    check(spell_slots(ClassSlot::fighter, 5, 18) == SpellSlots{}, "A fighter has no spell slots");
+    // Secret's casters go on to level 15 and seventh-level spells, the sixth
+    // and seventh only with Wisdom 17 and 18 (clerics), Intelligence 12 and
+    // 14 (magic-users).
+    const auto curse = opengold::GoldBoxGame::curse_of_the_azure_bonds;
+    const auto secret = opengold::GoldBoxGame::secret_of_the_silver_blades;
+    check(spell_slots(ClassSlot::cleric, 15, 18, 9, secret) == SpellSlots{9, 9, 8, 6, 4, 2, 0} &&
+              spell_slots(ClassSlot::cleric, 15, 16, 9, secret)[5] == 0,
+          "A level 15 cleric of Wisdom 18 casts sixth-level spells");
+    check(spell_slots(ClassSlot::magic_user, 15, 9, 14, secret) ==
+                  SpellSlots{5, 5, 5, 5, 5, 2, 1} &&
+              spell_slots(ClassSlot::magic_user, 15, 9, 13, secret)[6] == 0,
+          "A level 15 magic-user of Intelligence 14 casts a seventh-level spell");
+    check(spell_slots(ClassSlot::cleric, 12, 18, 9, curse)[5] == 0 &&
+              spell_slots(ClassSlot::magic_user, 14, 9, 18, curse) ==
+                  SpellSlots{4, 4, 4, 4, 4, 0, 0},
+          "Curse's casters stop at level 12 and fifth-level spells");
 }
 
 void dexterity_bonuses()
@@ -612,8 +627,8 @@ void curse_tables_and_creation()
     check(castable_spells(pool).size() == 56 &&
               std::ranges::find(curse_spells, 174) != curse_spells.end(),
           "Curse's characters may know its spells too");
-    check(spell_slots(ClassSlot::magic_user, 9, 10) == std::array<int, 5>{4, 3, 3, 2, 1} &&
-              spell_slots(ClassSlot::cleric, 9, 18) == std::array<int, 5>{6, 6, 4, 3, 1},
+    check(spell_slots(ClassSlot::magic_user, 9, 10) == SpellSlots{4, 3, 3, 2, 1, 0, 0} &&
+              spell_slots(ClassSlot::cleric, 9, 18) == SpellSlots{6, 6, 4, 3, 1, 0, 0},
           "Slots go on to fifth-level spells, a cleric of 18 Wisdom with one more at fourth");
     ClassLevels cleric9{};
     level_in(cleric9, ClassSlot::cleric) = 9;
@@ -683,7 +698,7 @@ void creation_behind_the_rules_interface()
               sheet.level_classes == std::vector<std::string>{"fighter", "magic_user"},
           "A fighter/magic-user starts at level 1 in both classes");
     check(sheet.original && sheet.original->thac0 == 20 && sheet.hit_points >= 1 &&
-              sheet.original->magic_user_slots == std::array<int, 5>{1, 0, 0, 0, 0},
+              sheet.original->magic_user_slots == std::array<int, 7>{1, 0, 0, 0, 0, 0, 0},
           "The sheet carries the original's THAC0, Hit Points and spell slots");
     for (const auto ability : every_ability)
     {

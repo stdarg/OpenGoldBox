@@ -6,16 +6,16 @@ msgstr "Project-Id-Version: OpenGoldBox\nLanguage: en\nMIME-Version: 1.0\nConten
 msgid "\n\n[theme_emphasis]Items[/theme_emphasis]\nNo equipped item modifiers.\n\n[theme_emphasis]Spells[/theme_emphasis]\nNo active spell modifiers."
 msgstr "\n\n[theme_emphasis]Items[/theme_emphasis]\nNo equipped item modifiers.\n\n[theme_emphasis]Spells[/theme_emphasis]\nNo active spell modifiers."
 
-#: src/OpenGoldBox/character_sheet_text.cpp:230
+#: src/OpenGoldBox/character_sheet_text.cpp:231
 msgid "\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]"
 msgstr "\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:193
+#: src/OpenGoldBox/character_sheet_text.cpp:194
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "   Hit Dice: {dice}"
 msgstr "   Hit Dice: {dice}"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:196 src/OpenGoldBox/character_sheet_text.cpp:78
+#: src/OpenGoldBox/character_sheet_text.cpp:197 src/OpenGoldBox/character_sheet_text.cpp:78
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "   Party gold {gold}   XP {xp}"
 msgstr "   Party gold {gold}   XP {xp}"
@@ -65,7 +65,7 @@ msgstr " and "
 msgid " or "
 msgstr " or "
 
-#: src/OpenGoldBox/character_sheet_text.cpp:259
+#: src/OpenGoldBox/character_sheet_text.cpp:260
 msgid "* Proficient saving throw"
 msgstr "* Proficient saving throw"
 
@@ -274,7 +274,7 @@ msgstr "A disciplined martial artist. Primary abilities: Dexterity and Wisdom. H
 msgid "A divine scroll: a Cleric, Druid, Paladin or Ranger reads its spells. A level-13 Thief reads any scroll."
 msgstr "A divine scroll: a Cleric, Druid, Paladin or Ranger reads its spells. A level-13 Thief reads any scroll."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1200
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1204
 msgid "A drain takes more levels than the character has"
 msgstr "A drain takes more levels than the character has"
 
@@ -531,7 +531,7 @@ msgstr "A wizard who learns powerful spells from a spellbook but fights poorly a
 msgid "AC {ac}"
 msgstr "AC {ac}"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:280
+#: src/OpenGoldBox/character_sheet_text.cpp:281
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "AC {ac}   Speed {speed} ft"
 msgstr "AC {ac}   Speed {speed} ft"
@@ -895,7 +895,7 @@ msgstr "Ally"
 msgid "Already added. Use Rejoin party for a reserved member."
 msgstr "Already added. Use Rejoin party for a reserved member."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:763 src/OpenGold.Rules.Original/src/rules_module.cpp:769
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:766 src/OpenGold.Rules.Original/src/rules_module.cpp:772
 msgid "Already using another item there"
 msgstr "Already using another item there"
 
@@ -1177,7 +1177,7 @@ msgstr "Attribute bonuses: Intelligence, Wisdom, Charisma.\nSkills: Insight, Rel
 msgid "Attribute bonuses: Strength, Dexterity, Constitution.\nSkills: Athletics, Intimidation.\nFeat: Savage Attacker."
 msgstr "Attribute bonuses: Strength, Dexterity, Constitution.\nSkills: Athletics, Intimidation.\nFeat: Savage Attacker."
 
-#: src/OpenGoldBox/character_creation_view.cpp:56 src/OpenGoldBox/character_sheet_text.cpp:229 src/OpenGoldBox/character_sheet_text.cpp:85
+#: src/OpenGoldBox/character_creation_view.cpp:56 src/OpenGoldBox/character_sheet_text.cpp:230 src/OpenGoldBox/character_sheet_text.cpp:85
 msgid "Attributes"
 msgstr "Attributes"
 
@@ -2054,7 +2054,7 @@ msgstr "Cast a spell or use a feature outside combat."
 msgid "Cast spell"
 msgstr "Cast spell"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1543
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1547
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr "Cast {spell}"
@@ -3249,7 +3249,7 @@ msgstr "Dash"
 msgid "Dazed"
 msgstr "Dazed"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:201 src/OpenGoldBox/character_sheet_text.cpp:83
+#: src/OpenGoldBox/character_sheet_text.cpp:202 src/OpenGoldBox/character_sheet_text.cpp:83
 msgid "Dead"
 msgstr "Dead"
 
@@ -3928,7 +3928,7 @@ msgstr "Empowered Strikes"
 msgid "Empowered Strikes: Unarmed Strikes deal Force damage.\nOpen Hand: Wholeness of Body, a Bonus Action that heals the Martial Arts die + Wisdom, Wisdom modifier times per Long Rest.\nUnarmored Movement +15 feet."
 msgstr "Empowered Strikes: Unarmed Strikes deal Force damage.\nOpen Hand: Wholeness of Body, a Bonus Action that heals the Martial Arts die + Wisdom, Wisdom modifier times per Long Rest.\nUnarmored Movement +15 feet."
 
-#: src/OpenGoldBox/character_sheet_text.cpp:332
+#: src/OpenGoldBox/character_sheet_text.cpp:333
 msgid "Empty"
 msgstr "Empty"
 
@@ -4303,7 +4303,7 @@ msgstr "Feats"
 msgid "Features"
 msgstr "Features"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:317
+#: src/OpenGoldBox/character_sheet_text.cpp:318
 msgid "Features and choices"
 msgstr "Features and choices"
 
@@ -4517,7 +4517,7 @@ msgstr "Fire's Burn"
 msgid "Fireball"
 msgstr "Fireball"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:113
+#: src/OpenGoldBox/character_sheet_text.cpp:114
 msgid "First level"
 msgstr "First level"
 
@@ -4851,7 +4851,7 @@ msgstr "Full hit points."
 msgid "Fumble"
 msgstr "Fumble"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:172
+#: src/OpenGoldBox/character_sheet_text.cpp:173
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Future class goals: {classes}\n\n"
 msgstr "Future class goals: {classes}\n\n"
@@ -5469,7 +5469,7 @@ msgstr "Hit Point maximum lowered by {value} until Greater Restoration."
 msgid "Hit Point maximum lowered by {value} until a Long Rest."
 msgstr "Hit Point maximum lowered by {value} until a Long Rest."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:583 src/OpenGold.Rules.Original/src/rules_module.cpp:598
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:586 src/OpenGold.Rules.Original/src/rules_module.cpp:601
 msgid "Hit Points outside the character's range"
 msgstr "Hit Points outside the character's range"
 
@@ -5834,11 +5834,11 @@ msgstr "Invalid advancement training choice"
 msgid "Invalid original-rules combat checkpoint"
 msgstr "Invalid original-rules combat checkpoint"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:556
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:559
 msgid "Invalid original-rules profile"
 msgstr "Invalid original-rules profile"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:329 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:384
+#: src/OpenGoldBox/character_sheet_text.cpp:330 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:384
 msgid "Inventory"
 msgstr "Inventory"
 
@@ -5899,7 +5899,7 @@ msgstr "It is not {name}'s turn."
 msgid "It takes a bottle of Magic Ink of the spell's level or higher"
 msgstr "It takes a bottle of Magic Ink of the spell's level or higher"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:730
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:733
 msgid "It's cursed"
 msgstr "It's cursed"
 
@@ -6106,7 +6106,7 @@ msgstr "Lay On Hands: cure Poisoned"
 msgid "Lay On Hands: cure Poisoned (5)"
 msgstr "Lay On Hands: cure Poisoned (5)"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1535
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1539
 msgid "Lay on hands"
 msgstr "Lay on hands"
 
@@ -7437,7 +7437,7 @@ msgstr "No one else can get away. Your party fights on."
 msgid "No one in the party needs {spell}."
 msgstr "No one in the party needs {spell}."
 
-#: src/OpenGold.Rules.Original/src/combat_session.cpp:5879 src/OpenGold.Rules.Original/src/rules_module.cpp:567
+#: src/OpenGold.Rules.Original/src/combat_session.cpp:5879 src/OpenGold.Rules.Original/src/rules_module.cpp:570
 msgid "No original-rules record for "
 msgstr "No original-rules record for "
 
@@ -7453,7 +7453,7 @@ msgstr "No sanctuary is prepared: cast Word of Recall in a temple of New Phlan f
 msgid "No spell choices for this class"
 msgstr "No spell choices for this class"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:543
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:546
 msgid "No such level under the original rules"
 msgstr "No such level under the original rules"
 
@@ -7477,7 +7477,7 @@ msgstr "Non-binary"
 msgid "Nonbinary"
 msgstr "Nonbinary"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:298 src/OpenGoldBox/game_menu_view.cpp:388
+#: src/OpenGoldBox/character_sheet_text.cpp:299 src/OpenGoldBox/game_menu_view.cpp:388
 msgid "None"
 msgstr "None"
 
@@ -7493,7 +7493,7 @@ msgstr "Norris the Gray"
 msgid "North"
 msgstr "North"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:618
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:621
 msgid "Not an item of the original rules"
 msgstr "Not an item of the original rules"
 
@@ -7686,7 +7686,7 @@ msgstr "Only a conscious member can use the wand."
 msgid "Only a damaged simulacrum can be repaired"
 msgstr "Only a damaged simulacrum can be repaired"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1132
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1136
 msgid "Only a magic-user's training learns a spell"
 msgstr "Only a magic-user's training learns a spell"
 
@@ -8297,7 +8297,7 @@ msgstr "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style o
 msgid "Prepared spells: select at least one"
 msgstr "Prepared spells: select at least one"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:225
+#: src/OpenGoldBox/character_sheet_text.cpp:226
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Prepared spells: {spells}"
 msgstr "Prepared spells: {spells}"
@@ -8578,7 +8578,7 @@ msgstr "Raise Dead can bring it back within ten days of its death."
 msgid "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 msgstr "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1592
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1596
 msgid "Raise Dead cannot bring this member back"
 msgstr "Raise Dead cannot bring this member back"
 
@@ -8844,7 +8844,7 @@ msgstr "Readied"
 msgid "Ready"
 msgstr "Ready"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:205
+#: src/OpenGoldBox/character_sheet_text.cpp:206
 msgid "Ready to level up"
 msgstr "Ready to level up"
 
@@ -9645,7 +9645,7 @@ msgstr "Saving Throws"
 msgid "Saving throws"
 msgstr "Saving throws"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:262
+#: src/OpenGoldBox/character_sheet_text.cpp:263
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Saving throws include {bonus} from worn items."
 msgstr "Saving throws include {bonus} from worn items."
@@ -9736,7 +9736,7 @@ msgstr "Second Wind"
 msgid "Second Wind: {count}"
 msgstr "Second Wind: {count}"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:113
+#: src/OpenGoldBox/character_sheet_text.cpp:114
 msgid "Second level"
 msgstr "Second level"
 
@@ -9862,6 +9862,10 @@ msgstr "Self-Restoration"
 #: src/OpenGoldBox/godot/scenes/tour_inventory_panel.tscn:78
 msgid "Sell"
 msgstr "Sell"
+
+#: src/OpenGoldBox/character_sheet_text.cpp:115
+msgid "Seventh level"
+msgstr "Seventh level"
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:83
 msgid "Shadowdale Dungeon"
@@ -9991,6 +9995,10 @@ msgstr "Simulacrum"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Simulacrum copies a living member that is no simulacrum"
 msgstr "Simulacrum copies a living member that is no simulacrum"
+
+#: src/OpenGoldBox/character_sheet_text.cpp:115
+msgid "Sixth level"
+msgstr "Sixth level"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Size"
@@ -10560,7 +10568,7 @@ msgstr "Starting level"
 msgid "Starts with 3d6 x 10 gp to buy its gear. Preview portraits and both combat poses before adding."
 msgstr "Starts with 3d6 x 10 gp to buy its gear. Preview portraits and both combat poses before adding."
 
-#: src/OpenGoldBox/character_sheet_text.cpp:294
+#: src/OpenGoldBox/character_sheet_text.cpp:295
 msgid "Status Effects"
 msgstr "Status Effects"
 
@@ -10946,11 +10954,11 @@ msgstr "Temporary HP:"
 msgid "Teshwave Ruins"
 msgstr "Teshwave Ruins"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1565
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1569
 msgid "That cannot be done now"
 msgstr "That cannot be done now"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1661
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1665
 msgid "That cannot be used now"
 msgstr "That cannot be used now"
 
@@ -10962,7 +10970,7 @@ msgstr "That is not a Manual of Bodily Health"
 msgid "That potion works only in combat"
 msgstr "That potion works only in combat"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1585 src/OpenGold.Rules.Original/src/rules_module.cpp:1733
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1589 src/OpenGold.Rules.Original/src/rules_module.cpp:1737
 msgid "That spell cannot be cast now"
 msgstr "That spell cannot be cast now"
 
@@ -10970,11 +10978,11 @@ msgstr "That spell cannot be cast now"
 msgid "That spell cannot be copied into the spellbook"
 msgstr "That spell cannot be copied into the spellbook"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1143
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1147
 msgid "That spell cannot be learned"
 msgstr "That spell cannot be learned"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:886
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:889
 msgid "That spell cannot be memorized"
 msgstr "That spell cannot be memorized"
 
@@ -11088,7 +11096,7 @@ msgstr "The beam turns to {target}."
 msgid "The cantrip reaches 30 feet farther per Warlock level."
 msgstr "The cantrip reaches 30 feet farther per Warlock level."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1160
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1164
 msgid "The character has no levels in a class it trained in"
 msgstr "The character has no levels in a class it trained in"
 
@@ -11127,7 +11135,7 @@ msgstr "The cloud drifts."
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr "The creature that hit it this turn attacks it with Disadvantage."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1596
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1600
 msgid "The dead cannot be healed"
 msgstr "The dead cannot be healed"
 
@@ -11311,7 +11319,7 @@ msgstr "The sunlight ends the magical Darkness."
 msgid "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 msgstr "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1388
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1392
 msgid "The temple cannot help with that"
 msgstr "The temple cannot help with that"
 
@@ -11440,7 +11448,7 @@ msgstr "Thirsting Blade's Extra Attack becomes two: attack three times with your
 msgid "This armor imposes Disadvantage on Dexterity (Stealth) checks."
 msgstr "This armor imposes Disadvantage on Dexterity (Stealth) checks."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1099
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1103
 msgid "This character is not ready to train"
 msgstr "This character is not ready to train"
 
@@ -11595,7 +11603,7 @@ msgstr "To start in a class, your scores must reach its minimums. Classes in gra
 msgid "Too heavy to carry"
 msgstr "Too heavy to carry"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:891
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:894
 msgid "Too many spells of that level"
 msgstr "Too many spells of that level"
 
@@ -11914,7 +11922,7 @@ msgstr "Unequip selected"
 msgid "Unfilled cantrip choices remain pending. More choices will become available as spell support expands."
 msgstr "Unfilled cantrip choices remain pending. More choices will become available as spell support expands."
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:722
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:725
 msgid "Unknown equipment candidate"
 msgstr "Unknown equipment candidate"
 
@@ -12624,7 +12632,7 @@ msgstr "Worn: ordinary fire deals no damage; magical fire deals 2 less per damag
 msgid "Write a scroll of {spell} (Magic Ink of level {level} or higher, {hours} hours)"
 msgstr "Write a scroll of {spell} (Magic Ink of level {level} or higher, {hours} hours)"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:743
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:746
 msgid "Wrong class"
 msgstr "Wrong class"
 
@@ -12730,7 +12738,7 @@ msgstr "Your camp is attacked!"
 msgid "Your character: {race} / {gender} / {class}"
 msgstr "Your character: {race} / {gender} / {class}"
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:773
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:776
 msgid "Your hands are full!"
 msgstr "Your hands are full!"
 
@@ -12772,7 +12780,7 @@ msgstr "[theme_emphasis]{ability} save: {bonus} | {target}[/theme_emphasis]\n{mo
 msgid "[theme_font=sheet_title]{name}[/theme_font]\nLevel {levels} / {race} / {gender} / {class}\n{alignment} / Age {age}\n\n"
 msgstr "[theme_font=sheet_title]{name}[/theme_font]\nLevel {levels} / {race} / {gender} / {class}\n{alignment} / Age {age}\n\n"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:143
+#: src/OpenGoldBox/character_sheet_text.cpp:144
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "[theme_font=sheet_title]{name}[/theme_font]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n"
 msgstr "[theme_font=sheet_title]{name}[/theme_font]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n"
@@ -13336,7 +13344,7 @@ msgstr "{game} game files"
 msgid "{hand} — {weapon}"
 msgstr "{hand} — {weapon}"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:326
+#: src/OpenGoldBox/character_sheet_text.cpp:327
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{heading}: {names}"
 msgstr "{heading}: {names}"
