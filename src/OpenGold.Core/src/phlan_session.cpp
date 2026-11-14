@@ -2658,9 +2658,17 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
     }
     else
     {
+        // Gateway's engine prompts (a CALL) clear the text window once answered.
+        const auto &pending = machine_.pending_request();
+        const bool engine_prompt =
+            pending && pending->instruction && pending->instruction->opcode == 45;
         if (!machine_.resume(menu_request_, choice))
         {
             return false;
+        }
+        if (engine_prompt)
+        {
+            snapshot_.dialogue.clear();
         }
         snapshot_.phase = TourPhase::running;
     }

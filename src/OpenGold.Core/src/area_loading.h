@@ -78,20 +78,39 @@ class AreaFiles
         return directory_;
     }
 
+    [[nodiscard]] GoldBoxGame game() const noexcept
+    {
+        return game_;
+    }
+
     [[nodiscard]] const DaxDecodeResult &archive(const std::string &name) const;
     // A family's file for a disk ("SPRIT", 2 is SPRIT2.DAX): Secret of the
     // Silver Blades keeps one sprite and one combat icon file, numbered 1, for
     // every disk.
     [[nodiscard]] std::string disk_archive(std::string_view family, unsigned disk) const;
     [[nodiscard]] bool has_archive(const std::string &name) const;
+    // A family's files for a disk, in the order the original looks for a
+    // record: Gateway to the Savage Frontier first looks in the file without a
+    // disk number (8X8D.DAX), when there is one, then in the disk's (its LoadDax).
+    [[nodiscard]] std::vector<std::string> disk_archives(std::string_view family,
+                                                         unsigned disk) const;
+    // The first of disk_archives that exists and holds the record; throws
+    // EclError when none does.
+    [[nodiscard]] std::string disk_record_archive(std::string_view family, unsigned disk,
+                                                  unsigned id) const;
     // Throws EclError naming the archive when the record is missing.
     [[nodiscard]] const std::vector<std::uint8_t> &record(const std::string &archive_name,
                                                           unsigned id) const;
     // An archive's fixed item lists (shop stock in town, script treasure in areas).
     [[nodiscard]] std::map<unsigned, std::vector<Equipment>>
     item_lists(const std::string &name) const;
-    // The archive's pictures (not its animations), by record.
+    // The archive's pictures (not its animations), by record, in the colors
+    // the game shows them: Gateway to the Savage Frontier's in its VGA mode's.
+    // A record already in destination is kept.
     void pictures(const std::string &name, std::map<unsigned, Image> &destination) const;
+    // The archive's animations, by record, as pictures does.
+    void animations(const std::string &name,
+                    std::map<unsigned, std::vector<AnimationFrame>> &destination) const;
 
   private:
     std::filesystem::path directory_;
@@ -103,7 +122,8 @@ class AreaFiles
 
 // The walls LOAD PIECES loads into the view's three slots from the disk's
 // WALLDEF and 8X8D files: bank 255 leaves a slot blank, and a bank of several
-// blocks fills that many slots.
+// blocks fills that many slots. A slot's tiles number 70, or 210 for Gateway
+// to the Savage Frontier's large sets.
 [[nodiscard]] WallArtSet load_wall_art(const AreaFiles &files, unsigned disk,
                                        const std::array<unsigned, 3> &pieces,
                                        const WallArtReplacements &new_wall_art);

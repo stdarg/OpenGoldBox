@@ -75,6 +75,20 @@ inline constexpr std::array<GoldBoxGame, 7> gold_box_games{
     return {};
 }
 
+// The file of the game's item types: Gateway to the Savage Frontier names it
+// ITEMS.1.
+[[nodiscard]] constexpr std::string_view item_types_file(GoldBoxGame game) noexcept
+{
+    return game == GoldBoxGame::gateway_to_the_savage_frontier ? "ITEMS.1" : "ITEMS";
+}
+
+// The program that holds the game's item words: Gateway to the Savage
+// Frontier keeps them in its GAME.EXE, the earlier games in START.EXE.
+[[nodiscard]] constexpr std::string_view item_words_program(GoldBoxGame game) noexcept
+{
+    return game == GoldBoxGame::gateway_to_the_savage_frontier ? "GAME.EXE" : "START.EXE";
+}
+
 // The disk numbers a game's files carry, as in MON3CHA.DAX or HEAD2.DAX.
 struct GameDisks
 {

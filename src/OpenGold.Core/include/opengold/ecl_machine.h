@@ -183,6 +183,12 @@ class EclMachine
         return pc_;
     }
 
+    // The request the machine waits on, if any.
+    [[nodiscard]] const std::optional<EclRequest> &pending_request() const noexcept
+    {
+        return pending_;
+    }
+
     [[nodiscard]] const auto &trace() const noexcept
     {
         return trace_;
@@ -222,6 +228,7 @@ class EclMachine
     void finish_request();
     [[nodiscard]] unsigned draw(unsigned count);
     void request_host(const EclInstruction &instruction);
+    void request_engine_prompt(const EclInstruction &instruction, bool yes_or_no);
     void jump(std::uint32_t address);
     void execute(const EclInstruction &instruction);
 };

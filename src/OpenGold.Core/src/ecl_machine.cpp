@@ -489,7 +489,14 @@ void EclMachine::execute(const EclInstruction &i)
     if (i.opcode == 45)
     {
         const auto address = encoded_address(a[0]);
-        if (!ecl_engine_routines(program_->game()).contains(address))
+        const auto routines = ecl_engine_routines(program_->game());
+        if (address != 0 && (address == routines.wait_for_enter || address == routines.ask_yes_no))
+        {
+            request_engine_prompt(i, address == routines.ask_yes_no);
+            pc_ = i.next;
+            return;
+        }
+        if (!routines.contains(address))
         {
             pc_ = i.next;
             return;
@@ -807,6 +814,30 @@ const std::string &EclHostArgument::text() const
     return text_;
 }
 
+// Gateway's engine prompts (its CALL 880Ah and 880Dh): a menu of one choice
+// that waits for Enter, or Yes (0) and No (1) stored in the menu choice cell.
+void EclMachine::request_engine_prompt(const EclInstruction &i, bool yes_or_no)
+{
+    constexpr EclAddress menu_choice{0x7F79};
+    EclRequest request;
+    request.kind = EclRequestKind::menu;
+    request.instruction = i;
+    request.id = next_request_++;
+    if (yes_or_no)
+    {
+        request.choices = {"YES", "NO"};
+        destination_ = menu_choice;
+        menu_values_ = {0, 1};
+    }
+    else
+    {
+        request.choices = {"PRESS ENTER TO CONTINUE."};
+        menu_values_ = {0};
+    }
+    pending_ = std::move(request);
+    state_ = EclState::waiting;
+}
+
 void EclMachine::request_host(const EclInstruction &i)
 {
     if (!host_opcodes_.contains(i.opcode))
@@ -902,7 +933,16 @@ bool EclMachine::resume(std::uint64_t id, std::optional<std::size_t> choice)
         {
             return false;
         }
-        write(*destination_, menu_values_[*choice]);
+        const auto chosen = menu_values_[*choice];
+        if (destination_)
+        {
+            write(*destination_, chosen);
+        }
+        // Gateway's Yes or No compares the choice with 1 (its CALL 880Dh).
+        if (pending_->instruction && pending_->instruction->opcode == 45 && destination_)
+        {
+            conditions_ = relation(chosen < 1 ? -1 : chosen > 1 ? 1 : 0);
+        }
     }
     else if (pending_->kind != EclRequestKind::text || choice)
     {

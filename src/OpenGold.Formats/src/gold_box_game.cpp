@@ -18,6 +18,9 @@ GameDisks game_disks(GoldBoxGame game)
     case GoldBoxGame::secret_of_the_silver_blades:
         // One creature file serves every disk.
         return {{1}, {}, {1, 2, 3}, {}};
+    case GoldBoxGame::gateway_to_the_savage_frontier:
+        // Its HEAD and BODY files have no disk number.
+        return {{2, 3, 4, 5, 6}, {}, {2, 3, 4, 5, 6}, {}};
     default:
         throw std::invalid_argument("The files of " + std::string(game_title(game)) +
                                     " are not mapped yet");

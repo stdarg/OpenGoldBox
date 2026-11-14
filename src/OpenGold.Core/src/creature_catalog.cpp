@@ -447,7 +447,7 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory, Go
                 continue;
             }
             const auto name = detail::upper_ascii(path_text(entry.path().filename()));
-            if (name != "ITEMS" && name != "START.EXE" &&
+            if (name != item_types_file(game) && name != item_words_program(game) &&
                 !(name.starts_with("MON") && name.ends_with(".DAX")))
             {
                 continue;
@@ -466,19 +466,21 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory, Go
             }
             return file->second;
         };
-        const auto templates = decode_item_templates(read_file(required("ITEMS")));
+        const auto templates =
+            decode_item_templates(read_file(required(std::string(item_types_file(game)))), game);
         if (!templates)
         {
             throw CatalogError("Invalid ITEMS template file");
         }
         std::vector<std::string> item_words;
-        if (const auto start = files.find("START.EXE"); start != files.end())
+        const std::string words_program(item_words_program(game));
+        if (const auto start = files.find(words_program); start != files.end())
         {
             const auto image = unpack_sound_executable(read_file(start->second));
             auto decoded = decode_item_words(image, game);
             if (!decoded)
             {
-                throw CatalogError("START.EXE has no item name table");
+                throw CatalogError(words_program + " has no item name table");
             }
             item_words = std::move(*decoded);
         }

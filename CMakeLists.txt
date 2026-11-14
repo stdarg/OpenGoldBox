@@ -264,6 +264,11 @@ if(OPENGOLD_BUILD_TESTS)
     target_compile_definitions(opengold_gold_box_games_tests PRIVATE
         OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_gold_box_games_tests COMMAND opengold_gold_box_games_tests)
+    # Gateway to the Savage Frontier's campaign, played on the real files.
+    add_executable(opengold_gateway_tests tests/gateway_tests.cpp)
+    target_link_libraries(opengold_gateway_tests PRIVATE opengold_core opengold_rules_srd5
+        opengold_rules_original)
+    add_test(NAME opengold_gateway_tests COMMAND opengold_gateway_tests)
     # Every map of Curse walked with an original-rules party: each event runs.
     add_test(NAME opengold_curse_walk COMMAND opengold_gold_box_games_tests --curse-walk)
     # Every map of Secret of the Silver Blades walked the same way.

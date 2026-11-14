@@ -70,6 +70,10 @@ struct EclEngineRoutines
     std::uint16_t sound{};
     // Show the portrait animation's next frame; Pool of Radiance has none (0).
     std::uint16_t portrait_animation_step{};
+    // Gateway to the Savage Frontier's prompts: wait for Enter, and ask Yes or
+    // No into the menu choice cell 7F79h and the comparison (0 elsewhere).
+    // The machine runs them as menus; contains() leaves them out.
+    std::uint16_t wait_for_enter{}, ask_yes_no{};
 
     [[nodiscard]] bool contains(std::uint16_t address) const noexcept
     {

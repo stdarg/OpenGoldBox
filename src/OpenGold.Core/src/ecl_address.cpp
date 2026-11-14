@@ -28,6 +28,7 @@ ZoneStarts zone_starts(GoldBoxGame game)
         return {0x4900, 0x6B00, 0x9700};
     case GoldBoxGame::curse_of_the_azure_bonds:
     case GoldBoxGame::secret_of_the_silver_blades:
+    case GoldBoxGame::gateway_to_the_savage_frontier:
         return {0x4B00, 0x7C00, 0x7A00};
     default:
         throw EclError("The script memory of " + std::string(game_title(game)) +

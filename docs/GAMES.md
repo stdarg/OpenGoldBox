@@ -363,6 +363,18 @@ own differences. *Pools of Darkness*
 and *Treasures* bring 256-color VGA pictures and music, so their census needs
 new decoders.
 
+*Gateway to the Savage Frontier* ([gateway.md](games/gateway.md)):
+
+1. The census: every file decodes (2026-11-13).
+2. The opening: `load_campaign` plays script 1 of disk 2, the night of
+   celebration over picture 5 and the morning's loss, and reaches Yartar
+   (map 1) with the walls of its three large sets drawn, the party in the
+   inn's room at (1,10) facing north (`opengold_gateway_tests`, 2026-11-14).
+   Its files without a disk number are read first, its pictures in the VGA
+   mode's colors, its item words from `GAME.EXE`, and CALL 880Ah and 880Dh
+   ask for Enter and for Yes or No. Still to come: CALL 8810h, the overland
+   and fights out of doors, the startup menu, and walking every map.
+
 ### 8. *Unlimited Adventures*
 
 1. Playing adventures made with the original construction kit.

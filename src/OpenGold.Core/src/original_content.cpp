@@ -30,9 +30,9 @@ original::Content load_original_content(const std::filesystem::path &folder, Gol
         content.bestiary.emplace(
             id.key(), original::combatant_from_record(creature.stored, carried, effects));
     }
-    std::ifstream items(folder / "ITEMS", std::ios::binary);
+    std::ifstream items(folder / item_types_file(game), std::ios::binary);
     const std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(items), {}};
-    auto types = por::decode_item_templates(bytes);
+    auto types = por::decode_item_templates(bytes, game);
     if (!types)
     {
         throw std::runtime_error("The game's ITEMS file cannot be read");

@@ -22,7 +22,7 @@ using por::EclError;
 constexpr std::uint8_t load_files = 0x21, load_pieces = 0x37;
 
 // What sets the campaigns after Pool of Radiance apart (docs/games/curse.md,
-// docs/games/secret.md).
+// docs/games/secret.md, docs/games/gateway.md).
 struct LaterCampaign
 {
     // A new game runs this script, on this disk.
@@ -30,7 +30,8 @@ struct LaterCampaign
     // The disk whose scripts play at the root, out of any map.
     unsigned root_disk{};
     // Curse's root disk 1 has no map: its scripts (80 to 82) are the
-    // wilderness, fought on its own battlefield. Secret has none.
+    // wilderness, fought on its own battlefield. Secret has none, and
+    // Gateway's overland (script 21) loads its maps by cells.
     bool wilderness{};
 };
 
@@ -43,6 +44,10 @@ LaterCampaign later_campaign(GoldBoxGame game)
     case GoldBoxGame::secret_of_the_silver_blades:
         // The opening's vision of the valley has no map.
         return {17, 2, 2, false};
+    case GoldBoxGame::gateway_to_the_savage_frontier:
+        // A new game runs script 1 of disk 2 (Yartar); the overland's script
+        // is on disk 6.
+        return {1, 2, 6, false};
     default:
         throw std::invalid_argument(std::string(game_title(game)) + " cannot be played yet");
     }
@@ -179,17 +184,20 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
                        std::to_string(campaign.opening_script));
     }
     const auto templates = por::decode_item_templates(
-        por::detail::read_archive(por::detail::resolve_archive(folder, "ITEMS")));
+        por::detail::read_archive(por::detail::resolve_archive(folder, item_types_file(game))),
+        game);
     if (!templates)
     {
         throw EclError("Invalid item templates");
     }
-    const auto start_image = por::unpack_sound_executable(
-        por::detail::read_archive(por::detail::resolve_archive(folder, "START.EXE")));
-    auto words = por::decode_item_words(start_image, game);
+    // The program holding the item words: START.EXE, or Gateway's GAME.EXE.
+    const auto words_program = item_words_program(game);
+    const auto program_image = por::unpack_sound_executable(
+        por::detail::read_archive(por::detail::resolve_archive(folder, words_program)));
+    auto words = por::decode_item_words(program_image, game);
     if (!words)
     {
-        throw EclError("START.EXE has no item name table");
+        throw EclError(std::string(words_program) + " has no item name table");
     }
     const por::detail::AreaFiles files(folder, *templates, std::move(*words), game);
     const auto maps = por::MapCatalog::load(folder);
@@ -224,8 +232,12 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     root->encounter_creatures = disk_creatures(campaign.root_disk);
     root->map = por::GeoMap{};
     root->treasure = files.item_lists("ITEM" + root_disk + ".DAX");
-    root->sprite_archive = por::detail::read_archive(
-        por::detail::resolve_archive(folder, files.disk_archive("SPRIT", campaign.root_disk)));
+    // Gateway has no sprite files.
+    if (game != GoldBoxGame::gateway_to_the_savage_frontier)
+    {
+        root->sprite_archive = por::detail::read_archive(
+            por::detail::resolve_archive(folder, files.disk_archive("SPRIT", campaign.root_disk)));
+    }
     root->combat_archive = por::detail::read_archive(
         por::detail::resolve_archive(folder, files.disk_archive("CPIC", campaign.root_disk)));
     if (game == GoldBoxGame::curse_of_the_azure_bonds)
@@ -235,7 +247,7 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     }
     if (campaign.wilderness)
     {
-        add_curse_wilderness(folder, start_image, *root);
+        add_curse_wilderness(folder, program_image, *root);
     }
     const auto loads = script_loads(catalog);
     for (const auto &[id, program] : catalog.all())
@@ -255,27 +267,30 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
             }
         }
     }
-    // Every disk's pictures and animations, for every map.
-    std::map<unsigned, Image> pictures;
-    std::map<unsigned, std::vector<AnimationFrame>> animations;
+    // Every disk's pictures and animations, for every map; Gateway's files
+    // without a disk number come first, as its original looks there first.
+    std::vector<std::string> picture_files;
+    if (game == GoldBoxGame::gateway_to_the_savage_frontier)
+    {
+        picture_files = {"PIC.DAX", "BIGPIC.DAX"};
+    }
     for (unsigned picture_disk = 1; picture_disk <= 6; ++picture_disk)
     {
         for (const auto *family : {"PIC", "BIGPIC"})
         {
-            const auto name = family + std::to_string(picture_disk) + ".DAX";
-            if (!std::filesystem::exists(folder / name))
-            {
-                continue;
-            }
-            files.pictures(name, pictures);
-            for (const auto &record : files.archive(name).records)
-            {
-                if (auto animation = decode_ega_animation(record.bytes))
-                {
-                    animations.emplace(record.id, std::move(animation.frames));
-                }
-            }
+            picture_files.push_back(family + std::to_string(picture_disk) + ".DAX");
         }
+    }
+    std::map<unsigned, Image> pictures;
+    std::map<unsigned, std::vector<AnimationFrame>> animations;
+    for (const auto &name : picture_files)
+    {
+        if (!std::filesystem::exists(folder / name))
+        {
+            continue;
+        }
+        files.pictures(name, pictures);
+        files.animations(name, animations);
     }
     // Each map once, held by the scripts that load it; its walls until a
     // script's LOAD PIECES replaces them are the first such script's.
@@ -336,6 +351,7 @@ por::RolfTourSession load_campaign(const std::filesystem::path &folder, GoldBoxG
             data.new_wall_art ? *data.new_wall_art : por::WallArtReplacements{}, data.monsters);
     case GoldBoxGame::curse_of_the_azure_bonds:
     case GoldBoxGame::secret_of_the_silver_blades:
+    case GoldBoxGame::gateway_to_the_savage_frontier:
         return load_later_campaign(folder, game);
     default:
         throw std::invalid_argument(std::string(game_title(game)) + " cannot be played yet");

@@ -27,7 +27,9 @@ Since 2026-11-13 every file decodes, the music in `MUSIC.DAX` too (below).
 | `MUSIC` | The music: a driver program (0) and a bank of instruments and a song (1) | New file (below) |
 
 There are no `SPRIT` files. The names of items and spells are in the
-program, not in a `START.EXE`; the census does not read them.
+program, not in a `START.EXE`: `GAME.EXE`, packed with EXEPACK as the earlier
+`START.EXE` files are, holds the 255 item words in slots of 21 bytes
+(`decode_item_words`). The census does not read them.
 
 ## Pictures
 
@@ -113,6 +115,48 @@ portrait frame). 401Bh rereads the wall and event of the party's cell, where
 *Curse* had 4019h. Three are new: 880Ah waits for Enter, 880Dh asks Yes or
 No and sets the comparison, and 8810h changes the current character's coins
 up into larger ones.
+
+## The opening
+
+A new game runs script 1 of disk 2 (`ECL2.DAX`), its load entry only, as the
+original's game loop does. It loads map 1 of `GEO2.DAX`, Yartar, with the wall
+sets 36, 31 and 15, all three large: 36 and 31 from `WALLDEF2` and `8X8D2`, 15
+from the files without a disk number. Over picture 5 (`PIC2`), the tavern, it
+tells the night of celebration after the caravan from Citadel Adbar, naming
+two members of the party, then the morning's loss of everything to Yartar's
+thieves, and leaves the party in the inn's room at (1,10) facing north.
+Between its screens it waits for Enter (CALL 880Ah).
+
+`load_campaign(folder, GoldBoxGame::gateway_to_the_savage_frontier)` plays it
+with the loader of *Curse* and *Secret* (`campaign_session.cpp`). What Gateway
+changes there:
+
+- Script numbers are unique across the disks, as in *Curse*; a script's disk
+  is the `ECLn.DAX` that holds it. Scripts played out of any map use the
+  files of disk 6, the overland's.
+- A record of `8X8D`, `WALLDEF`, `PIC`, `BIGPIC`, `HEAD` and `BODY` is looked
+  for first in the file without a disk number, then in the disk's, as the
+  original's LoadDax does: `PIC` 73 is `PIC.DAX`'s on every disk, though
+  `PIC5.DAX` has one too.
+- Pictures and animations are drawn in the VGA mode's colors
+  (`gateway::picture_image`). Wall tiles keep the 16 colors of the EGA mode
+  (`decode_wall_tiles`); the large sets' own colors match them.
+- `load_wall_art` draws a large set from the shared symbols 1 to 45 and its
+  own 210 tiles as 46 to 255, unshifted, in whatever slot it is loaded; a set
+  of 70 draws from the view's one space of symbols, which holds the first 70
+  tiles of each slot, as before.
+- The item types are read from `ITEMS.1`, the item words from `GAME.EXE`, the
+  creatures from `MON2CHA` to `MON6CHA` as *Curse*'s records. There are no
+  sprite files.
+- CALL 880Ah (wait for Enter) and 880Dh (Yes or No) are menus the script
+  machine asks the player: Enter clears the text, and 880Dh stores Yes as 0
+  and No as 1 in 7F79h and compares the answer with 1.
+
+Not yet played: CALL 8810h, which changes the current character's coins up
+into larger ones; the overland (script 21 on disk 6), which loads its maps by
+cells with `IN_DUNGEON` 0 and draws a symbol set of `8X8D6` alone; and fights
+out of doors, which lay a river, trees and scattered features over grass with
+`WILDCOM`'s tiles rather than *Curse*'s tables of places.
 
 ## Sound effects
 
