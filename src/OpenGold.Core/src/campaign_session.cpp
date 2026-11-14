@@ -5,9 +5,12 @@
 #include "opengold/ecl_machine.h"
 #include "opengold/map_catalog.h"
 #include "opengold/por_sound.h"
+#include "opengold/treasures_texts.h"
+#include "opengold/vga_picture.h"
 
 #include <algorithm>
 #include <map>
+#include <optional>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -50,8 +53,10 @@ LaterCampaign later_campaign(GoldBoxGame game)
         // is on disk 6.
         return {1, 2, 6, false};
     case GoldBoxGame::pools_of_darkness:
-        // One disk: a new game runs script 16, New Phlan's docks (its
-        // GameLoop).
+    case GoldBoxGame::treasures_of_the_savage_frontier:
+        // One disk: a new game runs script 16 (its GameLoop), New Phlan's
+        // docks in Pools of Darkness, the waking in Llorkh's fortress in
+        // Treasures.
         return {16, 1, 1, false};
     default:
         throw std::invalid_argument(std::string(game_title(game)) + " cannot be played yet");
@@ -71,18 +76,19 @@ struct ScriptLoads
     bool maps_by_cell{};
 };
 
-// Pools of Darkness's LOAD FILES names a map (below 7Fh) and one wall set
-// (FFh keeps the current one); a set fills the view's walls alone, kept as
-// its first slot.
-void add_darkness_loads(const por::EclInstruction &i, ScriptLoads &script)
+// The 256-color engine's LOAD FILES names a map (below 7Fh) and one wall set
+// (FFh keeps the current one), which fills the view's first slot and empties
+// the others; Treasures' LOAD WALL SETS names a map and the three slots' sets.
+void add_vga_loads(const por::EclInstruction &i, ScriptLoads &script)
 {
     constexpr unsigned keep_walls = 255, first_non_map = 0x7F;
-    if (i.opcode != load_files || i.operands.size() != 2)
+    constexpr std::uint8_t load_wall_sets = 0x42;
+    const bool loads_files = i.opcode == load_files && i.operands.size() == 2;
+    if (!loads_files && !(i.opcode == load_wall_sets && i.operands.size() == 4))
     {
         return;
     }
     const auto &map = i.operands[0];
-    const auto &walls = i.operands[1];
     if (map.tag != 0)
     {
         script.maps_by_cell = true;
@@ -91,24 +97,43 @@ void add_darkness_loads(const por::EclInstruction &i, ScriptLoads &script)
     {
         script.maps.push_back(map.value);
     }
-    if (walls.tag == 0 && walls.value != keep_walls)
+    const bool literal_walls = std::all_of(i.operands.begin() + 1, i.operands.end(),
+                                           [](const auto &operand)
+                                           {
+                                               return operand.tag == 0;
+                                           });
+    if (!literal_walls || (loads_files && i.operands[1].value == keep_walls))
     {
-        script.walls.push_back({walls.value, por::detail::no_wall_bank, por::detail::no_wall_bank});
+        return;
     }
+    script.walls.push_back(
+        loads_files ? std::array<unsigned, 3>{i.operands[1].value, por::detail::no_wall_bank,
+                                              por::detail::no_wall_bank}
+                    : std::array<unsigned, 3>{i.operands[1].value, i.operands[2].value,
+                                              i.operands[3].value});
 }
 
 std::map<unsigned, ScriptLoads> script_loads(const por::EclCatalog &catalog, GoldBoxGame game)
 {
     std::map<unsigned, ScriptLoads> loads;
+    // Treasures' demonstration (script 4, which its original runs when the
+    // title is left alone) loads the opening's map and the overland's; the
+    // game's own scripts hold them.
+    constexpr unsigned treasures_demonstration = 4;
     for (const auto &[id, program] : catalog.all())
     {
         auto &script = loads[id.record];
         script.disk = static_cast<unsigned>(std::stoul(id.archive.substr(3)));
+        if (game == GoldBoxGame::treasures_of_the_savage_frontier &&
+            id.record == treasures_demonstration)
+        {
+            continue;
+        }
         for (const auto &i : por::walk_reachable(*program).instructions)
         {
-            if (game == GoldBoxGame::pools_of_darkness)
+            if (vga_engine(game))
             {
-                add_darkness_loads(i, script);
+                add_vga_loads(i, script);
                 continue;
             }
             if (i.opcode == load_files && !i.operands.empty() && i.operands[0].tag != 0)
@@ -291,6 +316,95 @@ std::vector<std::vector<std::uint8_t>> darkness_stores(std::span<const std::uint
     return {};
 }
 
+// Treasures' sixteen stores (its EclShop): runs of item definitions, each
+// ended by FFh, at a fixed place in the unpacked GAME.EXE of the release this
+// engine reads, whose first store sells item 1 first. Item 0 sells nothing.
+std::vector<std::vector<std::uint8_t>> treasures_stores(std::span<const std::uint8_t> game_image)
+{
+    constexpr std::size_t table = 0xC3E2, longest = 256, store_count = 16;
+    constexpr std::uint8_t end_of_run = 0xFF;
+    if (game_image.size() < table + longest || game_image[table] != 1)
+    {
+        return {};
+    }
+    std::vector<std::vector<std::uint8_t>> stores(1);
+    for (std::size_t at = table; at < table + longest && stores.size() <= store_count; ++at)
+    {
+        if (game_image[at] == end_of_run)
+        {
+            stores.emplace_back();
+            continue;
+        }
+        stores.back().push_back(game_image[at]);
+    }
+    stores.pop_back();
+    return stores.size() == store_count ? stores : std::vector<std::vector<std::uint8_t>>{};
+}
+
+// Treasures' item words: BORD.DAX record 10, numbered from 1 as the other
+// games' are.
+std::vector<std::string> treasures_item_words(const std::filesystem::path &folder)
+{
+    constexpr std::uint8_t word_record = 10;
+    constexpr std::size_t word_letters = 20;
+    const auto record = decode_dax_record(
+        por::detail::read_archive(por::detail::resolve_archive(folder, "BORD.DAX")), word_record);
+    auto words = record ? treasures::decode_name_table(*record, word_letters) : std::nullopt;
+    if (!words)
+    {
+        throw EclError("BORD.DAX has no item words");
+    }
+    words->insert(words->begin(), std::string{});
+    return std::move(*words);
+}
+
+// Treasures' overland (docs/games/treasure.md, The overland): each map's
+// picture (OVER 51 to 57) in the colors of each record that only sets colors
+// (1 to 4), which the cell 42h picks, and the party's arrow on it (the
+// automap's symbols 16 to 19, north first).
+void add_treasures_overland(const por::detail::AreaFiles &files, por::PhlanResources &root)
+{
+    std::map<unsigned, VgaPicture> pictures;
+    for (const auto &record : files.archive("OVER.DAX").records)
+    {
+        auto picture = decode_vga_picture(record.bytes);
+        if (!picture)
+        {
+            throw EclError("Invalid overland picture " + std::to_string(record.id));
+        }
+        pictures.emplace(record.id, std::move(*picture));
+    }
+    const auto colors_only = [](const VgaPicture &picture)
+    {
+        return picture.frames.empty() || picture.frames.front().width == 0;
+    };
+    for (const auto &[map, picture] : pictures)
+    {
+        for (const auto &[palette, colors] : pictures)
+        {
+            if (!colors_only(picture) && colors_only(colors))
+            {
+                root.overland_pictures.emplace(
+                    map * 256 + palette,
+                    vga_rgba(picture.frames.front(), vga_color_table(colors.palette)));
+            }
+        }
+    }
+    constexpr unsigned automap_symbols = 202, first_arrow = 16;
+    constexpr std::uint8_t see_through = 13;
+    const auto symbols = decode_vga_picture(files.record("8X8D0.DAX", automap_symbols));
+    if (!symbols || symbols->frames.size() < first_arrow + root.overland_arrows.size())
+    {
+        throw EclError("8X8D0.DAX has no party arrows");
+    }
+    const auto symbol_colors = vga_color_table(symbols->palette);
+    for (std::size_t facing = 0; facing < root.overland_arrows.size(); ++facing)
+    {
+        root.overland_arrows[facing] =
+            vga_rgba(symbols->frames[first_arrow + facing], symbol_colors, see_through);
+    }
+}
+
 // Every set of symbols in the files a disk's LOAD PIECES reads, the file
 // without a disk number first, as the original looks there first.
 void add_symbol_sets(const por::detail::AreaFiles &files, unsigned disk, por::PhlanResources &root)
@@ -339,14 +453,17 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     {
         throw EclError("Invalid item templates");
     }
-    // The program holding the item words: START.EXE, or Gateway's GAME.EXE.
-    const auto words_program = item_words_program(game);
+    // The program holding the item words and the game's tables: START.EXE, or
+    // the later games' GAME.EXE; Treasures keeps its words in BORD.DAX.
+    const bool treasures = game == GoldBoxGame::treasures_of_the_savage_frontier;
+    const auto program = treasures ? std::string_view("GAME.EXE") : item_words_program(game);
     const auto program_image = por::unpack_sound_executable(
-        por::detail::read_archive(por::detail::resolve_archive(folder, words_program)));
-    auto words = por::decode_item_words(program_image, game);
+        por::detail::read_archive(por::detail::resolve_archive(folder, program)));
+    auto words = treasures ? std::optional{treasures_item_words(folder)}
+                           : por::decode_item_words(program_image, game);
     if (!words)
     {
-        throw EclError(std::string(words_program) + " has no item name table");
+        throw EclError(std::string(program) + " has no item name table");
     }
     const por::detail::AreaFiles files(folder, *templates, std::move(*words), game);
     const auto maps = por::MapCatalog::load(folder);
@@ -382,15 +499,15 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     root->map = por::GeoMap{};
     // Pools of Darkness's TREASURE and STORE name ITEM0's definitions: it has
     // no lists.
-    if (game == GoldBoxGame::pools_of_darkness)
+    if (vga_engine(game))
     {
         constexpr auto definitions = "ITEM0.DAX";
         root->item_definitions =
             files.item_definitions(definitions, files.archive(definitions).records.at(0).id);
-        root->stores = darkness_stores(program_image);
+        root->stores = treasures ? treasures_stores(program_image) : darkness_stores(program_image);
         if (root->stores.empty())
         {
-            throw EclError("Pools of Darkness's GAME.EXE has no store lists");
+            throw EclError(std::string(game_title(game)) + "'s GAME.EXE has no store lists");
         }
     }
     else
@@ -420,6 +537,10 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     {
         add_gateway_wilderness(folder, program_image, *root);
     }
+    if (treasures)
+    {
+        add_treasures_overland(files, *root);
+    }
     const auto loads = script_loads(catalog, game);
     for (const auto &[id, program] : catalog.all())
     {
@@ -440,8 +561,8 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
             if (!root->wall_sets.contains(key))
             {
                 root->wall_sets.emplace(
-                    key, game == GoldBoxGame::pools_of_darkness
-                             ? por::detail::load_vga_wall_art(files, walls.front())
+                    key, vga_engine(game)
+                             ? por::detail::load_vga_wall_art(files, walls)
                              : por::detail::load_wall_art(files, load.disk, walls, {}));
             }
         }
@@ -459,6 +580,11 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
         {
             picture_files.push_back(family + std::to_string(picture_disk) + ".DAX");
         }
+    }
+    // Treasures looks for a picture in PIC1, then PIC1A.
+    if (treasures)
+    {
+        picture_files.emplace_back("PIC1A.DAX");
     }
     std::map<unsigned, Image> pictures;
     std::map<unsigned, std::vector<AnimationFrame>> animations;
@@ -545,6 +671,7 @@ por::RolfTourSession load_campaign(const std::filesystem::path &folder, GoldBoxG
     case GoldBoxGame::secret_of_the_silver_blades:
     case GoldBoxGame::gateway_to_the_savage_frontier:
     case GoldBoxGame::pools_of_darkness:
+    case GoldBoxGame::treasures_of_the_savage_frontier:
         return load_later_campaign(folder, game);
     default:
         throw std::invalid_argument(std::string(game_title(game)) + " cannot be played yet");

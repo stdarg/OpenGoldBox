@@ -30,7 +30,7 @@ The user decided these on 2026-11-12:
 | 3 | *Secret of the Silver Blades* | 1990 | `SECRET` | Every file decodes ([secret.md](games/secret.md)) |
 | 4 | *Gateway to the Savage Frontier* | 1991 | `GATEWAY` | Every file decodes ([gateway.md](games/gateway.md)) |
 | 5 | *Pools of Darkness* | 1991 | `DARKNESS` | Its opening plays and its walk passes ([darkness.md](games/darkness.md)) |
-| 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Every file decodes ([treasure.md](games/treasure.md)) |
+| 6 | *Treasures of the Savage Frontier* | 1992 | `TREASURE` | Its opening plays and the walk passes every map and fight ([treasure.md](games/treasure.md)) |
 | 7 | *Forgotten Realms: Unlimited Adventures* | 1993 | `UA` | A design made with the kit plays: its walls, events and fights ([ua.md](games/ua.md)) |
 
 The developer's copies live in `/Users/edmond/GoldBox/<folder>`.
@@ -522,6 +522,28 @@ new decoders.
    the keep (map 22). Still to come: drawing the area map, spell levels 8 and
    9 and the new spells, starting equipment, skies, combat ground tiles,
    sound and music.
+
+*Treasures of the Savage Frontier* ([treasure.md](games/treasure.md)) runs on
+the engine of *Pools of Darkness*, and OpenGoldBox plays both with one code
+path (`vga_engine`): the same loader, script machine, memory map, record,
+pictures, walls and script host, *Treasures* adding only what it changes.
+
+1. The census: every file decodes (2026-11-13).
+2. The opening: `load_campaign` plays script 16, the afternoon above Yartar
+   and the waking in the dwarves' fortress over pictures 2 to 4, and reaches
+   map 16 with the walls of its three wall sets drawn in 256 colors, the
+   party at (10,7) facing north (`opengold_treasure_tests`, 2026-11-14).
+3. Making a party under *Treasures*' rules: 22,600 experience (11,300 or
+   7,533 for each class of two or three) trained at once and 200 platinum,
+   on its engine's tables (ORIGINAL-RULES.md, *Treasures*). Bringing a
+   *Gateway* party across, which the original allows, is still to come.
+4. Walking every map and playing every event and fight (the walk).
+   `opengold_treasure_walk` (`opengold_gold_box_games_tests
+   --treasure-walk`) walks every square of every map, the overland's too
+   (script 51, maps 51 to 57, drawn from above from `OVER`'s pictures), with
+   six fighters made under *Treasures*' rules, and runs each event and fight
+   (treasure.md, The walk). Still to come: the music and sounds, the
+   romances and luck readings (PROGRAM 3), the startup menu and the route.
 
 ### 8. *Unlimited Adventures*
 

@@ -119,19 +119,14 @@ std::vector<EclOpcode> darkness_opcodes()
     return opcodes;
 }
 
-// Treasures of the Savage Frontier adds three commands to Pools of Darkness'
-// (docs/games/treasure.md). Its scripts are only decoded so far, not run.
+// Treasures of the Savage Frontier adds three commands to Pools of Darkness',
+// which the host answers (docs/games/treasure.md).
 std::vector<EclOpcode> treasures_opcodes()
 {
     auto opcodes = darkness_opcodes();
-    opcodes.push_back({"LOAD WALL SETS", 4});
-    opcodes.push_back({"FIND NAMED ITEM", 4});
-    opcodes.push_back({"TAKE NAMED ITEM", 4});
-    for (auto &opcode : opcodes)
-    {
-        opcode.executable = false;
-        opcode.requires_host = false;
-    }
+    opcodes.push_back({"LOAD WALL SETS", 4, false, true, true});
+    opcodes.push_back({"FIND NAMED ITEM", 4, false, true, true});
+    opcodes.push_back({"TAKE NAMED ITEM", 4, false, true, true});
     return opcodes;
 }
 
@@ -214,8 +209,10 @@ EclEngineRoutines ecl_engine_routines(GoldBoxGame game)
         // new routines are in docs/games/gateway.md.
         return {0x2E10, 0xC01A, 0xC01E, 0x8001, 0x8000, 0xB200, 0x6803, 0x0809, 0x080C, 0x080F};
     case GoldBoxGame::pools_of_darkness:
-        // Its CALL names three routines by number: 1 redraws the view, 2 steps
-        // forward, 3 shows the portrait's next frame (its EclCall).
+    case GoldBoxGame::treasures_of_the_savage_frontier:
+        // The 256-color engine's CALL names three routines by number: 1
+        // redraws the view, 2 steps forward, 3 shows the portrait's next
+        // frame (its EclCall).
         return {1, 0, 2, 0, 0, 0, 3};
     default:
         throw EclError("The scripts of " + std::string(game_title(game)) + " are not decoded yet");

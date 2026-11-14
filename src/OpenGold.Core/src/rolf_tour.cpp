@@ -808,7 +808,7 @@ void RolfTourSession::reset_run()
     for (const std::uint8_t opcode : std::initializer_list<std::uint8_t>{12, 13, 14, 45, 49, 58})
     {
         // Pools of Darkness's 31h is ACTION MENU, which the machine runs.
-        if (opcode == 49 && game() == GoldBoxGame::pools_of_darkness)
+        if (opcode == 49 && vga_engine(game()))
         {
             continue;
         }
@@ -945,6 +945,13 @@ void RolfTourSession::publish_pose()
     const PartyPose next{machine_.variable(game_cell(ecl_party_x)),
                          machine_.variable(game_cell(ecl_party_y)),
                          facing.value_or(MapDirection::north)};
+    // Treasures' overland scripts may put the party off the map, which its
+    // original lets stand; the view keeps the square it showed last.
+    if ((next.x >= 16 || next.y >= 16) && facing &&
+        game() == GoldBoxGame::treasures_of_the_savage_frontier)
+    {
+        return;
+    }
     if (next.x >= 16 || next.y >= 16 || !facing)
     {
         throw EclError("Tour wrote an invalid party pose");
@@ -1013,6 +1020,10 @@ Image RolfTourSession::observe_view()
     {
         return render_symbol_map(map_, overland_symbols_, town_->symbol_sets.at(gateway_marks),
                                  pose.x, pose.y, pose.facing);
+    }
+    if (treasures_overland())
+    {
+        return treasures_overland_view();
     }
     auto view =
         render_exploration_view(map_, wall_art_, pose.x, pose.y, pose.facing, original_walls_);
@@ -1103,13 +1114,18 @@ void RolfTourSession::handle_host(const EclRequest &request)
             const auto x = machine_.variable(game_cell(ecl_party_x)),
                        y = machine_.variable(game_cell(ecl_party_y)),
                        f = machine_.variable(game_cell(ecl_party_facing));
-            if (x >= 16 || y >= 16 || f >= 4)
+            // Treasures' overland scripts may put the party off the map for
+            // a moment, where its original finds no wall and no event.
+            const bool off_map = x >= 16 || y >= 16;
+            if ((off_map && game() != GoldBoxGame::treasures_of_the_savage_frontier) || f >= 4)
             {
-                throw EclError("Invalid redraw pose");
+                throw EclError("Invalid redraw pose " + std::to_string(x) + "," +
+                               std::to_string(y) + " facing " + std::to_string(f));
             }
-            const auto &cell = map_.at(x, y);
-            reply.writes = {{game_cell(ecl_wall_ahead), cell.walls[f]},
-                            {game_cell(ecl_cell_event), cell.event_raw}};
+            reply.writes = {{game_cell(ecl_wall_ahead),
+                             static_cast<std::uint16_t>(off_map ? 0 : map_.at(x, y).walls[f])},
+                            {game_cell(ecl_cell_event),
+                             static_cast<std::uint16_t>(off_map ? 0 : map_.at(x, y).event_raw)}};
             ++snapshot_.redraws;
             // Curse's redraw draws the view over the picture a script showed.
             if (game() != GoldBoxGame::pool_of_radiance &&
@@ -1266,7 +1282,7 @@ void RolfTourSession::advance(double seconds)
                 }
                 // Pools of Darkness's journal entries and action menus say
                 // their words first; a journal entry clears the box for them.
-                else if (game() == GoldBoxGame::pools_of_darkness && !request.text.empty())
+                else if (vga_engine(game()) && !request.text.empty())
                 {
                     snapshot_.dialogue =
                         request.clear ? request.text : snapshot_.dialogue + "\n" + request.text;
@@ -1388,7 +1404,7 @@ bool RolfTourSession::explore(ExplorationCommand command)
         // area it walks forward and turns.
         const bool step = command >= ExplorationCommand::north;
         // So does Pools of Darkness's party on its area map.
-        const bool stepping_map = overland() || darkness_area_map();
+        const bool stepping_map = overland() || vga_area_map();
         if (step != stepping_map && command != ExplorationCommand::look)
         {
             return false;

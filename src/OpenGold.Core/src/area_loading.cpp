@@ -190,7 +190,7 @@ void AreaFiles::pictures(const std::string &name, std::map<unsigned, Image> &des
 {
     for (const auto &record : archive(name).records)
     {
-        if (game_ == GoldBoxGame::pools_of_darkness)
+        if (vga_engine(game_))
         {
             // A big picture is drawn whole, in the colors it sets.
             if (const auto picture = decode_vga_picture(record.bytes);
@@ -224,7 +224,7 @@ void AreaFiles::animations(const std::string &name,
 {
     for (const auto &record : archive(name).records)
     {
-        if (game_ == GoldBoxGame::pools_of_darkness)
+        if (vga_engine(game_))
         {
             if (const auto animation = decode_vga_animation(record.bytes))
             {
@@ -423,7 +423,12 @@ WallArtSet load_wall_art(const AreaFiles &files, unsigned disk,
     return walls;
 }
 
-WallArtSet load_vga_wall_art(const AreaFiles &files, unsigned set)
+namespace
+{
+
+// One wall set of the 256-color engine: WALLDEF1 record `set` drawn from the
+// tiles of 8X8D1 record `set` in the colors they set, with its backdrops.
+WallArtSet vga_wall_set(const AreaFiles &files, unsigned set)
 {
     // The original draws its tiles through color 13 (its Load8x8Set).
     constexpr std::uint8_t see_through = 13;
@@ -471,6 +476,41 @@ WallArtSet load_vga_wall_art(const AreaFiles &files, unsigned set)
     return walls;
 }
 
+} // namespace
+
+WallArtSet load_vga_wall_art(const AreaFiles &files, const std::array<unsigned, 3> &slots)
+{
+    // A slot's set copies its appearances into that slot and the ones after
+    // it (the original's LoadWallSet), so a later slot's set covers what an
+    // earlier one spilled; 0 or 255 leaves a slot as it is. The view's
+    // backdrops are the first slot's set's.
+    constexpr unsigned no_set = 0;
+    constexpr std::size_t slot_appearances = 5;
+    WallArtSet walls;
+    for (std::size_t slot = 0; slot < slots.size(); ++slot)
+    {
+        if (slots[slot] == no_set || slots[slot] == no_wall_bank)
+        {
+            continue;
+        }
+        auto set = vga_wall_set(files, slots[slot]);
+        const auto first = slot * slot_appearances;
+        if (walls.appearances.size() < first + set.appearances.size())
+        {
+            walls.appearances.resize(first + set.appearances.size());
+        }
+        std::ranges::move(set.appearances,
+                          walls.appearances.begin() + static_cast<std::ptrdiff_t>(first));
+        if (slot == 0)
+        {
+            walls.indoor_backdrop = std::move(set.indoor_backdrop);
+            walls.sky_backdrop = std::move(set.sky_backdrop);
+        }
+    }
+    walls.originals.resize(walls.appearances.size());
+    return walls;
+}
+
 std::shared_ptr<PhlanResources> load_district(const AreaFiles &files, const MapCatalog &maps,
                                               const AreaSource &area, const DistrictMap &geo,
                                               const WallArtReplacements &new_wall_art,
@@ -489,13 +529,13 @@ std::shared_ptr<PhlanResources> load_district(const AreaFiles &files, const MapC
     district->bank = area.bank;
     district->pieces = geo.pieces;
     // Pools of Darkness's TREASURE names its items itself: it has no lists.
-    const bool darkness = files.game() == GoldBoxGame::pools_of_darkness;
-    if (!darkness)
+    const bool vga = vga_engine(files.game());
+    if (!vga)
     {
         district->treasure = files.item_lists("ITEM" + bank + ".DAX");
     }
-    district->wall_art = darkness ? load_vga_wall_art(files, geo.pieces.front())
-                                  : load_wall_art(files, area.bank, geo.pieces, new_wall_art);
+    district->wall_art = vga ? load_vga_wall_art(files, geo.pieces)
+                             : load_wall_art(files, area.bank, geo.pieces, new_wall_art);
     // Gateway to the Savage Frontier has no sprite files.
     if (files.game() != GoldBoxGame::gateway_to_the_savage_frontier)
     {

@@ -106,11 +106,16 @@ struct PhlanResources
     // own (the dragon's cave).
     std::map<unsigned, unsigned> script_banks;
     std::map<unsigned, std::vector<Equipment>> treasure;
-    // Pools of Darkness's item definitions (ITEM0), by number from 1, which
+    // The 256-color engine's item definitions (ITEM0), by number from 1, which
     // its TREASURE and STORE name; and each of its stores' definitions, as
     // its program lists them (docs/games/darkness.md, Shops and treasure).
     std::map<unsigned, Equipment> item_definitions;
     std::vector<std::vector<std::uint8_t>> stores;
+    // On the town only: Treasures of the Savage Frontier's overland maps'
+    // pictures (OVER), by map x 256 + the record giving their colors, and the
+    // party's arrow on them, by facing.
+    std::map<unsigned, Image> overland_pictures;
+    std::array<Image, 4> overland_arrows;
     // ITEMS templates, indexed by original item type, for generated treasure.
     std::vector<ItemTemplate> item_templates;
     std::vector<std::uint8_t> sprite_archive;
@@ -830,6 +835,10 @@ class RolfTourSession
     // the map's cells, each into its slot of 70 symbols.
     void load_overland_symbols(const std::array<unsigned, 3> &banks);
     WallTiles overland_symbols_;
+    // The 256-color engine's wall sets in the view's three slots, and
+    // Treasures' overland picture its script loaded last.
+    std::array<unsigned, 3> wall_slots_{};
+    unsigned treasures_overland_picture_{};
     std::map<unsigned, std::bitset<256>> visited_areas_;
     std::map<unsigned, std::bitset<256>> seen_areas_;
     std::vector<rules::Participant> staged_enemies_;
@@ -1018,40 +1027,52 @@ class RolfTourSession
     void begin_event(EventTrigger trigger, std::optional<std::size_t> entry = std::nullopt);
     void finish_event();
     bool handle_town_host(const EclRequest &request);
-    // Pools of Darkness's LOAD FILES: a map (below 7Fh, indoors only) and a
-    // wall set (255 keeps the current one); darkness_host.cpp.
-    [[nodiscard]] EclHostReply darkness_load_files(unsigned map, unsigned walls);
+    // The 256-color engine's LOAD FILES: a map (below 7Fh, indoors only) and a
+    // wall set (255 keeps the current one); vga_host.cpp.
+    [[nodiscard]] EclHostReply vga_load_files(unsigned map, unsigned walls);
+    // Its map loading for LOAD FILES and LOAD WALL SETS: the party's square's
+    // wall and event in the new map, and the map's number.
+    [[nodiscard]] EclHostReply vga_load_map(unsigned map);
+    // The walls of the view's three slots, as the scripts load them.
+    void vga_load_wall_slots(const std::array<unsigned, 3> &slots);
+    // Treasures' LOAD WALL SETS: a map and the three slots' wall sets.
+    [[nodiscard]] EclHostReply treasures_load_wall_sets(unsigned map,
+                                                        const std::array<unsigned, 3> &sets);
+    // Treasures' overland: its script set the overland cell (40h), and the
+    // view shows the map's picture from above with the party's arrow.
+    [[nodiscard]] bool treasures_overland() const;
+    [[nodiscard]] Image treasures_overland_view() const;
     // Its PLAY SOUND: a sound effect, or music from 80h up.
-    void darkness_play_sound(unsigned sound);
+    void vga_play_sound(unsigned sound);
     // Its scripts read the current character's record byte for byte from
     // 401h (docs/games/darkness.md, Script memory): the record's fields, last
     // in the reply so that they stand.
-    void add_darkness_record(PartySlot slot, EclHostReply &reply) const;
+    void add_vga_record(PartySlot slot, EclHostReply &reply) const;
     // Its item definition of this number, or for FFh a scroll of three
     // random magic-user spells drawn on the request's dice; nothing for an
     // empty definition.
-    [[nodiscard]] std::optional<Equipment> darkness_item(unsigned number, std::uint64_t request);
+    [[nodiscard]] std::optional<Equipment> vga_item(unsigned number, std::uint64_t request);
     // Its TREASURE: platinum, gems, jewelry and item definitions, handed out
     // as the other games' treasure is.
-    void stage_darkness_treasure(const EclRequest &request);
+    void stage_vga_treasure(const EclRequest &request);
     // Its STORE: one of the program's eleven stores opens with its goods.
-    void open_darkness_store(const EclRequest &request);
+    void open_vga_store(const EclRequest &request);
     // Its SPELL: the first member with the spell memorized casts it; its place
     // in the member's list (0, or FFh for no one) into `place`, the member's
     // into `member`.
-    [[nodiscard]] EclHostReply darkness_spell(unsigned spell, EclAddress place, EclAddress member);
+    [[nodiscard]] EclHostReply vga_spell(unsigned spell, EclAddress place, EclAddress member);
     // Its area map: outside a dungeon (cell 22h at 0) the party steps on a
     // map of 38 by 15 squares, in eight directions, its square in cells 25h
     // and 26h; a step takes half a day.
-    [[nodiscard]] bool darkness_area_map() const;
-    void darkness_area_step();
+    [[nodiscard]] bool vga_area_map() const;
+    void vga_area_step();
     // Its DAMAGE's forms, told in the dialogue.
-    void darkness_damage(const EclRequest &request);
+    void vga_damage(const EclRequest &request);
     // Its encounter sprite's view at a distance (0 near, 2 far), in the
     // colors the sprite sets, its color 0 see-through.
-    [[nodiscard]] ImageDecodeResult darkness_sprite(unsigned id, unsigned distance) const;
+    [[nodiscard]] ImageDecodeResult vga_sprite(unsigned id, unsigned distance) const;
     // Its FIND NPC: the named companion's place in the party into `place`.
-    [[nodiscard]] EclHostReply darkness_find_npc(const std::string &name, EclAddress place) const;
+    [[nodiscard]] EclHostReply vga_find_npc(const std::string &name, EclAddress place) const;
     // Scripts change coins relative to the view they were given, so the script
     // must receive a fresh character_reply after every read before it continues.
     void read_character();

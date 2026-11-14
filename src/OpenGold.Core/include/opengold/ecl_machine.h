@@ -235,8 +235,8 @@ class EclMachine
     [[nodiscard]] unsigned draw(unsigned count);
     void request_host(const EclInstruction &instruction);
     void request_engine_prompt(const EclInstruction &instruction, bool yes_or_no);
-    // Pools of Darkness's commands that need no host: true when it ran one.
-    [[nodiscard]] bool execute_darkness_command(const EclInstruction &instruction);
+    // The 256-color engine's commands that need no host: true when it ran one.
+    [[nodiscard]] bool execute_vga_command(const EclInstruction &instruction);
     void jump(std::uint32_t address);
     void execute(const EclInstruction &instruction);
 };

@@ -411,6 +411,23 @@ constexpr std::array<int, class_slot_count> curse_fixed_hit_points{2, 0, 3, 3, 2
 // Gateway caps every class by its own level, whatever the race (its
 // levelCaps): clerics, druids and magic-users 6, rangers 7, the rest 8.
 constexpr std::array<int, class_slot_count> gateway_level_caps{6, 6, 8, 8, 7, 6, 8, 8};
+// Treasures caps them too, besides its races' limits (its trainingLimits):
+// clerics 10, druids 12, the rest 11.
+constexpr std::array<int, class_slot_count> treasures_level_caps{10, 12, 11, 11, 11, 11, 11, 11};
+
+// A class's own highest level in the game, whatever the race; none in most.
+[[nodiscard]] std::optional<int> game_level_cap(GoldBoxGame game, std::size_t slot)
+{
+    switch (game)
+    {
+    case GoldBoxGame::gateway_to_the_savage_frontier:
+        return gateway_level_caps.at(slot);
+    case GoldBoxGame::treasures_of_the_savage_frontier:
+        return treasures_level_caps.at(slot);
+    default:
+        return std::nullopt;
+    }
+}
 
 using SlotRow = std::array<int, 7>;
 // Spell slots of levels 1 to 7, for class levels 2 to 15 (Secret's, its
@@ -608,8 +625,7 @@ constexpr std::array<std::array<int, 5>, 11> thief_dexterity_adjustments{{{-15, 
 // bonus once for each die.
 [[nodiscard]] constexpr bool secret_hit_points(GoldBoxGame game) noexcept
 {
-    return game == GoldBoxGame::secret_of_the_silver_blades ||
-           game == GoldBoxGame::pools_of_darkness;
+    return game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game);
 }
 
 [[nodiscard]] int divided_among_classes(int total, int bonus, int class_count)
@@ -817,7 +833,7 @@ RolledCharacter roll_character(Race race, Profession profession, GoldBoxGame gam
     const auto classes = classes_of(profession);
     // Curse's characters start with platinum (starting_platinum) instead; in
     // Secret only a thief brings gold, 2d6, and in Pools of Darkness no one.
-    if (game == GoldBoxGame::pools_of_darkness)
+    if (vga_engine(game))
     {
         rolled.gold = 0;
     }
@@ -871,6 +887,9 @@ int starting_experience(Profession profession, GoldBoxGame game)
     case GoldBoxGame::pools_of_darkness:
         // Its creation gives each count its own amount (CreateCharacterMenu).
         return classes == 1 ? 1500001 : classes == 2 ? 750000 : 500000;
+    case GoldBoxGame::treasures_of_the_savage_frontier:
+        // 22,600 shared among the classes, rounded down (its chargen.pas).
+        return 22600 / classes;
     default:
         return 0;
     }
@@ -901,6 +920,7 @@ int starting_platinum(GoldBoxGame game)
         return 35;
     case GoldBoxGame::unlimited_adventures:
     case GoldBoxGame::pools_of_darkness:
+    case GoldBoxGame::treasures_of_the_savage_frontier:
         return 200;
     default:
         return 0;
@@ -1017,7 +1037,7 @@ StartingTraining starting_training(Race race, Profession profession,
                 static_cast<std::size_t>(std::ranges::find(classes, slot) - classes.begin());
             rolled_dice +=
                 rolled.training_hit_dice.at(first_die[n] + static_cast<std::size_t>(level - 2));
-            if (slot == C::magic_user && game != GoldBoxGame::pools_of_darkness)
+            if (slot == C::magic_user && !vga_engine(game))
             {
                 const auto learned = game == GoldBoxGame::secret_of_the_silver_blades
                                          ? secret_starting_spells(level)
@@ -1291,7 +1311,7 @@ int thac0(const ClassLevels &levels, GoldBoxGame game)
                 secret_stored_thac0[slot][static_cast<std::size_t>(std::min(levels[slot], 18))]);
             continue;
         }
-        if (game == GoldBoxGame::pools_of_darkness)
+        if (vga_engine(game))
         {
             best = std::max(
                 best,
@@ -1314,7 +1334,7 @@ std::array<int, 5> saving_throws(const ClassLevels &levels, GoldBoxGame game)
         {
             continue;
         }
-        if (game == GoldBoxGame::pools_of_darkness && levels[slot] > 18)
+        if (vga_engine(game) && levels[slot] > 18)
         {
             const auto &row =
                 darkness_high_saves[slot]
@@ -1325,8 +1345,7 @@ std::array<int, 5> saving_throws(const ClassLevels &levels, GoldBoxGame game)
             }
             continue;
         }
-        if (game == GoldBoxGame::secret_of_the_silver_blades ||
-            game == GoldBoxGame::pools_of_darkness)
+        if (game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game))
         {
             const auto &row =
                 secret_saves[slot][static_cast<std::size_t>(std::min(levels[slot], 18) - 1)];
@@ -1354,7 +1373,7 @@ std::optional<int> experience_for_level(ClassSlot slot, int level, GoldBoxGame g
     {
         return 0;
     }
-    if (game == GoldBoxGame::pools_of_darkness && level >= 11)
+    if (vga_engine(game) && level >= 11)
     {
         const auto at = index(slot);
         if (level > darkness_highest_level || darkness_level_11[at] == 0)
@@ -1363,7 +1382,7 @@ std::optional<int> experience_for_level(ClassSlot slot, int level, GoldBoxGame g
         }
         return darkness_level_11[at] + (level - 11) * darkness_per_level[at];
     }
-    if (game == GoldBoxGame::secret_of_the_silver_blades || game == GoldBoxGame::pools_of_darkness)
+    if (game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game))
     {
         if (level < 2 || level > 18)
         {
@@ -1397,7 +1416,7 @@ std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<c
     // Detect Magic, Read Magic, Sleep, and Shield (Pool of Radiance) or
     // Enlarge (Curse).
     // Pools of Darkness's too knows Enlarge.
-    const bool enlarge = curse_tables(game) || game == GoldBoxGame::pools_of_darkness;
+    const bool enlarge = curse_tables(game) || vga_engine(game);
     const std::array<int, 4> first_magic_user_spells{11, enlarge ? 12 : 19, 18, 21};
     const bool magic_user = level_in(levels, ClassSlot::magic_user) > 0;
     std::vector<int> known;
@@ -1438,8 +1457,8 @@ std::vector<ClassSlot> classes_ready_to_train(Race race, const ClassLevels &leve
         }
         const auto limit = racial_level_limit(race, slot, scores, game);
         const auto needed = experience_for_level(slot, level + 1, game);
-        const bool capped =
-            game == GoldBoxGame::gateway_to_the_savage_frontier && level >= gateway_level_caps[at];
+        const auto cap = game_level_cap(game, at);
+        const bool capped = cap && level >= *cap;
         if (!capped && (!limit || level < *limit) && needed && *needed <= experience)
         {
             ready.push_back(slot);
@@ -1561,8 +1580,7 @@ int experience_share(Profession profession, const AbilityArray<int> &scores, int
     {
     case P::cleric:
         // Secret's and Pools of Darkness's cleric gains it from Wisdom 15.
-        return (game == GoldBoxGame::secret_of_the_silver_blades ||
-                game == GoldBoxGame::pools_of_darkness) &&
+        return (game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game)) &&
                        scores[Ability::wisdom] == 15
                    ? award + award / 10
                    : bonus_above_15(Ability::wisdom);
@@ -1653,7 +1671,7 @@ SpellSlots spell_slots(ClassSlot slot, int level, int wisdom, int intelligence, 
     {
         return {};
     }
-    const bool darkness = game == GoldBoxGame::pools_of_darkness;
+    const bool darkness = vga_engine(game);
     const bool secret = game == GoldBoxGame::secret_of_the_silver_blades || darkness;
     const auto &table = slot == C::cleric ? cleric_slots : magic_user_slots;
     const auto &darkness_table =

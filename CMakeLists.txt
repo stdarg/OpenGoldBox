@@ -199,7 +199,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/por_effects.cpp
     src/OpenGold.Core/src/rolf_tour.cpp
     src/OpenGold.Core/src/phlan_session.cpp
-    src/OpenGold.Core/src/darkness_host.cpp
+    src/OpenGold.Core/src/vga_host.cpp
     src/OpenGold.Core/src/random_treasure.cpp
     src/OpenGold.Core/src/magic_item_catalog.cpp
     src/OpenGold.Core/src/encounter_budget.cpp
@@ -290,6 +290,11 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_darkness_tests PRIVATE opengold_core opengold_rules_srd5
         opengold_rules_original)
     add_test(NAME opengold_darkness_tests COMMAND opengold_darkness_tests)
+    # Treasures of the Savage Frontier's campaign, played on the real files.
+    add_executable(opengold_treasure_tests tests/treasure_tests.cpp)
+    target_link_libraries(opengold_treasure_tests PRIVATE opengold_core opengold_rules_srd5
+        opengold_rules_original)
+    add_test(NAME opengold_treasure_tests COMMAND opengold_treasure_tests)
     # Every map of Curse walked with an original-rules party: each event runs.
     add_test(NAME opengold_curse_walk COMMAND opengold_gold_box_games_tests --curse-walk)
     # Every map of Secret of the Silver Blades walked the same way.
@@ -298,6 +303,8 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_gateway_walk COMMAND opengold_gold_box_games_tests --gateway-walk)
     # And every map of Pools of Darkness.
     add_test(NAME opengold_darkness_walk COMMAND opengold_gold_box_games_tests --darkness-walk)
+    # And every map of Treasures of the Savage Frontier, its overland too.
+    add_test(NAME opengold_treasure_walk COMMAND opengold_gold_box_games_tests --treasure-walk)
     # Curse's story, beat by beat, with a party made for it (plan step 7).
     add_test(NAME opengold_curse_route COMMAND opengold_gold_box_games_tests --curse-route)
     # Secret of the Silver Blades' story the same way (plan phase 4, step 4).

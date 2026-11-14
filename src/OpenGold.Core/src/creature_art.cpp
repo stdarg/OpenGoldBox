@@ -72,6 +72,7 @@ std::optional<CombatArt> creature_art(const std::vector<std::uint8_t> &archive, 
         case GoldBoxGame::gateway_to_the_savage_frontier:
             return gateway::decode_combat_icon(archive, id);
         case GoldBoxGame::pools_of_darkness:
+        case GoldBoxGame::treasures_of_the_savage_frontier:
             return decode_vga_combat_icon(archive, id);
         default:
             return decode_ega_combat_icon(archive, id, 0);

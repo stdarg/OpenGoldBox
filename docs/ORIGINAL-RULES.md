@@ -424,6 +424,25 @@ Journal), chosen by the game as the others' are (2026-11-14):
   bringing a *Secret* party across (its LoadChar), which the original
   offers.
 
+## Treasures of the Savage Frontier
+
+*Treasures* runs on the engine of *Pools of Darkness*, and its tables are that
+game's, number for number (its reconstruction's `classLevelTable`,
+`xpIncrement`, `thac0Tbl`, `classSaves`, `raceCaps` and `firstLevelHitDice`
+match): experience, THAC0, saving throws and spell slots to level 40 (above).
+Its differences (2026-11-14):
+
+- **Creation:** a character starts with 22,600 experience, shared among its
+  classes and rounded down (11,300 for two, 7,533 for three), trained at
+  once, and 200 platinum (its `chargen.pas`): a human fighter starts at level
+  5, a thief at 6.
+- **Level caps:** besides its races' limits, every class stops at its own
+  level (its `trainingLimits`): clerics 10, druids 12, the rest 11.
+- **Training** takes one class a visit, as in *Curse* and *Gateway*: the ready
+  class whose next level needs the most experience (Bugs).
+- **Still to come:** its spells, training's cost, and bringing a *Gateway*
+  party across.
+
 ## Unlimited Adventures
 
 *Unlimited Adventures* is SSI's C rewrite, not the Pascal engine, but its
@@ -1114,7 +1133,7 @@ tuned with the AI lab once the original rules play.
 | *Curse:* Entangle's hold lasts as long as the spell table's row past its end says, an unset value (`magic.pas`, `SpellEntangle`, its duration taken for spell 136) | Entangle's own 10 rounds |
 | *Secret:* the Delayed Blast Fireball asks for its delay at the keyboard whoever casts it, the computer's creatures too (`magic.pas`, `SpellDelayedBlastFireball`) | The computer bursts it at once |
 | *Secret:* its +1 to hit with long and short swords and bows goes to every race (`charhlp.pas`, `WeaponAdjust`), where the earlier games give it to elves | Elves only |
-| *Curse* and *Gateway:* training picks the class whose next level needs the most experience, but reads every class at the level of the last one it looked at (TrainingMenu) | Each class at its own level |
+| *Curse*, *Gateway* and *Treasures:* training picks the class whose next level needs the most experience, but reads every class at the level of the last one it looked at (TrainingMenu) | Each class at its own level |
 | *Curse:* Hold Monster holds only what Hold Person can, as the spell its resolver exempts from the creature-type rule is Dimension Door (0x53) and not Hold Monster (0x5E) (`ovr023`, `MultiTargetedSpell`) | Any creature |
 | *Curse:* Ice Storm and Cone of Cold deal acid damage, so resisting cold does not lessen them (`ovr023`, `SpellIceStorm`, `SpellConeOfCold`) | Cold |
 | *Curse:* a shambling mound struck by electricity rolls 1d8, throws the roll away and gains 8 Hit Points (`ovr013`, its absorbing of lightning) | It gains the 1d8 |

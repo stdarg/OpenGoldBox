@@ -38,14 +38,14 @@ ZoneStarts zone_starts(GoldBoxGame game)
     }
 }
 
-// Pools of Darkness keeps its script memory its own way (docs/games/darkness.md,
-// "Script memory"): its cells 1h to 400h are the game's state, each named cell
-// at its own place, and 401h to 800h are the current character's record, byte
-// for byte. Each Pool of Radiance cell the engine names has its Darkness cell
-// here.
+// The 256-color engine (Pools of Darkness, Treasures of the Savage Frontier)
+// keeps its script memory its own way (docs/games/darkness.md, "Script
+// memory"): its cells 1h to 400h are the game's state, each named cell at its
+// own place, and 401h to 800h are the current character's record, byte for
+// byte. Each Pool of Radiance cell the engine names has its cell here.
 using CellPair = std::pair<std::uint16_t, std::uint16_t>;
-constexpr std::uint16_t darkness_record = 0x401;
-constexpr std::array<CellPair, 33> darkness_cells{{
+constexpr std::uint16_t vga_record = 0x401;
+constexpr std::array<CellPair, 33> vga_cells{{
     {0x49C5, 0x0013}, // The map LOAD FILES loaded.
     // The clock: minute ones and tens, hour, day, month and year.
     {0x49C7, 0x0006},
@@ -60,13 +60,13 @@ constexpr std::array<CellPair, 33> darkness_cells{{
     {0x49F2, 0x0016}, // The area's script.
     // The current character: its name, its platinum, gems and jewelry (two
     // bytes each), its status, side and hit points.
-    {0x6B00, darkness_record},
-    {0x6BC3, darkness_record + 331},
-    {0x6BC5, darkness_record + 333},
-    {0x6BC7, darkness_record + 335},
-    {0x6C00, darkness_record + 493},
-    {0x6C0C, darkness_record + 495},
-    {0x6C19, darkness_record + 508},
+    {0x6B00, vga_record},
+    {0x6BC3, vga_record + 331},
+    {0x6BC5, vga_record + 333},
+    {0x6BC7, vga_record + 335},
+    {0x6C00, vga_record + 493},
+    {0x6C0C, vga_record + 495},
+    {0x6C19, vga_record + 508},
     {0x6DA8, 0x0030}, // The classes a training hall trains, 127 for every class.
     {0x6DC8, 0x0015}, // Monsters defeated.
     {0x6DCA, 0x0019}, // Searching (bit 0) and looking (bit 1).
@@ -84,51 +84,64 @@ constexpr std::array<CellPair, 33> darkness_cells{{
     {0xC04F, 0x002D},
 }};
 
-// Darkness's memory: its game cells, its character's record and its script.
-[[nodiscard]] constexpr bool darkness_memory(std::uint16_t cell) noexcept
+// The engine's memory: its game cells, its character's record and its
+// script, which runs to 9DFFh in Pools of Darkness and B6B0h in Treasures.
+// A Pool of Radiance cell the engine has no place for keeps a place of its
+// own that no script reads: its own address, or, where that is the engine's
+// memory, the same cell moved up (low cells by F000h; script cells past the
+// script's end, by 2000h in Darkness and 4000h in Treasures).
+struct VgaMemory
 {
-    return (cell >= 0x0001 && cell <= 0x0800) || (cell >= 0x8000 && cell <= 0x9DFF);
+    std::uint16_t script_last, script_spare;
+};
+
+constexpr std::uint16_t low_last = 0x0800, low_spare = 0xF000, script_first = 0x8000;
+
+[[nodiscard]] constexpr VgaMemory vga_memory(GoldBoxGame game) noexcept
+{
+    return game == GoldBoxGame::treasures_of_the_savage_frontier ? VgaMemory{0xB6B0, 0x4000}
+                                                                 : VgaMemory{0x9DFF, 0x2000};
 }
 
-constexpr std::uint16_t low_spare = 0xF000, script_spare = 0x2000;
-
-// A Pool of Radiance cell Darkness has no place for keeps a place of its own
-// that no Darkness script reads: its own address, or, where that is Darkness's
-// memory, the same cell moved up (low cells by F000h, strings by 2000h).
-[[nodiscard]] constexpr std::uint16_t darkness_spare(std::uint16_t cell) noexcept
+[[nodiscard]] constexpr std::uint16_t vga_spare(std::uint16_t cell, VgaMemory memory) noexcept
 {
-    if (!darkness_memory(cell))
+    if (cell >= 0x0001 && cell <= low_last)
     {
-        return cell;
+        return static_cast<std::uint16_t>(cell + low_spare);
     }
-    return static_cast<std::uint16_t>(cell <= 0x0800 ? cell + low_spare : cell + script_spare);
+    if (cell >= script_first && cell <= memory.script_last)
+    {
+        return static_cast<std::uint16_t>(cell + memory.script_spare);
+    }
+    return cell;
 }
 
-EclAddress darkness_address(EclAddress cell)
+EclAddress vga_address(EclAddress cell, GoldBoxGame game)
 {
-    const auto named = std::ranges::find(darkness_cells, cell.location, &CellPair::first);
-    return EclAddress(named != darkness_cells.end() ? named->second
-                                                    : darkness_spare(cell.location));
+    const auto named = std::ranges::find(vga_cells, cell.location, &CellPair::first);
+    return EclAddress(named != vga_cells.end() ? named->second
+                                               : vga_spare(cell.location, vga_memory(game)));
 }
 
-EclAddress darkness_pool_of_radiance_address(EclAddress cell)
+EclAddress vga_pool_of_radiance_address(EclAddress cell, GoldBoxGame game)
 {
-    const auto named = std::ranges::find(darkness_cells, cell.location, &CellPair::second);
-    if (named != darkness_cells.end())
+    const auto named = std::ranges::find(vga_cells, cell.location, &CellPair::second);
+    if (named != vga_cells.end())
     {
         return EclAddress(named->first);
     }
+    const auto memory = vga_memory(game);
     const auto moved_from = [&cell](std::uint16_t spare, std::uint16_t first, std::uint16_t last)
     {
         return cell.location >= first + spare && cell.location <= last + spare;
     };
-    if (moved_from(low_spare, 0x0001, 0x0800))
+    if (moved_from(low_spare, 0x0001, low_last))
     {
         return EclAddress(static_cast<std::uint16_t>(cell.location - low_spare));
     }
-    if (moved_from(script_spare, 0x8000, 0x9DFF))
+    if (moved_from(memory.script_spare, script_first, memory.script_last))
     {
-        return EclAddress(static_cast<std::uint16_t>(cell.location - script_spare));
+        return EclAddress(static_cast<std::uint16_t>(cell.location - memory.script_spare));
     }
     return cell;
 }
@@ -137,9 +150,9 @@ EclAddress darkness_pool_of_radiance_address(EclAddress cell)
 
 EclAddress game_address(EclAddress cell, GoldBoxGame game)
 {
-    if (game == GoldBoxGame::pools_of_darkness)
+    if (vga_engine(game))
     {
-        return darkness_address(cell);
+        return vga_address(cell, game);
     }
     const auto starts = zone_starts(game);
     for (std::size_t zone = 0; zone < pool_of_radiance_zones.size(); ++zone)
@@ -155,9 +168,9 @@ EclAddress game_address(EclAddress cell, GoldBoxGame game)
 
 EclAddress pool_of_radiance_address(EclAddress cell, GoldBoxGame game)
 {
-    if (game == GoldBoxGame::pools_of_darkness)
+    if (vga_engine(game))
     {
-        return darkness_pool_of_radiance_address(cell);
+        return vga_pool_of_radiance_address(cell, game);
     }
     const auto starts = zone_starts(game);
     for (std::size_t zone = 0; zone < pool_of_radiance_zones.size(); ++zone)

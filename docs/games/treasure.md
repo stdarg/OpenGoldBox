@@ -99,3 +99,105 @@ points.
 
 As in *Pools of Darkness*: 17-byte items, 254 definitions in `ITEM0`, and 128
 item types in `ITEMS` with no header.
+
+### Script memory
+
+A script names the game's cells anew. The game's state is cells 1 to 400h,
+cell n holding the state's byte n − 1, and the current character's record is
+cells 401h to 800h, its byte n at 401h + n; the script runs at 8000h to
+B6B0h. A cell outside these reads 0. Some cells the engine serves itself:
+
+| Cell | What it holds |
+|---|---|
+| 6 to 0Bh | The clock: minutes, tens of minutes, hour, day, month, year |
+| 11h | The party's facing, 0 to 3 (written, 4 and up count less 4) |
+| 13h | The map loaded last |
+| 15h | The monsters defeated |
+| 16h | The script the area returns to |
+| 20h | The party's size |
+| 22h | 1 inside, 0 on an area map with a cursor, which no script of this game uses |
+| 2Bh, 2Ch | Rest steps between interruption rolls, and an interruption's chance |
+| 2Dh | The event of the party's square |
+| 30h | The classes a hall trains (127 every class) |
+| 32h | The wall ahead |
+| 34h, 35h | The party's square, x and y |
+| 40h | 1 while the overland is shown |
+| 42h | The overland's colors: the OVER record after this number |
+| 54Ch, 54Eh, 550h | The character's platinum, gems and jewelry |
+| 5EEh | The character's status |
+| 5FDh | The character's hit points |
+
+`game_address` gives these cells for the engine's own (Pool of Radiance's).
+
+### What the commands do
+
+CALL takes a routine's number: 1 redraws the view, 2 steps forward and 3 shows
+the portrait animation's next frame. CHECK PARTY reads its operands and does
+nothing. PICTURE 254 blanks the picture's box, 255 shows the view again; a
+picture from 240 up is a big picture (`BIGPIC1`), below a `PIC1` or `PIC1A`
+animation. YES NO sets the equal flag on Yes. JOURNAL ENTRY tells the party
+"This is recorded as journal entry n." and waits for a key. LOAD FILES loads
+its wall set into the first slot and empties the others, unless the set is
+there already; LOAD WALL SETS fills the three slots, each set copying its
+appearances into its slot and the ones after it. TREASURE adds its platinum,
+gems and jewelry and its items (`ITEM0`'s definitions) to the pile the next
+COMBAT with no monsters gives.
+
+## The opening
+
+A new game runs script 16, its load entry only. Over pictures 2, 3 and 4 it
+tells of a lazy afternoon on a hilltop above Yartar, the party's waking in a
+stone fortress, its old friend Amanitas's word and Milzorr the dwarven leader's
+welcome, each screen waiting for a key (WAIT KEY), and ends with CLEAR AND
+EXIT. Its entry then loads map 16 with the wall sets 9, 10 and 11 (LOAD WALL
+SETS) and leaves the party at (10,7) facing north.
+
+`load_campaign(folder, GoldBoxGame::treasures_of_the_savage_frontier)` plays it
+with the code that plays *Pools of Darkness*, its engine's (`vga_engine`):
+the same loader (`campaign_session.cpp`), script machine, memory map
+(`game_address`), character record (`add_vga_record`), pictures, sprites,
+combat icons, walls and backdrops in the colors each sets (`vga_picture.h`,
+`load_vga_wall_art`), and script host (`vga_host.cpp`). What *Treasures* adds
+there: LOAD WALL SETS fills three slots, each set copying its appearances into
+its slot and the ones after it, as its LoadWallSet does (Pools of Darkness
+loads one set, into the first slot); `PIC1A` continues `PIC1`; its item words
+are `BORD`'s record 10; its stores are listed differently (The walk); the
+overland, FIND and TAKE NAMED ITEM, and CHECK PARTY doing nothing.
+
+## The overland
+
+The overland is script 51. It sets the overland cell (40h) and loads the map
+its cell 2EEh names, one of `GEO1`'s maps 51 to 57, and the "wall set" of the
+same number, which on the overland is `OVER`'s picture of that map: 128 by 128
+pixels, a square of 8 for each of the map's. It puts the party where cells
+2EBh to 2EDh say (facing, x and y). The view shows the 11 by 11 squares
+around the party, kept on the map, with the party's arrow (the automap's
+symbols 16 to 19), in the colors of the `OVER` record after the cell 42h's
+number (its DrawOverMap and LoadOverPalette). A step there passes as inside,
+by the map's walls and doors.
+
+## The walk
+
+`opengold_treasure_walk` (`opengold_gold_box_games_tests --treasure-walk`)
+walks every square of every map, the overland's too, with six fighters made
+under *Treasures*' rules, and runs each event and fight. Entering an overland
+map directly, it sets the cells 2EBh to 2EEh as the way there would. What the
+walk needed besides the opening's:
+
+- **Shops.** STORE opens one of 16 stores whose stock `GAME.EXE` lists: runs
+  of item definitions (`ITEM0`, from 1), each ended by FFh, at a fixed place
+  in the unpacked program of this release. A number outside 1 to 16 opens the
+  first; item 0 sells nothing, so store 12, the gem trader's, sells nothing.
+- **Off the map.** An overland script may put the party off the map for a
+  moment (stepping off an edge it did not step over), where the original finds
+  no wall and no event; the view keeps the square it showed.
+- **FIND NAMED ITEM** answers with the comparison flags; **TAKE NAMED ITEM**
+  takes the first matching item from the party.
+- The demonstration (script 4, which the original runs when the title is left
+  alone) loads the opening's map and the overland's too; the game's own
+  scripts hold those maps.
+
+Still to come: the records that only set colors for the picture shown, the overland's color
+cycling, the music and sounds other than the footstep, PROGRAM 3 to 5
+(the luck readings, the Fix menu, the party's repair), the romances, and the
+route.

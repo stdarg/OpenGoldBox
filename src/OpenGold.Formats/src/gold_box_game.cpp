@@ -22,6 +22,7 @@ GameDisks game_disks(GoldBoxGame game)
         // Its HEAD and BODY files have no disk number.
         return {{2, 3, 4, 5, 6}, {}, {2, 3, 4, 5, 6}, {}};
     case GoldBoxGame::pools_of_darkness:
+    case GoldBoxGame::treasures_of_the_savage_frontier:
         // One file of each kind, numbered 1; TREASURE names its items itself,
         // so there are no item lists.
         return {{1}, {}, {}, {}};

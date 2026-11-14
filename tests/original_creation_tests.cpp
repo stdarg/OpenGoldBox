@@ -864,6 +864,38 @@ void darkness_characters_start_high()
           "A Darkness hall trains a party with no gold");
 }
 
+// Treasures of the Savage Frontier: a new character starts with 22,600
+// experience (11,300 for each class of two, 7,533 of three), trained at once,
+// and 200 platinum, on the tables of Pools of Darkness, its engine's.
+void treasures_characters_start_with_their_experience()
+{
+    const auto treasures = GoldBoxGame::treasures_of_the_savage_frontier;
+    std::shared_ptr<const rules::CharacterRules> creation =
+        original::character_rules(original::default_aging, treasures);
+    const auto made = [&](std::string race, std::string profession)
+    {
+        rules::CharacterDraft draft;
+        draft.race = std::move(race);
+        draft.gender = "male";
+        draft.character_class = std::move(profession);
+        draft.alignment = "neutral_good";
+        draft.name = "Brok";
+        RandomState random{31};
+        creation->roll_in_place(draft, random);
+        return creation->evaluate(draft, rules::NameRequirement::required);
+    };
+    const auto fighter = made("human", "fighter");
+    check(original::game_of(fighter.identity) == treasures, "The sheet names Treasures' edition");
+    check(fighter.original->experience == 22600 && fighter.original->class_levels[2] == 5 &&
+              fighter.original->platinum == 200,
+          "A Treasures fighter starts at level 5 with 22,600 experience and 200 platinum");
+    check(made("human", "thief").original->class_levels[6] == 6, "A thief reaches level 6");
+    const auto pair = made("halfling", "fighter_thief");
+    check(pair.original->experience == 11300 && pair.original->class_levels[2] == 4 &&
+              pair.original->class_levels[6] == 5,
+          "A fighter/thief has 11,300 for each class: fighter 4, thief 5");
+}
+
 void curse_paladins_and_rangers()
 {
     const auto module = original::rules_module();
@@ -1600,6 +1632,7 @@ int main()
         secret_characters_start_trained();
         gateway_characters_start_low_and_stop_at_caps();
         darkness_characters_start_high();
+        treasures_characters_start_with_their_experience();
         std::cout << "Original creation tests passed\n";
         return 0;
     }

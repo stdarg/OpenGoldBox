@@ -47,7 +47,7 @@ const CharacterSheet::Original &original_numbers(const CharacterSheet &sheet)
 }
 
 // The classes the character would train in at a hall with this much
-// experience. Curse and Gateway train one a visit: the ready class whose next
+// experience. Curse, Gateway and Treasures train one a visit: the ready class whose next
 // level needs the most experience (their TrainingMenu, which read every class
 // at the last one's level; each is read at its own here, docs/ORIGINAL-RULES.md, Bugs).
 std::vector<ClassSlot> ready_classes(const CharacterSheet &sheet, unsigned experience)
@@ -58,7 +58,8 @@ std::vector<ClassSlot> ready_classes(const CharacterSheet &sheet, unsigned exper
     auto ready = classes_ready_to_train(static_cast<Race>(numbers.race), numbers.class_levels,
                                         sheet.scores, static_cast<int>(capped), game);
     if (ready.size() > 1 && (game == GoldBoxGame::curse_of_the_azure_bonds ||
-                             game == GoldBoxGame::gateway_to_the_savage_frontier))
+                             game == GoldBoxGame::gateway_to_the_savage_frontier ||
+                             game == GoldBoxGame::treasures_of_the_savage_frontier))
     {
         const auto needed = [&](ClassSlot slot)
         {
@@ -253,7 +254,7 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
         attacks = warrior || level_in(l, ClassSlot::ranger) > 7 ? 3 : 2;
     }
     // Pools of Darkness's are Secret's.
-    if (game == GoldBoxGame::secret_of_the_silver_blades || game == GoldBoxGame::pools_of_darkness)
+    if (game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game))
     {
         const auto warrior = std::max(fighter, level_in(l, ClassSlot::paladin));
         const auto ranger = level_in(l, ClassSlot::ranger);
@@ -685,8 +686,7 @@ constexpr std::array<std::uint8_t, class_slot_count> usability_bits{1 << 1, 1 <<
 std::uint8_t usability(const CharacterSheet &sheet)
 {
     const auto game = game_of(sheet.identity);
-    const bool secret =
-        game == GoldBoxGame::secret_of_the_silver_blades || game == GoldBoxGame::pools_of_darkness;
+    const bool secret = game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game);
     std::uint8_t bits = 0;
     const auto &levels = original_numbers(sheet).class_levels;
     for (std::size_t at = 0; at < class_slot_count; ++at)

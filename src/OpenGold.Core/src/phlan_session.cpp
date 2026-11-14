@@ -19,9 +19,14 @@ namespace opengold::por
 constexpr int hidden_archer_attack_bonus = 4;
 // The time a step takes, which ECL CLOCK also counts in.
 constexpr std::chrono::seconds step_time{6};
-// Pools of Darkness's PLAY SOUND, a host command only there
+// The 256-color engine's PLAY SOUND, a host command only there
 // (docs/games/darkness.md, Scripts).
-constexpr std::uint8_t darkness_play_sound_command = 0x2C;
+constexpr std::uint8_t vga_play_sound_command = 0x2C;
+// The three commands Treasures of the Savage Frontier adds
+// (docs/games/treasure.md, Scripts).
+constexpr std::uint8_t treasures_load_wall_sets_command = 0x42,
+                       treasures_find_named_item_command = 0x43,
+                       treasures_take_named_item_command = 0x44;
 
 const PhlanResources &RolfTourSession::area_resources() const
 {
@@ -95,13 +100,13 @@ void RolfTourSession::change_area(unsigned id)
 // ITEMS (64), Secret AWARD EXPERIENCE (65).
 void RolfTourSession::enable_party_commands()
 {
-    const bool darkness = game() == GoldBoxGame::pools_of_darkness;
+    const bool vga = vga_engine(game());
     for (const std::uint8_t op :
          std::initializer_list<std::uint8_t>{11, 29, 30, 34, 35, 41, 46, 52, 54, 59})
     {
-        // Pools of Darkness's 1Dh, 22h, 23h and 29h are commands the machine
+        // The 256-color engine's 1Dh, 22h, 23h and 29h are commands the machine
         // runs itself (WAIT KEY, YES NO, CLEAR AND EXIT, unused).
-        if (darkness && (op == 29 || op == 34 || op == 35 || op == 41))
+        if (vga && (op == 29 || op == 34 || op == 35 || op == 41))
         {
             continue;
         }
@@ -112,7 +117,7 @@ void RolfTourSession::enable_party_commands()
         machine_.enable_host(62);
         machine_.enable_host(64);
     }
-    if (game() == GoldBoxGame::secret_of_the_silver_blades || darkness)
+    if (game() == GoldBoxGame::secret_of_the_silver_blades || vga)
     {
         machine_.enable_host(65);
     }
@@ -463,7 +468,7 @@ void RolfTourSession::configure_town()
     // charm on the climber (ECL4:2 0xACF5); no script writes there, so it
     // finds none.
     // Each cell where the campaign's game keeps it (game_address): Pools of
-    // Darkness keeps its named cells apart, not in runs.
+    // The 256-color engine keeps its named cells apart, not in runs.
     const auto bind_range = [this](std::uint16_t first, std::uint16_t last)
     {
         for (auto a = first; a <= last; ++a)
@@ -478,9 +483,9 @@ void RolfTourSession::configure_town()
     bind_range(0x6B00, 0x6C1C);
     bind_range(0x6DA8, 0x6EFF);
     bind_range(0x9800, 0x98FF);
-    // Pools of Darkness's own memory: its game cells and the current
+    // The 256-color engine's own memory: its game cells and the current
     // character's record (docs/games/darkness.md, Script memory).
-    if (game() == GoldBoxGame::pools_of_darkness)
+    if (vga_engine(game()))
     {
         constexpr std::uint16_t first_cell = 0x0001, last_cell = 0x0800;
         for (auto a = first_cell; a <= last_cell; ++a)
@@ -527,9 +532,17 @@ void RolfTourSession::configure_town()
     {
         machine_.enable_host(op);
     }
-    if (game() == GoldBoxGame::pools_of_darkness)
+    if (vga_engine(game()))
     {
-        machine_.enable_host(darkness_play_sound_command);
+        machine_.enable_host(vga_play_sound_command);
+    }
+    if (game() == GoldBoxGame::treasures_of_the_savage_frontier)
+    {
+        for (const auto op : {treasures_load_wall_sets_command, treasures_find_named_item_command,
+                              treasures_take_named_item_command})
+        {
+            machine_.enable_host(op);
+        }
     }
     // When the Pyramid falls the Central Wilderness's script patches the
     // original's colours of 36 wilderness tiles in two buffers (ECL7:26
@@ -691,9 +704,9 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
                               &EclMemoryWrite::address)
                 ->value = 0x81;
         }
-        if (game() == GoldBoxGame::pools_of_darkness)
+        if (vga_engine(game()))
         {
-            add_darkness_record(slot, reply);
+            add_vga_record(slot, reply);
         }
         return reply;
     }
@@ -1943,9 +1956,9 @@ void RolfTourSession::finish_event()
         search_destination();
         return;
     }
-    if (event_stage_ == EventStage::step && darkness_area_map())
+    if (event_stage_ == EventStage::step && vga_area_map())
     {
-        darkness_area_step();
+        vga_area_step();
         search_destination();
         return;
     }
@@ -3050,7 +3063,7 @@ std::string RolfTourSession::hurt(const std::optional<HazardHit> &hit, int save_
     {
         return "\n" + name + " avoids it" + save + ".";
     }
-    // A save that only halves the damage (Pools of Darkness's) still hurts.
+    // A save that only halves the damage (the 256-color engine's) still hurts.
     const auto saving = result.saved ? " saves" + save + " but"
                         : save_dc    ? " fails to avoid it" + save + " and"
                                      : std::string();
@@ -3239,14 +3252,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             ++snapshot_.picture_revision;
             break;
         }
-        // Pools of Darkness's sprites are 256-color animations.
+        // The 256-color engine's sprites are 256-color animations.
         const auto sprite = [this](unsigned id, unsigned distance)
         {
-            return game() == GoldBoxGame::pools_of_darkness
-                       ? darkness_sprite(id, distance)
-                       : decode_ega_sprite(area_resources().sprite_archive,
-                                           static_cast<std::uint8_t>(id),
-                                           static_cast<std::uint8_t>(distance));
+            return vga_engine(game()) ? vga_sprite(id, distance)
+                                      : decode_ega_sprite(area_resources().sprite_archive,
+                                                          static_cast<std::uint8_t>(id),
+                                                          static_cast<std::uint8_t>(distance));
         };
         // The Pitt's buccaneer names sprite 19, which SPRIT1 lacks: met face
         // to face, the original shows the head (0x6DE1) and body portrait.
@@ -3290,7 +3302,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         picture_.reset();
         picture_animation_id_.reset();
         ++snapshot_.picture_revision;
-        if (arg(0) == 255)
+        // The 256-color engine's 254 blanks the picture's box (its ShowPicture).
+        constexpr unsigned blank_picture = 254;
+        if (arg(0) == 255 || (vga_engine(game()) && arg(0) == blank_picture))
         {
             break;
         }
@@ -3441,6 +3455,22 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         read_character();
         reply = character_reply(selected_character_);
+        // Treasures' CHECK PARTY reads its operands and does nothing: its
+        // four cells keep what they hold.
+        if (game() == GoldBoxGame::treasures_of_the_savage_frontier)
+        {
+            for (std::size_t n = 2; n < request.arguments.size(); ++n)
+            {
+                const auto cell = address_arg(static_cast<unsigned>(n));
+                std::erase_if(reply.writes,
+                              [cell](const EclMemoryWrite &write)
+                              {
+                                  return write.address == cell;
+                              });
+                reply.writes.push_back({cell, machine_.variable(cell)});
+            }
+            break;
+        }
         auto values = check_party(*campaign_, pool_of_radiance_address(address_arg(0), game()),
                                   arg(1), game());
         // A trap the Wand of Secrets pointed out is seen as Find Traps sees it.
@@ -3493,11 +3523,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         const bool dispel = (game() == GoldBoxGame::secret_of_the_silver_blades &&
                              (arg(0) == cleric_dispel || arg(0) == magic_user_dispel)) ||
                             (gateway && !asked.empty());
-        // Pools of Darkness asks for any spell: whoever has it memorized casts it.
-        if (game() == GoldBoxGame::pools_of_darkness)
+        // The 256-color engine asks for any spell: whoever has it memorized casts it.
+        if (vga_engine(game()))
         {
             read_character();
-            reply = darkness_spell(arg(0), address_arg(1), address_arg(2));
+            reply = vga_spell(arg(0), address_arg(1), address_arg(2));
             break;
         }
         if (arg(0) != knock && !dispel)
@@ -3643,9 +3673,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 39:
     {
-        if (game() == GoldBoxGame::pools_of_darkness)
+        if (vga_engine(game()))
         {
-            stage_darkness_treasure(request);
+            stage_vga_treasure(request);
             break;
         }
         bool money = false;
@@ -3968,14 +3998,14 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         break;
     }
-    case darkness_play_sound_command:
-        darkness_play_sound(arg(0));
+    case vga_play_sound_command:
+        vga_play_sound(arg(0));
         break;
     case 33:
     {
-        if (game() == GoldBoxGame::pools_of_darkness)
+        if (vga_engine(game()))
         {
-            reply = darkness_load_files(arg(0), arg(1));
+            reply = vga_load_files(arg(0), arg(1));
             break;
         }
         // Original gate transition refresh before NEW ECL selects its district.
@@ -4091,6 +4121,26 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         reply = character_reply(selected_character_);
         break;
     }
+    case treasures_load_wall_sets_command:
+        reply = treasures_load_wall_sets(arg(0), {arg(1), arg(2), arg(3)});
+        break;
+    case treasures_find_named_item_command:
+    case treasures_take_named_item_command:
+    {
+        // Treasures' FIND and TAKE NAMED ITEM: an item of the type (0 for
+        // any) whose name words are these, the last first (a last word of 0
+        // matches any name); TAKE takes the first such item from the party.
+        const std::array words{static_cast<std::uint8_t>(arg(3)), static_cast<std::uint8_t>(arg(2)),
+                               static_cast<std::uint8_t>(arg(1))};
+        const bool found =
+            campaign_ && campaign_->find_named_item(static_cast<std::uint8_t>(arg(0)), words,
+                                                    op == treasures_take_named_item_command);
+        if (op == treasures_find_named_item_command)
+        {
+            reply.conditions = EclConditions{found, !found, false, false, false, false};
+        }
+        break;
+    }
     case 64:
         // DESTROY ITEMS (Curse): every item of the type in the party is gone.
         campaign_->destroy_items(static_cast<std::uint8_t>(arg(0)));
@@ -4116,9 +4166,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 60:
     {
-        if (game() == GoldBoxGame::pools_of_darkness)
+        if (vga_engine(game()))
         {
-            open_darkness_store(request);
+            open_vga_store(request);
             return true;
         }
         // PROTECTION: a line of rune glyphs at the operand's address, which the
@@ -4130,9 +4180,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 55:
     {
-        if (game() == GoldBoxGame::pools_of_darkness)
+        if (vga_engine(game()))
         {
-            reply = darkness_find_npc(request.arguments.at(0).text(), address_arg(1));
+            reply = vga_find_npc(request.arguments.at(0).text(), address_arg(1));
             break;
         }
         // The wilderness's sites reset the wall banks (127) before NEW ECL.
@@ -4193,10 +4243,10 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     }
     case 46:
     {
-        if (game() == GoldBoxGame::pools_of_darkness)
+        if (vga_engine(game()))
         {
             read_character();
-            darkness_damage(request);
+            vga_damage(request);
             damage_request_ = request.id;
             snapshot_.phase = TourPhase::awaiting_continue;
             snapshot_.choices = {"Continue"};

@@ -75,6 +75,15 @@ inline constexpr std::array<GoldBoxGame, 7> gold_box_games{
     return {};
 }
 
+// Whether the game runs on the 256-color engine Pools of Darkness began and
+// Treasures of the Savage Frontier kept: the same script machine, memory,
+// records and pictures (docs/games/darkness.md, docs/games/treasure.md).
+[[nodiscard]] constexpr bool vga_engine(GoldBoxGame game) noexcept
+{
+    return game == GoldBoxGame::pools_of_darkness ||
+           game == GoldBoxGame::treasures_of_the_savage_frontier;
+}
+
 // The file of the game's item types: Gateway to the Savage Frontier names it
 // ITEMS.1.
 [[nodiscard]] constexpr std::string_view item_types_file(GoldBoxGame game) noexcept

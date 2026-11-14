@@ -221,7 +221,7 @@ int canonical_spell(int number, GoldBoxGame game) noexcept
 {
     // Pools of Darkness numbers its spells as Secret does, and its new ones
     // (101 to 109, 118 to 126) take numbers Secret leaves free.
-    if (game == GoldBoxGame::secret_of_the_silver_blades || game == GoldBoxGame::pools_of_darkness)
+    if (game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game))
     {
         // Secret keeps Curse's numbers but where its own spells took them.
         constexpr std::array<int, 6> own{36, 56, 63, 90, 96, 98};

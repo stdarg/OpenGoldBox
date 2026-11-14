@@ -381,6 +381,11 @@ class CampaignParty
     // The original's DESTROY ITEMS (Curse's opcode 0x40): every item of this
     // original type the party's members carry is gone, cursed or not.
     void destroy_items(std::uint8_t type);
+    // Treasures' FIND NAMED ITEM and TAKE NAMED ITEM: whether a member carries
+    // an item of the original type (0 for any) whose three name words are
+    // these, the first word first (a last word of 0 matches any name); with
+    // `take`, the first such item is gone.
+    bool find_named_item(std::uint8_t type, std::array<std::uint8_t, 3> words, bool take);
     void set_wealth(Purse wealth);
     // Money a joining character brings; throws if the party purse cannot hold it.
     void add_coins(Coin coin, std::uint32_t count);

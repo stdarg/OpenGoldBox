@@ -132,10 +132,13 @@ class AreaFiles
                                        const std::array<unsigned, 3> &pieces,
                                        const WallArtReplacements &new_wall_art);
 
-// Pools of Darkness's walls: one set at a time, WALLDEF1 record `set` drawn
-// from the tiles of 8X8D1 record `set` in the colors they set; the maps name
-// its appearances from 1 (docs/games/darkness.md, Walls).
-[[nodiscard]] WallArtSet load_vga_wall_art(const AreaFiles &files, unsigned set);
+// The 256-color engine's walls: the wall sets of the view's three slots, each
+// WALLDEF1 record drawn from the tiles of the 8X8D1 record of its number in the
+// colors they set; the maps name their appearances from 1, five a slot
+// (docs/games/darkness.md, Walls). Pools of Darkness loads one set, in the
+// first slot; Treasures of the Savage Frontier up to three.
+[[nodiscard]] WallArtSet load_vga_wall_art(const AreaFiles &files,
+                                           const std::array<unsigned, 3> &slots);
 
 // One map of an area, without its creatures: the campaign adds those.
 [[nodiscard]] std::shared_ptr<PhlanResources>

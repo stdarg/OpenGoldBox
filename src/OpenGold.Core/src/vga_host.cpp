@@ -1,4 +1,4 @@
-// Pools of Darkness's script commands the session answers where its numbers
+// The 256-color engine's script commands the session answers where its numbers
 // mean other commands in the other games (docs/games/darkness.md, Scripts).
 #include "opengold/rolf_tour.h"
 #include "area_loading.h"
@@ -42,7 +42,7 @@ constexpr std::uint16_t okay = 0, dead = 6;
 
 } // namespace
 
-std::optional<Equipment> RolfTourSession::darkness_item(unsigned number, std::uint64_t request)
+std::optional<Equipment> RolfTourSession::vga_item(unsigned number, std::uint64_t request)
 {
     constexpr unsigned random_scroll = 0xFF;
     if (number != random_scroll)
@@ -86,7 +86,7 @@ std::optional<Equipment> RolfTourSession::darkness_item(unsigned number, std::ui
     return item;
 }
 
-void RolfTourSession::stage_darkness_treasure(const EclRequest &request)
+void RolfTourSession::stage_vga_treasure(const EclRequest &request)
 {
     if (!campaign_)
     {
@@ -107,7 +107,7 @@ void RolfTourSession::stage_darkness_treasure(const EclRequest &request)
     loot.include_items = false;
     for (std::size_t n = 0; n < number(3); ++n)
     {
-        if (auto item = darkness_item(number(4 + n), request.id))
+        if (auto item = vga_item(number(4 + n), request.id))
         {
             item->index = loot.items.size();
             loot.items.push_back(std::move(*item));
@@ -116,7 +116,7 @@ void RolfTourSession::stage_darkness_treasure(const EclRequest &request)
     staged_treasure_ = std::move(loot);
 }
 
-void RolfTourSession::open_darkness_store(const EclRequest &request)
+void RolfTourSession::open_vga_store(const EclRequest &request)
 {
     // Stores 1 to 11; any other number opens the first (its EclShop).
     auto store = request.arguments.at(0).number();
@@ -127,7 +127,7 @@ void RolfTourSession::open_darkness_store(const EclRequest &request)
     treasure_.clear();
     for (const auto number : town_->stores.at(store - 1))
     {
-        if (auto item = darkness_item(number, request.id))
+        if (auto item = vga_item(number, request.id))
         {
             // A store's goods are known for what they are.
             item->identify();
@@ -145,13 +145,12 @@ void RolfTourSession::open_darkness_store(const EclRequest &request)
     ++snapshot_.revision;
 }
 
-bool RolfTourSession::darkness_area_map() const
+bool RolfTourSession::vga_area_map() const
 {
-    return game() == GoldBoxGame::pools_of_darkness &&
-           machine_.variable(game_cell(ecl_in_3d_area)) == 0;
+    return vga_engine(game()) && machine_.variable(game_cell(ecl_in_3d_area)) == 0;
 }
 
-void RolfTourSession::darkness_area_step()
+void RolfTourSession::vga_area_step()
 {
     // The party's square on the area map, 38 columns by 15 rows (its
     // MovePartyWilderness), and the square it left.
@@ -178,7 +177,7 @@ void RolfTourSession::darkness_area_step()
     ++snapshot_.revision;
 }
 
-EclHostReply RolfTourSession::darkness_spell(unsigned spell, EclAddress place, EclAddress member)
+EclHostReply RolfTourSession::vga_spell(unsigned spell, EclAddress place, EclAddress member)
 {
     constexpr std::uint16_t nobody = 0xFF;
     auto reply = character_reply(selected_character_);
@@ -200,7 +199,7 @@ EclHostReply RolfTourSession::darkness_spell(unsigned spell, EclAddress place, E
     return reply;
 }
 
-void RolfTourSession::darkness_damage(const EclRequest &request)
+void RolfTourSession::vga_damage(const EclRequest &request)
 {
     // DAMAGE: attack, dice, sides, bonus, value (its EclDamage). With attack's
     // 80h its low four bits are the save's modifier and value's low three bits
@@ -273,7 +272,7 @@ void RolfTourSession::darkness_damage(const EclRequest &request)
     snapshot_.dialogue += hurt(campaign_->hazard_attack(harm), harm.save_dc, harm.sides);
 }
 
-ImageDecodeResult RolfTourSession::darkness_sprite(unsigned id, unsigned distance) const
+ImageDecodeResult RolfTourSession::vga_sprite(unsigned id, unsigned distance) const
 {
     // Its frames are the monster near, at middle distance and far; the
     // original swaps colors 0 and 13 and draws through 13, so 0 shows through.
@@ -289,7 +288,7 @@ ImageDecodeResult RolfTourSession::darkness_sprite(unsigned id, unsigned distanc
                                        vga_color_table(animation->palette), see_through)};
 }
 
-EclHostReply RolfTourSession::darkness_find_npc(const std::string &name, EclAddress place) const
+EclHostReply RolfTourSession::vga_find_npc(const std::string &name, EclAddress place) const
 {
     // The member's place in the party, 80h more when it is out of play, or
     // FFh when no companion has that name (its EclFindNpc).
@@ -319,7 +318,7 @@ EclHostReply RolfTourSession::darkness_find_npc(const std::string &name, EclAddr
     return reply;
 }
 
-void RolfTourSession::add_darkness_record(PartySlot slot, EclHostReply &reply) const
+void RolfTourSession::add_vga_record(PartySlot slot, EclHostReply &reply) const
 {
     std::array<std::uint16_t, record_size> record{};
     const auto id = slot.index < 8 ? campaign_->state().slots[slot.index] : MemberId{};
@@ -391,40 +390,143 @@ void RolfTourSession::add_darkness_record(PartySlot slot, EclHostReply &reply) c
     }
 }
 
-EclHostReply RolfTourSession::darkness_load_files(unsigned map, unsigned walls)
+EclHostReply RolfTourSession::vga_load_map(unsigned map)
 {
     EclHostReply reply;
     // Indoors only: the area map keeps its own picture (its EclLoadFiles).
-    if (map < first_non_map && machine_.variable(game_cell(ecl_in_3d_area)) != 0)
+    if (map >= first_non_map || machine_.variable(game_cell(ecl_in_3d_area)) == 0)
     {
-        if (!town_->districts.contains(map))
-        {
-            throw EclError("Resources outside the supported areas (map " + std::to_string(map) +
-                           ")");
-        }
-        change_area(map);
-        const auto &here = map_.at(machine_.variable(game_cell(ecl_party_x)),
-                                   machine_.variable(game_cell(ecl_party_y)));
-        const auto facing = machine_.variable(game_cell(ecl_party_facing));
-        reply.writes = {{game_cell(ecl_wall_ahead), here.walls[facing % 4]},
-                        {game_cell(ecl_cell_event), here.event_raw},
-                        {game_cell(ecl_current_map), static_cast<std::uint16_t>(map)}};
+        return reply;
     }
-    if (walls != keep_walls)
+    if (!town_->districts.contains(map))
     {
-        const auto set = town_->wall_sets.find(
-            {town_->bank, {walls, detail::no_wall_bank, detail::no_wall_bank}});
-        if (set == town_->wall_sets.end())
-        {
-            throw EclError("Unknown wall set " + std::to_string(walls));
-        }
-        wall_art_ = set->second;
-        ++snapshot_.revision;
+        throw EclError("Resources outside the supported areas (map " + std::to_string(map) + ")");
+    }
+    change_area(map);
+    // A square off the map has no wall and no event (its GetWallType and
+    // GetMapEvent): Treasures' overland may load the next map before it moves
+    // the party onto it.
+    const auto x = machine_.variable(game_cell(ecl_party_x)),
+               y = machine_.variable(game_cell(ecl_party_y));
+    const auto facing = machine_.variable(game_cell(ecl_party_facing)) % 4;
+    const bool on_map = x < GeoMap::width && y < GeoMap::height;
+    reply.writes = {{game_cell(ecl_wall_ahead),
+                     static_cast<std::uint16_t>(on_map ? map_.at(x, y).walls[facing] : 0)},
+                    {game_cell(ecl_cell_event),
+                     static_cast<std::uint16_t>(on_map ? map_.at(x, y).event_raw : 0)},
+                    {game_cell(ecl_current_map), static_cast<std::uint16_t>(map)}};
+    return reply;
+}
+
+void RolfTourSession::vga_load_wall_slots(const std::array<unsigned, 3> &slots)
+{
+    const auto set = town_->wall_sets.find({town_->bank, slots});
+    if (set == town_->wall_sets.end())
+    {
+        throw EclError("Unknown wall sets " + std::to_string(slots[0]) + ", " +
+                       std::to_string(slots[1]) + ", " + std::to_string(slots[2]));
+    }
+    wall_slots_ = slots;
+    wall_art_ = set->second;
+    ++snapshot_.revision;
+}
+
+EclHostReply RolfTourSession::vga_load_files(unsigned map, unsigned walls)
+{
+    auto reply = vga_load_map(map);
+    if (walls == keep_walls)
+    {
+        return reply;
+    }
+    // On Treasures' overland the set is the map's picture (OVER), drawn from
+    // above (its LoadWallSet).
+    if (treasures_overland())
+    {
+        treasures_overland_picture_ = walls;
+        return reply;
+    }
+    // The set fills the first slot and empties the others, unless it is there
+    // already.
+    if (walls != wall_slots_[0])
+    {
+        vga_load_wall_slots({walls, detail::no_wall_bank, detail::no_wall_bank});
     }
     return reply;
 }
 
-void RolfTourSession::darkness_play_sound(unsigned sound)
+EclHostReply RolfTourSession::treasures_load_wall_sets(unsigned map,
+                                                       const std::array<unsigned, 3> &sets)
+{
+    auto reply = vga_load_map(map);
+    // On the overland each slot's set loads the map's picture in turn.
+    if (treasures_overland())
+    {
+        for (const auto set : sets)
+        {
+            if (set != 0 && set != keep_walls)
+            {
+                treasures_overland_picture_ = set;
+            }
+        }
+        return reply;
+    }
+    vga_load_wall_slots(sets);
+    return reply;
+}
+
+bool RolfTourSession::treasures_overland() const
+{
+    constexpr EclAddress overland_shown{0x40};
+    return game() == GoldBoxGame::treasures_of_the_savage_frontier &&
+           machine_.variable(overland_shown) != 0;
+}
+
+Image RolfTourSession::treasures_overland_view() const
+{
+    // The window of 11 by 11 squares of the map's picture around the party,
+    // kept on the 16 by 16 map, with the party's arrow (its DrawOverMap), in
+    // the colors of the OVER record after the cell 42h's number.
+    constexpr EclAddress overland_palette{0x42};
+    constexpr unsigned cells = 11, cell_pixels = 8, highest_corner = 16 - cells;
+    const auto palette = machine_.variable(overland_palette) + 1U;
+    const auto found = town_->overland_pictures.find(treasures_overland_picture_ * 256 + palette);
+    if (found == town_->overland_pictures.end())
+    {
+        throw EclError("Unknown overland picture " + std::to_string(treasures_overland_picture_));
+    }
+    const auto &map = found->second;
+    const auto pose = snapshot_.pose;
+    const auto left = std::min(pose.x > 5 ? pose.x - 5 : 0U, highest_corner);
+    const auto top = std::min(pose.y > 5 ? pose.y - 5 : 0U, highest_corner);
+    Image view;
+    view.width = view.height = static_cast<std::uint16_t>(cells * cell_pixels);
+    view.rgba.resize(std::size_t{view.width} * view.height * 4);
+    for (unsigned y = 0; y < view.height; ++y)
+    {
+        const auto from = (std::size_t{top * cell_pixels + y} * map.width + left * cell_pixels) * 4;
+        std::copy_n(map.rgba.begin() + static_cast<std::ptrdiff_t>(from), view.width * 4U,
+                    view.rgba.begin() +
+                        static_cast<std::ptrdiff_t>(std::size_t{y} * view.width * 4));
+    }
+    const auto &arrow = town_->overland_arrows.at(index(pose.facing));
+    const auto arrow_left = (pose.x - left) * cell_pixels, arrow_top = (pose.y - top) * cell_pixels;
+    for (unsigned y = 0; y < arrow.height; ++y)
+    {
+        for (unsigned x = 0; x < arrow.width; ++x)
+        {
+            const auto from = (std::size_t{y} * arrow.width + x) * 4;
+            if (arrow.rgba[from + 3] != 0)
+            {
+                const auto to = (std::size_t{arrow_top + y} * view.width + arrow_left + x) * 4;
+                std::copy_n(arrow.rgba.begin() + static_cast<std::ptrdiff_t>(from), 4,
+                            view.rgba.begin() + static_cast<std::ptrdiff_t>(to));
+            }
+        }
+    }
+    return view;
+}
+
+void RolfTourSession::vga_play_sound(unsigned sound)
 {
     // The footstep plays as the other games' does; the other sound effects
     // and the music are not played yet.

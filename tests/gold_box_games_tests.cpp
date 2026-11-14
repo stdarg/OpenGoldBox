@@ -2129,6 +2129,26 @@ void secret_opening_reaches_the_first_map()
     }
 }
 
+// Treasures' overland script (51) loads the map its cell 2EEh names and puts
+// the party where cells 2EBh to 2EDh say (facing, x and y), which the way
+// there sets; entering an overland map directly, the walk sets them.
+void prepare_treasures_entry(opengold::por::RolfTourSession &session, unsigned map)
+{
+    constexpr unsigned overland_script = 51;
+    constexpr std::uint16_t facing_cell = 0x2EB, x_cell = 0x2EC, y_cell = 0x2ED, map_cell = 0x2EE;
+    if (opengold::test::TourAccess::area_scripts(session).at(map) != overland_script)
+    {
+        return;
+    }
+    for (const auto &[cell, value] :
+         {std::pair{map_cell, static_cast<std::uint16_t>(map)},
+          std::pair{facing_cell, std::uint16_t{0}}, std::pair{x_cell, std::uint16_t{8}},
+          std::pair{y_cell, std::uint16_t{8}}})
+    {
+        opengold::test::TourAccess::set_variable(session, opengold::por::EclAddress{cell}, value);
+    }
+}
+
 bool walk_census(GoldBoxGame game, bool route)
 {
     using opengold::por::TourPhase;
@@ -2845,7 +2865,9 @@ bool walk_census(GoldBoxGame game, bool route)
                 continue;
             }
             case TourPhase::shopping:
-                if (session.shop_stock().empty())
+                // Treasures' shop 12 trades gems and sells nothing.
+                if (session.shop_stock().empty() &&
+                    game != GoldBoxGame::treasures_of_the_savage_frontier)
                 {
                     needs["A shop with nothing to sell"].push_back(where);
                 }
@@ -2946,6 +2968,10 @@ bool walk_census(GoldBoxGame game, bool route)
             opengold::test::TourAccess::set_variable(
                 session, opengold::por::EclAddress{0x4C24},
                 static_cast<std::uint16_t>(overland ? map : yartar_overland));
+        }
+        if (game == GoldBoxGame::treasures_of_the_savage_frontier)
+        {
+            prepare_treasures_entry(session, map);
         }
         try
         {
@@ -3689,6 +3715,10 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--darkness-walk")
         {
             return walk_census(GoldBoxGame::pools_of_darkness, false) ? 0 : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--treasure-walk")
+        {
+            return walk_census(GoldBoxGame::treasures_of_the_savage_frontier, false) ? 0 : 1;
         }
         if (argc == 2 && std::string_view(argv[1]) == "--secret-route")
         {

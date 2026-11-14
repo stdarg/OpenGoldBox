@@ -2156,6 +2156,40 @@ void CampaignParty::destroy_items(std::uint8_t type)
     }
 }
 
+bool CampaignParty::find_named_item(std::uint8_t type, std::array<std::uint8_t, 3> words, bool take)
+{
+    for (const auto id : state_.slots)
+    {
+        if (!id)
+        {
+            continue;
+        }
+        const auto &sources = member(id).item_sources;
+        const auto match =
+            std::ranges::find_if(sources,
+                                 [&](const auto &entry)
+                                 {
+                                     const auto &stored = entry.second.stored;
+                                     return (type == 0 || stored.type == type) &&
+                                            (words[2] == 0 || stored.name_components == words);
+                                 });
+        if (match == sources.end())
+        {
+            continue;
+        }
+        if (take)
+        {
+            const auto item = match->first;
+            editable();
+            auto holder = member(id);
+            remove_item(holder, item);
+            edit(id) = std::move(holder);
+        }
+        return true;
+    }
+    return false;
+}
+
 void CampaignParty::set_wealth(Purse wealth)
 {
     editable();

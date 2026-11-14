@@ -254,8 +254,10 @@ struct Choices
 }
 
 // A creature record of any game, told by its size: Pool of Radiance's 285
-// bytes, Curse's 422 or Secret's 439.
-std::optional<por::CharacterRecord> decode_record(std::span<const std::uint8_t> bytes)
+// bytes, Curse's 422, Secret's 439 or the 256-color engine's 510, read as the
+// game's whose rules play it (Pools of Darkness's or Treasures').
+std::optional<por::CharacterRecord> decode_record(std::span<const std::uint8_t> bytes,
+                                                  GoldBoxGame game)
 {
     switch (bytes.size())
     {
@@ -264,7 +266,8 @@ std::optional<por::CharacterRecord> decode_record(std::span<const std::uint8_t> 
     case 439:
         return secret::decode_creature(bytes);
     case 510:
-        return late::decode_creature(bytes, GoldBoxGame::pools_of_darkness);
+        return late::decode_creature(bytes,
+                                     vga_engine(game) ? game : GoldBoxGame::pools_of_darkness);
     default:
         return por::decode_character(bytes);
     }
@@ -359,7 +362,7 @@ std::string record_data(std::span<const std::uint8_t> bytes)
 }
 
 // The record a draft holds, if it is an NPC's.
-std::optional<por::CharacterRecord> record_of(const CharacterDraft &draft)
+std::optional<por::CharacterRecord> record_of(const CharacterDraft &draft, GoldBoxGame game)
 {
     std::string_view data = draft.rules_data;
     if (!data.starts_with(record_prefix))
@@ -372,7 +375,7 @@ std::optional<por::CharacterRecord> record_of(const CharacterDraft &draft)
     {
         bytes.push_back(static_cast<std::uint8_t>(hex.find(data[n]) * 16 + hex.find(data[n + 1])));
     }
-    auto record = decode_record(bytes);
+    auto record = decode_record(bytes, game);
     if (!record)
     {
         throw std::invalid_argument("Unreadable original record");
@@ -450,7 +453,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
     // character is the record's scores, levels and Hit Points.
     std::optional<CharacterDraft> record_draft(std::span<const std::uint8_t> bytes) const override
     {
-        const auto record = decode_record(bytes);
+        const auto record = decode_record(bytes, game_);
         if (!record)
         {
             throw std::invalid_argument("Unreadable original record");
@@ -643,7 +646,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
 
     std::optional<int> ability_score(const CharacterDraft &draft, Ability ability) const override
     {
-        if (const auto record = record_of(draft))
+        if (const auto record = record_of(draft, game_))
         {
             return record_scores(*record)[ability];
         }
@@ -677,7 +680,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         {
             throw std::invalid_argument("A character needs a name");
         }
-        if (const auto record = record_of(draft))
+        if (const auto record = record_of(draft, game_))
         {
             return record_sheet(draft, *record);
         }
@@ -927,16 +930,18 @@ constexpr std::string_view secret_edition = "secret-of-the-silver-blades";
 constexpr std::string_view gateway_edition = "gateway-to-the-savage-frontier";
 constexpr std::string_view ua_edition = "unlimited-adventures";
 constexpr std::string_view darkness_edition = "pools-of-darkness";
+constexpr std::string_view treasures_edition = "treasures-of-the-savage-frontier";
 } // namespace
 
 rules::Identity identity(GoldBoxGame game)
 {
-    const auto edition = game == GoldBoxGame::curse_of_the_azure_bonds         ? curse_edition
-                         : game == GoldBoxGame::secret_of_the_silver_blades    ? secret_edition
-                         : game == GoldBoxGame::gateway_to_the_savage_frontier ? gateway_edition
-                         : game == GoldBoxGame::unlimited_adventures           ? ua_edition
-                         : game == GoldBoxGame::pools_of_darkness              ? darkness_edition
-                                                                               : pool_edition;
+    const auto edition = game == GoldBoxGame::curse_of_the_azure_bonds           ? curse_edition
+                         : game == GoldBoxGame::secret_of_the_silver_blades      ? secret_edition
+                         : game == GoldBoxGame::gateway_to_the_savage_frontier   ? gateway_edition
+                         : game == GoldBoxGame::unlimited_adventures             ? ua_edition
+                         : game == GoldBoxGame::pools_of_darkness                ? darkness_edition
+                         : game == GoldBoxGame::treasures_of_the_savage_frontier ? treasures_edition
+                                                                                 : pool_edition;
     return {"opengold.original", "0.1.0", std::string(edition)};
 }
 
@@ -957,6 +962,10 @@ GoldBoxGame game_of(const rules::Identity &identity)
     if (identity.content == darkness_edition)
     {
         return GoldBoxGame::pools_of_darkness;
+    }
+    if (identity.content == treasures_edition)
+    {
+        return GoldBoxGame::treasures_of_the_savage_frontier;
     }
     return identity.content == secret_edition ? GoldBoxGame::secret_of_the_silver_blades
                                               : GoldBoxGame::pool_of_radiance;
