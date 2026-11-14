@@ -29,6 +29,10 @@ class SoundBank
     // played it: one clip, whose ID is the piece.
     [[nodiscard]] static SoundBank load_music(const std::filesystem::path &game_directory,
                                               GoldBoxGame game, unsigned piece);
+    // A song of a song file the music driver plays outside the game (Pools
+    // of Darkness' films' P1.SMS and P3.SMS): one clip, whose ID is 1.
+    [[nodiscard]] static SoundBank load_song(const std::filesystem::path &song_file,
+                                             GoldBoxGame game, unsigned song);
 
     [[nodiscard]] std::span<const SoundClip> clips() const noexcept
     {

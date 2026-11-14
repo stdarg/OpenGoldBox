@@ -158,7 +158,7 @@ func run_checks() -> void:
 	await settle()
 	var picker := window("GamePicker")
 	if not require(picker.visible and not main.visible, "Pick game opens the games"): return
-	if not require(labels(picker.get_node("Buttons")) == ["Pool of Radiance", "Curse of the Azure Bonds", "Secret of the Silver Blades", "Gateway to the Savage Frontier", "Unlimited Adventures", "Back"], "The games: " + str(labels(picker.get_node("Buttons")))): return
+	if not require(labels(picker.get_node("Buttons")) == ["Pool of Radiance", "Curse of the Azure Bonds", "Secret of the Silver Blades", "Gateway to the Savage Frontier", "Pools of Darkness", "Treasures of the Savage Frontier", "Unlimited Adventures", "Back"], "The games: " + str(labels(picker.get_node("Buttons")))): return
 	await capture("pick-game.png")
 	await escape_in(picker)
 	if not require(main.visible and not picker.visible, "Escape goes back from the games to the main menu"): return

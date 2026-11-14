@@ -242,6 +242,13 @@ void real_banks_render()
         {
             real_bank_renders(root / "DARKNESS", GoldBoxGame::pools_of_darkness, piece);
         }
+        // The opening film's song, from its own file.
+        const auto film_song = opengold::por::SoundBank::load_song(
+            root / "DARKNESS" / "P1.SMS", GoldBoxGame::pools_of_darkness, 0);
+        check(film_song.clips().size() == 1 && film_song.at(1).audible &&
+                  film_song.at(1).pcm.samples().size() >
+                      10u * opengold::por::PcmBuffer::sample_rate(),
+              "P1.SMS's song 0 plays for more than ten seconds");
     }
     if (std::filesystem::exists(root / "TREASURE"))
     {

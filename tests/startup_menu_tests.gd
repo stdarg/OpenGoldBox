@@ -5,7 +5,8 @@ extends SceneTree
 # tests/settings_check.cmake; --menu-capture=DIR saves pictures of them.
 # Curse's button is checked when OPENGOLD_GOLDBOX_DIR holds its files, and
 # with --secret Secret of the Silver Blades' button, with --gateway Gateway
-# to the Savage Frontier's, with --ua and --ua-design=FOLDER Unlimited
+# to the Savage Frontier's, with --darkness Pools of Darkness', with
+# --treasure Treasures of the Savage Frontier's, with --ua and --ua-design=FOLDER Unlimited
 # Adventures' with the test design in FOLDER. A game other than Pool
 # of Radiance first shows its own title pictures (TITLE.DAX), as its original
 # does when it starts, then its menu.
@@ -14,6 +15,8 @@ var captures := ""
 var exit_case := false
 var secret_case := false
 var gateway_case := false
+var darkness_case := false
+var treasure_case := false
 var ua_case := false
 var ua_design := ""
 
@@ -23,6 +26,8 @@ func _initialize() -> void:
 		if arg == "--menu-exit": exit_case = true
 		if arg == "--secret": secret_case = true
 		if arg == "--gateway": gateway_case = true
+		if arg == "--darkness": darkness_case = true
+		if arg == "--treasure": treasure_case = true
 		if arg == "--ua": ua_case = true
 		if arg.begins_with("--ua-design="): ua_design = arg.trim_prefix("--ua-design=")
 	call_deferred("run_checks")
@@ -178,6 +183,12 @@ func run_checks() -> void:
 		return
 	if gateway_case:
 		await check_gateway()
+		return
+	if darkness_case:
+		await check_darkness()
+		return
+	if treasure_case:
+		await check_treasure()
 		return
 	if ua_case:
 		await check_ua()
@@ -335,6 +346,144 @@ func check_gateway() -> void:
 		await process_frame
 		root.get_texture().get_image().save_png(captures.path_join("gateway-exploration.png"))
 	print("Startup menu passed: Gateway's title, a party made under the original rules, its opening and Yartar.")
+	quit(0)
+
+# Escape from the game's menu back to the games, then the game's button again.
+func pick_again(folder: String) -> void:
+	var escape := InputEventKey.new()
+	escape.keycode = KEY_ESCAPE
+	escape.pressed = true
+	Input.parse_input_event(escape)
+	await settle()
+	current_scene.get_node("GamePicker/Buttons/Games/" + folder).pressed.emit()
+	await settle()
+
+# Pools of Darkness from the menu: its opening film (INTRO) first, its title
+# card deaf to keys, its song playing, then a key ends the film; title
+# pictures 1 and 2 stay 5 seconds and a key on either goes on to 3, which a
+# key ends; the title music plays from picture 1. Then a party made under the
+# original rules meets Rolf on New Phlan's docks, declines his tour and is
+# walked out.
+func check_darkness() -> void:
+	var darkness := OS.get_environment("OPENGOLD_GOLDBOX_DIR").path_join("DARKNESS")
+	if OS.get_environment("OPENGOLD_GOLDBOX_DIR").is_empty() or not FileAccess.file_exists(darkness.path_join("INTRO.BMA")):
+		print("Skipped: Pools of Darkness' files are not here.")
+		quit(0)
+		return
+	await pick("DARKNESS")
+	var card := shown_title()
+	require(not card.is_empty(), "The opening film's title card must show")
+	require(current_scene.get_node("TitleSound").playing, "The film plays its song")
+	await capture_screen("DARKNESS-film-1")
+	await press_key()
+	require(shown_title() == card, "A key does not pass the film's title card")
+	# The title card holds about 3.6 seconds; on the next frame a key ends the film.
+	await create_timer(4.0).timeout
+	await settle()
+	var frame := shown_title()
+	require(not frame.is_empty() and frame != card, "The film goes on after its title card")
+	await capture_screen("DARKNESS-film-2")
+	await press_key()
+	var first := shown_title()
+	require(not first.is_empty() and first != frame, "A key ends the film on title picture 1")
+	require(current_scene.get_node("TitleSound").playing, "The title music plays from picture 1")
+	await capture_screen("DARKNESS-title-1")
+	await create_timer(5.5).timeout
+	await settle()
+	var second := shown_title()
+	require(not second.is_empty() and second != first, "Picture 1 gives way to 2 after 5 seconds")
+	await capture_screen("DARKNESS-title-2")
+	await press_key()
+	var third := shown_title()
+	require(not third.is_empty() and third != second, "A key on picture 2 goes on to 3")
+	await capture_screen("DARKNESS-title-3")
+	await press_key()
+	require(not current_scene.get_node("GameTitle").visible and current_scene.get_node("GameMenu").visible,
+		"A key on picture 3 ends the title")
+	# Again: a key on picture 1 goes straight on to picture 3.
+	await pick_again("DARKNESS")
+	await create_timer(4.0).timeout
+	await settle()
+	await press_key()
+	require(shown_title() == first, "The film ends on picture 1 again")
+	await press_key()
+	require(shown_title() == third, "A key on picture 1 goes on to picture 3")
+	await press_key()
+	require(not current_scene.get_node("GameTitle").visible, "Pools of Darkness' title ends after picture 3")
+
+	await create_new_party(true)
+	require(current_scene != null and current_scene.name == "CharacterCreation", "Pools of Darkness' button must lead on to the party")
+	var town: Control = await explore_with_a_fighter()
+	var rolf := false
+	var escorted := false
+	for wait in range(600):
+		await process_frame
+		var dialogue: String = town.find_child("Dialogue", true, false).get_parsed_text()
+		var list: ItemList = town.get_node("%Choices")
+		var continue_button: Button = town.get_node("%Continue")
+		if dialogue.contains("I AM ROLF, PORTMASTER") and list.is_visible_in_tree() and list.item_count == 2:
+			rolf = true
+			list.select(1)
+			list.item_selected.emit(1)
+			await settle()
+			continue_button.pressed.emit()
+			await settle()
+			continue
+		if dialogue.contains("THEN LET ME ESCORT YOU OUT"): escorted = true
+		if escorted and not continue_button.visible: break
+		if continue_button.visible and not continue_button.disabled:
+			continue_button.pressed.emit()
+			await settle()
+	require(rolf and escorted, "Rolf's offer and his escort must play on the exploration screen")
+	require(not town.get_node("%Continue").visible, "The opening ends exploring New Phlan")
+	if not captures.is_empty():
+		RenderingServer.force_draw(false)
+		await process_frame
+		root.get_texture().get_image().save_png(captures.path_join("darkness-exploration.png"))
+	print("Startup menu passed: Pools of Darkness' film and title, a party made under the original rules, Rolf and New Phlan.")
+	quit(0)
+
+# Treasures of the Savage Frontier from the menu: its five title pictures, a
+# key passing one, its title music from the first; then a party made under
+# the original rules plays the opening, the valley and the dwarves' fortress.
+func check_treasure() -> void:
+	var treasure := OS.get_environment("OPENGOLD_GOLDBOX_DIR").path_join("TREASURE")
+	if OS.get_environment("OPENGOLD_GOLDBOX_DIR").is_empty() or not FileAccess.file_exists(treasure.path_join("TITLE.DAX")):
+		print("Skipped: Treasures' files are not here.")
+		quit(0)
+		return
+	await pick("TREASURE")
+	var seen := []
+	for screen in range(5):
+		var shown := shown_title()
+		require(not shown.is_empty() and not seen.has(shown), "Treasures' title screen " + str(screen + 1) + " must show")
+		seen.append(shown)
+		require(current_scene.get_node("TitleSound").playing, "Treasures' title music plays from its first picture")
+		await capture_screen("TREASURE-title-" + str(screen + 1))
+		await press_key()
+	require(not current_scene.get_node("GameTitle").visible and current_scene.get_node("GameMenu").visible,
+		"Treasures' title ends after five screens")
+
+	await create_new_party(true)
+	require(current_scene != null and current_scene.name == "CharacterCreation", "Treasures' button must lead on to the party")
+	var town: Control = await explore_with_a_fighter()
+	var valley := false
+	for wait in range(600):
+		await process_frame
+		var dialogue: String = town.find_child("Dialogue", true, false).get_parsed_text()
+		if dialogue.contains("LATE SUMMER IN THE VALLEY OF DESSARIN"): valley = true
+		var continue_button: Button = town.get_node("%Continue")
+		if valley and not continue_button.visible: break
+		if continue_button.visible and not continue_button.disabled:
+			continue_button.pressed.emit()
+			await settle()
+	require(valley, "Treasures' opening must play on the exploration screen")
+	require(not town.get_node("%Continue").visible, "The opening ends exploring the dwarves' fortress")
+	if not captures.is_empty():
+		RenderingServer.force_draw(false)
+		await process_frame
+		root.get_texture().get_image().save_png(captures.path_join("treasure-exploration.png"))
+	print("Startup menu passed: Treasures' title, a party made under the original rules and its opening.")
 	quit(0)
 
 # Secret of the Silver Blades from the menu: its folder found, a fighter made

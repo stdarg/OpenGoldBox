@@ -84,11 +84,14 @@ struct MenuGame
 };
 
 // The games the startup menu offers, in release order (docs/GAMES.md).
-constexpr std::array<MenuGame, 5> playable_games{
+constexpr std::array<MenuGame, 7> playable_games{
     {{opengold::GoldBoxGame::pool_of_radiance, N_("Pool of Radiance")},
      {opengold::GoldBoxGame::curse_of_the_azure_bonds, N_("Curse of the Azure Bonds")},
      {opengold::GoldBoxGame::secret_of_the_silver_blades, N_("Secret of the Silver Blades")},
      {opengold::GoldBoxGame::gateway_to_the_savage_frontier, N_("Gateway to the Savage Frontier")},
+     {opengold::GoldBoxGame::pools_of_darkness, N_("Pools of Darkness")},
+     {opengold::GoldBoxGame::treasures_of_the_savage_frontier,
+      N_("Treasures of the Savage Frontier")},
      {opengold::GoldBoxGame::unlimited_adventures, N_("Unlimited Adventures")}}};
 
 const char *menu_title(opengold::GoldBoxGame game)
@@ -132,8 +135,8 @@ std::optional<std::pair<opengold::GoldBoxGame, std::filesystem::path>> newest_sa
     return newest;
 }
 
-// --game=POOLRAD (or CURSE, SECRET, GATEWAY or UA): the game a check plays, without
-// the titles and the menus.
+// --game=POOLRAD (or CURSE, SECRET, GATEWAY, DARKNESS, TREASURE or UA): the game a check plays,
+// without the titles and the menus.
 std::optional<opengold::GoldBoxGame> game_from_command_line()
 {
     auto *os = OS::get_singleton(); // borrowed engine singleton
@@ -878,12 +881,10 @@ void StartupView::advance_title()
         end_game_title();
         return;
     case Stage::original_title:
-        if (game_title_->key_ends_all || (title_screen_ == 0 && game_title_->first_key_ends_all))
+        if (const auto after_key = game_title_->screens.at(title_screen_).after_key)
         {
-            end_game_title();
-            return;
+            go_to_title_screen(*after_key);
         }
-        next_title_screen();
         return;
     case Stage::menus:
         return;
@@ -970,21 +971,43 @@ void StartupView::play_title_music(opengold::GoldBoxGame game)
     }
     try
     {
-        title_sound_ = std::make_unique<opengold::por::SoundPlayer>(
+        start_title_music(
             opengold::por::SoundBank::load_music(
                 presentation::path_from_godot(settings::game_folder(game)), game, *piece),
-            std::make_unique<GodotSoundOutput>(
-                required_node<AudioStreamPlayer>(*this, "TitleSound")));
+            *piece);
     }
     catch (const std::runtime_error &failure)
     {
         // A game whose music cannot be read shows its title silent.
         opengold::log_diagnostic(opengold::LogPriority::warning, "startup", failure.what());
-        return;
     }
-    // The player's music level (Options).
+}
+
+// Pools of Darkness' opening film plays its own song until the title music.
+void StartupView::play_film_song(const opengold::TitleSong &song)
+{
+    try
+    {
+        constexpr unsigned song_clip = 1;
+        start_title_music(
+            opengold::por::SoundBank::load_song(song.file, settings::chosen_game(), song.number),
+            song_clip);
+    }
+    catch (const std::runtime_error &failure)
+    {
+        opengold::log_diagnostic(opengold::LogPriority::warning, "startup", failure.what());
+    }
+}
+
+// Music in place of the title's sounds so far, at the player's music level
+// (Options).
+void StartupView::start_title_music(opengold::por::SoundBank music, unsigned clip)
+{
+    title_sound_ = std::make_unique<opengold::por::SoundPlayer>(
+        std::move(music),
+        std::make_unique<GodotSoundOutput>(required_node<AudioStreamPlayer>(*this, "TitleSound")));
     title_sound_->set_volume(settings::sound_volume(settings::SoundKind::music));
-    title_sound_->play(*piece);
+    title_sound_->play(clip);
 }
 
 void StartupView::show_title_screen()
@@ -993,6 +1016,10 @@ void StartupView::show_title_screen()
     required_node<TextureRect>(*this, "GameTitle/Picture")
         .set_texture(presentation::image_texture(screen.screen));
     required_node<Control>(*this, "GameTitle").show();
+    if (title_screen_ == 0 && game_title_->film_song)
+    {
+        play_film_song(*game_title_->film_song);
+    }
     if (title_screen_ == game_title_->music_screen)
     {
         play_title_music(settings::chosen_game());
@@ -1031,7 +1058,14 @@ void StartupView::play_title_sound(unsigned sound)
 
 void StartupView::next_title_screen()
 {
-    if (++title_screen_ == game_title_->screens.size())
+    go_to_title_screen(title_screen_ + 1);
+}
+
+// The title's screen at `screen`, or the end of the title past its last.
+void StartupView::go_to_title_screen(std::size_t screen)
+{
+    title_screen_ = screen;
+    if (title_screen_ >= game_title_->screens.size())
     {
         end_game_title();
         return;

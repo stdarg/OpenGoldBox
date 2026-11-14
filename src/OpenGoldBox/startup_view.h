@@ -69,7 +69,10 @@ class StartupView : public godot::Control
     void show_title_screen();
     void play_title_sound(unsigned sound);
     void play_title_music(opengold::GoldBoxGame game);
+    void play_film_song(const opengold::TitleSong &song);
+    void start_title_music(opengold::por::SoundBank music, unsigned clip);
     void next_title_screen();
+    void go_to_title_screen(std::size_t screen);
     void stop_game_title();
     void end_game_title();
     std::optional<opengold::TitleScreens> game_title_;

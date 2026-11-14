@@ -636,6 +636,10 @@ if(OPENGOLD_BUILD_TESTS)
         "Startup menu passed: Secret" -DARGS=--secret)
     opengold_settings_check(startup_menu_gateway startup_menu_tests
         "Startup menu passed: Gateway" -DARGS=--gateway)
+    opengold_settings_check(startup_menu_darkness startup_menu_tests
+        "Startup menu passed: Pools of Darkness" -DARGS=--darkness)
+    opengold_settings_check(startup_menu_treasure startup_menu_tests
+        "Startup menu passed: Treasures" -DARGS=--treasure)
     # Unlimited Adventures: the kit's folder, the test design's folder (written
     # by opengold_ua_session_tests), a party made under the kit's rules and the
     # design's start.
