@@ -271,6 +271,11 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   party with a Rest button, not the kit's camp menu. Treasure items go to
   the first member with room, without the treasure menu. A design's NPC who
   is a monster (race 6) joins as a human.
+- **Unlimited Adventures' party icons** (2026-11-14). The kit gives a party
+  member the combat icon made in its own icon editor (`CBODY.TLB` and
+  `COMSPR.TLB`). A party made in OpenGoldBox has the combat icon its
+  creation gives it, from the DAX games' art, as on their combat screens;
+  the design's monsters keep the kit's own icons (`CPIC.TLB`).
 
 ## Party and parley
 

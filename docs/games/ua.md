@@ -359,12 +359,74 @@ kit's twenty rates (`ua::rated_price`, temple.c's `rate_price`):
 Any other kind is reported as not played yet (`diagnostics`).
 
 A fight's event names up to six groups of a count and a monster. The fight
-is played by the original rules' combat with the kit's monsters; a won fight
-shares the monsters' experience among the members standing and hands over
-the treasure an event staged. A treasure's items are ITEM.DAT's (numbered
+is played by the original rules' combat with the kit's monsters (Fights,
+below). A treasure's items are ITEM.DAT's (numbered
 from 1, of ITEMS.DAT's types; FFh a scroll of three magic-user spells),
 identified when byte 7's bit 80h says so, each to the first member with
 room. A trap's defence 1 halves its damage, rounded down, on a save.
+
+### Fights
+
+Since 2026-11-14 a design's fight is laid out, fielded and ended as the kit
+does it (`ua_combat`, `ua_session`; the reconstruction's `cmbsetup.c`,
+`evcmds.c` and `postcmbt.c`).
+
+- **The field.** In a dungeon, the 50 by 25 squares of DUNGCOM tiles around
+  the party: 13 by 5 exploration squares, each stamped with its walls, as
+  the DAX games lay theirs (one code path, `kit_dungeon_battlefield`; the
+  kit draws one corner piece of its own, where a wall from the north ends).
+  A wall byte with a picture is a wall when it stops a step (14 and 15) and
+  a doorway otherwise; past the area's edge is wall, but for the party's
+  own row east and west. The set is the area header's +0Ch (0 the first).
+  Out of doors (byte 8's bit 20h in a dungeon, or any overland area, by the
+  set of the zone the party stands in, +108h) WILDCOM's set (+0Dh): open
+  ground with trees (a crown over a trunk, or a lone tree) one time in 20
+  where two squares of ground stand one above the other, then brush on 3
+  in 100, grass on 14 and stones on 5. The kit's terrain byte and river
+  flag are never set, so no river runs. A tile's picture is its set's
+  glyph after the palette; trees, walls and stones stop a step, brush costs
+  two. A design's own loose set (`DUNG1003.TLB`) takes the kit's place.
+- **Colors.** The combat screen's (COMSPR's), then the field set's over
+  them; the icons are drawn in these, as the kit loads none of its own
+  (CPIC's colors 144 to 255 are the field sets').
+- **Icons.** A monster's CPIC icon by its MONST number, its action pose 128
+  above (a design's `CPIC1nnn.TLB` first); its squares from the icon's
+  shape (1 one square, 2 tall, 3 wide, 4 two by two), which also make it
+  large for weapons' damage, with the record's top size bit. The party's
+  icons are those of its creation (DEVIATIONS.md).
+- **Monsters.** Up to 50. A MONST record fights as the original rules
+  recalculate a creature's record (`combatant_from_record`): its base
+  THAC0, Armor Class, attacks and movement, Strength's bonuses on its blows,
+  and its items (the tail at +18Eh: ITEM.DAT numbers, unidentified, with
+  their charges at +19Eh from the kit's table of 0 to 100), each readied in
+  turn where its hands, its places and its classes allow (a monster of no
+  class readies nothing). Groups 4 to 6 fight for the party when byte 0Ah's
+  bits 20h, 40h and 80h say so; a group picked at random (kind 33) is never
+  an ally.
+- **Where they stand.** The event's distance (byte 0Eh's bits 60h), cut
+  short by a wall ahead in a dungeon. With a quarter set (byte 10h's top
+  bits north, east and south, byte 12h's bit 20h west) the enemies are dealt
+  to the quarters in turn from the east, each group its distance that way
+  and at least a square off beside or behind the party.
+- **The end.** A won fight: the monsters brought down (not those that fled)
+  give their experience (+54h) and, unless byte 0Ch's bit 80h says they keep
+  it, their platinum, gems and jewelry (+4Ch) and items to the treasure (a
+  monster whose first item is of type 69h keeps its items); then the
+  treasure's platinum (2 each), gems (250), jewelry (2,200) and magic items
+  (400 a plus) count too, and the whole is shared among the members
+  standing, each share as the rules give it (single classes 10% more for
+  their prime scores, a cleric's from Wisdom 15; a two-class member half, a
+  three-class a third). Where byte 0Ch's bit 40h says the party cannot die,
+  the fallen get up with 1 Hit Point, and only a party with no one alive is
+  lost.
+- **Difficulty.** The kit scales a monster's Hit Points by its Level (1 to
+  5) times (Level + 1) / 4; at its Normal, Level 3, they stand as recorded.
+  The original rules play at Normal ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md)),
+  so they are never scaled.
+
+`opengold_ua_session_tests` checks each on the test design's fights and
+every monster of the kit; `opengold_godot_startup_menu_ua` sees the kobolds
+on the kit's field in their icons.
 
 ### A party under the kit's rules
 
@@ -391,8 +453,9 @@ Its differences from the Pool family ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md))
   hits is a critical hit. Saving throws take the best of a character's
   classes. *Still to come.*
 - Difficulty (five levels, Normal the third) changes the party's to-hit and
-  the monsters' Hit Points. Experience from a fight gives single classes 10%
-  more. *Still to come.*
+  the monsters' Hit Points; the original rules play at Normal, where
+  neither changes (Fights). Experience from a fight gives single classes
+  10% more. *Done* (Fights).
 
 ### The test design
 
@@ -412,7 +475,11 @@ into `ua-fixtures/TEST.DSN`.
   about (Yes or No) holding platinum and gems, three kobolds once only, a
   fountain's menu (experience), a dart trap, the mayor's quest and a flag it
   sets, his thanks on that flag, a teleporter, a chain to an hour passing,
-  stairs down asked about, and goblins or orcs picked at random.
+  stairs down asked about, and goblins or orcs picked at random; and for
+  the fights, two kobolds out of doors, two kobolds with a goblin on the
+  party's side two squares off (a wall a square west of them), a thug
+  with his items, one who keeps them where the party cannot die, and two
+  kobolds starting north and south of the party.
 - **Area 6, the cellar**: words on arrival, a statue's list (damage to all,
   experience to the selected member, or nothing), and stairs back to the
   hall's second entry point.
@@ -442,10 +509,21 @@ playing each event and fight; it fails on any event the session cannot play.
 - Overland areas: their map and big picture (steps already move the party
   there); zone texts, step events and rest encounters.
 - Locked doors: bashing, picking and Knock.
-- Fights: the kit's battlefields (DUNGCOM, WILDCOM; an open field stands in),
-  its combat icons (CPIC), monsters' items and effects, allies, the area's
-  wandering monster, the starting quarter, "no magic"; a monster's size on
-  the field.
+- Fights:
+  - Monsters' effects (the record's ten at +1AEh, held at strength FFh:
+    specials and immunities, 68 kinds among the kit's monsters). The kit
+    numbers them as the Krynn games do, not as the DAX games whose effects
+    the original rules' combat knows, so each needs matching by what it
+    does; none is given yet.
+  - Monsters' spells (+C6h) and an item's special effect when readied.
+  - "No magic" fights (byte 0Eh's bit 80h: no one casts). The original
+    rules' combat resets who may cast each round, so the fight must keep
+    the bar itself, which raises its saved format.
+  - The area's wandering monster (+106h): the kit fields ten of it out of
+    sight, for a Monster Summoning to gate in beside its caster; the
+    original rules have no summoning.
+  - Byte 12h's top bits (the turning level +0, 2, 10 or 41 over the
+    area's) and an icon over two squares a side, which stands as two.
 - The treasure menu, and items' names (the kit's words are in CKIT.EXE,
   which is not read; an item shows its type's name).
 - The kit's rules' remaining differences (above).

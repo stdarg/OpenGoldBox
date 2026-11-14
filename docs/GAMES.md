@@ -622,8 +622,13 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    towns in the kit's words and prices, guided tours, NPCs joining and
    leaving, encounters, who tries, who pays and passwords; treasure hands
    over its items, a trap's save halves its damage, and a new character
-   starts with the design's own experience, money and equipment. Still to
-   come: overland maps, locked doors, the kit's battlefields and icons, the
+   starts with the design's own experience, money and equipment. Since
+   2026-11-14 its fights are the kit's: its battlefields (the walls around
+   the party in the area's DUNGCOM set, or WILDCOM's ground out of doors),
+   its monsters' CPIC icons and sizes, their items readied, allies, the
+   enemies' starting quarters, the distance a wall ahead cuts short, and
+   the kit's experience and loot after a won fight. Still to come:
+   overland maps, locked doors, monsters' effects, "no magic" fights, the
    treasure menu, the rest of its rules, the camp menu, the overhead map, a
    default party, and saves.
 2. An updated construction kit for making new ones.
