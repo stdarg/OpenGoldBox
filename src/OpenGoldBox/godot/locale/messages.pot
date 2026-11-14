@@ -274,7 +274,7 @@ msgstr ""
 msgid "A divine scroll: a Cleric, Druid, Paladin or Ranger reads its spells. A level-13 Thief reads any scroll."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1415
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1421
 msgid "A drain takes more levels than the character has"
 msgstr ""
 
@@ -2054,7 +2054,7 @@ msgstr ""
 msgid "Cast spell"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1821
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1827
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr ""
@@ -3148,7 +3148,7 @@ msgstr ""
 msgid "Cure Wounds (level 2 slot)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1813
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1819
 msgid "Cure disease"
 msgstr ""
 
@@ -6142,7 +6142,7 @@ msgstr ""
 msgid "Lay On Hands: cure Poisoned (5)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1809
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1815
 msgid "Lay on hands"
 msgstr ""
 
@@ -7738,7 +7738,7 @@ msgstr ""
 msgid "Only a damaged simulacrum can be repaired"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1347
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1353
 msgid "Only a magic-user's training learns a spell"
 msgstr ""
 
@@ -8638,7 +8638,7 @@ msgstr ""
 msgid "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1889
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1895
 msgid "Raise Dead cannot bring this member back"
 msgstr ""
 
@@ -11018,11 +11018,11 @@ msgstr ""
 msgid "Teshwave Ruins"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1839
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1845
 msgid "That cannot be done now"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1991
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1997
 msgid "That cannot be used now"
 msgstr ""
 
@@ -11034,7 +11034,7 @@ msgstr ""
 msgid "That potion works only in combat"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1881 src/OpenGold.Rules.Original/src/rules_module.cpp:2068
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1887 src/OpenGold.Rules.Original/src/rules_module.cpp:2074
 msgid "That spell cannot be cast now"
 msgstr ""
 
@@ -11042,7 +11042,7 @@ msgstr ""
 msgid "That spell cannot be copied into the spellbook"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1358
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1364
 msgid "That spell cannot be learned"
 msgstr ""
 
@@ -11160,7 +11160,7 @@ msgstr ""
 msgid "The cantrip reaches 30 feet farther per Warlock level."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1375
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1381
 msgid "The character has no levels in a class it trained in"
 msgstr ""
 
@@ -11199,7 +11199,7 @@ msgstr ""
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1894
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1900
 msgid "The dead cannot be healed"
 msgstr ""
 
@@ -11392,7 +11392,7 @@ msgstr ""
 msgid "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1661
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1667
 msgid "The temple cannot help with that"
 msgstr ""
 
