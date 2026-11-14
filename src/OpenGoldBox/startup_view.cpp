@@ -7,6 +7,7 @@
 #include "godot_images.h"
 #include "godot_path.h"
 #include "godot_sound_output.h"
+#include "opengold/music_render.h"
 #include "opengold/diagnostic_log.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
 #include <godot_cpp/classes/input_event_mouse_button.hpp>
@@ -614,6 +615,35 @@ void StartupView::show_game_title()
     }
     title_screen_ = 0;
     show_title_screen();
+    play_title_music(game);
+}
+
+// The later games play a piece of their music over the title, from its first
+// picture until the title ends.
+void StartupView::play_title_music(opengold::GoldBoxGame game)
+{
+    const auto piece = opengold::title_music_piece(game);
+    if (!piece)
+    {
+        return;
+    }
+    try
+    {
+        title_sound_ = std::make_unique<opengold::por::SoundPlayer>(
+            opengold::por::SoundBank::load_music(
+                presentation::path_from_godot(settings::game_folder(game)), game, *piece),
+            std::make_unique<GodotSoundOutput>(
+                required_node<AudioStreamPlayer>(*this, "TitleSound")));
+    }
+    catch (const std::runtime_error &failure)
+    {
+        // A game whose music cannot be read shows its title silent.
+        opengold::log_diagnostic(opengold::LogPriority::warning, "startup", failure.what());
+        return;
+    }
+    // The level the game's other sounds play at.
+    title_sound_->set_volume(0.125);
+    title_sound_->play(*piece);
 }
 
 void StartupView::show_title_screen()
@@ -684,6 +714,8 @@ void StartupView::next_title_screen()
 void StartupView::end_game_title()
 {
     game_title_.reset();
+    // The title's music, if any, stops with it.
+    title_sound_.reset();
     required_node<Control>(*this, "GameTitle").hide();
     ask_rules();
 }

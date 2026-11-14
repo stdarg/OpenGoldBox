@@ -339,7 +339,8 @@ The steps of *Curse*'s phase 3, with *Secret*'s differences
    plays the vision on to New Verdigris, every area named as the cluebook's
    maps name it ([secret.md](games/secret.md), Area names;
    `opengold_godot_startup_menu_secret` checks it on screen), after
-   *Secret*'s title pictures; its saves are kept apart as each game's are
+   *Secret*'s title pictures, over its title music (SOUND.DAX's piece 2,
+   2026-11-14); its saves are kept apart as each game's are
    (*Curse*'s step 1.7).
 3. Making a party under *Secret*'s rules: 200,000 experience for a single
    class (100,000 dual, 66,667 triple) trained up at once, its classes,

@@ -229,9 +229,11 @@ func check_secret(menu: Window) -> void:
 	await settle()
 	# Secret's title: four screens, which one key ends, as its original's does.
 	require(not shown_title().is_empty(), "Secret's title must show")
+	require(current_scene.get_node("TitleSound").playing, "Secret's title music plays over its pictures")
 	await press_key()
 	await settle()
 	require(not current_scene.get_node("GameTitle").visible, "One key ends Secret's title")
+	require(not current_scene.get_node("TitleSound").playing, "Secret's title music ends with its title")
 	await answer_rules(true)
 	require(current_scene != null and current_scene.name == "CharacterCreation", "Secret's button must lead on to the party")
 	var name: LineEdit = current_scene.get_node("Name")
