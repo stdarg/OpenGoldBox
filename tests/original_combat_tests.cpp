@@ -1436,14 +1436,14 @@ void strikers_come_from_the_gear()
 // condition holds or 30 rounds pass; a far-off ogre keeps the fight going.
 Fight strike_until(const original::Combatant &attacker, const original::Combatant &target,
                    const std::function<bool(const rules::CombatSession &)> &done,
-                   std::uint64_t seed = 53)
+                   std::uint64_t seed = 53, GoldBoxGame game = GoldBoxGame::pool_of_radiance)
 {
     auto ogre = creature(1000, 0);
     ogre.movement = 0;
     auto fight = arrange({{"Attacker", rules::Side::party, {3, 3}, attacker},
                           {"Target", rules::Side::opposition, {4, 3}, target},
                           {"Ogre", rules::Side::opposition, {7, 7}, ogre}},
-                         seed);
+                         seed, {}, 100, game);
     auto &session = *fight.session;
     play_until(
         session,
@@ -1467,14 +1467,16 @@ Fight strike_until(const original::Combatant &attacker, const original::Combatan
 }
 
 // The damage of the attacker's first hit on the target.
-int first_hit(const original::Combatant &attacker, const original::Combatant &target)
+int first_hit(const original::Combatant &attacker, const original::Combatant &target,
+              GoldBoxGame game = GoldBoxGame::pool_of_radiance)
 {
-    auto fight = strike_until(attacker, target,
-                              [](const rules::CombatSession &session)
-                              {
-                                  return logged(session, "{attacker} hits {name} for {damage}.",
-                                                "Attacker") > 0;
-                              });
+    auto fight = strike_until(
+        attacker, target,
+        [](const rules::CombatSession &session)
+        {
+            return logged(session, "{attacker} hits {name} for {damage}.", "Attacker") > 0;
+        },
+        53, game);
     for (const auto &entry : fight.session->snapshot().log_entries)
     {
         if (entry.message.source == "{attacker} hits {name} for {damage}.")
@@ -4128,6 +4130,231 @@ void write_view_fixture()
     check(bool(out), "The view fixture is written");
 }
 
+// One of the kit's own effects (docs/games/ua.md, Monsters' effects), at its
+// code past the kit's (kit_effect_offset).
+original::Effect kit_effect(int code, int strength = 0)
+{
+    return {code + original::kit_effect_offset, 0, strength, false};
+}
+
+constexpr auto kit_game = GoldBoxGame::unlimited_adventures;
+
+// The kit's defenses against blows (effects.c): half from a weapon below +3
+// or +4 (80, 81); nothing from one below +2, nor from bare blows but a
+// monster's of 7 Hit Dice (125); nothing from any blow (193).
+void the_kits_defenses_weigh_the_blow()
+{
+    const auto hitter = [](std::optional<original::StrikingItem> striker, int race, int level)
+    {
+        auto c = monster({2, 1, 1, 9}, {0, 0, 0, 0}, {});
+        c.striker = striker;
+        c.race = race;
+        c.level = level;
+        return c;
+    };
+    const auto defended = [](int code)
+    {
+        auto c = creature(1000, 0);
+        c.effects.push_back(kit_effect(code));
+        return c;
+    };
+    const auto plus = [](int magic)
+    {
+        return original::StrikingItem{magic, false, 0};
+    };
+    check(first_hit(hitter(plus(2), 7, 1), defended(80), kit_game) == 5 &&
+              first_hit(hitter(plus(3), 7, 1), defended(80), kit_game) == 10 &&
+              first_hit(hitter(std::nullopt, 0, 1), defended(80), kit_game) == 10,
+          "A rakshasa takes half from a weapon below +3, and claws whole");
+    check(first_hit(hitter(plus(3), 7, 1), defended(81), kit_game) == 5 &&
+              first_hit(hitter(plus(4), 7, 1), defended(81), kit_game) == 10,
+          "A rakshasa rukh takes half from one below +4");
+    check(first_hit(hitter(plus(1), 7, 1), defended(125), kit_game) == 0 &&
+              first_hit(hitter(plus(2), 7, 1), defended(125), kit_game) == 10,
+          "An elemental takes nothing from a weapon below +2");
+    check(first_hit(hitter(std::nullopt, 0, 6), defended(125), kit_game) == 0 &&
+              first_hit(hitter(std::nullopt, 0, 7), defended(125), kit_game) == 10 &&
+              first_hit(hitter(std::nullopt, 7, 9), defended(125), kit_game) == 0,
+          "Nor from bare blows but a monster's of 7 Hit Dice or more");
+    check(first_hit(hitter(plus(5), 7, 1), defended(193), kit_game) == 0 &&
+              first_hit(hitter(std::nullopt, 0, 20), defended(193), kit_game) == 0,
+          "A black pudding takes nothing from any blow");
+}
+
+// The kit's defenses against spells (effects.c): a rakshasa shrugs off every
+// spell below the eighth level (40); a mummy takes 1 more a die of magical
+// fire (168), an efreeti 1 less, never under 1 a die (219); an otyugh takes
+// no disease (76).
+void the_kits_defenses_weigh_the_spell()
+{
+    using original::ClassSlot;
+    auto mummy = victim(100), efreeti = victim(100), rakshasa = victim(100);
+    mummy.effects.push_back(kit_effect(168));
+    efreeti.effects.push_back(kit_effect(219));
+    rakshasa.effects.push_back(kit_effect(40));
+    auto fight =
+        arrange({{"Mage", rules::Side::party, {0, 0}, caster(ClassSlot::magic_user, 5, {47})},
+                 {"Plain", rules::Side::opposition, {6, 5}, victim(100)},
+                 {"Mummy", rules::Side::opposition, {5, 5}, mummy},
+                 {"Efreeti", rules::Side::opposition, {6, 4}, efreeti},
+                 {"Rakshasa", rules::Side::opposition, {5, 4}, rakshasa}},
+                105, {}, 100, kit_game);
+    auto &session = *fight.session;
+    cast_now(session, "Mage", 47,
+             [&]
+             {
+                 return aim_at_cell(session, {6, 5});
+             });
+    const auto state = session.snapshot();
+    const auto lost = [&](std::string_view name)
+    {
+        return 100 - view_of(state, name).hit_points;
+    };
+    check(lost("Plain") >= 5 && lost("Mummy") == lost("Plain") + 5,
+          "The fireball's 5 dice burn a mummy 5 more");
+    check(lost("Efreeti") == std::max(lost("Plain") - 5, 5),
+          "And an efreeti 5 less, never under 1 a die");
+    check(lost("Rakshasa") == 0, "A rakshasa takes no harm from a spell below the eighth level");
+
+    auto held = arrange({{"Cleric", rules::Side::party, {0, 3}, caster(ClassSlot::cleric, 3, {23})},
+                         {"Rakshasa", rules::Side::opposition, {4, 3}, rakshasa}},
+                        101, {}, 100, kit_game);
+    cast_now(*held.session, "Cleric", 23,
+             [&]
+             {
+                 return aim_at(*held.session, "Rakshasa");
+             });
+    held.session->submit(order(*held.session, "aim_done"));
+    check(view_of(held.session->snapshot(), "Rakshasa").status.empty(),
+          "Nor is it held by Hold Person");
+
+    auto otyugh = victim(100);
+    otyugh.effects.push_back(kit_effect(76));
+    auto healer = caster(ClassSlot::cleric, 5, {40, 40});
+    healer.thac0 = -20;
+    auto sick = arrange({{"Cleric", rules::Side::party, {3, 3}, healer},
+                         {"Otyugh", rules::Side::opposition, {4, 3}, otyugh},
+                         {"Plain", rules::Side::opposition, {3, 4}, victim(100)}},
+                        107, {}, 100, kit_game);
+    const auto diseased = [&](std::string_view name)
+    {
+        cast_now(*sick.session, "Cleric", 40,
+                 [&]
+                 {
+                     return aim_at(*sick.session, name);
+                 });
+        const auto left = left_by_fight(*sick.session, name);
+        return std::ranges::find(left.effects, 34, &original::Effect::code) != left.effects.end();
+    };
+    check(diseased("Plain") && !diseased("Otyugh"),
+          "Cause Disease takes hold, but not on an otyugh");
+}
+
+// The kit's monsters at their turns (effects.c and fxcombat.c): a vampire
+// meets a gaze unharmed (126); a ghast's stench leaves an enemy beside it
+// that fails its save 2 worse at its attacks for the round (137, the kit's
+// 148); a bulette strikes 4 times with its second attack, or 8 (99).
+void the_kits_monsters_act_as_the_kit_has_them()
+{
+    const auto gaze_at = [](const original::Combatant &numbers)
+    {
+        auto fight =
+            arrange({{"Fighter", rules::Side::party, {0, 3}, numbers},
+                     {"Basilisk", rules::Side::opposition, {6, 3}, special({{458, 0, 0, false}})}},
+                    249, {}, 100, kit_game);
+        until_turn_of(*fight.session, "Basilisk");
+        fight.session->submit(order(*fight.session, "quick"));
+        return fight;
+    };
+    auto vampire = victim();
+    vampire.effects.push_back(kit_effect(126));
+    auto stoned = gaze_at(victim());
+    auto spared = gaze_at(vampire);
+    check(view_of(stoned.session->snapshot(), "Fighter").status == "stoned" &&
+              logged(*spared.session, "{name} gazes.") == 1 &&
+              view_of(spared.session->snapshot(), "Fighter").status.empty(),
+          "A gaze that stones another leaves a vampire as it was");
+
+    const int sick = kit_effect(148).code;
+    auto stench = arrange({{"Fighter", rules::Side::party, {3, 3}, victim()},
+                           {"Ghast", rules::Side::opposition, {4, 3}, special({kit_effect(137)})}},
+                          251, {}, 100, kit_game);
+    until_turn_of(*stench.session, "Ghast");
+    const auto fighter = left_by_fight(*stench.session, "Fighter");
+    const auto ghast = left_by_fight(*stench.session, "Ghast");
+    check(logged(*stench.session, "{name} emits an evil stench.") == 1 &&
+              logged(*stench.session, "{name} is sickened.") == 1 &&
+              std::ranges::find(fighter.effects, sick, &original::Effect::code) !=
+                  fighter.effects.end(),
+          "The ghast's stench sickens the fighter beside it");
+    check(std::ranges::find(ghast.effects, sick, &original::Effect::code) == ghast.effects.end(),
+          "The ghast itself strikes as well as ever");
+
+    auto flurry = arrange({{"Fighter", rules::Side::party, {3, 3}, victim()},
+                           {"Bulette",
+                            rules::Side::opposition,
+                            {4, 3},
+                            monster({0, 0, 0, 0}, {2, 1, 1, 0}, {kit_effect(99)})}},
+                          253, {}, 100, kit_game);
+    until_turn_of(*flurry.session, "Bulette");
+    flurry.session->submit(order(*flurry.session, "melee", "Fighter"));
+    const int attacks = logged(*flurry.session, "{attacker} hits {name} for {damage}.", "Bulette") +
+                        logged(*flurry.session, "{attacker} misses {name}.", "Bulette");
+    check(attacks == 4 || attacks == 8, "A bulette strikes 4 or 8 times with its second attack");
+}
+
+// The kit's breath (fxcombat.c and effects.c): a green dragon breathes poison
+// three times a fight, its maximum Hit Points or half saved (90); a gorgon
+// four times, turning to stone what fails its save (195).
+void the_kits_monsters_breathe()
+{
+    const auto never = []
+    {
+        return false;
+    };
+    auto poison =
+        arrange({{"Fighter", rules::Side::party, {3, 3}, victim(500)},
+                 {"Dragon", rules::Side::opposition, {5, 3}, special({kit_effect(90, 255)}, 40)}},
+                257, {}, 100, kit_game);
+    ai_plays(*poison.session, "Dragon", never, 8);
+    const int lost = 500 - view_of(poison.session->snapshot(), "Fighter").hit_points;
+    check(logged(*poison.session, "{name} breathes poison.") == 3 && lost >= 60,
+          "A green dragon breathes poison three times, 40 or 20 each, and no more");
+
+    const auto gorgon = special({kit_effect(195, 255)}, 36);
+    auto stone = arrange({{"Fighter", rules::Side::party, {1, 3}, victim(500)},
+                          {"Gorgon", rules::Side::opposition, {5, 3}, gorgon}},
+                         259, {}, 100, kit_game);
+    until_turn_of(*stone.session, "Gorgon");
+    stone.session->submit(order(*stone.session, "quick"));
+    check(logged(*stone.session, "{name} breathes.") == 1 &&
+              view_of(stone.session->snapshot(), "Fighter").status == "stoned",
+          "A gorgon's breath turns the fighter to stone");
+    auto sure = victim(500);
+    sure.saving_throws = {2, 2, 2, 2, 2};
+    auto breaths = arrange({{"Fighter", rules::Side::party, {1, 3}, sure},
+                            {"Gorgon", rules::Side::opposition, {5, 3}, gorgon}},
+                           259, {}, 100, kit_game);
+    ai_plays(*breaths.session, "Gorgon", never, 10);
+    check(logged(*breaths.session, "{name} breathes.") == 4, "Four breaths a fight, and no more");
+}
+
+// The kit's monster types (+BFh): a ranger beside a ranger's foe adds its
+// level to the blow (105); a giant the kit does not call one takes it as it is.
+void the_kits_rangers_know_their_foes()
+{
+    auto ranger = monster({2, 1, 1, 9}, {0, 0, 0, 0}, {{334, 0, 0, false}});
+    ranger.race = 7;
+    ranger.class_levels[static_cast<std::size_t>(original::ClassSlot::ranger)] = 5;
+    auto kobold = creature(1000, 0);
+    kobold.traits = original::trait::ranger_foe;
+    check(first_hit(ranger, kobold, kit_game) == 15, "A ranger strikes a kobold 5 harder");
+    auto giant = creature(1000, 0);
+    giant.kin = original::kin::giant;
+    check(first_hit(ranger, giant, kit_game) == 10,
+          "A giant the kit does not call a ranger's foe takes the blow as it is");
+}
+
 } // namespace
 
 int main()
@@ -4230,6 +4457,11 @@ int main()
         secret_heal_and_harm();
         secret_spells_slay();
         secret_spells_stun_hide_and_burn();
+        the_kits_defenses_weigh_the_blow();
+        the_kits_defenses_weigh_the_spell();
+        the_kits_monsters_act_as_the_kit_has_them();
+        the_kits_monsters_breathe();
+        the_kits_rangers_know_their_foes();
         std::cout << "Original-rules combat passed.\n";
     }
     catch (const std::exception &error)

@@ -578,16 +578,17 @@ void rest(opengold::CampaignParty &party)
     }
 }
 
-// The pending fight played to its end, every turn the computer's.
-opengold::rules::Snapshot fight(const ua::UaSession &session,
+// The fight played to its end, or for that many commands, every turn the
+// computer's.
+opengold::rules::Snapshot fight(const opengold::CampaignEncounter &encounter,
                                 const std::shared_ptr<opengold::CampaignParty> &party,
-                                const opengold::original::Content &content)
+                                const opengold::original::Content &content, int commands = 3000)
 {
     opengold::CombatDemo combat(opengold::original::rules_module(content));
     combat.campaign_party(party);
-    combat.encounter(*session.pending_encounter(), 7);
-    for (int command = 0;
-         command < 3000 && combat.combat().snapshot().outcome == opengold::rules::Outcome::ongoing;
+    combat.encounter(encounter, 7);
+    for (int command = 0; command < commands &&
+                          combat.combat().snapshot().outcome == opengold::rules::Outcome::ongoing;
          ++command)
     {
         const auto &state = combat.combat();
@@ -675,7 +676,7 @@ struct Player
             case TourPhase::combat:
             {
                 ++fights;
-                const auto result = fight(session, party, content);
+                const auto result = fight(*session.pending_encounter(), party, content);
                 victories += result.outcome == opengold::rules::Outcome::victory ? 1 : 0;
                 check(session.resolve_combat(result), "The fight's result is taken");
                 continue;
@@ -1825,11 +1826,72 @@ void the_kits_monsters_and_events_play_as_the_kit_has_them(const std::filesystem
     // The troll's return and regeneration are Pool of Radiance's own.
     const auto troll = effects(9);
     check(has(troll, 100) && has(troll, 101), "The kit's troll returns and regenerates");
-    // The rakshasa's spell immunity has no handler yet: numbered past the kit's own.
-    check(has(effects(71), 40 + opengold::original::kit_effect_offset),
-          "An effect no game plays yet is kept, unplayed");
-    // The no-magic fight.
+    // The effects only the kit has, past its own numbers, on the monsters that
+    // carry them (opengold_original_combat_tests plays each).
+    const std::vector<std::pair<unsigned, int>> own{
+        {71, 40},  {53, 76},  {71, 80},  {110, 81}, {38, 90},  {47, 99},  {57, 125},
+        {26, 126}, {21, 137}, {24, 168}, {52, 186}, {52, 193}, {43, 195}, {56, 219}};
+    for (const auto &[number, code] : own)
+    {
+        check(has(effects(number), code + opengold::original::kit_effect_offset),
+              "Monster " + std::to_string(number) + " carries the kit's " + std::to_string(code));
+    }
+    // Its monster types (+BFh) are the fight's kin: a goblin a dwarf's foe
+    // and a ranger's, an ogre a giant and one a gnome defends against.
+    namespace kin = opengold::original::kin;
+    const auto numbers = [&](unsigned number)
+    {
+        return ua::monster_combatant(*ua::decode_monster(*files.data("MONST", number)), items,
+                                     {1, 1});
+    };
+    const auto goblin = numbers(2), ogre = numbers(8);
+    const auto ranger_foe = opengold::original::trait::ranger_foe;
+    check(goblin.kin == kin::dwarf_foe && goblin.traits == ranger_foe,
+          "The kit's goblin is a dwarf's foe and a ranger's");
+    check(ogre.kin == (kin::giant | kin::bugbear) && ogre.traits == ranger_foe,
+          "The kit's ogre is a giant, a gnome's foe and a ranger's");
+    // The black pudding and the gorgon against the party, in the game's fight.
     const auto content = ua::load_design_content(files);
+    const auto against = [&](unsigned number, const std::string &name, int commands)
+    {
+        auto encounter = hall_fight(files, content, 8, 2, MapDirection::east);
+        for (auto &enemy : encounter.enemies)
+        {
+            enemy.definition = ua::monster_key(number);
+            enemy.name = name;
+        }
+        return fight(encounter, new_party(content), content, commands);
+    };
+    const auto pudding_fight = against(52, "BLACK PUDDING", 400);
+    const auto blows_on = [](const opengold::rules::Snapshot &state, std::string_view name)
+    {
+        std::vector<std::string> damage;
+        for (const auto &entry : state.log_entries)
+        {
+            const auto &arguments = entry.message.arguments;
+            if (entry.message.source == "{attacker} hits {name} for {damage}." &&
+                arguments[1].value.starts_with(name))
+            {
+                damage.push_back(arguments[2].value);
+            }
+        }
+        return damage;
+    };
+    const auto on_pudding = blows_on(pudding_fight, "BLACK PUDDING");
+    check(!on_pudding.empty() && std::ranges::all_of(on_pudding,
+                                                     [](const std::string &damage)
+                                                     {
+                                                         return damage == "0";
+                                                     }),
+          "The party's blows do the kit's black pudding no harm");
+    const auto gorgon_fight = against(43, "GORGON", 400);
+    check(std::ranges::any_of(gorgon_fight.log_entries,
+                              [](const opengold::rules::LogEntry &entry)
+                              {
+                                  return entry.message.source == "{name} is stoned.";
+                              }),
+          "The kit's gorgon breathes the party to stone");
+    // The no-magic fight.
     auto session = ua::UaSession::start(files);
     auto party = new_party(content);
     session.campaign_party(party);

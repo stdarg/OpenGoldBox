@@ -2285,6 +2285,91 @@ void items_are_readied_mid_fight()
               std::ranges::find(equipped, blade) == equipped.end(),
           "The inventory keeps the bow readied and the sword put away");
 }
+
+// An Unlimited Adventures black pudding's acid (the kit's 186, docs/games/ua.md,
+// Monsters' effects): each blow on a member in armor eats a plus off the armor
+// and does no harm, then dissolves the armor; the inventory keeps what the
+// fight leaves of it.
+void a_black_pudding_eats_armor()
+{
+    std::vector<por::ItemTemplate> types(256);
+    constexpr std::uint8_t chain_mail = 34;
+    types[chain_mail].class_restrictions = 0xFF;
+    types[chain_mail].worn_location = 2;
+    types[chain_mail].protection_raw = 0x85;
+    por::CharacterRecord record;
+    record.name = "BLACK PUDDING";
+    record.max_hit_points = 200;
+    record.base_thac0 = -20;
+    record.base_armor_class = 6;
+    record.base_movement = 12;
+    record.base_attacks[0] = {2, {3, 8, 0}};
+    auto pudding = original::combatant_from_record(record);
+    pudding.effects.push_back({186 + original::kit_effect_offset, 0, 255, false});
+    original::Content content{{}, types};
+    content.bestiary.emplace("MON2CHA.DAX:0", pudding);
+
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module(content), creation);
+    const auto knight = member_with(party, creation, "fighter", "Gareth");
+    auto mail = original_item(types, chain_mail, 300);
+    mail.stored.magic_bonus = 1;
+    mail.stored.raw[50] = 1;
+    const auto armor = carried(party, knight, mail);
+    party.equip(knight, armor, rules::EquipmentOperation::equip);
+
+    const auto module = original::rules_module(content);
+    rules::Encounter encounter;
+    encounter.battlefield = {12, 6, std::vector<rules::Terrain>(72, rules::Terrain::open)};
+    encounter.participants = party.participants();
+    rules::Participant target;
+    target.id = 1000;
+    target.definition = "MON2CHA.DAX:0";
+    target.name = "Pudding";
+    target.side = rules::Side::opposition;
+    target.cell = {6, 1};
+    encounter.participants.push_back(target);
+    party.begin_combat();
+    auto session = module->create(encounter, 7);
+    const auto logged = [&session](std::string_view source)
+    {
+        return std::ranges::count(session->snapshot().log_entries, source,
+                                  [](const rules::LogEntry &entry)
+                                  {
+                                      return std::string_view(entry.message.source);
+                                  });
+    };
+    const auto play_until = [&](std::string_view source)
+    {
+        for (int step = 0; step < 200 && logged(source) == 0; ++step)
+        {
+            const auto commands = session->legal_commands();
+            const bool pudding_acts = session->snapshot().actor == 1000;
+            const auto next = std::ranges::find(
+                commands, std::string(pudding_acts ? "quick" : "end"), &rules::Command::verb);
+            check(session->submit(*next), "The fight goes on");
+        }
+    };
+    const auto hit_points = party.member(knight).vitals.hit_points;
+    const auto knight_view = [&]
+    {
+        const auto snapshot = session->snapshot();
+        return *std::ranges::find(snapshot.combatants, knight, &rules::CombatantView::id);
+    };
+    play_until("{name} is dissolving {target}'s armor!");
+    check(knight_view().hit_points == hit_points, "The blow spends itself on the armor");
+    party.apply_combat(session->snapshot());
+    const auto eaten = por::item_of_original_key(
+        party.member(knight).character.inventory().find(armor)->get().definition_id);
+    check(eaten && eaten->magic_bonus == 0 &&
+              party.member(knight).item_sources.at(armor).stored.magic_bonus == 0,
+          "The armor keeps the plus the acid left it");
+    play_until("{name} dissolves {target}'s armor!");
+    party.apply_combat(session->snapshot());
+    party.end_combat();
+    check(!party.member(knight).character.inventory().find(armor),
+          "Armor with no plus left dissolves");
+}
 } // namespace
 
 int main()
@@ -2314,6 +2399,7 @@ int main()
         a_drain_lasts_beyond_the_fight();
         ages_change_after_creation();
         items_are_readied_mid_fight();
+        a_black_pudding_eats_armor();
         time_passes_between_rests();
         curse_clerics_heal_and_raise_in_camp();
         secret_clerics_heal_in_camp();
