@@ -54,6 +54,17 @@ DesignFiles::DesignFiles(std::filesystem::path kit, std::filesystem::path design
 {
 }
 
+std::optional<std::vector<std::uint8_t>> DesignFiles::program() const
+{
+    const auto path = file_in(kit_, "CKIT.EXE");
+    if (!path)
+    {
+        return std::nullopt;
+    }
+    return por::detail::read_archive_bytes<std::runtime_error>(
+        *path, "CKIT.EXE is too large", "Cannot open CKIT.EXE", "Cannot read CKIT.EXE");
+}
+
 std::optional<std::filesystem::path> DesignFiles::find(std::string_view file) const
 {
     if (auto own = file_in(design_, file))

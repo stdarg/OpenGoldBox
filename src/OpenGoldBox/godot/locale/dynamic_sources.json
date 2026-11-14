@@ -1849,6 +1849,17 @@
   "Bash",
   "Pick",
   "Knock",
+<<<<<<< HEAD
   "A secret door!"
 >>>>>>> 74a05cd5 (UA locked doors open as the kit opens them: a step into a locked door, a wizard lock or a false door asks "Blocked:" with Bash (each member who can act by Strength, the kit's two tables), Pick (a thief's open-locks chance, never a wizard lock) and Knock (memorized, spent), each of Bash and Pick once until the party steps; a false door gives to nothing; a secret door says "A secret door!". The kit's wizard-lock table read by the wrong wall kinds, and dead members bashing and casting Knock, are fixed (ORIGINAL-RULES.md, Bugs). ua.md (Locked doors); opengold_ua_session_tests)
+=======
+  "A secret door!",
+  "The party finds treasure.",
+  "Detect",
+  "Take:",
+  "Items",
+  "The party takes the money.",
+  "Items:",
+  "Treasure is still left here. Go back for it?"
+>>>>>>> 286f08a1 (UA treasure menu and item names as the kit shows them: a treasure (an event's, or a won fight's with the monsters' money and items) opens Take (Money into the one purse, Items by name to the selected member, whom the player may change), Detect (a memorized Detect Magic, spent, starring the magic items) and Exit (asked while treasure is left); items carry the kit's names, its 122 words read from the player's CKIT.EXE as the DAX games read theirs (ua::decode_item_words). Replaces the first-member-with-room shortcut (DEVIATIONS.md); ua.md (The treasure menu and items' names); opengold_ua_session_tests)
 ]

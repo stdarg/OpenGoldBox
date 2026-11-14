@@ -3409,6 +3409,10 @@ msgstr ""
 msgid "Desired Class(es)"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Detect"
+msgstr ""
+
 #: src/OpenGold.Rules.Original/src/spells.cpp:44
 msgid "Detect Invisibility"
 msgstr ""
@@ -6067,8 +6071,12 @@ msgstr ""
 msgid "Item unequipped."
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_view.cpp:140 src/OpenGoldBox/godot/scenes/combat_demo.tscn:832
+#: src/OpenGoldBox/character_sheet_view.cpp:140 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:832
 msgid "Items"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Items:"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:147
@@ -11138,6 +11146,10 @@ msgstr ""
 msgid "Take off shield"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Take:"
+msgstr ""
+
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:2376
 msgid "Takes 1d4 Fire damage at the start of each of its turns."
 msgstr ""
@@ -11613,6 +11625,10 @@ msgstr ""
 msgid "The party enters the vault."
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "The party finds treasure."
+msgstr ""
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:2260
 msgid "The party gains experience."
 msgstr ""
@@ -11643,6 +11659,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "The party rests."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "The party takes the money."
 msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:2496
@@ -12108,6 +12128,10 @@ msgstr ""
 #: src/OpenGoldBox/rolf_tour_view.cpp:2879
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Treasure / {name} takes: carrying {carried}/{capacity} lb"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Treasure is still left here. Go back for it?"
 msgstr ""
 
 #: src/OpenGoldBox/startup_view.cpp:94

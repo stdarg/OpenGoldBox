@@ -259,18 +259,20 @@ Departures from the original game's own rules, when OpenGoldBox plays by them
   next to the dying member.
 
 - **Unlimited Adventures' services** (2026-11-14). The kit's shops, temples,
-  vaults and taverns have Pool, Share and Take for each member's own coins,
-  since its members carry their own; OpenGoldBox's party has one purse
-  (Party gold, below), so those are left out and every price is paid from
-  it, and who pays pays from it. A shop sells, buys and identifies for the
+  vaults, taverns and treasure menu have Pool, Share and Take for each
+  member's own coins, since its members carry their own; OpenGoldBox's party
+  has one purse (Party gold, below), so those are left out and every price
+  is paid from it, who pays pays from it, and a treasure's money goes into
+  it whole. A shop sells, buys and identifies for the
   selected member, without Appraise (gems and jewelry stay counted, never
   valued one by one). A temple cures one member a service: a member who
   does not need it is turned away rather than asked whether to pay anyway,
   and Restoration and the free Fix of a high temple wait for the rules to
   have them. A vault keeps the party's money, not items. An inn rests the
-  party with a Rest button, not the kit's camp menu. Treasure items go to
-  the first member with room, without the treasure menu. A design's NPC who
-  is a monster (race 6) joins as a human.
+  party with a Rest button, not the kit's camp menu. An item's name
+  leaves out the count the kit puts before a stack's name, and its plural:
+  the inventory shows the quantity. A design's NPC who is a monster (race 6)
+  joins as a human.
 - **Unlimited Adventures' camp** (2026-11-14). The kit's camp menu (View,
   Magic, Rest, Alter, Fix, Load, Save) and its rest menu, where the player
   sets the days, hours and minutes to rest, are OpenGoldBox's Rest dialog,

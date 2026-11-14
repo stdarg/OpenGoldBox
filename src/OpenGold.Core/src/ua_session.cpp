@@ -65,6 +65,19 @@ constexpr rules::EntityId first_monster_id = 1000;
     return map;
 }
 
+// An item's name in the kit's words, last first, and the name it shows
+// before it is identified (hero.c, item_name). Its count is the inventory's
+// quantity, not a part of its name (DEVIATIONS.md).
+void name_item(por::Equipment &item, std::span<const std::string> words)
+{
+    if (words.empty())
+    {
+        return;
+    }
+    item.decoded_name = por::item_name(item.stored, words);
+    item.unidentified_name = por::item_name(item.stored, words, item.stored.hidden_name_words);
+}
+
 [[nodiscard]] por::MapDirection kit_facing(unsigned facing)
 {
     return por::MapDirection{(facing & 7) / 2 % 4};
@@ -333,7 +346,10 @@ DesignItems load_design_items(const DesignFiles &files)
     {
         throw std::runtime_error("ITEM.DAT does not decode");
     }
-    return {std::move(*items), read_item_types(files)};
+    const auto program = files.program();
+    auto words = program ? decode_item_words(*program) : std::nullopt;
+    return {std::move(*items), read_item_types(files),
+            words ? std::move(*words) : std::vector<std::string>{}};
 }
 
 std::optional<por::Equipment> design_item(const DesignItems &items, unsigned number,
@@ -363,6 +379,7 @@ std::optional<por::Equipment> design_item(const DesignItems &items, unsigned num
     stored.effect_codes = record.effects;
     item.base = items.types[record.type];
     item.bonuses = por::equipment_bonuses(stored, item.base);
+    name_item(item, items.words);
     return item;
 }
 
@@ -884,53 +901,38 @@ void UaSession::damage_member(const EventRecord &event, MemberId member)
     (void)party_->hazard_attack(member, attack);
 }
 
-void UaSession::hand_over_treasure()
+// The treasure the party finds, an event's and the fallen monsters', laid
+// out for the treasure menu (postcmbt.c, post_combat): its money and its
+// items, made as the kit makes them.
+void UaSession::offer_treasure()
 {
     if (!party_)
     {
         return;
     }
     constexpr std::array<Coin, 3> money{Coin::platinum, Coin::gems, Coin::jewelry};
-    for (const auto coin : money)
+    for (std::size_t n = 0; n < money.size(); ++n)
     {
-        const auto count = treasure_wealth_[static_cast<std::size_t>(coin)];
-        if (count != 0)
-        {
-            party_->add_coins(coin, count);
-        }
+        pile_money_[n] += treasure_wealth_[static_cast<std::size_t>(money[n])];
     }
-    // The first member with room takes an item; with no room it stays behind.
-    const auto give = [this](const por::Equipment &item)
-    {
-        for (const auto id : active_members())
-        {
-            try
-            {
-                party_->take_item(id, item);
-                return;
-            }
-            catch (const std::runtime_error &)
-            {
-                // Too heavy for this member: the next one tries.
-            }
-        }
-    };
     for (const auto number : treasure_items_)
     {
-        if (const auto item = number == scroll_number
-                                  ? random_scroll()
-                                  : design_item(items_, number, treasure_identified_))
+        if (auto item = number == scroll_number ? random_scroll()
+                                                : design_item(items_, number, treasure_identified_))
         {
-            give(*item);
+            pile_items_.push_back(std::move(*item));
         }
     }
-    for (const auto &item : loot_)
-    {
-        give(item);
-    }
+    pile_items_.insert(pile_items_.end(), loot_.begin(), loot_.end());
     treasure_wealth_ = {};
     treasure_items_.clear();
     loot_.clear();
+    pile_magic_shown_ = false;
+    if (treasure_left())
+    {
+        say_kit({"The party finds treasure.", {}});
+        treasure_menu();
+    }
 }
 
 // Item FFh of a treasure: a scroll of three magic-user spells picked at
@@ -960,6 +962,7 @@ std::optional<por::Equipment> UaSession::random_scroll()
     }
     scroll.base = items_.types[scroll_type];
     scroll.bonuses = por::equipment_bonuses(stored, scroll.base);
+    name_item(scroll, items_.words);
     return scroll;
 }
 
@@ -1171,7 +1174,7 @@ bool UaSession::resolve_combat(const rules::Snapshot &outcome)
             take_loot(outcome);
         }
         award_fight_experience(outcome);
-        hand_over_treasure();
+        offer_treasure();
     }
     if (!party_can_lose_)
     {

@@ -3409,6 +3409,10 @@ msgstr "Delayed Blast Fireball goes off."
 msgid "Desired Class(es)"
 msgstr "Desired Class(es)"
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Detect"
+msgstr "Detect"
+
 #: src/OpenGold.Rules.Original/src/spells.cpp:44
 msgid "Detect Invisibility"
 msgstr "Detect Invisibility"
@@ -6067,9 +6071,13 @@ msgstr "It's cursed"
 msgid "Item unequipped."
 msgstr "Item unequipped."
 
-#: src/OpenGoldBox/character_sheet_view.cpp:140 src/OpenGoldBox/godot/scenes/combat_demo.tscn:832
+#: src/OpenGoldBox/character_sheet_view.cpp:140 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:832
 msgid "Items"
 msgstr "Items"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Items:"
+msgstr "Items:"
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:147
 msgid "Its Club or Quarterstaff uses its spellcasting ability and deals a d8."
@@ -11138,6 +11146,10 @@ msgstr "Take control"
 msgid "Take off shield"
 msgstr "Take off shield"
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Take:"
+msgstr "Take:"
+
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:2376
 msgid "Takes 1d4 Fire damage at the start of each of its turns."
 msgstr "Takes 1d4 Fire damage at the start of each of its turns."
@@ -11613,6 +11625,10 @@ msgstr "The party enters a tavern."
 msgid "The party enters the vault."
 msgstr "The party enters the vault."
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "The party finds treasure."
+msgstr "The party finds treasure."
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:2260
 msgid "The party gains experience."
 msgstr "The party gains experience."
@@ -11644,6 +11660,10 @@ msgstr "The party purse cannot pay the offering"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "The party rests."
 msgstr "The party rests."
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "The party takes the money."
+msgstr "The party takes the money."
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:2496
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -12109,6 +12129,10 @@ msgstr "Transmuted Spell"
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Treasure / {name} takes: carrying {carried}/{capacity} lb"
 msgstr "Treasure / {name} takes: carrying {carried}/{capacity} lb"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Treasure is still left here. Go back for it?"
+msgstr "Treasure is still left here. Go back for it?"
 
 #: src/OpenGoldBox/startup_view.cpp:94
 msgid "Treasures of the Savage Frontier"

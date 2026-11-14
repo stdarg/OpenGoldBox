@@ -3409,6 +3409,10 @@ msgstr "Estalla la bola de fuego retardada."
 msgid "Desired Class(es)"
 msgstr "Clases deseadas"
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Detect"
+msgstr "Detectar"
+
 #: src/OpenGold.Rules.Original/src/spells.cpp:44
 msgid "Detect Invisibility"
 msgstr "Detectar invisibilidad"
@@ -6067,9 +6071,13 @@ msgstr "Está maldito"
 msgid "Item unequipped."
 msgstr "Objeto desequipado."
 
-#: src/OpenGoldBox/character_sheet_view.cpp:140 src/OpenGoldBox/godot/scenes/combat_demo.tscn:832
+#: src/OpenGoldBox/character_sheet_view.cpp:140 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:832
 msgid "Items"
 msgstr "Objetos"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Items:"
+msgstr "Objetos:"
 
 #: src/OpenGold.Rules.Srd5/src/effect_labels.h:147
 msgid "Its Club or Quarterstaff uses its spellcasting ability and deals a d8."
@@ -11138,6 +11146,10 @@ msgstr "Tomar el control"
 msgid "Take off shield"
 msgstr "Quitarse el escudo"
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Take:"
+msgstr "Tomar:"
+
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:2376
 msgid "Takes 1d4 Fire damage at the start of each of its turns."
 msgstr "Recibe 1d4 de daño de Fuego al comienzo de cada uno de sus turnos."
@@ -11613,6 +11625,10 @@ msgstr "El grupo entra en una taberna."
 msgid "The party enters the vault."
 msgstr "El grupo entra en la cámara."
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "The party finds treasure."
+msgstr "El grupo encuentra un tesoro."
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:2260
 msgid "The party gains experience."
 msgstr "El grupo gana experiencia."
@@ -11644,6 +11660,10 @@ msgstr "La bolsa del grupo no puede pagar la ofrenda"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "The party rests."
 msgstr "El grupo descansa."
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "The party takes the money."
+msgstr "El grupo toma el dinero."
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:2496
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -12109,6 +12129,10 @@ msgstr "Conjuro transmutado"
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Treasure / {name} takes: carrying {carried}/{capacity} lb"
 msgstr "Tesoro / toma {name}: carga {carried}/{capacity} lb"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Treasure is still left here. Go back for it?"
+msgstr "Aún queda tesoro aquí. ¿Volver a por él?"
 
 #: src/OpenGoldBox/startup_view.cpp:94
 msgid "Treasures of the Savage Frontier"

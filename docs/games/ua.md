@@ -25,7 +25,8 @@ These are the templates a new design starts from. A design made with the kit
 saves its own copies of them (and loose `.DAT` and `.TLB` files) in its
 `NAME.DSN` folder, which phase 8 will read.
 
-Never read: `CKIT.EXE`, `INSTALL.EXE`, `SOUND.EXE`, the batch files, the
+Never read: `CKIT.EXE` (but for the words items are named with, A design's
+items below), `INSTALL.EXE`, `SOUND.EXE`, the batch files, the
 sound drivers (`*.ADV`), `INSTR.AD` (the AdLib driver's timbres), `CKIT.CFG`
 (the player's settings) and `UAHELP.TXT`, the designer's printed supplement,
 which `README.BAT` only shows.
@@ -363,8 +364,8 @@ A fight's event names up to six groups of a count and a monster. The fight
 is played by the original rules' combat with the kit's monsters (Fights,
 below). A treasure's items are ITEM.DAT's (numbered
 from 1, of ITEMS.DAT's types; FFh a scroll of three magic-user spells),
-identified when byte 7's bit 80h says so, each to the first member with
-room. A trap's defence 1 halves its damage, rounded down, on a save.
+identified when byte 7's bit 80h says so, offered on the treasure menu
+(below). A trap's defence 1 halves its damage, rounded down, on a save.
 
 ### Fights
 
@@ -533,8 +534,6 @@ playing each event and fight; it fails on any event the session cannot play.
     wandering monsters, its step events and rest encounters, play.)
   - Byte 12h's top bits (the turning level +0, 2, 10 or 41 over the
     area's) and an icon over two squares a side, which stands as two.
-- The treasure menu, and items' names (the kit's words are in CKIT.EXE,
-  which is not read; an item shows its type's name).
 - The kit's rules' remaining differences (above).
 - A default party; the kit's camp menu's own parts (Alter, Fix, the rest
   menu's chosen hours); overhead maps of dungeons larger than 16 by 16.
@@ -642,6 +641,42 @@ map (`ua_session.cpp`; the reconstruction's `rest.c` and `camp.c`).
 passed) and in the cellar, whose rats break the rest at its first hour, and
 reads the hall's map; `opengold_godot_startup_menu_ua` sees the hall's map
 and rests there from the Camp button.
+
+### The treasure menu and items' names
+
+Since 2026-11-14 a treasure (a treasure event's, and a won fight's with the
+fallen monsters' money and items) opens the kit's treasure menu
+(`ua_treasure.cpp`; the reconstruction's `postcmbt.c`, `loot_menu`,
+`loot_take` and `loot_items`): "The party finds treasure." and
+
+- **Take**: with money and items both there, "Take:" asks Money, Items or
+  Exit. Money goes into the party's one purse, all of it (DEVIATIONS.md);
+  Items lists the items by name, and the one chosen goes to the selected
+  member, whom the player may change while the menu waits; an overloaded
+  member takes nothing.
+- **Detect**, while a member who can act has Detect Magic memorized (the
+  cleric's or the magic-user's): the first such casts it, spending it, and
+  from then on the list marks each magic item (a plus, a saving throw bonus
+  or a curse) with a star, as the kit's names do while Detect Magic lasts.
+- **Exit**: with treasure still there, the party is asked whether to go back
+  for it; what it leaves is lost.
+
+The menu closes by itself once nothing is left. The kit's View, Pool and
+Share are the game's own screens and its one purse.
+
+**Items' names.** An item is named by its three name words, last first, as
+the DAX games name theirs; one not yet identified leaves out the words its
+record hides (and shows "(unidentified magic)", as in every game). The words
+are the kit's: the table of 122 the kit's program holds, read from the
+player's `CKIT.EXE` as the DAX games read theirs from `START.EXE` or
+`GAME.EXE` (`ua::decode_item_words`, a table of pointers into the program's
+data found by its first two words). The count the kit puts before a stack's
+name, and its plural, are the inventory's quantity instead. Without the
+program an item shows its type's name.
+
+`opengold_ua_session_tests` opens the hall's chest on the menu, leaves and
+goes back, takes its money and then its items by their kit names for two
+members, and has the mage's Detect Magic star the scroll.
 
 ### Locked doors
 

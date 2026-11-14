@@ -597,6 +597,70 @@ std::optional<std::vector<ItemRecord>> decode_items(std::span<const std::uint8_t
     return items;
 }
 
+std::optional<std::vector<std::string>> decode_item_words(std::span<const std::uint8_t> program)
+{
+    constexpr std::size_t word_count = 122, pointer_size = 4;
+    constexpr std::size_t longest_word = 24;
+    constexpr std::string_view first = "Battle Axe", second = "Hand Axe";
+    // The first word, NUL-ended after a NUL; the second's string follows it.
+    std::vector<std::uint8_t> anchor{0};
+    anchor.insert(anchor.end(), first.begin(), first.end());
+    anchor.push_back(0);
+    const auto found = std::search(program.begin(), program.end(), anchor.begin(), anchor.end());
+    if (found == program.end())
+    {
+        return std::nullopt;
+    }
+    const auto first_at = static_cast<std::size_t>(found - program.begin()) + 1;
+    // The string at offset `offset` of the data segment based at `base`.
+    const auto word_at = [program](std::size_t base,
+                                   std::size_t offset) -> std::optional<std::string>
+    {
+        const auto at = base + offset;
+        std::string word;
+        for (auto n = at; n < program.size() && program[n] != 0; ++n)
+        {
+            if (program[n] < 0x20 || program[n] >= 0x7F || word.size() == longest_word)
+            {
+                return std::nullopt;
+            }
+            word += static_cast<char>(program[n]);
+        }
+        return at < program.size() ? std::optional{word} : std::nullopt;
+    };
+    // A table whose second and third pointers, in one segment, are the two
+    // words' offsets in it, and every entry a word.
+    for (std::size_t table = 0; table + word_count * pointer_size <= program.size(); ++table)
+    {
+        const auto offset = read_u16(program, table + pointer_size);
+        const auto segment = read_u16(program, table + pointer_size + 2);
+        if (offset > first_at ||
+            read_u16(program, table + 2 * pointer_size) != offset + first.size() + 1 ||
+            read_u16(program, table + 2 * pointer_size + 2) != segment)
+        {
+            continue;
+        }
+        const auto base = first_at - offset;
+        std::vector<std::string> words;
+        for (std::size_t n = 0; n < word_count; ++n)
+        {
+            const auto at = table + n * pointer_size;
+            auto word = read_u16(program, at + 2) == segment ? word_at(base, read_u16(program, at))
+                                                             : std::nullopt;
+            if (!word)
+            {
+                break;
+            }
+            words.push_back(std::move(*word));
+        }
+        if (words.size() == word_count && words[2] == second)
+        {
+            return words;
+        }
+    }
+    return std::nullopt;
+}
+
 std::optional<Monster> decode_monster(std::span<const std::uint8_t> item)
 {
     Monster monster;

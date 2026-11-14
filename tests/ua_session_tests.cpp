@@ -12,6 +12,7 @@
 #include "opengold/combat_demo.h"
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
+#include "opengold/original_spells.h"
 #include "opengold/ua_design.h"
 #include "opengold/ua_session.h"
 #include "test_support.h"
@@ -565,7 +566,8 @@ opengold::rules::Snapshot fight(const ua::UaSession &session,
 
 // Plays what the square's events ask until they end: the answer named in
 // `answers` where one fits, else the first choice (the last after a menu
-// came back twice), and every fight.
+// came back twice), and every fight; a member too laden to take treasure
+// hands the taking to the next.
 struct Player
 {
     ua::UaSession &session;
@@ -591,8 +593,20 @@ struct Player
             {
             case TourPhase::awaiting_continue:
             {
+                // A member too laden to take more treasure: the next takes.
+                if (s.dialogue.find("is overloaded.") != std::string::npos)
+                {
+                    select_next_member();
+                }
+                // A menu is the same when its words and choices are: a list
+                // that shrinks as it is taken from is another each time.
+                std::string menu = s.dialogue;
+                for (const auto &choice : s.choices)
+                {
+                    menu += '\n' + choice;
+                }
                 std::size_t pick =
-                    ++shown[s.dialogue] > 2 && !s.choices.empty() ? s.choices.size() - 1 : 0;
+                    ++shown[menu] > 2 && !s.choices.empty() ? s.choices.size() - 1 : 0;
                 if (!answers.empty())
                 {
                     const auto found = std::ranges::find(s.choices, answers.front());
@@ -628,6 +642,21 @@ struct Player
             }
         }
         check(false, "An event never ends");
+    }
+
+    void select_next_member()
+    {
+        const auto &slots = party->state().slots;
+        const auto selected = std::ranges::find(slots, party->selected());
+        for (auto at = selected + 1; at != slots.end(); ++at)
+        {
+            if (*at)
+            {
+                party->select(opengold::PartySlot{static_cast<unsigned>(at - slots.begin())});
+                return;
+            }
+        }
+        party->select(opengold::PartySlot{0});
     }
 
     [[nodiscard]] bool heard(std::string_view words) const
@@ -810,6 +839,26 @@ void a_character_starts_as_the_design_says(const std::filesystem::path &kit)
           "The first set is the kit's ITEM.DAT items 17h and 29h");
 }
 
+// Pressing on into the door ahead: the kit's "Blocked:" menu and its choices.
+std::vector<std::string> door_choices(ua::UaSession &session)
+{
+    check(session.explore(ExplorationCommand::forward), "A door ahead answers a step");
+    const auto &s = session.snapshot();
+    check(s.phase == TourPhase::awaiting_continue &&
+              s.dialogue.find("Blocked:") != std::string::npos,
+          "The door asks what the party does: " + s.dialogue);
+    return s.choices;
+}
+
+void choose_choice(ua::UaSession &session, std::string_view choice)
+{
+    const auto &s = session.snapshot();
+    const auto found = std::ranges::find(s.choices, choice);
+    check(found != s.choices.end(), "The menu offers " + std::string(choice));
+    check(session.choose(s.continue_ticket, static_cast<std::size_t>(found - s.choices.begin())),
+          "The door's choice is taken");
+}
+
 void the_design_loads_and_plays(const std::filesystem::path &kit)
 {
     const auto design = build_test_design(kit, temporary_design("opengold_ua_test.dsn"));
@@ -847,12 +896,52 @@ void the_design_loads_and_plays(const std::filesystem::path &kit)
     const auto before = party->state().wealth;
     session.place(5, 4, 2, MapDirection::east);
     check(session.explore(ExplorationCommand::forward), "The party steps to the chest");
-    player.answers = {"Yes"};
-    player.play();
+    // The chest opens on the treasure menu (docs/games/ua.md, The treasure
+    // menu): Take and Exit, no one having Detect Magic.
+    check(session.choose(session.snapshot().continue_ticket, 0), "Yes opens the chest");
+    const auto menu = [&session]
+    {
+        return session.snapshot().choices;
+    };
+    check(session.snapshot().dialogue.find("The party finds treasure.") != std::string::npos &&
+              menu() == std::vector<std::string>{"Take", "Exit"},
+          "The treasure menu offers Take and Exit: " + session.snapshot().dialogue);
+    check(session.can_select_member(), "The player chooses who takes");
+    // Exit with treasure left asks first; Yes goes back for it.
+    choose_choice(session, "Exit");
+    check(menu() == std::vector<std::string>{"Yes", "No"}, "Leaving treasure behind is asked");
+    choose_choice(session, "Yes");
+    choose_choice(session, "Take");
+    check(session.snapshot().dialogue == "Take:" &&
+              menu() == std::vector<std::string>{"Money", "Items", "Exit"},
+          "Take asks for the money or the items");
+    choose_choice(session, "Money");
     check(party->state().wealth[4] == before[4] + 50 && party->state().wealth[5] == before[5] + 3,
-          "The chest's 50 platinum and 3 gems go to the party");
-    const auto &first = party->member(party->state().slots[0]).character.inventory().items();
-    check(first.size() == 2, "The chest's two items go to the first member with room");
+          "The party's purse takes the chest's 50 platinum and 3 gems");
+    check(session.continue_dialogue(session.snapshot().continue_ticket) &&
+              session.snapshot().dialogue == "Items:" && menu().size() == 3,
+          "With the money taken, Take lists the two items");
+    // The items carry the kit's names: item 17h identified, the scroll's
+    // spells hidden until it is.
+    const auto items = ua::load_design_items(files);
+    check(items.words.size() == 122 && items.words[1] == "Battle Axe",
+          "The kit's item words are read from its program");
+    const auto chest_item = ua::design_item(items, 0x17, true);
+    check(chest_item && menu()[0] == chest_item->label() &&
+              chest_item->label() == opengold::por::item_name(chest_item->stored, items.words),
+          "An item shows the kit's name for it: " + menu()[0]);
+    check(menu()[1] == "Mage Scroll (unidentified magic)",
+          "The scroll hides its spells: " + menu()[1]);
+    // The selected member takes the one chosen.
+    party->select(opengold::PartySlot{1});
+    choose_choice(session, menu()[1]);
+    const auto &second = party->member(party->state().slots[1]).character.inventory().items();
+    check(second.size() == 1 && menu().size() == 2, "The selected member takes the scroll");
+    party->select(opengold::PartySlot{0});
+    choose_choice(session, menu()[0]);
+    check(session.snapshot().phase == TourPhase::completed &&
+              party->member(party->state().slots[0]).character.inventory().items().size() == 1,
+          "With the treasure all taken, the menu closes");
     // A trap's saving throw that halves the damage (defence 1).
     opengold::rules::HazardAttack dart;
     dart.automatic = true;
@@ -926,26 +1015,6 @@ void the_design_loads_and_plays(const std::filesystem::path &kit)
               session.snapshot().pose.y == 11,
           "The cellar's stairs take it back to the hall's second entry point");
     check(session.diagnostics().empty(), "Every event of the test design is played");
-}
-
-// Pressing on into the door ahead: the kit's "Blocked:" menu and its choices.
-std::vector<std::string> door_choices(ua::UaSession &session)
-{
-    check(session.explore(ExplorationCommand::forward), "A door ahead answers a step");
-    const auto &s = session.snapshot();
-    check(s.phase == TourPhase::awaiting_continue &&
-              s.dialogue.find("Blocked:") != std::string::npos,
-          "The door asks what the party does: " + s.dialogue);
-    return s.choices;
-}
-
-void choose_choice(ua::UaSession &session, std::string_view choice)
-{
-    const auto &s = session.snapshot();
-    const auto found = std::ranges::find(s.choices, choice);
-    check(found != s.choices.end(), "The menu offers " + std::string(choice));
-    check(session.choose(s.continue_ticket, static_cast<std::size_t>(found - s.choices.begin())),
-          "The door's choice is taken");
 }
 
 // The kit's doors (docs/games/ua.md, Locked doors): a locked door is bashed by
@@ -1086,6 +1155,35 @@ void the_kits_doors_open_as_the_kit_opens_them(const std::filesystem::path &kit)
     check(!session.explore(ExplorationCommand::turn_left) ||
               session.snapshot().phase == TourPhase::completed,
           "The party is free to go on");
+
+    // The treasure menu's Detect: a member with Detect Magic memorized casts
+    // it, and the magic items show a star.
+    check(party->rest(), "The party rests a day");
+    while (party->state().spell_rest)
+    {
+        const auto id = party->state().spell_rest->members.front();
+        if (id == mage)
+        {
+            party->choose_spells(mage,
+                                 {{}, std::vector<std::string>{opengold::original::spell_id(11)}});
+        }
+        else
+        {
+            party->keep_rest_spells(id);
+        }
+    }
+    session.place(5, 5, 2, MapDirection::east);
+    session.look();
+    choose_choice(session, "Yes");
+    check(session.snapshot().choices == std::vector<std::string>{"Take", "Detect", "Exit"},
+          "Detect is offered while a member has Detect Magic memorized");
+    choose_choice(session, "Detect");
+    check(session.snapshot().choices == std::vector<std::string>{"Take", "Exit"},
+          "Detect Magic is spent");
+    choose_choice(session, "Take");
+    choose_choice(session, "Items");
+    check(session.snapshot().choices[1] == "* Mage Scroll (unidentified magic)",
+          "The magic scroll shows its star: " + session.snapshot().choices[1]);
 }
 
 // The town's services and tests, each played as the test design sets them.
@@ -1385,11 +1483,20 @@ void the_town_serves_the_party(const std::filesystem::path &kit)
     check(player.heard("THEY SAY THE MAYOR HIDES GOLD."), "The tavern tells its tale");
     visit(2, 1, {"Fight"});
     check(player.fights == 1, "The brawl is the tavern's fight");
-    const auto carried = party->member(first).character.inventory().items().size();
+    // What the member carries, counting each of a stack (bought arrows join
+    // those it has).
+    const auto pieces = [&party, first]
+    {
+        unsigned count = 0;
+        for (const auto &item : party->member(first).character.inventory().items())
+        {
+            count += item.quantity;
+        }
+        return count;
+    };
+    const auto carried = pieces();
     visit(3, 1, {"Buy"});
-    check(party->member(first).character.inventory().items().size() == carried + 1 &&
-              player.heard("FIGHTER 1 buys"),
-          "The shop sells an item");
+    check(pieces() > carried && player.heard("FIGHTER 1 buys"), "The shop sells an item");
     visit(4, 1, {"Donate"}, {"100"});
     check(player.heard("Thank you for your generous donation.") &&
               player.heard("THE PRIESTS BLESS YOU."),

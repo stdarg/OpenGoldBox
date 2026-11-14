@@ -35,6 +35,10 @@ class DesignFiles
     // when it exists but does not decode.
     [[nodiscard]] std::optional<Library> library(std::string_view file) const;
 
+    // The kit's program, CKIT.EXE, read only for the words it names items
+    // with; nullopt when the kit has none. Throws when it cannot be read.
+    [[nodiscard]] std::optional<std::vector<std::uint8_t>> program() const;
+
     [[nodiscard]] const std::filesystem::path &kit() const noexcept
     {
         return kit_;

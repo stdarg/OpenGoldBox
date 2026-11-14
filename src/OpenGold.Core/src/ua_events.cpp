@@ -568,7 +568,7 @@ void UaSession::treasure_event(const EventRecord &event, bool now)
     }
     if (now)
     {
-        hand_over_treasure();
+        offer_treasure();
     }
 }
 

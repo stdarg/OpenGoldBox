@@ -105,13 +105,16 @@ struct DesignItems
 {
     std::vector<ItemRecord> items;
     std::vector<por::ItemTemplate> types;
+    // The kit's item words (decode_item_words); empty without CKIT.EXE, when
+    // an item shows its type's name.
+    std::vector<std::string> words;
 };
 
 [[nodiscard]] DesignItems load_design_items(const DesignFiles &files);
 
 // Item `number` as a member carries it; nullopt for no item (0, past the
-// list, or a record the kit leaves unused). An identified item shows every
-// name word.
+// list, or a record the kit leaves unused). It is named by the kit's words,
+// last first (hero.c, item_name); an identified item shows every one.
 [[nodiscard]] std::optional<por::Equipment> design_item(const DesignItems &items, unsigned number,
                                                         bool identified);
 
@@ -202,9 +205,11 @@ class UaSession final : public ExplorationSession
         return snapshot_.phase == por::TourPhase::completed;
     }
 
+    // While nothing waits, and at the treasure menu, which gives to the
+    // selected member.
     [[nodiscard]] bool can_select_member() const override
     {
-        return can_leave();
+        return can_leave() || treasure_open_;
     }
 
     // No member turns on the party in a design yet.
@@ -352,7 +357,18 @@ class UaSession final : public ExplorationSession
     void text_event(const EventRecord &event);
     void show_texts(const EventRecord &event, unsigned from);
     void treasure_event(const EventRecord &event, bool now);
-    void hand_over_treasure();
+    // The treasure menu (ua_treasure.cpp; postcmbt.c, loot_menu): Take,
+    // Detect and Exit while the treasure holds something.
+    void offer_treasure();
+    void treasure_menu();
+    void take_treasure();
+    void take_treasure_money();
+    void take_treasure_items();
+    void detect_treasure_magic();
+    void leave_treasure();
+    [[nodiscard]] bool treasure_left() const;
+    [[nodiscard]] std::string treasure_label(const por::Equipment &item) const;
+    [[nodiscard]] std::optional<std::string> detect_magic_spell() const;
     void take_loot(const rules::Snapshot &outcome);
     void award_fight_experience(const rules::Snapshot &outcome);
     [[nodiscard]] std::optional<por::Equipment> random_scroll();
@@ -506,6 +522,12 @@ class UaSession final : public ExplorationSession
     std::array<unsigned, 7> treasure_wealth_{};
     std::vector<unsigned> treasure_items_;
     bool treasure_identified_{};
+    // What the treasure menu holds: platinum, gems and jewelry, and the
+    // items; whether Detect has shown which are magic; whether the menu is
+    // open, when the player may choose who takes.
+    std::array<unsigned, 3> pile_money_{};
+    std::vector<por::Equipment> pile_items_;
+    bool pile_magic_shown_{}, treasure_open_{};
     // A tavern's drinks this visit and the next tale it tells in order.
     unsigned drunkenness_{}, tavern_tale_next_{};
     // The open shop's ITEM.DAT numbers.
