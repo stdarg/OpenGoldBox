@@ -317,6 +317,8 @@ if(OPENGOLD_BUILD_TESTS)
     add_test(NAME opengold_darkness_route COMMAND opengold_gold_box_games_tests --darkness-route)
     # Gateway to the Savage Frontier's story the same way (plan phase 5, step 4).
     add_test(NAME opengold_gateway_route COMMAND opengold_gold_box_games_tests --gateway-route)
+    # Treasures of the Savage Frontier's story the same way.
+    add_test(NAME opengold_treasure_route COMMAND opengold_gold_box_games_tests --treasure-route)
     # Each game's title pictures, as its original shows them when it starts.
     add_executable(opengold_title_screens_tests tests/title_screens_tests.cpp)
     target_link_libraries(opengold_title_screens_tests PRIVATE opengold_core)

@@ -2956,10 +2956,78 @@ const std::vector<RouteBeat> &gateway_route()
     return beats;
 }
 
+// Treasures' route plays to the game's end once this is true; until then it
+// stops on this map (docs/GAMES.md, Treasures, step 5).
+constexpr bool treasure_route_ends_the_game = false;
+constexpr unsigned treasure_route_stops_on_map = 16;
+
+// Treasures of the Savage Frontier's story, beat by beat, as its cluebook
+// tells it: from the dwarves' fortress outside Llorkh, where the opening
+// leaves the party.
+const std::vector<RouteBeat> &treasure_route()
+{
+    static const std::vector<RouteBeat> beats = []
+    {
+        using D = opengold::por::MapDirection;
+        std::vector<RouteBeat> route;
+        // Before each fight the party has its dead raised at the temple
+        // (15,3) and rests at the inn (12,1): the streets' camps draw the
+        // guards.
+        const auto heal_in_llorkh = [&route]
+        {
+            route.push_back({16, 15, 3, D::north, {"YES", "raise:dead", "Leave"}});
+            route.push_back({16, 12, 1, D::north, {"YES"}});
+        };
+        // A party brought from Gateway carries the experience and money of
+        // that game's end, which the test gives (a stand-in, as Secret's
+        // route stands in for a party from Curse), given at each visit since
+        // an award stops short of the level after next; it trains at
+        // Llorkh's hall (1,3, facing its door to the west), a level a visit.
+        for (int visit = 0; visit < 4; ++visit)
+        {
+            RouteBeat hall{16, 1, 3, D::west, train_everyone()};
+            hall.test_experience = 100'000;
+            hall.test_gold = 10'000;
+            route.push_back(hall);
+        }
+        // Llorkh (map 16): the Zhentil troops and Lord's men about the city
+        // first, so that the Keep's courtyard loses guards to them (the
+        // cluebook's Llorkh).
+        for (const auto &[x, y, answers] :
+             std::initializer_list<std::tuple<unsigned, unsigned, std::vector<std::string>>>{
+                 {9, 14, {}},
+                 {13, 13, {}},
+                 {11, 12, {"ATTACK"}},
+                 {8, 13, {}},
+                 {8, 8, {}},
+                 {1, 8, {"HELP DWARVES"}},
+                 {6, 8, {"HELP DWARVES"}},
+                 {14, 1, {}},
+                 {4, 1, {}},
+                 {1, 1, {}},
+                 {0, 6, {}},
+                 {5, 5, {}},
+                 {8, 0, {}},
+             })
+        {
+            heal_in_llorkh();
+            route.push_back({16, x, y, D::north, answers});
+        }
+        // The Keep's courtyard, its guards fewer now.
+        heal_in_llorkh();
+        route.push_back({16, 8, 10, D::north, {}});
+        heal_in_llorkh();
+        return route;
+    }();
+    return beats;
+}
+
 const std::vector<RouteBeat> &route_for(GoldBoxGame game)
 {
     switch (game)
     {
+    case GoldBoxGame::treasures_of_the_savage_frontier:
+        return treasure_route();
     case GoldBoxGame::secret_of_the_silver_blades:
         return secret_route();
     case GoldBoxGame::pools_of_darkness:
@@ -3285,11 +3353,12 @@ bool walk_census(GoldBoxGame game, bool route)
             }
             const auto id = party->add_pc(creator.create_character());
             // A long sword, plate mail and a shield of the game's own item
-            // types; a cleric's mace; a magic-user's dagger. Secret and Pools
-            // of Darkness number their types as Pool of Radiance does, not as
-            // Curse.
+            // types; a cleric's mace; a magic-user's dagger. Secret, Pools of
+            // Darkness and Treasures number their types as Pool of Radiance
+            // does, not as Curse.
             const bool secret = game == GoldBoxGame::secret_of_the_silver_blades ||
-                                game == GoldBoxGame::pools_of_darkness;
+                                game == GoldBoxGame::pools_of_darkness ||
+                                game == GoldBoxGame::treasures_of_the_savage_frontier;
             const std::uint8_t sword = secret ? 18 : 36, plate = secret ? 36 : 55,
                                shield = secret ? 37 : 59, mace = secret ? 8 : 23,
                                dagger = secret ? 4 : 8;
@@ -4816,6 +4885,12 @@ bool walk_census(GoldBoxGame game, bool route)
                       << ", short of the game's end (docs/GAMES.md, phase 5 step 4).\n";
             return played && end.area_id == gateway_route_stops_on_map;
         }
+        if (game == GoldBoxGame::treasures_of_the_savage_frontier && !treasure_route_ends_the_game)
+        {
+            std::cout << "Treasures' route stops on map " << end.area_id
+                      << ", short of the game's end (docs/GAMES.md, Treasures, step 5).\n";
+            return played && end.area_id == treasure_route_stops_on_map;
+        }
         return played && end.dialogue.find("You have won.") != std::string::npos &&
                game_won_shown && all_alive;
     }
@@ -4938,6 +5013,10 @@ int main(int argc, char **argv)
         if (argc == 2 && std::string_view(argv[1]) == "--gateway-route")
         {
             return walk_census(GoldBoxGame::gateway_to_the_savage_frontier, true) ? 0 : 1;
+        }
+        if (argc == 2 && std::string_view(argv[1]) == "--treasure-route")
+        {
+            return walk_census(GoldBoxGame::treasures_of_the_savage_frontier, true) ? 0 : 1;
         }
         each_game_is_told_apart_by_its_files();
         curse_creatures_are_read_from_their_layout();
