@@ -2009,7 +2009,7 @@ const std::vector<RouteBeat> &secret_route()
 // Pools of Darkness's route plays to the game's end once this is true; until
 // then it stops on this map (docs/GAMES.md, Pools of Darkness, step 5).
 constexpr bool darkness_route_ends_the_game = false;
-constexpr unsigned darkness_route_stops_on_map = 33;
+constexpr unsigned darkness_route_stops_on_map = 34;
 
 // Pools of Darkness's story, beat by beat, as its cluebook tells it: from New
 // Phlan's docks, where Rolf has walked the party out.
@@ -3895,6 +3895,9 @@ bool walk_census(GoldBoxGame game, bool route)
         }
         raise_the_dead();
     };
+    const auto item_definitions = game == GoldBoxGame::pools_of_darkness
+                                      ? opengold::load_item_definitions(folder, game)
+                                      : std::map<unsigned, opengold::por::Equipment>{};
     const auto new_party = [&]
     {
         party = std::make_shared<opengold::CampaignParty>(opengold::original::rules_module(content),
@@ -3916,6 +3919,13 @@ bool walk_census(GoldBoxGame game, bool route)
                 creator.next();
             }
             const auto id = party->add_pc(creator.create_character());
+            // Pools of Darkness's route party carries the game's own starting
+            // equipment, as a party made in the original does.
+            if (route && game == GoldBoxGame::pools_of_darkness)
+            {
+                opengold::outfit_original_character(*party, id, item_definitions);
+                continue;
+            }
             // A long sword, plate mail and a shield of the game's own item
             // types; a cleric's mace; a magic-user's dagger. Secret, Pools of
             // Darkness and Treasures number their types as Pool of Radiance
