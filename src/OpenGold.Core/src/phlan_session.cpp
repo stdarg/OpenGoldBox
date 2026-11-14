@@ -1596,8 +1596,10 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             }
             // A monster that surrendered is beaten, and pays as the dead do
             // (postcbt.pas, DetermineLootExp); under the original rules one
-            // down may be below 0 Hit Points.
-            if (unit.hit_points <= 0 || unit.surrendered)
+            // down may be below 0 Hit Points, or unconscious with Hit Points
+            // healed into it, which leave it out of the fight (fxengine.pas,
+            // RestoreHitPoints).
+            if (unit.hit_points <= 0 || unit.surrendered || unit.status == "unconscious")
             {
                 ++defeated;
             }
