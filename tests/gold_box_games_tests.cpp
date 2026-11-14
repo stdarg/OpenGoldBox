@@ -2778,6 +2778,21 @@ const std::vector<RouteBeat> &darkness_route()
                        {5, 15, D::west},  {4, 15, D::west},   {3, 15, D::west},  {2, 15, D::west},
                        {1, 15, D::north}, {1, 14, D::north}});
         route.push_back(step_beat(34, 1, 13, D::west, {"YES", "MOVE ON", "REALM"}));
+        // Elminster sends the party back to the Aerie's gate (7,0): it walks
+        // out by the Aerie's entrance (8,15) onto the area map (6,0).
+        walk_passages(route, 33,
+                      {{7, 0, D::east},   {8, 0, D::south},  {8, 1, D::south},  {8, 2, D::south},
+                       {8, 3, D::west},   {7, 3, D::west},   {6, 3, D::west},   {5, 3, D::south},
+                       {5, 4, D::east},   {6, 4, D::east},   {7, 4, D::east},   {8, 4, D::south},
+                       {8, 5, D::south},  {8, 6, D::south},  {8, 7, D::south},  {8, 8, D::south},
+                       {8, 9, D::south},  {8, 10, D::south}, {8, 11, D::south}, {8, 12, D::south},
+                       {8, 13, D::south}, {8, 14, D::south}});
+        route.push_back(step_beat(33, 8, 15, D::south, {"YES", "NO"}));
+        // South-west round the area map to Zhentil Keep's gate (0,4).
+        RouteBeat to_zhentil_keep{17, 0, 0, D::north, {}};
+        to_zhentil_keep.area_steps = {C::southwest, C::southwest, C::southwest, C::southwest,
+                                      C::west};
+        route.push_back(to_zhentil_keep);
         return route;
     }();
     return beats;
