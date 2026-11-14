@@ -80,7 +80,10 @@ constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_r
               prayer = 49, coughing = 30, nausea = 31, stinking_cloud = 40, cloudkill = 291,
               enlarged = 12, strengthened = 38, strength_wasted = original::strength_wasted,
               delayed_blast = 500, animated = 32, snake_charm = 51, slow_poison_tick = 15,
-              slow_poison = 22, revival = 78, read_magic = 16, dust = 71;
+              slow_poison = 22, revival = 78, read_magic = 16, dust = 71,
+              age_in_years = original::age_in_years;
+// Haste keeps whether it has aged its creature in this bit of its strength.
+constexpr int hasted_aged = 0x10;
 // Displacement keeps whether it has turned an attack aside in this bit of its strength.
 constexpr int displaced = 0x10;
 // A ring of invisibility's renewal (Pool of Radiance's 56, Secret's too), a
@@ -771,6 +774,8 @@ class Session final : public rules::CombatSession
     [[nodiscard]] rules::MovementGrid grid_for(const Fighter &mover) const;
     void log(Message message);
     void begin_round();
+    void age_the_hasted();
+    void make_younger(Fighter &user);
     void next_actor();
     void end_round();
     void end_actions(Fighter &fighter);
@@ -982,6 +987,7 @@ void Session::begin_round()
             }
         }
     }
+    age_the_hasted();
     if (secret())
     {
         order_turns();
@@ -2776,12 +2782,56 @@ void Session::resolve_spell(Fighter &caster, std::vector<EntityId> targets, Cell
     case 317:
         cast_secret_spell(caster, number, level, targets, aim);
         break;
+    case 263:
+        make_younger(caster);
+        break;
     default:
         cast_generic(caster, number, level, targets, 0, 0);
         break;
     }
     caster.using_item = -1;
     end_actions(caster);
+}
+
+// Haste ages its creature a year the first time it works on it, which a bit
+// of its strength marks (effhndlr.pas, EffHasted): as the round's numbers are
+// worked out (RecalcStats). A member's age is its marker's.
+void Session::age_the_hasted()
+{
+    for (auto &f : fighters_)
+    {
+        auto *haste = f.find_effect(effect::hasted);
+        if (!haste || (haste->strength & effect::hasted_aged) != 0)
+        {
+            continue;
+        }
+        haste->strength |= effect::hasted_aged;
+        if (auto *age = f.find_effect(effect::age_in_years))
+        {
+            ++age->strength;
+        }
+        log({"{name} ages.", {{"name", f.name}}});
+    }
+}
+
+// Youth (Secret's item power 63, SpellYouth): its user becomes 1d4+1 years
+// younger, but not below 18.
+void Session::make_younger(Fighter &user)
+{
+    constexpr int youngest = 18;
+    const int years = roll(4) + 1;
+    auto *age = user.find_effect(effect::age_in_years);
+    if (age && age->strength - years < youngest)
+    {
+        age->strength = youngest;
+        log({"{name} is now 18 years old.", {{"name", user.name}}});
+        return;
+    }
+    if (age)
+    {
+        age->strength -= years;
+    }
+    log({"{name} becomes younger.", {{"name", user.name}}});
 }
 
 // What using an item spends (viewchar.pas, UseItem): a scroll the spell read,
@@ -3926,6 +3976,11 @@ void Session::dispel(Fighter &target, int level)
     for (std::size_t node = 0; node < target.numbers.effects.size();)
     {
         const auto &e = target.numbers.effects[node];
+        if (e.code == effect::age_in_years)
+        {
+            ++node;
+            continue;
+        }
         const int effect_level = e.strength & 0x0F;
         const int chance = level >= effect_level ? 50 + 5 * (level - effect_level)
                                                  : 50 - 2 * (effect_level - level);

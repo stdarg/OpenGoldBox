@@ -2106,6 +2106,15 @@ void CampaignParty::drink_potion(MemberId id, std::uint64_t item)
     const auto left = potion->get().quantity - 1;
     rules_->drink_potion(drinker.character.sheet(), drinker.vitals, potion->get().definition_id,
                          next.random_state);
+    // What it changes for good goes into the level history (the original
+    // rules' Youth: the years it takes off).
+    for (const auto &change : rules_->lasting_changes(drinker.character.sheet(), drinker.vitals))
+    {
+        if (!drinker.character.advance(*rules_, drinker.vitals, change))
+        {
+            throw std::runtime_error("An item's lasting change cannot be kept");
+        }
+    }
     keep_item_uses(drinker, item, left);
     state_ = std::move(next);
 }

@@ -1232,9 +1232,10 @@ class RulesModule
         return {2, 20, 100, 200, 2000};
     }
 
-    // What a fight left on a character for good beyond its vital state (the
-    // original rules' level drain), as level history entries the character
-    // takes in order (advance_character); none by default.
+    // What a fight, or an item used outside one, left on a character for
+    // good beyond its vital state (the original rules' level drain and the
+    // years its age changed by), as level history entries the character takes
+    // in order (advance_character); none by default.
     [[nodiscard]] virtual std::vector<AdvancementChoice>
     lasting_changes(const CharacterSheet &sheet, const VitalState &after_fight) const
     {

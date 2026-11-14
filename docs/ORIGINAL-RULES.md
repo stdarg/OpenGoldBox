@@ -278,9 +278,9 @@ chosen by the game as *Curse*'s are. In progress (2026-11-13):
   it at once (Bugs).
 - Its paladins and rangers cast as *Curse*'s do (*Curse*, Paladins and
   rangers), a paladin at its full level.
-- **Still to come:** Youth (an item power that makes its user 1d4+1 years
-  younger), with the years Haste adds, as a character's age changing after
-  creation.
+- **Youth** (2026-11-14; its item power 63, `SpellYouth`) makes its user
+  1d4+1 years younger, not below 18, in a fight or out of one (an age that
+  changes, Plan step 3).
 
 ### *Secret*'s combat
 
@@ -494,22 +494,16 @@ whole list):
 
 The work asked for next (2026-11-14), in order, with what each needs:
 
-1. **An age that changes after creation:** a character keeps its starting
-   age (scores are worked out from it), so the years added since need their
-   own entry in the level history. Then Youth (Secret's item power 63,
-   `SpellYouth`: 1d4+1 years younger, not below 18) and the year Haste ages
-   a creature (`EffHasted`, the first time), applied after the fight through
-   `lasting_changes`.
-2. **Readying items mid-fight** (the View menu; `RecalcStats`,
+1. **Readying items mid-fight** (the View menu; `RecalcStats`,
    `RecalcAttacksLeft`, the AI's `EquipWeaponAndArmor`): a fight holds only a
    member's Combatant. It needs, through the rules seam, the member's record
    and its carried items, so the session can work its numbers out again as
    an item is readied or put away.
-3. **Time between rests:** the walking time the campaign's clock counts, so
+2. **Time between rests:** the walking time the campaign's clock counts, so
    a disease wastes (a point of Strength an hour, a Hit Point every ten
    minutes) and camp spells, Slow Poison and the paladin's week run down as
    the original counts time; today they change only at a day's rest.
-4. The other "Still to come" items above that are no one game's campaign or
+3. The other "Still to come" items above that are no one game's campaign or
    route work, in their order in this file: the AI's caution near clouds and
    a giant-bane weapon (effect 75) in *Secret*; the party's facing, the
    terrain heights for sight and PARTY_MOVE_MODIFIER (step 7); Spiritual
@@ -616,6 +610,17 @@ lines in all:
      classes, a third for three.
    - Checks start a game under the original rules with `--original-rules`
      until the new game's question is shown.
+   - **An age that changes after creation** (2026-11-14): a character keeps
+     its starting age, from which its scores are worked out, and each change
+     since is an entry of its level history ("age" and the years), which a
+     save keeps. A member's numbers carry its age into a fight (OpenGoldBox's
+     marker effect 602), where Haste ages it a year (`EffHasted`) and Youth
+     takes 1d4+1 years off (`SpellYouth`); after the fight the game keeps the
+     change (`lasting_changes`), as it does Youth used out of a fight. Under
+     the original's aging the scores stay; under AD&D aging each age group
+     reached or left changes them again, between 3 and the race's maximum
+     (exceptional Strength is lost below 18). Still to come under AD&D aging:
+     a year added for each year the game's clock passes.
    - Later: the training hall's fee and the classes each hall trains (step
      6), and a magic-user's new spell at each level (step 5). The Character
      Pool has no original-rules characters yet.
@@ -1020,8 +1025,9 @@ gear.
      rates of movement and attacks, up to the caster's level of creatures,
      one under the other spell only freed of it), Protection from Evil and
      Good 10' Radius (an aura of a square) and Protection from Normal
-     Missiles. The year Haste ages a creature waits for step 7; a fireball out of
-     doors reaches 2 and not 3 (step 7).
+     Missiles. Haste ages its creature a year the first time it works on it
+     (`EffHasted`, as the round starts), camp Haste too (an age that changes,
+     Plan step 3); a fireball out of doors reaches 2 and not 3 (step 7).
    - 8b-2. *Done 2026-11-13:* Lightning Bolt (one roll at the aim and along
      8 squares beyond it, away from the caster, turned back by a wall, its
      length counted as the original counts it), Stinking Cloud (a cloud of up

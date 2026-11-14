@@ -146,6 +146,9 @@ struct CharacterSheet
         // breath weapon, spell.
         std::array<int, 5> saving_throws{};
         int exceptional_strength{}, age{}, gold{};
+        // Whether its scores follow its age as the age changes after
+        // creation (AD&D aging); otherwise only its starting age counts.
+        bool aging_changes_scores{};
         // What a new character starts with besides its gold: Curse's 25,000
         // experience and 300 platinum; none in Pool of Radiance.
         int experience{}, platinum{};

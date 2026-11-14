@@ -738,6 +738,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         original.rolled_hit_points =
             first_level_rolled_hit_points(chosen.profession, rolled) + trained.rolled_hit_points;
         original.age = rolled.starting_age;
+        original.aging_changes_scores = aging_ == Aging::add;
         original.gold = rolled.gold;
         original.race = static_cast<int>(chosen.race);
         original.profession = static_cast<int>(chosen.profession);
@@ -810,6 +811,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         numbers.saving_throws = saving_throws(from.levels, game_);
         numbers.exceptional_strength = from.exceptional_strength;
         numbers.age = from.age;
+        numbers.aging_changes_scores = aging_ == Aging::add;
         numbers.race = from.race;
         numbers.profession = from.profession;
         numbers.alignment = from.alignment;
@@ -878,6 +880,7 @@ class OriginalCharacterRules final : public rules::CharacterRules
         numbers.exceptional_strength = record.current_abilities.exceptional_strength;
         numbers.rolled_hit_points = record.rolled_hit_points;
         numbers.age = record.age;
+        numbers.aging_changes_scores = aging_ == Aging::add;
         numbers.race = static_cast<int>(race);
         numbers.profession = static_cast<int>(profession);
         numbers.alignment = static_cast<int>(alignment);

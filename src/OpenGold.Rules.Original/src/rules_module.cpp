@@ -150,6 +150,31 @@ std::optional<Revival> decode_raised(std::string_view data)
     return std::nullopt;
 }
 
+// The years a character's age changed by after creation (Haste ages a year,
+// Youth takes 1d4+1 off), as a level history entry: "age" and the years.
+constexpr std::string_view age_word = "age";
+
+std::string encode_age(int years)
+{
+    return std::string(age_word) + ' ' + std::to_string(years);
+}
+
+std::optional<int> decode_age(std::string_view data)
+{
+    if (!data.starts_with(age_word))
+    {
+        return std::nullopt;
+    }
+    std::istringstream in{std::string(data.substr(age_word.size()))};
+    int years{};
+    std::string rest;
+    if (!(in >> years) || (in >> rest) || years == 0)
+    {
+        throw std::invalid_argument("Unreadable original-rules age");
+    }
+    return years;
+}
+
 std::optional<Drain> decode_drain(std::string_view data)
 {
     if (!data.starts_with(drain_word))
@@ -359,6 +384,8 @@ Combatant character_combatant(const CharacterSheet &sheet,
     {
         innate(334);
     }
+    // Its age, which Haste and Youth change in a fight (age_in_years).
+    c.effects.push_back({age_in_years, 0, original_numbers(sheet).age, false});
     return c;
 }
 
@@ -466,6 +493,7 @@ class OriginalModule final : public RulesModule
     }
     void drain_character(CharacterSheet &sheet, VitalState &state, const Drain &drain) const;
     void raise_character(CharacterSheet &sheet, VitalState &state, Revival by) const;
+    void age_character(CharacterSheet &sheet, int years) const;
     [[nodiscard]] unsigned experience_share(const CharacterSheet &sheet,
                                             unsigned award) const override;
     void recover(VitalState &state, const CharacterSheet &sheet) const override;
@@ -1533,6 +1561,11 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
         raise_character(sheet, state, *raised);
         return true;
     }
+    if (const auto years = decode_age(choice.rules_data))
+    {
+        age_character(sheet, *years);
+        return true;
+    }
     const auto training = decode_training(choice.rules_data);
     // The spell a magic-user learns, when the level is one of its own.
     const bool magic_user_trained =
@@ -1631,6 +1664,42 @@ void OriginalModule::drain_character(CharacterSheet &sheet, VitalState &state,
     sheet = std::move(next);
 }
 
+// A character's age changes by `years`. Under AD&D aging its scores follow,
+// each older age group's changes kept between 3 and the race's maximum, as
+// at creation (ability_scores); under the original's only its starting age
+// counts.
+void OriginalModule::age_character(CharacterSheet &sheet, int years) const
+{
+    auto next = sheet;
+    auto &numbers = *next.original;
+    const int before = numbers.age;
+    numbers.age = std::max(1, numbers.age + years);
+    if (numbers.aging_changes_scores)
+    {
+        const auto race = static_cast<Race>(numbers.race);
+        const auto gender = next.gender == "Female" ? Gender::female : Gender::male;
+        const auto limits = ability_limits(race, gender);
+        const auto then = age_changes(Aging::add, race, before);
+        const auto now = age_changes(Aging::add, race, numbers.age);
+        for (const auto ability : rules::all_abilities)
+        {
+            const int change = now[ability] - then[ability];
+            if (change != 0)
+            {
+                const int score =
+                    std::clamp(next.scores[ability] + change, 3, limits.maximum[ability]);
+                next.scores[ability] = next.base[ability] = score;
+            }
+        }
+        if (next.scores[Ability::strength] != 18)
+        {
+            numbers.exceptional_strength = 0;
+        }
+        recount_levels(next);
+    }
+    sheet = std::move(next);
+}
+
 // A raised character loses a point of Constitution while it has one
 // (temple.pas, RaiseDead; Curse's cast_raise). A temple's raising also takes
 // Hit Points off its maximum (raised_hit_point_loss); the spell's does not.
@@ -1672,29 +1741,44 @@ std::vector<AdvancementChoice> OriginalModule::revival_changes(const CharacterSh
     return {change};
 }
 
+// What a fight, or an item used outside one, left that the character keeps:
+// the levels drained, and the years its age changed by (age_in_years).
 std::vector<AdvancementChoice> OriginalModule::lasting_changes(const CharacterSheet &sheet,
                                                                const VitalState &after) const
 {
-    const auto last = Combatant::decode(after.resources);
-    if (after.resources.empty() || !last || !sheet.original)
+    if (after.resources.empty() || !sheet.original)
     {
         return {};
     }
-    Drain drain;
-    bool drained = false;
-    for (std::size_t at = 0; at < class_slot_count; ++at)
+    std::vector<AdvancementChoice> changes;
+    const auto carried = carried_state(after.resources, game_of(sheet.identity));
+    if (const auto &last = carried.last_fight)
     {
-        drain.levels[at] = std::max(0, sheet.original->class_levels[at] - last->class_levels[at]);
-        drained = drained || drain.levels[at] > 0;
+        Drain drain;
+        bool drained = false;
+        for (std::size_t at = 0; at < class_slot_count; ++at)
+        {
+            drain.levels[at] =
+                std::max(0, sheet.original->class_levels[at] - last->class_levels[at]);
+            drained = drained || drain.levels[at] > 0;
+        }
+        if (drained)
+        {
+            drain.hit_points = std::max(0, sheet.hit_points - last->max_hit_points);
+            AdvancementChoice change;
+            change.rules_data = encode_drain(drain);
+            changes.push_back(std::move(change));
+        }
     }
-    if (!drained)
+    const auto &effects = carried.last_fight ? carried.last_fight->effects : carried.conditions;
+    const auto age = std::ranges::find(effects, age_in_years, &Effect::code);
+    if (age != effects.end() && age->strength != sheet.original->age)
     {
-        return {};
+        AdvancementChoice change;
+        change.rules_data = encode_age(age->strength - sheet.original->age);
+        changes.push_back(std::move(change));
     }
-    drain.hit_points = std::max(0, sheet.hit_points - last->max_hit_points);
-    AdvancementChoice change;
-    change.rules_data = encode_drain(drain);
-    return {change};
+    return changes;
 }
 
 unsigned OriginalModule::experience_after_advance(const CharacterSheet &before,
@@ -2214,7 +2298,27 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
 
 namespace
 {
-constexpr int keoghtums_ointment = 58, potion_of_healing = 62;
+constexpr int keoghtums_ointment = 58, potion_of_healing = 62, youth = 263;
+
+// Youth used outside a fight (Secret's SpellYouth): its user becomes 1d4+1
+// years younger, but not below 18, which the game keeps (lasting_changes).
+void make_younger(const CharacterSheet &sheet, VitalState &state, RandomState &random_state)
+{
+    constexpr int youngest = 18;
+    const int years = roll_die(random_state, 4) + 1;
+    change_conditions(sheet, state,
+                      [&](std::vector<Effect> &effects)
+                      {
+                          auto age = std::ranges::find(effects, age_in_years, &Effect::code);
+                          if (age == effects.end())
+                          {
+                              effects.push_back(
+                                  {age_in_years, 0, original_numbers(sheet).age, false});
+                              age = std::prev(effects.end());
+                          }
+                          age->strength = std::max(youngest, age->strength - years);
+                      });
+}
 
 // The item power an item of the original's holds, by the spell table's
 // numbers, or nothing: in Pool of Radiance a power above 56 is 23 less
@@ -2248,7 +2352,7 @@ bool OriginalModule::cursed_item(std::string_view item) const
 bool OriginalModule::usable_outside_combat(std::string_view item) const
 {
     const auto power = item_power(item, content_.game);
-    return power == potion_of_healing || power == keoghtums_ointment;
+    return power == potion_of_healing || power == keoghtums_ointment || power == youth;
 }
 
 void OriginalModule::drink_potion(const CharacterSheet &sheet, VitalState &state,
@@ -2257,6 +2361,11 @@ void OriginalModule::drink_potion(const CharacterSheet &sheet, VitalState &state
     if (!usable_outside_combat(item) || state.dead)
     {
         throw std::runtime_error("That cannot be used now");
+    }
+    if (item_power(item, content_.game) == youth)
+    {
+        make_younger(sheet, state, random_state);
+        return;
     }
     const bool ointment = item_power(item, content_.game) == keoghtums_ointment;
     if (ointment && (cure(sheet, state, poison_codes) ||

@@ -1768,6 +1768,137 @@ void a_drain_lasts_beyond_the_fight()
               character.sheet().original->drained_levels == 0,
           "Training gives the drained level back");
 }
+
+// An age that changes after creation goes into the level history: Haste ages
+// a member a year the first time it works on it (effhndlr.pas, EffHasted),
+// and Youth (Secret's SpellYouth) takes 1d4+1 years off, not below 18. Only
+// under AD&D aging do the scores follow.
+void ages_change_after_creation()
+{
+    std::shared_ptr<const rules::CharacterRules> creation = original::character_rules();
+    CampaignParty party(original::rules_module(), creation);
+    const auto id = party.add_pc(made_fighter(creation));
+    const int age = party.member(id).character.sheet().original->age;
+    const auto scores = party.member(id).character.sheet().scores;
+
+    por::CharacterRecord kobold;
+    kobold.name = "KOBOLD";
+    kobold.max_hit_points = 4;
+    kobold.base_thac0 = 20;
+    kobold.base_armor_class = 7;
+    original::Content content;
+    content.bestiary.emplace("MON2CHA.DAX:0", original::combatant_from_record(kobold));
+    rules::Encounter encounter;
+    encounter.battlefield = {8, 4, std::vector<rules::Terrain>(32, rules::Terrain::open)};
+    encounter.participants = party.participants();
+    auto hasted = party.member(id).vitals;
+    constexpr int haste = 39;
+    const std::array camp_haste{original::Effect{haste, 30, 5, false}};
+    hasted.resources = original::rested_state(camp_haste);
+    encounter.participants.front().state = hasted;
+    rules::Participant foe;
+    foe.id = 1000;
+    foe.definition = "MON2CHA.DAX:0";
+    foe.name = "Kobold";
+    foe.side = rules::Side::opposition;
+    foe.cell = {7, 3};
+    encounter.participants.push_back(foe);
+    party.begin_combat();
+    auto session = original::rules_module(content)->create(encounter, 9);
+    for (int step = 0; step < 20 && session->snapshot().round < 3; ++step)
+    {
+        const auto commands = session->legal_commands();
+        check(session->submit(
+                  *std::ranges::find(commands, std::string("end"), &rules::Command::verb)),
+              "The turn ends");
+    }
+    const auto snapshot = session->snapshot();
+    const auto aged = std::ranges::count_if(snapshot.log_entries,
+                                            [](const rules::LogEntry &entry)
+                                            {
+                                                return entry.message.source == "{name} ages.";
+                                            });
+    check(snapshot.round >= 3 && aged == 1, "Haste ages its creature once, as it first works");
+    party.apply_combat(snapshot);
+    party.end_combat();
+    const auto &older = party.member(id).character;
+    check(older.sheet().original->age == age + 1 &&
+              older.advancements().back().rules_data == "age 1",
+          "The year Haste added is the fighter's, in its level history");
+    check(older.sheet().scores == scores, "As the original ages, the scores stay");
+    const auto saved = encode_campaign(party, nullptr, "age-check");
+    const auto loaded =
+        decode_campaign(saved, *creation, *original::rules_module(), "age-check", nullptr);
+    check(loaded.party.roster.front().character.sheet().original->age == age + 1,
+          "A save keeps the age");
+
+    // Youth, used outside a fight in Secret.
+    const auto secret = GoldBoxGame::secret_of_the_silver_blades;
+    original::Content secret_content;
+    secret_content.game = secret;
+    secret_content.item_types.resize(256);
+    std::shared_ptr<const rules::CharacterRules> secret_creation =
+        original::character_rules(original::default_aging, secret);
+    CampaignParty secret_party(original::rules_module(secret_content), secret_creation);
+    const auto elder = secret_party.add_pc(made_fighter(secret_creation));
+    const int secret_age = secret_party.member(elder).character.sheet().original->age;
+    std::array<std::uint8_t, 63> raw{};
+    raw[46] = 65;
+    raw[60] = 1;
+    raw[61] = 63;
+    por::Equipment elixir;
+    elixir.stored = por::decode_items(raw)->front();
+    secret_party.take_item(elder, elixir);
+    const auto bottle = secret_party.member(elder).character.inventory().items().back().id;
+    check(secret_party.rule_module().usable_outside_combat(
+              secret_party.member(elder).character.inventory().find(bottle)->get().definition_id),
+          "Youth is used outside a fight");
+    secret_party.drink_potion(elder, bottle);
+    const int younger = secret_party.member(elder).character.sheet().original->age;
+    check(younger >= std::max(18, secret_age - 5) && younger <= std::max(18, secret_age - 2),
+          "Youth takes 1d4+1 years off, not below 18");
+    check(!secret_party.member(elder).character.inventory().find(bottle), "Its one use is spent");
+
+    // Under AD&D aging the scores follow the age; under the original's they stay.
+    const auto module = original::rules_module();
+    for (const auto aging : {original::Aging::add, original::Aging::original})
+    {
+        const auto rules = original::character_rules(aging);
+        RandomState random{77};
+        rules::CharacterDraft draft;
+        draft.race = "human";
+        draft.gender = "male";
+        draft.character_class = "fighter";
+        draft.alignment = "neutral_good";
+        draft.name = "Aldo";
+        rules->roll_in_place(draft, random);
+        const auto young = rules->evaluate(draft, rules::NameRequirement::required);
+        auto old = young;
+        rules::VitalState state{young.hit_points, false, {}, {}};
+        rules::AdvancementChoice years;
+        years.rules_data = "age 50";
+        check(module->advance_character(old, state, years) &&
+                  old.original->age == young.original->age + 50,
+              "Fifty years pass");
+        const auto then =
+            original::age_changes(original::Aging::add, original::Race::human, young.original->age);
+        const auto now =
+            original::age_changes(original::Aging::add, original::Race::human, old.original->age);
+        const auto limits = original::ability_limits(original::Race::human, original::Gender::male);
+        bool follows = true;
+        for (const auto ability : rules::all_abilities)
+        {
+            const int change = now[ability] - then[ability];
+            const int expected =
+                aging == original::Aging::add && change != 0
+                    ? std::clamp(young.scores[ability] + change, 3, limits.maximum[ability])
+                    : young.scores[ability];
+            follows = follows && old.scores[ability] == expected;
+        }
+        check(follows, aging == original::Aging::add ? "Under AD&D aging the scores follow"
+                                                     : "Under the original's aging they stay");
+    }
+}
 } // namespace
 
 int main()
@@ -1795,6 +1926,7 @@ int main()
         a_potion_heals_outside_a_fight();
         an_npc_joins_as_its_record();
         a_drain_lasts_beyond_the_fight();
+        ages_change_after_creation();
         curse_clerics_heal_and_raise_in_camp();
         secret_clerics_heal_in_camp();
         a_pool_character_comes_to_curse();

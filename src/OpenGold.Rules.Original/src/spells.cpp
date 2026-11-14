@@ -167,10 +167,13 @@ constexpr std::array<NumberedSpell, 36> curse_spells{{
 // more than Secret's own (secret_spell_offset), with their effects by the
 // fight's numbers (canonical_effect) and the party as camp target 4, as Pool
 // of Radiance's table has it. Its numbers 101 to 109 cast nothing and are
-// left out, as is Youth (63), a power that changes only an age.
-constexpr std::array<NumberedSpell, 13> secret_spells{{
+// left out. Youth (63), an item's power, makes its user younger whatever it
+// aims at (SpellYouth), so it takes no aim (area 0) and goes on its user out
+// of fights (camp target 1).
+constexpr std::array<NumberedSpell, 14> secret_spells{{
     {236, {"Heal", SpellClass::cleric, 6, 5, 0, 0, 0, 4, 2, 0, 4, 0, 2, 0, 2, false, 0}},
     {256, {"Harm", SpellClass::cleric, 6, 0, 0, 0, 0, 4, 0, 0, 4, 0, 1, 10, 0, true, 0}},
+    {263, {"Youth", SpellClass::item, 6, 0, 0, 0, 0, 0, 1, 0, 4, 0, 2, 0, 0, false, 0}},
     {290, {"Barkskin", SpellClass::druid, 2, 1, 0, 0, 0, 240, 4, 0, 4, 413, 2, 3, 0, false, 0}},
     {296,
      {"Charm Person or Mammal", SpellClass::druid, 2, 8, 0, 60, 60, 4, 0, 1, 4, 11, 1, 4, 5, true,

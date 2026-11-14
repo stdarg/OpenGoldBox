@@ -293,6 +293,11 @@ struct AmmunitionTypes
 [[nodiscard]] bool lasting_condition(const Effect &effect, GoldBoxGame game) noexcept;
 // The marker of the Strength a disease has wasted outside fights.
 inline constexpr int strength_wasted = 601;
+// A party member's age in years, OpenGoldBox's own marker (its strength): a
+// member's numbers carry it into a fight, where Haste and Youth change it,
+// and the game keeps the change in the member's level history
+// (RulesModule::lasting_changes).
+inline constexpr int age_in_years = 602;
 
 // What a party member's state carries between fights
 // (rules::VitalState::resources): the numbers its last fight left it, its
