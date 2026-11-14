@@ -6322,7 +6322,10 @@ rules::Snapshot Session::snapshot() const
         // them), death, and its numbers as the fight left them (levels
         // drained, effects still running), for the game to keep.
         const bool keeps = f->condition == Condition::okay || f->condition == Condition::fled;
-        view.persistent = {keeps ? f->hit_points : 0, view.dead, f->numbers.encode(), {}};
+        // A statue stays one until Stone to Flesh (status PETRIFIED).
+        view.persistent = {keeps ? f->hit_points : 0, view.dead, f->numbers.encode(),
+                           f->condition == Condition::stoned ? std::string(stoned_description)
+                                                             : std::string()};
         // What is left of a party member's items, for the game to trim its
         // inventory to: an item gone is 0.
         for (const auto &[ordinal, id] : f->item_ids)
@@ -7070,6 +7073,11 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
         if (p.state && p.state->dead)
         {
             f.condition = Condition::dead;
+        }
+        else if (p.state && p.state->description == stoned_description)
+        {
+            f.condition = Condition::stoned;
+            f.hit_points = 0;
         }
         else if (f.hit_points <= 0)
         {

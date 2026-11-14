@@ -1697,6 +1697,12 @@ unsigned OriginalModule::experience_share(const CharacterSheet &sheet, unsigned 
 // CheckRestingHeal: one every 288 five-minute ticks).
 void OriginalModule::recover(VitalState &state, const CharacterSheet &sheet) const
 {
+    // A statue heals nothing until Stone to Flesh (CheckRestingHeal heals
+    // only those okay).
+    if (state.description == stoned_description)
+    {
+        return;
+    }
     if (!state.dead)
     {
         state.hit_points = std::min(state.hit_points + 1, sheet.hit_points);
@@ -1799,7 +1805,7 @@ RestPolicy OriginalModule::short_rest_policy() const
 // and Remove Curse take their conditions away; in Secret and Gateway
 // Neutralize Poison stands one poison killed up again, and Secret's Heal
 // cures blindness, disease and feeblemind too. It raises no one by
-// Resurrection; its cure of stone is Secret's route's.
+// Resurrection. Stone to Flesh brings a statue back with 1 Hit Point.
 bool OriginalModule::temple_service_helps(const CharacterSheet &sheet, const VitalState &state,
                                           TempleService service) const
 {
@@ -1811,9 +1817,15 @@ bool OriginalModule::temple_service_helps(const CharacterSheet &sheet, const Vit
     case TempleService::cure_light_wounds:
     case TempleService::cure_serious_wounds:
     case TempleService::cure_critical_wounds:
-        return !state.dead && state.hit_points < sheet.hit_points;
+        // A statue "can only be healed by a stonemason" (temple.pas).
+        return !state.dead && state.description != stoned_description &&
+               state.hit_points < sheet.hit_points;
     case TempleService::heal:
     {
+        if (state.description == stoned_description)
+        {
+            return false;
+        }
         auto cured = disease_codes(game);
         cured.insert(cured.end(), {blind, feebleminded});
         const bool cures =
@@ -1830,6 +1842,8 @@ bool OriginalModule::temple_service_helps(const CharacterSheet &sheet, const Vit
         return (!state.dead || reviving_poison) && has_any(sheet, state, poison_codes);
     case TempleService::remove_curse:
         return !state.dead && has_any(sheet, state, std::array{bestow_curse});
+    case TempleService::stone_to_flesh:
+        return !state.dead && state.description == stoned_description;
     default:
         return false;
     }
@@ -1910,6 +1924,12 @@ void OriginalModule::temple_service(VitalState &state, const CharacterSheet &she
     case TempleService::remove_curse:
         (void)cure(sheet, state, std::array{bestow_curse});
         break;
+    case TempleService::stone_to_flesh:
+        // A statue comes back into play okay at 1 Hit Point (temple.pas,
+        // StoneToFlesh).
+        state.description.clear();
+        state.hit_points = 1;
+        break;
     default:
         break;
     }
@@ -1980,7 +2000,7 @@ HazardAttackResult OriginalModule::hazard_attack(VitalState &state, const Charac
 std::vector<CampAction> OriginalModule::camp_actions(const CharacterSheet &sheet,
                                                      const VitalState &state) const
 {
-    if (state.dead || !sheet.original)
+    if (state.dead || state.description == stoned_description || !sheet.original)
     {
         return {};
     }

@@ -476,8 +476,12 @@ struct RouteBeat
     // through the story: a stand-in until its player wins it.
     bool test_wins = false;
     // The party only passes by: it answers NO where it is asked a question
-    // (and the first choice elsewhere, fighting what it meets).
+    // (and the first choice elsewhere, fighting what it meets), and rests
+    // first when a member is below half its Hit Points.
     bool passing = false;
+    // The party waits for the monsters it meets to go where it is offered
+    // (level 10's stoning patrols).
+    bool avoiding = false;
     // Search mode on or off from this beat on, as a player's (S)earch, so
     // a hidden trap is noticed on the way.
     std::optional<bool> searching;
@@ -986,7 +990,7 @@ void walk_ruins(
 void walk_passages(
     std::vector<RouteBeat> &beats, unsigned map,
     std::initializer_list<std::tuple<unsigned, unsigned, opengold::por::MapDirection>> passages,
-    bool searching = false, bool test_wins = false)
+    bool searching = false, bool test_wins = false, bool avoiding = false)
 {
     for (const auto &[x, y, facing] : passages)
     {
@@ -994,6 +998,7 @@ void walk_passages(
         beat.passing = true;
         beat.searching = searching;
         beat.test_wins = test_wins;
+        beat.avoiding = avoiding;
         beats.push_back(beat);
     }
 }
@@ -1036,6 +1041,9 @@ const std::vector<RouteBeat> &secret_route()
             experienced.test_experience = 1'000'000;
             route.push_back(experienced);
         }
+        // The armoury (location 9): a mirror for each member, readied, which
+        // turns the gazes of basilisks and medusae back (the cluebook's advice).
+        route.push_back({16, 14, 6, D::north, {"YES", "buy:MIRROR"}});
         route.insert(
             route.end(),
             {
@@ -1483,8 +1491,9 @@ const std::vector<RouteBeat> &secret_route()
         route.push_back({49, 3, 3, D::north, {"YES", "B"}});
         // Level 10: through the hole the miners broke into the castle's dungeon
         // (script 64). Its patrols of cockatrices, medusae and basilisks turn the
-        // party to stone with every dice the route tries: there the test wins a
-        // fight its player loses (a stand-in).
+        // party to stone: the party waits for them to go where it may, and where
+        // they attack with every dice the route tries the test wins the fight
+        // its player loses (a stand-in).
         walk_passages(route, 49,
                       {{3, 3, D::east},   {4, 3, D::east},   {5, 3, D::east},    {6, 3, D::east},
                        {11, 0, D::east},  {12, 0, D::east},  {13, 0, D::east},   {14, 0, D::east},
@@ -1505,7 +1514,56 @@ const std::vector<RouteBeat> &secret_route()
                        {8, 14, D::south}, {8, 15, D::east},  {9, 15, D::east},   {10, 15, D::east},
                        {11, 15, D::east}, {12, 15, D::east}, {13, 15, D::north}, {13, 14, D::east},
                        {14, 14, D::east}, {15, 14, D::east}},
-                      true, true);
+                      true, true, true);
+        // The Dungeon (map 64; levels 10 to 7 on one map, the level in cell
+        // 4C87). Level 10's patrols leave members turned to stone, which only
+        // Stone to Flesh cures: back by the Dungeon's teleporter (location 7)
+        // to the Well and the Temple of Gond.
+        // To the teleporter.
+        walk_passages(route, 64,
+                      {{0, 15, D::north}, {0, 14, D::north}, {0, 13, D::north}, {0, 12, D::east},
+                       {1, 12, D::east},  {2, 12, D::east},  {3, 12, D::north}, {3, 11, D::north},
+                       {3, 10, D::north}, {3, 9, D::north},  {3, 8, D::north},  {3, 7, D::west},
+                       {2, 7, D::west},   {1, 7, D::west},   {0, 7, D::north},  {0, 6, D::north},
+                       {0, 5, D::east},   {1, 5, D::east},   {2, 5, D::south},  {2, 6, D::east}},
+                      true);
+        route.push_back({64, 3, 6, D::north, {"YES"}});
+        // At the Well (building 15): rested, then by its gate to the mayor's
+        // house, where the Temple of Gond raises the dead and turns statues
+        // back to flesh, and back by the mayor's teleporter and the Well's
+        // gate 15 to the Dungeon (3,6), rested there.
+        route.push_back({33, 1, 1, D::north, {"YES"}, true});
+        route.push_back({16, 10, 9, D::north, {"YES", "raise:dead", "stone:flesh", "Leave"}});
+        route.push_back({16, 3, 0, D::north, {"YES"}});
+        route.push_back({33, 8, 14, D::north, {"YES"}});
+        route.push_back({64, 3, 6, D::north, {"NO"}, true});
+        // The Brass Key, on level 7, which the Amulet of Eldamar reveals (cell 4CDE); the spirit's
+        // riddles are answered as the cluebook answers them.
+        walk_passages(
+            route, 64,
+            {{3, 6, D::west},    {2, 6, D::north},   {2, 5, D::west},    {1, 5, D::west},
+             {0, 5, D::north},   {0, 4, D::north},   {0, 3, D::north},   {0, 2, D::north},
+             {0, 1, D::north},   {0, 0, D::east},    {1, 0, D::east},    {2, 0, D::east},
+             {3, 0, D::north},   {4, 0, D::east},    {5, 0, D::south},   {5, 1, D::south},
+             {5, 2, D::south},   {5, 3, D::south},   {5, 4, D::south},   {5, 5, D::south},
+             {5, 6, D::south},   {5, 7, D::west},    {4, 7, D::south},   {4, 8, D::south},
+             {4, 9, D::east},    {5, 9, D::north},   {5, 8, D::east},    {6, 8, D::east},
+             {7, 8, D::south},   {7, 9, D::south},   {7, 10, D::south},  {7, 11, D::south},
+             {7, 12, D::west},   {6, 12, D::west},   {5, 12, D::north},  {5, 11, D::west},
+             {4, 11, D::south},  {4, 12, D::south},  {4, 13, D::south},  {4, 14, D::south},
+             {4, 15, D::east},   {5, 15, D::east},   {6, 15, D::north},  {6, 14, D::north},
+             {6, 13, D::east},   {7, 13, D::south},  {7, 14, D::south},  {7, 15, D::south},
+             {8, 15, D::east},   {9, 15, D::north},  {9, 14, D::north},  {9, 13, D::east},
+             {10, 13, D::north}, {10, 12, D::north}, {10, 11, D::north}, {10, 10, D::east},
+             {11, 10, D::north}, {11, 9, D::north},  {11, 8, D::north},  {11, 7, D::north},
+             {11, 6, D::west},   {10, 6, D::south},  {10, 7, D::west},   {9, 7, D::north},
+             {9, 6, D::north},   {9, 5, D::east},    {10, 5, D::east},   {11, 5, D::north},
+             {11, 4, D::north},  {11, 3, D::north},  {11, 2, D::north},  {11, 1, D::north},
+             {11, 0, D::north},  {15, 7, D::west},   {14, 7, D::south},  {14, 8, D::south},
+             {14, 9, D::south},  {14, 10, D::south}, {14, 11, D::south}, {14, 12, D::south},
+             {14, 13, D::south}, {14, 14, D::south}, {14, 15, D::west},  {13, 15, D::north},
+             {13, 14, D::west},  {12, 14, D::south}},
+            true);
         return route;
     }();
     return beats;
@@ -2690,6 +2748,8 @@ bool walk_census(GoldBoxGame game, bool route)
     bool passing = false;
     // The beat being played flees what it meets (RouteBeat::fleeing).
     bool fleeing = false;
+    // The beat being played avoids the monsters it meets (RouteBeat::avoiding).
+    bool avoiding = false;
     const auto play = [&](const std::string &where)
     {
         const auto attribute = [&]
@@ -2705,7 +2765,7 @@ bool walk_census(GoldBoxGame game, bool route)
         for (int step = 0; step < 400; ++step)
         {
             const auto &s = session.snapshot();
-            if (!s.diagnostic.empty())
+            if (!s.diagnostic.empty() && !s.diagnostic.starts_with("Bought "))
             {
                 needs[s.diagnostic].push_back(where);
             }
@@ -2744,7 +2804,30 @@ bool walk_census(GoldBoxGame game, bool route)
                                        : 0;
                 // The planning aid takes on what it meets but declines a
                 // question (NO), so it fights its way on but stays put.
-                if ((planning || passing) && shown[s.dialogue] <= 2)
+                // Monsters that come on Secret's party in camp while a member
+                // is below half its Hit Points: the party flees them, as a
+                // player would, rather than fight on.
+                const auto flee = std::ranges::find(s.choices, "FLEE");
+                if (where == "camp" && game == GoldBoxGame::secret_of_the_silver_blades &&
+                    flee != s.choices.end() &&
+                    std::ranges::any_of(
+                        party->state().slots,
+                        [&](opengold::MemberId id)
+                        {
+                            return id && !party->member(id).vitals.dead &&
+                                   party->member(id).vitals.description != "Turned to stone." &&
+                                   party->member(id).vitals.hit_points * 2 <
+                                       party->member(id).character.sheet().hit_points;
+                        }))
+                {
+                    pick = static_cast<std::size_t>(flee - s.choices.begin());
+                }
+                else if (const auto wait = std::ranges::find(s.choices, "WAIT");
+                         avoiding && wait != s.choices.end() && shown[s.dialogue] <= 2)
+                {
+                    pick = static_cast<std::size_t>(wait - s.choices.begin());
+                }
+                else if ((planning || (passing && where != "camp")) && shown[s.dialogue] <= 2)
                 {
                     const auto no = std::ranges::find(s.choices, "NO");
                     pick = no == s.choices.end() ? 0
@@ -2802,6 +2885,28 @@ bool walk_census(GoldBoxGame game, bool route)
                             answers.insert(answers.begin(),
                                            {"Raise Dead", party->member(id).character.sheet().name,
                                             "Pay", "raise:dead"});
+                            break;
+                        }
+                    }
+                }
+                // "stone:flesh" likewise has the temple's Stone to Flesh bring
+                // back each member turned to stone.
+                if (!answers.empty() && answers.front() == "stone:flesh" &&
+                    std::ranges::any_of(s.choices,
+                                        [](const std::string &choice)
+                                        {
+                                            return choice.starts_with("Stone to Flesh");
+                                        }))
+                {
+                    answers.erase(answers.begin());
+                    for (const auto id : party->state().slots)
+                    {
+                        if (id && party->member(id).vitals.description == "Turned to stone.")
+                        {
+                            answers.insert(answers.begin(),
+                                           {"Stone to Flesh",
+                                            party->member(id).character.sheet().name, "Pay",
+                                            "stone:flesh"});
                             break;
                         }
                     }
@@ -2872,7 +2977,52 @@ bool walk_census(GoldBoxGame game, bool route)
                     needs["A shop with nothing to sell"].push_back(where);
                 }
                 ++phases["shops with goods"];
-                (void)session.leave_shop(s.continue_ticket);
+                // "buy:NAME" buys each member an item whose name holds NAME
+                // and readies it, as a player outfits the party (Secret's
+                // armoury sells the mirrors that turn gazes back).
+                if (!answers.empty() && answers.front().starts_with("buy:"))
+                {
+                    const auto wanted = answers.front().substr(4);
+                    answers.erase(answers.begin());
+                    std::cout << where << ": the shop sells";
+                    for (const auto &offered : session.shop_stock())
+                    {
+                        std::cout << " " << offered.label() << ";";
+                    }
+                    std::cout << "\n";
+                    const auto slots = party->state().slots;
+                    for (std::size_t slot = 0; slot < slots.size(); ++slot)
+                    {
+                        const auto &stock = session.shop_stock();
+                        const auto item = std::ranges::find_if(
+                            stock,
+                            [&](const opengold::por::Equipment &offered)
+                            {
+                                auto name = offered.label();
+                                std::ranges::transform(name, name.begin(), ::toupper);
+                                return name.find(wanted) != std::string::npos;
+                            });
+                        if (!slots[slot] || item == stock.end())
+                        {
+                            continue;
+                        }
+                        party->select(opengold::PartySlot{static_cast<unsigned>(slot)});
+                        if (session.buy(session.snapshot().continue_ticket,
+                                        static_cast<std::size_t>(item - stock.begin())))
+                        {
+                            const auto &items =
+                                party->member(slots[slot]).character.inventory().items();
+                            try
+                            {
+                                party->equip(slots[slot], items.back().id);
+                            }
+                            catch (const std::exception &)
+                            {
+                            }
+                        }
+                    }
+                }
+                (void)session.leave_shop(session.snapshot().continue_ticket);
                 continue;
             case TourPhase::treasure:
             {
@@ -3029,7 +3179,22 @@ bool walk_census(GoldBoxGame game, bool route)
                 [&](opengold::MemberId id)
                 {
                     return !id || party->member(id).vitals.dead ||
+                           party->member(id).vitals.description == "Turned to stone." ||
                            party->member(id).vitals.hit_points >=
+                               party->member(id).character.sheet().hit_points;
+                });
+        };
+        // A member below half its Hit Points (and not dead or a statue): a
+        // player passing through rests first.
+        const auto party_hurt = [&]
+        {
+            return std::ranges::any_of(
+                party->state().slots,
+                [&](opengold::MemberId id)
+                {
+                    return id && !party->member(id).vitals.dead &&
+                           party->member(id).vitals.description != "Turned to stone." &&
+                           party->member(id).vitals.hit_points * 2 <
                                party->member(id).character.sheet().hit_points;
                 });
         };
@@ -3094,7 +3259,7 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     break;
                 }
-                if (beat.rest_first)
+                if (beat.rest_first || (beat.passing && party_hurt()))
                 {
                     beat.waiting ? rest_in_wilderness() : rest_until_healed();
                 }
@@ -3146,6 +3311,7 @@ bool walk_census(GoldBoxGame game, bool route)
                     taking_wand = beat.take_wand;
                     passing = beat.passing;
                     fleeing = beat.fleeing;
+                    avoiding = beat.avoiding;
                     if (beat.searching)
                     {
                         session.set_searching(*beat.searching);

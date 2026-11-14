@@ -123,6 +123,11 @@ struct UsableItem
     bool operator==(const UsableItem &) const = default;
 };
 
+// A party member turned to stone stays a statue after the fight (the
+// original's status PETRIFIED) until Stone to Flesh: its state outside fights
+// says so in its description.
+inline constexpr std::string_view stoned_description = "Turned to stone.";
+
 // A creature's numbers in a fight under the original rules.
 struct Combatant
 {

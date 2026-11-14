@@ -704,8 +704,14 @@ lines in all:
      Strength back (`EffDiseaseStrength`, `EffDiseaseHitPoints`); the time
      spent walking is not counted. Slow Poison in camp stands one poison
      killed up for an hour a caster level, and the poison kills it again as
-     the spell runs out over a rest. Still to come: the temple's cure of
-     stone, which *Secret*'s route brings.
+     the spell runs out over a rest.
+   - **Stone** (2026-11-14): a member a fight turns to stone stays a statue
+     after it (the original's status PETRIFIED; its state's description
+     says "Turned to stone."): it starts every later fight out of it, heals
+     nothing as the party rests, casts nothing in camp, and no cure of
+     wounds or Raise Dead helps it ("can only be healed by a stonemason");
+     the temple's Stone to Flesh brings it back okay at 1 Hit Point
+     (`StoneToFlesh`).
    - **Companions:** an NPC who joins (ADD NPC) is its original record: its
      scores, class levels, Hit Points, spells known and memorized, and its
      own gear. The rules keep the record whole in its draft, so a save makes

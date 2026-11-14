@@ -1027,6 +1027,22 @@ void the_temple_heals_and_raises()
     module->temple_service(hurt, sheet, rules::TempleService::heal, random);
     check(hurt.hit_points >= std::max(1, sheet.hit_points - 4),
           "Curse's Heal restores all but 1d4 Hit Points");
+    // A member turned to stone stays a statue outside fights: no rest heals
+    // it, no cure of wounds or camp spell helps it, and Stone to Flesh brings
+    // it back okay at 1 Hit Point (temple.pas, StoneToFlesh).
+    rules::VitalState statue{0, false, {}, std::string(original::stoned_description)};
+    module->recover(statue, sheet);
+    check(statue.hit_points == 0, "A statue heals nothing as the party rests");
+    check(!module->temple_service_helps(sheet, statue, rules::TempleService::heal) &&
+              !module->temple_service_helps(sheet, statue, rules::TempleService::raise_dead) &&
+              module->temple_service_helps(sheet, statue, rules::TempleService::stone_to_flesh) &&
+              module->camp_actions(sheet, statue).empty(),
+          "Only Stone to Flesh helps a statue");
+    check(!module->temple_service_helps(sheet, hurt, rules::TempleService::stone_to_flesh),
+          "Stone to Flesh helps no one else");
+    module->temple_service(statue, sheet, rules::TempleService::stone_to_flesh, random);
+    check(statue.hit_points == 1 && statue.description.empty(),
+          "Stone to Flesh brings a statue back with 1 Hit Point");
 }
 
 // A character of a game's original rules, by its class and alignment.
