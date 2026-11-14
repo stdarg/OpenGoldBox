@@ -526,6 +526,39 @@ Image RolfTourSession::treasures_overland_view() const
     return view;
 }
 
+void RolfTourSession::cast_outside_combat(MemberId caster, MemberId patient,
+                                          const std::string &action)
+{
+    log_player("member " + std::to_string(caster) + " casts " + action);
+    if (!campaign_ || campaign_->in_combat())
+    {
+        throw std::runtime_error("A spell is cast outside combat");
+    }
+    campaign_->use_camp_action(caster, patient, action);
+    constexpr EclAddress last_spell{0x4B};
+    constexpr std::uint16_t awaiting_spell = 0xFF;
+    constexpr std::string_view cast_prefix = "cast:";
+    const auto canonical = opengold::original::spell_number(
+        action.starts_with(cast_prefix) ? action.substr(cast_prefix.size()) : action);
+    if (game() != GoldBoxGame::treasures_of_the_savage_frontier || !canonical || !can_leave() ||
+        machine_.variable(last_spell) != awaiting_spell)
+    {
+        return;
+    }
+    // The script reads the spell by the game's own number.
+    for (int number = 1; number <= 0xFF; ++number)
+    {
+        if (opengold::original::canonical_spell(number, game()) == *canonical)
+        {
+            machine_.bind_variable(last_spell, static_cast<std::uint16_t>(number));
+            break;
+        }
+    }
+    pending_movement_.reset();
+    begin_event(EventTrigger::step);
+    advance(0);
+}
+
 void RolfTourSession::vga_play_sound(unsigned sound)
 {
     // The footstep plays as the other games' does; the other sound effects

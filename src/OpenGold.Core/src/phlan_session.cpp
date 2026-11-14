@@ -141,14 +141,14 @@ void RolfTourSession::attach_restored_party(std::shared_ptr<opengold::CampaignPa
 namespace
 {
 
-// Pools of Darkness's scripts read a fight's result with IF right after
-// COMBAT: its PostCombat sets "equal" when the party won or came through,
-// and "not equal" when it fled (postcbt.pas). The other games keep the flags
-// and leave the result in a cell.
-[[nodiscard]] std::optional<EclConditions> darkness_combat_conditions(GoldBoxGame game,
-                                                                      bool party_stood)
+// The 256-color engine's scripts (Pools of Darkness's and Treasures') read a
+// fight's result with IF right after COMBAT: its PostCombat sets "equal" when
+// the party won or came through, and "not equal" when it fled (postcbt.pas).
+// The other games keep the flags and leave the result in a cell.
+[[nodiscard]] std::optional<EclConditions> vga_combat_conditions(GoldBoxGame game,
+                                                                 bool party_stood)
 {
-    if (game != GoldBoxGame::pools_of_darkness)
+    if (!vga_engine(game))
     {
         return std::nullopt;
     }
@@ -1802,7 +1802,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         {
             results.push_back(write);
         }
-        const auto conditions = darkness_combat_conditions(game(), !fled && !duel_lost);
+        const auto conditions = vga_combat_conditions(game(), !fled && !duel_lost);
         // The party leaves a maze fight facing the side it ran off, which
         // the script reads to find the next part of the maze (postcbt.pas).
         if (result.escape_side)
@@ -2020,7 +2020,9 @@ void RolfTourSession::finish_event()
     }
     if (event_stage_ == EventStage::step)
     {
-        if (!move_party(*pending_movement_))
+        // A step entry run with no move (Treasures' after a cast) searches
+        // where the party stands.
+        if (pending_movement_ && !move_party(*pending_movement_))
         {
             if (locked_door_ahead())
             {
@@ -3995,11 +3997,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             if (!treasure_pile_.empty())
             {
                 open_treasure(request.id, {});
-                treasure_conditions_ = darkness_combat_conditions(game(), true);
+                treasure_conditions_ = vga_combat_conditions(game(), true);
                 return true;
             }
             reply = character_reply(selected_character_);
-            reply.conditions = darkness_combat_conditions(game(), true);
+            reply.conditions = vga_combat_conditions(game(), true);
             break;
         }
         if (machine_.variable(game_cell(ecl_temple_service)) == 1)
@@ -4012,7 +4014,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         reply = character_reply(selected_character_);
         reply.writes.push_back({game_cell(ecl_combat_result), 0});
         reply.writes.push_back({game_cell(ecl_monsters_defeated), 0});
-        reply.conditions = darkness_combat_conditions(game(), true);
+        reply.conditions = vga_combat_conditions(game(), true);
         break;
     case 32:
     {

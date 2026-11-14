@@ -418,6 +418,13 @@ class RolfTourSession
     // when the party cannot leave or has not been on that map, before
     // spending anything.
     void teleport(opengold::MemberId caster, const std::string &action, unsigned map);
+    // A spell cast outside combat while exploring, `action` its camp action,
+    // on `patient`. Treasures' scripts may wait for one (the last spell's
+    // cell, 4Bh, at FFh, as before Cortarra's twins): the spell's number is
+    // recorded there and the square's event runs again, as its map menu runs
+    // the step and location entries after a cast (its NoncombatCastMenu).
+    void cast_outside_combat(opengold::MemberId caster, opengold::MemberId patient,
+                             const std::string &action);
 
     // The Wand of Secrets (SECRET-1): while the party explores, `member` spends
     // a charge of the wand `item`, and the hidden secret door or armed trap

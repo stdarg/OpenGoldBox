@@ -517,6 +517,10 @@ struct RouteBeat
     // Answer the waiting menu with this choice, night after night, until the
     // party is whole, its spells chosen after each: Elminster's REST in Limbo.
     std::optional<std::string> rest_choice;
+    // After the beat's event a member casts the first of these spells (camp
+    // actions holding the text) that anyone has memorized, as a player
+    // answers Treasures' Cortarra, whose script waits for a spell.
+    std::vector<std::string> cast_after;
 };
 
 // Answers that train each of the route's members a level at a hall: its
@@ -3723,7 +3727,24 @@ const std::vector<RouteBeat> &treasure_route()
         // The Keep's courtyard, its guards fewer now.
         heal_in_llorkh();
         route.push_back({16, 8, 10, D::north, {}});
+        // Down the stairs east of the courtyard into Geildarr's Keep (map 17),
+        // rested first.
         heal_in_llorkh();
+        route.push_back(step_beat(16, 9, 10, D::east));
+        // The Keep: the black-caped man giving orders (11,5); Cortarra, who
+        // takes the shape of her prisoner Siulajia (11,1): the party casts
+        // Detect Magic, sees through her and fights her; then Lord
+        // Geildarr's chamber (15,4), each rested for.
+        RouteBeat orders{17, 11, 5, D::north, {}};
+        orders.rest_first = true;
+        route.push_back(orders);
+        RouteBeat twins{17, 11, 1, D::north, {"CAST"}};
+        twins.rest_first = true;
+        twins.cast_after = {"detect_magic", "detect_evil", "dispel_magic"};
+        route.push_back(twins);
+        RouteBeat geildarr{17, 15, 4, D::north, {}};
+        geildarr.rest_first = true;
+        route.push_back(geildarr);
         return route;
     }();
     return beats;
@@ -3923,6 +3944,9 @@ bool walk_census(GoldBoxGame game, bool route)
                                                   "fighter", "fighter", "fighter"};
     const std::array<std::string, 6> route_classes{"paladin", "paladin", "ranger",
                                                    "cleric",  "cleric",  "magic_user"};
+    // Spells the next beat casts outside combat (RouteBeat::cast_after),
+    // which each caster takes first.
+    std::vector<std::string> wanted_spells;
     // Each day's spells: the strongest a caster knows at each of its levels.
     const auto memorize = [&]
     {
@@ -4014,6 +4038,14 @@ bool walk_census(GoldBoxGame game, bool route)
                     {
                         // With someone dead, a cleric takes Raise Dead first.
                         if (anyone_dead && id.find("raise_dead") != std::string::npos)
+                        {
+                            return -1;
+                        }
+                        if (std::ranges::any_of(wanted_spells,
+                                                [&](const std::string &wanted)
+                                                {
+                                                    return id.find(wanted) != std::string::npos;
+                                                }))
                         {
                             return -1;
                         }
@@ -5113,6 +5145,32 @@ bool walk_census(GoldBoxGame game, bool route)
         std::size_t beat_number = 0;
         // A beat that throws ends the route, named with the beat it was in.
         std::string current_beat = "the route's start";
+        // A member casts the first of these spells anyone has memorized,
+        // outside combat.
+        const auto cast_one_of = [&](const std::vector<std::string> &wanted)
+        {
+            for (const auto &spell : wanted)
+            {
+                for (const auto id : party->state().slots)
+                {
+                    if (!id || party->member(id).vitals.dead)
+                    {
+                        continue;
+                    }
+                    for (const auto &action : party->camp_actions(id))
+                    {
+                        if (action.id.find(spell) != std::string::npos)
+                        {
+                            std::cout << "  " << party->member(id).character.sheet().name
+                                      << " casts " << action.id << "\n";
+                            session.cast_outside_combat(id, id, action.id);
+                            return;
+                        }
+                    }
+                }
+            }
+            needs["No one can cast what the beat asks"].push_back(current_beat);
+        };
         try
         {
             for (const auto &beat : route_for(game))
@@ -5133,6 +5191,7 @@ bool walk_census(GoldBoxGame game, bool route)
                 {
                     break;
                 }
+                wanted_spells = beat.cast_after;
                 // A camp before the beat fights as the beat does.
                 test_winning = beat.test_wins;
                 if (beat.rest_first || (beat.passing && !beat.camp_broken && party_hurt() &&
@@ -5245,6 +5304,11 @@ bool walk_census(GoldBoxGame game, bool route)
                         {
                             play(where);
                         }
+                    }
+                    if (!beat.cast_after.empty())
+                    {
+                        cast_one_of(beat.cast_after);
+                        play(where);
                     }
                     const auto &until = beat.repeat_until_at_least;
                     const auto &bits = beat.repeat_until_bits;

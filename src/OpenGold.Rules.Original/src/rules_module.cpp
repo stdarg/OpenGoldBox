@@ -1469,6 +1469,20 @@ constexpr std::array<int, 20> camp_effect_spells{1,  6,  7,  8,  16, 17, 18, 19,
                                                  30, 32, 42, 45, 48, 50, 52, 53, 54, 169};
 constexpr int party_target = 4;
 
+// The spells a player casts outside combat to see what is hidden, spent with
+// no effect laid: a script may answer one (Treasures' Cortarra is seen
+// through when Detect Magic is cast before her twin).
+[[nodiscard]] bool sight_spell(int number)
+{
+    constexpr std::array<std::string_view, 3> sight{
+        "cleric:detect_magic", "magic_user:detect_magic", "druid:detect_magic"};
+    return std::ranges::any_of(sight,
+                               [number](std::string_view id)
+                               {
+                                   return spell_number(id) == number;
+                               });
+}
+
 // A camp spell's effect on its target (magic.pas, ResolveSpell): its minutes
 // by the caster's level, its strength the caster's level; Mirror Image's the
 // 1d4 images, Prayer's the party's side (bit 4 clear) and the level.
@@ -2162,6 +2176,18 @@ std::vector<CampAction> OriginalModule::camp_actions(const CharacterSheet &sheet
                                known->camp_target == party_target});
         }
     }
+    std::vector<int> sights;
+    for (const int number : left)
+    {
+        if (sight_spell(number) && std::ranges::find(sights, number) == sights.end())
+        {
+            sights.push_back(number);
+            actions.push_back(
+                {std::string(cast_prefix) + spell_id(number),
+                 {"Cast {spell}", {{"spell", std::string(spell(number)->name), true}}},
+                 false});
+        }
+    }
     return actions;
 }
 
@@ -2228,6 +2254,15 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
         const bool on_caster = known->camp_target == 1;
         lay_camp_effect(user, on_caster ? user : target, on_caster ? user_state : target_state,
                         *number, random_state);
+        return;
+    }
+    if (number && sight_spell(*number))
+    {
+        if (std::ranges::find(left, *number) == left.end() || user_state.dead)
+        {
+            throw std::runtime_error("That spell cannot be cast now");
+        }
+        spend_spell(user, user_state, *number);
         return;
     }
     if (!number || std::ranges::find(camp_spells, *number) == camp_spells.end() ||

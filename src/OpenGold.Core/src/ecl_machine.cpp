@@ -1190,15 +1190,14 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
     }
     const auto opcode = pending_->instruction->opcode;
     // FIND ITEM answers with the flags, as Treasures' FIND NAMED ITEM does;
-    // Gateway's PROGRAM 12h may (whether it healed), and so may Pools of
-    // Darkness's COMBAT (the fight's result, postcbt.pas PostCombat).
-    constexpr std::uint8_t find_named_item = 0x43;
+    // Gateway's PROGRAM 12h may (whether it healed), and so may the
+    // 256-color engine's COMBAT (the fight's result, its PostCombat).
+    constexpr std::uint8_t find_named_item = 0x43, combat = 36;
     const bool finds =
         opcode == 50 || (program_->game() == GoldBoxGame::treasures_of_the_savage_frontier &&
                          opcode == find_named_item);
     const bool may_answer =
-        finds || opcode == 56 ||
-        (opcode == 36 && program_->game() == GoldBoxGame::pools_of_darkness);
+        finds || opcode == 56 || (opcode == combat && vga_engine(program_->game()));
     if ((opcode == 32) != static_cast<bool>(reply.next_program) || (finds && !reply.conditions) ||
         (reply.conditions && !may_answer))
     {
