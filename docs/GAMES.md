@@ -617,10 +617,15 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    and the exploration screen plays the design through `ExplorationSession`,
    the one view code path for a DAX campaign and a design; its fights open
    on the combat screen with the design's monsters
-   (`opengold_godot_startup_menu_ua`). Still to come: the other event kinds
-   (shops, temples, training, NPCs, encounters and the rest), overland maps,
-   locked doors, the kit's battlefields and icons, treasure items, the rest
-   of its rules, camping, the overhead map, a default party, and saves.
+   (`opengold_godot_startup_menu_ua`). Since 2026-11-14 every event kind
+   plays: training halls, taverns, shops, temples, vaults, inns and small
+   towns in the kit's words and prices, guided tours, NPCs joining and
+   leaving, encounters, who tries, who pays and passwords; treasure hands
+   over its items, a trap's save halves its damage, and a new character
+   starts with the design's own experience, money and equipment. Still to
+   come: overland maps, locked doors, the kit's battlefields and icons, the
+   treasure menu, the rest of its rules, the camp menu, the overhead map, a
+   default party, and saves.
 2. An updated construction kit for making new ones.
 
 ### 9. The SRD rules for the new games

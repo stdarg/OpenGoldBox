@@ -317,13 +317,54 @@ not), button and list menus (10 and 21), utilities (16: quest flags set,
 added, combined, or the adventure ended), sounds (17, silent for now), chain
 (23), experience (26), time passing (27), a quest's stage (35), Yes or No
 (36), tavern tales (37), special items (38, a quest flag) and an NPC's words
-(14, never heard yet since no NPC joins). Any other kind is reported as not
-played yet (`diagnostics`).
+(14, heard only with that NPC in the party). Since 2026-11-14 the rest
+play too (`ua_services.cpp`), their menus in the kit's words (host
+messages the view translates) and their prices in platinum at one of the
+kit's twenty rates (`ua::rated_price`, temple.c's `rate_price`):
+
+- **Training hall** (6): asks whether the party trains, then who; a member
+  of a class the hall's bits name (byte 8) with the experience rises a
+  level in each class it can, for 1,000 platinum at byte 9's rate; a
+  magic-user's level picks a spell.
+- **Tavern** (7): Drink (byte 7, bit 20h: the designer's drinks menu, each
+  stronger, and at 60 points of drink event 13h), Talk (its four tales and
+  the tavern tales of kind 37, at random or in turn), Fight (10h: event
+  12h, or no one to fight) and Leave.
+- **Shop** (8): its stock from four masks of ITEM.DAT rows (shop.c's
+  table), at byte 5's rate; Buy for the selected member, Sell at half the
+  price (nothing for a cursed or worthless item), Identify for 20.
+- **Temple** (9): the cures of its level (byte 4), from Cure Light Wounds
+  (level 1, 20) to Resurrection (7, 2,000), at byte 5's rate; Donate (byte
+  7, bit 8) counts toward a tithe (bytes 8 to 11) that runs event 0Ch.
+- **Vault** (24): the party's money left and taken back, kept for the game.
+- **Inn** (29): the party rests.
+- **Small town** (22): Temple, Hall, Shop, Inn, Pub and Vault by byte 7's
+  bits, each made from the town's bytes as the kit does, back to the town
+  after each.
+- **Guided tour** (12): from its start square or the party's, up to its
+  steps of turns and steps forward (through walls, no square's event on
+  the way), its two texts at their steps.
+- **NPCs** (13 and 32): a MONST record joins as a member under the kit's
+  rules (`imported_draft`) with its percent of Hit Points, unless with the
+  party already or the party has eight; it leaves again.
+- **Encounter** (15): Approach, Retreat, Fight, Wait and Talk as the
+  designer set each button, the range closing to the fight, the talk or a
+  flight, the monsters' speed against the party's slowest deciding surprise
+  and whether the party gets away.
+- **Who tries, who pays, passwords** (18 to 20): a member picked tests an
+  ability or a thief's skill, pays gems, jewelry or platinum, or the party
+  types the password (any case); success or failure shows its words and
+  chains, teleports or steps back.
+
+Any other kind is reported as not played yet (`diagnostics`).
 
 A fight's event names up to six groups of a count and a monster. The fight
 is played by the original rules' combat with the kit's monsters; a won fight
 shares the monsters' experience among the members standing and hands over
-the treasure an event staged.
+the treasure an event staged. A treasure's items are ITEM.DAT's (numbered
+from 1, of ITEMS.DAT's types; FFh a scroll of three magic-user spells),
+identified when byte 7's bit 80h says so, each to the first member with
+room. A trap's defence 1 halves its damage, rounded down, on a save.
 
 ### A party under the kit's rules
 
@@ -336,8 +377,11 @@ Its differences from the Pool family ([ORIGINAL-RULES.md](../ORIGINAL-RULES.md))
   human. *Done.*
 - A new character's experience and money come from the design's game record:
   40,001 experience (shared among its classes, trained at once) and 200
-  platinum by default. *OpenGoldBox uses the kit's defaults; a design's own
-  values are still to come.*
+  platinum by default, and the gems, jewelry and set of equipment (1 to 8,
+  by class group: fighters, clerics, thieves, magic-users; create.c) it
+  names. *Done* (`original::design_character_rules`, chosen in
+  `game_rules.cpp` by the design; `ua::outfit_new_character` when the
+  character joins).
 - Level caps by race: elves fighters 7 and magic-users 11; half-elves
   clerics 5 and fighters, rangers and magic-users 8; dwarves fighters 9;
   gnomes and halflings fighters 6; humans and thieves without limit. *Still
@@ -372,6 +416,15 @@ into `ua-fixtures/TEST.DSN`.
 - **Area 6, the cellar**: words on arrival, a statue's list (damage to all,
   experience to the selected member, or nothing), and stairs back to the
   hall's second entry point.
+- **Area 7, the town**: a training hall, a tavern with a tale, drinks and a
+  brawl, a shop, a temple taking a tithe, a vault, an inn, a small town with
+  every service, a guided tour, an NPC (the kit's 70h) joining, speaking and
+  leaving, strangers to approach and talk to, a stuck door for the strong,
+  a toll and a password.
+
+The game record starts a new character with 20,000 experience, 75
+platinum, 2 gems, a jewel and the first set of equipment, and the chest's
+treasure holds an item and a random scroll.
 
 `opengold_ua_session_tests` plays it beat by beat. `opengold_ua_walk`
 (`opengold_ua_session_tests --ua-walk`) walks every square of every area of
@@ -381,9 +434,11 @@ playing each event and fight; it fails on any event the session cannot play.
 
 ### What remains
 
-- Every other event kind: training halls, taverns, shops, temples, inns,
-  vaults, small towns, guided tours, NPCs joining and leaving, encounters
-  (the approach menu), who tries, who pays, passwords, camping.
+- The services' smaller parts (DEVIATIONS.md, Unlimited Adventures'
+  services): Pool, Share and Take, Appraise, vault items, the camp menu at
+  an inn, a temple's Restoration and Fix; a ranger's magic-user spells
+  from level 9; drinks as more than a count; the encounter's monster
+  picture at its range.
 - Overland areas: their map and big picture (steps already move the party
   there); zone texts, step events and rest encounters.
 - Locked doors: bashing, picking and Knock.
@@ -391,9 +446,8 @@ playing each event and fight; it fails on any event the session cannot play.
   its combat icons (CPIC), monsters' items and effects, allies, the area's
   wandering monster, the starting quarter, "no magic"; a monster's size on
   the field.
-- Treasure items (ITEM.DAT) and the treasure menu; a save that halves damage
-  spares it for now.
-- A design's own starting experience, money and equipment; the kit's rules'
-  remaining differences (above).
+- The treasure menu, and items' names (the kit's words are in CKIT.EXE,
+  which is not read; an item shows its type's name).
+- The kit's rules' remaining differences (above).
 - Saving and loading a game (Save, Load and Continue are not offered for a
   design yet), a default party, camping, and the overhead map.

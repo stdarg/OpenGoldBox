@@ -471,8 +471,12 @@ whole list):
 - **No half-orcs.**
 - **The design starts the party:** its game record gives a new character's
   experience (the kit's default 40,001, shared among its classes and trained
-  at once) and money (200 platinum, and gems and jewelry); OpenGoldBox uses
-  the kit's defaults for now.
+  at once), money (200 platinum, and gems and jewelry) and one of eight
+  sets of equipment by class group; OpenGoldBox follows the record
+  (2026-11-14).
+- **Prices are platinum,** at one of twenty rates an event sets (a
+  hundredth to a hundred times the list price): training 1,000, a temple's
+  cures 20 to 2,000, a shop's items their value, identifying 20.
 - **Still to come:** its own level caps by race, THAC0 and saving throw
   tables, initiative ties, its critical hits on a natural 17 or more, its
   difficulty levels and its experience bonus for single classes.
@@ -1108,6 +1112,9 @@ tuned with the AI lab once the original rules play.
 | Bug | Direction |
 |---|---|
 | Creation never applies racial ability adjustments: a leftover variable makes every character human (`chargen.pas`, the ability roll) | Fixed (the user, 2026-11-11) |
+| *Unlimited Adventures:* a price rate above 19 reads past the kit's rate tables (`temple.c`, `rate_price`) | Taken as rate 19, a hundred times the price |
+| *Unlimited Adventures:* a wrong password says "wrong, try agin." (`evcmds.c`, the password event) | Spelt "Wrong, try again." |
+| *Unlimited Adventures:* an NPC refused by a full party still has its Hit Points set, on whichever member was current (`evcmds.c`, the NPC event) | A full party changes no one |
 | Age gives no young adult the +1 Constitution of AD&D's table, which every older age group keeps (`chargen.pas`, the ability roll). The other changes match AD&D's table added up | The Aging setting: As the original keeps it, AD&D adds it (the user, 2026-11-12) |
 | The thief skill table's Dexterity adjustments break their own order at Dexterity 10 (pick pockets −19, between −15 at 9 and −5 at 11) and 16 (open locks −5, between 0 at 15 and +10 at 17) (`gdconsts.pas`, `dexAdj`) | Corrected to −10 and +5 (the user, 2026-11-12) |
 | A thief's chance is kept in a byte, so a Dexterity penalty above it wraps around: a level 1 thief of Dexterity 9 moves silently 251% of the time (`classcal.pas`, the thief skills) | Stops at 0 |
