@@ -278,7 +278,7 @@ msgstr ""
 msgid "A divine scroll: a Cleric, Druid, Paladin or Ranger reads its spells. A level-13 Thief reads any scroll."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1634
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1648
 msgid "A drain takes more levels than the character has"
 msgstr ""
 
@@ -2078,7 +2078,7 @@ msgstr ""
 msgid "Cast spell"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2148 src/OpenGold.Rules.Original/src/rules_module.cpp:2161 src/OpenGoldBox/combat_view.cpp:102
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2162 src/OpenGold.Rules.Original/src/rules_module.cpp:2175 src/OpenGold.Rules.Original/src/rules_module.cpp:2187 src/OpenGoldBox/combat_view.cpp:102
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Cast {spell}"
 msgstr ""
@@ -3168,7 +3168,7 @@ msgstr ""
 msgid "Cure Serious Wounds"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:31347 src/OpenGold.Rules.Srd5/src/srd5.cpp:31356 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:188 src/OpenGoldBox/rest_dialog_impl.h:1074 src/OpenGoldBox/rest_dialog_impl.h:1134
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:31347 src/OpenGold.Rules.Srd5/src/srd5.cpp:31356 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:188 src/OpenGoldBox/rest_dialog_impl.h:1083 src/OpenGoldBox/rest_dialog_impl.h:1143
 msgid "Cure Wounds"
 msgstr ""
 
@@ -3180,7 +3180,7 @@ msgstr ""
 msgid "Cure Wounds (level 2 slot)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2140
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2154
 msgid "Cure disease"
 msgstr ""
 
@@ -5306,7 +5306,7 @@ msgstr ""
 msgid "HP"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:1092 src/OpenGoldBox/rest_dialog_impl.h:296 src/OpenGoldBox/rest_dialog_impl.h:501 src/OpenGoldBox/rest_dialog_impl.h:726
+#: src/OpenGoldBox/rest_dialog_impl.h:1101 src/OpenGoldBox/rest_dialog_impl.h:296 src/OpenGoldBox/rest_dialog_impl.h:510 src/OpenGoldBox/rest_dialog_impl.h:735
 msgid "HP restored:"
 msgstr ""
 
@@ -6140,7 +6140,7 @@ msgstr ""
 msgid "Keep Quick after a fight"
 msgstr ""
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:30507 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:585 src/OpenGoldBox/level_up_dialog.cpp:325 src/OpenGoldBox/rest_dialog_impl.h:1212 src/OpenGoldBox/rest_dialog_impl.h:19 src/OpenGoldBox/training_replacement_controls.h:37
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:30507 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/combat_demo.tscn:585 src/OpenGoldBox/level_up_dialog.cpp:325 src/OpenGoldBox/rest_dialog_impl.h:1221 src/OpenGoldBox/rest_dialog_impl.h:19 src/OpenGoldBox/training_replacement_controls.h:37
 msgid "Keep current"
 msgstr ""
 
@@ -6262,7 +6262,7 @@ msgstr ""
 msgid "Lay On Hands: cure Poisoned (5)"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2136
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2150
 msgid "Lay on hands"
 msgstr ""
 
@@ -6634,7 +6634,7 @@ msgstr ""
 msgid "Locked."
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:1189 src/OpenGoldBox/rest_dialog_impl.h:202 src/OpenGoldBox/rest_dialog_impl.h:48
+#: src/OpenGoldBox/rest_dialog_impl.h:1198 src/OpenGoldBox/rest_dialog_impl.h:202 src/OpenGoldBox/rest_dialog_impl.h:48
 msgid "Long Rest"
 msgstr ""
 
@@ -6832,7 +6832,7 @@ msgstr ""
 msgid "Magic Weapon"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:488
+#: src/OpenGoldBox/rest_dialog_impl.h:497
 msgid "Magic items are marked * for ten minutes."
 msgstr ""
 
@@ -7620,7 +7620,7 @@ msgstr ""
 msgid "No further level-up is offered for this character."
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:500
+#: src/OpenGoldBox/rest_dialog_impl.h:509
 msgid "No longer Poisoned."
 msgstr ""
 
@@ -7894,7 +7894,7 @@ msgstr ""
 msgid "Only a damaged simulacrum can be repaired"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1566
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1580
 msgid "Only a magic-user's training learns a spell"
 msgstr ""
 
@@ -8505,7 +8505,7 @@ msgstr ""
 msgid "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:265 src/OpenGoldBox/level_up_dialog.cpp:121 src/OpenGoldBox/rest_dialog_impl.h:1050 src/OpenGoldBox/spell_choice_controls.h:102 src/OpenGoldBox/spell_choice_controls.h:265 src/OpenGoldBox/spell_choice_controls.h:279
+#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:265 src/OpenGoldBox/level_up_dialog.cpp:121 src/OpenGoldBox/rest_dialog_impl.h:1059 src/OpenGoldBox/spell_choice_controls.h:102 src/OpenGoldBox/spell_choice_controls.h:265 src/OpenGoldBox/spell_choice_controls.h:279
 msgid "Prepared spells"
 msgstr ""
 
@@ -8815,7 +8815,7 @@ msgstr ""
 msgid "Raise Dead cannot bring back {name}, who has been dead too long or is dust."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2244
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2279
 msgid "Raise Dead cannot bring this member back"
 msgstr ""
 
@@ -10191,7 +10191,7 @@ msgstr ""
 msgid "Short Bow +1"
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:1188 src/OpenGoldBox/rest_dialog_impl.h:199 src/OpenGoldBox/rest_dialog_impl.h:47
+#: src/OpenGoldBox/rest_dialog_impl.h:1197 src/OpenGoldBox/rest_dialog_impl.h:199 src/OpenGoldBox/rest_dialog_impl.h:47
 msgid "Short Rest"
 msgstr ""
 
@@ -11238,7 +11238,7 @@ msgstr ""
 msgid "Temporary HP from {source}. Absorbs damage before ordinary HP; does not heal or stack."
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:493 src/OpenGoldBox/rest_dialog_impl.h:579
+#: src/OpenGoldBox/rest_dialog_impl.h:502 src/OpenGoldBox/rest_dialog_impl.h:588
 msgid "Temporary HP:"
 msgstr ""
 
@@ -11254,11 +11254,11 @@ msgstr ""
 msgid "That attempt did not succeed."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2179
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2205
 msgid "That cannot be done now"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2382
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2417
 msgid "That cannot be used now"
 msgstr ""
 
@@ -11270,7 +11270,7 @@ msgstr ""
 msgid "That potion works only in combat"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2224 src/OpenGold.Rules.Original/src/rules_module.cpp:2236 src/OpenGold.Rules.Original/src/rules_module.cpp:2416 src/OpenGold.Rules.Original/src/rules_module.cpp:2608
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2250 src/OpenGold.Rules.Original/src/rules_module.cpp:2263 src/OpenGold.Rules.Original/src/rules_module.cpp:2271 src/OpenGold.Rules.Original/src/rules_module.cpp:2451 src/OpenGold.Rules.Original/src/rules_module.cpp:2643
 msgid "That spell cannot be cast now"
 msgstr ""
 
@@ -11278,7 +11278,7 @@ msgstr ""
 msgid "That spell cannot be copied into the spellbook"
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1577
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1591
 msgid "That spell cannot be learned"
 msgstr ""
 
@@ -11424,7 +11424,7 @@ msgstr ""
 msgid "The cantrip reaches 30 feet farther per Warlock level."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1594
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1608
 msgid "The character has no levels in a class it trained in"
 msgstr ""
 
@@ -11463,7 +11463,7 @@ msgstr ""
 msgid "The creature that hit it this turn attacks it with Disadvantage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:2250
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:2285
 msgid "The dead cannot be healed"
 msgstr ""
 
@@ -11692,7 +11692,7 @@ msgstr ""
 msgid "The sword will not stay in {name}'s hand and burns for {damage} Force damage."
 msgstr ""
 
-#: src/OpenGold.Rules.Original/src/rules_module.cpp:1982
+#: src/OpenGold.Rules.Original/src/rules_module.cpp:1996
 msgid "The temple cannot help with that"
 msgstr ""
 
@@ -16495,7 +16495,7 @@ msgstr ""
 msgid "{name} will scribe the spell at the next rest."
 msgstr ""
 
-#: src/OpenGoldBox/rest_dialog_impl.h:525
+#: src/OpenGoldBox/rest_dialog_impl.h:534
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} writes a scroll of {spell}."
 msgstr ""
