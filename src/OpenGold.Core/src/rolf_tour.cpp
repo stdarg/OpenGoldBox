@@ -908,7 +908,7 @@ void RolfTourSession::roll_back_event()
     snapshot_.revision = revision;
     who_request_ = damage_request_ = 0;
     snapshot_.choosing_member = false;
-    victory_ = false;
+    snapshot_.game_won = victory_ = false;
     duel_ = mirror_duel_ = false;
     turncoats_.clear();
     who_slots_.clear();

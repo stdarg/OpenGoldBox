@@ -1494,6 +1494,8 @@ bool walk_census(GoldBoxGame game, bool route)
     bool declining = false;
     // The beat being played takes the first wand a treasure holds (RouteBeat::take_wand).
     bool taking_wand = false;
+    // Whether the closing words of a won game were shown (game_won).
+    bool game_won_shown = false;
     const auto play = [&](const std::string &where)
     {
         const auto attribute = [&]
@@ -1520,6 +1522,7 @@ bool walk_census(GoldBoxGame game, bool route)
                 continue;
             case TourPhase::awaiting_continue:
             {
+                game_won_shown = game_won_shown || s.game_won;
                 // OPENGOLD_CURSE_TRACE prints each square's dialogue, to plan a route by.
                 if (trace && shown[s.dialogue] == 0)
                 {
@@ -2015,7 +2018,8 @@ bool walk_census(GoldBoxGame game, bool route)
                                                         return id && party->member(id).vitals.dead;
                                                     });
         return needs.empty() && end.phase != TourPhase::defeated &&
-               end.dialogue.find("You have won.") != std::string::npos && end.game_won && all_alive;
+               end.dialogue.find("You have won.") != std::string::npos && game_won_shown &&
+               all_alive;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");

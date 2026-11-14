@@ -2608,16 +2608,17 @@ void RolfTourView::play_ending_film()
 
 void RolfTourView::end_ending_film()
 {
+    // Freed at the frame's end, as the film's own finished signal may call this.
     if (auto *film = get_node_or_null("EndingFilm"))
     {
-        remove_child(film);
         film->queue_free();
     }
 }
 
 bool RolfTourView::ending_film_playing() const
 {
-    return has_node("EndingFilm");
+    const auto *film = get_node_or_null("EndingFilm");
+    return film && !film->is_queued_for_deletion();
 }
 
 void RolfTourView::refresh()
