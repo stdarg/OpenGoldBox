@@ -658,6 +658,9 @@ class RolfTourSession
     // Tyranthraxus defeated: the game's won cell is written as the closing
     // words are acknowledged (PROGRAM 8).
     bool victory_{};
+    // Secret of the Silver Blades' soul cell (4CD9) as the event began: the
+    // event that frees Eldamar's soul (0 to 1) wins the game as it ends.
+    std::uint16_t soul_at_event_start_{};
 
     // A training hall's PROGRAM 0: the script waits on `request` while the
     // party buys sessions of experience and skill lessons from the list.

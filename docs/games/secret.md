@@ -186,6 +186,50 @@ map 49, so both maps are the Mines of Verdigris.
 New Verdigris's Temple of Gond heals the town's champions for nothing: its
 HealMenu takes no money, so every service costs 0.
 
+## Rooms joined by passages
+
+The ruins (map 32) and the mine's levels (map 48 for levels 1 to 8, map 49
+for the temple level and levels 9 and 10) are each one 16x16 map that serves
+many places. A wall of a given kind (7 or 8 in the ruins, 1 in the mines)
+stepped into from a square with an event is a passage: the step script looks
+the event up in the place's tables and moves the party to another square,
+and perhaps another place.
+
+- **The ruins**: cell 4C4B names the sector (1 to 10, each with its own
+  table of 64 events); bit 64 of a table's entry moves to another sector, and
+  4CFF turns the party's facing. 4CFD and 4CFE count the rooms on the
+  cluebook's large map. Sector 5 holds the town's gate, sector 8 the Black
+  Circle Headquarters' main entrance and the mine's entrance, sector 9 the Old
+  Red Dragon's lair. The Well's corners lead into sectors 6 and 10.
+- **The mines**: cell 4C69 is the level and 4C6B the level's half (each
+  level has two tables, one a half); an entry of 128 or more is rubble. A
+  hidden trapdoor on level 2 drops an unwary party to level 3 (search mode, a
+  dwarf or a thief notices it).
+
+## The ending
+
+The game has no ending of its own: script 99 tells of the soul gem's
+shattering (it sets cell 4CD9 to 1) and the game goes on; back in New
+Verdigris every building celebrates and the mayor thanks the party (ECL1:16
+at 9132h), setting the cell to 255. OpenGoldBox wins the game as the event
+that frees the soul ends ([DEVIATIONS.md](../DEVIATIONS.md)): its closing
+words end "You have won." and the session's `game_won` holds until the player
+goes on.
+
+## The route
+
+`opengold_secret_route` (`opengold_gold_box_games_tests --secret-route`) plays
+the cluebook's order of play with two paladins, a ranger, two clerics and a
+magic-user made under Secret's rules. It has not reached the end yet; where it
+stops and why is in [GAMES.md](../GAMES.md), phase 4 step 4. Two planning
+aids help extend it: `OPENGOLD_SECRET_LINKS` prints the ruins' passages, and
+`OPENGOLD_SECRET_FIND=X,Y[,MAP]` (or `*`, or `map:N`, with
+`OPENGOLD_SECRET_KEYS` and `OPENGOLD_SECRET_GOAL` naming cells, and
+`OPENGOLD_SECRET_SEARCHING`) searches from where the route ends for the
+steps that reach a square or set a cell, playing each step as the game does
+(offers declined, every fight won at once), and prints them for the route's
+`walk_passages`.
+
 ## Sound effects
 
 The PC speaker's driver is *Curse*'s, found the same way, with 13 songs. Its

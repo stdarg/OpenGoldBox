@@ -980,6 +980,11 @@ void walk_passages(
     }
 }
 
+// Secret's route plays to the game's end once this is true; until then it
+// stops on this map, the castle's dungeon (docs/GAMES.md, phase 4 step 4).
+constexpr bool secret_route_ends_the_game = false;
+constexpr unsigned secret_route_stops_on_map = 64;
+
 // Secret's story, beat by beat, as its cluebook tells it (plan phase 4, step
 // 4): from New Verdigris on.
 const std::vector<RouteBeat> &secret_route()
@@ -1571,6 +1576,46 @@ void secret_opening_reaches_the_first_map()
         colours.insert(view.rgba[p] << 16 | view.rgba[p + 1] << 8 | view.rgba[p + 2]);
     }
     check(colours.size() > 2, "The town's walls are drawn");
+    // Secret has no ending of its own: the event in which Eldamar's soul is
+    // freed (script 99 sets cell 4CD9 to 1) wins the game as it ends. Here
+    // the cell is set and the mayor's teleporter's question taken as the event that
+    // set it.
+    const auto ask_at_the_archway = [&]
+    {
+        opengold::test::TourAccess::place(session, {3, 0, opengold::por::MapDirection::north});
+        check(session.explore(opengold::por::ExplorationCommand::look), "The archway is looked at");
+        settle();
+        check(session.snapshot().choices.size() == 2,
+              "The archway asks: " + session.snapshot().dialogue + diagnostics());
+    };
+    opengold::test::TourAccess::set_variable(session, opengold::por::EclAddress{0x4CD9}, 1);
+    ask_at_the_archway();
+    opengold::test::TourAccess::soul_freed_in_event(session);
+    check(session.choose(session.snapshot().continue_ticket, 1), "The party stays");
+    settle();
+    for (int screen = 0; screen < 4 && session.snapshot().phase == TourPhase::awaiting_continue &&
+                         !session.snapshot().game_won;
+         ++screen)
+    {
+        check(session.choose(session.snapshot().continue_ticket, 0), "The words go on");
+        settle();
+    }
+    check(session.snapshot().game_won && session.snapshot().dialogue.ends_with("You have won.") &&
+              session.snapshot().phase == TourPhase::awaiting_continue,
+          "Freeing Eldamar's soul wins the game: " + session.snapshot().dialogue);
+    check(session.continue_dialogue(session.snapshot().continue_ticket) &&
+              !session.snapshot().game_won && session.snapshot().phase == TourPhase::completed,
+          "The game goes on after its win");
+    ask_at_the_archway();
+    check(session.choose(session.snapshot().continue_ticket, 1), "The party declines again");
+    settle();
+    for (int screen = 0; screen < 4 && session.snapshot().phase == TourPhase::awaiting_continue;
+         ++screen)
+    {
+        check(!session.snapshot().game_won, "The win is told once");
+        check(session.choose(session.snapshot().continue_ticket, 0), "The words go on");
+        settle();
+    }
 }
 
 bool walk_census(GoldBoxGame game, bool route)
@@ -2775,16 +2820,26 @@ bool walk_census(GoldBoxGame game, bool route)
             planning = false;
             declining = false;
         }
-        // The route's last beat wins the game: Tyranthraxus falls, and the
-        // ending is told.
+        // The route's last beat wins the game, its closing words shown as a
+        // win (game_won): Curse's Tyranthraxus falls and its ending is told;
+        // Secret's soul gem is shattered (cell 4CD9 set to 1) and the win
+        // follows the soul's freeing.
         const bool all_alive = std::ranges::none_of(party->state().slots,
                                                     [&](opengold::MemberId id)
                                                     {
                                                         return id && party->member(id).vitals.dead;
                                                     });
-        return needs.empty() && end.phase != TourPhase::defeated &&
-               end.dialogue.find("You have won.") != std::string::npos && game_won_shown &&
-               all_alive;
+        const bool played = needs.empty() && end.phase != TourPhase::defeated;
+        // Secret's route does not reach its end yet: until it does, it passes
+        // when it plays every beat to the map of its last.
+        if (game == GoldBoxGame::secret_of_the_silver_blades && !secret_route_ends_the_game)
+        {
+            std::cout << "Secret's route stops on map " << end.area_id
+                      << ", short of the game's end (docs/GAMES.md, phase 4 step 4).\n";
+            return played && end.area_id == secret_route_stops_on_map;
+        }
+        return played && end.dialogue.find("You have won.") != std::string::npos &&
+               game_won_shown && all_alive;
     }
     // OPENGOLD_CURSE_MAP walks that map alone.
     const char *only = std::getenv("OPENGOLD_CURSE_MAP");

@@ -252,6 +252,10 @@ constexpr unsigned city_hall_script = 8;
 // The Pyramid's poisoned rivers open once its sorcerer is beaten.
 constexpr EclAddress pyramid_valley_healed{0x4AA2};
 constexpr EclAddress cadorna_box{0x4AC8}, cadorna_payment{0x4AB8};
+// Secret of the Silver Blades' cell for Eldamar's soul: script 99 sets it to 1
+// as the gem holding the soul shatters; New Verdigris's mayor sets it to 255
+// once he has thanked the party (a cell of Secret's own, not translated).
+constexpr EclAddress secret_soul_freed{0x4CD9};
 
 // The minute of the day on the campaign clock, which starts at noon.
 std::uint64_t clock_minute_of_day(std::uint64_t minutes)
@@ -859,6 +863,7 @@ bool RolfTourSession::move_party(ExplorationCommand command)
 
 void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_t> entry)
 {
+    soul_at_event_start_ = machine_.variable(secret_soul_freed);
     // Loot left unclaimed until the party had room is named with this event.
     snapshot_.loot_taken.clear();
     snapshot_.gear_changes.clear();
@@ -2027,6 +2032,18 @@ void RolfTourSession::finish_event()
         }
         return;
     }
+    // Secret has no ending of its own: the scripts tell of the soul's
+    // freeing and the game goes on. The event that frees Eldamar's soul wins
+    // the game as it ends (docs/DEVIATIONS.md), and the win is shown until the
+    // player goes on.
+    if (game() == GoldBoxGame::secret_of_the_silver_blades && soul_at_event_start_ == 0 &&
+        machine_.variable(secret_soul_freed) == 1)
+    {
+        soul_at_event_start_ = 1;
+        snapshot_.game_won = true;
+        notice("Eldamar's soul is free, and the Dreadlord is no more. You have won.");
+        return;
+    }
     snapshot_.phase = TourPhase::completed;
     snapshot_.choices.clear();
     snapshot_.continue_ticket = 0;
@@ -2715,6 +2732,8 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
     else if (message_only_)
     {
         message_only_ = false;
+        // Secret's win is shown until the player goes on.
+        snapshot_.game_won = false;
         snapshot_.phase = TourPhase::completed;
     }
     else

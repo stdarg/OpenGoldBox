@@ -372,6 +372,49 @@ The steps of *Curse*'s phase 3, with *Secret*'s differences
    the mayor's teleporter to the Well of Knowledge, kills the Ancient Red
    Dragon, returns, survives Marcus's welcome and his pets, is healed at the
    Temple of Gond, and leaves town by its east gate (15,8) into the ruins.
+   *Further (2026-11-14):* `opengold_secret_route` trains first at the
+   town's hall on the experience a party brought from *Curse* carries (a
+   stand-in, given four times since an award stops short of the level after
+   next: paladins, ranger and clerics reach level 12, the magic-user 13), as
+   *Curse*'s route stands in for a party from *Pool of Radiance*. It walks the
+   ruins' passages ([secret.md](games/secret.md), Rooms joined by passages)
+   west through sectors 5 and 7 to the Old Red Dragon's lair (location 13,
+   sector 9), kills it for the Amulet of Eldamar (cell 4C53) and takes its
+   gateway to the Well. Rested at the Well, it walks sectors 6 and 8 to the
+   Black Circle Headquarters (map 34), beats the captain at its door, the
+   commander and his troops, takes the key from his desk, rests at the Well
+   by the office's gateway and comes back, finds the secret door by a search,
+   bashes the locked door beyond, and beats the hatchlings of the pool and
+   the Inner Sanctum (cell 4C4D at 255), whose gateway takes it to the Well.
+   Back through the ruins to the mine's entrance (location 12, unguarded now),
+   it beats the minotaurs at the Temple of Tyr's doors, meets Derf Strongarm
+   (the Ring of Tyr, cell 4C85), takes the wheel lift to each of levels 1 to
+   8 for the eight pieces of Oswulf's staff (cell 4C84 at 255; level 2's
+   trapdoor noticed in search mode, its trapped chest opened; Vala joins on
+   level 6), has Derf mend the staff (cell 4C86), takes level 8's
+   malfunctioning teleporter to level 9 and its umber hulks, takes down the
+   force wall across the lift's shaft (cell 4C70), rests in the Temple of
+   Tyr (the lift's rests are interrupted), and walks level 10 to the hole the
+   miners broke into the Dungeon (map 64). Every walk inside a map is played
+   step by step as the planning aid `OPENGOLD_SECRET_FIND` found it (each
+   arrival's event runs; the party answers NO where only passing by); the
+   spirit's riddles are answered as the cluebook answers them. *Where it
+   stops:* on the Dungeon's level 10 (map 64, 0,15). Level 10's patrols of
+   cockatrices, medusae and basilisks stone members with every dice the route
+   tries; its walk lets the test win a fight its player loses (a stand-in,
+   three fights in the last run), and the party reaches the Dungeon with one
+   member dead and three stoned, which the route's player cannot cure there
+   (the Temple of Gond's Stone to Flesh is the way). The planning aid then
+   finds no way to the Brass Key (cell 4CDE) from the Dungeon's entrance. The
+   next steps: return by the Dungeon's teleporter (location 7) to the Well and
+   the Temple of Gond, then the three keys (cells 4CDE, 4CDF, 4CE0), the
+   crevasses, the Frost Giant Village, the castle and the soul gem. Until it
+   reaches the end the check passes when the route plays every beat to the
+   Dungeon (`secret_route_stops_on_map`); then it checks the win as *Curse*'s
+   does. The win itself is in place: the event that frees Eldamar's soul
+   (cell 4CD9 set to 1 by script 99) ends with "Eldamar's soul is free, and
+   the Dreadlord is no more. You have won." as a win (`game_won`)
+   ([secret.md](games/secret.md), The ending).
 
 ### 5 to 7. The other campaigns
 

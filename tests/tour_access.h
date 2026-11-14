@@ -21,6 +21,14 @@ struct TourAccess
         town.machine_.bind_variable(address, value);
     }
 
+    // Takes the running event as the one that freed Secret's soul (cell 4CD9
+    // set to 1 by script 99's SAVE, which a test cannot reach): the cell is
+    // set while the party is idle, and this forgets it was set before.
+    static void soul_freed_in_event(por::RolfTourSession &town)
+    {
+        town.soul_at_event_start_ = 0;
+    }
+
     // Sets a script string, such as the training hall's class word.
     static void set_string(por::RolfTourSession &town, por::EclAddress address,
                            std::string_view value)

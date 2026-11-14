@@ -453,6 +453,15 @@ in the game: answering YES at a hall lists its services in the dialogue
   or click ends. Without a film the closing words, ending "You have won.",
   stand alone. The films are to be made with AI video and music, the heroes
   shown in shadow or from behind ([ENDING-FILMS.md](ENDING-FILMS.md)).
+- **Secret of the Silver Blades has a win** (2026-11-14, the main session's
+  design). The original has no ending of its own: script 99 tells of the soul
+  gem's shattering and Eldamar's and Oswulf's spirits rising (it sets cell
+  4CD9 to 1), and the game goes on, New Verdigris celebrating until the mayor
+  thanks the party. OpenGoldBox wins the game as the event that frees the
+  soul ends: "Eldamar's soul is free, and the Dreadlord is no more. You have
+  won." is shown (the win, with its film when one is there) until the player
+  goes on, and the game then goes on as the original's does
+  ([secret.md](games/secret.md), The ending).
 - **Startup has menus, and every title takes a click** (2026-11-14, the
   user's design). The originals start with their title pictures and go
   straight to their party creation menu; *Pool of Radiance* and *Curse* take
