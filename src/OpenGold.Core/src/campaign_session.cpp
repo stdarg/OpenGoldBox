@@ -344,6 +344,30 @@ std::vector<std::vector<std::uint8_t>> treasures_stores(std::span<const std::uin
 // picture (OVER 51 to 57) in the colors of each record that only sets colors
 // (1 to 4), which the cell 42h picks, and the party's arrow on it (the
 // automap's symbols 16 to 19, north first).
+// Pools of Darkness's clerics in Manshoon's tower ask how many times the
+// party has entered Zhentil Keep (ECL1:49) and add 2 to the answer's place
+// (0 for "1") before comparing it with the count, so no true answer passes:
+// the script adds 1, as "1", "2" and "MANY" (3) mean (ORIGINAL-RULES.md, Bugs).
+void fix_darkness_scripts(por::PhlanResources &town)
+{
+    constexpr unsigned clerics_script = 49;
+    constexpr std::uint16_t answer_to_count = 0x816A;
+    const auto found = town.programs.find(clerics_script);
+    if (found == town.programs.end())
+    {
+        return;
+    }
+    const auto add = found->second->instruction(answer_to_count);
+    constexpr std::uint16_t places_over = 2;
+    if (por::ecl_opcode(add.opcode, GoldBoxGame::pools_of_darkness).name != "ADD" ||
+        add.operands.at(0).value != places_over)
+    {
+        return;
+    }
+    found->second = std::make_shared<const por::EclProgram>(
+        found->second->with_operand_overrides({{answer_to_count, 0, 1}}));
+}
+
 void add_treasures_overland(const por::detail::AreaFiles &files, por::PhlanResources &root)
 {
     std::map<unsigned, VgaPicture> pictures;
@@ -528,6 +552,10 @@ por::RolfTourSession load_later_campaign(const std::filesystem::path &folder, Go
     {
         root->programs.emplace(id.record, program);
         root->script_banks.emplace(id.record, loads.at(id.record).disk);
+    }
+    if (game == GoldBoxGame::pools_of_darkness)
+    {
+        fix_darkness_scripts(*root);
     }
     for (const auto &[script, load] : loads)
     {
