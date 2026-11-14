@@ -165,6 +165,17 @@ class CharacterCreationView : public godot::Control
     // Offers a choice of hands when the item has one; false when it has none.
     bool open_equipment_choice(opengold::MemberId member, std::uint64_t item);
     void setup_party();
+    // How the startup menu began the game (settings::chosen_game_start), read
+    // once so a later return here makes a new party; for the checks,
+    // --default-party chooses the default party and --load-save=PATH a save.
+    void begin_chosen_start();
+    // Play with Default Party: the game's saved game A, then Begin
+    // Adventuring; a party that cannot be read leaves the creation screen
+    // with the reason.
+    void play_with_default_party();
+    // Continue or Load Game: the save, then exploring where it was made.
+    void load_saved_start();
+    std::filesystem::path saved_start_;
 
     // Reincarnate from camp (LEVELS-5): the creation pages for a dead
     // member's new body, then back to the town.

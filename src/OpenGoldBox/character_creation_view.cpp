@@ -290,6 +290,7 @@ void CharacterCreationView::_ready()
         creator_ = std::make_unique<CharacterCreator>(campaign_->character_rules(), seed);
         recommend_portrait();
         refresh();
+        begin_chosen_start();
     }
     catch (const std::exception &e)
     {

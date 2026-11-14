@@ -23,6 +23,7 @@
 #include "vital_fixtures.h"
 #include "opengold/campaign_save.h"
 #include "opengold/combat_body_catalog.h"
+#include "opengold/default_party.h"
 #include "opengold/original.h"
 #include "opengold/srd5.h"
 #include "godot_path.h"
@@ -1763,6 +1764,71 @@ void CharacterCreationView::update_party_navigation()
     button->set_tooltip_text(i18n::text(
         allowed ? N_("Inspect your party and equipment.")
                 : N_("Finish combat, dialogue or shopping before returning to the party.")));
+}
+
+void CharacterCreationView::begin_chosen_start()
+{
+    auto start = settings::chosen_game_start();
+    settings::choose_game_start({});
+    // The checks' flags: --default-party, or --load-save=PATH for Continue.
+    for (const auto &argument : OS::get_singleton()->get_cmdline_user_args())
+    {
+        if (argument == "--default-party")
+        {
+            start.kind = settings::GameStart::Kind::default_party;
+        }
+        else if (argument.begins_with("--load-save="))
+        {
+            start = {settings::GameStart::Kind::saved_game,
+                     presentation::path_from_godot(ProjectSettings::get_singleton()->globalize_path(
+                         argument.trim_prefix("--load-save=")))};
+        }
+    }
+    switch (start.kind)
+    {
+    case settings::GameStart::Kind::new_party:
+        return;
+    case settings::GameStart::Kind::default_party:
+        presentation::guarded(this, &CharacterCreationView::play_with_default_party)
+            .call_deferred();
+        return;
+    case settings::GameStart::Kind::saved_game:
+        saved_start_ = std::move(start.save);
+        presentation::guarded(this, &CharacterCreationView::load_saved_start).call_deferred();
+        return;
+    }
+}
+
+void CharacterCreationView::play_with_default_party()
+{
+    if (game_rules_of(*campaign_).set != GameRules::Set::original)
+    {
+        error_ = i18n::text(N_("The default party plays only under the original rules."));
+        required_node<Label>(*this, "Status").set_text(error_);
+        return;
+    }
+    const auto files = game_rules_files();
+    try
+    {
+        add_default_party(*campaign_, files.game, files.original_game);
+    }
+    catch (const std::exception &failure)
+    {
+        error_ = i18n::format(N_("The game's saved game A could not be read: {problem}"),
+                              {{"problem", String::utf8(failure.what())}});
+        required_node<Label>(*this, "Status").set_text(error_);
+        return;
+    }
+    party_action(PartyAction::explore);
+}
+
+void CharacterCreationView::load_saved_start()
+{
+    load_campaign(saved_start_);
+    if (get_node_or_null("CampaignTown"))
+    {
+        party_action(PartyAction::explore);
+    }
 }
 
 // The expedition check's party under the original rules: six human fighters

@@ -632,6 +632,21 @@ if(OPENGOLD_BUILD_TESTS)
     # Each game's save and load screens list its own saves, and a save of
     # another game starts that game. Skipped without Curse's files.
     opengold_settings_check(saves_by_game saves_by_game_tests "Saves by game passed")
+    # Play with Default Party: each game begun with its saved game A explores
+    # with six members and plays its opening; Curse's game is then saved and
+    # continued from the save (--load-save, as Continue starts it). Skipped
+    # without a game's files.
+    opengold_settings_check(default_party_pool default_party_tests
+        "Default party passed: POOLRAD began"
+        "-DARGS=--game=POOLRAD\;--rules=original\;--default-party\;--opening=PHLAN")
+    opengold_settings_check(default_party_curse default_party_tests
+        "Default party passed: CURSE began"
+        "-DARGS=--game=CURSE\;--rules=original\;--default-party\;--opening=AWAKEN\;--save-as=Tilverton"
+        "-DRESTART_ARGS=--game=CURSE\;--rules=original\;--load-save=user://saves/CURSE/54696c766572746f6e.ogs"
+        "-DRESTART_EXPECTED=Default party passed: CURSE continued")
+    opengold_settings_check(default_party_secret default_party_tests
+        "Default party passed: SECRET began"
+        "-DARGS=--game=SECRET\;--rules=original\;--default-party\;--opening=GLACIER")
     # Curse's party screen brings characters from a Pool of Radiance save;
     # Pool of Radiance's does not offer it. Skipped without Curse's files.
     foreach(case curse pool)

@@ -39,6 +39,15 @@ The original let a party travel on: *Curse* imports a *Pool of Radiance*
 party, *Secret* a *Curse* party and *Pools of Darkness* a *Secret* party.
 *Treasures* imports a *Gateway* party. OpenGoldBox follows the original.
 
+Each game also shipped a pre-rolled party as its saved game A (`SAVE/SAVGAMA.DAT`
+and the `CHRDATA1` to `6` files it names), for beginning to play at once. The
+startup menu's Play with Default Party reads it from the player's game folder
+(`opengold::add_default_party`): each character's record, its items (*Pool of
+Radiance*'s `.ITM`; *Curse*'s and *Secret*'s saved game A have none) and its
+money, then begins the game's opening as Begin Adventuring does. Their
+effects files are not read. It plays under the original rules only: no
+conversion of an original character to the SRD rules exists yet.
+
 ## What the games share
 
 The reconstructed DOS sources of each game (kept outside this repository) show
