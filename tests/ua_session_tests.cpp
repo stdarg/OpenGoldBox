@@ -236,7 +236,8 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
     hall.event(2, {38, 0, 0, 0, low(key), high(key), 0, 0, 0});
     // 3: a yes/no question; yes runs 4, a treasure of 50 platinum and 3 gems.
     hall.event(3, {36, 0, 0, 0, low(chest), high(chest), 0, 0, 4, 0}, {{5, 2}});
-    hall.event(4, {3, 0, 0, 0, 50, 0, 0, 0, 3, 0});
+    // Its items: ITEM.DAT's 17h, identified, and a random scroll.
+    hall.event(4, {3, 0, 0, 0, 50, 0, 0, 0x80, 3, 0, 0, 0, 0x17, 0xFF});
     // 5: once only, three kobolds (MONST 1).
     hall.event(5, {1, 1, 0, 0, low(kobolds), high(kobolds), 0, 100, 3, 1}, {{8, 2}});
     // 6: a menu of two buttons: DRINK runs 7 (500 experience), LEAVE nothing.
@@ -589,6 +590,27 @@ void the_design_loads_and_plays(const std::filesystem::path &kit)
     player.play();
     check(party->state().wealth[4] == before[4] + 50 && party->state().wealth[5] == before[5] + 3,
           "The chest's 50 platinum and 3 gems go to the party");
+    const auto &first = party->member(party->state().slots[0]).character.inventory().items();
+    check(first.size() == 2, "The chest's two items go to the first member with room");
+    // A trap's saving throw that halves the damage (defence 1).
+    opengold::rules::HazardAttack dart;
+    dart.automatic = true;
+    dart.dice = 1;
+    dart.sides = 1;
+    dart.damage_bonus = 9;
+    dart.original_save = 0;
+    dart.original_save_modifier = 15;
+    dart.save_dc = 1;
+    dart.half_on_save = true;
+    bool halved = false;
+    for (int n = 0; n < 20; ++n)
+    {
+        (void)party->rest();
+        const auto hit = party->hazard_attack(party->state().slots[1], dart);
+        check(hit && hit->damage == (hit->saved ? 5 : 10), "A save halves a trap's damage");
+        halved = halved || hit->saved;
+    }
+    check(halved, "Some saves are made");
     // The kobolds.
     const auto experience = party->member(party->state().slots[0]).experience;
     session.place(5, 8, 2, MapDirection::east);

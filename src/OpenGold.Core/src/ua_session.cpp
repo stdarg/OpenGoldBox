@@ -1,6 +1,7 @@
 #include "opengold/ua_session.h"
 
 #include "archive_io.h"
+#include "opengold/original_spells.h"
 #include "opengold/path_text.h"
 
 #include <algorithm>
@@ -298,7 +299,7 @@ UaSession UaSession::start(DesignFiles files)
 }
 
 UaSession::UaSession(DesignFiles files, GameSettings game)
-    : files_(std::move(files)), game_(std::move(game))
+    : files_(std::move(files)), game_(std::move(game)), items_(load_design_items(files_))
 {
     load_area(game_.start_area);
     // The kit's entry points are 1-based in the game record.
@@ -668,13 +669,14 @@ void UaSession::damage_member(const EventRecord &event, MemberId member)
     attack.sides = event[10];
     attack.damage_bonus = event[11];
     const unsigned defence = (event[7] & 0x30) >> 4;
-    // A saving throw that spares the member the damage (defence 2); one that
-    // halves it (1) is taken as one that spares it for now (docs/games/ua.md).
+    // A saving throw that halves the damage (defence 1) or spares the member
+    // it (2); defence 0 rolls none, as a save changes nothing.
     if (defence == 1 || defence == 2)
     {
         attack.original_save = (event[13] & 0x70) >> 4;
         attack.original_save_modifier = event[13] & 0xF;
         attack.save_dc = 1;
+        attack.half_on_save = defence == 1;
     }
     else if (defence == 3)
     {
@@ -700,12 +702,60 @@ void UaSession::hand_over_treasure()
             party_->add_coins(coin, count);
         }
     }
-    if (!treasure_items_.empty())
+    for (const auto number : treasure_items_)
     {
-        diagnostics_.push_back("Treasure items are not handed over yet");
+        auto item =
+            number == 0xFF ? random_scroll() : design_item(items_, number, treasure_identified_);
+        if (!item)
+        {
+            continue;
+        }
+        // The first member with room takes it; with no room it stays behind.
+        for (const auto id : active_members())
+        {
+            try
+            {
+                party_->take_item(id, *item);
+                break;
+            }
+            catch (const std::runtime_error &)
+            {
+                // Too heavy for this member: the next one tries.
+            }
+        }
     }
     treasure_wealth_ = {};
     treasure_items_.clear();
+}
+
+// Item FFh of a treasure: a scroll of three magic-user spells picked at
+// random (shop.c, scroll_make).
+std::optional<por::Equipment> UaSession::random_scroll()
+{
+    constexpr std::uint8_t scroll_type = 0x27;
+    if (scroll_type >= items_.types.size())
+    {
+        return std::nullopt;
+    }
+    por::Equipment scroll;
+    auto &stored = scroll.stored;
+    stored.type = scroll_type;
+    stored.name_components = {0x66, 0x27, 0x28};
+    stored.magic_bonus = 1;
+    stored.weight = 1;
+    stored.value = 3000;
+    stored.hidden_name_words = 4;
+    for (auto &number : stored.effect_codes)
+    {
+        do
+        {
+            number = static_cast<std::uint8_t>(roll(126));
+        } while (!original::spell(number) ||
+                 original::spell(number)->caster_class != original::SpellClass::magic_user);
+    }
+    scroll.base = items_.types[scroll_type];
+    scroll.bonuses = por::equipment_bonuses(stored, scroll.base);
+    return scroll;
 }
 
 // Kinds 1 and 33: the event's groups of monsters (all of them, or one picked

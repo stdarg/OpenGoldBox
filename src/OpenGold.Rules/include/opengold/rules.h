@@ -449,8 +449,9 @@ struct HazardAttack
     // modifier, and for an attack the figure it hits with, 60 less a THAC0;
     // -1 when the script gave none.
     int original_save{-1}, original_save_modifier{}, original_attack{-1};
-    // A made saving throw halves the damage instead of avoiding it (Pools of
-    // Darkness's scripts, its EclDamage).
+    // A made saving throw halves the damage, rounded down, instead of
+    // avoiding it (Pools of Darkness's scripts, its EclDamage; an
+    // Unlimited Adventures trap's defence 1).
     bool half_on_save{};
 };
 

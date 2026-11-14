@@ -299,6 +299,7 @@ class UaSession final : public ExplorationSession
     void show_texts(const EventRecord &event, unsigned from);
     void treasure_event(const EventRecord &event, bool now);
     void hand_over_treasure();
+    [[nodiscard]] std::optional<por::Equipment> random_scroll();
     void damage_event(const EventRecord &event);
     void damage_round(const EventRecord &event);
     void damage_member(const EventRecord &event, MemberId member);
@@ -330,6 +331,7 @@ class UaSession final : public ExplorationSession
 
     DesignFiles files_;
     GameSettings game_;
+    DesignItems items_;
     DesignArea area_;
     ViewArt view_art_;
     std::shared_ptr<CampaignParty> party_;
@@ -368,6 +370,7 @@ class UaSession final : public ExplorationSession
     // ITEM.DAT numbers.
     std::array<unsigned, 7> treasure_wealth_{};
     std::vector<unsigned> treasure_items_;
+    bool treasure_identified_{};
     std::vector<std::string> tavern_tales_;
 };
 

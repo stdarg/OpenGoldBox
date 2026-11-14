@@ -495,6 +495,8 @@ void UaSession::treasure_event(const EventRecord &event, bool now)
     treasure_wealth_[gems] = word_at(event, 8);
     treasure_wealth_[jewelry] = word_at(event, 10);
     treasure_items_.clear();
+    // Bit 7 of byte 7: the items come identified.
+    treasure_identified_ = (event[7] & 0x80) != 0;
     for (std::size_t at = 12; at < 20; ++at)
     {
         if (event[at] != 0)
