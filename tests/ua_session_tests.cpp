@@ -263,6 +263,13 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
                {{12, 12}});
     // 16: one group of two, goblins (MONST 2) or orcs (3), picked at random.
     hall.event(16, {33, 0, 0, 0, 0, 0, 0, 100, 2, 2, 2, 3}, {{13, 8}});
+    // 17: two kobolds out of doors (byte 8's bit 20h), on WILDCOM's field.
+    hall.event(17, {1, 0, 0, 0, 0, 0, 0, 100, 0x22, 1}, {{6, 13}});
+    // 18: two kobolds against the party and, as group 4, a goblin on its
+    // side (byte 0Ah's bit 20h); two squares away (byte 0Eh's bits 60h).
+    hall.event(18, {1, 0, 0, 0, 0, 0, 0, 100, 2, 1, 0x20, 0, 0, 0, 0x41, 2}, {{3, 14}});
+    // A wall a square west of it, which cuts the distance short that way.
+    hall.wall(2, 14, MapDirection::west, 0xE1);
     write(folder / "GEO005.DAT", hall.finish());
 
     AreaBuilder cellar(*blank);
@@ -772,6 +779,112 @@ void the_design_loads_and_plays(const std::filesystem::path &kit)
 }
 
 // The town's services and tests, each played as the test design sets them.
+// Pixels of an image that are not see-through.
+std::size_t opaque(const opengold::Image &image)
+{
+    std::size_t count = 0;
+    for (std::size_t at = 3; at < image.rgba.size(); at += 4)
+    {
+        count += image.rgba[at] != 0 ? 1 : 0;
+    }
+    return count;
+}
+
+std::size_t terrain_count(const opengold::CampaignEncounter &encounter,
+                          opengold::rules::Terrain terrain)
+{
+    return static_cast<std::size_t>(std::ranges::count(encounter.field.geometry.terrain, terrain));
+}
+
+// The fight the hall's square (x, y) starts, the party facing `facing`.
+opengold::CampaignEncounter hall_fight(const ua::DesignFiles &files,
+                                       const opengold::original::Content &content, unsigned x,
+                                       unsigned y, MapDirection facing)
+{
+    auto session = ua::UaSession::start(files);
+    auto party = new_party(content);
+    session.campaign_party(party);
+    Player{session, party, content}.play();
+    session.place(5, x, y, facing);
+    session.look();
+    // Return to the event's words.
+    while (session.snapshot().phase == TourPhase::awaiting_continue)
+    {
+        check(session.choose(session.snapshot().continue_ticket, 0), "The words are read");
+    }
+    check(session.pending_encounter().has_value(),
+          "A fight starts at " + std::to_string(x) + "," + std::to_string(y));
+    return *session.pending_encounter();
+}
+
+void the_kits_fights_look_as_the_kit_draws_them(const std::filesystem::path &kit)
+{
+    const auto design = build_test_design(kit, temporary_design("opengold_ua_fights.dsn"));
+    const ua::DesignFiles files(kit, design);
+    const auto content = ua::load_design_content(files);
+
+    // The kobolds in the hall: its walls as DUNGCOM's tiles, their CPIC icons.
+    const auto kobolds = hall_fight(files, content, 8, 2, MapDirection::east);
+    check(kobolds.field.tiles.size() == 50 * 25 && kobolds.terrain_art.size() == 25,
+          "A dungeon fight's field is the kit's 50 by 25 squares of DUNGCOM's 25 tiles");
+    check(std::ranges::all_of(kobolds.terrain_art,
+                              [](const opengold::Image &tile)
+                              {
+                                  return tile.width == 24 && tile.height == 24 && colours(tile) > 1;
+                              }),
+          "Each tile is a 24-pixel square picture");
+    check(terrain_count(kobolds, opengold::rules::Terrain::obstacle) > 0 &&
+              terrain_count(kobolds, opengold::rules::Terrain::open) > 0,
+          "The walls stand on the field");
+    // The party's own square, one of the field's open middle squares.
+    check(kobolds.field.geometry.at({23, 12}) == opengold::rules::Terrain::open,
+          "The party's square is open floor");
+    check(kobolds.art.size() == 3 && kobolds.enemies.size() == 3, "Each kobold has its icon");
+    for (const auto &art : kobolds.art)
+    {
+        check(
+            art.image.width == 24 && art.image.height == 24 && opaque(art.image) > 50 &&
+                opaque(art.image) < 24 * 24 && art.action && opaque(*art.action) > 50,
+            "A kobold's icon is a square of the kit's, see-through round it, with its action pose");
+    }
+    // Out of doors: WILDCOM's open ground, trees and stones.
+    const auto outdoors = hall_fight(files, content, 6, 13, MapDirection::north);
+    check(outdoors.terrain_art.size() == 38 && outdoors.field.tiles.size() == 50 * 25,
+          "An outdoor fight's field is WILDCOM's 38 tiles");
+    check(std::ranges::count(outdoors.field.tiles, 37) > 800 &&
+              terrain_count(outdoors, opengold::rules::Terrain::obstacle) > 0 &&
+              terrain_count(outdoors, opengold::rules::Terrain::difficult) > 0,
+          "Most of it is open ground, with trees and brush");
+    check(outdoors.enemies.size() == 2, "Two kobolds meet the party outside");
+
+    // Group 4 fights for the party; the distance is the event's, unless a
+    // wall ahead cuts it short.
+    const auto allied = hall_fight(files, content, 3, 14, MapDirection::north);
+    check(allied.enemies.size() == 2 && allied.allies.size() == 1 &&
+              allied.allies.front().definition == ua::monster_key(2) &&
+              allied.allies.front().side == opengold::rules::Side::party &&
+              opengold::is_ally(allied.allies.front().id),
+          "The goblin of group 4 stands with the party");
+    check(allied.art.size() == 3, "The ally has its icon too");
+    check(allied.distance == 2, "The monsters stand the event's two squares away");
+    check(hall_fight(files, content, 3, 14, MapDirection::west).distance == 1,
+          "A wall a square ahead brings them within one");
+
+    // Every monster of the kit has its icon, a square or more.
+    const auto colors =
+        ua::dungeon_field(files, *ua::decode_area(*files.data("GEO", 5)), 2, 2).palette;
+    for (const auto &[key, monster] : content.bestiary)
+    {
+        const auto number = static_cast<unsigned>(std::stoul(key.substr(key.rfind(':') + 1)));
+        const auto icon = ua::combat_icon(files, number, colors);
+        check(icon && icon->ready.width >= 24 && icon->ready.height >= 24 &&
+                  opaque(icon->ready) > 0 && opaque(icon->action) > 0,
+              "Monster " + std::to_string(number) + " has its combat icon");
+        check(monster.large == (icon->footprint.width * icon->footprint.height > 1),
+              "Monster " + std::to_string(number) + "'s size is its icon's");
+    }
+}
+
 void the_town_serves_the_party(const std::filesystem::path &kit)
 {
     const ua::DesignFiles files(kit,
@@ -1004,6 +1117,7 @@ int main(int argc, char **argv)
         }
         a_character_starts_as_the_design_says(*kit);
         the_design_loads_and_plays(*kit);
+        the_kits_fights_look_as_the_kit_draws_them(*kit);
         the_town_serves_the_party(*kit);
         the_view_plays_it_through_the_seam(*kit);
         // The game's startup check plays the test design from the menu (a

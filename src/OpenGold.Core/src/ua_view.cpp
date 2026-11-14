@@ -32,7 +32,8 @@ void apply(std::array<VgaColor, 256> &palette, const VgaPaletteRange &range)
     }
 }
 
-// The palette glyph of a library's glyphs, applied over `palette`.
+} // namespace
+
 void apply_palette_glyph(std::array<VgaColor, 256> &palette, const TileLibrary &tiles)
 {
     for (const auto &glyph : tiles.glyphs)
@@ -45,9 +46,7 @@ void apply_palette_glyph(std::array<VgaColor, 256> &palette, const TileLibrary &
     }
 }
 
-// The inner library a TLB's index gives number `number`.
-[[nodiscard]] TileLibrary nested_tiles(const Library &outer, unsigned number,
-                                       const std::string &what)
+TileLibrary nested_tiles(const Library &outer, unsigned number, const std::string &what)
 {
     const auto index = decode_index(outer);
     if (!index)
@@ -71,6 +70,32 @@ void apply_palette_glyph(std::array<VgaColor, 256> &palette, const TileLibrary &
     }
     return std::move(*tiles);
 }
+
+Image glyph_image(const Glyph &glyph, const std::array<VgaColor, 256> &palette)
+{
+    const auto &picture = glyph.image;
+    Image image;
+    image.width = picture.width;
+    image.height = picture.height;
+    image.rgba.assign(std::size_t{picture.width} * picture.height * 4, 0);
+    for (std::size_t at = 0; at < picture.pixels.size(); ++at)
+    {
+        if (!glyph.see_through.empty() && glyph.see_through[at])
+        {
+            continue;
+        }
+        const auto &color = palette[picture.pixels[at]];
+        for (std::size_t channel = 0; channel < 3; ++channel)
+        {
+            image.rgba[at * 4 + channel] = full_level(color[channel]);
+        }
+        image.rgba[at * 4 + 3] = 255;
+    }
+    return image;
+}
+
+namespace
+{
 
 class ViewPainter
 {

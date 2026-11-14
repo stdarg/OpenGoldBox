@@ -8,6 +8,7 @@
 #include <array>
 #include <map>
 #include <optional>
+#include <string>
 #include <vector>
 
 // Unlimited Adventures' first-person view (docs/games/ua.md, The 3D view): an
@@ -38,6 +39,16 @@ struct ViewArt
     // By backdrop number.
     std::map<unsigned, Backdrop> backdrops;
 };
+
+// The glyphs of the inner library the index of `outer` gives `number` (a
+// wall set of 8X8DB.TLB, a battlefield set of DUNGCOM.TLB). Throws, naming
+// `what`, when there is none or it does not decode.
+[[nodiscard]] TileLibrary nested_tiles(const Library &outer, unsigned number,
+                                       const std::string &what);
+// The palette glyph among `tiles`, applied over `palette`.
+void apply_palette_glyph(std::array<VgaColor, 256> &palette, const TileLibrary &tiles);
+// An image glyph in `palette`'s colors, its see-through pixels clear.
+[[nodiscard]] Image glyph_image(const Glyph &glyph, const std::array<VgaColor, 256> &palette);
 
 // The wall sets and backdrops the area names, from the design's files. Throws
 // when a set or backdrop it names is missing or does not decode.

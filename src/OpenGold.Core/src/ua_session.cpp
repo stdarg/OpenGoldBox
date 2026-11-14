@@ -3,6 +3,7 @@
 #include "archive_io.h"
 #include "opengold/original_spells.h"
 #include "opengold/path_text.h"
+#include "opengold/ua_combat.h"
 
 #include <algorithm>
 #include <fstream>
@@ -21,6 +22,8 @@ using por::TourPhase;
 constexpr std::size_t event_count = 100, event_size = 20;
 // The area header's entry points: eight of y, x, facing and a spare byte.
 constexpr std::size_t header_spots = 0xE;
+// The area header's outdoor combat set and an overland area's sets by zone.
+constexpr std::size_t header_outdoor_set = 0xD, header_zone_sets = 0x108;
 // A fight's monsters take ids from here, as the DAX games' do.
 constexpr rules::EntityId first_monster_id = 1000;
 
@@ -771,53 +774,76 @@ void UaSession::combat_event(const EventRecord &event, bool pick_one)
 
 void UaSession::begin_combat(const EventRecord &event, bool pick_one)
 {
-    std::vector<std::pair<unsigned, unsigned>> groups; // MONST number, count.
-    for (std::size_t group = 0; group < 6; ++group)
+    struct Group
     {
-        const unsigned count = event[8 + 2 * group] & 0x1F, number = event[9 + 2 * group];
+        std::size_t slot;
+        unsigned number, count;
+    };
+
+    std::vector<Group> groups;
+    for (std::size_t slot = 0; slot < 6; ++slot)
+    {
+        const unsigned count = event[8 + 2 * slot] & 0x1F, number = event[9 + 2 * slot];
         if (count != 0 && number != 0)
         {
-            groups.emplace_back(number, count);
+            groups.push_back({slot, number, count});
         }
     }
     if (pick_one && !groups.empty())
     {
-        groups = {groups[roll(static_cast<unsigned>(groups.size())) - 1]};
+        // The kit fields the group it picks first, where it is never an ally.
+        auto picked = groups[roll(static_cast<unsigned>(groups.size())) - 1];
+        picked.slot = 0;
+        groups = {picked};
     }
     if (groups.empty() || !party_)
     {
         return;
     }
+    auto field = fight_field(event);
     CampaignEncounter encounter;
-    // An open field for now; the kit's own battlefields (DUNGCOM, WILDCOM)
-    // come later (docs/games/ua.md).
-    auto &board = encounter.field.geometry;
-    board.width = 50;
-    board.height = 25;
-    board.terrain.assign(static_cast<std::size_t>(board.width * board.height),
-                         rules::Terrain::open);
-    encounter.field.tiles.assign(board.terrain.size(), 0);
+    encounter.field = std::move(field.field);
+    encounter.terrain_art = std::move(field.terrain_art);
     encounter.facing = snapshot_.pose.facing;
     // An encounter's choice decides the surprise; else the fight's own bits.
     encounter.surprise =
         encounter_surprise_.value_or(Surprise{static_cast<std::uint8_t>((event[8] & 0xC0) >> 6)});
     encounter_surprise_.reset();
-    encounter.distance = std::min(2U, static_cast<unsigned>((event[14] & 0x60) >> 5));
+    encounter.distance = fight_distance(event);
     encounter.morale = std::min(100U, event[7] & 0x7FU);
-    rules::EntityId next = first_monster_id;
+    rules::EntityId next_enemy = first_monster_id, next_ally = first_ally_id;
     encounter_experience_ = 0;
     // The kit fields at most 50 monsters.
     constexpr unsigned most_monsters = 50;
-    for (const auto &[number, count] : groups)
+    unsigned fielded = 0;
+    for (const auto &group : groups)
     {
-        const auto monster = read_monster(files_, number);
-        for (unsigned n = 0; n < count && next < first_monster_id + most_monsters; ++n)
+        // Groups 4 to 6 fight for the party when byte 0Ah's bits 20h, 40h and
+        // 80h say so (evcmds.c, monsters_place).
+        const bool ally = group.slot >= 3 && (event[0xA] & (0x20U << (group.slot - 3))) != 0;
+        const auto monster = read_monster(files_, group.number);
+        const auto icon = combat_icon(files_, group.number, field.palette);
+        for (unsigned n = 0; n < group.count && fielded < most_monsters; ++n, ++fielded)
         {
-            rules::Participant fighter{
-                next++, monster_key(number), monster.name, rules::Side::opposition, {}};
+            const auto id = ally ? next_ally++ : next_enemy++;
+            rules::Participant fighter{id,
+                                       monster_key(group.number),
+                                       monster.name,
+                                       ally ? rules::Side::party : rules::Side::opposition,
+                                       {}};
             const unsigned own = monster.raw[0x93] >= 0x80 ? (monster.raw[0x93] & 0x7FU) * 2 : 0;
             fighter.morale = own > 102 ? 0 : std::min(own, 100U);
             fighter.intelligence = std::min<unsigned>(monster.raw[0x72], 30);
+            if (icon)
+            {
+                fighter.footprint = icon->footprint;
+                encounter.art.push_back({id, icon->ready, icon->action});
+            }
+            if (ally)
+            {
+                encounter.allies.push_back(std::move(fighter));
+                continue;
+            }
             encounter.enemies.push_back(std::move(fighter));
             encounter_experience_ += word_at(monster.raw, 0x54);
         }
@@ -826,6 +852,58 @@ void UaSession::begin_combat(const EventRecord &event, bool pick_one)
     encounter_ = std::move(encounter);
     pending_.wait = Wait::combat;
     snapshot_.phase = TourPhase::combat;
+}
+
+// Out of doors (the event's bit 20h of byte 8 in a dungeon, or an overland
+// area, by the zone the party stands in) the field is WILDCOM's; in a dungeon
+// the walls around the party in DUNGCOM's tiles (cmbsetup.c, map_build).
+FightField UaSession::fight_field(const EventRecord &event)
+{
+    const auto &area = area_.area;
+    const auto &pose = snapshot_.pose;
+    const auto dice = [this](unsigned sides)
+    {
+        return roll(sides);
+    };
+    if (area_.overland())
+    {
+        const auto zone = (area.squares[std::size_t{pose.y} * area.columns + pose.x].bits >> 2) & 7;
+        return wilderness_field(files_, area.header[header_zone_sets + zone], dice);
+    }
+    if ((event[8] & 0x20) != 0)
+    {
+        return wilderness_field(files_, area.header[header_outdoor_set], dice);
+    }
+    return dungeon_field(files_, area, pose.x, pose.y);
+}
+
+// The event's distance (0 to 2 squares), cut short in a dungeon by a wall
+// ahead of the party (evcmds.c, monster_dist).
+unsigned UaSession::fight_distance(const EventRecord &event) const
+{
+    const unsigned wanted = std::min(2U, static_cast<unsigned>((event[14] & 0x60) >> 5));
+    if (area_.overland())
+    {
+        return wanted;
+    }
+    const auto &area = area_.area;
+    const auto facing = snapshot_.pose.facing;
+    auto x = static_cast<int>(snapshot_.pose.x), y = static_cast<int>(snapshot_.pose.y);
+    unsigned open = 0;
+    while (open < wanted)
+    {
+        const auto &square =
+            area.squares[static_cast<std::size_t>(y) * area.columns + static_cast<std::size_t>(x)];
+        if ((square.walls[por::index(facing)] & 0xF) != 0)
+        {
+            break;
+        }
+        ++open;
+        // Past the edge the area wraps round, as for a step.
+        x = (x + por::step_x(facing) + area.columns) % area.columns;
+        y = (y + por::step_y(facing) + area.rows) % area.rows;
+    }
+    return open;
 }
 
 bool UaSession::reject_combat(std::string diagnostic)

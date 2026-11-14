@@ -7,6 +7,7 @@
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
 #include "opengold/rolf_tour.h"
+#include "opengold/ua_combat.h"
 #include "opengold/ua_design.h"
 #include "opengold/ua_view.h"
 
@@ -369,6 +370,8 @@ class UaSession final : public ExplorationSession
     void password_event(const EventRecord &event);
     void ask_password(const EventRecord &event);
     void begin_combat(const EventRecord &event, bool pick_one);
+    [[nodiscard]] FightField fight_field(const EventRecord &event);
+    [[nodiscard]] unsigned fight_distance(const EventRecord &event) const;
 
     void move_party(unsigned x, unsigned y, por::MapDirection facing);
     void step_back();
