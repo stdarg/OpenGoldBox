@@ -65,7 +65,8 @@ inline constexpr int curse_spell_offset = 100;
 inline constexpr int secret_spell_offset = 200;
 
 // The spell or item power of this number (1 to 67, Curse's 158 and 166 to
-// 200, and Secret's 236, 256, 290, 296, 298 and 310 to 317), or nothing.
+// 200, Secret's 236, 256, 290, 296, 298 and 310 to 317, and Pools of
+// Darkness's 301 to 309 and 318 to 326), or nothing.
 [[nodiscard]] const Spell *spell(int number) noexcept;
 // The spell as a game's table has it: Gateway's Strength may be cast in
 // fights, its Prayer goes on up to four creatures the caster touches, its
@@ -85,6 +86,10 @@ inline constexpr int secret_spell_offset = 200;
 // The cleric or magic-user spell an ID names, or nothing; a copy's "#2" is
 // left out.
 [[nodiscard]] std::optional<int> spell_number(std::string_view id);
+// The spell an ID names among those a game's characters may know, else as
+// spell_number(id): Pools of Darkness's Restoration (302) shares Pool of
+// Radiance's ID (56).
+[[nodiscard]] std::optional<int> spell_number(std::string_view id, GoldBoxGame game);
 
 } // namespace opengold::original
 #endif

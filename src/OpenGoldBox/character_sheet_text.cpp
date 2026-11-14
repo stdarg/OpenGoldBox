@@ -110,9 +110,10 @@ std::string original_identity_and_attributes(const Character &character, const P
         text += "\n\n[theme_title]" + i18n::utf8("Thief skills") + "[/theme_title]\n" +
                 number_table(skills, original.thief_skills, "%");
     }
-    static constexpr std::array<const char *, 7> spell_levels{
-        N_("First level"), N_("Second level"), N_("Third level"),  N_("Fourth level"),
-        N_("Fifth level"), N_("Sixth level"),  N_("Seventh level")};
+    static constexpr std::array<const char *, 9> spell_levels{
+        N_("First level"),   N_("Second level"), N_("Third level"),
+        N_("Fourth level"),  N_("Fifth level"),  N_("Sixth level"),
+        N_("Seventh level"), N_("Eighth level"), N_("Ninth level")};
     for (const auto &[title, slots] :
          {std::pair{N_("Cleric spells a day"), original.cleric_slots},
           std::pair{N_("Druid spells a day"), original.druid_slots},
@@ -121,7 +122,7 @@ std::string original_identity_and_attributes(const Character &character, const P
         if (slots[0] > 0)
         {
             // The levels it casts: Pool of Radiance's three, Curse's up to
-            // five, Secret's up to seven.
+            // five, Secret's up to seven, Pools of Darkness's up to nine.
             const auto shown = static_cast<std::size_t>(
                 std::max<std::ptrdiff_t>(3, std::ranges::find(slots, 0) - slots.begin()));
             text +=

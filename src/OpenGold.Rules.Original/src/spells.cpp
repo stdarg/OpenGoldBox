@@ -199,6 +199,42 @@ constexpr std::array<NumberedSpell, 14> secret_spells{{
      {"Power Word Stun", SpellClass::magic_user, 7, 0, 2, 0, 0, 4, 0, 0, 4, 506, 1, 1, 3, true, 0}},
 }};
 
+// Pools of Darkness's own spells (its reconstruction's spellTable, 101 to 109
+// and 118 to 126), numbered 200 higher as Secret's are, with their effects by
+// the fight's numbers: its own beyond Secret's (118 to 123) secret_effect_offset
+// higher, as canonical_effect numbers Secret's. Treasures of the Savage
+// Frontier's table is the same.
+constexpr std::array<NumberedSpell, 18> darkness_spells{{
+    {301, {"Blade Barrier", SpellClass::cleric, 6, 3, 0, 0, 3, 9, 0, 1, 4, 0, 1, 9, 9, true, 0}},
+    {302, {"Restoration", SpellClass::cleric, 7, 0, 0, 0, 0, 0, 2, 0, 4, 0, 0, 1, 0, false, 0}},
+    {303, {"Energy Drain", SpellClass::cleric, 7, 0, 0, 0, 0, 4, 0, 0, 4, 0, 1, 3, 8, true, 0}},
+    {304, {"Destruction", SpellClass::cleric, 7, 0, 0, 0, 0, 4, 0, 0, 4, 0, 1, 10, 9, true, 0}},
+    {305, {"Resurrection", SpellClass::cleric, 7, 0, 0, 0, 0, 0, 2, 0, 4, 0, 0, 10, 0, false, 0}},
+    {306, {"Cure Disease", SpellClass::druid, 3, 0, 0, 0, 0, 0, 2, 0, 4, 0, 0, 1, 0, false, 0}},
+    {307,
+     {"Neutralize Poison", SpellClass::druid, 3, 0, 0, 0, 0, 0, 2, 0, 4, 0, 0, 1, 0, false, 0}},
+    {308, {"Hold Animal", SpellClass::druid, 3, 8, 0, 0, 2, 7, 0, 1, 4, 52, 1, 5, 4, true, 0}},
+    {309,
+     {"Protection from Fire", SpellClass::druid, 3, 0, 0, 0, 0, 4, 2, 0, 4, 519, 2, 5, 3, false,
+      0}},
+    {318,
+     {"Fire Touch", SpellClass::magic_user, 5, 0, 0, 0, 1, 4, 2, 0, 4, 521, 2, 6, 4, false, 0}},
+    {319, {"Iron Skin", SpellClass::magic_user, 5, 0, 0, 0, 1, 0, 1, 0, 4, 522, 2, 5, 3, false, 0}},
+    {320, {"Mass Charm", SpellClass::magic_user, 8, 0, 1, 0, 0, 9, 0, 1, 4, 11, 1, 8, 6, true, 0}},
+    {321,
+     {"Otto's Irresistible Dance", SpellClass::magic_user, 8, 255, 0, 0, 0, 4, 0, 0, 4, 518, 1, 5,
+      5, true, 0}},
+    {322,
+     {"Mind Blank", SpellClass::magic_user, 8, 3, 0, 0, 0, 4, 2, 0, 4, 523, 2, 1, 0, false, 0}},
+    {323,
+     {"Power Word Blind", SpellClass::magic_user, 8, 0, 1, 0, 0, 10, 0, 0, 4, 0, 1, 1, 3, true, 0}},
+    {324, {"Meteor Swarm", SpellClass::magic_user, 9, 4, 1, 0, 0, 8, 0, 2, 4, 0, 1, 9, 3, true, 0}},
+    {325,
+     {"Power Word Kill", SpellClass::magic_user, 9, 0, 1, 0, 0, 9, 0, 0, 4, 0, 1, 1, 6, true, 0}},
+    {326,
+     {"Monster Summoning", SpellClass::magic_user, 9, 9, 0, 0, 0, 0, 0, 0, 4, 0, 1, 9, 0, true, 0}},
+}};
+
 // The four rows Gateway to the Savage Frontier's table changes from Curse's
 // (its reconstruction's spellTable): Strength in fights too, Prayer on up
 // to four creatures within reach, Blink out of fights too, and Invisibility
@@ -250,6 +286,13 @@ std::vector<int> castable_spells(GoldBoxGame game)
         const int table_size = vga_engine(game) ? 126 : 117;
         for (int number = 1; number <= table_size; ++number)
         {
+            // Secret's rows 101 to 109 cast nothing; Pools of Darkness's
+            // new spells took them.
+            const bool secret_blank = !vga_engine(game) && number >= 101 && number <= 109;
+            if (secret_blank)
+            {
+                continue;
+            }
             const int canonical = canonical_spell(number, game);
             const auto *known = spell(canonical);
             if (known && known->caster_class != SpellClass::item)
@@ -328,7 +371,27 @@ std::optional<int> spell_number(std::string_view id)
             return entry.number;
         }
     }
+    for (const auto &entry : darkness_spells)
+    {
+        if (spell_id(entry.number) == id)
+        {
+            return entry.number;
+        }
+    }
     return std::nullopt;
+}
+
+std::optional<int> spell_number(std::string_view id, GoldBoxGame game)
+{
+    id = id.substr(0, id.find('#'));
+    for (const int number : castable_spells(game))
+    {
+        if (spell_id(number) == id)
+        {
+            return number;
+        }
+    }
+    return spell_number(id);
 }
 
 const Spell *spell(int number) noexcept
@@ -345,6 +408,13 @@ const Spell *spell(int number) noexcept
         }
     }
     for (const auto &entry : secret_spells)
+    {
+        if (entry.number == number)
+        {
+            return &entry.spell;
+        }
+    }
+    for (const auto &entry : darkness_spells)
     {
         if (entry.number == number)
         {

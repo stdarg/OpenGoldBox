@@ -207,8 +207,9 @@ int slots_for(const CharacterSheet::Original &numbers, const Spell &known)
     const auto &slots = known.caster_class == SpellClass::cleric  ? numbers.cleric_slots
                         : known.caster_class == SpellClass::druid ? numbers.druid_slots
                                                                   : numbers.magic_user_slots;
-    return known.level >= 1 && known.level <= 7 ? slots[static_cast<std::size_t>(known.level - 1)]
-                                                : 0;
+    return known.level >= 1 && known.level <= static_cast<int>(slots.size())
+               ? slots[static_cast<std::size_t>(known.level - 1)]
+               : 0;
 }
 
 // The sheet's numbers that follow from its class levels, worked out again.
@@ -314,7 +315,7 @@ por::CharacterRecord character_record(const CharacterSheet &sheet)
     record.icon_size_raw = short_folk ? 1 : 2;
     for (const auto &id : sheet.prepared_spells)
     {
-        if (const auto number = spell_number(id))
+        if (const auto number = spell_number(id, game_of(sheet.identity)))
         {
             // As the game's own record holds it (canonical_spell undone).
             const int own = *number > secret_spell_offset  ? *number - secret_spell_offset
@@ -937,7 +938,7 @@ void OriginalModule::apply_spell_choices(CharacterSheet &sheet, const SpellChoic
         {
             throw std::runtime_error("That spell cannot be memorized");
         }
-        const auto *chosen = spell(*spell_number(id));
+        const auto *chosen = spell(*spell_number(id, game_of(sheet.identity)));
         if (++taken[{chosen->caster_class, chosen->level}] > slots_for(*sheet.original, *chosen))
         {
             throw std::runtime_error("Too many spells of that level");
@@ -1115,7 +1116,7 @@ AdvancementOptions OriginalModule::advancement_options(const CharacterSheet &she
     for (const int number : castable_spells(game_of(sheet.identity)))
     {
         const auto *offered = spell(number);
-        if (offered->caster_class == SpellClass::magic_user && offered->level <= 7 &&
+        if (offered->caster_class == SpellClass::magic_user &&
             slots[static_cast<std::size_t>(offered->level - 1)] > 0 &&
             std::ranges::find(numbers.known_spells, number) == numbers.known_spells.end())
         {
@@ -1266,7 +1267,7 @@ std::vector<int> spells_left(const CharacterSheet &sheet, const VitalState &stat
     std::vector<int> memorized;
     for (const auto &id : sheet.prepared_spells)
     {
-        if (const auto number = spell_number(id))
+        if (const auto number = spell_number(id, game_of(sheet.identity)))
         {
             memorized.push_back(*number);
         }
@@ -1594,7 +1595,7 @@ bool OriginalModule::advance_character(CharacterSheet &sheet, VitalState &state,
     auto next = sheet;
     for (const auto &id : choice.spells)
     {
-        next.original->known_spells.push_back(*spell_number(id));
+        next.original->known_spells.push_back(*spell_number(id, game_of(sheet.identity)));
     }
     auto &levels = next.original->class_levels;
     for (std::size_t at = 0; at < class_slot_count; ++at)
@@ -2237,9 +2238,10 @@ void OriginalModule::use_camp_action(const CharacterSheet &user, VitalState &use
         }
         return;
     }
-    const auto number = action.starts_with(cast_prefix)
-                            ? spell_number(action.substr(cast_prefix.size()))
-                            : std::nullopt;
+    const auto number =
+        action.starts_with(cast_prefix)
+            ? spell_number(action.substr(cast_prefix.size()), game_of(user.identity))
+            : std::nullopt;
     const auto left = spells_left(user, user_state);
     if (number && std::ranges::find(camp_effect_spells, *number) != camp_effect_spells.end())
     {
@@ -2439,9 +2441,10 @@ void OriginalModule::use_party_camp_action(const CharacterSheet &user, VitalStat
                                            std::span<CampTarget> party, std::string_view action,
                                            RandomState &random_state) const
 {
-    const auto number = action.starts_with(cast_prefix)
-                            ? spell_number(action.substr(cast_prefix.size()))
-                            : std::nullopt;
+    const auto number =
+        action.starts_with(cast_prefix)
+            ? spell_number(action.substr(cast_prefix.size()), game_of(user.identity))
+            : std::nullopt;
     const auto game = game_of(user.identity);
     const auto left = spells_left(user, user_state);
     if (!number || std::ranges::find(camp_effect_spells, *number) == camp_effect_spells.end() ||

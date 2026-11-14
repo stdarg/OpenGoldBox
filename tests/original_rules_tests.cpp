@@ -512,6 +512,92 @@ void paladins_and_rangers_cast()
           "Gateway's paladins and rangers stop before their spells");
 }
 
+// Pools of Darkness's spells of levels 8 and 9 and its other new ones
+// (docs/ORIGINAL-RULES.md, Pools of Darkness): a magic-user's slots of
+// them from level 16 with Intelligence 16 and 18, a paladin's and a ranger's
+// slots past Secret's 15, and who knows the new spells.
+void darkness_high_level_spells()
+{
+    const auto darkness = opengold::GoldBoxGame::pools_of_darkness;
+    const auto secret = opengold::GoldBoxGame::secret_of_the_silver_blades;
+    check(spell_slots(ClassSlot::magic_user, 16, 9, 18, darkness) ==
+                  SpellSlots{5, 5, 5, 5, 5, 3, 2, 1, 0} &&
+              spell_slots(ClassSlot::magic_user, 29, 9, 18, darkness) ==
+                  SpellSlots{7, 7, 7, 7, 6, 6, 6, 6, 6},
+          "A Darkness magic-user gains eighth-level slots at 16, ninth at 18");
+    check(spell_slots(ClassSlot::magic_user, 20, 9, 17, darkness)[7] == 3 &&
+              spell_slots(ClassSlot::magic_user, 20, 9, 17, darkness)[8] == 0 &&
+              spell_slots(ClassSlot::magic_user, 20, 9, 15, darkness)[7] == 0,
+          "Eighth-level slots need Intelligence 16, ninth-level 18");
+    check(spell_slots(ClassSlot::cleric, 29, 18, 18, darkness)[7] == 0 &&
+              spell_slots(ClassSlot::magic_user, 15, 9, 18, secret)[7] == 0,
+          "Clerics and Secret's magic-users have none");
+
+    const auto only = [](ClassSlot slot, int level)
+    {
+        ClassLevels levels{};
+        levels[static_cast<std::size_t>(slot)] = level;
+        return levels;
+    };
+    check(caster_slots(only(ClassSlot::paladin, 20), 18, 9, darkness).cleric ==
+                  SpellSlots{3, 3, 3, 3} &&
+              caster_slots(only(ClassSlot::paladin, 29), 18, 9, darkness).cleric ==
+                  SpellSlots{3, 3, 3, 3} &&
+              caster_slots(only(ClassSlot::paladin, 20), 18, 9, secret).cleric ==
+                  SpellSlots{3, 2, 1, 1},
+          "A Darkness paladin's slots grow to level 20, Secret's to 15");
+    const auto ranger = caster_slots(only(ClassSlot::ranger, 17), 18, 9, darkness);
+    check(caster_slots(only(ClassSlot::ranger, 15), 18, 9, darkness).druid == SpellSlots{2, 2} &&
+              caster_slots(only(ClassSlot::ranger, 16), 18, 9, darkness).druid ==
+                  SpellSlots{2, 2, 1} &&
+              ranger.druid == SpellSlots{2, 2, 2} && ranger.magic_user == SpellSlots{2, 2},
+          "A Darkness ranger gains third-level druid slots at 16 and 17");
+
+    const auto knows = [](const std::vector<int> &known, int number)
+    {
+        return std::ranges::find(known, number) != known.end();
+    };
+    const auto ranger_spells = known_spells(only(ClassSlot::ranger, 16), 18, {}, darkness);
+    check(knows(ranger_spells, 306) && knows(ranger_spells, 309) && knows(ranger_spells, 15) &&
+              !knows(known_spells(only(ClassSlot::ranger, 15), 18, {}, darkness), 308),
+          "A Darkness ranger knows the third-level druid spells and its magic-user ones");
+    const auto cleric = known_spells(only(ClassSlot::cleric, 16), 18, {}, darkness);
+    check(knows(cleric, 301) && knows(cleric, 302) && knows(cleric, 305) &&
+              !knows(known_spells(only(ClassSlot::cleric, 16), 17, {}, darkness), 303),
+          "A cleric knows Blade Barrier, and the seventh-level spells with Wisdom 18");
+
+    const auto castable = castable_spells(darkness);
+    const auto secret_castable = castable_spells(secret);
+    check(knows(castable, 301) && knows(castable, 309) && knows(castable, 318) &&
+              knows(castable, 326) && !knows(secret_castable, 318) && !knows(secret_castable, 301),
+          "Darkness's characters may know its new spells, Secret's not");
+    check(spell(324)->level == 9 && spell(320)->level == 8 &&
+              spell(308)->caster_class == SpellClass::druid,
+          "Meteor Swarm is of the ninth level, Mass Charm of the eighth");
+    check(spell_number("cleric:restoration", darkness) == 302 &&
+              spell_number("cleric:restoration") == 56 &&
+              spell_number("magic_user:meteor_swarm", darkness) == 324,
+          "Darkness's Restoration is its own spell");
+
+    // Creation's spells (InitKnownSpells): with ninth-level slots, every
+    // magic-user spell; with eighth-level slots only, the sets to the seventh.
+    RandomState random{3};
+    constexpr int experience = 3'800'000;
+    const auto rolled =
+        roll_character(Race::human, Profession::magic_user, darkness, experience, random);
+    auto scores = rolled.rolls;
+    scores[Ability::intelligence] = 18;
+    const auto wise = starting_training(Race::human, Profession::magic_user, scores, rolled,
+                                        darkness, experience);
+    scores[Ability::intelligence] = 16;
+    const auto bright = starting_training(Race::human, Profession::magic_user, scores, rolled,
+                                          darkness, experience);
+    check(level_in(wise.levels, ClassSlot::magic_user) == 20 && knows(wise.learned_spells, 324) &&
+              knows(wise.learned_spells, 320) && knows(wise.learned_spells, 182) &&
+              !knows(bright.learned_spells, 320) && knows(bright.learned_spells, 315),
+          "A magic-user with ninth-level slots knows every spell at creation");
+}
+
 void dexterity_bonuses()
 {
     struct Expected
@@ -763,7 +849,7 @@ void creation_behind_the_rules_interface()
               sheet.level_classes == std::vector<std::string>{"fighter", "magic_user"},
           "A fighter/magic-user starts at level 1 in both classes");
     check(sheet.original && sheet.original->thac0 == 20 && sheet.hit_points >= 1 &&
-              sheet.original->magic_user_slots == std::array<int, 7>{1, 0, 0, 0, 0, 0, 0},
+              sheet.original->magic_user_slots == std::array<int, 9>{1},
           "The sheet carries the original's THAC0, Hit Points and spell slots");
     for (const auto ability : every_ability)
     {
@@ -869,6 +955,7 @@ int main()
         training();
         spell_slots_and_wisdom();
         paladins_and_rangers_cast();
+        darkness_high_level_spells();
         dexterity_bonuses();
         constitution_and_age();
         creation_behind_the_rules_interface();

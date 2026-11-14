@@ -468,7 +468,7 @@ constexpr std::array<int, class_slot_count> treasures_level_caps{10, 12, 11, 11,
     }
 }
 
-using SlotRow = std::array<int, 7>;
+using SlotRow = SpellSlots;
 // Spell slots of levels 1 to 7, for class levels 2 to 15 (Secret's, its
 // classProgression summed). Pool of Radiance's and Curse's are the same to
 // level 12 at spell levels 1 to 5, and stop there (spell_slots).
@@ -501,9 +501,9 @@ constexpr std::array<SlotRow, 14> magic_user_slots{{{2, 0, 0, 0, 0, 0, 0},
                                                     {5, 5, 5, 4, 4, 2, 1},
                                                     {5, 5, 5, 5, 5, 2, 1}}};
 
-// Pools of Darkness's slots of spell levels 1 to 7 for class levels 16 to 29
-// (its spell table; to 15 they are Secret's). Its magic-users' eighth- and
-// ninth-level slots are not kept yet.
+// Pools of Darkness's slots for class levels 16 to 29 (its classLevelTable;
+// to 15 they are Secret's): a cleric's of spell levels 1 to 7, a
+// magic-user's of 1 to 9.
 constexpr std::array<SlotRow, 14> darkness_cleric_slots{{{7, 7, 7, 6, 5, 3, 1},
                                                          {8, 8, 8, 6, 5, 3, 1},
                                                          {8, 8, 8, 7, 6, 4, 1},
@@ -518,20 +518,20 @@ constexpr std::array<SlotRow, 14> darkness_cleric_slots{{{7, 7, 7, 6, 5, 3, 1},
                                                          {9, 9, 9, 9, 9, 9, 5},
                                                          {9, 9, 9, 9, 9, 9, 6},
                                                          {9, 9, 9, 9, 9, 9, 7}}};
-constexpr std::array<SlotRow, 14> darkness_magic_user_slots{{{5, 5, 5, 5, 5, 3, 2},
-                                                             {5, 5, 5, 5, 5, 3, 3},
-                                                             {5, 5, 5, 5, 5, 3, 3},
-                                                             {5, 5, 5, 5, 5, 3, 3},
-                                                             {5, 5, 5, 5, 5, 4, 3},
-                                                             {5, 5, 5, 5, 5, 4, 4},
-                                                             {5, 5, 5, 5, 5, 5, 4},
-                                                             {5, 5, 5, 5, 5, 5, 5},
-                                                             {5, 5, 5, 5, 5, 5, 5},
-                                                             {5, 5, 5, 5, 5, 5, 5},
-                                                             {6, 6, 6, 6, 5, 5, 5},
-                                                             {6, 6, 6, 6, 6, 6, 6},
-                                                             {6, 6, 6, 6, 6, 6, 6},
-                                                             {7, 7, 7, 7, 6, 6, 6}}};
+constexpr std::array<SlotRow, 14> darkness_magic_user_slots{{{5, 5, 5, 5, 5, 3, 2, 1, 0},
+                                                             {5, 5, 5, 5, 5, 3, 3, 2, 0},
+                                                             {5, 5, 5, 5, 5, 3, 3, 2, 1},
+                                                             {5, 5, 5, 5, 5, 3, 3, 3, 1},
+                                                             {5, 5, 5, 5, 5, 4, 3, 3, 2},
+                                                             {5, 5, 5, 5, 5, 4, 4, 4, 2},
+                                                             {5, 5, 5, 5, 5, 5, 4, 4, 3},
+                                                             {5, 5, 5, 5, 5, 5, 5, 5, 3},
+                                                             {5, 5, 5, 5, 5, 5, 5, 5, 4},
+                                                             {5, 5, 5, 5, 5, 5, 5, 5, 5},
+                                                             {6, 6, 6, 6, 5, 5, 5, 5, 5},
+                                                             {6, 6, 6, 6, 6, 6, 6, 5, 5},
+                                                             {6, 6, 6, 6, 6, 6, 6, 6, 6},
+                                                             {7, 7, 7, 7, 6, 6, 6, 6, 6}}};
 
 using SkillRow = std::array<int, 8>;
 // A thief's chances by thief level 1 to 9.
@@ -1056,18 +1056,23 @@ namespace
 
 // The magic-user spells the 256-color engine's creation teaches once trained
 // (its InitKnownSpells), by its own numbers: every spell of levels 1 to 3,
-// then a set for each higher level the magic-user has slots of, and every
-// spell with ninth-level slots, which OpenGoldBox does not keep yet.
+// then a set for each higher level the magic-user has slots of, and with
+// ninth-level slots every spell.
 [[nodiscard]] std::vector<int> vga_starting_spells(const SlotRow &slots)
 {
     std::vector<int> learned;
+    const bool every_spell = slots[8] > 0;
     for (const int number : castable_spells(GoldBoxGame::pools_of_darkness))
     {
         const auto *known = spell(number);
-        if (known->caster_class == SpellClass::magic_user && known->level <= 3)
+        if (known->caster_class == SpellClass::magic_user && (known->level <= 3 || every_spell))
         {
             learned.push_back(number);
         }
+    }
+    if (every_spell)
+    {
+        return learned;
     }
     const std::array<std::vector<int>, 4> sets{
         {{81, 82, 83, 84, 85, 87, 88}, {91, 92, 118, 119}, {111, 112, 113, 114}, {115, 117}}};
@@ -1527,7 +1532,9 @@ std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<c
     ClassLevels ranger_alone{};
     ranger_alone[static_cast<std::size_t>(ClassSlot::ranger)] = level_in(levels, ClassSlot::ranger);
     const auto ranger_slots = caster_slots(ranger_alone, wisdom, 9, game);
-    const bool secret = game == GoldBoxGame::secret_of_the_silver_blades;
+    // Secret's and Pools of Darkness's rangers know every magic-user spell
+    // of a level they have slots of (classcal.pas, RecalcSpellSlots).
+    const bool secret = game == GoldBoxGame::secret_of_the_silver_blades || vga_engine(game);
     // Detect Magic, Read Magic, Sleep, and Shield (Pool of Radiance) or
     // Enlarge (Curse).
     // Pools of Darkness's too knows Enlarge.
@@ -1541,21 +1548,20 @@ std::vector<int> known_spells(const ClassLevels &levels, int wisdom, std::span<c
     for (const int number : castable_spells(game))
     {
         const auto *known_spell = spell(number);
-        const auto at = static_cast<std::size_t>(std::clamp(known_spell->level, 1, 7) - 1);
-        const bool cleric_spell = known_spell->caster_class == SpellClass::cleric &&
-                                  known_spell->level <= 7 && slots.cleric[at] > 0;
-        const bool druid_spell = known_spell->caster_class == SpellClass::druid &&
-                                 known_spell->level <= 7 && slots.druid[at] > 0;
+        const auto at = static_cast<std::size_t>(std::clamp(known_spell->level, 1, 9) - 1);
+        const bool cleric_spell =
+            known_spell->caster_class == SpellClass::cleric && slots.cleric[at] > 0;
+        const bool druid_spell =
+            known_spell->caster_class == SpellClass::druid && slots.druid[at] > 0;
         // A spell learned or scribed stays known, a ranger's too (Curse's
         // ranger knows only those it scribes; Unlimited Adventures' those it
         // learned in training past level 8).
-        const bool magic_user_spell =
-            known_spell->caster_class == SpellClass::magic_user &&
-            ((magic_user && preset &&
-              std::ranges::find(first_magic_user_spells, number) !=
-                  first_magic_user_spells.end()) ||
-             std::ranges::find(learned, number) != learned.end() ||
-             (secret && known_spell->level <= 7 && ranger_slots.magic_user[at] > 0));
+        const bool magic_user_spell = known_spell->caster_class == SpellClass::magic_user &&
+                                      ((magic_user && preset &&
+                                        std::ranges::find(first_magic_user_spells, number) !=
+                                            first_magic_user_spells.end()) ||
+                                       std::ranges::find(learned, number) != learned.end() ||
+                                       (secret && ranger_slots.magic_user[at] > 0));
         if (cleric_spell || druid_spell || magic_user_spell)
         {
             known.push_back(number);
@@ -1800,7 +1806,7 @@ SpellSlots spell_slots(ClassSlot slot, int level, int wisdom, int intelligence, 
     const auto &table = slot == C::cleric ? cleric_slots : magic_user_slots;
     const auto &darkness_table =
         slot == C::cleric ? darkness_cleric_slots : darkness_magic_user_slots;
-    SlotRow slots = level == 1 ? SlotRow{1, 0, 0, 0, 0, 0, 0}
+    SlotRow slots = level == 1 ? SlotRow{1}
                     : darkness && level > 15
                         ? darkness_table[static_cast<std::size_t>(std::min(level, 29) - 16)]
                         : table[static_cast<std::size_t>(std::min(level, secret ? 15 : 12) - 2)];
@@ -1817,6 +1823,9 @@ SpellSlots spell_slots(ClassSlot slot, int level, int wisdom, int intelligence, 
                                           : std::pair{intelligence >= 12, intelligence >= 14};
         slots[5] = sixth ? slots[5] : 0;
         slots[6] = seventh ? slots[6] : 0;
+        // And eighth- and ninth-level ones Intelligence 16 and 18 (TrimHighSpellSlots).
+        slots[7] = intelligence >= 16 ? slots[7] : 0;
+        slots[8] = intelligence >= 18 ? slots[8] : 0;
     }
     if (slot == C::cleric)
     {
@@ -1841,25 +1850,36 @@ SpellSlots spell_slots(ClassSlot slot, int level, int wisdom, int intelligence, 
 
 namespace
 {
-// The cleric slots a paladin gains at levels 9 to 15, of spell levels 1 to 4
-// (Secret's classProgression; Curse's classExperience to level 12).
-constexpr std::array<std::array<int, 4>, 7> paladin_slot_gains{{{1, 0, 0, 0},
-                                                                {1, 0, 0, 0},
-                                                                {0, 1, 0, 0},
-                                                                {0, 1, 0, 0},
-                                                                {0, 0, 1, 0},
-                                                                {1, 0, 0, 0},
-                                                                {0, 0, 0, 1}}};
-// The slots a ranger gains at levels 8 to 15: druid spell levels 1 to 3,
-// then magic-user spell levels 1 and 2.
-constexpr std::array<std::array<int, 5>, 8> ranger_slot_gains{{{1, 0, 0, 0, 0},
-                                                               {0, 0, 0, 1, 0},
-                                                               {1, 0, 0, 0, 0},
-                                                               {0, 0, 0, 1, 0},
-                                                               {0, 1, 0, 0, 0},
-                                                               {0, 0, 0, 0, 1},
-                                                               {0, 1, 0, 0, 0},
-                                                               {0, 0, 0, 0, 1}}};
+// The cleric slots a paladin gains at levels 9 to 20, of spell levels 1 to 4
+// (Secret's classProgression to 15, Curse's classExperience to 12, Pools of
+// Darkness's classLevelTable to 20, past which it gains none).
+constexpr std::array<std::array<int, 4>, 12> paladin_slot_gains{{{1, 0, 0, 0},
+                                                                 {1, 0, 0, 0},
+                                                                 {0, 1, 0, 0},
+                                                                 {0, 1, 0, 0},
+                                                                 {0, 0, 1, 0},
+                                                                 {1, 0, 0, 0},
+                                                                 {0, 0, 0, 1},
+                                                                 {0, 1, 0, 0},
+                                                                 {0, 0, 1, 0},
+                                                                 {0, 0, 1, 0},
+                                                                 {0, 0, 0, 1},
+                                                                 {0, 0, 0, 1}}};
+// The slots a ranger gains at levels 8 to 17: druid spell levels 1 to 3,
+// then magic-user spell levels 1 and 2 (Pools of Darkness's third-level
+// druid slots come at 16 and 17).
+constexpr std::array<std::array<int, 5>, 10> ranger_slot_gains{{{1, 0, 0, 0, 0},
+                                                                {0, 0, 0, 1, 0},
+                                                                {1, 0, 0, 0, 0},
+                                                                {0, 0, 0, 1, 0},
+                                                                {0, 1, 0, 0, 0},
+                                                                {0, 0, 0, 0, 1},
+                                                                {0, 1, 0, 0, 0},
+                                                                {0, 0, 0, 0, 1},
+                                                                {0, 0, 1, 0, 0},
+                                                                {0, 0, 1, 0, 0}}};
+constexpr int paladin_last_gain = 9 + static_cast<int>(paladin_slot_gains.size()) - 1;
+constexpr int ranger_last_gain = 8 + static_cast<int>(ranger_slot_gains.size()) - 1;
 } // namespace
 
 CasterSlots caster_slots(const ClassLevels &levels, int wisdom, int intelligence, GoldBoxGame game)
@@ -1868,9 +1888,13 @@ CasterSlots caster_slots(const ClassLevels &levels, int wisdom, int intelligence
     slots.cleric = spell_slots(C::cleric, level_in(levels, C::cleric), wisdom, intelligence, game);
     slots.magic_user =
         spell_slots(C::magic_user, level_in(levels, C::magic_user), wisdom, intelligence, game);
-    // Their tables end with the game's levels: Curse's at 12, Secret's at 15.
-    const int top = game == GoldBoxGame::secret_of_the_silver_blades ? 15 : 12;
-    for (int level = 9; level <= std::min(level_in(levels, C::paladin), top); ++level)
+    // Their tables end with the game's levels: Curse's at 12, Secret's at 15,
+    // Pools of Darkness's where the gains end.
+    const int top = vga_engine(game)                                   ? paladin_last_gain
+                    : game == GoldBoxGame::secret_of_the_silver_blades ? 15
+                                                                       : 12;
+    for (int level = 9; level <= std::min({level_in(levels, C::paladin), top, paladin_last_gain});
+         ++level)
     {
         const auto &gains = paladin_slot_gains[static_cast<std::size_t>(level - 9)];
         for (std::size_t at = 0; at < gains.size(); ++at)
@@ -1878,7 +1902,8 @@ CasterSlots caster_slots(const ClassLevels &levels, int wisdom, int intelligence
             slots.cleric[at] += gains[at];
         }
     }
-    for (int level = 8; level <= std::min(level_in(levels, C::ranger), top); ++level)
+    for (int level = 8; level <= std::min({level_in(levels, C::ranger), top, ranger_last_gain});
+         ++level)
     {
         const auto &gains = ranger_slot_gains[static_cast<std::size_t>(level - 8)];
         for (std::size_t at = 0; at < 3; ++at)
