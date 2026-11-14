@@ -1,8 +1,10 @@
 # Ending films
 
 Each game ends with a film of about 20 seconds when the party wins: the heroes
-defeat the game's final foe, then the people of the game's own setting meet
-them as heroes. This document plans the seven films: the facts behind each
+defeat the game's final foe, and then the film shows how the game's story
+ends, a satisfying conclusion to it. A welcome by the people they saved is
+one such ending, where the story has one; it is not a rule (the user's
+direction, 2026-11-14). This document plans the seven films: the facts behind each
 finale, a storyboard, prompts for the video and music services, and how to
 put a film into the game.
 
@@ -16,7 +18,7 @@ closing words ("You have won.").
 **The heroes never show a face.** AI video can't keep the same six people
 from one shot to the next, so the party only ever appears in silhouette,
 from behind, or in deep shadow against a bright light (fire, a spell, the
-sun, a cheering street). Faces belong to the foe and the crowd only.
+sun, a cheering street). Faces belong to the foe and the other people only.
 
 **One look for all seven films.** Every prompt ends with the same style
 words, changing only the palette:
@@ -55,7 +57,7 @@ reference still. Sora is a fallback for any of these. Generate clips of 5 to
 adds its own sound: strip it (`-an` below), because the music replaces it.
 
 **Assembly.** Use 4 or 5 shots, cut together with half-second cross-fades.
-The crowd's welcome always comes last and lasts longest. End on a fade to
+The story's ending always comes last and lasts longest. End on a fade to
 black as the music resolves. First trim each clip to its shot length and
 bring it to one size and frame rate:
 
@@ -361,9 +363,10 @@ the hall and pink-gold at dawn.
   cities return, and the party wakes healed on the peaceful streets of
   Phlan. (*Cluebook.pdf*, story synopsis and "The Palace of Gothmenes",
   Finale.)
-- **Welcome:** the people of Phlan. In the original the whole Realms forgets
-  what happened, so a cheering crowd goes beyond the original. Record it in
-  `docs/DEVIATIONS.md` if the film is kept. (*Cluebook.pdf*.)
+- **Ending:** the Realms are whole again, and no one but the heroes
+  remembers what happened: Phlan goes about a peaceful morning, unaware it
+  was ever taken. No crowd: the film ends on the heroes alone knowing what
+  they saved. (*Cluebook.pdf*.)
 
 ### Storyboard (≈21 s)
 
@@ -373,7 +376,7 @@ the hall and pink-gold at dawn.
 | 2 | 4.5 s | Behind the party, charging | An old wizard pulls free of the whip and throws light at the demon as the heroes charge. |
 | 3 | 4.5 s | Medium shot, slow motion | A dark crystal cracks and pours away as black sand. The demon roars and dissolves into ash. The violet sky tears open to sunlight. |
 | 4 | 4.5 s | Behind the party | White light fades to reveal a harbor city street at dawn, whole again, with gulls overhead. |
-| 5 | 5 s | Crane up from behind the party | The streets fill with cheering people, bunting and petals. Ships' bells ring in the harbor. |
+| 5 | 5 s | Slow crane up from behind the party | An ordinary morning: townsfolk open shutters and market stalls, unaware. The heroes stand on the harbor wall watching the sun rise over the water, the only ones who remember. |
 
 ### Prompts
 
@@ -401,12 +404,13 @@ the hall and pink-gold at dawn.
    the street, seen only from behind as silhouettes against the sunrise.
    Painted epic-fantasy realism, 35mm anamorphic, film grain, soft gold
    dawn, cinematic.
-5. *(Veo 3)* The streets of a harbor city fill with cheering people:
-   bunting strung between houses, flower petals in the air, ships' bells
-   ringing in the harbor. Six adventurers seen from behind as silhouettes
-   walk through the crowd. The camera cranes up and back. Painted
-   epic-fantasy realism, 35mm anamorphic, film grain, golden morning
-   backlight, joyful, cinematic.
+5. *(Veo 3)* An ordinary peaceful morning in a walled harbor city:
+   townsfolk open shutters and set out market stalls, fishermen ready their
+   boats, no one looking up. Six adventurers stand on the harbor wall, seen
+   only from behind as silhouettes, watching the sun rise over the sea. The
+   camera cranes slowly up and back until the city and the bright sea fill
+   the frame. Painted epic-fantasy realism, 35mm anamorphic, film grain,
+   golden morning backlight, quiet and bittersweet, cinematic.
 
 **Negative:** shared line, plus: horned devil cartoon, red skin close-up of
 the heroes.
@@ -422,9 +426,9 @@ demon fire and then by the dawn.
 > Original instrumental dark-fantasy orchestral cue, 22 seconds. Starts
 > menacing and massive: low brass clusters, pounding war drums, dissonant
 > choir pad (no words). At about 10 seconds a sudden silence, a single
-> bell, then a radiant brass and string anthem blooms, with harp and
-> glockenspiel sparkle for a harbor city's celebration. Ends on a broad,
-> triumphant major chord. No vocals.
+> bell, then strings and a solo horn rise into a radiant but quiet theme,
+> with harp and soft glockenspiel for a peaceful harbor morning. Ends on a
+> warm, held major chord, more peace than triumph. No vocals.
 
 ---
 

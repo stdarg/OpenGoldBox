@@ -452,7 +452,8 @@ in the game: answering YES at a hall lists its services in the dialogue
   CURSE, SECRET, GATEWAY, DARKNESS, TREASURE, UA), a Theora film that any key
   or click ends. Without a film the closing words, ending "You have won.",
   stand alone. The films are to be made with AI video and music, the heroes
-  shown in shadow or from behind ([ENDING-FILMS.md](ENDING-FILMS.md)).
+  shown in shadow or from behind, each ending its game's story with a
+  satisfying conclusion ([ENDING-FILMS.md](ENDING-FILMS.md)).
 - **Secret of the Silver Blades has a win** (2026-11-14, the main session's
   design). The original has no ending of its own: script 99 tells of the soul
   gem's shattering and Eldamar's and Oswulf's spirits rising (it sets cell

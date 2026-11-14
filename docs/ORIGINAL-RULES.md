@@ -21,8 +21,14 @@ The user decided these on 2026-11-11 and 2026-11-12:
   ability switches) belong to the SRD rules. Under the original rules the
   game plays at Normal, the original's own play (2026-11-14); see
   [Difficulty](#difficulty).
-- **Obvious bugs in the original are fixed, not kept.** Each one is put to the
-  user for direction and then recorded in [DEVIATIONS.md](DEVIATIONS.md).
+- **Obvious bugs in the original are fixed, not kept.** Since 2026-11-14 an
+  obvious one is fixed without asking first, listed in [Bugs](#bugs) and told
+  to the user; one that may not be a bug, or has more than one fair fix, is
+  put to the user first.
+- **2026-11-14 answers:** *Secret*'s Barkskin casts as Heal, as its table
+  has it (kept as the original); a *Secret* paladin casts at its full paladin
+  level (the original's fixed level 6 is a bug); *Pools of Darkness*'s
+  cleric and thief saves at level 19 take level 20's row (Bugs).
 - **The rules are chosen for each game** (2026-11-12): a new game's first
   question is which rules it plays by, and the choice is kept for that save.
   The player does not switch mid-game. A character belongs to its game's rules,
