@@ -2544,7 +2544,7 @@ std::vector<std::string> train_gateway_party()
 // Gateway's route plays to the game's end once this is true; until then it
 // stops on this map (docs/GAMES.md, phase 5 step 4).
 constexpr bool gateway_route_ends_the_game = false;
-constexpr unsigned gateway_route_stops_on_map = 13;
+constexpr unsigned gateway_route_stops_on_map = 14;
 
 // Gateway's story, beat by beat, as its cluebook tells it (plan phase 5, step
 // 4): from the inn of Yartar on.
@@ -2981,6 +2981,78 @@ const std::vector<RouteBeat> &gateway_route()
             chest.holding_foes = true;
             route.push_back(chest);
         }
+        // Back through the fortress to the beach, where the hidden boat takes
+        // the party, rested, on the current to Neverwinter and its ambush.
+        walk_passages(route, 13,
+                      {{3, 9, D::east},    {4, 9, D::north},  {4, 8, D::east},    {5, 8, D::east},
+                       {6, 8, D::east},    {7, 8, D::east},   {8, 8, D::south},   {8, 9, D::east},
+                       {9, 9, D::north},   {9, 8, D::east},   {10, 8, D::east},   {11, 8, D::south},
+                       {11, 9, D::west},   {10, 9, D::south}, {10, 10, D::west},  {9, 10, D::south},
+                       {9, 11, D::south},  {9, 12, D::east},  {10, 12, D::north}, {10, 11, D::east},
+                       {11, 11, D::north}, {11, 10, D::east}, {12, 10, D::north}, {12, 9, D::east},
+                       {13, 9, D::north},  {13, 8, D::west}},
+                      true);
+        {
+            auto boat = step_beat(13, 12, 8, D::north, {"YES"});
+            boat.rest_first = true;
+            route.push_back(boat);
+        }
+        // Neverwinter: up from the landing, rested, to the Zhentarim and their
+        // manticores who wait for the statuette (cell 4C2A set).
+        walk_passages(route, 6,
+                      {{2, 5, D::north}, {2, 4, D::north}, {2, 3, D::west}, {1, 3, D::north}},
+                      true);
+        {
+            auto ambush = step_beat(6, 1, 2, D::north);
+            ambush.rest_first = true;
+            ambush.expect_cell = {{0x4C2A, 1}};
+            route.push_back(ambush);
+        }
+        // Out of Neverwinter's south gate and overland east and south, past
+        // Yartar, to Secomber, where Amanitas lives.
+        walk_passages(route, 6,
+                      {{1, 1, D::east},
+                       {2, 1, D::east},
+                       {3, 1, D::east},
+                       {4, 1, D::east},
+                       {5, 1, D::east},
+                       {6, 1, D::north},
+                       {6, 14, D::east},
+                       {7, 14, D::south},
+                       {7, 15, D::south}},
+                      true);
+        walk_overland(route, 21,
+                      {{4, 11, D::north},
+                       {4, 9, D::east},
+                       {5, 7, D::east},
+                       {6, 5, D::east},
+                       {7, 4, D::east},
+                       {8, 3, D::east},
+                       {9, 1, D::east},
+                       {10, 0, D::east},
+                       {11, 14, D::east},
+                       {12, 12, D::east},
+                       {13, 10, D::east},
+                       {14, 8, D::east},
+                       {15, 6, D::east}});
+        walk_overland(route, 22,
+                      {{0, 6, D::east},
+                       {1, 4, D::east},
+                       {2, 2, D::east},
+                       {3, 0, D::east},
+                       {4, 14, D::east},
+                       {5, 13, D::east},
+                       {6, 11, D::east},
+                       {7, 9, D::east},
+                       {8, 7, D::east},
+                       {9, 6, D::east},
+                       {10, 4, D::east},
+                       {11, 2, D::east},
+                       {12, 1, D::east},
+                       {13, 0, D::east},
+                       {14, 15, D::south}});
+        walk_overland(route, 25, {{10, 0, D::east}});
+        route.push_back(step_beat(25, 11, 14, D::east, {"YES"}));
         return route;
     }();
     return beats;
