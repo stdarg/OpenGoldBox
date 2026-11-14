@@ -9,6 +9,7 @@
 #include "opengold/original.h"
 #include "opengold/original_content.h"
 #include "opengold/pool_radiance.h"
+#include "opengold/treasures_import.h"
 #include "test_support.h"
 #include "tour_access.h"
 
@@ -192,6 +193,74 @@ void the_overland_is_drawn_from_above()
           "The party's arrow turns with it");
 }
 
+// A Gateway character comes to Treasures as its LoadChar takes one in: its
+// levels, Hit Points and experience under Treasures' rules, and its items
+// renumbered (a battle axe stays item type 1, named again by its words), but
+// one of a type Treasures lacks (Gateway's 3) left behind, none readied.
+void a_gateway_character_comes_across()
+{
+    const auto treasures = treasures_folder();
+    const char *games = std::getenv("OPENGOLD_GOLDBOX_DIR");
+    const auto gateway = games ? std::filesystem::path(games) / "GATEWAY" : std::filesystem::path();
+    constexpr auto gateway_game = GoldBoxGame::gateway_to_the_savage_frontier;
+    if (treasures.empty() || opengold::identify_game(gateway) != gateway_game)
+    {
+        std::cout << "Gateway's or Treasures' files are not here; no one comes across.\n";
+        return;
+    }
+    const auto gateway_content = opengold::load_original_content(gateway, gateway_game);
+    std::shared_ptr<const opengold::rules::CharacterRules> gateway_creation =
+        opengold::original::character_rules(opengold::original::default_aging, gateway_game);
+    opengold::CampaignParty first(opengold::original::rules_module(gateway_content),
+                                  gateway_creation);
+    opengold::CharacterCreator creator(gateway_creation, 5);
+    creator.select(opengold::rules::CreationField::race, "human");
+    creator.select(opengold::rules::CreationField::character_class, "fighter");
+    creator.name("Veteran");
+    for (const bool roll : {false, false, false, true, false, false})
+    {
+        if (roll)
+        {
+            creator.roll();
+        }
+        creator.next();
+    }
+    const auto id = first.add_pc(creator.create_character());
+    const auto item = [&](std::uint8_t type)
+    {
+        opengold::por::Equipment equipment;
+        equipment.stored.type = type;
+        equipment.stored.name_components = {type, 0, 0};
+        equipment.base = gateway_content.item_types.at(type);
+        return equipment;
+    };
+    constexpr std::uint8_t battle_axe = 1, lost_type = 3;
+    first.take_item(id, item(battle_axe));
+    first.take_item(id, item(lost_type));
+    const auto &veteran = first.member(id);
+
+    std::shared_ptr<const opengold::rules::CharacterRules> creation =
+        opengold::original::character_rules(opengold::original::default_aging, treasures_game);
+    opengold::CampaignParty second(opengold::original::rules_module(
+                                       opengold::load_original_content(treasures, treasures_game)),
+                                   creation);
+    const auto arrived =
+        second.bring_across(veteran, opengold::gateway_items_for_treasures(treasures));
+    const auto &member = second.member(arrived);
+    const auto &sheet = member.character.sheet();
+    check(sheet.original->class_levels == veteran.character.sheet().original->class_levels &&
+              sheet.hit_points == veteran.character.sheet().hit_points &&
+              member.experience == veteran.experience &&
+              opengold::original::game_of(sheet.identity) == treasures_game,
+          "Its levels, Hit Points and experience come along, under Treasures' rules");
+    const auto &items = member.character.inventory().items();
+    check(items.size() == 1 && member.equipped.empty(),
+          "The battle axe comes along unreadied, the item Treasures lacks stays behind");
+    const auto &axe = member.item_sources.at(items.front().id);
+    check(axe.stored.type == battle_axe && axe.stored.name_components[0] == battle_axe,
+          "The axe keeps its type and its word, as Treasures numbers them");
+}
+
 } // namespace
 
 int main()
@@ -200,6 +269,7 @@ int main()
     {
         the_opening_reaches_the_fortress();
         the_overland_is_drawn_from_above();
+        a_gateway_character_comes_across();
         std::cout << "Treasures passed.\n";
     }
     catch (const std::exception &error)

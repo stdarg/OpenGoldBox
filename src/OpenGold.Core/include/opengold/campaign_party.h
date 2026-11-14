@@ -7,6 +7,7 @@
 #include "opengold/shop_sale.h"
 #include "opengold/training_hall.h"
 #include <chrono>
+#include <functional>
 
 namespace opengold::por
 {
@@ -270,8 +271,11 @@ class CampaignParty
     // A member of another game's party brought into this one (Curse's Add
     // Character from Pool of Radiance), as this party's rules take it in:
     // its numbers, experience and items, and the platinum it starts with; its
-    // money stays behind. Throws when the rules take in no one.
-    MemberId bring_across(const PartyMember &from);
+    // money stays behind. Throws when the rules take in no one. A game that
+    // renumbers the items it takes in (Treasures from Gateway) converts each
+    // one, nothing for an item it cannot use, and takes them unreadied.
+    using ItemConversion = std::function<std::optional<por::Equipment>(const por::Equipment &)>;
+    MemberId bring_across(const PartyMember &from, const ItemConversion &convert_item = {});
 
     // Developer tools only (dev_tools/party_tester): player characters may
     // also take the two NPC positions, so up to eight of them fight. A game

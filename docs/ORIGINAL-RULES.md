@@ -447,7 +447,17 @@ Its differences (2026-11-14):
   choose a third more spells than the level's slots; OpenGoldBox teaches every
   spell of those levels for now, as *Pools of Darkness* does, until creation
   offers the choice.
-- **Still to come:** bringing a *Gateway* party across.
+- **A *Gateway* character comes across** as its LoadChar takes one in
+  (`CampaignParty::bring_across` with `gateway_items_for_treasures`): its
+  scores, levels, Hit Points, experience and learned spells, and its items,
+  each name word found again among *Treasures*' own by its letters and its
+  type renumbered by the program's table (`legacyTypeMap`), unreadied; an
+  item whose word or type *Treasures* lacks, or of effect 98, is left behind.
+  The original keeps the character's own platinum, gems and jewelry;
+  OpenGoldBox keeps a party's money in one purse, so the character arrives
+  with *Treasures*' 200 platinum, as a *Pool of Radiance* character arrives
+  in *Curse* with its 300. The party screen's choice of *Gateway* saves is
+  still to come.
 
 ## Unlimited Adventures
 

@@ -200,6 +200,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/rolf_tour.cpp
     src/OpenGold.Core/src/phlan_session.cpp
     src/OpenGold.Core/src/vga_host.cpp
+    src/OpenGold.Core/src/treasures_import.cpp
     src/OpenGold.Core/src/random_treasure.cpp
     src/OpenGold.Core/src/magic_item_catalog.cpp
     src/OpenGold.Core/src/encounter_budget.cpp

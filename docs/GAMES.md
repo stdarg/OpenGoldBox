@@ -535,8 +535,9 @@ pictures, walls and script host, *Treasures* adding only what it changes.
    party at (10,7) facing north (`opengold_treasure_tests`, 2026-11-14).
 3. Making a party under *Treasures*' rules: 22,600 experience (11,300 or
    7,533 for each class of two or three) trained at once and 200 platinum,
-   on its engine's tables (ORIGINAL-RULES.md, *Treasures*). Bringing a
-   *Gateway* party across, which the original allows, is still to come.
+   on its engine's tables (ORIGINAL-RULES.md, *Treasures*). A *Gateway*
+   character comes across as its LoadChar takes one in, its items renumbered
+   (`gateway_items_for_treasures`); the party screen's choice of saves is to come.
 4. Walking every map and playing every event and fight (the walk).
    `opengold_treasure_walk` (`opengold_gold_box_games_tests
    --treasure-walk`) walks every square of every map, the overland's too
