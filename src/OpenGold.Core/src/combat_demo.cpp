@@ -683,7 +683,7 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
                                  campaign_->state().next_combat_scope, encounter.morale,
                                  spendable_gold(campaign_->state().wealth, campaign_->coin_rates()),
                                  encounter.daylight, encounter.spares_the_party, encounter.outdoors,
-                                 encounter.escape_ends_fight},
+                                 encounter.escape_ends_fight, encounter.no_magic},
                                 seed);
     install_combat(std::move(next), {});
     seed_ = seed;

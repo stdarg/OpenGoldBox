@@ -119,6 +119,9 @@ struct CampaignEncounter
     // The fight is out of doors, on the wilderness or the overland
     // (rules::Encounter::outdoors).
     bool outdoors{};
+    // No one casts a spell (an Unlimited Adventures design's "no magic"
+    // fight, rules::Encounter::no_magic).
+    bool no_magic{};
     // Monsters on the party's side, standing beside it.
     std::vector<rules::Participant> allies;
     // Party members who fight for the monsters, standing with them (the

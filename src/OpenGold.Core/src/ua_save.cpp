@@ -95,6 +95,11 @@ std::string UaSession::saved_state() const
     }
     out << '\n' << hex_bits(done_bits_) << '\n';
     out << snapshot_.visited.to_string() << ' ' << snapshot_.seen.to_string() << '\n';
+    for (const auto steps : step_counts_)
+    {
+        out << steps << ' ';
+    }
+    out << '\n';
     out << tavern_tales_.size();
     for (const auto &tale : tavern_tales_)
     {
@@ -152,6 +157,10 @@ UaSession UaSession::resume(DesignFiles files, std::string_view state)
     session.done_bits_ = bits_from_hex(next<std::string>(in), session.done_bits_.size());
     session.snapshot_.visited = decltype(session.snapshot_.visited)(next<std::string>(in));
     session.snapshot_.seen = decltype(session.snapshot_.seen)(next<std::string>(in));
+    for (auto &steps : session.step_counts_)
+    {
+        steps = next<unsigned>(in);
+    }
     const auto tales = next<std::size_t>(in);
     require(tales <= 100, "The saved tavern tales are too many");
     for (std::size_t n = 0; n < tales; ++n)

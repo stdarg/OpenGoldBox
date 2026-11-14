@@ -153,6 +153,17 @@ class AreaBuilder
         bytes_[at + 3] = static_cast<std::uint8_t>(chance);
     }
 
+    // Step event `slot` (0 to 7, the header's four bytes a slot from +4Eh):
+    // event `event` every `steps` steps taken outside the zones in `zones_off`.
+    void step_event(unsigned slot, unsigned steps, unsigned event, unsigned zones_off)
+    {
+        const auto at = header_at + 0x4E + 4 * slot;
+        bytes_[at] = static_cast<std::uint8_t>(steps & 0xFF);
+        bytes_[at + 1] = static_cast<std::uint8_t>(steps >> 8);
+        bytes_[at + 2] = static_cast<std::uint8_t>(event);
+        bytes_[at + 3] = static_cast<std::uint8_t>(zones_off);
+    }
+
     // Whether the overhead map shows the area (bit 0 of the header's +7).
     void overhead_map(bool shown)
     {
@@ -300,6 +311,8 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
     hall.event(21, {1, 0, 0, 0, 0, 0, 0, 100, 2, 1, 0, 0, 0, 0, 0x20, 0, 0xA0}, {{7, 14}});
     // A wall a square west of it, which cuts the distance short that way.
     hall.wall(2, 14, MapDirection::west, 0xE1);
+    // 22: two kobolds where no one may cast (byte 0Eh's bit 80h).
+    hall.event(22, {1, 0, 0, 0, 0, 0, 0, 100, 2, 1, 0, 0, 0, 0, 0x80}, {{1, 13}});
     write(folder / "GEO005.DAT", hall.finish());
 
     AreaBuilder cellar(*blank);
@@ -325,6 +338,10 @@ std::filesystem::path build_test_design(const std::filesystem::path &kit,
     cellar.event(6, {2, 0, 0, 0, 0, 0, 0, 0, low(rats), high(rats)});
     cellar.rest_encounter(0, 60, 6, 100);
     cellar.overhead_map(false);
+    // 7: a draft every third step taken in the cellar's zone 0 (step event 1).
+    const auto draft = cellar.text("A DRAFT CHILLS THE PARTY.");
+    cellar.event(7, {2, 0, 0, 0, 0, 0, 0, 0, low(draft), high(draft)});
+    cellar.step_event(0, 3, 7, 0);
     write(folder / "GEO006.DAT", cellar.finish());
 
     // Area 7, the town: a square of each service and test along row 1.
@@ -1297,6 +1314,71 @@ void the_view_plays_it_through_the_seam(const std::filesystem::path &kit)
     check(!session.view_picture(), "An overland area shows no 3D view yet");
 }
 
+// The kit's monster effects as the fight's (docs/games/ua.md, Monsters'
+// effects), a "no magic" fight, and the cellar's step event.
+void the_kits_monsters_and_events_play_as_the_kit_has_them(const std::filesystem::path &kit)
+{
+    const ua::DesignFiles files(
+        kit, build_test_design(kit, temporary_design("opengold_ua_effects.dsn")));
+    const auto items = ua::load_design_items(files);
+    const auto effects = [&](unsigned number)
+    {
+        const auto monster = *ua::decode_monster(*files.data("MONST", number));
+        std::vector<int> codes;
+        for (const auto &effect : ua::monster_combatant(monster, items, {1, 1}).effects)
+        {
+            codes.push_back(effect.code);
+        }
+        return codes;
+    };
+    const auto has = [](const std::vector<int> &codes, int code)
+    {
+        return std::ranges::find(codes, code) != codes.end();
+    };
+    // The skeleton: half damage from edged weapons (Pool's 115), no fear
+    // (Secret's 492) and no cold (Curse's 310).
+    const auto skeleton = effects(18);
+    check(has(skeleton, 115) && has(skeleton, 492) && has(skeleton, 310),
+          "The kit's skeleton fights with its effects");
+    // The troll's return and regeneration are Pool of Radiance's own.
+    const auto troll = effects(9);
+    check(has(troll, 100) && has(troll, 101), "The kit's troll returns and regenerates");
+    // The rakshasa's spell immunity has no handler yet: numbered past the kit's own.
+    check(has(effects(71), 40 + opengold::original::kit_effect_offset),
+          "An effect no game plays yet is kept, unplayed");
+    // The no-magic fight.
+    const auto content = ua::load_design_content(files);
+    auto session = ua::UaSession::start(files);
+    auto party = new_party(content);
+    session.campaign_party(party);
+    Player player{session, party, content};
+    player.play();
+    session.place(5, 1, 13, MapDirection::north);
+    session.look();
+    check(session.pending_encounter() && session.pending_encounter()->no_magic,
+          "The fight's event bars magic");
+    player.play();
+    session.place(5, 8, 2, MapDirection::east);
+    session.look();
+    while (session.snapshot().phase == TourPhase::awaiting_continue)
+    {
+        check(session.choose(session.snapshot().continue_ticket, 0), "Return goes on");
+    }
+    check(session.pending_encounter() && !session.pending_encounter()->no_magic,
+          "Other fights allow it");
+    player.play();
+    // The cellar's draft: every third step.
+    session.place(6, 1, 4, MapDirection::east);
+    player.said.clear();
+    for (int step = 0; step < 3; ++step)
+    {
+        check(!player.heard("A DRAFT CHILLS THE PARTY."), "The draft waits for its third step");
+        check(session.explore(ExplorationCommand::forward), "The party walks the cellar");
+        player.play();
+    }
+    check(player.heard("A DRAFT CHILLS THE PARTY."), "The third step brings the draft");
+}
+
 // Camping (docs/games/ua.md, Camping): a rest where no encounter waits heals
 // as the rules rest; the cellar's rats break one at its first hour, and their
 // event runs.
@@ -1572,6 +1654,7 @@ int main(int argc, char **argv)
         the_view_plays_it_through_the_seam(*kit);
         a_game_saves_and_loads(*kit);
         the_party_camps(*kit);
+        the_kits_monsters_and_events_play_as_the_kit_has_them(*kit);
         // The game's startup check plays the test design from the menu (a
         // CTest fixture): it is written where the check looks for it.
         if (const char *fixture = std::getenv("OPENGOLD_UA_DESIGN_FIXTURE"))

@@ -82,6 +82,9 @@ inline constexpr int curse_effect_offset = 200;
 // Secret of the Silver Blades' effects that neither earlier game has are
 // numbered this much higher than Secret's own.
 inline constexpr int secret_effect_offset = 400;
+// Unlimited Adventures' monster effects that no earlier game's effect does
+// are numbered this much higher than the kit's own, which no handler plays.
+inline constexpr int kit_effect_offset = 600;
 
 // The number the fight knows a game's own effect by (its records', items'
 // and spells'): Pool of Radiance's as they are; Curse's that work as Pool of
@@ -89,7 +92,9 @@ inline constexpr int secret_effect_offset = 400;
 // Radiance's helplessness (31), and the rest curse_effect_offset higher
 // (docs/ORIGINAL-RULES.md, Curse of the Azure Bonds); Secret's as the earlier
 // game's effect that works as it does, and the rest secret_effect_offset
-// higher (Secret of the Silver Blades).
+// higher (Secret of the Silver Blades); Unlimited Adventures' monsters' as
+// the effect that does what the kit's does, and the rest kit_effect_offset
+// higher (docs/games/ua.md, Monsters' effects).
 [[nodiscard]] int canonical_effect(int code, GoldBoxGame game) noexcept;
 
 struct Effect

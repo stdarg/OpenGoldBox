@@ -1183,6 +1183,10 @@ tuned with the AI lab once the original rules play.
 |---|---|
 | Creation never applies racial ability adjustments: a leftover variable makes every character human (`chargen.pas`, the ability roll) | Fixed (the user, 2026-11-11) |
 | *Unlimited Adventures:* a ranger above level 8 learns a magic-user spell at every training, its ranger level risen or not (`train.c`, `train_hero`) | Only when its ranger level rises (the user, 2026-11-14) |
+| *Unlimited Adventures:* Protection from Evil's -2 to an evil attacker (monster effects 8 and 45) is set before the attack roll, which overwrites it (`fxcombat.c`) | The fight's own effects 8 and 45 apply it |
+| *Unlimited Adventures:* a displacing monster (effect 89) turns aside one attack a fight, its effect readied only as the fight starts | Once a round, as the fight's effect 89 |
+| *Unlimited Adventures:* the shambling mound (effect 173) heals a flat 8 from electricity, past its maximum, its 1d8 thrown away; the owlbear's hug (220) never squeezes | 1d8, and the hug squeezes, as the fight's 284 and 296 |
+| *Unlimited Adventures:* a troll (effect 216) tests a blow's element against 0, so acid never keeps it down | Fire and acid keep it down, as the fight's 100 |
 | *Unlimited Adventures:* a rest encounter with a chance but no minutes between rolls divides by zero (`rest.c`, `encounter_roll`) | It never rolls |
 | *Unlimited Adventures:* a price rate above 19 reads past the kit's rate tables (`temple.c`, `rate_price`) | Taken as rate 19, a hundred times the price |
 | *Unlimited Adventures:* a wrong password says "wrong, try agin." (`evcmds.c`, the password event) | Spelt "Wrong, try again." |

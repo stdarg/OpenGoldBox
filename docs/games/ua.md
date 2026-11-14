@@ -518,18 +518,15 @@ playing each event and fight; it fails on any event the session cannot play.
   and their rest encounters break a camp); zone texts and step events.
 - Locked doors: bashing, picking and Knock.
 - Fights:
-  - Monsters' effects (the record's ten at +1AEh, held at strength FFh:
-    specials and immunities, 68 kinds among the kit's monsters). The kit
-    numbers them as the Krynn games do, not as the DAX games whose effects
-    the original rules' combat knows, so each needs matching by what it
-    does; none is given yet.
+  - The 14 monster effects no game's effect plays yet (Monsters' effects,
+    below), the kit's monster types (+BFh) as the fight's kin for the
+    effects that name them (26, 47, 105), and the differences of the near
+    matches.
   - Monsters' spells (+C6h) and an item's special effect when readied.
-  - "No magic" fights (byte 0Eh's bit 80h: no one casts). The original
-    rules' combat resets who may cast each round, so the fight must keep
-    the bar itself, which raises its saved format.
   - The area's wandering monster (+106h): the kit fields ten of it out of
     sight, for a Monster Summoning to gate in beside its caster; the
-    original rules have no summoning.
+    original rules have no summoning, so it waits for them. (The kit's other
+    wandering monsters, its step events and rest encounters, play.)
   - Byte 12h's top bits (the turning level +0, 2, 10 or 41 over the
     area's) and an icon over two squares a side, which stands as two.
 - The treasure menu, and items' names (the kit's words are in CKIT.EXE,
@@ -540,6 +537,68 @@ playing each event and fight; it fails on any event the session cannot play.
   area's big picture, `BIGPIC`, the header's first backdrop, with the
   party's marker over its square: `view3d.c`, `wild_pic_open`; `cursor.c`)
   and its zone texts, step events and maps larger than 16 by 16.
+
+### Monsters' effects, "no magic" fights and step events
+
+Since 2026-11-14 (`ua_session.cpp`, `combatant.cpp`):
+
+- **Monsters' effects.** A MONST record's ten effects (+1AEh) fight as the
+  kit loads them, for good at strength FFh, each as the original rules'
+  effect that does what the kit's does (`original::canonical_effect`, as
+  for *Curse* and *Secret*; judged from the reconstruction's `effects.c`,
+  `fxcore.c` and `fxcombat.c`). The kit's monsters carry 68 kinds; 54 match
+  an effect the fight plays:
+
+  | Kit | Fight | Kit | Fight | Kit | Fight | Kit | Fight |
+  |---|---|---|---|---|---|---|---|
+  | 6 | 335 | 64 | 64 | 92 | 492 | 141 | 108 |
+  | 8 | 8 | 65 | 465 | 93 | 112 | 143 | 111 |
+  | 18 | 124 | 66 | 115 | 95 | 107 | 158 | 109 |
+  | 24 | 24 | 70 | 470 | 96 | 290~ | 159 | 117~ |
+  | 26 | 26 | 73 | 273 | 98 | 310 | 169 | 116 |
+  | 37 | 237 | 79 | 479 | 100 | 482~ | 170 | 87~ |
+  | 45 | 45 | 82 | 330~ | 101 | 85 | 171 | 82 |
+  | 47 | 47 | 84 | 504 | 102 | 86 | 173 | 284 |
+  | 58 | 458~ | 85 | 483 | 103 | 119~ | 174 | 282 |
+  | 59 | 127 | 86 | 70 | 105 | 334 | 175 | 281 |
+  | 60 | 460~ | 88 | 488~ | 108 | 303~ | 176 | 257 |
+  | | | 89 | 89 | 117 | 287~ | 216 | 100 |
+  | | | 91 | 88~ | 124 | 84~ | 217 | 101 |
+  | | | | | 132 | 488 | 220 | 296 |
+  | | | | | | | 223 | 480 |
+  | | | | | | | 224 | 68~ |
+
+  A ~ marks a near match: the gaze of 58 reaches six squares and spares no
+  one the kit's 126 or 79 spare; 60 and 103 let any monster of their level
+  through, armed or not; 82 slays with the banishing quarrel; 88 and 224
+  paralyse on either attack and 224 for longer; 91 breathes as Pool of
+  Radiance's dragons do; 96 is acid as well as breath; 100's terror takes
+  no save; 108 adds 1d6 to the blow; 117's rays need their exact
+  distances; 124's charm is saved at -2; 159's holy water is the fight's;
+  170's rot takes no Charisma. The other 14 (40, 76, 80, 81, 90, 99, 125,
+  126, 137, 168, 186, 193, 195, 219: spell immunity, disease immunity,
+  half damage from weapons below +3 and +4, poison breath, the bulette's
+  attacks, +2 weapons needed, sure saves against gazes, stench, damage from
+  magical fire, the pudding's corrosion, no damage from weapons, the
+  gorgon's breath, less fire damage) are kept 600 higher
+  (`kit_effect_offset`), which no handler plays yet.
+- **"No magic" fights.** Byte 0Eh's bit 80h of a fight's event bars every
+  spell (evcmds.c): `CampaignEncounter::no_magic` and
+  `rules::Encounter::no_magic`; the original rules' fight gives every
+  fighter an effect that bars casting (600, `effect::no_magic`), so the bar
+  lasts as a saved fight's effects do, and neither the player nor the AI
+  is offered a spell.
+- **Step events**, the kit's wandering monsters: the area header's eight
+  from +4Eh (move.c, `step_events_tick`), each the steps between its runs
+  (a word), the event, and the zones where steps do not count (bit n, zone
+  n). Each counts the steps the party takes in its zones from its arrival
+  in the area and runs when the count comes round, before the square's own
+  event; the counts are saved.
+
+`opengold_ua_session_tests` checks the skeleton's, troll's and rakshasa's
+effects, the hall's no-magic kobolds and the cellar's draft every third
+step; `opengold_original_combat_tests` that no one casts in a no-magic fight,
+saved or not.
 
 ### Camping and the overhead map
 
@@ -578,7 +637,8 @@ the kit's `SavGamA..J.csv`:
   loading picks the design's monsters before the party; and the session's
   own state (`ua::UaSession::saved_state`, `ua_save.cpp`): the area, the
   party's square and facing, the square a step back returns to, the quest
-  flags, every area's events done, the squares seen, Search mode, the clock
+  flags, every area's events done, the squares seen, the step
+  events' counts, Search mode, the clock
   while no party plays, the session's dice, the tithe given, the vault, the
   tavern's next tale and drink, and the tavern tales heard on this square.
   Campaign format 51 (`DesignSave`); older saves load as before.

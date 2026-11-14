@@ -419,6 +419,10 @@ class UaSession final : public ExplorationSession
     [[nodiscard]] unsigned party_zone() const;
     // A rest encounter breaks this five-minute step of a rest: its event.
     [[nodiscard]] std::optional<unsigned> rest_encounter();
+    // The area's step events whose count this step reaches, in order.
+    [[nodiscard]] std::vector<unsigned> due_step_events();
+    // A step's events: those its steps make due, then the square's.
+    void run_step_events(unsigned square);
     void step_back();
     void advance_minutes(unsigned minutes);
     [[nodiscard]] unsigned hour() const;
@@ -459,6 +463,9 @@ class UaSession final : public ExplorationSession
     // Minutes rested toward the next rest encounter roll (the kit's
     // encounter_ticks), from a camp's start.
     unsigned rest_ticks_{};
+    // The steps counted toward each of the area's eight step events (the
+    // kit's cursor_obj 1FDh), from the party's arrival in the area.
+    std::array<unsigned, 8> step_counts_{};
 
     // The event loop's state between steps.
     std::uint8_t loop_step_{};

@@ -376,7 +376,8 @@ original::Combatant creature(int hit_points, int level = 1)
 
 Fight arrange(const std::vector<Placed> &placed, std::uint64_t seed,
               const std::vector<rules::Cell> &walls = {}, unsigned morale = 100,
-              GoldBoxGame game = GoldBoxGame::pool_of_radiance, bool outdoors = false)
+              GoldBoxGame game = GoldBoxGame::pool_of_radiance, bool outdoors = false,
+              bool no_magic = false)
 {
     original::Content content;
     content.game = game;
@@ -384,6 +385,7 @@ Fight arrange(const std::vector<Placed> &placed, std::uint64_t seed,
     rules::Encounter encounter;
     encounter.morale = morale;
     encounter.outdoors = outdoors;
+    encounter.no_magic = no_magic;
     encounter.battlefield = {8, 8, std::vector<rules::Terrain>(64, rules::Terrain::open)};
     for (const auto wall : walls)
     {
@@ -1741,6 +1743,25 @@ std::optional<rules::Command> aim_at(const rules::CombatSession &session, std::s
 std::optional<rules::Command> aim_at_cell(const rules::CombatSession &session, rules::Cell cell)
 {
     return offered(session, "aim", {}, cell);
+}
+
+// An Unlimited Adventures design's "no magic" fight: no one casts, its spells
+// kept, and the bar lasts through a saved fight (rules::Encounter::no_magic).
+void no_one_casts_in_a_no_magic_fight()
+{
+    using original::ClassSlot;
+    const std::vector<Placed> placed{
+        {"Cleric", rules::Side::party, {1, 3}, caster(ClassSlot::cleric, 3, {1})},
+        {"Kobold", rules::Side::opposition, {3, 1}, creature(20, 0)}};
+    auto fight = arrange(placed, 71, {}, 100, GoldBoxGame::unlimited_adventures, false, true);
+    auto &session = *fight.session;
+    until_turn_of(session, "Cleric");
+    check(!cast_command(session, 1), "No one casts in a no-magic fight");
+    auto restored = fight.module->restore(session.save());
+    check(!cast_command(*restored, 1), "The bar lasts through a saved fight");
+    auto open = arrange(placed, 71, {}, 100, GoldBoxGame::unlimited_adventures);
+    until_turn_of(*open.session, "Cleric");
+    check(cast_command(*open.session, 1).has_value(), "Another fight lets the cleric cast");
 }
 
 // Bless takes 3 off the caster's initiative and goes off later in the round,
@@ -4148,6 +4169,7 @@ int main()
         a_mummy_frightens();
         clerics_turn_undead();
         bless_waits_for_its_turn();
+        no_one_casts_in_a_no_magic_fight();
         damage_loses_a_spell();
         magic_missiles();
         curse_caster_levels();

@@ -703,6 +703,9 @@ struct Encounter
     // first party member to get away ends the fight, the party leaving by
     // the side it ran off (Snapshot::escape_side).
     bool escape_ends_fight{};
+    // No one casts a spell in this fight (an Unlimited Adventures design's
+    // "no magic" fight).
+    bool no_magic{};
 };
 
 // A weapon attack as the rules resolve it: the attack roll's bonus and the

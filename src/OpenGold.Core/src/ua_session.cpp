@@ -287,7 +287,23 @@ original::Combatant monster_combatant(const Monster &monster, const DesignItems 
     {
         carried.push_back({item.stored, item.base});
     }
-    return original::combatant_from_record(monster_record(monster, icon), carried);
+    // Its ten effects (+1AEh), held for good at strength FFh as the kit
+    // loads them (saveload.c, mon_load), by the fight's numbers
+    // (original::canonical_effect).
+    constexpr std::size_t tail_effects = 0x1AE, tail_effect_count = 10;
+    std::vector<por::EffectRecord> effects;
+    for (std::size_t n = 0; n < tail_effect_count; ++n)
+    {
+        const auto code = monster.raw[tail_effects + n];
+        if (code != 0)
+        {
+            por::EffectRecord effect;
+            effect.code = code;
+            effect.data = 0xFF;
+            effects.push_back(effect);
+        }
+    }
+    return original::combatant_from_record(monster_record(monster, icon), carried, effects);
 }
 
 original::Content load_design_content(const DesignFiles &files)
@@ -492,6 +508,7 @@ void UaSession::load_area(unsigned number)
     area_ = {number, std::move(*area)};
     view_art_ = area_.overland() ? ViewArt{} : load_view_art(files_, area_.area);
     area_map_ = overhead_map(area_);
+    step_counts_ = {};
     snapshot_.area_id = number;
     snapshot_.visited.reset();
     snapshot_.seen.reset();
@@ -677,7 +694,7 @@ bool UaSession::explore(por::ExplorationCommand command)
         ++snapshot_.footsteps;
         advance_minutes(area_.overland() ? 12 * 60 : (snapshot_.searching ? 10 : 1));
         tavern_tales_.clear();
-        run_events(square_event(pose.x, pose.y));
+        run_step_events(square_event(pose.x, pose.y));
         return true;
     }
     default:
@@ -974,6 +991,8 @@ void UaSession::begin_combat(const EventRecord &event, bool pick_one)
     encounter_surprise_.reset();
     encounter.distance = fight_distance(event);
     encounter.morale = std::min(100U, event[7] & 0x7FU);
+    // Byte 0Eh's bit 80h: no one casts in this fight (evcmds.c).
+    encounter.no_magic = (event[0xE] & 0x80) != 0;
     rules::EntityId next_enemy = first_monster_id, next_ally = first_ally_id;
     fielded_monsters_.clear();
     // The kit fields at most 50 monsters.
@@ -1271,6 +1290,56 @@ std::optional<unsigned> UaSession::rest_encounter()
         }
     }
     return std::nullopt;
+}
+
+// The area header's step events, eight from +4Eh (move.c,
+// step_events_tick): the steps between them (a word), the event, and the
+// zones where they do not count (bit n, zone n). Each counts the steps taken
+// in its zones and runs once its count comes round.
+std::vector<unsigned> UaSession::due_step_events()
+{
+    constexpr std::size_t header_step_events = 0x4E;
+    const auto &header = area_.area.header;
+    const auto zone = party_zone();
+    std::vector<unsigned> due;
+    for (std::size_t n = 0; n < step_counts_.size(); ++n)
+    {
+        const std::size_t at = header_step_events + 4 * n;
+        const unsigned steps = word_at(header, at), event = header[at + 2],
+                       zones_off = header[at + 3];
+        if (event == 0 || event > event_count || ((zones_off >> zone) & 1U) != 0)
+        {
+            continue;
+        }
+        if (++step_counts_[n] >= steps)
+        {
+            step_counts_[n] = 0;
+            due.push_back(event);
+        }
+    }
+    return due;
+}
+
+// The kit runs a step's due events one after another and then the square's;
+// the later ones wait on the event stack as a menu's own event does, so an
+// event that moves the party leaves them behind.
+void UaSession::run_step_events(unsigned square)
+{
+    auto due = due_step_events();
+    if (due.empty())
+    {
+        run_events(square);
+        return;
+    }
+    if (square != 0)
+    {
+        event_stack_.push_back(square);
+    }
+    for (auto later = due.rbegin(); later + 1 != due.rend(); ++later)
+    {
+        event_stack_.push_back(*later);
+    }
+    run_events(due.front());
 }
 
 bool UaSession::camp(RestKind kind)

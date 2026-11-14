@@ -578,10 +578,35 @@ int secret_canonical_effect(int code) noexcept
     return code + secret_effect_offset;
 }
 
+// Unlimited Adventures' monsters' effects by the fight's numbers (the
+// kit's effects.c and fxcombat.c, judged by what each does; docs/games/ua.md,
+// Monsters' effects). The kit numbers its effects as the Krynn games do, so
+// none keeps its number by chance; those no game's effect plays are
+// kit_effect_offset higher.
+int kit_canonical_effect(int code) noexcept
+{
+    constexpr std::array<std::pair<int, int>, 54> matched{{
+        {6, 335},   {8, 8},     {18, 124},  {24, 24},   {26, 26},   {37, 237},  {45, 45},
+        {47, 47},   {58, 458},  {59, 127},  {60, 460},  {64, 64},   {65, 465},  {66, 115},
+        {70, 470},  {73, 273},  {79, 479},  {82, 330},  {84, 504},  {85, 483},  {86, 70},
+        {88, 488},  {89, 89},   {91, 88},   {92, 492},  {93, 112},  {95, 107},  {96, 290},
+        {98, 310},  {100, 482}, {101, 85},  {102, 86},  {103, 119}, {105, 334}, {108, 303},
+        {117, 287}, {124, 84},  {132, 488}, {141, 108}, {143, 111}, {158, 109}, {159, 117},
+        {169, 116}, {170, 87},  {171, 82},  {173, 284}, {174, 282}, {175, 281}, {176, 257},
+        {216, 100}, {217, 101}, {220, 296}, {223, 480}, {224, 68},
+    }};
+    const auto found = std::ranges::find(matched, code, &std::pair<int, int>::first);
+    return found != matched.end() ? found->second : code + kit_effect_offset;
+}
+
 } // namespace
 
 int canonical_effect(int code, GoldBoxGame game) noexcept
 {
+    if (game == GoldBoxGame::unlimited_adventures && code != 0)
+    {
+        return kit_canonical_effect(code);
+    }
     if (game == GoldBoxGame::secret_of_the_silver_blades && code != 0)
     {
         return secret_canonical_effect(code);

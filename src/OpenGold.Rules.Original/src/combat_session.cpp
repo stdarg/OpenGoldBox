@@ -75,13 +75,15 @@ constexpr int bite_hold = 74, blood_drain = 75, rot = 50, poisoned = 55, mummy_r
               troll_heal = 101, troll_return = 102, gaze_block = 126, bless = 1, curse = 2,
               protection_from_evil = 8, protection_from_good = 9, resist_cold = 10, charm = 11,
               shield = 17, resist_fire = 20, sleep = 53, silence = 21, mirror_image = 28,
-              enfeebled = 29, blind = 33, bestow_curse = 36, hasted = 39, missile_protection = 41,
-              slowed = 42, protection_from_evil_aura = 45, protection_from_good_aura = 46,
-              prayer = 49, coughing = 30, nausea = 31, stinking_cloud = 40, cloudkill = 291,
-              enlarged = 12, strengthened = 38, strength_wasted = original::strength_wasted,
-              delayed_blast = 500, animated = 32, snake_charm = 51, slow_poison_tick = 15,
-              slow_poison = 22, revival = 78, read_magic = 16, dust = 71,
-              age_in_years = original::age_in_years;
+              // The fight's bar on spells, which every fighter of a "no magic"
+              // fight holds (rules::Encounter::no_magic): no game numbers it.
+    no_magic = kit_effect_offset, enfeebled = 29, blind = 33, bestow_curse = 36, hasted = 39,
+              missile_protection = 41, slowed = 42, protection_from_evil_aura = 45,
+              protection_from_good_aura = 46, prayer = 49, coughing = 30, nausea = 31,
+              stinking_cloud = 40, cloudkill = 291, enlarged = 12, strengthened = 38,
+              strength_wasted = original::strength_wasted, delayed_blast = 500, animated = 32,
+              snake_charm = 51, slow_poison_tick = 15, slow_poison = 22, revival = 78,
+              read_magic = 16, dust = 71, age_in_years = original::age_in_years;
 // Haste keeps whether it has aged its creature in this bit of its strength,
 // which no caster's level reaches. The original's bit 0x10 is set already by
 // a caster of level 16 to 31, whose Haste so never aged (Bugs).
@@ -5585,7 +5587,7 @@ bool Session::ai_cast(Fighter &f, bool magic)
     const auto &spells = f.numbers.spells;
     // A party member casts only with the party's Quick magic on (Curse's
     // reference card: ALT M); monsters and NPCs always may.
-    if (!f.cast_allowed || silenced(f) || !enemy_left ||
+    if (!f.cast_allowed || silenced(f) || f.has(effect::no_magic) || !enemy_left ||
         (f.numbers.morale < non_player && !magic) || spells.empty())
     {
         return false;
@@ -7042,7 +7044,7 @@ std::vector<rules::Command> Session::legal_commands() const
         commands.push_back(command);
     };
     // Cast, while it may and has a spell ready for a fight (combat.pas, CombatMenu).
-    if (actor->cast_allowed && !silenced(*actor))
+    if (actor->cast_allowed && !silenced(*actor) && !actor->has(effect::no_magic))
     {
         std::vector<int> offered_spells;
         for (const int number : actor->numbers.spells)
@@ -7916,6 +7918,15 @@ std::unique_ptr<rules::CombatSession> create_session(rules::Identity identity,
             f.hit_points = 0;
         }
         fighters.push_back(std::move(f));
+    }
+    // In a "no magic" fight every fighter holds the bar, so it lasts as the
+    // fight's effects are kept.
+    if (encounter.no_magic)
+    {
+        for (auto &f : fighters)
+        {
+            f.numbers.effects.push_back({effect::no_magic, 0, 0, false});
+        }
     }
     // A party NPC without a morale of its own takes the encounter's (combatst.pas,
     // InitCreatureCombatData).
