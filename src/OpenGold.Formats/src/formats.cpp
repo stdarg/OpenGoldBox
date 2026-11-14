@@ -214,6 +214,17 @@ ImageDecodeResult decode_ega_sprite(std::span<const std::uint8_t> dax, std::uint
     return {FormatResult::not_found, {}};
 }
 
+std::optional<std::vector<std::uint8_t>> decode_dax_record(std::span<const std::uint8_t> dax,
+                                                           std::uint8_t record_id)
+{
+    auto extracted = extract_record(dax, record_id);
+    if (extracted.status != FormatResult::ok)
+    {
+        return std::nullopt;
+    }
+    return std::move(extracted.bytes);
+}
+
 ImageDecodeResult decode_ega_combat_icon(std::span<const std::uint8_t> dax, std::uint8_t record_id,
                                          std::uint8_t frame_index)
 {

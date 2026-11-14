@@ -117,6 +117,50 @@ void five_plane_pictures_read_their_own_colors()
     check(!gateway::decode_picture(record), "Bytes past the last frame are no picture");
 }
 
+// A DAX archive of one record `id`, stored as literal runs.
+Bytes one_record_archive(std::uint8_t id, const Bytes &record)
+{
+    Bytes stored;
+    for (std::size_t offset = 0; offset < record.size();)
+    {
+        const auto size = std::min<std::size_t>(128, record.size() - offset);
+        stored.push_back(static_cast<std::uint8_t>(size - 1));
+        stored.insert(stored.end(), record.begin() + static_cast<std::ptrdiff_t>(offset),
+                      record.begin() + static_cast<std::ptrdiff_t>(offset + size));
+        offset += size;
+    }
+    Bytes bytes;
+    append_u16(bytes, 9);
+    bytes.push_back(id);
+    bytes.insert(bytes.end(), {0, 0, 0, 0});
+    append_u16(bytes, static_cast<unsigned>(record.size()));
+    append_u16(bytes, static_cast<unsigned>(stored.size()));
+    bytes.insert(bytes.end(), stored.begin(), stored.end());
+    return bytes;
+}
+
+void combat_icons_key_black_and_show_dark_gray_black()
+{
+    auto record = picture_header(1, 1, 1);
+    const auto colors = planar_colors();
+    record.insert(record.end(), colors.begin(), colors.end());
+    const auto row = planar_row({0, 8, 1, 18, 0, 0, 0, 0});
+    record.insert(record.end(), row.begin(), row.end());
+    const auto dax = one_record_archive(5, record);
+
+    const auto icon = gateway::decode_combat_icon(dax, 5);
+    check(icon && icon.image.width == 8 && icon.image.height == 1, "A combat icon decodes");
+    const auto &rgba = icon.image.rgba;
+    check(rgba[3] == 0, "Black is the icon's transparent color");
+    check(rgba[4] == 0 && rgba[5] == 0 && rgba[6] == 0 && rgba[7] == 255, "Dark gray shows black");
+    check(std::equal(rgba.begin() + 8, rgba.begin() + 11, opengold::ega_rgb(1).begin()) &&
+              rgba[11] == 255,
+          "Other colors keep the VGA mode's");
+    check(rgba[12] == rgb_level(1) && rgba[15] == 255, "The icon's own colors show");
+    check(gateway::decode_combat_icon(dax, 6).status == opengold::FormatResult::not_found,
+          "An icon the archive lacks is not found");
+}
+
 void older_headers_hold_packed_pixels()
 {
     auto record = picture_header(1, 1, 2);
@@ -302,6 +346,7 @@ int main()
     {
         five_plane_pictures_read_their_own_colors();
         older_headers_hold_packed_pixels();
+        combat_icons_key_black_and_show_dark_gray_black();
         a_picture_may_hold_only_its_colors();
         animations_store_later_frames_as_differences();
         eight_by_eight_tiles_show_their_ega_colors();

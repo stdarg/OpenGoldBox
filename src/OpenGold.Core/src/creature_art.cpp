@@ -2,6 +2,7 @@
 #include "opengold/campaign_party.h"
 #include "opengold/scroll_key.h"
 #include "opengold/formats.h"
+#include "opengold/gateway_formats.h"
 #include <algorithm>
 #include <utility>
 
@@ -57,9 +58,18 @@ std::vector<std::optional<Equipment>> carried_gear(const Creature &creature,
 }
 
 std::optional<CombatArt> creature_art(const std::vector<std::uint8_t> &archive, unsigned icon,
-                                      const ExportedMonster *exported, bool archer)
+                                      const ExportedMonster *exported, bool archer,
+                                      GoldBoxGame game)
 {
-    auto ready = decode_ega_combat_icon(archive, static_cast<std::uint8_t>(icon), 0);
+    // Gateway's icons are pictures of its own format.
+    const auto decode = [&](unsigned record)
+    {
+        const auto id = static_cast<std::uint8_t>(record);
+        return game == GoldBoxGame::gateway_to_the_savage_frontier
+                   ? gateway::decode_combat_icon(archive, id)
+                   : decode_ega_combat_icon(archive, id, 0);
+    };
+    auto ready = decode(icon);
     if (!ready)
     {
         return std::nullopt;
@@ -67,7 +77,7 @@ std::optional<CombatArt> creature_art(const std::vector<std::uint8_t> &archive, 
     CombatArt art{0, std::move(ready.image), {}, {}, {}, {}};
     if (icon < 128)
     {
-        if (auto action = decode_ega_combat_icon(archive, static_cast<std::uint8_t>(icon + 128), 0))
+        if (auto action = decode(icon + 128))
         {
             art.action = std::move(action.image);
         }

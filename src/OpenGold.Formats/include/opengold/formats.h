@@ -37,6 +37,11 @@ struct DaxDecodeResult
 // Validates the entire archive. Duplicate IDs and malformed records fail atomically.
 [[nodiscard]] DaxDecodeResult decode_dax_archive(std::span<const std::uint8_t> bytes);
 
+// One record of an archive, decompressed; nullopt when the archive lacks it or
+// does not parse.
+[[nodiscard]] std::optional<std::vector<std::uint8_t>>
+decode_dax_record(std::span<const std::uint8_t> dax, std::uint8_t record_id);
+
 struct Image
 {
     std::uint16_t width{};

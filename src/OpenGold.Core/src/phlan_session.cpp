@@ -1257,7 +1257,7 @@ void RolfTourSession::stage_mirror()
 {
     // The fight builds the copy from the duelist; here it gets its place
     // among the enemies and the original's combat icon 11.
-    auto art = creature_art(area_resources().combat_archive, 11, nullptr, false);
+    auto art = creature_art(area_resources().combat_archive, 11, nullptr, false, game());
     if (!art)
     {
         throw EclError("Invalid original combat icon");
@@ -3192,17 +3192,17 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 static_cast<rules::EntityId>(opengold::first_ally_id + staged_allies_.size());
             auto staged =
                 stage_area_creature(area, record, icon, exported, id, name, rules::Side::party,
-                                    difficulty_, plays_original_records());
+                                    difficulty_, plays_original_records(), game());
             staged_allies_.push_back(std::move(staged.fighter));
             staged_ally_art_.push_back(std::move(staged.art));
         }
         for (unsigned i = 0; !ally && i < count; ++i)
         {
             const auto id = static_cast<rules::EntityId>(1000 + staged_enemies_.size());
-            auto staged =
-                stage_area_creature(area, record, icon, exported, id,
-                                    name + " " + std::to_string(staged_enemies_.size() + 1),
-                                    rules::Side::opposition, difficulty_, plays_original_records());
+            auto staged = stage_area_creature(
+                area, record, icon, exported, id,
+                name + " " + std::to_string(staged_enemies_.size() + 1), rules::Side::opposition,
+                difficulty_, plays_original_records(), game());
             staged_enemies_.push_back(std::move(staged.fighter));
             staged_art_.push_back(std::move(staged.art));
             staged_records_.push_back(record);
@@ -5048,7 +5048,7 @@ std::string creature_name(const PhlanResources &area, unsigned record,
 StagedCreature stage_area_creature(const PhlanResources &area, unsigned record, unsigned icon,
                                    const ExportedMonster *exported, rules::EntityId id,
                                    std::string name, rules::Side side, Difficulty difficulty,
-                                   bool original_record)
+                                   bool original_record, GoldBoxGame game)
 {
     const auto conversion = area.conversions.find(record);
     const auto creature = area.encounter_creatures.find(record);
@@ -5066,7 +5066,8 @@ StagedCreature stage_area_creature(const PhlanResources &area, unsigned record, 
     {
         definition = "slums-orc-leader-archer";
     }
-    auto art = creature_art(area.combat_archive, icon, exported, definition.ends_with("-archer"));
+    auto art =
+        creature_art(area.combat_archive, icon, exported, definition.ends_with("-archer"), game);
     if (!art)
     {
         throw EclError("Invalid original combat icon");

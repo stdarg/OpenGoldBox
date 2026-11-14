@@ -74,6 +74,13 @@ decode_animation(std::span<const std::uint8_t> record);
 // picture with no colors of its own, the EGA map's).
 [[nodiscard]] Image picture_image(const Picture &picture, std::size_t frame = 0);
 
+// Combat icon `record_id` of a CPIC, CHEAD, CBODY or COMSPR archive as the
+// original's LoadIconAnim draws it: the VGA mode's colors with black (0) made
+// transparent and dark gray (8) shown black, as it swaps the two and keys the
+// swapped black. not_found when the archive lacks the record.
+[[nodiscard]] ImageDecodeResult decode_combat_icon(std::span<const std::uint8_t> dax,
+                                                   std::uint8_t record_id);
+
 // The EGA color, 0 to 15, the original's EGA mode shows for a picture's color.
 [[nodiscard]] std::uint8_t ega_color(const PictureColors &colors, std::uint8_t color) noexcept;
 

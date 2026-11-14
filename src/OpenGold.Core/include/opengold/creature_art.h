@@ -4,6 +4,7 @@
 #include "opengold/campaign_encounter.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/difficulty.h"
+#include "opengold/gold_box_game.h"
 #include "opengold/monster_bundle.h"
 #include <cstdint>
 #include <optional>
@@ -16,10 +17,12 @@ namespace opengold::por
 // set for what it readies and the sets its melee attacks and shots show, drawn
 // as the catalog previews them; or else the original icon with its action pose,
 // the icon 128 records on. New art keeps the original, which the Combat art
-// setting can show. Empty when `archive`, a CPICn.DAX, lacks the icon.
-[[nodiscard]] std::optional<CombatArt> creature_art(const std::vector<std::uint8_t> &archive,
-                                                    unsigned icon, const ExportedMonster *exported,
-                                                    bool archer);
+// setting can show. Empty when `archive`, a CPICn.DAX, lacks the icon. Its
+// icons are in the format of `game`, whose files it is.
+[[nodiscard]] std::optional<CombatArt>
+creature_art(const std::vector<std::uint8_t> &archive, unsigned icon,
+             const ExportedMonster *exported, bool archer,
+             GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 
 // A creature as any fight stages it, the one way the game, demos and tools do:
 // the squares it fills, its morale and Intelligence from its original record and

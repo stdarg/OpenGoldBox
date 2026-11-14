@@ -226,13 +226,14 @@ struct StagedCreature
 // named `name` on `side`. `exported` is the creature's Combat Sprite Catalog
 // export, or null. Under rules that play the original's records
 // (`original_record`) it fights as its record; otherwise as the area's
-// conversion of it. Throws when the area converts no such record or lacks the
-// icon.
+// conversion of it. The area's icons are in the format of `game`. Throws when
+// the area converts no such record or lacks the icon.
 [[nodiscard]] StagedCreature stage_area_creature(const PhlanResources &area, unsigned record,
                                                  unsigned icon, const ExportedMonster *exported,
                                                  rules::EntityId id, std::string name,
                                                  rules::Side side, Difficulty difficulty,
-                                                 bool original_record);
+                                                 bool original_record,
+                                                 GoldBoxGame game = GoldBoxGame::pool_of_radiance);
 
 struct TourSnapshot
 {

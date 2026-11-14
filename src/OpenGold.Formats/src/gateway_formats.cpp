@@ -326,6 +326,37 @@ Image picture_image(const Picture &picture, std::size_t frame)
     return image;
 }
 
+ImageDecodeResult decode_combat_icon(std::span<const std::uint8_t> dax, std::uint8_t record_id)
+{
+    const auto record = decode_dax_record(dax, record_id);
+    if (!record)
+    {
+        return {FormatResult::not_found, {}};
+    }
+    const auto picture = decode_picture(*record);
+    if (!picture || picture->frames.empty())
+    {
+        return {};
+    }
+    constexpr std::uint8_t black = 0, dark_gray = 8;
+    auto image = picture_image(*picture);
+    const auto &pixels = picture->frames.front();
+    for (std::size_t pixel = 0; pixel < pixels.size(); ++pixel)
+    {
+        auto *rgba = image.rgba.data() + pixel * 4;
+        if (pixels[pixel] == black)
+        {
+            rgba[3] = 0;
+        }
+        else if (pixels[pixel] == dark_gray)
+        {
+            const auto shown = ega_rgb(black);
+            std::copy(shown.begin(), shown.end(), rgba);
+        }
+    }
+    return {FormatResult::ok, std::move(image)};
+}
+
 std::optional<SoundSample> decode_sound_sample(unsigned id, std::span<const std::uint8_t> record)
 {
     if (id >= sample_rates.size() || sample_rates[id] == 0 || record.empty() ||
