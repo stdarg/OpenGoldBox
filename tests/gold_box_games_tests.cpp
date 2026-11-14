@@ -3815,6 +3815,38 @@ const std::vector<RouteBeat> &treasure_route()
         tavern.rest_first = true;
         route.push_back(tavern);
         route.push_back({20, 12, 5, D::north, {"SICK TRICK"}});
+        // Out of the barn by the stone stairway and the farmhouse, out of
+        // Leilon and overland, where the Waterdeep 'guards' catch the party,
+        // Fell Hatchet sentences it and the sea elves' caverns (map 22) take
+        // it in (the cluebook's Waterdeep and the Caverns).
+        walk_passages(route, 20,
+                      {{12, 5, D::east},
+                       {13, 5, D::north},
+                       {13, 4, D::east},
+                       {14, 4, D::south},
+                       {14, 5, D::south},
+                       {14, 6, D::east},
+                       {15, 6, D::east},
+                       {5, 3, D::east},
+                       {6, 3, D::east},
+                       {7, 3, D::north},
+                       {7, 2, D::north},
+                       {7, 1, D::west},
+                       {6, 1, D::west},
+                       {5, 1, D::north},
+                       {5, 0, D::north}});
+        walk_overland(route, 53,
+                      {{4, 7, D::north},
+                       {4, 6, D::north},
+                       {4, 5, D::north},
+                       {4, 4, D::north},
+                       {4, 3, D::north},
+                       {4, 2, D::north},
+                       {4, 1, D::east},
+                       {5, 1, D::east},
+                       {6, 1, D::east},
+                       {7, 1, D::north}});
+        walk_overland(route, 52, {{4, 14, D::north}});
         return route;
     }();
     return beats;
